@@ -68,6 +68,7 @@ import {
   OrganizationRequiredNotice,
 } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PdfPreview = lazy(() => import("./PdfPreview"));
 
@@ -382,6 +383,7 @@ export function OfficePreview({
         >
           Try again
         </button>
+        <ErrorAlchemyMenu className="ml-auto" />
       </div>
     );
   }
@@ -515,6 +517,7 @@ export function OfficePreview({
                 View extracted text
               </button>
             </div>
+            <ErrorAlchemyMenu className="ml-auto" />
           </div>
         ) : pdfRef ? (
           <Suspense

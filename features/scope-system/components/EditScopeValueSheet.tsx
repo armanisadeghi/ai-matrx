@@ -18,6 +18,7 @@ import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayloa
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import { referenceConfigFromItem } from "@/features/scopes/utils/referenceCell";
 import { EditContextItemSheet } from "./EditContextItemSheet";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface EditScopeValueSheetProps {
   open: boolean;
@@ -279,6 +280,7 @@ export function EditScopeValueSheet({
               >
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                 {jsonError}
+                <ErrorAlchemyMenu className="ml-auto" />
               </p>
             )}
           </div>

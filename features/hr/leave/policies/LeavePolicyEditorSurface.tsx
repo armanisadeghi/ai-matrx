@@ -128,6 +128,7 @@ import {
 } from "./policy-form";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The schedule classes `hr.leave_policy.schedule_class_scope` is filtered against. */
 const SCHEDULE_CLASSES = ["full_time", "part_time", "variable", "per_diem"] as const;
@@ -592,6 +593,7 @@ export function LeavePolicyEditorSurface({ policyId }: { policyId: string }) {
           {writeError ? (
             <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-3">
               <p className="text-sm text-destructive">{writeError}</p>
+              <ErrorAlchemyMenu className="ml-auto" />
             </div>
           ) : null}
 

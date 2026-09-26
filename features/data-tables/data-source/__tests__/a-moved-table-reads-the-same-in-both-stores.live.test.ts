@@ -31,8 +31,8 @@ dotenv.config({ path: path.resolve(__dirname, "../../../../.env"), override: fal
 dotenv.config({ path: path.resolve(__dirname, "../../../../../aidream/.env"), override: false });
 
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
-import { defaultFormatForBase } from "@/lib/field-formats/registry";
-import { withComputedColumns } from "@/features/data-tables/formulas";
+import { defaultFormatForBase } from "@ai-matrx/design-system/field-formats";
+import { withComputedColumns } from "@ai-matrx/design-system/formulas";
 
 const URL_ = process.env.GRID_PORT_SUPABASE_URL ?? "";
 const KEY = process.env.GRID_PORT_SUPABASE_PUBLISHABLE_KEY ?? "";

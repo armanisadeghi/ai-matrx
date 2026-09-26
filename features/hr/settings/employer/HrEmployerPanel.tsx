@@ -74,6 +74,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── Applicability derivation ────────────────────────────────────────────────
 
@@ -221,6 +222,7 @@ export function HrEmployerPanel() {
                 whoever runs HR here.
               </p>
             </div>
+            <ErrorAlchemyMenu className="ml-auto" />
           </div>
         ) : (
           <>

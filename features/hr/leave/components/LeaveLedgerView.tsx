@@ -49,6 +49,7 @@ import type {
   LeaveLedgerView as LeaveLedger,
 } from "../api/types";
 import { LeaveBalanceBlock, formatHours } from "./LeaveBalanceBlock";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The filters a figure's door can ask for. §5: *"Every figure is a door to the ledger rows
@@ -246,6 +247,7 @@ export function LeaveLedgerView({
               </a>
             ) : null}
           </div>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
 

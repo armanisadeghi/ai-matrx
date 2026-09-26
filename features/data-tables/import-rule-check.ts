@@ -39,7 +39,7 @@ import {
   validateCellValue,
   type ValidationRules,
 } from "./validation";
-import { parseFieldInput, resolveFieldFormat } from "@/lib/field-formats/format";
+import { parseFieldInput, resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
 
 /** The destination column, exactly as the table config row carries it. */
 export interface ImportTargetField {

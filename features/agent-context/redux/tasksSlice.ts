@@ -93,16 +93,20 @@ export const fetchTask = createAsyncThunk(
     const { data, error } = await workspaceDb(supabase)
       .from("tasks")
       .select(
-        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, updated_at, created_by, visibility",
+        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, updated_at, created_by, visibility, organization_id",
       )
       .is("deleted_at", null)
       .eq("id", taskId)
       .single();
     if (error) throw error;
 
-    // Resolve organization_id: look it up from the project if available
-    let organization_id = "";
-    if ((data as { project_id?: string | null }).project_id) {
+    // The task's OWN organization first (every task row carries one); the
+    // project's only when the row has none. A project-less task used to read
+    // as organization "" — its assignee picker then swept every organization
+    // the viewer belongs to (RC-B6 round 2).
+    let organization_id =
+      (data as { organization_id?: string | null }).organization_id ?? "";
+    if (!organization_id && (data as { project_id?: string | null }).project_id) {
       const { data: proj } = await workspaceDb(supabase)
         .from("projects")
         .select("organization_id")

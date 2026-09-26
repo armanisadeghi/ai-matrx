@@ -35,6 +35,7 @@ import { pageColumns } from "./pageColumns";
 import { narrowingSentence, type NarrowedPageRows } from "./pageRows";
 import { PagesBulkActions } from "./bulk/PagesBulkActions";
 import type { PagesWorkspaceContext, SetPageIntentsOutcome } from "./seams";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface PagesTableProps {
   context: PagesWorkspaceContext;
@@ -138,6 +139,7 @@ export function PagesTable({
             Only the newest is shown for each. That should not happen — one
             intent per page is enforced by seo.set_page_intents, so another
             writer created them.
+            <ErrorAlchemyMenu className="ml-auto" />
           </p>
         ) : null}
       </div>

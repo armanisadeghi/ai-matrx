@@ -25,6 +25,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 import { TopicStatusMark } from "../ui/TopicStatusMark";
 import type { KeywordMapHomes } from "./useKeywordMapHomes";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const MAP_TOPIC_COLUMN_ID = "map_topic";
 
@@ -48,6 +49,7 @@ export function buildKeywordMapTopicColumn({
         return (
           <span role="alert" className="text-xs text-destructive" title={homes.error}>
             {homes.error}
+            <ErrorAlchemyMenu className="ml-auto" />
           </span>
         );
       }

@@ -133,6 +133,7 @@ import {
   type SourceListRow,
 } from "@/features/sources/sourceRows";
 import { cn } from "@/utils/cn";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Canonical `ui_surface.name` this page emits (unchanged from the old library). */
 const RAG_LIBRARY_SURFACE = "matrx-user/knowledge-library";
@@ -778,6 +779,7 @@ export function SourcesPage() {
             role="alert"
           >
             {error}
+            <ErrorAlchemyMenu className="ml-auto" />
           </div>
         ) : null}
         {factsError ? (
@@ -986,6 +988,7 @@ export function SourcesPage() {
             {addError && !adding ? (
               <p role="alert" className="text-sm text-destructive">
                 {addError}
+                <ErrorAlchemyMenu className="ml-auto" />
               </p>
             ) : null}
             <div className="flex justify-end gap-2">
@@ -1037,6 +1040,7 @@ export function SourcesPage() {
             {addError && !adding ? (
               <p role="alert" className="text-sm text-destructive">
                 {addError}
+                <ErrorAlchemyMenu className="ml-auto" />
               </p>
             ) : null}
             <div className="flex justify-end gap-2">

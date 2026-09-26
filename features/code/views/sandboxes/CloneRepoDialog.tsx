@@ -28,6 +28,7 @@ import { useGitHubConnection } from "@/features/github-integration/useGitHubConn
 import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
 import { GitHubRepositoryPicker } from "@/features/github-integration/GitHubRepositoryPicker";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CloneRepoDialogProps {
   /** sandbox_instances.id to clone into. */
@@ -182,7 +183,7 @@ export function CloneRepoDialog({
                and the same explanation of what connecting does. */
             <GitHubConnectionCard compact />
           )}
-          {github.error && <p role="alert" className="text-xs text-destructive">GitHub: {github.error}</p>}
+          {github.error && <p role="alert" className="text-xs text-destructive">GitHub: {github.error} <ErrorAlchemyMenu className="ml-auto" /></p>}
           {cloneError && <ErrorNotice size="inline" className="text-xs" message={cloneError} />}
           <div className="space-y-1">
             <label htmlFor="clone-repository-url" className="text-xs font-medium text-muted-foreground">

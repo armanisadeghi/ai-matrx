@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { CodeWorkspace, type CodeWorkspaceProps } from "../CodeWorkspace";
 import { ChatPanelSlot } from "../chat/ChatPanelSlot";
 import { ChatHistorySlot } from "../chat/ChatHistorySlot";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface CodeWorkspaceRouteProps extends CodeWorkspaceProps {
   /** Disable the chat column (default: enabled). */
@@ -50,6 +51,7 @@ export const CodeWorkspaceRoute: React.FC<CodeWorkspaceRouteProps> = ({
           <a href="/code" className="mt-3 inline-block font-medium underline">
             Open Code and choose a sandbox
           </a>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       </div>
     );

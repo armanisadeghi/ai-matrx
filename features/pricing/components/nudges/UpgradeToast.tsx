@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowRight, Crown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface UpgradeToastProps {
   title?: string;
@@ -80,6 +81,7 @@ export function UpgradeToast({
           </div>
         </div>
       </div>
+      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

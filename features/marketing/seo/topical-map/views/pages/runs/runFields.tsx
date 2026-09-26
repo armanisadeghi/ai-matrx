@@ -19,6 +19,7 @@
 
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@ai-matrx/design-system";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * What an optional whole-number box currently means to the wire.
@@ -77,6 +78,7 @@ export function NumberField({
         <p role="alert" className="text-destructive">
           That has to be a whole number of pages, at least 1. Clear the box to
           let the {placeholderNote} decide.
+          <ErrorAlchemyMenu className="ml-auto" />
         </p>
       ) : null}
     </div>

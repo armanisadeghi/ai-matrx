@@ -109,7 +109,12 @@ export function useTaskEditorController(taskId: string) {
   const draft = useAppSelector(selectTaskEdit(taskId));
   const isDirty = useAppSelector(selectTaskIsDirty(taskId));
   const isOperating = useAppSelector(selectIsTaskOperating(taskId));
-  const orgId = useAppSelector(selectOrganizationId);
+  const activeOrgId = useAppSelector(selectOrganizationId);
+  // A task lives in ITS organization: its assignee list is that organization's
+  // people, whatever workspace is selected (and with none selected it is not a
+  // sweep of every organization the viewer belongs to — RC-B6 round 2: 45
+  // roster requests on one task page for an admin in 45 organizations).
+  const orgId = task?.organization_id || activeOrgId;
   const project = useAppSelector((s) =>
     task?.project_id ? selectProjectById(s, task.project_id) : undefined,
   );

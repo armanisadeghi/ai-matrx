@@ -55,7 +55,7 @@
  *   pnpm check:knob-resolve-callers              # the census
  *   pnpm check:knob-resolve-callers --self-test  # RED then GREEN against the real database
  */
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { resolve, dirname, relative, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -106,7 +106,10 @@ function walk(dir: string, out: string[], depth = 0): void {
     if (SKIP_DIR.test(e)) continue;
     const p = join(dir, e);
     let st;
-    try { st = statSync(p); } catch { continue; }
+    // lstat: never follow a symlink — matrx-frontend's gitignored `work/aidream` links the whole
+    // aidream checkout, which SOURCE_ROOTS already scans once in its own right.
+    try { st = lstatSync(p); } catch { continue; }
+    if (st.isSymbolicLink()) continue;
     if (st.isDirectory()) walk(p, out, depth + 1);
     else if (SOURCE_EXT.test(e) && st.size < 4_000_000) out.push(p);
   }

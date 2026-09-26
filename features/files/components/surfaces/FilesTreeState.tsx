@@ -3,6 +3,7 @@
 import { FolderOpen, RefreshCw, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function FilesTreeLoadingState() {
   return (
@@ -70,6 +71,7 @@ export function FilesTreeErrorState({
           Try again
         </Button>
       </div>
+      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

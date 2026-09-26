@@ -28,6 +28,7 @@ import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
 import { getStore } from "@/lib/redux/store-singleton";
 import { setActiveFileId } from "@/features/files/redux/slice";
 import { getFileUrl } from "@/features/files/redux/thunks";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface PreviewErrorBoundaryProps {
   fileId: string;
@@ -158,6 +159,7 @@ export class PreviewErrorBoundary extends React.Component<
             Close preview
           </button>
         </div>
+        <ErrorAlchemyMenu className="ml-auto" />
       </div>
     );
   }

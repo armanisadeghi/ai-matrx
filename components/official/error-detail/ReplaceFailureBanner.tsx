@@ -1,5 +1,6 @@
 import { AlertTriangle } from "lucide-react";
 import { explainError } from "./explainError";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Full-width, wrapping failure banner. Never a truncated footer string and
@@ -26,6 +27,7 @@ export function ReplaceFailureBanner({ error }: { error: string }) {
       <pre className="max-h-32 overflow-auto whitespace-pre-wrap break-words rounded-md bg-background/80 p-2 text-xs leading-relaxed text-muted-foreground">
         {explained.detail}
       </pre>
+      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

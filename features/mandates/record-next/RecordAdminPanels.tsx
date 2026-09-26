@@ -41,6 +41,7 @@ import {
 import type { AppDispatch } from "@/lib/redux/store";
 import { readMandateAddress } from "@/features/mandates/mandate-address";
 import type { RecordTabId } from "./record-tabs";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type AdminSection = "test" | "permissions" | "source" | "diagnostics";
 
@@ -203,6 +204,7 @@ export function RecordAdminPanels({
           <Button variant="outline" size="sm" onClick={load}>
             Retry
           </Button>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : !data ? (
         <div

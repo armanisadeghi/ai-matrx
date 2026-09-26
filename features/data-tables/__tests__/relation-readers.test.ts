@@ -23,7 +23,7 @@ import {
   type RelationWordsByField,
 } from "../relation-words";
 import { rowLabelText } from "../row-label";
-import { withComputedColumns } from "../formulas";
+import { withComputedColumns } from "@ai-matrx/design-system/formulas";
 import { copyValueOf, dataTableRowsToMarkdown } from "../table-copy";
 
 const MARIA = "771155c3-cc6f-431b-a2cd-cd15af2c8941";

@@ -1,5 +1,5 @@
-import { FIELD_FORMATS } from "../registry";
-import type { FieldFormatConfig } from "../types";
+import { FIELD_FORMATS } from "@ai-matrx/design-system/field-formats";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import { isChoiceFormat, isPersonFormat, withResolvedChoices } from "../choices";
 
 /** A "Owner" column on a project table: the person responsible, picked from the team. */

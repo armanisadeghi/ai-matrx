@@ -1,6 +1,11 @@
 # Field Formats — semantic display types over plain storage types
 
-**Status:** live · **Owner:** platform primitive (`lib/field-formats/`)
+**Status:** live · **Owner:** platform primitive. The pure half (types, registry, `format`) is
+`@ai-matrx/design-system/field-formats` and the formula engine is
+`@ai-matrx/design-system/formulas` (the app forks were deleted 2026-09-25, merge step 2 —
+[MERGE-DESIGN](../../../common-docs/projects/data-doctrine-adoption/v5/v2-readiness-audit/MERGE-DESIGN.md) §2).
+What stays here is app-only glue: the React pieces, choice hydration, relation states and the
+agent-context bridge. **Add or change a format in the package, never here.**
 
 ## What this is
 
@@ -26,7 +31,7 @@ has no opinion about its input, and the caller's storage-type input runs
 unchanged. **A format may add a better rendering or input; it may never take a
 working one away.**
 
-**ONE REGISTRY.** Every format lives in `registry.ts`. Adding a row there gives
+**ONE REGISTRY.** Every format lives in the design-system's `field-formats/registry.ts`. Adding a row there gives
 it to every consumer at once. A consumer with its own type vocabulary maps that
 vocabulary onto `FieldFormatId` (see `context-value-types.ts`); it never forks a
 second formatter table. Currency formatting existed in six places before this
@@ -36,9 +41,7 @@ module — do not make it seven.
 
 | File | Role |
 |---|---|
-| `types.ts` | `FieldFormatId`, `FieldFormatDef`, `FieldFormatOptions`, `FormatResult` |
-| `registry.ts` | THE registry — 23 formats, their `format()` / `parse()`, and `formatsForBase` / `defaultFormatForBase` |
-| `format.ts` | `formatFieldValue`, `parseFieldInput`, `resolveFieldFormat`, `readFieldFormatConfig` — THE FALLBACK LAW lives here |
+| `@ai-matrx/design-system/field-formats` (package) | `FieldFormatId`, `FieldFormatDef`, `FieldFormatOptions`, `FormatResult`; THE registry (`FIELD_FORMATS`, `formatsForBase`, `defaultFormatForBase`); `formatFieldValue`, `parseFieldInput`, `resolveFieldFormat`, `readFieldFormatConfig` — THE FALLBACK LAW lives there |
 | `FormattedFieldValue.tsx` | The ONE read-only renderer (links, swatch, chips, stars, amber mismatch) |
 | `FieldFormatPicker.tsx` | The ONE picker — format select + only the options that format reads; stacked by default, `layout="embedded"` exposes the option rail to a responsive parent |
 | `context-value-types.ts` | Bridge from the scopes `ContextValueType` vocabulary |
@@ -150,7 +153,7 @@ resultFormat? }` — the same JSONB the other formats' options live in — so a
 formula needs no migration, no column type, and no server support, and
 stripping the format leaves an ordinary empty text column behind.
 
-**The engine is `features/data-tables/formulas.ts`** — pure, dependency-free,
+**The engine is `@ai-matrx/design-system/formulas`** — pure, dependency-free,
 and with **no `eval` and no `new Function`**: formula text is tokenized, parsed
 to an AST, and interpreted. Nothing a user types ever becomes JavaScript.
 
@@ -209,7 +212,7 @@ best-effort static type so it can suggest the right one.
 
 ## Adding a format
 
-1. Add one `FieldFormatDef` to `DEFS` in `registry.ts`. `format()` returns
+1. Add one `FieldFormatDef` to `DEFS` in the design-system's `field-formats/registry.ts` (publish, then adopt here). `format()` returns
    `null` — never `""`, never a throw — when a value does not fit.
 2. If it needs a new option, add the key to `FieldFormatOptions` and a control
    to `FieldFormatPicker`, and list the key in the def's `optionKeys`.

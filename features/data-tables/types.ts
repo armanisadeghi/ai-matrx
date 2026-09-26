@@ -7,7 +7,7 @@
  */
 import type { RecordsError } from "@ai-matrx/records";
 import type { Database } from "@/types/database.types";
-import type { FieldFormatConfig } from "@/lib/field-formats/types";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 
 type T = Database["workbench"]["Tables"];
 type E = Database["public"]["Enums"];

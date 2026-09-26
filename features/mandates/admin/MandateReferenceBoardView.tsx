@@ -35,6 +35,7 @@ import { useOrganizationRequired } from "@/features/organizations/useOrganizatio
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { errorRowsHref, fetchMandateReferenceBoard, formatRepoList, formatSeconds, costCell, type MandatePatrolRun, type MandatePatrolSection, type MandateReferenceBoard, type MandateReferenceBoardRepo } from "./references";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function ScanLine({
   label,
@@ -226,6 +227,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
             aria-hidden="true"
           />
           <span>{patrol.read_error}</span>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
 
@@ -535,6 +537,7 @@ export function MandateReferenceBoardView() {
             <strong>The board failed to load.</strong> Nothing below is a
             report of health — it is unknown. {error}
           </div>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
 

@@ -35,7 +35,7 @@
  * write). See `migrations/udt_validation_rules_strict_enforcement.sql`.
  */
 
-import type { FieldFormatConfig } from "@/lib/field-formats/types";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 
 export type ValidationRules = {
   /**

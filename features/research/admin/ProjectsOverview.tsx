@@ -22,6 +22,7 @@ import { getTopicProjectLinks } from "../service";
 import type { ResearchTemplate } from "../types";
 import { fetchResearchTopics, fetchTemplates } from "./service";
 import { AGENT_CONFIG_KEYS } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ResearchTopicRow {
   id: string;
@@ -291,6 +292,7 @@ export function ProjectsOverview() {
             >
               Retry
             </button>
+            <ErrorAlchemyMenu className="ml-auto" />
           </div>
         )}
         <div className="min-h-0 flex-1">

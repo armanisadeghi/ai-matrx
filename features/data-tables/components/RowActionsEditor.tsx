@@ -29,13 +29,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { CHOICE_COLORS } from "@/lib/field-formats/choices";
-import { resolveFieldFormat, formatFieldValue } from "@/lib/field-formats/format";
-import type { FieldFormatConfig } from "@/lib/field-formats/types";
+import { resolveFieldFormat, formatFieldValue } from "@ai-matrx/design-system/field-formats";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import { cn } from "@/lib/utils";
 import { IconResolver } from "@ai-matrx/icons";
 import { IconInputCompact } from "@/components/official/icons/IconInputWithValidation.dynamic";
 
-import { isComputedColumn } from "../formulas";
+import { isComputedColumn } from "@ai-matrx/design-system/formulas";
 import {
   coerceForColumn,
   compileRowAction,

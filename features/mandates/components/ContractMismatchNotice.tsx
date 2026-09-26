@@ -22,6 +22,7 @@ import type {
   ContractCheck,
   ContractMismatch,
 } from "@/features/mandates/contract-check";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ContractMismatchNoticeProps {
   /** The server's persisted verdict — preferred when present. */
@@ -93,6 +94,7 @@ export function ContractMismatchNotice({
           ) : null}
         </div>
       </div>
+      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

@@ -37,6 +37,7 @@ import { RunControlShell } from "./RunControlShell";
 import { NumberField, SwitchField, numberFieldValue } from "./runFields";
 import { SiteChooser } from "./SiteChooser";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** How many topics the picker's search offers at once. */
 const TOPIC_SEARCH_LIMIT = 10;
@@ -396,6 +397,7 @@ function ProposeIntentsResultSummary({
         <p role="alert" className="text-destructive">
           Gave up after {result.consecutive_failures} failures in a row. The
           queue is intact — nothing was lost, and the next press picks it up.
+          <ErrorAlchemyMenu className="ml-auto" />
         </p>
       ) : null}
       {result.notes.map((note) => (

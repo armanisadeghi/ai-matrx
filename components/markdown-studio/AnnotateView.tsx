@@ -32,6 +32,7 @@ import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefu
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { fenceOpenerOf } from "@ai-matrx/content-ir/source";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** A heading, else the first line of prose — never a directive, fence or front-matter line. */
 function titleFrom(bufferTitle: string | null, buffer: string): string {
@@ -138,6 +139,7 @@ export function AnnotateView({
       <div role="alert" className="m-6 rounded-lg border border-destructive/30 p-4 text-sm">
         <p>{error ?? "This document could not be opened."}</p>
         <Button className="mt-2" size="sm" variant="outline" onClick={() => void reload(documentId)}>Try again</Button>
+        <ErrorAlchemyMenu className="ml-auto" />
       </div>
     );
   }

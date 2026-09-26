@@ -14,7 +14,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 
 import { useOrgMembers } from "@/features/crm/deals/useOrgMembers";
-import type { FieldChoice } from "@/lib/field-formats/types";
+import type { FieldChoice } from "@ai-matrx/design-system/field-formats";
 import { resolveUserName } from "@/components/user/UserIdentity";
 
 const PersonChoicesContext = createContext<FieldChoice[] | undefined>(undefined);

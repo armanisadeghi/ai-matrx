@@ -45,7 +45,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 
-import type { GridMove } from "../grid-selection";
+import type { GridMove } from "@ai-matrx/design-system/data-table/grid-selection";
 
 export type DateCellKind = "date" | "datetime";
 

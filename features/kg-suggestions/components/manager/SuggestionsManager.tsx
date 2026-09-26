@@ -49,6 +49,7 @@ import {
 import { SourcePreviewPanel } from "@/features/kg-suggestions/components/source-preview/SourcePreviewPanel";
 import { SuggestionsFilterBar } from "./SuggestionsFilterBar";
 import { SuggestionsTable } from "./SuggestionsTable";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function SuggestionsManager() {
   const isMobile = useIsMobile();
@@ -239,6 +240,7 @@ export function SuggestionsManager() {
         {error ? (
           <div role="alert" className="px-3 py-2 text-sm text-destructive">
             Couldn&apos;t load suggestions: {error}
+            <ErrorAlchemyMenu className="ml-auto" />
           </div>
         ) : null}
         <SuggestionsTable

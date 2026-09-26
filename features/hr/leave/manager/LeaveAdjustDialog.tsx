@@ -60,6 +60,7 @@ import {
 } from "./api/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const NOTE_MIN = 20;
 const NOTE_MIN_OTHER = 60;
@@ -235,6 +236,7 @@ export function LeaveAdjustDialog({
               <p role="alert" className="text-[11px] leading-snug text-destructive">
                 Time earned under a legal minimum can only be removed to correct an error or to
                 recover an over-accrual, and the removal is recorded for compliance.
+                <ErrorAlchemyMenu className="ml-auto" />
               </p>
             ) : null}
           </div>
@@ -303,6 +305,7 @@ export function LeaveAdjustDialog({
                     : `${refusal.resultingBalance} h`}
                 </Button>
               ) : null}
+              <ErrorAlchemyMenu className="ml-auto" />
             </div>
           ) : null}
 

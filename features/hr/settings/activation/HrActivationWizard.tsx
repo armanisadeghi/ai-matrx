@@ -102,6 +102,7 @@ import type {
 import { checkEin, formatEinInput } from "./ein";
 import { useHrActivationState } from "./useHrActivationState";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // A short, honest list. IANA carries hundreds; a US-first employer needs these, and
 // anything else is typed. The field accepts any IANA name — this is a shortcut, not
@@ -552,7 +553,8 @@ export function HrActivationWizard({
                   No jurisdictions are loaded in this system, so no location can be
                   created — nothing could be lawfully scheduled or stamped against it.
                   This is a platform gap, not something you can fill in here. Send this
-                  screen to whoever runs the platform.
+                  screen to whoever runs the platform.{" "}
+                  <ErrorAlchemyMenu className="align-middle" operation="Create an HR location" />
                 </p>
               ) : (
                 <Select
@@ -722,7 +724,8 @@ export function HrActivationWizard({
               <p role="alert" className="text-sm text-destructive">
                 {isHrDenied(refusal)
                   ? refusal.detail || `Setup was refused (${refusal.reason}).`
-                  : refusal.message}
+                  : refusal.message}{" "}
+                <ErrorAlchemyMenu className="align-middle" operation="Activate HR" />
               </p>
             ) : null}
           </StepShell>

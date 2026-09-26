@@ -32,6 +32,7 @@ import { RunControlShell } from "./RunControlShell";
 import { NumberField, SwitchField, numberFieldValue } from "./runFields";
 import { SiteChooser } from "./SiteChooser";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface MapRegionsRunControlProps {
   context: PagesWorkspaceContext;
@@ -396,6 +397,7 @@ function MapRegionsResultSummary({ result }: { result: MapRegionsRunResult }) {
         <p role="alert" className="text-destructive">
           {result.pages_left_without_topic} page(s) ended on no topic because the
           place-named topic they sat on is gone.
+          <ErrorAlchemyMenu className="ml-auto" />
         </p>
       ) : null}
       {result.values_held_back.length > 0 ? (

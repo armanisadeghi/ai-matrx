@@ -69,6 +69,7 @@ import { TopicChanges, type TopicChangeKind } from "./sections/TopicChanges";
 import { TOPICAL_MAP_SURFACE_NAME } from "./topicCuration";
 import { useTopicPanelData } from "./useTopicPanelData";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface TopicDetailBodyProps {
   mapId: string;
@@ -346,6 +347,7 @@ function TopicDetailBodyInner({
           <p role="alert" className="text-xs text-destructive">
             {topicalMapErrorText(data.topicRows.error)} — attach and &ldquo;make a page&rdquo;
             need the topic&rsquo;s id, so they are absent until this read succeeds.
+            <ErrorAlchemyMenu className="ml-auto" />
           </p>
         ) : null}
       </div>

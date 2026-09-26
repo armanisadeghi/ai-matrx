@@ -32,6 +32,7 @@ import {
   evaluateShareLinkHandoff,
   shareLinkUnavailableReason,
 } from "@/features/sharing/hooks/shareText";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ShareLinkPanelProps {
   resourceType: ResourceType;
@@ -551,6 +552,7 @@ export function ShareLinkPanel({
             <RefreshCw className="mr-1 h-3.5 w-3.5" />
             Refresh
           </Button>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
 

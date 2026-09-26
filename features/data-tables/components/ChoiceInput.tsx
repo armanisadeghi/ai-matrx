@@ -46,7 +46,7 @@ import {
   choiceColorClass,
   useFieldChoices,
 } from "@/lib/field-formats/choices";
-import type { FieldFormatConfig } from "@/lib/field-formats/types";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import {
   unresolvedRelationText,
   unresolvedRelationTitle,

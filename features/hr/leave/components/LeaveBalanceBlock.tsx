@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 
 import type { LeaveFigures } from "../api/types";
 import type { LeaveLedgerFilter } from "./LeaveLedgerView";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Display-only formatting. No arithmetic happens on this screen. */
 export function formatHours(value: number | null): string | null {
@@ -203,6 +204,7 @@ export function LeaveBalanceBlock({
               </Link>
             ) : null}
           </div>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
 

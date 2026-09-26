@@ -17,6 +17,7 @@ import { topicalMapErrorText } from "../errors";
 import { useTopicalMap } from "../hooks";
 import { useSiteTopicalMapLink } from "./useSiteTopicalMapLink";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function PlanSiteMapCell({ siteId }: { siteId: string }) {
   const brand = useMarketingBrandOptional();
@@ -29,6 +30,7 @@ export function PlanSiteMapCell({ siteId }: { siteId: string }) {
     return (
       <span role="alert" className="text-xs text-destructive" title={link.error}>
         {link.error}
+        <ErrorAlchemyMenu className="ml-auto" />
       </span>
     );
   if (link.status === "none")

@@ -34,8 +34,8 @@ import {
   defaultFormatForBase,
   getFieldFormat,
   groupedFormatsForBase,
-} from "./registry";
-import type { FieldBaseType, FieldFormatConfig, FieldFormatOptions } from "./types";
+} from "@ai-matrx/design-system/field-formats";
+import type { FieldBaseType, FieldFormatConfig, FieldFormatOptions } from "@ai-matrx/design-system/field-formats";
 import {
   ChoiceOptionsEditor,
   type ChoiceSuggestion,

@@ -147,6 +147,7 @@ import { noteFolderIdentityKey, noteFolderReference, type NoteSortField, type No
 import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── Sort field labels ───────────────────────────────────────────────────────
 const SORT_FIELDS: { field: NoteSortField; label: string }[] = [
@@ -1276,6 +1277,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
               <RefreshCw className="h-3.5 w-3.5" />
               Try again
             </button>
+            <ErrorAlchemyMenu className="ml-auto" />
           </div>
         )}
         {/* Recent — collapsible, paginated. Sits ABOVE "Shared with me".

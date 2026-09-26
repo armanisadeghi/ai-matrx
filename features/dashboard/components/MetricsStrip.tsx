@@ -18,6 +18,7 @@ import {
   type MetricCardConfig,
 } from "../constants/metricCards";
 import type { DashboardMetrics } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function chipClass(color: string): string {
   return iconColorMap[color] ?? iconColorMap.slate;
@@ -107,6 +108,7 @@ export function MetricsStrip() {
           label="Retry"
           onClick={refetch}
         />
+        <ErrorAlchemyMenu className="ml-auto" />
       </section>
     );
   }

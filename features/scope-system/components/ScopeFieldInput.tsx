@@ -21,6 +21,7 @@ import {
 import { referenceConfigFromItem } from "@/features/scopes/utils/referenceCell";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import { EditScopeValueSheet } from "./EditScopeValueSheet";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ScopeFieldInputProps {
   scopeId: string;
@@ -385,6 +386,7 @@ function FieldStatus({
       >
         <AlertCircle className="h-3 w-3" />
         not saved
+        <ErrorAlchemyMenu className="ml-auto" />
       </span>
     );
   }

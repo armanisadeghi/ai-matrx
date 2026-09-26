@@ -27,6 +27,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { cn } from "@/lib/utils";
 import type { NotesRealtimeStatus } from "../redux/notes.types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** What the strip says, derived from the channel state. Exported so the
  *  decision can be tested without a DOM, and so both surfaces share ONE rule. */
@@ -112,6 +113,7 @@ export function NoteSyncStatusStrip({
         <RotateCw className="h-3 w-3" aria-hidden="true" />
         Reload
       </button>
+      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

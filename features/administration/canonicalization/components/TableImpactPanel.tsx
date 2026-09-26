@@ -34,6 +34,7 @@ import {
   stringUrlCodec,
   useUrlState,
 } from "@ai-matrx/kit/url-state";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function TableImpactPanel() {
   const searchParams = useSearchParams();
@@ -213,6 +214,7 @@ export function TableImpactPanel() {
         <div role="alert" className="mx-4 mb-3 flex shrink-0 items-center justify-between gap-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           <span>Preflight could not be read: {readError}. {rows.length ? "The last successful result remains below; it may be stale." : "There is no verified result for this table."}</span>
           <Button size="sm" variant="outline" disabled={loading} onClick={() => void runImpact()}>Retry</Button>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
 

@@ -64,6 +64,7 @@ import { usePendingFieldRequests } from "@/features/hr/me/usePendingFieldRequest
 import { selfServicePolicyFor } from "@/features/hr/me/selfServicePolicy";
 import { MoreSection } from "../MoreSection";
 import { PlatformAccessSection } from "../PlatformAccessSection";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── Field specs — data, so they can be reordered and reused ─────────────────
 
@@ -362,6 +363,7 @@ export function PersonalTab({
                 >
                   Dismiss
                 </button>
+                <ErrorAlchemyMenu className="ml-auto" />
               </div>
             );
           })()}

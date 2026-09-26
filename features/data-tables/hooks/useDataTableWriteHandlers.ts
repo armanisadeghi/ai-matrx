@@ -21,13 +21,13 @@
  * what was received, what was expected, and what to re-read.
  */
 
-import type { FieldFormatConfig } from "@/lib/field-formats/types";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import { useMemo, type RefObject } from "react";
 
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 import { normalizeCellValue } from "../components/EditableCell";
-import { isComputedColumn } from "../formulas";
+import { isComputedColumn } from "@ai-matrx/design-system/formulas";
 import { updateTableMetadata, upsertCell } from "../service";
 import { isServiceFailure } from "../types";
 import {

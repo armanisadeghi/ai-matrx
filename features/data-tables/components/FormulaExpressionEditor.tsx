@@ -33,10 +33,10 @@ import {
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
-import { resolveFieldFormat } from "@/lib/field-formats/format";
-import type { FieldFormatConfig, FieldFormatId } from "@/lib/field-formats/types";
+import { resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
+import type { FieldFormatConfig, FieldFormatId } from "@ai-matrx/design-system/field-formats";
 
-import { FORMULA_FUNCTIONS, parseFormula } from "../formulas";
+import { FORMULA_FUNCTIONS, parseFormula } from "@ai-matrx/design-system/formulas";
 
 /** Result formats a formula can show as — the ones whose `format()` reads a plain value. */
 const RESULT_FORMATS: { id: FieldFormatId; label: string }[] = [

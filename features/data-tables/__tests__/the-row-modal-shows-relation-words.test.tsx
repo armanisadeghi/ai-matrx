@@ -59,7 +59,7 @@ jest.mock("../service", () => ({
 }));
 
 import EditRowModal from "@/components/user-generated-table-data/EditRowModal";
-import type { FieldChoice } from "@/lib/field-formats/types";
+import type { FieldChoice } from "@ai-matrx/design-system/field-formats";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

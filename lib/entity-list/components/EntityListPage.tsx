@@ -50,6 +50,7 @@ import {
 } from "./EntityBulkBar";
 import { useEntityListSelection } from "../useEntityListSelection";
 import type { MatrxDataTableSelectionConfig } from "@ai-matrx/design-system/data-table/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const EMPTY_ITEM_MENU_CONFIG: ItemMenuConfig = { sections: [] };
 
@@ -723,6 +724,7 @@ export function EntityListPage<TRow>({
                 Retry
               </Button>
             )}
+            <ErrorAlchemyMenu className="ml-auto" />
           </div>
         )}
 

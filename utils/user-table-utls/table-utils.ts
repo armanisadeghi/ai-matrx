@@ -108,6 +108,8 @@ export interface CreateTableResult {
   success: boolean;
   tableId?: string;
   error?: string;
+  /** Made, but not exactly as asked (a required mark the store did not keep, a description refused) — said, never dropped. */
+  warning?: string;
 }
 
 export interface AddColumnParams {

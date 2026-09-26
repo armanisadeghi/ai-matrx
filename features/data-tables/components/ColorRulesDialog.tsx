@@ -36,7 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { resolveFieldFormat } from "@/lib/field-formats/format";
+import { resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
 import type { TableField } from "@/utils/user-table-utls/table-utils";
 
 import {

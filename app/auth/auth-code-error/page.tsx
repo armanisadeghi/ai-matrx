@@ -3,6 +3,7 @@
 import Link from "next/link";
 import AuthPageContainer from "@/components/auth/auth-page-container";
 import { AuthMessageType } from "@/components/form-message";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AuthCodeErrorProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -37,6 +38,17 @@ export default async function AuthCodeError({ searchParams }: AuthCodeErrorProps
       subtitle={
         <>
           Something went wrong during the authentication process.{" "}
+          <ErrorAlchemyMenu
+            className="align-middle"
+            input={{
+              title: "Authentication Error",
+              message: message.message,
+              code: errorCode || error || undefined,
+              operation: "Sign in (authentication callback)",
+              details: { redirect_to: redirectTo },
+              source: "route-boundary",
+            }}
+          />{" "}
           <Link
             className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
             href={`/login${searchParamsString ? `?${searchParamsString}` : ""}`}

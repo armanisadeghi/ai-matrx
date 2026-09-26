@@ -18,6 +18,7 @@ import type { Organization } from "../../types";
 import type { OrgMemberResource } from "../types";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { useOrgMemberDetail } from "../hooks";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   orgId: string;
@@ -129,6 +130,7 @@ export function MemberResourcesView({ orgId, organization, userId }: Props) {
             <button type="button" className="underline" onClick={refresh}>
               Retry
             </button>
+            <ErrorAlchemyMenu className="ml-auto" />
           </div>
         )}
         <div className="min-h-0 flex-1">

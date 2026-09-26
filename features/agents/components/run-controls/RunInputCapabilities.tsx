@@ -12,6 +12,7 @@ import {
   UI_GATE_EDITABLE_KEYS,
   type UiGateEditableKey,
 } from "@/lib/redux/slices/agent-settings/ui-gates";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface RunInputCapabilitiesProps {
   conversationId: string;
@@ -57,6 +58,7 @@ export function RunInputCapabilities({
     {entry?.persistence === "error" ? (
       <p className="mt-1 text-[10px] text-destructive" role="alert">
         Capability changes could not be saved. Try again.
+        <ErrorAlchemyMenu className="ml-auto" />
       </p>
     ) : null}
     </>

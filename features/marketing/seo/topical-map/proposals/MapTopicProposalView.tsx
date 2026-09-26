@@ -60,6 +60,7 @@ import {
   orphanedProposalNodes,
   topicTreeRows,
 } from "./topicRows";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface MapTopicProposalViewProps {
   proposal: MapTopicProposal;
@@ -350,6 +351,7 @@ function ProposalDoors({
               <span className="font-mono">{err.slug ?? "(no slug)"}</span>: {err.message}
             </li>
           ))}
+          <li className="list-none"><ErrorAlchemyMenu /></li>
         </ul>
       ) : null}
 

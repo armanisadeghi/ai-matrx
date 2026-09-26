@@ -39,6 +39,7 @@ import {
   subscribeNoteLiveContent,
 } from "../utils/noteLiveContent";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function sinceLabel(from: number | null): string | null {
   if (!from) return null;
@@ -165,6 +166,7 @@ export function NoteSaveFailureBanner({ noteId }: NoteSaveFailureBannerProps) {
           </button>
         </div>
       </div>
+      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

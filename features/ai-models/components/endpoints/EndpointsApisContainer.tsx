@@ -45,6 +45,7 @@ import { reloadAiCatalog } from "../../catalogReload";
 import { aiModelService } from "../../service";
 import type { AiApi, AiEndpoint } from "../../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Shared bits ─────────────────────────────────────────────────────────────
 
@@ -510,6 +511,7 @@ function EndpointApiTable<T extends EndpointApiRow>({
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{actionError || loadError}</span>
           {loadError ? <Button type="button" variant="outline" size="sm" onClick={onRetry}>Retry refresh</Button> : null}
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       )}
       <MatrxDataTable<T>

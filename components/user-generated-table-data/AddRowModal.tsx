@@ -23,10 +23,10 @@ import {
   FormatAwareInput,
   formatHasOwnInput,
 } from '@/features/data-tables/components/FormatAwareInput';
-import { resolveFieldFormat } from '@/lib/field-formats/format';
+import { resolveFieldFormat } from '@ai-matrx/design-system/field-formats';
 import { withResolvedChoices } from '@/lib/field-formats/choices';
-import type { FieldChoice } from '@/lib/field-formats/types';
-import { isComputedColumn } from '@/features/data-tables/formulas';
+import type { FieldChoice } from '@ai-matrx/design-system/field-formats';
+import { isComputedColumn } from '@ai-matrx/design-system/formulas';
 import {
   describeValidationRules,
   parseValidationRules,

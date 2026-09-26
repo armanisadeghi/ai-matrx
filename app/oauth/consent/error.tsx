@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Logo } from '@/components/branding/MatrixLogo';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
+import { ErrorAlchemyMenu } from '@/components/errors/ErrorAlchemyMenu';
 
 export default function ConsentError({
     error,
@@ -30,9 +31,21 @@ export default function ConsentError({
                         <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
                     </div>
                     <div className="space-y-1.5">
-                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                            Something went wrong
-                        </h2>
+                        <div className="flex items-center justify-center gap-2">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                Something went wrong
+                            </h2>
+                            <ErrorAlchemyMenu
+                                input={{
+                                    title: 'Something went wrong',
+                                    message: error.message || 'An unexpected error occurred while processing this authorization request.',
+                                    error,
+                                    operation: 'Review an OAuth authorization request',
+                                    details: error.digest ? { digest: error.digest } : undefined,
+                                    source: 'route-boundary',
+                                }}
+                            />
+                        </div>
                         <p className="text-sm text-gray-500 dark:text-neutral-400">
                             An unexpected error occurred while processing this authorization
                             request. Please try again.

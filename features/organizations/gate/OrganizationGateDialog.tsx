@@ -46,6 +46,7 @@ import {
   registerOrganizationPicker,
   settleOrganizationSelection,
 } from "@/lib/organization/organization-gate";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Row shape common to the scope tree's rich `OrgNode` and a bare prefetched
  * choice — all the dialog actually renders or selects by. */
@@ -209,6 +210,7 @@ export function OrganizationGateDialog() {
             <p role="alert" className="px-1 py-6 text-sm text-destructive">
               Your session is unavailable. Sign in again to continue; nothing
               has been submitted.
+              <ErrorAlchemyMenu className="ml-auto" />
             </p>
           ) : error && organizations.length === 0 && !usingPrefetched ? (
             <div role="alert" className="space-y-2 px-1 py-6">
@@ -216,6 +218,7 @@ export function OrganizationGateDialog() {
               <Button variant="outline" onClick={() => void refresh()}>
                 Try again
               </Button>
+              <ErrorAlchemyMenu className="ml-auto" />
             </div>
           ) : loading ? (
             <p className="px-1 py-6 text-sm text-muted-foreground">

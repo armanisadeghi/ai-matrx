@@ -30,6 +30,7 @@ import {
 } from "@ai-matrx/tap-target/buttons";
 import { Lock, SlidersHorizontal } from "lucide-react";
 import type { AiSetting } from "../../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function CompactRange({
   min,
@@ -163,7 +164,7 @@ export default function SettingTable({
     }));
     return (
       <div className="flex h-full min-h-0 flex-col">
-        {error ? <p role="alert">{error}</p> : null}
+        {error ? <p role="alert">{error} <ErrorAlchemyMenu className="ml-auto" /></p> : null}
         <MatrxDataTable
           data={settings}
           columns={defaultColumns}
@@ -249,6 +250,7 @@ export default function SettingTable({
           <Button type="button" variant="outline" size="sm" onClick={onRetry}>
             Retry refresh
           </Button>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
       <MatrxDataTable<AiSetting>

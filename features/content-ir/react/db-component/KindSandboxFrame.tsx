@@ -58,6 +58,7 @@ import type {
 import { reportKindComponentIncident } from "./kindComponentIncident";
 import type { KindSandboxCeilings } from "./useKindSandboxKnob";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The sandbox document. Same origin; the `sandbox` attribute opaques it. */
 export const KIND_SANDBOX_ROUTE = "/kind-sandbox";
@@ -568,6 +569,7 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
                     This component could not be prepared.
                 </strong>
                 <span className="text-muted-foreground">{sentence}</span>
+              <ErrorAlchemyMenu className="ml-auto" />
             </div>
         );
     }

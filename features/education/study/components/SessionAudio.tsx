@@ -9,6 +9,7 @@
 
 import { useState } from "react";
 import { InlineMediaRef } from "@ai-matrx/media/react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function SessionAudio({
   fileId,
@@ -24,6 +25,7 @@ export function SessionAudio({
     return (
       <p className="text-xs text-destructive" role="alert">
         This study audio could not be loaded. Try again.
+        <ErrorAlchemyMenu className="ml-auto" />
       </p>
     );
   }

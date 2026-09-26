@@ -25,8 +25,8 @@
 import { ToastAction } from "@/components/ui/toast";
 import { toast } from "@/components/ui/use-toast";
 import { inlineChoices, isChoiceFormat } from "@/lib/field-formats/choices";
-import { resolveFieldFormat } from "@/lib/field-formats/format";
-import type { FieldChoice, FieldFormatConfig } from "@/lib/field-formats/types";
+import { resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
+import type { FieldChoice, FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 
 import { setFieldFormat } from "./service";
 import { isServiceFailure } from "./types";

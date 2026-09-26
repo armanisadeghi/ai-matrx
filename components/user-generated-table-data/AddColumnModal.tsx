@@ -29,8 +29,8 @@ import {
   offerFormatWhereRelationIs,
   useRelationColumnsEnabled,
 } from "@/features/data-tables/relation-knob";
-import { defaultFormatForBase } from '@/lib/field-formats/registry';
-import type { FieldFormatConfig } from '@/lib/field-formats/types';
+import { defaultFormatForBase } from '@ai-matrx/design-system/field-formats';
+import type { FieldFormatConfig } from '@ai-matrx/design-system/field-formats';
 
 interface AddColumnModalProps {
   tableId: string;

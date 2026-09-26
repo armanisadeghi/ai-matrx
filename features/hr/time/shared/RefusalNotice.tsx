@@ -19,6 +19,7 @@ import { AlertCircle, Lock } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { HrRpcError } from "../api/rpc";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function RefusalNotice({
   error,
@@ -78,6 +79,8 @@ export function RefusalNotice({
           </Link>
         ) : null}
       </div>
+      {/* The machine code rides the copy-for-AI payload — never page text. */}
+      <ErrorAlchemyMenu className="ml-auto" error={error} />
     </div>
   );
 }

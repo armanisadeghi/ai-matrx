@@ -81,6 +81,7 @@ import { HrSettingsShell } from "../HrSettingsShell";
 import type { HrEarningCode, HrHolidayCalendar, HrPayGroup } from "../types";
 import { formatPreviewDay, previewPeriods, WORKWEEK_DAYS } from "./period-preview";
 import { upsertHrPayGroup } from "./pay-group-write";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const FREQUENCIES = [
   { value: "weekly", label: "Weekly" },
@@ -125,6 +126,7 @@ function RefusalNote({ refusal }: { refusal: WriteRefusal }) {
           Go and fix it
         </Link>
       ) : null}
+      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

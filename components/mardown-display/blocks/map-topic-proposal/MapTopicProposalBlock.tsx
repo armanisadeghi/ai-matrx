@@ -18,6 +18,7 @@
 
 import { MapTopicProposalView } from "@/features/marketing/seo/topical-map/proposals/MapTopicProposalView";
 import { readMapTopicProposal } from "@/features/marketing/seo/topical-map/map-author";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface MapTopicProposalBlockProps {
   serverData: Record<string, unknown>;
@@ -40,6 +41,7 @@ export default function MapTopicProposalBlock({ serverData }: MapTopicProposalBl
         <pre className="mt-2 max-h-64 overflow-auto rounded bg-muted p-2 text-xs">
           {JSON.stringify(serverData.proposal, null, 2)}
         </pre>
+        <ErrorAlchemyMenu className="ml-auto" />
       </div>
     );
   }

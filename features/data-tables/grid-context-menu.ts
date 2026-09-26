@@ -68,7 +68,7 @@ import {
   type AvailabilityMap,
 } from "@/features/context-menu-v3/utils/availability";
 
-import type { CellAddress } from "./grid-selection";
+import type { CellAddress } from "@ai-matrx/design-system/data-table/grid-selection";
 import {
   STYLE_COLORS,
   STYLE_COLOR_LABELS,

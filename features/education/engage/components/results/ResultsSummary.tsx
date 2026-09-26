@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { BADGES, type BadgeKey } from "../../engine/badges";
 import type { RoomPlayerResult } from "../../data/gameService";
 import type { GameOutcome } from "../../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function ResultsSummary({
   outcome,
@@ -65,6 +66,7 @@ export function ResultsSummary({
               Retry verification
             </Button>
           )}
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       )}
 

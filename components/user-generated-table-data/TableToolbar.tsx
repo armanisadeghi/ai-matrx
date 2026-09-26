@@ -36,7 +36,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
-import type { FieldChoice } from "@/lib/field-formats/types";
+import type { FieldChoice } from "@ai-matrx/design-system/field-formats";
 
 /** A single full-width, 44px-tall row inside the mobile actions drawer. */
 function MobileActionRow({

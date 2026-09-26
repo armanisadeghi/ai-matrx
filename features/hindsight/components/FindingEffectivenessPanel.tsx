@@ -26,6 +26,7 @@ import { getFindingEffectiveness } from "../api";
 import type { FindingEffectiveness, UnitToken } from "../types";
 import { hasSignal } from "../types";
 import { KIND_COLOR, KIND_ICON, LEVER_LABEL } from "./tokens";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The endpoint supplies rows but no total or cap receipt. */
 export const FINDING_EFFECTIVENESS_COVERAGE = {
@@ -117,6 +118,7 @@ export function FindingEffectivenessPanel({
           >
             Retry
           </button>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       )}
       {!effectiveness.isLoading &&

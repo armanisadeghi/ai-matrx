@@ -242,6 +242,7 @@ function parseStringArray(buffer: string, fieldName: string): string[] {
 // `{ event: "chunk", data: { text: "..." } }`. The suggestion consumer
 // below reads chunks via the new envelope.
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── Step dots ─────────────────────────────────────────────────────────────────
 
@@ -2318,7 +2319,8 @@ export default function ResearchInitForm() {
             </>
           ) : aiPhase.status === "error" ? (
             <div className="space-y-6 py-8">
-              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 space-y-2">
+              <div className="relative rounded-xl border border-destructive/30 bg-destructive/5 p-5 space-y-2">
+                <ErrorAlchemyMenu className="absolute right-3 top-3" operation="Set up a research project with AI" />
                 <p className="font-semibold text-destructive">
                   Something went wrong
                 </p>

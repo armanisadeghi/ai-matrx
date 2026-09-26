@@ -67,6 +67,7 @@ import {
   LeaveBookableCell,
 } from "../manager/balanceFigures";
 import { leaveLedgerHrefFrom, leavePolicyHref } from "../manager/routes";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The one page size this surface asks for. Paired with the honest "there are more" notice. */
 const DIRECTORY_PAGE = 500;
@@ -453,6 +454,7 @@ export function LeaveEnrollmentSurface({ policyId }: { policyId: string }) {
                 className="rounded-md border border-destructive/40 bg-destructive/5 p-3"
               >
                 <p className="text-sm text-destructive">{writeError}</p>
+                <ErrorAlchemyMenu className="ml-auto" />
               </div>
             ) : null}
 

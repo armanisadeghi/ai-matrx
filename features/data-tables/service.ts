@@ -26,9 +26,9 @@ import { mapPgError } from "@ai-matrx/records/core";
 
 import { supabase } from "@/utils/supabase/client";
 
-import type { FieldFormatConfig } from "@/lib/field-formats/types";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 
-import { rewriteFormulaReferences } from "./formulas";
+import { rewriteFormulaReferences } from "@ai-matrx/design-system/formulas";
 import * as recordStore from "./data-source/record-store";
 import { placeTableInRecordStore, recordStoreHomeOf } from "./data-source/table-home";
 import { recordChangeActions } from "./data-source/record-store-grid";
@@ -1473,7 +1473,7 @@ export async function createTable(params: CreateTableParams): Promise<CreateTabl
   if (!made.success || !made.tableId) return { success: false, error: made.error ?? "The table was not created." };
   placeTableInRecordStore(made.tableId, { organizationId: born.home.organizationId, userId: born.home.userId });
   if (made.warning) console.warn(`[data-tables] ${made.warning}`);
-  return { success: true, tableId: made.tableId };
+  return { success: true, tableId: made.tableId, ...(made.warning ? { warning: made.warning } : {}) };
 }
 
 export async function readTableDetails(tableId: string): Promise<GetTableResult> {

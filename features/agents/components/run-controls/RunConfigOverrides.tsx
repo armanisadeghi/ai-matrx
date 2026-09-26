@@ -69,6 +69,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { parseRequestOverrides } from "@/features/agents/redux/execution-system/utils/request-overrides";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const OVERRIDE_COLUMNS = [
   { key: "setting", label: "Setting" },
@@ -341,6 +342,7 @@ export function RunConfigOverrides({
           >
             Retry
           </Button>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
       <div className="flex w-full items-center justify-between px-3 pb-1 pt-2">
@@ -555,6 +557,7 @@ export function RunConfigOverrides({
           className="px-3 pb-3 text-sm text-destructive"
         >
           {jsonError}
+          <ErrorAlchemyMenu className="ml-auto" />
         </p>
       )}
     </div>

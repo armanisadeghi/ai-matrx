@@ -57,8 +57,8 @@ import {
 } from "@/features/data-tables/components/EditableCell";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
-import { parseFieldInput, resolveFieldFormat } from "@/lib/field-formats/format";
-import type { FieldFormatConfig } from "@/lib/field-formats/types";
+import { parseFieldInput, resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import { formatDateCellDisplay } from "@/features/data-tables/format-date-cell";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import {
@@ -81,7 +81,7 @@ import {
   useFieldChoiceMap,
   withResolvedChoices,
 } from "@/lib/field-formats/choices";
-import { defaultFormatForBase } from "@/lib/field-formats/registry";
+import { defaultFormatForBase } from "@ai-matrx/design-system/field-formats";
 import { useTableViewUrlState } from "@/features/data-tables/hooks/useTableViewUrlState";
 import { useSavedViews } from "@/features/data-tables/saved-views/useSavedViews";
 import { SavedViewBar } from "@/features/data-tables/saved-views/SavedViewBar";
@@ -138,7 +138,7 @@ import {
   cellDomKey,
   rangeRows as rangeRowsOf,
   type CellAddress,
-} from "@/features/data-tables/grid-selection";
+} from "@ai-matrx/design-system/data-table/grid-selection";
 import { classifyEcho } from "@/features/data-tables/realtime-echo";
 import { computedColumnsFor } from "@/features/data-tables/data-source/computed-columns";
 import {
@@ -178,7 +178,7 @@ import {
 import { sheetChoiceColorLookup } from "@/features/data-tables/sheet-colors";
 import { ColorRulesDialog } from "@/features/data-tables/components/ColorRulesDialog";
 import { isChoiceFormat } from "@/lib/field-formats/choices";
-import { isComputedColumn } from "@/features/data-tables/formulas";
+import { isComputedColumn } from "@ai-matrx/design-system/formulas";
 import {
   hasValidationRules,
   parseValidationRules,
@@ -209,7 +209,7 @@ import {
   parseClipboardGrid,
   planPaste,
   storedValuesEqual,
-} from "@/features/data-tables/grid-clipboard";
+} from "@ai-matrx/design-system/data-table/grid-clipboard";
 import {
   EMPTY_GRID_MENU_TARGET,
   GRID_FIELD_DOM_ATTR,

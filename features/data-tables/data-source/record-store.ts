@@ -44,7 +44,7 @@ import { declareTable, personActor, recordsDataSource, resolveTableStyle, type N
 import { withheldCells, type WithheldCells } from "../withheld-cells";
 
 import { createClient } from "@/utils/supabase/client";
-import type { FieldChoice } from "@/lib/field-formats/types";
+import type { FieldChoice } from "@ai-matrx/design-system/field-formats";
 
 import type {
   BulkOp,
@@ -60,7 +60,7 @@ import type {
 } from "../types";
 import type { RecordStoreHome } from "./table-home";
 import { handOrderAbsence, migrateRetype, readRecordsInViewOrder, viewRecordOrderSet } from "./record-store-grid";
-import type { FieldFormatConfig } from "@/lib/field-formats/types";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import {
   choiceFromOption,
   jsonbText,
@@ -70,6 +70,8 @@ import {
   searchRowsLikeTheOlderStore,
   sortRowsLikeTheOlderStore,
   storeDefaultSort,
+  storeFormatWrite,
+  storeRulesFromOlder,
   storeValue,
   withHandOrder,
   type StoreHandOrder,
@@ -962,6 +964,19 @@ export async function setTableRowLabel(
       "A record-store table names its rows by one of its columns; a label worked out by a formula is not something it keeps yet. Pick a column instead.",
     );
   }
+  if (args.rowLabel?.field) {
+    // The store names a record by the words a column HOLDS (`custom._words_for` reads the
+    // title column off the record); a worked-out column holds none, so every row would fall
+    // back to some other words while the grid said the label was set.
+    const fields = await fieldsOf(home, args.tableId);
+    if (!fields.success) return fields;
+    const picked = fields.data.find((f) => f.key === args.rowLabel!.field);
+    if (picked && String(picked.type) === "formula") {
+      return plainFailure(
+        `"${picked.label || picked.key}" is worked out by the table, and a record-store table names its rows by a column that holds its own words. Pick a column people fill in. Nothing was changed.`,
+      );
+    }
+  }
   const client = clientFor(home);
   const written = await client.recordUpdate({
     record_id: args.tableId,
@@ -1085,18 +1100,6 @@ export async function deleteField(
   };
 }
 
-/** The store's kind word for a format that changes what a column IS, not how it shows. */
-const KIND_FOR_FORMAT: Partial<Record<string, string>> = {
-  choice: "select",
-  multi_choice: "multi_select",
-  relation: "relation",
-  person: "member",
-  attachment: "attachment",
-  autonumber: "autonumber",
-  created_time: "created_time",
-  modified_time: "modified_time",
-};
-
 export async function setFieldFormat(
   home: RecordStoreHome,
   args: { tableId: string; fieldId: string; format: FieldFormatConfig | null },
@@ -1104,36 +1107,35 @@ export async function setFieldFormat(
   const field = await fieldById(home, args.tableId, args.fieldId);
   if (!field.success) return field;
   const client = clientFor(home);
-  const format = args.format;
-  let patch: Record<string, unknown>;
-  if (!format) {
-    patch = { display_format: null };
-  } else if (format.id === "formula") {
-    // THE TEXT GOES TO THE STORE; THE STORE WORKS IT OUT. `field_update` parses
-    // `formula_text` (custom.formula_parse) and keeps the text for the editor.
-    const expression = format.options?.formula?.expression ?? "";
-    const resultFormat = format.options?.formula?.resultFormat;
-    patch = String(field.data.type) === "formula" ? { formula_text: expression } : { type: "formula", formula_text: expression };
-    if (resultFormat) patch.display_format = { id: resultFormat };
-  } else if (KIND_FOR_FORMAT[format.id]) {
-    const kind = KIND_FOR_FORMAT[format.id]!;
-    patch = { type: kind };
-    const options = format.options ?? {};
-    if (kind === "select" || kind === "multi_select") {
-      const choices = (options.choices ?? []).map((c) => c.value).filter((v) => typeof v === "string" && v.trim() !== "");
-      if (choices.length) patch.options = choices;
-    }
-    if (kind === "relation") {
-      if (options.relation_target) patch.relation_target = options.relation_target;
-      if (typeof options.relation_max === "number") patch.relation_max = options.relation_max;
-    }
-  } else {
-    patch = { display_format: { id: format.id, ...(format.options ? { options: format.options } : {}) } };
+  // SEAM HONESTY: every option of the format is carried through `custom.field_update` or the
+  // whole save is refused before anything is written (record-store-shape.ts `storeFormatWrite`).
+  let current: { choices: FieldChoice[] | null; optionsKeyedByName: boolean } = { choices: null, optionsKeyedByName: false };
+  if (String(field.data.type) === "list") {
+    const options = await client.fieldOptions({ field_id: args.fieldId });
+    if (!options.ok) return refused(options.error);
+    const docs = options.data.map((o) => ((o as { data?: Record<string, unknown> | null }).data ?? {}));
+    current = {
+      choices: options.data
+        .map((option) => choiceFromOption(option as { data?: Record<string, unknown> | null }))
+        .filter((c): c is FieldChoice => c !== null),
+      optionsKeyedByName: docs.some((d) => typeof d.name === "string" && typeof d.title !== "string"),
+    };
   }
-  const written = await client.fieldUpdate({ field_id: args.fieldId, patch: patch as never });
+  const write = storeFormatWrite(field.data, args.format, current);
+  if (!write.ok) return plainFailure(write.says);
+  for (const [i, patch] of write.patches.entries()) {
+    const written = await client.fieldUpdate({ field_id: args.fieldId, patch: patch as never });
+    if (!written.ok) {
+      invalidateRecordStoreTable(args.tableId);
+      if (i === 0) return refused(written.error);
+      // A later patch refused after an earlier one landed: said, never reported as saved.
+      return plainFailure(
+        `Part of this column's settings was saved, but the rest was refused: ${written.error.message} Open the column's settings again to see what it holds now.`,
+      );
+    }
+  }
   invalidateRecordStoreTable(args.tableId);
-  if (!written.ok) return refused(written.error);
-  if (format?.id === "autonumber") {
+  if (args.format?.id === "autonumber") {
     const numbered = await clientFor(home).autonumberBackfill({ field_id: args.fieldId });
     if (!numbered.ok) {
       return plainFailure(
@@ -1377,21 +1379,10 @@ export async function restoreArchivedRow(
 
 // ─── table settings: the older `update_user_table_config` shape ─────────────
 
-/** The older rule keys → the store's executable rules. A key it cannot enforce is named, never dropped. */
-function storeRules(rules: Record<string, unknown>): { rules: Array<{ kind: string; value: unknown }>; unique: boolean | null; refused: string[] } {
-  const out: Array<{ kind: string; value: unknown }> = [];
-  const refused: string[] = [];
-  let unique: boolean | null = null;
-  for (const [key, value] of Object.entries(rules)) {
-    if (value === undefined || value === null || value === "") continue;
-    if (key === "min" || key === "max" || key === "pattern") out.push({ kind: key, value });
-    else if (key === "maxLength") out.push({ kind: "length", value });
-    else if (key === "unique") unique = value === true;
-    else if (key === "patternHint") continue; // presentation, not a rule
-    else refused.push(key === "minLength" ? "a shortest length" : key === "allowedValues" ? "a list of allowed values" : key);
-  }
-  return { rules: out, unique, refused };
-}
+/** The column settings this seam carries (`update_user_table_config`'s field keys it has a door for). */
+const FIELD_SETTINGS_CARRIED = new Set(["id", "display_name", "field_order", "is_required", "validation_rules", "field_name", "default_value"]);
+/** The table settings it carries. */
+const TABLE_SETTINGS_CARRIED = new Set(["table_name", "description"]);
 
 export async function updateTableConfig(
   home: RecordStoreHome,
@@ -1402,6 +1393,62 @@ export async function updateTableConfig(
   },
 ): Promise<ServiceResult<null>> {
   const table = args.tableUpdates ?? {};
+  // SEAM HONESTY: every setting is judged BEFORE anything is written, so a refusal means
+  // nothing changed — never "the name saved and the rest vanished".
+  const tableUnknown = Object.keys(table).filter((k) => table[k] !== undefined && !TABLE_SETTINGS_CARRIED.has(k));
+  if (tableUnknown.length) {
+    return plainFailure(
+      tableUnknown.includes("is_public")
+        ? "A record-store table is shared by the Share button, person by person or with the organization — it has no public switch. Nothing was changed."
+        : `The record store has nowhere to keep this table's ${tableUnknown.map((k) => `"${k}"`).join(" or ")} setting. Nothing was changed.`,
+    );
+  }
+  const updates = args.fieldUpdates ?? [];
+  const patches: Array<{ id: string; patch: Record<string, unknown> }> = [];
+  if (updates.length) {
+    const fields = await fieldsOf(home, args.tableId);
+    if (!fields.success) return fields;
+    for (const update of updates) {
+      const field = fields.data.find((f) => f.id === update.id);
+      if (!field) return plainFailure("That column is no longer part of this table. Nothing was changed.");
+      const name = field.label || field.key;
+      const unknown = Object.keys(update).filter((k) => update[k] !== undefined && !FIELD_SETTINGS_CARRIED.has(k));
+      if (unknown.length) {
+        return plainFailure(
+          unknown.includes("is_public")
+            ? `A record-store column is shared with its table; "${name}" has no public switch of its own. Nothing was changed.`
+            : `The record store has nowhere to keep ${unknown.map((k) => `"${k}"`).join(" or ")} on "${name}". Nothing was changed.`,
+        );
+      }
+      if (typeof update.field_name === "string" && update.field_name !== field.key) {
+        return plainFailure(
+          `"${name}" keeps the machine name it was made with (${field.key}), because its rows, formulas and rules point at it. Rename what people read — the column's name — instead. Nothing was changed.`,
+        );
+      }
+      if (update.default_value !== undefined) {
+        return plainFailure("A record-store column has no default value to set. Nothing about this column was changed.");
+      }
+      const patch: Record<string, unknown> = {};
+      if (typeof update.display_name === "string") patch.label = update.display_name;
+      if (typeof update.field_order === "number") patch.sort = update.field_order;
+      if (typeof update.is_required === "boolean") patch.required = update.is_required;
+      if (update.validation_rules !== undefined) {
+        const mapped = storeRulesFromOlder(
+          (update.validation_rules ?? {}) as Record<string, unknown>,
+          field.rules as unknown as Array<Record<string, unknown>>,
+        );
+        if (mapped.refused.length) {
+          return plainFailure(
+            `The record store checks a smallest or largest number, a pattern, a shortest and a longest length and "no two rows the same"; it cannot keep ${mapped.refused.join(" or ")} on "${name}" yet. Nothing was changed.`,
+          );
+        }
+        patch.rules = mapped.rules;
+        // The older rule object is the whole set, so a missing `unique` means OFF.
+        if (mapped.unique !== ((field as { unique?: boolean | null }).unique === true)) patch.unique = mapped.unique;
+      }
+      if (Object.keys(patch).length > 0) patches.push({ id: update.id, patch });
+    }
+  }
   if (table.table_name !== undefined || table.description !== undefined) {
     const t = await updateTableMetadata(home, {
       tableId: args.tableId,
@@ -1411,28 +1458,8 @@ export async function updateTableConfig(
     if (!t.success) return t;
   }
   const client = clientFor(home);
-  for (const update of args.fieldUpdates ?? []) {
-    const patch: Record<string, unknown> = {};
-    if (typeof update.display_name === "string") patch.label = update.display_name;
-    if (typeof update.field_order === "number") patch.sort = update.field_order;
-    if (typeof update.is_required === "boolean") patch.required = update.is_required;
-    if (update.validation_rules !== undefined) {
-      const mapped = storeRules((update.validation_rules ?? {}) as Record<string, unknown>);
-      if (mapped.refused.length) {
-        invalidateRecordStoreTable(args.tableId);
-        return plainFailure(
-          `The record store checks a smallest or largest number, a pattern, a longest length and "no two rows the same"; it cannot keep ${mapped.refused.join(" or ")} yet. Nothing about this column was changed.`,
-        );
-      }
-      patch.rules = mapped.rules;
-      if (mapped.unique !== null) patch.unique = mapped.unique;
-    }
-    if (update.default_value !== undefined) {
-      invalidateRecordStoreTable(args.tableId);
-      return plainFailure("A record-store column has no default value to set. Nothing about this column was changed.");
-    }
-    if (Object.keys(patch).length === 0) continue;
-    const written = await client.fieldUpdate({ field_id: update.id, patch: patch as never });
+  for (const { id, patch } of patches) {
+    const written = await client.fieldUpdate({ field_id: id, patch: patch as never });
     if (!written.ok) {
       invalidateRecordStoreTable(args.tableId);
       return refused(written.error);
@@ -1553,11 +1580,20 @@ export async function createTable(
     ...(fields.length > 0 ? { fields, titleField: fields[0]!.key } : {}),
   });
   if (!declared.ok) return { success: false, error: declared.error.message };
-  let warning: string | undefined;
+  const warnings: string[] = [];
+  // SEAM HONESTY: every column is made optional (above); a caller that asked for a required one
+  // is told so, never left believing the store will demand it.
+  const asked = args.fields.filter((f) => f.is_required).map((f) => f.display_name || f.field_name);
+  if (asked.length) {
+    warnings.push(
+      `${asked.map((n) => `"${n}"`).join(", ")} ${asked.length === 1 ? "was" : "were"} made optional: a new record-store table demands no column until someone marks it required in the column's settings.`,
+    );
+  }
   if (args.description && args.description.trim()) {
     const described = await client.recordUpdate({ record_id: declared.data, patch: { description: args.description.trim() } });
-    if (!described.ok) warning = `The table was made, but its description was not saved: ${described.error.message}`;
+    if (!described.ok) warnings.push(`The table was made, but its description was not saved: ${described.error.message}`);
   }
+  const warning = warnings.length ? warnings.join(" ") : undefined;
   return { success: true, tableId: declared.data, ...(warning ? { warning } : {}) };
 }
 

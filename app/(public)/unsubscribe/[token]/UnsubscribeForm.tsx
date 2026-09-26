@@ -12,6 +12,7 @@ import { Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Props = {
   token: string;
@@ -127,7 +128,8 @@ export function UnsubscribeForm({
         <p className="text-sm text-destructive">
           Something went wrong on our end. Please try once more — or reply to the
           message with the word <span className="font-medium">unsubscribe</span>{" "}
-          and we&apos;ll stop contacting you.
+          and we&apos;ll stop contacting you.{" "}
+          <ErrorAlchemyMenu className="align-middle" operation="Unsubscribe from our messages" />
         </p>
       ) : null}
 

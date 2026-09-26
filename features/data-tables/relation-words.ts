@@ -25,7 +25,7 @@
  */
 
 import { RELATION_WITHHELD_LABEL, looksLikeRecordId } from "@/lib/field-formats/relation";
-import type { FieldFormatConfig } from "@/lib/field-formats/types";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 
 /** id → the words that id reads. An id the store answered nothing for is ABSENT. */
 export type RelationWordsMap = ReadonlyMap<string, string>;

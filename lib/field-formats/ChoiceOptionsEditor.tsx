@@ -48,7 +48,7 @@ import {
   choiceColorClass,
   inlineChoices,
 } from "./choices";
-import type { FieldChoice, FieldFormatOptions } from "./types";
+import type { FieldChoice, FieldFormatOptions } from "@ai-matrx/design-system/field-formats";
 
 /** One observed value of the column, and how many rows carry it. */
 export type ChoiceSuggestion = {

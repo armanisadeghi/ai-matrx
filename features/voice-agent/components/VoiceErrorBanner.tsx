@@ -7,6 +7,7 @@
 
 import { AlertCircle } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface VoiceErrorBannerProps {
   error: { code: string; message: string } | null;
@@ -27,6 +28,7 @@ export function VoiceErrorBanner({ error }: VoiceErrorBannerProps) {
         >
           <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
           <span className="leading-snug">{error.message}</span>
+          <ErrorAlchemyMenu className="ml-auto" />
         </motion.div>
       ) : null}
     </AnimatePresence>

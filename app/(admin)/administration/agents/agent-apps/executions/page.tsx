@@ -55,6 +55,7 @@ import {
   AgentAppRef,
   agentAppExecutionsHref,
 } from "@/features/agent-apps/components/AgentAppRef";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const LIMIT = 500;
 /** Both source calls order newest first and request only the newest 500; no total receipt exists. */
@@ -968,6 +969,7 @@ function LoadError({
       <button type="button" className="underline" onClick={() => void retry()}>
         Retry
       </button>
+      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

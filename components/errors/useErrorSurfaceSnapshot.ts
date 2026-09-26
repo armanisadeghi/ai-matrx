@@ -81,7 +81,7 @@ export function readErrorSurfaceSnapshot(
       values: null,
       ...(name
         ? {
-            note: `"${name}" is named for this page but has no surface declaration. Register it to include its declared values.`,
+            note: `This route maps to "${name}", which has no surface declaration in this build, so no page values could be read. The url and route in <context> are the page's address; the error below is what it showed.`,
           }
         : {}),
     };

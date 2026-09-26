@@ -42,7 +42,7 @@ import type {
   FieldChoice,
   FieldFormatConfig,
   FieldFormatOptions,
-} from "./types";
+} from "@ai-matrx/design-system/field-formats";
 
 /**
  * Format ids whose options come from this module — THE ONE LIST THAT MEANS

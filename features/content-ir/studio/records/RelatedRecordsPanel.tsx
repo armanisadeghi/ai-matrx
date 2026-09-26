@@ -61,6 +61,7 @@ import {
   type RelatedRecordsResult,
 } from "./related-records-service";
 import type { ConfirmationFilter, KindRecordRow } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -165,6 +166,7 @@ export function RelatedRecordsPanel({
               {edgesError} Any records that belong to this one are still there —
               this panel simply could not read which shapes they are.
             </span>
+            <ErrorAlchemyMenu className="ml-auto" />
           </p>
         ) : edgesLoading ? (
           <p className="mb-2 text-xs text-muted-foreground">
@@ -361,6 +363,7 @@ function RelatedChildList({
               Try again
             </Button>
           </span>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : result && result.rows.length > 0 ? (
         <ol className="space-y-1.5">

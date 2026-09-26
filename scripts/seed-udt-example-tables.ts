@@ -52,7 +52,7 @@ import { createClient } from "@supabase/supabase-js";
 import type {
   FieldChoice,
   FieldFormatConfig,
-} from "../lib/field-formats/types";
+} from "@ai-matrx/design-system/field-formats";
 import type {
   ColorBy,
   ColorRule,

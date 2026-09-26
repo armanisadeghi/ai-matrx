@@ -12,7 +12,7 @@
 // The two answers have one shape, so the grid's eight call sites ask
 // `computedColumnsFor(tableId)` once and do not know which store they are on.
 
-import { isComputedColumn, withComputedColumns, type ComputedColumnField, type ComputedRowsResult } from "../formulas";
+import { isComputedColumn, withComputedColumns, type ComputedColumnField, type ComputedRowsResult } from "@ai-matrx/design-system/formulas";
 
 import { recordStoreHomeOf } from "./table-home";
 

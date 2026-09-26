@@ -23,7 +23,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import { relationWords as recordStoreRelationWords } from "./data-source/record-store";
 import { recordStoreHomeOf } from "./data-source/table-home";
-import type { FieldChoice, FieldFormatConfig } from "@/lib/field-formats/types";
+import type { FieldChoice, FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import { isRelationFormat, relationIdsInColumn, type RelationWordsByField, type RelationWordsMap } from "./relation-words";
 
 const EMPTY_WORDS: RelationWordsMap = new Map();

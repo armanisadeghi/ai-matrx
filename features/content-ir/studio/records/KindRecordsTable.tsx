@@ -88,6 +88,7 @@ import {
 } from "./RelatedRecordsPanel";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface Props {
   kind: string;
   label: string;
@@ -521,6 +522,7 @@ export default function KindRecordsTable({
           <span>
             <strong>These records could not be read.</strong> {error}
           </span>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
 

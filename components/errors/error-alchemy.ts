@@ -188,7 +188,7 @@ const SURFACE_NOTES: Record<ErrorSurfaceSnapshot["status"], string | undefined> 
   "route-only":
     "This route maps to the surface, but no live surface provider was mounted, so its values could not be read.",
   unregistered:
-    "This page has no surface registration, so no declared values are available. Register the page's surface to include them.",
+    "This page is not a registered surface, so it declares no page values. What it knows is its address: the url and route in <context> (the route and its parameters identify the record or step), plus the error, operation and records below. Pages that hold real state are registered surfaces; sign-in, public and demo pages deliberately are not.",
   error: undefined,
 };
 

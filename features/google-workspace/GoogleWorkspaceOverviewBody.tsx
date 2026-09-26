@@ -55,6 +55,7 @@ import {
 } from "@/providers/google-provider/GoogleApiProvider";
 import { extractErrorMessage } from "@/utils/errors";
 import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface GoogleWorkspaceOverviewBodyProps {
   initialConnectionId?: string | null;
@@ -705,6 +706,7 @@ function OverviewError({
         <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
         {retryLabel}
       </Button>
+      <ErrorAlchemyMenu className="ml-auto" />
     </section>
   );
 }
@@ -745,6 +747,7 @@ function UnavailableRequestedAccount({
         <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
         Try again
       </Button>
+      <ErrorAlchemyMenu className="ml-auto" />
     </section>
   );
 }

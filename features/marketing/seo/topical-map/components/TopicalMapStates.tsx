@@ -21,6 +21,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 
 import { topicalMapErrorText, TopicalMapError } from "../errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function TopicalMapLoading({ what }: { what: string }) {
   return (
@@ -126,6 +127,7 @@ function TopicalMapFault({ what, error }: { what: string; error: unknown }) {
           {hint}
         </p>
       ) : null}
+      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

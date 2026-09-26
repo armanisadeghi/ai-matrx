@@ -25,6 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system
 import { Button } from "@/components/ui/button";
 import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
 import { formatElapsed } from "@/lib/durable-run/useDurableRun";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The slice of `DurableRunHandle` this shell renders. Deliberately not the
@@ -174,6 +175,7 @@ function RunErrorBlock({
           Run it again
         </Button>
       ) : null}
+      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

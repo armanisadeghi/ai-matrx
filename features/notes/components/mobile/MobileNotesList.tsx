@@ -49,6 +49,7 @@ import { noteMatchesActiveOrgContext } from "../../utils/noteUtils";
 import { MobileActionBar } from "@/components/official/mobile-action-bar/MobileActionBar";
 import NotesFilterSheet, { NotesFilterState } from "./NotesFilterSheet";
 import type { Note } from "@/features/notes/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface MobileNotesListProps {
   onNoteSelect: (note: Note) => void;
@@ -314,6 +315,7 @@ export default function MobileNotesList({
                   >
                     Try again
                   </button>
+                  <ErrorAlchemyMenu className="ml-auto" />
                 </div>
               ) : (
                 <div className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground">

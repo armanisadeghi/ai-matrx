@@ -43,6 +43,7 @@ import {
   type BulkIntentAction,
   type BulkIntentDraft,
 } from "./useBulkIntentFlow";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface BulkActionSpec {
   id: BulkIntentAction;
@@ -243,6 +244,7 @@ function BulkActionPopover({
               ? "The rehearsal was refused, so nothing was written. "
               : "The write was refused. "}
             {flow.failureText}
+            <ErrorAlchemyMenu className="ml-auto" />
           </p>
         ) : null}
 

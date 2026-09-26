@@ -17,9 +17,9 @@ import { Input } from "@ai-matrx/design-system";
 
 import { ChoiceInput } from "./ChoiceInput";
 
-import { parseFieldInput } from "@/lib/field-formats/format";
-import { getFieldFormat } from "@/lib/field-formats/registry";
-import type { FieldFormatConfig } from "@/lib/field-formats/types";
+import { parseFieldInput } from "@ai-matrx/design-system/field-formats";
+import { getFieldFormat } from "@ai-matrx/design-system/field-formats";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 const OWNED_EDITORS = new Set([

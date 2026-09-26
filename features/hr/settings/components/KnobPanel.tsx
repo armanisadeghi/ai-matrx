@@ -56,6 +56,7 @@ import { isHrDenied } from "../../types";
 import type { HrPresentedKnob } from "../types";
 import { Textarea } from "@/components/ui/textarea";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── Value rendering ─────────────────────────────────────────────────────────
 
@@ -172,6 +173,7 @@ export function KnobRow({
             becomes a constant. Send this key name to whoever runs the platform.
           </p>
         </div>
+        <ErrorAlchemyMenu className="ml-auto" />
       </div>
     );
   }

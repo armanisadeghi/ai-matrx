@@ -67,6 +67,7 @@ import {
 } from "@/features/admin/reporting/source-links";
 import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
 import { useNow } from "@/hooks/useNow";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const DOCTRINE_HREF =
   "https://github.com/armanisadeghi/ai-matrx/blob/main/.claude/skills/no-dead-ends/SKILL.md";
@@ -774,6 +775,7 @@ function Header({
           >
             <Copy className="h-3 w-3" />
           </button>
+          <ErrorAlchemyMenu className="ml-auto" />
         </span>
       )}
 

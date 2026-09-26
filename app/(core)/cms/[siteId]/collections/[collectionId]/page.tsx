@@ -42,8 +42,8 @@ import ColumnHeaderMenu from "@/components/user-generated-table-data/ColumnHeade
 import { useTableViewUrlState } from "@/features/data-tables/hooks/useTableViewUrlState";
 import { activeFiltersOnly } from "@/features/data-tables/table-view-url";
 import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
-import { defaultFormatForBase } from "@/lib/field-formats/registry";
-import { readFieldFormatConfig } from "@/lib/field-formats/format";
+import { defaultFormatForBase } from "@ai-matrx/design-system/field-formats";
+import { readFieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import type { ColumnFilter } from "@/features/data-tables/column-filters";
 import type { ColumnFacets } from "@/features/data-tables/types";
 import { Button } from "@/components/ui/button";

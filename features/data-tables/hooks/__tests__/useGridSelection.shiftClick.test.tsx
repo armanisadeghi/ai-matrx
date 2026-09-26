@@ -10,7 +10,7 @@
  */
 import { renderHook } from "@/test-utils/renderHook";
 import { useGridSelection } from "../useGridSelection";
-import { cellsInRange } from "../../grid-selection";
+import { cellsInRange } from "@ai-matrx/design-system/data-table/grid-selection";
 
 const ROW_IDS = ["r1", "r2", "r3", "r4"];
 const FIELD_NAMES = ["job", "status", "owner"];

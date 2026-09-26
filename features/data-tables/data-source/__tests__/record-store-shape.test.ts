@@ -82,7 +82,8 @@ describe("a store Field reads back as the column the older grid drew", () => {
     expect(choiceFromOption({ data: { title: "Complete" } })).toEqual({ value: "Complete" });
     expect(olderFormat(field({ type: "list", format: "choice" } as never), choices)).toEqual({
       id: "choice",
-      options: { choices },
+      // allow-other is said out loud: the store's default is off, the grid's is on.
+      options: { choices, allowOther: false },
     });
   });
 

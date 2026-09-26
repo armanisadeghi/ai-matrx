@@ -24,8 +24,8 @@ import {
   serializeValidationRules,
   type ValidationRules,
 } from "@/features/data-tables/validation";
-import { resolveFieldFormat } from "@/lib/field-formats/format";
-import type { FieldFormatConfig } from "@/lib/field-formats/types";
+import { resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import {
   isServiceFailure,
   type FieldDataType,

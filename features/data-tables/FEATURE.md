@@ -215,7 +215,7 @@ creates workbook UI and duplicate internal editor documents.
 - `@ai-matrx/design-system/data-table/table-style` (colors model: color-by / rules / highlights,
   pure, server-safe; this repo's copy was deleted 2026-09-24) +
   `components/ColorRulesDialog.tsx` (the Colors dialog) + `scripts/seed-udt-example-tables.ts`.
-- `features/data-tables/grid-clipboard.ts` (TSV parse / serialize + `planPaste`, pure) and
+- `@ai-matrx/design-system/data-table/grid-clipboard` (TSV parse / serialize + `planPaste`, pure; this repo's copy was deleted 2026-09-25) and
   `features/data-tables/grid-context-menu.ts` (the grid's cell / row / column menu sections +
   the DOM-anchor resolver, pure `build*`) — consumed by `UserTableViewer` + `useGridSelection`.
 - `features/data-tables/components/TableCopyControls.tsx` + `table-copy.ts` — the shared user-table copy control (canonical `CopyButtons`; row/column shaping through the platform `copy-subset` window, `components/agent-copy/copy-subset/`) and pure projection/Markdown/AI-envelope builders. `UserTableViewer` mounts the controls once, so route, quick-data sheet, resource picker, canvas, modal, dataset overlay, and WindowPanel consumers stay identical.
@@ -624,7 +624,7 @@ Decide before agent-heavy workloads land.
 
 ## The grid interaction model — three states, and THE CLICK LAW
 
-`features/data-tables/grid-selection.ts` is the source of truth; read it before
+`@ai-matrx/design-system/data-table/grid-selection` is the source of truth (this repo's fork was deleted 2026-09-25); read it before
 touching how a cell responds to a click or a key.
 
 A grid has **three** states, not two: nothing selected / one cell **selected** /
@@ -659,7 +659,8 @@ recoverable floor. `useCellUndo` captures the inverse **before** the write —
 re-reading the cell afterwards races with realtime and with agent writes and can
 "undo" to a value someone else just set — and applies it through the same
 `upsertCell` path as a hand edit, so it validates, versions, and is refused on a
-read-only table. A second write path is always the one that corrupts something.
+read-only table. A second write path is always the one that corrupts something. Its stack (depth, the redo contract) is the design-system's pure
+`@ai-matrx/design-system/data-table/cell-undo`; the hook owns only the write, the toast and the labels.
 
 ## 🚨 Which database — before you apply ANY migration here
 
@@ -971,7 +972,7 @@ not in this pass.
 ## Formula columns in the grid (2026-09-14; readers unified 2026-09-15)
 
 **THE ONE INJECTION POINT (2026-09-15):** `withComputedColumns(rows, fields)` in
-[`formulas.ts`](./formulas.ts) (with `formulaColumnsOf` / `isFormulaColumn`) is the only place a
+`@ai-matrx/design-system/formulas` (with `formulaColumnsOf` / `isFormulaColumn`) is the only place a
 formula column's value is put into a row. The grid page, `loadRowsForCopy` / `loadAllRows`
 (every Copy / Copy for AI / CSV+JSON export / copy-subset window — they all read
 `getCompleteTable`, whose rows hold the stored BLANK), the column-filter path, the client-side
@@ -994,7 +995,7 @@ Text carried the computed column; the Project Tracker example renders "Budget pe
 $2,471 (84000 / 34).
 
 A column whose format is `formula` (`lib/field-formats` — language, coercion rules and the
-26 functions in [`formulas.ts`](./formulas.ts), 65 tests) STORES nothing. `UserTableViewer`
+26 functions in `@ai-matrx/design-system/formulas`, tested there) STORES nothing. `UserTableViewer`
 computes it at render for every displayed row (`{Display Name}` or `{field_name}` references,
 earlier formula columns visible to later ones) and injects the value into the row it renders,
 so display, copy, the agent scope and client-side sort all see the same number. A bad

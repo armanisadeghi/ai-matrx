@@ -101,6 +101,7 @@ import {
 import { ConsentFailureNotice } from "./ConsentFailureNotice";
 import { GOOGLE_CONNECTOR_PROVIDER } from "./provider-config";
 import { confirmGmailChangesDisclosure, confirmGmailReadDisclosure } from "./gmail-read-disclosure";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The sentinel account id meaning "a Google login not connected here yet". */
 const NEW_ACCOUNT = "__new_account__";
@@ -783,6 +784,7 @@ export function ConnectorConsentBody({
             >
               Try again
             </button>
+            <ErrorAlchemyMenu className="ml-auto" />
           </div>
         ) : null}
 

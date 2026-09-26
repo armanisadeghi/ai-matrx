@@ -57,6 +57,7 @@ import { TopicalMapFailed } from "../components/TopicalMapStates";
 import { START_MAP_SOURCES, startMapSource } from "./startMapSources";
 import { StartMapResult } from "./StartMapResult";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const EVERY_SITE = "__every_site__";
 const ROOT = "__root__";
@@ -458,6 +459,7 @@ export function StartMapScreen({
             {knobs.error ? (
               <span role="alert" className="text-destructive">
                 Change mode could not be read: {extractErrorMessage(knobs.error)}
+                <ErrorAlchemyMenu className="ml-auto" />
               </span>
             ) : effectiveMode === null ? (
               "Reading this organization's change-mode setting…"
@@ -553,6 +555,7 @@ export function StartMapScreen({
               Run it again exactly as sent
             </Button>
           ) : null}
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
       {run.result ? (

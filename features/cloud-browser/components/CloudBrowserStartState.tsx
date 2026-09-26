@@ -22,6 +22,7 @@ import { AlertTriangle, Globe, Hourglass, Loader2, RotateCw } from "lucide-react
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import { isWaitingForCapacity, type CloudBrowserLoadError } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** How often the panel asks again while every browser slot is taken. */
 export const CAPACITY_RETRY_MS = 10_000;
@@ -213,6 +214,7 @@ export function CloudBrowserStartFailed({
           Reference: <span className="font-mono">{error.requestId}</span>
         </p>
       ) : null}
+      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

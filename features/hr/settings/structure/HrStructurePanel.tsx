@@ -72,6 +72,7 @@ import { useHrContext } from "../../shared/useHrContext";
 import { useHrSettingsStructure } from "../hooks/useHrSettingsStructure";
 import { HrSettingsShell } from "../HrSettingsShell";
 import type { HrJurisdiction } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * ONE right-click section shape for all three structure tables (department,
@@ -182,6 +183,7 @@ function RefusalNote({ refusal }: { refusal: WriteRefusal }) {
           Go and fix it
         </Link>
       ) : null}
+      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

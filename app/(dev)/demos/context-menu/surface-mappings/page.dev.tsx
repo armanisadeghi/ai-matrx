@@ -62,6 +62,7 @@ import {
 import type { SurfaceValue } from "@/features/surfaces/types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Sample-scope seeding
@@ -329,6 +330,7 @@ export default function SurfaceMappingsDemoPage() {
                   <RefreshCw className="h-3.5 w-3.5" />
                   Retry
                 </button>
+                <ErrorAlchemyMenu className="ml-auto" />
               </div>
             ) : (
               <div className="[&_button]:min-h-11">

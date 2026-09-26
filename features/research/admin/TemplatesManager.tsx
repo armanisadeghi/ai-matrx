@@ -77,6 +77,7 @@ import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/se
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SYSTEM_AGENT_TAB = ["system"] as const;
 
@@ -852,6 +853,7 @@ export function TemplatesManager() {
             >
               Retry
             </button>
+            <ErrorAlchemyMenu className="ml-auto" />
           </div>
         )}
         <div className="min-h-0 flex-1">

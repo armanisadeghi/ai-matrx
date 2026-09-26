@@ -31,6 +31,7 @@ import type {
   JsonValue,
   RunEvidence,
 } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function pretty(value: unknown): string {
   return JSON.stringify(value, null, 2);
@@ -348,6 +349,7 @@ export function DataForSeoLab() {
             className="whitespace-pre-wrap rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
           >
             {error}
+            <ErrorAlchemyMenu className="ml-auto" />
           </pre>
         ) : null}
 

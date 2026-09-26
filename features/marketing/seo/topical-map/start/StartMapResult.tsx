@@ -42,6 +42,7 @@ import { Button } from "@/components/ui/button";
 import { useMapLinks } from "../links";
 import type { AuthorTopicalMapResult } from "../map-author";
 import { MapTopicProposalView } from "../proposals/MapTopicProposalView";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function StartMapResult({
   result,
@@ -86,6 +87,7 @@ export function StartMapResult({
           <p className="mt-2 text-sm text-destructive" role="alert">
             The server reported the research started but returned no research id, so there is
             nothing to open. Check the research list.
+            <ErrorAlchemyMenu className="ml-auto" />
           </p>
         )}
         <Notes notes={result.notes} />

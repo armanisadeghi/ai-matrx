@@ -39,6 +39,7 @@ import {
   type RecordAnchor,
 } from "@/features/content-ir/records/kind-record-service";
 import { shapeInstancePermalink } from "@/features/content-ir/studio/constants";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface AnchorRecordsState {
   status: "loading" | "ready" | "error";
@@ -174,6 +175,7 @@ export function AnchorRecordsList({
           <RotateCw className="h-3 w-3" aria-hidden />
           Try again
         </button>
+        <ErrorAlchemyMenu className="ml-auto" />
       </div>
     );
   }

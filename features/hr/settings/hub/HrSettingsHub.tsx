@@ -36,6 +36,7 @@ import { useHrKnobs } from "../hooks/useHrKnobs";
 import { HR_SETTINGS_TABS } from "../settings-tabs";
 import type { HrPresentedKnob } from "../types";
 import { HrSettingsShell } from "../HrSettingsShell";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ORIGIN_LABEL: Record<HrPresentedKnob["origin"], string> = {
   org_override: "This employer",
@@ -172,6 +173,7 @@ export function HrSettingsHub() {
                 </li>
               ))}
             </ul>
+            <ErrorAlchemyMenu className="ml-auto" />
           </div>
         ) : null}
 

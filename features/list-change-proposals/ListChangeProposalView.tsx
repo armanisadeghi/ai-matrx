@@ -63,6 +63,7 @@ import {
   type ProposalDecision,
   type ProposalDecisions,
 } from "./decisions";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ListChangeProposalViewProps {
   proposal: ListChangeProposalValue;
@@ -276,6 +277,7 @@ export function ListChangeProposalView({
               Proposal {u.index + 1} was not shown because {u.why}.
             </li>
           ))}
+          <li className="list-none"><ErrorAlchemyMenu /></li>
         </ul>
       ) : null}
 

@@ -58,6 +58,7 @@ import type {
 } from "../types";
 import { TopicStatusMark } from "../ui/TopicStatusMark";
 import { TREE_INCLUDE } from "./MapTreeHarness";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 
 /** Which statuses the history read may be narrowed to (the function's own list). */
@@ -342,6 +343,7 @@ function HistoryList({
               <span className="font-mono">{err.slug ?? "(no slug)"}</span>: {err.message}
             </li>
           ))}
+          <li className="list-none"><ErrorAlchemyMenu /></li>
         </ul>
       ) : null}
 

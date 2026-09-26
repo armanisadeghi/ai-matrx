@@ -47,6 +47,7 @@ import type {
 import { LeaveBalanceBlock, formatHours } from "./LeaveBalanceBlock";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** How long after the last keystroke the preview re-reads. */
 const PREVIEW_DEBOUNCE_MS = 350;
@@ -629,6 +630,7 @@ export function LeaveRequestForm({
                   aria-hidden
                 />
                 <p className="text-sm text-destructive/90">{shownPreview.blocker}</p>
+                <ErrorAlchemyMenu className="ml-auto" />
               </div>
             ) : null}
 
@@ -683,6 +685,7 @@ export function LeaveRequestForm({
               </li>
             ))}
           </ul>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
 

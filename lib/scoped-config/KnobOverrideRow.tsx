@@ -42,7 +42,7 @@ import {
   type KnobLadder,
   type ViewerStanding,
 } from "./ladder";
-import { availableVoices } from "@/lib/cartesia/voices";
+import { voiceDisplayName, voiceSetOf } from "@/lib/voices/voiceSets";
 import {
   setKnobOverride,
   setKnobRungLock,
@@ -113,20 +113,18 @@ function formatRowValue(
    * one formatter.
    */
   choices?: ReadonlyArray<{ value: string; label: string }> | null,
+  /** A voice knob's `ui.preview` — which voice set its value belongs to. */
+  preview?: string | null,
 ): string {
   if (choices && (typeof value === "string" || typeof value === "boolean")) {
     const match = choices.find((choice) => choice.value === String(value));
     if (match) return match.label;
   }
   if (control !== "voice") return formatKnobValue(value, unit);
-  if (value === null || value === undefined || value === "") {
-    return "Default for each use";
+  if (value !== null && value !== undefined && typeof value !== "string") {
+    return formatKnobValue(value, unit);
   }
-  if (typeof value !== "string") return formatKnobValue(value, unit);
-  return (
-    availableVoices.find((voice) => voice.id === value)?.name ??
-    `Unknown voice: ${value}`
-  );
+  return voiceDisplayName(voiceSetOf(preview), value);
 }
 
 function parseDraft(
@@ -296,7 +294,7 @@ export function KnobOverrideRow(props: {
       ? knobChoices(knob)
       : null;
   const displayValue = (value: unknown) =>
-    formatRowValue(value, knob.unit, ladder?.control, rowChoices);
+    formatRowValue(value, knob.unit, ladder?.control, rowChoices, knob.ui?.preview);
   const draftIdentity = `${knob.full_key}:${organizationId}:${scopeId}:${overrideText}`;
   const [draft, setDraft] = useState<string>(overrideText);
   const [syncedDraftIdentity, setSyncedDraftIdentity] = useState(draftIdentity);

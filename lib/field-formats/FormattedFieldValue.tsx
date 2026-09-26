@@ -31,9 +31,9 @@ import {
   unresolvedRelationText,
   unresolvedRelationTitle,
 } from "./relation";
-import { formatFieldValue } from "./format";
-import { getFieldFormat } from "./registry";
-import type { FieldChoice, FieldFormatConfig } from "./types";
+import { formatFieldValue } from "@ai-matrx/design-system/field-formats";
+import { getFieldFormat } from "@ai-matrx/design-system/field-formats";
+import type { FieldChoice, FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 
 const MISMATCH_CLASS =
   "text-amber-600 dark:text-amber-400 decoration-amber-400/60 underline decoration-dotted underline-offset-2";

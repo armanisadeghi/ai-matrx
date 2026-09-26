@@ -53,6 +53,7 @@ import {
   type MatrxColumnDef,
   type MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface DeprecatedModelsAuditProps {
   allModels: AiModel[];
@@ -573,6 +574,7 @@ export default function DeprecatedModelsAudit({
         >
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
           <span>{globalError}</span>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       )}
 

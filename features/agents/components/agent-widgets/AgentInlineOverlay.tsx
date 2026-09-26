@@ -30,6 +30,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectInstanceDisplayTitle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { AgentRunner } from "../smart/AgentRunner";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AgentInlineOverlayProps {
   conversationId: string;
@@ -104,6 +105,7 @@ export function AgentInlineOverlay({
             from your conversation history, or close this window and run the
             action again.
           </p>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       )}
     </div>

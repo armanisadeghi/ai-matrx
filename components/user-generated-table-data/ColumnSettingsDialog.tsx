@@ -46,8 +46,8 @@ import {
   offerFormatWhereRelationIs,
   useRelationColumnsEnabled,
 } from "@/features/data-tables/relation-knob";
-import { resolveFieldFormat } from "@/lib/field-formats/format";
-import type { FieldFormatConfig } from "@/lib/field-formats/types";
+import { resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import { ColumnValidationEditor } from "@/features/data-tables/components/ColumnValidationEditor";
 import { FormulaExpressionEditor } from "@/features/data-tables/components/FormulaExpressionEditor";
 import {
@@ -55,7 +55,7 @@ import {
   summaryKindsFor,
   type ColumnSummaryKind,
 } from "@/features/data-tables/column-summaries";
-import { isComputedColumn } from "@/features/data-tables/formulas";
+import { isComputedColumn } from "@ai-matrx/design-system/formulas";
 import { effectiveRowLabel, isRowLabelField } from "@/features/data-tables/row-label";
 import {
   changeFieldType,

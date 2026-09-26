@@ -48,16 +48,16 @@ import { Input, Popover, PopoverAnchor, PopoverContent } from "@ai-matrx/design-
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 
-import { parseFieldInput } from "@/lib/field-formats/format";
-import { getFieldFormat } from "@/lib/field-formats/registry";
+import { parseFieldInput } from "@ai-matrx/design-system/field-formats";
+import { getFieldFormat } from "@ai-matrx/design-system/field-formats";
 import { looksLikeRecordId } from "@/lib/field-formats/relation";
-import type { FieldFormatConfig } from "@/lib/field-formats/types";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 
 import { ChoiceInput } from "./ChoiceInput";
 import { RatingInput } from "./RatingInput";
 import { AttachmentInput } from "./AttachmentInput";
 import { DateCellEditor } from "./DateCellEditor";
-import { isDirectClickEditor, type GridMove } from "../grid-selection";
+import { isDirectClickEditor, type GridMove } from "@ai-matrx/design-system/data-table/grid-selection";
 import { upsertCell } from "../service";
 import { validateCellValue, type ValidationRules } from "../validation";
 import { columnRuleRefusal, type ColumnRuleRefusal } from "../validation-refusal";

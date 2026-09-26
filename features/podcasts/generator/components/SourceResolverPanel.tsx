@@ -34,6 +34,7 @@ import { NotesAPI } from "@/features/notes/service/notesApi";
 import { extractErrorMessage } from "@/utils/errors";
 import type { ResolveKind } from "../constants";
 import { useSourceResolvers } from "../useSourceResolvers";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SourceResolverPanelProps {
   resolveKind: ResolveKind;
@@ -325,6 +326,7 @@ function NoteResolver({
         >
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{error}</span>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       )}
 

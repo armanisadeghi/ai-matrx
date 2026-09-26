@@ -67,6 +67,7 @@ import {
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -358,6 +359,7 @@ export default function LaunchInspectorDemoPage() {
                     <RefreshCw className="h-3.5 w-3.5" />
                     Retry shortcut load
                   </button>
+                  <ErrorAlchemyMenu className="ml-auto" />
                 </div>
               ) : shortcutList.length === 0 ? (
                 <p className="p-2 text-xs text-muted-foreground">

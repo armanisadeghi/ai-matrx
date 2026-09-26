@@ -20,29 +20,59 @@ import {
 } from "@/components/errors/error-alchemy";
 import { useErrorSurfaceSnapshot } from "@/components/errors/useErrorSurfaceSnapshot";
 import { cn } from "@/lib/utils";
+import { useRef } from "react";
 
 export type ErrorAlchemyMenuProps = {
-  input: ErrorAlchemyInput | (() => ErrorAlchemyInput);
+  /**
+   * The error. Omit it inside an existing `role="alert"` box: the menu then
+   * reads the box's rendered words at the click (what the person sees, never
+   * a re-derivation), with any `operation`/`records`/`unsavedInput` given here
+   * layered on top.
+   */
+  input?: ErrorAlchemyInput | (() => ErrorAlchemyInput);
+  operation?: string;
+  records?: ErrorAlchemyInput["records"];
+  unsavedInput?: unknown;
+  error?: unknown;
   size?: "xs" | "icon" | "sm";
   className?: string;
   /** The toast/alert label; defaults to the error's title. */
   label?: string;
 };
 
-function resolve(input: ErrorAlchemyMenuProps["input"]): ErrorAlchemyInput {
+function resolve(input: NonNullable<ErrorAlchemyMenuProps["input"]>): ErrorAlchemyInput {
   return typeof input === "function" ? input() : input;
 }
 
 export function ErrorAlchemyMenu({
-  input,
+  input: given,
   size = "xs",
   className,
   label,
+  operation,
+  records,
+  unsavedInput,
+  error,
 }: ErrorAlchemyMenuProps) {
   const surface = useErrorSurfaceSnapshot();
+  const self = useRef<HTMLSpanElement | null>(null);
+  const input: NonNullable<ErrorAlchemyMenuProps["input"]> =
+    given ??
+    (() => ({
+      ...readRenderedError(
+        self.current?.closest('[role="alert"], [data-error-alchemy-root]') ??
+          null,
+      ),
+      source: "inline" as const,
+      ...(operation ? { operation } : {}),
+      ...(records ? { records } : {}),
+      ...(unsavedInput !== undefined ? { unsavedInput } : {}),
+      ...(error !== undefined ? { error } : {}),
+    }));
   const staticTitle = typeof input === "function" ? undefined : input.title;
   return (
     <span
+      ref={self}
       data-error-alchemy-menu=""
       className={cn("inline-flex shrink-0", className)}
       onPointerEnter={surface.refresh}

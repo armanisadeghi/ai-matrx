@@ -65,6 +65,7 @@ import {
   type HrContextValue,
 } from "./useHrContext";
 import { isOrgSteward } from "./useHrPersona";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── 1. Loading ──────────────────────────────────────────────────────────────
 
@@ -324,6 +325,7 @@ export function HrError({
           </details>
         ) : null}
       </div>
+      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

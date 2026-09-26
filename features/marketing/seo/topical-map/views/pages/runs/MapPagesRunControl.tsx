@@ -41,6 +41,7 @@ import { NumberField, SwitchField, numberFieldValue } from "./runFields";
 import { SiteChooser } from "./SiteChooser";
 import { WantedTopicsPanel } from "./WantedTopicsPanel";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface MapPagesRunControlProps {
   context: PagesWorkspaceContext;
@@ -304,6 +305,7 @@ function MapPagesResultSummary({ result }: { result: MapPagesRunResult }) {
         <p role="alert" className="text-destructive">
           Gave up after {result.consecutive_failures} failures in a row. The
           queue is intact — nothing was lost, and the next press picks it up.
+          <ErrorAlchemyMenu className="ml-auto" />
         </p>
       ) : null}
       {/* The run's own notes, unaltered. */}

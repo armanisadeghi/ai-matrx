@@ -20,6 +20,7 @@ import {
   updateScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import { unwrapScopesRpc } from "@/features/scopes/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ScopeAdvancedSectionProps {
   scope: Scope;
@@ -193,6 +194,7 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
               >
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                 {jsonError}
+                <ErrorAlchemyMenu className="ml-auto" />
               </p>
             )}
             <p className="text-[10px] text-muted-foreground">

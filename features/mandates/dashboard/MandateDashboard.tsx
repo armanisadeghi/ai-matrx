@@ -67,6 +67,7 @@ import {
   ADMIN_MANDATES_HEALTH,
   CLASSIC_ADMIN_MANDATES,
 } from "@/features/mandates/admin-routes";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Scan freshness lives on the owner's References page (repos + patrol). */
 const REFERENCES_PATH = CLASSIC_ADMIN_MANDATES.references;
@@ -127,6 +128,7 @@ function Section({
           <span className="min-w-0 [overflow-wrap:anywhere]">
             Not measured: {error}
           </span>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
       {children}

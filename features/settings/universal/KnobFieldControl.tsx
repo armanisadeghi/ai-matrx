@@ -25,7 +25,7 @@
 //   secret    → state only, from `knob.secret`; the value never comes here
 //               and is never asked for here (see the note on the case below).
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -49,10 +49,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
-import { useCartesia } from "@/hooks/tts/useCartesia";
-import { VoiceSpeed } from "@/lib/cartesia/cartesia.types";
-import { ASSISTANT_VOICE_ID, READING_VOICE_ID } from "@/lib/cartesia/config";
-import { availableVoices } from "@/lib/cartesia/voices";
+import { useVoiceSample } from "@/features/audio/service/useVoiceSample";
+import {
+  voiceDisplayName,
+  voiceOptions,
+  voiceSetDefaultLabel,
+  voiceSetOf,
+  type VoiceSetId,
+} from "@/lib/voices/voiceSets";
 import {
   formatKnobValue,
   type KnobControl,
@@ -62,7 +66,6 @@ import { knobChoices } from "@/lib/scoped-config/choices";
 import type { ScopedKnob } from "@/lib/scoped-config/types";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
-import { extractErrorMessage } from "@/utils/errors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectPlatformDefaultTextModelId } from "@/features/ai-models/redux/platformDefaultModel";
 import { useModels } from "@/features/ai-models/hooks/useModels";
@@ -86,13 +89,6 @@ const RENDERED: ReadonlySet<KnobControl> = new Set<KnobControl>([
   "json",
 ]);
 
-function canonicalVoiceName(voiceId: string): string {
-  const name = availableVoices.find((voice) => voice.id === voiceId)?.name;
-  return name?.replace(/\s+\([^)]*\)$/, "") ?? voiceId;
-}
-
-const purposeDefaultVoiceLabel = `${canonicalVoiceName(ASSISTANT_VOICE_ID)} / ${canonicalVoiceName(READING_VOICE_ID)}`;
-const purposeDefaultVoiceDescription = `Assistant replies: ${canonicalVoiceName(ASSISTANT_VOICE_ID)}; reading: ${canonicalVoiceName(READING_VOICE_ID)}`;
 const AGENT_GENERATOR_SHORTCUT_ID = getSystemShortcut("agent-generator-01").id;
 
 /**
@@ -487,15 +483,11 @@ function ModelField({
   );
 }
 
-/** The line a voice sample speaks. Short, and the same one every time. */
-const VOICE_SAMPLE_LINE =
-  "Hi — this is how I sound. I can read anything back to you in this voice.";
-
 /**
- * A voice, with a sample you hear before you keep it. The catalogue is
- * `lib/cartesia/voices` (what `VoiceTab` lists) and the sample plays through
- * `useCartesia` — the SAME TTS path `VoiceSelectionModal` uses. A second audio
- * path is how two surfaces start sounding different.
+ * A voice, with a sample you hear before you keep it. Which voices a knob
+ * lists is its `ui.preview` voice set (lib/voices/voiceSets): read-aloud
+ * (Cartesia) or live conversation (xAI). Samples play through the ONE queue
+ * (`useVoiceSample` → speak()), the same path every other sound takes.
  */
 function VoiceField({
   knob,
@@ -505,14 +497,11 @@ function VoiceField({
   inputId,
   labelId,
 }: KnobFieldControlProps) {
+  const set = voiceSetOf(knob.ui?.preview);
   const current = typeof ladder.value === "string" ? ladder.value : "";
   const [open, setOpen] = useState(false);
-  const selected = availableVoices.find((voice) => voice.id === current);
-  const selectedLabel = selected
-    ? selected.name
-    : current
-      ? `Unknown voice: ${current}`
-      : purposeDefaultVoiceLabel;
+  const selectedLabel = voiceDisplayName(set, current);
+  const defaultLabel = voiceSetDefaultLabel(set);
   const handleSelect = (voiceId: string) => {
     void Promise.resolve(onCommit(voiceId))
       .then((result) => {
@@ -529,12 +518,9 @@ function VoiceField({
           type="button"
           variant="outline"
           disabled={disabled}
-          title={current ? undefined : purposeDefaultVoiceDescription}
+          title={current ? undefined : defaultLabel}
           aria-label={labelId ? undefined : knob.label}
           aria-labelledby={labelId}
-          aria-description={
-            current ? undefined : purposeDefaultVoiceDescription
-          }
           className={selectTriggerVariants({
             size: "default",
             className:
@@ -554,6 +540,7 @@ function VoiceField({
           className="overflow-hidden p-0"
         >
           <VoiceChooser
+            set={set}
             current={current}
             disabled={disabled}
             onSelect={handleSelect}
@@ -564,118 +551,109 @@ function VoiceField({
   );
 }
 
-/** Mounted only while the chooser is open, so settings-page load opens no TTS socket. */
+/** Mounted only while the chooser is open, so a settings page plays nothing until asked. */
 function VoiceChooser({
+  set,
   current,
   disabled,
   onSelect,
 }: {
+  set: VoiceSetId;
   current: string;
   disabled?: boolean;
   onSelect: (voiceId: string) => void;
 }) {
-  const { sendMessage, stopPlayback, isConnected, error } = useCartesia();
+  const sample = useVoiceSample();
   const [query, setQuery] = useState("");
-  const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
-  const [failure, setFailure] = useState<string | null>(null);
-  const playRequestId = useRef(0);
-  const matchingVoices = availableVoices.filter((voice) => {
+  const voices = voiceOptions(set);
+  const matchingVoices = voices.filter((voice) => {
     const search = query.trim().toLocaleLowerCase();
     return (
       search === "" ||
       voice.name.toLocaleLowerCase().includes(search) ||
-      voice.description.toLocaleLowerCase().includes(search)
+      (voice.description ?? "").toLocaleLowerCase().includes(search)
     );
   });
 
-  const play = async (voiceId: string) => {
-    const requestId = ++playRequestId.current;
-    if (playingVoiceId === voiceId) {
-      await stopPlayback();
-      if (requestId === playRequestId.current) setPlayingVoiceId(null);
-      return;
-    }
-    if (playingVoiceId) await stopPlayback();
-    if (requestId !== playRequestId.current) return;
-    setFailure(null);
-    setPlayingVoiceId(voiceId);
-    try {
-      await sendMessage(VOICE_SAMPLE_LINE, VoiceSpeed.NORMAL, {
-        mode: "id",
-        id: voiceId,
-      });
-    } catch (err) {
-      setFailure(extractErrorMessage(err));
-    } finally {
-      if (requestId === playRequestId.current) setPlayingVoiceId(null);
-    }
-  };
-
   return (
     <div className="flex min-h-0 max-h-[min(32rem,var(--radix-popover-content-available-height))] flex-col">
-      <div className="shrink-0 border-b p-2">
-        <Input
-          autoFocus
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search voices"
-          aria-label="Search voices"
-          className="h-8"
-        />
-      </div>
+      {voices.length > 8 && (
+        <div className="shrink-0 border-b p-2">
+          <Input
+            autoFocus
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search voices"
+            aria-label="Search voices"
+            className="h-8"
+          />
+        </div>
+      )}
       <div className="min-h-0 flex-auto overflow-y-auto">
+        <div className="flex min-w-0 items-center gap-1 rounded-sm px-1 py-0.5 hover:bg-accent">
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-auto min-w-0 flex-1 justify-start whitespace-normal px-2 py-1.5 text-left text-sm"
+            disabled={disabled}
+            onClick={() => onSelect("")}
+          >
+            <span className="min-w-0 flex-1 break-words">
+              Default — {voiceSetDefaultLabel(set)}
+            </span>
+            {current === "" && <Check className="h-4 w-4 shrink-0" />}
+          </Button>
+        </div>
         {matchingVoices.length === 0 ? (
           <p className="px-3 py-4 text-sm text-muted-foreground">
             No voices match “{query}”.
           </p>
         ) : (
-          matchingVoices.map((voice) => (
-            <div
-              key={voice.id}
-              className="flex min-w-0 items-center gap-1 rounded-sm px-1 py-0.5 hover:bg-accent"
-            >
-              <Button
-                type="button"
-                variant="ghost"
-                className="h-auto min-w-0 flex-1 justify-start whitespace-normal px-2 py-1.5 text-left text-sm"
-                disabled={disabled}
-                onClick={() => onSelect(voice.id)}
+          matchingVoices.map((voice) => {
+            const key = `${set}:${voice.id}`;
+            const playing = sample.playingKey === key;
+            return (
+              <div
+                key={voice.id}
+                className="flex min-w-0 items-center gap-1 rounded-sm px-1 py-0.5 hover:bg-accent"
               >
-                <span className="min-w-0 flex-1 break-words">{voice.name}</span>
-                {voice.id === current && <Check className="h-4 w-4 shrink-0" />}
-              </Button>
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 shrink-0"
-                aria-label={
-                  playingVoiceId === voice.id
-                    ? "Stop voice sample"
-                    : `Play sample for ${voice.name}`
-                }
-                disabled={disabled || !isConnected}
-                onClick={() => void play(voice.id)}
-              >
-                {playingVoiceId === voice.id ? (
-                  <Square className="h-3.5 w-3.5" />
-                ) : (
-                  <Play className="h-3.5 w-3.5" />
-                )}
-              </Button>
-            </div>
-          ))
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-auto min-w-0 flex-1 justify-start whitespace-normal px-2 py-1.5 text-left text-sm"
+                  disabled={disabled}
+                  onClick={() => onSelect(voice.id)}
+                >
+                  <span className="min-w-0 flex-1 break-words">{voice.name}</span>
+                  {voice.id === current && <Check className="h-4 w-4 shrink-0" />}
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 shrink-0"
+                  aria-label={
+                    playing ? "Stop voice sample" : `Play sample for ${voice.name}`
+                  }
+                  disabled={disabled}
+                  onClick={() => sample.play(set, voice.id, voice.name)}
+                >
+                  {playing && sample.starting ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : playing ? (
+                    <Square className="h-3.5 w-3.5" />
+                  ) : (
+                    <Play className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              </div>
+            );
+          })
         )}
       </div>
-      {!isConnected && !error && (
-        <p className="flex shrink-0 items-center gap-1.5 px-2 py-1 text-[11px] text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          Connecting to the speech service…
-        </p>
-      )}
-      {(error || failure) && (
+      {sample.error && (
         <p className="shrink-0 px-2 py-1 text-[11px] text-destructive">
-          {failure ?? `The sample could not play: ${error?.message}`}
+          The sample could not play: {sample.error}
         </p>
       )}
     </div>

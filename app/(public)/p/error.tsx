@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import Link from 'next/link';
+import { ErrorAlchemyMenu } from '@/components/errors/ErrorAlchemyMenu';
 
 interface ErrorPageProps {
     error: Error & { digest?: string };
@@ -33,9 +34,22 @@ export default function PromptAppError({ error, reset }: ErrorPageProps) {
                 </div>
 
                 {/* Heading */}
-                <h1 className="text-2xl font-bold text-foreground mb-2">
-                    Something went wrong
-                </h1>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                    <h1 className="text-2xl font-bold text-foreground">
+                        Something went wrong
+                    </h1>
+                    <ErrorAlchemyMenu
+                        size="icon"
+                        input={{
+                            title: 'Something went wrong',
+                            message: error.message || 'An unexpected error occurred while loading this app.',
+                            error,
+                            operation: 'Load a published agent app',
+                            details: error.digest ? { digest: error.digest } : undefined,
+                            source: 'route-boundary',
+                        }}
+                    />
+                </div>
                 <p className="text-sm text-muted-foreground mb-8 max-w-sm mx-auto">
                     We encountered an unexpected error while loading this app. 
                     This can happen when app code has an issue or the service is temporarily unavailable.

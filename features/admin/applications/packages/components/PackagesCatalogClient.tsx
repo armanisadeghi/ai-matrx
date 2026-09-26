@@ -14,6 +14,7 @@ import {
   formatNpmPublishDate,
   type NpmPackageCatalogRow,
 } from "../npmRegistry";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface PackagesCatalogClientProps {
   rows: NpmPackageCatalogRow[];
@@ -160,6 +161,7 @@ export function PackagesCatalogClient({ rows, error }: PackagesCatalogClientProp
         {error ? (
           <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             The npm registry inventory could not be loaded. No cached or invented package status is being shown. {error}
+            <ErrorAlchemyMenu className="ml-auto" />
           </div>
         ) : (
           <>

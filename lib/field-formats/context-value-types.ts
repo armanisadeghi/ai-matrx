@@ -8,7 +8,7 @@
  * value of that type should be DISPLAYED.
  */
 import type { ContextValueType } from "@/features/agent-context/types";
-import type { FieldFormatId } from "./types";
+import type { FieldFormatId } from "@ai-matrx/design-system/field-formats";
 
 const MAP: Partial<Record<ContextValueType, FieldFormatId>> = {
   string: "text",

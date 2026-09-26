@@ -45,6 +45,7 @@ import type { FilesystemAdapter } from "../adapters/FilesystemAdapter";
 // The PDF blob arm renders the canonical PdfDocumentRenderer directly, which
 // absorbed the former BinaryFilePdfPreview adapter.
 import { PreviewerSwitch } from "@/features/files/components/core/FilePreview/PreviewerSwitch";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Loading state shown while a heavy previewer chunk (e.g. react-pdf) loads.
 function PreviewerSkeleton() {
@@ -234,6 +235,7 @@ export function BinaryFileViewer({ tab, className }: BinaryFileViewerProps) {
             {state.error}
           </p>
         </div>
+        <ErrorAlchemyMenu className="ml-auto" />
       </div>
     );
   }

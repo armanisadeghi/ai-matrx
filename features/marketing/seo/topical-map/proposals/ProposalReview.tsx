@@ -42,6 +42,7 @@ import type { NormalizedMapTopic } from "../redux/types";
 import type { MapTopicRejectionPolicy, MapTopicsPatchResult } from "../types";
 import { TopicStatusMark } from "../ui/TopicStatusMark";
 import { RejectPolicyPicker, rejectPolicySentence } from "./RejectPolicyPicker";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ProposalReviewProps {
   mapId: string;
@@ -189,6 +190,7 @@ export function ProposalReview({ mapId, host, readOnly, className }: ProposalRev
               <span className="font-mono">{err.slug ?? "(no slug)"}</span>: {err.message}
             </li>
           ))}
+          <li className="list-none"><ErrorAlchemyMenu /></li>
         </ul>
       ) : null}
       <ReviewDeck

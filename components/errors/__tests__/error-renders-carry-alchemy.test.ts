@@ -31,6 +31,7 @@ const BASELINE_FILE = path.join(__dirname, "error-render-census.baseline.json");
 /** The primitives themselves — they ARE the one place an error box is drawn. */
 const PRIMITIVES = new Set([
   "components/errors/ErrorNotice.tsx",
+  "components/errors/ErrorAlchemyMenu.tsx",
   "components/errors/ErrorBoundaryView.tsx",
   "lib/error-boundary/ErrorBoundaryWithCapture.tsx",
 ]);
@@ -39,25 +40,47 @@ const PRIMITIVES = new Set([
  * What counts as a bespoke ERROR render (comments never count — a sentence in a
  * doc comment is not on screen):
  *   - an element carrying role="alert" whose opening tag is not styled as a
- *     warning / info / muted notice (those are not errors), UNLESS the file
- *     puts an `<ErrorAlchemyMenu>` inside its own boxes (each menu offsets one
- *     box — a bespoke-styled box that carries the menu satisfies the law);
+ *     warning / info / muted notice (those are not errors);
  *   - "Something went wrong" as rendered JSX text. The same words as a fallback
  *     STRING (a toast message, a thrown error) are not a render; the toast
  *     carries the menu on its own.
+ * Each menu carrier in the file (`<ErrorAlchemyMenu>` inside a bespoke box, an
+ * `<ErrorNotice>`, a destructive `<Alert>`, `<ErrorBoundaryView>`) offsets one
+ * render — a bespoke-styled box or heading that carries the menu satisfies the
+ * law. A file with more error renders than carriers is counted by the excess.
  * "Not saved" is not counted: it is also an ordinary status label (Sources'
  * "Saved / Not saved" column); a real Not-saved error box carries role="alert".
  */
 const ALERT_ATTR = /role=(?:"alert"|\{\s*["']alert["']\s*\})/g;
 const NOT_AN_ERROR_TAG = /warning|amber|yellow|text-info|border-info|muted-foreground/;
 const RENDERED_SOMETHING_WENT_WRONG = />\s*Something went wrong/g;
-const MENU_IN_BOX = /<ErrorAlchemyMenu\b/g;
+/** Anything that puts the menu on screen beside the render it sits in. */
+const MENU_CARRIERS = /<ErrorAlchemyMenu\b|<ErrorNotice\b|<ErrorBoundaryView\b|<Alert\b[^>]*variant="destructive"/g;
 
+/**
+ * Comments that START a line (after indentation), and JSX comment blocks
+ * (a slash-star comment wrapped in braces).
+ * Deliberately not a full lexer: JSX text holds apostrophes ("Couldn't"), so
+ * string-aware scanning would swallow real markup; a mid-line comment is rare
+ * and at worst over-counts, which the census makes visible.
+ */
 export function stripComments(source: string): string {
   return source
     .replace(/\{\s*\/\*[\s\S]*?\*\/\s*\}/g, "")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1");
+    .replace(/^([ \t]*)\/\*[\s\S]*?\*\//gm, "$1")
+    .replace(/^([ \t]*)\/\/[^\n]*/gm, "$1");
+}
+
+/** End of a JSX opening tag, skipping `>` inside `{…}` expressions. */
+function openingTagEnd(source: string, from: number): number {
+  let depth = 0;
+  for (let i = from; i < source.length; i += 1) {
+    const c = source[i];
+    if (c === "{") depth += 1;
+    else if (c === "}") depth -= 1;
+    else if (c === ">" && depth === 0) return i;
+  }
+  return source.length;
 }
 
 export function countBespokeErrorRenders(raw: string): number {
@@ -66,17 +89,24 @@ export function countBespokeErrorRenders(raw: string): number {
   for (const match of source.matchAll(ALERT_ATTR)) {
     const at = match.index ?? 0;
     const open = source.lastIndexOf("<", at);
-    const close = source.indexOf(">", at);
-    const tag = source.slice(open, close === -1 ? at : close);
+    const tag = source.slice(open, openingTagEnd(source, open + 1));
     if (!NOT_AN_ERROR_TAG.test(tag)) alerts += 1;
   }
-  const menus = source.match(MENU_IN_BOX)?.length ?? 0;
   const words = source.match(RENDERED_SOMETHING_WENT_WRONG)?.length ?? 0;
-  return Math.max(0, alerts - menus) + words;
+  const carriers = source.match(MENU_CARRIERS)?.length ?? 0;
+  return Math.max(0, alerts + words - carriers);
 }
+
+/**
+ * Bundles that cannot import host code: the kind sandbox runtime runs inside
+ * an isolated iframe and relays its render error to the host, whose boundary
+ * carries the menu.
+ */
+const ISOLATED_BUNDLES = [/^features\/content-ir\/sandbox\/runtime\//];
 
 function isScannable(rel: string): boolean {
   if (!/\.tsx$/.test(rel)) return false;
+  if (ISOLATED_BUNDLES.some((pattern) => pattern.test(rel))) return false;
   if (PRIMITIVES.has(rel)) return false;
   return (
     !/(^|\/)(__tests__|__mocks__)(\/|$)/.test(rel) &&
@@ -124,6 +154,10 @@ describe("the bespoke-error detector (self-test)", () => {
       countBespokeErrorRenders('<div role="alert" className="text-destructive">x<ErrorAlchemyMenu input={i} /></div>'),
     ).toBe(0);
     expect(countBespokeErrorRenders('<p role="alert" className="text-warning">x</p>')).toBe(0);
+    expect(countBespokeErrorRenders('<h2>Something went wrong</h2><ErrorAlchemyMenu input={i} />')).toBe(0);
+    expect(
+      countBespokeErrorRenders('<p role="alert">a</p><p role="alert">b<ErrorAlchemyMenu /></p>'),
+    ).toBe(1);
     expect(countBespokeErrorRenders('// it used to render role="alert" here\nconst a = 1;')).toBe(0);
     expect(countBespokeErrorRenders('toast.error(e.message ?? "Something went wrong.")')).toBe(0);
   });

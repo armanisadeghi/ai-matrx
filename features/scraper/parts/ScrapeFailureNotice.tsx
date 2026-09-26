@@ -17,6 +17,7 @@ import { AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScraperHookErrorDetails } from "@/features/scraper/parts/ScraperHookErrorDetails";
 import type { ScrapeFailure } from "@/features/scraper/failure/scrapeFailure";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ScrapeFailureNoticeProps {
   failure: ScrapeFailure;
@@ -121,6 +122,7 @@ export function ScrapeFailureNotice({
           <ScraperHookErrorDetails diagnostics={failure.diagnostics} />
         </div>
       ) : null}
+      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

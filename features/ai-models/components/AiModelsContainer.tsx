@@ -27,6 +27,7 @@ import {
 } from "@/features/surfaces/manifests/admin-ai-models.manifest";
 import { AI_MODEL_DEEP_LINK_PARAM, AI_MODEL_NEW_VALUE } from "../doors";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function AiModelsContainer() {
   const router = useRouter();
@@ -313,6 +314,7 @@ export default function AiModelsContainer() {
           <div role="alert" className="flex shrink-0 items-center gap-2 border-b border-destructive/30 bg-destructive/5 px-2 py-1 text-sm">
             <span className="min-w-0 flex-1">{loadError}{models.length > 0 ? " Previously loaded models remain visible." : ""}</span>
             <Button type="button" variant="outline" size="sm" disabled={isLoading} onClick={() => void loadData()}>Retry</Button>
+            <ErrorAlchemyMenu className="ml-auto" />
           </div>
         )}
         {/* Tab bar + audit button */}

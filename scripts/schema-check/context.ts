@@ -3,7 +3,8 @@
  * registry. Walks the repo a single time; reference-scanning checks iterate
  * `ctx.codeFiles`, freshness checks read their generated artifact directly.
  */
-import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
+import { repoFiles } from "../lib/repo-files";
 import { extname, join, relative } from "node:path";
 import { classifyGenerated } from "./generated-files";
 import { parseDbTypesSchemaList } from "./db-types-parse";
@@ -25,26 +26,13 @@ const SKIP_DIR = new Set([
   "docs", // prose; references there are illustrative
 ]);
 
-function* walk(dir: string): Generator<string> {
-  let names: string[];
-  try {
-    names = readdirSync(dir);
-  } catch {
-    return;
-  }
-  for (const name of names) {
-    const full = join(dir, name);
-    let st;
-    try {
-      st = statSync(full);
-    } catch {
-      continue;
-    }
-    if (st.isDirectory()) {
-      if (!SKIP_DIR.has(name) && !name.startsWith(".")) yield* walk(full);
-    } else if (SCAN_EXT.has(extname(name))) {
-      yield full;
-    }
+// The file list is git's (scripts/lib/repo-files.ts): a readdir walk from the root followed the
+// gitignored `work/aidream` symlink into the whole aidream checkout and read it as this repo's code.
+function* walk(root: string): Generator<string> {
+  for (const rel of repoFiles(root)) {
+    const parts = rel.split("/");
+    if (parts.slice(0, -1).some((part) => SKIP_DIR.has(part) || part.startsWith("."))) continue;
+    if (SCAN_EXT.has(extname(rel))) yield join(root, rel);
   }
 }
 

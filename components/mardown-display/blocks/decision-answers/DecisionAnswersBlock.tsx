@@ -11,6 +11,7 @@
 
 import { DecisionAnswers } from "@/features/agents/decision-answers/DecisionAnswers";
 import { readDecisionAnswers } from "@/features/agents/decision-answers/read";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface DecisionAnswersBlockProps {
   serverData: Record<string, unknown>;
@@ -37,6 +38,7 @@ export default function DecisionAnswersBlock({
         <pre className="mt-2 max-h-64 overflow-auto rounded bg-muted p-2 text-xs">
           {JSON.stringify(serverData.payload, null, 2)}
         </pre>
+        <ErrorAlchemyMenu className="ml-auto" />
       </div>
     );
   }

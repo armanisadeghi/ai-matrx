@@ -36,6 +36,7 @@ import {
   TrashTapButton,
 } from "@ai-matrx/tap-target/buttons";
 import type { AiProvider } from "../../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function LinkIcon({
   href,
@@ -283,6 +284,7 @@ export default function ProviderTable({
           <Button type="button" variant="outline" size="sm" onClick={onRetry}>
             Retry refresh
           </Button>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
       <MatrxDataTable<AiProvider>

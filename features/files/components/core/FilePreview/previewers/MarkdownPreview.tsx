@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { guardMarkdownDelimiters } from "@ai-matrx/kit/delimiter-guard";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface MarkdownPreviewProps {
   fileId: string;
@@ -122,6 +123,7 @@ export function MarkdownPreview({
             {combinedError}
           </p>
         </div>
+        <ErrorAlchemyMenu className="ml-auto" />
       </div>
     );
   }

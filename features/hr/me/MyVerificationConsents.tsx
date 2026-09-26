@@ -37,6 +37,7 @@ import {
   type HrMyVerificationConsent,
 } from "@/features/hr/service";
 import { hrErrorSentence } from "@/features/hr/shared/HrStates";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The letter says pay. That is the whole reason consent is being asked for. */
 function whatIsDisclosed(kind: string): string {
@@ -128,6 +129,7 @@ export function MyVerificationConsents() {
         >
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
           <span>{failure}</span>
+          <ErrorAlchemyMenu className="ml-auto" />
         </p>
       ) : null}
 

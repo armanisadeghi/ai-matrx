@@ -16,6 +16,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 import { startMapHref } from "../components/TopicalMapHome";
 import { useSiteTopicalMapLink } from "./useSiteTopicalMapLink";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function SiteTopicalMapButton({
   siteId,
@@ -33,6 +34,7 @@ export function SiteTopicalMapButton({
     return (
       <p role="alert" className="rounded-md border border-destructive/40 px-3 py-2 text-xs text-destructive">
         Topical map: {link.error}
+        <ErrorAlchemyMenu className="ml-auto" />
       </p>
     );
   }

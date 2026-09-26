@@ -19,6 +19,7 @@
 
 import { ListChangeProposalView } from "@/features/list-change-proposals/ListChangeProposalView";
 import { readListChangeProposal } from "@/features/content-ir/kinds/list-change-proposal";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ListChangeProposalBlockProps {
   serverData: Record<string, unknown>;
@@ -47,6 +48,7 @@ export default function ListChangeProposalBlock({
         <pre className="mt-2 max-h-64 overflow-auto rounded bg-muted p-2 text-xs">
           {JSON.stringify(serverData.proposal, null, 2)}
         </pre>
+        <ErrorAlchemyMenu className="ml-auto" />
       </div>
     );
   }

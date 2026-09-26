@@ -42,6 +42,7 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ROWS_PER_PAGE = 25;
 
@@ -326,6 +327,7 @@ export function DataPreview({ fileId, fileName, className }: DataPreviewProps) {
             {error}
           </p>
         </div>
+        <ErrorAlchemyMenu className="ml-auto" />
       </div>
     );
   }

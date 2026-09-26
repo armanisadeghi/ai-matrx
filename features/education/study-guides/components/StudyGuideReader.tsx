@@ -62,6 +62,7 @@ import { AnnotationPanel } from "@/features/rich-document/annotations/Annotation
 import type { AnnotationSource } from "@/features/rich-document/annotations/types";
 import { noteBodyStore, spliceSaveBody } from "@/features/rich-document/annotations/sourceSave";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type InspectorTab = "notes" | "terms";
 
@@ -153,7 +154,7 @@ function Inspector({ guide, tab, onTabChange, terms, loading, error, onRetry }: 
       <button type="button" role="tab" aria-selected={tab === "terms"} onClick={() => onTabChange("terms")} className={cn("flex-1 border-b-2 px-1 py-2 text-xs font-medium", tab === "terms" ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>Key Terms</button>
     </div>
     {tab === "notes" ? (guide ? <AnnotationPanel className="min-h-0 flex-1" /> : <p className="px-3 py-8 text-sm text-muted-foreground">Choose a guide to see its notes and comments.</p>) : <div role="tabpanel" aria-label="Key Terms" className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto p-1.5">
-      {loading ? <div className="space-y-3" aria-label="Loading study details">{[0,1,2].map((item) => <div key={item} className="h-24 animate-pulse rounded border border-border bg-muted" />)}</div> : error ? <div role="alert" className="rounded border border-destructive/30 p-3 text-sm"><p>{error}</p><Button className="mt-3" variant="outline" size="sm" onClick={onRetry}>Try again</Button></div> : <div className="grid gap-3">
+      {loading ? <div className="space-y-3" aria-label="Loading study details">{[0,1,2].map((item) => <div key={item} className="h-24 animate-pulse rounded border border-border bg-muted" />)}</div> : error ? <div role="alert" className="rounded border border-destructive/30 p-3 text-sm"><p>{error}</p><Button className="mt-3" variant="outline" size="sm" onClick={onRetry}>Try again</Button> <ErrorAlchemyMenu className="ml-auto" /></div> : <div className="grid gap-3">
         <Input aria-label="Search key terms" placeholder="Search terms…" value={query} onChange={(event) => setQuery(event.target.value)} className="h-8 text-sm" />
         {visibleTerms.map((term) => <button key={term.id} type="button" onClick={() => openCard({ front: term.term, back: term.definition, title: term.term })} className="rounded border border-border bg-card p-1.5 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-accent/30"><p className="text-xs font-semibold text-primary"><RichContent level="inline" source={term.term} /></p><p className="mt-1.5 text-xs leading-5 text-muted-foreground">{term.definition ? <RichContent level="inline" source={term.definition} /> : "Open card"}</p></button>)}
         {!visibleTerms.length && <p className="py-5 text-sm text-muted-foreground">{terms.length ? "No terms match that search." : "Link a flashcard deck to see its key terms here."}</p>}

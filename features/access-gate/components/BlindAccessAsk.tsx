@@ -15,6 +15,7 @@ import { useState } from "react";
 import { KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { askForAccessBlind, BLIND_ASK_ANSWER } from "@/features/access-gate/service/accessRequests";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function BlindAccessAsk({
   token,
@@ -66,6 +67,7 @@ export function BlindAccessAsk({
       {state.kind === "failed" ? (
         <p className="text-xs text-destructive" role="alert">
           {state.why} Try again.
+          <ErrorAlchemyMenu className="ml-auto" />
         </p>
       ) : null}
     </div>

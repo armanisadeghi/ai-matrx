@@ -1,0 +1,21 @@
+{
+  "kind": "rule27-rehearsal",
+  "passed": true,
+  "target": "clone",
+  "file": "reachability_rebuild_passes_safeupdate.sql",
+  "role": "up",
+  "sha256": "06e4807399631d36a13d273f8316be772559f3edf7172a69f24f5faeca7a4b0c",
+  "paired_with": {
+    "file": "reachability_rebuild_passes_safeupdate_down.sql",
+    "sha256": "0181332286bafca3676d627fb091375309c8c901fda7823597edd3256bdba0ce"
+  },
+  "clone_ref": "jxhgzalwckuarngvsdyq",
+  "legs_ms": {
+    "up": 6444,
+    "inverse": 7619,
+    "up_again": 5965
+  },
+  "rehearsed_at": "2026-09-26T04:52:43+00:00",
+  "rehearsed_by": "armanisadeghi",
+  "tool": "pnpm db:rehearse"
+}

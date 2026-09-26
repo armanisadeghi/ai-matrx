@@ -20,6 +20,7 @@ import { useId, useState } from "react";
 import { AlertTriangle, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ConsentFailureAnswer } from "./google-adapter";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function ConsentFailureNotice({
   failure,
@@ -69,6 +70,7 @@ export function ConsentFailureNotice({
           ) : null}
         </>
       ) : null}
+      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

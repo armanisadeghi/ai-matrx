@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { useMediaResolution } from "@ai-matrx/media/core";
 import { podcastService } from "@/features/podcasts/service";
 import { PodcastAudioPlayer } from "@/features/podcasts/components/player/PodcastAudioPlayer";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface EpisodeAudioResolution {
   episodeId: string;
@@ -60,6 +61,7 @@ export function AudioPlayback({
     return (
       <p className="text-xs text-destructive" role="alert">
         This audio study could not be loaded. Try again.
+        <ErrorAlchemyMenu className="ml-auto" />
       </p>
     );
   }

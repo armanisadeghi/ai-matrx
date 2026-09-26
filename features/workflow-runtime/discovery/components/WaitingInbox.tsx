@@ -30,6 +30,7 @@ import {
 } from "../waiting";
 import { useWaitingRuns } from "../useWaitingRuns";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function WaitingRowCard({ row }: { row: WaitingRunRow }) {
   const summary = waitingSummary(row);
@@ -146,6 +147,7 @@ export function WaitingInbox() {
           Could not check what is waiting on you
         </p>
         <p className="text-xs text-muted-foreground">{error}</p>
+        <ErrorAlchemyMenu className="ml-auto" />
       </div>
     );
   }

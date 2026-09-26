@@ -26,14 +26,14 @@ import {
   isPersonFormat,
   withResolvedChoices,
 } from "../choices";
-import { FIELD_FORMATS, FIELD_FORMAT_IDS } from "../registry";
+import { FIELD_FORMATS, FIELD_FORMAT_IDS } from "@ai-matrx/design-system/field-formats";
 import {
   RELATION_WITHHELD_LABEL,
   looksLikeRecordId,
   relationCellState,
   unresolvedRelationText,
 } from "../relation";
-import type { FieldFormatConfig } from "../types";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 
 const MARIA = "0b7c1f3e-2a44-4d19-9f81-6cb2d4e77a10";
 const CUSTOMERS = [

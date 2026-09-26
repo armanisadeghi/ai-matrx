@@ -45,6 +45,7 @@ import {
   type StreamVerdicts,
   type WireMode,
 } from "@/features/content-ir/studio/stream-simulator";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ShapeStreamTabProps {
   kind: string;
@@ -261,6 +262,7 @@ export default function ShapeStreamTab({
           >
             Simulated stream interruption. No data was written. The last valid
             partial render stays visible below with streaming disabled.
+            <ErrorAlchemyMenu className="ml-auto" />
           </div>
         ) : null}
 

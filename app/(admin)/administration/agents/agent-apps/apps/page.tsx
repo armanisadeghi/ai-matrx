@@ -47,6 +47,7 @@ import {
   agentAppExecutionsHref,
 } from "@/features/agent-apps/components/AgentAppRef";
 import { pushAppHref } from "@/lib/deployment/navigate";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function getStatusBadge(status: string) {
   const map: Record<string, { cls: string; Icon: typeof Clock }> = {
@@ -523,6 +524,7 @@ export default function AgentAppsAdminListPage() {
               >
                 Retry
               </button>
+              <ErrorAlchemyMenu className="ml-auto" />
             </div>
           )}
           <div className="grid shrink-0 grid-cols-3 gap-3 pb-3">

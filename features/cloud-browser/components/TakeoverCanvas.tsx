@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import type { ControllerState, StreamTicketEnvelope } from "../types";
 import { renewStreamTicket } from "../service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function TakeoverCanvas({
   controller,
@@ -128,6 +129,7 @@ export function TakeoverCanvas({
               You are still in control — use Reconnect below, or return control
               to the agent.
             </span>
+            <ErrorAlchemyMenu className="ml-auto" />
           </div>
         ) : (
           <>

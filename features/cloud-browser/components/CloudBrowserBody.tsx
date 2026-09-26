@@ -63,6 +63,7 @@ import { Walkthrough } from "./Walkthrough";
 import { CredentialCaptureCard } from "./CredentialCaptureCard";
 import { LoginCapturePanel } from "./LoginCapturePanel";
 import { AuthenticatorPanel } from "./AuthenticatorPanel";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type FaceTab = "written" | "screenshots" | "takeover";
 
@@ -344,6 +345,7 @@ export function CloudBrowserBody({
               Try again
             </Button>
           ) : null}
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
 

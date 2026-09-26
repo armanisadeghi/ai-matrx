@@ -9,8 +9,8 @@
  * never lets a page sum read as a table sum.
  */
 
-import { formatFieldValue } from "@/lib/field-formats/format";
-import type { FieldFormatConfig } from "@/lib/field-formats/types";
+import { formatFieldValue } from "@ai-matrx/design-system/field-formats";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 
 export type ColumnSummaryKind =
   | "sum"

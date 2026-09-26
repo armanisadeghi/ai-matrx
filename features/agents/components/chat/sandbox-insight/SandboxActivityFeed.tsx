@@ -23,6 +23,7 @@ import {
   type SandboxActivityRow,
 } from "./sandbox-activity";
 import { DURABLE_VFS_BADGE_TEXT } from "@/features/tool-call-visualization/renderers/shell/ShellInline";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function formatDuration(ms: number | null): string | null {
   if (ms === null) return null;
@@ -90,6 +91,7 @@ const ActivityRow: React.FC<{ row: SandboxActivityRow }> = ({ row }) => {
             >
               <AlertTriangle className="mt-px size-3 shrink-0" />
               {DURABLE_VFS_BADGE_TEXT}
+              <ErrorAlchemyMenu className="ml-auto" />
             </p>
           )}
         </div>

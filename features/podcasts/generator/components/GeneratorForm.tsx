@@ -116,6 +116,7 @@ import type {
 import type { PcShow } from "@/features/podcasts/types";
 import { DictionaryIndicatorButton } from "@/features/dictionary/components/DictionaryIndicatorButton";
 import { useDictionaryContext } from "@/features/dictionary/hooks/useDictionaryContext";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Surface key the podcast studio persists its dictionary selection under. */
 const PODCAST_DICTIONARY_SURFACE = "matrx-user/podcast-studio";
@@ -679,6 +680,7 @@ export function GeneratorForm({
                 className="text-sm text-destructive"
               >
                 {sourceReadiness.message}
+                <ErrorAlchemyMenu className="ml-auto" />
               </p>
             )}
         </div>

@@ -46,7 +46,7 @@ import {
   parseFormula,
   type ComputedColumnField,
   type ResolveCell,
-} from "./formulas";
+} from "@ai-matrx/design-system/formulas";
 import type { BulkOp } from "./types";
 import { isStyleColor, type StyleColor } from "@ai-matrx/design-system/data-table/table-style";
 

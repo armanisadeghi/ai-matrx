@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatCount, formatPercent } from "@ai-matrx/kit/format";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type RangePreset = "today" | "yesterday" | "last-12-hours" | "custom";
 
@@ -539,6 +540,7 @@ export function CodexUsageDashboard() {
               page.
             </p>
           </div>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
 

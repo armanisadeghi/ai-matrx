@@ -34,6 +34,7 @@ import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { aiModelService } from "../../service";
 import type { AiModelAliasRow, AiModelRow } from "../../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ALIAS_KINDS = ["alias", "deprecated", "latest"] as const;
 type AliasKind = (typeof ALIAS_KINDS)[number];
@@ -274,6 +275,7 @@ export default function AliasesContainer() {
             <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
             Retry
           </Button>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
 
@@ -284,6 +286,7 @@ export default function AliasesContainer() {
         >
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
           <span className="break-words">{saveError}</span>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
 

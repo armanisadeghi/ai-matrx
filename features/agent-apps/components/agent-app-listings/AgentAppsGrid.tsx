@@ -85,6 +85,7 @@ import {
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { RefreshCwTapButton, XTapButton } from "@ai-matrx/tap-target/buttons";
 import { AgentAppsGridSkeleton } from "./AgentAppsGridSkeleton";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SORT_OPTIONS: { value: AgentAppSortOption; label: string }[] = [
   { value: "updated-desc", label: "Recently Updated" },
@@ -596,6 +597,7 @@ export function AgentAppsGrid({
                   label="Retry"
                   onClick={() => void dispatch(fetchAppsInitial())}
                 />
+                <ErrorAlchemyMenu className="ml-auto" />
               </div>
             ) : filteredApps.length === 0 ? (
               <div className="border border-primary/20 rounded-xl p-8 bg-gradient-to-br from-primary/5 to-secondary/5">

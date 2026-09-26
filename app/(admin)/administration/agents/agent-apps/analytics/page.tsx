@@ -51,6 +51,7 @@ import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
   createAdminAgentAppsScope,
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const ANALYTICS_COVERAGE = { noun: "app", answeredBy: "client" } as const;
 
@@ -492,6 +493,7 @@ export default function AgentAppsAnalyticsPage() {
               <button type="button" className="underline" onClick={() => void loadData()}>
                 Retry
               </button>
+              <ErrorAlchemyMenu className="ml-auto" />
             </div>
           )}
           <div className="min-h-[32rem]">

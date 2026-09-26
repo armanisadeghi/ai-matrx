@@ -18,6 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, ChevronRight, Save, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface TabDefinition<TLabel extends ReactNode = string> {
   id: string;
@@ -420,6 +421,7 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
           <div role="alert" className="mr-auto px-2 text-sm text-destructive">
             {errorMessage}
             {onRetry ? <Button variant="link" size="sm" onClick={onRetry}>Retry</Button> : null}
+            <ErrorAlchemyMenu className="ml-auto" />
           </div>
         ) : null}
         {isPending ? <span className="mr-auto px-2 text-sm text-muted-foreground">{pendingMessage}</span> : null}

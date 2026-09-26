@@ -56,6 +56,8 @@ import type { RootState } from "@/lib/redux/store";
 import { readInstructionsFromAgent } from "../agentInstructions";
 import { selectAgentReadyForBuilder } from "@/features/agents/redux/agent-definition/selectors";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
+import { resolveSessionKnob } from "@/lib/scoped-config/sessionKnob";
+import { LIVE_CONVERSATION_VOICES } from "@/lib/voices/voiceSets";
 
 interface UseVoiceAgentInstanceOpts {
   preset: VoiceAgentPreset;
@@ -100,12 +102,17 @@ interface UseVoiceAgentInstanceOpts {
 }
 
 
+/** The person-level choice for AI Matrx's own live voice agents ("" = the agent's own). */
+export const LIVE_CONVERSATION_VOICE_KNOB = "media.conversation.voice";
+
+function isVoiceId(v: string): v is VoiceId {
+  return LIVE_CONVERSATION_VOICES.some((voice) => voice.id === v);
+}
+
 function readVoiceIdFromAgent(settings: unknown): VoiceId {
   if (settings && typeof settings === "object") {
     const v = (settings as Record<string, unknown>).voice_id;
-    if (typeof v === "string" && /^(ara|eve|leo|rex|sal)$/.test(v)) {
-      return v as VoiceId;
-    }
+    if (typeof v === "string" && isVoiceId(v)) return v;
   }
   return DEFAULT_INTRO_VOICE;
 }
@@ -216,10 +223,28 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
         // tools from this late agent-fetch would clobber the resolved set in a
         // resolve/seed race (M1). The synchronous builtin seed lives in
         // initInstance only — useRealtimeAgentConfig overwrites it once.
+        // The voice: a person's "Live conversation voice" (media.conversation.voice)
+        // applies to AI Matrx's OWN (builtin) voice agents — the assistant, the
+        // tutor, Scribe live. An agent somebody built speaks in the voice its
+        // builder chose; a consumer preference never rewrites a builder's work.
+        let voiceId = readVoiceIdFromAgent(agent!.settings);
+        if (agent!.agentType === "builtin") {
+          const personal = await resolveSessionKnob(LIVE_CONVERSATION_VOICE_KNOB).catch(
+            (error: unknown) => {
+              console.error(
+                `[voice-agent] ${LIVE_CONVERSATION_VOICE_KNOB} could not be resolved — the agent's own voice speaks:`,
+                error,
+              );
+              return undefined;
+            },
+          );
+          if (cancelled) return;
+          if (typeof personal === "string" && isVoiceId(personal)) voiceId = personal;
+        }
         dispatch(
           applyAgentConfig({
             instanceId,
-            voiceId: readVoiceIdFromAgent(agent!.settings),
+            voiceId,
             instructions,
           }),
         );

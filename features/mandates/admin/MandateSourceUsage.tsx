@@ -36,6 +36,7 @@ import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { SINGLE_SITE_SENTENCE, fetchMandateReferences, formatRepoList, unreportedSentence, type MandateReferenceReport, type MandateReferenceRow } from "./references";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface SourceUsageFallback {
   /** The code-truth declaration string, when discovery found one. */
@@ -169,6 +170,7 @@ export function MandateSourceUsage({
             <strong>The reference report failed.</strong> This list is not
             empty — it is unknown. {error}
           </div>
+          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
 

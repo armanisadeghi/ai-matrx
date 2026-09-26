@@ -57,8 +57,8 @@ import {
   type CellRange,
   type GridMove,
   type RangeBounds,
-} from "../grid-selection";
-import { gridToTsv } from "../grid-clipboard";
+} from "@ai-matrx/design-system/data-table/grid-selection";
+import { gridToTsv } from "@ai-matrx/design-system/data-table/grid-clipboard";
 
 export type GridSelectionApi = {
   /** The anchor — the cell with the ring. */

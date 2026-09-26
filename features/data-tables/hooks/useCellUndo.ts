@@ -28,6 +28,16 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import {
+  DEFAULT_UNDO_DEPTH,
+  createUndoStack,
+  popRedo,
+  popUndo,
+  pushUndo,
+  undoEntryFor,
+  type UndoEntry,
+  type UndoStack,
+} from "@ai-matrx/design-system/data-table/cell-undo";
 
 import { toast } from "@/components/ui/use-toast";
 
@@ -48,12 +58,12 @@ export type CellEdit = {
 };
 
 /**
- * How many steps back we remember. Deliberately generous — the cost is a few
- * kilobytes of session memory, and the failure mode of a too-short stack is a
- * user discovering their mistake is unrecoverable.
+ * THE STACK IS THE DESIGN SYSTEM'S (`@ai-matrx/design-system/data-table/cell-undo`):
+ * its depth, its redo contract and its "a fresh edit clears the future" rule are
+ * spreadsheet law shared by every grid. This hook owns only what the pure stack
+ * cannot: the write through `upsertCell`, the toast, and the table/column labels
+ * an entry needs for its message. Each entry carries exactly one cell patch.
  */
-const MAX_DEPTH = 100;
-
 export function useCellUndo(options: {
   /**
    * An undo/redo landed. Carries the exact cell and the value now stored, so
@@ -67,29 +77,32 @@ export function useCellUndo(options: {
 }) {
   const { onApplied, readOnly } = options;
 
-  const undoStack = useRef<CellEdit[]>([]);
-  const redoStack = useRef<CellEdit[]>([]);
-  // Depths are mirrored into state ONLY so the toolbar can enable/disable its
-  // buttons; the stacks themselves stay in refs so recording an edit never
-  // re-renders the grid mid-typing.
+  // The stack lives in a ref so recording an edit never re-renders the grid
+  // mid-typing; depths are mirrored into state ONLY for the toolbar buttons.
+  const stack = useRef<UndoStack>(createUndoStack(DEFAULT_UNDO_DEPTH));
+  // What the pure entry does not carry (the table, the column's human label),
+  // keyed by the entry object the stack hands back.
+  const edits = useRef(new WeakMap<UndoEntry, CellEdit>());
   const [depths, setDepths] = useState({ undo: 0, redo: 0 });
   const [busy, setBusy] = useState(false);
 
-  const syncDepths = useCallback(() => {
-    setDepths({ undo: undoStack.current.length, redo: redoStack.current.length });
+  const commit = useCallback((next: UndoStack) => {
+    stack.current = next;
+    setDepths({ undo: next.past.length, redo: next.future.length });
   }, []);
 
   /** Record a write that already succeeded. */
   const record = useCallback(
     (edit: CellEdit) => {
-      undoStack.current.push(edit);
-      if (undoStack.current.length > MAX_DEPTH) undoStack.current.shift();
-      // A fresh edit invalidates the redo branch, exactly as in every editor:
-      // you cannot redo into a future you have just diverged from.
-      redoStack.current = [];
-      syncDepths();
+      const entry = undoEntryFor(
+        [{ rowId: edit.rowId, columnId: edit.fieldName, value: edit.priorValue }],
+        [{ rowId: edit.rowId, columnId: edit.fieldName, value: edit.nextValue }],
+        edit.fieldDisplayName,
+      );
+      edits.current.set(entry, edit);
+      commit(pushUndo(stack.current, entry));
     },
-    [syncDepths],
+    [commit],
   );
 
   const applyValue = useCallback(
@@ -115,49 +128,40 @@ export function useCellUndo(options: {
     [],
   );
 
-  const undo = useCallback(async () => {
-    if (readOnly || busy) return;
-    const edit = undoStack.current[undoStack.current.length - 1];
-    if (!edit) return;
+  const step = useCallback(
+    async (direction: "undo" | "redo") => {
+      if (readOnly || busy) return;
+      const popped =
+        direction === "undo" ? popUndo(stack.current) : popRedo(stack.current);
+      const entry = popped.entry;
+      const edit = entry ? edits.current.get(entry) : undefined;
+      const patch = entry ? (direction === "undo" ? entry.undo : entry.redo)[0] : undefined;
+      if (!entry || !edit || !patch) return;
 
-    setBusy(true);
-    try {
-      if (await applyValue(edit, edit.priorValue)) {
-        undoStack.current.pop();
-        redoStack.current.push(edit);
-        syncDepths();
-        onApplied(edit, edit.priorValue);
-        toast({
-          title: "Undone",
-          description: `${edit.fieldDisplayName} restored.`,
-        });
+      setBusy(true);
+      try {
+        // Loud, never silent: the stack only moves once the write landed, so
+        // a failed step can be tried again rather than lost.
+        if (await applyValue(edit, patch.value)) {
+          commit(popped.stack);
+          onApplied(edit, patch.value);
+          toast({
+            title: direction === "undo" ? "Undone" : "Redone",
+            description:
+              direction === "undo"
+                ? `${edit.fieldDisplayName} restored.`
+                : `${edit.fieldDisplayName} reapplied.`,
+          });
+        }
+      } finally {
+        setBusy(false);
       }
-    } finally {
-      setBusy(false);
-    }
-  }, [applyValue, busy, onApplied, readOnly, syncDepths]);
+    },
+    [applyValue, busy, commit, onApplied, readOnly],
+  );
 
-  const redo = useCallback(async () => {
-    if (readOnly || busy) return;
-    const edit = redoStack.current[redoStack.current.length - 1];
-    if (!edit) return;
-
-    setBusy(true);
-    try {
-      if (await applyValue(edit, edit.nextValue)) {
-        redoStack.current.pop();
-        undoStack.current.push(edit);
-        syncDepths();
-        onApplied(edit, edit.nextValue);
-        toast({
-          title: "Redone",
-          description: `${edit.fieldDisplayName} reapplied.`,
-        });
-      }
-    } finally {
-      setBusy(false);
-    }
-  }, [applyValue, busy, onApplied, readOnly, syncDepths]);
+  const undo = useCallback(() => step("undo"), [step]);
+  const redo = useCallback(() => step("redo"), [step]);
 
   /**
    * Drop everything. Called when the viewer switches to a different table —
@@ -165,10 +169,8 @@ export function useCellUndo(options: {
    * the user is no longer looking at.
    */
   const reset = useCallback(() => {
-    undoStack.current = [];
-    redoStack.current = [];
-    syncDepths();
-  }, [syncDepths]);
+    commit(createUndoStack(stack.current.depth));
+  }, [commit]);
 
   return {
     record,

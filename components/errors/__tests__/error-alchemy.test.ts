@@ -136,7 +136,8 @@ describe("buildErrorAlchemyPayload", () => {
     );
     const data = payload.data as { surface: { status: string; note: string } };
     expect(data.surface.status).toBe("unregistered");
-    expect(data.surface.note).toMatch(/no surface registration/i);
+    expect(data.surface.note).toMatch(/not a registered surface/i);
+    expect(data.surface.note).toMatch(/url and route/i);
   });
 });
 

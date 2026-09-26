@@ -60,6 +60,7 @@ import {
 } from "@/features/rag/hooks/useFileIngest";
 import { useFileRagStatus } from "@/features/rag/hooks/useFileRagStatus";
 import type { FileRagState } from "@/features/rag/api/rag-jobs";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface DocumentTabProps {
   fileId: string;
@@ -415,6 +416,7 @@ function UnavailableCard({
       >
         Retry
       </button>
+      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }
