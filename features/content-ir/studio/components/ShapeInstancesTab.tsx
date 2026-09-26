@@ -421,7 +421,9 @@ export default function ShapeInstancesTab({
     return (
       <div className="rounded-md border border-dashed border-border bg-card/50 px-4 py-12 text-center">
         <p className="text-sm text-muted-foreground">
-          You have no saved {label} instances yet.
+          {adminSeat
+            ? `The platform has no saved ${label} instances yet.`
+            : `You have no saved ${label} instances yet.`}
         </p>
         <Link
           href={shapeTestHref(kind)}

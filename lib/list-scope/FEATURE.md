@@ -180,6 +180,15 @@ Invariants the template carries, all of them learned the hard way:
 
 ## Change log
 
+- 2026-09-26 — MANAGEMENT vs SUPPORT (Arman): an admin MANAGEMENT page has no
+  scope lanes — it shows the platform's own records (`system` alone, rendered
+  with `EntityListPage scopeTabs={false}`). The tenant lanes `platform_orgs` /
+  `platform_users` / `platform_all` are exported as `ADMIN_SUPPORT_LIST_SCOPES`
+  and belong ONLY to separate support routes (`…/support`: Mandate support
+  lookup, Agent support lookup). `ADMIN_LIST_SCOPES` (the four-lane set) is
+  retired; `pnpm check:admin-no-personal-seat` fails if a management page names
+  a tenant lane outside a line marked `admin-support-only:`.
+
 - 2026-09-26 — THE ADMIN SEAT: three admin-only platform kinds join the
   vocabulary — `platform_orgs` (every organization, narrowable to one),
   `platform_users` (every person's own records, narrowable to one person by
