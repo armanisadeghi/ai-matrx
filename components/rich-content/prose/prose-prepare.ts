@@ -344,30 +344,11 @@ export function preprocessProse(rawContent: string): string {
     "$1\n\n$2",
   );
 
-  // Ensure proper separation between list items and following paragraph content
-  // This handles cases where content follows a list without proper spacing
-
-  // First, handle nested/indented list items (most specific case)
-  // Use negative lookahead to exclude actual list markers (* or -) but allow bold text (**)
-  processed = processed.replace(
-    /(^|\n)(\s+[*-] .+)\n(?!\s*[*-]\s)([^\n\s\-#\d][^\n]*)/gm,
-    "$1$2\n\n$3",
-  );
-
-  // Then handle regular list items
-  // Use negative lookahead to exclude actual list markers but allow bold text
-  processed = processed.replace(
-    /(^|\n)(- .+)\n(?!\s*[*-]\s)([^\n\s\-#\d][^\n]*)/gm,
-    "$1$2\n\n$3",
-  );
-  processed = processed.replace(
-    /(^|\n)(\d+\. .+)\n(?!\s*\d+[.)]\s)([^\n\s\-#\d][^\n]*)/gm,
-    "$1$2\n\n$3",
-  );
-  processed = processed.replace(
-    /(^|\n)(\d+\) .+)\n(?!\s*\d+[.)]\s)([^\n\s\-#\d][^\n]*)/gm,
-    "$1$2\n\n$3",
-  );
+  // A line right under a list item's text is that item's text (CommonMark 5.2
+  // lazy continuation) — no blank line is inserted after a list item, so the
+  // screen reads it as GFM, print and the Visual editor do; four rules here
+  // used to split it into a paragraph below the list, and `| a | b |` lines
+  // into a table under the bullet (verify-RC-B4 round 9, R9-2).
 
   // Convert intentional blank lines into &nbsp; paragraphs so they render
   // at the same height as a normal line of text, capped at 2 visible blank lines.
