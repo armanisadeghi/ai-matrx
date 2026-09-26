@@ -142,6 +142,20 @@ describe("3. Add everyone never lists your personal workspace", () => {
     expect(host.textContent).not.toContain("Add everyone in an organization");
   });
 
+  it("never lists the nav tree's synthetic Personal bucket", async () => {
+    navOrgs = [
+      { id: "00000000-0000-0000-0000-000000000001", name: "Personal", is_personal: true } as never,
+    ];
+    await act(async () => {
+      root.render(
+        <Provider store={storeWithPersonalOrg()}>
+          <AddEveryoneInOrg level="viewer" grantPerson={async () => ({ success: true })} />
+        </Provider>,
+      );
+    });
+    expect(host.textContent).not.toContain("Add everyone in an organization");
+  });
+
   it("is offered when a real organization exists", async () => {
     navOrgs = [
       { id: PERSONAL, name: "Alex Hart's Workspace" },
