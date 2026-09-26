@@ -37,9 +37,9 @@
  */
 
 import { execSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { repoFiles } from "./lib/repo-files";
 
 interface Args {
   mode: "repo" | "staged" | "branch";
@@ -110,23 +110,11 @@ function isExempt(file: string): boolean {
   return EXEMPT_RE.some((re) => re.test(file));
 }
 
-function listRepoFiles(dir: string, acc: string[]): string[] {
-  for (const entry of readdirSync(dir)) {
-    // Skip dot-dirs (.git, .next, .claude/worktrees with full repo copies, …),
-    // dependency dirs, and build output.
-    if (
-      entry.startsWith(".") ||
-      entry === "node_modules" ||
-      entry === "dist" ||
-      entry === "build"
-    )
-      continue;
-    const full = join(dir, entry);
-    const st = statSync(full);
-    if (st.isDirectory()) listRepoFiles(full, acc);
-    else if (entry.endsWith(".tsx")) acc.push(relative(ROOT, full));
-  }
-  return acc;
+function listRepoFiles(): string[] {
+  // git-based (scripts/lib/repo-files.ts): a readdir walk followed the gitignored
+  // `work/aidream` symlink into the whole aidream checkout and reported its files
+  // as this repo's findings — git ls-files never descends a symlink.
+  return repoFiles(ROOT, { match: /\.tsx$/ });
 }
 
 function listChangedFiles(args: Args): string[] {
@@ -141,7 +129,7 @@ function listChangedFiles(args: Args): string[] {
 
 function selectFiles(args: Args): string[] {
   const files =
-    args.mode === "repo" ? listRepoFiles(ROOT, []) : listChangedFiles(args);
+    args.mode === "repo" ? listRepoFiles() : listChangedFiles(args);
   return files.filter((f) => shouldScan(f) && !isExempt(f));
 }
 

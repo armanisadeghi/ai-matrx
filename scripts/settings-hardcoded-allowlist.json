@@ -2,7 +2,7 @@
   "_law": "THE ALLOWLIST ONLY SHRINKS. Growing it is the defect this guard exists to catch.",
   "_why": "CLAUDE.md law 6 — opinions become knobs. These are the knob-shaped constants that existed when check:settings-hardcoded was written; each one is a setting nobody can see or change. They are tolerated so the guard can hold the line against NEW ones, and they come off this list as the Unified Settings Platform migrates them (common-docs/projects/unified-settings-platform/REGISTER.md, USP-020).",
   "_how": "`pnpm check:settings-hardcoded --write` removes entries that no longer exist. It CANNOT add one: a new constant must be registered in platform.feature_knob, or the line must be argued for by a human editing this file by hand with a reason.",
-  "_baselined": "2026-09-22",
+  "_baselined": "2026-09-26",
   "entries": [
     {
       "file": "aidream/aidream/api/middleware/request_log.py",
@@ -4537,10 +4537,6 @@
       "name": "CODING_SESSION_PAGE_SIZE"
     },
     {
-      "file": "matrx-frontend/features/agent-context/components/hierarchy-selection/HierarchyCascade.tsx",
-      "name": "MIN_TOTAL_ROWS"
-    },
-    {
       "file": "matrx-frontend/features/agents/api/submit-tool-results.ts",
       "name": "MAX_RETRIES"
     },
@@ -4682,15 +4678,7 @@
     },
     {
       "file": "matrx-frontend/features/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
-      "name": "CONNECT_TIMEOUT_MS"
-    },
-    {
-      "file": "matrx-frontend/features/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
       "name": "HEARTBEAT_TIMEOUT_MS"
-    },
-    {
-      "file": "matrx-frontend/features/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
-      "name": "MAX_LIFETIME_MS"
     },
     {
       "file": "matrx-frontend/features/agents/redux/execution-system/thunks/follow-workflow-run-stream.ts",
@@ -5079,10 +5067,6 @@
     {
       "file": "matrx-frontend/features/data-tables/components/WorkbookCursorOverlay.tsx",
       "name": "STALE_AFTER_MS"
-    },
-    {
-      "file": "matrx-frontend/features/data-tables/hooks/useCellUndo.ts",
-      "name": "MAX_DEPTH"
     },
     {
       "file": "matrx-frontend/features/data-tables/hooks/useDataTableWriteHandlers.ts",
@@ -5523,10 +5507,6 @@
     {
       "file": "matrx-frontend/features/mandates/admin/advanced/AdvancedMandateCrud.tsx",
       "name": "PAGE_SIZE"
-    },
-    {
-      "file": "matrx-frontend/features/mandates/admin/bench-output-preview.tsx",
-      "name": "MAX_PREVIEW_CHARS"
     },
     {
       "file": "matrx-frontend/features/mandates/admin/references.ts",
@@ -6951,10 +6931,6 @@
     {
       "file": "matrx-frontend/lib/redux/slices/apiConfigSlice.ts",
       "name": "HEALTH_CHECK_TIMEOUT_MS"
-    },
-    {
-      "file": "matrx-frontend/lib/redux/slices/apiConfigSlice.ts",
-      "name": "MAX_RECENT_CALLS"
     },
     {
       "file": "matrx-frontend/lib/scoped-config/effectiveKnobs.ts",
