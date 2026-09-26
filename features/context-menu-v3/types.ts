@@ -48,7 +48,8 @@ export type PlacementMode = Partial<Record<PlacementKey, PlacementVisibility>>;
 
 // ---------------------------------------------------------------------------
 // Presentation knobs — how the ONE model is arranged and how dense it draws.
-// Behaviour never changes with these; see `model/layouts.ts`.
+// Behaviour never changes with these; the arrangements are the Alchemy
+// package's pure layouts (`@ai-matrx/alchemy/menu`).
 // ---------------------------------------------------------------------------
 
 /**

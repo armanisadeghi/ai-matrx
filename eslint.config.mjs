@@ -1471,23 +1471,17 @@ const storageUriEradicationBan = [
 
 // Bundle-splitting fence for the v3 context menu. v3's public API is the
 // LIGHTWEIGHT shell (EditableContextMenu / NonEditableContextMenu) — import
-// those statically. The heavy layer is `MenuContent` (MenuBody-class tree +
-// react-icons + data hooks + launchers); the shell reaches it ONLY via
-// `dynamic(() => import('./components/MenuContent'))`. A static import drags the
-// whole heavy graph into the importing chunk, defeating the T0/T1 split.
-// Matches a static default import only; dynamic `import()` is unaffected.
+// those statically. The heavy layer is `AlchemyMenuContent` (the engine hook,
+// the agent fetch, the Alchemy package renderers — ALC-15 S3); the shell
+// reaches it ONLY via `dynamic(() => import('./components/AlchemyMenuContent'))`.
+// A static import drags the whole heavy graph into the importing chunk,
+// defeating the T0/T1 split. Dynamic `import()` is unaffected.
 const contextMenuV3StaticImportBan = [
   {
     selector:
-      "ImportDeclaration[importKind!='type'][source.value='@/features/context-menu-v3/components/MenuContent'] > ImportDefaultSpecifier",
+      "ImportDeclaration[importKind!='type'][source.value=/context-menu-v3\\/components\\/AlchemyMenuContent$/] > ImportDefaultSpecifier",
     message:
-      "Do not statically import MenuContent — it's the heavy v3 layer and must stay behind the shell's next/dynamic({ ssr: false }) boundary. Render a surface menu via EditableContextMenu / NonEditableContextMenu from @/features/context-menu-v3 instead.",
-  },
-  {
-    selector:
-      "ImportDeclaration[importKind!='type'][source.value='@/features/context-menu-v3/components/MobileMenuContent'] > ImportDefaultSpecifier",
-    message:
-      "Do not statically import MobileMenuContent — it's the heavy mobile v3 layer and must stay behind the shell's next/dynamic({ ssr: false }) boundary. Render a surface menu via EditableContextMenu / NonEditableContextMenu from @/features/context-menu-v3 instead.",
+      "Do not statically import AlchemyMenuContent — it's the heavy menu layer (engine + Alchemy renderers) and must stay behind the shell's next/dynamic({ ssr: false }) boundary. Render a surface menu via EditableContextMenu / NonEditableContextMenu from @/features/context-menu-v3 instead.",
   },
 ];
 

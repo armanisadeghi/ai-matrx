@@ -41,16 +41,6 @@ import {
   type ApplyApprovedOutcome,
 } from "./applyRecordChange";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { recordsDataSource } from "@ai-matrx/records-ui";
-import { createClient } from "@/utils/supabase/client";
-import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
-
-/** One data source for every card on the page — the organization lookup's dependency stays stable. */
-let sharedDataSource: ReturnType<typeof recordsDataSource> | null = null;
-function cardDataSource(): ReturnType<typeof recordsDataSource> {
-  sharedDataSource ??= recordsDataSource(createClient());
-  return sharedDataSource;
-}
 
 export interface RecordChangeApprovalCardProps {
   wait: RecordChangeWait;
@@ -89,31 +79,12 @@ export function RecordChangeApprovalCard({
   onDecided,
   organizationId: objectOrganizationId = null,
 }: RecordChangeApprovalCardProps) {
-  // THE switch, asked for the organization THE WAIT LIVES IN. A card that
-  // offered to write into a store its organization does not keep its data in
-  // would be a button that cannot mean what it says, so while the switch is off
-  // the wait is reported and no decision is offered.
-  //
-  // ACCESS IS PERSONAL (owner, 2026-09-23): the organization comes FROM THE
-  // OBJECT — the approval row names its own — never merely from whichever one
-  // is active. A reopened chat with no organization picked used to say "No
-  // organization is picked yet" instead of offering the decision (lane
-  // AGENT-WRITE-APPROVAL, 2026-09-26).
+  // THE switch, asked for the organization the person is actually working in.
+  // A card that offered to write into a store this organization does not keep
+  // its data in would be a button that cannot mean what it says, so while the
+  // switch is off the wait is reported and no decision is offered.
   const activeOrganizationId = useAppSelector(selectActiveOrganizationId);
-  const tableIdForOrganization = waitTableId(wait);
-  const object = useObjectOrganization(
-    cardDataSource(),
-    objectOrganizationId ? null : (wait.approvalId ?? tableIdForOrganization),
-  );
-  const organizationId =
-    objectOrganizationId ??
-    (object.state === "found"
-      ? object.organizationId
-      : object.state === "stand-in"
-        ? activeOrganizationId
-        : null);
-  const organizationKnown =
-    Boolean(objectOrganizationId) || object.state !== "resolving";
+  const organizationId = objectOrganizationId ?? activeOrganizationId;
   const campaign = useUnifiedDataCampaign({
     organizationId,
     storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.enabled(organization),
@@ -188,7 +159,7 @@ export function RecordChangeApprovalCard({
     }),
   };
 
-  if (!organizationKnown || campaign.on === null) return null;
+  if (campaign.on === null) return null;
   if (!campaign.on) {
     return (
       <p className="text-xs leading-relaxed text-muted-foreground">

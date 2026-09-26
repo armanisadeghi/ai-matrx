@@ -79,7 +79,7 @@ const ONE_EDITOR =
   "Until it lands, add NO new consumer: extend the surface's existing editor call site instead of adding a new one.";
 
 const ONE_ACTION_REGISTRY =
-  "Register the action in the ONE action registry: features/rich-document/actions/registry.ts " +
+  "Register the action in the ONE action registry: features/rich-document/actions/provider.ts (the rich-document provider of the Alchemy action registry, ALC-15) " +
   "(rich-content-unification PLAN §3.10). The chat registry and both AssistantActionBar copies are being deleted.";
 
 const PROMPT_EDITOR =

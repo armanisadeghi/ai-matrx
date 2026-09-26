@@ -165,14 +165,7 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
     chunksRead.total,
   );
   const libraryDoc = useLibraryDoc(viewedId);
-  // The server's `entities_state` (source_list_facts, migration 1301) is the
-  // answer for the current version; the chunk-coverage read runs only when it
-  // is absent (an older server) or when the person views the original capture.
-  const coverage = useExtractionCoverage(
-    version.loading || (viewingCurrent && version.facts?.entitiesState)
-      ? null
-      : viewedId,
-  );
+  const coverage = useExtractionCoverage(viewedId);
   const search = useDocumentSearch(viewedId ?? documentId);
   const view = doc ? resolveOriginalView(doc, media.media) : null;
 

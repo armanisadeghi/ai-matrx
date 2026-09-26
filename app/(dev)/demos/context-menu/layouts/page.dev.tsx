@@ -6,7 +6,7 @@
  * Every panel is the exact /notes wiring (`matrx-user/notes`, full surface
  * scope, the full notes `extraSections` incl. super-admin rows). The ONLY
  * difference between panels is the `menuLayout` / `menuDensity` presentation
- * knobs (`features/context-menu-v3/model/layouts.ts`). Behaviour is identical:
+ * knobs (the Alchemy package's layouts, `@ai-matrx/alchemy/menu`). Behaviour is identical:
  * one engine, one model, one renderer.
  *
  *   1. Classic  — classic / comfortable  (the previous platform default)

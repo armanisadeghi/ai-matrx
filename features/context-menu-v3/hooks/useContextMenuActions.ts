@@ -2,9 +2,10 @@
 
 // features/context-menu-v3/hooks/useContextMenuActions.ts
 //
-// THE shared engine behind both menu renderers. Desktop (`MenuContent`) and
-// mobile (`MobileMenuContent`) are pure PRESENTATION over this hook — Radix
-// submenus vs a 70dvh drill-down — while every piece of behavior lives here
+// THE shared engine behind every menu layout. `components/AlchemyMenuContent`
+// runs it and hands its model to the Alchemy package, whose layouts (right-
+// click, phone sheet, palette, bar ⋯) are pure PRESENTATION (ALC-15 S3) —
+// while every piece of behavior lives here
 // exactly once: placement resolution, the single deduped data fetch, scope +
 // action-text resolution, the rich-document action lists, and every handler
 // (clipboard, history, compare, launch, insert, attach/share, admin).
