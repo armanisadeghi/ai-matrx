@@ -125,6 +125,23 @@ names the page and lists its live values. His review inbox gets one row per fini
     attributed to `canvas`. If the Content Library should report as its own product, add the slug in
     aidream, regenerate, and update `features/agents/utils/source-feature-from-surface.ts`.
 
+11. **Generic scope tools must not build a feature's records half-way.**
+    - **Where:** aidream, the `scope_system` agent tool (`expand_scope_type`, `apply` with
+      `upsert_context_item` / scope-create ops).
+    - **Problem (seen live 2026-09-26 on /education/classes):** asked to "just add" classes, an agent
+      used `scope_system` to create three scopes of the org's `class` type. They came out with
+      `settings = {}`: no access mode, no join code, no exam dates, and no owner membership. It also
+      added `teacher` / `term` / `period` context items to the Class scope TYPE, which changes it for
+      everyone in the workspace. To the person this looked like success.
+    - **What to add:** a scope type owned by a feature (e.g. slug `class`, owned by education) is
+      refused by the generic create/upsert ops. The refusal names the feature's own path ("classes
+      are created on My Classes with `create_classes`"). Type-level context-item upserts ask first.
+    - **Done when:** the same prompt, run from a page with no classes surface, gets a refusal that
+      names My Classes, and nothing is written.
+    - **Clean-up:** `Physics 101`, `History 210` and `Spanish II` (org `884d1ce8…`, created
+      2026-09-26 21:39 UTC) and the three type-level context items are test debris. The person
+      decides whether to delete them.
+
 ## Resources
 
 - Worker brief: `.claude/skills/surface-authoring/references/campaign-worker.md`

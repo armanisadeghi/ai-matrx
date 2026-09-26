@@ -173,7 +173,7 @@ export const educationClassesManifest: SurfaceManifest = {
     "My Classes: owned and joined classes, New class dialog, create a list of classes (/education/classes).",
   readiness: "partial",
   readinessNote:
-    "Manifest, emitter and both write targets shipped 2026-09-26. Not yet stamped verified: the live agent runs (fill the dialog incl. access mode + exam dates; create a list of classes) must pass on production; neither structured target names a valueKind yet (the handlers validate by hand); no data-surface-value Locate anchors.",
+    "Manifest, emitter and both write targets shipped and proven with live agent runs on production 2026-09-26: new_class_draft opened the closed dialog and filled every field (access mode + two exam dates) in one approval; create_classes created three classes (closed / open / paid $25 with exam dates) in one approval, each with full settings and an owner membership. Not yet stamped verified: neither structured target names a valueKind (the handlers validate by hand), and no data-surface-value Locate anchors are tagged.",
   label: "My Classes",
   urlPattern: "/education/classes",
   intro: `<surface_intro>
