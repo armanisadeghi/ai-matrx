@@ -49,6 +49,9 @@ export interface ReviewItem {
   agreed: boolean | null;
   messageId: string | null;
   conversationId: string | null;
+  /** Set when a workflow Decide step produced the answer — the queue links back to the run. */
+  workflowRunId: string | null;
+  workflowNodeId: string | null;
   createdAt: string;
   /** The answer as the answers primitive reads it (distribution, legend). */
   view: DecisionAnswersView | null;
@@ -142,6 +145,8 @@ export function readReviewItem(row: JudgeVerdictRow): ReviewItem {
     agreed: row.agreed,
     messageId: row.subject_ref_id,
     conversationId: str(meta.conversation_id),
+    workflowRunId: str(meta.workflow_run_id),
+    workflowNodeId: str(meta.workflow_node_id),
     createdAt: row.created_at,
     view,
   };

@@ -378,8 +378,16 @@ export function ReviewQueue({ agentId }: { agentId: string }) {
               </div>
 
               <section className="rounded-lg border border-border bg-card">
-                <div className="border-b border-border px-3 py-1.5 text-[11px] font-medium text-muted-foreground">
+                <div className="flex items-center gap-2 border-b border-border px-3 py-1.5 text-[11px] font-medium text-muted-foreground">
                   What the model judged
+                  {selected.workflowRunId && (
+                    <Link
+                      href={`/workflows/runs/${selected.workflowRunId}`}
+                      className="ml-auto font-normal text-primary hover:underline"
+                    >
+                      Workflow run{selected.workflowNodeId ? ` · step ${selected.workflowNodeId}` : ""}
+                    </Link>
+                  )}
                 </div>
                 <div className="max-h-[40vh] overflow-y-auto whitespace-pre-wrap px-3 py-2 text-xs leading-relaxed">
                   {state == null ? (

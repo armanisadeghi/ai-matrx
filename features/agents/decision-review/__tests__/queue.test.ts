@@ -139,3 +139,27 @@ describe("agentAsksDecisions", () => {
     expect(agentAsksDecisions(undefined)).toBe(false);
   });
 });
+
+describe("workflow items", () => {
+  it("carry the run and step a Decide node stamped on them (aidream migration 1195)", () => {
+    const base = row({}).metadata as Record<string, unknown>;
+    const item = readReviewItem(
+      row({
+        metadata: {
+          ...base,
+          workflow_run_id: "18ff87aa-5380-4a27-9291-c26e8847e52e",
+          workflow_node_id: "decide",
+          workflow_id: "f30ddc59-1a09-4946-b995-3399474eaa33",
+        },
+      }),
+    );
+    expect(item.workflowRunId).toBe("18ff87aa-5380-4a27-9291-c26e8847e52e");
+    expect(item.workflowNodeId).toBe("decide");
+  });
+
+  it("an answer from chat has no run to link to", () => {
+    const item = readReviewItem(row({}));
+    expect(item.workflowRunId).toBeNull();
+    expect(item.workflowNodeId).toBeNull();
+  });
+});
