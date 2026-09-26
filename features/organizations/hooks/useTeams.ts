@@ -26,7 +26,9 @@ export function useOrganizationTeams(
   organizationId: string | undefined,
   includeArchived: boolean,
 ): Loaded<Team[]> {
-  const [data, setData] = useState<Team[]>([]);
+  // Rows remember which organization they belong to, so switching organizations never
+  // shows the previous one's teams while the next list loads.
+  const [loaded, setLoaded] = useState<{ org: string; rows: Team[] }>({ org: "", rows: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -40,7 +42,7 @@ export function useOrganizationTeams(
     setLoading(true);
     setError(null);
     listTeams(organizationId, includeArchived)
-      .then((rows) => live && setData(rows))
+      .then((rows) => live && setLoaded({ org: organizationId, rows }))
       .catch((e: unknown) => live && setError(messageOf(e)))
       .finally(() => live && setLoading(false));
     return () => {
@@ -48,6 +50,7 @@ export function useOrganizationTeams(
     };
   }, [organizationId, includeArchived, tick]);
 
+  const data = loaded.org === organizationId ? loaded.rows : [];
   return { data, loading, error, refresh: () => setTick((t) => t + 1) };
 }
 

@@ -465,6 +465,13 @@ function TeamDetail({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={NO_DEPARTMENT}>No HR department</SelectItem>
+              {team.hrDepartmentId &&
+                !departments.some((d) => d.id === team.hrDepartmentId) && (
+                  // Linked to a department HR has since archived or deactivated: it feeds nobody.
+                  <SelectItem value={team.hrDepartmentId}>
+                    A department HR no longer uses (feeds nobody)
+                  </SelectItem>
+                )}
               {departments.map((d) => (
                 <SelectItem key={d.id} value={d.id}>
                   {d.name}
@@ -491,7 +498,10 @@ function TeamDetail({
 
       {members.error ? (
         <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <p className="text-sm text-red-800 dark:text-red-200">{members.error}</p>
+          <p className="text-sm text-red-800 dark:text-red-200">
+            {members.error}
+            <ErrorAlchemyMenu error={members.error} operation="List this team's members" />
+          </p>
           <Button onClick={members.refresh} variant="outline" size="sm" className="mt-2">
             Retry
           </Button>
