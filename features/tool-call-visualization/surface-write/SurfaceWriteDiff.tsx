@@ -35,8 +35,11 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { cn } from "@/lib/utils";
 
-import { DIFF_VIEW_KNOB, diffLanguageOf, type SurfaceWriteReceipt } from "./readSurfaceWrite";
-
+import {
+  DIFF_VIEW_KNOB,
+  diffLanguageOf,
+  type SurfaceWriteReceipt,
+} from "./readSurfaceWrite";
 
 /** Knob value → the package's view name. Unknown / unresolved → unified. */
 export function viewFromKnob(value: unknown): TextDiffView {
@@ -71,7 +74,8 @@ export function SurfaceWriteDiff({
   const before = useDeferredValue(receipt.before);
   const after = useDeferredValue(receipt.after);
   const language = diffLanguageOf(receipt);
-  const canPreview = receipt.contentFormat === "markdown" || receipt.contentFormat === "text";
+  const canPreview =
+    receipt.contentFormat === "markdown" || receipt.contentFormat === "text";
 
   const slot = (
     <span className="ml-1 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -104,11 +108,16 @@ export function SurfaceWriteDiff({
     <div
       data-surface-write-diff=""
       data-surface-write-mode={receipt.mode}
-      className={cn("w-full overflow-hidden rounded-lg border border-border/60 bg-card text-[13px]", className)}
+      className={cn(
+        "w-full overflow-hidden rounded-lg border border-border/60 bg-card text-[13px]",
+        className,
+      )}
     >
       {preview ? (
         <div>
-          <div className="flex items-center justify-end border-b border-border/60 px-2 py-1">{slot}</div>
+          <div className="flex items-center justify-end border-b border-border/60 px-2 py-1">
+            {slot}
+          </div>
           <div className="max-h-96 overflow-auto px-4 py-3">
             <MarkdownStream
               imagePolicy="ai"
@@ -131,18 +140,32 @@ export function SurfaceWriteDiff({
           className="max-h-96"
         />
       ) : (
-        <TextDiff
-          original={before}
-          modified={after}
-          originalLabel="Before"
-          modifiedLabel="After"
-          view={view}
-          onViewChange={setChosenView}
-          showLineNumbers={!isMobile}
-          toolbarSlot={slot}
-          className="max-h-96"
-          ariaLabel={`What changed in ${receipt.targetLabel || receipt.targetType}`}
-        />
+        <>
+          {isMobile ? (
+            // A phone has no room for the package toolbar's view switcher (it is
+            // always unified here), so the card's one control row carries only
+            // what still applies: the change label and Preview.
+            <div className="flex items-center justify-end border-b border-border/60 px-2 py-1">
+              {slot}
+            </div>
+          ) : null}
+          <TextDiff
+            // TextDiff latches line numbers on mount; remount when the phone
+            // layout resolves so the gutter follows it.
+            key={isMobile ? "phone" : "desk"}
+            original={before}
+            modified={after}
+            originalLabel="Before"
+            modifiedLabel="After"
+            view={view}
+            onViewChange={setChosenView}
+            showToolbar={!isMobile}
+            showLineNumbers={!isMobile}
+            toolbarSlot={slot}
+            className="max-h-96"
+            ariaLabel={`What changed in ${receipt.targetLabel || receipt.targetType}`}
+          />
+        </>
       )}
     </div>
   );
