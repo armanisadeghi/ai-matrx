@@ -23,9 +23,10 @@ registerAction({
   supportedSources: "*",
   renderSlot: "overflow",
   order: 10,
-  // A read-only source (an error card, a loaded copy) has nothing to edit;
-  // the action does not apply there, so it is absent (ALC-15, R1).
-  visible: (ctx) => !ctx.source.readOnly,
+  // It is the full-screen EDITOR: a read-only source (an error card, a loaded
+  // copy) has nothing to edit, so the action is absent there (ALC-15, R1) —
+  // declared as a source writer, the one rule every read-only surface honors.
+  writesSource: true,
   run: async (ctx) => {
     // A CHAT ANSWER opens THE ONE editor, expanded, in its own spot (RC-B5):
     // the same instance and save path as the pencil — never this old editor,
