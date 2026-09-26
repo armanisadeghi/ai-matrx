@@ -118,5 +118,26 @@ export function resolveTableRowMenuDescriptor(target: HTMLElement | null): Table
   // by name. Handing the resolver a bare id instead leaves `level` undefined
   // and the table answers nothing at all.
   const token = resolvers.get(tableId)?.({ tableId, level: "row", rowId });
-  return token && typeof token === "object" ? descriptors.get(token) ?? null : null;
+  const descriptor = token && typeof token === "object" ? descriptors.get(token) ?? null : null;
+  if (!descriptor) return null;
+  // 🚨 THE HEADING IS WHAT THE PERSON RIGHT-CLICKED, IN THE WORDS ON SCREEN (merged-grid review
+  // 2026-09-26): the heading read `Content: { "id": …, "_choices": …, "level": "admin",
+  // "hidden": {} }` — the row's raw document. The clicked cell's shown text ("Content: Priya
+  // Nair") is the heading; the row's words when the click was between cells. The full row stays
+  // in `context.context` for the actions that read it.
+  const cell = target?.closest<HTMLElement>("td, [role='gridcell']");
+  const shown = shownWords(cell ?? row);
+  return shown ? { ...descriptor, context: { ...descriptor.context, content: shown } } : descriptor;
+}
+
+/** The words an element shows, without its controls (buttons, hidden marks). */
+function shownWords(element: HTMLElement | null | undefined): string {
+  if (!element) return "";
+  const copy = element.cloneNode(true) as HTMLElement;
+  copy.querySelectorAll("button, [aria-hidden='true'], input, textarea, select").forEach((node) => node.remove());
+  const cells = copy.querySelectorAll("td, [role='gridcell']");
+  const text = cells.length > 1
+    ? Array.from(cells).map((c) => (c.textContent ?? "").replace(/\s+/g, " ").trim()).filter((t) => t && t !== "—").join(" · ")
+    : (copy.textContent ?? "").replace(/\s+/g, " ").trim();
+  return text.length > 200 ? `${text.slice(0, 199)}…` : text;
 }

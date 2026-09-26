@@ -66,4 +66,27 @@ describe("table row context registry", () => {
     unregister();
     table.remove();
   });
+
+  it("heads the menu with the clicked cell's words, never the row's raw document", () => {
+    const descriptor = createDefaultTableRowMenuDescriptor({
+      level: "row",
+      rowId: "row-9",
+      row: { id: "row-9", level: "admin", hidden: {}, document: { customer: "Priya Nair", _choices: {} } },
+      controls: {} as never,
+    });
+    const table = document.createElement("table");
+    table.dataset.matrxTableId = "table-instance-c";
+    const row = document.createElement("tr");
+    row.dataset.rowId = "row-9";
+    row.innerHTML = '<td><span>One-off — Harbor Motel</span></td><td><span>Priya Nair</span><button>who?</button></td>';
+    table.append(row);
+    document.body.append(table);
+    const unregister = registerTableRowContextResolver("table-instance-c", () => descriptor);
+    const customerCell = row.querySelectorAll("td")[1]!.querySelector("span")!;
+    expect(resolveTableRowMenuDescriptor(customerCell)?.context.content).toBe("Priya Nair");
+    expect(resolveTableRowMenuDescriptor(row)?.context.content).toBe("One-off — Harbor Motel · Priya Nair");
+    expect(String(resolveTableRowMenuDescriptor(customerCell)?.context.content)).not.toContain("_choices");
+    unregister();
+    table.remove();
+  });
 });
