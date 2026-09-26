@@ -39,6 +39,23 @@ function wait(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Wait until something the scheduler DID is visible, up to a generous deadline.
+ *
+ * A fixed `wait(FAST_DEBOUNCE + 40)` before a POSITIVE assertion raced the
+ * debounce + Dexie + fake-indexeddb chain: on a loaded machine (full suite,
+ * --maxWorkers=2, 2026-09-26) the flush had not landed at 60ms and "coalesces"
+ * read zero writes. Positive checks now settle on the fact; NEGATIVE checks
+ * ("nothing more fired") still use a fixed window, which cannot pass early.
+ */
+async function settle(done: () => boolean | Promise<boolean>, deadlineMs = 3000): Promise<void> {
+    const start = Date.now();
+    while (!(await done())) {
+        if (Date.now() - start > deadlineMs) return; // the assertion that follows reports it
+        await wait(10);
+    }
+}
+
 describe("remoteWrite scheduler", () => {
     beforeEach(async () => {
         window.localStorage.clear();
@@ -67,7 +84,7 @@ describe("remoteWrite scheduler", () => {
         // Debounce pending — nothing persisted yet.
         expect(await readSlice("auth:u1", "slice1", 1)).toBeNull();
 
-        await wait(FAST_DEBOUNCE + 40);
+        await settle(async () => (await readSlice("auth:u1", "slice1", 1)) !== null);
 
         const record = await readSlice("auth:u1", "slice1", 1);
         expect(record).not.toBeNull();
@@ -109,6 +126,8 @@ describe("remoteWrite scheduler", () => {
         scheduler.schedule("slice1", { v: 1 });
         scheduler.schedule("slice1", { v: 2 });
         scheduler.schedule("slice1", { v: 3 });
+        await settle(() => writeCalls.length > 0);
+        // …and nothing more fires after a further full debounce window.
         await wait(FAST_DEBOUNCE + 40);
 
         expect(writeCalls).toHaveLength(1);
@@ -146,7 +165,7 @@ describe("remoteWrite scheduler", () => {
         await wait(60); // half-way through policy debounce window
         expect(writeCalls).toHaveLength(0); // still waiting
 
-        await wait(POLICY_DEBOUNCE); // total ≈ 180ms, well past 120ms + Dexie
+        await settle(() => writeCalls.length > 0);
         expect(writeCalls).toHaveLength(1);
         expect(writeCalls[0]).toEqual({ v: 1 });
 
@@ -186,7 +205,7 @@ describe("remoteWrite scheduler", () => {
         });
 
         scheduler.schedule("slice1", { v: 1 });
-        await wait(FAST_DEBOUNCE + 40);
+        await settle(() => writeCalls.length > 0);
         expect(writeCalls).toEqual([{ v: 1 }]);
         expect(receivedSignal).not.toBeNull();
         expect(receivedSignal!.aborted).toBe(false);
@@ -200,7 +219,7 @@ describe("remoteWrite scheduler", () => {
         await wait(5);
 
         // The new debounce fires the second write.
-        await wait(FAST_DEBOUNCE + 40);
+        await settle(() => writeCalls.length > 1);
         expect(writeCalls.length).toBe(2);
         expect(writeCalls[1]).toEqual({ v: 2 });
 
@@ -238,7 +257,7 @@ describe("remoteWrite scheduler", () => {
         });
 
         scheduler.schedule("slice1", { v: "original" });
-        await wait(FAST_DEBOUNCE + 40);
+        await settle(() => writeCalls.length > 0);
         expect(writeCalls).toHaveLength(1);
         expect(seenAbort!.aborted).toBe(false);
 
@@ -312,14 +331,15 @@ describe("remoteWrite scheduler", () => {
                 };
                 return () => {};
             },
-            defaultDebounceMs: FAST_DEBOUNCE,
+            // A debounce that cannot elapse during the test: only pagehide can flush.
+            defaultDebounceMs: 60_000,
         });
 
         scheduler.schedule("slice1", { v: 99 });
         // Simulate pagehide before debounce elapses.
         hideFire();
-        // flushAll is fire-and-forget internally; give Dexie + awaits a moment.
-        await wait(40);
+        // flushAll is fire-and-forget internally; settle on the write landing.
+        await settle(() => writeCalls.length > 0);
         expect(writeCalls).toEqual([{ v: 99 }]);
 
         scheduler.dispose();
