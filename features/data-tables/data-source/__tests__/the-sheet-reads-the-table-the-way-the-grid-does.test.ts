@@ -49,6 +49,8 @@ const client = {
   myLevels: jest.fn(async () => ok([{ id: TABLE, level: "viewer" }])),
   fieldOptions: jest.fn(async () => ok([])),
   tableCapacity: jest.fn(async () => ok({ records: ROWS.length })),
+  // The page door answers as the store does: a masked field present-and-null, its notice in `hidden`.
+  listPage: jest.fn(async () => ok({ total: ROWS.length, limit: 20, offset: 0, rows: ROWS.map((r) => ({ ...r, level: "viewer" })) })),
   tableDecorations: jest.fn(async () => ok(DECORATIONS)),
   rowActions: jest.fn(async () => ok({ actions: [] })),
   views: jest.fn(async () => ok([])),
@@ -60,12 +62,6 @@ jest.mock("@ai-matrx/records/core", () => ({
 }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("../record-store-grid", () => ({
-  ...jest.requireActual("../record-store-grid"),
-  // The page door answers as the store does: a masked field present-and-null, its notice under `_hidden`.
-  readRecordsPage: jest.fn(async () => ({
-    ok: true,
-    data: { total: ROWS.length, rows: ROWS.map((r) => ({ id: r.id, level: "viewer", document: { ...r.document, _hidden: r.hidden } })) },
-  })),
   handOrderAbsence: jest.fn(async () => null),
   readRecordsInViewOrder: jest.fn(async () => ({ ok: false, absent: true, error: { message: "absent here" } })),
   viewRecordOrderSet: jest.fn(),

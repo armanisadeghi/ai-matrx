@@ -36,6 +36,9 @@ import { actionRefusals } from "@ai-matrx/records";
 import type {
   DecorationPath,
   Field,
+  ReadRow,
+  RecordChange,
+  RecordPageSort,
   RecordHistoryEntry,
   RecordsError,
   RowAction as StoreRowAction,
@@ -63,13 +66,7 @@ import {
   handOrderAbsence,
   migrateRetype,
   readRecordsInViewOrder,
-  readRecordsPage,
-  recordChangeMany,
-  unfoldDocument,
   viewRecordOrderSet,
-  type PageDoorRow,
-  type RecordPageSortSpec,
-  type StoreChange,
 } from "./record-store-grid";
 import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import {
@@ -223,7 +220,7 @@ function pageSort(
   columns: readonly DatasetField[],
   sortField: string | null | undefined,
   sortDirection: "asc" | "desc" | undefined,
-): RecordPageSortSpec[] {
+): RecordPageSort[] {
   if (!sortField) return [];
   const column = columns.find((c) => c.field_name === sortField || c.display_name === sortField);
   if (!column) return [];
@@ -232,11 +229,29 @@ function pageSort(
   return [{ field: column.field_name, direction: sortDirection === "desc" ? "desc" : "asc", as }];
 }
 
-function gridRowsOf(rows: readonly PageDoorRow[], snap: Snapshot): GridRow[] {
+function gridRowsOf(rows: readonly ReadRow[], snap: Snapshot): GridRow[] {
   return rows.map((row) => {
-    const { document, hidden } = unfoldDocument(row.document);
-    const withheld = withheldCells(hidden, snap.fields);
-    return { id: row.id, data: olderRowData(document, snap.columns), ...(withheld ? { withheld } : {}) };
+    const withheld = withheldCells(row.hidden, snap.fields);
+    return {
+      id: row.id,
+      data: olderRowData(row.document as Record<string, unknown>, snap.columns),
+      ...(withheld ? { withheld } : {}),
+    };
+  });
+}
+
+/** One page through the store's page door (`client.listPage` → `custom.read_records_page`). */
+function readRecordsPage(
+  home: RecordStoreHome,
+  args: { tableId: string; search: string | null; sort: RecordPageSort[]; viewId: string | null; limit: number; offset: number },
+) {
+  return clientFor(home).listPage({
+    table_id: args.tableId,
+    search: args.search && args.search.trim() !== "" ? args.search : null,
+    sort: args.sort,
+    view_id: args.viewId,
+    limit: args.limit,
+    offset: args.offset,
   });
 }
 
@@ -481,7 +496,7 @@ export async function getTablePage(
   // A caller that asks for more than one store page (the filter cache, the cleanup pass, the
   // reorder dialog ask for up to 10,000) is served store page by store page — never refused
   // for asking, never cut short.
-  const rows: PageDoorRow[] = [];
+  const rows: ReadRow[] = [];
   let total = 0;
   for (let at = offset; ; ) {
     const want = Math.min(READ_PAGE, offset + limit - at);
@@ -774,7 +789,7 @@ export async function bulkWrite(
     return { success: true, data: { table_id: args.tableId, count: 0, results: [] } };
   }
   const written: Array<Record<string, unknown>> = [];
-  const changes: StoreChange[] = args.operations.map((op) => {
+  const changes: RecordChange[] = args.operations.map((op) => {
     if (op.op === "insert") {
       written.push(op.data);
       return { op: "insert", data: toStoreDocument(columns.data, op.data) };
@@ -788,7 +803,7 @@ export async function bulkWrite(
     written.push(data);
     return { op: "update", record_id: op.row_id, patch: toStoreDocument(columns.data, data) };
   });
-  const done = await recordChangeMany(home, args.tableId, changes);
+  const done = await clientFor(home).recordChangeMany({ table_id: args.tableId, changes });
   if (!done.ok) return refused(done.error);
   const results: BulkOpResult[] = done.data.map((result, i) =>
     asDatasetRow(args.tableId, home, result.id, written[i] ?? {}),

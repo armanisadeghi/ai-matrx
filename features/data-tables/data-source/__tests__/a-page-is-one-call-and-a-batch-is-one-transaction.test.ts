@@ -114,6 +114,22 @@ const client = {
   rowActions: jest.fn(async () => ok({ actions: [] })),
   views: jest.fn(async () => ok([])),
   recordUpdate: jest.fn(async () => ok(2)),
+  // The published client's page and batch methods, answered by the same fake store (the op id is
+  // added here exactly as the client adds it).
+  listPage: jest.fn(async (a: { table_id: string; search?: string | null; sort?: unknown[]; view_id?: string | null; limit: number; offset: number }) => {
+    const r = postgrest("read_records_page", { p_table_id: a.table_id, p_search: a.search ?? null, p_sort: a.sort ?? [], p_view_id: a.view_id ?? null, p_limit: a.limit, p_offset: a.offset });
+    const d = r.data as { total: number; rows: Array<{ id: string; document: Record<string, unknown>; level: string }> };
+    return ok({ total: d.total, limit: a.limit, offset: a.offset, rows: d.rows.map((x) => ({ ...x, hidden: {} })) });
+  }),
+  recordChangeMany: jest.fn(async (a: { table_id: string; changes: Array<Record<string, unknown>> }) => {
+    const opId = "5f0e0000-0000-4000-8000-00000000000a";
+    const r = postgrest("record_change_many", {
+      p_table_id: a.table_id,
+      p_changes: a.changes.map((c) => (c.op === "update" ? { ...c, patch: { ...(c.patch as object), _op_id: opId } } : c)),
+    });
+    if (r.error) return { ok: false as const, error: { code: "refused_by_rule", message: r.error.message, hint: (r.error as { hint?: string }).hint } };
+    return ok(r.data);
+  }),
 };
 
 jest.mock("@ai-matrx/records/core", () => ({

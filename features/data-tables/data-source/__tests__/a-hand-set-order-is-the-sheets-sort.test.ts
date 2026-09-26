@@ -91,6 +91,11 @@ const client = {
   myLevels: jest.fn(async () => ok([{ id: TABLE, level: "owner" }])),
   fieldOptions: jest.fn(async () => ok([])),
   tableCapacity: jest.fn(async () => ok({ records: ROWS.length })),
+  listPage: jest.fn(async (a: { view_id?: string | null; limit: number; offset: number }) => {
+    const r = postgrest("read_records_page", { p_view_id: a.view_id ?? null, p_limit: a.limit, p_offset: a.offset });
+    const d = r.data as { total: number; rows: Array<{ id: string; document: Record<string, unknown>; level: string }> };
+    return ok({ total: d.total, limit: a.limit, offset: a.offset, rows: d.rows.map((x) => ({ ...x, hidden: {} })) });
+  }),
   tableDecorations: jest.fn(async () => ok({ rules: [] })),
   rowActions: jest.fn(async () => ok({ actions: [] })),
   views: jest.fn(async () => ok(store.views)),
