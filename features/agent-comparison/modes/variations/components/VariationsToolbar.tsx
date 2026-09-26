@@ -279,7 +279,7 @@ export function VariationsToolbar({
         battleName={activeSetName}
         fallbackTitle="Variations battle"
         actions={actions}
-        inlineCount={2}
+        inlineCount={columns.length > 0 ? 2 : 1}
         onSubmit={() => {
           void handleSubmitAll();
         }}
