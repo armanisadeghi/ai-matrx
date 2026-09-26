@@ -37,6 +37,12 @@ it.each([
   ["a header wider than its delimiter", ["| Bay | Status |", "|---|", "| B3 | re-scan |", "", "Signed off."]],
   ["a one-column table with no pipe in its header", ["Notes", "|---|", "Dock B closed", "", "Signed off."]],
   ["a lone | row", [...HANDOVER, "|", "", "Signed off."]],
+  // verify-RC-B4 round 9: a table written right under a list item's (or quote's)
+  // text is that item's text in GFM — a lazy continuation line, never a table.
+  ["a table right under a list item's text", ["Dock handover", "", "- Dock C reopens at six", ...HANDOVER, "", "Signed off."]],
+  ["a table right under an ordered item's text", ["1. Drain the print queue", ...HANDOVER, "", "Signed off."]],
+  ["a table inside the item, at its content column", ["- Dock C reopens at six", ...HANDOVER.map((line) => `  ${line}`), "", "Signed off."]],
+  ["a table after the item and a blank line", ["- Dock C reopens at six", "", ...HANDOVER, "", "Signed off."]],
 ] as const)("%s", (_label, lines) => {
   const text = lines.join("\n");
   const { json, plan } = buildVisualDocument(text, schema);
