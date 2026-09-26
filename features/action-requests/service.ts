@@ -53,7 +53,8 @@ export type ActionRequestForm =
   | "pick_time"
   | "credential"
   | "browser_takeover"
-  | "one_time_code";
+  | "one_time_code"
+  | "vault_item";
 
 /**
  * What EVERY render spec carries. Verified against the live doors on
@@ -138,6 +139,17 @@ export interface OneTimeCodeRender extends RenderCommon {
   period_seconds: number;
 }
 
+/**
+ * "Save this in your vault" — kind `vault_capture`. A list of fields and
+ * nothing else: no origin line and no origin echo, because nothing is being
+ * signed into, and no authenticator box, because the kind does not store one.
+ */
+export interface VaultItemRender extends RenderCommon {
+  form: "vault_item";
+  fields: { key: string; label: string; secret: boolean }[];
+  submit_label: string;
+}
+
 export type ActionRequestRender =
   | ApproveRender
   | ChooseOneRender
@@ -146,7 +158,8 @@ export type ActionRequestRender =
   | PickTimeRender
   | CredentialRender
   | BrowserTakeoverRender
-  | OneTimeCodeRender;
+  | OneTimeCodeRender
+  | VaultItemRender;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OPEN

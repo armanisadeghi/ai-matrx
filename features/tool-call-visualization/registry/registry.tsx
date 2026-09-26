@@ -104,6 +104,7 @@ import {
   topicalMapActionOf,
 } from "../renderers/topical-map/topicalMapResult";
 import { AskInline } from "../renderers/ask/AskInline";
+import { AskPersonInline } from "../renderers/ask-person/AskPersonInline";
 import { CloudBrowserInline } from "../renderers/cloud-browser/CloudBrowserRunCard";
 import { cloudBrowserAction } from "../renderers/cloud-browser/cloudBrowserRun";
 import { DbSchemaInline } from "../renderers/sql/DbSchemaInline";
@@ -1460,6 +1461,27 @@ export const toolRendererRegistry: ToolRegistry = {
       const q = getArg<string>(entry, "question");
       return typeof q === "string" && q ? q : null;
     },
+  },
+
+  // The agent asks the person it works for for ONE thing (a yes, a choice, a
+  // sign-in, a code, a vault item). By text that is a `/q/<token>` link; in the
+  // chat it is this card, drawing the SAME form (features/action-requests).
+  ask_person: {
+    toolName: "ask_person",
+    chrome: "card",
+    displayName: "Needs you",
+    phaseLabels: {
+      running: "Asking you",
+      complete: "Asked you",
+      errorPrefix: "Couldn't ask",
+    },
+    resultsLabel: "Ask",
+    InlineComponent: AskPersonInline,
+    OverlayComponent: AskPersonInline,
+    // An open ask is a demand for action: its form is shown, never folded
+    // away behind a click — live or reloaded.
+    displayMode: "stay-open",
+    keepExpandedOnStream: true,
   },
 
   interaction_ask: {

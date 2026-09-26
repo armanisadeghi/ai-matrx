@@ -10,8 +10,25 @@ by itself. This folder is the app's whole half of it.
 ## What the page is
 
 One ask, one answer, on a phone. `approve`, `choose_one`, `confirm_details`,
-`pick_time`, `credential`, `browser_takeover` — the form is whichever one the
+`pick_time`, `credential`, `browser_takeover`, `one_time_code`, `vault_item` — the form is whichever one the
 server's render spec names.
+
+## The in-chat twin (2026-09-26)
+
+The same ask, answered where the person already is. When the chat renders an
+`ask_person` tool call, `AskPersonInline`
+(`features/tool-call-visualization/renderers/ask-person/`) finds the ask in
+aidream's authenticated `GET /action-requests/pending` (by the parked output's
+`action_request_id`, else this conversation + the kind) and draws the SAME form.
+The answer goes to `POST /action-requests/{id}/complete` with the person's own
+session — no token anywhere ([`self-service.ts`](./self-service.ts)). Not in the
+list = not open: one quiet line, never a dead form.
+
+- **One form, two doors:** [`components/ActionRequestAnswerForm.tsx`](./components/ActionRequestAnswerForm.tsx)
+  owns every `render.form` (incl. `vault_item`, kind `vault_capture`: a field
+  list with no origin line and no origin echo) and the shared outcome reader
+  `useActionRequestAnswer`. The `/q` page and the chat card only supply the
+  transport.
 
 ## What it is NOT
 
