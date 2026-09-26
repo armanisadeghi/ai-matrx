@@ -14,7 +14,6 @@ import type { AlchemyHostPorts } from "@ai-matrx/alchemy/ports";
 import { createAlchemyHostPorts } from "./alchemy-host-ports";
 import { createActionRegistry } from "@ai-matrx/alchemy/actions";
 import { AlchemyActionsProvider } from "@ai-matrx/alchemy/react/host";
-import { richDocumentActionProvider } from "@/features/rich-document/actions/provider";
 import { useRouter } from "next/navigation";
 import "@ai-matrx/design-system/content-transfer.css";
 import {
@@ -144,12 +143,9 @@ export function AlchemyHost({ children }: { children: ReactNode }) {
   // Bound once per mount: the identity port reads the live store, so an
   // account or organization switch needs no new ports.
   const [hostPorts] = useState(() => createAlchemyHostPorts({ store }));
-  // THE one action registry (ALC-15). Providers register once, here.
-  const [actionRegistry] = useState(() => {
-    const registry = createActionRegistry({ ports: hostPorts });
-    registry.register(richDocumentActionProvider);
-    return registry;
-  });
+  // THE one action registry (ALC-15). Each provider registers itself once
+  // (rich-document: ensureRichDocumentProvider, from its layouts).
+  const [actionRegistry] = useState(() => createActionRegistry({ ports: hostPorts }));
 
   return (
     <AlchemyHostPortsContext.Provider value={hostPorts}>

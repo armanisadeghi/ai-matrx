@@ -52,12 +52,27 @@ const SOURCE_WRITE_TARGET: WriteTarget = {
   mode: "entity",
 };
 
-/** Insertion order = registration order = the stable display order within a section. */
-const ACTIONS = new Map<string, RichDocumentAction>();
-const listeners = new Set<() => void>();
+/**
+ * Insertion order = registration order = the stable display order within a
+ * section. Held on globalThis and reached through a hoisted function: handler
+ * modules call `registerAction` while this module may still be initializing
+ * (an import cycle through the handlers index), where a module `const` would
+ * be in its temporal dead zone.
+ */
+function store(): { actions: Map<string, RichDocumentAction>; listeners: Set<() => void> } {
+  const key = Symbol.for("ai-matrx.rich-document.actions");
+  const g = globalThis as unknown as Record<symbol, ReturnType<typeof store> | undefined>;
+  let s = g[key];
+  if (!s) {
+    s = { actions: new Map(), listeners: new Set() };
+    g[key] = s;
+  }
+  return s;
+}
 
 /** Register an action at module load. A duplicate id is refused. */
 export function registerAction(action: RichDocumentAction): void {
+  const { actions: ACTIONS, listeners } = store();
   if (ACTIONS.has(action.id)) {
     if (process.env.NODE_ENV === "development") {
       console.warn(
@@ -75,17 +90,22 @@ export function registerAction(action: RichDocumentAction): void {
 export function getAction(
   id: RichDocumentActionId | string,
 ): RichDocumentAction | undefined {
-  return ACTIONS.get(id);
+  return store().actions.get(id);
 }
 
 /** Get all registered actions. */
 export function getAllActions(): RichDocumentAction[] {
-  return Array.from(ACTIONS.values());
+  return Array.from(store().actions.values());
 }
 
 // ── Section + order from the existing menu hierarchy ─────────────────────────
 
-const PLACEMENT = (() => {
+let placementCache: Map<string, { order: number; section?: { id: string; label: string; icon?: string } }> | null = null;
+function placementOf(id: string) {
+  placementCache ??= buildPlacement();
+  return placementCache.get(id);
+}
+function buildPlacement() {
   const map = new Map<string, { order: number; section?: { id: string; label: string; icon?: string } }>();
   MENU_STRUCTURE.forEach((section, sectionIndex) => {
     section.actionIds.forEach((id, index) => {
@@ -106,7 +126,7 @@ const PLACEMENT = (() => {
     });
   });
   return map;
-})();
+}
 
 /** Two ids for one act: only the canonical row is offered when both are present. */
 const MENU_ALIASES: Record<string, string> = {
@@ -180,7 +200,7 @@ const converted = new WeakMap<RichDocumentAction, Action>();
 export function toAlchemyAction(rd: RichDocumentAction): Action {
   const cached = converted.get(rd);
   if (cached) return cached;
-  const place = PLACEMENT.get(rd.id);
+  const place = placementOf(rd.id);
   const ctxOf = (t: ClickTarget) => hostOf(t)?.ctx;
   const action: Action = {
     id: rd.id,
@@ -238,6 +258,7 @@ export function toAlchemyAction(rd: RichDocumentAction): Action {
 function candidates(target: ClickTarget): RichDocumentAction[] {
   const host = hostOf(target);
   if (!host) return [];
+  const ACTIONS = store().actions;
   const all = [...ACTIONS.values(), ...host.extra.filter((a) => !ACTIONS.has(a.id))];
   const present = new Set(all.map((a) => a.id));
   return all.filter((a) => {
@@ -246,18 +267,34 @@ function candidates(target: ClickTarget): RichDocumentAction[] {
   });
 }
 
+const REGISTERED = new WeakSet<object>();
+
+/**
+ * Register this provider into the app's one registry, once per registry.
+ * Called by the rich-document layouts (the only hosts that need it), so the
+ * app's root host never imports the handler graph.
+ */
+export function ensureRichDocumentProvider(registry: { register(p: ActionProvider): () => void }): void {
+  if (REGISTERED.has(registry)) return;
+  REGISTERED.add(registry);
+  registry.register(richDocumentActionProvider);
+}
+
 /** The provider registered into the app's Alchemy action registry. */
 export const richDocumentActionProvider: ActionProvider = {
   id: RICH_DOCUMENT_PROVIDER_ID,
   tier: "T0",
-  declaredIds: () => [...ACTIONS.keys()],
+  declaredIds: () => [...store().actions.keys()],
   actions: (target) => candidates(target).map(toAlchemyAction),
 };
 
 /** Re-render hook for hosts: the list changed (a handler module loaded). */
 export function subscribeRichDocumentActions(listener: () => void): () => void {
+  const { listeners } = store();
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 /**

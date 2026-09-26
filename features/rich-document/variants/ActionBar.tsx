@@ -12,6 +12,8 @@
 import * as React from "react";
 import { ActionBar as AlchemyActionBar } from "@ai-matrx/alchemy/react/bar";
 import type { ClickTarget } from "@ai-matrx/alchemy/actions";
+import { useAlchemyActions } from "@ai-matrx/alchemy/react/host";
+import { ensureRichDocumentProvider } from "../actions/provider";
 import { cn } from "@/lib/utils";
 import { AlchemyDocumentMenu } from "./shared/AlchemyDocumentMenu";
 import { OpenOneMenuButton, useOneMenuFor } from "./shared/OpenOneMenuButton";
@@ -35,6 +37,8 @@ const BAR_RESTRICT = { exclude: ["copy"] } as const;
 
 export function ActionBar(props: ActionBarProps): React.ReactElement {
   const { actions, getCtx, target, sourceId, className, hideOverflow = false, mini = false } = props;
+  // Idempotent: the one registry gets the rich-document provider once.
+  ensureRichDocumentProvider(useAlchemyActions().registry);
   const oneMenu = useOneMenuFor(getCtx().source);
   const hasCopy = actions.some((action) => action.category === "copy");
   return (

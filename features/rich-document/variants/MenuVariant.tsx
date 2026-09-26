@@ -12,6 +12,8 @@ import dynamic from "next/dynamic";
 import { MoreHorizontal } from "lucide-react";
 import { OverflowMenu } from "@ai-matrx/alchemy/react/overflow";
 import type { ClickTarget } from "@ai-matrx/alchemy/actions";
+import { useAlchemyActions } from "@ai-matrx/alchemy/react/host";
+import { ensureRichDocumentProvider } from "../actions/provider";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -40,6 +42,8 @@ function Trigger(props: React.ComponentProps<typeof Button>): React.ReactElement
 export function MenuVariant(props: MenuVariantProps): React.ReactElement {
   const { getCtx, target, className } = props;
   const isMobile = useIsMobile();
+  // Idempotent: the one registry gets the rich-document provider once.
+  ensureRichDocumentProvider(useAlchemyActions().registry);
   const oneMenu = useOneMenuFor(getCtx().source);
   const [sheetOpen, setSheetOpen] = React.useState(false);
   return (
