@@ -994,22 +994,33 @@ export function ShadowInboxDialog({
           ) : null}
 
           {door === "connected" ? (
-            <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 p-2.5">
-              <Label htmlFor="shadow-inbox-days" className="text-xs">
-                Look back
-              </Label>
-              <Input
-                id="shadow-inbox-days"
-                type="number"
-                min={1}
-                max={365}
-                value={daysBack}
-                onChange={(e) =>
-                  setDaysBack(Math.max(1, Number(e.target.value) || 1))
-                }
-                className="h-8 w-20"
-              />
-              <span className="text-xs text-muted-foreground">days</span>
+            <div className="space-y-2 rounded-md border border-border bg-muted/30 p-2.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <Label htmlFor="shadow-inbox-days" className="text-xs">
+                  Look back
+                </Label>
+                <Input
+                  id="shadow-inbox-days"
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={daysBack}
+                  onChange={(e) =>
+                    setDaysBack(Math.max(1, Number(e.target.value) || 1))
+                  }
+                  className="h-8 w-20"
+                />
+                <span className="text-xs text-muted-foreground">days</span>
+              </div>
+              <p className="text-sm text-foreground">
+                When you select <span className="font-medium">Shadow my last {daysBack} days</span>,{" "}
+                AI Matrx reads up to 50 threads you replied to in this mailbox. Qualifying
+                thread content is retained as Rulebook raw material to derive
+                draft rules, and the configured AI model provider may process it
+                for this request. Connecting Gmail alone does not start this;
+                disconnecting stops future reading but does not erase retained
+                Rulebook content.
+              </p>
             </div>
           ) : null}
 

@@ -154,6 +154,16 @@ function buttons(): HTMLButtonElement[] {
   return [...document.querySelectorAll("button")] as HTMLButtonElement[];
 }
 
+async function chooseConnectedDoor() {
+  const button = buttons().find((node) =>
+    (node.textContent ?? "").includes("From your inbox"),
+  );
+  if (!button) throw new Error("Connected inbox door was not rendered.");
+  await act(async () => {
+    button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+}
+
 beforeEach(() => {
   dispatched.length = 0;
   launch.mockClear();
@@ -219,6 +229,48 @@ describe("the shadow-inbox connected door", () => {
     // The how-to-connect sentence is gone — it would be a lie now.
     expect(text()).not.toContain(
       "Connect a Google mailbox with permission to read your replies",
+    );
+  });
+
+  it("discloses the bounded Rulebook and model processing before the run", async () => {
+    connectionAnswer.data = {
+      connected: true,
+      account_email: "admin@admin.com",
+      connection_id: "11111111-1111-1111-1111-111111111111",
+      days_back_default: 30,
+    };
+    await mount();
+    await chooseConnectedDoor();
+
+    const screen = text();
+    expect(screen).toContain("When you select Shadow my last 30 days, AI Matrx reads");
+    expect(screen).toContain("up to 50 threads you replied to");
+    expect(screen).toContain("Rulebook raw material");
+    expect(screen).toContain("configured AI model provider may process it");
+    expect(screen).toContain("Connecting Gmail alone does not start this");
+    expect(screen).toContain("does not erase retained Rulebook content");
+    const disclosure = [...container.querySelectorAll("p")].find((node) =>
+      (node.textContent ?? "").includes("When you select Shadow my last 30 days"),
+    );
+    const runButton = buttons().find((node) =>
+      (node.textContent ?? "").includes("Shadow my last 30 days"),
+    );
+    expect(disclosure).toBeTruthy();
+    expect(runButton).toBeTruthy();
+    expect(
+      (disclosure?.compareDocumentPosition(runButton as Node) ?? 0) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(launch).not.toHaveBeenCalled();
+    await act(async () => {
+      runButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(launch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        connection_id: "11111111-1111-1111-1111-111111111111",
+        days_back: 30,
+      }),
+      "my inbox, last 30 days",
     );
   });
 });

@@ -8,7 +8,7 @@ const PrivacyPolicyPage = () => {
       <article className="prose prose-neutral mx-auto max-w-3xl px-4 py-8 dark:prose-invert sm:px-6 sm:py-12">
         <h1>Privacy Policy</h1>
         <p>
-          <strong>Last updated:</strong> September 22, 2026
+          <strong>Last updated:</strong> September 27, 2026
         </p>
         <p>
           AI Matrx is a technology product owned and operated by{" "}
@@ -297,7 +297,13 @@ const PrivacyPolicyPage = () => {
           you grant <code>gmail.readonly</code>, AI Matrx can search your
           mailbox when you request it, show message headers and snippets in the
           results, and read the body of a message you select. That permission
-          does not let AI Matrx delete, organize, or send messages.
+          does not let AI Matrx delete, organize, or send messages. When you
+          choose Connected Shadow Inbox and start it, AI Matrx reads up to 50
+          recent threads you replied to in your chosen lookback period. It
+          retains qualifying thread content as Rulebook raw material to derive
+          draft rules, and the configured AI model provider may process that
+          content for that request. Connecting Gmail alone does not start
+          Connected Shadow Inbox.
         </p>
         <p>
           Gmail changes are a separate, optional feature in internal testing.
@@ -328,11 +334,13 @@ const PrivacyPolicyPage = () => {
           creditworthiness. Gmail search results and opened messages are not
           automatically sent to an AI agent. Saved CRM interaction subjects and
           bodies, including matched outreach replies, are also excluded from
-          automatic agent context. If you choose to provide Google content to
-          an agent in a chat or another explicit request, the configured model
-          provider may process that content to answer your request, as described
-          in Section 3.1. We do not use Gmail content to train our own
-          generalized AI models.
+          automatic agent context. Starting Connected Shadow Inbox is an
+          explicit request to process its qualifying Gmail thread content to
+          derive Rulebook draft rules. If you choose to provide other Google
+          content to an agent in a chat or another explicit request, the
+          configured model provider may process that content to answer your
+          request, as described in Section 3.1. We do not use Gmail content to
+          train our own generalized AI models.
         </p>
         <p>
           The use of information received from Google Workspace APIs will adhere
@@ -513,12 +521,16 @@ const PrivacyPolicyPage = () => {
           account identity plus <code>drive.file</code> may be held in browser
           memory while Google Picker is open; it is not written to browser
           storage. We store safe connection metadata and references for the
-          individual files you selected. On-demand Google Workspace operations
-          do not save document contents, spreadsheet cell values, Gmail search
-          queries, or Gmail message bodies as records. The separately configured
-          outreach-reply feature saves matched replies as described in Section
-          2.9; that CRM copy remains after you disconnect Google until you
-          request its deletion or delete your account.
+          individual files you selected. On-demand document and spreadsheet
+          operations do not save document contents or spreadsheet cell values as
+          records. The on-demand Gmail search/open reader does not save search
+          queries or opened message bodies as records. Connected Shadow Inbox
+          retains qualifying Gmail thread content as Rulebook raw material;
+          disconnecting Google stops future reading but does not erase that
+          retained Rulebook content. The separately configured outreach-reply
+          feature saves matched replies as described in Section 2.9; that CRM
+          copy remains after you disconnect Google until you request its
+          deletion or delete your account.
         </p>
 
         <h3>3.6 Amazon credentials and information</h3>
@@ -588,18 +600,20 @@ const PrivacyPolicyPage = () => {
           <li>
             <strong>Google Workspace connection:</strong> encrypted credentials
             and selected-file references are kept until you disconnect Google or
-            delete your account. Document contents, spreadsheet values, and
-            Gmail message bodies handled by on-demand Workspace operations are
-            processed for the requested action and are not stored by those
-            endpoints. Matched outreach replies saved as CRM interactions are
-            retained until you request their deletion or delete your account;
-            disconnecting Google stops future access but does not itself delete
-            those existing CRM interactions. Deleting a CRM copy from the active
-            database does not immediately remove earlier backup copies. Our
-            daily S3 database backups have a 365-day expiration rule. The
-            separate point-in-time recovery window was about seven days when
-            last checked in September 2026; other copies may have different
-            retention.
+            delete your account. On-demand document and spreadsheet operations
+            process content without storing those values as records. The Gmail
+            search/open reader processes selected message bodies without saving
+            them as records. Qualifying Connected Shadow Inbox threads are retained
+            as Rulebook raw material; disconnecting Google stops future access
+            but does not itself delete that retained content. Matched outreach
+            replies saved as CRM interactions are retained until you request
+            their deletion or delete your account; disconnecting Google stops
+            future access but does not itself delete those existing CRM
+            interactions. Deleting a CRM copy from the active database does not
+            immediately remove earlier backup copies. Our daily S3 database
+            backups have a 365-day expiration rule. The separate point-in-time
+            recovery window was about seven days when last checked in September
+            2026; other copies may have different retention.
           </li>
           <li>
             <strong>Amazon Selling Partner connection:</strong> encrypted

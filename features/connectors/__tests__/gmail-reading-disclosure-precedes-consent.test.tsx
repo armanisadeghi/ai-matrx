@@ -130,7 +130,7 @@ afterEach(() => {
 });
 
 describe("Gmail reading disclosure", () => {
-  it("shows both Gmail uses, retention, and user-initiated model exposure", async () => {
+  it("shows all three Gmail uses, retention, and user-initiated model exposure", async () => {
     confirmDisclosure.mockResolvedValue(false);
     mount("gmail_read");
 
@@ -152,7 +152,12 @@ describe("Gmail reading disclosure", () => {
     expect(disclosure).toContain("search or open Gmail");
     expect(disclosure).toContain("separately register this mailbox for outreach");
     expect(disclosure).toContain("up to 20,000 characters");
+    expect(disclosure).toContain("choose Connected Shadow Inbox and start it");
+    expect(disclosure).toContain("up to 50 recent threads you replied to");
+    expect(disclosure).toContain("Rulebook raw material");
+    expect(disclosure).toContain("Connecting Gmail alone does not start this");
     expect(disclosure).toContain("does not erase reply data already saved in CRM");
+    expect(disclosure).toContain("Rulebook raw material already retained");
     expect(disclosure).toContain("not automatically added to an agent");
     expect(disclosure).toContain("choose to provide Gmail content to an agent");
     expect(disclosure).toContain("configured model provider may process it");
