@@ -688,6 +688,7 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
                     key={doc.id}
                     documentId={doc.id}
                     originalFileId={doc.original_file_id}
+                    organizationId={doc.organization_id}
                     name={doc.name}
                     url={url}
                     sections={webSections}

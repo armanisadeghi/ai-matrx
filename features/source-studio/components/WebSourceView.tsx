@@ -16,6 +16,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import { fetchFileBlob } from "@/features/files/hooks/useFileBlob";
+import { rememberFileOrganization } from "@/features/files/api/fileOrganization";
 import PageContent from "@/features/scraper/parts/core/PageContent";
 import ScraperDataUtils from "@/features/scraper/utils/data-utils";
 import { ScrapeProvenance } from "@/features/scraper/parts/ScrapeProvenance";
@@ -36,13 +37,20 @@ interface WebPayload {
   originalError: string | null;
 }
 
-function useWebPayload(documentId: string, originalFileId: string | null) {
+function useWebPayload(
+  documentId: string,
+  originalFileId: string | null,
+  organizationId: string,
+) {
   const [state, setState] = useState<{ forKey: string | null; payload: WebPayload | null; error: string | null }>(
     { forKey: null, payload: null, error: null },
   );
   const key = `${documentId}:${originalFileId}`;
   useEffect(() => {
     let cancelled = false;
+    // The stored original belongs to the Source's organization — read it
+    // there, whatever organization the picker currently shows.
+    if (originalFileId) rememberFileOrganization(originalFileId, organizationId);
     void (async () => {
       const [row, original] = await Promise.all([
         supabase
@@ -96,7 +104,7 @@ function useWebPayload(documentId: string, originalFileId: string | null) {
     return () => {
       cancelled = true;
     };
-  }, [documentId, originalFileId, key]);
+  }, [documentId, originalFileId, organizationId, key]);
   const settled = state.forKey === key;
   return {
     payload: settled ? state.payload : null,
@@ -108,6 +116,7 @@ function useWebPayload(documentId: string, originalFileId: string | null) {
 export interface WebSourceViewProps {
   documentId: string;
   originalFileId: string | null;
+  organizationId: string;
   name: string;
   url: string | null;
   sections: WebSection[];
@@ -118,13 +127,14 @@ export interface WebSourceViewProps {
 export function WebSourceView({
   documentId,
   originalFileId,
+  organizationId,
   name,
   url,
   sections,
   sectionsLoading,
   sectionsError,
 }: WebSourceViewProps) {
-  const read = useWebPayload(documentId, originalFileId);
+  const read = useWebPayload(documentId, originalFileId, organizationId);
   const [activeTab, setActiveTab] = useState("pretty");
 
   if (read.loading || sectionsLoading) {

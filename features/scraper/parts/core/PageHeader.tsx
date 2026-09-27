@@ -63,6 +63,9 @@ const PageHeader = ({
                 </div>
               )}
             </div>
+            {/* No status reported (a stored Source, a result envelope without
+                one): no badge — never an empty red pill that reads as failure. */}
+            {status ? (
             <Badge
               className={`ml-2 shrink-0 text-xs px-2 py-0.5 ${
                 status === "success"
@@ -72,6 +75,7 @@ const PageHeader = ({
             >
               {status}
             </Badge>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
