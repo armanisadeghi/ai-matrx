@@ -199,6 +199,9 @@ export async function browseConnectedSources(
     callApi({
       path: "/connected-sources/browse",
       method: "POST",
+      // A read of the person's OWN account; the server declares it
+      // organization-free, so it never waits on an organization.
+      organizationFreeRead: true,
       body: request,
       expectedErrorStatuses: [401, 403, 404, 409, 422],
       // Walking a provider is slow work by nature; the default client timeout
@@ -219,6 +222,9 @@ export async function readGoogleComments(
     callApi({
       path: "/connected-sources/google/comments",
       method: "POST",
+      // A read of the person's OWN account; the server declares it
+      // organization-free, so it never waits on an organization.
+      organizationFreeRead: true,
       body: { connection_id: connectionId, file_id: fileId },
       expectedErrorStatuses: [401, 403, 404, 422],
     }),
@@ -236,6 +242,9 @@ export async function readGoogleRevisions(
     callApi({
       path: "/connected-sources/google/revisions",
       method: "POST",
+      // A read of the person's OWN account; the server declares it
+      // organization-free, so it never waits on an organization.
+      organizationFreeRead: true,
       body: { connection_id: connectionId, file_id: fileId },
       expectedErrorStatuses: [401, 403, 404, 422],
     }),
@@ -253,6 +262,9 @@ export async function readGooglePresentation(
     callApi({
       path: "/connected-sources/google/presentation",
       method: "POST",
+      // A read of the person's OWN account; the server declares it
+      // organization-free, so it never waits on an organization.
+      organizationFreeRead: true,
       body: { connection_id: connectionId, file_id: fileId },
       expectedErrorStatuses: [401, 403, 404, 422],
     }),

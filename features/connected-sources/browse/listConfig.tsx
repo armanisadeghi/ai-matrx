@@ -31,6 +31,7 @@ import {
   readGoogleRevisions,
 } from "../api";
 import type { ConnectedSourceRow } from "../types";
+import type { ConnectedReadResult } from "../components/ReadResultsDialog";
 import {
   CONNECTED_SOURCE_SCOPES,
   createConnectedSourceListService,
@@ -164,50 +165,39 @@ function connectionIdOf(row: ConnectedSourceRow): string | null {
 }
 
 /**
- * The bulk verbs. Each one names its consequence before it runs, and each one
- * is honest about what it can reach: reading corrections only makes sense for a
- * picked Google file, so it refuses by name on anything else rather than
- * running and returning nothing.
+ * The bulk verbs. Each read opens what it read (every comment, revision or
+ * speaker note, in a dialog with Copy), never just a count. Each is honest about
+ * what it can reach: these reads only make sense for a picked Google file, so
+ * they refuse by name on anything else rather than running and returning nothing.
  */
 function bulkActions(
   dispatch: AppDispatch,
+  onRead: (result: ConnectedReadResult) => void,
 ): EntityBulkAction<ConnectedSourceRow>[] {
+  const fileRef = (row: ConnectedSourceRow) => ({ title: row.title, url: row.url ?? null });
   return [
     {
       id: "read-comments",
-      label: "Read corrections",
+      label: "Read comments",
       icon: FileText,
       variant: "outline",
-      confirm: (selection) => ({
-        title: "Read the corrections on these files",
-        description: `AI Matrx will read every comment, reply and quoted passage on ${selection.rows.length} file(s). Nothing is changed in Google, and nothing is sent anywhere — the corrections are read back to you here.`,
-        confirmLabel: "Read them",
-      }),
       run: async (selection) => {
         const eligible = selection.rows.filter(readsExpertSignal);
         if (!eligible.length) {
           return {
             message:
-              "None of the selected items is a picked Google file, so there are no comments to read. Corrections live on Google Docs, Sheets and Slides you have picked.",
+              "None of the selected items is a picked Google file, so there are no comments to read. Comments are read from Google Docs, Sheets and Slides you have picked.",
           };
         }
-        let comments = 0;
-        let replies = 0;
+        const files = [];
         for (const row of eligible) {
           const connectionId = connectionIdOf(row);
           if (!connectionId) continue;
-          const thread = await readGoogleComments(
-            dispatch,
-            connectionId,
-            row.external_id,
-          );
-          comments += thread.comments.length;
-          replies += thread.total_replies;
+          const thread = await readGoogleComments(dispatch, connectionId, row.external_id);
+          files.push({ ...fileRef(row), thread });
         }
-        return {
-          message: `Read ${comments} comment(s) and ${replies} repl(y/ies) across ${eligible.length} file(s).`,
-          keepSelection: true,
-        };
+        onRead({ kind: "comments", files });
+        return { keepSelection: true };
       },
     },
     {
@@ -223,21 +213,15 @@ function bulkActions(
               "None of the selected items is a picked Google file, so there is no revision history to read.",
           };
         }
-        let revisions = 0;
+        const files = [];
         for (const row of eligible) {
           const connectionId = connectionIdOf(row);
           if (!connectionId) continue;
-          const history = await readGoogleRevisions(
-            dispatch,
-            connectionId,
-            row.external_id,
-          );
-          revisions += history.revisions.length;
+          const history = await readGoogleRevisions(dispatch, connectionId, row.external_id);
+          files.push({ ...fileRef(row), history });
         }
-        return {
-          message: `Read ${revisions} kept revision(s) across ${eligible.length} file(s).`,
-          keepSelection: true,
-        };
+        onRead({ kind: "revisions", files });
+        return { keepSelection: true };
       },
     },
     {
@@ -255,23 +239,15 @@ function bulkActions(
               "No Slides deck is selected. Speaker notes live on a picked Google Slides deck.",
           };
         }
-        let slides = 0;
-        let withNotes = 0;
+        const files = [];
         for (const row of decks) {
           const connectionId = connectionIdOf(row);
           if (!connectionId) continue;
-          const deck = await readGooglePresentation(
-            dispatch,
-            connectionId,
-            row.external_id,
-          );
-          slides += deck.slides.length;
-          withNotes += deck.slides_with_notes;
+          const deck = await readGooglePresentation(dispatch, connectionId, row.external_id);
+          files.push({ ...fileRef(row), deck });
         }
-        return {
-          message: `Read ${slides} slide(s), ${withNotes} of them carrying speaker notes.`,
-          keepSelection: true,
-        };
+        onRead({ kind: "slides", files });
+        return { keepSelection: true };
       },
     },
     {
@@ -359,7 +335,8 @@ export function createConnectedSourceListConfig(
   dispatch: AppDispatch,
   target: ConnectedBrowseTarget,
   organizationId: string | null,
-  onReport?: (report: ConnectedBrowseReport) => void,
+  onReport: (report: ConnectedBrowseReport) => void,
+  onRead: (result: ConnectedReadResult) => void,
 ): EntityListConfig<ConnectedSourceRow> {
   return {
     surfaceKey: "connected-sources-browse",
@@ -380,7 +357,7 @@ export function createConnectedSourceListConfig(
     // Someone else's mailbox has no archive axis of ours.
     supportsArchived: false,
     facetSections: [],
-    bulkActions: bulkActions(dispatch),
+    bulkActions: bulkActions(dispatch, onRead),
     bulkSelection: { noun: "source" },
     emptyState: {
       title: "Nothing in this account matches",

@@ -9,9 +9,9 @@
  * itself), and each source's limit — what it CANNOT reach — sits one hover away
  * beside that choice, never as a wall of sentences in front of the rows.
  *
- * The server needs an organization for every call, so with none selected the
- * request is HELD: the person picks one inline and the page loads (never the
- * server's refusal printed as an error). Rows are never ours — nothing here
+ * A person's own accounts need no organization: the server declares these
+ * reads organization-free, so the page loads with none selected and re-reads
+ * when the header organization changes. Rows are never ours — nothing here
  * writes anything, so the agent surface is read-only.
  */
 
@@ -36,10 +36,9 @@ import {
 } from "@/components/ui/tooltip";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
-  OrganizationContextNotice,
   OrganizationRequiredNotice,
   isOrganizationRequiredError,
 } from "@/features/organizations/components/OrganizationRequiredNotice";
@@ -50,6 +49,7 @@ import { listConnectedAdapters } from "../api";
 import type { ConnectedAdapterRow } from "../types";
 import { createConnectedSourceListConfig } from "../browse/listConfig";
 import type { ConnectedBrowseReport } from "../browse/service";
+import { ReadResultsDialog, type ConnectedReadResult } from "./ReadResultsDialog";
 import {
   buildConnectedSourcesScope,
   createConnectedSourcesListSurface,
@@ -116,19 +116,19 @@ function reportLine(report: ConnectedBrowseReport): string {
 
 export function BrowseEverything() {
   const dispatch = useAppDispatch();
-  const organization = useOrganizationRequired();
-  const organizationId = organization.organizationId;
-  const canLoad = organization.canLoad;
+  // A person's own connected accounts need no organization (the server declares
+  // these reads organization-free); the selection is still re-read when it
+  // changes, so switching organizations in the header refreshes the page.
+  const organizationId = useAppSelector(selectOrganizationId);
   const [adapters, setAdapters] = useState<ConnectedAdapterRow[] | null>(null);
   const [loadError, setLoadError] = useState<unknown>(null);
   const [attempt, setAttempt] = useState(0);
   const [picked, setPicked] = useState<ChosenTarget | null>(null);
   const [report, setReport] = useState<ConnectedBrowseReport | null>(null);
+  const [readResult, setReadResult] = useState<ConnectedReadResult | null>(null);
 
-  // Held until an organization is selected; re-asked when it changes (the
-  // server stamps every call with it) and on Try again.
+  // Re-asked when the header organization changes and on Try again.
   useEffect(() => {
-    if (!canLoad) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -145,7 +145,7 @@ export function BrowseEverything() {
     return () => {
       cancelled = true;
     };
-  }, [dispatch, canLoad, organizationId, attempt]);
+  }, [dispatch, organizationId, attempt]);
 
   const retry = () => {
     setLoadError(null);
@@ -166,12 +166,13 @@ export function BrowseEverything() {
   const getPageState = () => pageState;
 
   const config =
-    chosen && canLoad
+    chosen
       ? createConnectedSourceListConfig(
           dispatch,
           { adapter: chosen.adapter, connectionId: chosen.connectionId },
           organizationId,
           setReport,
+          setReadResult,
         )
       : null;
 
@@ -200,15 +201,7 @@ export function BrowseEverything() {
   ));
 
   let body: ReactNode = null;
-  if (organization.organizationState !== "ready") {
-    body = (
-      <OrganizationContextNotice
-        state={organization.organizationState}
-        what="Connected sources"
-        onRetry={organization.retry}
-      />
-    );
-  } else if (loadError && isOrganizationRequiredError(loadError)) {
+  if (loadError && isOrganizationRequiredError(loadError)) {
     body = <OrganizationRequiredNotice what="Connected sources" onRetry={retry} />;
   } else if (loadError) {
     body = (
@@ -344,6 +337,7 @@ export function BrowseEverything() {
         surface={createConnectedSourcesListSurface(getPageState)}
         notice={accountBar}
       />
+      <ReadResultsDialog result={readResult} onClose={() => setReadResult(null)} />
     </>
   );
 }
