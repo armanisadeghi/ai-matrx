@@ -32,6 +32,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useGamePlay } from "../../data/useGamePlay";
+import {
+  StudyOrganizationGate,
+  useStudyOrganizationReady,
+} from "@/features/education/study/components/StudyOrganizationGate";
 import { useGameChannel } from "../../realtime/useGameChannel";
 import {
   gameService,
@@ -51,7 +55,17 @@ import { ResultsSummary } from "../results/ResultsSummary";
 import type { BadgeKey } from "../../engine/badges";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-export function MultiplayerGameImpl({
+export function MultiplayerGameImpl(props: { roomId: string; code: string }) {
+  // A match writes a study session, filed under one organization: with none
+  // chosen, the notice shows in place (never the blocking workspace prompt).
+  return (
+    <StudyOrganizationGate what="This game">
+      <MultiplayerGame {...props} />
+    </StudyOrganizationGate>
+  );
+}
+
+function MultiplayerGame({
   roomId,
   code,
 }: {
@@ -59,6 +73,7 @@ export function MultiplayerGameImpl({
   code: string;
 }) {
   const router = useRouter();
+  const orgReady = useStudyOrganizationReady();
   const { userId, displayName } = useCurrentPlayer();
   const [room, setRoom] = useState<JoinableRoom | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,7 +144,8 @@ export function MultiplayerGameImpl({
     autoStart: false,
     // Gate the queue load until the room (source deck/config) is resolved —
     // otherwise the null-room first render opens an orphaned 'due' session.
-    enabled: Boolean(room),
+    // ...and until an organization is chosen, so nothing is written before.
+    enabled: Boolean(room) && orgReady,
     onScore: channel.sendScore,
     onFinish: (outcome) => {
       setFinalOutcome(outcome);

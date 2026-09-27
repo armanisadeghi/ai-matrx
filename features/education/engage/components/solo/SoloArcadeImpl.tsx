@@ -19,6 +19,10 @@ import { toast } from "@/lib/toast";
 import { ArrowLeft, Loader2, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGamePlay } from "../../data/useGamePlay";
+import {
+  StudyOrganizationGate,
+  useStudyOrganizationReady,
+} from "@/features/education/study/components/StudyOrganizationGate";
 import { finalizeGame } from "../../data/finalizeGame";
 import { useCurrentPlayer } from "../../data/useCurrentPlayer";
 import { DEFAULT_ROOM_CONFIG, type GameOutcome } from "../../types";
@@ -38,13 +42,17 @@ export function SoloArcadeImpl({
   sourceTitle?: string | null;
 }) {
   const [roundKey, setRoundKey] = useState(0);
+  // A round writes a study session, filed under one organization: with none
+  // chosen, the notice shows in place (never the blocking workspace prompt).
   return (
-    <SoloRound
-      key={roundKey}
-      sourceSetId={sourceSetId}
-      sourceTitle={sourceTitle}
-      onPlayAgain={() => setRoundKey((k) => k + 1)}
-    />
+    <StudyOrganizationGate what="This game">
+      <SoloRound
+        key={roundKey}
+        sourceSetId={sourceSetId}
+        sourceTitle={sourceTitle}
+        onPlayAgain={() => setRoundKey((k) => k + 1)}
+      />
+    </StudyOrganizationGate>
   );
 }
 
@@ -58,6 +66,7 @@ function SoloRound({
   onPlayAgain: () => void;
 }) {
   const router = useRouter();
+  const orgReady = useStudyOrganizationReady();
   const { displayName } = useCurrentPlayer();
   const [finalOutcome, setFinalOutcome] = useState<GameOutcome | null>(null);
   const [newBadges, setNewBadges] = useState<BadgeKey[]>([]);
@@ -86,6 +95,8 @@ function SoloRound({
     config: SOLO_CONFIG,
     mode: "solo",
     autoStart: true,
+    // Nothing loads or is written until an organization is chosen.
+    enabled: orgReady,
     onFinish: (outcome) => {
       setFinalOutcome(outcome);
       void verifyOutcome(outcome);
