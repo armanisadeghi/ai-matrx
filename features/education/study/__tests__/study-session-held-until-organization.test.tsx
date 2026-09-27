@@ -78,6 +78,16 @@ jest.mock("@/features/organizations/useOrganizationRequired", () => {
 jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () => ({
   OrganizationRequiredNotice: () => null,
 }));
+const startGameSession = jest.fn(async (_roomId: string, _code: string) => ({
+  data: { id: SESSION },
+  error: null,
+}));
+jest.mock("@/features/education/engage/data/gameService", () => ({
+  gameService: {
+    startGameSession: (roomId: string, code: string) =>
+      startGameSession(roomId, code),
+  },
+}));
 jest.mock("@/features/education/assessment/data/assessmentService", () => ({
   assessmentService: {
     createResult: async () => ({ data: { id: "result-1" }, error: null }),
@@ -93,6 +103,8 @@ jest.mock("@/features/education/assessment/data/grading", () => ({
 import { useFlashcardStudy } from "@/features/flashcards/data/useFlashcardStudy";
 import { useQuizStudy } from "@/features/flashcards/data/useQuizStudy";
 import { useMatchGame } from "@/features/flashcards/data/useMatchGame";
+import { useGamePlay } from "@/features/education/engage/data/useGamePlay";
+import { DEFAULT_ROOM_CONFIG } from "@/features/education/engage/types";
 import { useTakeAssessment } from "@/features/education/assessment/components/take/useTakeAssessment";
 import {
   useHeldStudyStart,
@@ -186,6 +198,36 @@ describe("a study session waits for an organization", () => {
     await hook.act(async () => hook.current.start());
     expect(createSession).toHaveBeenCalledTimes(1);
     expect(hook.current.sessionId).toBe(SESSION);
+    await hook.unmount();
+  });
+});
+
+/**
+ * A multiplayer player never chooses an organization: joining the room by its
+ * code IS the permission, and the session opens through `start_game_session`,
+ * filed under the ROOM's organization — never the player's own selection.
+ */
+describe("a multiplayer game session belongs to the room", () => {
+  beforeEach(() => {
+    createSession.mockClear();
+    startGameSession.mockClear();
+  });
+
+  it("opens through the room door with the join code, never a direct insert", async () => {
+    const hook = await renderHook(() =>
+      useGamePlay({
+        sourceKind: "set",
+        sourceSetId: SET,
+        config: DEFAULT_ROOM_CONFIG,
+        mode: "multiplayer",
+        roomId: "room-1",
+        joinCode: "AB12C",
+        autoStart: false,
+      }),
+    );
+    await settle(hook, (h) => h.sessionId === SESSION, "room session");
+    expect(startGameSession).toHaveBeenCalledWith("room-1", "AB12C");
+    expect(createSession).not.toHaveBeenCalled();
     await hook.unmount();
   });
 });

@@ -22,6 +22,7 @@ import type {
   GameRoomConfig,
 } from "../types";
 import type { DbRpcRow } from "@/types/supabase-rpc";
+import type { StudySessionRow } from "@/features/education/study/types";
 
 const EDU = () => supabase.schema("education");
 
@@ -66,7 +67,7 @@ export interface JoinableRoom {
   config: GameRoomConfig;
   started_at: string | null;
   created_at: string;
-  /** The room's organization — a player's game session is filed under it. */
+  /** The room's organization (a player's game session is filed under it). */
   organization_id: string;
 }
 
@@ -184,6 +185,29 @@ export const gameService = {
       return { data: (row ?? null) as JoinableRoom | null, error: null };
     } catch (e) {
       return fail("findRoomByCode", e);
+    }
+  },
+
+  /**
+   * Open the caller's OWN game session in a room they joined by its code.
+   * Joining by code IS the permission: the session is filed under the ROOM's
+   * organization even when the player is not a member of it (the
+   * `start_game_session` door checks the code + open room; table row security
+   * is not widened).
+   */
+  async startGameSession(
+    roomId: string,
+    joinCode: string,
+  ): Promise<EngageResult<StudySessionRow>> {
+    try {
+      const { data, error } = await supabase.rpc("start_game_session", {
+        p_room_id: roomId,
+        p_join_code: joinCode.trim(),
+      });
+      if (error) return fail("startGameSession", error);
+      return { data: data as StudySessionRow, error: null };
+    } catch (e) {
+      return fail("startGameSession", e);
     }
   },
 

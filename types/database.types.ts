@@ -86678,6 +86678,16 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      start_game_session: {
+        Args: { p_join_code: string; p_room_id: string }
+        Returns: Database["education"]["Tables"]["study_session"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "study_session"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       std_select_count_as: {
         Args: { p_schema: string; p_table: string; p_user: string }
         Returns: number

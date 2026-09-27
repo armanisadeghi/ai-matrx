@@ -130,9 +130,9 @@ export function MultiplayerGameImpl({
     // Gate the queue load until the room (source deck/config) is resolved —
     // otherwise the null-room first render opens an orphaned 'due' session.
     enabled: Boolean(room),
-    // The session is filed under the ROOM's organization (the record-owner
-    // rule), so a player never has to choose one — no workspace prompt.
-    organizationId: room?.organization_id ?? null,
+    // Joining by code IS the permission: the session opens under the ROOM's
+    // organization (start_game_session), so a player never chooses one.
+    joinCode: room?.join_code ?? null,
     onScore: channel.sendScore,
     onFinish: (outcome) => {
       setFinalOutcome(outcome);

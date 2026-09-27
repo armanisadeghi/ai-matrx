@@ -18,6 +18,7 @@
 import { useEffect, useRef, useState } from "react";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { studyService } from "@/features/education/study/service/studyService";
+import { gameService } from "./gameService";
 import { currentRetrievability } from "@/features/education/study/utils/masteryFsrs";
 import type {
   ItemMasteryRow,
@@ -56,11 +57,12 @@ export interface UseGamePlayArgs {
    */
   enabled?: boolean;
   /**
-   * The organization the session is filed under. Multiplayer passes the ROOM's
-   * organization (the record-owner rule) — never the player's selected one.
-   * Omitted (solo) → the player's selected organization.
+   * Multiplayer: the room's join code. The session then opens through
+   * `start_game_session` — filed under the ROOM's organization, allowed for
+   * any player who joined by the code. Omitted (solo) → the player's selected
+   * organization, via the normal session insert.
    */
-  organizationId?: string | null;
+  joinCode?: string | null;
   /** Multiplayer: broadcast the mutable scoreboard after each answer. */
   onScore?: (fields: {
     score: number;
@@ -110,7 +112,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     roomId = null,
     autoStart = mode === "solo",
     enabled = true,
-    organizationId = null,
+    joinCode = null,
     onScore,
     onFinish,
   } = args;
@@ -226,13 +228,17 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
       }
       setQuestions(queue);
 
-      const sessRes = await studyService.createSession({
-        mode: GAME_METHOD,
-        sourceKind: effectiveSourceSetId ? "set" : "due",
-        ...(effectiveSourceSetId ? { sourceSetId: effectiveSourceSetId } : {}),
-        metadata: { engage: true, mode, roomId },
-        ...(organizationId ? { orgId: organizationId } : {}),
-      });
+      const sessRes =
+        roomId && joinCode
+          ? await gameService.startGameSession(roomId, joinCode)
+          : await studyService.createSession({
+              mode: GAME_METHOD,
+              sourceKind: effectiveSourceSetId ? "set" : "due",
+              ...(effectiveSourceSetId
+                ? { sourceSetId: effectiveSourceSetId }
+                : {}),
+              metadata: { engage: true, mode, roomId },
+            });
       if (cancelled) return;
       if (sessRes.error || !sessRes.data) {
         setError(sessRes.error ?? "Failed to open the game session");
@@ -245,7 +251,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     return () => {
       cancelled = true;
     };
-  }, [enabled, sourceKind, sourceSetId, mode, roomId, organizationId]);
+  }, [enabled, sourceKind, sourceSetId, mode, roomId, joinCode]);
 
   // Solo autostart once the queue is ready.
   useEffect(() => {
