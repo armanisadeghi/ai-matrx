@@ -18,8 +18,39 @@ export interface PositionedCalendarEvent extends CalendarEventSegment {
 
 /** A UTC-built date is only a carrier for the local calendar-day key. */
 export function dateForCalendarDay(day: string): Date {
-  const [year, month, date] = day.split("-").map(Number);
+const [year, month, date] = day.split("-").map(Number);
   return new Date(Date.UTC(year, (month ?? 1) - 1, date ?? 1, 12));
+}
+
+const DAY_START_CACHE = new Map<string, number>();
+
+/**
+ * The instant at which this IANA-zone calendar day begins. `Date` cannot build
+ * a zoned midnight itself, so find the first instant that Intl formats as the
+ * requested day. This keeps the DST boundary in one testable place.
+ */
+function dayStartInstant(day: string, timeZone: string): Date {
+  const cacheKey = `${timeZone}:${day}`;
+  const cached = DAY_START_CACHE.get(cacheKey);
+  if (cached !== undefined) return new Date(cached);
+
+  const centre = dateForCalendarDay(day).getTime();
+  let before = centre - 48 * 3_600_000;
+  let after = centre + 48 * 3_600_000;
+  while (after - before > 1) {
+    const middle = Math.floor((before + after) / 2);
+    if (dayKeyInZone(new Date(middle), timeZone) < day) before = middle;
+    else after = middle;
+  }
+  DAY_START_CACHE.set(cacheKey, after);
+  return new Date(after);
+}
+
+/** Actual elapsed minutes in a local calendar day: 23, 24, or 25 hours at DST. */
+export function calendarDayDurationMinutes(day: string, timeZone: string): number {
+  const start = dayStartInstant(day, timeZone).getTime();
+  const next = dayStartInstant(addDaysToKey(day, 1), timeZone).getTime();
+  return (next - start) / 60_000;
 }
 
 export function calendarDays(startDay: string, count: number): string[] {
@@ -77,12 +108,28 @@ export function calendarSegments(
     if (!startDay) continue;
     const endDay = endDayOf(event, startDay, timeZone);
     const start = event.starts_at ? new Date(event.starts_at) : null;
-    const end = event.ends_at ? new Date(event.ends_at) : null;
+    if (!start || Number.isNaN(start.getTime())) continue;
+    const suppliedEnd = event.ends_at ? new Date(event.ends_at) : null;
+    const end = suppliedEnd && !Number.isNaN(suppliedEnd.getTime()) && suppliedEnd > start
+      ? suppliedEnd
+      : new Date(start.getTime() + 15 * 60_000);
     for (let day = startDay; day <= endDay; day = addDaysToKey(day, 1)) {
       if (!visible.has(day)) continue;
-      const startMinute = event.all_day || day !== startDay || !start ? 0 : minuteInZone(start, timeZone);
-      const endMinute = event.all_day || day !== endDay || !end ? 1440 : Math.max(startMinute + 15, minuteInZone(end, timeZone));
-      out.push({ event, day, allDay: event.all_day, startMinute, endMinute: Math.min(1440, endMinute) });
+      if (event.all_day) {
+        out.push({ event, day, allDay: true, startMinute: 0, endMinute: 1440 });
+        continue;
+      }
+      const dayStart = dayStartInstant(day, timeZone);
+      const dayEnd = dayStartInstant(addDaysToKey(day, 1), timeZone);
+      const segmentStart = start > dayStart ? start : dayStart;
+      const segmentEnd = end < dayEnd ? end : dayEnd;
+      if (segmentEnd <= segmentStart) continue;
+      // Position comes from the local clock; height comes from the actual
+      // instants. That is what keeps 23:00–00:00 one hour long and keeps the
+      // repeated 1:30 AM during fall-back from collapsing to fifteen minutes.
+      const startMinute = day === startDay ? minuteInZone(segmentStart, timeZone) : 0;
+      const endMinute = startMinute + (segmentEnd.getTime() - segmentStart.getTime()) / 60_000;
+      out.push({ event, day, allDay: false, startMinute, endMinute });
     }
   }
   return out;

@@ -144,6 +144,7 @@ export function useAgenda(options?: {
   const [peopleByEvent, setPeopleByEvent] = useState<Map<string, AttendeePerson[]>>(new Map());
   const [problems, setProblems] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isWindowLoading, setIsWindowLoading] = useState(false);
   const [generation, setGeneration] = useState(0);
   const refreshedFor = useRef<string | null>(null);
 
@@ -176,9 +177,13 @@ export function useAgenda(options?: {
 
   // ── The window read ───────────────────────────────────────────────────────
   useEffect(() => {
-    if (!organizationId || !userId) return;
+    if (!organizationId || !userId) {
+      setIsWindowLoading(false);
+      return;
+    }
     let cancelled = false;
     const controller = new AbortController();
+    setIsWindowLoading(true);
     void (async () => {
       const found: string[] = [];
       let rows: CalendarEventRow[] = [];
@@ -215,6 +220,7 @@ export function useAgenda(options?: {
       if (cancelled) return;
       setPeopleByEvent(people);
       setProblems(found);
+      setIsWindowLoading(false);
     })();
     return () => {
       cancelled = true;
@@ -289,6 +295,7 @@ export function useAgenda(options?: {
     // either way: boot either lands on a selection or on "none".
     isLoading:
       organizationState === "resolving" ||
+      isWindowLoading ||
       (events === null && Boolean(organizationId && userId)),
     isRefreshing,
     days,

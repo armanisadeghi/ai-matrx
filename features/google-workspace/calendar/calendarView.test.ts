@@ -76,6 +76,27 @@ describe("calendar Day/Week layout", () => {
     expect(positioned.every((segment) => segment.lanes === 2)).toBe(true);
   });
 
+  it("renders a meeting ending at local midnight as its full elapsed hour", () => {
+    const [segment] = calendarSegments(
+      [event({ id: "late", starts_at: "2026-09-18T23:00:00Z", ends_at: "2026-09-19T00:00:00Z" })],
+      days,
+      "UTC",
+    );
+
+    expect(segment).toMatchObject({ day: "2026-09-18", startMinute: 1380, endMinute: 1440 });
+  });
+
+  it("keeps a fall-back meeting at its actual elapsed hour instead of collapsing repeated local time", () => {
+    const [segment] = calendarSegments(
+      [event({ id: "fall-back", starts_at: "2026-11-01T05:30:00Z", ends_at: "2026-11-01T06:30:00Z" })],
+      calendarDays("2026-11-01", 1),
+      "America/New_York",
+    );
+
+    expect(segment.day).toBe("2026-11-01");
+    expect(segment.endMinute - segment.startMinute).toBe(60);
+  });
+
   it("places a past local day without consulting a provider", () => {
     const past = calendarDays("2026-09-11", 1);
     const segments = calendarSegments(
