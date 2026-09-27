@@ -36,7 +36,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Set library",
     sortOrder: 100,
     description:
-      "Every flashcard set the learner owns or can see, plus the folder taxonomy those sets are filed under.",
+      "The flashcard decks the learner can see (the page on screen), plus the folder taxonomy decks are filed under.",
   },
   {
     key: "list_view",
@@ -78,7 +78,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "set_count",
     label: "Total set count",
     description:
-      "How many live (not archived) decks the learner can see across every lane, before any filter is applied. Zero for a learner with no decks yet. Absent until `sets_loaded` is true.",
+      "How many decks match the list right now — the active lane, search, filters and archive filter — across every page (the \"of N\" under the list). The per-lane totals are on the lane tabs. Absent until `sets_loaded` is true.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 3,
@@ -86,22 +86,10 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "library",
   },
   {
-    name: "all_sets",
-    label: "All sets",
-    description:
-      "Every live (not archived) deck the learner can see in any lane, recent-first, as { id, name, topic, lesson, description, visibility, updated_at, folder_ids }. Absent until `sets_loaded` is true. Can be hundreds of rows — bindable-only, so it never silently consumes the context window; bind `visible_sets` for the on-screen subset.",
-    valueType: "array",
-    alwaysAvailable: false,
-    typicalCharCount: 12000,
-    autoContext: false,
-    sortOrder: 320,
-    group: "library",
-  },
-  {
     name: "visible_sets",
     label: "Sets on screen",
     description:
-      "The decks on the current page of the list — the active lane, search, filters, archive filter and sort applied, in the order rendered — as { id, name, topic, lesson, description, visibility, updated_at, folder_ids }. Empty array when nothing matches. Absent until `sets_loaded` is true. This — not `all_sets` — is what the learner is looking at; `deck_list` is the same page condensed.",
+      "The decks on the current page of the list — the active lane, search, filters, archive filter and sort applied, in the order rendered — as { id, name, topic, lesson, description, visibility, updated_at, folder_ids }. Empty array when nothing matches. Absent until `sets_loaded` is true. `deck_list` is the same page condensed.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 3000,
@@ -158,7 +146,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "my_decks",
     label: "My decks",
     description:
-      "Every deck the person made (the only decks update_decks / delete_decks may change), live and archived, as { id, name, topic, lesson, difficulty, description, archived }. Absent until the list has loaded; an empty array when they have made none.",
+      "The person's OWN decks among the rows on screen (only decks they made can be changed by update_decks / delete_decks), as { id, name, topic, lesson, difficulty, description, archived }. The list pages on the server, so a deck not on screen is not here — update_decks and delete_decks still accept the id of any deck the person made. Absent until the list has loaded; an empty array when none on screen are theirs.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 3000,
@@ -305,14 +293,14 @@ export const educationFlashcardsManifest: SurfaceManifest = {
   client: "matrx-user",
   executionMode: "python-stream",
   description:
-    "The Flashcards home — the learner's deck library with lanes, search, sort, filters and archive, plus their study streak; agents can create, change and archive the person's own decks.",
+    "Flashcard Studio — the learner's deck library with lanes, search, sort, filters and archive, plus their study streak; agents can create, change and archive the person's own decks.",
   readiness: "partial",
   readinessNote:
-    "page-pass 2026-09-27: the list moved onto EntityListPage (lanes, sort/filter, archive, row menus) and gained create/update/delete_decks + the deck_list bundle. Unproven until the live surface:probe --agent run: create two decks, update one, archive one, one refused before the card.",
-  label: "Flashcards",
+    "page-pass 2026-09-27: the list moved onto EntityListPage over the server-side education.fc_set_list_scoped RPC (lanes, sort/filter, archive, row menus) and gained create/update/delete_decks + the deck_list bundle. The agent write path is proven live only for what the page-pass report lists.",
+  label: "Flashcard Studio",
   urlPattern: "/education/flashcards",
   intro: `<surface_intro>
-You are on the Flashcards home at /education/flashcards — the learner's LIBRARY of flashcard decks (called "sets" in older values), not a study session. The list has lanes (Mine, My Orgs, Shared, Public), a search box, sort and filter on every column, and an archive filter; each row opens the deck, spaced-repetition study, or the Fast Fire drill.
+You are on Flashcard Studio at /education/flashcards — the learner's LIBRARY of flashcard decks (called "sets" in older values), not a study session. The list has lanes (Mine, My Orgs, Shared, Public), a search box, sort and filter on every column, and an archive filter; each row opens the deck, spaced-repetition study, or the Fast Fire drill.
 Read deck_list first: it is the page on screen, with ids. Check sets_loaded — while it is false the library is still loading (or load_error explains a real failure), so never tell the learner they have no decks. If a lane, search, filter or the archive filter is narrowing the list (visibility_filter, search_query, list_filters, selected_folder_ids, archive_filter), say so rather than concluding a deck does not exist.
 To change decks use ONLY these targets, on decks the person made (my_decks): create_decks adds empty decks; update_decks renames, re-topics, sets difficulty, archives (archived: true) or restores (archived: false); delete_decks archives. Never use generic scope or context tools for deck data. Cards are edited on each deck's own page.
 The study streak is cross-mode: it reflects every study session the learner has run, not only flashcards. Treat it as encouragement context, never as a reason to pressure them.
@@ -333,7 +321,7 @@ export interface MyDeckSummary {
   archived: boolean;
 }
 
-/** One entry in `all_sets` / `visible_sets`. */
+/** One entry in `visible_sets`. */
 export interface FlashcardSetSummary {
   id: string;
   name: string;
@@ -370,7 +358,6 @@ export function createEducationFlashcardsScope(values: {
   selection?: string;
   context?: Record<string, unknown>;
   set_count?: number;
-  all_sets?: FlashcardSetSummary[];
   visible_sets?: FlashcardSetSummary[];
   visible_set_ids?: string[];
   load_error?: string;

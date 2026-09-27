@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import {
   DATE_FILTER_OPTIONS,
+  entityColumnSortable,
   DATE_SORT_WORDS,
   type EntityColumnSpec,
 } from "../columns";
@@ -132,6 +133,42 @@ function toOptions(
   }));
 }
 
+
+/**
+ * The panel's sort choices, derived from the columns. Exported for its guard
+ * (`__tests__/panel-sort-options.test.ts`): a column that declared
+ * `sortable: false` is never offered.
+ */
+export function panelSortOptions<TRow>(
+  columns: EntityColumnSpec<TRow>[],
+): { value: SortKey; label: string }[] {
+  return [
+    ...EXTRA_SORTS,
+    ...columns
+      // A column that declared `sortable: false` (a multi-valued Folders
+      // cell, a row of action buttons) is never offered as a sort here —
+      // the panel used to list "Folders (A→Z)", a choice the service ignores.
+      .filter(
+        (c) =>
+          c.id !== "updated" && c.id !== "created" && entityColumnSortable(c),
+      )
+      .flatMap((c) => {
+        const words = sortWordsFor(c);
+        return [
+          {
+            value: `${c.id}-asc` as SortKey,
+            label: `${c.label} (${words.asc})`,
+          },
+          {
+            value: `${c.id}-desc` as SortKey,
+            label: `${c.label} (${words.desc})`,
+          },
+        ];
+      })
+      .slice(0, 12),
+  ];
+}
+
 export function EntityFilterPanel<TRow>({
   query,
   facets,
@@ -159,25 +196,7 @@ export function EntityFilterPanel<TRow>({
   const activeCount = countActiveFilters(query);
   const sortKey = `${sort}-${direction}` as SortKey;
 
-  const sortOptions: { value: SortKey; label: string }[] = [
-    ...EXTRA_SORTS,
-    ...columns
-      .filter((c) => c.id !== "updated" && c.id !== "created")
-      .flatMap((c) => {
-        const words = sortWordsFor(c);
-        return [
-          {
-            value: `${c.id}-asc` as SortKey,
-            label: `${c.label} (${words.asc})`,
-          },
-          {
-            value: `${c.id}-desc` as SortKey,
-            label: `${c.label} (${words.desc})`,
-          },
-        ];
-      })
-      .slice(0, 12),
-  ];
+  const sortOptions = panelSortOptions(columns);
   const sortLabel =
     sortOptions.find((o) => o.value === sortKey)?.label ?? "Custom";
 

@@ -65,10 +65,9 @@ import { useLoginHref } from "@/hooks/auth/useLoginHref";
 import {
   FLASHCARD_SETS_BASE,
   buildFlashcardSetListConfig,
-  createFlashcardSetLibrary,
   type FlashcardSetListRow,
 } from "./flashcardSetList";
-import { makeUseFlashcardSetRowActions } from "./useFlashcardSetRowActions";
+import { useFlashcardSetRowActions } from "./useFlashcardSetRowActions";
 import { buildDeckScope, buildDeckWriteHandlers } from "./deckSurface";
 
 const EDU_BASE = FLASHCARD_SETS_BASE;
@@ -106,28 +105,23 @@ export function FlashcardsHome({
     dimension: FOLDER_DIMENSION,
   });
 
-  // One library (loaded corpus + list service) per signed-in person.
-  const bundle = useMemo(
-    () => (userId ? createFlashcardSetLibrary(userId) : null),
-    [userId],
-  );
   const folderNames = new Map(folders.map((f) => [f.id, f.name]));
+  // A folder id the taxonomy has not named yet still shows, honestly.
+  const folderName = (id: string) => folderNames.get(id) ?? "Unnamed folder";
   const foldersKey = folders.map((f) => `${f.id}:${f.name}`).join("|");
   const config = useMemo(
     () =>
-      bundle && userId
+      userId
         ? buildFlashcardSetListConfig({
             userId,
-            service: bundle.service,
-            useRowActions: makeUseFlashcardSetRowActions(bundle.library),
-            // A folder id the taxonomy has not named yet still shows, honestly.
+            useRowActions: useFlashcardSetRowActions,
             folderName: (id) => folderNames.get(id) ?? "Unnamed folder",
             foldersKey,
           })
         : null,
     // folderNames is derived from foldersKey.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [bundle, userId, foldersKey],
+    [userId, foldersKey],
   );
 
   // Phase 3 (daily streak): read-only — the streak row is written exclusively
@@ -144,20 +138,24 @@ export function FlashcardsHome({
     };
   }, []);
 
-  const liveSets = (): FlashcardSetListRow[] =>
-    (bundle?.library.snapshot() ?? []).filter((s) => !s.archived);
-
   // VISION §15 (WP3 gap 6) — account-level export: every live deck the learner
   // can list, with full cards, as one lossless JSON file. Loud on partial
   // failure — a deck that fails to load is reported, never silently dropped.
   const exportLibrary = async (): Promise<void> => {
-    const sets: FcSetRow[] = liveSets();
-    if (sets.length === 0 || exportingLibrary) {
-      if (sets.length === 0) toast.error("There are no decks to export yet.");
-      return;
-    }
+    if (exportingLibrary) return;
     setExportingLibrary(true);
     try {
+      // Export is the one job that reads the whole library, on request.
+      const listed = await fcService.listSets();
+      if (listed.error) {
+        toast.error(`Export failed — ${listed.error}`);
+        return;
+      }
+      const sets: FcSetRow[] = listed.data ?? [];
+      if (sets.length === 0) {
+        toast.error("There are no decks to export yet.");
+        return;
+      }
       const decks: { set: FcSetRow; cards: CardWithDetails[] }[] = [];
       const failed: string[] = [];
       for (const set of sets) {
@@ -261,15 +259,13 @@ export function FlashcardsHome({
       {createButton}
     </>
   );
-  const folderName = (id: string) => folderNames.get(id) ?? "Unnamed folder";
   const surface =
-    bundle && userId
+    userId
       ? {
           surfaceName: SURFACE_NAME,
           getScope: (list: EntityListSurfaceController<FlashcardSetListRow>) =>
             buildDeckScope({
               list,
-              library: bundle.library,
               userId,
               folders: folders.map((f) => ({ id: f.id, name: f.name })),
               folderName,
@@ -277,14 +273,14 @@ export function FlashcardsHome({
             }),
           getWriteHandlers: (
             list: EntityListSurfaceController<FlashcardSetListRow>,
-          ) => buildDeckWriteHandlers({ list, library: bundle.library, userId }),
+          ) => buildDeckWriteHandlers({ list, userId }),
         }
       : undefined;
 
   return (
     <>
       <EducationToolHeader
-        title="Flashcards"
+        title="Flashcard Studio"
         sheetTitle="Flashcard actions"
         actions={actionLayout === "header" ? headerActions : undefined}
       />
@@ -305,10 +301,6 @@ export function FlashcardsHome({
                   if (!exportingLibrary) void exportLibrary();
                 }}
               />
-            ) : bundle?.library.folderError() ? (
-              <p role="status" className="text-xs text-muted-foreground">
-                {bundle.library.folderError()}
-              </p>
             ) : undefined
           }
           surface={surface}

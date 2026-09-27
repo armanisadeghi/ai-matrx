@@ -4,12 +4,20 @@
 // state the list already rendered — never a fetch) and the deck write
 // handlers, which save through the same service calls the page's own
 // controls use (fcService.createSet / updateSet, Trash's archive / restore).
+// Nothing here holds the whole library: the scope is the page on screen, and
+// a write reads only the decks its value names (fetchOwnDecksFor).
 
 import type { EntityListSurfaceController } from "@/lib/entity-list/components/EntityListPage";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type {
+  SurfaceWriteHandlerEntry,
+  SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
-import { xmlElement, xmlList } from "@/features/surfaces/runtime/context-bundle";
+import {
+  xmlElement,
+  xmlList,
+} from "@/features/surfaces/runtime/context-bundle";
 import {
   createEducationFlashcardsScope,
   type FlashcardSetSummary,
@@ -25,7 +33,8 @@ import {
   parseUpdateDecksValue,
   type CurrentDeck,
 } from "./deckAgentWrites";
-import type { FlashcardSetLibrary, FlashcardSetListRow } from "./flashcardSetList";
+import { fetchOwnDecksFor } from "../../data/deckListService";
+import type { FlashcardSetListRow } from "./flashcardSetList";
 
 type Controller = EntityListSurfaceController<FlashcardSetListRow>;
 
@@ -77,25 +86,15 @@ export function buildDeckListBundle(
   );
 }
 
-function myDecks(
-  library: FlashcardSetLibrary,
-  userId: string,
-): FlashcardSetListRow[] {
-  return (library.snapshot() ?? []).filter((s) => s.created_by === userId);
-}
-
 export function buildDeckScope(input: {
   list: Controller;
-  library: FlashcardSetLibrary;
   userId: string;
   folders: { id: string; name: string }[];
   folderName: (id: string) => string;
   streak: StudyStreakRow | null;
 }): SurfaceScopePayload {
-  const { list, library, userId, folders, folderName, streak } = input;
-  const corpus = library.snapshot();
-  const loaded = corpus !== null && !list.error;
-  const live = (corpus ?? []).filter((s) => !s.archived);
+  const { list, userId, folders, folderName, streak } = input;
+  const loaded = !list.isLoading && !list.error;
   const folderFilter = list.query.filters.folders;
   return createEducationFlashcardsScope({
     sets_loaded: loaded,
@@ -108,13 +107,13 @@ export function buildDeckScope(input: {
     list_filters: list.query.filters,
     ...(loaded
       ? {
-          set_count: live.length,
-          all_sets: live.map(toSetSummary),
+          set_count: list.total,
           visible_sets: list.rows.map(toSetSummary),
           visible_set_ids: list.rows.map((s) => s.id),
           deck_list: buildDeckListBundle(list, folderName),
-          my_decks: myDecks(library, userId).map(
-            (s): MyDeckSummary => ({
+          my_decks: list.rows
+            .filter((s) => s.created_by === userId)
+            .map((s): MyDeckSummary => ({
               id: s.id,
               name: s.name,
               topic: s.topic,
@@ -122,8 +121,7 @@ export function buildDeckScope(input: {
               difficulty: s.difficulty,
               description: s.description,
               archived: s.archived,
-            }),
-          ),
+            })),
         }
       : {}),
     ...(list.error ? { load_error: list.error.message } : {}),
@@ -139,30 +137,49 @@ export function buildDeckScope(input: {
   });
 }
 
+/** Ids and names a write value mentions — what the write must read to check. */
+function mentioned(value: unknown): { ids: string[]; names: string[] } {
+  const items = Array.isArray(value)
+    ? value
+    : value &&
+        typeof value === "object" &&
+        Array.isArray((value as { decks?: unknown }).decks)
+      ? (value as { decks: unknown[] }).decks
+      : [];
+  const ids: string[] = [];
+  const names: string[] = [];
+  for (const item of items.slice(0, 50)) {
+    if (typeof item === "string") ids.push(item);
+    else if (item && typeof item === "object") {
+      const r = item as Record<string, unknown>;
+      if (typeof r.id === "string") ids.push(r.id);
+      if (typeof r.name === "string") names.push(r.name);
+    }
+  }
+  return { ids, names };
+}
+
 /** create_decks / update_decks / delete_decks over the person's own decks. */
 export function buildDeckWriteHandlers(input: {
   list: Controller;
-  library: FlashcardSetLibrary;
   userId: string;
 }): SurfaceWriteHandlers {
-  const { list, library, userId } = input;
-  const current = (): CurrentDeck[] =>
-    myDecks(library, userId).map((d) => ({
-      id: d.id,
-      name: d.name,
-      archived: d.archived,
-    }));
-  const afterWrite = () => {
-    library.invalidate();
-    list.refresh();
+  const { list, userId } = input;
+  // The person's own decks the current value names, read right before each
+  // check (validate and again at apply — records may change while the card
+  // is open). Never the whole library.
+  let current: CurrentDeck[] = [];
+  const load = async (value: unknown) => {
+    current = await fetchOwnDecksFor({ userId, ...mentioned(value) });
   };
+  const afterWrite = () => list.refresh();
 
-  return collectionWriteHandlers(
+  const inner = collectionWriteHandlers(
     {
       plural: "decks",
       singular: "deck",
       create: {
-        parse: (value) => parseCreateDecksValue(value, current()),
+        parse: (value) => parseCreateDecksValue(value, current),
         run: async (fields) => {
           const res = await fcService.createSet(fields);
           if (res.error || !res.data) throw new Error(res.error ?? "not saved");
@@ -172,17 +189,20 @@ export function buildDeckWriteHandlers(input: {
         nameOf: (fields) => fields.name,
       },
       update: {
-        parse: (value) => parseUpdateDecksValue(value, current()),
+        parse: (value) => parseUpdateDecksValue(value, current),
         run: async (plan) => {
           // Restore first, so an edit to an archived deck lands on a live row.
-          if (plan.archived === false) await restoreFromTrash("fc_set", plan.id);
+          if (plan.archived === false)
+            await restoreFromTrash("fc_set", plan.id);
           let name = plan.patch.name ?? plan.previousName;
           if (Object.keys(plan.patch).length > 0) {
             const res = await fcService.updateSet(plan.id, plan.patch);
-            if (res.error || !res.data) throw new Error(res.error ?? "not saved");
+            if (res.error || !res.data)
+              throw new Error(res.error ?? "not saved");
             name = res.data.name;
           }
-          if (plan.archived === true) await archiveRecord("fc_set", plan.id, "deck");
+          if (plan.archived === true)
+            await archiveRecord("fc_set", plan.id, "deck");
           afterWrite();
           return { id: plan.id, name };
         },
@@ -190,7 +210,7 @@ export function buildDeckWriteHandlers(input: {
         changedOf: (plan) => plan.changed,
       },
       delete: {
-        parse: (value) => parseDeleteDecksValue(value, current()),
+        parse: (value) => parseDeleteDecksValue(value, current),
         run: async (deck) => {
           await archiveRecord("fc_set", deck.id, "deck");
           afterWrite();
@@ -201,4 +221,20 @@ export function buildDeckWriteHandlers(input: {
     },
     refuseSurfaceWrite,
   );
+
+  const out: SurfaceWriteHandlers = {};
+  for (const [name, handler] of Object.entries(inner)) {
+    const entry = handler as SurfaceWriteHandlerEntry;
+    out[name] = {
+      validate: async (value) => {
+        await load(value);
+        await entry.validate?.(value);
+      },
+      apply: async (value) => {
+        await load(value);
+        return entry.apply(value);
+      },
+    };
+  }
+  return out;
 }
