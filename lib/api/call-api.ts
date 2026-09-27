@@ -420,8 +420,9 @@ export interface ApiCallConfig<
 
   /**
    * Whether a WRITE with no workspace selected may open the workspace picker.
-   * Default: yes when the person just acted (a click or key within the
-   * browser's transient-activation window), no otherwise — so a write the
+   * Default: yes when the person just acted deliberately (a click/tap, Enter
+   * or Space on a control, or a modifier shortcut within the last few seconds
+   * — `personJustActed`; plain typing never counts), no otherwise — so a write the
    * person pressed ASKS and continues on the pick, while a background write
    * (retry, autosave on a timer, rejoin) keeps the fail-closed refusal it
    * always had and never raises a dialog with nothing behind it (4821555e98).

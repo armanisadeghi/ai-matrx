@@ -27,8 +27,9 @@
  * At the ASYNC action boundaries, never scattered through feature code:
  *
  *   * `callApi` — every REST call in the app: a WRITE the person just pressed
- *     (browser transient activation, `personJustActed`) asks; a background
- *     write and every read do not (2026-09-26; before that it never asked).
+ *     (a click/tap, Enter/Space on a control, or a modifier shortcut —
+ *     `personJustActed`; never plain typing) asks; a background write and
+ *     every read do not (2026-09-26; before that it never asked).
  *   * `cloudUpload` — every file upload, both transports.
  *   * the AI execution thunks — the one path that does not go through callApi.
  *
@@ -58,6 +59,7 @@ import type { OrganizationRequiredWireMembership } from "@/lib/organizations/org
 // toast layer can recognise and drop it at the boundary) and re-exported here
 // so every existing import keeps working.
 import {
+  organizationSelectionCancelledWithin,
   OrganizationSelectionCancelled,
   isOrganizationSelectionCancelled,
 } from "./selection-cancelled";
@@ -304,16 +306,84 @@ const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
  * never asks. `interactive` overrides the method for a background write.
  */
 /**
- * Did the person just act? The browser's transient user activation — true for a
- * few seconds after a click, tap or key press, false for work that started on
- * its own (a timer, a refocus refetch, a retry loop). It is how a shared
- * transport tells a write somebody pressed from a background one without every
- * caller having to say which it is. Missing API (old browser, SSR) = false.
+ * Did the person just DO something on purpose? Only deliberate acts count:
+ *   - a pointer press (click / tap) — except into a text field, which starts typing;
+ *   - Enter or Space on a focused button, link or menu item;
+ *   - a modifier shortcut (Cmd/Ctrl/Alt + a key, e.g. Cmd+S).
+ * Plain character keys NEVER count: typing followed by a debounced autosave is
+ * a background write, and a picker popping up mid-sentence is worse than the
+ * refusal it replaces (chair ruling, 2026-09-26). The browser's own
+ * `navigator.userActivation` is NOT used — it goes active on every keystroke.
+ *
+ * Recorded in the capture phase at the document, trusted events only, and read
+ * as "within the last DELIBERATE_ACT_WINDOW_MS". SSR / no document = false.
  */
-export function personJustActed(): boolean {
-  if (typeof navigator === "undefined") return false;
-  const activation = (navigator as Navigator & { userActivation?: { isActive?: boolean } }).userActivation;
-  return activation?.isActive === true;
+export const DELIBERATE_ACT_WINDOW_MS = 5_000;
+let lastDeliberateActAt = 0;
+
+const ACTIVATABLE =
+  'button, a[href], summary, [role="button"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], [role="option"], [role="tab"], [role="link"]';
+
+/**
+ * Chords that EDIT text (paste, cut, copy, select-all, undo/redo, caret moves)
+ * are typing, not acts: Cmd+V into a field followed by a debounced preview
+ * write must not ask. Cmd+S, Cmd+Enter and the like still count.
+ */
+const EDITING_CHORD = /^(a|c|v|x|z|y|Backspace|Delete|ArrowLeft|ArrowRight|ArrowUp|ArrowDown|Home|End)$/i;
+
+function isDeliberateKey(event: KeyboardEvent): boolean {
+  const modifierKey = ["Meta", "Control", "Alt", "Shift"].includes(event.key);
+  if ((event.metaKey || event.ctrlKey || event.altKey) && !modifierKey) {
+    return !EDITING_CHORD.test(event.key);
+  }
+  if (event.key !== "Enter" && event.key !== " " && event.key !== "Spacebar") return false;
+  const target = event.target;
+  return target instanceof Element && target.closest(ACTIVATABLE) !== null;
+}
+
+function isTextEntry(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  if (target.closest('[contenteditable=""], [contenteditable="true"], textarea, select')) return true;
+  const input = target.closest("input");
+  return input !== null && !["button", "submit", "reset", "checkbox", "radio", "file", "image", "range", "color"].includes(input.type);
+}
+
+function recordDeliberateAct(event: Event): void {
+  // Script-dispatched events are not the person (jsdom marks every event
+  // untrusted, so the test runner is the one exception).
+  if (!event.isTrusted && process.env.NODE_ENV !== "test") return;
+  if (event.type === "keydown" && !isDeliberateKey(event as KeyboardEvent)) return;
+  // Pressing INTO a text field is the start of typing, not an act: click a
+  // field, type, and the debounced autosave a second later must not ask.
+  if (event.type === "pointerdown" && isTextEntry(event.target)) return;
+  lastDeliberateActAt = Date.now();
+}
+
+let deliberateActListening = false;
+function listenForDeliberateActs(): void {
+  if (deliberateActListening || typeof document === "undefined") return;
+  deliberateActListening = true;
+  document.addEventListener("pointerdown", recordDeliberateAct, { capture: true, passive: true });
+  document.addEventListener("keydown", recordDeliberateAct, { capture: true, passive: true });
+}
+// Installed as soon as the gate loads in a browser (the picker host registers
+// at boot, so it is listening long before the first write).
+listenForDeliberateActs();
+
+export function personJustActed(now: number = Date.now()): boolean {
+  listenForDeliberateActs();
+  if (lastDeliberateActAt <= 0) return false;
+  const since = now - lastDeliberateActAt;
+  if (since > DELIBERATE_ACT_WINDOW_MS) return false;
+  // One act, one question: if the person already dismissed the picker since
+  // this act, a follow-up write (a retry, a rejoin a second later) does not
+  // ask again — "not now" stands until they act again.
+  return !organizationSelectionCancelledWithin(since);
+}
+
+/** Tests only. */
+export function __resetDeliberateActsForTests(): void {
+  lastDeliberateActAt = 0;
 }
 
 export function ensureOrganizationForRequest(options: {
