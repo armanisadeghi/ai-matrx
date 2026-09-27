@@ -213,6 +213,19 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "app_identity",
   },
 
+  {
+    name: "app_bundle",
+    label: "Open app",
+    description:
+      "The open app condensed as one XML bundle — read this first: <agent_app id name slug public_url status visibility category tags version shell view> with <tagline>, <description>, <variables total> (one <variable name label type required/> each), <usage runs success_rate last_run/> and <component_code language> (clipped at 6,000 chars with clipped=\"true\" total_chars=\"N\"; the full source is component_code). Absent when no app is open or it has not loaded yet.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 5000,
+    inlineUpTo: 9000,
+    sortOrder: 299,
+    group: "app_identity",
+  },
+
   // ── App content ───────────────────────────────────────────────────────
   {
     name: "shell_kind",
@@ -466,12 +479,12 @@ export const agentAppsManifest: SurfaceManifest = {
     "Agent-backed apps directory (replaces prompt-apps)",
   readiness: "partial",
   readinessNote:
-    "Hub and per-app runtime emitters are implemented; full browser certification is pending",
+    "page-pass 2026-09-27 (/agent-apps/[id]/run): app_bundle added; the app's own run is declared the page's own conversation; no workspace chosen shows the inline picker. Live probe and agent write proof are pending.",
   label: "Agent Apps",
   urlPattern: "/agent-apps",
   intro: `<surface_intro>
 You are on Agent Apps: the user's workspace for shareable AI mini-apps — each app wraps one agent in a custom UI (a shell kind plus optional custom component code) and can be published publicly at /p/[slug].
-When app_id is present the user has one app open in its workspace; active_view tells you which UI they are on (overview, run, code, settings, versions). When app_id is absent the user is on the hub grid — only the catalog values apply.
+When app_id is present the user has one app open in its workspace; read app_bundle first — it is the open app (identity, variables, usage and its code) in one place. active_view tells you which UI they are on (overview, run, code, settings, versions); on run, the app's own run is the app doing its job and is not yours to steer. When app_id is absent the user is on the hub grid — only the catalog values apply.
 Read app_identity for what the app is, app_content for what it is made of (shell, code, variables, config), and run_state for the active view plus usage evidence. Code-editing work targets component_code; configuration work targets shell_config and variable_schema — never invent usage statistics.
 You can also WRITE the open app's storefront copy through apply_surface_write — its name, tagline, description, category and tags. Name, tagline and description stage into the Settings > Identity inputs for the user to Save and are available only on that tab; category and tags save to the database as soon as the user approves and remain available on every per-app sub-route. Those five are the only writable fields: the slug, publish status, public sharing, agent binding and code are not agent-writable, so propose those in words instead. Every write requires an app to be open (app_id present); the hub grid has no writable app.
 </surface_intro>`,
@@ -497,6 +510,7 @@ export interface AgentAppsListedEntry {
  * every key is optional.
  */
 export function createAgentAppsScope(values: {
+  app_bundle?: string;
   app_id?: string;
   app_slug?: string;
   app_name?: string;

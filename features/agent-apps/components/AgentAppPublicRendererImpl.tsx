@@ -793,7 +793,6 @@ function CustomComponentRenderer({
           anchorElement={moreButtonRef.current}
           onShowHtmlPreview={handleShowHtmlPreview}
           onOpenCanvas={handleOpenCanvas}
-          onQuickHtmlShare={() => {}}
         />
 
         {htmlPreviewOpen && (

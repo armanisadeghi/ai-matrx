@@ -113,14 +113,22 @@ export function AgentAppHeader({
       backHref={backHref}
       entityLabel={appName}
       entityStatus={
+        // One word on a desktop; on a phone the name needs the room, so the
+        // state is a colored dot with the same words for assistive tech
+        // (the chip used to clip to "Publis" and squeeze the name to "Fa…").
         <span
+          aria-label={isPublished ? "Published" : "Unpublished"}
+          title={isPublished ? "Published" : "Unpublished"}
           className={
             isPublished
-              ? "rounded-full bg-success/15 px-1.5 py-0.5 text-[10px] font-medium text-success"
-              : "rounded-full bg-warning/15 px-1.5 py-0.5 text-[10px] font-medium text-warning"
+              ? "inline-flex shrink-0 items-center gap-1 rounded-full bg-success/15 px-1.5 py-0.5 text-xs font-medium text-success"
+              : "inline-flex shrink-0 items-center gap-1 rounded-full bg-warning/15 px-1.5 py-0.5 text-xs font-medium text-warning"
           }
         >
-          {isPublished ? "Published" : "Unpublished"}
+          <span aria-hidden className="size-1.5 rounded-full bg-current sm:hidden" />
+          <span className="hidden sm:inline">
+            {isPublished ? "Published" : "Unpublished"}
+          </span>
         </span>
       }
       modes={modes}

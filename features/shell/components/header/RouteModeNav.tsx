@@ -90,7 +90,7 @@ const PILL =
 // hit target without changing the compact desktop pill geometry. Its sheet
 // owns the large route rows after activation.
 const ITEM =
-  "flex items-center justify-center gap-1 py-0.5 px-2.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer whitespace-nowrap [&_svg]:w-3.5 [&_svg]:h-3.5";
+  "flex items-center justify-center gap-1 py-0.5 px-2.5 text-xs font-medium rounded-full transition-colors cursor-pointer whitespace-nowrap [&_svg]:w-3.5 [&_svg]:h-3.5";
 
 // Breathing room the nav must keep between itself and the header's left/right
 // flanks. Without it the measurement picks "full" whenever the content fits by
@@ -359,7 +359,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
                       {item.description ? (
                         <span className="min-w-0 flex-1">
                           <span className="block">{item.name}</span>
-                          <span className="mt-0.5 block whitespace-normal text-[0.6875rem] font-normal leading-snug text-muted-foreground">
+                          <span className="mt-0.5 block whitespace-normal text-xs font-normal leading-snug text-muted-foreground">
                             {item.description}
                           </span>
                         </span>

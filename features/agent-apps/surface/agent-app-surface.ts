@@ -23,6 +23,13 @@
  * rendered on `/p` passes the binding below, which is explicit — an explicit
  * `runtime.surfaceName` always wins over adoption.
  *
+ * (2026-09-27, page-pass) On the authed routes the app's OWN run is declared
+ * the page's own conversation (`isOwnConversation` in
+ * `AgentAppSurfaceRuntime`): it adopts the surface name but receives no
+ * workspace context and no workspace write tools — the app's agent does the
+ * app's job on engineered inputs only. The authoring agents opened from the
+ * Agents menu are the ones that see the app's code / schema / config.
+ *
  * Host values (app identity + visitor) are supplied by whoever renders the
  * shell, because only that host knows whether this is the public route and
  * what the guest's fingerprint / remaining runs are. Live run values come from

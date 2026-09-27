@@ -33,6 +33,7 @@ import {
   createAgentAppsScope,
 } from "@/features/surfaces/manifests/agent-apps.manifest";
 import { buildAgentAppEntityWriteHandlers } from "./agent-app-entity-writes";
+import { buildAgentAppBundle } from "./agent-app-context";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 type ActiveView =
@@ -105,6 +106,7 @@ export function AgentAppSurfaceRuntime({ children }: { children: ReactNode }) {
       return createAgentAppsScope({ active_view });
     }
     return createAgentAppsScope({
+      app_bundle: buildAgentAppBundle(app, active_view),
       app_id: app.id,
       app_slug: app.slug,
       app_name: app.name,
@@ -151,11 +153,31 @@ export function AgentAppSurfaceRuntime({ children }: { children: ReactNode }) {
     });
   };
 
+  // THE APP'S OWN RUN IS THIS PAGE. On /run (and every preview of the app in
+  // this family) the app's agent runs through `useAgentApp` under surface key
+  // `agent-app:<id>` (the legacy renderer uses `agent-app:<slug>`). That
+  // conversation is the app doing its job — a fact checker checking a claim —
+  // so it must never receive this workspace as context or be offered its
+  // write tools (it could otherwise re-tag the app it is running inside).
+  // Every OTHER agent on the screen (Agents menu, windows) still gets both.
+  // Read live on every launch and turn — `isPageOwnConversation`.
+  const isOwnConversation = (conversationId: string) => {
+    const state = store.getState();
+    const app = selectActiveApp(state);
+    if (!app) return false;
+    const bySurface = state.conversationFocus?.bySurface ?? {};
+    return [`agent-app:${app.id}`, `agent-app:${app.slug}`].some((key) => {
+      const focus = bySurface[key];
+      return focus?.input === conversationId || focus?.display === conversationId;
+    });
+  };
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={AGENT_APPS_SURFACE_NAME}
       getScope={getScope}
       getWriteHandlers={getSurfaceWriteHandlers}
+      isOwnConversation={isOwnConversation}
     >
       {children}
     </SurfaceRuntimeProvider>

@@ -189,6 +189,7 @@ and admin/user route families are live. Remaining migration work is tracked in:
 
 ## Change log
 
+- `2026-09-27` — page-pass 2026-09-27: type AI workspace (`/agent-apps/[id]/run`), posture ui-sharp after Vercel's project run view, fixed: no workspace chosen now shows the inline workspace picker (`AppWorkspaceGate` over every shell; `useAppHolder.organizationPending`) instead of `execution_error: mandate "app.…" cannot resolve yet` twice; the app's own run is the page's own conversation (`isOwnConversation` in `AgentAppSurfaceRuntime`) so it gets no workspace context or write tools; `app_bundle` XML context bundle; result bar uses the canonical Copy / Copy-for-AI pair and a TapButton; dead "Share as HTML" row and "Add to docs" toast stub gone from `PublicMessageOptionsMenu`; header status chip 12px and a dot on phones; `RouteModeNav` labels 12px.
 - `2026-09-19` — **A pinned mandate winner is no longer dropped after resolve.**
   After D1 stopped `resolveMandate` from throwing on a pin, `useAppHolder`
   still zeroed `agentVersionId` and forced `useLatest: true` ("FLOATING by

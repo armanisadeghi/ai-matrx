@@ -7,7 +7,6 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  BookText,
   Briefcase,
   Copy,
   FileCode,
@@ -449,13 +448,6 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
     onClose();
   };
 
-  const handleAddToDocs = () => {
-    toast.info("Coming soon", {
-      description: "Add to docs will be available shortly.",
-    });
-    onClose();
-  };
-
   // ── Menu items — identical structure to MessageOptionsMenu ─────────────────
 
   const menuItems: MenuItem[] = [
@@ -621,16 +613,11 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
       category: "Actions",
       showToast: false,
     },
-    {
-      key: "add-docs",
-      icon: BookText,
-      iconColor: "text-emerald-500 dark:text-emerald-400",
-      label: "Add to docs",
-      action: handleAddToDocs,
-      category: "Actions",
-      showToast: false,
-    },
-  ];
+  ].filter(
+    // A host with no share flow gets no "Share as HTML" row — never a row
+    // that closes the menu and does nothing.
+    (item) => item.key !== "quick-share-html" || Boolean(onQuickHtmlShare),
+  );
 
   return (
     <>

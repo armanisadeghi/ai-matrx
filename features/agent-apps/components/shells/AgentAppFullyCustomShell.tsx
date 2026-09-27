@@ -22,7 +22,9 @@
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
-import { AlertCircle, Copy, Check, MoreHorizontal } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { useApiAuth } from "@/hooks/useApiAuth";
 import { useGuestLimit } from "@/hooks/useGuestLimit";
 import { GuestLimitWarning } from "@/components/guest/GuestLimitWarning";
@@ -165,7 +167,6 @@ export function AgentAppFullyCustomShell({
   const [htmlPreviewOpen, setHtmlPreviewOpen] = useState(false);
   const [htmlPreviewContent, setHtmlPreviewContent] = useState("");
   const [htmlPreviewTitle, setHtmlPreviewTitle] = useState("");
-  const [isCopied, setIsCopied] = useState(false);
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const moreButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -188,17 +189,6 @@ export function AgentAppFullyCustomShell({
       },
     });
   }, [openCanvas, ctx.response, app.name, ctx.conversationId]);
-
-  const handleCopy = useCallback(async () => {
-    if (!ctx.response) return;
-    try {
-      await navigator.clipboard.writeText(ctx.response);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch {
-      // silently fail
-    }
-  }, [ctx.response]);
 
   const showActionBar = !ctx.isStreaming && ctx.response.length > 0;
 
@@ -303,30 +293,21 @@ export function AgentAppFullyCustomShell({
 
         {showActionBar && (
           <div className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 border-t border-border/40">
-            <button
-              onClick={handleCopy}
-              className="flex items-center gap-1.5 h-7 px-2 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-            >
-              {isCopied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-green-500" />
-                  <span>Copied</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>Copy</span>
-                </>
-              )}
-            </button>
-            <button
+            {/* The canonical Copy / Copy-for-AI pair over the finished result. */}
+            <CopyButtons
+              size="icon"
+              label={`${app.name || "App"} result`}
+              human={() => ctx.response}
+              agent={() =>
+                `Result from the "${app.name || "agent"}" app:\n\n${ctx.response}`
+              }
+            />
+            <MoreHorizontalTapButton
               ref={moreButtonRef}
               onClick={() => setIsOptionsOpen(true)}
-              className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              aria-label="More options"
-            >
-              <MoreHorizontal className="w-3.5 h-3.5" />
-            </button>
+              ariaLabel="More options"
+              tooltip="More options"
+            />
           </div>
         )}
 
@@ -337,7 +318,6 @@ export function AgentAppFullyCustomShell({
           anchorElement={moreButtonRef.current}
           onShowHtmlPreview={handleShowHtmlPreview}
           onOpenCanvas={handleOpenCanvas}
-          onQuickHtmlShare={() => {}}
         />
 
         {htmlPreviewOpen && (
