@@ -185,9 +185,6 @@ export function DirectiveCatalogGrid({
                 />
                 Writable only
               </label>
-              <span className="text-xs text-muted-foreground">
-                {filtered.length} of {catalog.nouns.length} nouns
-              </span>
               <div className="ml-auto flex items-center gap-2">
                 <StateBadge state="yes" />
                 <StateBadge state="planned" />
