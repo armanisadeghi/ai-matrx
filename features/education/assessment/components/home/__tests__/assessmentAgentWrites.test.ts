@@ -5,6 +5,7 @@
 import {
   parseCreateAssessmentsValue,
   parseDeleteAssessmentsValue,
+  parseGenerateValue,
   parseUpdateAssessmentsValue,
   type CurrentAssessment,
 } from "../assessmentAgentWrites";
@@ -94,5 +95,42 @@ describe("distinctTopic", () => {
   it("hides a topic that only repeats the title", () => {
     expect(distinctTopic({ title: "Ava Science Book", topic: "ava science book" })).toBeNull();
     expect(distinctTopic({ title: "Photosynthesis", topic: "The Calvin Cycle" })).toBe("The Calvin Cycle");
+  });
+});
+
+describe("generate_quizzes", () => {
+  const LIMITS = { defaultCount: 8, countMax: 30, timed: false };
+  it("reads a topic request with the New form's defaults", () => {
+    expect(parseGenerateValue("quizzes", { source: "topic", topic: "# Plate tectonics" }, LIMITS)).toEqual({
+      source: { mode: "topic", topic: "Plate tectonics" },
+      count: 8,
+      difficulty: "Medium",
+      depth: "applied",
+      questionTypes: [],
+      examType: "",
+      userRequest: "",
+      timeLimitMinutes: 0,
+    });
+  });
+  it("infers a deck source and refuses every bad field at once", () => {
+    expect(parseGenerateValue("quizzes", { deck: "Cell Biology" }, LIMITS).source).toEqual({
+      mode: "deck",
+      ref: "Cell Biology",
+    });
+    let message = "";
+    try {
+      parseGenerateValue(
+        "quizzes",
+        { source: "topic", question_count: 99, difficulty: "brutal", time_limit_minutes: 5, colour: 1 },
+        LIMITS,
+      );
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    expect(message).toContain("topic is required");
+    expect(message).toContain("question_count must be a whole number from 1 to 30");
+    expect(message).toContain("difficulty must be one of");
+    expect(message).toContain("applies only to practice tests");
+    expect(message).toContain("does not accept colour");
   });
 });
