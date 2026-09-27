@@ -39,6 +39,11 @@ import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
 import type { UseAgentAppReturn } from "@/features/agent-apps/hooks/useAgentApp";
 import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import { useAgentAppTracker } from "@/features/agent-apps/tracking/useAgentAppTracker";
+import {
+  recordRunOutcome,
+  waitForRunOutcome,
+} from "@/features/agent-apps/tracking/run-outcome";
+import { useAppStore } from "@/lib/redux/hooks";
 import { useWarmAgent } from "@/features/agents/hooks/useWarmAgent";
 import type {
   AgentAppShellConfigCommon,
@@ -122,6 +127,7 @@ export function AgentAppFullyCustomShell({
   });
 
   const [localError, setLocalError] = useState<string | null>(null);
+  const store = useAppStore();
 
   // ── Legacy-compat onExecute / onResetConversation ──────────────────────
   // The three sample apps + many in-the-wild rows still use the old prop
@@ -143,11 +149,21 @@ export function AgentAppFullyCustomShell({
 
       const tracker = startRun(variables);
       try {
-        await ctx.submit({
+        const receipt = await ctx.submit({
           variables,
           text: userInput,
         });
-        tracker.complete();
+        // Resolving is not success: the server may have refused the run.
+        // Record what the request actually ended as (the screen already
+        // shows its reason through ctx.error).
+        const outcome = receipt
+          ? await waitForRunOutcome(
+              store,
+              receipt.conversationId,
+              receipt.requestIdsBefore,
+            )
+          : ({ kind: "pending" } as const);
+        recordRunOutcome(tracker, outcome);
         guestLimit.refresh();
       } catch (err) {
         const e = err as { name?: string; message?: string };
@@ -160,7 +176,7 @@ export function AgentAppFullyCustomShell({
         });
       }
     },
-    [ctx, guestLimit, isAuthenticated, startRun],
+    [ctx, guestLimit, isAuthenticated, startRun, store],
   );
 
   // ── Action bar (copy / canvas / preview) ──────────────────────────────

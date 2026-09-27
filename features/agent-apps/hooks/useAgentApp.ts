@@ -35,6 +35,12 @@ import { useConversationRoutePromotion } from "@/features/agents/hooks/useConver
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { reconnectServerOperation } from "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk";
+// The run's failure in words a person reads — `request.error` (ErrorPayload),
+// never `errorMessage` (a tool-call field). Shared with the app's run record.
+import {
+  requestFailure,
+  requestIdsOf,
+} from "@/features/agent-apps/tracking/run-outcome";
 
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 
@@ -242,7 +248,12 @@ export interface UseAgentAppReturn {
   setText: (value: string) => void;
 
   // ── Submit + execution state ───────────────────────────────────────────
-  submit: (args?: SubmitArgs) => Promise<void>;
+  /**
+   * Stage and run. Resolves with a receipt naming the conversation and the
+   * requests that existed before this run, so a caller can wait for THIS
+   * run's real outcome (`waitForRunOutcome`) — resolving is not success.
+   */
+  submit: (args?: SubmitArgs) => Promise<SubmitReceipt | undefined>;
   response: string;
   requestId: string | null;
   isStreaming: boolean;
@@ -269,6 +280,11 @@ export interface UseAgentAppReturn {
   surfaceHandle: SurfaceHandle | null;
 }
 
+export interface SubmitReceipt {
+  conversationId: string;
+  requestIdsBefore: string[];
+}
+
 export interface SubmitArgs {
   text?: string;
   variables?: Record<string, unknown>;
@@ -276,25 +292,6 @@ export interface SubmitArgs {
 }
 
 const EMPTY_RECORD: Record<string, never> = Object.freeze({});
-
-/**
- * THE RUN'S OWN FAILURE, in words a person reads. The server's refusal lands
- * on the request as `error` (`ErrorPayload`: `user_message` for people,
- * `message` always present). This used to read `request.errorMessage` — a
- * field requests do not have (it belongs to tool calls) — so every failed
- * run of an app rendered a blank result with no reason (page-pass /p/[slug],
- * 2026-09-27: a guest's refused run showed nothing at all).
- */
-function requestFailure(
-  request: { status?: string; error?: { user_message?: string; message?: string } | null } | undefined,
-): string | null {
-  if (!request) return null;
-  const failed = request.status === "error" || request.status === "timeout";
-  const text =
-    request.error?.user_message?.trim() || request.error?.message?.trim() || "";
-  if (text) return text;
-  return failed ? "This run could not finish. Try again in a moment." : null;
-}
 
 /** How long a submit pressed during load waits for the app before it says so. */
 const SUBMIT_READY_WAIT_MS = 30_000;
@@ -838,7 +835,9 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   // is true), so the control never looks idle and never refuses on press.
   const [isHolding, setIsHolding] = useState(false);
 
-  const submitWhenReady = async (submitArgs?: SubmitArgs) => {
+  const submitWhenReady = async (
+    submitArgs?: SubmitArgs,
+  ): Promise<SubmitReceipt> => {
     {
       const deadline = Date.now() + SUBMIT_READY_WAIT_MS;
       while (
@@ -895,14 +894,18 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       if (submitArgs?.text != null) {
         dispatch(setUserInputText({ conversationId, text: submitArgs.text }));
       }
+      const requestIdsBefore = requestIdsOf(store.getState(), conversationId);
       await dispatch(smartExecute({ conversationId, surfaceKey }));
+      return { conversationId, requestIdsBefore };
     }
   };
 
-  const submit = async (submitArgs?: SubmitArgs) => {
+  const submit = async (
+    submitArgs?: SubmitArgs,
+  ): Promise<SubmitReceipt | undefined> => {
     setIsHolding(true);
     try {
-      await submitWhenReady(submitArgs);
+      return await submitWhenReady(submitArgs);
     } finally {
       setIsHolding(false);
     }

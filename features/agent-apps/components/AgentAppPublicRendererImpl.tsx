@@ -25,7 +25,11 @@ import PublicMessageOptionsMenu from "@/features/public-chat/components/PublicMe
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import type { PublicAgentApp } from "../types";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import {
+  recordRunOutcome,
+  waitForRunOutcome,
+} from "../tracking/run-outcome";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import {
   selectResultText,
@@ -225,6 +229,7 @@ function CustomComponentRenderer({
   surfaceName = null,
 }: AgentAppPublicRendererProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
 
   const [isExecuting, setIsExecuting] = useState(false);
   const [localError, setLocalError] = useState<{
@@ -465,6 +470,7 @@ function CustomComponentRenderer({
         // dispatch below kicks off in the same JS turn. The taskId we get
         // back is what we'll send on completion/error.
         runTracker = startRun(validVariables);
+        let launchedConversationId: string | null = null;
 
         // Live refs for the SurfaceRuntimeProvider's chrome getScope().
         lastRunInputRef.current = { userInput, variables: validVariables };
@@ -526,11 +532,18 @@ function CustomComponentRenderer({
             // streaming text — only the final blob. Setting conversationId
             // here lets selectPrimaryRequest pick up the live request and
             // selectResultText stream the text into the UI.
-            onConversationCreated: (id) => setConversationId(id),
+            onConversationCreated: (id) => {
+              launchedConversationId = id;
+              setConversationId(id);
+            },
           }),
         ).unwrap();
 
-        runTracker.complete();
+        // Resolving is not success: record what the request ended as.
+        const outcome = launchedConversationId
+          ? await waitForRunOutcome(store, launchedConversationId, [])
+          : ({ kind: "pending" } as const);
+        recordRunOutcome(runTracker, outcome);
         guestLimit.refresh();
       } catch (err: unknown) {
         const e = err as { name?: string; message?: string };
@@ -564,6 +577,7 @@ function CustomComponentRenderer({
       dispatch,
       startRun,
       surfaceName,
+      store,
     ],
   );
 
