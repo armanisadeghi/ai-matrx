@@ -41,6 +41,19 @@ export function templateManagedBy(
   return metadataString(template.metadata, "managed_by");
 }
 
+/**
+ * A person-readable name for a `managed_by` job key: "crm.reply_drafting" →
+ * "CRM reply drafting". The key itself stays in the agent's bundle.
+ */
+export function humanizeManagedBy(key: string): string {
+  const words = key
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((w) => (w.length <= 3 ? w.toUpperCase() : w.toLowerCase()));
+  const text = words.join(" ");
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 /** THE record as one XML bundle. */
 export function buildMessageTemplateBundle(template: MessageTemplateDB): string {
   return xmlElement(

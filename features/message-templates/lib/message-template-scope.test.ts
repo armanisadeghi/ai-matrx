@@ -1,4 +1,5 @@
 import {
+  humanizeManagedBy,
   buildMessageTemplateBundle,
   buildMessageTemplateScope,
   parseTemplateDraftValue,
@@ -110,5 +111,12 @@ describe("parseTemplateDraftValue", () => {
     [{ label: "Outreach reply" }, true, /would change nothing/],
   ])("refuses %j", (value, canEdit, message) => {
     expect(() => parseTemplateDraftValue(value, draft, canEdit)).toThrow(message);
+  });
+});
+
+describe("humanizeManagedBy", () => {
+  it("turns a job key into words a person reads", () => {
+    expect(humanizeManagedBy("crm.reply_drafting")).toBe("CRM reply drafting");
+    expect(humanizeManagedBy("notifications.digest")).toBe("Notifications digest");
   });
 });

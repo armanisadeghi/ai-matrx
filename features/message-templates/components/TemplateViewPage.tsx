@@ -45,6 +45,7 @@ import {
 } from "@/features/surfaces/manifests/message-template.manifest";
 import {
   buildMessageTemplateScope,
+  humanizeManagedBy,
   parseTemplateDraftValue,
   templateManagedBy,
   templateSubject,
@@ -119,7 +120,8 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
   const savedDraft = draftFrom(saved);
   const isDirty = !sameDraft(draft, savedDraft);
   const canSave = draft.label.length > 0 && content.trim().length > 0;
-  const managedBy = templateManagedBy(saved);
+  const managedByKey = templateManagedBy(saved);
+  const managedBy = managedByKey ? humanizeManagedBy(managedByKey) : null;
   const savedSubject = templateSubject(saved);
   const displayLabel = saved.label || "Untitled template";
 
@@ -208,7 +210,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
     const ok = await confirm({
       title: `Archive “${displayLabel}”?`,
       description: managedBy
-        ? `It moves to Trash, where you can restore it. The ${managedBy} job uses this template and will not send until it is restored or replaced.`
+        ? `It moves to Trash, where you can restore it. ${managedBy} uses this template and will not send until it is restored or replaced.`
         : "It moves to Trash, where you can restore it. It disappears from your template lists and pickers, and anything that sends it (a sequence step, a single send, a managed reply) stops until it is restored or replaced.",
       confirmLabel: "Archive",
       variant: "destructive",
@@ -307,7 +309,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                   ))}
                   {managedBy && (
                     <span className="text-xs text-muted-foreground">
-                      Used by the {managedBy} job
+                      Used by {managedBy}
                     </span>
                   )}
                   <div className="ml-auto">
