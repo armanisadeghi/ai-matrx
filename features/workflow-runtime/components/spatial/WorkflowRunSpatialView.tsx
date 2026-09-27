@@ -56,7 +56,12 @@ import { selectRequestCarriesKindEnvelope } from "@/features/agents/redux/execut
 
 import type { PaceTier } from "@/features/spatial/engine/lod";
 import type { SpatialStore } from "@/features/spatial/engine/spatial-store";
-import { DEFAULT_THROW_ACTIONS, type ThrowDirection } from "@/features/spatial/engine/throw";
+import {
+  DEFAULT_THROW_ACTIONS,
+  type ThrowAction,
+  type ThrowDirection,
+} from "@/features/spatial/engine/throw";
+
 import { useBoard, type BoardFrame } from "@/features/spatial/board/useBoard";
 import { useWheelModePreference } from "@/features/spatial/board/useWheelModePreference";
 import { SpatialBoardMenu } from "@/features/spatial/components/SpatialBoardMenu";
@@ -99,6 +104,9 @@ import {
   type RunStepPresentation,
 } from "../run/node-presentation";
 import { layoutWorkflowRunBoard, type RunBoardLayout } from "./run-board-layout";
+
+/** Down only takes a tile off this board — the step stays in its run. */
+const RUN_THROWS: Record<ThrowDirection, ThrowAction> = { ...DEFAULT_THROW_ACTIONS, down: "remove" };
 
 const FAMILY_TILE_ICON: Record<NodeFamily, LucideIcon> = {
   input: ClipboardPen,
@@ -331,10 +339,10 @@ function RunBoard({
     toast(`Took "${spec.title}" off the board`, { action: { label: "Undo", onClick: undo } });
   };
   const onThrow = (id: string, direction: ThrowDirection) => {
-    const action = DEFAULT_THROW_ACTIONS[direction];
+    const action = RUN_THROWS[direction];
     if (action === "park") park(id);
     else if (action === "save-close") void saveAndClose(id);
-    else if (action === "delete") void remove(id);
+    else if (action === "remove") void remove(id);
   };
 
   const rectById = new Map(board.tiles.map((t) => [t.id, t.rect]));
@@ -542,6 +550,7 @@ function AddedTile({
       statusFrom={c.type === "note" && !c.noteId ? ADDED_IDLE : ADDED_DONE}
       onMove={onMove}
       onThrow={onThrow}
+      throwActions={RUN_THROWS}
     >
       {(tier) => {
         switch (c.type) {
@@ -665,6 +674,7 @@ function RunNodeTile({
       statusFrom={statusFrom}
       onMove={onMove}
       onThrow={onThrow}
+      throwActions={RUN_THROWS}
     >
       {(tier) => (
         <RunNodeBody
