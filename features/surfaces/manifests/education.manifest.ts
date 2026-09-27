@@ -192,7 +192,7 @@ export const educationManifest: SurfaceManifest = {
     "",
   readiness: "partial",
   readinessNote:
-    "Manifest + emitter shipped and complete for the hub's own data (discovery registries, entry points, and the Study-today snapshot published by EducationHome). Not yet stamped verified: the DB sync + a live non-matching-name binding test and the Matrx-vs-matrix context check have not been run, and no agent roles are declared yet.",
+    "STALE since 2026-09-27: signed-in people are redirected off /education, and EducationHome (now at /education/overview) emits matrx-user/education-overview instead, so this hub's Study-today values are never supplied. Only the hub's discovery values can appear, for signed-out visitors. Re-scope this manifest to what /education actually renders for them (or retire the Study-today group) before it is verified.",
   label: "Education Hub",
   urlPattern: "/education",
   intro: `<surface_intro>
