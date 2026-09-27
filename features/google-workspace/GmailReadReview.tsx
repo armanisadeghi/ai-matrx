@@ -280,6 +280,12 @@ export function GmailReadReview() {
           you can change an opened message with an explicit action. This screen
           does not sync your whole mailbox or send email.
         </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Gmail reading access lets this screen search for your words and show
+          the body of a message you select. Sending access cannot read messages;
+          metadata-only access cannot search by your words or show the body.
+          You choose the account and each search.
+        </p>
       </div>
       {!userId || inventory.isLoading ? (
         <p className="rounded-md border p-3 text-sm">Loading Google accounts…</p>
