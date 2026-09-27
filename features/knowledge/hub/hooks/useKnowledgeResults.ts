@@ -102,10 +102,12 @@ export function useKnowledgeResults(
   query: KnowledgeQuery,
   data: "live" | "sample",
   runnerOverride?: KnowledgeSearchRunner,
+  /** Rerank passages for this search; undefined = the organization's setting. */
+  rerank?: boolean,
 ): KnowledgeResults {
   const runner = runnerOverride ?? runnerFor(data);
   const normalized = normalizeQuery(query);
-  const key = `${data}|${JSON.stringify(normalized)}`;
+  const key = `${data}|${JSON.stringify(normalized)}|${String(rerank)}`;
   const [sections, setSections] = useState<SectionState[]>(initial);
   const [engine, setEngine] = useState<KnowledgeSearchEngine | null>(null);
   const [loading, setLoading] = useState(true);
@@ -120,6 +122,7 @@ export function useKnowledgeResults(
     const q = queryRef.current;
     runner(q, {
       signal: ctrl.signal,
+      ...(typeof rerank === "boolean" ? { rerank } : {}),
       onEngine: (e) => {
         if (!ctrl.signal.aborted) setEngine(e);
       },

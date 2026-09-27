@@ -181,6 +181,11 @@ export interface KnowledgeSearchOptions {
    * fired after a ~600 ms typing pause and on submit). Omitted = both in one stream.
    */
   pass?: "instant" | "content";
+  /**
+   * Rerank passage results for this search. Omitted = the organization's setting
+   * (knowledge.search_rerank). Honoured on the content pass and on submit only.
+   */
+  rerank?: boolean;
   /** Called once with the engine that actually answered. */
   onEngine?: (engine: KnowledgeSearchEngine) => void;
 }
@@ -200,7 +205,13 @@ export function toServerRequest(
   query: KnowledgeQuery,
   asYouType: boolean,
   pass?: "instant" | "content",
-): KnowledgeQuery & { mode: "find" | "ask"; as_you_type: boolean; pass?: "instant" | "content" } {
+  rerank?: boolean,
+): KnowledgeQuery & {
+  mode: "find" | "ask";
+  as_you_type: boolean;
+  pass?: "instant" | "content";
+  rerank?: boolean;
+} {
   // `id: "*"` ("any container of this type", a preset's `library:*`) is a
   // client-side marker the service cannot read; never send it as an id. The
   // hub announces the unsupported filter itself (hubSavedViews.anyContainerTypes).
@@ -212,6 +223,7 @@ export function toServerRequest(
     mode: query.mode ?? "find",
     as_you_type: asYouType,
     ...(pass ? { pass } : {}),
+    ...(typeof rerank === "boolean" ? { rerank } : {}),
   };
 }
 
@@ -396,7 +408,7 @@ export const searchKnowledgeServer: KnowledgeSearchRunner = async (
   try {
     const stream = postNdjson(
       KNOWLEDGE_SEARCH_PATH,
-      toServerRequest(query, options.asYouType ?? false, options.pass),
+      toServerRequest(query, options.asYouType ?? false, options.pass, options.rerank),
       { signal: options.signal, bodyCarriedRead: true },
     );
     for await (const evt of stream) {

@@ -260,7 +260,14 @@ export function KnowledgeHubPage({
   const expanded = expandAnyContainers(state.query, idsByType);
   // Ask (H4) answers over the same filter in a docked panel; the results keep listing it.
   const asking = state.query.mode === "ask";
-  const results = useKnowledgeResults(asking ? { ...expanded.query, mode: "find" } : expanded.query, state.data);
+  // Advanced → "Rerank results": undefined follows the organization's setting.
+  const [rerank, setRerank] = useState<boolean | undefined>(undefined);
+  const results = useKnowledgeResults(
+    asking ? { ...expanded.query, mode: "find" } : expanded.query,
+    state.data,
+    undefined,
+    rerank,
+  );
   const activeOrgId = useAppSelector(selectOrganizationId);
   const activeOrgName = useAppSelector(selectOrganizationName);
   const [saveDialog, setSaveDialog] = useState<null | { mode: "create" } | { mode: "rename"; view: HubSavedView }>(null);
@@ -1132,6 +1139,16 @@ export function KnowledgeHubPage({
                 <DropdownMenuRadioItem value="current" disabled={!activeOrgId}>
                   {activeOrgName ? `Only ${activeOrgName}` : "Only the selected organization (choose one first)"}
                 </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Rerank results</DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={rerank === undefined ? "org" : rerank ? "on" : "off"}
+                onValueChange={(v) => setRerank(v === "org" ? undefined : v === "on")}
+              >
+                <DropdownMenuRadioItem value="org">Use my organization&apos;s setting</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="on">Rerank passages (best first, about a second slower)</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="off">Don&apos;t rerank (fastest)</DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
               <DropdownMenuSeparator />
               <p className="px-2 py-1.5 text-[11px] text-muted-foreground">
