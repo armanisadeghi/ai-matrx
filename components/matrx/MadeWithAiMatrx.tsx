@@ -7,15 +7,32 @@ import Link from "next/link";
  * A stranger who opened a link somebody sent gets the thing they were sent,
  * not the marketing site — but a page that takes their input still names who
  * runs it and where its privacy and terms live. One slim row, the way a
- * Typeform or Calendly page ends: "Made with AI Matrx" plus the two legal
- * links. No Download, no Discover, no sign-up pitch.
+ * Typeform or Calendly page ends: who published it, "Made with AI Matrx",
+ * and the two legal links. No Download, no Discover, no sign-up pitch.
  */
-export function MadeWithAiMatrx() {
+export function MadeWithAiMatrx({
+  publisherName,
+}: {
+  /**
+   * Who sent it: the organization that published the thing on this page
+   * (e.g. `get_aga_public_data.publisher_name`). Omitted when unknown.
+   */
+  publisherName?: string | null;
+} = {}) {
+  const publisher = publisherName?.trim();
   return (
     <footer
       data-made-with
-      className="flex w-full shrink-0 items-center justify-center gap-x-1 px-4 pb-safe text-xs text-muted-foreground"
+      className="flex w-full shrink-0 flex-wrap items-center justify-center gap-x-1 px-4 pb-safe text-xs text-muted-foreground"
     >
+      {publisher && (
+        <>
+          <span className="inline-flex min-h-11 items-center px-2">
+            Published by {publisher}
+          </span>
+          <span aria-hidden="true">·</span>
+        </>
+      )}
       <Link
         href="/"
         className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
