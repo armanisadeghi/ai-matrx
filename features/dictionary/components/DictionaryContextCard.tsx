@@ -12,6 +12,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useDictionaryContext } from "@/features/dictionary/hooks/useDictionaryContext";
 import { useOpenDictionarySelectorWindow } from "@/features/overlays/openers/dictionarySelectorWindow";
 import { DICT_LEVEL_LABELS } from "@/features/dictionary/constants";
@@ -34,8 +35,14 @@ const SOURCE_BADGE: Record<string, string> = {
 };
 
 export function DictionaryContextCard({ surfaceKey }: { surfaceKey: string }) {
-  const { consumption, activeCount, selection } =
-    useDictionaryContext(surfaceKey);
+  const {
+    consumption,
+    activeCount,
+    selection,
+    status: resolveStatus,
+    error: resolveError,
+    retry: retryResolve,
+  } = useDictionaryContext(surfaceKey);
   const openSelector = useOpenDictionarySelectorWindow();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(true);
@@ -171,7 +178,24 @@ export function DictionaryContextCard({ surfaceKey }: { surfaceKey: string }) {
           </div>
 
           <ScrollArea className="max-h-72">
-            {filtered.length === 0 ? (
+            {filtered.length === 0 &&
+            entries.length === 0 &&
+            resolveStatus === "error" ? (
+              <ReadFailure
+                error={resolveError ?? true}
+                what="your dictionary"
+                onRetry={retryResolve}
+              />
+            ) : filtered.length === 0 &&
+              entries.length === 0 &&
+              resolveStatus !== "ready" ? (
+              <div
+                className="px-3 py-6 text-center text-xs text-muted-foreground"
+                role="status"
+              >
+                Reading your dictionary…
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="px-3 py-6 text-center text-xs text-muted-foreground">
                 {entries.length === 0
                   ? "No active dictionary terms. Add to your personal dictionary or pick sources."

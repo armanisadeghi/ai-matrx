@@ -130,6 +130,7 @@ function TableCard({
             {table.markdown}
           </pre>
         ) : (
+          // read-gate-exempt: useGridFromCells is a pure reshape of a table already in the analysis result prop — no read here can fail
           <div className="px-3 py-4 text-xs text-muted-foreground">
             No cell data for this table.
           </div>

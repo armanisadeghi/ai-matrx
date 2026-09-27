@@ -99,7 +99,7 @@ export function VersionLadder({
           <ErrorAlchemyMenu />
         </p>
       )}
-      {versions.data && versions.data.length === 0 && (
+      {!versions.isError && versions.data && versions.data.length === 0 && (
         <p className="text-xs text-muted-foreground">No saved versions yet.</p>
       )}
 

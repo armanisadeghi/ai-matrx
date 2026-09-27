@@ -11,6 +11,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAllCodeFiles,
   selectAllCodeFolders,
+  selectCodeFilesListError,
   selectCodeFilesListStatus,
   selectCodeFoldersLoaded,
 } from "../redux/selectors";
@@ -72,6 +73,7 @@ export function useQuickSaveCode({
   const allFiles = useAppSelector(selectAllCodeFiles);
   const folders = useAppSelector(selectAllCodeFolders);
   const listStatus = useAppSelector(selectCodeFilesListStatus);
+  const listError = useAppSelector(selectCodeFilesListError);
   const foldersLoaded = useAppSelector(selectCodeFoldersLoaded);
 
   useEffect(() => {
@@ -280,6 +282,10 @@ export function useQuickSaveCode({
     // data
     folders: folders as CodeFolder[],
     filesInFolder,
+    /** The code-files list read (RC-B12 r12): gate "No files" on it. */
+    filesListStatus: listStatus,
+    filesListError: listError,
+    retryFilesList: () => void dispatch(loadCodeFilesList()),
     languageOptions: LANGUAGE_OPTIONS,
 
     // folder actions

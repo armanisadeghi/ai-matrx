@@ -41,6 +41,7 @@ import {
   transcriptUpserted,
   transcriptsFetched,
   transcriptsInitialized,
+  transcriptsLoadFailed,
   transcriptsLoadingChanged,
   transcriptsScopeChanged,
 } from "./transcriptsSlice";
@@ -80,7 +81,11 @@ export const fetchTranscripts = (): AppThunk<Promise<void>> => {
       dispatch(transcriptsFetched(data));
     } catch (error) {
       console.error("Error fetching transcripts:", error);
-      dispatch(transcriptsLoadingChanged(false));
+      dispatch(
+        transcriptsLoadFailed(
+          error instanceof Error ? error.message : String(error),
+        ),
+      );
     }
   };
 };

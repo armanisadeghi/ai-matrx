@@ -17,6 +17,7 @@
  * and pipe the resulting dataUrl through our save helper.
  */
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Save, ShieldAlert, X, Zap } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -51,7 +52,7 @@ export function AnnotateModeShell({
   onSave,
   onCancel,
 }: ModeShellProps) {
-  const { url, filename } = useImageSource(source);
+  const { url, filename, error: sourceError } = useImageSource(source);
   const sourceRef = source?.kind === "cloudFileId" ? source.cloudFileId : url;
   const imgRef = useRef<HTMLImageElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -168,6 +169,14 @@ export function AnnotateModeShell({
       setAiBusy(null);
     }
   };
+
+  if (sourceError) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <ReadFailure error={sourceError} what="this image" />
+      </div>
+    );
+  }
 
   if (!sourceRef) {
     return (

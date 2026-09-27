@@ -610,6 +610,7 @@ export function AuditionDialog({
                   <p className="text-xs font-medium text-foreground">
                     {verdict.gaps_captured > 0
                       ? `${verdict.gaps_captured} new draft ${verdict.gaps_captured === 1 ? "rule" : "rules"} captured from what the original does better — review them on the Rulebook page.`
+                      // read-gate-exempt: a heading over a NON-empty gaps list from a finished verdict ("no rule covers them yet"), not an empty view
                       : "The original does these better — no rule covers them yet:"}
                   </p>
                   <ul className="mt-1 list-disc pl-4 text-xs text-muted-foreground">

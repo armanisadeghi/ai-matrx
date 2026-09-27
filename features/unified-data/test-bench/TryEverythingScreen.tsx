@@ -992,7 +992,8 @@ function StatusStrip({
     const visibilityProblem =
         visibilityChoices.problem ??
         (visibilitySettled && visibilityLabel === null
-            ? "This organization is set to a value the settings registry does not list, so there are no words for it yet. An administrator can re-set it below."
+            ? // read-gate-exempt: a problem sentence about a stored setting value with no registry words ("no words for it yet"), not an empty view
+              "This organization is set to a value the settings registry does not list, so there are no words for it yet. An administrator can re-set it below."
             : null);
 
     return (
@@ -2005,7 +2006,15 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                     </div>
 
                     {/* ── render this record ───────────────────────────────── */}
-                    {rows.length === 0 ? (
+                    {records.error && rows.length === 0 ? (
+                        <Refusal>
+                            {refusalLineForAPerson(records.error)} <ErrorAlchemyMenu />
+                        </Refusal>
+                    ) : rows.length === 0 && records.loading ? (
+                        <p className="text-sm text-muted-foreground" role="status">
+                            Reading {tableName(table)}…
+                        </p>
+                    ) : rows.length === 0 ? (
                         <p className="text-sm text-muted-foreground">
                             {tableName(table)} has no records yet, so there is nothing to render a document
                             about. Type a row into it in section 1 and this comes alive.

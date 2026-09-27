@@ -1,6 +1,8 @@
 // features/transcripts/components/TranscriptsSidebar.tsx
 "use client";
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import React, { useState, useMemo } from "react";
 import { useTranscripts } from "../hooks/useTranscripts";
 import { Button } from "@/components/ui/button";
@@ -39,6 +41,10 @@ export function TranscriptsSidebar({
 }: TranscriptsSidebarProps) {
   const {
     transcripts,
+    isLoading,
+    loadError,
+    hasLoaded,
+    refreshTranscripts,
     activeTranscript,
     setActiveTranscript,
     updateTranscript,
@@ -218,7 +224,29 @@ export function TranscriptsSidebar({
       {/* Transcripts List */}
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
-          {filteredTranscripts.length === 0 ? (
+          {transcripts.length > 0 && loadError ? (
+            <StaleDataNotice
+              hasData
+              what="your transcripts"
+              detail={loadError}
+              retrying={isLoading}
+              onRetry={() => void refreshTranscripts()}
+            />
+          ) : null}
+          {filteredTranscripts.length === 0 && transcripts.length === 0 && loadError ? (
+            <ReadFailure
+              error={new Error(loadError)}
+              what="your transcripts"
+              onRetry={() => void refreshTranscripts()}
+            />
+          ) : filteredTranscripts.length === 0 && !hasLoaded ? (
+            <div
+              className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm"
+              role="status"
+            >
+              Reading your transcripts…
+            </div>
+          ) : filteredTranscripts.length === 0 ? (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
               {searchTerm ? "No transcripts found" : "No transcripts yet"}
             </div>

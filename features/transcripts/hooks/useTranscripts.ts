@@ -18,7 +18,9 @@ import type {
 import {
   selectActiveTranscript,
   selectTranscripts,
+  selectTranscriptsHasLoaded,
   selectTranscriptsInitialized,
+  selectTranscriptsLoadError,
   selectTranscriptsLoading,
   selectTranscriptsScope,
 } from "../redux/transcriptsSlice";
@@ -36,6 +38,10 @@ import {
 export interface UseTranscriptsApi {
   transcripts: Transcript[];
   isLoading: boolean;
+  /** Why the list read failed, or null — gate every empty view on it. */
+  loadError: string | null;
+  /** True once a list read has succeeded. */
+  hasLoaded: boolean;
   activeTranscript: Transcript | null;
   setActiveTranscript: (transcript: Transcript | null) => void;
   createTranscript: (input: CreateTranscriptInput) => Promise<Transcript>;
@@ -54,6 +60,8 @@ export function useTranscripts(): UseTranscriptsApi {
   const dispatch = useAppDispatch();
   const transcripts = useAppSelector(selectTranscripts);
   const isLoading = useAppSelector(selectTranscriptsLoading);
+  const loadError = useAppSelector(selectTranscriptsLoadError);
+  const hasLoaded = useAppSelector(selectTranscriptsHasLoaded);
   const activeTranscript = useAppSelector(selectActiveTranscript);
   const initialized = useAppSelector(selectTranscriptsInitialized);
   const scope = useAppSelector(selectTranscriptsScope);
@@ -61,6 +69,8 @@ export function useTranscripts(): UseTranscriptsApi {
   return {
     transcripts,
     isLoading,
+    loadError,
+    hasLoaded,
     activeTranscript,
     initialized,
     scope,

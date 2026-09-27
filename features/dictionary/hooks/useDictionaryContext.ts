@@ -115,6 +115,9 @@ export function useDictionaryContext(surfaceKey: string) {
     owners,
     status: cell?.status ?? "idle",
     error: cell?.error ?? null,
+    /** Re-run the resolve read (after a failure) — RC-B12 round 12. */
+    retry: () =>
+      void dispatch(ensureResolved(surfaceKey, selection as DictSelection, true)),
     // Per-task custom dictionary (session-scoped, not saved to any tier).
     customEntries,
     setCustomEntries,

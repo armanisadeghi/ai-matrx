@@ -18,6 +18,7 @@
  * unchanged.
  */
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useCallback, useState } from "react";
 import Cropper from "react-easy-crop";
 import { useImageSource } from "../shared/use-image-source";
@@ -49,7 +50,7 @@ export function AvatarModeShell({
   onSave,
   onCancel,
 }: ModeShellProps) {
-  const { url, filename } = useImageSource(source);
+  const { url, filename, error: sourceError } = useImageSource(source);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
@@ -173,6 +174,10 @@ export function AvatarModeShell({
             onRotationChange={setRotation}
             onCropComplete={onCropComplete}
           />
+        ) : sourceError ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-background">
+            <ReadFailure error={sourceError} what="this image" />
+          </div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
             No image loaded.

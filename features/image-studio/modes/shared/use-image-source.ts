@@ -22,12 +22,24 @@ export function useImageSource(source: ImageSource | null): {
   url: string | null;
   filename: string;
   ready: boolean;
+  /**
+   * Why a `cloudFileId` source could not be resolved (access denied, not
+   * found, deleted…), or null. A mode shows this failure — never "No image
+   * loaded" over a resolve that refused (RC-B12 round 12).
+   */
+  error: Error | null;
 } {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
-  const cloudFileUrl =
-    useMediaResolution(
-      source?.kind === "cloudFileId" ? source.cloudFileId : null,
-    ).resolution?.src ?? null;
+  const cloudResolution = useMediaResolution(
+    source?.kind === "cloudFileId" ? source.cloudFileId : null,
+  );
+  const cloudFileUrl = cloudResolution.resolution?.src ?? null;
+  const error =
+    source?.kind === "cloudFileId" && cloudResolution.status === "unavailable"
+      ? new Error(
+          `This image could not be opened (${(cloudResolution.reason ?? "unknown").replace(/_/g, " ")}).`,
+        )
+      : null;
 
   useEffect(() => {
     if (source?.kind !== "file") return undefined;
@@ -64,6 +76,7 @@ export function useImageSource(source: ImageSource | null): {
     url: resolvedUrl,
     filename,
     ready: resolvedUrl !== null,
+    error,
   };
 }
 

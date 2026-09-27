@@ -965,6 +965,7 @@ function AutoCreateAgentAppFormWithAgent({
                             User Instructions
                           </h4>
                           <p className="text-xs text-muted-foreground mt-0.5">
+                            {/* read-gate-exempt: a form switch's off-state label ("no custom instructions"), not an empty view over a read */}
                             {includeUserInstructions
                               ? "Allow custom instructions"
                               : "No custom instructions"}

@@ -361,6 +361,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
         <ScrollArea className="max-h-[calc(60dvh-60px)]">
           <div className="p-2 space-y-1">
             {resources.length === 0 ? (
+              // read-gate-exempt: admin debug view of the resources the user attached to this composer instance (client state), not a database read
               <div className="p-4 text-center text-sm text-muted-foreground">
                 No resources attached
               </div>

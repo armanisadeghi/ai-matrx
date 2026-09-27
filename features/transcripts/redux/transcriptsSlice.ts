@@ -21,6 +21,14 @@ import type { Transcript } from "../types";
 export interface TranscriptsState {
   items: Transcript[];
   isLoading: boolean;
+  /**
+   * Why the last list read failed, or null (RC-B12 round 12). The fetch used
+   * to console.error and leave `items` at [], which the sidebar drew as "No
+   * transcripts yet".
+   */
+  loadError: string | null;
+  /** True once a list read has SUCCEEDED — only then is an empty list an answer. */
+  hasLoaded: boolean;
   activeId: string | null;
   initialized: boolean;
   /** VIEW LAW: the declared list scope driving fetches. */
@@ -30,6 +38,8 @@ export interface TranscriptsState {
 const initialState: TranscriptsState = {
   items: [],
   isLoading: false,
+  loadError: null,
+  hasLoaded: false,
   activeId: null,
   initialized: false,
   scope: { kind: "mine" },
@@ -45,6 +55,10 @@ const slice = createSlice({
     transcriptsLoadingChanged(state, action: PayloadAction<boolean>) {
       state.isLoading = action.payload;
     },
+    transcriptsLoadFailed(state, action: PayloadAction<string>) {
+      state.isLoading = false;
+      state.loadError = action.payload;
+    },
     /**
      * Full-list hydration — ONE batched dispatch per fetch (never per-row).
      * Reconciles the active selection: keep it if still present, fall back to
@@ -53,6 +67,8 @@ const slice = createSlice({
     transcriptsFetched(state, action: PayloadAction<Transcript[]>) {
       state.items = action.payload;
       state.isLoading = false;
+      state.loadError = null;
+      state.hasLoaded = true;
       const stillThere =
         state.activeId !== null &&
         action.payload.some((t) => t.id === state.activeId);
@@ -99,6 +115,7 @@ const slice = createSlice({
 export const {
   transcriptsInitialized,
   transcriptsLoadingChanged,
+  transcriptsLoadFailed,
   transcriptsFetched,
   activeTranscriptChanged,
   transcriptsScopeChanged,
@@ -122,6 +139,11 @@ export const selectTranscriptsLoading = (state: WithTranscripts): boolean =>
   state.transcripts.isLoading;
 export const selectTranscriptsInitialized = (state: WithTranscripts): boolean =>
   state.transcripts.initialized;
+export const selectTranscriptsLoadError = (
+  state: WithTranscripts,
+): string | null => state.transcripts.loadError;
+export const selectTranscriptsHasLoaded = (state: WithTranscripts): boolean =>
+  state.transcripts.hasLoaded;
 export const selectTranscriptsScope = (state: WithTranscripts): ListScope =>
   state.transcripts.scope;
 export const selectActiveTranscriptId = (

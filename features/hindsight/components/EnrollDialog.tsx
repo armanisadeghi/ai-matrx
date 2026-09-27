@@ -444,7 +444,7 @@ export function EnrollDialog({
                     <ErrorAlchemyMenu />
                   </p>
                 )}
-                {rows.data?.length === 0 && (
+                {!rows.isError && rows.data?.length === 0 && (
                   <p className="p-3 text-sm text-muted-foreground">
                     {search
                       ? `No ${subjectNoun}s match “${search}”.`
@@ -482,7 +482,7 @@ export function EnrollDialog({
                     <ErrorAlchemyMenu />
                   </p>
                 )}
-                {workflowNodes.data?.length === 0 && (
+                {!workflowNodes.isError && workflowNodes.data?.length === 0 && (
                   <p className="p-3 text-sm text-muted-foreground">
                     This workflow has no steps yet.
                   </p>

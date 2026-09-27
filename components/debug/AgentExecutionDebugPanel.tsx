@@ -623,6 +623,7 @@ export const AgentExecutionDebugPanel: React.FC<
               {/* TODO: wire aggregate/completion stats to activeRequests/observability */}
 
               {messages.length === 0 ? (
+                // read-gate-exempt: admin debug inspector over the execution instance already in Redux; the conversation surface owns and shows its own load failure
                 <p className="text-xs text-gray-500">
                   No committed messages yet
                 </p>
@@ -874,6 +875,7 @@ export const AgentExecutionDebugPanel: React.FC<
           >
             <div className="space-y-3">
               {allResources.length === 0 ? (
+                // read-gate-exempt: admin debug inspector over the execution instance already in Redux; the conversation surface owns and shows its own load failure
                 <p className="text-xs text-gray-500">No resources attached</p>
               ) : (
                 <div className="space-y-2">

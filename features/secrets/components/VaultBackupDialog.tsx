@@ -622,6 +622,7 @@ export function VaultBackupDialog({
                   Personal credentials
                 </legend>
                 {items.length === 0 ? (
+                  // read-gate-exempt: `items` is VaultWorkspace's loaded rows (a prop) and this says only what is LOADED, never that none exist; the workspace shows its own read failure
                   <p className="p-2 text-sm text-muted-foreground">
                     No personal credentials are loaded.
                   </p>

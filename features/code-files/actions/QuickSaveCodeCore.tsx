@@ -5,6 +5,7 @@
 // does not own its own dialog/overlay/popover wrapper — callers render it
 // inside whatever shell they need.
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import React, { useCallback } from "react";
 import {
   AlertTriangle,
@@ -93,6 +94,9 @@ export function QuickSaveCodeCore({
     setUpdateMethod,
     folders,
     filesInFolder,
+    filesListStatus,
+    filesListError,
+    retryFilesList,
     languageOptions,
     createFolder,
     isSaving,
@@ -394,9 +398,20 @@ export function QuickSaveCodeCore({
                           <span className="truncate font-mono">{f.name}</span>
                         </SelectItem>
                       ))
-                    ) : (
+                    ) : filesListStatus === "error" ? (
+                      <ReadFailure
+                        error={filesListError ?? true}
+                        what="your code files"
+                        onRetry={retryFilesList}
+                        className="m-1"
+                      />
+                    ) : filesListStatus === "loaded" ? (
                       <SelectItem value="__none" disabled>
                         No files in this folder
+                      </SelectItem>
+                    ) : (
+                      <SelectItem value="__none" disabled>
+                        Reading your code files…
                       </SelectItem>
                     )}
                   </SelectContent>
