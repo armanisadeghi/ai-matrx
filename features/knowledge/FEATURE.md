@@ -55,6 +55,22 @@ Plan: `common-docs/projects/knowledge-system/KNOWLEDGE-HUB.md` §5.1.
   its own target when its search row hands off to the bar.
 - `hitHref.ts` — ↵ opens a hit at the entity registry's door (`/agents/go/<id>` for agents).
 
+## Ask (hub phase H4) — `features/knowledge/ask/`
+
+- `AskPanel.tsx` — docked-right Ask over the current filter (NotebookLM is the champion). Props:
+  `query` (the filter; `text` pre-fills the question), `sources` (the filter's `sources` section —
+  omitted → the panel reads it through `searchKnowledge`), `onOpenCitation` (the hub's peek; omitted →
+  the citation link opens `/knowledge/sources/<id>?chunk=<segment>` in a new tab), `onClose`.
+  **The hub docks it** beside its results for `mode=ask` URLs (⌘↵ in the bar already lands there);
+  until it does, `/knowledge/ask?<hub params>` (`AskRoute.tsx`) is the page that hosts it.
+- `askKnowledge.ts` — the one client + wire adapter for `POST /knowledge/search` `mode: "ask"`:
+  `ask_started → answer_delta… (answer_reset) → citations → sources_used → ask_done`, or `ask_refused`
+  (org monthly cap / no organization). Not a body-carried read: Ask spends against the selected
+  organization, so `postNdjson` refuses before sending when none is selected.
+- Contexts are labelled `[S1]…` by the server; `[1]` and `[S1]` both cite context 1.
+- Tests: `ask/__tests__/askPanel.test.tsx` (citation links + click target, uncited sentence badge,
+  per-Source on/off reaching `sources_used`, no-Sources and cap states, wire adapter).
+
 ## Traps
 
 - **The bar's search runs on the title stand-in until `POST /knowledge/search` (H1) ships.** The
