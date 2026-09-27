@@ -107,6 +107,29 @@ export function isErrorBox(node: Element): boolean {
   return ERROR_BOX_CLASS.test(cls);
 }
 
+const ERROR_TEXT_CLASS = /(^|\s)(?:(?:dark|sm|md|lg|xl|2xl):)*text-(?:destructive|red|rose)(?:\b|-|\/)/;
+
+/**
+ * THE MENU NEVER SHOWS WITHOUT AN ERROR (page-pass 2026-09-27). A menu that is
+ * handed no `input` and no `error` reads the error from the box it sits in —
+ * so outside any error box it offered "Error for AI" over nothing (a null
+ * error), at hundreds of call sites. It is shown only when there IS an error:
+ * one handed to it, or an error box around it (an alert / declared root /
+ * destructive-styled box or line, within a few levels).
+ */
+export function menuHasAnError(
+  args: { hasInput: boolean; errorGiven: boolean; error: unknown },
+  anchor: Element | null,
+): boolean {
+  if (args.hasInput) return true;
+  if (args.errorGiven) return args.error !== null && args.error !== undefined && args.error !== "";
+  let el = anchor?.parentElement ?? null;
+  for (let hops = 0; el && el !== document.body && hops < 6; hops += 1, el = el.parentElement) {
+    if (isErrorBox(el) || ERROR_TEXT_CLASS.test(el.getAttribute("class") ?? "")) return true;
+  }
+  return false;
+}
+
 export function ErrorAlchemyMenu({
   input: given,
   size = "xs",
@@ -139,6 +162,13 @@ export function ErrorAlchemyMenu({
   const staticTitle = typeof input === "function" ? undefined : input.title;
   const markerRef = useRef<HTMLSpanElement | null>(null);
   const placement = useInlinePlacement(self, markerRef);
+  // Decided after mount from the marker's place in the DOM; the menu stays
+  // absent until then so it never flashes over a box with nothing wrong.
+  const errorGiven = error !== undefined;
+  const [shown, setShown] = useState<boolean>(given !== undefined || (errorGiven && error != null && error !== ""));
+  useLayoutEffect(() => {
+    setShown(menuHasAnError({ hasInput: given !== undefined, errorGiven, error }, markerRef.current));
+  }, [given, errorGiven, error]);
   const menu = (
     <span
       ref={self}
@@ -190,7 +220,7 @@ export function ErrorAlchemyMenu({
   return (
     <>
       <span ref={markerRef} hidden data-error-alchemy-anchor="" />
-      {placement.target && placement.host ? createPortal(menu, placement.host) : menu}
+      {!shown ? null : placement.target && placement.host ? createPortal(menu, placement.host) : menu}
     </>
   );
 }
