@@ -1,4 +1,4 @@
--- draft: claude selection-toolbar lane — ready for the chair to apply (written 2026-09-26; NOT applied by the lane)
+-- chair-step: REVOKEs execute on the new server-only SECURITY DEFINER door public.passage_link_restore from public/anon/authenticated (reached only via entity_undelete, matching cmt_restore). Reviewed and applied by the chair 2026-09-26.
 -- based-on: public._trash_kind_rows(uuid, uuid, uuid, text[], integer, integer) 0835054e6d20a37358915f86893c954bc4c9a4aa978f639216f9f43180db67af
 -- based-on: public._trash_kind_counts(uuid, uuid, uuid) d6b74549441ec1b4d263f8bf13cf5cbf37432dc2de08f22e08f13454c1e20fe8
 -- based-on: public.entity_undelete(text, uuid) 6abfa596e367cb7bd9bcd3ff2edd42c23689511fe5f1fd3b25f278b92f203a6d
@@ -120,6 +120,9 @@ begin
   perform public.assoc_add(a.source_type, a.source_id, a.target_type, a.target_id, a.organization_id,
                            a.label, a.metadata, a.role, a.position, a.payload_kind, a.payload);
 end $function$;
+
+revoke execute on function public.passage_link_restore(uuid) from public, anon, authenticated;
+grant execute on function public.passage_link_restore(uuid) to service_role;
 
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
