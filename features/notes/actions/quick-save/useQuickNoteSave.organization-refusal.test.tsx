@@ -21,6 +21,7 @@ jest.mock("@/features/notes/redux/selectors", () => ({
   selectAllNotesList: () => state.notes,
   selectAllFolders: () => [],
   selectNotesListStatus: () => "ready",
+  selectNotesListError: () => null,
   selectNotesByFolder: () => () => [],
 }));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({ selectOrganizationId: () => state.organizationId }));
