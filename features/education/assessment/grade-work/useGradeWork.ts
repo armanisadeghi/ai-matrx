@@ -37,7 +37,16 @@ export interface GradeWorkInput {
 const NO_MODEL_ANSWER =
   "No model answer was provided. Solve the problem yourself to determine the correct result and full-credit reasoning, then grade the student's photographed work against that.";
 
-export function useGradeWork() {
+export function useGradeWork(
+  options: {
+    /**
+     * False until an organization is chosen — see StudyOrganizationGate. A
+     * grade while false writes nothing (no `study_session`, no attempt).
+     */
+    enabled?: boolean;
+  } = {},
+) {
+  const enabled = options.enabled ?? true;
   const dispatch = useAppDispatch();
   const liveWindow = useFloatingRunWindow({ instanceId: "education-grade-work" });
   const [status, setStatus] = useState<GradeWorkStatus>("idle");
@@ -45,6 +54,11 @@ export function useGradeWork() {
   const [error, setError] = useState<string | null>(null);
 
   async function grade(input: GradeWorkInput): Promise<GradedAnswer | null> {
+    if (!enabled) {
+      setError("Choose an organization above to grade your work.");
+      setStatus("error");
+      return null;
+    }
     setStatus("grading");
     setError(null);
     setResult(null);

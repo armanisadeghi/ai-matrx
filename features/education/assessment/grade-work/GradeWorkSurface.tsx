@@ -34,6 +34,10 @@ import { HandwrittenWorkInput } from "../components/HandwrittenWorkInput";
 import { StepBreakdown } from "../components/StepBreakdown";
 import { GradedAnswerBlock } from "../components/GradedAnswerBlock";
 import { useGradeWork } from "./useGradeWork";
+import {
+  StudyOrganizationGate,
+  useStudyOrganizationReady,
+} from "@/features/education/study/components/StudyOrganizationGate";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 
@@ -41,7 +45,9 @@ export function GradeWorkSurface() {
   const [problem, setProblem] = useState("");
   const [expected, setExpected] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
-  const grader = useGradeWork();
+  // A grade writes a study session, filed under one organization: the notice
+  // shows in place until one is chosen (never the blocking workspace prompt).
+  const grader = useGradeWork({ enabled: useStudyOrganizationReady() });
   const guard = useEntitlementGuard("education.image_grade");
   // School-safe COPPA gate: an under-13 account with no active guardian link is
   // blocked from AI generation until a parent approves (never a silent failure).
@@ -156,6 +162,7 @@ export function GradeWorkSurface() {
       getScope={getScope}
       getWriteHandlers={getSurfaceWriteHandlers}
     >
+    <StudyOrganizationGate what="Grading your work">
     <div className="mx-auto max-w-2xl px-3 pb-16 pt-6 sm:px-6">
       {/* Header */}
       <div className="mb-5">
@@ -259,6 +266,7 @@ export function GradeWorkSurface() {
       <guard.Paywall />
       <coppa.Gate />
     </div>
+    </StudyOrganizationGate>
     </SurfaceRuntimeProvider>
   );
 }
