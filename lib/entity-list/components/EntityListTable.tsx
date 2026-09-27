@@ -195,6 +195,10 @@ function fromTableFilters(state: ColumnFiltersState): EntityFilters {
 
 const PAGE_OWNS_COLUMN_PICKER = { columns: false } as const;
 
+
+/** Per list surface: the column widths last fitted to loaded rows. */
+const LAST_FITTED_WIDTHS = new Map<string, Map<string, string | number | undefined>>();
+
 export function EntityListTable<TRow>({
   config,
   actions,
@@ -365,7 +369,24 @@ export function EntityListTable<TRow>({
 
   // Widths follow the data: mostly-empty columns yield, the name is pinned
   // (../columnWidths.ts).
-  const columns = fitColumnWidths(declaredColumns, rows, nameColumnId);
+  // While the skeleton shows, the table keeps the widths it last fitted to
+  // real rows (page-pass 2026-09-27: the skeleton drew the declared widths,
+  // then the loaded rows yielded their empty columns and everything jumped).
+  const fitted = fitColumnWidths(declaredColumns, rows, nameColumnId);
+  const widthKey = config.surfaceKey;
+  if (rows.length > 0) {
+    LAST_FITTED_WIDTHS.set(
+      widthKey,
+      new Map(fitted.map((c) => [String(c.id ?? c.accessorKey ?? ""), c.width])),
+    );
+  }
+  const remembered = isLoading ? LAST_FITTED_WIDTHS.get(widthKey) : undefined;
+  const columns = remembered
+    ? fitted.map((c) => {
+        const width = remembered.get(String(c.id ?? c.accessorKey ?? ""));
+        return width === undefined ? c : { ...c, width };
+      })
+    : fitted;
 
   return (
     <MatrxDataTable<TRow>
@@ -374,6 +395,15 @@ export function EntityListTable<TRow>({
       getRowId={config.getRowId}
       isLoading={isLoading}
       isFetching={isFetching}
+      // No row count until the rows arrive (page-pass 2026-09-27): the footer
+      // read "0 rows" under the loading skeleton.
+      paginationLabelFormat={(start, end, count) =>
+        isLoading
+          ? ""
+          : count === 0
+            ? "0 rows"
+            : `${start.toLocaleString()}-${end.toLocaleString()} of ${count.toLocaleString()}`
+      }
       zebra
       pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}
       className={cn(density === "compact" && "text-xs [&_td]:py-1 [&_th]:py-1")}

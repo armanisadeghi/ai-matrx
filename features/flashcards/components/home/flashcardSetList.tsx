@@ -130,18 +130,35 @@ function StudyCell({ row }: { row: FlashcardSetListRow }) {
       className="flex items-center gap-0.5"
       onClick={(e) => e.stopPropagation()}
     >
-      <PlayTapButton
-        href={flashcardStudyHref(row)}
-        variant="transparent"
-        tooltip="Study"
-        ariaLabel={`Study ${row.name}`}
-      />
-      <ZapTapButton
-        href={flashcardFastFireHref(row)}
-        variant="transparent"
-        tooltip="Fast Fire drill"
-        ariaLabel={`Fast Fire ${row.name}`}
-      />
+      {/* Phone card: labelled one-tap buttons; the grid: icons + tooltips. */}
+      <span className="contents sm:hidden">
+        <PlayTapButton
+          href={flashcardStudyHref(row)}
+          variant="transparent"
+          label="Study"
+          ariaLabel={`Study ${row.name}`}
+        />
+        <ZapTapButton
+          href={flashcardFastFireHref(row)}
+          variant="transparent"
+          label="Fast Fire"
+          ariaLabel={`Fast Fire ${row.name}`}
+        />
+      </span>
+      <span className="hidden sm:contents">
+        <PlayTapButton
+          href={flashcardStudyHref(row)}
+          variant="transparent"
+          tooltip="Study"
+          ariaLabel={`Study ${row.name}`}
+        />
+        <ZapTapButton
+          href={flashcardFastFireHref(row)}
+          variant="transparent"
+          tooltip="Fast Fire drill"
+          ariaLabel={`Fast Fire ${row.name}`}
+        />
+      </span>
     </span>
   );
 }
@@ -168,6 +185,22 @@ export function buildFlashcardSetColumns(
         href: flashcardSetHref,
         entityToken: "fc_set",
         cell: (row) => <TextCell value={row.name} className="font-medium" />,
+      },
+    },
+    {
+      id: "study",
+      label: "Study",
+      locked: true,
+      phone: "primary",
+      // Ordered right after the name (page-pass 2026-09-27): the main action
+      // stays on screen at 800px instead of behind Topic and Folders.
+      column: {
+        id: "study",
+        width: 96,
+        header: "Study",
+        filter: false,
+        sortable: false,
+        cell: (row) => <StudyCell row={row} />,
       },
     },
     {
@@ -293,19 +326,6 @@ export function buildFlashcardSetColumns(
         header: "Created",
         filter: false,
         cell: (row) => timeCell(row.created_at),
-      },
-    },
-    {
-      id: "study",
-      label: "Study",
-      locked: true,
-      phone: "primary",
-      column: {
-        id: "study",
-        header: "Study",
-        filter: false,
-        sortable: false,
-        cell: (row) => <StudyCell row={row} />,
       },
     },
   ];

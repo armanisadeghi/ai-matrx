@@ -48,15 +48,32 @@ function valueOf<T>(row: T, column: MatrxColumnDef<T>): unknown {
   return (row as Record<string, unknown>)[key];
 }
 
-/** True when this row has nothing in this column (null, "", "—", []). */
+/**
+ * True when this row has nothing in this column (null, "", "—", []).
+ *
+ * A column with no accessor whose id is not a field of the row is an ACTION
+ * or computed cell (a Study button) — its value cannot be read, so it is never
+ * judged empty (page-pass 2026-09-27: the flashcards Study buttons vanished
+ * from every phone card because `row.study` is undefined).
+ */
 export function cellIsEmpty<T>(row: T, column: MatrxColumnDef<T>): boolean {
+  if (isUnreadableColumn(row, column)) return false;
   return isEmptyCellValue(valueOf(row, column));
+}
+
+function isUnreadableColumn<T>(row: T, column: MatrxColumnDef<T>): boolean {
+  if (column.accessorFn || column.accessorKey) return false;
+  const key = column.id;
+  return (
+    !key || typeof row !== "object" || row === null || !(key in (row as object))
+  );
 }
 
 /** Share of rows with nothing in this column; null when there are too few rows to judge. */
 export function emptyShare<T>(rows: readonly T[], column: MatrxColumnDef<T>): number | null {
   if (rows.length < MIN_ROWS_TO_JUDGE) return null;
   let empty = 0;
+  if (isUnreadableColumn(rows[0], column)) return null;
   for (const row of rows) if (isEmptyCellValue(valueOf(row, column))) empty++;
   return empty / rows.length;
 }

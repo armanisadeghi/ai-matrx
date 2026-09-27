@@ -42,8 +42,10 @@ import {
   Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
-import type { HeaderAction } from "@/features/shell/components/header/variants/types";
+import {
+  EducationToolHeader,
+  type EducationToolAction,
+} from "@/features/education/components/EducationToolHeader";
 import { fcService } from "../../data/fcService";
 import type { CardWithDetails, FcSetRow } from "../../data/types";
 import { toast } from "@/lib/toast";
@@ -189,37 +191,26 @@ export function FlashcardsHome({
     startTransition(() => router.push(path));
   };
 
-  // Secondary actions live in the shell header (IC-5): inline glass icons on
-  // `lg+`, one `…` bottom sheet below it.
-  const headerActions: HeaderAction[] = [
-    {
-      icon: "CalendarClock",
-      label: "Review due",
-      onPress: () => goTo(`${EDU_BASE}/review`),
-    },
+  // Page actions (page-pass 2026-09-27): "Review due" is the one labelled
+  // primary action; everything else is ONE labelled "More" menu. Navigation
+  // is a real link (new tab, prefetch, the route's loading state at once).
+  const headerActions: EducationToolAction[] = [
     {
       icon: "Flame",
       label: "Drill weak areas",
-      onPress: () => goTo(`${EDU_BASE}/weak-areas`),
+      href: `${EDU_BASE}/weak-areas`,
     },
-    {
-      icon: "TrendingUp",
-      label: "Progress",
-      onPress: () => goTo(`${EDU_BASE}/progress`),
-    },
+    { icon: "TrendingUp", label: "Progress", href: `${EDU_BASE}/progress` },
     {
       icon: "FileSearch",
       label: "New deck from a document",
-      onPress: () => goTo(`${EDU_BASE}/new/from-source`),
+      href: `${EDU_BASE}/new/from-source`,
     },
-    {
-      icon: "Upload",
-      label: "Import decks",
-      onPress: () => goTo(`${EDU_BASE}/new/import`),
-    },
+    { icon: "Upload", label: "Import decks", href: `${EDU_BASE}/new/import` },
     {
       icon: "Download",
       label: exportingLibrary ? "Exporting library…" : "Export library",
+      disabled: exportingLibrary,
       onPress: () => {
         if (!exportingLibrary) void exportLibrary();
       },
@@ -229,15 +220,20 @@ export function FlashcardsHome({
       // worker serving it on a failed navigation.
       icon: "CloudOff",
       label: "Downloaded & offline",
-      onPress: () => goTo("/education/offline"),
+      href: "/education/offline",
     },
     {
-      // THE DOOR LAW — every AI step in flashcards (grading, live help, batch
-      // review, card images) is a Mandate the learner may re-point at their
-      // own agent. Deep-linked to the `flashcards` domain.
+      // THE DOOR LAW — every AI step in flashcards is a Mandate the learner
+      // may re-point at their own agent.
       icon: INTELLIGENCE_ICON_NAME,
       label: "Flashcards intelligence",
-      onPress: () => goTo(featureIntelligenceHref("flashcards")),
+      href: featureIntelligenceHref("flashcards"),
+    },
+    {
+      icon: "CalendarClock",
+      label: "Review due",
+      href: `${EDU_BASE}/review`,
+      primary: true,
     },
   ];
 
@@ -281,7 +277,6 @@ export function FlashcardsHome({
     <>
       <EducationToolHeader
         title="Flashcard Studio"
-        sheetTitle="Flashcard actions"
         actions={actionLayout === "header" ? headerActions : undefined}
       />
       {config ? (
