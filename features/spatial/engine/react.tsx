@@ -58,3 +58,13 @@ export function useFocusedTile(): string | null {
   const store = useSpatialStore();
   return useSyncExternalStore(store.subscribeFocus, store.getFocused, store.getFocused);
 }
+
+export function useActiveTool() {
+  const store = useSpatialStore();
+  return useSyncExternalStore(store.subscribeUi, store.getTool, store.getTool);
+}
+
+export function useLayoutGuides(): boolean {
+  const store = useSpatialStore();
+  return useSyncExternalStore(store.subscribeUi, store.getGuides, store.getGuides);
+}
