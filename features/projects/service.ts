@@ -360,15 +360,15 @@ export async function getOrgProjects(
   }
 }
 
+/**
+ * The signed-in person's projects. A failed read REJECTS — returning `[]` here
+ * made every picker say "No projects yet" when the read had failed. Callers
+ * (the context-assignment data layer and its pickers) catch and show it.
+ */
 export async function getUserProjects(): Promise<ProjectWithRole[]> {
-  try {
-    requireUserId();
-    const projects = await loadUserProjectsWithRole();
-    return projects.sort((a, b) => a.name.localeCompare(b.name));
-  } catch (error) {
-    console.error("Error in getUserProjects:", error);
-    return [];
-  }
+  requireUserId();
+  const projects = await loadUserProjectsWithRole();
+  return projects.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function isProjectSlugAvailable(

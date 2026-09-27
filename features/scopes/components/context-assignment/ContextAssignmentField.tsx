@@ -57,6 +57,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
@@ -734,7 +735,12 @@ export function ContextAssignmentField({
   );
   const dispatch = useAppDispatch();
   const openScopeEdit = useOpenScopeEditWindow();
-  const { organizations } = useScopeTree();
+  const {
+    organizations,
+    status: treeStatus,
+    error: treeError,
+    refresh: refreshTree,
+  } = useScopeTree();
 
   // Tree: idempotent ensure (no-refetch policy — a no-op when already loaded).
   useEffect(() => {
@@ -745,23 +751,51 @@ export function ContextAssignmentField({
   // mount this content on open, so popovers/dialogs are lazy by construction).
   const [allProjects, setAllProjects] = useState<AssignableProject[]>([]);
   const [allTasks, setAllTasks] = useState<AssignableTask[]>([]);
+  // Each engagement read's outcome — "No projects yet" only after a read that
+  // succeeded; a failed read says so (with a retry) instead.
+  const [projectsRead, setProjectsRead] = useState<"loading" | "ready" | "error">("loading");
+  const [projectsError, setProjectsError] = useState<string | null>(null);
+  const [tasksRead, setTasksRead] = useState<"loading" | "ready" | "error">("loading");
+  const [tasksError, setTasksError] = useState<string | null>(null);
+  const [engagementAttempt, setEngagementAttempt] = useState(0);
   useEffect(() => {
     if (!dims.projects && !dims.tasks) return undefined;
     let alive = true;
     if (dims.projects) {
-      void fetchAssignableProjects().then((p) => {
-        if (alive) setAllProjects(p);
-      });
+      void fetchAssignableProjects().then(
+        (p) => {
+          if (!alive) return;
+          setAllProjects(p);
+          setProjectsError(null);
+          setProjectsRead("ready");
+        },
+        (err: unknown) => {
+          if (!alive) return;
+          setProjectsError(err instanceof Error ? err.message : "Couldn't load your projects");
+          setProjectsRead("error");
+        },
+      );
     }
     if (dims.tasks) {
-      void fetchAssignableTasks().then((t) => {
-        if (alive) setAllTasks(t);
-      });
+      void fetchAssignableTasks().then(
+        (t) => {
+          if (!alive) return;
+          setAllTasks(t);
+          setTasksError(null);
+          setTasksRead("ready");
+        },
+        (err: unknown) => {
+          if (!alive) return;
+          setTasksError(err instanceof Error ? err.message : "Couldn't load your tasks");
+          setTasksRead("error");
+        },
+      );
     }
     return () => {
       alive = false;
     };
-  }, [dims.projects, dims.tasks]);
+  }, [dims.projects, dims.tasks, engagementAttempt]);
+  const retryEngagement = () => setEngagementAttempt((n) => n + 1);
 
   // Org: an explicitly-passed `defaultOrganizationId` wins; otherwise the
   // default is "All organizations" (nothing filtered out). Always changeable.
@@ -1378,7 +1412,9 @@ export function ContextAssignmentField({
     (dims.projects ? selProjects.size : 0) +
     (dims.tasks ? selTasks.size : 0);
   const SubIcon = subject?.icon ?? FileText;
-  const loadingTree = organizations.length === 0;
+  // The scope tree's read failed and nothing is on hand — say so, never spin.
+  const treeReadFailed = treeStatus === "error" && organizations.length === 0;
+  const loadingTree = organizations.length === 0 && !treeReadFailed;
   const allowCreate = mode !== "filter";
 
   return (
@@ -1457,7 +1493,13 @@ export function ContextAssignmentField({
           )}
           style={fill ? undefined : { height: sectionHeight }}
         >
-          {loadingTree ? (
+          {treeReadFailed ? (
+            <ReadFailure
+              error={treeError ?? true}
+              what="your organizations and scopes"
+              onRetry={() => void refreshTree()}
+            />
+          ) : loadingTree ? (
             <div className="flex h-full items-center justify-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading your context…
@@ -1622,7 +1664,18 @@ export function ContextAssignmentField({
                       onCancel={() => setAdding(null)}
                     />
                   )}
-                  {projects.length === 0 ? (
+                  {projects.length === 0 && projectsRead === "error" ? (
+                    <ReadFailure
+                      error={projectsError ?? true}
+                      what="your projects"
+                      className="m-1"
+                      onRetry={retryEngagement}
+                    />
+                  ) : projects.length === 0 && projectsRead === "loading" ? (
+                    <div className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Loading projects…
+                    </div>
+                  ) : projects.length === 0 ? (
                     <div className="px-2.5 py-1.5 text-xs text-muted-foreground">
                       {q ? "No matches." : "No projects yet."}
                     </div>
@@ -1674,7 +1727,18 @@ export function ContextAssignmentField({
                       onCancel={() => setAdding(null)}
                     />
                   )}
-                  {tasks.length === 0 ? (
+                  {tasks.length === 0 && tasksRead === "error" ? (
+                    <ReadFailure
+                      error={tasksError ?? true}
+                      what="your tasks"
+                      className="m-1"
+                      onRetry={retryEngagement}
+                    />
+                  ) : tasks.length === 0 && tasksRead === "loading" ? (
+                    <div className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Loading tasks…
+                    </div>
+                  ) : tasks.length === 0 ? (
                     <div className="px-2.5 py-1.5 text-xs text-muted-foreground">
                       {q ? "No matches." : "No tasks yet."}
                     </div>
@@ -1693,6 +1757,7 @@ export function ContextAssignmentField({
                               <Circle className="h-3 w-3 shrink-0" />
                             )}
                             <span className="truncate">
+                              {/* read-gate-exempt: a field of one loaded task row (it has no project), not the answer of a read */}
                               {t.projectId
                                 ? projName(t.projectId)
                                 : "No project"}
