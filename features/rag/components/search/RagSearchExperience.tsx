@@ -1222,7 +1222,7 @@ function SearchTab({
               startIcon={<SearchIcon className="h-4 w-4" />}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search indexed content (PDFs, notes, code)…"
+              placeholder="Search your Sources — files, web pages, transcripts, notes…"
               className="h-10"
               enableVoice={false}
               showCopyButton={false}

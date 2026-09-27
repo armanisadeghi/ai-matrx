@@ -29,6 +29,8 @@ const actions = new Set(ACTIONS.split(","));
 mkdirSync(OUT, { recursive: true });
 const COUNTER = readFileSync(resolve(ROOT, "scripts/lib/render-counter.js"), "utf8");
 const REGIONS = [
+  "Toaster",
+  "HeaderChooseOrgButton",
   "Header",
   "Sidebar",
   "RouteHeader",
@@ -54,20 +56,31 @@ try {
   page.on("pageerror", (e) => (report.pageErrors ??= []).push(String(e).slice(0, 300)));
   report.seat = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
 
+  let rpcs = [];
+  page.on("request", (r) => {
+    const u = r.url();
+    if (u.includes("/rest/v1/")) rpcs.push(u.split("/rest/v1/")[1].split("?")[0]);
+  });
   const take = async (label) => {
     const t = await page.evaluate(() => window.__rc.take());
     const err = await page.evaluate(() => window.__rcErr ?? null);
     const top = Object.entries(t.counts)
       .map(([name, v]) => ({ name, ...v }))
       .sort((a, b) => b.n - a.n);
-    const phase = { label, commits: t.commits, regions: t.regions, total: top.reduce((s, c) => s + c.n, 0), top, err };
+    const reads = {};
+    for (const r of rpcs) reads[r] = (reads[r] ?? 0) + 1;
+    const phase = { label, commits: t.commits, regions: t.regions, total: top.reduce((s, c) => s + c.n, 0), requests: rpcs.length, reads, top, err };
     report.phases.push(phase);
     console.log(`\n== ${label}: ${t.commits} commits, ${phase.total} component renders`);
     console.log("   regions:", JSON.stringify(t.regions));
+    console.log("   requests:", rpcs.length, JSON.stringify(reads).slice(0, 400));
     for (const c of top.slice(0, 25)) console.log(`   ${String(c.n).padStart(5)}  ${c.name}  ${JSON.stringify(c.reasons).slice(0, 160)}`);
     return phase;
   };
-  const mark = (label) => page.evaluate((l) => window.__rc.mark(l), label);
+  const mark = (label) => {
+    rpcs = [];
+    return page.evaluate((l) => window.__rc.mark(l), label);
+  };
   const settle = async (ms = 4000) => {
     // quiet: no commits for 1.5s, at most ms
     const start = Date.now();
@@ -84,6 +97,7 @@ try {
   };
 
   // ── PAGE LOAD ─────────────────────────────────────────────
+  rpcs = [];
   await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await page.evaluate(() => window.__rc.mark("load"));
   await page.waitForSelector("table tbody tr td", { timeout: 180000 }).catch(() => undefined);
@@ -153,25 +167,37 @@ try {
     }
   }
 
-  // ── OPENING THE SETTINGS RAIL ─────────────────────────────
+  // ── OPENING THE SETTINGS RAIL (the table's one menu → Settings) ──
+  report.headerButtons = await page.evaluate(() =>
+    [...document.querySelectorAll("header button")].map((b) => b.getAttribute("aria-label") || b.textContent.trim().slice(0, 30)),
+  );
   if (actions.has("settings")) {
-    const btn = page.getByRole("button", { name: new RegExp(process.env.RA_SETTINGS ?? "settings", "i") }).first();
-    report.settingsButton = (await btn.count()) ? await btn.getAttribute("aria-label") : null;
-    if (await btn.count()) {
-      await mark("settings");
-      await btn.click();
-      await settle(8000);
-      await take("open-settings");
+    const menus = page.getByRole("button", { name: /^table menu$/i });
+    const n = await menus.count();
+    let opened = false;
+    for (let i = n - 1; i >= 0 && !opened; i--) {
+      await menus.nth(i).click().catch(() => undefined);
+      await sleep(700);
+      const item = page.getByRole("menuitem", { name: /^settings$/i }).first();
+      if (await item.count()) {
+        await mark("settings");
+        await item.click();
+        opened = true;
+      } else await page.keyboard.press("Escape");
+    }
+    report.settingsOpened = opened;
+    if (opened) {
+      await settle(10000);
+      await take("open-settings-rail");
       await page.screenshot({ path: `${OUT}/${LABEL}-settings.png` });
       await page.keyboard.press("Escape");
-      await btn.click().catch(() => undefined);
-      await settle(5000);
-    } else report.settingsMissing = true;
+      await settle(4000);
+    }
   }
 
   // ── TYPING IN SEARCH ─────────────────────────────────────
   if (actions.has("search")) {
-    const box = page.getByPlaceholder(/search/i).first();
+    const box = page.locator("main input[placeholder*='earch'], input[placeholder^='Search table'], input[placeholder^='Search records'], input[placeholder='Search…']").first();
     if (await box.count()) {
       await box.click();
       await mark("search");

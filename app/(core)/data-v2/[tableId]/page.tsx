@@ -145,6 +145,28 @@ function TableCapture({
   return null;
 }
 
+/**
+ * The address's `?filter=` as the store's filter shape, or null (see the route's own note on why a
+ * half-read filter is dropped). A module function, never inline in the component: a `try`/`catch`
+ * with a value block inside the component makes the React Compiler SKIP the whole route
+ * (`Support value blocks … within a try/catch statement`), and a skipped route rebuilt the
+ * records client, the realtime port and the host on every render — lane RENDER-AUDIT, measured
+ * with `scripts/react-compiler-bailouts.mjs`.
+ */
+function filterFromAddress(rawFilter: string | null): RecordFilter | null {
+  if (!rawFilter) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawFilter);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+  const entries = Object.entries(parsed as Record<string, unknown>);
+  if (entries.length === 0) return null;
+  return Object.fromEntries(entries) as RecordFilter;
+}
+
 export default function UnifiedDataTableRoute({
   params,
 }: {
@@ -233,18 +255,7 @@ export default function UnifiedDataTableRoute({
    * (which carries no `filter` at all) lands on.
    */
   const rawFilter = searchParams.get("filter");
-  const filter = useMemo<RecordFilter | null>(() => {
-    if (!rawFilter) return null;
-    try {
-      const parsed: unknown = JSON.parse(rawFilter);
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
-      const entries = Object.entries(parsed as Record<string, unknown>);
-      if (entries.length === 0) return null;
-      return Object.fromEntries(entries) as RecordFilter;
-    } catch {
-      return null;
-    }
-  }, [rawFilter]);
+  const filter = useMemo(() => filterFromAddress(rawFilter), [rawFilter]);
   /**
    * AND THE ADDRESS FOLLOWS THEM. Half a deep link is a link that works when
    * you arrive and lies when you copy it out of the bar afterwards. `replace`
