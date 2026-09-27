@@ -16,7 +16,9 @@ interface AssistantProgramResult {
   message: string;
 }
 
-async function readProgram(): Promise<SmsAssistantProgramState> {
+/** The person's program state, or null when they have no verified enrollment
+ *  (a real answer, not a failure). A failed read throws. */
+async function readProgram(): Promise<SmsAssistantProgramState | null> {
   const { data, error } = await supabase
     .schema("communication")
     .rpc("get_my_sms_assistant_program", {
@@ -24,30 +26,34 @@ async function readProgram(): Promise<SmsAssistantProgramState> {
     });
   if (error) throw error;
   const row = data?.[0];
-  if (!row) throw new Error("No verified text-assistant enrollment was found.");
+  if (!row) return null;
   return smsAssistantProgramFromRpc(row);
+}
+
+function readFailureMessage(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : "Unable to load the text assistant binding.";
 }
 
 export function useSmsAssistantProgram() {
   const [state, setState] = useState<SmsAssistantProgramState | null>(null);
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<AssistantProgramResult | null>(null);
+  /** The program READ failed (distinct from a failed update/test `result`). */
+  const [readError, setReadError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     const load = async () => {
       try {
         const program = await readProgram();
-        if (active) setState(program);
+        if (!active) return;
+        setState(program);
+        setReadError(null);
       } catch (error) {
         if (!active) return;
-        setResult({
-          success: false,
-          message:
-            error instanceof Error
-              ? error.message
-              : "Unable to load the text assistant binding.",
-        });
+        setReadError(readFailureMessage(error));
       } finally {
         if (active) setLoading(false);
       }
@@ -57,6 +63,19 @@ export function useSmsAssistantProgram() {
       active = false;
     };
   }, []);
+
+  /** Read the program again after a failed read. */
+  const retry = async () => {
+    setLoading(true);
+    setReadError(null);
+    try {
+      setState(await readProgram());
+    } catch (error) {
+      setReadError(readFailureMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const update = async (
     input: UpdateSmsAssistantProgram,
@@ -123,5 +142,5 @@ export function useSmsAssistantProgram() {
     }
   };
 
-  return { state, loading, result, update, sendTest };
+  return { state, loading, result, readError, retry, update, sendTest };
 }

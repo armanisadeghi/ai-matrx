@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsReadOnlyValue } from "@/components/official/settings/layout/SettingsReadOnlyValue";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
@@ -53,13 +54,22 @@ export function SmsAssistantSettingsSection() {
         description="Owner beta: bind one verified phone to one saved agent. The Holder keeps its complete tool set; consequential actions pause for recent sign-in confirmation."
         icon={MessagesSquare}
       >
+        {assistant.readError ? (
+          <ReadFailure
+            error={assistant.readError}
+            what="your text assistant settings"
+            onRetry={() => void assistant.retry()}
+          />
+        ) : null}
         <SettingsReadOnlyValue
           label="Assistant status"
           description={
             !state
               ? assistant.loading
                 ? "Checking your verified phone and assistant binding."
-                : "No verified text-assistant enrollment was found for this account."
+                : assistant.readError
+                  ? "Unknown until the assistant's state loads — see the notice above."
+                  : "No verified text-assistant enrollment was found for this account."
               : mandate.error
                 ? `The SMS Mandate could not resolve: ${mandate.error}`
                 : transportBlockedReasons.length

@@ -31,9 +31,11 @@ import { toast, recordToast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectFlatTemplateScopeTypes,
+  selectTemplatesError,
   selectTemplatesList,
   selectTemplatesStatus,
 } from "@/features/scopes/redux/selectors/templates";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ensureTemplates } from "@/features/scopes/redux/thunks/ensureTemplates";
 import { applyTemplate } from "@/features/scopes/redux/thunks/applyTemplate";
 import { createScopeType } from "@/features/scopes/redux/thunks/scopeTreeMutations";
@@ -128,6 +130,7 @@ export function TemplateGalleryDrawer({
   const allFlat = useAppSelector(selectFlatTemplateScopeTypes);
   const status = useAppSelector(selectTemplatesStatus);
   const loading = status === "loading";
+  const templatesError = useAppSelector(selectTemplatesError);
 
   const [mode, setMode] = useState<Mode>(initialMode);
   const [query, setQuery] = useState("");
@@ -344,6 +347,12 @@ export function TemplateGalleryDrawer({
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
+        ) : status === "error" && allTemplates.length === 0 ? (
+          <ReadFailure
+            error={templatesError ?? true}
+            what="the scope templates"
+            onRetry={() => void dispatch(ensureTemplates({ refresh: true }))}
+          />
         ) : mode === "templates" && selected ? (
           <TemplateDetail
             template={selected}

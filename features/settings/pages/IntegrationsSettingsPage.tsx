@@ -656,6 +656,10 @@ export default function IntegrationsPage({
           <div className="py-8">
             <SuspenseLoader size="sm" message="Loading integrations…" />
           </div>
+        ) : error && catalog.length === 0 ? (
+          // The catalog read failed: the error (with its menu) is said above —
+          // an empty grid here would claim there are no integrations.
+          null
         ) : sorted.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground text-sm">
             {search.trim()

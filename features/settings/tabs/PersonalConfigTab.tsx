@@ -58,7 +58,7 @@ export default function PersonalConfigTab() {
         {organizationId && error && (
           <SettingsCallout tone="warning">{error} <ErrorAlchemyMenu error={error} /></SettingsCallout>
         )}
-        {organizationId && !isLoading && byFeature.length === 0 && (
+        {organizationId && !isLoading && !error && byFeature.length === 0 && (
           <SettingsCallout tone="info">
             Nothing here yet: none of your organizations&rsquo; settings are
             currently opened to personal override. When an administrator marks a
