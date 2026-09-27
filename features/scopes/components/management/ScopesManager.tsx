@@ -46,6 +46,7 @@ import { ReorderDialog } from "@/features/scopes/components/management/ReorderDi
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { scopesService } from "@/features/scopes/service/scopesService";
+import { scopeStore } from "@/features/scopes/service/scopeStore";
 import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
 import type { ArchivedScopeTypeRow } from "@/features/scopes/types";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
@@ -112,7 +113,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
   async function restoreType(row: ArchivedScopeTypeRow) {
     setRestoring(true);
     try {
-      const res = await scopesService.restoreScopeType(row.id);
+      const res = await scopeStore.restoreScopeType(row.id);
       if (isScopesRpcErr(res)) {
         toast.error(`Restore failed: ${res.error.message}`);
         return;

@@ -15,7 +15,7 @@
 // toast/error path (matching setContextValue.ts).
 
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
-import { scopesService } from "@/features/scopes/service/scopesService";
+import { scopeStore } from "@/features/scopes/service/scopeStore";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type {
@@ -46,7 +46,7 @@ export function createScopeType(
   params: CreateScopeTypeParams,
 ): AppThunk<Promise<ScopesRpcResult<ScopeTypeNode>>> {
   return async (dispatch) => {
-    const res = await scopesService.createScopeType(params);
+    const res = await scopeStore.createScopeType(params);
     if (!isScopesRpcErr(res)) {
       dispatch(scopesActions.scopeTypeUpserted(res.data));
     }
@@ -58,7 +58,7 @@ export function updateScopeType(
   params: UpdateScopeTypeParams,
 ): AppThunk<Promise<ScopesRpcResult<ScopeTypeNode>>> {
   return async (dispatch, getState) => {
-    const res = await scopesService.updateScopeType(params);
+    const res = await scopeStore.updateScopeType(params);
     if (!isScopesRpcErr(res)) {
       // The RPC returns the bare row; re-attach the scopes this tree already
       // holds so the upsert can't wipe the type's children.
@@ -112,7 +112,7 @@ export function deleteScopeType(params: {
   return async (dispatch, getState) => {
     const organizationId =
       params.organization_id ?? orgIdForScopeType(getState(), params.type_id);
-    const res = await scopesService.deleteScopeType(params.type_id);
+    const res = await scopeStore.deleteScopeType(params.type_id);
     if (!isScopesRpcErr(res) && organizationId) {
       dispatch(
         scopesActions.scopeTypeRemoved({
@@ -129,7 +129,7 @@ export function createScope(
   params: CreateScopeParams,
 ): AppThunk<Promise<ScopesRpcResult<ScopeNode>>> {
   return async (dispatch) => {
-    const res = await scopesService.createScope(params);
+    const res = await scopeStore.createScope(params);
     if (!isScopesRpcErr(res)) {
       dispatch(scopesActions.scopeUpserted(res.data));
     }
@@ -141,7 +141,7 @@ export function updateScope(
   params: UpdateScopeParams,
 ): AppThunk<Promise<ScopesRpcResult<ScopeNode>>> {
   return async (dispatch) => {
-    const res = await scopesService.updateScope(params);
+    const res = await scopeStore.updateScope(params);
     if (!isScopesRpcErr(res)) {
       dispatch(scopesActions.scopeUpserted(res.data));
     }
@@ -166,7 +166,7 @@ export function deleteScope(params: {
             scopeTypeId: params.scope_type_id,
           }
         : homeForScope(getState(), params.scope_id);
-    const res = await scopesService.deleteScope(params.scope_id);
+    const res = await scopeStore.deleteScope(params.scope_id);
     if (!isScopesRpcErr(res) && home) {
       dispatch(
         scopesActions.scopeRemoved({

@@ -11,7 +11,7 @@
 // branch with `isScopesRpcErr` (matching setContextValue.ts).
 
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
-import { scopesService } from "@/features/scopes/service/scopesService";
+import { scopeStore } from "@/features/scopes/service/scopeStore";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type {
@@ -28,7 +28,7 @@ export function createContextItem(
   params: CreateContextItemParams,
 ): AppThunk<Promise<ScopesRpcResult<ContextItemRow>>> {
   return async (dispatch) => {
-    const res = await scopesService.createContextItem(params);
+    const res = await scopeStore.createContextItem(params);
     if (!isScopesRpcErr(res)) {
       dispatch(scopesActions.contextItemUpserted(res.data));
     }
@@ -40,7 +40,7 @@ export function updateContextItem(
   params: UpdateContextItemParams,
 ): AppThunk<Promise<ScopesRpcResult<ContextItemRow>>> {
   return async (dispatch) => {
-    const res = await scopesService.updateContextItem(params);
+    const res = await scopeStore.updateContextItem(params);
     if (!isScopesRpcErr(res)) {
       dispatch(scopesActions.contextItemUpserted(res.data));
     }
@@ -53,7 +53,7 @@ export function deleteContextItem(params: {
   scope_type_id: string;
 }): AppThunk<Promise<ScopesRpcResult<{ id: string }>>> {
   return async (dispatch) => {
-    const res = await scopesService.deleteContextItem(params.item_id);
+    const res = await scopeStore.deleteContextItem(params.item_id);
     if (!isScopesRpcErr(res)) {
       dispatch(
         scopesActions.contextItemRemoved({

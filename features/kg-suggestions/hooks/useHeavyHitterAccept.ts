@@ -30,6 +30,7 @@ import { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { removeFromLists } from "@/lib/redux/slices/kgSuggestionsSlice";
 import { scopesService } from "@/features/scopes/service/scopesService";
+import { scopeStore } from "@/features/scopes/service/scopeStore";
 import {
   assertKgSuggestionOwned,
   markKgSuggestionAccepted,
@@ -87,7 +88,7 @@ async function tagSourceToScope(
   const current = await scopesService.getEntityScopes(entityType, sourceId);
   if (isScopesRpcErr(current)) return false;
   const next = Array.from(new Set([...current.data.scope_ids, scopeId]));
-  const written = await scopesService.setEntityScopes(
+  const written = await scopeStore.setEntityScopes(
     entityType,
     sourceId,
     next,

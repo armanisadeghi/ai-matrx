@@ -9,7 +9,7 @@
 // Never throws — returns the service's ScopesRpcResult envelope.
 
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
-import { scopesService } from "@/features/scopes/service/scopesService";
+import { scopeStore } from "@/features/scopes/service/scopeStore";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type {
@@ -25,7 +25,7 @@ export function applyTemplate(params: {
   org_id: string;
 }): AppThunk<Promise<ScopesRpcResult<ApplyTemplateResult>>> {
   return async (dispatch) => {
-    const res = await scopesService.applyTemplate(params);
+    const res = await scopeStore.applyTemplate(params);
     if (!isScopesRpcErr(res)) {
       await dispatch(ensureScopeTree({ refresh: true }));
     }

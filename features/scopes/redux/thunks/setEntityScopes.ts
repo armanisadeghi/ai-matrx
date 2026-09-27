@@ -10,6 +10,7 @@
 
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import { scopesService } from "@/features/scopes/service/scopesService";
+import { scopeStore } from "@/features/scopes/service/scopeStore";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { entityScopesKey } from "@/features/scopes/redux/thunks/ensureEntityScopes";
 import { isScopesRpcErr } from "@/features/scopes/types";
@@ -38,7 +39,7 @@ export function setEntityScopes(
   args: SetEntityScopesArgs,
 ): AppThunk<Promise<SetEntityScopesResult>> {
   return async (dispatch) => {
-    const res = await scopesService.setEntityScopes(
+    const res = await scopeStore.setEntityScopes(
       args.entityType,
       args.entityId,
       args.scopeIds,
