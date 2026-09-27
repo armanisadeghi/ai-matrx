@@ -62,7 +62,10 @@ procedure — open it only when you are doing that job or the check fails.
    audience** (signed out for a shared link or promotional page — a guest run,
    not an admin run), then re-checked (console
    and Error Inspector clean after, not just on load).
-6. **Look again as a stranger — the final look.** On the live result, run
+6. **Look again as a stranger — the final look.** Needs your changes live: push
+   (or have your coordinator push), then wait for the release with
+   `until pnpm -s page:look --route <r> --views desktop-light --commit <sha> --out /tmp/<you>/w; do sleep 120; done`
+   (exit 3 = not live yet). On the live result, run
    `page:look --full` (and `--signed-out` where visitors come) and review it as
    a demanding customer who never saw your work: list every flaw you can still
    see, rule or no rule. Fix them, or report each as open. Blind reviewers
@@ -363,9 +366,12 @@ surface). Say which parts you judged as authored content.
 - **Color means something.** Success color only for success, alarm color
   only for a real alarm (a zero is never green; a routine control is never
   red).
-- **Charts are readable:** axes and units visible and not clipped, a scale a
-  person can read, and they render on a phone.
+- **Charts are readable and honest:** axes and units visible and not clipped,
+  a scale a person can read, they render on a phone, and a line never smooths
+  across periods with no data (mark empty periods; points carry their count).
 - **One fact, once.** The same list or number never appears twice on a page.
+- **A section's scope is its title.** A section that covers only part of what
+  the page covers (one study mode of many) says so, or is widened to match.
 - Tab title leads with the specific word (on a record page, the record's
   name); follow the `route-metadata-favicons` helper's order for a record's
   sub-views. The route has a favicon entry.
