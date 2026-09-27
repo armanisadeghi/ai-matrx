@@ -170,6 +170,8 @@
     "check:blocking-dialogs:self-test": "tsx scripts/check-blocking-dialogs.ts --self-test",
     "check:scroll-chain:strict": "tsx scripts/check-scroll-chain.ts --strict",
     "check:page-headers": "tsx scripts/check-page-headers.ts",
+    "check:bespoke-headers": "node scripts/check-bespoke-headers.mjs",
+    "check:bespoke-headers:self-test": "node scripts/check-bespoke-headers.mjs --self-test",
     "check:page-headers:strict": "tsx scripts/check-page-headers.ts --strict",
     "check:registry-deps": "tsx scripts/check-registry-deps.ts",
     "check:registry-repaint": "tsx scripts/check-registry-repaint.ts",

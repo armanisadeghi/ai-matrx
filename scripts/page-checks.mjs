@@ -26,6 +26,7 @@ const DEFAULT_CHECKS = [
   "check:menu-naming",
   "check:agent-disclosure",
   "check:page-headers",
+  "check:bespoke-headers",
   "check:phone-layout",
   "check:ui-primitives",
   "check:one-table-law",
