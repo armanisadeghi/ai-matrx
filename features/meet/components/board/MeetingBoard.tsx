@@ -73,7 +73,6 @@ import { type Rect, screenToWorld } from "@/features/spatial/engine/camera";
 import { useSelectedTile } from "@/features/spatial/engine/react";
 import type { SpatialStore } from "@/features/spatial/engine/spatial-store";
 import { DEFAULT_THROW_ACTIONS, type ThrowDirection } from "@/features/spatial/engine/throw";
-import type { WheelMode } from "@/features/spatial/engine/wheel-input";
 import { useBoard } from "@/features/spatial/board/useBoard";
 import { SpatialBoardMenu } from "@/features/spatial/components/SpatialBoardMenu";
 import { ParkedShelf } from "@/features/spatial/components/ParkedShelf";
@@ -92,6 +91,7 @@ import {
   useMeetingSectionStatus,
   type MeetingSection,
 } from "./MeetingNotesBodies";
+import { useWheelModePreference } from "@/features/spatial/board/useWheelModePreference";
 
 // ── the board's tiles ────────────────────────────────────────────────────────
 
@@ -240,28 +240,6 @@ function writeScratch(meetingId: string, id: string, text: string): void {
   }
 }
 
-/** Per-viewer: how scrolling behaves on a board. Same key as every board. */
-function useWheelModePreference(): [WheelMode, (m: WheelMode) => void] {
-  const [mode, setMode] = useState<WheelMode>(() => {
-    try {
-      const saved = window.localStorage.getItem(WHEEL_MODE_KEY);
-      return saved === "zoom" || saved === "pan" || saved === "auto" ? saved : "auto";
-    } catch {
-      return "auto";
-    }
-  });
-  const update = (m: WheelMode) => {
-    setMode(m);
-    try {
-      window.localStorage.setItem(WHEEL_MODE_KEY, m);
-    } catch {
-      // Storage blocked: the choice lasts for this visit.
-    }
-  };
-  return [mode, update];
-}
-
-const WHEEL_MODE_KEY = "matrx.spatial.wheelMode";
 
 // ── the board ────────────────────────────────────────────────────────────────
 

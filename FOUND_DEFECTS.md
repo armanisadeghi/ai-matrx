@@ -15,6 +15,18 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D350 — Meeting consent and attendance banners are dark text on the dark stage; the control bar uses Sparkles for AI (2026-09-27)
+
+`@ai-matrx/meet` 0.6.5 `styles.css`: `.mx-meet__consent` paints `color: var(--mx-meet-text)` over
+`background: var(--mx-meet-accent-subtle)` (primary at 12% alpha). The banner sits in the meeting's
+always-dark top band, so in the light theme it is dark text on near-black — the note-taker consent
+line and "attending without a microphone" are unreadable in the Room AND Board layouts (seen
+2026-09-27, `/meet/*` harness). CONSENT IS NEVER SUBTLE is the package's own rule. Fix in the
+package (`aidream/apps/shared/meet`, THE SAME-SESSION LAW): give the banner an opaque surface and the
+stage's text token (the tile/stage tokens the header already uses), then release and adopt. The
+package `ControlBar`'s assistant button draws Sparkles; the platform icon for AI is `BrainCircuit`.
+Owner: meet package.
+
 ### D349 — Global `:has()` rules turn ordinary DOM changes into whole-document restyles (2026-09-25)
 
 Traced on `/demos/spatial` (Chrome trace, invalidation tracking): a text-node insertion anywhere under

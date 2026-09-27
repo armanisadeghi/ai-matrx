@@ -48,7 +48,6 @@ import type { Rect } from "../engine/camera";
 import { useSelectedTile } from "../engine/react";
 import type { SpatialStore } from "../engine/spatial-store";
 import { DEFAULT_THROW_ACTIONS, type ThrowDirection } from "../engine/throw";
-import type { WheelMode } from "../engine/wheel-input";
 import { useBoard } from "../board/useBoard";
 import { SpatialBoardMenu } from "../components/SpatialBoardMenu";
 import { ParkedShelf } from "../components/ParkedShelf";
@@ -69,6 +68,7 @@ import {
   RESEARCH_REPORT,
   stressScript,
 } from "./demo-content";
+import { useWheelModePreference } from "../board/useWheelModePreference";
 
 export interface DemoKindExample {
   kind: string;
@@ -478,29 +478,6 @@ function tileMarkdown(spec: TileSpec): string {
   }
 }
 
-/** Per-viewer preference: how scrolling behaves on the board. Kept in this
- * browser only (a convenience, not shared state); absent storage = default. */
-function useWheelModePreference(): [WheelMode, (m: WheelMode) => void] {
-  const [mode, setMode] = useState<WheelMode>(() => {
-    try {
-      const saved = window.localStorage.getItem(WHEEL_MODE_KEY);
-      return saved === "zoom" || saved === "pan" || saved === "auto" ? saved : "auto";
-    } catch {
-      return "auto";
-    }
-  });
-  const update = (m: WheelMode) => {
-    setMode(m);
-    try {
-      window.localStorage.setItem(WHEEL_MODE_KEY, m);
-    } catch {
-      // Storage blocked (private window): the choice lasts for this visit.
-    }
-  };
-  return [mode, update];
-}
-
-const WHEEL_MODE_KEY = "matrx.spatial.wheelMode";
 
 // ── tiles ────────────────────────────────────────────────────────────────────
 
