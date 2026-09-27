@@ -32,10 +32,7 @@ import {
   selectModelColumns,
   selectActiveModelSetId,
 } from "../redux/selectors";
-import {
-  addColumnToModelBattle,
-  loadModelBattleSet,
-} from "../redux/thunks";
+import { addColumnToModelBattle, loadModelBattleSet } from "../redux/thunks";
 import {
   BattleRouteNotice,
   useBattleRoute,
@@ -96,7 +93,10 @@ export function ModelBattlePage({ setId = null }: { setId?: string | null }) {
           aria-label="Model outcomes"
           className="flex-1 min-h-0 flex overflow-x-auto"
         >
-          {columns.length === 0 ? (
+          {/* While a saved battle is opening or failed to open, BattleRouteNotice above says so — no empty prompt. */}
+          {columns.length === 0 &&
+          (routeStatus.kind === "loading" ||
+            routeStatus.kind === "error") ? null : columns.length === 0 ? (
             <EmptyState
               agentReady={!!lockedAgentId}
               onAdd={() => dispatch(addColumnToModelBattle(undefined))}

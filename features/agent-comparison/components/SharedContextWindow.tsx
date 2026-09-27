@@ -79,6 +79,7 @@ export function SharedContextWindow({ id, onClose }: SharedContextWindowProps) {
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {previewKeys.length === 0 ? (
           <div className="px-3 py-2 text-[11px] text-muted-foreground border border-dashed border-border rounded-md text-center">
+            {/* read-gate-exempt: shared context keys are typed in this window into local battle state; no read feeds this list */}
             No shared context yet.
           </div>
         ) : (
@@ -278,6 +279,7 @@ function SharedContextScopeStatus() {
     >
       <Layers className="w-3 h-3" />
       {submittableCount === 0
+        // read-gate-exempt: counts this session's battle columns (local state; a saved battle's failed open is shown by BattleRouteNotice), not a read
         ? "No columns"
         : `${submittableCount} column${submittableCount === 1 ? "" : "s"}`}
     </span>

@@ -63,7 +63,11 @@ import type { VariationColumn as VariationColumnType } from "../types";
 const RUNS_WINDOW_ID = "agent-comparison-variations-runs";
 const EDITOR_WINDOW_ID = "agent-comparison-variations-editor";
 
-export function VariationsBattlePage({ setId = null }: { setId?: string | null }) {
+export function VariationsBattlePage({
+  setId = null,
+}: {
+  setId?: string | null;
+}) {
   const dispatch = useAppDispatch();
   const activeSetId = useAppSelector(selectActiveVariationsSetId);
   const routeStatus = useBattleRoute({
@@ -124,7 +128,10 @@ export function VariationsBattlePage({ setId = null }: { setId?: string | null }
       <LockedInputSection />
 
       <div className="flex-1 min-h-0 flex">
-        {columns.length === 0 ? (
+        {/* While a saved battle is opening or failed to open, BattleRouteNotice above says so — no empty prompt. */}
+        {columns.length === 0 &&
+        (routeStatus.kind === "loading" ||
+          routeStatus.kind === "error") ? null : columns.length === 0 ? (
           <EmptyState sourceAgentReady={!!sourceAgentId} />
         ) : (
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
@@ -284,9 +291,7 @@ function EmptyState({ sourceAgentReady }: { sourceAgentReady: boolean }) {
               max={12}
               value={count}
               onChange={(e) =>
-                setCount(
-                  Math.max(1, Math.min(12, Number(e.target.value) || 1)),
-                )
+                setCount(Math.max(1, Math.min(12, Number(e.target.value) || 1)))
               }
               className="w-16 h-9 text-center text-sm bg-background border border-border rounded-md text-foreground focus:outline-none focus:border-primary"
             />

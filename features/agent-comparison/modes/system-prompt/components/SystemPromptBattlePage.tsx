@@ -58,7 +58,11 @@ import type { SystemPromptColumn as SystemPromptColumnType } from "../types";
 
 const RUNS_WINDOW_ID = "agent-comparison-system-prompt-runs";
 
-export function SystemPromptBattlePage({ setId = null }: { setId?: string | null }) {
+export function SystemPromptBattlePage({
+  setId = null,
+}: {
+  setId?: string | null;
+}) {
   const dispatch = useAppDispatch();
   const activeSetId = useAppSelector(selectActiveSystemPromptSetId);
   const routeStatus = useBattleRoute({
@@ -101,12 +105,13 @@ export function SystemPromptBattlePage({ setId = null }: { setId?: string | null
       <LockedInputSection />
 
       <div className="flex-1 min-h-0 flex">
-        {columns.length === 0 ? (
+        {/* While a saved battle is opening or failed to open, BattleRouteNotice above says so — no empty prompt. */}
+        {columns.length === 0 &&
+        (routeStatus.kind === "loading" ||
+          routeStatus.kind === "error") ? null : columns.length === 0 ? (
           <EmptyState
             sourceAgentReady={!!sourceAgentId}
-            onAdd={() =>
-              dispatch(addColumnToSystemPromptBattle(undefined))
-            }
+            onAdd={() => dispatch(addColumnToSystemPromptBattle(undefined))}
           />
         ) : (
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>

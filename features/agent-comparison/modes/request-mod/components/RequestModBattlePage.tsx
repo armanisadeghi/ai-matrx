@@ -50,7 +50,11 @@ import type { RequestModColumn as RequestModColumnType } from "../types";
 
 const RUNS_WINDOW_ID = "agent-comparison-request-mod-runs";
 
-export function RequestModBattlePage({ setId = null }: { setId?: string | null }) {
+export function RequestModBattlePage({
+  setId = null,
+}: {
+  setId?: string | null;
+}) {
   const dispatch = useAppDispatch();
   const activeSetId = useAppSelector(selectActiveRequestModSetId);
   const routeStatus = useBattleRoute({
@@ -93,7 +97,10 @@ export function RequestModBattlePage({ setId = null }: { setId?: string | null }
       <LockedAgentSection />
 
       <div className="flex-1 min-h-0 flex">
-        {columns.length === 0 ? (
+        {/* While a saved battle is opening or failed to open, BattleRouteNotice above says so — no empty prompt. */}
+        {columns.length === 0 &&
+        (routeStatus.kind === "loading" ||
+          routeStatus.kind === "error") ? null : columns.length === 0 ? (
           <EmptyState
             agentReady={!!agentId}
             onAdd={() => dispatch(addColumnToRequestModBattle(undefined))}

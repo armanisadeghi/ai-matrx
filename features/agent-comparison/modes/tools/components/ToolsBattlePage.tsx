@@ -31,20 +31,14 @@ import {
 } from "@/components/ui/resizable";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SharedRunsWindow } from "@/features/agent-comparison/components/SharedRunsWindow";
-import {
-  reorderToolsColumns,
-  setToolsColumnCollapsed,
-} from "../redux/slice";
+import { reorderToolsColumns, setToolsColumnCollapsed } from "../redux/slice";
 import {
   selectSourceAgentId,
   selectToolsColumnIds,
   selectToolsColumns,
   selectActiveToolsSetId,
 } from "../redux/selectors";
-import {
-  addColumnToToolsBattle,
-  loadToolsBattleSet,
-} from "../redux/thunks";
+import { addColumnToToolsBattle, loadToolsBattleSet } from "../redux/thunks";
 import {
   BattleRouteNotice,
   useBattleRoute,
@@ -99,7 +93,10 @@ export function ToolsBattlePage({ setId = null }: { setId?: string | null }) {
       <LockedInputSection />
 
       <div className="flex-1 min-h-0 flex">
-        {columns.length === 0 ? (
+        {/* While a saved battle is opening or failed to open, BattleRouteNotice above says so — no empty prompt. */}
+        {columns.length === 0 &&
+        (routeStatus.kind === "loading" ||
+          routeStatus.kind === "error") ? null : columns.length === 0 ? (
           <EmptyState
             sourceAgentReady={!!sourceAgentId}
             onAdd={() => dispatch(addColumnToToolsBattle(undefined))}

@@ -326,7 +326,10 @@ export function ConversationBattlePage({
       </div>
 
       <div className="flex-1 min-h-0 overflow-hidden">
-        {forks.length === 0 ? (
+        {/* While a saved battle is opening or failed to open, BattleRouteNotice above says so — no empty prompt. */}
+        {forks.length === 0 &&
+        (routeStatus.kind === "loading" ||
+          routeStatus.kind === "error") ? null : forks.length === 0 ? (
           <EmptyState
             hasSource={!!source}
             isForking={isForking}

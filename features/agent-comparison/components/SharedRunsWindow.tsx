@@ -43,6 +43,7 @@ export function SharedRunsWindow({ id, onClose }: SharedRunsWindowProps) {
       <div className="h-full flex flex-col">
         {columns.length === 0 ? (
           <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground">
+            {/* read-gate-exempt: battle columns are this session's local state (a failed saved-battle open is shown by BattleRouteNotice on the page), not a read */}
             No columns yet.
           </div>
         ) : (

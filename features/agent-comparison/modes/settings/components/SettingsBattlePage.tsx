@@ -65,7 +65,11 @@ import type { SettingsColumn as SettingsColumnType } from "../types";
 
 const RUNS_WINDOW_ID = "agent-comparison-settings-runs";
 
-export function SettingsBattlePage({ setId = null }: { setId?: string | null }) {
+export function SettingsBattlePage({
+  setId = null,
+}: {
+  setId?: string | null;
+}) {
   const dispatch = useAppDispatch();
   const activeSetId = useAppSelector(selectActiveSettingsSetId);
   const routeStatus = useBattleRoute({
@@ -108,7 +112,10 @@ export function SettingsBattlePage({ setId = null }: { setId?: string | null }) 
       <LockedInputSection />
 
       <div className="flex-1 min-h-0 flex">
-        {columns.length === 0 ? (
+        {/* While a saved battle is opening or failed to open, BattleRouteNotice above says so — no empty prompt. */}
+        {columns.length === 0 &&
+        (routeStatus.kind === "loading" ||
+          routeStatus.kind === "error") ? null : columns.length === 0 ? (
           <EmptyState
             lockedAgentReady={!!lockedAgentId}
             onAdd={() => dispatch(addColumnToSettingsBattle(undefined))}
@@ -235,9 +242,7 @@ function EmptyState({
     <div className="flex-1 flex items-center justify-center text-center p-8">
       <div className="max-w-md space-y-3">
         <div className="text-base font-medium">
-          {lockedAgentReady
-            ? "Add a variant to start"
-            : "Pick an agent above"}
+          {lockedAgentReady ? "Add a variant to start" : "Pick an agent above"}
         </div>
         <p className="text-sm text-muted-foreground">
           {lockedAgentReady

@@ -73,6 +73,7 @@ export function SharedRunSettingsWindow({ id, onClose }: Props) {
             ? `Broadcasts to ${configured.length} column${
                 configured.length === 1 ? "" : "s"
               }`
+            // read-gate-exempt: counts this session's configured battle columns (local state; a failed saved-battle open is shown by BattleRouteNotice), not a read
             : "No columns configured"}
         </span>
       }

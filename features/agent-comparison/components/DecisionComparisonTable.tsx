@@ -232,6 +232,7 @@ export function DecisionComparisonTable() {
   if (answering.length === 0) {
     return (
       <p className="p-3 text-xs text-muted-foreground">
+        {/* read-gate-exempt: answers stream from this session's live runs in the message store (each column shows its own run failure); no read feeds this */}
         No column has returned decision answers yet.
       </p>
     );
