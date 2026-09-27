@@ -80,7 +80,7 @@ describe("study guide outline", () => {
   });
 
   it("nests H2-first material under its note title and excludes extraction fragments without changing heading indices", () => {
-    const headings = parseNoteOutline([
+    const material = [
       "## Evolution of Atomic Theory",
       "The theory evolved.",
       "## J.J. Thomson noticed that mysterious rays bent away from ... - ▪ Proton: a clipped bullet...",
@@ -89,8 +89,9 @@ describe("study guide outline", () => {
       "## • Bromine is a red-orange liquid with an average atomic m... - <page number=\"41\">",
       "## 1. Characteristics of Bromine",
       "### Naturally Occurring Isotopes",
-    ].join("\n"));
-    const items = studyGuideOutlineItems(headings);
+    ].join("\n");
+    const headings = parseNoteOutline(material);
+    const items = studyGuideOutlineItems(headings, material);
     expect(studyGuideOutlineDisplayTitle(headings, "Agent Test Note")).toMatchObject({ text: "Agent Test Note", headingIndex: -1 });
     expect(items.map((item) => [item.text, item.headingIndex, outlineIndentLevel(item, items)])).toEqual([
       ["Evolution of Atomic Theory", 0, 1],
@@ -108,11 +109,13 @@ describe("study guide outline", () => {
   });
 
   it("preserves ordinary sibling headings while omitting a clipped source caption", () => {
-    const headings = parseNoteOutline("## What happened... - and why\n## First section\n## Second section\n## 2) Fill-in the charges for the ions. On the top line, thi... - Example 2.8 (2 of 3)\n## Ion Charges and Polyatomic Patterns");
-    expect(studyGuideOutlineItems(headings).map((item) => item.text)).toEqual([
+    const material = "## What happened... - and why\n## First section\n## Second section\n## Safety - • Lab checklist\nA real section body.\n## 2) Fill-in the charges for the ions. On the top line, thi... - Example 2.8 (2 of 3)\n## Ion Charges and Polyatomic Patterns";
+    const headings = parseNoteOutline(material);
+    expect(studyGuideOutlineItems(headings, material).map((item) => item.text)).toEqual([
       "What happened... - and why",
       "First section",
       "Second section",
+      "Safety - • Lab checklist",
       "Ion Charges and Polyatomic Patterns",
     ]);
   });
