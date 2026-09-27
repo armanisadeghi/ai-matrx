@@ -30,6 +30,10 @@ jest.mock("@ai-matrx/meet/react", () => ({
   ),
   MeetingRoom: () => <div data-testid="member-room" />,
   useMeetHost: () => mockMeetHost,
+  useMeetSnapshot: () => null,
+}));
+jest.mock("@/features/meet/components/board/MeetingBoard", () => ({
+  MeetingBoard: () => <div data-testid="meeting-board" />,
 }));
 jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () => ({
   OrganizationRequiredNotice: () => <div data-testid="organization-recovery" />,

@@ -18,6 +18,8 @@ chrome, and the routes.
 | The room, both lanes | [`components/MeetingSurface.tsx`](./components/MeetingSurface.tsx) |
 | Create a meeting, list every meeting incl. ended ones | [`components/MeetingsWorkspace.tsx`](./components/MeetingsWorkspace.tsx) → `/meetings` |
 | The meeting RECORD after `ended_at` | the package's `<MeetingRecordView>`, routed to by `<MeetingRoom>` — nothing here |
+| Room ⇄ Board layout choice (connected phase only; per viewer, this browser) | [`components/MeetingLayout.tsx`](./components/MeetingLayout.tsx) |
+| The Board layout — spatial board + floating people strip + live meeting-notes tiles | [`components/board/`](./components/board/) (`MeetingBoard`, `PeopleStrip`, `MeetingNotesBodies`, `LayoutSwitch`) |
 | aidream base URL | [`lib/meetBaseUrl.ts`](./lib/meetBaseUrl.ts) |
 | Stylesheets (tokens → brand → structure) | `app/layout.tsx` imports 1 and 3; the brand map is the `--mx-meet-*` block in `app/globals.css` |
 
@@ -82,6 +84,32 @@ belonged (C22, THE SAME-SESSION LAW):
 If a future defect tempts a fifth wrapper, the answer is the same: fix it in the
 package, release, adopt — never a crossing in here.
 
+## The Board layout (2026-09-27)
+
+While connected, a person can swap the package's room for a **Board**: the
+spatial board (`features/spatial`, consumed — never forked) fills the stage,
+people float in a compact draggable strip, and the meeting's AI output is a live
+"Meeting notes" frame (transcript, notes, decisions, action items, summary)
+beside anything else the person adds (scratchpad, web page, image, sample
+generated pages, a replayed stream). Rules:
+
+- **Only the connected room is swappable.** Pre-join, lobby, a failed join,
+  leaving and the post-meeting record always render through `<MeetingRoom>`.
+  The room engine lives in the provider's store, so switching never rejoins.
+- **Composed, not re-implemented.** `ConsentNotice`, `AttendanceNotice` and
+  `RecordingIndicator` render in the Board for every participant exactly as the
+  package ships them; faces are `ParticipantTile` ordered by the package's
+  `orderParticipants`; `Captions` and `ControlBar` (with its chat, people and
+  Meeting-assistant panels) are the package's. The root carries the package's
+  `mx-meet` class so those pieces sit in their own structure and tokens.
+- **Per viewer, this browser:** the layout (`matrx.meet.layout`, default
+  `room`), the board's tiles and positions (`matrx.meet.board.<meetingId>`) and
+  scratchpad text. Every read/write is try/catch; blocked storage = defaults.
+  What a person adds is theirs alone — nobody else in the meeting sees it.
+- **Package gap:** the host menu (lock / end for everyone) is not exported, so
+  the Board shows a "Host controls" link that returns the host to the Room
+  layout. Exporting it from `@ai-matrx/meet` removes that hop.
+
 ## Known blockers on this surface (2026-09-08, MRI-A9)
 
 Found by the FIRST browser proof of the in-room intelligence panel; neither was
@@ -109,6 +137,16 @@ reader of an older tag will otherwise conclude the package is broken.
 
 ## Change log
 
+- **2026-09-27 — Board layout.** A Room | Board switch inside the connected
+  meeting; the Board mounts the spatial engine with a live "Meeting notes"
+  frame fed by `useMeetAi`, a draggable `ParticipantTile` strip (active speaker
+  first, overflow counted), the package's notices, captions and control bar,
+  and user-added tiles. `MeetingSurface.tsx` changed only to render
+  `<MeetingLayout>` where it rendered `<MeetingRoom>`. Guard:
+  `components/MeetingLayout.test.tsx` (default room; switch + remembered; never
+  replaces pre-join/lobby/left/failed). Browser-verified against the real
+  package components on a seeded provider store (desktop + 390px); a live
+  LiveKit join was not reachable from the build container.
 
 - **2026-09-12 — adopted `@ai-matrx/meet` 0.5.0 (MRF-1: guests and the
   post-meeting record).** A guest following a meeting link afterwards used to

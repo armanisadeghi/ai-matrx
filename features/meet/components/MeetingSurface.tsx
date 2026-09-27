@@ -21,7 +21,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   MeetProvider,
-  MeetingRoom,
   createMeetRepository,
   useMeetHost,
   type MeetingRecord,
@@ -37,6 +36,7 @@ import {
   selectAuthReady,
   selectIsAuthenticated,
 } from "@/lib/redux/selectors/userSelectors";
+import { MeetingLayout } from "@/features/meet/components/MeetingLayout";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 type Resolution =
@@ -174,7 +174,9 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
           renders the meeting RECORD instead of a pre-join screen once
           `ended_at` is set, and this prop is how it knows before — or without —
           a durable-feed read. */}
-      <MeetingRoom
+      {/* Room or Board — the viewer's choice while connected; everything
+          before and after the room is still `<MeetingRoom>` (MeetingLayout). */}
+      <MeetingLayout
         roomName={meeting.roomName}
         meetingId={meeting.id}
         slug={meeting.slug}
@@ -263,7 +265,7 @@ function GuestRoom({ meeting, slug }: { meeting: MeetingRecord; slug: string }) 
       onDiagnostic={onDiagnostic}
     >
       <div className="h-dvh w-full">
-        <MeetingRoom
+        <MeetingLayout
           roomName={meeting.roomName}
           meetingId={meeting.id}
           slug={slug}
