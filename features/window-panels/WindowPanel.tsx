@@ -746,7 +746,12 @@ export function WindowPanel({
   }, [restoredPersistence]);
 
   // ── fitContent: sync measured shell size back into Redux ─────────────────
-  const fitContentRef = useRef<HTMLDivElement>(null);
+  // A STATE-backed ref, not useRef: the shell renders through a portal that
+  // exists only after mount, so on the first effect a plain ref was still null
+  // and the measurer never attached — no fitContent window ever synced its
+  // measured size (or its preset position). The effect re-runs when the
+  // element actually appears.
+  const [fitContentEl, fitContentRef] = useState<HTMLDivElement | null>(null);
   // A preset position ("center", a corner) was resolved from the DEFAULT size
   // before anything was measured, so a window that fits its content grew away
   // from where it was placed — a centered 694px picker opened with its left
@@ -768,7 +773,7 @@ export function WindowPanel({
 
   useEffect(() => {
     if (!fitContent || isMobile) return undefined;
-    const el = fitContentRef.current;
+    const el = fitContentEl;
     if (!el) return undefined;
     const ro = new ResizeObserver((entries) => {
       const entry = entries[0];
@@ -798,7 +803,7 @@ export function WindowPanel({
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, [fitContent, id, dispatch, fitPresetPosition, fitMayReplace]);
+  }, [fitContent, fitContentEl, isMobile, id, dispatch, fitPresetPosition, fitMayReplace]);
 
   const toggleSidebar = useCallback(() => {
     const panel = sidebarPanelRef.current;

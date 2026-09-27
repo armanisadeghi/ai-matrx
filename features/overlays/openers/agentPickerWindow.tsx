@@ -26,7 +26,7 @@ import {
 const OVERLAY_ID = "agentPickerWindow" as const;
 
 export interface OpenAgentPickerWindowOptions extends AgentPickerHandlers {
-  /** Window title. Defaults to "Choose an agent". */
+  /** Window title. Defaults to "Select Agent". */
   title?: string;
   /** Highlights + previews this agent when the picker opens. */
   activeAgentId?: string | null;

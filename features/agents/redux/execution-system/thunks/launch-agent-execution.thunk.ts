@@ -49,7 +49,10 @@ import {
   getSurfaceRuntimeForName,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { withSurfaceDocumentEvidence } from "@/features/surfaces/utils/document-evidence";
-import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
+import {
+  ensureAgentIdentity,
+  fetchAgentExecutionFull,
+} from "@/features/agents/redux/agent-definition/thunks";
 import {
   isBasicWorkMandate,
   resolvePreferredChatModel,
@@ -492,6 +495,9 @@ export const launchAgentExecution = createAsyncThunk<
   // override delta guard. See base-settings.ts for the invariant.
   // =========================================================================
   if (agentId && !shortcutId) {
+    // The execution payload carries no NAME; the window title and the empty
+    // hero read it from the registry. Non-blocking — the title fills in.
+    void dispatch(ensureAgentIdentity(agentId));
     const preState = getState() as RootState;
     const payload = selectAgentCustomExecutionPayload(preState, agentId);
     const debugProjectCreate = isProjectCreateFlow(sourceFeature, agentId);

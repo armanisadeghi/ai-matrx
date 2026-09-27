@@ -1418,7 +1418,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     slug: "agent-picker-window",
     overlayId: "agentPickerWindow",
     kind: "window",
-    label: "Choose an agent",
+    label: "Select Agent",
     defaultData: {
       callbackGroupId: null as string | null,
       title: null as string | null,

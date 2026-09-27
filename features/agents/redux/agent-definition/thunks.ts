@@ -426,6 +426,29 @@ export const fetchAgentsListFull = createAsyncThunk<void, void, ThunkApi>(
 );
 
 /**
+ * Makes sure ONE agent's identity (name, description, …) is in this registry.
+ *
+ * Neither execution fetch (`agx_get_execution_minimal` / `_full`) carries the
+ * name, so an agent that no list fetch had loaded launched with a nameless
+ * record: every window titled it "Agent" and the empty hero lost its name.
+ * The name comes from the same place every name comes from — the ONE catalog —
+ * projected through `mergeAgentSummaries`. No-op when the name is present.
+ */
+export const ensureAgentIdentity = createAsyncThunk<void, string, ThunkApi>(
+  "agentDefinition/ensureIdentity",
+  async (agentId, { dispatch, getState }) => {
+    if (getState().agentDefinition.agents?.[agentId]?.name) return;
+    const catalog = getAgentCatalog();
+    let row = catalog.getState().byId[agentId];
+    if (!row) {
+      await catalog.ensureLoaded();
+      row = catalog.getState().byId[agentId];
+    }
+    if (row) mergeAgentSummaries(dispatch, [row]);
+  },
+);
+
+/**
  * Fetches the minimal execution payload for an agent: id, variableDefinitions, contextPolicies.
  *
  * Skips the network call if both fields are already loaded (isReady = true).

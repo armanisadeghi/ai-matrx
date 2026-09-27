@@ -40,11 +40,12 @@ export interface SendToAgentDestinationOption {
   id: string;
   destination: SendToAgentDestination;
   label: string;
-  description: string;
+  /** The agent's own help text for this input/slot, when it has one. */
+  description?: string;
+  /** Why this destination cannot take the text — shown, never hidden. */
+  disabledReason?: string;
   group: "general" | "variables" | "context";
 }
-
-export const DEFAULT_DESTINATION_ID = "important-context";
 
 export function destinationId(d: SendToAgentDestination): string {
   switch (d.kind) {
@@ -59,69 +60,78 @@ export function destinationId(d: SendToAgentDestination): string {
 }
 
 /**
- * Every destination the picked agent offers, default first.
- *
- * - A variable that is a MODEL CONTROL (`control`) or is filled at run time
- *   (`binding`) is not a place for text — it is never offered.
- * - An agent with automatic context injection OFF (`auto_context_disabled`)
- *   accepts only its declared slots; the server drops any other key, so
- *   "Important context" is not offered for it rather than silently vanishing.
+ * Every destination, always in the same place. One that cannot take the text
+ * is still listed, disabled, with a one-line reason:
+ * - "Important context" when the agent's "Allow automated context injection"
+ *   is off (`auto_context_disabled`) — the server drops undeclared keys;
+ * - a variable that is a model control (`control`) or filled at run time
+ *   (`binding`).
  */
 export function buildDestinationOptions(
   variables: readonly VariableDefinition[] | null | undefined,
   contextSlots: readonly ContextPolicy[] | null | undefined,
   opts: { autoContextDisabled?: boolean } = {},
 ): SendToAgentDestinationOption[] {
-  const options: SendToAgentDestinationOption[] = [];
-  if (!opts.autoContextDisabled) {
-    options.push({
-      id: DEFAULT_DESTINATION_ID,
+  const options: SendToAgentDestinationOption[] = [
+    {
+      id: "important-context",
       destination: { kind: "important-context" },
       label: "Important context",
-      description:
-        "Attached for the agent to review, tagged as important. You type your own message.",
       group: "general",
-    });
-  }
-  options.push(
+      ...(opts.autoContextDisabled
+        ? { disabledReason: "Automated context injection is off for this agent" }
+        : {}),
+    },
     {
       id: "user-text",
       destination: { kind: "user-text" },
       label: "Your message",
-      description:
-        "Placed in the message box as your own words, so you can edit it before sending.",
       group: "general",
     },
-  );
+  ];
   for (const v of variables ?? []) {
-    if (!v?.name || v.control || v.binding) continue;
+    if (!v?.name) continue;
     const destination: SendToAgentDestination = { kind: "variable", name: v.name };
+    const help = v.helpText?.trim();
+    const disabledReason = v.control
+      ? "Model setting"
+      : v.binding
+        ? "Filled automatically"
+        : undefined;
     options.push({
       id: destinationId(destination),
       destination,
       label: humanizeName(v.name),
-      description: v.helpText?.trim() || "An input this agent asks for.",
       group: "variables",
+      ...(help ? { description: help } : {}),
+      ...(disabledReason ? { disabledReason } : {}),
     });
   }
   for (const slot of contextSlots ?? []) {
     if (!slot?.key || slot.key === IMPORTANT_CONTEXT_KEY) continue;
-    const label = slot.label?.trim() || slot.key;
+    const slotLabel = slot.label?.trim();
     const destination: SendToAgentDestination = {
       kind: "context-slot",
       key: slot.key,
-      ...(slot.label?.trim() ? { label: slot.label.trim() } : {}),
+      ...(slotLabel ? { label: slotLabel } : {}),
     };
+    const help = slot.description?.trim();
     options.push({
       id: destinationId(destination),
       destination,
-      label,
-      description:
-        slot.description?.trim() || "Context this agent knows how to use.",
+      label: slotLabel || slot.key,
       group: "context",
+      ...(help ? { description: help } : {}),
     });
   }
   return options;
+}
+
+/** The option selected when the person has not chosen: the first enabled one. */
+export function defaultDestination(
+  options: readonly SendToAgentDestinationOption[],
+): SendToAgentDestinationOption | undefined {
+  return options.find((o) => !o.disabledReason);
 }
 
 export interface SendToAgentLaunchPlan {

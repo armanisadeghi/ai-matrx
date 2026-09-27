@@ -645,7 +645,7 @@ export const OVERLAY_CATALOGUE = {
   // THE agent picker as a floating window — the dropdown's exact two-column
   // picker (list + peek, 680 × 528). Picks return through a callback group.
   agentPickerWindow: {
-    label: "Choose an agent",
+    label: "Select Agent",
     instanceMode: "multi",
     isWindow: true,
   },

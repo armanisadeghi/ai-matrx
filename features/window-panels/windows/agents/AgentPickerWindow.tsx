@@ -123,7 +123,7 @@ export default function AgentPickerWindow({
     <AgentPickerFrame
       id={`agent-picker-${instanceId}`}
       overlayId="agentPickerWindow"
-      title={title?.trim() || "Choose an agent"}
+      title={title?.trim() || "Select Agent"}
       onClose={handleClose}
       activeAgentId={activeAgentId ?? null}
       onSelect={(agentId) => {

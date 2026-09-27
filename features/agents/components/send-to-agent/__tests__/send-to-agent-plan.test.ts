@@ -1,5 +1,5 @@
 import {
-  DEFAULT_DESTINATION_ID,
+  defaultDestination,
   IMPORTANT_CONTEXT_DESCRIPTION,
   IMPORTANT_CONTEXT_INLINE_CHARS,
   IMPORTANT_CONTEXT_KEY,
@@ -14,16 +14,17 @@ describe("buildDestinationOptions", () => {
       [{ key: "brief", type: "text", label: "Client brief", description: "The brief" }],
     );
     expect(options.map((o) => o.id)).toEqual([
-      DEFAULT_DESTINATION_ID,
+      "important-context",
       "user-text",
       "variable:topic",
       "context:brief",
     ]);
     expect(options[2]).toMatchObject({ label: "Topic", description: "What to write about", group: "variables" });
+    expect(defaultDestination(options)?.id).toBe("important-context");
     expect(options[3]).toMatchObject({ label: "Client brief", description: "The brief", group: "context" });
   });
 
-  it("never offers a model control or a run-time-bound variable as a place for text", () => {
+  it("lists a model control or a run-time-bound variable DISABLED with its reason", () => {
     const options = buildDestinationOptions(
       [
         { name: "temperature", defaultValue: 0.7, control: {} as never },
@@ -32,17 +33,24 @@ describe("buildDestinationOptions", () => {
       ],
       [],
     );
-    expect(options.filter((o) => o.group === "variables").map((o) => o.id)).toEqual(["variable:topic"]);
+    const vars = options.filter((o) => o.group === "variables");
+    expect(vars.map((o) => [o.id, o.disabledReason])).toEqual([
+      ["variable:temperature", "Model setting"],
+      ["variable:client", "Filled automatically"],
+      ["variable:topic", undefined],
+    ]);
   });
 
-  it("an agent that refuses ad-hoc context is not offered Important context (the server would drop it)", () => {
+  it("keeps Important context in place, disabled with the setting's name, when injection is off; the default moves to the first enabled", () => {
     const options = buildDestinationOptions([], [{ key: "brief", type: "text" }], { autoContextDisabled: true });
-    expect(options.map((o) => o.id)).toEqual(["user-text", "context:brief"]);
+    expect(options.map((o) => o.id)).toEqual(["important-context", "user-text", "context:brief"]);
+    expect(options[0]?.disabledReason).toBe("Automated context injection is off for this agent");
+    expect(defaultDestination(options)?.id).toBe("user-text");
   });
 
   it("an agent with no inputs or slots still offers the two general destinations", () => {
     expect(buildDestinationOptions(null, undefined).map((o) => o.id)).toEqual([
-      DEFAULT_DESTINATION_ID,
+      "important-context",
       "user-text",
     ]);
   });
