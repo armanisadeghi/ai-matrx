@@ -10,24 +10,32 @@
 
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Flame } from "lucide-react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useWeakAreaDrill } from "../../data/useWeakAreaDrill";
 import { StudyDeck } from "./StudyDeck";
 import { StudyDeckHeader } from "./StudyDeckHeader";
 import { getVoiceTestForCard } from "./voiceTestExtra";
+import { topicLabel } from "@/features/education/study/utils/topicLabel";
 
 const EDU_BASE = "/education/flashcards";
 
 export function WeakAreaDrillSurface() {
   const router = useRouter();
-  const study = useWeakAreaDrill();
+  // `?topic=<raw topic>` drills one topic (the progress dashboard's topic
+  // rows and the narrator's weak_area recommendations link it).
+  const topic = useSearchParams().get("topic")?.trim() || null;
+  const study = useWeakAreaDrill({ topic });
+  const topicName = topic ? topicLabel(topic) : null;
 
   return (
     <>
       <PageHeader>
-        <StudyDeckHeader title="Drill weak areas" backHref={EDU_BASE} />
+        <StudyDeckHeader
+          title={topicName ? `Drill: ${topicName}` : "Drill weak areas"}
+          backHref={EDU_BASE}
+        />
       </PageHeader>
       <div className="h-full overflow-hidden">
         <StudyDeck
@@ -48,10 +56,20 @@ export function WeakAreaDrillSurface() {
           masteryByCard={study.masteryByCard}
           sessionId={study.sessionId}
           errorTitle="Couldn't load your weak areas"
-          emptyTitle="No weak areas right now"
-          emptyBody="Nothing is flagged as struggling or low-retention yet. Keep studying — cards that need extra practice will surface here automatically."
+          emptyTitle={
+            topicName ? `No studied cards in ${topicName}` : "No weak areas right now"
+          }
+          emptyBody={
+            topicName
+              ? "You haven't studied any cards in this topic yet. Study its set first and the drill will pick them up."
+              : "Nothing is flagged as struggling or low-retention yet. Keep studying — cards that need extra practice will surface here automatically."
+          }
           completionTitle="Drill complete"
-          completionSubtitle={`You reviewed all ${study.progress.total} weak cards.`}
+          completionSubtitle={
+            topicName
+              ? `You reviewed all ${study.progress.total} cards in ${topicName}.`
+              : `You reviewed all ${study.progress.total} weak cards.`
+          }
           completionPrimary={{
             label: "Back to flashcards",
             icon: Flame,

@@ -8,6 +8,7 @@ describe("topicLabel", () => {
   it("humanizes a slug", () => {
     expect(topicLabel("data-resilience")).toBe("Data resilience");
     expect(topicLabel("telemetry_monitoring")).toBe("Telemetry monitoring");
+    expect(topicLabel("diagnostics")).toBe("Diagnostics");
   });
   it("leaves a real name alone", () => {
     expect(topicLabel("Krebs Cycle")).toBe("Krebs Cycle");

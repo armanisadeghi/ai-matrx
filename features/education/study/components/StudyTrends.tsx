@@ -19,6 +19,8 @@
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   CartesianGrid,
   Line,
@@ -63,6 +65,8 @@ export interface StudyTrendsProps {
   /** Which mode-specific topic join to use for the per-topic section. Omit
    *  to hide that section entirely (e.g. a mode with no topic concept). */
   topicSource?: TopicSource;
+  /** Where a topic row opens (e.g. a drill of that topic). Omit → rows are plain. */
+  topicHref?: (topic: string) => string;
 }
 
 interface WeekBucket {
@@ -203,6 +207,7 @@ export function StudyTrends({
   mastery,
   weeks = 8,
   topicSource,
+  topicHref,
 }: StudyTrendsProps) {
   const [buckets, setBuckets] = useState<WeekBucket[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -270,13 +275,58 @@ export function StudyTrends({
     (b) => b.attempts > 0 || b.minutes > 0,
   );
 
+  const location = "Study progress › Trends";
+  const accuracyText = () =>
+    [
+      `Accuracy trend (last ${weeks} weeks, by week)`,
+      ...accuracyData.map(
+        (d) => `${d.label}: ${d.accuracy == null ? "no graded answers" : `${d.accuracy}%`}`,
+      ),
+    ].join("\n");
+  const timeText = () =>
+    [
+      `Weekly time studied (last ${weeks} weeks, minutes)`,
+      ...timeData.map((d) => `${d.label}: ${d.minutes} min`),
+    ].join("\n");
+  const topicRows = (topicStats ?? []).map((t) => ({
+    topic: topicLabel(t.topic),
+    raw_topic: t.topic,
+    mastery_pct: t.avgMasteryPct,
+    cards: t.count,
+    needs_work: t.struggling,
+  }));
+  const topicText = () =>
+    [
+      "Mastery by topic (weakest first)",
+      ...topicRows.map(
+        (t) => `${t.topic}: ${t.mastery_pct}% mastery · ${t.cards} card${t.cards === 1 ? "" : "s"}`,
+      ),
+    ].join("\n");
+
   return (
     <div className="mt-3 flex flex-col gap-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <section className="rounded-xl border border-border bg-card p-4">
-          <h2 className="mb-2 text-sm font-medium text-foreground">
-            Accuracy trend
-          </h2>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h2 className="text-sm font-medium text-foreground">
+              Accuracy trend
+            </h2>
+            {hasAnyActivity && (
+              <CopyButtons
+                size="xs"
+                label="Accuracy trend"
+                human={accuracyText}
+                agent={() => ({
+                  kind: "study-accuracy-trend",
+                  location,
+                  description: `Weekly accuracy (percent of graded answers correct) over the last ${weeks} weeks, as drawn on the chart.`,
+                  data: accuracyData,
+                  summary: accuracyText(),
+                  attributes: { weeks },
+                })}
+              />
+            )}
+          </div>
           {buckets === null ? (
             <Skeleton className="h-40 w-full rounded-lg" />
           ) : loadError ? (
@@ -335,9 +385,29 @@ export function StudyTrends({
         </section>
 
         <section className="rounded-xl border border-border bg-card p-4">
-          <h2 className="mb-2 text-sm font-medium text-foreground">
-            Weekly time studied
-          </h2>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h2 className="text-sm font-medium text-foreground">
+              Weekly time studied
+            </h2>
+            {hasAnyActivity && (
+              <CopyButtons
+                size="xs"
+                label="Weekly time studied"
+                human={timeText}
+                agent={() => ({
+                  kind: "study-weekly-time",
+                  location,
+                  description: `Minutes actually studied per week over the last ${weeks} weeks (abandoned sessions count only up to their last answer), as drawn on the chart.`,
+                  data: timeData,
+                  summary: timeText(),
+                  attributes: {
+                    weeks,
+                    total_minutes: timeData.reduce((n, d) => n + d.minutes, 0),
+                  },
+                })}
+              />
+            )}
+          </div>
           {buckets === null ? (
             <Skeleton className="h-40 w-full rounded-lg" />
           ) : loadError ? (
@@ -388,7 +458,25 @@ export function StudyTrends({
 
       {topicSource && (
         <section className="rounded-xl border border-border bg-card p-4">
-          <h2 className="mb-3 text-sm font-medium text-foreground">By topic</h2>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="text-sm font-medium text-foreground">By topic</h2>
+            {topicRows.length > 0 && (
+              <CopyButtons
+                size="xs"
+                label="Mastery by topic"
+                human={topicText}
+                agent={() => ({
+                  kind: "study-topic-mastery",
+                  location,
+                  description:
+                    "Average mastery per flashcard topic, weakest first — every topic, as listed on the page.",
+                  data: topicRows,
+                  summary: topicText(),
+                  attributes: { topics: topicRows.length },
+                })}
+              />
+            )}
+          </div>
           {topicStats === null ? (
             <div className="flex flex-col gap-2">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -401,8 +489,10 @@ export function StudyTrends({
             </p>
           ) : (
             <ul className="flex flex-col gap-2">
-              {topicStats.map((t) => (
-                <li key={t.topic} className="flex items-center gap-3">
+              {topicStats.map((t) => {
+                const href = topicHref?.(t.topic);
+                const row = (
+                  <>
                   <span
                     className="w-40 shrink-0 truncate text-xs text-foreground sm:w-56"
                     title={t.topic}
@@ -428,8 +518,24 @@ export function StudyTrends({
                   <span className="w-16 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
                     {t.count} card{t.count === 1 ? "" : "s"}
                   </span>
-                </li>
-              ))}
+                  </>
+                );
+                return (
+                  <li key={t.topic}>
+                    {href ? (
+                      <Link
+                        href={href}
+                        title={`Drill ${topicLabel(t.topic)}`}
+                        className="-mx-1 flex items-center gap-3 rounded-md px-1 py-0.5 hover:bg-muted/60"
+                      >
+                        {row}
+                      </Link>
+                    ) : (
+                      <div className="flex items-center gap-3">{row}</div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

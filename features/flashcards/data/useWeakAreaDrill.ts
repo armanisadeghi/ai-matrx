@@ -58,9 +58,19 @@ function progressDone(
 }
 
 export function useWeakAreaDrill(
-  options: { limit?: number } = {},
+  options: {
+    limit?: number;
+    /**
+     * Drill ONE topic (the raw `fc_card.topic`, as the progress dashboard's
+     * topic rows link it): every card the learner has studied in that topic,
+     * worst first — not only the globally weakest, so a strong topic still
+     * opens a real drill instead of an empty one.
+     */
+    topic?: string | null;
+  } = {},
 ): UseWeakAreaDrillResult {
   const { limit = 20 } = options;
+  const topic = options.topic?.trim() || null;
 
   const [cards, setCards] = useState<CardWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,8 +99,11 @@ export function useWeakAreaDrill(
       setIsFlipped(false);
       setMasteryByCard({});
 
-      // 1. Candidate weak rows (struggling OR low write-time retrievability).
-      const weakRes = await studyService.listWeakest(FC_CARD_ITEM_TYPE);
+      // 1. Candidates: the weak rows (struggling OR low write-time
+      //    retrievability) — or, for one topic, every studied card in it.
+      const weakRes = topic
+        ? await studyService.listAllMastery()
+        : await studyService.listWeakest(FC_CARD_ITEM_TYPE);
       if (cancelled) return;
       if (weakRes.error) {
         setError(weakRes.error);
@@ -99,10 +112,31 @@ export function useWeakAreaDrill(
         setLoading(false);
         return;
       }
+      let candidates = weakRes.data ?? [];
+      if (topic) {
+        const fcRows = candidates.filter(
+          (m) => m.item_type === FC_CARD_ITEM_TYPE,
+        );
+        const topicsRes = await fcService.getTopicsForCardIds(
+          fcRows.map((m) => m.item_id),
+        );
+        if (cancelled) return;
+        if (topicsRes.error) {
+          setError(topicsRes.error);
+          setCards([]);
+          setResultsByCard({});
+          setLoading(false);
+          return;
+        }
+        const topics = topicsRes.data ?? {};
+        candidates = fcRows.filter(
+          (m) => topics[m.item_id]?.trim() === topic,
+        );
+      }
 
       // 2. Re-rank by LIVE (decayed) retrievability, worst first, then cap.
       const now = new Date();
-      const ranked = [...(weakRes.data ?? [])].sort((a, b) => {
+      const ranked = [...candidates].sort((a, b) => {
         const ra = currentRetrievability(a, now) ?? 0;
         const rb = currentRetrievability(b, now) ?? 0;
         if (a.struggle_flag !== b.struggle_flag) return a.struggle_flag ? -1 : 1;
@@ -133,6 +167,7 @@ export function useWeakAreaDrill(
       const sessionRes = await studyService.createSession({
         mode: STUDY_MODE,
         sourceKind: "weak_area",
+        ...(topic ? { sourceQuery: { topic } } : {}),
       });
       if (!cancelled) {
         if (sessionRes.error) {
@@ -146,7 +181,7 @@ export function useWeakAreaDrill(
     return () => {
       cancelled = true;
     };
-  }, [limit]);
+  }, [limit, topic]);
 
   const closeRef = useRef<{ id: string; closed: boolean } | null>(null);
   useEffect(() => {

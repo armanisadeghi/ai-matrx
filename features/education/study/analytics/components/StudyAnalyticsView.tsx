@@ -39,6 +39,14 @@ import type { ItemMasteryRow } from "../../types";
 import type { StudyAnalytics } from "../computeAnalytics";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { topicLabel } from "../../utils/topicLabel";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+
+const LOCATION = "Study progress";
+
+/** The drill that opens one topic (the weak-areas route honors `?topic=`). */
+function topicDrillHref(topic: string): string {
+  return `/education/flashcards/weak-areas?topic=${encodeURIComponent(topic)}`;
+}
 
 export interface StudyAnalyticsViewProps {
   analytics: StudyAnalytics | null;
@@ -87,6 +95,21 @@ export function StudyAnalyticsView({
           analytics.overall.struggling,
       )
     : 1;
+
+  // The page's leading numbers ride on every section payload (agent-copy law).
+  const kpis = analytics
+    ? {
+        accuracy_pct: analytics.overall.accuracyPct,
+        mastered: analytics.overall.mastered,
+        studied: analytics.overall.studied,
+        due_now: analytics.overall.dueNow,
+        day_streak: analytics.currentStreak,
+        minutes_studied: analytics.totalMinutes,
+      }
+    : {};
+  const weakList = analytics
+    ? analytics.weakTopics.filter((t) => t.struggling > 0)
+    : [];
 
   return (
     <div className="matrx-touch-targets min-h-full w-full bg-textured">
@@ -203,7 +226,28 @@ export function StudyAnalyticsView({
             <div className="flex min-w-0 flex-col gap-4">
             {/* Mastery distribution */}
             <section className="rounded-xl border border-border bg-card p-4">
-              <h2 className="mb-3 text-sm font-medium text-foreground">Mastery</h2>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h2 className="text-sm font-medium text-foreground">Mastery</h2>
+                <CopyButtons
+                  size="xs"
+                  label="Mastery"
+                  human={() =>
+                    `Mastery: ${analytics.overall.mastered} mastered · ${analytics.overall.learning} learning · ${analytics.overall.struggling} needs work (of ${analytics.overall.studied} studied)`
+                  }
+                  agent={() => ({
+                    kind: "study-mastery-distribution",
+                    location: LOCATION,
+                    description:
+                      "How the learner's studied items split across mastered / learning / needs work, as drawn in the mastery bar.",
+                    data: {
+                      mastered: analytics.overall.mastered,
+                      learning: analytics.overall.learning,
+                      needs_work: analytics.overall.struggling,
+                    },
+                    attributes: kpis,
+                  })}
+                />
+              </div>
               <div className="flex h-3 overflow-hidden rounded-full bg-muted">
                 <div
                   className="bg-green-500"
@@ -228,9 +272,36 @@ export function StudyAnalyticsView({
             {/* Per-mode breakdown — only meaningful once >1 mode records */}
             {analytics.byMode.length > 1 && (
               <section className="rounded-xl border border-border bg-card p-4">
-                <h2 className="mb-3 text-sm font-medium text-foreground">
-                  By study mode
-                </h2>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h2 className="text-sm font-medium text-foreground">
+                    By study mode
+                  </h2>
+                  <CopyButtons
+                    size="xs"
+                    label="By study mode"
+                    human={() =>
+                      analytics.byMode
+                        .map(
+                          (m) =>
+                            `${m.label}: ${m.studied} studied · ${m.accuracyPct == null ? "no graded answers" : `${m.accuracyPct}% accuracy`} · ${m.mastered} mastered`,
+                        )
+                        .join("\n")
+                    }
+                    agent={() => ({
+                      kind: "study-mode-breakdown",
+                      location: LOCATION,
+                      description: "Per-study-mode totals, as listed on the page.",
+                      data: analytics.byMode.map((m) => ({
+                        mode: m.label,
+                        studied: m.studied,
+                        accuracy_pct: m.accuracyPct,
+                        mastered: m.mastered,
+                        needs_work: m.struggling,
+                      })),
+                      attributes: { ...kpis, modes: analytics.byMode.length },
+                    })}
+                  />
+                </div>
                 <ul className="flex flex-col gap-2">
                   {analytics.byMode.map((mode) => (
                     <li
@@ -258,23 +329,52 @@ export function StudyAnalyticsView({
             </div>
             <div className="flex min-w-0 flex-col gap-4">
             {/* Weak areas — the smallest subset causing the most errors */}
-            {analytics.weakTopics.filter((t) => t.struggling > 0).length > 0 && (
+            {weakList.length > 0 && (
               <section className="rounded-xl border border-border bg-card p-4">
-                <div
-                  className="mb-3 flex items-center gap-2"
-                  title="The smallest set of material causing the most errors — clear these first."
-                >
-                  <Flame className="h-4 w-4 text-red-500" />
-                  <h2 className="text-sm font-medium text-foreground">
-                    Highest-leverage fixes
-                  </h2>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div
+                    className="flex items-center gap-2"
+                    title="The smallest set of material causing the most errors — clear these first."
+                  >
+                    <Flame className="h-4 w-4 text-red-500" />
+                    <h2 className="text-sm font-medium text-foreground">
+                      Highest-leverage fixes
+                    </h2>
+                  </div>
+                  <CopyButtons
+                    size="xs"
+                    label="Highest-leverage fixes"
+                    human={() =>
+                      [
+                        "Highest-leverage fixes (weakest topics with struggling cards)",
+                        ...weakList.map(
+                          (t) =>
+                            `${topicLabel(t.topic)}: ${t.masteryPct}% mastery · ${t.struggling} of ${t.count} need work`,
+                        ),
+                      ].join("\n")
+                    }
+                    agent={() => ({
+                      kind: "study-weak-topics",
+                      location: LOCATION,
+                      description:
+                        "Every topic with struggling cards, weakest first (the card shows the top 5).",
+                      data: weakList.map((t) => ({
+                        topic: topicLabel(t.topic),
+                        raw_topic: t.topic,
+                        mastery_pct: t.masteryPct,
+                        cards: t.count,
+                        needs_work: t.struggling,
+                      })),
+                      attributes: { ...kpis, topics: weakList.length, shown: Math.min(5, weakList.length) },
+                    })}
+                  />
                 </div>
                 <ul className="flex flex-col gap-2">
-                  {analytics.weakTopics
-                    .filter((t) => t.struggling > 0)
+                  {weakList
                     .slice(0, 5)
                     .map((t) => (
-                      <li key={t.topic} className="flex items-center gap-3">
+                      <li key={t.topic}>
+                        <WeakRow href={readOnly ? undefined : topicDrillHref(t.topic)} title={topicLabel(t.topic)}>
                         <span
                           className="w-40 shrink-0 truncate text-xs text-foreground"
                           title={t.topic}
@@ -297,6 +397,7 @@ export function StudyAnalyticsView({
                         <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
                           {t.masteryPct}%
                         </span>
+                        </WeakRow>
                       </li>
                     ))}
                 </ul>
@@ -332,11 +433,34 @@ export function StudyAnalyticsView({
               itemType="fc_card"
               mastery={fcMastery}
               topicSource="fc_card"
+              topicHref={readOnly ? undefined : topicDrillHref}
             />
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+/** A weak-topic row: opens that topic's drill when `href` is given. */
+function WeakRow({
+  href,
+  title,
+  children,
+}: {
+  href?: string;
+  title: string;
+  children: ReactNode;
+}) {
+  if (!href) return <div className="flex items-center gap-3">{children}</div>;
+  return (
+    <Link
+      href={href}
+      title={`Drill ${title}`}
+      className="-mx-1 flex items-center gap-3 rounded-md px-1 py-0.5 hover:bg-muted/60"
+    >
+      {children}
+    </Link>
   );
 }
 

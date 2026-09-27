@@ -15,7 +15,9 @@
 //
 // React Compiler is on: no manual memo.
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Skeleton } from "@ai-matrx/design-system";
 import { ChevronRight, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
@@ -133,6 +135,13 @@ export function NarrativeCard({
   const needsOrganization =
     !report && !loading && organizationState !== "ready" &&
     organizationState !== "resolving";
+  // Still reading which organization this session is in: never claim "study a
+  // little" (there IS data) or "choose one" (we don't know yet).
+  const checkingOrganization =
+    !report && !loading && organizationState === "resolving";
+  // The picker is a whole list — it stays folded behind one button so the
+  // numbers below keep the first screen.
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
     <section className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-transparent p-4">
@@ -143,28 +152,47 @@ export function NarrativeCard({
             What your data says
           </h2>
         </div>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
-          disabled={loading || organizationState !== "ready"}
-          onClick={onRegenerate}
-        >
-          {loading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3.5 w-3.5" />
-          )}
-          {loading ? "Analyzing…" : "Refresh"}
-        </Button>
+        {organizationState === "ready" && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
+            disabled={loading}
+            title="Writes a new reading of your current numbers — one agent run, which replaces the one shown"
+            onClick={onRegenerate}
+          >
+            {loading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            {loading ? "Analyzing…" : "Refresh"}
+          </Button>
+        )}
       </div>
 
       {needsOrganization ? (
-        <OrganizationRequiredNotice
-          compact
-          what="Your insights"
-          description="Insights are written by an agent, and every agent run is filed under one organization. Pick the one you are working in and they will appear here."
-        />
+        pickerOpen ? (
+          <OrganizationRequiredNotice
+            compact
+            what="Your insights"
+            description="Insights are written by an agent, and every agent run is filed under one organization. Pick the one you are working in and they will appear here."
+          />
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-2 py-1">
+            <p className="text-sm text-muted-foreground">
+              Choose an organization and your insights will be written here.
+            </p>
+            <Button size="sm" variant="outline" onClick={() => setPickerOpen(true)}>
+              Choose organization
+            </Button>
+          </div>
+        )
+      ) : checkingOrganization ? (
+        <div className="flex flex-col gap-2 py-1" aria-label="Checking your organization">
+          <Skeleton className="h-4 w-3/4 rounded" />
+          <Skeleton className="h-4 w-1/2 rounded" />
+        </div>
       ) : loading && !report ? (
         <LiveRunDisplay
           conversationId={conversationId}
