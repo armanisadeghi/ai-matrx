@@ -42,6 +42,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, ChevronDown, UserRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 
 import { EmployeeSearchSelect } from "../clock/EmployeeSearchSelect";
@@ -73,7 +74,13 @@ export function PunchRegisterScopePicker({
 }) {
   const router = useRouter();
   const params = useSearchParams();
-  const { employers, active } = useHrContext();
+  const {
+    employers,
+    active,
+    error: contextError,
+    isLoading: contextLoading,
+    refresh: refreshContext,
+  } = useHrContext();
   const chosen = scope.employmentId !== null || scope.orgScope;
   const [open, setOpen] = useState(!chosen);
 
@@ -135,6 +142,10 @@ export function PunchRegisterScopePicker({
               <span className="font-medium text-foreground">{activeEmployer.name}</span>. Choose
               whose punches to show.
             </>
+          ) : contextError ? (
+            <>Your employers could not be read, so this register cannot be scoped yet.</>
+          ) : contextLoading ? (
+            <>Reading the employers you work in…</>
           ) : (
             // No employer resolved at all: then it genuinely is both questions.
             <>This register has no scope yet. Choose a person, or an employer.</>
@@ -154,6 +165,14 @@ export function PunchRegisterScopePicker({
           {chosen ? "Change who this is about" : "Choose who this is about"}
         </Button>
       </div>
+
+      {contextError ? (
+        <ReadFailure
+          error={contextError}
+          what="the employers you can see"
+          onRetry={refreshContext}
+        />
+      ) : null}
 
       {open ? (
         <div className="grid gap-4 border-t border-border px-3 py-3 sm:grid-cols-2">
@@ -182,7 +201,9 @@ export function PunchRegisterScopePicker({
               <Building2 className="h-3.5 w-3.5" aria-hidden />
               {activeEmployer ? "Everyone here" : "Everyone at one employer"}
             </div>
-            {employers.length === 0 ? (
+            {contextError ? null /* the ReadFailure above says it, with its menu */ : contextLoading && employers.length === 0 ? (
+              <p className="text-[12px] text-muted-foreground">Reading your employers…</p>
+            ) : employers.length === 0 ? (
               <p className="text-[12px] text-muted-foreground">
                 No employer is available to you yet.
               </p>

@@ -86,6 +86,7 @@ import { readWriteAck, type HrWriteRefusal } from "./writeAck";
 import { DuplicatePanel, type HrDuplicateScan } from "./DuplicatePanel";
 import { RehirePanel, type HrPriorEmployment } from "./RehirePanel";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 type Mode = "new-person" | "link-member" | "link-party" | "convert-candidate";
 
@@ -124,7 +125,11 @@ export function HrNewEmployee({
           : null,
   );
 
-  const structure = useHrStructure(organizationId).data;
+  const structureRead = useHrStructure(organizationId);
+  const structure = structureRead.data;
+  // The structure read's failure (or refusal) — never "this employer has none".
+  const structureError = structureRead.error ?? structureRead.denied;
+  const structureWaiting = !structureError && structureRead.isLoading;
   const [saving, setSaving] = useState(false);
   const [created, setCreated] = useState<{ employeeId: string } | null>(null);
   const [refusal, setRefusal] = useState<HrWriteRefusal | null>(null);
@@ -217,7 +222,7 @@ export function HrNewEmployee({
     problems.push({
       field: "job_title_id",
       sentence:
-        jobTitles.length === 0
+        !structureError && !structureWaiting && jobTitles.length === 0
           ? "This employer has no job titles yet, and every position needs one."
           : "A position needs a job title.",
     });
@@ -713,7 +718,16 @@ export function HrNewEmployee({
                     `hr.pay_period` is generated from a pay group's calendar. No
                     group, no period; no period, no timesheet, no attestation, no
                     approval, no lock and no export for that person, ever. */}
-                {payGroups.length === 0 ? (
+                {structureError ? (
+                  <ReadFailure
+                    error={structureError}
+                    what="this employer's pay groups"
+                    onRetry={structureRead.refresh}
+                    className="min-w-0"
+                  />
+                ) : structureWaiting ? (
+                  <p className="min-w-0 text-xs text-muted-foreground">Loading pay groups…</p>
+                ) : payGroups.length === 0 ? (
                   <div className="min-w-0 space-y-1.5">
                     <span className="block text-xs font-medium">Pay group</span>
                     <p className="text-xs text-muted-foreground">
@@ -794,7 +808,16 @@ export function HrNewEmployee({
                     deliver: an empty dropdown is not an explanation, and it is
                     especially not one on the very first thing a new employer tries.
                   */}
-                  {jobTitles.length === 0 ? (
+                  {structureError ? (
+                    <ReadFailure
+                      error={structureError}
+                      what="this employer's job titles"
+                      onRetry={structureRead.refresh}
+                      className="m-0"
+                    />
+                  ) : structureWaiting ? (
+                    <p className="text-xs text-muted-foreground">Loading job titles…</p>
+                  ) : jobTitles.length === 0 ? (
                     <div className="space-y-1.5 rounded-md border border-dashed border-border p-2.5">
                       <p className="text-sm text-foreground">
                         No job titles exist yet.
