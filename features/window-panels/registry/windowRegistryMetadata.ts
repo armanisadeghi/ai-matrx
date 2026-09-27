@@ -1429,6 +1429,19 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
   },
 
+  // ── Custom agent ────────────────────────────────────────────────────────
+  // The agent picker window, then map inputs to what the menu captured.
+  {
+    slug: "custom-agent-window",
+    overlayId: "customAgentWindow",
+    kind: "window",
+    label: "Custom agent",
+    defaultData: { sessionId: null as string | null },
+    mobilePresentation: "drawer",
+    instanceMode: "multi",
+    ephemeral: true,
+  },
+
   // ── Send to another agent ───────────────────────────────────────────────
   // The agent picker window, then where the content goes. Carries the content
   // being sent, so it is ephemeral and never restored from a link.

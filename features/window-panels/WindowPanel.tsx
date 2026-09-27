@@ -19,7 +19,11 @@ assertLazyLoaded("features/window-panels/WindowPanel.tsx");
  */
 
 import React, { useCallback, useEffect, useId, useRef, useState } from "react";
-import { announceLayerFront } from "@ai-matrx/design-system";
+import {
+  announceLayerFront,
+  FloatingLayer,
+  useFloatingLayerZIndex,
+} from "@ai-matrx/design-system";
 import { createPortal } from "react-dom";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 import {
@@ -507,7 +511,7 @@ export function WindowPanel({
   const {
     windowState,
     rect,
-    zIndex,
+    zIndex: managerZIndex,
     onDragStart,
     onResizeStart,
     onFocus,
@@ -535,6 +539,12 @@ export function WindowPanel({
         }
       : {}),
   });
+
+  // A window opened from inside a blocking Dialog/Sheet/Drawer is lifted to
+  // the modal tier so it paints above that surface's scrim — otherwise the
+  // click that picks an option lands on the scrim and closes the modal
+  // (design-system floating-layer; the Source screen's association picker).
+  const zIndex = useFloatingLayerZIndex(managerZIndex);
 
   const dispatch = useAppDispatch();
   const windowsHidden = useAppSelector(selectWindowsHidden);
@@ -1440,7 +1450,9 @@ export function WindowPanel({
         {footerBar}
       </div>
     );
-    return portalTarget ? createPortal(mobileEl, portalTarget) : null;
+    return portalTarget
+      ? createPortal(<FloatingLayer>{mobileEl}</FloatingLayer>, portalTarget)
+      : null;
   }
 
   // ────────────────────────────────────────────────────────────────────────
@@ -1498,7 +1510,9 @@ export function WindowPanel({
         {footerBar}
       </div>
     );
-    return portalTarget ? createPortal(el, portalTarget) : null;
+    return portalTarget
+      ? createPortal(<FloatingLayer>{el}</FloatingLayer>, portalTarget)
+      : null;
   }
 
   // ────────────────────────────────────────────────────────────────────────
@@ -1626,7 +1640,9 @@ export function WindowPanel({
     </div>
   );
 
-  return portalTarget ? createPortal(el, portalTarget) : null;
+  return portalTarget
+      ? createPortal(<FloatingLayer>{el}</FloatingLayer>, portalTarget)
+      : null;
 }
 
 // DebugStrip extracted to ./WindowPanel/DebugStrip.tsx (Phase 6).

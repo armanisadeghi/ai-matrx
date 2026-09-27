@@ -649,6 +649,19 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  // "Custom agent…" — the agent picker window, then map the agent's inputs to
+  // what the menu captured; opens the agent in its own window.
+  customAgentWindow: {
+    label: "Custom agent",
+    instanceMode: "multi",
+    isWindow: true,
+  },
+  // "Apply to source" from an agent window — the one review (diff → apply).
+  applyToSourceReview: {
+    label: "Apply to source",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
   // "Send to another agent…" from any response's ⋯ menu — the picker window,
   // then where the content goes, then the agent opens prefilled and unsent.
   sendToAgentWindow: {

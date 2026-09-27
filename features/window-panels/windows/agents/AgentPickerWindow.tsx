@@ -25,7 +25,10 @@ import { emitAgentPickerEvent } from "./agent-picker-callbacks";
 
 export const AGENT_PICKER_WINDOW_CONSUMER_ID = "agent-picker-window";
 
-type AgentPickerFrameOverlayId = "agentPickerWindow" | "sendToAgentWindow";
+type AgentPickerFrameOverlayId =
+  | "agentPickerWindow"
+  | "sendToAgentWindow"
+  | "customAgentWindow";
 
 export interface AgentPickerFrameProps {
   /** Window-manager id — unique per open window. */

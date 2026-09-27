@@ -9,6 +9,7 @@
 // See `features/rich-document/FEATURE.md` for the full architecture and the
 // per-source action compatibility matrix.
 
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import type { LucideIcon } from "lucide-react";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Note } from "@/features/notes/types";
@@ -190,6 +191,8 @@ export type RichDocumentActionId =
   | "ask-followup"
   // Hand the content to ANY agent (picker → destination → prefilled window)
   | "send-to-agent"
+  // An agent window's answer applied back to the text it was launched from
+  | "apply-to-source"
   // The Notes & comments dock of a saved record (annotations/RecordAnnotations)
   | "notes-and-comments"
   // Text-field AI powers (ProTextarea hosts them)
@@ -390,6 +393,11 @@ export interface RichDocumentActionContext {
   callbacks?: RichDocumentActionContextCallbacks;
   /** Source-specific extensions. Discriminated so chat-only fields don't pollute the base shape. */
   extensions?: SourceExtensions;
+  /**
+   * The scope the right-click menu captured for this open (selection, whole
+   * content, text around it, every surface value). Absent on bars.
+   */
+  applicationScope?: ApplicationScope;
 }
 
 // ============================================================================
