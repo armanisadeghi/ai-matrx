@@ -46,3 +46,32 @@ describe("fitColumnWidths", () => {
     expect(out[1]?.width).toBe(220);
   });
 });
+
+// /education/quizzes (page-pass 2026-09-27): columns empty or identical on every
+// loaded row, hand-hidden page by page. Break: a uniform column is not found, a
+// varying one is, a button column (no accessor) is judged, or a column the person
+// showed is hidden again → red.
+import { effectiveHiddenColumns, hiddenColumnsPatch, uniformColumnIds } from "../columnWidths";
+
+describe("uniform columns hide by default", () => {
+  const specs = [
+    { id: "name", column: col("name") },
+    { id: "topic", column: col("topic") },
+    { id: "visibility", column: col("visibility") },
+    { id: "study", column: { id: "study", header: "Study" } as MatrxColumnDef<Row> },
+  ];
+  const same = rows.map((r) => ({ ...r, visibility: "Organization" }));
+
+  it("finds the empty-or-identical columns, never the name or a button column", () => {
+    expect(uniformColumnIds(specs, same, ["name"])).toEqual(["visibility"]);
+    expect(uniformColumnIds(specs, rows, ["name"])).toEqual([]);
+  });
+
+  it("a column the person shows stays shown", () => {
+    const eff = effectiveHiddenColumns([], ["visibility"], []);
+    expect(eff).toEqual(["visibility"]);
+    const patch = hiddenColumnsPatch([], eff, []);
+    expect(patch).toEqual({ hiddenColumns: [], shownColumns: ["visibility"] });
+    expect(effectiveHiddenColumns(patch.hiddenColumns, ["visibility"], patch.shownColumns)).toEqual([]);
+  });
+});

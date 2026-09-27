@@ -45,6 +45,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useEffect, useRef, useState } from "react";
 import {
   makeScope,
   scopeIndustryId,
@@ -142,14 +143,49 @@ export function EntityScopeTabs({
   countsLoading,
   onChange,
 }: Props) {
+  // A row wider than the screen fades at the edge that has more tabs past it
+  // (page-pass 2026-09-27, /education/quizzes: "Public" was cut off beside
+  // the "+" with no cue that the row scrolls).
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const [more, setMore] = useState<{ start: boolean; end: boolean }>({ start: false, end: false });
+  useEffect(() => {
+    const el = rowRef.current;
+    if (!el) return;
+    const measure = () => {
+      const start = el.scrollLeft > 1;
+      const end = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+      setMore((prev) => (prev.start === start && prev.end === end ? prev : { start, end }));
+    };
+    measure();
+    el.addEventListener("scroll", measure, { passive: true });
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    observer?.observe(el);
+    return () => {
+      el.removeEventListener("scroll", measure);
+      observer?.disconnect();
+    };
+  }, [scopes.length]);
+  const fade =
+    more.start && more.end
+      ? "[mask-image:linear-gradient(to_right,transparent,black_1.5rem,black_calc(100%-1.5rem),transparent)]"
+      : more.end
+        ? "[mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)]"
+        : more.start
+          ? "[mask-image:linear-gradient(to_right,transparent,black_1.5rem)]"
+          : "";
   return (
     <div
+      ref={rowRef}
+      data-scope-tabs-more={more.end ? "end" : more.start ? "start" : undefined}
       // No box around the tabs: the active tab's fill is the whole signal
       // (a bordered box around them read as box-in-box, 2026-09-27).
       // Labels stay on a phone (page-pass 2026-09-27: icon + count alone left
       // "which one is Mine?" to guesswork); a row too wide for the screen
       // scrolls sideways instead of dropping its words.
-      className="inline-flex max-w-full min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] sm:gap-1 [&::-webkit-scrollbar]:hidden [&>*]:shrink-0"
+      className={cn(
+        "inline-flex max-w-full min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] sm:gap-1 [&::-webkit-scrollbar]:hidden [&>*]:shrink-0",
+        fade,
+      )}
       role="tablist"
       aria-label="List scope"
     >

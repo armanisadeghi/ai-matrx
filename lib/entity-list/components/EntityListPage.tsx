@@ -29,6 +29,7 @@ import {
   hiddenColumnsPatch,
   uniformColumnIds,
 } from "../columnWidths";
+import { entityListDoorColumnId } from "../doors";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { commitUrlParams } from "@ai-matrx/kit/url-state";

@@ -378,6 +378,8 @@ export function buildAssessmentListConfig(input: {
     columns: buildAssessmentColumns(config),
     // v2 (2026-09-27): Depth/Exam hidden by default, My attempts / My best added.
     prefsVersion: 2,
+    // Empty-or-identical columns hide by default (list shell, page-pass 2026-09-27).
+    autoHideUniformColumns: true,
     prefsDefaults: { sort: "updated", direction: "desc" },
     getRowId: (row) => row.id,
     getRowName: (row) => row.title,
