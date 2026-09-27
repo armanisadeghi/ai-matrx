@@ -1065,6 +1065,13 @@ module in the folder + the two deleted filenames).
 
 ## Change log
 
+- page-pass 2026-09-27 round 3 (/crm/[partyId]): the employer picker is the
+  standard searchable picker (Popover + Command) with `Create "typed"` through
+  `resolveParty`; the Activity composer's channel and direction are
+  SegmentedControls; expand/collapse-all is absent when nothing expands;
+  hover-reveal sits on a wrapper span so the TapButton itself hides. Live proof
+  of rounds 1-2 on e75b0005a3: tab title, platform id, compact empties, Agents
+  and right-click menus; Contact details loads with no organization selected.
 - page-pass 2026-09-27 round 2 (/crm/[partyId]): empty is compact — identity
   shows its name plus filled fields and one "Add details" menu; empty sections
   (Contact, Addresses, People, Deals, Contact details) are one header line via
