@@ -1,3 +1,4 @@
+-- chair-step: lane GUARDS-GREEN — adds six partial Trash indexes (archived rows only). Its only DROPs are 'drop index concurrently if exists' of these same six names, so a rerun rebuilds an INVALID leftover of a cancelled build instead of skipping it; no data is touched.
 -- lane GUARDS-GREEN — every sizable Trash kind is read by a bounded index walk, not a filter over its live rows.
 -- AUTOCOMMIT FILE: CREATE INDEX CONCURRENTLY cannot run inside a transaction; apply statement by statement.
 --
@@ -18,24 +19,52 @@
 --
 -- INVERSE: migrations/inverse/guardsgreen_trash_reads_are_index_walks_on_every_sizable_kind_down.sql
 -- lane: GUARDS-GREEN
+--
+-- RE-RUNNABLE WITHOUT A SILENT INVALID INDEX. A CONCURRENTLY build cancelled by lock_timeout leaves
+-- an INVALID index behind, and `create index concurrently if not exists` then skips it and reports
+-- ok (measured on the clone 2026-09-27: three invalid indexes after an "ok" rerun). So each index is
+-- dropped (concurrently, if it exists) and built again, and the last statement refuses the file
+-- unless all six are valid.
 
-create index concurrently if not exists conversation_trash_org_shared_deleted_idx
+drop index concurrently if exists chat.conversation_trash_org_shared_deleted_idx;
+create index concurrently conversation_trash_org_shared_deleted_idx
   on chat.conversation (organization_id, deleted_at desc, id)
   where deleted_at is not null and visibility is distinct from 'personal'::platform.visibility;
 
-create index concurrently if not exists conversation_trash_owner_deleted_idx
+drop index concurrently if exists chat.conversation_trash_owner_deleted_idx;
+create index concurrently conversation_trash_owner_deleted_idx
   on chat.conversation (created_by, deleted_at desc, id) where deleted_at is not null;
 
-create index concurrently if not exists folders_trash_org_shared_deleted_idx
+drop index concurrently if exists files.folders_trash_org_shared_deleted_idx;
+create index concurrently folders_trash_org_shared_deleted_idx
   on files.folders (organization_id, deleted_at desc, id)
   where deleted_at is not null and visibility is distinct from 'personal'::platform.visibility;
 
-create index concurrently if not exists folders_trash_owner_deleted_idx
+drop index concurrently if exists files.folders_trash_owner_deleted_idx;
+create index concurrently folders_trash_owner_deleted_idx
   on files.folders (created_by, deleted_at desc, id) where deleted_at is not null;
 
-create index concurrently if not exists processed_documents_trash_org_shared_deleted_idx
+drop index concurrently if exists docproc.processed_documents_trash_org_shared_deleted_idx;
+create index concurrently processed_documents_trash_org_shared_deleted_idx
   on docproc.processed_documents (organization_id, deleted_at desc, id)
   where deleted_at is not null and visibility is distinct from 'personal'::platform.visibility;
 
-create index concurrently if not exists processed_documents_trash_owner_deleted_idx
+drop index concurrently if exists docproc.processed_documents_trash_owner_deleted_idx;
+create index concurrently processed_documents_trash_owner_deleted_idx
   on docproc.processed_documents (created_by, deleted_at desc, id) where deleted_at is not null;
+
+do $check$
+declare v_bad text;
+begin
+  select string_agg(w.n, ', ') into v_bad
+    from (values ('conversation_trash_org_shared_deleted_idx'), ('conversation_trash_owner_deleted_idx'),
+                 ('folders_trash_org_shared_deleted_idx'), ('folders_trash_owner_deleted_idx'),
+                 ('processed_documents_trash_org_shared_deleted_idx'), ('processed_documents_trash_owner_deleted_idx')) w(n)
+    left join pg_class c on c.relname = w.n and c.relkind = 'i'
+    left join pg_index i on i.indexrelid = c.oid
+   where i.indisvalid is not true;
+  if v_bad is not null then
+    raise exception 'guardsgreen trash indexes not valid: % — re-run the file', v_bad;
+  end if;
+end
+$check$;
