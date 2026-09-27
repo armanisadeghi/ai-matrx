@@ -24,6 +24,7 @@ import type {
   MembershipRoleOption,
 } from "@/components/membership/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ConnectionsReadNotice } from "@/features/messaging/components/ConnectionsReadNotice";
 
 interface InvitationManagerProps {
   organizationId: string;
@@ -55,7 +56,13 @@ export function InvitationManager({
     resend,
     loading: operationLoading,
   } = useInvitationOperations(organizationId);
-  const { connections, isLoading: connectionsLoading } = useUserConnections({
+  const {
+    connections,
+    isLoading: connectionsLoading,
+    error: connectionsError,
+    partialFailures: connectionsPartial,
+    refresh: refreshConnections,
+  } = useUserConnections({
     // The people already in THIS organization, never everybody in every organization the
     // inviter happens to belong to (FIX-7B).
     organizationId,
@@ -159,6 +166,16 @@ export function InvitationManager({
   }
 
   return (
+    <>
+    {/* The invite form's contact suggestions come from the roster read — a
+        failed or partly failed roster is said, never a silently short list. */}
+    <ConnectionsReadNotice
+      error={connectionsError}
+      partialFailures={connectionsPartial}
+      hasRows={connections.length > 0}
+      onRetry={() => void refreshConnections()}
+      what="the people you can invite"
+    />
     <InvitationsPanel
       invitations={invitations as PanelInvitation[]}
       roleOptions={roleOptions}
@@ -180,5 +197,6 @@ export function InvitationManager({
         name: organizationName,
       }}
     />
+    </>
   );
 }

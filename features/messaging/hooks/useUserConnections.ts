@@ -76,10 +76,24 @@ type _CheckLookupRow =
 declare const _lookupRow: _CheckLookupRow;
 true satisfies typeof _lookupRow;
 
+/** One source of the roster that could not be read while others could. */
+export interface ConnectionReadFailure {
+  /** The organization (or source) in the person's words. */
+  source: string;
+  error: string;
+}
+
 interface UseUserConnectionsReturn {
   connections: ConnectionUser[];
   isLoading: boolean;
+  /** Nothing could be read at all — the list is not an answer. */
   error: string | null;
+  /**
+   * Some sources read and some did not: `connections` holds what was read and
+   * this names what is missing. Surfaces show the rows plus a StaleDataNotice
+   * ("Couldn't read the people in Acme") — never a silently short list.
+   */
+  partialFailures: ConnectionReadFailure[];
   refresh: () => Promise<void>;
 }
 
@@ -151,6 +165,7 @@ export function useUserConnections(
     key: string;
     orgConnections: ConnectionUser[];
     error: string | null;
+    partialFailures: ConnectionReadFailure[];
   } | null>(null);
 
   useEffect(() => {
@@ -164,7 +179,7 @@ export function useUserConnections(
     ];
     void (async () => {
       try {
-        const orgConnections = await fetchOrgConnections(supabase, {
+        const { users: orgConnections, failures } = await fetchOrgConnections(supabase, {
           currentUserId: userId,
           organizations: orgs,
           invitationOrganizationId: invitationOrgId,
@@ -173,7 +188,7 @@ export function useUserConnections(
           // A refresh re-reads; a first load reuses a roster another picker just read.
           fresh: refreshCount > 0,
         });
-        if (active) setResolved({ key: fetchKey, orgConnections, error: null });
+        if (active) setResolved({ key: fetchKey, orgConnections, error: null, partialFailures: failures });
       } catch (err) {
         if (!active) return;
         console.error("Error aggregating connections:", err);
@@ -181,6 +196,7 @@ export function useUserConnections(
           key: fetchKey,
           orgConnections: [],
           error: err instanceof Error ? err.message : "Failed to load connections",
+          partialFailures: [],
         });
       }
     })();
@@ -227,6 +243,7 @@ export function useUserConnections(
     connections,
     isLoading,
     error: current?.error ?? null,
+    partialFailures: current?.partialFailures ?? [],
     refresh,
   };
 }
@@ -277,7 +294,7 @@ async function fetchOrgConnections(
     /** An explicit refresh re-reads rather than reusing a settled roster. */
     fresh?: boolean;
   },
-): Promise<ConnectionUser[]> {
+): Promise<{ users: ConnectionUser[]; failures: ConnectionReadFailure[] }> {
   const usersMap = new Map<string, ConnectionUser>();
   /** Organizations whose roster could not be read. */
   const failures: Array<{ orgName: string; error: unknown }> = [];
@@ -328,6 +345,7 @@ async function fetchOrgConnections(
           `Error fetching invitations for org ${org.id}:`,
           invResult.error.message,
         );
+        failures.push({ orgName: `${org.name} (pending invitations)`, error: new Error(invResult.error.message) });
         continue;
       }
       const nowIso = new Date().toISOString();
@@ -376,7 +394,19 @@ async function fetchOrgConnections(
     );
   }
 
-  return Array.from(usersMap.values());
+  // Some read, some did not: return what was read AND name what was not.
+  return {
+    users: Array.from(usersMap.values()),
+    failures: failures.map((f) => ({
+      source: f.orgName,
+      error: f.error instanceof Error ? f.error.message : String(f.error),
+    })),
+  };
+}
+
+/** "Acme, Beta Co" — the sources a partial read could not reach, for a notice's `what`. */
+export function describeConnectionFailures(failures: ConnectionReadFailure[]): string {
+  return `the people in ${failures.map((f) => f.source).join(", ")}`;
 }
 
 export default useUserConnections;

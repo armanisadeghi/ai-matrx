@@ -50,6 +50,7 @@ import {
   AddEveryoneInOrg,
   type OrgMemberPerson,
 } from "../AddEveryoneInOrg";
+import { ConnectionsReadNotice } from "@/features/messaging/components/ConnectionsReadNotice";
 
 interface ShareWithUserTabProps {
   onShare: (
@@ -128,9 +129,13 @@ export function ShareWithUserTab({
   // Scoped: this dialog is about ONE thing, in ONE organization, and the people it offers are
   // the people in that organization. Past conversations are not folded in — a conversation is
   // bounded by no organization (FIX-7B).
-  const { connections, isLoading: connectionsLoading } = useUserConnections(
-    organizationId ? { organizationId } : {},
-  );
+  const {
+    connections,
+    isLoading: connectionsLoading,
+    error: connectionsError,
+    partialFailures: connectionsPartial,
+    refresh: refreshConnections,
+  } = useUserConnections(organizationId ? { organizationId } : {});
 
   const filteredConnections = useMemo(() => {
     if (!searchQuery.trim()) return connections;
@@ -379,12 +384,25 @@ export function ShareWithUserTab({
                 <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" />
                 Loading contacts...
               </div>
+            ) : connectionsError && connections.length === 0 ? (
+              <ConnectionsReadNotice
+                error={connectionsError}
+                partialFailures={connectionsPartial}
+                hasRows={false}
+                onRetry={() => void refreshConnections()}
+              />
             ) : connections.length === 0 ? (
               <p className="text-xs text-muted-foreground py-2 text-center">
                 No contacts found. Enter an email below.
               </p>
             ) : (
               <>
+                <ConnectionsReadNotice
+                  error={connectionsError}
+                  partialFailures={connectionsPartial}
+                  hasRows
+                  onRetry={() => void refreshConnections()}
+                />
                 {connections.length > 5 && (
                   <div>
                     <UserSearchField

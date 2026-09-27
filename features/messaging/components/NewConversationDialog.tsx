@@ -42,6 +42,7 @@ import { getInitials } from "@ai-matrx/kit/format";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ConnectionsReadNotice } from "@/features/messaging/components/ConnectionsReadNotice";
 
 interface NewConversationDialogProps {
   open: boolean;
@@ -88,7 +89,13 @@ export function NewConversationDialog({
 
   // THE ONE surface that is about conversations, so it is the one that folds in the people you
   // have had conversations with. Every other picker names its organization instead (FIX-7B).
-  const { connections, isLoading: connectionsLoading } = useUserConnections({
+  const {
+    connections,
+    isLoading: connectionsLoading,
+    error: connectionsError,
+    partialFailures: connectionsPartial,
+    refresh: refreshConnections,
+  } = useUserConnections({
     includeConversations: true,
   });
 
@@ -427,7 +434,23 @@ export function NewConversationDialog({
                       </div>
                     ))}
                   </div>
+                ) : connectionsError && connections.length === 0 ? (
+                  <ConnectionsReadNotice
+                    error={connectionsError}
+                    partialFailures={connectionsPartial}
+                    hasRows={false}
+                    onRetry={() => void refreshConnections()}
+                    what="your connections"
+                  />
                 ) : connections.length > 0 ? (
+                  <>
+                  <ConnectionsReadNotice
+                    error={connectionsError}
+                    partialFailures={connectionsPartial}
+                    hasRows
+                    onRetry={() => void refreshConnections()}
+                    what="your connections"
+                  />
                   <div className="rounded-lg border divide-y">
                     {connections.map((connection) => (
                       <UserListItem
@@ -442,6 +465,7 @@ export function NewConversationDialog({
                       />
                     ))}
                   </div>
+                  </>
                 ) : (
                   <div className="flex flex-col items-center py-8 text-center">
                     <User className="h-12 w-12 text-muted-foreground mb-3" />

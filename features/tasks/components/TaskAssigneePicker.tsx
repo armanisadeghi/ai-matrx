@@ -21,6 +21,7 @@ import { UserSearchField } from "@/features/user-search/UserSearchField";
 // first character: exactly what these copies did by hand.
 import { getInitials } from "@ai-matrx/kit/format";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ConnectionsReadNotice } from "@/features/messaging/components/ConnectionsReadNotice";
 
 const SOURCE_ICON: Record<ConnectionUser["source"], typeof Users> = {
   conversation: MessageSquare,
@@ -49,7 +50,7 @@ export default function TaskAssigneePicker({
   organizationId,
   className,
 }: TaskAssigneePickerProps) {
-  const { connections, isLoading, error: connectionsError, refresh } = useUserConnections(
+  const { connections, isLoading, error: connectionsError, partialFailures, refresh } = useUserConnections(
     organizationId ? { organizationId } : {},
   );
   const [open, setOpen] = useState(false);
@@ -181,6 +182,10 @@ export default function TaskAssigneePicker({
             </button>
           )}
 
+          {!isLoading && partialFailures.length > 0 ? (
+            // Some organizations' people read, some did not: the list is short, and says so.
+            <ConnectionsReadNotice error={null} partialFailures={partialFailures} hasRows onRetry={() => void refresh()} className="m-2" />
+          ) : null}
           {isLoading ? (
             <p className="text-center text-xs text-muted-foreground py-4">
               Loading people...

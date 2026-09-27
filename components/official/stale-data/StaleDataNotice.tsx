@@ -56,6 +56,12 @@ export interface StaleDataNoticeProps {
   retrying?: boolean;
   /** Optional detail (a server message). Shown verbatim, never interpreted. */
   detail?: string | null;
+  /**
+   * A multi-source list where SOME sources read and some did not: the rows on
+   * screen are current, but `what` is missing from them. Says so instead of
+   * "may be out of date" (RC-B12 round 12 — a partly failed roster).
+   */
+  partial?: boolean;
   className?: string;
 }
 
@@ -65,6 +71,7 @@ export function StaleDataNotice({
   onRetry,
   retrying = false,
   detail,
+  partial = false,
   className,
 }: StaleDataNoticeProps) {
   return (
@@ -77,7 +84,12 @@ export function StaleDataNotice({
     >
       <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-500" />
       <span className="min-w-0 flex-1 text-foreground">
-        {hasData ? (
+        {partial ? (
+          <>
+            Couldn&apos;t load {what}, so <strong>they are missing</strong> from
+            the list below — everything else loaded.
+          </>
+        ) : hasData ? (
           <>
             Couldn&apos;t refresh {what}. What you see below is the last version
             we loaded and <strong>may be out of date</strong>.
@@ -96,12 +108,12 @@ export function StaleDataNotice({
             grew the notice 118→138px at 375px. */}
         <ErrorAlchemyMenu
           input={{
-            title: hasData ? `Couldn't refresh ${what}` : `Couldn't load ${what}`,
+            title: partial || !hasData ? `Couldn't load ${what}` : `Couldn't refresh ${what}`,
             message: detail
               ? `${hasData ? "Couldn't refresh" : "Couldn't load"} ${what}: ${detail}`
               : `${hasData ? "Couldn't refresh" : "Couldn't load"} ${what}.`,
             operation: `${hasData ? "Refresh" : "Load"} ${what}`,
-            details: { rows_on_screen_are_stale: hasData },
+            details: partial ? { rows_on_screen_are_partial: true } : { rows_on_screen_are_stale: hasData },
           }}
         />
       </span>
