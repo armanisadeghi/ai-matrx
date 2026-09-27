@@ -1,6 +1,6 @@
 "use client";
 
-// features/mandates/feature-intelligence/job-card-parts.tsx
+// features/mandates/feature-intelligence/card-options/parts.tsx
 //
 // The shared, REAL pieces every card option on /intelligence/card-options is
 // built from (Arman, 2026-09-26: "10 card options … real data, real working
@@ -202,12 +202,12 @@ export function Actions({
       ) : null}
       <Button size="sm" variant="outline" className={h} onClick={ctx.onUseOwn} disabled={ctx.busy}>
         <UserRoundCog className="mr-1.5 h-3.5 w-3.5" />
-        <span className="min-w-0 truncate">{job.useOwnLabel}</span>
+        {job.useOwnLabel}
       </Button>
       {job.canReset ? (
         <Button size="sm" variant="ghost" className={h} onClick={ctx.onReset} disabled={ctx.busy}>
           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-          <span className="min-w-0 truncate">{compact ? "Reset" : job.resetLabel}</span>
+          {compact ? "Reset" : job.resetLabel}
         </Button>
       ) : null}
     </span>

@@ -117,7 +117,7 @@ describe("the agent's one cell write goes to the record store", () => {
     await expect(applyOf(handlers["cell_value"])({ row_id: BISCUIT, field_name: "visit_status", value: "Checked in" })).rejects.toThrow(/not one of the 2 row/);
     await expect(applyOf(handlers["cell_value"])({ row_id: MAPLE, field_name: "Visit status", value: "x" })).rejects.toThrow(/not a column/);
     const readOnly = recordStoreWriteHandlers({ current: { ...SNAPSHOT, canWrite: false } }, async (...a) => (writes.push(a), { ok: true }));
-    await expect(readOnly["cell_value"]!({ row_id: MAPLE, field_name: "visit_status", value: "x" })).rejects.toThrow(/is_read_only/);
+    await expect(applyOf(readOnly["cell_value"])({ row_id: MAPLE, field_name: "visit_status", value: "x" })).rejects.toThrow(/is_read_only/);
     expect(writes).toEqual([]);
   });
 });
