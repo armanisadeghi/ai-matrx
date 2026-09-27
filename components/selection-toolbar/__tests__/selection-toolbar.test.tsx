@@ -80,7 +80,8 @@ import { createActionRegistry } from "@ai-matrx/alchemy/actions";
 import { AlchemyActionsProvider } from "@ai-matrx/alchemy/react/host";
 import type { AlchemyHostPorts } from "@ai-matrx/alchemy/ports";
 import { resolveAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
-import { AnnotatedContent, AnnotationSidecarProvider } from "@/features/rich-document/annotations/AnnotationSidecar";
+import { AnnotatedContent, AnnotationSidecarProvider, useSidecar } from "@/features/rich-document/annotations/AnnotationSidecar";
+import { toast } from "@/lib/toast";
 import { SelectionToolbarRoot } from "../SelectionToolbarRoot";
 import { useSelectionZone } from "../selection-zones";
 
@@ -121,6 +122,12 @@ async function flush(n = 8) {
   for (let i = 0; i < n; i++) await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
 }
 
+let sidecar: ReturnType<typeof useSidecar> | null = null;
+function Grab() {
+  sidecar = useSidecar();
+  return null;
+}
+
 async function mount(editable = false) {
   const registry = createActionRegistry({ ports });
   const content = (
@@ -133,6 +140,7 @@ async function mount(editable = false) {
     root.render(
       <AlchemyActionsProvider ports={ports} registry={registry}>
         <AnnotationSidecarProvider source={SOURCE}>
+          <Grab />
           {editable ? <EditableZone>{content}</EditableZone> : content}
         </AnnotationSidecarProvider>
         <SelectionToolbarRoot />
@@ -228,4 +236,22 @@ it("keyboard: Ctrl+Alt+M focuses the toolbar, arrows move, Esc closes and focus 
   await flush();
   expect(toolbar()).toBeNull();
   expect(document.activeElement).toBe(opener);
+});
+
+it("reattach: a pending reattach opens the toolbar straight into its question, and Reattach here completes it", async () => {
+  service.listCommentThreads.mockResolvedValue({
+    items: [{ key: "comment:c1", kind: "comment", saveState: "confirmed", anchor: null, author: { id: "me", name: "You" }, mine: true, createdAt: "2026-09-25T10:00:00Z", body: "Which data?", replies: [], commentId: "c1", version: 1 }],
+    collaborationDoors: true,
+  });
+  await mount();
+  await act(async () => sidecar!.setPendingReattach("comment:c1"));
+  await selectWord("statistical");
+  const panel = document.querySelector<HTMLElement>("[data-selection-panel]")!;
+  expect(panel.textContent).toContain("Move this comment to the selected text?");
+  const reattach = [...panel.querySelectorAll("button")].find((b) => b.textContent === "Reattach here")!;
+  await act(async () => { reattach.click(); });
+  await flush();
+  expect(sidecar!.pendingReattach).toBeNull();
+  expect(toolbar()).toBeNull();
+  expect(toast.success).toHaveBeenCalledWith("Reattached to the new passage.");
 });

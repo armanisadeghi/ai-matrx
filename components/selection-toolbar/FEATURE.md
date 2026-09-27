@@ -13,6 +13,8 @@
 
 **Providers (all ordinary Alchemy actions in the one registry):** rich-editor formatting `components/rich-editor/visual/format-actions.ts`; annotations `features/rich-document/annotations/annotation-actions.tsx` (highlight ×5, comment, suggest, link — they write through the sidecar API exactly as before); the context menu's "AI and more" `features/context-menu-v3/selection-provider.ts` (opens the same Alchemy menu over the selection); the study guide's "I don't get this", "Ask a question", "Report an issue" as `passageActions` on `AnnotatedContent`.
 
+**Fitting a phone:** the docked bar never scrolls. The root computes how many buttons fit (`slots`, 44px touch targets on coarse pointers); `SELECTION_PRIORITY` (selection-actions.ts) decides which actions keep a button, and every selection provider returns its actions through `placeSelectionActions`, which moves the rest to `placement: "overflow"` — the package layout's More. At 320 the reading bar is yellow highlight, comment, suggest, "I don't get this", "AI and more", More.
+
 **Knob:** `selection_toolbar.highlight_while_editing` (platform.feature_knob, org then person, default off; seed `migrations/selection_toolbar_knobs.sql`, applied 2026-09-26).
 
 ## Rules
@@ -21,6 +23,12 @@
 - **Panels render in the toolbar's portal, outside the zone's React tree.** A zone whose panel reads React context re-provides it around the panel (the annotation sidecar wraps its panel in `SidecarContext.Provider`) — a panel that calls a context hook without it crashes the page.
 - `enableFloatingIcon={false}` on a context menu (and a `suppressed` menu) means no toolbar over that text: the zone suppresses everything outside it.
 
+## Known gaps
+
+- A soft-deleted passage comment has no restore path in the UI (not on /trash, not in the Notes & comments panel, no undo toast) — found 2026-09-26 while cleaning up a test; queued by the chair.
+
 ## Change Log
+
+- 2026-09-26 — Phone fit: the docked bar no longer scrolls sideways; lower-priority actions move to the registry overflow (More). Annotation cards carry `data-annotation-key` / `data-annotation-kind` so tests and cleanup act on a card by its own id, never by position.
 
 - 2026-09-26 — Built. Replaced three popups: the rich editor's Tiptap BubbleMenu, the annotation sidecar's toolbar, and the context menu's floating selection icon (which sat on top of the editor's bubble).
