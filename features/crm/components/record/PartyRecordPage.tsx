@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/lib/toast";
-import { Building2, Plus, Send, Trash2, User } from "lucide-react";
+import { Building2, MailX, Plus, Send, Trash2, User } from "lucide-react";
 import { contactPointBlockReason } from "../../reachability";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import {
@@ -356,14 +356,18 @@ export function PartyRecordPage({ partyId }: Props) {
                   write to them (VERIFY-B1-B2 A1). It opens the window over the
                   record; the record stays readable behind it. */}
               {!isMobile && emailAction === "send" && (
+                // THE TITLE ALWAYS WINS: below lg the words fold away and the
+                // icon keeps its accessible name and tooltip.
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={openCompose}
+                  aria-label="Send email"
+                  title="Send email"
                   className="h-7 px-2 text-xs"
                 >
-                  <Send className="mr-1 h-3.5 w-3.5" />
-                  Send email
+                  <Send className="h-3.5 w-3.5 lg:mr-1" />
+                  <span className="max-lg:sr-only">Send email</span>
                 </Button>
               )}
               {!isMobile && emailAction === "add" && (
@@ -371,17 +375,23 @@ export function PartyRecordPage({ partyId }: Props) {
                   variant="ghost"
                   size="sm"
                   onClick={requestAddEmail}
+                  aria-label="Add email"
+                  title="Add email"
                   className="h-7 px-2 text-xs"
                 >
-                  <Plus className="mr-1 h-3.5 w-3.5" />
-                  Add email
+                  <Plus className="h-3.5 w-3.5 lg:mr-1" />
+                  <span className="max-lg:sr-only">Add email</span>
                 </Button>
               )}
               {!isMobile && emailAction === "blocked" && (
                 // Not a disabled-looking button: the sentence IS the state,
                 // and the Contact points card below names each block.
-                <span className="px-2 text-xs text-muted-foreground">
-                  Email blocked for this record
+                <span
+                  className="inline-flex items-center gap-1 px-2 text-xs text-muted-foreground"
+                  title="Email blocked for this record"
+                >
+                  <MailX className="h-3.5 w-3.5" />
+                  <span className="max-lg:sr-only">Email blocked for this record</span>
                 </span>
               )}
             </>
