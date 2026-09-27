@@ -52,7 +52,8 @@ const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => ({
   title: (row.table_name as string | null) ?? "Untitled table",
   subtitle: (row.description as string | null) ?? null,
   updatedAt: (row.updated_at as string | null) ?? null,
-  tags: row.version ? [`v${row.version}`] : undefined,
+  // No "v14" tag (lane HANDOVER, 2026-09-27): a table's version is the store's edit counter, not
+  // anything a person named or can act on; every card wore one.
   source,
 });
 
