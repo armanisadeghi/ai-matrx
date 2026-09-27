@@ -11,9 +11,13 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-const tui = {
+const tui: {
+    markdown: string;
+    getMarkdown: jest.Mock<string, []>;
+    setMarkdown: jest.Mock<void, [string]>;
+} = {
     markdown: "",
-    getMarkdown: jest.fn(() => tui.markdown),
+    getMarkdown: jest.fn((): string => tui.markdown),
     setMarkdown: jest.fn((md: string) => {
         tui.markdown = md;
     }),
