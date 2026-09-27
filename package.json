@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "bash scripts/agent-dev-server.sh start",
     "build": "ts-node scripts/generate-manifest.ts && pnpm build:sw && pnpm build:kind-sandbox && pnpm build:pdfjs-worker && pnpm build:next",
-    "build:next": "next build --webpack --experimental-build-mode compile && next build --webpack --experimental-build-mode generate",
-    "build:next:turbopack": "next build --experimental-build-mode compile && node scripts/check-turbopack-chunk-identities.mjs && next build --experimental-build-mode generate",
+    "build:next": "next build --experimental-build-mode compile && node scripts/check-turbopack-chunk-identities.mjs && next build --experimental-build-mode generate",
     "build:sw": "tsx features/files/cache/service-worker/build-sw.ts",
     "build:kind-sandbox": "tsx features/content-ir/sandbox/build-kind-sandbox.ts",
     "harness:kind-sandbox": "tsx features/content-ir/sandbox/make-acceptance-harness.ts",
