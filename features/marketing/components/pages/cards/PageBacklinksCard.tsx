@@ -483,6 +483,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
         )}
         {pageGapMatches.length > 0 ? (
           <div className="mt-3 rounded-md border border-border/60">
+            {/* read-gate-exempt: this block renders only when pageGapMatches.length > 0 — a failed pageGap read yields no rows and shows the QueryError above instead */}
             <div className="border-b border-border/60 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               {pageGapMatches.length} exact-page link opportunities · pending human review
             </div>

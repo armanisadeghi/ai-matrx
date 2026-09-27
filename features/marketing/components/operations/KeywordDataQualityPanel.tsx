@@ -254,6 +254,7 @@ function AssignTopicsCard() {
               </div>
               <div>
                 <p className="text-muted-foreground">New topics</p>
+                {/* read-gate-exempt: inside the `result ?` guard — command.result is set only by a completed run's final event; a failed run leaves it null and shows command.error */}
                 <p className="font-semibold text-foreground">{result.topics_created.length}</p>
               </div>
             </div>

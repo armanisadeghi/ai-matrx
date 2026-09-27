@@ -214,7 +214,7 @@ export function CollectionStatusPanel({
           <h2 className="text-sm font-semibold text-foreground">
             Where this site&apos;s data comes from
           </h2>
-          {attention.length ? (
+          {!status.isError && attention.length ? (
             <Badge variant="outline" className="border-warning/50 text-warning">
               {attention.length} need
               {attention.length === 1 ? "s" : ""} attention

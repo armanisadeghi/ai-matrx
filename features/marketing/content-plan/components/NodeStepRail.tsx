@@ -589,6 +589,7 @@ export function NodeStepRail({
                       stale={Boolean(staleness) && !busyHere}
                     />
                     {label}
+                    {/* read-gate-exempt: shown only when stepArtifacts.length > 1 — a count of artifact rows actually read; a failed read yields none and hides it */}
                     {stepArtifacts.length > 1 ? (
                       <span className="text-muted-foreground">
                         ×{stepArtifacts.length}

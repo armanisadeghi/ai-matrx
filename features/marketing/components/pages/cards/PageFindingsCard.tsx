@@ -72,7 +72,11 @@ export function PageFindingsCard({ page }: { page: MarketingPage }) {
 
   return (
     <SectionCard
-      title={total > 0 ? `Open findings (${total})` : "Open findings"}
+      title={
+        !findings.isError && total > 0
+          ? `Open findings (${total})`
+          : "Open findings"
+      }
       collapsible
       anchor="open_findings_list"
       copy={copy}
