@@ -185,6 +185,8 @@ export interface FastFireState {
   foldedCount: number;
   /** Structured error string for a fatal setup/finalize failure. */
   error: string | null;
+  /** TYPED MODE: what the learner typed per card, keyed by card id. */
+  typedAnswers: Record<string, string>;
 }
 
 // =============================================================================
@@ -206,6 +208,7 @@ const initialState: FastFireState = {
   adaptation: null,
   foldedCount: 0,
   error: null,
+  typedAnswers: {},
 };
 
 function blankGrade(cardId: string): CardGrade {
@@ -309,6 +312,14 @@ const fastFireSlice = createSlice({
       };
     },
 
+    /** TYPED MODE: the learner's text for one card (kept as they type). */
+    setTypedAnswer(
+      state,
+      action: PayloadAction<{ cardId: string; text: string }>,
+    ) {
+      state.typedAnswers[action.payload.cardId] = action.payload.text;
+    },
+
     /** Patch the config form while in `setup`. */
     updateConfig(state, action: PayloadAction<Partial<FastFireConfig>>) {
       state.config = { ...state.config, ...action.payload };
@@ -349,6 +360,7 @@ const fastFireSlice = createSlice({
       state.lastAdvanceReason = null;
       state.gradesByCard = {};
       for (const c of cards) state.gradesByCard[c.id] = blankGrade(c.id);
+      state.typedAnswers = {};
       state.sessionAudioFileId = null;
       state.sessionReview = null;
       state.adaptation = null;
@@ -426,7 +438,8 @@ const fastFireSlice = createSlice({
         runId: string | null;
         score: number;
         result: GradeResult;
-        rubric: GradeRubric;
+        /** Spoken grades carry a rubric; a typed (meaning) grade has none. */
+        rubric: GradeRubric | null;
         transcript: string;
         feedback: string;
         missing: string[];
@@ -538,6 +551,7 @@ const fastFireSlice = createSlice({
 export const {
   openSetup,
   updateConfig,
+  setTypedAnswer,
   startDrill,
   sessionOpened,
   beginRecording,

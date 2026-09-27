@@ -54,7 +54,18 @@ export interface FastFireConfig {
    * can switch it off for a fixed-order drill.
    */
   adaptive: boolean;
+  /**
+   * How the learner answers: aloud ("voice", graded from the recording) or by
+   * typing ("typed", graded on meaning). Typed needs no microphone — it is the
+   * mode for a device with no mic, a blocked mic, or a quiet room
+   * (page-pass 2026-09-27).
+   */
+  answerMode: FastFireAnswerMode;
 }
+
+/** The two ways to answer a card. */
+export const FASTFIRE_ANSWER_MODES = ["voice", "typed"] as const;
+export type FastFireAnswerMode = (typeof FASTFIRE_ANSWER_MODES)[number];
 
 export const DEFAULT_DRILL_CONFIG: FastFireConfig = {
   setId: null,
@@ -66,6 +77,7 @@ export const DEFAULT_DRILL_CONFIG: FastFireConfig = {
   voiceAnswerSeconds: 8,
   warningSeconds: 3,
   adaptive: true,
+  answerMode: "voice",
 };
 
 /**
@@ -98,6 +110,7 @@ export const AGENT_WRITABLE_DRILL_FIELDS = [
   "spokenFronts",
   "voiceAnswerSeconds",
   "adaptive",
+  "answerMode",
 ] as const;
 
 export type AgentWritableDrillField = (typeof AGENT_WRITABLE_DRILL_FIELDS)[number];
@@ -197,6 +210,19 @@ export function parseDrillConfigPatch(
       );
     }
     out[field] = raw;
+  }
+
+  if ("answerMode" in patch) {
+    const raw = patch.answerMode;
+    if (
+      typeof raw !== "string" ||
+      !(FASTFIRE_ANSWER_MODES as readonly string[]).includes(raw)
+    ) {
+      throw new Error(
+        `drill_config.answerMode expects "voice" (answer aloud) or "typed" (type each answer); received ${JSON.stringify(raw)}.`,
+      );
+    }
+    out.answerMode = raw as FastFireAnswerMode;
   }
 
   // Cross-field: the voice-mode answer window can never exceed the card window

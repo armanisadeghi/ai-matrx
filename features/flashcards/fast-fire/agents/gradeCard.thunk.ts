@@ -296,8 +296,9 @@ export function gradeCard(args: GradeCardArgs) {
 /**
  * Thin wrapper around the canonical OFFLINE-AWARE attempt writer. Loud on
  * error, and loud (once per session) when the answer went to the outbox.
+ * Shared with the typed-answer grader (`gradeTypedCard.thunk.ts`).
  */
-async function recordAttempt(
+export async function recordAttempt(
   input: {
     userId: string;
     cardId: string;
@@ -310,6 +311,8 @@ async function recordAttempt(
     score: Record<string, unknown> | null;
     transcript: string | null;
     gradedBy: string | null;
+    /** How the learner answered. Default "spoken". */
+    responseKind?: "spoken" | "typed";
   },
   pending?: PendingGradeRequest | null,
 ): Promise<void> {
@@ -319,7 +322,7 @@ async function recordAttempt(
       itemType: FC_CARD_ITEM_TYPE,
       itemId: input.cardId,
       method: FAST_FIRE_METHOD,
-      responseKind: "spoken",
+      responseKind: input.responseKind ?? "spoken",
       ...(input.sessionId ? { sessionId: input.sessionId } : {}),
       ...(input.result ? { result: input.result } : {}),
       ...(input.scoreValue !== null ? { scoreValue: input.scoreValue } : {}),

@@ -30,7 +30,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useAppStore,
+} from "@/lib/redux/hooks";
 import {
   beginRecording,
   advanceCard,
@@ -64,6 +68,7 @@ import {
   normalizeAudioType,
 } from "@ai-matrx/browser-audio/core";
 import { gradeCard } from "../agents/gradeCard.thunk";
+import { gradeTypedCard } from "../agents/gradeTypedCard.thunk";
 import {
   awaitFastFireSession,
   ensureFastFireSession,
@@ -107,6 +112,7 @@ interface CardWindow {
 
 export function useFastFireDrill(): UseFastFireDrillResult {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const phase = useAppSelector(selectFastFirePhase);
   const config = useAppSelector(selectFastFireConfig);
   const cards = useAppSelector(selectFastFireCards);
@@ -165,6 +171,10 @@ export function useFastFireDrill(): UseFastFireDrillResult {
   // Open the answer window for a card: buzzer + start its clip + arm the deadline.
   // The ONE place the answer clock starts (immediately in normal mode; after the
   // spoken question in voice mode).
+  // TYPED MODE (page-pass 2026-09-27): no microphone, no clip — the answer is
+  // what the learner typed, graded on meaning when the card closes.
+  const typed = config.answerMode === "typed";
+
   const beginAnswerWindow = (cardId: string): void => {
     if (audioFallbackRef.current) {
       clearTimeout(audioFallbackRef.current);
@@ -172,11 +182,13 @@ export function useFastFireDrill(): UseFastFireDrillResult {
     }
     awaitingAudioRef.current = null;
     playBuzzer("start");
-    startCardClip(cardId);
-    // Local-development certification only: the exact QA fixture feeds a real
-    // spoken WAV through the same warm MediaStream and PCM capture graph. In an
-    // ordinary session no fixture is installed, so this is a strict no-op.
-    playNextFastFireQaAnswer();
+    if (!typed) {
+      startCardClip(cardId);
+      // Local-development certification only: the exact QA fixture feeds a real
+      // spoken WAV through the same warm MediaStream and PCM capture graph. In an
+      // ordinary session no fixture is installed, so this is a strict no-op.
+      playNextFastFireQaAnswer();
+    }
     setDeadlineTs(Date.now() + answerSeconds * 1000);
   };
 
@@ -288,9 +300,22 @@ export function useFastFireDrill(): UseFastFireDrillResult {
     // This card was answered: open the run's session now (once) so finalize
     // can find it; the grade thunk shares the same in-flight open.
     void dispatch(ensureFastFireSession(runId));
-    const pendingGrade = stopCardClip(card.id)
-      .then((clip) => dispatch(gradeCard({ ...cardSnapshot, clip })))
-      .catch((error: unknown) => {
+    const pendingGrade = (
+      typed
+        ? dispatch(
+            gradeTypedCard({
+              cardId: card.id,
+              front: card.front,
+              back: card.back,
+              // Read at close time from the store, never a stale render.
+              answer: store.getState().fastFire.typedAnswers[card.id] ?? "",
+              runId,
+            }),
+          )
+        : stopCardClip(card.id).then((clip) =>
+            dispatch(gradeCard({ ...cardSnapshot, clip })),
+          )
+    ).catch((error: unknown) => {
         console.error(
           `[useFastFireDrill] card ${card.id} grading pipeline failed:`,
           error,

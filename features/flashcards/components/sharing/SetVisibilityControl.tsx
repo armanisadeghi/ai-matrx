@@ -33,7 +33,8 @@ import type { FcSetRow } from "../../data/types";
 
 type Visibility = FcSetRow["visibility"];
 
-const OPTIONS: {
+/** The four choices, named as the deck list names them (one name per thing). */
+export const DECK_VISIBILITY_CHOICES: {
   value: Visibility;
   label: string;
   description: string;
@@ -41,26 +42,26 @@ const OPTIONS: {
 }[] = [
   {
     value: "personal",
-    label: "Personal",
-    description: "Only you — for an individual person's own things (like your chats)",
+    label: "Only me",
+    description: "Only you can open this deck",
     icon: Lock,
   },
   {
     value: "internal",
     label: "Organization",
-    description: "Anyone in your organization can open this set",
+    description: "Anyone in your organization can open this deck",
     icon: Building2,
   },
   {
     value: "link",
-    label: "Anyone with the link",
-    description: "Signed-in users with the link can open this set",
+    label: "Anyone with link",
+    description: "Signed-in people with the link can open this deck",
     icon: Link2,
   },
   {
     value: "public",
     label: "Public",
-    description: "Any signed-in user can find and open this set",
+    description: "Any signed-in person can find and open this deck",
     icon: Globe2,
   },
 ];
@@ -75,7 +76,7 @@ export function SetVisibilityControl({
   onChange: (next: Visibility) => void;
 }) {
   const [saving, setSaving] = useState(false);
-  const current = OPTIONS.find((o) => o.value === visibility) ?? OPTIONS[0];
+  const current = DECK_VISIBILITY_CHOICES.find((o) => o.value === visibility) ?? DECK_VISIBILITY_CHOICES[0];
   const CurrentIcon = current.icon;
 
   const setVisibility = async (next: Visibility) => {
@@ -90,7 +91,7 @@ export function SetVisibilityControl({
     onChange(res.data.visibility);
     recordToast.success(
       { type: "flashcard_set", id: setId },
-      `Sharing set to "${OPTIONS.find((o) => o.value === next)?.label}"`,
+      `Sharing set to "${DECK_VISIBILITY_CHOICES.find((o) => o.value === next)?.label}"`,
     );
   };
 
@@ -114,7 +115,7 @@ export function SetVisibilityControl({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-64">
-          {OPTIONS.map((o) => {
+          {DECK_VISIBILITY_CHOICES.map((o) => {
             const Icon = o.icon;
             return (
               <DropdownMenuItem

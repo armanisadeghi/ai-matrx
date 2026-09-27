@@ -50,6 +50,7 @@ function makeListController(): EntityListSurfaceController<AgentBrowseRow> {
     removeRow: jest.fn(),
     patchRow: jest.fn(),
     patchView: jest.fn(),
+    selectedIds: [],
   };
 }
 

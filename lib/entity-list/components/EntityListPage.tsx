@@ -82,6 +82,12 @@ export interface EntityListSurfaceController<
   >;
   /** Apply view changes through the same preference/URL path as the toolbar. */
   patchView: (patch: Partial<ListViewPrefs>) => void;
+  /**
+   * The rows the person ticked (bulk selection), in tick order. Always an
+   * array — empty when nothing is ticked or the surface has no bulk actions —
+   * so an agent can act on "these" (page-pass 2026-09-27).
+   */
+  selectedIds: string[];
 }
 
 export interface EntityListSurface<TRow> {
@@ -339,7 +345,11 @@ export function EntityListPage<TRow>({
         title: `No ${config.entityLabel.plural} could be listed`,
         description: list.error.retryable
           ? `This list could not be read, so nothing came back. It is not empty and no filter is hiding anything — the reason, and the way to try again, are at the top of this page.`
-          : `You were refused this list, so nothing came back. It is not empty and no filter is hiding anything: clearing your search or filters would change nothing. The reason is at the top of this page — choose a tab you have access to, or ask an administrator for this one.`,
+          : // Only offer "choose a tab" where tabs are on screen (page-pass
+            // 2026-09-27, /connected-sources has none and said it anyway).
+            scopeTabs && visibleScopes.length > 1
+            ? `You were refused this list, so nothing came back. It is not empty and no filter is hiding anything: clearing your search or filters would change nothing. The reason is at the top of this page — choose a tab you have access to, or ask an administrator for this one.`
+            : `You were refused this list, so nothing came back. It is not empty and no filter is hiding anything: clearing your search or filters would change nothing. The reason is at the top of this page.`,
       }
     : null;
 
@@ -630,6 +640,7 @@ export function EntityListPage<TRow>({
       pageSize: prefs.pageSize,
     },
     patchView,
+    selectedIds: selection.ids,
   };
 
   const page = (

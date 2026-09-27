@@ -139,6 +139,12 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useSurfaceRuntimeRegistration } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createEducationFlashcardSetScope,
@@ -942,7 +948,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                   disabled={data.cards.length === 0}
                 />
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   onClick={() =>
                     navigate("fastfire", `/education/fastfire?set=${setId}`)
                   }
@@ -975,113 +981,26 @@ export function SetDetailView({ setId }: { setId: string }) {
                     variant="default"
                   />
                 )}
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    navigate("sessions", `${EDU_BASE}/${setId}/sessions`)
-                  }
-                  disabled={isPending}
-                  className={cn(pendingAction === "sessions" && "opacity-70")}
-                >
-                  <History className="mr-1.5 h-4 w-4" />
-                  History
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      disabled={data.cards.length === 0}
-                    >
-                      <Download className="mr-1.5 h-4 w-4" />
-                      Export
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => exportDeck("csv")}>
-                      CSV
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => exportDeck("anki")}>
-                      Anki (text import)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => exportDeck("md")}>
-                      Markdown
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => exportDeck("json")}>
-                      JSON
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Button
-                  variant="outline"
-                  onClick={handlePrint}
-                  disabled={data.cards.length === 0}
-                >
-                  <Printer className="mr-1.5 h-4 w-4" />
-                  Print
-                </Button>
-                {/* Download for offline — the control `OfflineStudyPanel`
-                    names in its copy. Distinct from Export beside it: Export
-                    hands you a FILE for another app, Download keeps THIS deck
-                    studiable in THIS app with no connection. */}
-                <OfflineDeckButton
-                  setId={setId}
-                  disabled={data.cards.length === 0}
-                />
                 {canEdit && (
-                  <div className="flex flex-col items-start gap-0.5">
-                  <Button
-                    variant="outline"
-                    onClick={() => void runBulkEnrich()}
-                    disabled={
-                      data.cards.length === 0 ||
-                      enrichGuard.isChecking ||
-                      bulkRun.phase === "running"
-                    }
-                    title="Add explanations, examples and memory tricks to every card in this deck — read them while studying under &quot;More on this card&quot;"
-                  >
-                    {bulkRun.phase === "running" ? (
-                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Lightbulb className="mr-1.5 h-4 w-4" />
-                    )}
-                    {bulkEnrichActionLabel(enrichPlan)}
-                  </Button>
-                  {/* Limit shown BEFORE the action (TRUST mandate). */}
-                  <EntitlementMeter capability="education.card_enrichment" />
-                  </div>
+                  <AddMoreCardsButton
+                    setId={setId}
+                    existingFronts={data.cards.map((c) => c.front)}
+                    onAdded={() => {
+                      setReloadKey((k) => k + 1);
+                      setLineageKey((k) => k + 1);
+                    }}
+                  />
                 )}
-                {canEdit && (
-                  <div className="flex flex-col items-start gap-0.5">
-                    <Button
-                      variant="outline"
-                      disabled={
-                        data.cards.length === 0 ||
-                        illustrate.isChecking ||
-                        illustrateRun.phase === "starting" ||
-                        illustrateRun.phase === "running"
-                      }
-                      onClick={() => void illustrate.guard(runIllustrate)}
-                      title="An agent finds an expert image on the open web for each card's front, judges the source, and attaches only what clears the bar"
-                    >
-                      {illustrateRun.phase === "starting" ||
-                      illustrateRun.phase === "running" ? (
-                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Images className="mr-1.5 h-4 w-4" />
-                      )}
-                      Illustrate this set
-                    </Button>
-                    {/* Limits BEFORE the cap — never ambush a batch mid-run. */}
-                    <EntitlementMeter capability="education.card_image_source" />
-                  </div>
-                )}
+                {/* ONE menu for everything else (page-pass 2026-09-27: the
+                    deck page stacked five rows of mixed buttons). History,
+                    export, print, offline, enrich, illustrate and convert
+                    live in Deck tools — the same panel the phone uses. */}
                 <Button
                   variant="outline"
-                  onClick={() => setConvertOpen(true)}
-                  disabled={data.cards.length === 0}
+                  onClick={() => setDeckToolsOpen(true)}
                 >
-                  <Boxes className="mr-1.5 h-4 w-4" />
-                  Convert
+                  <Ellipsis className="mr-1.5 h-4 w-4" />
+                  Deck tools
                 </Button>
               </div>
             </div>
@@ -1117,7 +1036,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                 </Button>
                 <Button
                   size="lg"
-                  variant="secondary"
+                  variant="outline"
                   className="h-12"
                   onClick={() =>
                     navigate("fastfire", `/education/fastfire?set=${setId}`)
@@ -1165,6 +1084,8 @@ export function SetDetailView({ setId }: { setId: string }) {
                 to be a dead end at whatever size the generator chose. */}
             <div className="mt-3 space-y-2">
               <MadeFromSource entityType="fc_set" entityId={setId} />
+              {/* Phone only: on desktop it sits in the action row. */}
+              <div className="md:hidden">
               <AddMoreCardsButton
                 setId={setId}
                 existingFronts={data.cards.map((c) => c.front)}
@@ -1173,6 +1094,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                   setLineageKey((k) => k + 1);
                 }}
               />
+              </div>
             </div>
 
             {/* Reverse lineage — study artifacts made from this deck. */}
@@ -1431,15 +1353,14 @@ export function SetDetailView({ setId }: { setId: string }) {
               </DrawerContent>
             </Drawer>
 
-            <Drawer open={deckToolsOpen} onOpenChange={setDeckToolsOpen}>
-              <DrawerContent className="h-[92dvh]">
-                <DrawerHeader>
-                  <DrawerTitle>Deck tools</DrawerTitle>
-                  <DrawerDescription>
-                    Organize, improve, save, and share this deck.
-                  </DrawerDescription>
-                </DrawerHeader>
-                <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 pb-safe">
+            {/* Deck tools: one panel on every width — a dialog on desktop,
+                a bottom sheet on a phone (Dialog does that by itself). */}
+            <Dialog open={deckToolsOpen} onOpenChange={setDeckToolsOpen}>
+              <DialogContent className="matrx-touch-targets flex max-h-[85dvh] flex-col sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Deck tools</DialogTitle>
+                </DialogHeader>
+                <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain pb-safe">
                   <section className="space-y-2">
                     <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Manage
@@ -1448,7 +1369,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                       {canEdit && (
                         <Button
                           variant="outline"
-                          className="h-11 justify-start"
+                          className="h-11 justify-start md:hidden"
                           onClick={() =>
                             navigate("edit", `${EDU_BASE}/${setId}/edit`)
                           }
@@ -1581,8 +1502,8 @@ export function SetDetailView({ setId }: { setId: string }) {
                     </div>
                   </section>
                 </div>
-              </DrawerContent>
-            </Drawer>
+              </DialogContent>
+            </Dialog>
 
             {/* Per-card "make this deeper", opened from a specific card tile —
                 never a modal list of the whole deck to scroll and pick from.

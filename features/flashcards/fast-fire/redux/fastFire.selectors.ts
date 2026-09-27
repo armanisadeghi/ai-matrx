@@ -187,3 +187,7 @@ export const selectReviewRows = createSelector(
     });
   },
 );
+
+/** TYPED MODE: what the learner has typed, keyed by card id. */
+export const selectFastFireTypedAnswers = (state: RootState) =>
+  state.fastFire.typedAnswers;

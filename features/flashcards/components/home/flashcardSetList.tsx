@@ -35,6 +35,8 @@ import {
 import type { ListScopeKind } from "@/lib/list-scope/types";
 import { visibilityWords } from "@/lib/record-words";
 import { PlayTapButton, ZapTapButton } from "@ai-matrx/tap-target/buttons";
+import { Archive } from "lucide-react";
+import { archiveRecord } from "@/features/trash/service";
 import {
   fetchDeckFacets,
   fetchDeckLaneCounts,
@@ -361,6 +363,35 @@ export function buildFlashcardSetListConfig(input: {
     }),
     door: { token: "fc_set", column: "name", hrefFor: flashcardSetHref },
     useRowActions: input.useRowActions,
+    // Ticking rows (page-pass 2026-09-27): the person — and the agent, through
+    // selected_deck_ids — can act on several of their own decks at once.
+    bulkActions: [
+      {
+        id: "archive",
+        label: "Archive",
+        icon: Archive,
+        variant: "outline",
+        confirm: (selection) => ({
+          title: `Archive ${selection.count === 1 ? "this deck" : `${selection.count} decks`}?`,
+          description: `${selection.count === 1 ? "It leaves" : "They leave"} this list and every study mode. Cards and study history are kept, and you can restore ${selection.count === 1 ? "it" : "them"} from Trash or the Archived filter.`,
+          confirmLabel: "Archive",
+        }),
+        run: async (selection) => {
+          for (const id of selection.ids)
+            await archiveRecord("fc_set", id, "deck");
+          return {
+            message: `Archived ${selection.count === 1 ? "1 deck" : `${selection.count} decks`}`,
+            removedIds: selection.ids,
+            refresh: true,
+          };
+        },
+      },
+    ],
+    bulkSelection: {
+      noun: "deck",
+      // Only the person's own live decks can be archived; others show no box.
+      isRowSelectable: (row) => row.created_by === input.userId && !row.archived,
+    },
     searchPlaceholder: "Search decks by name, topic, lesson or description…",
     facetSections: [
       {

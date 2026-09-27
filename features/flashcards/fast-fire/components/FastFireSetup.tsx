@@ -22,7 +22,7 @@ import {
   Headphones,
   ChevronDown,
   ChevronRight,
-  Video,
+  Keyboard,
   Plus,
   History,
   Volume2,
@@ -40,6 +40,9 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
 import { MediaDevicesPanel } from "@/features/audio/components/devices/MediaDevicesPanel";
+import { useAudioDevices } from "@/features/audio/useAudioDevices";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 import { updateConfig } from "../redux/fastFireSlice";
 import {
   DRILL_CONFIG_BOUNDS,
@@ -255,6 +258,21 @@ export function FastFireSetup() {
 
   const selectedSet = sets?.find((s) => s.id === config.setId) ?? null;
 
+  // ANSWER MODE (page-pass 2026-09-27). Voice needs a microphone the browser
+  // will give us; when there is none, or the person blocked it for this site,
+  // the Voice choice is absent (never a button that fails) and the drill is
+  // answered by typing.
+  const { permissionState: micPermission } = useAudioDevices();
+  const micSupported =
+    typeof navigator !== "undefined" &&
+    typeof navigator.mediaDevices?.getUserMedia === "function";
+  const voicePossible = micSupported && micPermission !== "denied";
+  const typed = config.answerMode === "typed" || !voicePossible;
+  useEffect(() => {
+    if (!voicePossible && config.answerMode !== "typed")
+      dispatch(updateConfig({ answerMode: "typed" }));
+  }, [voicePossible, config.answerMode, dispatch]);
+
 
   // The setup stays visible with no organization chosen; only Start holds. A
   // drill writes a study session filed under one organization, so Start with
@@ -273,17 +291,17 @@ export function FastFireSetup() {
   const heldStart = useHeldStudyStart(launch);
   return (
     <div className="min-h-full w-full bg-textured">
-      <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8 pb-safe">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8 pb-safe">
         {/* Set picker */}
         <section className="mb-5 rounded-xl border border-border bg-card p-4">
           <label htmlFor="fastfire-set-picker" className="sr-only">
-            Flashcard set
+            Deck
           </label>
           {sets === null ? (
             <div className="flex items-center justify-center py-8">
               <SuspenseLoader
                 centered={false}
-                message="Loading flashcard sets…"
+                message="Loading your decks"
               />
             </div>
           ) : loadError ? (
@@ -307,7 +325,7 @@ export function FastFireSetup() {
             </div>
           ) : sets.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border bg-background px-3 py-8 text-center text-xs text-muted-foreground">
-              No sets yet. Create one in the Flashcard Studio first.
+              No decks yet. Create one in Flashcard Studio first.
             </div>
           ) : (
             <FastFireSetPicker
@@ -319,6 +337,10 @@ export function FastFireSetup() {
           )}
         </section>
 
+        {/* Two columns on a wide screen: how the drill runs (left), how you
+            answer and Start (right) — the setup uses the width it has. */}
+        <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-5">
+        <div>
         {/* Pace + count */}
         <section className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="rounded-xl border border-border bg-card p-4">
@@ -327,7 +349,7 @@ export function FastFireSetup() {
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 Seconds per card
               </span>
-              <span className="tabular-nums text-orange-600 dark:text-orange-400">
+              <span className="tabular-nums text-primary">
                 {config.secondsPerCard}s
               </span>
             </div>
@@ -352,7 +374,7 @@ export function FastFireSetup() {
                 <Bell className="h-4 w-4 text-muted-foreground" />
                 Warning beep
               </span>
-              <span className="tabular-nums text-orange-600 dark:text-orange-400">
+              <span className="tabular-nums text-primary">
                 {config.warningSeconds === 0
                   ? "Off"
                   : `${config.warningSeconds}s left`}
@@ -383,7 +405,7 @@ export function FastFireSetup() {
                 <Hash className="h-4 w-4 text-muted-foreground" />
                 Number of cards
               </span>
-              <span className="tabular-nums text-orange-600 dark:text-orange-400">
+              <span className="tabular-nums text-primary">
                 {config.cardLimit === 0 ? "All" : config.cardLimit}
               </span>
             </div>
@@ -523,7 +545,7 @@ export function FastFireSetup() {
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   Answer time (after the question is read)
                 </span>
-                <span className="tabular-nums text-orange-600 dark:text-orange-400">
+                <span className="tabular-nums text-primary">
                   {config.voiceAnswerSeconds}s
                 </span>
               </div>
@@ -548,6 +570,56 @@ export function FastFireSetup() {
                 of it reading.
               </p>
             </div>
+          )}
+        </section>
+
+        </div>
+        <div>
+        {/* How you answer — voice or typing. */}
+        <section className="mb-5 rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            {typed ? (
+              <Keyboard className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <Mic className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span>Answer by</span>
+          </div>
+          {voicePossible ? (
+            <div
+              role="radiogroup"
+              aria-label="Answer by"
+              className="mt-3 grid grid-cols-2 gap-2"
+            >
+              {(
+                [
+                  { value: "voice", label: "Speaking", Icon: Mic },
+                  { value: "typed", label: "Typing", Icon: Keyboard },
+                ] as const
+              ).map(({ value, label, Icon }) => {
+                const selected = config.answerMode === value;
+                return (
+                  <Button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    variant={selected ? "default" : "outline"}
+                    className={cn("min-h-11 gap-2")}
+                    onClick={() => dispatch(updateConfig({ answerMode: value }))}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </Button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {micSupported
+                ? "Typing — the microphone is blocked for this site. Allow it in your browser's site settings to answer aloud."
+                : "Typing — this browser has no microphone to answer aloud."}
+            </p>
           )}
         </section>
 
@@ -615,6 +687,7 @@ export function FastFireSetup() {
         {/* Device check (Zoom/Meet style) — confirm + test mic/speaker before the
             drill. Reuses the shared MediaDevicesPanel (also openable as a window
             from the avatar menu via dispatch). Built to host video later. */}
+        {!typed && (
         <section className="mb-5 rounded-xl border border-border bg-card">
           <button
             type="button"
@@ -633,21 +706,18 @@ export function FastFireSetup() {
           </button>
           {showDevices && (
             <div className="border-t border-border">
-              <MediaDevicesPanel />
-              <div className="flex items-start gap-2 border-t border-border px-4 py-3 text-xs text-muted-foreground">
-                <Video className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span>Camera setup for video study aids is coming soon.</span>
-              </div>
+              {/* A drill never uses the camera — no camera controls here. */}
+              <MediaDevicesPanel showCamera={false} />
             </div>
           )}
         </section>
+        )}
 
         {startError && (
-          <div className="mb-3 flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            {startError}
-            <ErrorAlchemyMenu />
-          </div>
+          <Alert variant="destructive" className="mb-3">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{startError}</AlertDescription>
+          </Alert>
         )}
 
         {heldStart.held && (
@@ -659,14 +729,14 @@ export function FastFireSetup() {
         </div>
         <Button
           size="lg"
-          className="w-full gap-2 bg-orange-600 hover:bg-orange-700"
+          className="w-full gap-2"
           disabled={!selectedSet || starting || liveGrade.isChecking}
           onClick={() => heldStart.start()}
         >
           {starting ? (
             <>
-              <Mic className="h-5 w-5 animate-pulse" />
-              Warming the mic…
+              <Loader2 className="h-5 w-5 animate-spin" />
+              {typed ? "Starting…" : "Warming the mic…"}
             </>
           ) : (
             <>
@@ -675,9 +745,10 @@ export function FastFireSetup() {
             </>
           )}
         </Button>
-        <p className="mt-2 text-center text-[11px] text-muted-foreground">
-          One microphone prompt for the whole session. Answer each card aloud
-          before the timer runs out.
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          {typed
+            ? "Type each answer and press Enter before the timer runs out."
+            : "One microphone prompt for the whole session. Answer each card aloud before the timer runs out."}
         </p>
         {/* Respectful paywall — opens only on a real cap; self-controls visibility. */}
         <liveGrade.Paywall />
@@ -688,7 +759,7 @@ export function FastFireSetup() {
           <Button asChild variant="ghost" className="min-h-11">
             <Link href="/education/flashcards/new">
               <Plus className="h-4 w-4" />
-              Create a new set
+              Create a new deck
             </Link>
           </Button>
           <Button asChild variant="ghost" className="min-h-11">
@@ -697,6 +768,8 @@ export function FastFireSetup() {
               View past results
             </Link>
           </Button>
+        </div>
+        </div>
         </div>
       </div>
     </div>

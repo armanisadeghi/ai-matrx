@@ -30,9 +30,16 @@ import { fcService } from "../../data/fcService";
 import {
   parseCreateDecksValue,
   parseDeleteDecksValue,
+  parseDuplicateDecksValue,
   parseUpdateDecksValue,
+  DECK_VISIBILITY_OPTIONS,
   type CurrentDeck,
 } from "./deckAgentWrites";
+import {
+  duplicateDeck,
+  setDeckFolders,
+  setDeckVisibility,
+} from "../../data/deckOperations";
 import { fetchOwnDecksFor } from "../../data/deckListService";
 import type { FlashcardSetListRow } from "./flashcardSetList";
 
@@ -125,9 +132,17 @@ export function buildDeckScope(input: {
         }
       : {}),
     ...(list.error ? { load_error: list.error.message } : {}),
-    ...(list.query.search.trim()
-      ? { search_query: list.query.search.trim() }
-      : {}),
+    // Always supplied: "" when the search box is empty (an empty value is
+    // still a value — page-pass 2026-09-27).
+    search_query: list.query.search.trim(),
+    // The text the person has selected on the page ("" when none), and the
+    // rows they ticked.
+    selection:
+      typeof window === "undefined"
+        ? ""
+        : (window.getSelection()?.toString().trim() ?? ""),
+    selected_deck_ids: list.selectedIds,
+    visibility_options: DECK_VISIBILITY_OPTIONS,
     ...(streak
       ? {
           study_streak_days: streak.current_streak,
@@ -163,8 +178,9 @@ function mentioned(value: unknown): { ids: string[]; names: string[] } {
 export function buildDeckWriteHandlers(input: {
   list: Controller;
   userId: string;
+  folders: { id: string; name: string }[];
 }): SurfaceWriteHandlers {
-  const { list, userId } = input;
+  const { list, userId, folders } = input;
   // The person's own decks the current value names, read right before each
   // check (validate and again at apply — records may change while the card
   // is open). Never the whole library.
@@ -189,7 +205,7 @@ export function buildDeckWriteHandlers(input: {
         nameOf: (fields) => fields.name,
       },
       update: {
-        parse: (value) => parseUpdateDecksValue(value, current),
+        parse: (value) => parseUpdateDecksValue(value, current, folders),
         run: async (plan) => {
           // Restore first, so an edit to an archived deck lands on a live row.
           if (plan.archived === false)
@@ -200,6 +216,17 @@ export function buildDeckWriteHandlers(input: {
             if (res.error || !res.data)
               throw new Error(res.error ?? "not saved");
             name = res.data.name;
+          }
+          if (plan.visibility !== undefined)
+            await setDeckVisibility(plan.id, plan.visibility);
+          if (plan.folderIds !== undefined) {
+            if (!plan.organizationId)
+              throw new Error("the deck's organization could not be read");
+            await setDeckFolders({
+              id: plan.id,
+              organizationId: plan.organizationId,
+              folderIds: plan.folderIds,
+            });
           }
           if (plan.archived === true)
             await archiveRecord("fc_set", plan.id, "deck");
@@ -222,8 +249,46 @@ export function buildDeckWriteHandlers(input: {
     refuseSurfaceWrite,
   );
 
+  // duplicate_decks: copy any deck the person can see — their own (read by
+  // id) or one on screen. Same builder, its own local name.
+  const copies = collectionWriteHandlers(
+    {
+      plural: "decks",
+      singular: "deck",
+      create: {
+        parse: (value) => {
+          const onScreen: CurrentDeck[] = list.rows.map((r) => ({
+            id: r.id,
+            name: r.name,
+            archived: r.archived,
+          }));
+          const copyable = [
+            ...current,
+            ...onScreen.filter((r) => !current.some((c) => c.id === r.id)),
+          ];
+          const ownNames = list.rows
+            .filter((r) => r.created_by === userId && !r.archived)
+            .map((r) => r.name);
+          return parseDuplicateDecksValue(value, copyable, ownNames);
+        },
+        run: async (plan: { sourceId: string; sourceName: string; name: string }) => {
+          const copy = await duplicateDeck({ id: plan.sourceId, name: plan.name });
+          afterWrite();
+          return copy;
+        },
+        nameOf: (plan: { sourceName: string }) => plan.sourceName,
+      },
+    },
+    refuseSurfaceWrite,
+  );
+  const duplicateEntry = copies.create_decks;
+  const all: Record<string, SurfaceWriteHandlerEntry> = {
+    ...inner,
+    ...(duplicateEntry ? { duplicate_decks: duplicateEntry } : {}),
+  };
+
   const out: SurfaceWriteHandlers = {};
-  for (const [name, handler] of Object.entries(inner)) {
+  for (const [name, handler] of Object.entries(all)) {
     const entry = handler as SurfaceWriteHandlerEntry;
     out[name] = {
       validate: async (value) => {

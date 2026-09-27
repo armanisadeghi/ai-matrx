@@ -20,7 +20,13 @@ interface FastFireTimerBarProps {
   ) => () => void;
 }
 
-export function FastFireTimerBar({ subscribeProgress }: FastFireTimerBarProps) {
+export function FastFireTimerBar({
+  subscribeProgress,
+  typed = false,
+}: FastFireTimerBarProps & {
+  /** TYPED MODE: nothing is recorded, so no recording dot and no mic meter. */
+  typed?: boolean;
+}) {
   const barRef = useRef<HTMLDivElement | null>(null);
   const secondsRef = useRef<HTMLSpanElement | null>(null);
   const levelRef = useRef<HTMLDivElement | null>(null);
@@ -58,13 +64,17 @@ export function FastFireTimerBar({ subscribeProgress }: FastFireTimerBarProps) {
     <div className="space-y-2">
       {/* Recording indicator + countdown seconds */}
       <div className="flex items-center justify-between text-xs">
-        <span className="inline-flex items-center gap-1.5 font-medium text-red-600 dark:text-red-400">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-600" />
+        {typed ? (
+          <span className="font-medium text-muted-foreground">Type your answer</span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 font-medium text-red-600 dark:text-red-400">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-600" />
+            </span>
+            Recording
           </span>
-          Recording
-        </span>
+        )}
         <span
           ref={secondsRef}
           className="tabular-nums font-semibold text-foreground"
@@ -82,8 +92,8 @@ export function FastFireTimerBar({ subscribeProgress }: FastFireTimerBarProps) {
         />
       </div>
 
-      {/* Mic level meter */}
-      <div className="flex items-center gap-2">
+      {/* Mic level meter (voice mode only) */}
+      <div className={typed ? "hidden" : "flex items-center gap-2"}>
         <Mic className="h-3.5 w-3.5 text-muted-foreground" />
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
           <div

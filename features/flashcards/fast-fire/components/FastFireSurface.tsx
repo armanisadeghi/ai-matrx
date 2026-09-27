@@ -36,6 +36,7 @@ import { FastFireLiveCard } from "./FastFireLiveCard";
 import { FastFireScoreboard } from "./FastFireScoreboard";
 import { FastFireTimesUp } from "./FastFireTimesUp";
 import { useFastFireLocalQaAudioFixture } from "../qa/useFastFireLocalQaAudioFixture";
+import { useSuppressAmbientAssistant } from "@/features/agents/components/ambient-assistant/ambientAssistantSuppression";
 
 const FLASHCARDS_HOME = "/education/flashcards";
 
@@ -53,6 +54,11 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
   // this is a development build on localhost with the exact bounded QA flag;
   // production and ordinary local sessions retain native getUserMedia.
   useFastFireLocalQaAudioFixture();
+
+  // FastFire owns the screen and the microphone: the ambient chat dock never
+  // reveals here (its bottom-edge reveal sat under Start and brought up the
+  // composer — and its chat-voice session — as a drill began).
+  useSuppressAmbientAssistant(true);
 
   // The drill orchestrator — mounted for the whole surface so capture + timers
   // persist across phase transitions. It self-guards on phase internally.

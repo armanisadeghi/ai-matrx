@@ -16,6 +16,7 @@
 //   * Declared-editable columns edit in place; edits stay local until the
 //     floating Save pill commits them.
 
+import { useEffect, useSyncExternalStore } from "react";
 import { MoreVertical, Star } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
@@ -196,8 +197,56 @@ function fromTableFilters(state: ColumnFiltersState): EntityFilters {
 const PAGE_OWNS_COLUMN_PICKER = { columns: false } as const;
 
 
-/** Per list surface: the column widths last fitted to loaded rows. */
-const LAST_FITTED_WIDTHS = new Map<string, Map<string, string | number | undefined>>();
+/**
+ * Per list surface: the column widths last fitted to loaded rows. Kept in
+ * memory and in this browser's storage, so a skeleton on the NEXT visit is
+ * already the loaded table's shape. Derived layout, not a preference — it
+ * never syncs across devices, and a browser without storage just falls back
+ * to the declared widths.
+ */
+type FittedWidths = Map<string, string | number | undefined>;
+const LAST_FITTED_WIDTHS = new Map<string, FittedWidths>();
+const WIDTHS_STORAGE_PREFIX = "matrx:list-fitted-widths:";
+const noopSubscribe = () => () => {};
+
+function readFittedWidths(key: string): FittedWidths | undefined {
+  const cached = LAST_FITTED_WIDTHS.get(key);
+  if (cached) return cached;
+  try {
+    const raw = window.localStorage.getItem(WIDTHS_STORAGE_PREFIX + key);
+    if (!raw) return undefined;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return undefined;
+    const widths: FittedWidths = new Map(
+      Object.entries(parsed as Record<string, unknown>).filter(
+        (e): e is [string, string | number] =>
+          typeof e[1] === "number" || typeof e[1] === "string",
+      ),
+    );
+    LAST_FITTED_WIDTHS.set(key, widths);
+    return widths;
+  } catch {
+    return undefined;
+  }
+}
+
+function rememberFittedWidths(key: string, widths: FittedWidths): void {
+  const previous = LAST_FITTED_WIDTHS.get(key);
+  const same =
+    previous !== undefined &&
+    previous.size === widths.size &&
+    [...widths].every(([id, w]) => previous.get(id) === w);
+  LAST_FITTED_WIDTHS.set(key, widths);
+  if (same) return;
+  try {
+    window.localStorage.setItem(
+      WIDTHS_STORAGE_PREFIX + key,
+      JSON.stringify(Object.fromEntries([...widths].filter(([, w]) => w !== undefined))),
+    );
+  } catch {
+    /* storage unavailable (private window) — memory still serves this visit */
+  }
+}
 
 export function EntityListTable<TRow>({
   config,
@@ -374,13 +423,31 @@ export function EntityListTable<TRow>({
   // then the loaded rows yielded their empty columns and everything jumped).
   const fitted = fitColumnWidths(declaredColumns, rows, nameColumnId);
   const widthKey = config.surfaceKey;
-  if (rows.length > 0) {
-    LAST_FITTED_WIDTHS.set(
+  // Remember the fitted widths once real rows are on screen (an effect, never
+  // a write during render).
+  const fittedSignature =
+    rows.length > 0
+      ? JSON.stringify(
+          fitted.map((c) => [String(c.id ?? c.accessorKey ?? ""), c.width ?? null]),
+        )
+      : null;
+  useEffect(() => {
+    if (!fittedSignature) return;
+    const entries = JSON.parse(fittedSignature) as [string, string | number | null][];
+    rememberFittedWidths(
       widthKey,
-      new Map(fitted.map((c) => [String(c.id ?? c.accessorKey ?? ""), c.width])),
+      new Map(entries.map(([id, w]) => [id, w ?? undefined])),
     );
-  }
-  const remembered = isLoading ? LAST_FITTED_WIDTHS.get(widthKey) : undefined;
+  }, [widthKey, fittedSignature]);
+  // Client-only (hydration-safe): the server render and the first client
+  // render both use the declared widths.
+  const hydrated = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
+  const remembered =
+    isLoading && hydrated ? readFittedWidths(widthKey) : undefined;
   const columns = remembered
     ? fitted.map((c) => {
         const width = remembered.get(String(c.id ?? c.accessorKey ?? ""));

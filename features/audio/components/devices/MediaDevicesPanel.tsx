@@ -78,7 +78,15 @@ function deviceLabel(
       : `Camera (${short})`;
 }
 
-export function MediaDevicesPanel() {
+export function MediaDevicesPanel({
+  showCamera = true,
+}: {
+  /**
+   * Show the camera section. A surface that never uses the camera (an audio
+   * drill) passes false, so it asks for nothing it will not use.
+   */
+  showCamera?: boolean;
+} = {}) {
   const {
     permissionState,
     cameraPermissionState,
@@ -240,6 +248,7 @@ export function MediaDevicesPanel() {
       </section>
 
       {/* Camera */}
+      {showCamera && (
       <section className="flex flex-col gap-2">
         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
           <Camera className="h-4 w-4 text-muted-foreground" />
@@ -280,6 +289,7 @@ export function MediaDevicesPanel() {
         )}
         <CameraTestTile disabled={isCameraDenied} />
       </section>
+      )}
 
       <div className="flex justify-end">
         <Button

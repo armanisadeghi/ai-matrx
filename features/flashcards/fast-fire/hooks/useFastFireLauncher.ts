@@ -165,7 +165,8 @@ export function useFastFireLauncher(
       //    Do this before creating durable session state: permission denial or
       //    capture startup failure means the drill never started, so it must
       //    not leave an orphaned active study_session behind.
-      await startContinuousCapture();
+      //    TYPED MODE never touches the microphone (no prompt, no stream).
+      if (config.answerMode !== "typed") await startContinuousCapture();
 
       // 4. Arm (never write) the study session on the shared spine: the
       //    FIRST ANSWER opens it, so starting a drill and leaving writes

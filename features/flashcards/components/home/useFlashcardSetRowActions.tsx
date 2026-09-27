@@ -12,12 +12,36 @@ import { useRouter } from "next/navigation";
 import {
   Archive,
   ArchiveRestore,
+  Check,
+  Copy,
   ExternalLink,
   Eye,
+  FolderInput,
   Pencil,
   Play,
+  TextCursorInput,
+  Users,
   Zap,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { FolderTagPicker } from "../organize/FolderTagPicker";
+import { DECK_VISIBILITY_CHOICES } from "../sharing/SetVisibilityControl";
+import {
+  duplicateDeck,
+  renameDeck,
+  setDeckVisibility,
+  type DeckVisibilityValue,
+} from "../../data/deckOperations";
+import { copyName } from "./deckAgentWrites";
 import { toast } from "@/lib/toast";
 import type {
   ItemMenuConfig,
@@ -41,9 +65,64 @@ export function useFlashcardSetRowActions(
   list: EntityListController<FlashcardSetListRow>,
 ): EntityRowActionsResult<FlashcardSetListRow> {
   const router = useRouter();
+  const userId = useAppSelector(selectUserId);
   const [pendingArchive, setPendingArchive] =
     useState<FlashcardSetListRow | null>(null);
   const [busy, setBusy] = useState(false);
+  const [renaming, setRenaming] = useState<FlashcardSetListRow | null>(null);
+  const [filing, setFiling] = useState<FlashcardSetListRow | null>(null);
+  const [sharing, setSharing] = useState<FlashcardSetListRow | null>(null);
+  const [savingVisibility, setSavingVisibility] = useState(false);
+
+  const duplicate = async (row: FlashcardSetListRow) => {
+    const taken = new Set(
+      list.rows
+        .filter((r) => r.created_by === userId && !r.archived)
+        .map((r) => r.name.trim().toLowerCase()),
+    );
+    const pending = toast.loading(`Copying "${row.name}"…`);
+    try {
+      const copy = await duplicateDeck({
+        id: row.id,
+        name: copyName(row.name, taken),
+      });
+      toast.success(`Copied as "${copy.name}"`, { id: pending });
+      list.refresh();
+    } catch (e) {
+      if (e instanceof Error && e.name === "OrganizationSelectionCancelled") {
+        toast.dismiss(pending);
+        return;
+      }
+      toast.error(e instanceof Error ? e.message : "The deck was not copied.", {
+        id: pending,
+      });
+    }
+  };
+
+  const chooseVisibility = async (
+    row: FlashcardSetListRow,
+    next: DeckVisibilityValue,
+  ) => {
+    if (next === row.visibility) {
+      setSharing(null);
+      return;
+    }
+    setSavingVisibility(true);
+    try {
+      const saved = await setDeckVisibility(row.id, next);
+      list.patchRow(row.id, { visibility: saved.visibility });
+      toast.success(
+        `"${row.name}": ${DECK_VISIBILITY_CHOICES.find((c) => c.value === saved.visibility)?.label ?? saved.visibility}`,
+      );
+      setSharing(null);
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Who can see this deck was not changed.",
+      );
+    } finally {
+      setSavingVisibility(false);
+    }
+  };
 
   const restore = async (row: FlashcardSetListRow) => {
     try {
@@ -100,11 +179,50 @@ export function useFlashcardSetRowActions(
         disabledReason: "Restore the deck to edit it",
       },
     ];
+    const own = row.created_by === userId;
+    const offLimits = own ? "Restore the deck first" : "Only the deck's owner can change this";
+    const manage: ItemMenuEntry[] = [
+      {
+        id: "rename",
+        label: "Rename",
+        icon: TextCursorInput,
+        disabled: !own || row.archived,
+        disabledReason: offLimits,
+        onSelect: () => setRenaming(row),
+      },
+      {
+        id: "duplicate",
+        label: own ? "Duplicate" : "Make a copy",
+        icon: Copy,
+        disabled: row.archived,
+        disabledReason: "Restore the deck to copy it",
+        onSelect: () => {
+          void duplicate(row);
+        },
+      },
+      {
+        id: "folders",
+        label: "Move to folder",
+        icon: FolderInput,
+        disabled: !own || row.archived,
+        disabledReason: offLimits,
+        onSelect: () => setFiling(row),
+      },
+      {
+        id: "visibility",
+        label: "Who can see it",
+        icon: Users,
+        disabled: !own || row.archived,
+        disabledReason: offLimits,
+        onSelect: () => setSharing(row),
+      },
+    ];
     return {
       header: { title: row.name },
       sections: [
         { id: "open", items: open },
         { id: "study", label: "Study", items: study },
+        { id: "organize", label: "Organize", items: manage },
         {
           id: "manage",
           label: "Manage",
@@ -132,6 +250,93 @@ export function useFlashcardSetRowActions(
   };
 
   const modals = (
+    <>
+    <TextInputDialog
+      open={renaming !== null}
+      onOpenChange={(open) => {
+        if (!open) setRenaming(null);
+      }}
+      title="Rename deck"
+      defaultValue={renaming?.name ?? ""}
+      confirmLabel="Rename"
+      validate={(value) => (value.trim() ? null : "A deck needs a name.")}
+      onConfirm={async (value) => {
+        if (!renaming) return;
+        const row = renaming;
+        try {
+          const saved = await renameDeck(row.id, value);
+          list.patchRow(row.id, { name: saved.name });
+          toast.success(`Renamed to "${saved.name}"`);
+          setRenaming(null);
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "The new name was not saved.");
+        }
+      }}
+    />
+    <Dialog
+      open={filing !== null}
+      onOpenChange={(open) => {
+        if (!open) {
+          setFiling(null);
+          list.refresh();
+        }
+      }}
+    >
+      <DialogContent className="matrx-touch-targets sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Folders for &ldquo;{filing?.name}&rdquo;</DialogTitle>
+        </DialogHeader>
+        {filing ? <FolderTagPicker setId={filing.id} /> : null}
+        <div className="flex justify-end">
+          <Button onClick={() => {
+            setFiling(null);
+            list.refresh();
+          }}>
+            Done
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    <Dialog
+      open={sharing !== null}
+      onOpenChange={(open) => {
+        if (!open) setSharing(null);
+      }}
+    >
+      <DialogContent className="matrx-touch-targets sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Who can see &ldquo;{sharing?.name}&rdquo;</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-1" role="radiogroup" aria-label="Who can see it">
+          {DECK_VISIBILITY_CHOICES.map((choice) => {
+            const Icon = choice.icon;
+            const selected = sharing?.visibility === choice.value;
+            return (
+              <Button
+                key={choice.value}
+                variant="ghost"
+                role="radio"
+                aria-checked={selected}
+                disabled={savingVisibility}
+                className="h-auto justify-start gap-3 whitespace-normal px-3 py-2 text-left"
+                onClick={() => {
+                  if (sharing) void chooseVisibility(sharing, choice.value);
+                }}
+              >
+                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-medium">{choice.label}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {choice.description}
+                  </span>
+                </span>
+                {selected ? <Check className="h-4 w-4 shrink-0 text-primary" /> : null}
+              </Button>
+            );
+          })}
+        </div>
+      </DialogContent>
+    </Dialog>
     <ConfirmDialog
       open={pendingArchive !== null}
       onOpenChange={(open) => {
@@ -163,6 +368,7 @@ export function useFlashcardSetRowActions(
         setPendingArchive(null);
       }}
     />
+    </>
   );
 
   return {

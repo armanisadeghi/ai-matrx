@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ScrollAssistantLauncherImplProps } from "./ScrollAssistantLauncherImpl";
+import { useAmbientAssistantSuppressed } from "./ambientAssistantSuppression";
 
 export interface ScrollAssistantLauncherProps {
   inputVariant?: "single-line" | "multiline" | "text-voice";
@@ -43,8 +44,10 @@ export function ScrollAssistantLauncher({
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const [revealed, setRevealed] = useState(false);
+  // A page holding the screen/mic (a FastFire drill) keeps the dock away.
+  const suppressed = useAmbientAssistantSuppressed();
   const isIncludedPath =
-    !includePathnames || includePathnames.includes(pathname);
+    !suppressed && (!includePathnames || includePathnames.includes(pathname));
 
   useEffect(() => {
     if (!isIncludedPath || isMobile || revealed) return undefined;

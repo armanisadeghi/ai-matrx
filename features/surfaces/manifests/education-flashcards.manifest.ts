@@ -193,9 +193,9 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "search_query",
     label: "Search query",
     description:
-      "The learner's current search text, matched case-insensitively across set name, topic, lesson, and description. Absent when the search box is empty.",
+      "The learner's current search text, matched case-insensitively across deck name, topic, lesson, and description. Always present — an empty string when the search box is empty.",
     valueType: "string",
-    alwaysAvailable: false,
+    alwaysAvailable: true,
     typicalCharCount: 30,
     sortOrder: 400,
     group: "list_view",
@@ -221,6 +221,30 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 120,
     sortOrder: 420,
     group: "list_view",
+  },
+
+  {
+    name: "selected_deck_ids",
+    label: "Ticked decks",
+    description:
+      "Ids of the decks the person ticked in the list (the checkboxes), in the order ticked — what \"these decks\" means. Always present — an empty array when nothing is ticked.",
+    valueType: "array",
+    alwaysAvailable: true,
+    typicalCharCount: 200,
+    sortOrder: 425,
+    group: "list_view",
+  },
+  {
+    name: "visibility_options",
+    label: "Who-can-see-it options",
+    description:
+      'The choices for a deck\'s "Who can see it", as { id, label }: personal (Only me), internal (Organization), link (Anyone with link), public (Public). update_decks takes the id as visibility.',
+    valueType: "array",
+    alwaysAvailable: true,
+    typicalCharCount: 160,
+    autoContext: false,
+    sortOrder: 360,
+    group: "library",
   },
 
   // ── Study signal ──────────────────────────────────────────────────────
@@ -267,13 +291,24 @@ const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "update_decks",
     label: "Update decks",
-    description: `Changes one or more of the person's OWN decks (ids from my_decks — decks other people shared cannot be changed here), saved immediately. Value is a JSON ARRAY (not a string) of 1-25 objects, each { id: string (required), name?, description?, topic?, lesson?, difficulty?: "easy" | "medium" | "hard" | null, archived?: boolean }. Only the fields you send change; send "" or null to clear description, topic, lesson or difficulty. archived: true archives the deck (it leaves the list and is restorable from Trash or the Archived filter); archived: false restores it — send it in the same item to edit an archived deck. The whole list is refused, with nothing changed, on an unknown id, the same id twice, an item that changes nothing, or a rename onto a name another of the person's live decks has. Example: [{ "id": "…", "lesson": "Mitosis" }, { "id": "…", "archived": true }].`,
+    description: `Changes one or more of the person's OWN decks (ids from my_decks — decks other people shared cannot be changed here), saved immediately. Value is a JSON ARRAY (not a string) of 1-25 objects, each { id: string (required), name?, description?, topic?, lesson?, difficulty?: "easy" | "medium" | "hard" | null, visibility?: "personal" | "internal" | "link" | "public" (see visibility_options), folder_ids?: string[] (folder ids from folders — REPLACES the deck's folders; [] takes it out of every folder), archived?: boolean }. Only the fields you send change; send "" or null to clear description, topic, lesson or difficulty. Renaming is name; "move to folder" is folder_ids; "who can see it" is visibility. archived: true archives the deck (it leaves the list and is restorable from Trash or the Archived filter); archived: false restores it — send it in the same item to edit an archived deck. The whole list is refused, with nothing changed, on an unknown id, the same id twice, an item that changes nothing, or a rename onto a name another of the person's live decks has. Example: [{ "id": "…", "lesson": "Mitosis" }, { "id": "…", "archived": true }].`,
     valueType: "array",
     updatesValue: "my_decks",
     mode: "entity",
     applyPolicy: "ask",
     group: "decks",
     sortOrder: 120,
+  },
+  {
+    name: "duplicate_decks",
+    label: "Duplicate decks",
+    description: `Copies decks into the person's own library — every card and its layers — saved immediately (the person may be asked which workspace the copy goes to). Value is a JSON ARRAY (not a string) of 1-25 deck ids from deck_list, or { id, name? } objects; without a name the copy is called "<name> (copy)". Works on the person's own decks and on any deck on screen (a shared or public deck becomes their own copy). An unknown or archived id, or a name the person already has, refuses the whole list with nothing copied. Example: [{ "id": "…", "name": "Cell Biology — exam week" }].`,
+    valueType: "array",
+    updatesValue: "my_decks",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "decks",
+    sortOrder: 125,
   },
   {
     name: "delete_decks",
@@ -293,7 +328,7 @@ export const educationFlashcardsManifest: SurfaceManifest = {
   client: "matrx-user",
   executionMode: "python-stream",
   description:
-    "Flashcard Studio — the learner's deck library with lanes, search, sort, filters and archive, plus their study streak; agents can create, change and archive the person's own decks.",
+    "Flashcard Studio — the learner's deck library with lanes, search, sort, filters and archive, plus their study streak; agents can create, change, copy and archive the person's own decks.",
   readiness: "partial",
   readinessNote:
     "page-pass 2026-09-27: the list moved onto EntityListPage over the server-side education.fc_set_list_scoped RPC (lanes, sort/filter, archive, row menus) and gained create/update/delete_decks + the deck_list bundle. The agent write path is proven live only for what the page-pass report lists.",
@@ -302,7 +337,7 @@ export const educationFlashcardsManifest: SurfaceManifest = {
   intro: `<surface_intro>
 You are on Flashcard Studio at /education/flashcards — the learner's LIBRARY of flashcard decks (called "sets" in older values), not a study session. The list has lanes (Mine, My Orgs, Shared, Public), a search box, sort and filter on every column, and an archive filter; each row opens the deck, spaced-repetition study, or the Fast Fire drill.
 Read deck_list first: it is the page on screen, with ids. Check sets_loaded — while it is false the library is still loading (or load_error explains a real failure), so never tell the learner they have no decks. If a lane, search, filter or the archive filter is narrowing the list (visibility_filter, search_query, list_filters, selected_folder_ids, archive_filter), say so rather than concluding a deck does not exist.
-To change decks use ONLY these targets, on decks the person made (my_decks): create_decks adds empty decks; update_decks renames, re-topics, sets difficulty, archives (archived: true) or restores (archived: false); delete_decks archives. Never use generic scope or context tools for deck data. Cards are edited on each deck's own page.
+To change decks use ONLY these targets, on decks the person made (my_decks): create_decks adds empty decks; update_decks renames, re-topics, sets difficulty, changes who can see it (visibility), files it into folders (folder_ids), archives (archived: true) or restores (archived: false); duplicate_decks copies decks; delete_decks archives. "These decks" means selected_deck_ids when it is not empty. Never use generic scope or context tools for deck data. Cards are edited on each deck's own page.
 The study streak is cross-mode: it reflects every study session the learner has run, not only flashcards. Treat it as encouragement context, never as a reason to pressure them.
 </surface_intro>`,
   groups,
@@ -349,6 +384,9 @@ export function createEducationFlashcardsScope(values: {
   folders: FlashcardFolderSummary[];
   visibility_filter: string;
   selected_folder_ids: string[];
+  selected_deck_ids: string[];
+  visibility_options: { id: string; label: string }[];
+  search_query: string;
   list_sort: string;
   archive_filter: string;
   list_filters: Record<string, unknown>;
@@ -361,7 +399,6 @@ export function createEducationFlashcardsScope(values: {
   visible_sets?: FlashcardSetSummary[];
   visible_set_ids?: string[];
   load_error?: string;
-  search_query?: string;
   study_streak_days?: number;
   longest_streak_days?: number;
 }): SurfaceScopePayload {

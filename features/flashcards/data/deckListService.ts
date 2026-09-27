@@ -116,17 +116,31 @@ export async function fetchOwnDecksFor(input: {
   userId: string;
   ids: string[];
   names: string[];
-}): Promise<{ id: string; name: string; archived: boolean }[]> {
-  const out = new Map<string, { id: string; name: string; archived: boolean }>();
-  const add = (rows: { id: string; name: string; deleted_at: string | null }[] | null) => {
+}): Promise<
+  { id: string; name: string; archived: boolean; organizationId: string }[]
+> {
+  const out = new Map<
+    string,
+    { id: string; name: string; archived: boolean; organizationId: string }
+  >();
+  const add = (
+    rows:
+      | { id: string; name: string; deleted_at: string | null; organization_id: string }[]
+      | null,
+  ) => {
     for (const r of rows ?? [])
-      out.set(r.id, { id: r.id, name: r.name, archived: r.deleted_at !== null });
+      out.set(r.id, {
+        id: r.id,
+        name: r.name,
+        archived: r.deleted_at !== null,
+        organizationId: r.organization_id,
+      });
   };
   const ids = input.ids.filter((id) => /^[0-9a-f-]{36}$/i.test(id));
   if (ids.length > 0) {
     const { data, error } = await EDU()
       .from("fc_set")
-      .select("id, name, deleted_at")
+      .select("id, name, deleted_at, organization_id")
       .eq("created_by", input.userId)
       .in("id", ids);
     if (error) fail("read", error);
@@ -135,7 +149,7 @@ export async function fetchOwnDecksFor(input: {
   for (const name of input.names.filter((n) => n.trim())) {
     const { data, error } = await EDU()
       .from("fc_set")
-      .select("id, name, deleted_at")
+      .select("id, name, deleted_at, organization_id")
       .eq("created_by", input.userId)
       .is("deleted_at", null)
       .ilike("name", name.trim().replace(/[\\%_]/g, (c) => `\\${c}`));

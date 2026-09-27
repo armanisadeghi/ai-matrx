@@ -269,7 +269,12 @@ export function FlashcardsHome({
             }),
           getWriteHandlers: (
             list: EntityListSurfaceController<FlashcardSetListRow>,
-          ) => buildDeckWriteHandlers({ list, userId }),
+          ) =>
+            buildDeckWriteHandlers({
+              list,
+              userId,
+              folders: folders.map((f) => ({ id: f.id, name: f.name })),
+            }),
         }
       : undefined;
 
