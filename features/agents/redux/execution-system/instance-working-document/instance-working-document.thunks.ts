@@ -25,6 +25,7 @@
  *     (the agent's edit content, streamed as each ctx_patch lands — D9 fix).
  */
 
+import { toast } from "@/lib/toast";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ContextDeltaData } from "@/types/python-generated/stream-events";
 import { applyContextDeltaToContent } from "./contextDelta";
@@ -1241,6 +1242,11 @@ export const syncWorkingDocumentFromAgentThunk = createAsyncThunk<
           "[working-document] failed to resync row after agent writeback",
           { conversationId, kind, docId: binding.id, err },
         );
+        // Said, not just logged (RC-B12 r13): the editor still shows the text
+        // from BEFORE the agent's edit.
+        toast.error(
+          "The agent edited this document, but the new version couldn't be loaded — reopen it to see the change.",
+        );
       }
       return;
     }
@@ -1261,6 +1267,9 @@ export const syncWorkingDocumentFromAgentThunk = createAsyncThunk<
         console.error(
           "[working-document] failed to resync bound note after agent writeback",
           { conversationId, kind, noteId: binding.id, err },
+        );
+        toast.error(
+          "The agent edited this note, but the new version couldn't be loaded — reopen it to see the change.",
         );
       }
       return;
