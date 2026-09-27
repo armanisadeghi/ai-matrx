@@ -61,9 +61,10 @@ export function toolMetadata(slug: string): Metadata {
       metadataBase: EDU_ORIGIN,
     });
   }
+  // The tab leads with the specific word (the tool), then the section.
   return createDynamicRouteMetadata("/education", {
-    titlePrefix: "Study",
-    title: tool.name,
+    titlePrefix: tool.name,
+    title: "Study",
     description: tool.description,
     letter: tool.letter,
     canonicalPath: eduHref(slug),
