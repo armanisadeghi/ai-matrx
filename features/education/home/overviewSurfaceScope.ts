@@ -65,6 +65,11 @@ export function buildEducationOverviewScope(input: {
     unavailable_sections: unavailable,
     visible_blocks: input.visibleBlocks,
     tool_counts,
+    owned_counts: Object.fromEntries(
+      tool_counts
+        .filter((t) => t.count !== null)
+        .map((t) => [t.slug, t.count as number]),
+    ),
     ...(ready("plan")
       ? {
           active_plan: study.plan
@@ -89,7 +94,6 @@ export function buildEducationOverviewScope(input: {
           due_by_mode: study.modes
             .filter((m) => m.due > 0 || m.weak > 0)
             .map((m) => ({
-              mode: m.itemType,
               label: m.label,
               due: m.due,
               weak: m.weak,
@@ -109,7 +113,10 @@ export function buildEducationOverviewScope(input: {
     // missing makes the list unknown, not empty.
     ...(ready("plan") && ready("mastery") && ready("goals")
       ? {
-          next_actions_brief: nextActions.map(({ id, title }) => ({ id, title })),
+          next_actions_brief: nextActions.map(({ id, title, minutes }) => ({
+            id,
+            title: minutes != null ? `${title} (~${minutes} min)` : title,
+          })),
           next_actions: nextActions,
           next_actions_total_minutes: nextActions.reduce(
             (sum, a) => sum + (a.minutes ?? 0),

@@ -4,14 +4,15 @@
  * SpatialViewport — the pannable, zoomable plane. Owns input and the ONE
  * world transform; knows nothing about what the tiles contain.
  *
- * Conventions (Figma / FigJam / tldraw / Miro — users already know them):
- *   wheel / two-finger trackpad ... pan          ⌘/ctrl + wheel, pinch ... zoom at cursor
- *   drag empty space .............. pan          space + drag, middle drag ... pan anywhere
- *   shift+1 ....................... fit all      shift+2 ... fit selection
- *   shift+0 ....................... 100%         + / - ... zoom      arrows ... nudge
- *   esc ........................... deselect
- * Wheel over the SELECTED tile's scroll area scrolls that tile instead —
- * the one exception, so long content stays readable without leaving the plane.
+ * Input (engine/wheel-input.ts decides what a scroll means):
+ *   mouse wheel ................... zoom at cursor   pinch / ⌘-ctrl + scroll ... zoom
+ *   trackpad two-finger swipe ..... pan              drag empty space ......... pan
+ *   space + drag, middle drag ..... pan anywhere     shift+1 / shift+2 ........ fit all / selection
+ *   shift+0 ....................... 100%             + / - .................... zoom
+ *   enter or f .................... focus selected   esc ...................... leave focus, then deselect
+ *   arrows ........................ nudge the view (in focus: previous / next tile)
+ * The one exception to "scroll moves the board": the SELECTED tile, under the
+ * pointer, with room to scroll that way, scrolls itself.
  *
  * The camera is written straight to the DOM (no React render per frame) and
  * mirrored into `#cam=x,y,z` so a view is a shareable link.
@@ -29,7 +30,9 @@ import {
   zoomAt,
 } from "../engine/camera";
 import { type Insets, SpatialStore } from "../engine/spatial-store";
-import { SpatialStoreContext } from "../engine/react";
+import type { WheelMode } from "../engine/wheel-input";
+import { FocusHostContext, SpatialStoreContext } from "../engine/react";
+import { FocusLayer } from "./FocusLayer";
 
 const GRID_WORLD_PX = 24;
 const HASH_THROTTLE_MS = 400;
@@ -44,6 +47,10 @@ interface SpatialViewportProps {
   overlay?: ReactNode;
   /** Screen px the overlay covers on each edge; fits keep content clear of it. */
   insets?: Partial<Insets>;
+  /** What a scroll does (see `engine/wheel-input.ts`). Default "auto". */
+  wheelMode?: WheelMode;
+  /** Receives the store once, for hosts that drive the camera or focus. */
+  onStore?: (store: SpatialStore) => void;
   className?: string;
 }
 
@@ -53,10 +60,17 @@ export function SpatialViewport({
   children,
   overlay,
   insets,
+  wheelMode = "auto",
+  onStore,
   className,
 }: SpatialViewportProps) {
   const [store] = useState(() => new SpatialStore(initialCamera));
+  const [focusHost, setFocusHost] = useState<HTMLElement | null>(null);
   const { top = 0, right = 0, bottom = 0, left = 0 } = insets ?? {};
+  useEffect(() => {
+    store.setWheelMode(wheelMode);
+  }, [store, wheelMode]);
+  useEffect(() => onStore?.(store), [store, onStore]);
   useEffect(() => store.setInsets({ top, right, bottom, left }), [store, top, right, bottom, left]);
   const rootRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<HTMLDivElement>(null);
@@ -154,11 +168,17 @@ export function SpatialViewport({
     const root = rootRef.current;
     if (!root) return;
     const onWheel = (e: WheelEvent) => {
+      const target = e.target as HTMLElement | null;
+      // Focus mode and chrome own their own scrolling.
+      if (target?.closest("[data-spatial-focus], [data-spatial-chrome]")) return;
+      const intent = store.wheel.intent(e);
+      // THE ONE EXCEPTION: the selected tile, under the pointer, with room to
+      // scroll in that direction, scrolls itself instead of moving the board.
       if (!(e.ctrlKey || e.metaKey) && selectedTileScrolls(e, store.getSelected())) return;
       e.preventDefault();
       const bounds = root.getBoundingClientRect();
       const cam = store.getCamera();
-      if (e.ctrlKey || e.metaKey) {
+      if (intent === "zoom") {
         const sx = e.clientX - bounds.left;
         const sy = e.clientY - bounds.top;
         store.setCamera(zoomAt(cam, sx, sy, cam.z * wheelZoomFactor(e.deltaY, e.deltaMode)));
@@ -268,7 +288,20 @@ export function SpatialViewport({
       const size = store.getSize();
       const cam = store.getCamera();
       const centre = (z: number) => store.flyTo(zoomAt(cam, size.w / 2, size.h / 2, z), 220);
-      if (e.shiftKey && e.code === "Digit1") store.fitAll();
+      const focused = store.getFocused();
+      if (focused) {
+        if (e.key === "Escape") store.unfocus();
+        else if (e.key === "ArrowRight" || e.key === "ArrowDown") store.focusStep(1);
+        else if (e.key === "ArrowLeft" || e.key === "ArrowUp") store.focusStep(-1);
+        else return;
+        e.preventDefault();
+        return;
+      }
+      if ((e.key === "Enter" || e.key === "f") && !e.shiftKey) {
+        const sel = store.getSelected();
+        if (!sel) return;
+        store.focus(sel);
+      } else if (e.shiftKey && e.code === "Digit1") store.fitAll();
       else if (e.shiftKey && e.code === "Digit2") {
         const sel = store.getSelected();
         if (sel) store.fitItem(sel);
@@ -292,6 +325,7 @@ export function SpatialViewport({
 
   return (
     <SpatialStoreContext.Provider value={store}>
+      <FocusHostContext.Provider value={focusHost}>
       <div
         ref={rootRef}
         className={cn(
@@ -315,7 +349,9 @@ export function SpatialViewport({
           </div>
         </div>
         {overlay}
+        <FocusLayer onHost={setFocusHost} />
       </div>
+      </FocusHostContext.Provider>
     </SpatialStoreContext.Provider>
   );
 }

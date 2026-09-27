@@ -156,10 +156,11 @@ returning name;
 
 - **Type check only what you touched** (the full `pnpm type-check` needs ~13 GB and is killed in a
   cloud container):
-  1. Write `tsconfig.focused.tmp.json` IN THE REPO ROOT (outside it, `types` cannot resolve and
-     every file errors) with
+  1. Write `tsconfig.focused.<your-short-name>.tmp.json` IN THE REPO ROOT (outside it, `types`
+     cannot resolve and every file errors; a name of your own, because parallel workers delete a
+     shared one mid-run) with
      `{"extends":"./tsconfig.json","compilerOptions":{"noEmit":true,"incremental":false},"include":["global.d.ts","cartesia.d.ts","types/typecheck-env.d.ts", <your files>]}`.
-  2. Run `node node_modules/typescript/bin/tsc6 -p tsconfig.focused.tmp.json`. One run covers the
+  2. Run `node --max-old-space-size=11000 node_modules/typescript/bin/tsc6 -p tsconfig.focused.<your-short-name>.tmp.json`. One run covers the
      whole batch, in about 3 minutes.
   3. Delete the temporary file.
 
@@ -181,6 +182,10 @@ returning name;
   then push. Record each surface's commit SHA; you need it to verify.
 
 ## 4. Verify on production (per batch, once deployed)
+
+Run every probe with your own short temp dir, e.g. `TMPDIR=/tmp/sw-<short-name> pnpm surface:probe …`:
+parallel workers otherwise share one browser profile and collide (keep the path short; a long one
+breaks Chromium's socket).
 
 ```bash
 pnpm surface:probe --surface <client/name> --commit <sha> \

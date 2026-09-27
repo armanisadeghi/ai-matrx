@@ -52,6 +52,7 @@ export function buildEducationStartScope(input: {
       ...o,
       selected: input.selected.has(o.kind),
     })),
+    available_outputs: input.options.filter((o) => o.available).map((o) => o.kind),
     can_build: input.canBuild,
     kit_phase: kit.phase,
     ...(input.file && fileSupport

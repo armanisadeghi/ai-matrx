@@ -316,9 +316,32 @@ export function StartHero({
         }
         if (fields.focus !== undefined) setFocus(fields.focus);
         const filled = Object.keys(value as Record<string, unknown>);
+        // The agent's page snapshot predates this fill, so say what the form
+        // now holds (the same shape as the kit_request_draft value).
+        const nextMode = fields.mode ?? mode;
         return {
           summary: `Filled the Create a study kit form (${filled.join(", ")}). Nothing is built until the person presses Build my study kit.`,
-          data: owned ? { file: owned.fileName } : undefined,
+          data: {
+            input_mode: nextMode,
+            paste_chars: (fields.pasteText ?? pasteText).length,
+            url: fields.url ?? url,
+            file: owned
+              ? { file_id: owned.fileId, file_name: owned.fileName }
+              : stored
+                ? { file_id: stored.fileId, file_name: stored.fileName }
+                : null,
+            outputs: ALL_TARGET_KINDS.filter((k) =>
+              (fields.outputs ? new Set(fields.outputs) : selected).has(k),
+            ),
+            depth: fields.depth ?? depth,
+            count:
+              fields.count !== undefined
+                ? fields.count
+                : Number.parseInt(count, 10) > 0
+                  ? Number.parseInt(count, 10)
+                  : null,
+            focus: fields.focus ?? focus,
+          },
         };
       },
     },
@@ -479,7 +502,10 @@ function InputPanel({
     { id: "link", label: "Link", icon: Link2 },
   ];
   return (
-    <div className="rounded-xl border border-border bg-card">
+    <div
+      className="rounded-xl border border-border bg-card"
+      data-surface-value="kit_request_draft"
+    >
       <div className="flex gap-1 border-b border-border p-1.5">
         {modes.map((m) => (
           <button
@@ -738,7 +764,7 @@ function KitPicker(props: {
   onToggle: (k: TargetKind) => void;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-surface-value="output_options">
       <label className="text-xs font-medium text-muted-foreground">
         What should we make?
       </label>

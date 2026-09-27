@@ -95,10 +95,16 @@ export function withSurfaceInlineCeiling(
   );
   const ceiling = declared?.inlineUpTo;
   if (!ceiling || wire == null) return wire;
+  // An existing envelope is `{ content, type, label }` (toWireContextValue or a
+  // rich builder). A RECORD that merely has a `content` field (a note, a study
+  // guide: `{ id, title, content, … }`) is data and gets wrapped — reading it as
+  // an envelope dropped its ceiling and sent the record as a lookup (2026-09-27).
   if (
     typeof wire === "object" &&
     !Array.isArray(wire) &&
-    "content" in (wire as Record<string, unknown>)
+    "content" in (wire as Record<string, unknown>) &&
+    typeof (wire as Record<string, unknown>).type === "string" &&
+    typeof (wire as Record<string, unknown>).label === "string"
   ) {
     const env = wire as Record<string, unknown>;
     return "max_inline_chars" in env ? env : { ...env, max_inline_chars: ceiling };

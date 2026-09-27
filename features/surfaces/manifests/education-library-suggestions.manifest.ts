@@ -7,7 +7,7 @@
  * declining only records the answer — it never edits the deck.
  *
  * Write half: ONE target, `update_suggestions` (`ask`), which answers a list
- * of open suggestions through the page's own `resolveSuggestionAction` (the
+ * of open suggestions through the page's own `resolveDeckSuggestion` (the
  * RPC `edu_resolve_suggestion`, owner-gated). No create (suggestions come from
  * other people, on the Community Library) and no delete (the page has none).
  *

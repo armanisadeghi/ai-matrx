@@ -73,7 +73,7 @@ const groups: SurfaceValueGroup[] = [
 ];
 
 const ROW_SCAN_SHAPE =
-  '{ id, title, kind, format, items, due, accuracy_pct, last_studied, mine }';
+  '{ id, title, format, items?, due?, accuracy_pct?, last_studied?, mine? }';
 
 const surfaceSpecific: SurfaceValue[] = [
   {
@@ -101,7 +101,7 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "library_list",
     label: "Library list",
-    description: `What the page lists, in its current tab, search, filters and sort: the first 25 rows of the current page, each ${ROW_SCAN_SHAPE}. kind is "fc_set" (flashcards), "assessment", "study_media" or "note"; format is the subtype ("flashcards", "quiz", "practice_test", "audio", "summary", "mind_map", "memory_aid", "notes"); items is the card/question count (null for formats without one); due is how many items are due for review now; accuracy_pct is 0-100, null until studied; last_studied is an ISO time or null; mine is true when the person owns it. library_total is how many match in all; library_rows has every field. Absent unless library_state is "ready"; [] when nothing matches.`,
+    description: `What the page lists, in its current tab, search, filters and sort: the first 25 rows of the current page (fewer only when long rows would not fit in 4000 characters — library_rows always has the whole page), each ${ROW_SCAN_SHAPE}. format is the item's type: "flashcards" (a flashcard set), "quiz" or "practice_test" (assessments), "audio", "summary", "mind_map" or "memory_aid" (study media), "notes" (a note). A title longer than 60 characters is cut (library_rows has it whole). Fields with nothing to say are LEFT OUT: items (card/question count) only when the format has one; due (items due for review now) only when above 0; accuracy_pct (0-100) and last_studied (YYYY-MM-DD) only once studied; mine: false only on an item someone else owns. library_total is how many match in all; library_rows has every field. Absent unless library_state is "ready"; [] when nothing matches.`,
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 3000,
@@ -255,13 +255,12 @@ To narrow or re-sort what the person sees, use library_view (one object: search_
 export interface EducationLibraryListRow {
   id: string;
   title: string;
-  kind: string;
-  format: string | null;
-  items: number | null;
-  due: number;
-  accuracy_pct: number | null;
-  last_studied: string | null;
-  mine: boolean;
+  format: string;
+  items?: number;
+  due?: number;
+  accuracy_pct?: number;
+  last_studied?: string;
+  mine?: false;
 }
 
 /** One `library_rows` row — every field the list loads. */

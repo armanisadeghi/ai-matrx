@@ -40,6 +40,17 @@ describe("withSurfaceInlineCeiling", () => {
     });
   });
 
+  it("wraps a record that merely has a content field instead of mistaking it for an envelope", () => {
+    const record = { id: "g1", title: "Cells", content: "# Cells" };
+    expect(withSurfaceInlineCeiling(entry("record", record), record, "matrx-user/demo")).toEqual({
+      content: record,
+      type: "json",
+      label: "record",
+      description: "The note",
+      max_inline_chars: 10000,
+    });
+  });
+
   it("leaves undeclared values, agent-slot values and surface-less runs untouched", () => {
     expect(withSurfaceInlineCeiling(entry("plain", [1]), [1], "matrx-user/demo")).toEqual([1]);
     expect(withSurfaceInlineCeiling(entry("record", [1], true), [1], "matrx-user/demo")).toEqual([1]);

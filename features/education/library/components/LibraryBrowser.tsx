@@ -7,8 +7,10 @@ import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DeckCard } from "./DeckCard";
-import { listPublicDecks } from "../service";
+import { listPublicDecks, suggestDeckEdit } from "../service";
 import type { PublicDeck } from "../types";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
@@ -16,7 +18,6 @@ import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writebac
 import { EDUCATION_LIBRARY_COMMUNITY_SURFACE_NAME } from "@/features/surfaces/manifests/education-library-community.manifest";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { forkSharedResource } from "@/utils/permissions/shareLinks";
-import { suggestEditAction } from "../actions";
 import {
   buildCommunityLibraryScope,
   parseCopyDecksValue,
@@ -31,7 +32,7 @@ import {
 export function LibraryBrowser({
   initialDecks,
   isSuperAdmin,
-  isSignedIn,
+  isSignedIn: isSignedInOnServer,
   openSuggestionCount = 0,
 }: {
   initialDecks: PublicDeck[];
@@ -40,6 +41,12 @@ export function LibraryBrowser({
   /** Open suggestions on the viewer's own decks — the badge on the inbox door. */
   openSuggestionCount?: number;
 }) {
+  // The server's answer can blink to "signed out" when its identity check
+  // is briefly unavailable (seen live 2026-09-27: a signed-in admin lost the
+  // Suggest edit buttons and the suggestions door on one load). The client
+  // session is the second witness; either one means signed in.
+  const isSignedInOnClient = useAppSelector(selectIsAuthenticated);
+  const isSignedIn = isSignedInOnServer || isSignedInOnClient;
   const [decks, setDecks] = useState<PublicDeck[]>(initialDecks);
   const [search, setSearch] = useState("");
   const [certifiedOnly, setCertifiedOnly] = useState(false);
@@ -97,7 +104,8 @@ export function LibraryBrowser({
           if (!result.success || !result.path)
             throw new Error(result.error ?? "the copy could not be saved");
           const copyId = result.path.split("/").filter(Boolean).pop() ?? "";
-          return { id: copyId, name: `Copy of ${deck.name}` };
+          // The copy keeps the deck's name (same as the button's fork).
+          return { id: copyId, name: deck.name };
         },
         nameOf: (deck: PublicDeck) => deck.name,
         refusalFor: (e) =>
@@ -119,7 +127,7 @@ export function LibraryBrowser({
             parseCreateDeckSuggestionsValue(value, decks, isSignedIn),
           ),
         run: async (plan: { deck: PublicDeck; body: string }) => {
-          await suggestEditAction(plan.deck.id, plan.body);
+          await suggestDeckEdit(plan.deck.id, plan.body);
           return { id: plan.deck.id, name: `Suggestion on ${plan.deck.name}` };
         },
         nameOf: (plan: { deck: PublicDeck }) => `suggestion on ${plan.deck.name}`,
