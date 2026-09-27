@@ -13,12 +13,11 @@
 // loud which rule is in force. A person whose preference happens to be off
 // presses Return, watches nothing happen, and has no way to find out why.
 //
-// The deeper class is that the rule itself was written six times, three
+// The deeper class is that the rule itself was written several times, three
 // different ways:
 //
 //   • `AgentTextarea`          — honours the per-conversation preference
 //   • `CompactAssistantInput`  — honours it, minus the ⌘/Ctrl+Enter fallback
-//   • `NewChatLandingInput`    — IGNORES it; Enter always sends
 //   • `cx-chat` / `cx-conversation` — their own local, unpersisted toggle
 //   • `whatsapp-clone`         — hardcoded, with a decorative dead toggle
 //   • `ProTextarea`            — opt-in, defaulting to Enter-is-a-newline

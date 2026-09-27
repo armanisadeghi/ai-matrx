@@ -23,18 +23,25 @@ context rail); only the chrome is arranged differently.
 ## Entry points
 
 **The prop** — `SmartAgentInput` / `AgentConversationColumn.smartInputProps` → `composer?: ComposerPresentation`
-(`composer-types.ts`): `size`, `mode`, `agent.onSelectAgent(agentId, via?)`, `placeholder`, `maxInputHeightPx`.
-**Absent = the classic composer, byte-for-byte.** Every host that does not pass it is untouched.
+(`composer-types.ts`): `size`, `mode`, `agent.onSelectAgent(agentId, via?)`, `placeholder`, `maxInputHeightPx`,
+`textMenu` (the host's right-click agent menu over the draft — v3 `EditableContextMenu` props + a click-time
+`getApplicationScope(textarea)`). **Absent = the classic composer, byte-for-byte.** Every host that does not pass it is untouched.
+
+**Hosts today:** every `/chat` route (`ChatRoomClient` — `/chat/new` splash, conversations at page size; its
+`textMenu` is `chat/agent-context/chatComposerTextMenu.ts`) and the canvas workspace's docked/floating chat
+(compact, `features/canvas/workspace/`).
 
 **Where it threads** (each an additive optional prop, nothing else changed):
 - `SmartAgentInput` → `SmartAgentInputStacked` (composer branch; never the single-row/ambient path).
 - `InputActionButtons.composer` — the same send/stop/mic/+ elements, arranged per size.
 - `RunControlsMenu.composer` — desktop `+` opens `ComposerPlusMenu`; phones keep the bottom sheet, tabs filtered by mode.
-- `AgentTextarea.placeholder` / `.maxHeightPx` — literal placeholder; unexpanded cap (default 200).
+- `AgentTextarea.placeholder` / `.maxHeightPx` / `.textMenu` — literal placeholder; unexpanded cap (default 200);
+  the menu wraps the ONE textarea (`ComposerTextMenuFrame`), never a second one.
 - `ResourcePickerMenu.initialView` + `onExitInitialView` — open straight into one picker (the cascade).
 
 **Components** (this folder)
-- `ComposerModeSwitch` — Chat · Work · Advanced; `size="bar"` (top bar) or `"panel"` (chat panel header).
+- `ComposerModeSwitch` — Chat · Work · Advanced; `size="bar"` (top bar; below `sm` ONE button naming the mode
+  that opens the three, because the phone top bar has no room for three segments) or `"panel"` (chat panel header).
 - `ComposerAgentPill` — Chat: ★ presets · Custom (+ its model) · Manage chat agents. Work: agent + Change ·
   Recent · Model. Advanced: + Overrides · Advanced.
 - `ComposerPlusMenu` — the 300px cascading + menu; `ComposerEnvironmentPanel` (also the Cloud chip's menu).
@@ -42,7 +49,8 @@ context rail); only the chrome is arranged differently.
 - `ComposerChipsRow` — Work+: Cloud chip + this chat's connections.
 - `ComposerOutput` — Output pill/panel (Shapes + Let the agent decide).
 - `ComposerEffortPill`, `ComposerAutoPill`, `ComposerMenu` (the row primitives), `ComposerSplash`
-  (`ComposerGreeting`, `ComposerQuickActions`).
+  (`ComposerGreeting`, `ComposerQuickActions` with a `trailing(mandateKeys)` slot for the host's intelligence
+  icon, `ComposerQuickActionsSkeleton`). The quick-action row is absent with no active organization.
 
 **Hooks**
 - `useComposerMode(initialMode)` — the ONE mode reader/writer (tab-wide Redux `chatRoute.composerMode`).
@@ -105,6 +113,9 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 
 ## Change Log
 
+- **2026-09-27** — Plugged into every `/chat` route (splash on `/chat/new`, page size in conversations, header mode
+  switch); `textMenu` added (the retired `/chat/new` hero's right-click menu, now on every chat composer);
+  phone top bar = one mode button; `ComposerQuickActions.trailing` + `ComposerQuickActionsSkeleton`.
 - **2026-09-27** — Built: modes + knobs + cookie, three sizes, agent pill (presets/Custom/panel/Recent),
   cascading + menu, meta row, chips row, Output (Shapes), Effort, Auto, splash greeting + quick actions,
   phone tab filtering, `/demos/composer`; `chat-agent` seeded on three quick-start agents.

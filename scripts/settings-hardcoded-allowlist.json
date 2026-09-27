@@ -4549,10 +4549,6 @@
       "name": "CHAT_INITIAL_MESSAGE_LIMIT"
     },
     {
-      "file": "matrx-frontend/features/agents/components/chat/NewChatLandingInput.tsx",
-      "name": "MAX_TEXTAREA_HEIGHT"
-    },
-    {
       "file": "matrx-frontend/features/agents/components/chat/PinnedAgentsSection.tsx",
       "name": "PINNED_COLLAPSED_LIMIT"
     },

@@ -13,7 +13,13 @@
  * silent fallback.
  */
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { ChevronRight } from "lucide-react";
 import { isMandateKey, type MandateKey } from "@ai-matrx/agents/mandates";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -44,7 +50,10 @@ export function ComposerGreeting({ className }: { className?: string }) {
   );
   return (
     <div className={cn("flex items-center justify-center gap-3.5", className)}>
-      <span className="inline-block h-4 w-4 shrink-0 rounded-full bg-foreground" aria-hidden="true" />
+      <span
+        className="inline-block h-4 w-4 shrink-0 rounded-full bg-foreground"
+        aria-hidden="true"
+      />
       <h1 className="font-serif text-[clamp(2rem,1.6rem+1.8vw,2.875rem)] font-normal tracking-tight text-foreground">
         {greeting ?? "Hello"}
         {firstName ? `, ${firstName}` : ""}
@@ -69,7 +78,10 @@ function parseQuickActions(value: unknown): QuickActionEntry[] {
     if (typeof label === "string" && label.trim() && isMandateKey(key)) {
       entries.push({ label, mandateKey: key });
     } else {
-      console.error("[composer] a quick action in agents.chat_composer.quick_actions is not a {label, mandateKey} pair and is skipped:", item);
+      console.error(
+        "[composer] a quick action in agents.chat_composer.quick_actions is not a {label, mandateKey} pair and is skipped:",
+        item,
+      );
     }
   }
   return entries;
@@ -77,17 +89,22 @@ function parseQuickActions(value: unknown): QuickActionEntry[] {
 
 export function ComposerQuickActions({
   onLaunchAgent,
+  trailing,
   className,
 }: {
   /** Host decides what opening an agent means (the chat route stages + navigates). */
   onLaunchAgent: (agentId: string) => void;
+  /** Rendered after the row, given the jobs it lists (e.g. the host's intelligence icon). */
+  trailing?: (mandateKeys: readonly MandateKey[]) => ReactNode;
   className?: string;
 }) {
   const knob = useSessionKnob(COMPOSER_KNOBS.quickActions);
   // The list and every job it names resolve PER ORGANIZATION. With none active
   // yet there is nothing that could answer, so the row is absent (the org
   // chooser appears the moment the person acts) — never a pulse forever.
-  const organizationId = useAppSelector((state) => state.appContext?.organization_id ?? null);
+  const organizationId = useAppSelector(
+    (state) => state.appContext?.organization_id ?? null,
+  );
   const actions = parseQuickActions(knob);
   const mandates = useMandateSet(
     actions.map((a) => a.mandateKey),
@@ -99,7 +116,8 @@ export function ComposerQuickActions({
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return undefined;
-    const update = () => setCanScroll(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    const update = () =>
+      setCanScroll(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
     update();
     el.addEventListener("scroll", update, { passive: true });
     const observer = new ResizeObserver(update);
@@ -112,63 +130,81 @@ export function ComposerQuickActions({
 
   if (!organizationId) return null;
   if (knob === undefined) {
-    return (
-      <div className={cn("flex h-[34px] gap-2 overflow-hidden", className)} aria-busy="true" aria-label="Loading quick actions">
-        {[120, 104, 150, 132].map((w) => (
-          <span key={w} className="h-[34px] shrink-0 animate-pulse rounded-lg bg-muted" style={{ width: w }} />
-        ))}
-      </div>
-    );
+    return <ComposerQuickActionsSkeleton className={className} />;
   }
   if (actions.length === 0) return null;
 
   return (
-    <div className={cn("relative min-w-0", className)}>
-      <div
-        ref={scrollerRef}
-        className="flex min-w-0 flex-nowrap gap-2 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {actions.map((action) => {
-          const state = mandates[action.mandateKey];
-          const agentId = state?.mandate?.agentId ?? null;
-          const unavailable = Boolean(state && !state.loading && state.error);
-          return (
+    <div className={cn("flex min-w-0 items-center gap-2", className)}>
+      <div className="relative min-w-0 flex-1">
+        <div
+          ref={scrollerRef}
+          className="flex min-w-0 flex-nowrap gap-2 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {actions.map((action) => {
+            const state = mandates[action.mandateKey];
+            const agentId = state?.mandate?.agentId ?? null;
+            const unavailable = Boolean(state && !state.loading && state.error);
+            return (
+              <button
+                key={`${action.mandateKey}:${action.label}`}
+                type="button"
+                disabled={!agentId}
+                title={
+                  unavailable
+                    ? `"${action.label}" is not available yet — its agent has not been assigned (${action.mandateKey}).`
+                    : undefined
+                }
+                onClick={() => agentId && onLaunchAgent(agentId)}
+                className={cn(
+                  "inline-flex h-[34px] shrink-0 items-center whitespace-nowrap rounded-lg border border-border bg-card px-3 text-sm text-foreground/80 transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed",
+                  unavailable && "opacity-50",
+                )}
+              >
+                {action.label}
+              </button>
+            );
+          })}
+        </div>
+        {canScroll ? (
+          <>
+            <div
+              className="pointer-events-none absolute inset-y-0 right-0 w-[72px] bg-gradient-to-r from-transparent via-background/80 to-background"
+              aria-hidden="true"
+            />
             <button
-              key={`${action.mandateKey}:${action.label}`}
               type="button"
-              disabled={!agentId}
-              title={
-                unavailable
-                  ? `"${action.label}" is not available yet — its agent has not been assigned (${action.mandateKey}).`
-                  : undefined
+              onClick={() =>
+                scrollerRef.current?.scrollBy({ left: 240, behavior: "smooth" })
               }
-              onClick={() => agentId && onLaunchAgent(agentId)}
-              className={cn(
-                "inline-flex h-[34px] shrink-0 items-center whitespace-nowrap rounded-lg border border-border bg-card px-3 text-sm text-foreground/80 transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed",
-                unavailable && "opacity-50",
-              )}
+              className="absolute right-0 top-0 inline-flex h-[34px] w-[34px] items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground"
+              aria-label="More quick actions"
             >
-              {action.label}
+              <ChevronRight className="h-4 w-4" />
             </button>
-          );
-        })}
+          </>
+        ) : null}
       </div>
-      {canScroll ? (
-        <>
-          <div
-            className="pointer-events-none absolute inset-y-0 right-0 w-[72px] bg-gradient-to-r from-transparent via-background/80 to-background"
-            aria-hidden="true"
-          />
-          <button
-            type="button"
-            onClick={() => scrollerRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
-            className="absolute right-0 top-0 inline-flex h-[34px] w-[34px] items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground"
-            aria-label="More quick actions"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </>
-      ) : null}
+      {trailing?.(actions.map((a) => a.mandateKey))}
+    </div>
+  );
+}
+
+/** The quick-action row's footprint while its list loads. */
+export function ComposerQuickActionsSkeleton({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn("flex h-[34px] gap-2 overflow-hidden", className)}
+      aria-busy="true"
+      aria-label="Loading quick actions"
+    >
+      {[120, 104, 150, 132].map((w) => (
+        <span
+          key={w}
+          className="h-[34px] shrink-0 animate-pulse rounded-lg bg-muted"
+          style={{ width: w }}
+        />
+      ))}
     </div>
   );
 }
