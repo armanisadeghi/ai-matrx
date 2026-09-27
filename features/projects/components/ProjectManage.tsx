@@ -47,6 +47,7 @@ import { MemberManagement } from "./MemberManagement";
 import { InvitationManager } from "./InvitationManager";
 import { DangerZone } from "./DangerZone";
 import { ProjectCopyForAiButton } from "./ProjectCopyForAiButton";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -59,23 +60,39 @@ export function ProjectManage() {
   const [resolving, setResolving] = React.useState(true);
   const [orgSlug, setOrgSlug] = React.useState<string | null>(null);
 
+  // A failed project read is its own state (RC-B12 r13) — `getProject` used
+  // to answer null for a fault, which showed the access gate.
+  const [projectReadError, setProjectReadError] = React.useState<unknown>(null);
+  const [projectReadAttempt, setProjectReadAttempt] = React.useState(0);
+
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
       setResolving(true);
+      setProjectReadError(null);
       let resolved: Project | null = null;
-      if (UUID_RE.test(projectParam)) {
-        resolved = await getProject(projectParam);
-      } else {
-        const { data } = await workspaceDb(supabase)
-          .from("projects")
-          .select("id")
-          .is("deleted_at", null)
-          .eq("slug", projectParam)
-          .limit(1)
-          .maybeSingle();
-        const id = (data as { id?: string } | null)?.id;
-        if (id) resolved = await getProject(id);
+      try {
+        if (UUID_RE.test(projectParam)) {
+          resolved = await getProject(projectParam);
+        } else {
+          const { data, error: slugError } = await workspaceDb(supabase)
+            .from("projects")
+            .select("id")
+            .is("deleted_at", null)
+            .eq("slug", projectParam)
+            .limit(1)
+            .maybeSingle();
+          if (slugError) throw slugError;
+          const id = (data as { id?: string } | null)?.id;
+          if (id) resolved = await getProject(id);
+        }
+      } catch (err) {
+        console.error("[project page] project read failed:", err);
+        if (!cancelled) {
+          setProjectReadError(err ?? new Error("The project read failed"));
+          setResolving(false);
+        }
+        return;
       }
       if (cancelled) return;
       setProject(resolved);
@@ -92,7 +109,7 @@ export function ProjectManage() {
     return () => {
       cancelled = true;
     };
-  }, [projectParam]);
+  }, [projectParam, projectReadAttempt]);
 
   const {
     role,
@@ -101,6 +118,8 @@ export function ProjectManage() {
     canManageMembers,
     canManageSettings,
     canDelete,
+    error: roleError,
+    retry: retryRole,
   } = useProjectUserRole(project?.id);
   const { projects: siblingProjects } = useUserProjects();
 
@@ -118,6 +137,24 @@ export function ProjectManage() {
         <Center>
           <Loader2 className="h-7 w-7 animate-spin text-primary" />
         </Center>
+      </>
+    );
+  }
+
+  if (projectReadError != null || roleError != null) {
+    return (
+      <>
+        <RouteHeader
+          left={<ChevronLeftTapButton href="/projects" ariaLabel="Back" />}
+        />
+        <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
+          <ReadFailure
+            error={projectReadError ?? roleError}
+            what="this project"
+            onRetry={() => (projectReadError != null ? setProjectReadAttempt((n) => n + 1) : retryRole())}
+            size="default"
+          />
+        </div>
       </>
     );
   }

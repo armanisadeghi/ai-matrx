@@ -339,25 +339,45 @@ export function useProjectMemberOperations(projectId: string) {
 export function useProjectUserRole(projectId: string | undefined) {
   const [role, setRole] = useState<ProjectRole | null>(null);
   const [loading, setLoading] = useState(true);
+  // A failed role read is NOT "no role" (RC-B12 r13).
+  const [error, setError] = useState<unknown>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchRole = async () => {
       if (!projectId) {
         setRole(null);
+        setError(null);
         setLoading(false);
         return;
       }
       setLoading(true);
-      const userRole = await getProjectUserRole(projectId);
-      setRole(userRole);
-      setLoading(false);
+      setError(null);
+      try {
+        const userRole = await getProjectUserRole(projectId);
+        if (!cancelled) setRole(userRole);
+      } catch (err) {
+        if (!cancelled) {
+          setRole(null);
+          setError(err ?? new Error("The project role read failed"));
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
-    fetchRole();
-  }, [projectId]);
+    void fetchRole();
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, attempt]);
 
   return {
     role,
     loading,
+    /** The role read FAILED — `role: null` is then unknown, not "no access". */
+    error,
+    retry: () => setAttempt((n) => n + 1),
     isOwner: role === "owner",
     isAdmin: role === "admin" || role === "owner",
     canManageMembers: role === "admin" || role === "owner",
@@ -585,10 +605,14 @@ export function useProjectSlugAvailability(
     const timer = setTimeout(async () => {
       if (cancelled) return;
       setChecking(true);
+      // A check that could not run is unknown (null), never "taken".
       const isAvailable = await isProjectSlugAvailable(
         trimmedSlug,
         organizationId ?? null,
-      );
+      ).catch((err: unknown) => {
+        console.error("[useProjectSlugAvailability] check failed:", err);
+        return null;
+      });
       if (cancelled) return;
       setAvailable(isAvailable);
       setChecking(false);

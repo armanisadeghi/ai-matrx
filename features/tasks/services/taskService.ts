@@ -1,5 +1,6 @@
 // Task service for database operations
 import { supabase } from "@/utils/supabase/client";
+import { pgErrorToError } from "@ai-matrx/data";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
@@ -241,15 +242,13 @@ export async function getTopLevelProjectTasks(
       .is("parent_task_id", null)
       .order("created_at", { ascending: true });
 
-    if (error) {
-      console.error("Error fetching top-level project tasks:", error.message);
-      return [];
-    }
+    if (error) throw pgErrorToError(error);
 
     return data || [];
   } catch (error) {
+    // A failed read is not "no tasks" (RC-B12 r13).
     console.error("Exception fetching top-level project tasks:", error);
-    return [];
+    throw pgErrorToError(error);
   }
 }
 
@@ -289,10 +288,7 @@ export async function getTaskAttachments(
     const { data, error } = await supabase.rpc("get_task_associations", {
       p_task_id: taskId,
     });
-    if (error) {
-      console.error("Error fetching task attachments:", error.message);
-      return [];
-    }
+    if (error) throw pgErrorToError(error);
     // `get_task_associations` returns Json directly (no row schema to guard).
     const bundle: {
       files?: {
@@ -325,8 +321,9 @@ export async function getTaskAttachments(
       uploaded_at: f.created_at,
     }));
   } catch (error) {
+    // A failed read is not "no attachments" (RC-B12 r13).
     console.error("Exception fetching task attachments:", error);
-    return [];
+    throw pgErrorToError(error);
   }
 }
 
@@ -531,17 +528,15 @@ export async function getTaskById(
       .select("*")
       .is("deleted_at", null)
       .eq("id", taskId)
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      console.error("Error fetching task by ID:", error.message);
-      return null;
-    }
+    if (error) throw pgErrorToError(error);
 
+    // null = no row this person can read; a FAILED read throws (RC-B12 r13).
     return data;
   } catch (error) {
     console.error("Exception fetching task by ID:", error);
-    return null;
+    throw pgErrorToError(error);
   }
 }
 

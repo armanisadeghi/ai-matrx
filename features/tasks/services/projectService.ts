@@ -7,6 +7,7 @@
  * here any more (2026-09-17). For the richer org-scoped project surface, use
  * features/projects/service.ts instead.
  */
+import { pgErrorToError } from "@ai-matrx/data";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
@@ -100,17 +101,18 @@ export async function getUserProjects(): Promise<DatabaseProject[]> {
     const userId = requireUserId();
 
     // Memberships via the canonical store (RLS-safe).
+    // Every read here failing THROWS (RC-B12 r13): a failed membership read
+    // used to drop every shared project silently and list only "mine".
     const membersResult = await membershipsService.forUser("project");
     if (isScopesRpcErr(membersResult)) {
       console.error(
         "Error fetching project memberships:",
         membersResult.error.message,
       );
+      throw new Error(membersResult.error.message || "Could not read your project memberships");
     }
 
-    const memberProjectIds = isScopesRpcErr(membersResult)
-      ? []
-      : membersResult.data.memberships.map((m) => m.containerId);
+    const memberProjectIds = membersResult.data.memberships.map((m) => m.containerId);
 
     // Also fetch personal projects created by user that may not have members yet
     const ownerOnly = await scopeToOwner("project");
@@ -124,7 +126,7 @@ export async function getUserProjects(): Promise<DatabaseProject[]> {
 
     if (createdError) {
       console.error("Error fetching created projects:", createdError);
-      return [];
+      throw pgErrorToError(createdError);
     }
 
     // Merge without duplicates
@@ -144,13 +146,13 @@ export async function getUserProjects(): Promise<DatabaseProject[]> {
 
     if (error) {
       console.error("Error fetching projects:", error);
-      return [];
+      throw pgErrorToError(error);
     }
 
     return data ?? [];
   } catch (error) {
     console.error("Exception fetching projects:", error);
-    return [];
+    throw pgErrorToError(error);
   }
 }
 

@@ -106,7 +106,15 @@ export default function AcceptProjectInvitationPage() {
 
       // An invitee is not a member yet, so a null read here says nothing about
       // whether the project exists — only that we can't show its details.
-      const project = await getProject(invitationData.targetId);
+      let project: Awaited<ReturnType<typeof getProject>>;
+      try {
+        project = await getProject(invitationData.targetId);
+      } catch (err) {
+        setError(
+          `We couldn't load the details of the project this invitation is for: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return;
+      }
       if (!project) {
         setError("We couldn't load the details of the project this invitation is for.");
         return;

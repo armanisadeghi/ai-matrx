@@ -55,43 +55,37 @@ export interface TaskExportBundle {
 async function fetchNotesForProject(
   projectId: string,
 ): Promise<NoteExportRow[]> {
-  try {
-    const { data, error } = await supabase
-      .schema("workbench").from("notes")
-      .select("id, label, content, updated_at, task_id, project_id, tags")
-      .eq("project_id", projectId)
-      .is("deleted_at", null)
-      .order("updated_at", { ascending: false });
+  // A failed notes read fails the export (RC-B12 r13) — an export that silently
+  // drops the notes is a copy that lies about what the project holds.
+  const { data, error } = await supabase
+    .schema("workbench").from("notes")
+    .select("id, label, content, updated_at, task_id, project_id, tags")
+    .eq("project_id", projectId)
+    .is("deleted_at", null)
+    .order("updated_at", { ascending: false });
 
-    if (error) {
-      console.error("aiExportService: project notes", error.message);
-      return [];
-    }
-    return (data ?? []) as NoteExportRow[];
-  } catch (error) {
-    console.error("aiExportService: project notes exception", error);
-    return [];
+  if (error) {
+    console.error("aiExportService: project notes", error.message);
+    throw new Error(`Could not read the project notes: ${error.message}`);
   }
+  return (data ?? []) as NoteExportRow[];
 }
 
 async function fetchNotesForTask(taskId: string): Promise<NoteExportRow[]> {
-  try {
-    const { data, error } = await supabase
-      .schema("workbench").from("notes")
-      .select("id, label, content, updated_at, task_id, project_id, tags")
-      .eq("task_id", taskId)
-      .is("deleted_at", null)
-      .order("updated_at", { ascending: false });
+  // A failed notes read fails the export (RC-B12 r13) — an export that silently
+  // drops the notes is a copy that lies about what the task holds.
+  const { data, error } = await supabase
+    .schema("workbench").from("notes")
+    .select("id, label, content, updated_at, task_id, project_id, tags")
+    .eq("task_id", taskId)
+    .is("deleted_at", null)
+    .order("updated_at", { ascending: false });
 
-    if (error) {
-      console.error("aiExportService: task notes", error.message);
-      return [];
-    }
-    return (data ?? []) as NoteExportRow[];
-  } catch (error) {
-    console.error("aiExportService: task notes exception", error);
-    return [];
+  if (error) {
+    console.error("aiExportService: task notes", error.message);
+    throw new Error(`Could not read the task notes: ${error.message}`);
   }
+  return (data ?? []) as NoteExportRow[];
 }
 
 async function buildTaskExportNode(
@@ -203,10 +197,12 @@ export async function fetchTaskExportBundle(
     .eq("id", taskId)
     .maybeSingle();
 
-  if (error || !task) {
-    if (error) console.error("aiExportService: task", error.message);
-    return null;
+  if (error) {
+    // A failed read is not "no such task" (RC-B12 r13).
+    console.error("aiExportService: task", error.message);
+    throw new Error(`Could not read the task: ${error.message}`);
   }
+  if (!task) return null;
 
   const row = task as DatabaseTask;
   const [project, comments, attachments, notes, tree] = await Promise.all([

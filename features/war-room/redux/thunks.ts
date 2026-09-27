@@ -836,8 +836,17 @@ export const hydrateThreadTasks =
   (taskIds: string[]) => async (dispatch: AppDispatch) => {
     const unique = [...new Set(taskIds.filter((id): id is string => !!id))];
     if (unique.length === 0) return;
+    // A failed hydration read is said (toast + log), never silently absent
+    // (RC-B12 r13: getTaskById now throws on a failed read).
     const tasks = await Promise.all(
-      unique.map((id) => taskService.getTaskById(id)),
+      unique.map((id) =>
+        taskService.getTaskById(id).catch((err: unknown) => {
+          reportWarRoomError("hydrateThreadTasks", err, {
+            toast: "Couldn't load a task linked to this thread.",
+          });
+          return null;
+        }),
+      ),
     );
     for (const t of tasks) {
       if (t)
