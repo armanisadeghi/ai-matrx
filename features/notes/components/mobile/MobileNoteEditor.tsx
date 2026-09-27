@@ -511,7 +511,15 @@ export default function MobileNoteEditor({
 
         {/* Preview */}
         {effectiveMode === "preview" && (
-          <div className="min-h-[calc(100dvh-200px)] prose prose-sm dark:prose-invert max-w-none">
+          // The note is this content's record: its menu offers Attach To and
+          // Share for the note, as the desktop note's one menu does (R26).
+          <div
+            className="min-h-[calc(100dvh-200px)] prose prose-sm dark:prose-invert max-w-none"
+            data-entity-type="note"
+            data-entity-id={noteId}
+            data-entity-title={noteLabel || note.label}
+            data-entity-resource="note"
+          >
             {localContent.trim() ? (
               <RichDocument imagePolicy={authoredBy(note.created_by, editingActorId)}
                 content={localContent}
