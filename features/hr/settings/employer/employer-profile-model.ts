@@ -489,6 +489,10 @@ export type HrEmployerScopeInput = {
   profile: HrEmployerProfileRead | null;
   form: HrEmployerIdentityForm | null;
   establishments: HrEstablishment[] | null;
+  /** The jurisdictions an establishment may sit in; null until structure loads. */
+  jurisdictions?: ReadonlyArray<{ id: string; name: string; jurisdiction_key: string; level?: string }> | null;
+  /** The establishment dialog, when open. */
+  establishmentEditor?: { mode: "create" | "edit"; id: string | null; input: HrEstablishmentInput } | null;
 };
 
 /** The one XML bundle an agent reads up front. */
@@ -599,6 +603,24 @@ export function buildHrEmployerScope(input: HrEmployerScopeInput): Record<string
       annual_average_employees: row.annual_average_employees,
     }));
     scope.establishment_count = input.establishments.length;
+  }
+  if (input.jurisdictions) {
+    scope.establishment_jurisdictions = input.jurisdictions.map((j) => ({
+      id: j.id,
+      key: j.jurisdiction_key,
+      name: j.name,
+      level: j.level ?? null,
+    }));
+  }
+  if (input.establishmentEditor) {
+    const e = input.establishmentEditor;
+    scope.establishment_draft = {
+      mode: e.mode,
+      id: e.id,
+      ...establishmentPayload(e.input),
+      jurisdiction:
+        input.jurisdictions?.find((j) => j.id === e.input.jurisdiction_id)?.name ?? null,
+    };
   }
   if (input.loadStatus === "loaded") {
     scope.tax_registrations_status =
