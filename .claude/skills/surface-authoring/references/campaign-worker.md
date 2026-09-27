@@ -71,6 +71,8 @@ returning name;
 
 ## 2. Build one surface
 
+0. **Read what agents already said about it:** `pnpm surface:feedback --surface <name>`, then run
+   the printed SQL through the Supabase MCP. Fix what they report, or say why not in your report.
 1. **Completeness pass from the components, not from the manifest.**
    - Many manifests were declared from a code read and never audited, so expect wrong descriptions.
    - Read every component each route renders, and list what it loads: fields, their natural
@@ -115,6 +117,14 @@ returning name;
      classes with no settings or owner). Worked example: `education-classes.manifest.ts`, its
      validation `features/education/classes/classAgentWrites.ts`, its handlers in
      `ClassesHome.tsx` (list) and `ClassFormDialog.tsx` (dialog).
+   - **Record lists get full CRUD over lists, one set per record type** (`create_/update_/
+     delete_<plural>`, plus `<record>_draft` for a "New" dialog), built with
+     `collectionWriteHandlers`. The rules, the `{ validate, apply }` handler shape and the live
+     test are in `.claude/skills/surface-write-targets/SKILL.md` Steps 0-4 — read it before
+     declaring any target.
+   - **Never set `inlineUpTo`** (how much an agent sees up front) — pending Arman's policy. Do
+     write a guide (`features/surfaces/guides/<slug>.md` + manifest `guide`) for any page with more
+     than one record type or rules the descriptions can't hold.
    - **Every write handler** calls the page's OWN save/create function (never a parallel path),
      validates the WHOLE value before changing anything, and throws a sentence the agent can act
      on. A list target also refuses names repeated in the list or already present, and on a

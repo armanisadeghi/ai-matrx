@@ -270,7 +270,8 @@ async function buildSurfaceWriteInlineSpec(
           type: "string",
           description:
             "Optional: the surface the target is on (the name after `on` in " +
-            "its line). Only needed when two open screens list the same target.",
+            "its line). Only needed when two open screens list the same target, " +
+            "or to file `surface_feedback` for an open surface other than the one its line names.",
         },
         value: {
           type: ["string", "number", "boolean", "array", "object", "null"],

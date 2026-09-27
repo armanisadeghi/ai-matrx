@@ -139,7 +139,7 @@ export const PLATFORM_CONTEXT_VALUES = {
 /** Names only the platform writes — a manifest declaring one is refused. */
 export const PLATFORM_RESERVED_NAMES = {
   values: Object.keys(PLATFORM_CONTEXT_VALUES) as ReadonlyArray<string>,
-  writeTargets: ["window_form_fields"] as ReadonlyArray<string>,
+  writeTargets: ["window_form_fields", "surface_feedback"] as ReadonlyArray<string>,
 };
 
 export type BaselineKey = keyof typeof BASELINE_VALUES;

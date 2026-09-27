@@ -224,6 +224,7 @@ export const educationClassesManifest: SurfaceManifest = {
     "new_class_draft and create_classes proven with live agent runs on production 2026-09-26 (dialog filled in one approval; three classes created with full settings and owner memberships). update_classes, delete_classes and archived_classes added 2026-09-27 with unit-tested validation; not yet proven in a live agent run. Not yet stamped verified: no structured target names a valueKind (the handlers validate by hand), and no data-surface-value Locate anchors are tagged.",
   label: "My Classes",
   urlPattern: "/education/classes",
+  guide: "features/surfaces/guides/education-classes.md",
   intro: `<surface_intro>
 You are on My Classes at /education/classes. A class gathers one course's study material and exam dates; owned_classes lists the person's own active classes, archived_classes the ones they archived, and joined_classes the ones they joined.
 

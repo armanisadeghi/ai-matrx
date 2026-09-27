@@ -49,6 +49,7 @@
  *   1  at least one check failed
  *   2  unexpected import / runtime error
  */
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { isGeneratedKindSlug } from "../features/content-ir/kinds/generated/kinds.generated";
@@ -147,6 +148,19 @@ async function main() {
   const errors = issues
     .filter((i) => i.severity !== "advisory")
     .map((i) => `${i.sentence} Fix: ${i.remedy}`);
+  // A declared surface guide must exist and have content — manifest sync
+  // upserts it as a platform skill and points the stored intro at it.
+  for (const m of mod.ALL_MANIFESTS as ReadonlyArray<{
+    surfaceName: string;
+    guide?: string;
+  }>) {
+    if (!m.guide) continue;
+    const path = resolve(__dirname, "..", m.guide);
+    if (!existsSync(path) || readFileSync(path, "utf8").trim() === "")
+      errors.push(
+        `Surface "${m.surfaceName}" declares guide "${m.guide}" but the file is missing or empty. Fix: write the guide or drop the field.`,
+      );
+  }
   const structuredWithoutKind = issues
     .filter((i) => i.severity === "advisory" && i.path.endsWith("/valueKind"))
     .map((i) => `${i.surfaceName}:${i.path.split("/")[1]}`);

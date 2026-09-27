@@ -31,6 +31,10 @@ import type {
   SurfaceManifest,
 } from "@/features/surfaces/types";
 import { resolveSurfaceUrlPattern } from "@/features/surfaces/utils/surface-url-pattern";
+import {
+  introWithGuidePointer,
+  surfaceGuidePath,
+} from "@/features/surfaces/utils/surface-guide";
 
 /**
  * Which `ui` schema generation is live. Flip each flag in the SAME commit that
@@ -200,9 +204,37 @@ export const clientToolsExtension: DeclarationExtension<Manifest> = {
     })),
 };
 
+/**
+ * Agent-facing hints the package does not know: a value's inline ceiling
+ * (`inlineUpTo` → `ui_surface_value.max_inline_chars`) and the surface's
+ * runtime guide (`guide` → platform skill + intro pointer). Validate-only; the
+ * rows are added by `planManifestSync` (`withAgentHints`).
+ */
+export const agentHintsExtension: DeclarationExtension<Manifest> = {
+  key: "agentHints",
+  owner: "matrx-frontend agents (features/surfaces/declare)",
+  validate(m) {
+    const s = m.surfaceName;
+    const out: DeclarationIssue[] = [];
+    for (const v of m.values) {
+      const n = (v as { inlineUpTo?: unknown }).inlineUpTo;
+      if (n === undefined) continue;
+      if (typeof n !== "number" || !Number.isInteger(n) || n < 1)
+        out.push(issue(s, `values/${v.name}/inlineUpTo`, `Surface "${s}" value "${v.name}" has inlineUpTo ${JSON.stringify(n)} — it must be a positive integer (chars).`, "Use a positive integer, or omit it for the platform default (200)."));
+    }
+    if (m.guide !== undefined) {
+      const expected = surfaceGuidePath(s);
+      if (m.guide !== expected)
+        out.push(issue(s, "guide", `Surface "${s}" guide is "${m.guide}" — the convention is "${expected}" (the skill id is derived from the surface name).`, `Move the guide to ${expected}.`));
+    }
+    return out;
+  },
+};
+
 export const SURFACE_DECLARATION_EXTENSIONS = [
   agentRolesExtension,
   clientToolsExtension,
+  agentHintsExtension,
 ] as const;
 
 /**
@@ -242,10 +274,52 @@ export function planManifestSync(
   manifests: readonly Resolved<Manifest>[],
   options: { organizationId: string; syncedFrom: string; syncedBy?: string | null },
 ): SurfaceSyncPlan {
-  return planSurfaceSync(manifests, {
+  const plan = planSurfaceSync(manifests, {
     ...options,
     schema: SYNC_SCHEMA,
     extensions: SURFACE_DECLARATION_EXTENSIONS,
     resolveUrlPattern: (m) => resolveSurfaceUrlPattern(m) ?? undefined,
   });
+  return withAgentHints(plan, manifests);
+}
+
+/**
+ * The app columns the package plan does not carry yet, added to the ONE plan so
+ * every sync path (SQL emitter, direct sync, admin sync, `--check`) writes and
+ * compares them identically:
+ *   - `ui_surface_value.max_inline_chars` ← `SurfaceValue.inlineUpTo` on every
+ *     screen-value row (NULL = platform default; item-type values are NULL);
+ *   - `ui_surface.intro` gains the guide pointer line when `guide` is set.
+ */
+export function withAgentHints(
+  plan: SurfaceSyncPlan,
+  manifests: readonly Resolved<Manifest>[],
+): SurfaceSyncPlan {
+  const bySurface = new Map(manifests.map((m) => [m.surfaceName, m]));
+  const surfaces = plan.surfaces.map((row) => {
+    const m = bySurface.get(row.name);
+    if (!m?.guide) return row;
+    const intro = introWithGuidePointer(m.intro, m.surfaceName);
+    return {
+      ...row,
+      insert: { ...row.insert, intro },
+      update: { ...row.update, intro },
+    };
+  });
+  const tables = plan.tables.map((table) => {
+    if (table.table !== "ui.ui_surface_value") return table;
+    return {
+      ...table,
+      rows: table.rows.map((row) => {
+        const m = bySurface.get(String(row.surface_name));
+        const screen = !row.item_type;
+        const value = screen
+          ? m?.values.find((v) => v.name === row.name)
+          : undefined;
+        const ceiling = (value as { inlineUpTo?: number } | undefined)?.inlineUpTo;
+        return { ...row, max_inline_chars: ceiling ?? null };
+      }),
+    };
+  });
+  return { ...plan, surfaces, tables };
 }

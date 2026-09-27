@@ -142,6 +142,18 @@ names the page and lists its live values. His review inbox gets one row per fini
       2026-09-26 21:39 UTC) and the three type-level context items are test debris. The person
       decides whether to delete them.
 
+12. **UNVERIFIED — how the server decides which surface values an agent sees in full.**
+    - **Seen (2026-09-27, /education/classes):** an agent fetched `owned_classes` (~1,500 chars)
+      with the `context` tool four times instead of seeing it up front.
+    - **Not known:** how the live server decides inline vs lookup for SURFACE values, and whether
+      an existing mechanism already covers this. Nobody in this session has read that server code;
+      an earlier version of this item called it a server bug without evidence.
+    - **Parked, pending Arman's inline policy:** the `inlineUpTo` manifest field / column
+      `ui.ui_surface_value.max_inline_chars` added 2026-09-27, and its values on the classes
+      manifest. Do not set it on other surfaces. First step for whoever owns the server: say how
+      surface values are inlined today, so the policy builds on the existing mechanism instead of
+      a second one.
+
 ## Resources
 
 - Worker brief: `.claude/skills/surface-authoring/references/campaign-worker.md`

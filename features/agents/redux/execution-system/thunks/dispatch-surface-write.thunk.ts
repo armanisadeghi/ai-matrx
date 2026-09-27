@@ -175,6 +175,9 @@ export const dispatchSurfaceWrite = createAsyncThunk<
         ...surfaceArg,
         origin: "agent",
         actorLabel,
+        // Provenance for the platform `surface_feedback` target's row.
+        conversationId,
+        ...(agentId ? { agentId } : {}),
         requestApproval: async (proposal) => {
           // THE CARD IS BUILT BY THE SHARED PRIMITIVE, never inline here: a
           // structured value travels as DATA and is rendered by the kind

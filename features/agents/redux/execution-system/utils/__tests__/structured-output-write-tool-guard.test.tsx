@@ -291,7 +291,9 @@ describe("structured-output agents never receive the page's write tools", () => 
     expect(toolNames(result)).not.toContain(CLIENT_TOOL.name);
   });
 
-  it("does not pay for the by-id read on a surface with nothing to withhold", async () => {
+  it("a surface that declares no targets still offers only the platform surface_feedback target", async () => {
+    // Every mounted surface offers `surface_feedback`, so the output contract
+    // is resolved here too: a structured-output agent must not get it either.
     mockGetManifest.mockReturnValue({});
     const state = makeState({
       conversationId: "conv-no-targets",
@@ -300,7 +302,16 @@ describe("structured-output agents never receive the page's write tools", () => 
 
     const result = await buildToolInjection(state, "conv-no-targets");
 
-    expect(toolNames(result)).not.toContain("apply_surface_write");
-    expect(mockSelectIn).not.toHaveBeenCalled();
+    const write = (result.tools ?? []).find(
+      (spec) => spec.kind === "inline" && spec.name === "apply_surface_write",
+    );
+    expect(write?.kind).toBe("inline");
+    const properties =
+      write?.kind === "inline"
+        ? (write.input_schema as { properties: { target: { enum: string[] } } })
+            .properties
+        : undefined;
+    expect(properties?.target.enum).toEqual(["surface_feedback"]);
+    expect(mockSelectIn).toHaveBeenCalledWith(["agent-no-targets"]);
   });
 });

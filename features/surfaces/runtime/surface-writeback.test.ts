@@ -305,8 +305,9 @@ describe("agent write-target offer", () => {
       1,
     );
 
+    // `surface_feedback` is the platform target every mounted surface offers.
     expect(listAgentWritableTargets().map((entry) => entry.target.name)).toEqual(
-      ["rule_draft"],
+      ["rule_draft", "surface_feedback"],
     );
     expect(listUnwiredAgentTargets()).toEqual([]);
     unregister();
@@ -319,7 +320,10 @@ describe("agent write-target offer", () => {
       1,
     );
 
-    expect(listAgentWritableTargets()).toEqual([]);
+    // Only the platform feedback target remains — the unwired one is dropped.
+    expect(listAgentWritableTargets().map((entry) => entry.target.name)).toEqual(
+      ["surface_feedback"],
+    );
     expect(
       listUnwiredAgentTargets().map((entry) => entry.target.name),
     ).toEqual(["rule_draft"]);

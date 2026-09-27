@@ -125,6 +125,11 @@ function dbRowToSurfaceValue(row: UiSurfaceValueRow): SyncSurfaceValue {
     autoContext: row.auto_context,
     sortOrder: row.sort_order,
     groupKey: row.group_key,
+    // `max_inline_chars` (2026-09-27) is not in the generated types yet;
+    // `select("*")` returns it. NULL = platform default = `inlineUpTo` omitted.
+    inlineUpTo:
+      (row as UiSurfaceValueRow & { max_inline_chars?: number | null })
+        .max_inline_chars ?? undefined,
   };
 }
 
@@ -142,7 +147,7 @@ function diffSurfaceValue(
     "sortOrder",
     "groupKey",
   ];
-  keys.push("autoContext");
+  keys.push("autoContext", "inlineUpTo");
   for (const k of keys) {
     const m = manifest[k];
     const d = db[k];
@@ -165,6 +170,12 @@ function diffSurfaceValue(
       const mb = (m ?? true) as boolean;
       const db_ = (d ?? true) as boolean;
       if (mb !== db_) diff[k] = { manifest: mb, db: db_ };
+      continue;
+    }
+    // inlineUpTo: omitted in code and NULL in the DB both mean the default.
+    if (k === "inlineUpTo") {
+      if ((m ?? null) !== (d ?? null))
+        diff[k] = { manifest: m ?? null, db: d ?? null };
       continue;
     }
     if (m !== d) diff[k] = { manifest: m, db: d };
