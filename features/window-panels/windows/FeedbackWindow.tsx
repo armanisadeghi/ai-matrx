@@ -20,6 +20,7 @@ import {
   PenLine,
   Plus,
   Send,
+  Upload,
   Settings2,
   X,
     KeyRound,
@@ -36,10 +37,6 @@ import {
 import { submitFeedback, getUserFeedback } from "@/actions/feedback.actions";
 import { MediaAttachmentThumbnail } from "@/features/files/components/inline/MediaAttachmentThumbnail";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import {
-  FileUploadWithStorage,
-  type UploadedFileResult,
-} from "@/components/ui/file-upload/FileUploadWithStorage";
 import {
   FEEDBACK_TYPES,
   type FeedbackType,
@@ -105,14 +102,39 @@ interface FeedbackStats {
  */
 const FEEDBACK_TYPE_CHIPS: Record<
   FeedbackType,
-  { label: string; icon: typeof Bug }
+  { label: string; icon: typeof Bug; placeholder: string }
 > = {
-  bug: { label: "Bug", icon: Bug },
-  feature: { label: "Feature", icon: Lightbulb },
-  suggestion: { label: "Suggestion", icon: MessageSquare },
-  other: { label: "Other", icon: HelpCircle },
-  request: { label: "Access", icon: KeyRound },
+  bug: {
+    label: "Bug",
+    icon: Bug,
+    placeholder: "What went wrong, and what did you expect to happen?",
+  },
+  feature: {
+    label: "Feature",
+    icon: Lightbulb,
+    placeholder: "What should AI Matrx do that it can't today?",
+  },
+  suggestion: {
+    label: "Suggestion",
+    icon: MessageSquare,
+    placeholder: "What would make this better?",
+  },
+  other: { label: "Other", icon: HelpCircle, placeholder: "Tell us anything." },
+  request: {
+    label: "Access",
+    icon: KeyRound,
+    placeholder:
+      "Ask for access: which page, feature or record do you need, and why?",
+  },
 };
+
+/** ⌘ on Apple keyboards, Ctrl elsewhere. */
+function modifierKeyLabel(): string {
+  if (typeof navigator === "undefined") return "Ctrl";
+  return /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent)
+    ? "⌘"
+    : "Ctrl";
+}
 
 // ─── Agent prompt builder ─────────────────────────────────────────────────────
 
@@ -201,12 +223,16 @@ export function FeedbackWindow({
         minWidth={380}
         minHeight={320}
         width={480}
-        height={500}
+        height={452}
+        position="top-right"
+        mobileSizeToContent
         urlSyncKey="feedback"
         urlSyncId="default"
         className="feedback-window-panel"
         overlayId="feedbackDialog"
         surfaceLayer={FEEDBACK_SURFACE_NAME}
+        // "rich": the compact bar crushed Cancel/Submit to 20px.
+        footerVariant="rich"
         bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
         // Footer only exists for the form view — the success view replaces the
         // whole body and carries its own action tiles.
@@ -229,7 +255,7 @@ export function FeedbackWindow({
 function FeedbackFooterLeft({ form }: { form: FeedbackFormState }) {
   if (!form.isSlowConnection) return null;
   return (
-    <span className="text-amber-500 leading-snug">
+    <span className="px-3 text-xs text-amber-600 dark:text-amber-400 leading-snug">
       Still trying… slow connection. Cancel to keep your text.
     </span>
   );
@@ -239,18 +265,16 @@ function FeedbackFooterRight({ form }: { form: FeedbackFormState }) {
   const { isSubmitting, description, cancelSubmit, onClose, handleSubmit } =
     form;
   return (
-    <div className="matrx-touch-targets flex items-center gap-1.5">
+    <div className="matrx-touch-targets flex items-center gap-2 px-3 py-2">
       <Button
         type="button"
         variant="outline"
-        size="sm"
         onClick={isSubmitting ? cancelSubmit : onClose}
       >
         Cancel
       </Button>
       <Button
         type="button"
-        size="sm"
         onClick={handleSubmit}
         disabled={!description.trim() || isSubmitting}
       >
@@ -269,6 +293,26 @@ type FeedbackFormState = ReturnType<typeof useFeedbackForm>;
 
 function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: FeedbackSubject }) {
   const pathname = usePathname();
+  // What the person SEES: the page's own name (its tab title, before the
+  // " — AI Matrx" suffix) and the address bar — never the app-internal route
+  // (`/agents` rewrites to `/agents/all`). Re-read on every navigation; the
+  // title settles a moment after the route changes.
+  const [where, setWhere] = useState<{ page: string; address: string }>({
+    page: "",
+    address: pathname ?? "",
+  });
+  useEffect(() => {
+    const read = () => {
+      const page = document.title.split(/\s+[—|-]\s+/)[0]?.trim() ?? "";
+      setWhere({
+        page: page && page !== "AI Matrx" ? page : "",
+        address: window.location.pathname + window.location.search,
+      });
+    };
+    read();
+    const settle = window.setTimeout(read, 600);
+    return () => window.clearTimeout(settle);
+  }, [pathname]);
   const reduxUser = useAppSelector(selectUser);
   const isAdmin = useAppSelector(selectIsAdmin);
   // The organization the report is filed in — a Server Action carries no
@@ -387,7 +431,8 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
 
   // Add a pending slot and return its id
   const addPendingSlot = useCallback((): string => {
-    const id = `capture-${Date.now()}`;
+    // Unique per slot: several files chosen at once land in the same ms.
+    const id = `attachment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     setAttachments((prev) => [...prev, { status: "pending", id }]);
     return id;
   }, []);
@@ -414,10 +459,10 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     [],
   );
 
-  const errorSlot = useCallback((id: string, message: string) => {
-    setAttachments((prev) =>
-      prev.map((a) => (a.id === id ? { status: "error", id, message } : a)),
-    );
+  // A failed capture/upload REMOVES its tile — the toast beside it names the
+  // reason. A broken red thumbnail left in the form was a dead end.
+  const errorSlot = useCallback((id: string, _message: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
   }, []);
 
   const uploadFile = useCallback(
@@ -546,18 +591,16 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     return () => document.removeEventListener("paste", handler);
   }, [uploadPastedImage]);
 
-  const handleUploadComplete = useCallback((results: UploadedFileResult[]) => {
-    setAttachments((prev) => [
-      ...prev,
-      ...results.map((r) => ({
-        status: "ready" as const,
-        id: `upload-${Date.now()}-${Math.random()}`,
-        url: r.url,
-        fileId: r.fileId,
-        filename: r.details?.filename,
-      })),
-    ]);
-  }, []);
+  // Files chosen with "Upload" or dropped on the form go through the SAME
+  // upload + tile path as a capture (one pipeline, one tile per file).
+  const handleFilesChosen = useCallback(
+    (files: FileList | File[] | null) => {
+      for (const file of Array.from(files ?? [])) {
+        void uploadFile(file, addPendingSlot());
+      }
+    },
+    [uploadFile, addPendingSlot],
+  );
 
   const removeAttachment = useCallback((id: string) => {
     setAttachments((prev) => prev.filter((a) => a.id !== id));
@@ -679,7 +722,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     const result = await Promise.race([
       submitFeedback({
         feedback_type: feedbackType,
-        route: pathname,
+        route: where.address,
         // The organization the person is acting in — a Server Action carries
         // no header, so the selection travels as an argument.
         organization_id: organizationId,
@@ -734,7 +777,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
   }, [
     description,
     feedbackType,
-    pathname,
+    where.address,
     isSubmitting,
     uploadedImageFileIds,
     isAdmin,
@@ -765,7 +808,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     () =>
       createFeedbackScope({
         feedback_type: feedbackType,
-        route: pathname,
+        route: where.address,
         content: description,
         attachment_count: attachments.length,
         submitted,
@@ -778,7 +821,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
       }),
     [
       feedbackType,
-      pathname,
+      where.address,
       description,
       attachments.length,
       submitted,
@@ -865,6 +908,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     subject,
     // routing / identity
     pathname,
+    where,
     reduxUser,
     isAdmin,
     onClose,
@@ -906,7 +950,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     handlePasteButton,
     handleTabCapture,
     handleScreenCapture,
-    handleUploadComplete,
+    handleFilesChosen,
     annotateAttachment,
     removeAttachment,
     cancelSubmit,
@@ -923,7 +967,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
 
 function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
   const {
-    pathname,
+    where,
     reduxUser,
     isAdmin,
     onClose,
@@ -956,14 +1000,22 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
     handlePasteButton,
     handleTabCapture,
     handleScreenCapture,
-    handleUploadComplete,
     annotateAttachment,
     removeAttachment,
     handleSubmit,
     handleKeyDown,
     handleCopyForAgent,
     handleReset,
+    handleFilesChosen,
   } = form;
+
+  // A new tile is scrolled into view — it used to land under the footer.
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const tilesRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (attachments.length > 0)
+      tilesRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [attachments.length]);
 
   // ── Submitted state ───────────────────────────────────────────────────────
   if (submitted) {
@@ -1056,7 +1108,15 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
 
       {/* Where the report is filed from — sent with it. */}
       <p className="text-xs text-muted-foreground">
-        Filed from <span className="text-foreground">{pathname}</span>
+        Filed from{" "}
+        {where.page ? (
+          <>
+            <span className="text-foreground">{where.page}</span>{" "}
+            <span className="text-muted-foreground">({where.address})</span>
+          </>
+        ) : (
+          <span className="text-foreground">{where.address}</span>
+        )}
       </p>
 
       {form.subject ? (
@@ -1091,7 +1151,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             surfaceName={FEEDBACK_SURFACE_NAME}
             getApplicationScope={getApplicationScope}
             className="w-full h-28 px-3 py-2 text-base leading-relaxed text-foreground bg-muted/40 border border-border rounded-lg outline-none resize-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:bg-background"
-            placeholder="Describe the issue, feature request, or suggestion…"
+            placeholder={FEEDBACK_TYPE_CHIPS[feedbackType].placeholder}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -1116,8 +1176,9 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             This browser is not keeping drafts — your text is lost if the window closes.
           </p>
         ) : null}
-        <p className="text-[10px] text-muted-foreground pointer-coarse:hidden">
-          Ctrl+Enter to submit · Ctrl+V to paste screenshots
+        <p className="text-xs text-muted-foreground pointer-coarse:hidden">
+          {modifierKeyLabel()}+Enter to submit · {modifierKeyLabel()}+V to paste
+          a screenshot
         </p>
       </div>
 
@@ -1207,23 +1268,46 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
         </div>
       )}
 
-      {/* Screenshots */}
-      <div className="space-y-1.5">
+      {/* Screenshots — upload, paste, capture, or drop files here. */}
+      <div
+        className="space-y-1.5"
+        onDragOver={(e) => {
+          if (e.dataTransfer.types.includes("Files")) e.preventDefault();
+        }}
+        onDrop={(e) => {
+          if (!e.dataTransfer.files.length) return;
+          e.preventDefault();
+          handleFilesChosen(e.dataTransfer.files);
+        }}
+      >
         <p className="text-xs font-medium text-muted-foreground">
           Screenshots <span className="font-normal opacity-60">(optional)</span>
         </p>
 
-        <FileUploadWithStorage
-          folderRoot="userContent"
-          path="feedback-images"
-          saveTo="public"
-          onUploadComplete={handleUploadComplete}
+        <input
+          ref={fileInputRef}
+          type="file"
           multiple
-          useMiniUploader
-          maxHeight="120px"
+          accept="image/*,video/*,application/pdf"
+          className="hidden"
+          aria-hidden="true"
+          tabIndex={-1}
+          onChange={(e) => {
+            handleFilesChosen(e.target.files);
+            e.target.value = "";
+          }}
         />
-
         <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isSubmitting}
+          >
+            <Upload />
+            Upload
+          </Button>
           <Button
             type="button"
             variant="outline"
@@ -1267,7 +1351,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
           </p>
         )}
         {attachments.length > 0 && (
-          <div className="flex flex-wrap gap-2 pt-1">
+          <div ref={tilesRef} className="flex flex-wrap gap-2 pt-1 scroll-mb-3">
             {attachments.map((slot) => (
               <MediaAttachmentThumbnail
                 key={slot.id}
