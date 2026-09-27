@@ -104,6 +104,9 @@ function ChatBody({ tileId, source, title, onSource }: ItemBodyProps) {
   );
 }
 
+/** Stable empty list: `agentIds: []` = every conversation the person can open. */
+const ALL_AGENTS: string[] = [];
+
 function ChatPicker({ onPick, onCancel }: PickerProps) {
   const [mode, setMode] = useState<"conversations" | "agent">("conversations");
   return (
@@ -136,7 +139,7 @@ function ChatPicker({ onPick, onCancel }: PickerProps) {
           <ConversationHistorySidebar
             variant="dense"
             scopeId="spatial-board-chat-picker"
-            agentIds={[]}
+            agentIds={ALL_AGENTS}
             surfaceId="conversation-picker"
             onOpenConversation={(conv) =>
               onPick([

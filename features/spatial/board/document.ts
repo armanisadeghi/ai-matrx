@@ -15,6 +15,7 @@
  */
 
 import type { Camera, Rect } from "../engine/camera";
+import type { BoardShape, ShapeKind } from "./useBoard";
 
 export type NodeSource =
   /** A live or finished agent run, by request id. */
@@ -67,7 +68,11 @@ export interface BoardDocument {
   nodes: BoardNode[];
   groups: BoardGroup[];
   edges: BoardEdge[];
+  /** Drawn marks (rect, oval, arrow, line, pen). */
+  shapes: BoardShape[];
 }
+
+const SHAPE_KINDS: readonly ShapeKind[] = ["rect", "oval", "arrow", "line", "pen"];
 
 /** Validate a stored document at the read boundary. Anything malformed is
  * REPORTED (with the node that failed), never silently dropped. */
@@ -81,7 +86,15 @@ export function parseBoardDocument(raw: {
   if (!isCamera(raw.camera)) problems.push("camera was not {x,y,z}; reset to the default view");
   const nodes: BoardNode[] = [];
   const groups: BoardGroup[] = [];
+  const shapes: BoardShape[] = [];
   for (const [i, n] of (Array.isArray(raw.nodes) ? raw.nodes : []).entries()) {
+    if (isObject(n) && n.shape === true) {
+      const kind = SHAPE_KINDS.find((k) => k === n.kind);
+      const points = Array.isArray(n.points) ? n.points.filter(isPoint) : [];
+      if (typeof n.id === "string" && kind && points.length >= 2) shapes.push({ id: n.id, kind, points });
+      else problems.push(`shape ${i} is missing id, kind or points`);
+      continue;
+    }
     if (!isObject(n) || typeof n.id !== "string" || !isRect(n.rect) || typeof n.title !== "string") {
       problems.push(`node ${i} is missing id, rect or title`);
       continue;
@@ -103,15 +116,17 @@ export function parseBoardDocument(raw: {
       edges.push({ id: e.id, from: e.from, to: e.to });
     } else problems.push("an edge is missing id, from or to");
   }
-  return { doc: { camera, nodes, groups, edges }, problems };
+  return { doc: { camera, nodes, groups, edges, shapes }, problems };
 }
 
-/** The column values to store. Groups ride in `nodes` flagged `group: true`. */
+/** The column values to store. Groups and shapes ride in `nodes`, flagged
+ * `group: true` / `shape: true`. */
 export function serializeBoardDocument(doc: BoardDocument) {
   return {
     camera: doc.camera,
     nodes: [
       ...doc.groups.map((g) => ({ id: g.id, rect: g.rect, title: g.title, note: g.note, group: true })),
+      ...doc.shapes.map((sh) => ({ id: sh.id, kind: sh.kind, points: sh.points, shape: true })),
       ...doc.nodes,
     ],
     edges: doc.edges,
@@ -174,6 +189,9 @@ function isFiniteNumber(v: unknown): v is number {
 }
 function isCamera(v: unknown): v is Camera {
   return isObject(v) && isFiniteNumber(v.x) && isFiniteNumber(v.y) && isFiniteNumber(v.z) && v.z > 0;
+}
+function isPoint(v: unknown): v is { x: number; y: number } {
+  return isObject(v) && isFiniteNumber(v.x) && isFiniteNumber(v.y);
 }
 function isRect(v: unknown): v is Rect {
   return isObject(v) && isFiniteNumber(v.x) && isFiniteNumber(v.y) && isFiniteNumber(v.w) && isFiniteNumber(v.h);

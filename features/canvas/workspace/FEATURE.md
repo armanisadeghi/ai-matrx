@@ -92,8 +92,8 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
 - **Spatial board contract** (`features/spatial` is owned by another session): the board draws its own
   ToolBar + ZoomMenu inside its canvas and its own surface; it still owes — once it exposes its store outside
   its viewport — its LayersPanel as a Properties tab and an insets callback so fit-to-view avoids the
-  floating chat. `/demos/spatial` renders the workspace; the interim `features/spatial/chat/`
-  `BoardWithChat` / `BoardChatPanel` / `SpatialDemoBoardWithChat` are now unused (theirs to delete).
+  floating chat. `/demos/spatial` and `/board` render the workspace; the interim `features/spatial/chat/`
+  split was deleted 2026-09-27.
 - **Open:** Share/comments are unexercised (no demo has a record); at 390px the board's own ToolBar and
   ZoomMenu overlap (spatial-owned); the Error Inspector badge sits over the nav's user row bottom-left.
 

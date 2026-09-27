@@ -9,27 +9,13 @@
 import { useState } from "react";
 import { FileText, Globe, Image as ImageIcon, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import type { NodeSource } from "../board/document";
 import { HtmlTileBody, ImageTileBody } from "../tiles/MediaTileBodies";
 import { MarkdownTileBody } from "../tiles/MarkdownTileBody";
 import { TextTileBody } from "../tiles/NoteTileBody";
 import type { BoardItemType, ItemBodyProps, PickerProps } from "./types";
-
-/** A URL the person typed, made absolute; null when it is not a web URL. */
-export function parseWebUrl(value: string): URL | null {
-  const raw = value.trim();
-  if (!raw) return null;
-  try {
-    const url = new URL(/^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`);
-    return url.protocol === "https:" || url.protocol === "http:" ? url : null;
-  } catch {
-    return null;
-  }
-}
-
-const IMAGE_EXT = /\.(png|jpe?g|gif|webp|avif|svg)(\?|#|$)/i;
-export const looksLikeImageUrl = (url: URL) => IMAGE_EXT.test(url.pathname);
+import { parseWebUrl } from "./web-address";
 
 function UrlPicker({
   label,

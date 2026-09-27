@@ -71,18 +71,13 @@ The board takes a real run the same way it takes a replay. Nothing else is neede
 A pipeline (notes → script → media) is several tiles plus `SpatialEdge`s inside a `SpatialFrame`;
 each stage's tile is added when that stage's request starts.
 
-## Saved boards — status
+## Saved boards
 
-`workspace.spatial_boards` is LIVE (2026-09-27, provisioned through `platform.create_entity_table`,
-token `spatial_board`, entity variant, versioned, soft delete, personal visibility, list scope
-`mine`, `iam.canonical_certify_ok` = true, `platform_admin_read` present). Columns: `title`,
-`description`, `camera`, `nodes`, `edges`, `settings`, `last_opened_at` + the base contract. The
-stored shape is `board/document.ts` (parse reports every malformed node; JSON Canvas 1.0 export).
-**Blocked on one step:** `pnpm db-types` must be re-run on a machine holding the Supabase access
-token (this cloud container has none, and the MCP generator emits only `public`), so the client
-service, autosave (`mergeJsonColumn`, debounced) and the manage page (`<EntityListPage>`: open,
-rename, duplicate, archive, delete) can compile against the generated row. No cast was used to
-get around it.
+`workspace.spatial_boards` (token `spatial_board`, certified, soft delete, versioned; columns
+`title`, `description`, `camera`, `nodes`, `edges`, `settings`, `last_opened_at` + the base
+contract). The stored shape is `board/document.ts` (parse reports every malformed node; groups and
+shapes ride in `nodes` flagged; JSON Canvas 1.0 export). The home board is the row whose
+`settings.home` is true, per person per organization. Service + hook: `persistence/` (see The Board).
 
 ## Performance rules (each one measured on the 100-stream stress board)
 
@@ -170,6 +165,35 @@ within one thread / park / remove / focus work and persist, `text` on a Notes pa
 thread's note, add / group / connect / undo / rename / resize refuse with the remedy; see the War
 Room FEATURE.md Board section).
 
+## The Board (`/board`) — a person's own canvas, the main way in
+
+`/board` is the person's home board in the active organization; `/board/<id>` any of their boards;
+`/board/all` manages them (open, rename, duplicate, delete). The nav item "Board" lists My board,
+All boards and each feature's board view (War Room, Meetings, Workflow runs).
+
+| Piece | File |
+|---|---|
+| Page: the ONE chat-beside-a-canvas layout (`ChatCanvasWorkspace`, `features/canvas/workspace`) with the saved board as canvas; title menu Rename / New board / All boards; byline shows save state | `home/BoardPage.tsx`, `app/(core)/board/**` |
+| The board: placement, Add menu, Start panel (empty board), drop + paste, tools, shelf, layers, agent tools host | `home/UserBoard.tsx`, `home/AddMenu.tsx` |
+| What a paste/drop of text becomes (a link → web page / image, other text → a new Note) | `home/board-intake.ts` |
+| Saving: `useSavedBoard({home:true} \| {boardId})`, debounced guarded autosave, flush on pagehide | `persistence/` |
+| Manage page | `boards/`, `app/(core)/board/all` |
+
+**Item types — how a feature gets onto every board.** `items/types.ts` is the contract: a
+`BoardItemType` says how to start a new one (`startNew`, synchronous — the person starts at once),
+how to bring in an existing one (`bringIn.Picker`), and its tile `Body`, which is ALWAYS the
+feature's canonical component. Register it once in `items/catalog.ts` (via `work-items.tsx`,
+`feature-items.tsx` or `content-items.tsx`) and the Add menu, Start panel, drop, paste and the
+agent tools of every board offer it. A tile saves only a REFERENCE (`NodeSource`, usually
+`{ kind: "entity", entity, id }`; `id` null until the record exists, `meta.seed` for pasted text).
+A saved tile whose type is not registered renders an honest stand-in (`home/UnavailableItemBody.tsx`)
+and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` edge (`BoardPage` →
+`UserBoard`) — never `dynamic()` a body (code-splitting FRAGMENTATION LAW).
+
+- **The chat beside the board** is `ChatCanvasWorkspace`'s; the board publishes its own surface
+  (`matrx-user/spatial-board`: values + `board_*` tools), so no page-level snapshot is passed.
+- **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
+
 ## Change Log
 
 - 2026-09-27 — Frame fly-to includes its title band in the fit target; War Room’s board-only down throw uses the reversible 'remove' action, distinct from destructive 'delete'.
@@ -200,25 +224,9 @@ Room FEATURE.md Board section).
   `board_read` lists `removed` tiles; focusing a parked tile now waits for it to render before
   moving the camera (it used to fly nowhere). Tests: `features/war-room/components/board/__tests__/roomBoardAgent.test.tsx`
   drive the real handlers.
-
-## Chat beside the board
-
-`features/spatial/chat/` puts the platform's one chat on the left of a board (the Claude Design
-shape). Live on `/demos/spatial`.
-
-| Piece | File |
-|---|---|
-| `BoardWithChat` — v4 horizontal split, chat left (30%, min 300px, max 55%), board right; collapses to a 44px rail (button or Ctrl/Cmd + `\`), layout in the `panels:<id>` cookie; under 768px the chat is a bottom Drawer | `chat/BoardWithChat.tsx` |
-| `BoardChatPanel` + `useBoardChatConversation` — mounts `AgentConversationColumn` under the `chat.default_new_chat` mandate (what `/chat/new` resolves; no agent id, no prompt in code) | `chat/BoardChatPanel.tsx` |
-| `BoardContext` — bounded snapshot (60 tiles, 1,200 chars per excerpt, 24,000 total; focused/selected/in-view first; caps stated in the payload) + the DOM reader | `chat/board-context.ts` |
-
-- **The board is CONTEXT, never user text.** One entry, key `spatial_board` (type `json`), written
-  with `setContextEntries` when the conversation opens and again in the CAPTURE phase of every
-  pointerdown / Enter / focus inside the chat — before the composer's send handler — so every turn
-  carries the board as it is now. The composer's "Board" pill opens exactly what is sent.
-- **First version reads the DOM** (`[data-spatial-tile]`, `[data-spatial-card]`, `[data-spatial-body]`,
-  the status dot's `title`, the selection ring). Follow-up: a store-backed `getBoardContext` once
-  the board exposes its `SpatialStore` (kind payloads, not rendered text; a real `selected` field).
-- **The surface is registered now** (`matrx-user/spatial-board`, see Agent tools). The capture
-  handlers stay until conversations are stamped with a `surfaceName` (`launchMandate` does not pass
-  one today), which is what `SurfaceRuntimeProvider.beforeExecute` needs to refresh scope at submit.
+- 2026-09-27 — The Board: `/board`, `/board/<id>`, `/board/all`; the nav item with its feature
+  boards; the item-type contract and catalog; Add menu, Start panel, drop and paste; saved boards
+  (`useBoard` seeds parked tiles, shapes and connections; the document saves shapes, labels and
+  entity sources). The interim `chat/` (BoardWithChat, BoardChatPanel, the DOM snapshot reader) is
+  deleted — `ChatCanvasWorkspace` replaced it; the bounded snapshot `board_read` returns lives in
+  `tools/board-snapshot.ts`. `useBoardKeys` is shared (`board/useBoardKeys.ts`).

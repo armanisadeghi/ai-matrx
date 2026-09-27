@@ -258,8 +258,11 @@ describe("saved board document", () => {
       nodes: [
         { id: "n1", rect: { x: 40, y: 40, w: 400, h: 300 }, title: "Report", source: { kind: "stream" as const, requestId: "r-1" } },
         { id: "n2", rect: { x: 480, y: 40, w: 400, h: 300 }, title: "Page", source: { kind: "html" as const, url: "/p.html" }, parked: true },
+        { id: "n3", rect: { x: 0, y: 400, w: 380, h: 300 }, title: "Note", source: { kind: "entity" as const, entity: "note", id: null, meta: { seed: "hi" } } },
+        { id: "n4", rect: { x: 400, y: 400, w: 520, h: 120 }, title: "Label", source: { kind: "label" as const, text: "Q3" } },
       ],
       edges: [{ id: "e1", from: "n1", to: "n2" }],
+      shapes: [{ id: "s1", kind: "arrow" as const, points: [{ x: 0, y: 0 }, { x: 50, y: 60 }] }],
     };
     const stored = JSON.parse(JSON.stringify(serializeBoardDocument(doc)));
     const back = parseBoardDocument(stored);
@@ -267,6 +270,9 @@ describe("saved board document", () => {
     expect(back.doc.groups).toEqual(doc.groups);
     expect(back.doc.nodes[1]).toMatchObject({ id: "n2", parked: true });
     expect(back.doc.edges).toEqual(doc.edges);
+    expect(back.doc.shapes).toEqual(doc.shapes);
+    expect(back.doc.nodes[2].source).toEqual({ kind: "entity", entity: "note", id: null, meta: { seed: "hi" } });
+    expect(back.doc.nodes[3].source).toEqual({ kind: "label", text: "Q3" });
 
     const bad = parseBoardDocument({ camera: "x", nodes: [{ id: "a" }, { id: "b", rect: { x: 0, y: 0, w: 1, h: 1 }, title: "B", source: { kind: "nope" } }], edges: [{}] });
     expect(bad.doc.nodes).toEqual([]);
@@ -278,6 +284,7 @@ describe("saved board document", () => {
     const out = toJsonCanvas(
       {
         camera: { x: 0, y: 0, z: 1 },
+        shapes: [],
         groups: [{ id: "g", rect: { x: 0, y: 0, w: 10, h: 10 }, title: "G" }],
         nodes: [
           { id: "t", rect: { x: 1.4, y: 2, w: 3, h: 4 }, title: "T", source: { kind: "text", markdown: "# hi" } },

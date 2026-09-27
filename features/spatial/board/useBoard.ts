@@ -105,6 +105,16 @@ export interface Board<T extends BoardTileBase> {
   read: () => BoardView<T>;
 }
 
+/** A board to start from: tiles (parked ones listed in `parked`) and the rest. */
+export interface BoardSeed<T extends BoardTileBase> {
+  tiles: T[];
+  frames?: BoardFrame[];
+  /** Ids of tiles that start on the shelf. */
+  parked?: string[];
+  shapes?: BoardShape[];
+  connections?: BoardConnection[];
+}
+
 export interface BoardView<T extends BoardTileBase> {
   tiles: T[];
   parked: T[];
@@ -123,20 +133,28 @@ function viewOf<T extends BoardTileBase>(now: Snapshot<T>): BoardView<T> {
 }
 
 export function useBoard<T extends BoardTileBase>(
-  /** The starting tiles, or tiles plus frames. */
-  initial: () => T[] | { tiles: T[]; frames?: BoardFrame[] },
+  /** The starting tiles, or a whole saved board (tiles, frames, the shelf,
+   * shapes and connections). */
+  initial: () => T[] | BoardSeed<T>,
 ): Board<T> {
   const [state, setRendered] = useState<BoardState<T>>(() => {
     const start = initial();
-    const { tiles, frames = [] } = Array.isArray(start) ? { tiles: start } : start;
+    const {
+      tiles,
+      frames = [],
+      parked = [],
+      shapes = [],
+      connections = [],
+    }: BoardSeed<T> = Array.isArray(start) ? { tiles: start } : start;
+    const ids = new Set(tiles.map((t) => t.id));
     return {
       now: {
         order: tiles.map((t) => t.id),
         byId: Object.fromEntries(tiles.map((t) => [t.id, t])),
-        parked: [],
+        parked: parked.filter((id) => ids.has(id)),
         frames,
-        shapes: [],
-        connections: [],
+        shapes,
+        connections: connections.filter((c) => ids.has(c.from) && ids.has(c.to)),
       },
       past: [],
       future: [],
