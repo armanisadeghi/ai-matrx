@@ -82,12 +82,15 @@ import {
 } from "./CanvasPropertiesPanel";
 import { useCanvasWorkspaceConversation } from "./useCanvasWorkspaceConversation";
 import { ChatPanelTitleMenu, useChatPanelTitle } from "./ChatPanelTitleMenu";
+import { PageContextRow } from "./PageContextRow";
+import { useConversationFollowsPage } from "@/features/surfaces/runtime/useConversationFollowsPage";
 import {
   CANVAS_CHAT_SIZES,
   CANVAS_NAV_SIZES,
   CANVAS_PANEL_IDS,
   CANVAS_PROPERTIES_SIZES,
   writeCanvasChatCookie,
+  writeCanvasFollowsPageCookie,
   writeCanvasPropertiesCookie,
   type CanvasChatPlacement,
   type CanvasChatState,
@@ -113,7 +116,13 @@ export interface ChatCanvasWorkspaceProps {
   id: string;
   /** The host's canvas — it draws its own toolbar and zoom. */
   canvas: ReactNode;
-  title: string;
+  /**
+   * The canvas header's title. Absent on a host whose pages bring their own
+   * header content: every `<PageHeader>` / `<RouteHeader>` inside the
+   * workspace portals into the canvas header (a module's own menu), not the
+   * hidden shell header.
+   */
+  title?: string;
   /** Items for the title ▾ (DropdownMenuItem elements). Absent = no ▾. */
   titleMenu?: ReactNode;
   /** "By you". */
@@ -130,6 +139,12 @@ export interface ChatCanvasWorkspaceProps {
   initialLayout?: CanvasWorkspaceLayout;
   /** Whether the chat starts open for someone who has not chosen yet (default true). */
   defaultChatOpen?: boolean;
+  /**
+   * The chat sees the PAGE the person is on and follows them from page to page
+   * (a module hosted in the workspace, e.g. education). Off for a canvas that
+   * publishes its own surface (the spatial board).
+   */
+  followPageSurface?: boolean;
   /** Server-read cookie (`readComposerModeCookie`). */
   initialMode?: ComposerMode | null;
   /** Absent = no close button. */
@@ -183,6 +198,7 @@ export function ChatCanvasWorkspace({
   contextChip,
   initialLayout,
   defaultChatOpen = true,
+  followPageSurface = false,
   initialMode = null,
   onClose,
 }: ChatCanvasWorkspaceProps) {
@@ -272,6 +288,16 @@ export function ChatCanvasWorkspace({
   }, [fullScreen]);
 
   const conversationId = chat.conversationId;
+  const [followsPage, setFollowsPageState] = useState(initialLayout?.followsPage ?? true);
+  const setFollowsPage = (on: boolean) => {
+    setFollowsPageState(on);
+    writeCanvasFollowsPageCookie(id, on);
+  };
+  // Passing no conversation keeps the hook inert for a host that does not follow the page.
+  const { pageSurfaceLabel } = useConversationFollowsPage(
+    followPageSurface ? conversationId : null,
+    followsPage,
+  );
   const chatTitle = useChatPanelTitle(conversationId);
 
   const chatColumn = (
@@ -304,7 +330,7 @@ export function ChatCanvasWorkspace({
     <ChatPanelTitleMenu conversationId={conversationId} onNewChat={chat.startNew} />
   );
 
-  const canvasTitle = titleMenu ? (
+  const canvasTitle = !title ? null : titleMenu ? (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
@@ -349,6 +375,7 @@ export function ChatCanvasWorkspace({
           }}
           sizes={CANVAS_NAV_SIZES}
           initialWidth={initialLayout?.widths.nav}
+          onCollapse={() => nav.collapse()}
           aria-label="Navigation"
           outerClassName="max-lg:hidden"
           className={nav.overlay ? undefined : "border-r border-border"}
@@ -373,6 +400,7 @@ export function ChatCanvasWorkspace({
           open={showDockedChat}
           sizes={CANVAS_CHAT_SIZES}
           initialWidth={initialLayout?.widths.chat}
+          onCollapse={closeChat}
           aria-label="Chat"
           outerClassName="max-lg:hidden"
           className="border-r border-border bg-card"
@@ -400,6 +428,9 @@ export function ChatCanvasWorkspace({
               <PanelLeftClose className="h-4 w-4" />
             </button>
           </div>
+          {followPageSurface ? (
+            <PageContextRow label={pageSurfaceLabel} on={followsPage} onToggle={() => setFollowsPage(!followsPage)} />
+          ) : null}
           <div className="flex min-h-0 flex-1 flex-col">
             {placement === "side" && (chatOnScreen || conversationId) ? chatColumn : null}
           </div>
@@ -419,10 +450,34 @@ export function ChatCanvasWorkspace({
           >
             <Menu className="h-5 w-5" />
           </button>
+          <button
+            type="button"
+            aria-label="Chat"
+            onClick={openMobileChat}
+            className={cn(ICON_BUTTON, "h-11 w-11 lg:hidden")}
+          >
+            <MessageSquare className="h-5 w-5" />
+          </button>
           {navToggleInCanvasHeader ? (
             <CanvasNavToggle nav={nav} className="max-lg:hidden" />
           ) : null}
-          <div className="flex min-w-0 flex-1 items-center">{canvasTitle}</div>
+          {/* The way back to a hidden chat sits where the chat opens — on the left. */}
+          {!chatShown ? (
+            <button
+              type="button"
+              onClick={openChat}
+              aria-label="Show chat"
+              title="Show chat (Ctrl/Cmd + \)"
+              className="flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-foreground hover:bg-accent max-lg:hidden"
+            >
+              <MessageSquare className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              Chat
+            </button>
+          ) : null}
+          {canvasTitle ? <div className="flex min-w-0 max-w-[40%] shrink items-center">{canvasTitle}</div> : null}
+          {/* A hosted module's own header (<PageHeader>/<RouteHeader>) portals here. */}
+          <div data-page-header-target="workspace" className="shell-header-center" />
+          <div data-page-header-right-target="workspace" className="flex shrink-0 items-center gap-1 empty:hidden" />
           {byline ? (
             <span className="shrink-0 text-xs text-muted-foreground max-lg:hidden">
               {byline}
@@ -430,14 +485,6 @@ export function ChatCanvasWorkspace({
           ) : null}
 
           <div className="flex shrink-0 items-center lg:hidden">
-            <button
-              type="button"
-              aria-label="Chat"
-              onClick={openMobileChat}
-              className={cn(ICON_BUTTON, "h-11 w-11")}
-            >
-              <MessageSquare className="h-5 w-5" />
-            </button>
             {properties && properties.tabs.length > 0 ? (
               <button
                 type="button"
@@ -450,18 +497,6 @@ export function ChatCanvasWorkspace({
             ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-1.5 max-lg:hidden">
-            {/* The way back to a hidden chat — the one door that opens it. */}
-            {!chatShown ? (
-              <button
-                type="button"
-                onClick={openChat}
-                title="Show chat (Ctrl/Cmd + \)"
-                className="flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-sm font-medium text-foreground hover:bg-accent"
-              >
-                <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
-                Chat
-              </button>
-            ) : null}
             {hasProperties ? (
               <button
                 type="button"
@@ -565,6 +600,7 @@ export function ChatCanvasWorkspace({
               open={showProperties}
               sizes={CANVAS_PROPERTIES_SIZES}
               initialWidth={initialLayout?.widths.properties}
+              onCollapse={() => setPropertiesOpen(false)}
               aria-label="Properties"
               outerClassName="max-lg:hidden"
               className="border-l border-border"
@@ -592,10 +628,10 @@ export function ChatCanvasWorkspace({
               </DrawerTitle>
               <DrawerDescription className="sr-only">
                 {mobileSheet === "chat"
-                  ? `The agent sees ${title} with each message.`
+                  ? `The agent sees ${title ?? "this page"} with each message.`
                   : mobileSheet === "nav"
                     ? "Navigation, chat history and your account."
-                    : `Properties of ${title}.`}
+                    : `Properties of ${title ?? "this page"}.`}
               </DrawerDescription>
             </DrawerHeader>
             <div className="flex min-h-0 flex-1 flex-col">
@@ -607,6 +643,9 @@ export function ChatCanvasWorkspace({
                       initialMode={initialMode}
                     />
                   </div>
+                  {followPageSurface ? (
+                    <PageContextRow label={pageSurfaceLabel} on={followsPage} onToggle={() => setFollowsPage(!followsPage)} />
+                  ) : null}
                   {chatColumn}
                 </>
               ) : mobileSheet === "nav" ? (

@@ -26,7 +26,18 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Ellipsis, PanelLeft, Plus, SlidersHorizontal, type LucideIcon } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import AppLink from "@/components/navigation/AppLink";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -34,6 +45,7 @@ import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 import {
+  groupNavChildren,
   navItemsForViewer,
   primaryNavItems,
   type ShellNavItem,
@@ -47,6 +59,9 @@ import {
   type CanvasNavPersisted,
   type CanvasNavState,
 } from "./canvas-nav-cookie";
+
+/** How far the pointer must move from a click-collapse before hover may preview again. */
+const CLICK_HOVER_SLOP_PX = 40;
 
 /** How long the pointer may be away from icon + overlay before the overlay closes. */
 const HOVER_CLOSE_DELAY_MS = 160;
@@ -63,7 +78,13 @@ export interface CanvasNavController {
    */
   overlay: boolean;
   open: () => void;
-  collapse: () => void;
+  /**
+   * Put the nav away. A CLICK collapse (the pointer is sitting where the
+   * toggle icon reappears) suppresses the hover preview until the pointer has
+   * left that icon — otherwise the click reopens it at once (Arman,
+   * 2026-09-27). A drag collapse passes nothing: hover stays live.
+   */
+  collapse: (opts?: { fromClick?: { x: number; y: number } }) => void;
   /** Pointer entered the toggle or the overlay. */
   hoverEnter: () => void;
   /** Pointer left the toggle or the overlay. */
@@ -74,13 +95,42 @@ export function useCanvasNavState(initial: CanvasNavPersisted): CanvasNavControl
   const [state, setState] = useState<CanvasNavState>(initial);
   const [overlay, setOverlay] = useState(false);
   const closeTimer = useRef<number | null>(null);
+  /** False from a click-collapse until the pointer is off the toggle icon. */
+  const hoverArmed = useRef(true);
+  const stopWatchingPointer = useRef<(() => void) | null>(null);
+
+  const armHover = () => {
+    hoverArmed.current = true;
+    stopWatchingPointer.current?.();
+    stopWatchingPointer.current = null;
+  };
+  /**
+   * Re-arm once the pointer has really moved away from where it clicked (the
+   * nav slides away for 600ms and carries the toggle icon under a still
+   * pointer, so "not over the icon yet" is no signal), or leaves the icon.
+   */
+  const disarmHoverUntilPointerMovesAway = (from: { x: number; y: number }) => {
+    hoverArmed.current = false;
+    stopWatchingPointer.current?.();
+    const onMove = (e: PointerEvent) => {
+      if (Math.hypot(e.clientX - from.x, e.clientY - from.y) > CLICK_HOVER_SLOP_PX) armHover();
+    };
+    window.addEventListener("pointermove", onMove, true);
+    stopWatchingPointer.current = () => window.removeEventListener("pointermove", onMove, true);
+  };
 
   const cancelClose = () => {
     if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
     closeTimer.current = null;
   };
 
-  useEffect(() => () => cancelClose(), []);
+  useEffect(
+    () => () => {
+      cancelClose();
+      stopWatchingPointer.current?.();
+    },
+    [],
+  );
 
   return {
     state,
@@ -91,17 +141,20 @@ export function useCanvasNavState(initial: CanvasNavPersisted): CanvasNavControl
       setOverlay(false);
       writeCanvasNavCookie("open");
     },
-    collapse: () => {
+    collapse: (opts) => {
       cancelClose();
+      if (opts?.fromClick) disarmHoverUntilPointerMovesAway(opts.fromClick);
       setState("collapsed");
       writeCanvasNavCookie("collapsed");
     },
     hoverEnter: () => {
+      if (!hoverArmed.current) return;
       cancelClose();
       if (state === "collapsed") setOverlay(true);
       setState((current) => (current === "collapsed" ? "hover" : current));
     },
     hoverLeave: () => {
+      armHover();
       cancelClose();
       closeTimer.current = window.setTimeout(() => {
         // The org drop-up, the More flyout or a row menu owns the pointer.
@@ -120,6 +173,7 @@ export function CanvasNavToggle({ nav, className }: { nav: CanvasNavController; 
     <button
       type="button"
       aria-label="Show sidebar"
+      data-canvas-nav-toggle=""
       title="Show sidebar"
       onPointerEnter={(e) => {
         if (e.pointerType === "mouse") nav.hoverEnter();
@@ -200,7 +254,7 @@ export function CanvasNav({
           type="button"
           aria-label="Hide sidebar"
           title="Hide sidebar"
-          onClick={hover ? nav.open : nav.collapse}
+          onClick={hover ? nav.open : (e) => nav.collapse({ fromClick: { x: e.clientX, y: e.clientY } })}
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent text-foreground"
         >
           <PanelLeft className="h-4 w-4" />
@@ -274,41 +328,87 @@ export function CanvasNav({
   );
 }
 
-/** More — the full app nav, in a flyout beside the canvas nav. */
+/**
+ * More — the WHOLE app nav beside the canvas nav: every top-level destination,
+ * and each one that has sub-destinations opens them in a submenu to the right
+ * (grouped as the sidebar groups them). The sub-destinations are where most of
+ * the app lives (Arman, 2026-09-27) — a first-tier-only list hid them.
+ */
 function CanvasNavMore({ children }: { children: ReactNode }) {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  const [open, setOpen] = useState(false);
   const items: ShellNavItem[] = navItemsForViewer(primaryNavItems, isAuthenticated);
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent side="right" align="start" sizing="content" className="p-1.5">
-        <p className="px-2.5 pb-1 pt-1.5 text-xs text-muted-foreground">Everything in AI Matrx</p>
-        <div className="max-h-[70dvh] overflow-y-auto">
-          {items.map((item) => {
-            const Icon = shellIconComponents[item.iconName];
-            const className = cn(ROW_CLASS, "h-8");
-            return item.external ? (
-              <a
-                key={item.href}
-                href={item.href}
-                target="_blank"
-                rel="noreferrer"
-                className={className}
-                onClick={() => setOpen(false)}
-              >
-                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                <span className="min-w-0 flex-1 truncate">{item.label}</span>
-              </a>
-            ) : (
-              <AppLink key={item.href} href={item.href} className={className} onClick={() => setOpen(false)}>
-                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                <span className="min-w-0 flex-1 truncate">{item.label}</span>
-              </AppLink>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+      <DropdownMenuContent side="right" align="start" className="min-w-56">
+        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+          Everything in AI Matrx
+        </DropdownMenuLabel>
+        {items.map((item) => {
+          const Icon = shellIconComponents[item.iconName];
+          const label = (
+            <>
+              <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <span className="min-w-0 flex-1 truncate">{item.label}</span>
+            </>
+          );
+          if (item.children && item.children.length > 0) {
+            return (
+              <DropdownMenuSub key={item.href}>
+                <DropdownMenuSubTrigger className="gap-2.5">{label}</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="max-h-[75dvh] min-w-56 overflow-y-auto">
+                  {/* A group parent (`dashboard: false`) only organizes; any other parent is a page too. */}
+                  {item.dashboard !== false ? (
+                    <>
+                      <NavMenuLink href={item.href} external={item.external}>
+                        {label}
+                      </NavMenuLink>
+                      <DropdownMenuSeparator />
+                    </>
+                  ) : null}
+                  {groupNavChildren(item.children).map((section, index) => (
+                    <DropdownMenuGroup key={section.label ?? `section-${index}`}>
+                      {section.label ? (
+                        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                          {section.label}
+                        </DropdownMenuLabel>
+                      ) : null}
+                      {section.items.map((child) => {
+                        const ChildIcon = shellIconComponents[child.iconName];
+                        return (
+                          <NavMenuLink key={child.href} href={child.href}>
+                            <ChildIcon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                            <span className="min-w-0 flex-1 truncate">{child.label}</span>
+                          </NavMenuLink>
+                        );
+                      })}
+                    </DropdownMenuGroup>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
             );
-          })}
-        </div>
-      </PopoverContent>
-    </Popover>
+          }
+          return (
+            <NavMenuLink key={item.href} href={item.href} external={item.external}>
+              {label}
+            </NavMenuLink>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function NavMenuLink({ href, external, children }: { href: string; external?: boolean; children: ReactNode }) {
+  return (
+    <DropdownMenuItem asChild className="gap-2.5">
+      {external ? (
+        <a href={href} target="_blank" rel="noreferrer">
+          {children}
+        </a>
+      ) : (
+        <AppLink href={href}>{children}</AppLink>
+      )}
+    </DropdownMenuItem>
   );
 }

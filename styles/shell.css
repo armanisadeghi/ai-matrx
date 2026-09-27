@@ -410,16 +410,12 @@
   inset: 0;
   overflow: clip; /* 'clip' doesn't create a stacking context like 'hidden' does — backdrop-filter works through it in Chromium */
   display: grid;
-  /* Default: collapsed sidebar on desktop. The third column is the chat dock
-     (features/shell/chat-dock): `auto`, so it is exactly as wide as the dock's
-     own animated width — 0 while closed. The header spans above it, so opening
-     the dock narrows the page and never moves a header button. A rule that
-     lists only two tracks gets this third one as an implicit `auto` track. */
-  grid-template-columns: var(--shell-sidebar-w) 1fr auto;
+  /* Default: collapsed sidebar on desktop */
+  grid-template-columns: var(--shell-sidebar-w) 1fr;
   grid-template-rows: var(--shell-header-h) 1fr;
   grid-template-areas:
-    "sidebar header header"
-    "sidebar main chatdock";
+    "sidebar header"
+    "sidebar main";
   /* Animate the column track in lockstep with the fixed sidebar's width so the
      main content reflows over the SAME 600ms in BOTH directions. Without this
      the grid snapped instantly: opening still looked smooth (the opaque sidebar
@@ -431,18 +427,10 @@
 
 /* Build A/B (FORCE_EXCLUDE_SIDEMENU): no sidebar column — header + main full width. */
 .shell-root[data-no-sidebar] {
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr;
   grid-template-areas:
-    "header header"
-    "main chatdock";
-}
-
-/* The chat dock's grid cell (below the header row). The panel itself —
-   width, slide, resize handle — is DockedSidePanel. Desktop only: below
-   1024px the grid is one column and the dock is a bottom sheet. */
-.shell-chat-dock {
-  grid-area: chatdock;
-  z-index: 20;
+    "header"
+    "main";
 }
 
 /* ---------------------------------------------------------------------------
@@ -510,7 +498,7 @@
    A child-combinator :has is re-checked only when .shell-root's own children
    change, never on insertions deeper in the app (PAGE-WIDE :has above). */
 .shell-root:has(> #shell-sidebar-toggle:checked) {
-  grid-template-columns: var(--shell-sidebar-w-expanded) 1fr auto;
+  grid-template-columns: var(--shell-sidebar-w-expanded) 1fr;
 }
 
 /* Sidebar brand section */
@@ -1082,7 +1070,7 @@ button.shell-nav-flyout-item {
 @media (min-width: 1024px) {
   .shell-root[data-settings-route],
   .shell-root[data-settings-route]:has(> #shell-sidebar-toggle:checked) {
-    grid-template-columns: 15rem 1fr auto;
+    grid-template-columns: 15rem 1fr;
   }
 
   .shell-root[data-settings-route] .shell-sidebar,
@@ -1776,11 +1764,6 @@ body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
 .ambient-assistant-dock {
   background: transparent;
   pointer-events: none;
-  /* Centered in the space the page has — left of the chat dock when it is
-     open (--shell-chat-dock-w, features/shell/chat-dock). Unlayered, so it
-     wins over the element's `left-1/2` utility; 0px dock = 50%. */
-  left: calc(50% - var(--shell-chat-dock-w, 0px) / 2);
-  transition: left 200ms cubic-bezier(0.32, 0.72, 0, 1);
   bottom: calc(
     1.25rem + var(--keyboard-inset-height, 0px) +
       env(safe-area-inset-bottom, 0px)
@@ -2020,7 +2003,6 @@ body:has(.shell-root[data-pathname^="/administration"]) {
 .shell-root[data-shell-chrome="canvas"] .shell-user-block,
 .shell-root[data-shell-chrome="canvas"] .shell-mobile-trigger,
 .shell-root[data-shell-chrome="canvas"] .shell-mobile-sheet-wrapper,
-.shell-root[data-shell-chrome="canvas"] .shell-chat-dock,
 .shell-root[data-shell-chrome="canvas"] ~ * .shell-dock {
   display: none !important;
 }
@@ -2573,7 +2555,7 @@ body:has(.shell-root[data-pathname^="/administration"]) {
 
 /* THE RIGHT SET ON A PHONE (page-pass shared defects, 2026-09-27).
    Search / Agents / Canvas / Inbox sit in `.shell-header-secondary`; below
-   640px they fold into ONE control, `.shell-header-overflow`
+   768px (`useIsMobile`) they fold into ONE control, `.shell-header-overflow`
    (HeaderPhoneOverflow — a bottom sheet holding the same four), so the page
    title in the center stays readable. CSS, not a hook, so the server-rendered
    row never shifts on hydrate. */
@@ -2584,7 +2566,7 @@ body:has(.shell-root[data-pathname^="/administration"]) {
 .shell-header-overflow {
   display: none;
 }
-@media (max-width: 639px) {
+@media (max-width: 767px) {
   .shell-header-secondary {
     display: none;
   }

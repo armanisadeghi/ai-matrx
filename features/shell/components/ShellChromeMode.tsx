@@ -20,6 +20,7 @@ import { useEffect, useLayoutEffect } from "react";
 import { usePathname } from "next/navigation";
 import {
   SHELL_CHROME_ATTRIBUTE,
+  SHELL_SIGNED_IN_ATTRIBUTE,
   isCanvasChromeRoute,
   type ShellChromeMode as ShellChromeModeName,
 } from "@/features/shell/constants/canvas-chrome-routes";
@@ -29,7 +30,9 @@ let mountedCanvasHosts = 0;
 function applyShellChrome() {
   const root = document.querySelector<HTMLElement>(".shell-root");
   if (!root) return;
-  const canvas = mountedCanvasHosts > 0 || isCanvasChromeRoute(window.location.pathname);
+  const canvas =
+    mountedCanvasHosts > 0 ||
+    isCanvasChromeRoute(window.location.pathname, root.hasAttribute(SHELL_SIGNED_IN_ATTRIBUTE));
   if (canvas) root.setAttribute(SHELL_CHROME_ATTRIBUTE, "canvas");
   else root.removeAttribute(SHELL_CHROME_ATTRIBUTE);
 }

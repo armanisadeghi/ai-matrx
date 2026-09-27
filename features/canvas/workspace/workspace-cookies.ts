@@ -22,6 +22,8 @@ export interface CanvasWorkspaceLayout {
   nav: CanvasNavPersisted;
   chat: CanvasChatState;
   propertiesOpen: boolean;
+  /** A page-following chat sees the page (on unless the person turned it off). */
+  followsPage: boolean;
   widths: { nav: number; chat: number; properties: number };
 }
 
@@ -65,6 +67,14 @@ export function serializeCanvasChatState(state: CanvasChatState): string {
 
 export function writeCanvasChatCookie(workspaceId: string, state: CanvasChatState): void {
   document.cookie = `${canvasChatCookieName(workspaceId)}=${serializeCanvasChatState(state)}; path=/; max-age=${CANVAS_WORKSPACE_COOKIE_MAX_AGE}; samesite=lax`;
+}
+
+export function canvasFollowsPageCookieName(workspaceId: string): string {
+  return `canvas-workspace:${workspaceId}:page`;
+}
+
+export function writeCanvasFollowsPageCookie(workspaceId: string, on: boolean): void {
+  document.cookie = `${canvasFollowsPageCookieName(workspaceId)}=${on ? "on" : "off"}; path=/; max-age=${CANVAS_WORKSPACE_COOKIE_MAX_AGE}; samesite=lax`;
 }
 
 export function parseCanvasPropertiesCookie(value: string | undefined): boolean {

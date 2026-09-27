@@ -29,8 +29,7 @@ context rail); only the chrome is arranged differently.
 
 **Hosts today:** every `/chat` route (`ChatRoomClient` — `/chat/new` splash, conversations at page size; its
 `textMenu` is `chat/agent-context/chatComposerTextMenu.ts`), the canvas workspace's docked/floating chat
-(compact, `features/canvas/workspace/`) and the shell chat dock beside every ordinary page (compact,
-`features/shell/chat-dock/`).
+(compact, `features/canvas/workspace/`) — including modules hosted in it (education, for signed-in people).
 
 **Where it threads** (each an additive optional prop, nothing else changed):
 - `SmartAgentInput` → `SmartAgentInputStacked` (composer branch; never the single-row/ambient path).

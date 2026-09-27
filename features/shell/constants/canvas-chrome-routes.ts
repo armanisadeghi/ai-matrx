@@ -28,11 +28,28 @@ export const CANVAS_CHROME_ROUTES: readonly RegExp[] = [
   // a page that does not hides the shell's nav with nothing to replace it.
 ];
 
-export function isCanvasChromeRoute(pathname: string): boolean {
-  return CANVAS_CHROME_ROUTES.some((pattern) => pattern.test(pathname));
+/**
+ * Modules hosted in the chat-beside-a-canvas layout for SIGNED-IN people only
+ * (their layout renders ChatCanvasWorkspace when there is a session; a guest —
+ * these pages are public — keeps the ordinary shell, since the chat needs an
+ * account).
+ */
+export const SIGNED_IN_CANVAS_CHROME_ROUTES: readonly RegExp[] = [/^\/education(?:\/|$)/];
+
+/** Stamped on `.shell-root` for a session, so the client can apply the signed-in list. */
+export const SHELL_SIGNED_IN_ATTRIBUTE = "data-signed-in";
+
+export function isCanvasChromeRoute(pathname: string, signedIn = false): boolean {
+  return (
+    CANVAS_CHROME_ROUTES.some((pattern) => pattern.test(pathname)) ||
+    (signedIn && SIGNED_IN_CANVAS_CHROME_ROUTES.some((pattern) => pattern.test(pathname)))
+  );
 }
 
-/** The attribute to spread onto `.shell-root` at SSR. */
-export function shellChromeAttributes(pathname: string): Record<string, string> {
-  return isCanvasChromeRoute(pathname) ? { [SHELL_CHROME_ATTRIBUTE]: "canvas" } : {};
+/** The attributes to spread onto `.shell-root` at SSR. */
+export function shellChromeAttributes(pathname: string, signedIn = false): Record<string, string> {
+  return {
+    ...(signedIn ? { [SHELL_SIGNED_IN_ATTRIBUTE]: "" } : {}),
+    ...(isCanvasChromeRoute(pathname, signedIn) ? { [SHELL_CHROME_ATTRIBUTE]: "canvas" } : {}),
+  };
 }

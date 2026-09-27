@@ -3,13 +3,13 @@
  *
  * Page-pass shared defects (2026-09-27): at 375px Search, Agents, Canvas and
  * Inbox (44px each) plus the route's actions left the page title "C.",
- * "Fla…", "O…". Below 640px the four fold into `HeaderPhoneOverflow`, a bottom
+ * "Fla…", "O…". Below 768px the four fold into `HeaderPhoneOverflow`, a bottom
  * sheet that holds the same four with the same states and the same gates.
  *
  * WHAT THIS PINS:
  *   1. Header.tsx puts the four inside `.shell-header-secondary` and mounts the
  *      overflow beside them; shell.css hides the one and shows the other below
- *      640px (and not above).
+ *      768px (and not above), the width `useIsMobile` calls a phone.
  *   2. The sheet holds all four; an empty canvas is a DISABLED row that says
  *      why; a guest reaching for Agents or Inbox gets the auth gate, never a
  *      dead row; a signed-in Inbox press opens the inbox in the sheet.
@@ -57,21 +57,6 @@ jest.mock("@/features/notifications/components/InboxPanel", () => ({
 jest.mock("@/features/notifications/useInbox", () => ({
   useInboxCounts: () => ({ total: 3, partial: false }),
 }));
-const toggleChatDock = jest.fn();
-let chatDockUnavailable: string | null = null;
-jest.mock("@/features/shell/chat-dock/useChatDock", () => ({
-  useChatDock: () => ({
-    dockOpen: false,
-    sheetOpen: false,
-    compact: true,
-    unavailableReason: chatDockUnavailable,
-    pressed: false,
-    toggle: toggleChatDock,
-    closeDock: jest.fn(),
-    closeSheet: jest.fn(),
-  }),
-}));
-
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { TooltipProvider } = require("@/components/ui/tooltip") as typeof import("@/components/ui/tooltip");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -115,7 +100,6 @@ afterEach(() => {
   document.body.innerHTML = "";
   jest.clearAllMocks();
   canvasState = { isOpen: false, isAvailable: true, itemCount: 0, headlineTitle: "Canvas" };
-  chatDockUnavailable = null;
 });
 
 describe("the header right set on a phone — source", () => {
@@ -123,17 +107,17 @@ describe("the header right set on a phone — source", () => {
     const header = read("features/shell/components/header/Header.tsx");
     const secondary = header.indexOf('className="shell-header-secondary"');
     expect(secondary).toBeGreaterThan(-1);
-    for (const control of ["<CommandBarHeaderButton", "<SurfaceAgentsHeaderButton", "<ChatDockHeaderSlot", "<CanvasShellHeaderToggle", "<InboxHeaderButton"]) {
+    for (const control of ["<CommandBarHeaderButton", "<SurfaceAgentsHeaderButton", "<CanvasShellHeaderToggle", "<InboxHeaderButton"]) {
       expect(header.indexOf(control)).toBeGreaterThan(secondary);
     }
     expect(header.indexOf("<HeaderPhoneOverflow")).toBeGreaterThan(header.indexOf("<InboxHeaderButton"));
   });
 
-  it("folds below 640px and only below it", () => {
+  it("folds below 768px and only below it", () => {
     const css = read("styles/shell.css");
     expect(css).toMatch(/\.shell-header-overflow\s*\{\s*display:\s*none;/);
     expect(css).toMatch(
-      /@media \(max-width: 639px\)\s*\{\s*\.shell-header-secondary\s*\{\s*display:\s*none;\s*\}\s*\.shell-header-overflow\s*\{\s*display:\s*flex;/,
+      /@media \(max-width: 767px\)\s*\{\s*\.shell-header-secondary\s*\{\s*display:\s*none;\s*\}\s*\.shell-header-overflow\s*\{\s*display:\s*flex;/,
     );
   });
 });
@@ -193,28 +177,6 @@ describe("HeaderPhoneOverflow — the same four, the same states", () => {
     expect(document.querySelector('[data-testid="agents-panel"]')).not.toBeNull();
   });
 
-  it("Chat opens the chat beside the page; on a page that is its own chat the row is disabled and says why", () => {
-    mount(true);
-    openSheet();
-    click(row("Chat beside this page"));
-    expect(toggleChatDock).toHaveBeenCalled();
-    chatDockUnavailable = "This page is a chat — the chat panel is for every other page";
-    act(() => root.unmount());
-    mount(true);
-    openSheet();
-    const chat = row("Chat beside this page");
-    expect(chat?.disabled).toBe(true);
-    expect(chat?.textContent).toContain("This page is a chat");
-  });
-
-  it("a guest reaching for Chat gets the auth gate", () => {
-    mount(false);
-    openSheet();
-    click(row("Chat beside this page"));
-    expect(openAuthGate).toHaveBeenCalledWith(expect.objectContaining({ featureName: "Chat" }));
-    expect(toggleChatDock).not.toHaveBeenCalled();
-  });
-
   it("a guest reaching for Agents or Inbox gets the auth gate, never a dead row", () => {
     mount(false);
     openSheet();
@@ -223,5 +185,38 @@ describe("HeaderPhoneOverflow — the same four, the same states", () => {
     openSheet();
     click(row("Inbox"));
     expect(openAuthGate).toHaveBeenCalledWith(expect.objectContaining({ featureName: "Inbox" }));
+  });
+});
+
+describe("HeaderPhoneOverflow — the page's own actions, one overflow per phone header", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const store = require("./phone-page-actions") as typeof import("./phone-page-actions");
+
+  it("publishes a host node, and shows a 'This page' section holding what a route header portaled there", () => {
+    mount(true);
+    const { host } = (() => {
+      let snapshot = { host: null as HTMLElement | null };
+      const Probe = () => {
+        snapshot = store.usePhonePageActions();
+        return null;
+      };
+      const probeRoot = createRoot(document.createElement("div"));
+      act(() => probeRoot.render(<Probe />));
+      act(() => probeRoot.unmount());
+      return snapshot;
+    })();
+    expect(host).not.toBeNull();
+    // A route header's action, portaled into the host (simulated here).
+    const button = document.createElement("button");
+    button.textContent = "Send email";
+    host!.appendChild(button);
+    act(() => store.setPhonePageActionCount("route-1", 1));
+    openSheet();
+    const section = document.querySelector('[data-header-page-actions]');
+    expect(section?.textContent).toContain("This page");
+    expect(section?.contains(button)).toBe(true);
+    // The row stays one overflow: the page's actions are inside the sheet, not beside it.
+    expect(host!.closest("[data-header-page-actions]")).not.toBeNull();
+    act(() => store.setPhonePageActionCount("route-1", 0));
   });
 });
