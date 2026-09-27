@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   KNOWLEDGE_SECTION_KEYS,
   searchKnowledge,
+  SECTION_SENTENCE,
   type KnowledgeQuery,
   type KnowledgeSearchEngine,
   type KnowledgeSearchRunner,
@@ -115,7 +116,7 @@ export function useKnowledgeSearchStream(
                 : {
                     status: "error",
                     section: null,
-                    message: "This section did not answer.",
+                    message: SECTION_SENTENCE.didNotAnswer,
                     retryable: true,
                   };
             }

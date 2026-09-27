@@ -1,7 +1,9 @@
 /**
- * When does the hub fall back to the title stand-in? Only when the hub's
- * service did not answer: a 404/405, or a stream that never said
- * `search_started`. A 422 from the live service is a real validation error —
+ * When does the hub fall back to the title stand-in? ONLY on a 404/405 (the
+ * route is not on this server). A stream that never said `search_started` is
+ * NOT a fallback (coordinator, from the live walk: a slow or aborted request
+ * dropped the bar to titles while the service was deployed) — see
+ * searchHonesty.test.ts. A 422 from the live service is a real validation error —
  * its sentence shows in every section, it is never hidden behind the stand-in.
  */
 const postNdjson = jest.fn();
@@ -41,9 +43,10 @@ it("a 404 falls back", async () => {
   await expect(searchKnowledgeServer({ text: "x" })).rejects.toBeInstanceOf(KnowledgeSearchUnavailableError);
 });
 
-it("a 200 that never says search_started (the older route's JSON) falls back", async () => {
+it("a 200 that ends without search_started or done is interrupted, never a fallback", async () => {
   postNdjson.mockReturnValue(stream([]));
-  await expect(searchKnowledgeServer({ text: "x" })).rejects.toBeInstanceOf(KnowledgeSearchUnavailableError);
+  const sections = await searchKnowledgeServer({ text: "x" });
+  for (const s of sections) expect(s.error?.message).toBe("The search stopped before this section answered.");
 });
 
 it("search_started then sections is the live service", async () => {
