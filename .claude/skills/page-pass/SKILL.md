@@ -387,7 +387,8 @@ surface). Say which parts you judged as authored content.
 
 ### 6 · Copy and AI are everywhere
 - Nothing is shown that can't be copied — field, row, record, page — through
-  the canonical two-icon Copy / Copy-for-AI pair.
+  the canonical `CopyButtons` menu (the Alchemy copy menu; Copy and Copy
+  for AI live inside it).
 - Every box a person writes in is `ProTextarea` / `ProInput` with the
   microphone and the page's agents (`surfaceName` + `getApplicationScope`
   passed). A bare textarea needs a comment saying why.
