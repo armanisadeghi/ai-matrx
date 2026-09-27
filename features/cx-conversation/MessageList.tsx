@@ -145,6 +145,7 @@ export function MessageList({
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3 py-12">
         <MessageSquare className="h-10 w-10 opacity-30" />
+        {/* read-gate-exempt: messages come from _legacy-stubs selectors that return a constant empty list; no read exists here to fail */}
         <p className="text-sm">No messages yet. Start a conversation.</p>
       </div>
     );

@@ -12,6 +12,7 @@
 
 "use client";
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -127,8 +128,16 @@ function RecoveryInputSection({
 }
 
 export default function RecoveryWindowImpl() {
-  const { items, isOpen, close, markViewed, deleteItem, updatePayload } =
-    useRequestRecovery();
+  const {
+    items,
+    readError,
+    refresh,
+    isOpen,
+    close,
+    markViewed,
+    deleteItem,
+    updatePayload,
+  } = useRequestRecovery();
   const router = useRouter();
   const isMobile = useIsMobile();
 
@@ -465,9 +474,17 @@ export default function RecoveryWindowImpl() {
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
-                {items.length === 0
-                  ? "No recovered submissions."
-                  : "Select an item from the sidebar."}
+                {readError && items.length === 0 ? (
+                  <ReadFailure
+                    error={readError}
+                    what="your saved submissions"
+                    onRetry={() => void refresh()}
+                  />
+                ) : items.length === 0 ? (
+                  "No recovered submissions."
+                ) : (
+                  "Select an item from the sidebar."
+                )}
               </div>
             )}
           </section>

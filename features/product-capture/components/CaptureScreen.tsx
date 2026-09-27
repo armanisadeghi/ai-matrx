@@ -30,6 +30,7 @@
  * and the upload lane; SKU/notes/voice stay fully functional.
  */
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import React, {
   useCallback,
   useEffect,
@@ -449,7 +450,9 @@ export function CaptureScreen({
               {itemLabel}
               <span className="font-normal text-white/60">
                 {" · "}
-                {photoCount === 0
+                {session.resumeError && photoCount === 0
+                  ? "photos not loaded"
+                  : photoCount === 0
                   ? "no photos"
                   : `${photoCount} photo${photoCount === 1 ? "" : "s"}`}
               </span>
@@ -576,6 +579,17 @@ export function CaptureScreen({
               {host.flash && (
                 <div className="absolute inset-0 z-30 bg-white/70" />
               )}
+              {/* The resume read failed: this item's saved photos are unknown, not absent. */}
+              {session.resumeError ? (
+                <div className="absolute inset-x-3 top-16 z-40 mt-safe">
+                  <ReadFailure
+                    error={session.resumeError}
+                    what="this item's saved photos"
+                    onRetry={session.retryResume}
+                    className="m-0"
+                  />
+                </div>
+              ) : null}
               {/* Hide/show controls — always present, same spot. */}
               <button
                 type="button"

@@ -307,6 +307,7 @@ export default function SandboxSettingsPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {Object.entries(prefs.env).length === 0 && (
+            // read-gate-exempt: settings form over the user's preferences hydrated at boot (no read on this page); the env list is the form's own field
             <p className="text-xs text-muted-foreground">No env vars set.</p>
           )}
           {Object.entries(prefs.env).map(([key, value]) => (

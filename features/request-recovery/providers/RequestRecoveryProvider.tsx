@@ -27,6 +27,12 @@ import { setOnline } from "@/lib/redux/net/netHealthSlice";
 
 interface RequestRecoveryContextValue {
   items: PayloadRecord[];
+  /**
+   * The latest scan of the saved-submissions store (IndexedDB) failed — the
+   * list is then unknown, not empty. Null after a scan that succeeded
+   * (RC-B12 r12).
+   */
+  readError: unknown;
   hasItems: boolean;
   hasNewItems: boolean;
   isOpen: boolean;
@@ -48,6 +54,7 @@ const noop = async () => {};
 
 const RequestRecoveryContext = createContext<RequestRecoveryContextValue>({
   items: [],
+  readError: null,
   hasItems: false,
   hasNewItems: false,
   isOpen: false,
@@ -71,6 +78,7 @@ export function RequestRecoveryProvider({
 }) {
   const dispatch = useAppDispatch();
   const [items, setItems] = useState<PayloadRecord[]>([]);
+  const [readError, setReadError] = useState<unknown>(null);
   const [isOpen, setIsOpen] = useState(false);
   const refreshing = useRef(false);
 
@@ -84,8 +92,10 @@ export function RequestRecoveryProvider({
       }
       const orphans = await payloadSafetyStore.getOrphaned();
       setItems(orphans);
+      setReadError(null);
     } catch (err) {
       console.warn("[RequestRecoveryProvider] failed to read IndexedDB:", err);
+      setReadError(err ?? true);
     } finally {
       refreshing.current = false;
     }
@@ -154,6 +164,7 @@ export function RequestRecoveryProvider({
 
   const value: RequestRecoveryContextValue = {
     items,
+    readError,
     hasItems,
     hasNewItems,
     isOpen,

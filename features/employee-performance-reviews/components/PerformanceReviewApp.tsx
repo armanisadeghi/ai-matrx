@@ -2,6 +2,7 @@
 
 // Shared interactive surface for the retained demo and organization route.
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useRef, useState } from "react";
 import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -111,6 +112,16 @@ export default function PerformanceReviewApp({
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const reportCaptureRef = useRef<HTMLDivElement>(null);
+
+  if (store.loadError) {
+    return (
+      <ReadFailure
+        error={store.loadError}
+        what="your saved reviews"
+        onRetry={store.retryLoad}
+      />
+    );
+  }
 
   if (!store.hydrated || !store.active) {
     return (

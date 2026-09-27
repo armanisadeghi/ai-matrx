@@ -269,6 +269,7 @@ export function ChoiceOptionsEditor({
                   {siblingFields.find(
                     (f) => f.field_name === binding.groupFromField,
                   )?.display_name ?? binding.groupFromField}{" "}
+                  {/* read-gate-exempt: static explanation of group narrowing (an empty cell sees every option), not an empty view */}
                   cell. Rows where that cell is empty see every option, and
                   changing it never rewrites a value already saved here.
                 </p>

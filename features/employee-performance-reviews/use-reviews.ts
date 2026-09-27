@@ -27,46 +27,46 @@ export function organizationPerformanceReviewStorageKey(
   return `matrx.performanceReviews.organization.${organizationId}.v1`;
 }
 
+/**
+ * Reads the saved reviews. THROWS when the saved data cannot be read (storage
+ * blocked, corrupt JSON): the caller must not treat that as "no reviews" —
+ * seeding a blank review would then overwrite the unread data on first save.
+ */
 function loadReviews(storageKey: string): Review[] {
   if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(storageKey);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
+  const raw = window.localStorage.getItem(storageKey);
+  if (!raw) return [];
+  const parsed: unknown = JSON.parse(raw);
+  if (!Array.isArray(parsed)) return [];
 
-    return parsed
-      .filter((value): value is Partial<Review> =>
-        Boolean(value && typeof value === "object"),
-      )
-      .map((value) => ({
-        ...createBlankReview(),
-        ...value,
-        responsibilities: Array.isArray(value.responsibilities)
-          ? value.responsibilities.filter(
-              (item): item is string => typeof item === "string",
-            )
-          : [],
-        accomplishments: Array.isArray(value.accomplishments)
-          ? value.accomplishments.filter(
-              (item): item is string => typeof item === "string",
-            )
-          : [],
-        strengths: Array.isArray(value.strengths)
-          ? value.strengths.filter(
-              (item): item is string => typeof item === "string",
-            )
-          : [],
-        opportunities: Array.isArray(value.opportunities)
-          ? value.opportunities.filter(
-              (item): item is string => typeof item === "string",
-            )
-          : [],
-      }));
-  } catch (error) {
-    console.error("Unable to load saved performance reviews", error);
-    return [];
-  }
+  return parsed
+    .filter((value): value is Partial<Review> =>
+      Boolean(value && typeof value === "object"),
+    )
+    .map((value) => ({
+      ...createBlankReview(),
+      ...value,
+      responsibilities: Array.isArray(value.responsibilities)
+        ? value.responsibilities.filter(
+            (item): item is string => typeof item === "string",
+          )
+        : [],
+      accomplishments: Array.isArray(value.accomplishments)
+        ? value.accomplishments.filter(
+            (item): item is string => typeof item === "string",
+          )
+        : [],
+      strengths: Array.isArray(value.strengths)
+        ? value.strengths.filter(
+            (item): item is string => typeof item === "string",
+          )
+        : [],
+      opportunities: Array.isArray(value.opportunities)
+        ? value.opportunities.filter(
+            (item): item is string => typeof item === "string",
+          )
+        : [],
+    }));
 }
 
 function saveReviews(storageKey: string, reviews: Review[]) {
@@ -90,6 +90,13 @@ export interface ReviewStats {
 
 export interface UseReviews {
   hydrated: boolean;
+  /**
+   * The saved reviews could not be read (RC-B12 r12). While set, nothing is
+   * persisted (the unread data is never overwritten) and `hydrated` stays false.
+   */
+  loadError: unknown;
+  /** Read the saved reviews again. */
+  retryLoad: () => void;
   reviews: Review[];
   active: Review | null;
   activeId: string | null;
@@ -114,6 +121,12 @@ export function useReviews(
   storageKey = DEMO_PERFORMANCE_REVIEW_STORAGE_KEY,
 ): UseReviews {
   const [hydrated, setHydrated] = useState(false);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const retryLoad = () => {
+    setLoadError(null);
+    setLoadAttempt((n) => n + 1);
+  };
   const [reviews, setReviews] = useState<Review[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -122,7 +135,14 @@ export function useReviews(
   // Hydrate once on mount (client only) to avoid SSR mismatch.
   useEffect(() => {
     const timer = setTimeout(() => {
-      const loaded = loadReviews(storageKey);
+      let loaded: Review[];
+      try {
+        loaded = loadReviews(storageKey);
+      } catch (error) {
+        console.error("Unable to load saved performance reviews", error);
+        setLoadError(error ?? true);
+        return;
+      }
       if (loaded.length === 0) {
         const blank = createBlankReview();
         setReviews([blank]);
@@ -135,7 +155,7 @@ export function useReviews(
     }, 0);
 
     return () => clearTimeout(timer);
-  }, [storageKey]);
+  }, [storageKey, loadAttempt]);
 
   // Debounced persistence whenever reviews change (after hydration).
   useEffect(() => {
@@ -369,6 +389,8 @@ export function useReviews(
 
   return {
     hydrated,
+    loadError,
+    retryLoad,
     reviews,
     active,
     activeId,

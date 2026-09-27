@@ -96,6 +96,14 @@ export interface UseProductCaptureSessionResult {
   /** Reopen an existing item (from the review sheet). */
   resumeItem: (itemId: string) => Promise<void>;
   removeArtifact: (localId: string) => void;
+  /**
+   * The mount-time resume read (deep-linked or mid-item product and its saved
+   * files) failed — the item on screen is NOT known to have no photos. Null
+   * while it succeeded or never ran (RC-B12 r12).
+   */
+  resumeError: unknown;
+  /** Run the mount-time resume read again. */
+  retryResume: () => void;
 }
 
 export interface UseProductCaptureSessionOptions {
@@ -382,6 +390,13 @@ export function useProductCaptureSession(
   // Resume on mount (once per org resolution): an explicit `?item=` deep
   // link wins; otherwise the localStorage mid-item state after a reload.
   const resumeTriedRef = useRef(false);
+  const [resumeError, setResumeError] = useState<unknown>(null);
+  const [resumeAttempt, setResumeAttempt] = useState(0);
+  const retryResume = () => {
+    resumeTriedRef.current = false;
+    setResumeError(null);
+    setResumeAttempt((n) => n + 1);
+  };
   useEffect(() => {
     if (!organizationId || resumeTriedRef.current) return;
     resumeTriedRef.current = true;
@@ -403,13 +418,15 @@ export function useProductCaptureSession(
     // never run synchronously inside this effect (cascading-render lint).
     const timer = setTimeout(() => {
       void resumeItem(storedId)
+        .then(() => setResumeError(null))
         .catch((err: unknown) => {
           console.error("[product-capture] resume failed", err);
+          setResumeError(err ?? true);
         })
         .finally(resumeReady.resolve);
     }, 0);
     return () => clearTimeout(timer);
-  }, [organizationId, resumeItem, initialItemId, resumeReady]);
+  }, [organizationId, resumeItem, initialItemId, resumeReady, resumeAttempt]);
 
   // ── Codes ─────────────────────────────────────────────────────────────────
 
@@ -721,5 +738,7 @@ export function useProductCaptureSession(
     nextItem,
     resumeItem,
     removeArtifact,
+    resumeError,
+    retryResume,
   };
 }

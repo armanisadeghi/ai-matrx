@@ -8,6 +8,7 @@
 
 "use client";
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import React, { useState, useEffect } from "react";
 import {
   Mic,
@@ -343,8 +344,14 @@ export function AudioRecoveryModal({
   isOpen,
   onClose,
 }: AudioRecoveryModalProps) {
-  const { recoveredItems, dismissItem, dismissAll, hasRecoveredData } =
-    useAudioRecovery();
+  const {
+    recoveredItems,
+    dismissItem,
+    dismissAll,
+    hasRecoveredData,
+    recoveryError,
+    refreshRecovery,
+  } = useAudioRecovery();
 
   const handleDismissItem = async (id: string) => {
     await dismissItem(id);
@@ -377,7 +384,13 @@ export function AudioRecoveryModal({
           </DialogDescription>
         </DialogHeader>
 
-        {hasRecoveredData ? (
+        {recoveryError && !hasRecoveredData ? (
+          <ReadFailure
+            error={recoveryError}
+            what="your recovered recordings"
+            onRetry={() => void refreshRecovery()}
+          />
+        ) : hasRecoveredData ? (
           <div className="space-y-3">
             {recoveredItems.map((item) => (
               <RecoveryItem

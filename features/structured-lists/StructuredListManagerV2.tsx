@@ -107,6 +107,7 @@ export function StructuredListManagerV2({
           onRemove={(id) => q.removeItem(activeList.id, id)}
         />
       ) : (
+        // read-gate-exempt: this EmptyState takes readError and loading and renders ReadFailure (with retry) itself when the lists read failed
         <EmptyState
           loading={q.loadingLists}
           readError={q.listsError}

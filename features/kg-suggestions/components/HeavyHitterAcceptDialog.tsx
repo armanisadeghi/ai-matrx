@@ -59,6 +59,8 @@ import {
   selectScopeTypesLoading,
 } from "@/features/scopes/redux/selectors/admin";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import { selectTreeError } from "@/features/scopes/redux/selectors/tree";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export interface HeavyHitterAcceptDialogProps {
   open: boolean;
@@ -111,6 +113,7 @@ export function HeavyHitterAcceptDialog({
       : ([] as ScopeType[]),
   );
   const typesLoading = useAppSelector(selectScopeTypesLoading);
+  const typesError = useAppSelector(selectTreeError);
 
   const suggestedName = row.suggested_value ?? row.entity.name ?? "";
   const [name, setName] = useState(suggestedName);
@@ -194,6 +197,13 @@ export function HeavyHitterAcceptDialog({
         <Label className="text-xs">Scope type</Label>
         {typesLoading && !hasTypes ? (
           <Skeleton className="h-9 w-full rounded-md" />
+        ) : typesError && !hasTypes ? (
+          <ReadFailure
+            error={typesError}
+            what="your scope types"
+            onRetry={() => void dispatch(ensureScopeTree())}
+            className="m-0"
+          />
         ) : hasTypes ? (
           <Select value={typeId} onValueChange={setTypeId} disabled={busy}>
             <SelectTrigger>

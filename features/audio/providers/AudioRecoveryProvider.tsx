@@ -20,6 +20,11 @@ interface AudioRecoveryContextValue {
   getAudioBlob: (id: string) => Promise<Blob | null>;
   refreshRecovery: () => Promise<void>;
   initialize: () => void;
+  /**
+   * The orphan scan (the IndexedDB read) failed — "no recovered recordings"
+   * is then unknown, not true. Null after a scan that succeeded (RC-B12 r12).
+   */
+  recoveryError: unknown;
 }
 
 const AudioRecoveryContext = createContext<AudioRecoveryContextValue>({
@@ -30,6 +35,7 @@ const AudioRecoveryContext = createContext<AudioRecoveryContextValue>({
   getAudioBlob: async () => null,
   refreshRecovery: async () => {},
   initialize: () => {},
+  recoveryError: null,
 });
 
 export function useAudioRecovery() {
@@ -43,17 +49,20 @@ export function AudioRecoveryProvider({
 }) {
   const [recoveredItems, setRecoveredItems] = useState<SafetyRecord[]>([]);
   const [initialized, setInitialized] = useState(false);
+  const [recoveryError, setRecoveryError] = useState<unknown>(null);
 
   const checkForOrphans = useCallback(async () => {
     try {
       if (typeof window === "undefined" || !window.indexedDB) return;
       const orphans = await audioSafetyStore.getOrphaned();
       setRecoveredItems(orphans);
+      setRecoveryError(null);
       // Clean scan — nothing to recover, so the dirty-recording boot marker
       // (which auto-activates the audio system on boot) has done its job.
       if (orphans.length === 0) getSharedDirtyRecordingMarker().clear();
     } catch (err) {
       console.warn("[AudioRecoveryProvider] Failed to check IndexedDB:", err);
+      setRecoveryError(err ?? true);
     }
   }, []);
 
@@ -112,6 +121,7 @@ export function AudioRecoveryProvider({
     getAudioBlob,
     refreshRecovery: checkForOrphans,
     initialize,
+    recoveryError,
   };
 
   return (
