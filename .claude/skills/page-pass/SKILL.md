@@ -169,6 +169,9 @@ surface). Say which parts you judged as authored content.
   `features/flashcards/components/home/deckSurface.ts` (list); older manifests
   that inline raw arrays are not examples to copy. Over budget
   needs Arman's approval. Procedure: `surface-write-targets` Step 4.
+- **An agent sees the choices of anything it can set** — a stage, rating or
+  role target ships its options as a value (`<field>_options`: id + label), and
+  a write the agent makes shows where the person looks (the tile that lists it).
 - **Every person-action has an agent twin — count them.** List every create /
   edit / archive control on the page (New deal, Add file, a toggle) and the
   write target that does the same job; put that mapping in your report. A
