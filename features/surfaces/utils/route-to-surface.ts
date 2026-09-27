@@ -801,6 +801,14 @@ export function surfaceFromPathname(
     return "matrx-user/masterwork-rulebook";
   }
 
+  // The UI Surfaces registry LIST is exactly `/administration/ui/surfaces`.
+  // One surface's editor (`/administration/ui/surfaces/<client>/<local>`) is a
+  // one-record page with no surface of its own yet, so it resolves to null
+  // rather than borrowing the list's vocabulary.
+  if (/^\/administration\/ui\/surfaces\/?$/.test(stripped)) {
+    return "matrx-admin/ui-surfaces";
+  }
+
   // ONE open review is `/administration/users/agent-review/[id]` — a dynamic
   // leaf under the queue list's prefix, which cannot tell them apart. They are
   // two surfaces on purpose: the list emits true queue-wide counts it can only

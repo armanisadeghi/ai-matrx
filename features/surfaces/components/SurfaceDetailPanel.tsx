@@ -18,6 +18,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { surfaceDeleteConsequence } from "@/features/surfaces/utils/surface-delete-consequence";
+import { getRegisteredSurfaceNames } from "@/features/surfaces/manifests/registry";
 import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
 import {
   deleteSurface,
@@ -146,12 +148,12 @@ export function SurfaceDetailPanel({
   };
 
   const onDelete = async () => {
-    const referenced = surface.toolCount > 0 || surface.agentCount > 0;
     const ok = await confirm({
       title: `Delete ${surface.name}?`,
-      description: referenced
-        ? `This surface has ${surface.toolCount} tool reference${surface.toolCount === 1 ? "" : "s"} and ${surface.agentCount} agent reference${surface.agentCount === 1 ? "" : "s"}. Deletion will cascade-remove those rows. Use Deactivate unless you've already cleaned up references.`
-        : "No tools or agents point at this surface — safe to delete.",
+      description: surfaceDeleteConsequence(
+        surface,
+        getRegisteredSurfaceNames().includes(surface.name),
+      ),
       confirmLabel: "Delete",
       variant: "destructive",
     });

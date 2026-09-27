@@ -361,6 +361,14 @@ describe("Admin surface resolution (post catch-all removal)", () => {
     expect(surfaceFromPathname("/administration/users/agent-review")).toBe(
       "matrx-admin/agent-review",
     );
+    // The UI Surfaces registry list is exact; one surface's editor is a
+    // different (record) page and must not borrow the list's surface.
+    expect(surfaceFromPathname("/administration/ui/surfaces")).toBe(
+      "matrx-admin/ui-surfaces",
+    );
+    expect(
+      surfaceFromPathname("/administration/ui/surfaces/matrx-user/notes"),
+    ).toBeNull();
     // ONE open review is its own surface — the list's queue-wide counts and
     // the item page's open-row values cannot be emitted by each other.
     expect(

@@ -62,7 +62,7 @@ function checkedBadge(row: SurfaceWithStats) {
       variant="outline"
       title={title}
       className={cn(
-        "text-[10px]",
+        "text-xs",
         state === "never" && "bg-muted text-muted-foreground border-border",
         state === "stale" &&
           "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800",
@@ -92,7 +92,7 @@ function surfaceColumns(
               <span className="block truncate font-medium text-foreground">
                 {row.label}
               </span>
-              <span className="block truncate font-mono text-[10px] text-muted-foreground">
+              <span className="block truncate font-mono text-xs text-muted-foreground">
                 {row.name}
               </span>
             </span>
@@ -104,14 +104,14 @@ function surfaceColumns(
           {row.overlay_id && (
             <Badge
               variant="outline"
-              className="shrink-0 gap-1 text-[10px]"
+              className="shrink-0 gap-1 text-xs"
               title={row.overlay_id}
             >
               <AppWindow className="h-3 w-3" /> overlay
             </Badge>
           )}
           {row.name === navigatingName && (
-            <span className="inline-flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" /> Opening…
             </span>
           )}
@@ -134,7 +134,7 @@ function surfaceColumns(
       width: 180,
       cell: (row) =>
         row.executor_name ? (
-          <span className="font-mono text-[10px] text-muted-foreground">
+          <span className="font-mono text-xs text-muted-foreground">
             {row.executor_name}
           </span>
         ) : (
@@ -147,7 +147,7 @@ function surfaceColumns(
       width: 180,
       cell: (row) =>
         row.parent_surface_name ? (
-          <span className="font-mono text-[10px] text-muted-foreground">
+          <span className="font-mono text-xs text-muted-foreground">
             {row.parent_surface_name}
           </span>
         ) : (
@@ -162,10 +162,10 @@ function surfaceColumns(
         const tier = tierFor(row.sort_order);
         return (
           <>
-            <Badge variant="outline" className="text-[10px]">
+            <Badge variant="outline" className="text-xs">
               {tier.label}
             </Badge>
-            <span className="ml-1 text-[10px] tabular-nums text-muted-foreground">
+            <span className="ml-1 text-xs tabular-nums text-muted-foreground">
               {row.sort_order}
             </span>
           </>
@@ -182,7 +182,7 @@ function surfaceColumns(
         manifestedSurfaceNames.has(row.name) ? (
           <Badge
             variant={row.surfaceValueCount > 0 ? "default" : "outline"}
-            className="text-[10px] tabular-nums"
+            className="text-xs tabular-nums"
           >
             {row.surfaceValueCount}
           </Badge>
@@ -233,12 +233,12 @@ function surfaceColumns(
         row.is_active ? (
           <Badge
             variant="outline"
-            className="text-[10px] bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
+            className="text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
           >
             active
           </Badge>
         ) : (
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-xs">
             inactive
           </Badge>
         ),

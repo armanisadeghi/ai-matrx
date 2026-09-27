@@ -11,8 +11,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
   AlertTriangle,
-  Layers,
   Loader2,
+  MoreHorizontal,
+  RefreshCw,
   Zap,
   UserPlus,
   CircleCheck,
@@ -20,6 +21,30 @@ import {
   Circle,
   CircleAlert,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { ADMIN_UI_SURFACES_SURFACE_NAME } from "@/features/surfaces/manifests/admin-ui-surfaces.manifest";
+import {
+  buildUiSurfacesScope,
+  type UiSurfacesDialog,
+} from "@/features/surfaces/lib/ui-surfaces-scope";
+import {
+  parseCreateSurfacesValue,
+  parseDeleteSurfacesValue,
+  parseUpdateSurfacesValue,
+  type SurfaceWriteContext,
+} from "@/features/surfaces/lib/ui-surfaces-agent-writes";
+import { surfaceDeleteConsequence } from "@/features/surfaces/utils/surface-delete-consequence";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,8 +71,10 @@ import { NewSurfaceDialog } from "@/features/surfaces/components/NewSurfaceDialo
 
 import {
   bulkSetSurfacesActive,
+  createSurface,
   createUiClient,
   deleteSurface,
+  updateSurface,
   listClientNames,
   listSurfacesWithStats,
   readinessBucketOf,
@@ -66,6 +93,7 @@ export function SurfacesContainer() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const isMobile = useIsMobile();
 
   const [surfaces, setSurfaces] = useState<SurfaceWithStats[]>([]);
   const [clients, setClients] = useState<
@@ -231,6 +259,16 @@ export function SurfacesContainer() {
   }, [surfaces, manifestedSurfaceNames]);
 
   const onDelete = async (row: SurfaceWithStats) => {
+    const ok = await confirm({
+      title: `Delete ${row.label ?? row.name}?`,
+      description: surfaceDeleteConsequence(
+        row,
+        manifestedSurfaceNames.has(row.name),
+      ),
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (!ok) return;
     try {
       await deleteSurface(row.name);
       dismissRecordToasts({ type: "ui_surface", id: row.name });
@@ -242,27 +280,162 @@ export function SurfacesContainer() {
     }
   };
 
+  const openDialog: UiSurfacesDialog | null = creating
+    ? "new_surface"
+    : newClientOpen
+      ? "new_client"
+      : candidatesOpen
+        ? "candidates"
+        : syncOpen
+          ? "sync_manifests"
+          : driftOpen
+            ? "drift_report"
+            : null;
+
+  // Agent context — built from state this page already rendered; never fetches.
+  const getScope = () =>
+    buildUiSurfacesScope({
+      loading,
+      error,
+      surfaces,
+      visible,
+      clientNames,
+      manifestedNames: manifestedSurfaceNames,
+      filters,
+      readinessCounts,
+      candidatesAvailable,
+      codeOnlyManifests: driftSignal,
+      peekedName: selectedName,
+      openDialog,
+    });
+
+  // Agent writes — one record type (surfaces), full list CRUD through this
+  // page's own service functions; every list is checked whole before the
+  // approval card, and the page reloads after each write.
+  const writeContext = (): SurfaceWriteContext => ({
+    existing: surfaces.map((s) => ({
+      name: s.name,
+      has_manifest: manifestedSurfaceNames.has(s.name),
+    })),
+    clientNames,
+  });
+  const reloadAfter =
+    <T,>(run: (plan: T) => Promise<{ id: string; name: string }>) =>
+    async (plan: T) => {
+      const ref = await run(plan);
+      void load();
+      return ref;
+    };
+  const getWriteHandlers = () =>
+    collectionWriteHandlers(
+      {
+        plural: "surfaces",
+        singular: "surface",
+        create: {
+          parse: (value) => parseCreateSurfacesValue(value, writeContext()),
+          run: reloadAfter(async (plan: ReturnType<typeof parseCreateSurfacesValue>[number]) => {
+            const row = await createSurface(plan);
+            return { id: row.name, name: row.label ?? row.name };
+          }),
+          nameOf: (plan) => plan.name,
+        },
+        update: {
+          parse: (value) => parseUpdateSurfacesValue(value, writeContext()),
+          run: reloadAfter(async (plan: ReturnType<typeof parseUpdateSurfacesValue>[number]) => {
+            await updateSurface(plan.name, plan.patch);
+            return { id: plan.name, name: plan.name };
+          }),
+          nameOf: (plan) => plan.name,
+          changedOf: (plan) => plan.changed,
+        },
+        delete: {
+          parse: (value) => parseDeleteSurfacesValue(value, writeContext()),
+          run: reloadAfter(async (s: { name: string }) => {
+            await deleteSurface(s.name);
+            dismissRecordToasts({ type: "ui_surface", id: s.name });
+            if (selectedName === s.name) setSelectedName(null);
+            return { id: s.name, name: s.name };
+          }),
+          nameOf: (s) => s.name,
+        },
+      },
+      refuseSurfaceWrite,
+    );
+
+  const actions = [
+    {
+      key: "drift",
+      label: "Drift report",
+      icon: AlertTriangle,
+      title: "Compare code manifests to database state",
+      badge: driftSignal,
+      onClick: () => setDriftOpen(true),
+    },
+    {
+      key: "sync",
+      label: "Sync manifests",
+      icon: RefreshCw,
+      title: "Apply code manifests to the database",
+      badge: 0,
+      onClick: () => setSyncOpen(true),
+    },
+    {
+      key: "client",
+      label: "New client",
+      icon: UserPlus,
+      title: "Create a new UI client",
+      badge: 0,
+      onClick: () => setNewClientOpen(true),
+    },
+    {
+      key: "candidates",
+      label: "Candidates",
+      icon: Zap,
+      title:
+        candidatesAvailable === 0
+          ? "Every curated candidate is already in the registry"
+          : "Bulk-add from the curated candidate inventory",
+      badge: candidatesAvailable,
+      disabled: candidatesAvailable === 0,
+      onClick: () => setCandidatesOpen(true),
+    },
+  ];
+
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col bg-background">
-      {/* Header */}
-      <div data-matrx-table-page className="shrink-0 py-1.5 border-b border-border flex items-center gap-2 flex-wrap">
-        <Layers className="h-4 w-4 text-muted-foreground" />
-        <h1 className="text-sm font-medium">Tool Registry · UI Surfaces</h1>
-        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <Badge variant="outline" className="text-[10px]">
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_UI_SURFACES_SURFACE_NAME}
+      getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
+    >
+    <NonEditableContextMenu
+      sourceFeature="admin"
+      surfaceName={ADMIN_UI_SURFACES_SURFACE_NAME}
+      menuVersion={1}
+      getApplicationScope={getScope}
+      contentSource={{ type: "raw" }}
+    >
+    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col bg-background matrx-touch-targets">
+      {/* Toolbar — the page title lives in the shell header; this row holds
+          the registry counts, the readiness filter toggles and the actions. */}
+      <div
+        data-matrx-table-page
+        className="shrink-0 py-1.5 border-b border-border flex items-center gap-1.5 flex-wrap"
+      >
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Badge variant="outline" className="text-xs font-normal">
             {surfaces.length} total
           </Badge>
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-xs font-normal">
             {totalActive} active
           </Badge>
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-xs font-normal">
             {manifestedSurfaceNames.size} manifests
           </Badge>
           {totalUnused > 0 && (
             <Badge
-              variant="secondary"
-              className="text-[10px]"
-              title="No tools or agents"
+              variant="outline"
+              className="text-xs font-normal"
+              title="Surfaces with no agents and no tools"
             >
               {totalUnused} unused
             </Badge>
@@ -271,65 +444,9 @@ export function SurfacesContainer() {
         {loading && (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
         )}
-
-        <div className="ml-auto flex flex-wrap items-center gap-1.5">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setDriftOpen(true)}
-            className="h-7 gap-1.5 text-xs"
-            title="Compare code manifests to database state"
-          >
-            <AlertTriangle className="h-3.5 w-3.5" />
-            Drift report
-            {driftSignal > 0 && (
-              <Badge variant="default" className="ml-1 text-[10px] px-1 h-4">
-                {driftSignal}
-              </Badge>
-            )}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setSyncOpen(true)}
-            className="h-7 gap-1.5 text-xs"
-            title="Apply code manifests to the database"
-          >
-            Sync manifests
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setNewClientOpen(true)}
-            className="h-7 gap-1.5 text-xs"
-            title="Create a new ui_client"
-          >
-            <UserPlus className="h-3.5 w-3.5" />
-            New client
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setCandidatesOpen(true)}
-            disabled={candidatesAvailable === 0}
-            className="h-7 gap-1.5 text-xs"
-            title="Bulk-add from the curated candidate inventory"
-          >
-            <Zap className="h-3.5 w-3.5" />
-            Candidates
-            {candidatesAvailable > 0 && (
-              <Badge variant="default" className="ml-1 text-[10px] px-1 h-4">
-                {candidatesAvailable}
-              </Badge>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* Readiness rollup — the surface tracking board. Counts follow the
-          client filter; clicking a tile filters the list by that bucket. */}
-      <div data-matrx-table-page className="shrink-0 py-1.5 border-b border-border bg-background">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+        {/* Readiness filter — counts follow the client filter; pressing one
+            filters the list by that bucket, pressing it again clears it. */}
+        <div className="flex flex-wrap items-center gap-1">
           {(
             [
               { bucket: "verified", icon: CircleCheck },
@@ -341,36 +458,83 @@ export function SurfacesContainer() {
             const meta = READINESS_META[bucket];
             const active = filters.readiness === bucket;
             return (
-              <button
+              <Button
                 key={bucket}
+                size="sm"
+                variant={active ? "secondary" : "ghost"}
+                aria-pressed={active}
+                title={`${meta.description} — ${active ? "clear the" : "filter by this"} readiness`}
                 onClick={() =>
                   setFilters((f) => ({
                     ...f,
                     readiness: active ? "all" : bucket,
                   }))
                 }
-                title={`${meta.description} — click to ${active ? "clear the" : "filter by this"} readiness filter`}
-                aria-pressed={active}
-                className={`rounded-md border px-2.5 py-1.5 text-left transition-colors flex items-center justify-between gap-2 ${
-                  active
-                    ? "border-primary ring-1 ring-primary bg-muted/40"
-                    : "border-border bg-card hover:bg-muted/30"
-                }`}
+                className={`h-7 gap-1.5 px-2 text-xs ${active ? "ring-1 ring-primary" : ""}`}
               >
-                <span className="flex items-center gap-1.5 min-w-0">
-                  <Icon
-                    className={`h-3.5 w-3.5 shrink-0 ${meta.iconClassName}`}
-                  />
-                  <span className="text-[11px] font-medium capitalize truncate">
-                    {meta.label}
-                  </span>
-                </span>
-                <span className="text-base font-semibold tabular-nums leading-none">
+                <Icon className={`h-3.5 w-3.5 ${meta.iconClassName}`} />
+                <span className="capitalize">{meta.label}</span>
+                <span className="font-semibold tabular-nums">
                   {readinessCounts[bucket]}
                 </span>
-              </button>
+              </Button>
             );
           })}
+        </div>
+
+        <div className="ml-auto flex items-center gap-1.5">
+          {isMobile ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1.5 text-xs"
+                  aria-label="Registry actions"
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                  Actions
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {actions.map((a) => (
+                  <DropdownMenuItem
+                    key={a.key}
+                    disabled={a.disabled}
+                    onSelect={a.onClick}
+                  >
+                    <a.icon className="h-4 w-4" />
+                    {a.label}
+                    {a.badge > 0 && (
+                      <span className="ml-auto tabular-nums text-muted-foreground">
+                        {a.badge}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            actions.map((a) => (
+              <Button
+                key={a.key}
+                size="sm"
+                variant="outline"
+                onClick={a.onClick}
+                disabled={a.disabled}
+                className="h-7 gap-1.5 text-xs"
+                title={a.title}
+              >
+                <a.icon className="h-3.5 w-3.5" />
+                {a.label}
+                {a.badge > 0 && (
+                  <Badge variant="default" className="ml-1 h-4 px-1 text-xs">
+                    {a.badge}
+                  </Badge>
+                )}
+              </Button>
+            ))
+          )}
         </div>
       </div>
 
@@ -475,6 +639,8 @@ export function SurfacesContainer() {
         />
       )}
     </div>
+    </NonEditableContextMenu>
+    </SurfaceRuntimeProvider>
   );
 }
 
