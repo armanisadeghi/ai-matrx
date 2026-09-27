@@ -339,7 +339,9 @@ export interface AiModelsPreferences {
   /** Model id, or null = platform default (resolved from the AI catalog at
    *  consumption time — features/ai-models/redux/platformDefaultModel.ts). */
   defaultModel: string | null;
-  activeModels: string[];
+  /** Models the person switched off in Settings › Models; every user-variant
+   *  model picker leaves them out. (The old `activeModels` allow-list, which no
+   *  picker ever read, was removed 2026-09-27 and is stripped on load.) */
   inactiveModels: string[];
   newModels: string[];
   /** Starred model ids. Applied only when the model is present in the catalog
@@ -997,7 +999,23 @@ export function sanitizeLoadedPreferences(
     ) as VideoConferencePreferences;
   }
   out = liftLegacyAudioDevicesToMediaDevices(out);
+  out = stripRetiredActiveModels(out);
   return out;
+}
+
+/**
+ * 2026-09-27: `aiModels.activeModels` was an allow-list no model picker ever
+ * read (Settings › Models said "0 active" while every model was offered).
+ * The one real list is `inactiveModels` (hidden from pickers). Mirrored in
+ * `users.normalize_preferences_jsonb`.
+ */
+export function stripRetiredActiveModels(
+  loaded: Partial<UserPreferences>,
+): Partial<UserPreferences> {
+  const aiModels = loaded.aiModels as (Partial<AiModelsPreferences> & { activeModels?: unknown }) | undefined;
+  if (!aiModels || !("activeModels" in aiModels)) return loaded;
+  const { activeModels: _retired, ...rest } = aiModels;
+  return { ...loaded, aiModels: rest as AiModelsPreferences };
 }
 
 /**
@@ -1199,7 +1217,6 @@ export const initializeUserPreferencesState = (
     aiModels: {
       // null = platform default (catalog-resolved) — see prompts.defaultModel.
       defaultModel: null,
-      activeModels: [],
       inactiveModels: [],
       newModels: [],
       favoriteModels: [],

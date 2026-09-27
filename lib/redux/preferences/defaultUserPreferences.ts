@@ -152,7 +152,6 @@ export const defaultUserPreferences: UserPreferences = {
   aiModels: {
     // null = platform default (catalog-resolved) — see prompts.defaultModel.
     defaultModel: null,
-    activeModels: [],
     inactiveModels: [],
     newModels: [],
     favoriteModels: [],
