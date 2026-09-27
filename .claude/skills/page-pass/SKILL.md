@@ -256,6 +256,9 @@ surface). Say which parts you judged as authored content.
   every field round-trips exactly (a toggle labelled
   "Private" never writes another visibility; a blank type is never saved as a
   default).
+- **A count on a button equals what it opens** ("Review 81 due" opens 81, not 29).
+- **An automatic AI job re-runs only when its inputs meaningfully change** —
+  never on page open, a view switch, or an empty record it created itself.
 - **Numbers are plausible.** Sanity-check every computed figure against the
   rows behind it (a study time of 57 days, a count that disagrees with its
   list, a 0 shown beside content that exists are defects).
