@@ -42,8 +42,11 @@ procedure — open it only when you are doing that job or the check fails.
    `blocked` (what blocks).
 4. **Fix what you found** — the cause, not the symptom. Never remove, rename or
    hide a feature to make a rule pass. Database changes are part of the job
-   (functions, grants, `client_callable_door` rows through the Supabase MCP, per
-   CLAUDE.md; new tables only via `platform.create_entity_table`). A
+   (functions, grants, `client_callable_door` rows, per CLAUDE.md; new tables only
+   via `platform.create_entity_table`). Pick ONE path: through the Supabase MCP
+   with NO migration file, or a file you write and apply with `pnpm db:apply`
+   (ledgered). Never both — an MCP-applied change with a file left beside it
+   reads as unapplied drift. A
    DROP/CREATE of a function loses its grants and its `client_callable_door` row:
    restore both in the same transaction. A shared-link fix often reaches past the
    page into the shared execution stack (org gate, bindings, the server's guest
@@ -153,6 +156,10 @@ surface). Say which parts you judged as authored content.
   `features/flashcards/components/home/deckSurface.ts` (list); older manifests
   that inline raw arrays are not examples to copy. Over budget
   needs Arman's approval. Procedure: `surface-write-targets` Step 4.
+- **Every person-action has an agent twin — count them.** List every create /
+  edit / archive control on the page (New deal, Add file, a toggle) and the
+  write target that does the same job; put that mapping in your report. A
+  control with no target is a gap you close or explain.
 - **Can change what makes sense:** every record type the page lists gets
   `create_/update_/delete_<plural>` over lists (one set per type, built with
   `collectionWriteHandlers`), plus `<record>_draft` when the page has a
@@ -207,6 +214,10 @@ surface). Say which parts you judged as authored content.
   see — never a silent return that leaves the page "still loading" forever.
 - **A control is never enabled while what it needs is loading** only to
   refuse on press — it shows a pending state, or waits and then acts.
+- **A server render never waits on the database without a limit.** Every read
+  a page's server render (and `generateMetadata`) makes has a timeout and a
+  fallback — metadata falls back to the generic title, the page to an honest
+  error — so a slow database is never a platform 504.
 - **A vague error has a real cause — find it.** "Couldn't load …" is a symptom:
   read the recorded failure (`errors` MCP tool, or `ops.system_error` via the
   Supabase MCP) and fix the cause.
@@ -379,6 +390,15 @@ surface). Say which parts you judged as authored content.
   honest (`partial` with a note naming what is unproven; `verified` only when
   everything is); anything Arman should see → `agent-review-queue` row;
   unrelated defects → `FOUND_DEFECTS.md`.
+
+## Shared defects — report, don't skip, don't collide
+
+A defect you see on your page that lives in a shared piece (the shell header,
+the org picker, the list shell, a shared section, the right-click menu) is
+never "not mine". If it is small and nobody else is on that file, fix it at the
+source (step 4's second-page proof applies). Otherwise put it in your report
+under `SHARED:` with file, symptom and evidence; the coordinator gives each
+shared defect exactly one owner so parallel workers never edit it twice.
 
 ## Report — one per page
 
