@@ -36,6 +36,8 @@ import { ShimmerText } from "@/components/loaders/ShimmerText";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
 import { getToolDisplayName } from "../registry/registry";
+import { DIFF_START_OPEN_KNOB, readSurfaceWrite } from "../surface-write/readSurfaceWrite";
+import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { useDbToolMeta } from "../db-renderer/useDbToolMeta";
 import { selectToolDisplayPreference } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
@@ -126,12 +128,19 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
 
   // ─── Collapse behavior: one-way motion, session-lived memory ─────────────
   const userPref = useAppSelector(selectToolDisplayPreference(conversationId));
+  // A batch holding a write that changed a surface follows the same knob as a
+  // single card (agents.tool_cards.diff_start_open): the change is what the
+  // person most needs to see, so it stays open unless the knob says fold.
+  const diffStartOpen = useSessionKnob(DIFF_START_OPEN_KNOB) !== false;
+  const holdsSurfaceWrite = entries.some((e) => readSurfaceWrite(e) !== null);
   const effectiveMode: "auto" | "stay-open" | "never-open" =
     userPref === "verbose"
       ? "stay-open"
       : userPref === "minimal"
         ? "never-open"
-        : "auto";
+        : holdsSurfaceWrite && diffStartOpen
+          ? "stay-open"
+          : "auto";
 
   // Batch identity survives remounts + the live→persisted flip: the run's
   // first callId. (The batch component remounts when the run grows or the
