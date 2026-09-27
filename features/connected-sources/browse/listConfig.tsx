@@ -61,7 +61,16 @@ function formatBytes(bytes: number | null): string {
   return formatFileSize(bytes);
 }
 
-function sourceColumns(): EntityColumnSpec<ConnectedSourceRow>[] {
+/**
+ * Sources whose rows carry no time at all, by construction: a picked Google
+ * file is a row in our pick registry, which records WHAT was picked, not when
+ * Google last changed it. Its When column starts hidden (still in the column
+ * picker) — the auto-hide below only judges three or more rows, and an account
+ * with two picked files showed a column of dashes (page-pass 2026-09-27).
+ */
+const ADAPTERS_WITHOUT_TIMES = new Set(["google_picked_files"]);
+
+function sourceColumns(adapter: string): EntityColumnSpec<ConnectedSourceRow>[] {
   return [
   {
     id: "title",
@@ -125,6 +134,7 @@ function sourceColumns(): EntityColumnSpec<ConnectedSourceRow>[] {
     id: "modified_at",
     label: "When",
     phone: "meta",
+    defaultHidden: ADAPTERS_WITHOUT_TIMES.has(adapter),
     column: {
       id: "modified_at",
       accessorKey: "modified_at",
@@ -176,7 +186,7 @@ function readAsBulkAction(
     run: async (selection) => {
       const outcome = await runSourceRead(dispatch, spec.kind, selection.rows);
       if (!outcome.ok) {
-        toast.info(outcome.refusal);
+        toast.warning(outcome.refusal);
         return;
       }
       onRead(outcome.result);
@@ -262,7 +272,7 @@ function createRowActionsHook(
         try {
           const outcome = await runSourceRead(dispatch, spec.kind, [row]);
           if (!outcome.ok) {
-            toast.info(outcome.refusal);
+            toast.warning(outcome.refusal);
             return;
           }
           onRead(outcome.result);
@@ -353,13 +363,14 @@ export function createConnectedSourceListConfig(
     // service: switching either must re-ask the server, never re-render the
     // answer it got for the other one.
     serviceKey: `connected-sources:${organizationId ?? "none"}:${target.adapter}:${target.connectionId}:${target.containerId ?? ""}`,
-    columns: sourceColumns(),
+    columns: sourceColumns(target.adapter),
     // A picked Google file carries no time (the pick registry records WHAT was
     // picked, not when Google last changed it), and one account's rows all
     // carry the same From. A column that says nothing per row starts hidden,
     // still in the column picker — never a column of dashes.
     autoHideUniformColumns: true,
-    prefsVersion: 1,
+    // 2: When starts hidden for sources that carry no time.
+    prefsVersion: 2,
     getRowId: (row) => row.id,
     getRowName: (row) => row.title,
     door: { hrefFor: (row) => row.url ?? undefined },

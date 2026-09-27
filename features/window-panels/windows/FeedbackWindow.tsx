@@ -90,6 +90,7 @@ import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import type { FeedbackSubject } from "@/features/overlays/openers/feedbackDialog";
 import { describeSubject, subjectMetadata } from "./feedback-subject";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -640,7 +641,7 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
       }
       toast.info("No image found in the clipboard");
     } catch {
-      toast.info(`Copy an image first, then click Paste or press ${modifierKeyLabel()}+V`);
+      toast.warning(`Couldn't read the clipboard — copy an image first, then click Paste or press ${modifierKeyLabel()}+V`);
     }
   }, [addFiles]);
 
@@ -1332,7 +1333,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
           <CollapsibleContent className="space-y-2 border-t border-border/60 px-2.5 pb-2.5 pt-2">
             {adminOptionsError ? (
               <p className="flex items-center gap-2 text-xs text-destructive">
-                {adminOptionsError}.
+                {asClause(adminOptionsError)}.
                 <Button type="button" variant="outline" size="xs" onClick={retryAdminOptions}>
                   Retry
                 </Button>

@@ -157,7 +157,7 @@ function ReviewResult({ result }: { result: SelectedEventWindow }) {
         </p>
       </div>
       {result.truncated ? (
-        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-foreground">
+        <div role="alert" className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-foreground">
           <p>
             This seven-day window reached Google’s event limit. A complete
             snapshot is required before saving. Try again later or choose another calendar.

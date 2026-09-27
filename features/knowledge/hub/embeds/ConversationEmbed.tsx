@@ -20,6 +20,7 @@ import { hydrateConversationForReading } from "@/features/agents/components/mess
 import { loadFullConversationHistory } from "@/features/agents/conversation-export/load-full-history";
 import { setVisibleGroupLimit } from "@/features/agents/redux/execution-system/messages/messages.slice";
 import { findMessageGroup } from "./embedFor";
+import { asClause } from "@/lib/text/asClause";
 
 const SURFACE_KEY = "knowledge-hub-peek";
 /** How long the transcript may take to draw the matched message (frames ≈ 4s). */
@@ -127,7 +128,7 @@ export function ConversationEmbed({
       <div className="space-y-2 p-4 text-sm" role="alert">
         <p className="text-destructive">
           This chat could not be opened here:{" "}
-          {phase.error instanceof Error ? phase.error.message : "the read failed"}.
+          {asClause(phase.error instanceof Error ? phase.error.message : "the read failed")}.
         </p>
         <Button
           size="sm"

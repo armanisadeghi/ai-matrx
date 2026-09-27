@@ -292,10 +292,12 @@ export default function FirstScreenTab() {
           tone="error"
           title={`${missingKeys.length === 1 ? "One default is" : `${missingKeys.length} defaults are`} not set up for this organization yet`}
         >
-          They will appear here as soon as they are added — nothing is hidden on purpose.
-          <ErrorAlchemyMenu
-            error={`First-screen settings missing from the knob register: ${missingKeys.join(", ")}`}
-          />
+          <span role="alert">
+            They will appear here as soon as they are added — nothing is hidden on purpose.
+            <ErrorAlchemyMenu
+              error={`First-screen settings missing from the knob register: ${missingKeys.join(", ")}`}
+            />
+          </span>
         </SettingsCallout>
       )}
 
