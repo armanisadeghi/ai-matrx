@@ -42,8 +42,8 @@ const VIEW_MODES: {
   icon: React.ReactNode;
   label: string;
 }[] = [
-  { mode: "plain", icon: <FileText size={13} />, label: "Text" },
-  { mode: "preview", icon: <Eye size={13} />, label: "Preview" },
+  { mode: "plain", icon: <FileText size={16} />, label: "Edit" },
+  { mode: "preview", icon: <Eye size={16} />, label: "Preview" },
 ];
 
 export default function MobileNotesView({
@@ -268,42 +268,41 @@ export default function MobileNotesView({
             {/* Back */}
             <button
               onClick={handleBack}
-              className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full hover:bg-muted/60 transition-colors text-foreground"
+              className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full hover:bg-muted/60 transition-colors text-foreground"
               aria-label="Back to notes"
             >
               <ChevronLeft size={18} />
             </button>
 
-            {/* Title — truncated, small */}
-            <span className="text-xs font-medium text-muted-foreground truncate min-w-0 flex-1 max-w-[100px]">
+            {/* Title — the header names the record; it takes the free space */}
+            <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
               {noteDisplayLabel(selectedNote)}
             </span>
 
-            {/* View mode toggle — 3 pill buttons */}
-            <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5 mx-1">
-              {VIEW_MODES.map(({ mode, icon, label }) => (
+            {/* View mode — two modes, so one button that switches to the
+                other (a two-pill toggle squeezed the title to nothing and
+                its pills to 16px targets). */}
+            {(() => {
+              const next =
+                VIEW_MODES.find((m) => m.mode !== editorMode) ?? VIEW_MODES[0];
+              return (
                 <button
-                  key={mode}
-                  onClick={() => setEditorMode(mode)}
-                  title={label}
-                  className={cn(
-                    "flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all",
-                    editorMode === mode
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
+                  type="button"
+                  onClick={() => setEditorMode(next.mode)}
+                  aria-label={`Switch to ${next.label}`}
+                  title={next.label}
+                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                 >
-                  {icon}
-                  <span className="hidden xs:inline">{label}</span>
+                  {next.icon}
                 </button>
-              ))}
-            </div>
+              );
+            })()}
 
             {/* Clean up content — mutates the note, so viewers don't get it */}
             {!selectedAccess.readOnly && (
               <NoteCleanupButton
                 noteId={selectedNote.id}
-                triggerClassName="flex items-center justify-center w-7 h-7 rounded-full hover:bg-muted/60 transition-colors text-muted-foreground [&_svg]:w-3.5 [&_svg]:h-3.5"
+                triggerClassName="flex flex-shrink-0 items-center justify-center w-8 h-8 rounded-full hover:bg-muted/60 transition-colors text-muted-foreground [&_svg]:w-4 [&_svg]:h-4"
                 triggerActiveClassName="bg-muted/60 text-foreground"
               />
             )}
@@ -313,7 +312,7 @@ export default function MobileNotesView({
               noteId={selectedNote.id}
               label={selectedNote.label}
               size="sm"
-              className="h-7 w-7"
+              className="h-8 w-8 flex-shrink-0"
             />
 
             {/* Save state */}
@@ -325,11 +324,11 @@ export default function MobileNotesView({
                 />
               )}
               {justSaved && !isSaving && (
-                <Check size={14} className="text-green-500" />
+                <Check size={14} className="text-success" />
               )}
               {isDirty && !isSaving && !justSaved && (
                 <>
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-warning animate-pulse" />
                   <button
                     onClick={handleSave}
                     className="flex items-center justify-center w-7 h-7 rounded-full hover:bg-muted/60 transition-colors text-primary"
