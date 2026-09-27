@@ -23,6 +23,7 @@
 
 import type { Action, ActionCategory, ClickTarget, Eligibility } from "@ai-matrx/alchemy/actions";
 import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
+import { stripTurnTrust } from "@/features/education/tutor/turnTrust";
 import type { MenuModel, MenuNode, MenuSection } from "./model/menu-model";
 
 export interface ContextMenuTargetHost {
@@ -273,4 +274,15 @@ export function modelRevision(model: MenuModel): string {
       )
       .join(",");
   return model.sections.map((s) => `${s.id}(${walk(s.nodes)})`).join("|");
+}
+
+/**
+ * The text the menu's "Content: …" header shows for what the menu acts on —
+ * without storage plumbing: the tutor's trust comment goes through the ONE
+ * strip copies and files use (live 2026-09-26: the header showed
+ * `<!--MATRX_TRUST_V1 …-->` on every tutor answer).
+ */
+export function menuHeaderContent(actionText: { source: string; text: string }): string | null {
+  if (actionText.source === "none") return null;
+  return stripTurnTrust(actionText.text);
 }

@@ -27,7 +27,7 @@ import {
 } from "@/features/rich-document/actions/provider";
 import { useContextMenuActions } from "../hooks/useContextMenuActions";
 import { buildMenuModel } from "../model/menu-model";
-import { contextMenuActionsFromModel, modelRevision } from "../alchemy-provider";
+import { contextMenuActionsFromModel, menuHeaderContent, modelRevision } from "../alchemy-provider";
 import type { MenuContentProps } from "../types";
 
 export type AlchemyMenuMode = "context" | "sheet" | "palette";
@@ -116,7 +116,7 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
   // Re-resolve when what the menu would draw moves (agents finish loading, a
   // toggle flips) — the target object itself stays one per open.
   const revision = drawn;
-  const content = m.actionText.source === "none" ? null : m.actionText.text;
+  const content = menuHeaderContent(m.actionText);
   const engine = { revision, content };
 
   if (mode === "sheet") {
