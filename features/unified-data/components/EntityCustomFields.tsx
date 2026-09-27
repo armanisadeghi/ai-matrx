@@ -36,6 +36,7 @@ import { createClient } from "@/utils/supabase/client";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { askAsMember } from "@/features/organizations/organizationsIAmIn";
+import { registerCustomFieldsDoor } from "@/features/surfaces/runtime/custom-field-targets";
 
 export interface EntityCustomFieldsProps {
   /** The standard table's registry token (REC-33) — `party`, `crm_deal`, `crm_interaction`. */
@@ -73,7 +74,16 @@ export function EntityCustomFields({
       letTheStoreDecideRights
       config={{ dataSource: recordsDataSource(createClient()), actor: personActor(userId), organizationId }}
     >
-      <CustomFieldsSection entityToken={entityToken} recordId={recordId} title={title} className={className} />
+      {/* THE AGENT TWIN OF "ADD FIELD": the section hands its door to the
+          platform write target \`custom_fields_add\`, so every page that embeds
+          this line offers it to its agents (surfaces/runtime/custom-field-targets.ts). */}
+      <CustomFieldsSection
+        entityToken={entityToken}
+        recordId={recordId}
+        title={title}
+        className={className}
+        agentDoor={registerCustomFieldsDoor}
+      />
     </RecordsMount>
   );
 }
