@@ -152,3 +152,18 @@ describe("slow menu libraries", () => {
     expect(resolved.find((r) => r.action.id === "cm:placement:ai-action")).toBeUndefined();
   });
 });
+
+// /agent-apps/[id]/run (page-pass 2026-09-27): Compare, Attach To and Share sat
+// under "History". The section is its title. Break: any non-history row folded
+// under the History heading again → red.
+describe("the History section holds only history", () => {
+  it("Compare, Attach To and Share are not under History", async () => {
+    const { resolved } = await resolvedIds(engine(), false, {
+      entity: { type: "note", id: "n1", title: "A note", resourceType: "note" },
+    });
+    const underHistory = resolved.filter((r) => r.action.section?.label === "History").map((r) => r.action.id);
+    for (const id of underHistory) expect(["cm:view-history"]).toContain(id);
+    const ids = resolved.map((r) => r.action.id);
+    expect(ids).toEqual(expect.arrayContaining(["cm:attach", "cm:share", "cm:compare"]));
+  });
+});

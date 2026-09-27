@@ -71,6 +71,7 @@ const CATEGORY_OF: Record<MenuSection["group"], ActionCategory> = {
   clipboard: "clipboard",
   tools: "app",
   history: "history",
+  share: "share",
   document: "save",
   surface: "edit",
   ai: "ai",
