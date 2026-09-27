@@ -100,6 +100,11 @@ export interface TaskQuickCreateCoreProps {
   compact?: boolean;
   saveLabel?: string;
   onSaved?: (taskId: string, action: PostSaveAction) => void;
+  /**
+   * Fires once, the moment the task exists (before any post-save action is
+   * chosen) — for a host that becomes the task itself, like a board tile.
+   */
+  onCreated?: (taskId: string, title: string) => void;
   onCancel?: () => void;
   className?: string;
   /**
@@ -147,6 +152,7 @@ export function TaskQuickCreateCore({
   compact = false,
   saveLabel,
   onSaved,
+  onCreated,
   onCancel,
   className,
   footerHost,
@@ -457,6 +463,7 @@ export function TaskQuickCreateCore({
     dispatch(setSelectedTaskId(taskId));
     setLinkFailure(failure);
     setSavedTaskId(taskId);
+    onCreated?.(taskId, title.trim());
     // The task exists either way — on the link-failure path too, which is
     // exactly when the user most needs to reach it.
     if (!failure)
@@ -474,6 +481,7 @@ export function TaskQuickCreateCore({
     orgId,
     effectiveScopeIds,
     effectiveSources,
+    onCreated,
   ]);
 
   const handlePostSaveAction = useCallback(
