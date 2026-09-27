@@ -273,6 +273,14 @@ export interface UseAgentAppReturn {
     : never;
   loadConversation: (conversationId: string) => Promise<void>;
   resetConversation: () => void;
+  /**
+   * Start a brand-new run on a fresh conversation ("Start over"): the old
+   * result is left behind, the input clears, and the next submit starts a
+   * NEW conversation. `runKey` changes each time, so a shell can remount the
+   * app's own UI to its first screen.
+   */
+  startNewRun: () => void;
+  runKey: number;
 
   // ── Configuration mirrors (so shells can read state-of-app) ────────────
   allowChat: boolean;
@@ -427,9 +435,12 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
 
   // Use the same managed launcher /agents/[id]/run uses. It owns the
   // conversationId lifecycle, instance creation, focus tracking, etc.
+  // A bumped key re-mints the conversation id (see `startNewRun`).
+  const [runKey, setRunKey] = useState(0);
   const launcher = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature: "agent-app",
+    ...(runKey > 0 ? { preferFresh: true, freshSessionKey: runKey } : {}),
     // THE MANDATE DOOR — display identity is `agentId`; the run POSTs
     // `/ai/mandates/{key}` so the server honours a pinned winner. Passing
     // only the definition id ran latest and dropped the pin.
@@ -933,6 +944,11 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
     dispatch(clearInstanceContext(conversationId));
   }, [conversationId, dispatch]);
 
+  const startNewRun = useCallback(() => {
+    resetConversation();
+    setRunKey((key) => key + 1);
+  }, [resetConversation]);
+
   // Tag the conversation with this app's id once the conversationId is
   // available, so the history sidebar can filter by app.
   // (cx_conversation.metadata.app_id) — handled server-side by the
@@ -979,6 +995,8 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       messages: messages as UseAgentAppReturn["messages"],
       loadConversation: loadConversationCb,
       resetConversation,
+      startNewRun,
+      runKey,
       allowChat,
       surfaceHandle,
     }),
@@ -1014,6 +1032,8 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       messages,
       loadConversationCb,
       resetConversation,
+      startNewRun,
+      runKey,
       allowChat,
       surfaceHandle,
     ],

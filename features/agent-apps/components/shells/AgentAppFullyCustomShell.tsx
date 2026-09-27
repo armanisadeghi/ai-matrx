@@ -22,7 +22,8 @@
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
 import { APP_RUN_ERROR_TITLE } from "@/features/agent-apps/components/app-run-error";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -254,6 +255,24 @@ export function AgentAppFullyCustomShell({
 
   const error = localError ?? ctx.error;
 
+  // An app's own `autoFocus` lit its field's focus ring on an idle first
+  // paint, which a stranger read as an error (page-pass /p/[slug]). Release
+  // that programmatic first-paint focus; a click or Tab focuses normally.
+  const appRootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const focused = document.activeElement;
+      if (
+        focused instanceof HTMLElement &&
+        appRootRef.current?.contains(focused) &&
+        focused.matches("textarea, input")
+      ) {
+        focused.blur();
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   // Hook-contract props (Tier-3 idiomatic).
   const hookProps = ctx as unknown as Record<string, unknown>;
 
@@ -271,7 +290,7 @@ export function AgentAppFullyCustomShell({
       ? { remaining: guestLimit.remaining, total: 5 }
       : null,
     conversationId: ctx.conversationId,
-    onResetConversation: () => ctx.resetConversation(),
+    onResetConversation: () => ctx.startNewRun(),
     appName: app.name,
     appTagline: app.tagline,
     appCategory: app.category,
@@ -295,7 +314,18 @@ export function AgentAppFullyCustomShell({
           totalUsed={guestLimit.totalUsed}
         />
 
-        <div className="flex-1 overflow-auto">
+        <div ref={appRootRef} className="flex-1 overflow-auto">
+          {/* A finished result keeps its title and its actions at the TOP as
+              well as the bottom: a long answer never hides what it is, how to
+              copy it, or how to run the app again (page-pass /p/[slug]). */}
+          {showActionBar && (
+            <AppResultBar
+              appName={app.name}
+              response={ctx.response}
+              onStartOver={ctx.startNewRun}
+              className="border-b"
+            />
+          )}
           <AgentAppErrorBoundary appName={app.name}>
             <AgentAppStreamProvider
               value={{
@@ -305,7 +335,8 @@ export function AgentAppFullyCustomShell({
                 isStreaming: ctx.isStreaming,
               }}
             >
-              <CustomApp {...hookProps} {...legacyProps} />
+              {/* Remounted on "Start over" so the app returns to its first screen. */}
+              <CustomApp key={ctx.runKey} {...hookProps} {...legacyProps} />
             </AgentAppStreamProvider>
           </AgentAppErrorBoundary>
         </div>
@@ -321,6 +352,7 @@ export function AgentAppFullyCustomShell({
                 `Result from the "${app.name || "agent"}" app:\n\n${ctx.response}`
               }
             />
+            <StartOverButton onStartOver={ctx.startNewRun} />
             <MoreHorizontalTapButton
               ref={moreButtonRef}
               onClick={() => setIsOptionsOpen(true)}
@@ -349,6 +381,46 @@ export function AgentAppFullyCustomShell({
         )}
       </div>
     </AgentAppTransferBoundary>
+  );
+}
+
+function StartOverButton({ onStartOver }: { onStartOver: () => void }) {
+  return (
+    <Button variant="ghost" size="sm" onClick={onStartOver} className="gap-1.5">
+      <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+      Start over
+    </Button>
+  );
+}
+
+/** The app's name plus the result's actions, shown above a finished result. */
+function AppResultBar({
+  appName,
+  response,
+  onStartOver,
+  className,
+}: {
+  appName: string;
+  response: string;
+  onStartOver: () => void;
+  className?: string;
+}) {
+  const name = appName?.trim() || "App";
+  return (
+    <div
+      className={`flex items-center gap-2 border-border/40 px-3 py-1.5 ${className ?? ""}`}
+    >
+      <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+        {name}
+      </h1>
+      <CopyButtons
+        size="icon"
+        label={`${name} result`}
+        human={() => response}
+        agent={() => `Result from the "${name}" app:\n\n${response}`}
+      />
+      <StartOverButton onStartOver={onStartOver} />
+    </div>
   );
 }
 
