@@ -87,6 +87,47 @@ export function findingsInSource(raw) {
   return hits;
 }
 
+/**
+ * COMPONENT ROWS — a `<PageHeader>` whose child is a feature's own header
+ * component (AgentHeader, ChatRunHeader…) holding controls that do not go
+ * through the shared header. Resolved one import deep; the shell's own header
+ * components and anything inside a HeaderActionsSlot are the contract, not
+ * findings. Its own shrink-only baseline: `bespoke-header-components-baseline.json`.
+ */
+function resolveImport(file, source, name) {
+  const re = new RegExp(`import\\s+(?:${name}|\\{[^}]*\\b${name}\\b[^}]*\\}|${name}\\s*,[^;]*)\\s+from\\s+["']([^"']+)["']`);
+  const m = source.match(re);
+  if (!m) return null;
+  const spec = m[1];
+  const base = spec.startsWith("@/") ? path.join(ROOT, spec.slice(2)) : spec.startsWith(".") ? path.resolve(path.dirname(file), spec) : null;
+  if (!base) return null;
+  for (const c of [`${base}.tsx`, `${base}.ts`, path.join(base, "index.tsx")]) if (existsSync(c)) return c;
+  return null;
+}
+
+export function componentFindings(file, raw) {
+  const source = withoutComments(raw);
+  const hits = [];
+  for (const m of source.matchAll(/<PageHeader\b/g)) {
+    const rest = source.slice(m.index);
+    const close = rest.indexOf("</PageHeader>");
+    const seg = (close < 0 ? rest.slice(0, 1500) : rest.slice(0, close)).replace(/<HeaderActionsSlot\b[\s\S]*?<\/HeaderActionsSlot>/g, "");
+    for (const name of new Set([...seg.matchAll(/<([A-Z][A-Za-z0-9]+)\b/g)].map((x) => x[1]))) {
+      const target = resolveImport(file, source, name);
+      if (!target || /features[\\/]shell[\\/]components[\\/]header[\\/]/.test(target)) continue;
+      const body = withoutComments(readFileSync(target, "utf8"));
+      if (SHARED.test(body)) continue;
+      const controls = body
+        .replace(/<(ChevronLeftTapButton|HeaderBack)\b[\s\S]*?\/>/g, "")
+        .replace(/<HeaderActionsSlot\b[\s\S]*?<\/HeaderActionsSlot>/g, "");
+      if (CONTROL.test(controls)) {
+        hits.push({ line: source.slice(0, m.index).split("\n").length, kind: `header component ${name} (${path.relative(ROOT, target)})` });
+      }
+    }
+  }
+  return hits;
+}
+
 function walk(dir, out) {
   for (const name of readdirSync(dir)) {
     const full = path.join(dir, name);
@@ -97,17 +138,38 @@ function walk(dir, out) {
   }
 }
 
+/** Both finders; each keyed "file" (rows) or "file -> Component" (component rows). */
 function scan() {
   const files = [];
   for (const d of SCAN) if (existsSync(path.join(ROOT, d))) walk(path.join(ROOT, d), files);
-  const findings = new Map();
+  const rows = new Map();
+  const components = new Map();
   for (const file of files) {
-    const hits = findingsInSource(readFileSync(file, "utf8"));
-    if (hits.length) findings.set(path.relative(ROOT, file), hits);
+    const raw = readFileSync(file, "utf8");
+    const rel = path.relative(ROOT, file);
+    const hits = findingsInSource(raw);
+    if (hits.length) rows.set(rel, hits);
+    for (const h of componentFindings(file, raw)) {
+      const key = `${rel} -> ${h.kind.split(" ")[2]}`;
+      if (!components.has(key)) components.set(key, [h]);
+    }
   }
-  return findings;
+  return { rows, components };
 }
 
+function judge(findings, baselineFile, label) {
+  const baseline = new Set(existsSync(baselineFile) ? JSON.parse(readFileSync(baselineFile, "utf8")) : []);
+  const fresh = [...findings.keys()].filter((f) => !baseline.has(f));
+  const stale = [...baseline].filter((f) => !findings.has(f));
+  for (const f of fresh) {
+    for (const h of findings.get(f)) {
+      console.error(`NEW  ${f.split(" -> ")[0]}:${h.line}  ${h.kind} — build the header with RouteHeader / EntityModeHeader, or wrap its actions in HeaderActionsSlot (features/shell/components/header), so they fold into the phone ⋮ sheet.`);
+    }
+  }
+  for (const f of stale) console.error(`FIXED ${f} — remove it from ${path.relative(ROOT, baselineFile)} (the baseline only shrinks).`);
+  console.log(`[bespoke-headers] ${label}: ${findings.size} baselined.`);
+  return fresh.length + stale.length;
+}
 function selfTest() {
   const bad = `export default () => <PageHeader><span>T</span><TapTargetButton onClick={x}/></PageHeader>;`;
   const shared = `export default () => <RouteHeader left={<span>T</span>} right={<TapTargetButton onClick={x}/>} />;`;
@@ -130,26 +192,22 @@ function selfTest() {
   process.exit(ok ? 0 : 1);
 }
 
+const COMPONENT_BASELINE = path.join(ROOT, "scripts", "bespoke-header-components-baseline.json");
 const args = process.argv.slice(2);
 if (args.includes("--self-test")) selfTest();
-const findings = scan();
+const { rows, components } = scan();
 if (args.includes("--list")) {
-  for (const [file, hits] of [...findings].sort()) for (const h of hits) console.log(`${file}:${h.line}  ${h.kind}`);
+  for (const [file, hits] of [...rows].sort()) for (const h of hits) console.log(`${file}:${h.line}  ${h.kind}`);
+  for (const [key, hits] of [...components].sort()) for (const h of hits) console.log(`${key.split(" -> ")[0]}:${h.line}  ${h.kind}`);
   process.exit(0);
 }
 if (args.includes("--update")) {
-  writeFileSync(BASELINE, JSON.stringify([...findings.keys()].sort(), null, 2) + "\n");
-  console.log(`[bespoke-headers] baseline written: ${findings.size} files`);
+  writeFileSync(BASELINE, JSON.stringify([...rows.keys()].sort(), null, 2) + "\n");
+  writeFileSync(COMPONENT_BASELINE, JSON.stringify([...components.keys()].sort(), null, 2) + "\n");
+  console.log(`[bespoke-headers] baselines written: ${rows.size} rows, ${components.size} component rows`);
   process.exit(0);
 }
-const baseline = new Set(existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, "utf8")) : []);
-const fresh = [...findings.keys()].filter((f) => !baseline.has(f));
-const stale = [...baseline].filter((f) => !findings.has(f));
-for (const f of fresh) {
-  for (const h of findings.get(f)) {
-    console.error(`NEW  ${f}:${h.line}  ${h.kind} — build the header with RouteHeader / EntityModeHeader (features/shell/components/header) so its actions fold into the phone ⋮ sheet.`);
-  }
-}
-for (const f of stale) console.error(`FIXED ${f} — remove it from scripts/bespoke-headers-baseline.json (the baseline only shrinks).`);
-if (fresh.length || stale.length) process.exit(1);
-console.log(`[bespoke-headers] CLEAN — ${findings.size} baselined file(s) left to move onto the shared header.`);
+const failures =
+  judge(rows, BASELINE, "header rows") + judge(components, COMPONENT_BASELINE, "header components");
+if (failures) process.exit(1);
+console.log("[bespoke-headers] CLEAN");
