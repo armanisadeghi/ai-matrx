@@ -61,7 +61,6 @@ export default function AppShell({
         <div
           className="shell-root"
           data-pathname={pathname}
-          {...(sidebarExpanded ? { "data-sidebar-expanded": "" } : {})}
           {...(settingsRoute ? { "data-settings-route": "" } : {})}
           {...(FORCE_EXCLUDE_SIDEMENU ? { "data-no-sidebar": "" } : {})}
         >

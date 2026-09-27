@@ -250,7 +250,7 @@ All three are client components that render as `shell-nav-item` buttons:
 
 Key design decisions:
 
-1. **Grid layout** (`.shell-root`): `grid-template-columns: var(--shell-sidebar-w) 1fr` with rows `header | main`. Sidebar column expands from the `#shell-sidebar-toggle` checkbox: `.shell-root[data-sidebar-expanded]` (server-rendered from the cookie, mirrored by `ShellSidebarCookieSync`) sizes the grid, and `.shell-root > #shell-sidebar-toggle:checked ~ * .x` reaches everything else. Never `:has()` on `.shell-root` (`pnpm check:page-wide-has`).
+1. **Grid layout** (`.shell-root`): `grid-template-columns: var(--shell-sidebar-w) 1fr` with rows `header | main`. Sidebar column expands from the `#shell-sidebar-toggle` checkbox: the grid follows it through a child-only `.shell-root:has(> #shell-sidebar-toggle:checked)` (pure CSS, right before JavaScript loads), and `.shell-root > #shell-sidebar-toggle:checked ~ * .x` reaches everything else. Never a descendant `:has()` on `.shell-root` (`pnpm check:page-wide-has`).
 
 2. **Header is transparent** (`.shell-header`): `background: transparent; pointer-events: none` — content scrolls behind it. The center slot (`#shell-header-center`) is where all page-specific chrome appears.
 

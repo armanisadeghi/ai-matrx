@@ -131,6 +131,13 @@ function findingsForCss(css, file) {
         continue;
       }
       for (const anchor of hasAnchors(complex)) {
+        // A CHILD-only argument (`:has(> #x:checked)`) is re-checked only when
+        // the anchor's own children change — never on insertions deeper in the
+        // app — so it is allowed (the shell grid follows its checkbox this way
+        // before JavaScript loads).
+        const at = complex.indexOf(anchor) + anchor.length;
+        const arg = complex.slice(at, complex.indexOf(")", at));
+        if (/^\s*>\s*[^\s>~+,]+\s*$/.test(arg)) continue;
         if (PAGE_ROOT_ANCHOR.test(anchor)) {
           out.push(`${file}:${line}  :has() on the page root (${anchor.replace(/:has\($/, "")}) — "${complex}"`);
         }
@@ -183,6 +190,7 @@ function scan(files) {
 
 function selfTest() {
   const red = [
+    [".shell-root:has(> .shell-main .marker) .x { gap: 0 }", "css"],
     [".shell-root:has(#shell-sidebar-toggle:checked) .shell-sidebar { width: 1px }", "css"],
     ["body:has(.shell-show-dock) .shell-main { padding: 0 }", "css"],
     [".shell-root:not(:has(#t:checked)) .x { gap: 0 }", "css"],
@@ -190,6 +198,7 @@ function selfTest() {
     ['const c = "peer/menu-button group-has-[[data-sidebar=menu-action]]/menu-item:pr-8";', "tsx"],
   ];
   const green = [
+    [".shell-root:has(> #shell-sidebar-toggle:checked) { grid-template-columns: 1fr }", "css"],
     [".shell-root > #shell-sidebar-toggle:checked ~ * .shell-sidebar { width: 1px }", "css"],
     ['.shell-root[data-pathname^="/x"] ~ * .shell-dock { display: none }', "css"],
     [".item-row:has([data-state=open]) .item-shift { gap: 0 }", "css"],
