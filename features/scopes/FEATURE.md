@@ -398,6 +398,15 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-09-27 — **The boot scope tree reads project tags from the source side, and reads every scope.** `getScopeTree` asked
+  `assoc_for_targets('scope', <every scope>)` for every edge into every scope (transcripts, agents, workflows …) to keep
+  the project ones: 3–4 s per page, paged twice, against the 8 s statement timeout → `rpc/assoc_for_targets` 500 (57014)
+  on every right-click menu mount (/hr/settings/employer, /crm/<id>). It also found no project edges at all, because the
+  scopes read was capped at 1000 of 2296 rows. Now `bulkEntityScopeIds('project', projectIds)` (`assoc_for_sources`,
+  ~60 ms) and `readAllRows` for the scopes. Guard: `service/__tests__/scope-tree-reads-project-tags-from-the-source-side.test.ts`.
+  Still open (same class): `listEntityScopeTags` (notes sidebar) reads every edge into every visible scope and filters by
+  source type client-side; it needs a source-type-filtered target read.
+
 - 2026-09-27 — **The record store writes scopes; one writer in the app.** Lane SCOPES-WRITE-THROUGH.
   New `service/scopeStore.ts` (every scope write, through `custom.context_*`) and `service/scopeRows.ts`
   (decoders + slug rule moved out of `scopesService.ts`). Callers moved: `scopeTreeMutations`,
