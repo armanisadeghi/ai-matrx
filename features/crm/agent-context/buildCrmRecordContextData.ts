@@ -154,20 +154,23 @@ export function buildCrmRecordContextData(
     detail.interactions,
   );
 
+  // LOADED-AND-UNSET IS A VALUE. Every field a person can fill in is sent as
+  // "" / null when it is empty, so an agent can tell "not set" from "not
+  // loaded" (an absent key means the record has not loaded yet).
   return createCrmRecordScope({
     party_id: party.id,
     party_kind: party.party_kind,
     display_name: party.display_name,
     record: party,
-    first_name: party.first_name ?? undefined,
-    last_name: party.last_name ?? undefined,
-    preferred_name: party.preferred_name ?? undefined,
-    legal_name: party.legal_name ?? undefined,
-    job_title: party.job_title ?? undefined,
-    headline: party.headline ?? undefined,
-    bio: party.bio ?? undefined,
-    primary_domain: party.primary_domain ?? undefined,
-    timezone: party.timezone ?? undefined,
+    first_name: party.first_name ?? "",
+    last_name: party.last_name ?? "",
+    preferred_name: party.preferred_name ?? "",
+    legal_name: party.legal_name ?? "",
+    job_title: party.job_title ?? "",
+    headline: party.headline ?? "",
+    bio: party.bio ?? "",
+    primary_domain: party.primary_domain ?? "",
+    timezone: party.timezone ?? "",
     // Shown on the page as "None" when unset — so the agent sees it as set to
     // nothing (null), never as a value it was not told about.
     lifecycle_stage: args.lifecycleStage ?? NONE_CHOSEN,
@@ -176,24 +179,24 @@ export function buildCrmRecordContextData(
     rating_options: args.ratingOptions,
     role_options: args.roleOptions,
     roles: args.roles ?? [],
-    expert_status: party.expert_status ?? undefined,
+    expert_status: party.expert_status ?? "",
     record_class: party.record_class,
-    source: party.source ?? undefined,
-    source_detail: party.source_detail ?? undefined,
+    source: party.source ?? "",
+    source_detail: party.source_detail ?? "",
     organization_id: party.organization_id,
     visibility: party.visibility,
-    assigned_to: party.assigned_to ?? undefined,
+    assigned_to: party.assigned_to ?? "",
     primary_employer: party.employer
       ? { id: party.employer.id, name: party.employer.display_name }
       : undefined,
     aliases: party.aka,
-    pronouns: party.pronouns ?? undefined,
-    locale: party.locale ?? undefined,
-    date_of_birth: party.date_of_birth ?? undefined,
-    founded_year: party.founded_year ?? undefined,
-    industry_id: party.industry_id ?? undefined,
-    do_not_contact_reason: party.do_not_contact_reason ?? undefined,
-    became_customer_at: party.became_customer_at ?? undefined,
+    pronouns: party.pronouns ?? "",
+    locale: party.locale ?? "",
+    date_of_birth: party.date_of_birth ?? "",
+    founded_year: party.founded_year ?? null,
+    industry_id: party.industry_id ?? "",
+    do_not_contact_reason: party.do_not_contact_reason ?? "",
+    became_customer_at: party.became_customer_at ?? "",
     created_at: party.created_at,
     updated_at: party.updated_at,
     identity: {

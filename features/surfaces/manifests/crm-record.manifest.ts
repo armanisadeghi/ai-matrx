@@ -976,7 +976,7 @@ export function createCrmRecordScope(values: {
   pronouns?: string;
   locale?: string;
   date_of_birth?: string;
-  founded_year?: number;
+  founded_year?: number | null;
   industry_id?: string;
   do_not_contact_reason?: string;
   became_customer_at?: string;
