@@ -326,3 +326,79 @@ export function parseInteraction(value: unknown): ParsedInteraction {
     occurredAt,
   };
 }
+
+export interface ParsedDealDraft {
+  name: string;
+  pipelineId?: string;
+  amount?: number | null;
+  currency?: string;
+  expectedCloseDate?: string | null;
+  description?: string | null;
+}
+
+/** `create_deal` — a deal with THIS record as its party, validated whole. */
+export function parseDealDraft(value: unknown): ParsedDealDraft {
+  const target = "create_deal";
+  const input = objectValue(target, value);
+  rejectUnknownKeys(target, input, [
+    "name",
+    "pipeline_id",
+    "amount",
+    "currency",
+    "expected_close_date",
+    "description",
+  ]);
+  const name = optionalText(target, "name", input.name);
+  if (!name) throw new Error("create_deal.name is required.");
+  if (input.pipeline_id !== undefined && !isUuidShape(input.pipeline_id)) {
+    throw new Error("create_deal.pipeline_id expects a pipeline UUID.");
+  }
+  let amount: number | null | undefined;
+  if (input.amount === undefined || input.amount === null) {
+    amount = input.amount as null | undefined;
+  } else if (
+    typeof input.amount === "number" &&
+    Number.isFinite(input.amount) &&
+    input.amount >= 0
+  ) {
+    amount = input.amount;
+  } else {
+    throw new Error("create_deal.amount expects a non-negative number.");
+  }
+  const currency = optionalText(target, "currency", input.currency);
+  if (currency && !/^[A-Za-z]{3}$/.test(currency)) {
+    throw new Error("create_deal.currency expects a three-letter code such as USD.");
+  }
+  return {
+    name,
+    pipelineId: input.pipeline_id as string | undefined,
+    amount,
+    currency: currency ?? undefined,
+    expectedCloseDate: optionalDate(
+      target,
+      "expected_close_date",
+      input.expected_close_date,
+    ),
+    description: optionalText(target, "description", input.description),
+  };
+}
+
+export interface ParsedTaskDraft {
+  title: string;
+  description?: string;
+  dueDate?: string;
+}
+
+/** `create_task` — a task attached to THIS record, validated whole. */
+export function parseTaskDraft(value: unknown): ParsedTaskDraft {
+  const target = "create_task";
+  const input = objectValue(target, value);
+  rejectUnknownKeys(target, input, ["title", "description", "due_date"]);
+  const title = optionalText(target, "title", input.title);
+  if (!title) throw new Error("create_task.title is required.");
+  return {
+    title,
+    description: optionalText(target, "description", input.description) ?? undefined,
+    dueDate: optionalDate(target, "due_date", input.due_date) ?? undefined,
+  };
+}

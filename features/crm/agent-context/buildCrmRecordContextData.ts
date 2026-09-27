@@ -23,6 +23,7 @@ import {
 } from "@/features/surfaces/manifests/crm-record.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type { ContactCandidateView } from "../enrichment/service";
+import type { DealRow } from "../deals/types";
 import type { PlatformComment as Comment } from "@ai-matrx/associations";
 import {
   CONTACT_BLOCK_REASON_LABELS,
@@ -47,6 +48,12 @@ export interface BuildCrmRecordContextDataArgs {
   /** Suggested ways to reach this record, as the Contact details card shows them. `null` = not read yet. */
   contactCandidates?: ContactCandidateView[] | null;
   contactCandidatesLoadError?: string | null;
+  /** The Deals card's rows (`null` = not read yet) and its failure sentence. */
+  deals?: DealRow[] | null;
+  dealsLoadError?: string | null;
+  /** Ids of the tasks and files attached to this record (the Tasks / Files tiles). */
+  attachedTaskIds?: string[];
+  attachedFileIds?: string[];
 }
 
 /** The exact non-content interaction context permitted across the model boundary. */
@@ -154,8 +161,10 @@ export function buildCrmRecordContextData(
     bio: party.bio ?? undefined,
     primary_domain: party.primary_domain ?? undefined,
     timezone: party.timezone ?? undefined,
-    lifecycle_stage: args.lifecycleStage ?? undefined,
-    rating: args.rating ?? undefined,
+    // Shown on the page as "None" when unset — so the agent sees it as set to
+    // nothing (null), never as a value it was not told about.
+    lifecycle_stage: args.lifecycleStage ?? null,
+    rating: args.rating ?? null,
     roles: args.roles ?? [],
     expert_status: party.expert_status ?? undefined,
     record_class: party.record_class,
@@ -210,6 +219,18 @@ export function buildCrmRecordContextData(
     // Omitted until read; a failed read reports only its sentence.
     contact_candidates: args.contactCandidates?.map(candidateScope),
     contact_candidates_load_error: contactCandidatesLoadError,
+    deals: args.deals?.map((deal) => ({
+      id: deal.id,
+      name: deal.name,
+      amount: deal.amount,
+      currency: deal.currency,
+      status: deal.status,
+      stage_id: deal.stage_id,
+      expected_close_date: deal.expected_close_date,
+    })),
+    deals_load_error: args.dealsLoadError ?? undefined,
+    attached_task_ids: args.attachedTaskIds,
+    attached_file_ids: args.attachedFileIds,
     merge_state: party.canonical_id
       ? { merged_into_party_id: party.canonical_id, is_canonical: false }
       : undefined,

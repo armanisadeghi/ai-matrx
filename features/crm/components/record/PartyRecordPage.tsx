@@ -13,9 +13,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { Building2, Send, User } from "lucide-react";
+import { Building2, Send, Trash2, User } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import {
+  ChevronLeftTapButton,
+  MoreHorizontalTapButton,
+} from "@ai-matrx/tap-target/buttons";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
 import { AssociationCardGrid } from "@ai-matrx/associations/react";
@@ -26,6 +35,10 @@ import { cn } from "@/lib/utils";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createTask } from "@/features/tasks/services/taskService";
+import { parseTaskDraft } from "../../agent-context/crmRecordSurfaceWrite";
+import type { DealRow } from "../../deals/types";
 import type { ContactCandidateView } from "../../enrichment/service";
 import { useOpenGmailComposeWindow } from "@/features/overlays/openers/gmailComposeWindow";
 import { selectActiveProjectId } from "@/features/scopes/redux/selectors/active-context";
@@ -101,7 +114,12 @@ export function PartyRecordPage({ partyId }: Props) {
   const { categories: partyRoles } = useCategories({
     dimension: CATEGORY_DIMENSIONS.partyRole,
   });
-  const { edges: partyEdges } = useAssociations({ type: "party", id: partyId });
+  const { edges: partyEdges, add: addPartyEdge } = useAssociations({
+    type: "party",
+    id: partyId,
+  });
+  const [deals, setDeals] = useState<DealRow[] | null>(null);
+  const [dealsLoadError, setDealsLoadError] = useState<string | null>(null);
   const openGmailCompose = useOpenGmailComposeWindow();
   // The project the person is working in, so the sent message is ASSOCIATED with
   // it. Until F-20 no opener passed one, so the project edge `associations.ts`
@@ -115,15 +133,16 @@ export function PartyRecordPage({ partyId }: Props) {
   const onDelete = async () => {
     if (!party) return;
     const ok = await confirm({
-      title: `Delete ${party.display_name}?`,
-      description: "The record moves to trash. Contact history is kept.",
-      confirmLabel: "Delete",
+      title: `Move ${party.display_name} to trash?`,
+      description:
+        "The record moves to trash and can be restored from there. Its contact history, notes and deals are kept.",
+      confirmLabel: "Move to trash",
       variant: "destructive",
     });
     if (!ok) return;
     try {
       await deleteParty(party.id);
-      toast.success(`${party.display_name} deleted`);
+      toast.success(`${party.display_name} moved to trash`);
       router.push("/crm");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Delete failed");
@@ -167,7 +186,56 @@ export function PartyRecordPage({ partyId }: Props) {
       notesLoadError,
       contactCandidates,
       contactCandidatesLoadError,
+      deals,
+      dealsLoadError,
+      attachedTaskIds: partyEdges
+        .filter((edge) => edge.otherType === "task")
+        .map((edge) => edge.otherId),
+      attachedFileIds: partyEdges
+        .filter((edge) => edge.otherType === "file")
+        .map((edge) => edge.otherId),
     });
+
+  // The agent twin of the Tasks tile's "+": the same createTask every task
+  // surface uses, in THIS record's organization, then attached to the record
+  // through the one association write the tile itself uses.
+  useSurfaceWriteHandlers(CRM_RECORD_SURFACE_NAME, {
+    create_task: {
+      // Refused before the approval card when the value is malformed.
+      validate: (raw: unknown) => {
+        parseTaskDraft(raw);
+      },
+      apply: async (raw: unknown) => {
+      if (!party) throw new Error("The record has not loaded yet.");
+      const input = parseTaskDraft(raw);
+      const task = await createTask({
+        title: input.title,
+        description: input.description ?? null,
+        due_date: input.dueDate ?? null,
+        organization_id: party.organization_id,
+        origin: "agent",
+        source_type: "party",
+        source_id: party.id,
+        source_label: party.display_name,
+      });
+      if (!task) throw new Error("The task could not be created.");
+      const linked = await addPartyEdge({
+        targetType: "task",
+        targetId: task.id,
+        orgId: party.organization_id,
+      });
+      if (!linked.ok) {
+        throw new Error(
+          `Task "${task.title}" was created but could not be attached to ${party.display_name}: ${linked.error ?? "unknown error"}.`,
+        );
+      }
+      return {
+        summary: `Created task "${task.title}" and attached it to ${party.display_name}.`,
+        data: { id: task.id, title: task.title },
+      };
+      },
+    },
+  });
 
   return (
     <SurfaceRuntimeProvider
@@ -198,17 +266,23 @@ export function PartyRecordPage({ partyId }: Props) {
         right={
           party ? (
             <>
-              {/* Lowest priority first: on a narrow header RouteHeader folds
-                  Delete into its "…" overflow and keeps Send email visible.
-                  Never CSS-hidden — a phone must be able to delete too. */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => void onDelete()}
-                className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-              >
-                Delete
-              </Button>
+              {/* A destructive action lives in the record's "…" menu (Linear,
+                  HubSpot) — never bare red text in the header. It confirms,
+                  and the record goes to trash (restorable). */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <MoreHorizontalTapButton ariaLabel="More actions" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onSelect={() => void onDelete()}
+                  >
+                    <Trash2 className="mr-2 h-3.5 w-3.5" />
+                    Move to trash…
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               {/* 🚨 EMAILING A PERSON IS A FIRST-CLASS ACTION ON THE RECORD.
                   Until 2026-09-17 the only door to the Gmail compose window was
                   hidden behind the "Email" chip of the log-a-past-activity strip
@@ -338,6 +412,27 @@ export function PartyRecordPage({ partyId }: Props) {
                     onChanged={refresh}
                   />
                 )}
+                {/* Deals with this person/company — the door goes both ways
+                    (a deal names its party; the party names its deals). */}
+                <PartyDealsCard
+                  party={party}
+                  onStateChange={(rows, loadError) => {
+                    setDeals(rows);
+                    setDealsLoadError(loadError);
+                  }}
+                />
+                {/* Files and Tasks sit in the rail: full width here, and the rail no
+                    longer ends in empty space halfway down the page. */}
+                <PrimaryEntityProvider
+                  value={{
+                    type: "party",
+                    id: party.id,
+                    orgId: party.organization_id,
+                    label: party.display_name,
+                  }}
+                >
+                  <AssociationCardGrid tokens={["task", "file"]} />
+                </PrimaryEntityProvider>
               </div>
 
               {/* Activity main */}
@@ -375,9 +470,6 @@ export function PartyRecordPage({ partyId }: Props) {
                     storedActivity={storedJournalistActivity(party)}
                   />
                 )}
-                {/* Deals with this person/company — the door goes both ways
-                    (a deal names its party; the party names its deals). */}
-                <PartyDealsCard party={party} />
                 {/* "Outputs about this customer" — the reverse view slice 2
                     built for sites, pointed at this party (DD-131 slice 3). */}
                 <PartyOutputsSection
@@ -398,6 +490,7 @@ export function PartyRecordPage({ partyId }: Props) {
                   writeSurfaceName={CRM_RECORD_SURFACE_NAME}
                   copyParent={copyParent}
                   partyLabel={party.display_name}
+                  showSendEmail={false}
                 />
                 <PartyNotes
                   partyId={party.id}
@@ -410,16 +503,6 @@ export function PartyRecordPage({ partyId }: Props) {
                     setNotesLoadError(nextError);
                   }}
                 />
-                <PrimaryEntityProvider
-                  value={{
-                    type: "party",
-                    id: party.id,
-                    orgId: party.organization_id,
-                    label: party.display_name,
-                  }}
-                >
-                  <AssociationCardGrid tokens={["task", "file"]} />
-                </PrimaryEntityProvider>
               </div>
             </div>
           </NonEditableContextMenu>

@@ -70,9 +70,9 @@ const values: SurfaceValue[] = [
     name: "party_id",
     label: "Record ID",
     description:
-      "UUID of the CRM record open on this page. Always populated once the record loads.",
+      "UUID of the CRM record open on this page. Always present on this page — the id is the route.",
     valueType: "string",
-    alwaysAvailable: false,
+    alwaysAvailable: true,
     typicalCharCount: 36,
     group: "record_identity",
     sortOrder: 100,
@@ -209,7 +209,7 @@ const values: SurfaceValue[] = [
     name: "lifecycle_stage",
     label: "Lifecycle stage",
     description:
-      "The record's current CRM lifecycle category as { id, name }, or empty when unset.",
+      "The record's current CRM lifecycle category as { id, name }, or null when the page shows None.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 90,
@@ -220,7 +220,7 @@ const values: SurfaceValue[] = [
     name: "rating",
     label: "Rating",
     description:
-      "The record's current CRM rating category as { id, name }, or empty when unset.",
+      "The record's current CRM rating category as { id, name }, or null when the page shows None.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 90,
@@ -582,6 +582,48 @@ const values: SurfaceValue[] = [
     sortOrder: 241,
   },
   {
+    name: "deals",
+    label: "Deals",
+    description:
+      "Deals with this record as their party, as the Deals card shows them: id, name, amount, currency, status, stage_id, expected_close_date. Omitted until read.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 600,
+    group: "activity",
+    sortOrder: 420,
+  },
+  {
+    name: "deals_load_error",
+    label: "Deals load error",
+    description:
+      "The sentence the Deals card shows when deals could not be read. Empty when the list is trustworthy.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    group: "activity",
+    sortOrder: 421,
+  },
+  {
+    name: "attached_task_ids",
+    label: "Attached tasks",
+    description: "Ids of the tasks attached to this record (the Tasks tile).",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 200,
+    group: "collaboration",
+    sortOrder: 520,
+  },
+  {
+    name: "attached_file_ids",
+    label: "Attached files",
+    description: "Ids of the files attached to this record (the Files tile).",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 200,
+    group: "collaboration",
+    sortOrder: 530,
+  },
+  {
     name: "merge_state",
     label: "Merge state",
     description:
@@ -766,6 +808,30 @@ const writeTargets: SurfaceWriteTarget[] = [
     sortOrder: 500,
   },
   {
+    name: "create_deal",
+    label: "Create deal",
+    description:
+      "Creates a deal with THIS record as its party, through the same createDeal path as the Deals card's New deal dialog. Value: { name: string, amount?: non-negative number, currency?: three-letter code (default USD), expected_close_date?: YYYY-MM-DD, description?: string, pipeline_id?: pipeline UUID (default: the organization's first pipeline) }. It lands on the pipeline's first open stage.",
+    valueType: "object",
+    updatesValue: "deals",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "activity",
+    sortOrder: 420,
+  },
+  {
+    name: "create_task",
+    label: "Create task",
+    description:
+      "Creates a task in this record's organization and attaches it to the record — the same task the Tasks tile's add creates. Value: { title: string, description?: string, due_date?: YYYY-MM-DD }.",
+    valueType: "object",
+    updatesValue: "attached_task_ids",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "collaboration",
+    sortOrder: 520,
+  },
+  {
     name: "promote_to_contact",
     label: "Promote to contact",
     description:
@@ -785,7 +851,9 @@ export const crmRecordManifest: SurfaceManifest = {
   executionMode: "python-stream",
   description:
     "",
-  readiness: "verified",
+  readiness: "partial",
+  readinessNote:
+    "create_deal, create_task and company-side add_employment were added 2026-09-27 and are not yet proven with a live agent run (surface:probe --agent).",
   label: "CRM Record",
   urlPattern: "/crm/[partyId]",
   intro: `<surface_intro>
@@ -793,7 +861,7 @@ You are on a CRM record — the 360° view of ONE person or company the user's o
 
 REACHABILITY IS NOT A GUESS. Before you propose emailing or calling anyone, read do_not_contact and contactable_summary. A contact point can be blocked by the record's own do-not-contact flag, by that point's opt-out, or by the shared medium being marked DNC / invalid / suppressed — and a medium is shared, so a suppression set by anyone applies here too. Never propose using a blocked value; say it is blocked and why.
 
-NORMAL RECORD MAINTENANCE IS WRITABLE WITH APPROVAL. Use the declared write targets to update visible identity/classification fields, CRM roles and do-not-contact stance; add contact points, addresses, employment, interactions and notes; end an employment stint; or promote a discovered record into the contact list. Every target validates against the live page and writes through the same canonical path as its visible control. Party kind, organization/ownership, merge, delete, purge, removing historical rows, suppression overrides and candidate verdicts remain human-only.
+NORMAL RECORD MAINTENANCE IS WRITABLE WITH APPROVAL. Use the declared write targets to update visible identity/classification fields, CRM roles and do-not-contact stance; add contact points, addresses, employment (an employer on a person record, a person on a company record), interactions and notes; end an employment stint; create a deal or a task for this record; or promote a discovered record into the contact list. Attaching a FILE stays human: a file is uploaded by a person from the Files tile. Every target validates against the live page and writes through the same canonical path as its visible control. Party kind, organization/ownership, merge, delete, purge, removing historical rows, suppression overrides and candidate verdicts remain human-only.
 
 Interaction content and last_touch_at are withheld from model context until the server supplies immutable provenance. The interaction ID list may still establish that activity exists; never treat missing text or time as proof that there has been no interaction.
 </surface_intro>`,
@@ -852,8 +920,8 @@ export function createCrmRecordScope(values: {
   bio?: string;
   primary_domain?: string;
   timezone?: string;
-  lifecycle_stage?: CrmRecordCategoryScope;
-  rating?: CrmRecordCategoryScope;
+  lifecycle_stage?: CrmRecordCategoryScope | null;
+  rating?: CrmRecordCategoryScope | null;
   roles?: CrmRecordCategoryScope[];
   expert_status?: string;
   record_class?: string;
@@ -886,6 +954,10 @@ export function createCrmRecordScope(values: {
   notes_load_error?: string;
   contact_candidates?: CrmRecordContactCandidateScope[];
   contact_candidates_load_error?: string;
+  deals?: unknown[];
+  deals_load_error?: string;
+  attached_task_ids?: string[];
+  attached_file_ids?: string[];
   merge_state?: Record<string, unknown>;
   is_loading: boolean;
   load_error?: string;
