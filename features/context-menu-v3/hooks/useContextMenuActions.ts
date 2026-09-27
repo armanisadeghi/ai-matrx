@@ -240,8 +240,13 @@ export interface ContextMenuActions {
   categoryGroups: AgentMenuCategoryGroup[];
   grouped: Record<string, AgentMenuCategoryGroup[]>;
   loading: boolean;
+  /** Why the agent libraries (AI Actions, My Items, …) did not load — e.g. past the menu's deadline. */
+  librariesError: string | null;
   boundAgentSections: SurfaceBoundAgentSection[];
   boundAgentsLoading: boolean;
+  boundAgentsError: string | null;
+  /** Re-run the library fetches after a failure or a missed deadline. */
+  retryLibraries: () => void;
   richDocCtx: RichDocumentActionContext;
   /** The registry actions this menu shows — rendered as the ONE tree. */
   registryActions: RichDocumentAction[];
@@ -424,7 +429,12 @@ export function useContextMenuActions(
     [menuSurfaceConfig],
   );
 
-  const { categoryGroups, loading, refresh } = useUnifiedAgentContextMenu({
+  const {
+    categoryGroups,
+    loading,
+    error: librariesError,
+    refresh,
+  } = useUnifiedAgentContextMenu({
     placementTypes: dbPlacementTypes,
     surfaceName,
     availableKeys,
@@ -438,6 +448,7 @@ export function useContextMenuActions(
   const {
     sections: boundAgentSections,
     loading: boundAgentsLoading,
+    error: boundAgentsError,
     refresh: refreshBoundAgents,
   } = useSurfaceBoundAgents(surfaceName, { isEditable });
 
@@ -1208,8 +1219,14 @@ export function useContextMenuActions(
     categoryGroups,
     grouped: groupsByPlacement(categoryGroups),
     loading,
+    librariesError,
     boundAgentSections,
     boundAgentsLoading,
+    boundAgentsError,
+    retryLibraries: () => {
+      void refresh();
+      void refreshBoundAgents();
+    },
     richDocCtx,
     registryActions,
     copyVariantActions,

@@ -8,6 +8,8 @@
 
 ## Change log
 
+- `2026-09-27` — **A read-only right-click offers only what can act; nothing loads forever; the menu fits the viewport.** On a read-only target (a table row, rendered content) Cut / Paste / Undo / Redo are ABSENT instead of greyed (`EDIT_ONLY_VERBS` in `alchemy-provider.ts`; they still grey with their sentence in an editable field). Select All is absent when it would do nothing (no captured selection and no field). Every menu library fetch (AI Actions, My Items, Org Items, Agents) races `withMenuDeadline` (`utils/menu-deadline.ts`, 8 s); past it the row stays and opens onto one "Couldn't load. Retry" row instead of "Loading…" forever. The package menu opens beside the pointer (`@ai-matrx/alchemy` `ContextMenuPanel`, side right + collision padding) so Radix shifts a tall menu up instead of running it off the bottom. Guard: `__tests__/read-only-menu-stays-honest.test.ts`.
+
 - `2026-09-17` — **`primary` sections: the clicked target comes first.** New optional `ContextMenuExtraSection.primary`; `liftPrimarySections` (classic) and `arrangeMenu` (tiered/command) put it at the top, inline, heading kept, with the pane's sibling sections directly under it. First adopter: the data-table grid (a header right-click opened on dead Cell and Row folds with the column's actions eleven rows down). Verified live on `/data/[id]`; `layout-parity.test.ts` pins order, no-fold, headings and losslessness in all three layouts.
 
 - `2026-09-17` — Native numeric inputs retain their browser editing contract. Selection capture treats inputs without a supported selection API as one whole value, routes edits through the controlled replacement callback, and skips unsupported range restoration; text inputs and textareas retain partial selections.

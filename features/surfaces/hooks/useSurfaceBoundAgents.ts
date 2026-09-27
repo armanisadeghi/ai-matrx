@@ -7,6 +7,7 @@ import {
   fetchSurfaceMenuAgentsGrouped,
   type SurfaceBoundAgentSection,
 } from "@/features/surfaces/services/surface-bound-agents.service";
+import { withMenuDeadline } from "@/features/context-menu-v3/utils/menu-deadline";
 
 export interface UseSurfaceBoundAgentsOptions {
   /**
@@ -47,10 +48,12 @@ export function useSurfaceBoundAgents(
     try {
       setLoading(true);
       setError(null);
-      const grouped = await fetchSurfaceMenuAgentsGrouped(
-        surfaceName ?? null,
-        currentUserId,
-        { isEditable, includeDefaults },
+      const grouped = await withMenuDeadline(
+        fetchSurfaceMenuAgentsGrouped(surfaceName ?? null, currentUserId, {
+          isEditable,
+          includeDefaults,
+        }),
+        "Loading this page's agents",
       );
       setSections(grouped);
     } catch (err) {

@@ -50,6 +50,7 @@ import {
   Volume2,
   Headphones,
   AudioLines,
+  RotateCcw,
   type LucideIcon,
 } from "lucide-react";
 import type { IconComponentType } from "@ai-matrx/icons";
@@ -463,6 +464,9 @@ function placementNode(
   const hasCategories = groups.length > 0;
   const label = getPlacementLabel(placementType);
   const color = PLACEMENT_COLOR[placementType];
+  if (!hasCategories && m.librariesError && mode !== "disable") {
+    return failedLibraryNode(`placement:${placementType}`, label, getPlacementIcon(placementType), m, placementType);
+  }
   return {
     kind: "submenu",
     id: `placement:${placementType}`,
@@ -478,11 +482,45 @@ function placementNode(
   };
 }
 
+/**
+ * A library whose fetch failed or missed the menu's deadline: the row stays
+ * (never silently absent, never "Loading…" forever) and opens onto one
+ * honest row that retries (page-pass 2026-09-27).
+ */
+function failedLibraryNode(
+  id: string,
+  label: string,
+  icon: MenuSubmenuNode["icon"],
+  m: ContextMenuActions,
+  placement: string,
+): MenuSubmenuNode {
+  return {
+    kind: "submenu",
+    id,
+    label,
+    icon,
+    width: "w-64",
+    placement,
+    children: [
+      {
+        kind: "item",
+        id: `${id}:retry`,
+        label: "Couldn't load. Retry",
+        icon: RotateCcw,
+        onSelect: m.retryLibraries,
+      },
+    ],
+  };
+}
+
 function boundAgentsNode(m: ContextMenuActions): MenuSubmenuNode | null {
   const mode = m.resolvedPlacementMode["bound-agent"];
   if (mode === "hide") return null;
   const sections = m.boundAgentSections.filter((s) => s.agents.length > 0);
   const hasAgents = sections.length > 0;
+  if (!hasAgents && m.boundAgentsError && !m.boundAgentsLoading && mode !== "disable") {
+    return failedLibraryNode("placement:bound-agent", "Agents", AGENT_ICON, m, "bound-agent");
+  }
   const children: MenuNode[] = [];
   sections.forEach((section, idx) => {
     if (idx > 0) children.push({ kind: "separator", id: `agents:${section.key}:sep` });
@@ -539,7 +577,9 @@ export function buildMenuModel(
     | "hasHistory"
     | "selectedText"
     | "entity"
-  >,
+    | "getTextarea"
+  > &
+    Partial<Pick<MenuContentProps, "selectionRange">>,
 ): MenuModel {
   const {
     extraSections,
@@ -556,6 +596,8 @@ export function buildMenuModel(
     hasHistory,
     selectedText,
     entity,
+    selectionRange,
+    getTextarea,
   } = props;
   const { actionText, quickActions } = m;
 
@@ -672,6 +714,11 @@ export function buildMenuModel(
     label: "Select All",
     icon: Type,
     iconClassName: "text-muted-foreground",
+    // Select All acts on a captured selection's container, or an editable
+    // surface's own field. With neither (right-click on a table row or on
+    // read-only content without selecting) it would do nothing — a dead row,
+    // so it is absent (R1 b), not offered.
+    disabled: !selectionRange && !(isEditable && getTextarea),
     onSelect: m.handleSelectAll,
   };
   const find: MenuItemNode = {
