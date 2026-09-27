@@ -136,10 +136,17 @@ function TakeCell({ row, config }: { row: AssessmentListItem; config: KindConfig
     // The row itself opens the assessment; Take is its own labelled door —
     // one tap on the phone card, where it is the card's primary action.
     <span className="flex items-center" onClick={(e) => e.stopPropagation()}>
-      <Button asChild size="sm" variant="outline" className="h-11 gap-1.5 px-3 sm:h-7">
+      {/* Labelled on the phone card; icon-only in the narrow desktop column
+          (the accessible name stays), where the word wrapped letter by letter. */}
+      <Button
+        asChild
+        size="sm"
+        variant="outline"
+        className="h-11 gap-1.5 whitespace-nowrap px-3 sm:h-7 sm:w-7 sm:px-0"
+      >
         <Link href={assessmentTakeHref(config, row)} aria-label={`Take ${row.title}`}>
           <Play className="h-3.5 w-3.5" />
-          Take
+          <span className="sm:sr-only">Take</span>
         </Link>
       </Button>
     </span>
