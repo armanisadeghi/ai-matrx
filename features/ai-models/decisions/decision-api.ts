@@ -110,6 +110,8 @@ export async function runDecision(
     const rejoin = await dispatch(
       callApi({
         path: "/runtime/operations/{request_id}/rejoin",
+        // Background (rejoin / warm-up): never opens the workspace picker.
+        interactiveOrganization: false,
         method: "POST",
         pathParams: { request_id: runtimeRequestId },
         stream: true,

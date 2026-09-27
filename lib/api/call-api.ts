@@ -1863,6 +1863,8 @@ export type WarmSource =
 export function callWarmAgent(agentId: string, source?: WarmSource) {
   return callApi({
     path: "/ai/agents/{agent_id}/warm",
+    // Background (rejoin / warm-up): never opens the workspace picker.
+    interactiveOrganization: false,
     method: "POST",
     pathParams: { agent_id: agentId },
     body: (source ? { source } : undefined) as any,
@@ -1873,6 +1875,8 @@ export function callWarmAgent(agentId: string, source?: WarmSource) {
 export function callWarmConversation(conversationId: string) {
   return callApi({
     path: "/ai/conversations/{conversation_id}/warm",
+    // Background (rejoin / warm-up): never opens the workspace picker.
+    interactiveOrganization: false,
     method: "POST",
     pathParams: { conversation_id: conversationId },
     stream: false,
@@ -1919,6 +1923,8 @@ export function callPromptStart(options: CallPromptStartOptions) {
 export function callWarmPrompt(promptId: string) {
   return callApi({
     path: "/ai/prompts/{prompt_id}/warm",
+    // Background (rejoin / warm-up): never opens the workspace picker.
+    interactiveOrganization: false,
     method: "POST",
     pathParams: { prompt_id: promptId },
     stream: false,

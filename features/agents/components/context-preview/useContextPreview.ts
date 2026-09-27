@@ -101,6 +101,8 @@ export function useContextPreview(opts: {
       callApi({
         path: "/ai/context/preview",
         method: "POST",
+        // A preview that re-fires as the selection changes — never a question.
+        interactiveOrganization: false,
         body: {
           conversation_id: conversationId ?? null,
           agent_id: agentId ?? null,
