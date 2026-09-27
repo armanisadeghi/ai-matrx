@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useTransition,
 } from "react";
@@ -41,10 +42,13 @@ import {
 import {
   parseCreateSurfacesValue,
   parseDeleteSurfacesValue,
+  parseNewSurfaceDraftValue,
   parseUpdateSurfacesValue,
+  type NewSurfaceDraftFields,
   type SurfaceWriteContext,
 } from "@/features/surfaces/lib/ui-surfaces-agent-writes";
 import { surfaceDeleteConsequence } from "@/features/surfaces/utils/surface-delete-consequence";
+import { countDriftIssues } from "@/features/surfaces/utils/drift-report-count";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,13 +71,17 @@ import { SurfaceDetailPanel } from "@/features/surfaces/components/SurfaceDetail
 import { SurfaceCandidatesDialog } from "@/features/surfaces/components/SurfaceCandidatesDialog";
 import { ManifestSyncDialog } from "@/features/surfaces/components/ManifestSyncDialog";
 import { ManifestDriftDialog } from "@/features/surfaces/components/ManifestDriftDialog";
-import { NewSurfaceDialog } from "@/features/surfaces/components/NewSurfaceDialog";
+import {
+  NewSurfaceDialog,
+  type NewSurfaceDraftScope,
+} from "@/features/surfaces/components/NewSurfaceDialog";
 
 import {
   bulkSetSurfacesActive,
   createSurface,
   createUiClient,
   deleteSurface,
+  getDriftReport,
   updateSurface,
   listClientNames,
   listSurfacesWithStats,
@@ -108,6 +116,12 @@ export function SurfacesContainer() {
   const [navigatingName, setNavigatingName] = useState<string | null>(null);
 
   const [creating, setCreating] = useState(false);
+  // new_surface_draft: an agent's fill for the New surface dialog, and the
+  // dialog's live values (published into a ref so getScope stays synchronous).
+  const [draftSeed, setDraftSeed] = useState<
+    { fields: NewSurfaceDraftFields; version: number } | undefined
+  >(undefined);
+  const draftRef = useRef<NewSurfaceDraftScope | null>(null);
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [candidatesOpen, setCandidatesOpen] = useState(false);
   const [syncOpen, setSyncOpen] = useState(false);
@@ -132,7 +146,21 @@ export function SurfacesContainer() {
     [],
   );
 
+  // The Drift report button's count is the drift report's own total (the ONE
+  // helper, countDriftIssues) — it used to count only code manifests with no
+  // registry row, so the badge and the report disagreed. null = not loaded.
+  const [driftIssues, setDriftIssues] = useState<number | null>(null);
+  const loadDrift = useCallback(async () => {
+    try {
+      setDriftIssues(countDriftIssues(await getDriftReport()));
+    } catch {
+      // The report dialog shows the error itself; the badge just stays off.
+      setDriftIssues(null);
+    }
+  }, []);
+
   const load = useCallback(async () => {
+    void loadDrift();
     setLoading(true);
     setError(null);
     try {
@@ -147,7 +175,7 @@ export function SurfacesContainer() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadDrift]);
 
   useEffect(() => {
     void load();
@@ -250,13 +278,19 @@ export function SurfacesContainer() {
         .length,
     [surfaces],
   );
-  const driftSignal = useMemo(() => {
-    // Surfaces in DB without a code manifest, or manifested surfaces missing
-    // from the surfaces table — both indicate potential drift.
-    const dbNames = new Set(surfaces.map((s) => s.name));
-    const codeOnly = [...manifestedSurfaceNames].filter((n) => !dbNames.has(n));
-    return codeOnly.length;
-  }, [surfaces, manifestedSurfaceNames]);
+  const driftSignal = driftIssues ?? 0;
+
+  // Reversible: deactivating keeps every binding (the delete alternative).
+  const onToggleActive = async (row: SurfaceWithStats) => {
+    const next = row.is_active === false;
+    try {
+      await updateSurface(row.name, { is_active: next });
+      toast.success(`${row.label ?? row.name} ${next ? "activated" : "deactivated"}`);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Update failed");
+    }
+  };
 
   const onDelete = async (row: SurfaceWithStats) => {
     const ok = await confirm({
@@ -304,9 +338,10 @@ export function SurfacesContainer() {
       filters,
       readinessCounts,
       candidatesAvailable,
-      codeOnlyManifests: driftSignal,
+      driftIssues,
       peekedName: selectedName,
       openDialog,
+      newSurfaceDraft: creating ? draftRef.current : null,
     });
 
   // Agent writes — one record type (surfaces), full list CRUD through this
@@ -326,8 +361,8 @@ export function SurfacesContainer() {
       void load();
       return ref;
     };
-  const getWriteHandlers = () =>
-    collectionWriteHandlers(
+  const getWriteHandlers = () => ({
+    ...collectionWriteHandlers(
       {
         plural: "surfaces",
         singular: "surface",
@@ -360,14 +395,29 @@ export function SurfacesContainer() {
         },
       },
       refuseSurfaceWrite,
-    );
+    ),
+    new_surface_draft: {
+      // Before the approval card: a bad value is refused with no card.
+      validate: (value: unknown) => {
+        parseNewSurfaceDraftValue(value, writeContext());
+      },
+      apply: (value: unknown) => {
+        const fields = parseNewSurfaceDraftValue(value, writeContext());
+        setDraftSeed((prev) => ({ fields, version: (prev?.version ?? 0) + 1 }));
+        setCreating(true);
+        return {
+          summary: `Filled the New surface dialog (${Object.keys(fields).join(", ")}). Nothing is saved until the person presses Create.`,
+        };
+      },
+    },
+  });
 
   const actions = [
     {
       key: "drift",
       label: "Drift report",
       icon: AlertTriangle,
-      title: "Compare code manifests to database state",
+      title: "Compare code manifests to database state — the count is the report's total",
       badge: driftSignal,
       onClick: () => setDriftOpen(true),
     },
@@ -515,7 +565,8 @@ export function SurfacesContainer() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            actions.map((a) => (
+            <>
+            {actions.filter((a) => a.key === "drift" || a.key === "sync").map((a) => (
               <Button
                 key={a.key}
                 size="sm"
@@ -533,7 +584,40 @@ export function SurfacesContainer() {
                   </Badge>
                 )}
               </Button>
-            ))
+            ))}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 w-7 p-0"
+                  aria-label="More registry actions"
+                  title="New client, Candidates"
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {actions
+                  .filter((a) => a.key !== "drift" && a.key !== "sync")
+                  .map((a) => (
+                    <DropdownMenuItem
+                      key={a.key}
+                      disabled={a.disabled}
+                      onSelect={a.onClick}
+                    >
+                      <a.icon className="h-4 w-4" />
+                      {a.label}
+                      {a.badge > 0 && (
+                        <span className="ml-auto tabular-nums text-muted-foreground">
+                          {a.badge}
+                        </span>
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            </>
           )}
         </div>
       </div>
@@ -561,6 +645,7 @@ export function SurfacesContainer() {
             onEdit={openEditor}
             onPeek={(r) => setSelectedName(r.name)}
             onDelete={(r) => void onDelete(r)}
+            onToggleActive={(r) => void onToggleActive(r)}
             navigatingName={navigatingName}
             filters={filters}
             onFilterChange={(patch) => setFilters((f) => ({ ...f, ...patch }))}
@@ -593,9 +678,18 @@ export function SurfacesContainer() {
           clients={clients.filter((c) => c.is_active !== false)}
           existingNames={new Set(surfaces.map((s) => s.name))}
           parentOptions={parentNames}
-          onClose={() => setCreating(false)}
+          seed={draftSeed}
+          agentSurfaceName={ADMIN_UI_SURFACES_SURFACE_NAME}
+          onDraftChange={(d) => {
+            draftRef.current = d;
+          }}
+          onClose={() => {
+            setCreating(false);
+            setDraftSeed(undefined);
+          }}
           onCreated={(_name) => {
             setCreating(false);
+            setDraftSeed(undefined);
             void load();
           }}
         />

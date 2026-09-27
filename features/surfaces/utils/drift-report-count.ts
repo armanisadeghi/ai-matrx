@@ -32,3 +32,20 @@ export function countDriftIssues(
   }
   return total;
 }
+
+/**
+ * How many database rows no manifest declares — what "Delete stale rows"
+ * would remove. Every `db*NotInManifest` field, by construction, so a new
+ * stale category is counted the moment the report returns it.
+ */
+export function countStaleDbRows(
+  report: SurfaceDriftReport | null | undefined,
+): number {
+  if (!report) return 0;
+  let total = 0;
+  for (const [key, value] of Object.entries(report)) {
+    if (/^db.*NotInManifest$/.test(key) && Array.isArray(value))
+      total += value.length;
+  }
+  return total;
+}

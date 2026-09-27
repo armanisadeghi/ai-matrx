@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,15 @@ import {
 import { Label } from "@/components/ui/label";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { toast } from "@/lib/toast";
-import { syncManifests } from "@/features/surfaces/services/surfaces.service";
-import { countDriftIssues } from "@/features/surfaces/utils/drift-report-count";
+import {
+  getDriftReport,
+  syncManifests,
+} from "@/features/surfaces/services/surfaces.service";
+import {
+  countDriftIssues,
+  countStaleDbRows,
+} from "@/features/surfaces/utils/drift-report-count";
+import type { SurfaceDriftReport } from "@/features/surfaces/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type SyncResult = Awaited<ReturnType<typeof syncManifests>>;
@@ -27,7 +34,29 @@ interface Props {
 }
 
 export function ManifestSyncDialog({ onClose, onSynced }: Props) {
-  const [deleteStale, setDeleteStale] = useState(true);
+  // A destructive option is never pre-checked: stale rows are deleted only
+  // when the operator ticks it, after seeing how many there are.
+  const [deleteStale, setDeleteStale] = useState(false);
+  // The dialog previews the SAME drift report the Drift report dialog shows,
+  // counted by the same helper, so the two never disagree about what is out
+  // of sync.
+  const [preview, setPreview] = useState<SurfaceDriftReport | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    getDriftReport()
+      .then((r) => live && setPreview(r))
+      .catch(
+        (e: unknown) =>
+          live &&
+          setPreviewError(e instanceof Error ? e.message : "Drift report failed"),
+      );
+    return () => {
+      live = false;
+    };
+  }, []);
+  const previewTotal = preview ? countDriftIssues(preview) : null;
+  const previewStale = preview ? countStaleDbRows(preview) : null;
   const [createMissingSurfaces, setCreateMissingSurfaces] = useState(true);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<SyncResult | null>(null);
@@ -92,13 +121,31 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
         {!result && (
           <div className="space-y-3 text-xs">
             <p className="text-muted-foreground">
-              Applies the code-side{" "}
-              <code className="font-mono">SurfaceManifest</code> declarations to
-              the <code className="font-mono">ui_surface_value</code>,{" "}
-              <code className="font-mono">ui_surface_agent_role</code>, and{" "}
-              <code className="font-mono">ui_surface.url_pattern</code> columns.
-              Rows are upserted to match code exactly; nothing else changes.
+              Makes the database match the code manifests: surface values,
+              agent roles, write targets, client tools, labels, value groups
+              and URL patterns.
             </p>
+            <div className="rounded-md border border-border px-2 py-1.5">
+              {previewError ? (
+                <span className="text-destructive">
+                  Could not load the drift report: {previewError}
+                </span>
+              ) : previewTotal === null ? (
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Loading the drift report
+                </span>
+              ) : (
+                <span>
+                  <span className="font-medium tabular-nums">{previewTotal}</span>{" "}
+                  drift issue{previewTotal === 1 ? "" : "s"} (same count as the
+                  Drift report), of which{" "}
+                  <span className="font-medium tabular-nums">{previewStale}</span>{" "}
+                  {previewStale === 1 ? "is a database row" : "are database rows"} no
+                  manifest declares.
+                </span>
+              )}
+            </div>
             <label className="flex items-start gap-2 cursor-pointer">
               <Checkbox
                 checked={deleteStale}
@@ -107,8 +154,11 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
                 className="mt-0.5"
               />
               <div>
-                <div className="font-medium">Delete stale rows</div>
-                <p className="text-[11px] text-muted-foreground">
+                <div className="font-medium">
+                  Delete stale rows
+                  {previewStale !== null && ` (${previewStale})`}
+                </div>
+                <p className="text-xs text-muted-foreground">
                   Remove DB <code className="font-mono">ui_surface_value</code>{" "}
                   and <code className="font-mono">ui_surface_agent_role</code>{" "}
                   rows no longer declared in any registered manifest. Deleting a
@@ -127,7 +177,7 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
               />
               <div>
                 <div className="font-medium">Create missing surfaces</div>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   If a manifest references a{" "}
                   <code className="font-mono">surface_name</code> that
                   doesn&apos;t exist in{" "}
@@ -145,7 +195,7 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
               <CheckCircle2 className="h-4 w-4 text-green-600" />
               <span className="font-medium">Sync complete</span>
             </div>
-            <div className="rounded-md border border-border p-2 grid grid-cols-2 gap-1 text-[11px]">
+            <div className="rounded-md border border-border p-2 grid grid-cols-2 gap-1 text-xs">
               <span className="text-muted-foreground">Values upserted:</span>
               <span className="tabular-nums font-mono">
                 {result.upserted.length}
@@ -214,7 +264,7 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
               </span>
             </div>
             {result.skippedMissingSurface.length > 0 && (
-              <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-2 text-[11px]">
+              <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-2 text-xs">
                 <div className="flex items-center gap-1 mb-1 font-medium text-amber-700 dark:text-amber-300">
                   <AlertTriangle className="h-3.5 w-3.5" />
                   Skipped surfaces (not in{" "}
@@ -222,7 +272,7 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {result.skippedMissingSurface.map((s) => (
-                    <Badge key={s} variant="outline" className="text-[10px]">
+                    <Badge key={s} variant="outline" className="text-xs">
                       {s}
                     </Badge>
                   ))}
@@ -234,7 +284,7 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
               </div>
             )}
             {result.skippedRecentRows.length > 0 && (
-              <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-2 text-[11px]">
+              <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-2 text-xs">
                 <div className="flex items-center gap-1 mb-1 font-medium text-amber-700 dark:text-amber-300">
                   <AlertTriangle className="h-3.5 w-3.5" />
                   Recent rows skipped (touched too recently to be safely

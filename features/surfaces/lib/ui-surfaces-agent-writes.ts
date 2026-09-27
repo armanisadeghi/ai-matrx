@@ -308,3 +308,94 @@ export function parseDeleteSurfacesValue(
     },
   );
 }
+
+/** Fields the New surface dialog holds — the `new_surface_draft` target. */
+export interface NewSurfaceDraftFields {
+  client?: string;
+  local?: string;
+  /** A surface name, or null for a root surface. */
+  parent_surface_name?: string | null;
+  /** A tier label: Pages | Specialized | Overlays | Editor variants | Debug. */
+  tier?: string;
+  description?: string;
+}
+
+export const NEW_SURFACE_TIERS = [
+  "Pages",
+  "Specialized",
+  "Overlays",
+  "Editor variants",
+  "Debug",
+] as const;
+
+/**
+ * Read the `new_surface_draft` value: an OBJECT with any of { name, parent_surface_name,
+ * tier, description }. Every problem is reported at once; nothing is saved.
+ */
+export function parseNewSurfaceDraftValue(
+  value: unknown,
+  ctx: SurfaceWriteContext,
+): NewSurfaceDraftFields {
+  const target = "new_surface_draft";
+  const problems = new ProblemList(target);
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    problems.add(
+      "new_surface_draft expects a JSON OBJECT like { name, parent_surface_name, tier, description }.",
+    );
+    problems.throwIfAny();
+  }
+  const obj = value as Record<string, unknown>;
+  const allowed = ["name", "parent_surface_name", "tier", "description"];
+  const unknown = Object.keys(obj).filter((k) => !allowed.includes(k));
+  if (unknown.length)
+    problems.add(
+      `the dialog has no ${unknown.join(", ")} field (fields: ${allowed.join(", ")}).`,
+    );
+  const out: NewSurfaceDraftFields = {};
+  if ("name" in obj) {
+    const name = typeof obj.name === "string" ? obj.name.trim() : "";
+    const slash = name.indexOf("/");
+    const client = slash > 0 ? name.slice(0, slash) : "";
+    const local = slash > 0 ? name.slice(slash + 1) : "";
+    if (!client || !local) problems.add(`name must be "<client>/<local>".`);
+    else {
+      if (!ctx.clientNames.includes(client))
+        problems.add(
+          `client "${client}" is not a UI client (one of: ${ctx.clientNames.join(", ")}).`,
+        );
+      if (!LOCAL_RE.test(local))
+        problems.add(
+          `the local part "${local}" may use only lowercase letters, digits, hyphens and slashes.`,
+        );
+      if (ctx.existing.some((s) => s.name === name))
+        problems.add(`"${name}" already exists in the registry.`);
+      out.client = client;
+      out.local = local;
+    }
+  }
+  if ("parent_surface_name" in obj) {
+    const parent = readParent(
+      obj,
+      new Set(ctx.existing.map((s) => s.name)),
+      problems,
+    );
+    if (parent !== undefined) out.parent_surface_name = parent;
+  }
+  if ("tier" in obj) {
+    if (
+      typeof obj.tier !== "string" ||
+      !(NEW_SURFACE_TIERS as readonly string[]).includes(obj.tier)
+    )
+      problems.add(`tier must be one of: ${NEW_SURFACE_TIERS.join(", ")}.`);
+    else out.tier = obj.tier;
+  }
+  if ("description" in obj) {
+    if (typeof obj.description !== "string")
+      problems.add("description must be a string.");
+    else out.description = obj.description;
+  }
+  problems.throwIfAny();
+  if (Object.keys(out).length === 0)
+    throw new Error("new_surface_draft sends no field to fill. Nothing was changed.");
+  return out;
+}

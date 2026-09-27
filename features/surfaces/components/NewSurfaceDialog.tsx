@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +25,18 @@ import {
   SURFACE_TIERS,
 } from "@/features/surfaces/services/surfaces.service";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { SURFACE_LAYER_ATTRIBUTE } from "@/features/surfaces/runtime/window-forms";
+import type { NewSurfaceDraftFields } from "@/features/surfaces/lib/ui-surfaces-agent-writes";
+
+/** The dialog's live values — the `new_surface_draft` read twin. */
+export interface NewSurfaceDraftScope {
+  name: string;
+  client: string;
+  local: string;
+  parent_surface_name: string | null;
+  tier: string;
+  description: string;
+}
 
 export const DEFAULT_PARENT_SURFACE = "matrx-default/default";
 export const PARENT_NONE = "__none__";
@@ -42,6 +54,15 @@ interface Props {
   /** Pre-select parent (e.g. current surface when adding a child). */
   initialParent?: string;
   title?: string;
+  /**
+   * An agent's fill (`new_surface_draft`): applied on mount and again each
+   * time `version` changes. Nothing is saved — the person presses Create.
+   */
+  seed?: { fields: NewSurfaceDraftFields; version: number };
+  /** Marks the root as this surface's layer so the generic form net stands down. */
+  agentSurfaceName?: string;
+  /** Receives the live values on every render (the draft read twin). */
+  onDraftChange?: (draft: NewSurfaceDraftScope) => void;
   onClose: () => void;
   onCreated: (surfaceName: string) => void;
 }
@@ -53,6 +74,9 @@ export function NewSurfaceDialog({
   initialClient,
   initialParent,
   title = "New UI surface",
+  seed,
+  agentSurfaceName,
+  onDraftChange,
   onClose,
   onCreated,
 }: Props) {
@@ -71,8 +95,36 @@ export function NewSurfaceDialog({
     const names = new Set(parentOptions);
     names.add(DEFAULT_PARENT_SURFACE);
     if (initialParent) names.add(initialParent);
+    // An agent's fill names a parent the parser already checked exists.
+    const seededParent = seed?.fields.parent_surface_name;
+    if (seededParent) names.add(seededParent);
     return [...names].sort((a, b) => a.localeCompare(b));
-  }, [parentOptions, initialParent]);
+  }, [parentOptions, initialParent, seed]);
+
+  // Apply an agent's fill once per version — state adjusted during render
+  // (React's documented pattern for "reset when a prop changes").
+  const [appliedSeed, setAppliedSeed] = useState<number | null>(null);
+  if (seed && seed.version !== appliedSeed) {
+    setAppliedSeed(seed.version);
+    const f = seed.fields;
+    if (f.client !== undefined) setClient(f.client);
+    if (f.local !== undefined) setLocal(f.local);
+    if (f.parent_surface_name !== undefined)
+      setParentSurface(f.parent_surface_name ?? PARENT_NONE);
+    if (f.tier !== undefined) setTier(f.tier);
+    if (f.description !== undefined) setDescription(f.description);
+  }
+
+  useEffect(() => {
+    onDraftChange?.({
+      name: client && local ? `${client}/${local}` : "",
+      client,
+      local,
+      parent_surface_name: parentSurface === PARENT_NONE ? null : parentSurface,
+      tier,
+      description,
+    });
+  });
 
   const tierEntry =
     SURFACE_TIERS.find((t) => t.label === tier) ?? SURFACE_TIERS[1];
@@ -114,7 +166,12 @@ export function NewSurfaceDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md matrx-touch-targets"
+        {...(agentSurfaceName
+          ? { [SURFACE_LAYER_ATTRIBUTE]: agentSurfaceName }
+          : {})}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
@@ -159,12 +216,12 @@ export function NewSurfaceDialog({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Inheritance chain for tool defaults. Defaults to{" "}
               <code className="font-mono">{DEFAULT_PARENT_SURFACE}</code>.
             </p>
             {parentInvalid && (
-              <p className="text-[11px] text-destructive">
+              <p className="text-xs text-destructive">
                 Selected parent is not a known surface.
               </p>
             )}
@@ -180,19 +237,19 @@ export function NewSurfaceDialog({
               disabled={busy}
               autoFocus
             />
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Full name:{" "}
               <code className="bg-muted px-1 py-0.5 rounded font-mono">
                 {fullName || `${client || "<client>"}/<local>`}
               </code>
             </p>
             {!localValid && local.length > 0 && (
-              <p className="text-[11px] text-destructive">
+              <p className="text-xs text-destructive">
                 Use lowercase letters, digits, hyphens, and slashes.
               </p>
             )}
             {nameClash && (
-              <p className="text-[11px] text-destructive">
+              <p className="text-xs text-destructive">
                 <code className="font-mono">{fullName}</code> already exists.
               </p>
             )}
@@ -209,7 +266,7 @@ export function NewSurfaceDialog({
                     <SelectItem key={t.label} value={t.label}>
                       <div className="flex flex-col items-start">
                         <span>{t.label}</span>
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                           {t.description}
                         </span>
                       </div>

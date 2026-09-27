@@ -3,6 +3,7 @@ import {
   DEFAULT_SORT_ORDER,
   parseCreateSurfacesValue,
   parseDeleteSurfacesValue,
+  parseNewSurfaceDraftValue,
   parseUpdateSurfacesValue,
   type SurfaceWriteContext,
 } from "../ui-surfaces-agent-writes";
@@ -137,5 +138,32 @@ describe("parseDeleteSurfacesValue", () => {
     expect(message).toContain("code manifest");
     expect(message).toContain("ghost");
     expect(message).toContain("more than once");
+  });
+});
+
+describe("parseNewSurfaceDraftValue", () => {
+  it("splits the name and keeps only fields sent", () => {
+    expect(
+      parseNewSurfaceDraftValue(
+        { name: "matrx-admin/pp-test-draft", tier: "Specialized" },
+        ctx,
+      ),
+    ).toEqual({ client: "matrx-admin", local: "pp-test-draft", tier: "Specialized" });
+  });
+
+  it("reports every problem at once", () => {
+    let message = "";
+    try {
+      parseNewSurfaceDraftValue(
+        { name: "matrx-user/notes", tier: "Huge", label: "x", parent_surface_name: "nope/x" },
+        ctx,
+      );
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    expect(message).toContain("already exists");
+    expect(message).toContain("tier must be");
+    expect(message).toContain("no label field");
+    expect(message).toContain("nope/x");
   });
 });

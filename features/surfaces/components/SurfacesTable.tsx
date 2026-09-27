@@ -6,7 +6,20 @@ import {
   TrashTapButton,
   ViewTapButton,
 } from "@ai-matrx/tap-target/buttons";
-import { AppWindow, Loader2 } from "lucide-react";
+import {
+  AppWindow,
+  Eye,
+  Loader2,
+  Pencil,
+  Power,
+  PowerOff,
+  Trash2,
+} from "lucide-react";
+import {
+  buildDefaultTableRowMenuDescriptor,
+  createTableRowMenuDescriptor,
+} from "@/features/context-menu-v3/table-row-context-registry";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import {
@@ -42,6 +55,8 @@ interface Props {
   onEdit: (row: SurfaceWithStats) => void;
   onPeek: (row: SurfaceWithStats) => void;
   onDelete: (row: SurfaceWithStats) => void;
+  /** Activate / deactivate one surface (row right-click). */
+  onToggleActive: (row: SurfaceWithStats) => void;
   navigatingName: string | null;
   filters: SurfacesFilterState;
   onFilterChange: (patch: Partial<SurfacesFilterState>) => void;
@@ -255,6 +270,7 @@ export function SurfacesTable({
   onEdit,
   onPeek,
   onDelete,
+  onToggleActive,
   navigatingName,
   filters,
   onFilterChange,
@@ -325,6 +341,59 @@ export function SurfacesTable({
         ),
         refresh: { onRefresh },
         add: { onAdd },
+      }}
+      // One right-click menu per row: the row's own actions first (primary),
+      // then the table's universal rows; the page's provider + menu wrapper
+      // around the whole page supply the surface and the Agents entries.
+      contextMenu={{
+        resolveRowContext: (row, controls) => {
+          const descriptor = buildDefaultTableRowMenuDescriptor(
+            { id: row.name },
+            controls,
+          );
+          const manifested = manifestedSurfaceNames.has(row.name);
+          const active = row.is_active !== false;
+          return createTableRowMenuDescriptor({
+            ...descriptor,
+            extraSections: [
+              {
+                id: "surface-row",
+                label: row.label ?? row.name,
+                primary: true,
+                anchor: "after-clipboard",
+                items: [
+                  { kind: "item", id: "open", label: "Open editor", icon: Pencil, onSelect: () => onEdit(row) },
+                  { kind: "item", id: "peek", label: "Peek", icon: Eye, onSelect: () => onPeek(row) },
+                  manifested
+                    ? {
+                        kind: "item",
+                        id: "toggle-active",
+                        label: active ? "Deactivate" : "Activate",
+                        icon: active ? PowerOff : Power,
+                        disabled: true,
+                        description:
+                          "Its code manifest sets this — Sync manifests would undo it. Change the manifest in code.",
+                        onSelect: () => undefined,
+                      }
+                    : {
+                        kind: "item",
+                        id: "toggle-active",
+                        label: active ? "Deactivate" : "Activate",
+                        icon: active ? PowerOff : Power,
+                        onSelect: () => onToggleActive(row),
+                      },
+                  { kind: "item", id: "delete", label: "Delete", icon: Trash2, destructive: true, onSelect: () => onDelete(row) },
+                ],
+              },
+              ...descriptor.extraSections,
+            ],
+            context: {
+              content: [row.label, row.name, row.description].filter(Boolean).join(" — "),
+              context: { name: row.name },
+              [CONTEXT_MENU_ENTITY_KEY]: null,
+            },
+          });
+        },
       }}
       rowActions={(row) => (
         <>

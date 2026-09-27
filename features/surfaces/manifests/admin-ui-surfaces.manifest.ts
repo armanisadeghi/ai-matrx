@@ -16,7 +16,8 @@
  * `buildUiSurfacesScope` (`features/surfaces/lib/ui-surfaces-scope.ts`) from
  * the rows the page already loaded (never fetches).
  *
- * Write half — ONE record type (surfaces), full list CRUD, all `ask`, through
+ * Write half — ONE record type (surfaces), full list CRUD plus
+ * `new_surface_draft` (fills the New surface dialog; nothing saved), all `ask`, through
  * the page's own service functions (`createSurface` / `updateSurface` /
  * `deleteSurface`); pure parsers in `features/surfaces/lib/ui-surfaces-agent-writes.ts`.
  *  - A surface WITH a code manifest is owned by code: the next Sync manifests
@@ -106,7 +107,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "registry_counts",
     label: "Registry counts",
     description:
-      "{ total, active, manifests, unused, visible, readiness: { verified, partial, stub, unregistered }, candidates_available, code_only_manifests } — the numbers in the page's toolbar and readiness tiles. readiness counts follow the client filter, as the tiles do; unused = no agents and no tools; code_only_manifests = code manifests with no registry row (what the Drift report badge shows). Absent until the registry has loaded.",
+      "{ total, active, manifests, unused, visible, readiness: { verified, partial, stub, unregistered }, candidates_available, drift_issues? } — the numbers in the page's toolbar and readiness tiles. readiness counts follow the client filter, as the tiles do; unused = no agents and no tools; drift_issues = the Drift report's total issue count (what its button badge shows), omitted until that report loads. Absent until the registry has loaded.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 200,
@@ -160,12 +161,36 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 220,
     group: "view",
   },
+  {
+    name: "new_surface_draft",
+    label: "New surface draft",
+    description:
+      'The New surface dialog\'s live values as { name, client, local, parent_surface_name, tier, description } — name is "<client>/<local>" ("" until both are set); parent_surface_name null means a root surface; tier is the dialog\'s tier label. The read twin of the new_surface_draft write target. Absent while the dialog is closed.',
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 200,
+    inlineUpTo: 800,
+    sortOrder: 230,
+    group: "view",
+  },
 ];
 
 const SURFACE_FIELDS =
   'name: string (required on create; "<client>/<local>", client one of client_names, local lowercase letters, digits, hyphens and slashes, e.g. "matrx-user/notes"), label?: string, description?: string, parent_surface_name?: string | null (an existing surface name; default "matrx-default/default"; null = root), sort_order?: number (a whole number ≥ 100: 100-299 Pages, 300-999 Specialized, 1000-1999 Overlays, 2000-8999 Editor variants, 9000+ Debug; default 150), is_active?: boolean (default true), executor_name?: string | null, url_pattern?: string | null';
 
 const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "new_surface_draft",
+    label: "New surface form",
+    description:
+      'Opens the New surface dialog (if closed) and fills it in. NOTHING is saved — the person reviews it and presses Create. Value is a JSON OBJECT (not a string, not an array) with any of: { name: "<client>/<local>" (client one of client_names; local lowercase letters, digits, hyphens, slashes; must not exist yet), parent_surface_name: an existing surface name or null for a root surface, tier: "Pages" | "Specialized" | "Overlays" | "Editor variants" | "Debug", description: string }. Only the fields you send change. Every problem is reported at once and the dialog is left untouched. Use this for one surface the person wants to look over first; to create surfaces directly use create_surfaces.',
+    valueType: "object",
+    updatesValue: "new_surface_draft",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "view",
+    sortOrder: 100,
+  },
   {
     name: "create_surfaces",
     label: "Create surfaces",
@@ -218,8 +243,9 @@ export const adminUiSurfacesManifest: SurfaceManifest = {
 You are on the UI Surfaces registry at /administration/ui/surfaces — an admin page listing every agent surface (a page or window agents can read) with its readiness, when its full check last completed, and how many values, agents and tools it has. surface_list is what the list shows (condensed, first 40); surfaces has every row in full; registry_counts has the headline numbers.
 
 Changes go through these targets, each a JSON array (never a string), and each returns what landed:
-- create_surfaces — add registry rows. A row alone does not make a page agent-readable; that needs a code manifest.
+- create_surfaces — add registry rows (saved at once). A row alone does not make a page agent-readable; that needs a code manifest.
 - update_surfaces — change sort order, executor, and (only on surfaces WITHOUT a code manifest) description, parent, url pattern and active flag. is_active: false deactivates reversibly.
+- new_surface_draft — fill the New surface dialog for the person to review and save themselves.
 - delete_surfaces — permanent, cascades to the surface's values, roles and tool defaults; refused for manifested surfaces. Prefer is_active: false.
 Never change the registry with generic database or context tools: they skip these checks.
 </surface_intro>`,
@@ -262,7 +288,7 @@ export interface UiSurfacesRegistryCounts {
   visible: number;
   readiness: Record<"verified" | "partial" | "stub" | "unregistered", number>;
   candidates_available: number;
-  code_only_manifests: number;
+  drift_issues?: number;
 }
 
 export interface UiSurfacesFilterScope {
@@ -289,6 +315,14 @@ export function createAdminUiSurfacesScope(values: {
   client_names?: string[];
   peeked_surface?: string;
   open_dialog?: string;
+  new_surface_draft?: {
+    name: string;
+    client: string;
+    local: string;
+    parent_surface_name: string | null;
+    tier: string;
+    description: string;
+  };
 }): SurfaceScopePayload {
   return values as unknown as SurfaceScopePayload;
 }

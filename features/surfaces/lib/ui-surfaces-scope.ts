@@ -22,6 +22,7 @@ import {
 import { surfaceCheckState } from "@/features/surfaces/utils/surface-check-ledger";
 import type { SurfacesFilterState } from "@/features/surfaces/components/SurfacesFilterBar";
 import { xmlElement, xmlList } from "@/features/surfaces/runtime/context-bundle";
+import type { NewSurfaceDraftScope } from "@/features/surfaces/components/NewSurfaceDialog";
 
 /** How many rows `surface_list` carries up front (~4,000 chars). */
 export const SURFACE_LIST_MAX_ROWS = 40;
@@ -45,9 +46,12 @@ export interface UiSurfacesScopeInput {
   filters: SurfacesFilterState;
   readinessCounts: UiSurfacesRegistryCounts["readiness"];
   candidatesAvailable: number;
-  codeOnlyManifests: number;
+  /** The drift report's total (countDriftIssues); null until it loads. */
+  driftIssues: number | null;
   peekedName: string | null;
   openDialog: UiSurfacesDialog | null;
+  /** The New surface dialog's live values; null while it is closed. */
+  newSurfaceDraft: NewSurfaceDraftScope | null;
 }
 
 export function filtersToScope(f: SurfacesFilterState): UiSurfacesFilterScope {
@@ -129,6 +133,7 @@ export function buildUiSurfacesScope(
   const extras = {
     ...(input.peekedName ? { peeked_surface: input.peekedName } : {}),
     ...(input.openDialog ? { open_dialog: input.openDialog } : {}),
+    ...(input.newSurfaceDraft ? { new_surface_draft: input.newSurfaceDraft } : {}),
   };
   if (input.error) {
     return createAdminUiSurfacesScope({
@@ -157,7 +162,7 @@ export function buildUiSurfacesScope(
       visible: input.visible.length,
       readiness: input.readinessCounts,
       candidates_available: input.candidatesAvailable,
-      code_only_manifests: input.codeOnlyManifests,
+      ...(input.driftIssues !== null ? { drift_issues: input.driftIssues } : {}),
     },
     client_names: [...input.clientNames],
     ...extras,
