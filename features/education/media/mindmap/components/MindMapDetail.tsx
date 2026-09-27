@@ -25,7 +25,8 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { createEducationMindMapsScope } from "@/features/surfaces/manifests/education-mind-maps.manifest";
 import { studyMediaService } from "../../service";
 import type { StudyMediaRow } from "../../types";
-import { MindMapView } from "./MindMapView";
+import { MindMapNodeSearch, MindMapView } from "./MindMapView";
+import type { DiagramNode } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 
 /**
  * Read the stored diagram's size + node labels for the surface scope. Pure and
@@ -75,16 +76,20 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
   const [loadError, setLoadError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [selectedNode, setSelectedNode] = useState<DiagramNode | null>(null);
   const { isOwner } = useAccess("study_media", mediaId);
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    studyMediaService.getById(mediaId).then((res) => {
+    queueMicrotask(() => {
       if (!active) return;
-      setMedia(res.data);
-      setLoadError(res.data ? null : (res.error ?? null));
-      setLoading(false);
+      setLoading(true);
+      studyMediaService.getById(mediaId).then((res) => {
+        if (!active) return;
+        setMedia(res.data);
+        setLoadError(res.data ? null : (res.error ?? null));
+        setLoading(false);
+      });
     });
     return () => {
       active = false;
@@ -228,6 +233,8 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
           envelope={media.ir_envelope}
           mapTrust={trust}
           presentation="workspace"
+          selectedNode={selectedNode}
+          onSelectNode={setSelectedNode}
         />
 
         <div className="absolute left-3 right-3 top-3 z-20 flex min-w-0 flex-col gap-2 rounded-xl border border-border/70 bg-card/90 p-2 shadow-lg backdrop-blur-xl sm:right-auto sm:max-w-[calc(100%-12rem)] lg:flex-row lg:items-center">
@@ -252,6 +259,7 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
               </h1>
             </div>
           </div>
+          <MindMapNodeSearch envelope={media.ir_envelope} selectedNode={selectedNode} onSelectNode={setSelectedNode} />
           <div className="flex w-full flex-wrap items-center gap-1 lg:w-auto lg:flex-nowrap">
             {isOwner && (
               <div className="flex items-center gap-1">

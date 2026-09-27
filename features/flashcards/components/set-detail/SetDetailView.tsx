@@ -146,6 +146,11 @@ import {
   type FlashcardSetSurfaceMastery,
 } from "@/features/surfaces/manifests/education-flashcard-set.manifest";
 import { masteryTier } from "@/features/education/study/utils/masteryFsrs";
+import {
+  EducationCollectionNoResults,
+  EducationCollectionSearch,
+  filterEducationCollection,
+} from "@/features/education/components/EducationCollectionSearch";
 
 /** Phase 1B — the extra study modes on the spine, alongside classic Study. */
 const OTHER_STUDY_MODES = [
@@ -403,6 +408,7 @@ export function SetDetailView({ setId }: { setId: string }) {
   const [convertOpen, setConvertOpen] = useState(false);
   const [studyModesOpen, setStudyModesOpen] = useState(false);
   const [deckToolsOpen, setDeckToolsOpen] = useState(false);
+  const [cardSearch, setCardSearch] = useState("");
   // WP3 gap 5 — card merge selection.
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -692,6 +698,16 @@ export function SetDetailView({ setId }: { setId: string }) {
       backImage: images.back ?? null,
     });
   };
+
+  const filteredCards = data
+    ? filterEducationCollection(data.cards.map((card, index) => ({ card, index })), cardSearch, ({ card }) => [
+        card.front,
+        card.back,
+        card.card_kind,
+        ...card.details.map((detail) => detail.text),
+        ...matchingPairs(card).flatMap((pair) => [pair.left, pair.right]),
+      ])
+    : [];
 
   // The header Agents menu is outside this route tree, so the detail page
   // registers its own live runtime. The library's provider is absent here;
@@ -1070,6 +1086,19 @@ export function SetDetailView({ setId }: { setId: string }) {
               </div>
             </div>
 
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+              <EducationCollectionSearch
+                value={cardSearch}
+                onValueChange={setCardSearch}
+                label="cards in this deck"
+              />
+              {cardSearch.trim() && (
+                <span className="text-xs text-muted-foreground">
+                  {filteredCards.length} of {data.cards.length} cards match
+                </span>
+              )}
+            </div>
+
             {/* Mobile is a study launchpad, not a desktop action matrix squeezed
                 into one column. The two fastest paths stay visible; every
                 secondary capability remains reachable in a stable bottom sheet. */}
@@ -1266,36 +1295,44 @@ export function SetDetailView({ setId }: { setId: string }) {
                       )}
                     </div>
                   )}
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {data.cards.map((card, i) => (
-                      <CardPeek
-                        key={card.id}
-                        card={card}
-                        index={i}
-                        mastery={masteryByCard[card.id]}
-                        // Every kind is selectable, because every kind can be
-                        // ENRICHED. F3's text-mergeable restriction still holds
-                        // — it just moved to the Merge button, which judges the
-                        // selection (`canMergeSelection`): a matching/formula
-                        // card's structure lives in dynamic_content, which a
-                        // front/back merge would silently destroy.
-                        selectable={selecting}
-                        selected={selectedIds.has(card.id)}
-                        onToggleSelected={() =>
-                          setSelectedIds((prev) => {
-                            const nextIds = new Set(prev);
-                            if (nextIds.has(card.id)) nextIds.delete(card.id);
-                            else nextIds.add(card.id);
-                            return nextIds;
-                          })
-                        }
-                        onOpen={() => openCard(card)}
-                        onEnhance={
-                          canEdit ? () => setEnhanceCard(card) : undefined
-                        }
-                      />
-                    ))}
-                  </div>
+                  {filteredCards.length === 0 ? (
+                    <EducationCollectionNoResults
+                      query={cardSearch}
+                      label="cards in this deck"
+                      onClear={() => setCardSearch("")}
+                    />
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {filteredCards.map(({ card, index }) => (
+                        <CardPeek
+                          key={card.id}
+                          card={card}
+                          index={index}
+                          mastery={masteryByCard[card.id]}
+                          // Every kind is selectable, because every kind can be
+                          // ENRICHED. F3's text-mergeable restriction still holds
+                          // — it just moved to the Merge button, which judges the
+                          // selection (`canMergeSelection`): a matching/formula
+                          // card's structure lives in dynamic_content, which a
+                          // front/back merge would silently destroy.
+                          selectable={selecting}
+                          selected={selectedIds.has(card.id)}
+                          onToggleSelected={() =>
+                            setSelectedIds((prev) => {
+                              const nextIds = new Set(prev);
+                              if (nextIds.has(card.id)) nextIds.delete(card.id);
+                              else nextIds.add(card.id);
+                              return nextIds;
+                            })
+                          }
+                          onOpen={() => openCard(card)}
+                          onEnhance={
+                            canEdit ? () => setEnhanceCard(card) : undefined
+                          }
+                        />
+                      ))}
+                    </div>
+                  )}
                 </>
               )}
             </div>

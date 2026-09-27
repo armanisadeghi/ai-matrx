@@ -9,6 +9,7 @@
 "use client";
 
 import { withDisplayTitle } from "@/components/markdown-core/plain-title";
+import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
@@ -174,14 +175,18 @@ export const studyMediaService = {
     kind: EduMediaKind,
   ): Promise<MediaResult<StudyMediaRow[]>> {
     try {
-      const { data, error } = await EDU()
-        .from("study_media")
-        .select("*")
-        .eq("media_kind", kind)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
-      if (error) return fail("listByKind", error);
-      return { data: ((data ?? []) as StudyMediaRow[]).map((r) => withDisplayTitle(r, "title")), error: null };
+      const data = await readAllRows(
+        ({ from, to }) => EDU()
+          .from("study_media")
+          .select("*", { count: "exact" })
+          .eq("media_kind", kind)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(from, to),
+        { label: `education.study_media ${kind}` },
+      );
+      return { data: data.map((row) => withDisplayTitle(row, "title")), error: null };
     } catch (e) {
       return fail("listByKind", e);
     }

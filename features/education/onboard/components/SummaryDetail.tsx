@@ -12,7 +12,7 @@
 // `__kind` fenced blocks (flashcard_set, diagram_spec, tables, mermaid, …);
 // this is the education-side half of the Content IR integration (Lane C).
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Download, ListChecks, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
 import { downloadTextFile } from "../export/download";
+import { ContentFindControl } from "@/features/rich-document/search/ContentFindControl";
 
 interface SummaryEnvelope {
   __kind?: string;
@@ -44,6 +45,7 @@ export function SummaryDetail({ id }: { id: string }) {
   const [loadError, setLoadError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let alive = true;
@@ -120,11 +122,13 @@ export function SummaryDetail({ id }: { id: string }) {
             <span className="text-xs text-muted-foreground">Study summary</span>
           </div>
         </div>
+        <ContentFindControl rootRef={contentRef} label="Find in summary" />
         <Button variant="outline" size="sm" onClick={onExport}>
           <Download className="h-4 w-4" /> Markdown
         </Button>
       </div>
 
+      <div ref={contentRef} className="space-y-5">
       {keyPoints.length > 0 && (
         <div className="rounded-lg border border-border bg-muted/40 p-4">
           <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-foreground">
@@ -143,6 +147,7 @@ export function SummaryDetail({ id }: { id: string }) {
 
       <div className="prose-sm max-w-none">
         <MarkdownStream imagePolicy="ai" content={markdown} hideCopyButton />
+      </div>
       </div>
 
       {/* Where this came from + the rest of the kit made from the same upload. */}

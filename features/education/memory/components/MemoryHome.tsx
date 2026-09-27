@@ -13,6 +13,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useState } from "react";
 import { AlertCircle, Brain, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
@@ -32,6 +33,7 @@ import {
 import { authenticatedStudyMediaLoadKey } from "@/features/education/media/authLoad";
 import { useStudyMediaLibrary } from "@/features/education/media/useStudyMediaLibrary";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { EducationCollectionNoResults, EducationCollectionSearch, filterEducationCollection } from "@/features/education/components/EducationCollectionSearch";
 
 const SURFACE_NAME = "matrx-user/education-memory";
 
@@ -49,6 +51,8 @@ export function MemoryHome() {
   const library = useStudyMediaLibrary("memory_aid", loadKey);
   const rows = library.rows;
   const loading = !authReady || library.loading;
+  const [search, setSearch] = useState("");
+  const filteredRows = filterEducationCollection(rows, search, (row) => [row.title, row.source_title]);
 
   // Read at trigger time, never from stale closure state.
   const buildScope = () =>
@@ -91,7 +95,8 @@ export function MemoryHome() {
     <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
     <EducationToolHeader title="Memory Aids" />
     <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4">
-      <div className="flex items-center justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <EducationCollectionSearch value={search} onValueChange={setSearch} label="memory aids" />
         <Button
           size="sm"
           className="gap-1.5"
@@ -125,9 +130,11 @@ export function MemoryHome() {
             New memory aid
           </Button>
         </div>
+      ) : filteredRows.length === 0 ? (
+        <EducationCollectionNoResults query={search} label="memory aids" onClear={() => setSearch("")} />
       ) : (
         <ul className="space-y-2" data-surface-value="aid_library">
-          {rows.map((row) => (
+          {filteredRows.map((row) => (
             <li key={row.id}>
               {/* A record with its own page — an anchor, not a <button>.
                   As a button the card navigated on click and offered nothing

@@ -44,6 +44,7 @@ import type {
 } from "../../data/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { EducationCollectionNoResults, EducationCollectionSearch, filterEducationCollection } from "@/features/education/components/EducationCollectionSearch";
 
 const TYPE_LABEL: Record<QuestionType, string> = {
   multiple_choice: "Multiple choice",
@@ -69,6 +70,8 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
   const [loadError, setLoadError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [title, setTitle] = useState("");
+  const [questionSearch, setQuestionSearch] = useState("");
+  const [visibleQuestionIds, setVisibleQuestionIds] = useState<Set<string> | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -85,6 +88,8 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
         setAssessment(res.data.assessment);
         setItems(res.data.items);
         setTitle(res.data.assessment.title);
+        setQuestionSearch("");
+        setVisibleQuestionIds(null);
       }
       setLoading(false);
     })();
@@ -136,6 +141,18 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
 
   const config = kindConfigFor(assessment.assessment_kind);
   const base = `/education/${config.base}`;
+  const questionTerms = (item: AssessmentItemRow) => [item.prompt, item.correct_answer, item.explanation, item.question_type,
+    ...(Array.isArray(item.options) ? item.options.filter((option): option is string => typeof option === "string") : [])];
+  const changeQuestionSearch = (nextQuery: string) => {
+    setQuestionSearch(nextQuery);
+    setVisibleQuestionIds(nextQuery.trim()
+      ? new Set(filterEducationCollection(items, nextQuery, questionTerms).map((item) => item.id))
+      : null);
+  };
+  // Freeze membership while a question is being edited so a changed answer or
+  // prompt cannot unmount its unsaved editor before the learner presses Save.
+  const filteredItems = items.map((item, index) => ({ item, index }))
+    .filter(({ item }) => visibleQuestionIds === null || visibleQuestionIds.has(item.id));
 
   const saveTitle = async () => {
     if (title.trim() === assessment.title) return;
@@ -159,7 +176,12 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
       options: item.options,
     });
     if (res.error) toast.error(res.error);
-    else toast.success("Question saved");
+    else {
+      toast.success("Question saved");
+      if (questionSearch.trim()) {
+        setVisibleQuestionIds(new Set(filterEducationCollection(items, questionSearch, questionTerms).map((row) => row.id)));
+      }
+    }
   };
 
   // DESTRUCTIVE: this deletes the saved question row, not a draft in the form.
@@ -224,7 +246,13 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
         </div>
 
         <div className="mt-6 flex flex-col gap-4">
-          {items.map((item, i) => (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <EducationCollectionSearch value={questionSearch} onValueChange={changeQuestionSearch} label="questions" />
+            {questionSearch.trim() && <span className="text-xs text-muted-foreground">{filteredItems.length} of {items.length} questions match</span>}
+          </div>
+          {filteredItems.length === 0 && questionSearch.trim() ? (
+            <EducationCollectionNoResults query={questionSearch} label="questions" onClear={() => changeQuestionSearch("")} />
+          ) : filteredItems.map(({ item, index: i }) => (
             <ItemEditor
               key={item.id}
               item={item}
@@ -273,6 +301,7 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
                   next.splice(i + 1, 0, added.data![0]);
                   return next;
                 });
+                changeQuestionSearch("");
                 toast.success(`Added an ${target}-depth version`);
               }}
             />
