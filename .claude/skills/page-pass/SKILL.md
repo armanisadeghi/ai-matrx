@@ -121,7 +121,7 @@ session, never you.
   repo root — `{"extends":"./tsconfig.json","compilerOptions":{"noEmit":true,"incremental":false},"include":["global.d.ts","cartesia.d.ts","types/typecheck-env.d.ts", <your files>]}`
   — run `node --max-old-space-size=11000 node_modules/typescript/bin/tsc6 -p <it>`,
   delete it. Errors in files you didn't touch are not yours; list them.
-- **Every commit parses.** Before each commit run `pnpm -s check:parse <your files>` (seconds) — a quote inside a string once broke a manifest on main between two commits. Committing early never means committing unparsed.
+- **Every commit parses.** Before each commit run `pnpm -s check:parse` (~20s, whole tree; red outside your files is not yours) — a quote inside a string once broke a manifest on main between two commits. Committing early never means committing unparsed.
 - **Commit right after each coherent edit, before running checks** — a sync sweeps the shared
   checkout every ~30 minutes and commits any dirty file under its own message,
   so a file left uncommitted loses your authorship and message.
