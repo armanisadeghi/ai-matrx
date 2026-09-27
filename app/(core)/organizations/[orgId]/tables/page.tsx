@@ -13,45 +13,39 @@ import { RecordsMount, WhereItLives, personActor, recordsDataSource } from "@ai-
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
+import { KeptByTheAppLine } from "@/features/unified-data/hub/KeptByTheAppLine";
 
 const SELECT_COLS = "id, table_name, description, version, updated_at";
 
 /**
  * Which cards are record-store Tables — only those say where they live and can move
- * (`WhereItLives`); the older datasets have no such door. Filled by `fetchOwned` before the
+ * (`WhereItLives`); the older datasets have no such door. Filled by `listTables` before the
  * list renders its cards.
  */
 const storeTableIds = new Set<string>();
 
 /**
- * The organization's tables, from BOTH stores (lane INTEG-CLIENTS, CUTOVER-PLAN F12): its live
- * older datasets, and the record-store Tables this person may open here
- * (`custom.table_list_everywhere`, GRID-PRIMITIVES G9). A moved table is archived on the older
- * side with the same id, so it appears once, from the store. A store that could not be listed
- * is said in the console and the older list still answers.
+ * THE ORGANIZATION'S TABLES, READ WHERE TABLES LIVE (lane PROOF-DEFECTS, D5): one call to
+ * `custom.table_list_everywhere` — the both-stores list door (GRID-PRIMITIVES G9) the table
+ * pickers use — which answers each table's store and whether the app keeps it for itself. This
+ * page used to read `workbench.udt_datasets` directly for the older side and list every
+ * record-store table beside it, so a column's choice list ("Insurance Carriers") or a test's
+ * choices showed as ordinary tables while /data-v2 kept them behind Show everything. A list that
+ * cannot be read is a failure the page shows, never a silently shorter list.
  */
-const fetchOwned = async (orgId: string) => {
-  const older = await supabase
-    .schema("workbench")
-    .from("udt_datasets")
-    .select(SELECT_COLS)
-    .eq("organization_id", orgId)
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false });
-  const rows = (older.data ?? []) as Array<Record<string, unknown>>;
+async function listTables(orgId: string): Promise<{ rows: Array<Record<string, unknown>>; kept: Array<Record<string, unknown>> }> {
   const store = await (supabase as unknown as SupabaseClient).schema("custom").rpc("table_list_everywhere", { p_organization_id: orgId });
-  if (store.error) {
-    console.warn(`[org tables] The record store's tables could not be listed: ${store.error.message}`);
-    return rows;
-  }
-  const seen = new Set(rows.map((r) => String(r.id)));
+  if (store.error) throw new Error(`The organization's tables could not be listed: ${store.error.message}`);
   const tables = ((store.data as { tables?: unknown } | null)?.tables ?? []) as Array<Record<string, unknown>>;
-  const storeRows = tables.filter((t) => t.store === "records" && !seen.has(String(t.id)));
-  for (const t of storeRows) storeTableIds.add(String(t.id));
-  return [...storeRows, ...rows].sort((a, b) =>
-    String(b.updated_at ?? "").localeCompare(String(a.updated_at ?? "")),
-  );
-};
+  storeTableIds.clear();
+  for (const t of tables) if (t.store === "records") storeTableIds.add(String(t.id));
+  const byRecent = (a: Record<string, unknown>, b: Record<string, unknown>) =>
+    String(b.updated_at ?? "").localeCompare(String(a.updated_at ?? ""));
+  return {
+    rows: tables.filter((t) => t.kept_by_the_app !== true).sort(byRecent),
+    kept: tables.filter((t) => t.kept_by_the_app === true).sort(byRecent),
+  };
+}
 
 const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => ({
   id: String(row.id),
@@ -79,6 +73,18 @@ export default function OrgTablesPage() {
   const userId = useAppSelector(selectUserId);
   // A table moved from a card re-reads the list (the moved card leaves this organization's page).
   const [reread, setReread] = React.useState(0);
+  // THE SAME "SHOW EVERYTHING" AS /data-v2 (KeptByTheAppLine): the tables the app keeps for
+  // itself are counted, and listed only when asked.
+  const [showEverything, setShowEverything] = React.useState(false);
+  const [keptCount, setKeptCount] = React.useState(0);
+  const ownedQuery = React.useCallback(
+    async (orgId: string) => {
+      const { rows, kept } = await listTables(orgId);
+      setKeptCount(kept.length);
+      return showEverything ? [...rows, ...kept] : rows;
+    },
+    [showEverything],
+  );
 
 
   return (
@@ -107,7 +113,7 @@ export default function OrgTablesPage() {
             resourceType="dataset"
             tableName="udt_datasets"
             selectColumns={SELECT_COLS}
-            ownedQuery={fetchOwned}
+            ownedQuery={ownedQuery}
             mapRow={mapRow}
             emptyTitle="No shared tables yet"
             emptyDescription="Data tables owned by this organization will appear here, along with tables other members share."
@@ -125,6 +131,13 @@ export default function OrgTablesPage() {
               ) : null
             }
           />
+          <div className="mt-4">
+            <KeptByTheAppLine
+              keptCount={keptCount}
+              showEverything={showEverything}
+              onToggle={() => setShowEverything((on) => !on)}
+            />
+          </div>
         </RecordsMount>
       )}
     </OrgResourceLayout>

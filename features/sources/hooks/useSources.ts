@@ -161,6 +161,80 @@ export function mergeOrganizationNameFailures(
   return next;
 }
 
+/**
+ * THE ONE COUNT READ for Sources: the two numbers on the Sources page's
+ * Saved / All captures toggle — head counts only, under the caller's RLS and
+ * the declared scope. The Knowledge home reads these same numbers through
+ * `useSourcesCounts`, so the two screens can never disagree. A count whose
+ * read failed is `null` (shown as "—", never 0).
+ */
+export async function readSourcesCounts(
+  scope: SourcesScope,
+  userId: string,
+  search = "",
+): Promise<{ savedTotal: number | null; allTotal: number | null }> {
+  const counts = await Promise.allSettled(
+    [true, false].map(async (saved) => {
+      let q = supabase
+        .schema("docproc")
+        .from("processed_documents")
+        .select("id", { count: "exact", head: true })
+        .is("deleted_at", null)
+        .or(sourcesListFilter({ saved, search }));
+      q = applySourcesScope(q, scope, userId);
+      const { count, error } = await q;
+      return error ? null : count;
+    }),
+  );
+  return {
+    savedTotal: counts[0].status === "fulfilled" ? counts[0].value : null,
+    allTotal: counts[1].status === "fulfilled" ? counts[1].value : null,
+  };
+}
+
+export interface UseSourcesCountsResult {
+  savedTotal: number | null;
+  allTotal: number | null;
+  loading: boolean;
+  /** The count read failed: show "—", never 0. */
+  failed: boolean;
+}
+
+/** The Sources page's Saved / All captures counts, without the list. */
+export function useSourcesCounts(
+  scope: SourcesScope | null,
+  userId: string | null,
+): UseSourcesCountsResult {
+  const [state, setState] = useState<UseSourcesCountsResult>({
+    savedTotal: null,
+    allTotal: null,
+    loading: true,
+    failed: false,
+  });
+  const key = scope
+    ? `${scope.kind === "mine" ? "mine" : `orgs:${scope.organizationId}`}|${userId}`
+    : "none";
+  useEffect(() => {
+    if (!scope || !userId) return undefined;
+    let cancelled = false;
+    setState((st) => ({ ...st, loading: true, failed: false }));
+    void readSourcesCounts(scope, userId).then((c) => {
+      if (cancelled) return;
+      setState({
+        ...c,
+        loading: false,
+        failed: c.savedTotal === null || c.allTotal === null,
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // key carries every input; the scope object itself changes each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return state;
+}
+
 export function useSources(
   scope: SourcesScope | null,
   userId: string | null,
@@ -315,26 +389,9 @@ export function useSources(
         hasMore: page.count !== null && fetched.current < page.count,
       }));
       void readExtras(gen, rows);
-      // The two numbers on the Saved / All captures toggle — head counts only.
-      const counts = await Promise.allSettled(
-        [true, false].map(async (saved) => {
-          let q = supabase
-            .schema("docproc")
-            .from("processed_documents")
-            .select("id", { count: "exact", head: true })
-            .is("deleted_at", null)
-            .or(sourcesListFilter({ saved, search: options.search }));
-          q = applySourcesScope(q, scope, userId);
-          const { count, error } = await q;
-          return error ? null : count;
-        }),
-      );
+      const counts = await readSourcesCounts(scope, userId, options.search);
       if (gen !== generation.current) return;
-      setState((st) => ({
-        ...st,
-        savedTotal: counts[0].status === "fulfilled" ? counts[0].value : null,
-        allTotal: counts[1].status === "fulfilled" ? counts[1].value : null,
-      }));
+      setState((st) => ({ ...st, ...counts }));
     })();
     return undefined;
     // listKey carries every input; the scope object itself changes each render.

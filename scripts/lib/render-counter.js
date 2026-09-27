@@ -130,7 +130,13 @@
             for (const r of reasons) e.reasons[r] = (e.reasons[r] || 0) + 1;
             const par = chain(f, 2).join("<");
             e.parents[par] = (e.parents[par] || 0) + 1;
-            if (!e.anc && window.__rcTrack && window.__rcTrack.test(name)) e.anc = ancestorsAll(f).slice(0, 60);
+            if (!e.anc && window.__rcTrack && window.__rcTrack.test(name)) {
+              e.anc = ancestorsAll(f).slice(0, 60);
+              // Was this component compiled by the React Compiler? Its body reads the memo cache.
+              const src = String((f.type && (f.type.type || f.type.render)) || f.type);
+              e.compiled = /memo_cache_sentinel|\$\[0\]/.test(src);
+              if (window.__rcDumpSource) (window.__rcSrc = window.__rcSrc || {})[name] = src;
+            }
           }
           const rec = { props: f.memoizedProps, hookHead: f.tag === 1 ? f.stateNode : f.memoizedState, hooks, ctx };
           inst.set(f, rec);

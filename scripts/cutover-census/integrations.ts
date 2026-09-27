@@ -111,6 +111,16 @@ export const NOT_THE_OLDER_STORE: Array<{ repo: Repo; claims: string[]; why: str
     ],
     why: "the Vault's own `update_field_metadata` (a secret item's field), not the older tables' door",
   },
+  {
+    // Lane PROOF-DEFECTS (D4, 2026-09-27). The delete-policy registry the delete-actions guard
+    // (aidream/tools/tests/test_delete_actions_archive.py) reads: it NAMES
+    // `workbench.udt_dataset_rows` as the table a data-tool delete archives, and never reads or
+    // writes it. It was the census's one unlisted file, which kept every organization's Data tables
+    // card on "Not ready yet". When the older tables retire, its row goes with them (Retire, C).
+    repo: "aidream",
+    claims: ["packages/matrx-ai/matrx_ai/tools/delete_census.py"],
+    why: "a delete-policy registry that names the older rows table for the archive guard; it reads and writes nothing",
+  },
 ];
 
 export const INTEGRATIONS: Integration[] = [

@@ -389,6 +389,22 @@ export function EditableCell({
             onCheckedChange={(checked) => commitDirect(checked === true)}
             aria-label={fieldDisplayName}
           />
+        ) : readEditorKind === "checkbox" && (value === true || value === false || value === null || value === undefined) ? (
+          // A TWO-STATE VALUE LOOKS THE SAME FROM EVERY SEAT (lane PROOF-DEFECTS, D2). Only
+          // whether it can be changed differs: a viewer, a formula or a saving cell draws the
+          // same box, disabled and saying why — never the words "True" / "False" the plain
+          // display path printed for a viewer while the owner saw a tick box.
+          <Checkbox
+            checked={value === true}
+            disabled
+            onClick={(e) => e.stopPropagation()}
+            aria-label={fieldDisplayName}
+            title={
+              value === true || value === false
+                ? `${fieldDisplayName}: ${value ? "yes" : "no"}${saving ? "" : " (you cannot change this here)"}`
+                : `${fieldDisplayName}: nobody has answered this yet`
+            }
+          />
         ) : directClickable && readEditorKind === "rating" ? (
           <RatingInput
             value={value}

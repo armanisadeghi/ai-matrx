@@ -56,6 +56,34 @@ stale text. By construction a batched tile renders once per interval instead of 
   `document.body`, window-relative drag bounds) and anything `position: fixed` cannot be tile
   bodies. A kind tuned for the 720px chat column needs a ≥ 720px tile.
 
+## Connecting agents — the seam (for the agent-integration session)
+
+The board takes a real run the same way it takes a replay. Nothing else is needed:
+
+1. Launch the run the normal way (agent/shortcut/workflow execution, or `adoptForeignStream` for a
+   server-orchestrated pipeline) and take its `requestId`.
+2. `const source = useRequestSource(requestId)` (`streams/useRequestSource.ts`) — a `PacedSource`
+   over the same `activeRequests` row `MarkdownStream` reads, holding the viewer retention.
+3. `board.addTile({ id, title, rect: { x: 0, y: 0, w, h }, content: { type: "stream", stream: source } }, near)`
+   (`board/useBoard.ts`) — `near` is usually the viewport centre in world px
+   (`screenToWorld(store.getCamera(), w/2, h/2)`); the tile lands in the nearest free space.
+4. For a saved board, the node is `{ source: { kind: "stream", requestId } }` (`board/document.ts`).
+A pipeline (notes → script → media) is several tiles plus `SpatialEdge`s inside a `SpatialFrame`;
+each stage's tile is added when that stage's request starts.
+
+## Saved boards — status
+
+`workspace.spatial_boards` is LIVE (2026-09-27, provisioned through `platform.create_entity_table`,
+token `spatial_board`, entity variant, versioned, soft delete, personal visibility, list scope
+`mine`, `iam.canonical_certify_ok` = true, `platform_admin_read` present). Columns: `title`,
+`description`, `camera`, `nodes`, `edges`, `settings`, `last_opened_at` + the base contract. The
+stored shape is `board/document.ts` (parse reports every malformed node; JSON Canvas 1.0 export).
+**Blocked on one step:** `pnpm db-types` must be re-run on a machine holding the Supabase access
+token (this cloud container has none, and the MCP generator emits only `public`), so the client
+service, autosave (`mergeJsonColumn`, debounced) and the manage page (`<EntityListPage>`: open,
+rename, duplicate, archive, delete) can compile against the generated row. No cast was used to
+get around it.
+
 ## Performance rules (each one measured on the 100-stream stress board)
 
 - **Status is read in leaves.** `useTileStatus` lives in the dot and the overview card; subscribing
@@ -75,11 +103,27 @@ standing still with 100 live streams 58 fps (was 21); panning with 100 live stre
 7–8); panning when nothing streams 60 fps; the 12-tile board pans at 60 fps. Re-measure on real
 hardware with a production build before tuning further.
 
-## Gestures (the Figma/FigJam/tldraw standard)
+## Input, focus, gestures
 
-Wheel / two-finger pan · ⌘/ctrl+wheel or pinch zoom at cursor · drag empty space, space+drag or
-middle-drag pan · shift+1 fit all · shift+2 fit selection · shift+0 100% · +/- zoom · arrows nudge ·
-esc deselect · double-click a tile to fly to it · wheel over the SELECTED tile scrolls it.
+- **Scrolling (`engine/wheel-input.ts`, knob `WheelMode`, per-viewer):** `auto` (default) — a mouse
+  wheel zooms at the cursor, a trackpad swipe pans, a pinch zooms; `zoom`; `pan`. One decision per
+  gesture burst so an inertia tail never flips device. Drag empty space / space+drag / middle-drag
+  pans. **The one exception:** the SELECTED tile, under the pointer, with room to scroll that way,
+  scrolls itself.
+- **Focus (`FocusLayer`):** Enter, F, the tile's expand button or the menu → the tile's live card
+  portals into the focus layer and fills the board area (not browser fullscreen), growing out of its
+  on-board rect. ←/→ step in reading order; Esc returns to the exact camera. Double-click = fly to.
+- **Throws (`engine/throw.ts`):** a header drag released at ≥ 1.1 px/ms after ≥ 70px travel, on a
+  dominant axis. Defaults (`DEFAULT_THROW_ACTIONS`, a knob): → park on the shelf · ↑ save to Notes
+  and close · ↓ delete from the board after a consequence-naming confirm · ← unassigned. The action
+  is named on the tile BEFORE release; every result toasts an Undo.
+- **Right-click (`SpatialBoardMenu`):** the ONE v3 menu, one per board; the clicked tile's actions
+  come first (`primary`), then Board (fit, 100%, Scrolling, Parked).
+- **Keys:** shift+1 fit all · shift+2 fit selection · shift+0 100% · +/- zoom · arrows nudge · esc
+  leaves focus, then deselects.
+- **Board model (`board/useBoard.ts`):** tiles, positions, shelf, remove-with-undo, and `addTile`
+  with auto-placement in the nearest free space (`engine/placement.ts`) — the one path gestures,
+  the menu and agents change a board through.
 
 ## Change Log
 
@@ -92,3 +136,7 @@ esc deselect · double-click a tile to fly to it · wheel over the SELECTED tile
   768px (global `* { max-width: 100% }` in globals.css — every spatial element is `max-w-none`),
   a reload right after a move lost it (hash now throttled, not debounced), and a 1.8× zoom per
   mouse notch (now ~1.22×). Zoom-at-cursor measured exact to 0.1 world px over 23%→400%.
+- 2026-09-27 — Owner round 2: wheel-zooms input model with the auto/zoom/pan knob, focus mode, throw
+  gestures with pre-release hints and undo, the parked shelf, the v3 right-click menu, save-to-Notes,
+  `useBoard` + auto-placement. Browser-verified (wheel vs trackpad, focus + arrows + Esc, throw
+  right/down, shelf restore, delete confirm, menu), 0 console errors.

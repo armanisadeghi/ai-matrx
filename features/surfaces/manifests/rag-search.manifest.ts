@@ -471,7 +471,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "retrieval_source_kinds",
     label: "Source-kind filter",
     description:
-      `Stages the source-kind filter — which KIND of indexed content the next search is limited to. Value: an array that REPLACES the full filter (this is not an append; read the current value from \`source_kinds\` and send the complete new set). The array may hold AT MOST ONE kind, because the toggle that renders this filter is single-select — a two-kind array is refused rather than staged into a control that could only show one of them. Allowed kinds: ${FILTERABLE_SOURCE_KIND_ENUM_TEXT}. Send an empty array to clear the filter back to "All", which searches every kind. Note that "processed_document" and "library_doc" content is reached through the data store selector (retrieval_data_store), not through this filter, so neither is accepted here. Staged only: the user still presses Search.`,
+      `Stages the source-kind filter — which KIND of indexed content the next search is limited to. Value: an array that REPLACES the full filter (this is not an append; read the current value from \`source_kinds\` and send the complete new set). Every kind in the array must belong to ONE toggle position (the toggle is single-select; e.g. "scrape_parsed_page" and "web_page" are both Web page) — a mix of positions is refused rather than staged into a control that could only show one of them. Allowed kinds: ${FILTERABLE_SOURCE_KIND_ENUM_TEXT}. Send an empty array to clear the filter back to "All", which searches every kind. Staged only: the user still presses Search.`,
     valueType: "array",
     updatesValue: "source_kinds",
     mode: "draft",

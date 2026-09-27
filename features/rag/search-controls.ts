@@ -3,8 +3,8 @@
  *
  * The Knowledge Search Lab's CONTROL vocabulary — the one place that knows what the
  * search form's scope and pipeline knobs can say. Deliberately runtime
- * dependency-free (the single import is type-only) so every consumer can share
- * it without a cycle:
+ * dependency-light (it reads only the Sources page's pure kind table) so every
+ * consumer can share it without a cycle:
  *
  *  - `RagSearchExperience` renders its source-kind toggle and bounds its
  *    multi-query input from these constants,
@@ -16,88 +16,97 @@
  * CHECKED against, and the enum the UI actually renders cannot drift apart —
  * they are all this list. Never re-type these literals at a call site.
  *
- * WHY THE FILTER IS A SUBSET OF `SOURCE_KINDS`: the canonical source-kind
- * vocabulary (`types/data-stores-ext.ts`) has five kinds, but the Search Lab's
- * toggle only offers three. `processed_document` and `library_doc` are reached
- * through the DATA STORE selector, not this filter. Each entry below is typed
- * `SourceKind`, so a kind that stops existing canonically is a compile error
- * here rather than a filter that silently matches nothing.
+ * THE KINDS ARE THE SOURCES PAGE'S KINDS (2026-09-27): the toggle used to
+ * offer Files / Notes / Code only, so a person could not narrow a search to the
+ * web pages, transcripts and pasted text the Sources page lists. Positions are
+ * now derived from `SOURCE_KIND_GROUP_KINDS` (features/sources/sourceRows.ts) —
+ * the same table the Sources page's Kind column reads — plus the legacy curated
+ * library, so a kind the Sources page shows can never be missing here. Each
+ * position sends every stored `source_kind` token of its kind.
  */
 
-import type { SourceKind } from "@/features/rag/types/data-stores-ext";
+import {
+  SOURCE_KIND_GROUP_KINDS,
+  SOURCE_KIND_LABEL,
+  type SourceKindGroup,
+} from "@/features/sources/sourceRows";
 
-/**
- * Every position the Search Lab's source-kind toggle can be in.
- *
- * `sourceKind` is what the filter sends to the retrieval API — `null` for
- * "all", which sends NO filter (everything the user can see), not an empty
- * one. The write handler uses this table to map an agent's requested kind list
- * back onto the single toggle position that can actually render it.
- */
-export const SEARCH_SOURCE_KIND_FILTERS = [
-  {
-    /** The toggle's internal value, and what `kindFilter` state holds. */
-    value: "all",
-    /** The button label the user sees. */
-    label: "All",
-    /** The canonical source kind this position filters to — null = no filter. */
-    sourceKind: null,
-  },
-  {
-    value: "cld_file",
-    label: "Files",
-    sourceKind: "cld_file" satisfies SourceKind,
-  },
-  {
-    value: "note",
-    label: "Notes",
-    sourceKind: "note" satisfies SourceKind,
-  },
-  {
-    value: "code_file",
-    label: "Code",
-    sourceKind: "code_file" satisfies SourceKind,
-  },
-] as const;
+type KindPosition = Exclude<SourceKindGroup, "other">;
+
+export interface SearchSourceKindFilterSpec {
+  /** The toggle's internal value, and what `kindFilter` state holds. */
+  value: "all" | KindPosition | "library_doc";
+  /** The button label the user sees — the Sources page's word. */
+  label: string;
+  /** The stored source kinds this position sends — null = no filter (All). */
+  sourceKinds: readonly string[] | null;
+}
+
+/** The order a person reads the kinds in. */
+const POSITION_ORDER: readonly KindPosition[] = [
+  "file",
+  "web_page",
+  "transcript",
+  "note",
+  "pasted_text",
+];
+
+/** Every position the Search page's source-kind toggle can be in. */
+export const SEARCH_SOURCE_KIND_FILTERS: readonly SearchSourceKindFilterSpec[] = [
+  { value: "all", label: "All", sourceKinds: null },
+  ...POSITION_ORDER.map((group) => ({
+    value: group,
+    label: SOURCE_KIND_LABEL[group],
+    sourceKinds: SOURCE_KIND_GROUP_KINDS[group],
+  })),
+  { value: "library_doc", label: "Library", sourceKinds: ["library_doc"] },
+];
 
 /** The toggle position vocabulary — what `kindFilter` state holds. */
-export type SourceKindFilter =
-  (typeof SEARCH_SOURCE_KIND_FILTERS)[number]["value"];
+export type SourceKindFilter = SearchSourceKindFilterSpec["value"];
 
-/** One entry of {@link SEARCH_SOURCE_KIND_FILTERS}. */
-export type SearchSourceKindFilterSpec =
-  (typeof SEARCH_SOURCE_KIND_FILTERS)[number];
+/** A stored source kind the toggle can filter to. */
+export type FilterableSourceKind = string;
 
 /**
- * The subset of `SourceKind` this surface's toggle can filter to — narrower
- * than `SourceKind` itself, which also carries the kinds reached through the
- * data store selector rather than this filter.
- */
-export type FilterableSourceKind = NonNullable<
-  SearchSourceKindFilterSpec["sourceKind"]
->;
-
-/**
- * The source kinds the toggle can actually FILTER to (excludes "all", which is
+ * Every stored source kind the toggle can FILTER to (excludes "all", which is
  * the absence of a filter). This is the exact list an agent may send in the
  * `retrieval_source_kinds` write target.
  */
 export const FILTERABLE_SOURCE_KINDS: readonly FilterableSourceKind[] =
-  SEARCH_SOURCE_KIND_FILTERS.flatMap((f) =>
-    f.sourceKind === null ? [] : [f.sourceKind],
-  );
+  SEARCH_SOURCE_KIND_FILTERS.flatMap((f) => f.sourceKinds ?? []);
 
-/** `"cld_file" | "note" | "code_file"` — interpolate this, never re-type it. */
+/** `"cld_file" | "legacy" | …` — interpolate this, never re-type it. */
 export const FILTERABLE_SOURCE_KIND_ENUM_TEXT = FILTERABLE_SOURCE_KINDS.map(
   (k) => `"${k}"`,
 ).join(" | ");
 
-/** Lookup by the canonical source kind the position filters to. */
-export const SEARCH_FILTER_BY_SOURCE_KIND = Object.fromEntries(
-  SEARCH_SOURCE_KIND_FILTERS.flatMap((f) =>
-    f.sourceKind === null ? [] : [[f.sourceKind, f] as const],
-  ),
-) as Record<FilterableSourceKind, SearchSourceKindFilterSpec | undefined>;
+/** The source kinds a filter position sends (undefined = All, no filter). */
+export function sourceKindsForFilter(
+  value: SourceKindFilter,
+): string[] | undefined {
+  const spec = SEARCH_SOURCE_KIND_FILTERS.find((f) => f.value === value);
+  return spec?.sourceKinds ? [...spec.sourceKinds] : undefined;
+}
+
+/**
+ * The ONE position that renders this kind list, or null when the kinds belong
+ * to different positions (the toggle is single-select) or are unknown.
+ */
+export function searchFilterForKinds(
+  kinds: readonly string[],
+): SearchSourceKindFilterSpec | null {
+  const positions = new Set(
+    kinds.map(
+      (kind) =>
+        SEARCH_SOURCE_KIND_FILTERS.find((f) => f.sourceKinds?.includes(kind))
+          ?.value ?? null,
+    ),
+  );
+  if (positions.size !== 1 || positions.has(null)) return null;
+  const [value] = positions;
+  return SEARCH_SOURCE_KIND_FILTERS.find((f) => f.value === value) ?? null;
+}
 
 /** Runtime guard — is this a source kind the toggle can actually render? */
 export function isFilterableSourceKind(

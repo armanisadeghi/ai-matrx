@@ -21,7 +21,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ClipboardType,
@@ -352,8 +352,13 @@ export function SourcesPage() {
   const activeOrgId = useAppSelector(selectOrganizationId);
   const activeOrgName = useAppSelector(selectOrganizationName);
   const [scopeChoice, setScopeChoice] = useState<ScopeChoice>("mine");
-  const [savedFilter, setSavedFilter] =
-    useState<SavedFilter>(DEFAULT_SAVED_FILTER);
+  // `?show=all` / `?show=saved` opens the page on that view (the Knowledge
+  // home's count cards link here with it).
+  const searchParams = useSearchParams();
+  const [savedFilter, setSavedFilter] = useState<SavedFilter>(() => {
+    const show = searchParams?.get("show");
+    return show === "all" || show === "saved" ? show : DEFAULT_SAVED_FILTER;
+  });
   const [search, setSearch] = useState("");
   // The server searches (the list is paged); typing waits a beat before asking.
   const [serverSearch, setServerSearch] = useState("");

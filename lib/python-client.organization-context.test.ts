@@ -69,7 +69,7 @@ jest.mock("@/lib/redux/store-singleton", () => ({
   getStoreSingleton: () => fakeStore(),
 }));
 
-import { getJson, postJson, buildHeaders } from "@/lib/python-client";
+import { getJson, postJson, postNdjson, buildHeaders } from "@/lib/python-client";
 import { OrganizationContextError } from "@/lib/api/organization-context";
 
 describe("python-client organization admission (sender-side, fail-closed)", () => {
@@ -183,6 +183,55 @@ describe("python-client organization admission (sender-side, fail-closed)", () =
     for (const listener of storeListeners) listener();
     const { headers } = await pending;
     expect(headers["X-Organization-Id"]).toBe(TEST_ORG_ID);
+  });
+
+  // A SEARCH is a read whose query rides in a POST body (Knowledge search,
+  // 2026-09-27: the page said "Searching all your orgs" and then refused with
+  // "Select an organization before sending this request"). `bodyCarriedRead`
+  // sends it naming no organization; the server's named search door admits it
+  // and reads every membership. The REFUSAL below stays the paired control.
+  it("BODY-CARRIED READ: postNdjson with bodyCarriedRead sends WITHOUT an organization when none is selected", async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response('{"event":"end","data":{}}\n', {
+        status: 200,
+        headers: { "content-type": "application/x-ndjson" },
+      }),
+    );
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const events = [];
+    for await (const evt of postNdjson(
+      "/rag/search",
+      { query: "q" },
+      { baseUrlOverride: "https://api.example.test", bodyCarriedRead: true },
+    )) {
+      events.push(evt);
+    }
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(init.method).toBe("POST");
+    expect(
+      (init.headers as Record<string, string>)["X-Organization-Id"],
+    ).toBeUndefined();
+  });
+
+  it("BODY-CARRIED READ CONTROL: bodyCarriedRead still names the selected organization when there is one", async () => {
+    selectedOrganizationId = TEST_ORG_ID;
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response('{"event":"end","data":{}}\n', { status: 200 }),
+    );
+    global.fetch = fetchMock as unknown as typeof fetch;
+    for await (const _evt of postNdjson(
+      "/rag/search",
+      { query: "q" },
+      { baseUrlOverride: "https://api.example.test", bodyCarriedRead: true },
+    )) {
+      void _evt;
+    }
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect((init.headers as Record<string, string>)["X-Organization-Id"]).toBe(
+      TEST_ORG_ID,
+    );
   });
 
   it("REFUSAL: postJson never calls fetch when no organization is reachable", async () => {

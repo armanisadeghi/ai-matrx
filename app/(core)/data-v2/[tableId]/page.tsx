@@ -145,6 +145,28 @@ function TableCapture({
   return null;
 }
 
+/**
+ * The address's `?filter=` as the store's filter shape, or null (see the route's own note on why a
+ * half-read filter is dropped). A module function, never inline in the component: a `try`/`catch`
+ * with a value block inside the component makes the React Compiler SKIP the whole route
+ * (`Support value blocks … within a try/catch statement`), and a skipped route rebuilt the
+ * records client, the realtime port and the host on every render — lane RENDER-AUDIT, measured
+ * with `scripts/react-compiler-bailouts.mjs`.
+ */
+function filterFromAddress(rawFilter: string | null): RecordFilter | null {
+  if (!rawFilter) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawFilter);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+  const entries = Object.entries(parsed as Record<string, unknown>);
+  if (entries.length === 0) return null;
+  return Object.fromEntries(entries) as RecordFilter;
+}
+
 export default function UnifiedDataTableRoute({
   params,
 }: {
@@ -233,18 +255,7 @@ export default function UnifiedDataTableRoute({
    * (which carries no `filter` at all) lands on.
    */
   const rawFilter = searchParams.get("filter");
-  const filter = useMemo<RecordFilter | null>(() => {
-    if (!rawFilter) return null;
-    try {
-      const parsed: unknown = JSON.parse(rawFilter);
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
-      const entries = Object.entries(parsed as Record<string, unknown>);
-      if (entries.length === 0) return null;
-      return Object.fromEntries(entries) as RecordFilter;
-    } catch {
-      return null;
-    }
-  }, [rawFilter]);
+  const filter = useMemo(() => filterFromAddress(rawFilter), [rawFilter]);
   /**
    * AND THE ADDRESS FOLLOWS THEM. Half a deep link is a link that works when
    * you arrive and lies when you copy it out of the bar afterwards. `replace`
@@ -580,6 +591,60 @@ export default function UnifiedDataTableRoute({
     !(object.state === "stand-in" && (object.organizationState !== "ready" || shared.state !== "shared" && shared.state !== "none")) &&
     campaign.state === "on";
 
+  /**
+   * THE MOUNT'S CONFIG AND HOST, EACH ITS OWN VALUE (lane RENDER-AUDIT, 2026-09-26). Written inline
+   * in the JSX below, the React Compiler put them in ONE memo scope with the whole conditional tree
+   * — 28 inputs, `onViewChanged` and `menuExtras` among them — so every search-parameter move and
+   * every render that rebuilt the table menu handed `RecordsMount` a new config and a new host, and
+   * the table page, its view bar and every cell rendered again. As their own statements each is
+   * rebuilt only when what it is made of changes. Null until the table can mount.
+   */
+  const recordsConfig = mountsTheTable
+    ? {
+          dataSource,
+          actor: personActor(userId),
+          organizationId: readingOrganizationId!,
+          // LIVE UPDATES. The grid's "Not live: this host bound no realtime port" banner
+          // was naming exactly this seam. The port joins the private topic the database
+          // broadcasts a NOTICE on and re-reads through the read door; `undefined` when
+          // the store's switch is off, and the honest banner comes back.
+          realtime: createRecordsRealtimePort(readingOrganizationId!),
+        }
+    : null;
+  const recordsHost = mountsTheTable
+    ? recordsUiHostFor({
+      ports,
+      merged: mergedGrid,
+      gridContext,
+      // THE SHEET. The classic /data grid, ported onto the one data seam, is the
+      // fifth layout of this one table page (owner's ruling 2026-09-23: no switch
+      // on /data, no new route). It reads and writes the record store only.
+      layouts: [
+        {
+          id: "sheet",
+          label: "Sheet",
+          render: (args) => (
+            <SheetLayout
+              tableId={args.tableId}
+              organizationId={readingOrganizationId!}
+              userId={userId ?? null}
+              // The page's own export, handed over by records-ui 0.85+ (absent before it).
+              openExport={(args as { openExport?: () => void }).openExport}
+              // TABLE-PAGE-CHROME: the page's one toolbar row and where the view's footer sits,
+              // handed by the next records-ui (absent before it: the Sheet draws as today).
+              {...((args as { toolbarSlot?: HTMLElement | null }).toolbarSlot !== undefined
+                ? { toolbarSlot: (args as { toolbarSlot?: HTMLElement | null }).toolbarSlot }
+                : {})}
+              {...((args as { footer?: "sticky" | "inline" }).footer
+                ? { footer: (args as { footer?: "sticky" | "inline" }).footer }
+                : {})}
+            />
+          ),
+        },
+      ],
+    })
+    : null;
+
   return (
     <>
       {/* THE BODY IS BOUNDED (core-route-headers): the table page fills it, so a sticky footer
@@ -657,47 +722,8 @@ export default function UnifiedDataTableRoute({
         ) : (
           <RecordsMount
             letTheStoreDecideRights
-            config={{
-              dataSource,
-              actor: personActor(userId),
-              organizationId: readingOrganizationId!,
-              // LIVE UPDATES. The grid's "Not live: this host bound no realtime port" banner
-              // was naming exactly this seam. The port joins the private topic the database
-              // broadcasts a NOTICE on and re-reads through the read door; `undefined` when
-              // the store's switch is off, and the honest banner comes back.
-              realtime: createRecordsRealtimePort(readingOrganizationId!),
-            }}
-            host={recordsUiHostFor({
-              ports,
-              merged: mergedGrid,
-              gridContext,
-              // THE SHEET. The classic /data grid, ported onto the one data seam, is the
-              // fifth layout of this one table page (owner's ruling 2026-09-23: no switch
-              // on /data, no new route). It reads and writes the record store only.
-              layouts: [
-                {
-                  id: "sheet",
-                  label: "Sheet",
-                  render: (args) => (
-                    <SheetLayout
-                      tableId={args.tableId}
-                      organizationId={readingOrganizationId!}
-                      userId={userId ?? null}
-                      // The page's own export, handed over by records-ui 0.85+ (absent before it).
-                      openExport={(args as { openExport?: () => void }).openExport}
-                      // TABLE-PAGE-CHROME: the page's one toolbar row and where the view's footer sits,
-                      // handed by the next records-ui (absent before it: the Sheet draws as today).
-                      {...((args as { toolbarSlot?: HTMLElement | null }).toolbarSlot !== undefined
-                        ? { toolbarSlot: (args as { toolbarSlot?: HTMLElement | null }).toolbarSlot }
-                        : {})}
-                      {...((args as { footer?: "sticky" | "inline" }).footer
-                        ? { footer: (args as { footer?: "sticky" | "inline" }).footer }
-                        : {})}
-                    />
-                  ),
-                },
-              ],
-            })}
+            config={recordsConfig!}
+            host={recordsHost!}
           >
             {/* The header before records-ui hands over its actions (and, on an older build that
                 never calls `header`, the header itself): back, the title switcher, the capture. */}

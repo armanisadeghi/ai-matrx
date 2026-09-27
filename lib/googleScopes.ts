@@ -24,6 +24,8 @@ export const GOOGLE_SCOPE = {
   youtubeAnalyticsReadonly:
     "https://www.googleapis.com/auth/yt-analytics.readonly",
   contactsReadonly: "https://www.googleapis.com/auth/contacts.readonly",
+  // Future internal-test source preview only; excluded from all consent bundles until reviewed feature/provider approval.
+  contactsOtherReadonly: "https://www.googleapis.com/auth/contacts.other.readonly",
   calendarEventsOwnedReadonly:
     "https://www.googleapis.com/auth/calendar.events.owned.readonly",
   // Pending selected shared-calendar read grants. No consent flow requests these yet.

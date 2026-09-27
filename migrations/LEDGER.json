@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-27T03:58:11.468Z",
+  "generated_at": "2026-09-27T04:30:21.190Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3295,6 +3295,18 @@
       "filename": "portalbind_the_portal_accept_doors_are_reachable.sql",
       "checksum": "fd7963e8fd91aaf8c7b0597260b24e68f07fa7fb7c3206130d8a7690244f4b36",
       "applied_at": "2026-09-21 22:29:57.273243+00"
+    },
+    "migrations/campaign/proofdefects_a_standard_tables_registry_row_is_read_by_the_door.sql": {
+      "source": "matrx-frontend",
+      "filename": "proofdefects_a_standard_tables_registry_row_is_read_by_the_door.sql",
+      "checksum": "87b5715795f2f8999d662a6152ccfb82b814ec62d006dbf34697ee50281f474d",
+      "applied_at": "2026-09-27 04:30:20.23167+00"
+    },
+    "migrations/campaign/proofdefects_every_scope_tag_type_keeps_its_store_twin.sql": {
+      "source": "matrx-frontend",
+      "filename": "proofdefects_every_scope_tag_type_keeps_its_store_twin.sql",
+      "checksum": "e31ed27d0ce588e8abc455e5ef7366f52ec7eb98fcd43521d45b4c495c6ac035",
+      "applied_at": "2026-09-27 04:23:10.704329+00"
     },
     "migrations/campaign/provbatch_a_batch_owes_its_base_contract_like_one_table.sql": {
       "source": "campaign",

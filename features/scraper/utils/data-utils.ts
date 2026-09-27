@@ -586,6 +586,10 @@ class ScraperDataUtils {
     if (!organizedData || typeof organizedData !== "object") {
       return {};
     }
+    // The scraper streams a LIST of typed items; the live hook wraps it as
+    // `{ sections }`. A stored result arrives unwrapped — wrap it the same way
+    // instead of spreading the list into `{"0": …}` (an empty Content tab).
+    if (Array.isArray(organizedData)) return { sections: organizedData };
     const source = organizedData as Record<string, unknown>;
     return Object.keys(source).reduce((acc: Record<string, unknown>, key) => {
       acc[key] = source[key];
