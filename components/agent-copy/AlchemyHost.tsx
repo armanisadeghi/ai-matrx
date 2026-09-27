@@ -370,7 +370,10 @@ function AlchemyCapabilitiesGate({
     [inheritedFormats],
   );
   const { ai: _inheritedAi, ...inheritedRest } = capabilities;
-  const nonAiCapabilities = { ...inheritedRest, formats };
+  // PP-01a/b: the preparation workspace opens in a real WindowPanel (the same WindowPort the
+  // Alchemy host ports carry), never a page-local dialog.
+  const hostWindow = useContext(AlchemyHostPortsContext)?.window;
+  const nonAiCapabilities = { ...inheritedRest, formats, ...(hostWindow ? { window: hostWindow } : {}) };
   return (
     <ContentTransferCapabilitiesProvider
       value={
