@@ -1455,6 +1455,7 @@ export default function ContextLabPage() {
   const [fileId, setFileId] = useState<string | null>(null);
   const [projects, setProjects] = useState<AssignableProject[]>([]);
   const [tasks, setTasks] = useState<AssignableTask[]>([]);
+  const [engagementErr, setEngagementErr] = useState<unknown>(null);
   const [liveRows, setLiveRows] = useState<LiveRowView[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [windowOpen, setWindowOpen] = useState(false);
@@ -1484,10 +1485,10 @@ export default function ContextLabPage() {
     // their cache, so the page + every field instance cost ONE fetch each.
     fetchAssignableProjects()
       .then(setProjects)
-      .catch(() => {});
+      .catch(setEngagementErr);
     fetchAssignableTasks()
       .then(setTasks)
-      .catch(() => {});
+      .catch(setEngagementErr);
   }, []);
 
   useEffect(() => {
@@ -1621,6 +1622,12 @@ export default function ContextLabPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {engagementErr ? (
+                <span className="flex items-center gap-1 text-xs text-destructive" role="alert">
+                  Couldn&rsquo;t load your projects and tasks — the counts below are not an answer.
+                  <ErrorAlchemyMenu error={engagementErr} operation="Load your projects and tasks" />
+                </span>
+              ) : null}
               <span className="text-xs text-muted-foreground">
                 {files.length} files · {projects.length} projects ·{" "}
                 {tasks.length} tasks loaded
