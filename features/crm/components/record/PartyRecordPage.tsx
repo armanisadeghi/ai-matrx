@@ -618,6 +618,7 @@ export function PartyRecordPage({ partyId }: Props) {
                     copyParent={copyParent}
                     partyLabel={party.display_name}
                     showSendEmail={false}
+                    offerNoteChannel={false}
                   />
                 </div>
                 <div className="max-lg:order-6">

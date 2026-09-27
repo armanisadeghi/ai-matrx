@@ -107,6 +107,11 @@ interface Props {
    * door in its header (the CRM record page) — one door per action.
    */
   showSendEmail?: boolean;
+  /**
+   * Offer "Note" as a loggable activity type. Off where the host has its own
+   * Notes card (the CRM record page) — one door per way of adding a note.
+   */
+  offerNoteChannel?: boolean;
   /** The deal this timeline belongs to, when it is a deal's timeline. */
   dealLabel?: string | null;
   /**
@@ -134,10 +139,14 @@ export function InteractionTimeline({
   copyParent,
   partyLabel,
   showSendEmail = true,
+  offerNoteChannel = true,
   dealLabel,
   partyOrganizationId,
 }: Props) {
   const [channel, setChannel] = useState<InteractionChannel>("call");
+  const composerChannels = offerNoteChannel
+    ? COMPOSER_CHANNELS
+    : COMPOSER_CHANNELS.filter((c) => c !== "note");
   const [direction, setDirection] = useState<InteractionDirection>("outbound");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -319,10 +328,10 @@ export function InteractionTimeline({
             size="sm"
             value={channel}
             onValueChange={(next) => {
-              const picked = COMPOSER_CHANNELS.find((c) => c === next);
+              const picked = composerChannels.find((c) => c === next);
               if (picked) setChannel(picked);
             }}
-            data={COMPOSER_CHANNELS.map((c) => {
+            data={composerChannels.map((c) => {
               const meta = CHANNEL_META[c];
               return {
                 value: c,
@@ -336,6 +345,8 @@ export function InteractionTimeline({
               };
             })}
           />
+          {/* A note has no direction — hidden like Minutes is for non-calls. */}
+          {channel !== "note" && (
           <SegmentedControl
             size="sm"
             value={direction}
@@ -365,6 +376,7 @@ export function InteractionTimeline({
               },
             ]}
           />
+          )}
           {channel === "call" && (
             <label className="flex items-center gap-1 text-xs text-muted-foreground">
               Minutes
