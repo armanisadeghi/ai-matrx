@@ -262,7 +262,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "shared_access",
     label: "Shared access",
     description:
-      "Present only when the active note was shared WITH the current user (not owned): { shared_with_me: true, permission_level: viewer|editor|admin, owner_email }. Absent for the user's own notes. Lets agents refuse or adapt writes on viewer-level notes.",
+      "Who the open note belongs to and what this person may do with it: { shared_with_me, permission_level: viewer|editor|admin, owner_email }. shared_with_me false = the person's own note (permission_level admin, owner_email null); true = someone shared it with them. Absent only when no note is open. Lets agents refuse or adapt writes on viewer-level notes.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 90,
@@ -550,7 +550,7 @@ export const notesEditorManifest: SurfaceManifest = {
   intro: `<surface_intro>
 You are on the Notes editor: the user's markdown workspace of many small-to-medium notes, organized into folders and opened as tabs. One note is active in the editor at a time; a second may sit in a split pane.
 Start from note_bundle: one XML element holding the open note (metadata, body up to 7,000 characters, scopes), the other open tabs, and the folders — enough for most jobs without a lookup. Read the values in tiers: the Selection & cursor group is the live runtime cut (what is highlighted, where the cursor is); the Active note group identifies the persisted note and its metadata — its full content resolves through the current_note resource reference (with an unsaved-buffer overlay when dirty); the Workspace group describes the surrounding tabs, folders, and scope assignments; Editor state tells you what the UI can currently do (mode, panes, find bar).
-When shared_access is present the note belongs to someone else — respect its permission_level before proposing writes. When is_new_note is true the note has no server row yet; actions needing a stable id should save first or refuse.
+When shared_access.shared_with_me is true the note belongs to someone else — respect its permission_level before proposing writes. When is_new_note is true the note has no server row yet; actions needing a stable id should save first or refuse.
 You can also WRITE to this surface. On the open note: note_content (replace the body) or append_to_note, note_title, note_tags, note_folder (an existing folder), note_scopes (its scope set). Across notes: create_notes (new notes, or copies with copy_of), update_notes (title/body/tags by id), delete_notes (archives to Trash — restorable). These edit the user's own writing, so each one is confirmed with the user before it lands — read the matching value first (a replace or a tag set overwrites what is there), change only what was asked for, and leave the rest of the note alone.
 </surface_intro>`,
   groups,
@@ -634,7 +634,7 @@ export function createNotesScope(values: {
     is_dirty: boolean;
   };
   shared_access?: {
-    shared_with_me: true;
+    shared_with_me: boolean;
     /** Display/context only — never gates access; iam.has_access is authoritative. */
     permission_level: PermissionLevel;
     owner_email: string | null;

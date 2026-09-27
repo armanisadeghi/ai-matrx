@@ -21,8 +21,11 @@ describe("notes agent context", () => {
       resource_type: "note",
       resource_id: NOTE_ID,
     });
-    expect(scope.content).toBeUndefined();
+    // The body on screen is always supplied on the universal key.
+    expect(scope.content).toBe("# Heading\nA persisted note body.");
     expect(scope.active_text).toBeUndefined();
+    expect(scope.shared_access).toEqual({ shared_with_me: false, permission_level: "admin", owner_email: null });
+    expect(scope.context).toEqual(expect.objectContaining({ surface: "notes", note_id: NOTE_ID }));
     expect(scope.current_note_title).toBeUndefined();
   });
 
@@ -34,7 +37,7 @@ describe("notes agent context", () => {
         overlay: { content: "unsaved body", is_dirty: true },
       }),
     );
-    expect(scope.content).toBeUndefined();
+    expect(scope.content).toBe("unsaved body");
   });
 
   it("uses the content escape hatch only for a new client-only note", () => {
