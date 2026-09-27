@@ -50,7 +50,7 @@ export type ConversationTransferRow =
 const SLATE = "text-slate-500 dark:text-slate-400";
 
 export const CONVERSATION_TRANSFER_ROWS: readonly ConversationTransferRow[] = [
-  { id: "conversation-copy-plain", group: "copy", format: "plain", label: "Copy conversation", icon: Type, iconColor: SLATE },
+  { id: "conversation-copy-plain", group: "copy", format: "plain", label: "Copy conversation as plain text", icon: Type, iconColor: SLATE },
   { id: "conversation-copy-markdown", group: "copy", format: "markdown", label: "Copy conversation as Markdown", icon: FileCode2, iconColor: SLATE },
   { id: "conversation-copy-formatted", group: "copy", format: "rich-html", label: "Copy conversation formatted", icon: ClipboardType, iconColor: "text-indigo-500 dark:text-indigo-400" },
   { id: "conversation-copy-for-ai", group: "prepare", label: "Copy conversation for AI…", icon: ClipboardCopy, iconColor: "text-violet-500 dark:text-violet-400" },

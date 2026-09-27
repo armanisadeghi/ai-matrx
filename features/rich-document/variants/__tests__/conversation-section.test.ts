@@ -72,7 +72,7 @@ describe("the Conversation section", () => {
         "Rename conversation",
         "Duplicate conversation",
         // THE full Alchemy set over the whole conversation (Arman, 2026-09-26).
-        "Copy conversation",
+        "Copy conversation as plain text",
         "Copy conversation as Markdown",
         "Copy conversation formatted",
         "Copy conversation for AI…",
