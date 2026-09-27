@@ -47,13 +47,27 @@ export interface UseFastFireLauncherResult {
   startError: string | null;
 }
 
-export function useFastFireLauncher(): UseFastFireLauncherResult {
+export function useFastFireLauncher(
+  options: {
+    /**
+     * False until an organization is chosen — see StudyOrganizationGate. A
+     * start while false writes nothing (no mic, no `study_session`), so the
+     * blocking "Which workspace?" prompt never fires mid-gesture.
+     */
+    enabled?: boolean;
+  } = {},
+): UseFastFireLauncherResult {
+  const enabled = options.enabled ?? true;
   const dispatch = useAppDispatch();
   const config = useAppSelector(selectFastFireConfig);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
   const start = async (): Promise<boolean> => {
+    if (!enabled) {
+      setStartError("Choose an organization above to start the drill.");
+      return false;
+    }
     if (!config.setId) {
       setStartError("Pick a flashcard set first.");
       return false;

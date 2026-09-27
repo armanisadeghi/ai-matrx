@@ -48,6 +48,7 @@ import {
 } from "../drill-config";
 import { selectFastFireConfig } from "../redux/fastFire.selectors";
 import { useFastFireLauncher } from "../hooks/useFastFireLauncher";
+import { useStudyOrganizationReady } from "@/features/education/study/components/StudyOrganizationGate";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import {
@@ -71,7 +72,11 @@ export function FastFireSetup() {
   // through a whole drill whose every grade is refused server-side.
   const coppa = useAiComplianceGate();
   const config = useAppSelector(selectFastFireConfig);
-  const { start, starting, startError } = useFastFireLauncher();
+  // A drill writes a study session, filed under one organization; the surface
+  // shows the organization notice in place until one is chosen.
+  const { start, starting, startError } = useFastFireLauncher({
+    enabled: useStudyOrganizationReady(),
+  });
   // FastFire grades every spoken answer with AI — meter the live_grade
   // capability once at session start (a per-card check would stall the timed
   // loop). The limit shows on the setup screen; a cap opens the paywall.
