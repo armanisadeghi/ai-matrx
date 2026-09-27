@@ -499,6 +499,8 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       return `${pathname}?${params.toString()}`;
     },
     enabled: isAuthenticated && Boolean(agentId) && Boolean(pathname),
+    // Same page, one more search param: never remount the app mid-run.
+    promoteWith: "address",
   });
   const restoredRef = useRef<string | null>(null);
   useEffect(() => {
