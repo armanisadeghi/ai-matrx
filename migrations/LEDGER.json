@@ -632,6 +632,12 @@
       "checksum": "03392ced630b5688b7217623ac5a515cd3274b96854cdcfeb9726c2faf74ad2d",
       "applied_at": "2026-09-20 08:19:54.298612+00"
     },
+    "migrations/campaign/databasics_a_new_column_never_takes_a_key_another_column_holds.sql": {
+      "source": "matrx-frontend",
+      "filename": "databasics_a_new_column_never_takes_a_key_another_column_holds.sql",
+      "checksum": "8dd35478f614075338bfa8209db98de77dc647051bed008cf0e05b2b8f1b1356",
+      "applied_at": "2026-09-27 16:25:53.354011+00"
+    },
     "migrations/campaign/datacreatefix_a_new_data_table_carries_its_organization.sql": {
       "source": "matrx-frontend",
       "filename": "datacreatefix_a_new_data_table_carries_its_organization.sql",

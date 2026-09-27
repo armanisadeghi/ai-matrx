@@ -1559,7 +1559,11 @@ export async function addColumn(
     table_id: args.tableId,
     spec: {
       label: args.displayName,
-      key: args.fieldName,
+      // THE KEY IS THE STORE'S TO CHOOSE (lane DATA-V2-BASICS, 2026-09-27). `args.fieldName` is the
+      // older dialog's guess from the name ("Resets" → `resets`); sent as an asked-for key it is
+      // refused when another column already holds it — Arman's renamed "Account Type" still held
+      // `resets`, so adding "Resets" failed with a sentence about a column nobody could see. Left
+      // out, `custom.field_declare` derives it and picks one no column has ever held.
       required: args.isRequired,
       ...(typeof args.fieldOrder === "number" ? { sort: args.fieldOrder } : {}),
       ...spec,
