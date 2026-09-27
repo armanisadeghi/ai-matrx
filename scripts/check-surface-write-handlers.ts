@@ -457,6 +457,12 @@ function candidates(node: ts.Node, file: string, depth = 0): { nodes: Located[];
           : [`cannot resolve the result of \`${snippet(n)}\``],
       };
     }
+    // A `collectionWriteHandlers(spec)` call is a TERMINAL: its keys are read
+    // from the spec (`collectionCallKeys`), not from the builder's body, whose
+    // `create_${spec.plural}` keys no static read of the body can settle.
+    if (calleeCandidates.nodes.some(isCollectionBuilder)) {
+      return { nodes: [{ node: n, file }], unresolved: [] };
+    }
     const out: Located[] = [];
     const unresolved: string[] = [...calleeCandidates.unresolved];
     for (const candidate of calleeCandidates.nodes) {
@@ -534,8 +540,39 @@ function forOfElementStrings(node: ts.Identifier, file: string, depth: number): 
     const declares = initializer.declarations.some(
       (decl) => ts.isIdentifier(decl.name) && decl.name.text === node.text,
     );
-    if (declares) {
+    // `for (const [name, handler] of Object.entries(map))` — the KEY position of
+    // an entries destructure (`deckSurface`, `assessmentListSurface` re-wrap the
+    // entries of a `collectionWriteHandlers` result this way).
+    const declaresEntryKey = initializer.declarations.some((decl) => {
+      if (!ts.isArrayBindingPattern(decl.name)) return false;
+      const first = decl.name.elements[0];
+      return (
+        !!first &&
+        ts.isBindingElement(first) &&
+        ts.isIdentifier(first.name) &&
+        first.name.text === node.text
+      );
+    });
+    if (declares || declaresEntryKey) {
       loop = current;
+      if (declaresEntryKey) {
+        const iterable = unwrap(current.expression);
+        const callee = ts.isCallExpression(iterable) ? unwrap(iterable.expression) : null;
+        if (
+          ts.isCallExpression(iterable) &&
+          callee &&
+          ts.isPropertyAccessExpression(callee) &&
+          callee.name.text === "entries" &&
+          iterable.arguments.length === 1
+        ) {
+          const keys = resolveHandlerKeys(iterable.arguments[0], file, depth + 1);
+          return { values: [...keys.keys], unresolved: keys.unresolved };
+        }
+        return {
+          values: [],
+          unresolved: [`\`${snippet(iterable)}\` is not \`Object.entries(<map>)\`, so the loop key cannot be read`],
+        };
+      }
       break;
     }
   }
@@ -566,6 +603,11 @@ function forOfElementStrings(node: ts.Identifier, file: string, depth: number): 
     const wantsKeys =
       (unwrap(iterable.expression) as ts.PropertyAccessExpression).name.text === "keys";
     const holders = resolveObjectLiterals(iterable.arguments[0], file, depth + 1);
+    if (wantsKeys && holders.literals.length === 0) {
+      // Not a literal — perhaps a built handler map (`collectionWriteHandlers(…)`).
+      const keys = resolveHandlerKeys(iterable.arguments[0], file, depth + 1);
+      return { values: [...keys.keys], unresolved: keys.unresolved };
+    }
     const out: StringResult = { values: [], unresolved: [...holders.unresolved] };
     for (const holder of holders.literals) {
       for (const prop of (holder.node as ts.ObjectLiteralExpression).properties) {
@@ -846,6 +888,11 @@ function resolveHandlerKeys(node: ts.Node, file: string, depth = 0): KeyResult {
     );
   }
 
+  if (ts.isCallExpression(n)) {
+    const builder = candidates(unwrap(n.expression), file, depth + 1).nodes.find(isCollectionBuilder);
+    if (builder) return collectionCallKeys(n, file, builder.node as ts.FunctionDeclaration, depth);
+  }
+
   // Everything else — identifiers, calls, hook results, property chains,
   // destructured seams — goes through the shared candidate expander, and each
   // terminal is then read as a handler map (or the function returning one).
@@ -876,6 +923,173 @@ function resolveHandlerKeys(node: ts.Node, file: string, depth = 0): KeyResult {
   }
 
   return { keys: new Set(), unresolved: [`cannot statically resolve \`${snippet(n)}\``] };
+}
+
+/* ───────────────────── collectionWriteHandlers(spec) keys ─────────────────── */
+
+/**
+ * `collectionWriteHandlers` (features/surfaces/runtime/collection-write-targets.ts)
+ * builds its keys from a template — `out[\`create_${spec.plural}\`] = …` inside
+ * `if (spec.create)`. Before 2026-09-27 this guard read the builder's BODY, could
+ * not settle the template, and so reported every page that uses the builder
+ * (education classes, flashcards, quizzes, chat, HR, research…) as unhandled:
+ * an always-red guard that signalled nothing.
+ *
+ * The key set is DERIVED from the builder's own source, never copied here: each
+ * `out[<template over spec.X>] = …` assignment, with the `if (spec.Y)` that
+ * guards it, becomes one key template. A call site's spec literal then fills
+ * the template. If the builder grows a key shape this reader cannot parse, or a
+ * call site's spec cannot be read (a spread, a prop, a non-literal plural), the
+ * registration is UNRESOLVED — never credited.
+ */
+const COLLECTION_MODULE = resolve(ROOT, "features/surfaces/runtime/collection-write-targets.ts");
+const COLLECTION_BUILDER = "collectionWriteHandlers";
+
+type KeyTemplate = { parts: (string | { prop: string })[]; guard: string | null };
+const templateCache = new Map<ts.Node, { templates: KeyTemplate[]; unresolved: string[] }>();
+
+function isCollectionBuilder(candidate: Located): boolean {
+  return (
+    ts.isFunctionDeclaration(candidate.node) &&
+    candidate.node.name?.text === COLLECTION_BUILDER &&
+    resolve(candidate.file) === COLLECTION_MODULE
+  );
+}
+
+function collectionKeyTemplates(decl: ts.FunctionDeclaration): { templates: KeyTemplate[]; unresolved: string[] } {
+  const cached = templateCache.get(decl);
+  if (cached) return cached;
+  const result: { templates: KeyTemplate[]; unresolved: string[] } = { templates: [], unresolved: [] };
+  const param = decl.parameters[0]?.name;
+  const specName = param && ts.isIdentifier(param) ? param.text : null;
+  const specProp = (node: ts.Node): string | null => {
+    const u = unwrap(node);
+    return ts.isPropertyAccessExpression(u) &&
+      ts.isIdentifier(unwrap(u.expression)) &&
+      (unwrap(u.expression) as ts.Identifier).text === specName
+      ? u.name.text
+      : null;
+  };
+  if (!specName || !decl.body) {
+    result.unresolved.push(`\`${COLLECTION_BUILDER}\` no longer takes a readable spec parameter`);
+  } else {
+    const visit = (node: ts.Node): void => {
+      if (isFunctionish(node) && node !== decl) return; // nested helpers are not the key set
+      if (
+        ts.isBinaryExpression(node) &&
+        node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+        ts.isElementAccessExpression(unwrap(node.left))
+      ) {
+        const keyExpr = unwrap((unwrap(node.left) as ts.ElementAccessExpression).argumentExpression);
+        let parts: KeyTemplate["parts"] | null = null;
+        if (ts.isStringLiteral(keyExpr) || ts.isNoSubstitutionTemplateLiteral(keyExpr)) {
+          parts = [keyExpr.text];
+        } else if (ts.isTemplateExpression(keyExpr)) {
+          parts = [keyExpr.head.text];
+          for (const span of keyExpr.templateSpans) {
+            const prop = specProp(span.expression);
+            if (!prop) {
+              parts = null;
+              break;
+            }
+            parts.push({ prop }, span.literal.text);
+          }
+        }
+        // The guard: the nearest enclosing `if` inside the builder.
+        let guard: string | null = null;
+        let guardOk = true;
+        for (let p: ts.Node | undefined = node.parent; p && p !== decl; p = p.parent) {
+          if (ts.isIfStatement(p)) {
+            guard = specProp(p.expression);
+            if (!guard) guardOk = false;
+            break;
+          }
+        }
+        if (!parts || !guardOk) {
+          result.unresolved.push(
+            `\`${COLLECTION_BUILDER}\` builds a key this check cannot read: \`${snippet(node)}\``,
+          );
+        } else {
+          result.templates.push({ parts, guard });
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    ts.forEachChild(decl.body, visit);
+    if (result.templates.length === 0 && result.unresolved.length === 0)
+      result.unresolved.push(`\`${COLLECTION_BUILDER}\` builds no key this check can read`);
+  }
+  templateCache.set(decl, result);
+  return result;
+}
+
+function collectionCallKeys(
+  call: ts.CallExpression,
+  file: string,
+  decl: ts.FunctionDeclaration,
+  depth: number,
+): KeyResult {
+  const { templates, unresolved: templateProblems } = collectionKeyTemplates(decl);
+  const result: KeyResult = { keys: new Set(), unresolved: [...templateProblems] };
+  const arg = call.arguments[0];
+  if (!arg) {
+    result.unresolved.push(`\`${snippet(call)}\` passes no spec`);
+    return result;
+  }
+  const specs = resolveObjectLiterals(arg, file, depth + 1);
+  result.unresolved.push(...specs.unresolved);
+  if (specs.literals.length === 0) {
+    result.unresolved.push(`the spec of \`${snippet(call)}\` does not resolve to an object literal`);
+    return result;
+  }
+  for (const spec of specs.literals) {
+    const members = new Map<string, ts.Node>();
+    let opaque = false;
+    for (const prop of (spec.node as ts.ObjectLiteralExpression).properties) {
+      if (ts.isPropertyAssignment(prop)) {
+        const name = propName(prop.name, spec.file);
+        if (name) members.set(name, prop.initializer);
+        else opaque = true;
+      } else if (ts.isShorthandPropertyAssignment(prop)) members.set(prop.name.text, prop.name);
+      else if (ts.isMethodDeclaration(prop)) {
+        const name = propName(prop.name, spec.file);
+        if (name) members.set(name, prop);
+        else opaque = true;
+      } else opaque = true;
+    }
+    if (opaque) {
+      result.unresolved.push(
+        `the spec of \`${snippet(call)}\` has a spread or computed member, so its operations cannot be read`,
+      );
+      continue;
+    }
+    for (const template of templates) {
+      if (template.guard) {
+        const guardValue = members.get(template.guard);
+        if (!guardValue) continue; // the operation is absent: no key
+        const u = unwrap(guardValue);
+        if (u.kind === ts.SyntaxKind.NullKeyword || (ts.isIdentifier(u) && u.text === "undefined")) continue;
+      }
+      let values = [""];
+      for (const part of template.parts) {
+        if (typeof part === "string") {
+          values = values.map((v) => v + part);
+          continue;
+        }
+        const member = members.get(part.prop);
+        if (!member) {
+          result.unresolved.push(`the spec of \`${snippet(call)}\` has no \`${part.prop}\``);
+          values = [];
+          break;
+        }
+        const resolved = resolveStringExpr(member, spec.file, depth + 1);
+        result.unresolved.push(...resolved.unresolved);
+        values = values.flatMap((v) => resolved.values.map((r) => v + r));
+      }
+      for (const value of values) result.keys.add(value);
+    }
+  }
+  return result;
 }
 
 /* ─────────────────────────── registration discovery ──────────────────────── */
@@ -1581,6 +1795,122 @@ function runSelfTest(): number {
       bad += 1;
     } else {
       console.log(`  ${TAG.ok} an annotation naming the wrong target does not silence the real gap`);
+    }
+
+    // COLLECTION BUILDER — `collectionWriteHandlers(spec)` builds its keys from
+    // a template over `spec.plural`, guarded by `if (spec.<op>)`. The keys must
+    // be read from the REAL builder (imported through the real `@/` path) and
+    // the call's spec: the right plural, only the operations present. Before
+    // 2026-09-27 every page using the builder was reported unhandled.
+    const IMPORT_BUILDER =
+      'import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";';
+    const op = "{ parse: () => [], run: async () => ({ id: \"1\", name: \"x\" }), nameOf: () => \"x\" }";
+    // (1) The page wires only GADGETS; the manifest declares a WIDGETS delete.
+    const gadgetsFile = join(dir, "planted-collection-gadgets.tsx");
+    writeFileSync(
+      gadgetsFile,
+      [
+        IMPORT_BUILDER,
+        "const refuse = (m: string): never => { throw new Error(m); };",
+        "export function GadgetsPage() {",
+        "  return (",
+        '    <SurfaceRuntimeProvider surfaceName="matrx-selftest/collection-gadgets"',
+        `      getWriteHandlers={() => ({ ...collectionWriteHandlers({ plural: "gadgets", singular: "gadget", create: ${op}, delete: ${op} }, refuse) })}>`,
+        "      <div />",
+        "    </SurfaceRuntimeProvider>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    const gadgetsFindings = diff(
+      [{ surfaceName: "matrx-selftest/collection-gadgets", targets: ["create_gadgets", "delete_gadgets", "delete_widgets"] }],
+      scanFiles([gadgetsFile]),
+    );
+    const gadgetsGap = gadgetsFindings.unhandled.find((u) => u.surfaceName === "matrx-selftest/collection-gadgets");
+    if (!gadgetsGap || gadgetsGap.targets.join(",") !== "delete_widgets" || gadgetsFindings.unresolvedRegistrations.length > 0) {
+      console.log(
+        `  ${TAG.fail} a page wiring collectionWriteHandlers({ plural: "gadgets" }) was not reported as missing exactly delete_widgets (got: ${gadgetsGap?.targets.join(", ") || "nothing"}; unresolved: ${gadgetsFindings.unresolvedRegistrations.length})`,
+      );
+      bad += 1;
+    } else {
+      console.log(`  ${TAG.ok} collectionWriteHandlers({ plural: "gadgets" }) credits create/delete_gadgets and NOT delete_widgets`);
+    }
+
+    // (2) The deck/assessment shape: plural from a const, the result re-wrapped
+    // through `for (const [name, h] of Object.entries(inner))`, plus a second
+    // call with only an update. update_widgets was never offered → a gap.
+    const widgetsFile = join(dir, "planted-collection-widgets.ts");
+    writeFileSync(
+      widgetsFile,
+      [
+        IMPORT_BUILDER,
+        'const PLURAL = "widgets";',
+        "const refuse = (m: string): never => { throw new Error(m); };",
+        "export const widgetsSurface = {",
+        '  surfaceName: "matrx-selftest/collection-widgets",',
+        "  getWriteHandlers: () => {",
+        `    const inner = collectionWriteHandlers({ plural: PLURAL, singular: "widget", create: ${op}, delete: ${op} }, refuse);`,
+        "    const out: Record<string, unknown> = {};",
+        "    for (const [name, handler] of Object.entries(inner)) out[name] = handler;",
+        `    return { ...out, ...collectionWriteHandlers({ plural: "gadgets", singular: "gadget", update: ${op} }, refuse) };`,
+        "  },",
+        "};",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    const widgetsFindings = diff(
+      [
+        {
+          surfaceName: "matrx-selftest/collection-widgets",
+          targets: ["create_widgets", "delete_widgets", "update_gadgets", "update_widgets"],
+        },
+      ],
+      scanFiles([widgetsFile]),
+    );
+    const widgetsGap = widgetsFindings.unhandled.find((u) => u.surfaceName === "matrx-selftest/collection-widgets");
+    if (!widgetsGap || widgetsGap.targets.join(",") !== "update_widgets" || widgetsFindings.unresolvedRegistrations.length > 0) {
+      console.log(
+        `  ${TAG.fail} a re-wrapped collectionWriteHandlers map was misread (missing: ${widgetsGap?.targets.join(", ") || "nothing"}; expected exactly update_widgets; unresolved: ${widgetsFindings.unresolvedRegistrations.length})`,
+      );
+      bad += 1;
+    } else {
+      console.log(`  ${TAG.ok} a re-wrapped collectionWriteHandlers map credits exactly the operations its spec offers`);
+    }
+
+    // (3) A plural that arrives as a prop cannot be read → UNRESOLVED, never credited.
+    const propPluralFile = join(dir, "planted-collection-prop.tsx");
+    writeFileSync(
+      propPluralFile,
+      [
+        IMPORT_BUILDER,
+        "const refuse = (m: string): never => { throw new Error(m); };",
+        "export function PropPage({ plural }: { plural: string }) {",
+        "  return (",
+        '    <SurfaceRuntimeProvider surfaceName="matrx-selftest/collection-prop"',
+        `      getWriteHandlers={() => collectionWriteHandlers({ plural, singular: "item", delete: ${op} }, refuse)}>`,
+        "      <div />",
+        "    </SurfaceRuntimeProvider>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    const propFindings = diff(
+      [{ surfaceName: "matrx-selftest/collection-prop", targets: ["delete_widgets"] }],
+      scanFiles([propPluralFile]),
+    );
+    if (
+      propFindings.unresolvedRegistrations.length === 0 ||
+      !propFindings.unhandled.some((u) => u.targets.includes("delete_widgets"))
+    ) {
+      console.log(`  ${TAG.fail} a collectionWriteHandlers call whose plural is a prop was credited instead of reported UNRESOLVED`);
+      bad += 1;
+    } else {
+      console.log(`  ${TAG.ok} a collectionWriteHandlers plural that cannot be read is reported UNRESOLVED`);
     }
   } finally {
     rmSync(dir, { recursive: true, force: true });
