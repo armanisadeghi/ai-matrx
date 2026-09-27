@@ -73,6 +73,33 @@ function position(item: ResolvedItem): number {
   return item.resolution.start ?? Number.MAX_SAFE_INTEGER;
 }
 
+
+/**
+ * A removal says what happened and offers Undo — the same door /trash's Restore uses
+ * (soft-delete law: anything important can be restored, never lost). Every removal in this
+ * panel goes through here; annotation-kinds.ts declares which kinds exist.
+ */
+async function removeWithUndo(
+  remove: Promise<string | null>,
+  done: string,
+  undo: () => Promise<string | null>,
+  restored: string,
+): Promise<void> {
+  const err = await remove;
+  if (err) {
+    toast.error(err);
+    return;
+  }
+  toast.success(done, {
+    action: {
+      label: "Undo",
+      onClick: () => {
+        void undo().then((e) => (e ? toast.error(e) : toast.success(restored)));
+      },
+    },
+  });
+}
+
 export function AnnotationPanel({ className }: { className?: string }) {
   const { api, source, activeKey } = useSidecar();
   const { items, loading, error, capabilities } = api.state;
@@ -358,7 +385,15 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
         <div className="mt-1.5 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           <EntityRef token={item.link.token} id={item.link.id} name={item.link.title} className="min-w-0 flex-1" />
           {item.saveState === "confirmed" && (
-            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" title="Detach — the record itself is kept" onClick={() => void run(api.unlink(item.link!.token, item.link!.id), "Detached. The record itself was not changed.")}>
+            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" title="Detach — the record itself is kept" onClick={() => {
+              const link = item.link!;
+              void removeWithUndo(
+                api.unlink(link.token, link.id),
+                "Detached. The record itself was not changed.",
+                async () => ((await api.link(link.token, link.id, link.title, item.anchor ?? null)) ? null : "The link could not be restored — the panel says why."),
+                "Link restored to its passage.",
+              );
+            }}>
               <Unlink className="mr-1 h-3 w-3" aria-hidden />Detach
             </Button>
           )}
@@ -457,7 +492,7 @@ function ReplyRow({
               <button type="button" className="text-[11px] text-muted-foreground hover:text-foreground" onClick={() => { setBase({ body: reply.body, version: reply.version }); setEditing(true); }}>
                 Edit
               </button>
-              <button type="button" className="text-[11px] text-muted-foreground hover:text-destructive" onClick={() => void run(api.deleteComment(reply.id))}>
+              <button type="button" className="text-[11px] text-muted-foreground hover:text-destructive" onClick={() => void removeWithUndo(api.deleteComment(reply.id), "Reply deleted.", () => api.restoreComment(reply.id), "Reply restored.")}>
                 Delete
               </button>
             </div>
@@ -601,7 +636,7 @@ function ThreadActions({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
               <DropdownMenuItem onSelect={() => { setBase({ body: item.body, version: item.version ?? null }); setEditing(true); }}>Edit</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive" onSelect={() => void run(api.deleteComment(id), "Comment deleted.")}>
+              <DropdownMenuItem className="text-destructive" onSelect={() => void removeWithUndo(api.deleteComment(id), item.kind === "suggestion" ? "Suggestion deleted." : "Comment deleted.", () => api.restoreComment(id), item.kind === "suggestion" ? "Suggestion restored." : "Comment restored.")}>
                 <Trash2 className="mr-2 h-3.5 w-3.5" aria-hidden />Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -663,9 +698,13 @@ function PrivateNote({ item }: { item: ResolvedItem }) {
           variant="ghost"
           className={cn("h-7 px-2 text-xs text-muted-foreground hover:text-destructive", !dirty && "ml-auto")}
           onClick={async () => {
-            const err = await api.removeHighlight(docId);
-            if (err) toast.error(err);
-            else toast.success(item.kind === "highlight" ? "Highlight removed. The document was not changed." : "Note removed.");
+            const noun = item.kind === "highlight" ? "Highlight" : "Note";
+            await removeWithUndo(
+              api.removeHighlight(docId),
+              item.kind === "highlight" ? "Highlight removed. The document was not changed." : "Note removed.",
+              () => api.restoreHighlight(docId),
+              `${noun} restored.`,
+            );
           }}
         >
           <Trash2 className="mr-1 h-3 w-3" aria-hidden />Remove

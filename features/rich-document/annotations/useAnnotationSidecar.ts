@@ -27,6 +27,8 @@ import {
   canEditSource,
   createHighlight,
   deleteComment,
+  restoreComment,
+  restoreHighlight,
   deleteHighlight,
   editComment,
   linkRecord,
@@ -564,6 +566,13 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
     resolveComment: (commentId: string, resolved: boolean) => act(() => resolveComment(commentId, resolved)),
     saveNote: (documentId: string, note: string) => act(() => saveHighlightNote(documentId, note)),
     removeHighlight: (documentId: string) => act(() => deleteHighlight(documentId)),
+    /** Undo a removal (the toast's Undo): the same door /trash's Restore uses. */
+    restoreHighlight: (documentId: string) => act(() => restoreHighlight(documentId)),
+    restoreComment: (commentId: string) =>
+      act(async () => {
+        ledger.current.deletedIds.delete(commentId);
+        await restoreComment(commentId);
+      }),
     recolor: (item: ResolvedItem, color: HighlightColor) =>
       act(async () => {
         const src = sourceRef.current;

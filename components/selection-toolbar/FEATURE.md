@@ -25,7 +25,7 @@
 
 ## Known gaps
 
-- A soft-deleted passage comment has no restore path in the UI (not on /trash, not in the Notes & comments panel, no undo toast) — found 2026-09-26 while cleaning up a test; queued by the chair.
+- ~~A soft-deleted passage comment has no restore path~~ — fixed 2026-09-26: comments are on /trash and every panel removal has Undo (see `features/rich-document/FEATURE.md`). A detached passage link is still not on /trash (toast Undo only).
 
 ## Change Log
 

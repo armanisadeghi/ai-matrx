@@ -23,6 +23,7 @@ import { associationsDataSource } from "@/features/scopes/host/associationsStore
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { getUserId } from "@/utils/auth/getUserId";
+import { restoreFromTrash } from "@/features/trash/service";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import {
   ANCHOR_WRITES_ENABLED,
@@ -299,6 +300,20 @@ export async function deleteComment(id: string): Promise<void> {
   await rpc("cmt_delete", { p_id: id }, "deleting the comment");
 }
 
+/**
+ * Bring a deleted comment (or suggestion / reply) back — THE trash door /trash uses
+ * (`entity_undelete('comment', id)` → `cmt_restore`: its author or an admin of the record).
+ * Its anchor is unchanged, so it lands on its passage again, or in needs-reattach when the
+ * passage text has changed since.
+ */
+export async function restoreComment(id: string): Promise<void> {
+  try {
+    await restoreFromTrash("comment", id);
+  } catch (e) {
+    throw sentence("restoring the comment", e);
+  }
+}
+
 export async function resolveComment(id: string, resolved: boolean): Promise<void> {
   await rpc("cmt_resolve", { p_id: id, p_resolved: resolved }, resolved ? "resolving the thread" : "reopening the thread");
 }
@@ -456,6 +471,15 @@ export async function deleteHighlight(documentId: string): Promise<void> {
     { action: "remove", noun: "highlight" },
   );
   if (error) throw error instanceof WriteDidNotLandError ? error : sentence("removing your highlight", error);
+}
+
+/** Bring a removed highlight / note back through THE trash door (its edge returns with it). */
+export async function restoreHighlight(documentId: string): Promise<void> {
+  try {
+    await restoreFromTrash("document", documentId);
+  } catch (e) {
+    throw sentence("restoring your highlight", e);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -356,6 +356,8 @@ export function TrashList({
             return (
               <li
                 key={`${item.entity_token}:${item.id}`}
+                data-trash-token={item.entity_token}
+                data-trash-id={item.id}
                 className={cn(
                   "hover:bg-muted/40 flex items-center gap-3 px-3 py-2",
                   rowClassName?.(item),
