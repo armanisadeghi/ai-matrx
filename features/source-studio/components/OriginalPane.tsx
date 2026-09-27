@@ -162,7 +162,7 @@ function YouTubeOriginal({
   );
 }
 
-async function gunzipIfNeeded(blob: Blob): Promise<string> {
+export async function gunzipIfNeeded(blob: Blob): Promise<string> {
   const head = new Uint8Array(await blob.slice(0, 2).arrayBuffer());
   if (head[0] === 0x1f && head[1] === 0x8b) {
     const stream = blob.stream().pipeThrough(new DecompressionStream("gzip"));

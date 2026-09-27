@@ -11,6 +11,7 @@ import { processOrganizedData } from "@/features/scraper/utils/scraper-utils";
 import {
   detectStoredShape,
   sectionsAsMarkdown,
+  webSourcePageData,
   webSourceToScrape,
   type WebSection,
 } from "@/features/source-studio/webSourceAdapter";
@@ -108,7 +109,7 @@ const SCRAPER_STRUCTURED = {
 };
 
 function firstResult(view: ReturnType<typeof webSourceToScrape>) {
-  return ScraperDataUtils.processFullData(view.envelope).results[0];
+  return webSourcePageData(view).results[0];
 }
 
 describe("detectStoredShape", () => {

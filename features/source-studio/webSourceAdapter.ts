@@ -29,6 +29,7 @@ import type {
   ScrapeEngine,
 } from "@/features/scraper/types/scraper-api";
 import { asScrapeEngine } from "@/features/scraper/types/scraper-api";
+import ScraperDataUtils from "@/features/scraper/utils/data-utils";
 
 /** One section of the Source's text, as the portions read gives it. */
 export interface WebSection {
@@ -387,5 +388,25 @@ export function webSourceToScrape(inputs: WebSourceInputs): WebSourceView {
     shape,
     engine,
     envelope: { type: "fetch_results", metadata: {}, results: [result] },
+  };
+}
+
+/**
+ * The `pageData` the result screen (`PageContent`) takes, built by the
+ * scraper's own `processFullData`. That processor keeps `structured_data` only
+ * under a legacy "Ordered Lists" key, so the Source's structured data (JSON-LD,
+ * the scraper's structured half) is carried through as the adapter built it —
+ * otherwise the Structured tab would say "none" for data the Source holds.
+ */
+export function webSourcePageData(view: WebSourceView) {
+  const processed = ScraperDataUtils.processFullData(view.envelope);
+  const built = view.envelope.results[0];
+  return {
+    ...processed,
+    results: processed.results.map((r, i) =>
+      i === 0 && built?.structured_data && Object.keys(built.structured_data).length
+        ? { ...r, structured_data: built.structured_data }
+        : r,
+    ),
   };
 }

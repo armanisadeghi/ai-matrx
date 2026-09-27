@@ -25,7 +25,7 @@
  */
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Bookmark,
   Boxes,
@@ -123,6 +123,15 @@ import {
   type StudioPortion,
 } from "@/features/source-studio/sourceStudioModel";
 import { OriginalPane } from "./OriginalPane";
+import { WebSourceView } from "./WebSourceView";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { WebSection } from "@/features/source-studio/webSourceAdapter";
 import { SourceSidePanes, type SideTab } from "./SourceSidePanes";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -290,13 +299,28 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
   const keptRead = useSourceKept(doc ? { id: doc.id, kept_at: doc.kept_at } : null, headId);
   const url = doc ? sourceUrl(doc) : null;
 
-  const refreshAll = () => {
+  const refreshReads = () => {
     source.reload();
     portionsRead.reload();
     chunksRead.reload();
     libraryDoc.reload();
     keptRead.reload();
   };
+  // A person's action (Save, Process now, Capture again) may open a job: the
+  // facts are re-read too, and keep re-reading while it runs.
+  const refreshAll = () => {
+    refreshReads();
+    version.reload();
+  };
+  // When the job the screen watched ends, the searchable pieces it made show.
+  const wasIndexing = useRef(false);
+  const indexingNow = !!facts?.indexing;
+  useEffect(() => {
+    if (wasIndexing.current && !indexingNow) refreshReads();
+    wasIndexing.current = indexingNow;
+    // refreshReads only calls stable reloaders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [indexingNow]);
 
   const processNow = async () => {
     if (!doc || processing) return;
@@ -378,7 +402,18 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
     );
   };
 
-  const isWeb = doc?.source_kind === "scrape_parsed_page";
+  // A web page — whoever captured it — opens in the scraper's own result
+  // screen; a YouTube page keeps its player studio.
+  const isWeb =
+    (doc?.source_kind === "scrape_parsed_page" || doc?.source_kind === "web_page") &&
+    view?.kind !== "youtube";
+  const webSections: WebSection[] = portions.map((p) => {
+    const loc = p.locator?.locator as { heading_path?: unknown } | null | undefined;
+    const path = Array.isArray(loc?.heading_path)
+      ? loc.heading_path.filter((h): h is string => typeof h === "string")
+      : [];
+    return { headingPath: path, text: readableText(p) };
+  });
   const isPdf = view?.kind === "pdf";
   const kept = !!keptRead.keptAt;
 
@@ -403,6 +438,12 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
                 icon: Pencil,
                 onPress: () => {
                   if (!active) return;
+                  if (isWeb) {
+                    const first = portions[0];
+                    if (first)
+                      setEditing({ pageIndex: first.pageIndex, text: readableText(first) });
+                    return;
+                  }
                   setPanes((cur) => new Set(cur).add("clean"));
                   setPhonePane("clean");
                   setEditing({
@@ -550,8 +591,18 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
                   </Badge>
                 ) : null}
                 {stage && viewingCurrent && (
-                  <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-                    {SOURCE_STAGE_LABEL[stage]}
+                  <Badge
+                    variant="outline"
+                    className="px-1.5 py-0 text-[10px]"
+                    data-testid="source-stage"
+                    title={version.jobEndedWithoutText ?? undefined}
+                  >
+                    {stage === "indexing" ? (
+                      <Loader2 className="mr-1 h-2.5 w-2.5 animate-spin" />
+                    ) : null}
+                    {version.jobEndedWithoutText
+                      ? "Processing found no text"
+                      : SOURCE_STAGE_LABEL[stage]}
                   </Badge>
                 )}
               </span>
@@ -589,6 +640,11 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
               <ErrorAlchemyMenu error={version.error} />
             </div>
           )}
+          {version.jobEndedWithoutText && viewingCurrent && (
+            <div className="shrink-0 border-b px-4 py-1 text-xs text-warning">
+              {version.jobEndedWithoutText}
+            </div>
+          )}
           {media.error && (
             <div className="shrink-0 border-b px-4 py-1 text-xs text-warning">
               {media.error}
@@ -605,6 +661,45 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
               fallbackHref="/knowledge/library"
               fallbackLabel="Your Sources"
             />
+          ) : isWeb && doc ? (
+            <div
+              className={cn(
+                "grid min-h-0 flex-1 divide-x overflow-hidden",
+                layout.sideInline ? "grid-cols-[minmax(0,1fr)_360px]" : "grid-cols-1",
+              )}
+            >
+              <div className="flex min-h-0 min-w-0 flex-col">
+                {!layout.sideInline && (
+                  <div className="flex shrink-0 justify-end border-b px-3 py-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-xs"
+                      onClick={() => setSideSheetOpen(true)}
+                    >
+                      <Boxes className="h-3.5 w-3.5" />
+                      Chunks, entities and attachments
+                      {!chunksRead.loading ? ` (${chunksRead.total})` : ""}
+                    </Button>
+                  </div>
+                )}
+                <div className="min-h-0 flex-1">
+                  <WebSourceView
+                    key={doc.id}
+                    documentId={doc.id}
+                    originalFileId={doc.original_file_id}
+                    name={doc.name}
+                    url={url}
+                    sections={webSections}
+                    sectionsLoading={portionsRead.loading}
+                    sectionsError={portionsRead.error}
+                  />
+                </div>
+              </div>
+              {layout.sideInline && (
+                <div className="flex min-h-0 flex-col">{sidePanes}</div>
+              )}
+            </div>
           ) : (
             <div
               className={cn(
@@ -708,7 +803,7 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
             </DrawerContent>
           </Drawer>
         )}
-        {!layout.partsInline && (
+        {!layout.partsInline && !isWeb && (
           <Drawer open={partsSheetOpen} onOpenChange={setPartsSheetOpen} direction="bottom">
             <DrawerContent className="h-[85dvh]">
               <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -719,6 +814,63 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
               </div>
             </DrawerContent>
           </Drawer>
+        )}
+
+        {isWeb && (
+          <Dialog
+            open={!!editing}
+            onOpenChange={(open) => {
+              if (!open && !savingEdit) setEditing(null);
+            }}
+          >
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Edit the text of {doc?.name ?? "this page"}</DialogTitle>
+              </DialogHeader>
+              {editing ? (
+                <div className="space-y-3">
+                  <Select
+                    value={String(editing.pageIndex)}
+                    onValueChange={(v) => {
+                      const p = portions.find((x) => x.pageIndex === Number(v));
+                      if (p) setEditing({ pageIndex: p.pageIndex, text: readableText(p) });
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {portions.map((p, i) => (
+                        <SelectItem key={p.pageIndex} value={String(p.pageIndex)}>
+                          {webSections[i]?.headingPath.join(" › ") || "Opening text"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Textarea
+                    value={editing.text}
+                    onChange={(e) =>
+                      setEditing((cur) => (cur ? { ...cur, text: e.target.value } : cur))
+                    }
+                    className="min-h-[320px] text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Saving keeps the original capture one click away; people and AI
+                    search read the edited version.
+                  </p>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setEditing(null)} disabled={savingEdit}>
+                      Cancel
+                    </Button>
+                    <Button onClick={() => void saveEdit()} disabled={savingEdit}>
+                      {savingEdit ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
+                      Save edit
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            </DialogContent>
+          </Dialog>
         )}
 
         <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
