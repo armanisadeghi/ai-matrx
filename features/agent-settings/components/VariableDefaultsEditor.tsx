@@ -13,9 +13,15 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectVariableDefaults } from "@/lib/redux/slices/agent-settings/selectors";
+import {
+  selectError,
+  selectIsLoading,
+  selectVariableDefaults,
+} from "@/lib/redux/slices/agent-settings/selectors";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   addVariable,
+  loadAgentSettings,
   updateVariable,
   removeVariable,
 } from "@/lib/redux/slices/agent-settings/agentSettingsSlice";
@@ -49,6 +55,25 @@ export function VariableDefaultsEditor({
   const variables = useAppSelector((state) =>
     selectVariableDefaults(state, agentId),
   );
+  // The agent read these variables come from (RC-B12): "No variables
+  // defined" is only said when that read did not fail.
+  const settingsError = useAppSelector((state) => selectError(state, agentId));
+  const settingsLoading = useAppSelector((state) =>
+    selectIsLoading(state, agentId),
+  );
+  const settingsEntry = useAppSelector(
+    (state) => state.agentSettings?.entries[agentId] ?? null,
+  );
+  const retrySettings = () => {
+    if (!settingsEntry) return;
+    void dispatch(
+      loadAgentSettings({
+        agentId,
+        source: settingsEntry.source,
+        context: settingsEntry.context,
+      }),
+    );
+  };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
@@ -121,7 +146,18 @@ export function VariableDefaultsEditor({
         </Button>
       </div>
 
-      {variables.length === 0 ? (
+      {variables.length === 0 && settingsError ? (
+        <ReadFailure
+          error={settingsError}
+          what="this agent's variables"
+          onRetry={settingsEntry ? retrySettings : undefined}
+          className="m-0"
+        />
+      ) : variables.length === 0 && settingsLoading ? (
+        <p className="text-xs text-muted-foreground/60 italic">
+          Loading variables…
+        </p>
+      ) : variables.length === 0 ? (
         <p className="text-xs text-muted-foreground/60 italic">
           No variables defined
         </p>

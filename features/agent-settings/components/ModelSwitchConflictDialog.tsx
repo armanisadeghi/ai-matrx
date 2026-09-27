@@ -355,6 +355,7 @@ export function ModelSwitchConflictDialog({
                       {summary.willRemoveCount === 0 &&
                         summary.willResetCount === 0 && (
                           <span className="inline-flex items-center gap-1 text-muted-foreground">
+                            {/* read-gate-exempt: a computed diff of the pending model switch held in local redux state (nothing removed or reset), not a read */}
                             <CheckCircle2 className="w-3 h-3" /> no changes
                           </span>
                         )}
