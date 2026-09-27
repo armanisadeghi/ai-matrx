@@ -141,6 +141,30 @@ doors + `announceMeeting`).
   cannot take a series from a link, so that button is absent for one (the `.ics` covers Outlook).
   Exceptions (EXDATE) are only in the server's emailed `.ics`.
 
+## After the meeting — Meet wave 3 (2026-09-27)
+
+Bar: Zoom's recording page (video beside a searchable transcript) + Google Meet's notes doc.
+Package `@ai-matrx/meet` ≥ 0.7.7 (`core/after.ts`, repository `myRecordings` / `searchMeetings`
+/ `renameRecording` / `setRecordingArchived`); server `followup.py` (aidream FEATURE § After the
+meeting). UI lives in [`components/record/`](./components/record/).
+
+| Piece | File |
+|---|---|
+| `/meetings/[id]?tab=record` — video + Transcript / Chat / People side panel, summary, decisions, action items, notes, ask, guest access, Export, Email recap. `?t=<line>` / `?note=<note>` deep-link, `?recap=1` opens the recap | `MeetingRecordWorkspace.tsx` |
+| Seekable player (the package's file-session / bytes lane via `host.api.fileMedia`) | `RecordingSeekPlayer.tsx` |
+| Transcript: search within (count, prev/next), click a line's time to play from it, follow-along | `TranscriptPanel.tsx` |
+| Action items → `workspace.tasks` (one with owner + due date, or all); provenance `source_type='meet_note'`, `source_id` = the note, `dedupe_key='meet_note:<id>'` (the org+dedupe unique index = no duplicates); status read back on focus | `ActionItemsSection.tsx`, `hooks/useActionItemTasks.ts` |
+| Attendance (as what, joined / left / time, totals, CSV) | `AttendancePanel.tsx` |
+| Saved chat after the meeting | `ChatLogPanel.tsx` |
+| Export: notes (copy / .md / Word / PDF via `@ai-matrx/print/document`), transcript (copy / .txt / .vtt / Word), attendance CSV | `RecordExportMenu.tsx` |
+| Recap email: server draft from the wrap-up, host edits + picks recipients, "Check delivery" = dry run, Send only on click | `RecapDialog.tsx` |
+| `/meetings?tab=recordings` — library (state, play in place, download, Share… on the file, rename, archive/restore via `ArchiveFilter`) | `RecordingsLibrary.tsx` |
+| `/meetings` search also searches inside meetings (agenda, summary, decisions, action items, transcript) → hit opens the line | `MeetingContentSearch.tsx` |
+
+Without an active organization the workspace says so and offers the picker (the recording,
+chat and recap ride the org-aware Meet client). The public `/meet/<slug>` record is still the
+package's `MeetingRecordView`.
+
 ## The Invite panel (2026-09-27)
 
 One panel, opened from **Invite** in the room header (`headerControls`, both
@@ -222,6 +246,8 @@ reader of an older tag will otherwise conclude the package is broken.
    "captions, live notes, Q&A and the wrap-up without a page reload".
 
 ## Change log
+
+- 2026-09-27 — Meet wave 3 (after the meeting): record workspace, recordings library, action items → tasks, attendance, chat log, export, recap email, search inside meetings. See § After the meeting. Adopted `@ai-matrx/meet` 0.7.7.
 
 - 2026-09-27 — Meet wave 2 adopted (@ai-matrx/meet 0.7.5): Board header renders the package `HostMenu`; in-meeting parity arrives via `ControlBar`.
 

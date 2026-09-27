@@ -351,6 +351,10 @@ export function MeetingsHome() {
               onCreate={() => void withOrganization("create")}
               searching={query.trim() !== "" || scope !== "mine"}
             />
+          ) : query.trim() !== "" && listed.length === 0 ? (
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              No meeting titles here match “{query.trim()}”.
+            </p>
           ) : (
             <MeetingList
               tab={tab}
