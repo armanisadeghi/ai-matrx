@@ -53,14 +53,14 @@ it("the model has no fold-into-More… step and the table asks for none", () => 
 
 it("the package's heading check passes on the grid's real model and fails on the removed fold", async () => {
   const { buildMenuModel, unapprovedHeadings } = await import("@ai-matrx/alchemy/menu");
-  const approved = new Set(["Cell", "Row", "History"]);
   const target = createClickTarget({ host: { contextMenu: { kind: "context-menu", instanceId: "g2" } } });
   const resolve = async (model: MenuModel) => {
     const registry = createActionRegistry({ ports: { diagnostics: { capture: jest.fn() } } });
     registry.register({ id: "context-menu:g2", tier: "T1", actions: () => contextMenuActionsFromModel(model, "g2") });
-    return buildMenuModel(target, await registry.resolve(target));
+    return buildMenuModel(target, await registry.resolve(target), { headingPolicy: "throw" });
   };
-  expect(unapprovedHeadings(await resolve(gridCellMenu()), approved)).toEqual([]);
+  // The package's ONE approved list (surface sections declare themselves targets).
+  expect(unapprovedHeadings(await resolve(gridCellMenu()))).toEqual([]);
   // The fold a lane added: every site row under one "More…".
   const folded = gridCellMenu();
   const rest = folded.sections.filter((s) => s.group !== "surface");
@@ -68,5 +68,6 @@ it("the package's heading check passes on the grid's real model and fails on the
     ...folded.sections.filter((s) => s.group === "surface"),
     { id: "site-more", group: "tools", nodes: [{ kind: "submenu", id: "site-more", label: "More…", children: rest.flatMap((s) => s.nodes) } as MenuNode] },
   ];
-  expect(unapprovedHeadings(await resolve(folded), approved)).toEqual(["More…"]);
+  // Dev/test: the fold under a container word fails the model build, with the remedy.
+  await expect(resolve(folded)).rejects.toThrow(/More….*not an approved heading/);
 });
