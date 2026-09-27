@@ -358,7 +358,6 @@ export function NoteEditorDock({
         onOpenChange={(open) => setSheetOpen(open ? "more" : null)}
         title="Note Actions"
         surface="solid"
-        contentClassName="min-h-0"
       >
         <BottomSheetHeader title="Note Actions" />
         <BottomSheetBody>
