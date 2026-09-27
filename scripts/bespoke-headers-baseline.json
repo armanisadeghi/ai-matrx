@@ -4,7 +4,6 @@
   "features/html-pages/components/HtmlPageEditor.tsx",
   "features/notes/components/NotesHeaderPortal.tsx",
   "features/notes/components/mobile/MobileNotesView.tsx",
-  "features/page-extraction/data-review/ExtractionCatalogClient.tsx",
   "features/page-extraction/data-review/ExtractionDatasetClient.tsx",
   "features/pdf/scanner/components/ScannerSurface.tsx",
   "features/pdf/scanner/components/desktop/ScannerDesktop.tsx",

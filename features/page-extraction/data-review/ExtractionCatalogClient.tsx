@@ -29,7 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import {
   ContextAssignmentField,
   type ContextSelection,
@@ -223,12 +223,14 @@ export function ExtractionCatalogClient() {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex items-center w-full min-w-0 gap-0 p-0 space-x-0 space-y-0">
+      <RouteHeader
+        left={
           <h1 className="text-sm font-medium text-foreground truncate">
             Extraction Data
           </h1>
-          <div className="ml-auto shrink-0 flex items-center">
+        }
+        right={
+          <>
             {loading ? (
               <LoadingTapButton ariaLabel="Refreshing" disabled />
             ) : (
@@ -245,9 +247,9 @@ export function ExtractionCatalogClient() {
               }
               disabled={isPending}
             />
-          </div>
-        </div>
-      </PageHeader>
+          </>
+        }
+      />
 
       <div className="w-full h-full flex flex-col overflow-hidden bg-textured pt-[var(--shell-header-h)]">
         {/* Body — vertical scroll only; the <table> itself is the horizontal
