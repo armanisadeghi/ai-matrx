@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import React, { useEffect, useState, useTransition, useCallback } from "react";
 import {
   getUserFeedback,
@@ -413,6 +414,8 @@ function FeedbackItem({
   // User review messaging
   const [messages, setMessages] = useState<FeedbackUserMessage[]>([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  // A failed read of the conversation is said, never an empty thread (RC-B12 r13).
+  const [messagesError, setMessagesError] = useState<unknown>(null);
   const [replyText, setReplyText] = useState("");
   const [isSendingReply, setIsSendingReply] = useState(false);
 
@@ -424,9 +427,13 @@ function FeedbackItem({
       const result = await getUserMessages(item.id);
       if (result.success && result.data) {
         setMessages(result.data);
+        setMessagesError(null);
+      } else if (!result.success) {
+        setMessagesError(new Error(result.error || "The messages read failed"));
       }
-    } catch {
-      console.error("Error loading messages");
+    } catch (err) {
+      console.error("Error loading messages", err);
+      setMessagesError(err ?? new Error("The messages read failed"));
     } finally {
       setIsLoadingMessages(false);
     }
@@ -740,6 +747,13 @@ function FeedbackItem({
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   Loading messages...
                 </div>
+              ) : messagesError != null ? (
+                <ReadFailure
+                  error={messagesError}
+                  what="your conversation with the team"
+                  onRetry={() => void loadMessages()}
+                  className="m-0"
+                />
               ) : (
                 <div className="space-y-2">
                   {messages.map((msg) => {

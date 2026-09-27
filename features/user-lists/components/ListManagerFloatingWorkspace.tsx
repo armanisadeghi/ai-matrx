@@ -1,5 +1,7 @@
 "use client";
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { getAccessibleLists, getListWithItems } from "../service";
 import type { UserList, UserListWithItems } from "../types";
@@ -22,6 +24,11 @@ export function ListManagerFloatingWorkspace() {
   const [activeListId, setActiveListId] = useState<string | null>(null);
   const [activeListData, setActiveListData] = useState<UserListWithItems | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  // Failed reads are said (RC-B12 r13) — never an empty sidebar or a spinner
+  // that never ends.
+  const [listsError, setListsError] = useState<unknown>(null);
+  const [detailError, setDetailError] = useState<unknown>(null);
+  const [detailAttempt, setDetailAttempt] = useState(0);
   const [createListOpen, setCreateListOpen] = useState(false);
   const user = useAppSelector(selectUser);
 
@@ -29,8 +36,10 @@ export function ListManagerFloatingWorkspace() {
     try {
       const data = await getAccessibleLists();
       setLists(data);
+      setListsError(null);
     } catch (err) {
       console.error("Failed to load lists", err);
+      setListsError(err ?? new Error("The lists read failed"));
     } finally {
       setLoading(false);
     }
@@ -55,17 +64,27 @@ export function ListManagerFloatingWorkspace() {
     let active = true;
     if (activeListId) {
       setLoadingDetail(true);
-      getListWithItems(activeListId).then(data => {
-        if (active) {
-          setActiveListData(data);
-          setLoadingDetail(false);
-        }
-      });
+      setDetailError(null);
+      getListWithItems(activeListId).then(
+        (data) => {
+          if (active) {
+            setActiveListData(data);
+            setLoadingDetail(false);
+          }
+        },
+        (err: unknown) => {
+          console.error("Failed to load list", err);
+          if (active) {
+            setDetailError(err ?? new Error("The list read failed"));
+            setLoadingDetail(false);
+          }
+        },
+      );
     } else {
       setActiveListData(null);
     }
     return () => { active = false; };
-  }, [activeListId]);
+  }, [activeListId, detailAttempt]);
 
   // Optionally listen for changes in the active list items (when users edit them using Server Actions)
   // Usually the list will be updated because server actions revalidate, but here we can poll it.
@@ -170,7 +189,23 @@ export function ListManagerFloatingWorkspace() {
         onOverrideNavigate={setActiveListId}
       />
       <div className="flex-1 overflow-hidden relative border-l border-border bg-card/30">
-        {loadingDetail || (loading && !lists.length) ? (
+        {listsError != null && lists.length > 0 && (
+          <StaleDataNotice
+            hasData
+            what="your lists"
+            onRetry={() => void fetchLists()}
+            className="m-2"
+          />
+        )}
+        {listsError != null && lists.length === 0 ? (
+          <ReadFailure error={listsError} what="your lists" onRetry={() => void fetchLists()} />
+        ) : detailError != null ? (
+          <ReadFailure
+            error={detailError}
+            what="this list"
+            onRetry={() => setDetailAttempt((n) => n + 1)}
+          />
+        ) : loadingDetail || (loading && !lists.length) ? (
            <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
              <Loader2 className="h-6 w-6 animate-spin text-primary" />
            </div>

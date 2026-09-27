@@ -1,5 +1,7 @@
 "use client";
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { useState, useEffect, useMemo, useTransition } from "react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -63,6 +65,8 @@ export function ShowsClient() {
 
   const [shows, setShows] = useState<PcShow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // A failed read is said — never "No shows yet" (RC-B12 r13).
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -86,8 +90,10 @@ export function ShowsClient() {
     setIsLoading(true);
     try {
       setShows(await podcastService.fetchAllShows());
+      setLoadError(null);
     } catch (e) {
       console.error("Failed to load shows", e);
+      setLoadError(e ?? new Error("The shows read failed"));
     } finally {
       setIsLoading(false);
     }
@@ -191,6 +197,17 @@ export function ShowsClient() {
       }
     >
       <>
+        {loadError != null && shows.length > 0 && (
+          <StaleDataNotice
+            hasData
+            what="the podcast shows"
+            onRetry={() => void load()}
+            className="mb-2"
+          />
+        )}
+        {loadError != null && shows.length === 0 ? (
+          <ReadFailure error={loadError} what="the podcast shows" onRetry={() => void load()} />
+        ) : (
         <MatrxDataTable<PcShow>
           tableId="admin/podcasts/shows"
           data={shows}
@@ -258,6 +275,7 @@ export function ShowsClient() {
             },
           }}
         />
+        )}
 
         <AlertDialog
           open={!!pendingDeleteId}
