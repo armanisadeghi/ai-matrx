@@ -186,9 +186,14 @@ generated pages, a replayed stream). Rules:
   `room`), the board's tiles and positions (`matrx.meet.board.<meetingId>`) and
   scratchpad text. Every read/write is try/catch; blocked storage = defaults.
   What a person adds is theirs alone — nobody else in the meeting sees it.
-- **Package gap:** the host menu (lock / end for everyone) is not exported, so
-  the Board shows a "Host controls" link that returns the host to the Room
-  layout. Exporting it from `@ai-matrx/meet` removes that hop.
+- **Host menu:** the package's `HostMenu` (lock / end for everyone, @ai-matrx/meet
+  0.7.5) renders in the Board header for hosts — the "Host controls" hop back to
+  the Room layout is gone.
+- **Meet wave 2 arrives through `ControlBar`** in both layouts: reactions, the
+  hand queue, per-person menus (mute / ask to unmute / stop video / spotlight /
+  co-host / make host / rename / remove / report — all server-decided), saved
+  chat + private messages, audio/video/effects settings, keyboard shortcuts.
+  Package doc: `aidream/apps/shared/meet/FEATURE.md` § In the meeting.
 
 ## Known blockers on this surface (2026-09-08, MRI-A9)
 
@@ -216,6 +221,8 @@ reader of an older tag will otherwise conclude the package is broken.
    "captions, live notes, Q&A and the wrap-up without a page reload".
 
 ## Change log
+
+- 2026-09-27 — Meet wave 2 adopted (@ai-matrx/meet 0.7.5): Board header renders the package `HostMenu`; in-meeting parity arrives via `ControlBar`.
 
 - **2026-09-27 — Meet wave 1 UI (management).** `/meetings` rebuilt (agenda by day in the
   viewer's zone, Past / Cancelled / Archived, search, whose-meetings, row menu, New meeting,
