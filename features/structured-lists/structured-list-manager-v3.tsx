@@ -1229,7 +1229,7 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
     <>
       <MobilePanelShell
         desktop={
-          <div className="grid h-[calc(100dvh-8rem)] min-h-[560px] grid-cols-[260px_1fr] overflow-hidden rounded-lg border bg-background">
+          <div className="grid min-h-[560px] flex-1 grid-cols-[260px_1fr] overflow-hidden rounded-lg border bg-background">
             <aside className="flex min-h-0 flex-col border-r bg-muted/30">
               {sidebarContent}
             </aside>
