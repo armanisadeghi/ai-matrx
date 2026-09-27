@@ -20,6 +20,12 @@ const OVERLAY_ID = "agentRunHistoryWindow" as const;
 export interface OpenAgentRunHistoryWindowOptions {
   agentId?: string | null;
   initialSelectedConversationId?: string | null;
+  /**
+   * What the history is OF, in the person's words — the window reads
+   * "Run History — <subject>". An agent app passes its own name; without it
+   * the window names the agent (an app's agent is often unnamed: "— Agent").
+   */
+  subject?: string | null;
 }
 
 export interface AgentRunHistoryWindowHandle {
@@ -36,6 +42,7 @@ export function useOpenAgentRunHistoryWindow() {
           data: {
             agentId: opts.agentId,
             initialSelectedConversationId: opts.initialSelectedConversationId,
+            subject: opts.subject ?? null,
           },
         }),
       );
@@ -57,6 +64,6 @@ export function AgentRunHistoryWindowController(props: OpenAgentRunHistoryWindow
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.agentId, props.initialSelectedConversationId]);
+  }, [open, props.agentId, props.initialSelectedConversationId, props.subject]);
   return null;
 }

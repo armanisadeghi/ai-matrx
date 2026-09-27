@@ -3193,6 +3193,7 @@ export default function OverlayController() {
                 ? data.initialSelectedConversationId
                 : null
             }
+            subject={typeof data?.subject === "string" ? data.subject : null}
           />
         );
       })()}

@@ -86,6 +86,8 @@ export function AgentAppHeader({
       onPress: () =>
         openRunHistory({
           agentId,
+          // "Run History — Recipe Scaler", never "— Agent".
+          subject: appName,
           initialSelectedConversationId:
             typeof window !== "undefined"
               ? new URLSearchParams(window.location.search).get("conversationId")

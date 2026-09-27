@@ -417,6 +417,8 @@ interface AgentRunHistoryWindowProps {
   onClose: () => void;
   agentId?: string | null;
   initialSelectedConversationId?: string | null;
+  /** What the history is of ("Recipe Scaler") — see the opener. */
+  subject?: string | null;
 }
 
 export default function AgentRunHistoryWindow({
@@ -424,6 +426,7 @@ export default function AgentRunHistoryWindow({
   onClose,
   agentId,
   initialSelectedConversationId,
+  subject,
 }: AgentRunHistoryWindowProps) {
   if (!isOpen) return null;
   return (
@@ -431,18 +434,33 @@ export default function AgentRunHistoryWindow({
       onClose={onClose}
       agentId={agentId ?? null}
       initialSelectedConversationId={initialSelectedConversationId ?? null}
+      subject={subject ?? null}
     />
   );
+}
+
+/** The window's title: the caller's subject while its agent is shown, else the agent's name. */
+export function runHistoryWindowTitle(args: {
+  agentId: string | null;
+  initialAgentId: string | null;
+  subject: string | null;
+  agentName: string | null;
+}): string {
+  if (!args.agentId) return "Run History";
+  const subject = args.agentId === args.initialAgentId ? args.subject?.trim() : "";
+  return `Run History — ${subject || args.agentName?.trim() || "Agent"}`;
 }
 
 function AgentRunHistoryWindowInner({
   onClose,
   agentId: initialAgentId,
   initialSelectedConversationId,
+  subject,
 }: {
   onClose: () => void;
   agentId: string | null;
   initialSelectedConversationId: string | null;
+  subject: string | null;
 }) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -500,7 +518,7 @@ function AgentRunHistoryWindowInner({
 
   // An empty name (an agent read through a public app's door carries none)
   // must never leave a dangling "Run History —".
-  const titleSuffix = agentId ? ` — ${agentName?.trim() || "Agent"}` : "";
+  const windowTitle = runHistoryWindowTitle({ agentId, initialAgentId, subject, agentName });
 
   /**
    * The roster (and the canonical agent id it is fetched under) lives one
@@ -561,7 +579,7 @@ function AgentRunHistoryWindowInner({
     >
       <WindowPanel
         id="agent-run-history-window"
-        title={`Run History${titleSuffix}`}
+        title={windowTitle}
         onClose={onClose}
         width={900}
         height={640}
