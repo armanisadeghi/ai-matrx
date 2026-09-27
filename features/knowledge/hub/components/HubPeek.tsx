@@ -8,7 +8,7 @@
  * nothing, rather than disappearing.
  */
 
-import { ExternalLink, FolderInput, Lightbulb, X } from "lucide-react";
+import { ExternalLink, FolderInput, Lightbulb, Star, X } from "lucide-react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { useAssociations, useEntityTitles } from "@ai-matrx/associations/react";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,9 @@ interface HubPeekProps {
   onOpenFull: (hit: KnowledgeHit) => void;
   onFileUnder: (hit: KnowledgeHit) => void;
   onAcceptSuggestion: (hit: KnowledgeHit, target: FiledRef) => void;
+  /** Starred in MY favorites (platform.user_entity_state). */
+  isFavorite?: boolean;
+  onToggleFavorite?: (hit: KnowledgeHit) => void;
 }
 
 function Heading({ children }: { children: React.ReactNode }) {
@@ -95,6 +98,8 @@ export function HubPeek({
   onOpenFull,
   onFileUnder,
   onAcceptSuggestion,
+  isFavorite = false,
+  onToggleFavorite,
 }: HubPeekProps) {
   if (!hit) {
     const [entity, id] = [peekKey.slice(0, peekKey.indexOf(":")), peekKey.slice(peekKey.indexOf(":") + 1)];
@@ -153,6 +158,19 @@ export function HubPeek({
         <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => onFileUnder(hit)}>
           <FolderInput className="h-3.5 w-3.5" /> File under…
         </Button>
+        {onToggleFavorite ? (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1.5"
+            aria-pressed={isFavorite}
+            onClick={() => onToggleFavorite(hit)}
+            title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+          >
+            <Star className={isFavorite ? "h-3.5 w-3.5 fill-amber-400 text-amber-500" : "h-3.5 w-3.5"} />
+            {isFavorite ? "Favorited" : "Favorite"}
+          </Button>
+        ) : null}
       </div>
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden px-4 py-4">
         {hit.snippet && hit.entity !== "segment" ? (

@@ -14,9 +14,22 @@ import {
   Inbox,
   Layers,
   Bookmark,
+  BookmarkPlus,
+  MoreHorizontal,
+  Pin,
   Star,
   RotateCw,
+  Users,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { countLabel, type ViewCount } from "@/features/knowledge/hub/hubSavedViews";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/utils/cn";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
@@ -28,15 +41,33 @@ import {
 import {
   HUB_CONTAINER_LABEL,
   HUB_CONTAINER_TOKENS,
+  type HubSavedView,
   type HubSidebarData,
   type Loadable,
 } from "@/features/knowledge/hub/hooks/useHubSidebarData";
+
+export type SavedViewAction =
+  | "open"
+  | "rename"
+  | "save_changes"
+  | "share"
+  | "unshare"
+  | "notify_on"
+  | "notify_off"
+  | "pin"
+  | "unpin"
+  | "duplicate"
+  | "delete";
 
 interface HubSidebarProps {
   view: HubView;
   data: HubSidebarData;
   sample: boolean;
   onSelect: (view: HubView) => void;
+  /** Live counts by saved-view id. */
+  viewCounts?: Record<string, ViewCount | undefined>;
+  onSaveView?: () => void;
+  onViewAction?: (view: HubSavedView, action: SavedViewAction) => void;
 }
 
 const ROW =
@@ -117,6 +148,108 @@ function LoadState<T>({
   return null;
 }
 
+function SavedViewRow({
+  v,
+  active,
+  count,
+  onSelect,
+  onAction,
+}: {
+  v: HubSavedView;
+  active: boolean;
+  count: ViewCount | undefined;
+  onSelect: () => void;
+  onAction?: (view: HubSavedView, action: SavedViewAction) => void;
+}) {
+  const label = v.definition ? v.name : `${v.name} (unreadable definition)`;
+  const shown = countLabel(count);
+  const countTitle =
+    count?.kind === "unsupported" ? count.reason : count?.kind === "error" ? `Count unavailable: ${count.message}` : undefined;
+  const shared = v.visibility !== "personal";
+  return (
+    <div
+      className={cn(
+        "group flex min-w-0 items-center rounded-md hover:bg-accent",
+        active && "bg-accent",
+      )}
+      data-saved-view={v.id}
+    >
+      <button
+        type="button"
+        className={cn(ROW, "hover:bg-transparent", active && "font-medium text-foreground")}
+        aria-current={active ? "page" : undefined}
+        onClick={onSelect}
+        title={v.builtIn ? `${v.name} — built-in view, installed for everyone the next time a platform admin opens the hub` : v.name}
+      >
+        {v.pinned ? (
+          <Pin className="h-4 w-4 shrink-0 text-muted-foreground" />
+        ) : (
+          <Bookmark className="h-4 w-4 shrink-0 text-muted-foreground" />
+        )}
+        <span className="min-w-0 flex-1 truncate">{label}</span>
+        {shared && !v.preset ? (
+          <Users className="h-3 w-3 shrink-0 text-muted-foreground" aria-label="Shared with the organization" />
+        ) : null}
+        {shown !== null ? (
+          <span className="shrink-0 text-xs tabular-nums text-muted-foreground" title={countTitle} data-testid="view-count">
+            {shown}
+          </span>
+        ) : v.definition ? (
+          <span className="h-3 w-5 shrink-0 animate-pulse rounded bg-muted" aria-label="Counting" />
+        ) : null}
+      </button>
+      {onAction ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-60 hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+              aria-label={`Actions for ${v.name}`}
+            >
+              <MoreHorizontal className="h-3.5 w-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-64">
+            <DropdownMenuItem onSelect={() => onAction(v, "open")}>Open</DropdownMenuItem>
+            {v.mine ? (
+              <>
+                <DropdownMenuItem onSelect={() => onAction(v, "rename")}>Rename…</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onAction(v, "save_changes")}>
+                  Save current filters to this view
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onAction(v, shared ? "unshare" : "share")}>
+                  {shared ? "Make personal (stop sharing)" : "Share with organization"}
+                </DropdownMenuItem>
+                <DropdownMenuCheckboxItem
+                  checked={v.definition?.notifyNewMatches === true}
+                  onCheckedChange={(c) => onAction(v, c ? "notify_on" : "notify_off")}
+                >
+                  Notify me of new matches
+                  <span className="ml-auto pl-2 text-[10px] text-muted-foreground">coming soon</span>
+                </DropdownMenuCheckboxItem>
+              </>
+            ) : null}
+            {!v.builtIn ? (
+              <DropdownMenuItem onSelect={() => onAction(v, v.pinned ? "unpin" : "pin")}>
+                {v.pinned ? "Unpin from sidebar" : "Pin to sidebar"}
+              </DropdownMenuItem>
+            ) : null}
+            <DropdownMenuItem onSelect={() => onAction(v, "duplicate")}>Duplicate</DropdownMenuItem>
+            {v.mine ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => onAction(v, "delete")}>
+                  Delete…
+                </DropdownMenuItem>
+              </>
+            ) : null}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
+    </div>
+  );
+}
+
 const CONTAINER_PREVIEW = 8;
 
 function ContainerGroup({
@@ -190,7 +323,25 @@ function ContainerGroup({
   );
 }
 
-export function HubSidebar({ view, data, sample, onSelect }: HubSidebarProps) {
+export function HubSidebar({ view, data, sample, onSelect, viewCounts, onSaveView, onViewAction }: HubSidebarProps) {
+  const [allOpen, setAllOpen] = useState(false);
+  const items = data.savedViews.items;
+  const pinnedViews = items.filter((v) => v.pinned);
+  const presetViews = items.filter((v) => !v.pinned && v.preset);
+  const otherViews = items.filter((v) => !v.pinned && !v.preset);
+  const viewRow = (v: HubSavedView) => {
+    const hv: HubView = { kind: "saved", id: v.id };
+    return (
+      <SavedViewRow
+        key={v.id}
+        v={v}
+        active={sameView(view, hv)}
+        count={viewCounts?.[v.id]}
+        onSelect={() => onSelect(hv)}
+        onAction={onViewAction}
+      />
+    );
+  };
   return (
     <nav aria-label="Knowledge views" className="flex h-full min-h-0 flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-2 pb-6 pt-2">
@@ -217,24 +368,51 @@ export function HubSidebar({ view, data, sample, onSelect }: HubSidebarProps) {
           <LoadState loadable={data.favorites} what="favorites" empty="" indent />
         ) : null}
 
-        <GroupHeading>Saved views</GroupHeading>
+        <div className="flex items-center justify-between pr-1">
+          <GroupHeading>Saved views</GroupHeading>
+          {onSaveView ? (
+            <button
+              type="button"
+              className="mt-3 flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+              aria-label="Save view (⌥V)"
+              title="Save view (⌥V)"
+              onClick={onSaveView}
+            >
+              <BookmarkPlus className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
+        </div>
         <LoadState
           loadable={data.savedViews}
           what="saved views"
-          empty="No saved views for the hub yet."
+          empty="No saved views yet. Filter the hub, then Save view (⌥V)."
         />
-        {data.savedViews.items.map((v) => {
-          const hv: HubView = { kind: "saved", id: v.id };
-          return (
-            <Row
-              key={v.id}
-              icon={Bookmark}
-              label={v.definition ? v.name : `${v.name} (unreadable definition)`}
-              active={sameView(view, hv)}
-              onClick={() => onSelect(hv)}
-            />
-          );
-        })}
+        {pinnedViews.length === 0 && data.savedViews.status === "ready" && data.savedViews.items.length > 0 ? (
+          <p className="px-2 py-1 text-xs text-muted-foreground">Nothing pinned. Pin a view from its ··· menu.</p>
+        ) : null}
+        {pinnedViews.map(viewRow)}
+        {otherViews.length ? (
+          <div>
+            <button
+              type="button"
+              className={cn(ROW, "text-muted-foreground")}
+              aria-expanded={allOpen}
+              onClick={() => setAllOpen((o) => !o)}
+            >
+              {allOpen ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
+              <span className="min-w-0 flex-1 truncate">All views</span>
+              <span className="text-xs tabular-nums">{otherViews.length}</span>
+            </button>
+            {allOpen ? <div className="pl-3">{otherViews.map(viewRow)}</div> : null}
+          </div>
+        ) : null}
+
+        {presetViews.length ? (
+          <>
+            <GroupHeading>Presets</GroupHeading>
+            {presetViews.map(viewRow)}
+          </>
+        ) : null}
 
         <GroupHeading>Filed under{sample ? " (sample)" : ""}</GroupHeading>
         {HUB_CONTAINER_TOKENS.map((token) => (

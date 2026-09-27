@@ -57,3 +57,23 @@ it("search_started then sections is the live service", async () => {
   const sections = await searchKnowledgeServer({ text: "x" });
   expect(sections.find((s) => s.key === "notes")?.items[0].title).toBe("N");
 });
+
+it("the older RAG route's 422 (`body.query` required — a field the hub's request never has) falls back", async () => {
+  // Felt in the H5 walk (2026-09-27): the deployed server still carried the
+  // older route at this path; every section and every saved-view count read
+  // "Request validation failed … `body.query`: Field required" instead of the
+  // announced title stand-in.
+  postNdjson.mockReturnValue(refuse(422, "Request validation failed with 1 issue: `body.query`: Field required"));
+  await expect(searchKnowledgeServer({ text: "x" })).rejects.toBeInstanceOf(KnowledgeSearchUnavailableError);
+});
+
+it("the title stand-in answers a section the types filter rules out with nothing, never with silence", async () => {
+  const { searchCandidatesAcrossTokens } = jest.requireMock("@/features/scopes/service/associationCandidates");
+  searchCandidatesAcrossTokens.mockResolvedValue({ results: [{ token: "note", id: "n1", title: "Grant plan" }], failures: [] });
+  const { searchKnowledgeTitles, KNOWLEDGE_SECTION_KEYS } = jest.requireActual("@/features/knowledge/api/knowledgeSearch");
+  const sections = await searchKnowledgeTitles({ types: ["note"] });
+  const keys = sections.map((s: { key: string }) => s.key).sort();
+  expect(keys).toEqual([...KNOWLEDGE_SECTION_KEYS].sort());
+  for (const s of sections) expect(s.error ?? null).toBeNull();
+  expect(sections.find((s: { key: string }) => s.key === "notes").items).toHaveLength(1);
+});

@@ -1027,6 +1027,20 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     // move, which lands with H5.
     surfaces: ["/knowledge hub bulk bar — Archive"],
   },
+  "knowledge.saved-view-alerts": {
+    id: "knowledge.saved-view-alerts",
+    label: "Notify me when new items match",
+    owner: "knowledge",
+    promise:
+      "When something new matches a saved view — a captured page, a transcript, a note — you get a notification with a link straight to it.",
+    stage: "planned",
+    // KNOWLEDGE-HUB §4 / §8 H5. The per-view choice IS stored today
+    // (`notify_new_matches` on the saved view's definition, so nobody has to
+    // set it twice), but no server job watches views and sends anything yet.
+    // The notifier is server work (aidream): read views with the flag on,
+    // re-run their KnowledgeQuery since `last_notified_at`, notify the owner.
+    surfaces: ["/knowledge hub — Save view dialog", "/knowledge hub — saved view menu"],
+  },
 };
 
 export function getComingSoon(id: string): ComingSoonEntry | undefined {

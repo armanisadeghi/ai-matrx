@@ -79,7 +79,15 @@ export const HUB_KINDS: readonly HubKind[] = [
 export interface HubSavedViewDefinition {
   query: KnowledgeQuery;
   layout: HubLayout;
+  /** "Notify me when new items match" — stored now; the notifier is server work (coming soon). */
+  notifyNewMatches?: boolean;
+  /** Set only on the platform-owned preset views (`transcripts`, `files`, …). */
+  preset?: string | null;
 }
+
+/** The `__kind` of a hub view definition (the kind-marker law: every stored schema declares it). */
+export const HUB_VIEW_DEFINITION_KIND = "knowledge-hub-view";
+export const HUB_VIEW_DEFINITION_VERSION = 1;
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -88,11 +96,27 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 /** A stored definition, validated — never trusted raw. Null when unreadable. */
 export function parseSavedViewDefinition(raw: unknown): HubSavedViewDefinition | null {
   if (!isRecord(raw)) return null;
+  if ("__kind" in raw && raw.__kind !== HUB_VIEW_DEFINITION_KIND) return null;
   const q = isRecord(raw.query) ? raw.query : raw;
   const params = hubStateToParams({ ...DEFAULT_HUB_STATE, query: normalizeQuery(q as unknown as KnowledgeQuery) });
   const query = hubStateFromParams(params).query;
   const layout = HUB_LAYOUTS.includes(raw.layout as HubLayout) ? (raw.layout as HubLayout) : "list";
-  return { query, layout };
+  const def: HubSavedViewDefinition = { query, layout };
+  if (raw.notify_new_matches === true) def.notifyNewMatches = true;
+  if (typeof raw.preset === "string" && raw.preset) def.preset = raw.preset;
+  return def;
+}
+
+/** The stored shape (`platform.saved_view.definition`) — the one writer. */
+export function encodeSavedViewDefinition(def: HubSavedViewDefinition): Record<string, unknown> {
+  return {
+    __kind: HUB_VIEW_DEFINITION_KIND,
+    version: HUB_VIEW_DEFINITION_VERSION,
+    query: normalizeQuery(def.query),
+    layout: def.layout,
+    notify_new_matches: def.notifyNewMatches === true,
+    ...(def.preset ? { preset: def.preset } : {}),
+  };
 }
 
 // ─── Selection → query ──────────────────────────────────────────────────────

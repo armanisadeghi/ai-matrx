@@ -30,8 +30,10 @@ import {
   PanelLeft,
   Table2,
   Archive,
+  BookmarkPlus,
   Check,
   FolderInput,
+  Save,
   Trash2,
   X,
 } from "lucide-react";
@@ -45,11 +47,13 @@ import { RegisteredPanel } from "@/features/resizable-panels/RegisteredPanel";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId, selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
+import { favoritesService } from "@/features/scopes/service/favoritesService";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { archiveRecord } from "@/features/trash/service";
@@ -73,6 +77,7 @@ import {
   type HubSidebarData,
 } from "@/features/knowledge/hub/hooks/useHubSidebarData";
 import {
+  actionTarget,
   fileUnder,
   keepItems,
   trashItems,
@@ -80,6 +85,23 @@ import {
   type FileUnderContainer,
 } from "@/features/knowledge/hub/hubActions";
 import { hitKey, openFullHref, tokenLabel } from "@/features/knowledge/hub/hubPresentation";
+import { anyContainerTypes, viewIsDirty } from "@/features/knowledge/hub/hubSavedViews";
+import {
+  createHubView,
+  deleteView,
+  duplicateView,
+  renameView,
+  saveViewChanges,
+  setViewNotify,
+  setViewPinned,
+  setViewShared,
+  touchView,
+} from "@/features/knowledge/hub/hubSavedViewActions";
+import { useSavedViewCounts } from "@/features/knowledge/hub/hooks/useSavedViewCounts";
+import { runnerFor } from "@/features/knowledge/hub/hooks/useKnowledgeResults";
+import { SaveViewDialog, type SaveViewValues } from "@/features/knowledge/hub/components/SaveViewDialog";
+import type { SavedViewAction } from "@/features/knowledge/hub/components/HubSidebar";
+import type { HubSavedView } from "@/features/knowledge/hub/hooks/useHubSidebarData";
 import { HubSidebar } from "@/features/knowledge/hub/components/HubSidebar";
 import { HubSearchBox } from "@/features/knowledge/hub/components/HubSearchBox";
 import { HubFilterMenu } from "@/features/knowledge/hub/components/HubFilterMenu";
@@ -169,6 +191,17 @@ export function KnowledgeHubPage({
   const sidebar = useHubSidebarData(state.data);
   const results = useKnowledgeResults(state.query, state.data);
   const activeOrgId = useAppSelector(selectOrganizationId);
+  const activeOrgName = useAppSelector(selectOrganizationName);
+  const [saveDialog, setSaveDialog] = useState<null | { mode: "create" } | { mode: "rename"; view: HubSavedView }>(null);
+  const viewCountInputs = sidebar.savedViews.items
+    .filter((v) => v.definition)
+    .slice(0, 40)
+    .map((v) => ({ id: v.id, query: v.definition!.query }));
+  const { counts: viewCounts, refresh: refreshCounts } = useSavedViewCounts(
+    viewCountInputs,
+    state.data,
+    runnerFor(state.data),
+  );
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [focusedKey, setFocusedKey] = useState<string | null>(null);
@@ -200,6 +233,10 @@ export function KnowledgeHubPage({
   const peekHit = peekKey ? (byKey.get(peekKey) ?? null) : null;
   const selectedHits = [...selected].map((k) => byKey.get(k)).filter((h): h is KnowledgeHit => !!h);
   const title = viewTitle(state.view, sidebar);
+  const openSavedView =
+    state.view.kind === "saved" ? (sidebar.savedViews.items.find((v) => v.id === (state.view as { id: string }).id) ?? null) : null;
+  const dirty = openSavedView ? viewIsDirty(openSavedView.definition, { query: state.query, layout: state.layout }) : false;
+  const anyTypes = anyContainerTypes(state.query);
   const total = results.sections.every((s) => typeof s.section?.count === "number")
     ? results.sections
         .filter((s) => s.key !== "top_hit" && s.key !== "segments")
@@ -223,6 +260,135 @@ export function KnowledgeHubPage({
     setFocusedKey(null);
     setMobilePane("main");
     write({ view, query, layout: layout ?? state.layout, peek: null });
+    if (view.kind === "saved") {
+      const sv = sidebar.savedViews.items.find((v) => v.id === view.id);
+      if (sv?.mine && !sample)
+        void touchView(sv)
+          .then(() => sidebar.savedViews.retry())
+          .catch((err: unknown) =>
+            recordToast.warning(
+              { type: "platform_saved_view", id: sv.id, title: sv.name },
+              `Opened, but "last used" was not recorded: ${err instanceof Error ? err.message : "the server refused."}`,
+            ),
+          );
+    }
+  };
+
+  // ─── saved views (Linear custom views) ────────────────────────────────────
+
+  const afterViewWrite = () => {
+    sidebar.savedViews.retry();
+    refreshCounts();
+  };
+
+  const saveNewView = async (values: SaveViewValues) => {
+    if (sample) throw new Error(SAMPLE_WRITE_REFUSAL);
+    const organizationId = await ensureOrgId(activeOrgId);
+    const { id, pinError } = await createHubView({
+      name: values.name,
+      organizationId,
+      shared: values.shared,
+      pinned: values.pinned,
+      definition: {
+        query: normalizeQuery(state.query),
+        layout: state.layout,
+        notifyNewMatches: values.notify,
+      },
+    });
+    afterViewWrite();
+    write({ view: { kind: "saved", id } });
+    const ref = { type: "platform_saved_view", id, title: values.name };
+    if (pinError) recordToast.error(ref, pinError);
+    else
+      recordToast.success(
+        ref,
+        `Saved view "${values.name}"${values.shared ? `, shared with ${activeOrgName ?? "your organization"}` : ""}.`,
+      );
+  };
+
+  const runViewWrite = async (v: HubSavedView, fn: () => Promise<unknown>, done: string) => {
+    const ref = { type: "platform_saved_view", id: v.id, title: v.name };
+    try {
+      await fn();
+      recordToast.success(ref, done);
+      afterViewWrite();
+    } catch (err) {
+      recordToast.error(ref, err instanceof Error ? err.message : "The view was not changed.");
+    }
+  };
+
+  const onViewAction = async (v: HubSavedView, action: SavedViewAction) => {
+    if (sample && action !== "open") {
+      toast.info(SAMPLE_WRITE_REFUSAL);
+      return;
+    }
+    const current = { query: normalizeQuery(state.query), layout: state.layout };
+    switch (action) {
+      case "open":
+        return select({ kind: "saved", id: v.id });
+      case "rename":
+        return setSaveDialog({ mode: "rename", view: v });
+      case "save_changes":
+        return runViewWrite(v, () => saveViewChanges(v, current), `Saved the current filters to "${v.name}".`);
+      case "share":
+        return runViewWrite(v, () => setViewShared(v, true), `"${v.name}" is shared with the organization.`);
+      case "unshare":
+        return runViewWrite(v, () => setViewShared(v, false), `"${v.name}" is personal again.`);
+      case "notify_on":
+        return runViewWrite(v, 
+          () => setViewNotify(v, true),
+          `Noted. You'll be notified of new matches for "${v.name}" once notifications ship (coming soon).`,
+        );
+      case "notify_off":
+        return runViewWrite(v, () => setViewNotify(v, false), `No notifications for "${v.name}".`);
+      case "pin":
+        return runViewWrite(v, () => setViewPinned(v.id, true), `Pinned "${v.name}" to your sidebar.`);
+      case "unpin":
+        return runViewWrite(v, () => setViewPinned(v.id, false), `Unpinned "${v.name}".`);
+      case "duplicate":
+        return runViewWrite(v, async () => {
+          const { id, pinError } = await duplicateView(v, await ensureOrgId(activeOrgId));
+          if (pinError) throw new Error(pinError);
+          write({ view: { kind: "saved", id }, query: v.definition?.query ?? state.query, layout: v.definition?.layout ?? state.layout });
+        }, `Made a personal copy of "${v.name}".`);
+      case "delete": {
+        const ok = await confirm({
+          title: `Delete "${v.name}"?`,
+          description:
+            v.visibility !== "personal"
+              ? "The view disappears for everyone in the organization it is shared with. The items it shows are not touched."
+              : "The view disappears from your sidebar. The items it shows are not touched.",
+          confirmLabel: "Delete view",
+          variant: "destructive",
+        });
+        if (!ok) return;
+        return runViewWrite(v, async () => {
+          await deleteView(v);
+          if (state.view.kind === "saved" && state.view.id === v.id) write({ view: { kind: "everything" } });
+        }, `Deleted "${v.name}".`);
+      }
+    }
+  };
+
+  // ─── favorites (platform.user_entity_state only) ──────────────────────────
+
+  const favoriteKeys = new Set(sidebar.favorites.items.map((f) => `${f.entity}:${f.id}`));
+  const toggleFavorite = async (hit: KnowledgeHit) => {
+    if (sample) {
+      toast.info(SAMPLE_WRITE_REFUSAL);
+      return;
+    }
+    const target = actionTarget(hit);
+    const on = !favoriteKeys.has(`${target.entity}:${target.id}`);
+    const res = await favoritesService.setFavorite(target.entity, target.id, on);
+    const ref = { type: target.entity, id: target.id, title: target.title };
+    if (isScopesRpcErr(res)) {
+      const why = (res.error as { message?: string })?.message ?? "the server refused.";
+      recordToast.error(ref, `"${target.title}" was not ${on ? "added to" : "removed from"} Favorites: ${why}`);
+      return;
+    }
+    sidebar.favorites.retry();
+    recordToast.success(ref, on ? `Added "${target.title}" to Favorites.` : `Removed "${target.title}" from Favorites.`);
   };
 
   const openPeek = (hit: KnowledgeHit) => {
@@ -352,7 +518,7 @@ export function KnowledgeHubPage({
   };
 
   const onKey = (e: KeyboardEvent) => {
-    if (fileUnderFor || filtersOpen) return;
+    if (fileUnderFor || filtersOpen || saveDialog) return;
     if (document.querySelector("[role=dialog][data-state=open], [role=alertdialog][data-state=open]")) return;
     const focused = focusedKey ? byKey.get(focusedKey) : undefined;
     if (e.key === "Escape") {
@@ -364,6 +530,11 @@ export function KnowledgeHubPage({
         e.preventDefault();
         setSelected(new Set());
       }
+      return;
+    }
+    if (e.altKey && !e.metaKey && !e.ctrlKey && e.code === "KeyV") {
+      e.preventDefault();
+      setSaveDialog({ mode: "create" });
       return;
     }
     if (isTypingTarget(e.target)) return;
@@ -537,11 +708,59 @@ export function KnowledgeHubPage({
             </div>
           </HubFilterMenu>
         </div>
-        {!searching ? <div className="hidden sm:block">{layoutSwitch}</div> : null}
+        <div className="flex shrink-0 items-center gap-1">
+          {dirty && openSavedView?.mine ? (
+            <Button
+              size="sm"
+              variant="default"
+              className="h-8 gap-1.5"
+              onClick={() => void onViewAction(openSavedView, "save_changes")}
+              title="Save these filters and layout to this view"
+            >
+              <Save className="h-3.5 w-3.5" /> Save changes
+            </Button>
+          ) : null}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1.5"
+            onClick={() => setSaveDialog({ mode: "create" })}
+            title="Save view (⌥V)"
+          >
+            <BookmarkPlus className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">{dirty ? "Save as new view" : "Save view"}</span>
+            <kbd className="ml-0.5 hidden rounded border border-border px-1 text-[10px] text-muted-foreground lg:inline">⌥V</kbd>
+          </Button>
+          {!searching ? <div className="hidden sm:block">{layoutSwitch}</div> : null}
+        </div>
       </div>
       {!searching ? <div className="sm:hidden">{layoutSwitch}</div> : null}
       {bulkBar}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {anyTypes.length ? (
+        <div className="rounded-md border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground" role="status">
+          <p>
+            Showing everything in every library at once needs the search service&apos;s any-library filter, which is not
+            built yet — so this view lists your libraries instead. Open one to see what is in it.
+          </p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {(sidebar.containers.media_source_library.items ?? []).map((lib) => (
+              <button
+                key={lib.id}
+                type="button"
+                className="rounded-md border border-border bg-background px-2 py-1 text-foreground hover:bg-accent"
+                onClick={() => select({ kind: "container", type: "media_source_library", id: lib.id })}
+              >
+                {lib.title}
+              </button>
+            ))}
+            {sidebar.containers.media_source_library.status === "ready" &&
+            sidebar.containers.media_source_library.items.length === 0 ? (
+              <span>You have no libraries yet.</span>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+      <div className={anyTypes.length ? "hidden" : "flex min-h-0 flex-1 flex-col overflow-hidden"}>
         {state.view.kind === "favorites" && sidebar.favorites.status !== "ready" ? (
           sidebar.favorites.status === "error" ? (
             <p className="px-2 py-4 text-sm text-destructive">{sidebar.favorites.error}</p>
@@ -583,7 +802,15 @@ export function KnowledgeHubPage({
   );
 
   const sidebarNode = (
-    <HubSidebar view={state.view} data={sidebar} sample={sample} onSelect={select} />
+    <HubSidebar
+      view={state.view}
+      data={sidebar}
+      sample={sample}
+      onSelect={select}
+      viewCounts={viewCounts}
+      onSaveView={() => setSaveDialog({ mode: "create" })}
+      onViewAction={(v, a) => void onViewAction(v, a)}
+    />
   );
 
   const peekNode = peekKey ? (
@@ -595,6 +822,8 @@ export function KnowledgeHubPage({
       onOpenFull={openFull}
       onFileUnder={(h) => setFileUnderFor([h])}
       onAcceptSuggestion={acceptSuggestion}
+      isFavorite={peekHit ? favoriteKeys.has(`${actionTarget(peekHit).entity}:${actionTarget(peekHit).id}`) : false}
+      onToggleFavorite={(h) => void toggleFavorite(h)}
     />
   ) : null;
 
@@ -632,6 +861,28 @@ export function KnowledgeHubPage({
   );
 
   const dialogs = (
+    <>
+    <SaveViewDialog
+      open={saveDialog !== null}
+      mode={saveDialog?.mode ?? "create"}
+      initialName={saveDialog?.mode === "rename" ? saveDialog.view.name : ""}
+      organizationName={activeOrgName}
+      onOpenChange={(o) => {
+        if (!o) setSaveDialog(null);
+      }}
+      onSubmit={async (values) => {
+        if (saveDialog?.mode === "rename") {
+          await renameView(saveDialog.view, values.name);
+          recordToast.success(
+            { type: "platform_saved_view", id: saveDialog.view.id, title: values.name },
+            `Renamed to "${values.name}".`,
+          );
+          afterViewWrite();
+        } else {
+          await saveNewView(values);
+        }
+      }}
+    />
     <FileUnderDialog
       open={fileUnderFor !== null}
       onOpenChange={(o) => {
@@ -645,6 +896,7 @@ export function KnowledgeHubPage({
         void doFileUnder(items, container);
       }}
     />
+    </>
   );
 
   if (isMobile) {

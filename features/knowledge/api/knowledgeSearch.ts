@@ -181,7 +181,17 @@ export function toServerRequest(
   query: KnowledgeQuery,
   asYouType: boolean,
 ): KnowledgeQuery & { mode: "find" | "ask"; as_you_type: boolean } {
-  return { ...query, mode: query.mode ?? "find", as_you_type: asYouType };
+  // `id: "*"` ("any container of this type", a preset's `library:*`) is a
+  // client-side marker the service cannot read; never send it as an id. The
+  // hub announces the unsupported filter itself (hubSavedViews.anyContainerTypes).
+  const within = query.within?.filter((r) => r.id !== "*");
+  const { within: _dropped, ...rest } = query;
+  return {
+    ...rest,
+    ...(within && within.length ? { within } : {}),
+    mode: query.mode ?? "find",
+    as_you_type: asYouType,
+  };
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -302,6 +312,24 @@ function isRouteMissing(err: unknown): boolean {
   );
 }
 
+/**
+ * The OLDER RAG route still deployed at this path refuses the hub's body with
+ * a 422 that a request built by `toServerRequest` can never earn from the
+ * hub's own service: it demands `body.query`, a field the hub's request does
+ * not have (the query object IS the body, §2). That is "not the hub's
+ * service", exactly like a 404 — any other 422 is a real validation refusal.
+ */
+function isOlderRouteRefusal(err: unknown): boolean {
+  if (!(err instanceof BackendApiError) || err.status !== 422) return false;
+  let said = `${err.detail ?? ""} ${err.userMessage ?? ""}`;
+  try {
+    said += ` ${JSON.stringify(err.details ?? "")}`;
+  } catch {
+    /* details not serializable — the sentence alone decides */
+  }
+  return /body\.query|"body",\s*"query"/.test(said) && /field required|missing/i.test(said);
+}
+
 /** A refusal in the server's own words (a 4xx names what was wrong). */
 function refusalSentence(err: unknown): string {
   if (err instanceof BackendApiError && err.status !== null && err.status >= 400 && err.status < 500) {
@@ -369,7 +397,7 @@ export const searchKnowledgeServer: KnowledgeSearchRunner = async (
     }
   } catch (err) {
     if (options.signal?.aborted) throw err;
-    if (isRouteMissing(err)) throw new KnowledgeSearchUnavailableError();
+    if (isRouteMissing(err) || isOlderRouteRefusal(err)) throw new KnowledgeSearchUnavailableError();
     failRest(refusalSentence(err));
     started = true;
   }
@@ -445,6 +473,13 @@ export const searchKnowledgeTitles: KnowledgeSearchRunner = async (
       next_cursor: null,
     });
   }
+  // A section the `types` filter rules out answered — with nothing. Leaving it
+  // unsent reads as "this section did not answer" (felt in the H5 walk: a
+  // Notes-only view showed six red section errors).
+  for (const key of Object.keys(SECTION_TOKENS) as KnowledgeSectionKey[]) {
+    if (plan.some((p) => p.key === key)) continue;
+    emit({ key, label: KNOWLEDGE_SECTION_LABEL[key], count: 0, items: [], next_cursor: null });
+  }
   if (!wanted || wanted.has("processed_document") || wanted.has("segment")) {
     emit(
       erroredSection(
@@ -453,6 +488,8 @@ export const searchKnowledgeTitles: KnowledgeSearchRunner = async (
         false,
       ),
     );
+  } else {
+    emit({ key: "segments", label: KNOWLEDGE_SECTION_LABEL.segments, count: 0, items: [], next_cursor: null });
   }
   return out;
 };

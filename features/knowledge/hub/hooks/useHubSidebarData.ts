@@ -4,8 +4,10 @@
  * The hub sidebar's reads — all DIRECT from Supabase under RLS (client rule:
  * no server hop for a plain read), each with its own honest state:
  *
- *   Saved views  → platform.saved_view (surface_key `knowledge/hub`), declared
- *                  scope: created by me OR in one of my organizations.
+ *   Saved views  → platform.saved_view (surface_key `knowledge/hub`) through
+ *                  the one saved-views service, declared scope: created by me
+ *                  OR in one of my organizations OR the system organization
+ *                  (the platform-owned presets); pins from user_entity_state.
  *   Favorites    → platform.user_entity_state via `ues_list('favorite')`.
  *   Containers   → the registry's candidate reader per container token
  *                  (projects, scopes incl. tags, libraries, research topics,
@@ -25,12 +27,31 @@ import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import { FIXTURE_CONTAINERS } from "@/features/knowledge/api/knowledgeSearchFixture";
 import {
+  encodeSavedViewDefinition,
   parseSavedViewDefinition,
   HUB_KINDS,
+  HUB_VIEW_DEFINITION_VERSION,
   type HubSavedViewDefinition,
 } from "@/features/knowledge/hub/hubState";
+import {
+  HUB_SAVED_VIEW_SURFACE,
+  missingPresets,
+  presetDefinition,
+} from "@/features/knowledge/hub/hubSavedViews";
+import {
+  createSurfaceView,
+  listSurfaceViews,
+  type SavedViewVisibility,
+  type SurfaceView,
+} from "@/components/official/table-saved-views-service";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 
-export const HUB_SAVED_VIEW_SURFACE = "knowledge/hub";
+export { HUB_SAVED_VIEW_SURFACE };
+
+/** Registry token of `platform.saved_view` (pins live on user_entity_state under it). */
+export const SAVED_VIEW_TOKEN = "platform_saved_view";
+/** Id prefix of a preset shown from code because it is not installed yet. */
+export const BUILT_IN_PREFIX = "builtin:";
 
 /** Container tokens shown as the sidebar tree, in order. */
 export const HUB_CONTAINER_TOKENS = [
@@ -60,6 +81,19 @@ export interface HubSavedView {
   id: string;
   name: string;
   definition: HubSavedViewDefinition | null;
+  visibility: SavedViewVisibility;
+  /** Null only for a built-in preset not installed yet. */
+  organizationId: string | null;
+  createdBy: string | null;
+  /** Row version — the compare-and-swap token for "Save changes". */
+  version: number;
+  /** I made it (so I can rename, change, share and delete it). */
+  mine: boolean;
+  /** Pinned to MY sidebar (per person). */
+  pinned: boolean;
+  preset: string | null;
+  /** A preset shown from its code definition because no row is installed yet. */
+  builtIn: boolean;
 }
 
 export interface HubContainerRow {
@@ -115,28 +149,94 @@ function useLoad<T>(
   return { ...state, retry: () => setAttempt((n) => n + 1) };
 }
 
+/** The pins are per person (`user_entity_state.is_pinned`), never on the shared row. */
+async function readPinnedViewIds(): Promise<Set<string>> {
+  const { data, error } = await supabase.rpc("ues_list", { p_kind: "pinned" });
+  if (error) throw new Error(message(error, "your pinned views"));
+  const rows = (Array.isArray(data) ? data : []) as { entity_type: string; entity_id: string; is_pinned: boolean }[];
+  return new Set(rows.filter((r) => r.is_pinned && r.entity_type === SAVED_VIEW_TOKEN).map((r) => r.entity_id));
+}
+
+/** One refused seed per session is enough to know this person cannot install presets. */
+let presetSeedRefused = false;
+
+/**
+ * Presets (§6) are platform-owned rows in the system organization. When any
+ * are missing, the app installs them — a write only a platform admin's door
+ * admits (`iam.has_org_access` on the system org). For everyone else, until
+ * an admin has opened the hub once, the missing presets are shown from their
+ * code definition and say so (`builtIn`), never silently absent.
+ */
+async function ensurePresets(views: HubSavedView[], systemOrgId: string | null): Promise<HubSavedView[]> {
+  const installed = views.filter((v) => v.preset && v.organizationId === systemOrgId);
+  const missing = missingPresets(installed.map((v) => v.preset as string));
+  if (!missing.length) return views;
+  const created: HubSavedView[] = [];
+  if (systemOrgId && !presetSeedRefused) {
+    for (const p of missing) {
+      try {
+        const row = await createSurfaceView({
+          surfaceKey: HUB_SAVED_VIEW_SURFACE,
+          organizationId: systemOrgId,
+          name: p.name,
+          visibility: "internal",
+          definition: encodeSavedViewDefinition(presetDefinition(p)),
+          definitionVersion: HUB_VIEW_DEFINITION_VERSION,
+        });
+        created.push(toHubView(row, "", new Set()));
+      } catch {
+        presetSeedRefused = true;
+        break;
+      }
+    }
+  }
+  const have = new Set([...installed, ...created].map((v) => v.preset));
+  const virtual: HubSavedView[] = missing
+    .filter((p) => !have.has(p.key))
+    .map((p) => ({
+      id: `${BUILT_IN_PREFIX}${p.key}`,
+      name: p.name,
+      definition: presetDefinition(p),
+      visibility: "internal",
+      organizationId: null,
+      createdBy: null,
+      version: 0,
+      mine: false,
+      pinned: false,
+      preset: p.key,
+      builtIn: true,
+    }));
+  return [...views, ...created, ...virtual];
+}
+
+function toHubView(row: SurfaceView, userId: string, pins: Set<string>): HubSavedView {
+  const definition = parseSavedViewDefinition(row.definition);
+  return {
+    id: row.id,
+    name: row.name,
+    definition,
+    visibility: row.visibility,
+    organizationId: row.organizationId,
+    createdBy: row.createdBy,
+    version: row.version,
+    mine: Boolean(userId) && row.createdBy === userId,
+    pinned: pins.has(row.id),
+    preset: definition?.preset ?? null,
+    builtIn: false,
+  };
+}
+
 async function readSavedViews(userId: string): Promise<HubSavedView[]> {
   const orgs = await getUserOrganizations();
-  const orgIds = orgs.map((o) => o.id);
-  let q = supabase
-    .schema("platform")
-    .from("saved_view")
-    .select("id,name,definition")
-    .eq("surface_key", HUB_SAVED_VIEW_SURFACE)
-    .is("deleted_at", null)
-    .order("sort_order", { ascending: true, nullsFirst: false })
-    .order("name", { ascending: true })
-    .limit(200);
-  q = orgIds.length
-    ? q.or(`created_by.eq.${userId},organization_id.in.(${orgIds.join(",")})`)
-    : q.eq("created_by", userId);
-  const { data, error } = await q;
-  if (error) throw new Error(message(error, "your saved views"));
-  return ((data ?? []) as { id: string; name: string; definition: unknown }[]).map((r) => ({
-    id: r.id,
-    name: r.name,
-    definition: parseSavedViewDefinition(r.definition),
-  }));
+  const systemOrgId = await resolveSystemOrgId().catch(() => null);
+  const orgIds = [...new Set([...orgs.map((o) => o.id), ...(systemOrgId ? [systemOrgId] : [])])];
+  const [rows, pins] = await Promise.all([
+    listSurfaceViews(HUB_SAVED_VIEW_SURFACE, { userId, organizationIds: orgIds }).catch((err: unknown) => {
+      throw new Error(message(err, "your saved views"));
+    }),
+    readPinnedViewIds(),
+  ]);
+  return ensurePresets(rows.map((r) => toHubView(r, userId, pins)), systemOrgId);
 }
 
 /** Entity tokens the hub lists — a favorite of anything else is not knowledge. */
