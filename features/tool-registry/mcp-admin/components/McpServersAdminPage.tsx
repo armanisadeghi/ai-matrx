@@ -417,7 +417,7 @@ export function McpServersAdminPage() {
               </div>
             )}
             <div className="flex-1 overflow-auto">
-              {filtered.length === 0 && !loading && (
+              {filtered.length === 0 && !loading && !error && (
                 <div className="px-3 py-8 text-center text-xs text-muted-foreground">
                   No servers match.
                 </div>
@@ -1034,7 +1034,7 @@ function ConfigsTab({
       </div>
       {loading && <InlineLoading />}
       {error && <ErrorBox msg={error} />}
-      {!loading && configs.length === 0 && (
+      {!loading && !error && configs.length === 0 && (
         <EmptyHint>
           No connection configs defined yet — click "Add config" to create one.
         </EmptyHint>

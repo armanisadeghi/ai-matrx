@@ -3,11 +3,15 @@
 import React, { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Network, Server } from "lucide-react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import type { ExecutorWithStats } from "@/features/tool-registry/executor-surfaces/services/executor-surfaces.service";
 
 interface Props {
   rows: ExecutorWithStats[];
   isLoading: boolean;
+  /** The executor read's failure — with no rows the table shows it instead of "No executors". */
+  loadError: string | null;
+  onRetry: () => void;
   selectedName: string | null;
   onSelect: (row: ExecutorWithStats) => void;
 }
@@ -31,6 +35,8 @@ function GroupIcon({ kind }: { kind: ReturnType<typeof groupKey> }) {
 export function ExecutorSurfacesTable({
   rows,
   isLoading,
+  loadError,
+  onRetry,
   selectedName,
   onSelect,
 }: Props) {
@@ -51,6 +57,10 @@ export function ExecutorSurfacesTable({
         Loading executors…
       </div>
     );
+  }
+
+  if (loadError && rows.length === 0) {
+    return <ReadFailure error={loadError} what="the executors" onRetry={onRetry} />;
   }
 
   if (!isLoading && rows.length === 0) {

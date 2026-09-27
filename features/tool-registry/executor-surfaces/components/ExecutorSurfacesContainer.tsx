@@ -149,7 +149,8 @@ export function ExecutorSurfacesContainer() {
         </span>
       </div>
 
-      {error && (
+      {/* A failed refresh over rows already listed; with no rows the table says it. */}
+      {error && executors.length > 0 && (
         <div className="mx-3 mt-2 rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-xs text-destructive flex items-center gap-2">
           <AlertCircle className="h-3.5 w-3.5" />
           {error}
@@ -163,6 +164,8 @@ export function ExecutorSurfacesContainer() {
           <ExecutorSurfacesTable
             rows={filtered}
             isLoading={loading}
+            loadError={executors.length === 0 ? error : null}
+            onRetry={() => void load()}
             selectedName={selectedName}
             onSelect={(r) => setSelectedName(r.name)}
           />
