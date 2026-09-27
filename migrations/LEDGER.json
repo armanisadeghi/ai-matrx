@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-27T04:30:21.190Z",
+  "generated_at": "2026-09-27T05:26:54.115Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3727,6 +3727,24 @@
       "filename": "scopeadmin2_the_platform_admin_edits_any_organizations_scopes_from_administration.sql",
       "checksum": "516563d6e3f585f1f080c16e755eebf6038438c7204a32308a2282db312e1512",
       "applied_at": "2026-09-25 23:12:07.380961+00"
+    },
+    "migrations/campaign/scopeswt_a_template_applies_and_a_value_brings_its_field.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopeswt_a_template_applies_and_a_value_brings_its_field.sql",
+      "checksum": "68563e566da1e04f8938222892ff88d524f8d1cf0ea896c9e6130b7a81760ffe",
+      "applied_at": "2026-09-27 05:26:52.880041+00"
+    },
+    "migrations/campaign/scopeswt_scopes_are_written_in_the_store_first.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopeswt_scopes_are_written_in_the_store_first.sql",
+      "checksum": "a364b17447742be61b9ca7fd1f7ce7e69b34b9a2bb80e0bbfb1fdd20a9825823",
+      "applied_at": "2026-09-27 05:26:16.977823+00"
+    },
+    "migrations/campaign/scopeswt_the_scope_doors.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopeswt_the_scope_doors.sql",
+      "checksum": "c60ffc2d655e377b79d145b5ffb13675a6d160b34e33c8cb0bfda996fd016b23",
+      "applied_at": "2026-09-27 05:26:34.413525+00"
     },
     "migrations/campaign/scr_a_field_can_point_at_a_platform_entity.sql": {
       "source": "matrx-frontend",

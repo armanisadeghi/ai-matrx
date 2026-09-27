@@ -69,12 +69,14 @@ try {
       .sort((a, b) => b.n - a.n);
     const reads = {};
     for (const r of rpcs) reads[r] = (reads[r] ?? 0) + 1;
-    const phase = { label, commits: t.commits, regions: t.regions, total: top.reduce((s, c) => s + c.n, 0), requests: rpcs.length, reads, top, err };
+    const ran = top.reduce((s, c) => s + (c.ran ?? 0), 0);
+    const phase = { label, commits: t.commits, regions: t.regions, ranRegions: t.ranRegions, total: top.reduce((s, c) => s + c.n, 0), ran, requests: rpcs.length, reads, top, err };
     report.phases.push(phase);
-    console.log(`\n== ${label}: ${t.commits} commits, ${phase.total} component renders`);
+    console.log(`\n== ${label}: ${t.commits} commits, ${phase.total} component renders (${ran} ran)`);
     console.log("   regions:", JSON.stringify(t.regions));
+    console.log("   ran by region:", JSON.stringify(t.ranRegions));
     console.log("   requests:", rpcs.length, JSON.stringify(reads).slice(0, 400));
-    for (const c of top.slice(0, 25)) console.log(`   ${String(c.n).padStart(5)}  ${c.name}  ${JSON.stringify(c.reasons).slice(0, 160)}`);
+    for (const c of top.slice(0, 25)) console.log(`   ${String(c.n).padStart(5)} ran ${String(c.ran ?? "").padStart(5)}  ${c.name}  ${JSON.stringify(c.reasons).slice(0, 160)}`);
     return phase;
   };
   const mark = (label) => {

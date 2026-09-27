@@ -19,10 +19,53 @@
 // The row reads everything through the viewer's LATEST scope (a ref refreshed on every render), so
 // a row the memo kept never acts on the render it was drawn in.
 
-import { memo, useRef, type ReactNode } from "react";
+import { memo, useRef, useState, type ReactNode } from "react";
 
+/**
+ * A slot a handler (or a render, for the latest box) writes and reads, held in a closure rather
+ * than a ref: the React Compiler refuses a component that reads a ref during render or hands a
+ * ref-reading function to a call, and a skipped component has no memoisation at all (lane
+ * RENDER-2, `pnpm check:compiler-skips`). Never a value the screen draws from — that is state.
+ */
+export function useSlot<T>(initial: T): { get: () => T; set: (value: T) => void } {
+  const [slot] = useState(() => {
+    let held = initial;
+    return {
+      get: () => held,
+      set: (value: T) => {
+        held = value;
+      },
+    };
+  });
+  return slot;
+}
+
+/**
+ * A box holding the latest value of something the Sheet builds BELOW its early returns (a hook
+ * cannot be called there). `put` during render, `get` from a row or a handler: a row the memo
+ * kept never acts on the render it was drawn in.
+ */
+export function useLatestBox<T>(): { put: (value: T) => void; get: () => T } {
+  const slot = useSlot<T | null>(null);
+  const [box] = useState(() => ({ put: (value: T) => slot.set(value), get: () => slot.get() as T }));
+  return box;
+}
+
+/** A getter for the latest `value` (a handler reads it when it runs, never a stale render). */
+export function useLatest<T>(value: T): () => T {
+  const box = useLatestBox<T>();
+  box.put(value);
+  return box.get;
+}
+
+/**
+ * DELIBERATE MANUAL MEMOISATION ("use no memo", lane RENDER-2): this hook reads and writes a ref
+ * during render on purpose — that is its whole job — so it is opted out by name, and
+ * `pnpm check:compiler-skips` lists an opt-out apart from a silent skip.
+ */
 /** A number that moves only when one of `values` changed identity since the last render. */
 export function useRowEpoch(values: readonly unknown[]): number {
+  "use no memo";
   const held = useRef<{ values: readonly unknown[]; epoch: number } | null>(null);
   const previous = held.current;
   if (

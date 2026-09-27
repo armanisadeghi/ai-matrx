@@ -9,6 +9,7 @@
   const inst = new WeakMap(); // fiber -> record (shared by both halves of the pair)
   let counts = new Map();
   let regions = {};
+  let ranRegions = {};
   let commits = 0;
   let marking = null;
   const REGIONS = [
@@ -123,10 +124,18 @@
             regions[rg] = (regions[rg] || 0) + 1;
             let e = counts.get(name);
             if (!e) {
-              e = { n: 0, reasons: {}, parents: {} };
+              e = { n: 0, ran: 0, reasons: {}, parents: {} };
               counts.set(name, e);
             }
             e.n++;
+            // RAN: React's own PerformedWork flag (what DevTools' didFiberRender reads). `n` also
+            // counts a memo wrapper (tag 14/15) whose props object moved but whose compare BAILED
+            // OUT — React still stores the new props on the fiber. `ran` counts only bodies that
+            // actually executed (lane RENDER-2, 2026-09-27).
+            if (!prev || (f.flags & 1) === 1) {
+              e.ran++;
+              ranRegions[rg] = (ranRegions[rg] || 0) + 1;
+            }
             for (const r of reasons) e.reasons[r] = (e.reasons[r] || 0) + 1;
             const par = chain(f, 2).join("<");
             e.parents[par] = (e.parents[par] || 0) + 1;
@@ -176,13 +185,14 @@
     mark(label) {
       counts = new Map();
       regions = {};
+      ranRegions = {};
       commits = 0;
       marking = label;
     },
     take() {
       const out = {};
       for (const [k, v] of counts) out[k] = v;
-      return { label: marking, commits, regions, counts: out };
+      return { label: marking, commits, regions, ranRegions, counts: out };
     },
   };
   window.__rc.mark("load");

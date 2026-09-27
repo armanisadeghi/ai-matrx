@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SheetBodyRow, choiceMapSignature, shareUnchangedRows, useRowEpoch } from "@/features/data-tables/components/sheet-body-row";
+import { SheetBodyRow, choiceMapSignature, shareUnchangedRows, useLatest, useLatestBox, useRowEpoch, useSlot } from "@/features/data-tables/components/sheet-body-row";
 import { createPortal } from "react-dom";
 import * as RecordsUi from "@ai-matrx/records-ui";
 import {
@@ -336,6 +336,44 @@ function assertRpcSuccessEnvelope(
   }
 }
 
+/**
+ * Stops the current step with `message` as its error. A `throw` written inside a `try` makes the
+ * React Compiler skip the WHOLE component (it cannot lower one), and this component then has no
+ * memoisation at all (lane RENDER-2, `pnpm check:compiler-skips`); a call to this does the same
+ * thing and keeps the Sheet compiled.
+ */
+function failWith(message?: string): never {
+  throw new Error(message);
+}
+
+/**
+ * Rows in the table's hand-set order (ids in `order` first, by position; the rest after, as they
+ * came). A module function: sorting a copy inside the component reads to the React Compiler as
+ * mutating a hook value, and it skips the Sheet (lane RENDER-2).
+ */
+function inHandSetOrder<R extends { id?: string }>(rows: readonly R[], order: readonly string[]): R[] {
+  return [...rows].sort((a, b) => {
+    const aIndex = a.id !== undefined ? order.indexOf(a.id) : -1;
+    const bIndex = b.id !== undefined ? order.indexOf(b.id) : -1;
+    // Both in the order: by their position. One: it comes first. Neither: as they came.
+    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+    if (aIndex !== -1) return -1;
+    if (bIndex !== -1) return 1;
+    return 0;
+  });
+}
+
+/** A sorted copy (a module call, so the React Compiler never reads it as mutating a hook value). */
+function sortedCopy<T>(rows: readonly T[], compare: (a: T, b: T) => number): T[] {
+  return [...rows].sort(compare);
+}
+
+/** The page's drag look while a column is resized (a global the component may not write). */
+function setColumnResizeLook(dragging: boolean): void {
+  document.body.style.cursor = dragging ? "col-resize" : "";
+  document.body.style.userSelect = dragging ? "none" : "";
+}
+
 function rowOrderingIds(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter((x): x is string => typeof x === "string");
@@ -634,16 +672,14 @@ const UserTableViewer = ({
     const onUp = (e: MouseEvent) => {
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
+      setColumnResizeLook(false);
       const d = resizeDrag.current;
       resizeDrag.current = null;
       if (!d) return;
       const next = clampColumnWidth(d.startWidth + (e.clientX - d.startX));
       if (Math.abs(next - d.startWidth) >= 2) setColumnWidth(d.fieldName, next);
     };
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
+    setColumnResizeLook(true);
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
   };
@@ -704,8 +740,8 @@ const UserTableViewer = ({
   const [settingsFieldName, setSettingsFieldName] = useState<string | null>(null);
   // Which tab Table settings opens on; the Actions header's menu opens "actions".
   const [tableConfigTab, setTableConfigTab] = useState<"fields" | "table" | "actions">("fields");
-  const lastSelectedRowIndex = React.useRef<number | null>(null);
-  const shiftSelectionRequested = React.useRef(false);
+  const lastSelectedRowIndex = useSlot<number | null>(null);
+  const shiftSelectionRequested = useSlot(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -721,7 +757,7 @@ const UserTableViewer = ({
   const [renameDraft, setRenameDraft] = useState("");
   const [renameSaving, setRenameSaving] = useState(false);
   /** When the rename input opened — see the blur guard on the input. */
-  const renameOpenedAtRef = React.useRef(0);
+  const [renameOpenedAt, setRenameOpenedAt] = useState(0);
   const [showAddRowModal, setShowAddRowModal] = useState(false);
   const [showColorsDialog, setShowColorsDialog] = useState(false);
   /**
@@ -862,6 +898,11 @@ const UserTableViewer = ({
     return cleanValue(text, DEFAULT_ENABLED_VALUE_OPERATIONS).changed;
   };
 
+  // State for storing all sorted data when doing client-side sorting
+  const [allSortedData, setAllSortedData] = useState<TableDataRow[] | null>(
+    null,
+  );
+
   // Add this function to handle the cleanup and update
   const handleCleanupText = async (
     fieldName: string,
@@ -888,7 +929,7 @@ const UserTableViewer = ({
         fieldName,
         value: cleanedText,
       });
-      if (isServiceFailure(result)) throw new Error(result.error);
+      if (isServiceFailure(result)) failWith(result.error);
 
       // Clear sorted data cache when data is modified
       setAllSortedData(null);
@@ -909,7 +950,7 @@ const UserTableViewer = ({
 
     try {
       const result = await listTablesBeside({ tableId });
-      if (isServiceFailure(result)) throw new Error(result.error);
+      if (isServiceFailure(result)) failWith(result.error);
       onTablesChange(result.data as unknown as UserTable[]);
     } catch (err) {
       // The list lives in the parent; the failure is SAID here (RC-B12 r13)
@@ -959,7 +1000,7 @@ const UserTableViewer = ({
             setLoading(false);
             return;
           }
-          throw new Error(meta.error);
+          failWith(meta.error);
         }
 
         currentTableInfo = meta.data.table as unknown as TableInfo;
@@ -1003,59 +1044,37 @@ const UserTableViewer = ({
         sortDirection: effectiveDirection,
         searchTerm: search ? search : undefined,
       });
-      if (isServiceFailure(paged)) throw new Error(paged.error || "Failed to load data");
+      if (isServiceFailure(paged)) failWith(paged.error || "Failed to load data");
 
       const pagePayload = { data: paged.data.rows, pagination: paged.data.pagination };
-      let processedData = asTableDataRows(pagePayload.data);
+      const loadedRows = asTableDataRows(pagePayload.data);
 
       // Apply row ordering if enabled and no other sorting is active
-      if (
+      const handOrder =
         currentTableInfo?.row_ordering_config?.enabled &&
         currentTableInfo.row_ordering_config.order &&
         !effectiveSort
-      ) {
-        const orderConfig = rowOrderingIds(
-          currentTableInfo.row_ordering_config.order,
-        );
-        processedData = [...processedData].sort((a, b) => {
-          const aId = a.id;
-          const bId = b.id;
-          const aIndex = aId !== undefined ? orderConfig.indexOf(aId) : -1;
-          const bIndex = bId !== undefined ? orderConfig.indexOf(bId) : -1;
-
-          // If both items are in the order config, sort by their position
-          if (aIndex !== -1 && bIndex !== -1) {
-            return aIndex - bIndex;
-          }
-
-          // If only one item is in the order config, prioritize it
-          if (aIndex !== -1) return -1;
-          if (bIndex !== -1) return 1;
-
-          // If neither item is in the order config, maintain original order
-          return 0;
-        });
-      }
+          ? rowOrderingIds(currentTableInfo.row_ordering_config.order)
+          : null;
+      const orderedRows = handOrder ? inHandSetOrder(loadedRows, handOrder) : loadedRows;
 
       // Apply client-side sorting if we have a sort field and conditions are right for client-side sorting
-      if (
+      const sortHere =
         effectiveSort &&
         !search &&
         page === 1 &&
         pageLimit >= pagePayload.pagination.total_count
-      ) {
-        // Use currentFields (local variable) since state might not be updated yet
-        const fieldDef = currentFields.find(
-          (f) => f.field_name === effectiveSort,
-        );
-        const fieldDataType = fieldDef?.data_type;
-        processedData = smartSort(
-          processedData,
-          effectiveSort,
-          effectiveDirection as "asc" | "desc",
-          fieldDataType,
-        );
-      }
+          ? effectiveSort
+          : null;
+      // Use currentFields (local variable) since state might not be updated yet
+      const processedData = sortHere
+        ? smartSort(
+            orderedRows,
+            sortHere,
+            effectiveDirection as "asc" | "desc",
+            currentFields.find((f) => f.field_name === sortHere)?.data_type,
+          )
+        : orderedRows;
 
       setData((prev) => shareUnchangedRows(prev, processedData));
       setTotalCount(pagePayload.pagination.total_count);
@@ -1064,9 +1083,9 @@ const UserTableViewer = ({
     } catch (err) {
       console.error("Error loading table data:", err);
       setError(err instanceof Error ? err.message : "Failed to load table");
-    } finally {
-      setLoading(false);
     }
+    // (was `finally`: the compiler cannot lower one — lane RENDER-2)
+    setLoading(false);
   };
 
   // Initial data load
@@ -1083,7 +1102,7 @@ const UserTableViewer = ({
     // next table when an embedded viewer switches in place.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedRowIds([]);
-    lastSelectedRowIndex.current = null;
+    lastSelectedRowIndex.set(null);
   }, [tableId]);
 
   // --- Choice options -----------------------------------------------------
@@ -1259,7 +1278,7 @@ const UserTableViewer = ({
         searchTerm: searchTerm ? searchTerm : undefined,
       });
       if (isServiceFailure(all))
-        throw new Error(all.error || "Failed to load data for filtering");
+        failWith(all.error || "Failed to load data for filtering");
 
       const rows = asTableDataRows(all.data.rows);
       setFullDatasetCache(rows);
@@ -1278,9 +1297,9 @@ const UserTableViewer = ({
           ? err.message
           : "The rows needed for this filter could not be loaded.",
       );
-    } finally {
-      setLoadingFullDataset(false);
     }
+    // (was `finally`: the compiler cannot lower one — lane RENDER-2)
+    setLoadingFullDataset(false);
   };
 
   useEffect(() => {
@@ -1341,8 +1360,8 @@ const UserTableViewer = ({
     typeof setTimeout
   > | null>(null);
 
-  const rowsRef = React.useRef<TableDataRow[]>(data);
-  rowsRef.current = data;
+  /** The rows on screen NOW, read when a notice lands (never during render). */
+  const rowsNow = useLatest(data);
 
   const handleRealtime = useCallback(
     (event: TableRealtimeEvent) => {
@@ -1365,7 +1384,7 @@ const UserTableViewer = ({
         return;
       }
 
-      const local = rowsRef.current.find((r) => r.id === event.rowId);
+      const local = rowsNow().find((r) => r.id === event.rowId);
       const incomingData = event.row.data;
       if (!local || !incomingData) {
         // The record store's port names ids, not what happened to them, so a
@@ -1473,7 +1492,7 @@ const UserTableViewer = ({
   // Check row ordering status when table info changes
   useEffect(() => {
     if (tableInfo) {
-      setRowOrderingEnabled(checkRowOrderingEnabled());
+      setRowOrderingEnabled(tableInfo.row_ordering_config?.enabled === true);
     }
   }, [tableInfo]);
 
@@ -1535,10 +1554,6 @@ const UserTableViewer = ({
   // Threshold for client-side sorting (rows) - prevents loading too much data
   const CLIENT_SORT_THRESHOLD = 1000;
 
-  // State for storing all sorted data when doing client-side sorting
-  const [allSortedData, setAllSortedData] = useState<TableDataRow[] | null>(
-    null,
-  );
 
   // Smart numeric sorting helper
   const isNumericValue = (value: any): boolean => {
@@ -1568,7 +1583,7 @@ const UserTableViewer = ({
     const forceNumeric =
       declaredDataType === "integer" || declaredDataType === "number";
 
-    return [...rows].sort((a, b) => {
+    return sortedCopy(rows, (a, b) => {
       // A `relation` column sorts by the WORDS its cells read, never by the
       // record ids they store — sorting a customer column by uuid puts the
       // rows in an order nobody can explain (OLD-TABLES-CUTOVER rev 2 §3.3,
@@ -1682,7 +1697,7 @@ const UserTableViewer = ({
       try {
         const everyRow = await getRowsForClientSort({ tableId, limit: totalCount });
         if (isServiceFailure(everyRow))
-          throw new Error(everyRow.error || "Failed to load data");
+          failWith(everyRow.error || "Failed to load data");
 
         const allPayload = { data: everyRow.data };
         // Sort all data client-side with type awareness
@@ -1705,9 +1720,9 @@ const UserTableViewer = ({
         // Fallback to server-side sorting
         setAllSortedData(null);
         loadTableData(currentPage, limit, field, newDirection);
-      } finally {
-        setLoading(false);
       }
+      // (was `finally`: the compiler cannot lower one — lane RENDER-2)
+      setLoading(false);
     } else {
       // Fall back to server-side sorting for large datasets or when searching
       setAllSortedData(null);
@@ -1736,7 +1751,7 @@ const UserTableViewer = ({
       sortField,
       sortDirection,
     });
-    if (isServiceFailure(complete)) throw new Error(complete.error);
+    if (isServiceFailure(complete)) failWith(complete.error);
 
     // Formula columns are EMPTY in what the database returns — compute them
     // before the search, the filters and the sort look at the rows.
@@ -1852,7 +1867,7 @@ const UserTableViewer = ({
         fieldName: expandedFieldKey,
         value: expandedText,
       });
-      if (isServiceFailure(result)) throw new Error(result.error);
+      if (isServiceFailure(result)) failWith(result.error);
 
       // Clear sorted data cache when data is modified
       setAllSortedData(null);
@@ -1879,9 +1894,9 @@ const UserTableViewer = ({
       setError(
         err instanceof Error ? err.message : "Failed to save text changes",
       );
-    } finally {
-      setSavingExpandedText(false);
     }
+    // (was `finally`: the compiler cannot lower one — lane RENDER-2)
+    setSavingExpandedText(false);
   };
 
   // Handle manual text changes in the expanded modal
@@ -1907,7 +1922,7 @@ const UserTableViewer = ({
     try {
       const saved = await setRowOrdering({ tableId, enabled: false, order: [] });
       if (isServiceFailure(saved))
-        throw new Error(saved.error || "Failed to disable row ordering");
+        failWith(saved.error || "Failed to disable row ordering");
 
       // Clear sorted data cache when row ordering changes
       setAllSortedData(null);
@@ -1939,7 +1954,7 @@ const UserTableViewer = ({
       const replacesHandOrder = rowOrderingEnabled;
       const saved = await setDefaultSort({ tableId, sortField, sortDirection });
       if (isServiceFailure(saved))
-        throw new Error(saved.error || "Failed to save sort preference");
+        failWith(saved.error || "Failed to save sort preference");
 
       if (replacesHandOrder) {
         // ORDER-FIX: the store turned the hand-set order off when it took this sort. Read the
@@ -1951,6 +1966,7 @@ const UserTableViewer = ({
         });
         setAllSortedData(null);
         await loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true);
+        setSavingSortPreference(false);
         return;
       }
 
@@ -1973,9 +1989,9 @@ const UserTableViewer = ({
       setError(
         err instanceof Error ? err.message : "Failed to save sort preference",
       );
-    } finally {
-      setSavingSortPreference(false);
     }
+    // (was `finally`: the compiler cannot lower one — lane RENDER-2)
+    setSavingSortPreference(false);
   };
 
   // Clear saved default sort
@@ -1985,7 +2001,7 @@ const UserTableViewer = ({
 
       const saved = await setDefaultSort({ tableId });
       if (isServiceFailure(saved))
-        throw new Error(saved.error || "Failed to clear sort preference");
+        failWith(saved.error || "Failed to clear sort preference");
 
       // Clear saved sort state
       setSavedSortField(null);
@@ -2005,9 +2021,9 @@ const UserTableViewer = ({
       setError(
         err instanceof Error ? err.message : "Failed to clear sort preference",
       );
-    } finally {
-      setSavingSortPreference(false);
     }
+    // (was `finally`: the compiler cannot lower one — lane RENDER-2)
+    setSavingSortPreference(false);
   };
 
   // Check if current sort matches saved sort
@@ -2033,7 +2049,7 @@ const UserTableViewer = ({
       searchTerm: undefined,
     });
     if (isServiceFailure(all)) {
-      throw new Error(all.error || "Failed to load rows for cleanup");
+      failWith(all.error || "Failed to load rows for cleanup");
     }
     return asTableDataRows(all.data.rows);
   };
@@ -2054,7 +2070,7 @@ const UserTableViewer = ({
         description: bulkResult.error,
         variant: "destructive",
       });
-      throw new Error(bulkResult.error);
+      failWith(bulkResult.error);
     }
 
     setAllSortedData(null);
@@ -2104,7 +2120,7 @@ const UserTableViewer = ({
     const field = fields.find((f) => f.field_name === fieldName);
     if (!field) return;
     window.setTimeout(() => {
-      renameOpenedAtRef.current = Date.now();
+      setRenameOpenedAt(Date.now());
       setRenameDraft(field.display_name);
       setRenamingField(fieldName);
     }, 150);
@@ -3334,6 +3350,8 @@ const UserTableViewer = ({
     onUndo: () => void cellUndo.undo(),
     onRedo: () => void cellUndo.redo(),
   });
+  // Destructured: the compiler reads `grid.containerRef` (a property load) as a ref read in render.
+  const { containerRef: gridContainerRef } = grid;
 
   // ─── The ONE right-click menu for the grid ──────────────────────────────
   //
@@ -3394,7 +3412,7 @@ const UserTableViewer = ({
   };
 
   // The Sheet's shape for its memoised rows (`sheet-body-row.tsx`) — hooks, so above the returns.
-  const sheetLatest = useRef<typeof sheetRowScope | null>(null);
+  const sheetLatest = useLatestBox<typeof sheetRowScope>();
   const anyUniqueColumn = fields.some((field) => validationByField.get(field.field_name)?.unique);
   const sheetEpoch = useRowEpoch([
     ...viewFields,
@@ -3480,13 +3498,13 @@ const UserTableViewer = ({
       else next.add(row.id);
     }
     setSelectedRowIds([...next]);
-    lastSelectedRowIndex.current = null;
+    lastSelectedRowIndex.set(null);
   };
 
   const toggleRowSelection = (index: number, checked: boolean) => {
     const next = new Set(selectedRowIds);
-    const anchor = lastSelectedRowIndex.current;
-    const shift = shiftSelectionRequested.current && anchor !== null;
+    const anchor = lastSelectedRowIndex.get();
+    const shift = shiftSelectionRequested.get() && anchor !== null;
     const from = shift ? Math.min(anchor, index) : index;
     const to = shift ? Math.max(anchor, index) : index;
     for (let cursor = from; cursor <= to; cursor += 1) {
@@ -3496,8 +3514,8 @@ const UserTableViewer = ({
       else next.delete(row.id);
     }
     setSelectedRowIds([...next]);
-    lastSelectedRowIndex.current = index;
-    shiftSelectionRequested.current = false;
+    lastSelectedRowIndex.set(index);
+    shiftSelectionRequested.set(false);
   };
 
   // ─── Publish live surface state (synchronous, every render) ───────────────
@@ -3962,7 +3980,9 @@ const UserTableViewer = ({
     selectedRowId,
     selectedRowIdSet,
     setHistoryRowId,
-    shiftSelectionRequested,
+    requestShiftSelection: (shift: boolean) => {
+      shiftSelectionRequested.set(shift);
+    },
     showEditModal,
     showReadOnlyToast,
     surfaceOpenCell,
@@ -3974,8 +3994,8 @@ const UserTableViewer = ({
     freezeFirstColumn,
     reloadCurrentPage: () => loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true),
   };
-  sheetLatest.current = sheetRowScope;
-  const S = () => sheetLatest.current!;
+  sheetLatest.put(sheetRowScope);
+  const S = sheetLatest.get;
   /** The facts of ONE row that change without its record changing. */
   const sheetRowFacts = (row: TableDataRow): readonly unknown[] => {
     let cells = "";
@@ -4047,7 +4067,7 @@ const UserTableViewer = ({
           checked={S().selectedRowIdSet.has(row.id)}
           onClick={(event) => {
             event.stopPropagation();
-            S().shiftSelectionRequested.current = event.shiftKey;
+            S().requestShiftSelection(event.shiftKey);
           }}
           onCheckedChange={(checked) =>
             S().toggleRowSelection(index, checked === true)
@@ -4928,7 +4948,7 @@ const UserTableViewer = ({
             loadRows={loadRowsForCopy}
             loadAllRows={async () => {
               const complete = await getCompleteTable({ tableId, sortField, sortDirection });
-              if (isServiceFailure(complete)) throw new Error(complete.error);
+              if (isServiceFailure(complete)) failWith(complete.error);
               // Same rule as `loadRowsForCopy`: formula columns are computed
               // before anything downstream (export, sort) reads the rows.
               const rows = computeColumns(complete.data.rows, fields, displayValueOf).rows;
@@ -5145,7 +5165,7 @@ const UserTableViewer = ({
         // rows right-click opens, anchored at the button.
         moreActions={
           <OpenSurfaceMenuButton
-            getSurface={() => grid.containerRef.current}
+            getSurface={() => gridContainerRef.current}
             label="More actions"
             className="h-11 w-11 md:h-7 md:w-7"
           />
@@ -5209,7 +5229,7 @@ const UserTableViewer = ({
         onSelectPage={togglePageSelection}
         onClearSelection={() => {
           setSelectedRowIds([]);
-          lastSelectedRowIndex.current = null;
+          lastSelectedRowIndex.set(null);
         }}
         onRunOps={runBulkOps}
         onSetColumn={handleBulkSetColumn}
@@ -5301,7 +5321,7 @@ const UserTableViewer = ({
         extraSections={gridMenuSections}
       >
       <div
-        ref={grid.containerRef}
+        ref={gridContainerRef}
         data-surface-value={
           selectedRangeTsv ? "selected_range_cell_count" : undefined
         }
@@ -5483,7 +5503,7 @@ const UserTableViewer = ({
                             // is not the user leaving the field — take focus
                             // back instead of ending the rename they just
                             // asked for (live-found 2026-09-17).
-                            if (Date.now() - renameOpenedAtRef.current < 700) {
+                            if (Date.now() - renameOpenedAt < 700) {
                               const input = e.currentTarget;
                               window.setTimeout(() => input.focus(), 0);
                               return;
