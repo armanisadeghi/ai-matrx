@@ -1,6 +1,6 @@
 -- draft: deep-lane read-lane-v2 lock order — chair runs it at the start of the 2026-09-27 window, before the first table
 -- chair-step: replaces iam._apply_rls_unchecked so an enrolled (read-lane v2) regeneration locks every relation its policies read BEFORE the first policy statement; adds iam.read_lane_v2_lock_policy_reads. No policy statement, no freeze. Self-test: aidream scripts/read_lane_v2/lock_order_selftest.py (clone, RED on the old body, GREEN on this one).
--- based-on: iam._apply_rls_unchecked(text, text, text, text) a6bc3fd5b22b57b12d24290100c1d4de78dac61e5b4c4a20f26f05d00c3df5c7
+-- based-on: iam._apply_rls_unchecked(text, text, text, text) d31cf215a08d2de7effc4c1627ad2a26e9cdbfdaf396e3a356aeeffadcdb0767
 -- read_lane_v2_b_lock_order — design: common-docs/projects/rich-content-unification/evidence/generator-perf-design.md; queue: read-lane-v2-queue.md
 -- READ-LANE V2 LOCK ORDER (chair-approved 2026-09-26). On 2026-09-26 02:56 PT two regenerations of
 -- agent.message_template_detail each held the auth/storage/realtime freeze ~1.9 s while a CREATE POLICY
@@ -67,6 +67,8 @@ declare
   v_has_user boolean;
   v_has_created boolean;
   v_owner_disagree bigint;  -- PERSONAL-OWNER (2026-09-25): rows where a lingering user_id names another owner
+  v_personal_has_id boolean := false;  -- T-9: a personal row a grant can name
+  v_personal_grant text := '';        -- T-9: the owner-grant arm, a format() template taking the level
   v_has_org boolean;
   v_has_del boolean;
   v_has_vis boolean;
@@ -96,9 +98,14 @@ declare
   v_anon_expr text := '';
   v_pdel boolean;
   v_excluded text[];
-  v_su_sel text := ' or public.is_super_admin()';
-  v_su_ins text := 'public.is_super_admin() or ';
-  v_sysorg_ins text := ' or (organization_id in (select organization_id from iam.system_orgs where global_readable) and public.is_super_admin())';
+  -- 🚨 SUPER-ADMIN ONCE PER STATEMENT (2026-09-26, perf lane). Every super-admin arm is emitted as
+  -- `(select public.is_super_admin())` — an InitPlan, evaluated once per statement — instead of a
+  -- bare call PostgreSQL evaluated once per ROW (mandate.scan, 85k rows, paid it on every read).
+  -- The function takes no row argument and is STABLE, so the answer is the same; only the count of
+  -- calls changes. iam.verify_canonical and check-row-visibility accept both spellings.
+  v_su_sel text := ' or (select public.is_super_admin())';
+  v_su_ins text := '(select public.is_super_admin()) or ';
+  v_sysorg_ins text := ' or (organization_id in (select organization_id from iam.system_orgs where global_readable) and (select public.is_super_admin()))';
   -- 🚨 DD-165 (2026-09-12) — A PERSONAL ROW STAYS PERSONAL INSIDE AN ORGANIZATION TABLE.
   -- The CLASS sets the DEFAULT lane set; a row's `visibility` only ever NARROWS it. So on a
   -- classed table that carries a real `platform.visibility` column, the platform-staff arms are
@@ -258,7 +265,7 @@ begin
       v_admin_read := '((visibility >= ''internal''::platform.visibility) and (select public.is_platform_admin())) or ';
     end if;
     if v_su_sel <> '' then
-      v_su_sel_read := ' or (visibility >= ''internal''::platform.visibility and public.is_super_admin())';
+      v_su_sel_read := ' or (visibility >= ''internal''::platform.visibility and (select public.is_super_admin()))';
     end if;
   end if;
 
@@ -349,9 +356,28 @@ begin
       end if;
       raise notice 'apply_rls: %.% still carries the retired owner column user_id (it agrees with created_by on every row); the policies key on created_by — drop user_id once its readers are repointed.', p_schema, p_table;
     end if;
+    -- 🚨 SHARING SITS OUTSIDE THE LADDER (access ladder T-9, 2026-09-26;
+    -- common-docs/policies/access-ladder.md): any record at any level can be shared by its owner
+    -- DIRECTLY with a person. Until this edit the personal lanes were owner-only, so a grant the
+    -- owner made in iam.permissions reached nobody. The owner-grant arm is the entity variant's
+    -- direct-grant arm and NOTHING ELSE: a grant to a PERSON (granted_to_user_id; a share never
+    -- names an organization — iam._a_share_names_a_person), active and unexpired, at the level the
+    -- command needs (viewer to read, editor to update, admin to delete). No organization lane, no
+    -- platform-staff lane, no containment/reachability/scope lane is emitted here. A table with no
+    -- `id` column has no row a grant can name, so it keeps the owner-only lanes.
+    select exists (select 1 from information_schema.columns
+      where table_schema=p_schema and table_name=p_table and column_name='id' and data_type='uuid')
+      into v_personal_has_id;
+    if v_personal_has_id then
+      v_personal_grant := format(
+        ' or id in (select p.resource_id from iam.permissions p where p.resource_type = %L'
+        || ' and p.granted_to_user_id = (select auth.uid()) and p.status = ''active'''
+        || ' and (p.expires_at is null or p.expires_at > now())'
+        || ' and p.permission_level >= %%L::public.permission_level)', p_token);
+    end if;
     v_pol := v_pol || format(
-      'create policy std_select on %s for select to authenticated using (%screated_by = (select auth.uid()))',
-      v_tbl, v_delpfx);
+      'create policy std_select on %s for select to authenticated using (%s(created_by = (select auth.uid())%s))',
+      v_tbl, v_delpfx, format(v_personal_grant, 'viewer'));
     if not v_no_client_writes then
     v_pol := v_pol || format(
       'create policy std_insert on %s for insert to authenticated with check (created_by = (select auth.uid()))',
@@ -359,13 +385,13 @@ begin
     end if;
     if not v_no_client_writes then
     v_pol := v_pol || format(
-      'create policy std_update on %s for update to authenticated using (created_by = (select auth.uid())) with check (created_by = (select auth.uid()))',
-      v_tbl);
+      'create policy std_update on %s for update to authenticated using (created_by = (select auth.uid())%s) with check (created_by = (select auth.uid())%s)',
+      v_tbl, format(v_personal_grant, 'editor'), format(v_personal_grant, 'editor'));
     end if;
     if not v_no_client_writes then
     v_pol := v_pol || format(
-      'create policy std_delete on %s for delete to authenticated using (created_by = (select auth.uid()))',
-      v_tbl);
+      'create policy std_delete on %s for delete to authenticated using (created_by = (select auth.uid())%s)',
+      v_tbl, format(v_personal_grant, 'admin'));
     end if;
     perform iam._rls_plan_is(v_tbl, v_pol, v_kept);  -- POLICY-LOCK: the grants rail asks the caller what the policy set is ABOUT to be
     perform iam.apply_table_grants(p_schema, p_table, p_variant);
@@ -460,6 +486,56 @@ begin
   -- detail today goes through a door that has already filtered to ONE parent (public.cmt_list
   -- asks once per call), so a direct table read pays it only across the rows it asked for. A
   -- set-wise form needs a per-token id set, which a polymorphic parent cannot name in advance.
+  -- 🚨 1294 (2026-09-26) — A MAPPED DETAIL READS SET-WISE. A detail whose declaration names a
+  -- preferred typed pointer (platform.detail_parent_columns positions 4-5; rag.kg_chunks) is read
+  -- through the kernel's SET forms instead of one walk per row: the preferred arm asks
+  -- iam.accessible_entity_ids(<preferred type>) exactly as a component asks its parent, and the
+  -- polymorphic arm asks platform.detail_readable_parents(<token>) — one kernel walk per distinct
+  -- (type value, id value). Both are the kernel's answer, so the policy and iam.has_access(<token>, id)
+  -- agree row for row. RC-A1: a trashed row stays readable to its author only. Client writes are
+  -- refused outright (client_read_only): the rows are written by the server.
+  if p_variant = 'detail' and (platform.detail_parent_columns(p_token))[4] is not null then
+    declare
+      v_dc   text[] := platform.detail_parent_columns(p_token);
+      v_arms text[] := array[]::text[];
+      v_read text;
+    begin
+      if not v_no_client_writes then
+        raise exception
+          'apply_rls: %.% is a mapped detail (platform.detail_parent_columns declares a preferred pointer) and is read-only to clients — set platform.entity_types.client_read_only for token % first; its rows are written by the server.',
+          p_schema, p_table, p_token using errcode = '22023';
+      end if;
+      if not v_has_created then
+        raise exception
+          'apply_rls: detail variant on %.% requires created_by — the author, who alone reads a trashed row',
+          p_schema, p_table using errcode = '22023';
+      end if;
+      v_arms := v_arms || format(
+        '(%1$I is not null and %1$I in (select iam.unnest_uuids(iam.accessible_entity_ids(%2$L, ''viewer''::public.permission_level, 0, true))))',
+        v_dc[4], v_dc[5]);
+      if v_dc[2] is not null then
+        v_arms := v_arms || case
+          when v_dc[1] is null then format(
+            '(%1$I is null and %2$I::text in (select p.id_value from platform.detail_readable_parents(%3$L) p))',
+            v_dc[4], v_dc[2], p_token)
+          else format(
+            '(%1$I is null and (%2$I::text, %3$I::text) in (select p.type_value, p.id_value from platform.detail_readable_parents(%4$L) p))',
+            v_dc[4], v_dc[1], v_dc[2], p_token)
+        end;
+      end if;
+      v_read := '(' || array_to_string(v_arms, ' or ') || ')';
+      if exists (select 1 from information_schema.columns
+                  where table_schema = p_schema and table_name = p_table and column_name = 'deleted_at') then
+        v_read := v_read || ' and not (deleted_at is not null and created_by is distinct from (select auth.uid()))';
+      end if;
+      v_pol := v_pol || format('create policy std_select on %s for select to authenticated using (%s)', v_tbl, v_read);
+      perform iam._rls_plan_is(v_tbl, v_pol, v_kept);  -- POLICY-LOCK: declare the plan before any policy DDL
+      perform iam.apply_table_grants(p_schema, p_table, p_variant);
+      perform iam.apply_governance_guard(p_schema, p_table, p_token);
+      perform iam._rls_emit_policies(v_drop, v_pol);  -- POLICY-LOCK: the freeze starts here and ends at COMMIT
+      return;
+    end;
+  end if;
   if p_variant = 'detail' then
     if not exists (select 1 from information_schema.columns
                     where table_schema=p_schema and table_name=p_table
