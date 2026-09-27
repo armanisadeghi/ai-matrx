@@ -84,8 +84,15 @@ export function readAddress(raw: unknown): HrEmployerAddress {
   };
 }
 
-/** The six fields → what the column stores (blank → null). */
+/**
+ * The six fields → what the column stores (blank → null). An address with nothing
+ * but the default country is no address: it stores `{}`, never a row of nulls.
+ */
 export function writeAddress(address: HrEmployerAddress): Record<string, string | null> {
+  const hasAny = (["line1", "line2", "city", "region", "postal_code"] as const).some(
+    (key) => address[key].trim() !== "",
+  );
+  if (!hasAny) return {};
   const out: Record<string, string | null> = {};
   for (const key of ADDRESS_KEYS) {
     const value = address[key].trim();

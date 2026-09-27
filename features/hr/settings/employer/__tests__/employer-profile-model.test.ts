@@ -43,6 +43,11 @@ describe("address", () => {
       .toEqual({ line1: "1 Main", line2: "", city: "Irvine", region: "CA", postal_code: "92618", country: "US" });
     expect(readAddress(null).country).toBe("US");
   });
+
+  it("stores an empty address as {} — never a row of nulls", () => {
+    const form = identityFromProfile(profile());
+    expect(identityPayload(form).primary_address).toEqual({});
+  });
 });
 
 describe("identity draft (agent write)", () => {

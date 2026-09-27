@@ -531,7 +531,6 @@ function IdentitySection({
             value={form.formation_state}
             maxLength={2}
             autoCapitalize="characters"
-            placeholder="DE"
             onChange={(event) => set("formation_state", event.target.value.toUpperCase())}
           />
         </Field>
@@ -592,7 +591,6 @@ function IdentitySection({
               value={form.primary_address.region}
               maxLength={2}
               autoComplete="address-level1"
-              placeholder="CA"
               onChange={(event) => setAddress("region", event.target.value.toUpperCase())}
             />
           </Field>
@@ -722,7 +720,10 @@ function ApplicabilityRow({
           <p className="text-sm text-muted-foreground">{basis}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Badge variant={flag.isDeclared ? "default" : "secondary"}>
+          <Badge
+            variant={flag.value === null ? "outline" : flag.isDeclared ? "default" : "secondary"}
+            className="text-xs"
+          >
             {flagValueText(flag.value)}
           </Badge>
           {isList || declaring ? null : (
