@@ -23,7 +23,7 @@ import type { BoardConnection, BoardFrame, BoardTileBase, BoardView } from "../b
 import { screenToWorld, visibleWorldRect, rectsIntersect, type Rect } from "../engine/camera";
 import { align, arrange, distribute, enclosingFrame, type AlignEdge, type ArrangeLayout, type DistributeAxis } from "../engine/arrange";
 import type { SpatialStore } from "../engine/spatial-store";
-import { boundBoardContext, type RawBoardTile } from "../chat/board-context";
+import { boundBoardContext, type RawBoardTile } from "./board-snapshot";
 import type { BoardTileKindInput } from "./board-tools";
 
 export interface AddTileInput {

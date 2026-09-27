@@ -1,10 +1,8 @@
 /**
- * The board, as the chat agent sees it.
+ * The board, as an agent reads it (`board_read`).
  *
  * A `BoardContext` is a compact, BOUNDED structured snapshot of a spatial
- * board. It reaches the agent as ONE named context entry (`spatial_board`),
- * never as user text — THE USER-INPUT LAW
- * (common-docs/systems/agents/agent-variable-binding/FEATURE.md).
+ * board, returned by the board's agent tools — never sent as user text.
  *
  * Size bounds (so a 300-tile board can never blow the context window):
  *   - at most `BOARD_CONTEXT_MAX_TILES` tiles, in-view and selected tiles first;
@@ -15,19 +13,9 @@
  * Every cap is announced in the snapshot itself (`limits`, `omittedTileCount`).
  */
 
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-
 export const BOARD_CONTEXT_MAX_TILES = 60;
 export const BOARD_CONTEXT_EXCERPT_CHARS = 1200;
 export const BOARD_CONTEXT_TOTAL_EXCERPT_CHARS = 24_000;
-
-/** The layout cookie of a `BoardWithChat` group (plain module: server pages read it too). */
-export function boardChatCookieName(groupId: string): string {
-  return `panels:${groupId}`;
-}
-
-/** The context key the snapshot is delivered under. */
-export const BOARD_CONTEXT_KEY = "spatial_board";
 
 export type BoardTileStatus = string;
 
@@ -124,63 +112,4 @@ export function boundBoardContext(boardTitle: string, raw: readonly RawBoardTile
     },
     capturedAt: new Date().toISOString(),
   };
-}
-
-/** The ONE context entry the snapshot rides in. */
-export function boardContextEntry(context: BoardContext): Omit<InstanceContextEntry, "slotMatched"> {
-  return {
-    key: BOARD_CONTEXT_KEY,
-    value: context,
-    type: "json",
-    label: `Board: ${context.boardTitle}`,
-  };
-}
-
-/**
- * FIRST VERSION — read the board from its DOM.
- *
- * `SpatialTile` stamps `data-spatial-tile` / `data-spatial-title` on the world
- * placeholder and `data-spatial-card` on the card (which is portaled into the
- * focus layer while focused); the body is `[data-spatial-body]`. Selection is
- * read from the tile's selection ring, status from the status dot's `title`.
- *
- * FOLLOW-UP: a store-backed reader (`SpatialStore` items + stream sources)
- * replaces this once the board exposes its store — the DOM reader cannot see
- * a tile's kind payload, only its rendered text.
- */
-export function readBoardContextFromDom(root: HTMLElement | null, boardTitle: string): BoardContext {
-  if (!root) return boundBoardContext(boardTitle, []);
-  const rootRect = root.getBoundingClientRect();
-  const raw: RawBoardTile[] = [];
-  for (const tile of root.querySelectorAll<HTMLElement>("[data-spatial-tile]")) {
-    const id = tile.dataset.spatialTile ?? "";
-    if (!id) continue;
-    const card =
-      root.querySelector<HTMLElement>(`[data-spatial-card="${CSS.escape(id)}"]`) ?? tile;
-    const header = card.firstElementChild;
-    const status = header?.querySelector<HTMLElement>("span[title]")?.title ?? null;
-    const subtitle = header?.querySelector<HTMLElement>(":scope > span:not([title])")?.textContent ?? null;
-    const body = card.querySelector<HTMLElement>("[data-spatial-body]");
-    const focused = card.closest("[data-spatial-focus]") !== null;
-    const r = tile.getBoundingClientRect();
-    const inView =
-      r.width > 0 &&
-      r.right > rootRect.left &&
-      r.left < rootRect.right &&
-      r.bottom > rootRect.top &&
-      r.top < rootRect.bottom;
-    raw.push({
-      id,
-      title: tile.dataset.spatialTitle ?? id,
-      kind: subtitle ? collapse(subtitle) || null : null,
-      status,
-      // textContent, not innerText: an overview-tier body is `content-visibility:
-      // hidden`, and innerText would read it as empty.
-      text: body?.textContent ?? "",
-      inView,
-      selected: tile.classList.contains("ring-2"),
-      focused,
-    });
-  }
-  return boundBoardContext(boardTitle, raw);
 }
