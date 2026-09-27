@@ -48,6 +48,10 @@ export function ResultMeta({ hit }: { hit: KnowledgeHit }) {
 
 function clickHandlers(hit: KnowledgeHit, h: ResultHandlers) {
   return {
+    // Shift-click selects the row; it must not also paint a text selection.
+    onMouseDown: (e: React.MouseEvent) => {
+      if (e.shiftKey) e.preventDefault();
+    },
     onClick: (e: React.MouseEvent) => {
       if (e.metaKey || e.ctrlKey) {
         h.onOpenFull(hit);

@@ -14,7 +14,10 @@
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import {
+  mandateOutputUnusableSentence,
+  runHeadlessAgentJson,
+} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { ReviewResult } from "@/features/flashcards/types";
 import { FC_MANDATES } from "@/features/flashcards/data/mandates";
@@ -46,12 +49,22 @@ export function readTip(data: unknown): string | null {
   return typeof tip === "string" && tip.trim().length > 0 ? tip : null;
 }
 
-/** One-line coaching tip after a grade, or null on failure / no-signal. */
+/**
+ * What the coach came back with: a tip, or the plain sentence of a chosen
+ * coach that cannot answer this job (`mandate_output_unusable`). `null` = no
+ * signal or any other failure (nothing waits on this lane).
+ */
+export type MicroCoachOutcome =
+  | { kind: "tip"; tip: string }
+  | { kind: "unusable"; sentence: string }
+  | null;
+
+/** One-line coaching tip after a grade (see `MicroCoachOutcome`). */
 export function microCoach(ctx: MicroCoachContext) {
   return async (
     dispatch: AppDispatch,
     getState: () => RootState,
-  ): Promise<string | null> => {
+  ): Promise<MicroCoachOutcome> => {
     const mandateKey = ctx.mandateKey ?? FC_MANDATES.microCoach;
 
     try {
@@ -100,7 +113,10 @@ export function microCoach(ctx: MicroCoachContext) {
           : {}),
       });
 
-      return readTip(result.data);
+      const unusable = mandateOutputUnusableSentence(result);
+      if (unusable) return { kind: "unusable", sentence: unusable };
+      const tip = readTip(result.data);
+      return tip ? { kind: "tip", tip } : null;
     } catch (err) {
       console.error("[flashcards.microCoach] failed:", err);
       return null;

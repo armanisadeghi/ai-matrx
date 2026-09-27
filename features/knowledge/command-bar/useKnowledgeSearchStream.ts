@@ -98,17 +98,22 @@ export function useKnowledgeSearchStream(
     })
       .then(() => {
         if (seq.current !== mine) return;
-        // A lane that never reported is said out loud, never left spinning.
+        // A section the query narrowed away (type:/kind: chips) is simply not
+        // part of this search. Any other lane that never reported is said out
+        // loud, never left spinning.
+        const narrowed = Boolean(query.types?.length || query.source_kinds?.length);
         setSections((prev) => {
           const next = { ...prev };
           for (const k of KNOWLEDGE_SECTION_KEYS) {
             if (!arrived.has(k) && next[k].status === "loading") {
-              next[k] = {
-                status: "error",
-                section: null,
-                message: "This section did not answer.",
-                retryable: true,
-              };
+              next[k] = narrowed
+                ? { status: "idle", section: null }
+                : {
+                    status: "error",
+                    section: null,
+                    message: "This section did not answer.",
+                    retryable: true,
+                  };
             }
           }
           return next;

@@ -130,6 +130,7 @@ export function AddressesCard({
 
   return (
     <SectionCard
+      empty={addresses.length === 0 && !adding}
       title="Addresses"
       Icon={MapPin}
       count={addresses.length}

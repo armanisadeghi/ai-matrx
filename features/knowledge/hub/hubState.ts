@@ -160,8 +160,9 @@ function viewFromParam(p: string | null): HubView {
   return { kind: "everything" };
 }
 
+/** Comma-joined; only `%` and `,` inside a value are escaped (URLSearchParams does the rest). */
 const list = (v: string[] | undefined) =>
-  v && v.length ? v.map((x) => encodeURIComponent(x)).join(",") : null;
+  v && v.length ? v.map((x) => x.replace(/%/g, "%25").replace(/,/g, "%2C")).join(",") : null;
 const unlist = (v: string | null) =>
   v ? v.split(",").map((x) => decodeURIComponent(x)).filter(Boolean) : undefined;
 

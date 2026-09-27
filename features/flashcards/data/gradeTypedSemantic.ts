@@ -10,10 +10,16 @@
 // Mirrors the microCoach lane exactly: mandate key from FC_MANDATES (never a
 // raw agent id), runHeadlessAgentJson, defensive parse, null on any failure —
 // the similarity fallback is already on screen, so failure costs nothing.
+// ONE failure is never swallowed: a chosen agent whose answer cannot grade
+// (`mandate_output_unusable` — it does not declare the keys this job needs)
+// comes back as `{ kind: "unusable", sentence }` so the surface says why.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import {
+  mandateOutputUnusableSentence,
+  runHeadlessAgentJson,
+} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import {
   coerceGradeVerdict,
   verdictResult,
@@ -46,7 +52,17 @@ export function readTypedGradeVerdict(data: unknown): TypedGradeVerdict | null {
   return { result, reason };
 }
 
-/** Semantic verdict on a typed answer, or null on failure (fallback on screen). */
+/**
+ * What the meaning-grader came back with: a verdict, or the plain sentence of
+ * a chosen grader that cannot answer this job. `null` = any other failure
+ * (the spelling-based suggestion already on screen stands).
+ */
+export type TypedGradeOutcome =
+  | { kind: "verdict"; verdict: TypedGradeVerdict }
+  | { kind: "unusable"; sentence: string }
+  | null;
+
+/** Semantic verdict on a typed answer (see `TypedGradeOutcome`). */
 export function gradeTypedSemantic(ctx: {
   question: string;
   expectedAnswer: string;
@@ -57,7 +73,7 @@ export function gradeTypedSemantic(ctx: {
   return async (
     dispatch: AppDispatch,
     getState: () => RootState,
-  ): Promise<TypedGradeVerdict | null> => {
+  ): Promise<TypedGradeOutcome> => {
     try {
       const result = await runHeadlessAgentJson(dispatch, getState, {
         mandateKey: ctx.mandateKey ?? FC_MANDATES.gradeTypedAnswer,
@@ -73,7 +89,10 @@ export function gradeTypedSemantic(ctx: {
         timeoutMs: 20_000,
         pollIntervalMs: 100,
       });
-      return readTypedGradeVerdict(result.data);
+      const unusable = mandateOutputUnusableSentence(result);
+      if (unusable) return { kind: "unusable", sentence: unusable };
+      const verdict = readTypedGradeVerdict(result.data);
+      return verdict ? { kind: "verdict", verdict } : null;
     } catch (err) {
       console.error("[flashcards.gradeTypedSemantic] failed:", err);
       return null;

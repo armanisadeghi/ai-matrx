@@ -65,6 +65,22 @@ describe("contract check — read side", () => {
     expect(found[0].where).toBe("An organization's answer");
   });
 
+  it("an output mismatch is SAVED and RUNS — set aside at run is for input problems only (aidream 1363)", () => {
+    const outputOnly = parseContractCheck({
+      ...UNMET,
+      required_output_keys: ["summary"],
+      summary:
+        "Saved anyway — it runs as chosen, but its output may not fit: an answer missing a required key stops the job with a plain error instead of saving half of it.",
+    });
+    expect(outputOnly?.setAsideAtRun).toBe(false);
+    expect(outputOnly?.summary).toContain("runs as chosen");
+    expect(outputOnly?.summary).not.toMatch(/set aside|fails at run time/i);
+    // A missing flag never reads as set aside.
+    const { set_aside_at_run: _omit, ...noFlag } = UNMET;
+    void _omit;
+    expect(parseContractCheck(noFlag)?.setAsideAtRun).toBe(false);
+  });
+
   it("names a declared __kind that differs from the job's kind", () => {
     const schema = {
       type: "object",

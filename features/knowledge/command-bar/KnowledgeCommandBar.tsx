@@ -55,6 +55,7 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectIsCreator } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import { writeClipboard } from "@/components/agent-copy/clipboard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
   resolveEntityToken,
   tryGetEntityInfo,
@@ -377,12 +378,18 @@ export default function KnowledgeCommandBar({
 
   // ─── rendering ────────────────────────────────────────────────────────────
 
-  // Built fresh each render; handlers close over this render's map.
+  // Derived purely from state (never filled while rendering rows): the React
+  // Compiler may reuse a memoized row subtree, and a map populated as a side
+  // effect of rendering those rows would then be empty — ⌘K found no hit.
   const hitsByValue = new Map<string, KnowledgeHit>();
+  for (const k of KNOWLEDGE_SECTION_KEYS) {
+    for (const hit of sections[k].section?.items ?? []) {
+      hitsByValue.set(hitValue(k, hit), hit);
+    }
+  }
 
   const renderHitRow = (key: KnowledgeSectionKey, hit: KnowledgeHit) => {
     const value = hitValue(key, hit);
-    hitsByValue.set(value, hit);
     const href = hitHref(hit);
     const canAttach = primaryAction === "attach" && attachTarget?.accepts(hit);
     const sub =
@@ -459,7 +466,15 @@ export default function KnowledgeCommandBar({
         ) : null}
         {state.status === "error" ? (
           <>
-            <div className="px-2 py-1 text-xs text-destructive">{state.message}</div>
+            <div role="alert" className="flex items-center gap-1 px-2 py-1 text-xs text-destructive">
+              <span className="min-w-0 flex-1">{state.message}</span>
+              <ErrorAlchemyMenu
+                error={state.message}
+                operation={`Search ${label}`}
+                calls={["/knowledge/search"]}
+                size="xs"
+              />
+            </div>
             {state.retryable ? (
               <CommandItem value={`retry:${key}`} onSelect={() => retry()}>
                 <RotateCw className="h-4 w-4 text-muted-foreground" aria-hidden />
@@ -720,6 +735,7 @@ export default function KnowledgeCommandBar({
             autoFocus
             role="combobox"
             aria-expanded
+            aria-controls="knowledge-command-results"
             aria-autocomplete="list"
             aria-label="Search your knowledge"
             data-testid="knowledge-command-input"
@@ -771,7 +787,11 @@ export default function KnowledgeCommandBar({
           </div>
         ) : null}
 
-        <CommandList ref={listRef} className="max-h-[min(60dvh,32rem)]">
+        <CommandList
+          ref={listRef}
+          id="knowledge-command-results"
+          className="max-h-[min(60dvh,32rem)]"
+        >
           {view.kind === "actions" ? (
             renderActions(view.hit)
           ) : (

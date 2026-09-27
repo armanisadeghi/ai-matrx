@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-27T09:20:34.482Z",
+  "generated_at": "2026-09-27T09:35:17.880Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2360,6 +2360,12 @@
       "checksum": "281bb8d651ed17246e17f4a3aa4a88eebd778f455fd3960ecc4fdcfef59f439e",
       "applied_at": "2026-09-20 08:41:37.476976+00"
     },
+    "migrations/campaign/guardsgreen_the_annotation_title_census_decides_the_caller.sql": {
+      "source": "matrx-frontend",
+      "filename": "guardsgreen_the_annotation_title_census_decides_the_caller.sql",
+      "checksum": "eff04e67841fae03c7488dad2db1b723be966e91ba0ad9e1492f93c17a150359",
+      "applied_at": "2026-09-27 09:22:55.197251+00"
+    },
     "migrations/campaign/guardstamps_definer_census_asks_the_one_ladder.sql": {
       "source": "matrx-frontend",
       "filename": "guardstamps_definer_census_asks_the_one_ladder.sql",
@@ -3775,6 +3781,12 @@
       "filename": "scopeswt_the_scope_doors_decide_who_is_asking.sql",
       "checksum": "177350dca9373f34b109e2be74e95ddb310fb6e2c66901bfb5ddb5a4ee9528c9",
       "applied_at": "2026-09-27 09:15:46.914009+00"
+    },
+    "migrations/campaign/scopeswt_the_scope_doors_refuse_in_their_own_name.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopeswt_the_scope_doors_refuse_in_their_own_name.sql",
+      "checksum": "2f78259dfa20a4ea2cd11154197b35fcb8542ee8ce9add280e601b127fa1c2d2",
+      "applied_at": "2026-09-27 09:35:16.012514+00"
     },
     "migrations/campaign/scopeswt_the_scopes_switch_presses_for_one_organization_or_all.sql": {
       "source": "matrx-frontend",

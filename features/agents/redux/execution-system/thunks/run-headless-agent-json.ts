@@ -263,6 +263,13 @@ export interface HeadlessAgentJsonResult {
   errorDetail?: string;
   requestId?: string;
   conversationId?: string;
+  /**
+   * `true` when the run FINISHED (it was not a transport/launch failure, a
+   * timeout, or an abort) but produced no structured result. Lets the warned-
+   * output guard tell "the chosen agent answered in the wrong shape" apart
+   * from a failure that carries its own reason.
+   */
+  noResult?: boolean;
 }
 
 /**
@@ -406,12 +413,18 @@ async function deliverResult(
  */
 export async function failWarnedOutputMissingKeys(
   getState: () => RootState,
-  opts: Pick<HeadlessAgentJsonOptions, "mandateKey" | "surfaceKey">,
+  opts: Pick<HeadlessAgentJsonOptions, "mandateKey" | "surfaceKey" | "expect">,
   result: HeadlessAgentJsonResult,
 ): Promise<HeadlessAgentJsonResult> {
-  if (!opts.mandateKey || !result.success) return result;
+  if (!opts.mandateKey || (opts.expect ?? "json") === "text") return result;
   const data = result.data;
-  if (typeof data !== "object" || data === null || Array.isArray(data)) return result;
+  const isRecord = typeof data === "object" && data !== null && !Array.isArray(data);
+  // Judged: a finished run with an object (keys checked), a finished run with
+  // a non-object answer, or a finished run that produced NO structured result
+  // (prose from a plain-text agent). A transport/launch failure, a timeout or
+  // an abort keeps its own reason — it is not this guard's to rewrite.
+  const judged = result.success || result.noResult === true;
+  if (!judged) return result;
   let resolved: Awaited<ReturnType<typeof resolveMandate>>;
   try {
     resolved = await resolveMandate(opts.mandateKey);
@@ -421,12 +434,18 @@ export async function failWarnedOutputMissingKeys(
   if (!resolved?.outputWarnings?.length) return result;
   const required = resolved.contract?.requiredOutputKeys ?? [];
   if (required.length === 0) return result;
-  const record = data as Record<string, unknown>;
-  const answers =
-    typeof record.answers === "object" && record.answers !== null && !Array.isArray(record.answers)
-      ? (record.answers as Record<string, unknown>)
-      : null;
-  const missing = required.filter((key) => !(key in record) && !(answers && key in answers));
+  let missing: string[];
+  if (result.success && isRecord) {
+    const record = data as Record<string, unknown>;
+    const answers =
+      typeof record.answers === "object" && record.answers !== null && !Array.isArray(record.answers)
+        ? (record.answers as Record<string, unknown>)
+        : null;
+    missing = required.filter((key) => !(key in record) && !(answers && key in answers));
+  } else {
+    // No usable object at all: every required key is missing.
+    missing = [...required];
+  }
   if (missing.length === 0) return result;
 
   const warning = resolved.outputWarnings[0];
@@ -468,6 +487,20 @@ export async function failWarnedOutputMissingKeys(
     error: sentence,
     errorDetail: `mandate_output_unusable: missing ${keys}`,
   };
+}
+
+/**
+ * The plain sentence of a warned-holder failure (`failWarnedOutputMissingKeys`),
+ * or `null` for any other result. A lane that swallows failures to `null`
+ * (its fallback is already on screen) must still SAY this one — the person
+ * chose an agent that cannot answer this job, and only they can change that.
+ */
+export function mandateOutputUnusableSentence(
+  result: Pick<HeadlessAgentJsonResult, "success" | "error" | "errorDetail">,
+): string | null {
+  if (result.success) return null;
+  if (!result.errorDetail?.startsWith("mandate_output_unusable")) return null;
+  return result.error ?? null;
 }
 
 export async function runHeadlessAgentJson(
@@ -982,7 +1015,13 @@ async function waitForExtraction(
         message,
       });
     }
-    return { success: false, data: null, error: message, ...base() };
+    return {
+      success: false,
+      data: null,
+      error: message,
+      ...(reason === "timeout" ? {} : { noResult: true }),
+      ...base(),
+    };
   };
 
   try {

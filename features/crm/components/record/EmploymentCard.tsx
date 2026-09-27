@@ -291,6 +291,7 @@ export function EmploymentCard(props: Props) {
 
   return (
     <SectionCard
+      empty={rows.length === 0 && !adding}
       title={isPerson ? "Employment" : "People"}
       Icon={isPerson ? Briefcase : Users}
       count={rows.length}

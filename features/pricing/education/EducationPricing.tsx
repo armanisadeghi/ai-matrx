@@ -13,7 +13,7 @@
 // Premium (PRELAUNCH_COMPLIMENTARY_PREMIUM), else login; billing-not-configured
 // → a respectful notice. No dark patterns — the pledge is the product.
 
-import { useState, useTransition, type ReactNode } from "react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
@@ -36,10 +36,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
-import {
-  selectEntitlementTier,
-  selectIsSubscribed,
-} from "@/features/entitlements/state/selectors";
+import { selectEntitlementTier } from "@/features/entitlements/state/selectors";
+import { readMyPlanSource } from "@/features/entitlements/plan-service";
 import { PRELAUNCH_COMPLIMENTARY_PREMIUM } from "./pricingPolicy";
 import type { EducationPricing as EducationPricingData } from "./loadEducationPricing";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
@@ -82,10 +80,21 @@ export function EducationPricing({
   const router = useRouter();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const tier = useAppSelector(selectEntitlementTier);
-  const isSubscribed = useAppSelector(selectIsSubscribed);
   const isPremium = isAuthenticated && tier === "premium";
-  // Premium without a Stripe subscription = a grant (pre-launch complimentary).
-  const isComplimentary = isPremium && !isSubscribed;
+  // The snapshot's `isSubscribed` is just `tier in (premium, trial)`, so the
+  // grant source is read from the person's own billing.user_plan row.
+  const [planSource, setPlanSource] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isPremium) return;
+    let cancelled = false;
+    void readMyPlanSource().then((source) => {
+      if (!cancelled) setPlanSource(source);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isPremium]);
+  const isComplimentary = isPremium && planSource === "complimentary";
   const [isPending, startTransition] = useTransition();
   const [checkingOut, setCheckingOut] = useState(false);
 
@@ -148,7 +157,7 @@ export function EducationPricing({
         size="lg"
         className={`${CTA_CLASS} bg-background text-foreground hover:bg-background/90`}
       >
-        <Link href={signUpHref}>
+        <Link href={signUpHref} data-tap-target>
           Create a free account
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>

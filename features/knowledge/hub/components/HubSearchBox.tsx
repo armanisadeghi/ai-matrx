@@ -65,12 +65,16 @@ export const HubSearchBox = forwardRef<HTMLInputElement, HubSearchBoxProps>(func
   ref,
 ) {
   const [draft, setDraft] = useState(query.text ?? "");
-  const [lastExternal, setLastExternal] = useState(query.text ?? "");
   const external = query.text ?? "";
-  if (external !== lastExternal) {
-    // The URL changed underneath (sidebar, Back): the box follows it.
-    setLastExternal(external);
-    setDraft(external);
+  const [prevExternal, setPrevExternal] = useState(external);
+  /** The text this box last sent; its echo from the URL is not a change. */
+  const [sent, setSent] = useState<string | null>(null);
+  if (external !== prevExternal) {
+    // The URL changed. Our own commit landing (possibly while the person kept
+    // typing) must never overwrite the box; only an outside change (sidebar,
+    // Back, Clear) replaces what it shows.
+    setPrevExternal(external);
+    if (external !== sent && external !== draft.trim()) setDraft(external);
   }
 
   const commit = (raw: string, final: boolean) => {
@@ -80,14 +84,14 @@ export const HubSearchBox = forwardRef<HTMLInputElement, HubSearchBoxProps>(func
       if (chips.length) {
         const next = applyChips({ ...query, text: text || undefined }, chips);
         setDraft(text ? `${text}${endsWithSpace && !final ? " " : ""}` : "");
-        setLastExternal(text);
+        setSent(text);
         onQueryChange(next, { typing: !final });
         return;
       }
     }
     const text = raw.trim();
     if (text === (query.text ?? "")) return;
-    setLastExternal(text);
+    setSent(text);
     onQueryChange({ ...query, text: text || undefined }, { typing: !final });
   };
 

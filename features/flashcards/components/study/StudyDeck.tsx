@@ -490,6 +490,8 @@ export function StudyDeck(props: StudyDeckProps) {
   const [review, setReview] = useState<ReviewSessionResult | null>(null);
   const [reviewLoading, setReviewLoading] = useState(false);
   const reviewFiredRef = useRef(false);
+  // The micro-coach's "cannot answer this job" sentence is said once per session.
+  const coachUnusableSaidRef = useRef(false);
   useEffect(() => {
     if (
       !completed ||
@@ -656,8 +658,17 @@ export function StudyDeck(props: StudyDeckProps) {
             cardId: card.id,
             sessionId,
           }),
-        ).then((tip) => {
-          if (!tip) return;
+        ).then((outcome) => {
+          if (!outcome) return;
+          if (outcome.kind === "unusable") {
+            // Said ONCE per session — this lane fires on every card, and the
+            // chosen coach will not change mid-session.
+            if (coachUnusableSaidRef.current) return;
+            coachUnusableSaidRef.current = true;
+            toast.warning(`Couldn't coach this card — ${outcome.sentence}`, { duration: 10000 });
+            return;
+          }
+          const tip = outcome.tip;
           toast.info(tip, { duration: 8000 });
           setJournal((prev) => ({
             ...prev,

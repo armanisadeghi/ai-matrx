@@ -228,3 +228,34 @@ export async function fetchPublicPlans(): Promise<PublicPlan[]> {
     return [];
   }
 }
+
+/**
+ * How the signed-in person's own tier was granted — `'complimentary'` for the
+ * pre-launch grant (`billing.seed_prelaunch_complimentary()`), otherwise the
+ * `billing.user_plan.source` value. Note `entitlement_snapshot().is_subscribed`
+ * is NOT this: it is simply `tier in (premium, trial)`, so it cannot tell a
+ * grant from a paid subscription. `null` = no row, or the read failed (the
+ * reason is logged) — a caller renders the neutral wording then.
+ */
+export async function readMyPlanSource(): Promise<string | null> {
+  try {
+    const supabase = createClient();
+    const { data: auth } = await supabase.auth.getUser();
+    const userId = auth.user?.id;
+    if (!userId) return null;
+    const { data, error } = await supabase
+      .schema("billing")
+      .from("user_plan")
+      .select("source")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error) {
+      console.warn("[plan-service] could not read billing.user_plan.source:", error.message);
+      return null;
+    }
+    return (data?.source as string | undefined) ?? null;
+  } catch (err) {
+    console.warn("[plan-service] could not read billing.user_plan.source:", err);
+    return null;
+  }
+}

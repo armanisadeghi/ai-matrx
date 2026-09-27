@@ -158,6 +158,31 @@ async function readFavorites(): Promise<HubFavorite[]> {
     .map((r) => ({ entity: r.entity_type, id: r.entity_id }));
 }
 
+/**
+ * Libraries have no registry title column (the picker cannot list them), so —
+ * like the Source Save panel — read `media.source_library` directly, with a
+ * declared scope: the ones I made or that live in my organizations.
+ */
+async function readLibraries(userId: string): Promise<HubContainerRow[]> {
+  const orgIds = (await getUserOrganizations()).map((o) => o.id);
+  let q = supabase
+    .schema("media")
+    .from("source_library")
+    .select("id,name")
+    .is("deleted_at", null)
+    .order("name")
+    .limit(200);
+  q = orgIds.length
+    ? q.or(`created_by.eq.${userId},organization_id.in.(${orgIds.join(",")})`)
+    : q.eq("created_by", userId);
+  const { data, error } = await q;
+  if (error) throw new Error(message(error, "your libraries"));
+  return ((data ?? []) as { id: string; name: string | null }[]).map((r) => ({
+    id: r.id,
+    title: r.name || "Untitled library",
+  }));
+}
+
 async function readContainers(
   token: string,
   sample: boolean,
@@ -194,7 +219,15 @@ export function useHubSidebarData(data: "live" | "sample"): HubSidebarData {
   const k = String(sample);
   const project = useLoad(() => readContainers("project", sample), k);
   const scope = useLoad(() => readContainers("scope", sample), k);
-  const media_source_library = useLoad(() => readContainers("media_source_library", sample), k);
+  const media_source_library = useLoad(
+    () =>
+      sample
+        ? readContainers("media_source_library", true)
+        : userId
+          ? readLibraries(userId)
+          : Promise.resolve([]),
+    `${k}|${userId ?? ""}`,
+  );
   const research_topic = useLoad(() => readContainers("research_topic", sample), k);
   const data_store = useLoad(() => readContainers("data_store", sample), k);
   return {

@@ -272,6 +272,7 @@ export function ContactPointsCard({
 
   return (
     <SectionCard
+      empty={points.length === 0 && !adding}
       title="Contact"
       Icon={AtSign}
       count={points.length}

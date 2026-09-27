@@ -32,7 +32,6 @@
 // question, answered by the Written-by column in the grid and the contact's own
 // stamp, not by this list.
 
-import {  } from "lucide-react";
 import {
   AnchorRecordsList,
   useAnchorRecords,
@@ -52,13 +51,19 @@ export function PartyOutputsSection({
 }: PartyOutputsSectionProps) {
   const state = useAnchorRecords({ type: "party", id: partyId });
 
+  // Absent until there is something to show (or a failure to say): an empty
+  // "outputs" card with a paragraph explaining itself is the wall of empty
+  // cards a thin record must never show. Loading is silent for the same reason.
+  if (state.status === "loading") return null;
+  if (state.status === "ready" && state.records.length === 0) return null;
+
   return (
     <SectionCard title="Outputs about this customer" Icon={AGENT_ICON}>
       <div className="p-2.5">
         <AnchorRecordsList
           state={state}
           loadingText={`Reading what has been produced about ${partyName}…`}
-          emptyText={`Nothing yet. When an agent or a workflow produces a saved Shape about ${partyName} — a research brief, an assessment, anything with its own record — it is kept here with a link straight to it. What the agent learned about ${partyName} themselves is on this page already; this is for the output that is ABOUT them rather than part of them.`}
+          emptyText={`Nothing produced about ${partyName} yet`}
         />
       </div>
     </SectionCard>

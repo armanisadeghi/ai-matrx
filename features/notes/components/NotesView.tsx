@@ -37,7 +37,7 @@ import {
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { useParams, useSearchParams } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -380,6 +380,27 @@ export function NotesView({
 
   const activeTabId = useAppSelector(selectInstanceActiveTab(instanceId));
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
+
+  // A note door followed while /notes is ALREADY open (⌘K, an EntityRef link)
+  // changes only `?active=`; the restore above runs once on mount and never
+  // saw it, so the URL moved and the page did not (found in the ⌘K walk,
+  // 2026-09-27). Open that note — but only on a CHANGE of `?active=` that the
+  // instance is not already showing, so the tab bar's own URL writes stay
+  // no-ops (no per-tab-action dispatch cascade; state is read at the change).
+  const store = useAppStore();
+  const lastUrlActiveRef = useRef(urlActive);
+  useEffect(() => {
+    if (!syncUrl || singleNote || !urlActive) return;
+    if (lastUrlActiveRef.current === urlActive) return;
+    lastUrlActiveRef.current = urlActive;
+    const state = store.getState();
+    if (selectInstanceActiveTab(instanceId)(state) === urlActive) return;
+    if (!selectInstanceTabs(instanceId)(state).includes(urlActive)) {
+      dispatch(addInstanceTab({ instanceId, noteId: urlActive }));
+      dispatch(fetchNoteContent(urlActive));
+    }
+    dispatch(setInstanceActiveTab({ instanceId, noteId: urlActive }));
+  }, [dispatch, instanceId, singleNote, store, syncUrl, urlActive]);
   const splitNoteId = useAppSelector(selectInstanceSplitNoteId(instanceId));
   const splitNoteLabel = useAppSelector(
     splitNoteId ? selectNoteLabel(splitNoteId) : () => null,

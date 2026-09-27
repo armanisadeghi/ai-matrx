@@ -8,6 +8,8 @@
 
 import { useEffect, useState } from "react";
 import { Handshake, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@ai-matrx/design-system";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useCrmContext } from "../../hooks/useCrmContext";
 import { usePipelines } from "../../deals/usePipelines";
@@ -53,33 +55,36 @@ export function PartyDealsCard({ party }: Props) {
 
   return (
     <SectionCard
+      empty={!loadError && deals !== null && deals.length === 0}
       title="Deals"
       Icon={Handshake}
       count={loadError ? undefined : (deals?.length ?? undefined)}
       action={
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setCreateOpen(true)}
-          className="inline-flex h-6 items-center gap-1 rounded px-1.5 text-[11px] font-medium text-primary hover:bg-accent"
+          className="h-6 gap-1 px-1.5 text-xs font-medium text-primary"
         >
           <Plus className="h-3 w-3" />
           New deal
-        </button>
+        </Button>
       }
     >
       {loadError ? (
         <div className="flex items-center justify-between gap-2 py-1 text-xs text-muted-foreground">
           <span>Couldn&apos;t load deals — {loadError} <ErrorAlchemyMenu error={loadError} /></span>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-6 px-2 text-xs"
             onClick={() => setGeneration((g) => g + 1)}
-            className="rounded px-1.5 py-0.5 font-medium text-primary hover:bg-accent"
           >
             Retry
-          </button>
+          </Button>
         </div>
       ) : deals === null ? (
-        <SectionEmpty>Loading…</SectionEmpty>
+        <Skeleton className="h-8 w-full rounded" />
       ) : deals.length === 0 ? (
         <SectionEmpty>No deals with {party.display_name} yet</SectionEmpty>
       ) : (

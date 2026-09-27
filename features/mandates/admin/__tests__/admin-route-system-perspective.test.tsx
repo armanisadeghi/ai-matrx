@@ -57,14 +57,15 @@ jest.mock("../../useMandate", () => ({
 }));
 
 /**
- * 🚨 THE DOOR, ANSWERING AS PRODUCTION ANSWERS (FIX-R9). `mandate.resolve`
- * returns `research_client.output_slides`' system rung with FIX-R7's 22nd
- * column set — the platform's own judgement that the floor cannot run. The
- * admin route reads THAT ROW and prints THOSE WORDS; it no longer walks the
+ * 🚨 THE DOOR, ANSWERING AS PRODUCTION ANSWERS (aidream 1363). `mandate.resolve`
+ * returns `research_client.output_slides`' system rung with `output_warning`
+ * set — the platform's own judgement that the floor RUNS but its output may
+ * not fit (validation offers, never blocks; it is never dropped for this). The
+ * admin route reads THAT ROW and prints THOSE WORDS; it never walks the
  * holder's output schema itself.
  */
-const OUTPUT_SLIDES_DROPPED_REASON =
-  "The system default cannot run this job: its holder does not declare the structured output this job requires.";
+const OUTPUT_SLIDES_WARNING =
+  "The agent chosen here does not declare the output key(s) slides this job expects. It runs anyway, as chosen, but its output may not fit: if an answer comes back without that key, the job stops with a plain error instead of saving half an answer. Give that agent an output schema declaring it, or pick one that already does.";
 let ladderRows: unknown[] = [];
 let ladderOrganizationId: string | null = null;
 jest.mock("../../workspace/useMandateLadder", () => {
@@ -134,6 +135,7 @@ type BindingProbe = {
     sentence: string;
     remedy: string | null;
     broken: boolean;
+    warning?: boolean;
   } | null;
 };
 let bindingProps: BindingProbe | null = null;
@@ -291,8 +293,10 @@ async function renderWorkspace(
       definition_id: "59325dc2-4df9-4eb1-8d77-d4dd0d93a160",
       definition_enabled: true,
       fallback_mandate_key: null,
-      dropped_code: "output_contract_unmet",
-      dropped_reason: OUTPUT_SLIDES_DROPPED_REASON,
+      dropped_code: null,
+      dropped_reason: null,
+      output_warning: OUTPUT_SLIDES_WARNING,
+      output_missing_keys: ["slides"],
     },
   ];
   const container = document.createElement("div");
@@ -328,19 +332,18 @@ describe("the admin route renders the SYSTEM's answer and only that", () => {
     act(() => root.unmount());
   });
 
-  it("carries the DOOR's own defect sentence and a remedy, to the one place the holder is set", async () => {
+  it("carries the DOOR's own output warning — runs, amber, never broken — to the one place the holder is set", async () => {
     const { text, root } = await renderWorkspace("admin-route");
     // 🚨 FIX-R9 + V-PARITY/UX F2: the verdict is the database's, verbatim, and
     // it travels WITH the three controls instead of standing in a section of
-    // its own ten lines above them.
+    // its own ten lines above them. aidream 1363: an output mismatch RUNS.
     expect(bindingProps?.perspective).toBe("system");
-    expect(bindingProps?.healthNote?.sentence).toBe(
-      OUTPUT_SLIDES_DROPPED_REASON,
+    expect(bindingProps?.healthNote?.sentence).toContain(
+      "answers this job for every user on the platform.",
     );
-    expect(bindingProps?.healthNote?.broken).toBe(true);
-    expect(bindingProps?.healthNote?.remedy).toContain(
-      "Assign a Mandate Holder that declares the output this job requires",
-    );
+    expect(bindingProps?.healthNote?.sentence).toContain(OUTPUT_SLIDES_WARNING);
+    expect(bindingProps?.healthNote?.broken).toBe(false);
+    expect((bindingProps?.healthNote as { warning?: boolean } | undefined)?.warning).toBe(true);
     // …and the page no longer writes a SECOND verdict of its own beside it.
     expect(text).not.toContain("declares no structured output");
     expect(text).not.toContain("No Holder fulfils this job yet");

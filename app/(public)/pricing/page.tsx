@@ -39,14 +39,14 @@ export default async function PricingPage() {
                 one primary action (start free / create an account). */}
             <div className="matrx-touch-targets flex shrink-0 flex-col gap-1 sm:items-end">
               <Button asChild variant="outline" className="gap-2">
-                <Link href="/pricing/pledge">
+                <Link href="/pricing/pledge" data-tap-target>
                   <ScrollText className="h-4 w-4" strokeWidth={2} />
                   Read our billing pledge
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </Button>
               <Button asChild variant="ghost" className="gap-1.5 text-muted-foreground">
-                <Link href="/pricing/compare">
+                <Link href="/pricing/compare" data-tap-target>
                   <Scale className="h-3.5 w-3.5" strokeWidth={2} />
                   How we compare to the incumbents
                 </Link>

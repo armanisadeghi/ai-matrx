@@ -73,6 +73,9 @@ export function WriteSurface({ setId }: { setId: string }) {
   // mandate). The Levenshtein suggestion shows instantly; this upgrades it.
   const [verdict, setVerdict] = useState<TypedGradeVerdict | null>(null);
   const [verdictLoading, setVerdictLoading] = useState(false);
+  // The chosen grader ran but cannot answer this job (mandate_output_unusable)
+  // — said in one muted line, never a block: the spelling suggestion stands.
+  const [unusable, setUnusable] = useState<string | null>(null);
   // COPPA, non-blocking by design: the semantic upgrade is fire-and-forget
   // inside the study loop, so an await here would stall every submit. A
   // blocked learner keeps the instant string-distance grade and a full study
@@ -86,6 +89,7 @@ export function WriteSurface({ setId }: { setId: string }) {
     setAutoGrade(null);
     setVerdict(null);
     setVerdictLoading(false);
+    setUnusable(null);
   }, [current?.id]);
 
   // One-way latch, not a pure derivation (see StudyDeck's `completed`).
@@ -108,6 +112,7 @@ export function WriteSurface({ setId }: { setId: string }) {
     // (F1): clear before dispatching, and gate the arrival on the LIVE card
     // id via the ref — a closure capture would compare the id to itself.
     setVerdict(null);
+    setUnusable(null);
 
     // Grade on MEANING (gap 14): the mandate-bound grader judges the typed
     // answer semantically; when it lands (1-3s) it replaces the string-distance
@@ -124,7 +129,9 @@ export function WriteSurface({ setId }: { setId: string }) {
         }),
       ).then((v) => {
         setVerdictLoading(false);
-        if (v && cardId === currentIdRef.current) setVerdict(v);
+        if (!v || cardId !== currentIdRef.current) return;
+        if (v.kind === "verdict") setVerdict(v.verdict);
+        else setUnusable(v.sentence);
       });
     }
   };
@@ -298,6 +305,11 @@ export function WriteSurface({ setId }: { setId: string }) {
                       onGrade={(r) => void confirmGrade(r)}
                       disabled={study.grading}
                     />
+                    {unusable ? (
+                      <p className="text-xs text-muted-foreground">
+                        Couldn&apos;t grade on meaning — {unusable}
+                      </p>
+                    ) : null}
                   </div>
                 )}
               </div>

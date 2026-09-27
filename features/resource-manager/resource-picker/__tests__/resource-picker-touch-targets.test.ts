@@ -12,6 +12,7 @@ describe("ResourcePickerMenu responsive touch targets", () => {
       /h-11 w-full justify-start rounded-none px-2 py-0 text-xs hover:bg-muted\/60 lg:h-6/g,
     );
 
-    expect(responsiveRowClasses).toHaveLength(3);
+    // Search your knowledge (⌘K hand-off) · each resource row · Settings · Debug.
+    expect(responsiveRowClasses).toHaveLength(4);
   });
 });

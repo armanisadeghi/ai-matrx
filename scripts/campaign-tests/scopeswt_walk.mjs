@@ -35,7 +35,7 @@ const ORG_SLUG = "harbor-dental-group";
 const ORG_NAME = "Harbor Dental Group";
 const PATIENT = "Marisol Ortega";
 const PATIENT_SLUG = "marisol-ortega";
-const ALLERGIES = "Latex; penicillin (hives)";
+const ALLERGIES = process.env.WALK_ALLERGIES ?? "Latex; penicillin (hives)";
 
 const browser = await chromium.launch({ headless: true });
 const report = { origin: ORIGIN, steps: [], consoleErrors: {} };

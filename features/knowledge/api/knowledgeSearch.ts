@@ -293,9 +293,17 @@ export class KnowledgeSearchUnavailableError extends Error {
   }
 }
 
+/**
+ * The hub's service is not what answered. 404/405: no route. 422: a route
+ * exists at this path but refuses the `KnowledgeQuery` body — the older RAG
+ * search still mounted at `/knowledge/search` answers exactly this way until H1
+ * replaces it (seen in the hub walk, 2026-09-27: every section showed "one of
+ * the values was not filled in"). The stand-in answers instead, announced.
+ */
 function isRouteMissing(err: unknown): boolean {
   return (
-    err instanceof BackendApiError && (err.status === 404 || err.status === 405)
+    err instanceof BackendApiError &&
+    (err.status === 404 || err.status === 405 || err.status === 422)
   );
 }
 
