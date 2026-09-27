@@ -1,5 +1,6 @@
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -694,7 +695,13 @@ function ScopeTypeItemsSection({
           </span>
           {type.label_plural}
           <span className="text-sm font-normal text-muted-foreground">
-            ({items.length})
+            (
+            <UntrustedCount
+              value={items.length}
+              read={{ status: itemsError ? "error" : loaded ? "ready" : "loading", error: itemsError }}
+              label={type.label_plural}
+            />
+            )
           </span>
           <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
         </Link>

@@ -1,5 +1,7 @@
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { selectTreeError } from "@/features/scopes/redux/selectors/tree";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -138,6 +140,12 @@ export function ScopesList({
   const itemsError = useAppSelector((s) =>
     resolvedTypeId ? selectItemsErrorForType(s, resolvedTypeId) : null,
   );
+  const treeError = useAppSelector(selectTreeError);
+  /** The type's context-items read — its counts say "—" when it failed. */
+  const itemsRead = {
+    status: itemsError ? ("error" as const) : itemsLoaded ? ("ready" as const) : ("loading" as const),
+    error: itemsError,
+  };
   const suggestions = useScopeSuggestions();
   const openContextItemsWindow = useOpenContextItemsWindow();
 
@@ -334,7 +342,7 @@ export function ScopesList({
         <div className="mt-5 pt-4 border-t border-border flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
           <span className="inline-flex items-center gap-1.5">
             <Layers className="h-4 w-4 text-muted-foreground" />
-            <span className="font-semibold text-foreground">{scopeCount}</span>
+            <UntrustedCount className="font-semibold text-foreground" value={scopeCount} trustworthy={!treeError} label={scopeType.label_plural} />
             <span className="text-muted-foreground">
               {scopeCount === 1
                 ? scopeType.label_singular.toLowerCase()
@@ -343,9 +351,7 @@ export function ScopesList({
           </span>
           <span className="inline-flex items-center gap-1.5">
             <ListChecks className="h-4 w-4 text-muted-foreground" />
-            <span className="font-semibold text-foreground">
-              {items.length}
-            </span>
+            <UntrustedCount className="font-semibold text-foreground" value={items.length} read={itemsRead} label="Context items" />
             <span className="text-muted-foreground">
               {items.length === 1 ? "context item" : "context items"}
             </span>
@@ -368,7 +374,7 @@ export function ScopesList({
             {scopeType.label_plural}
             {scopeCount > 0 && (
               <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({scopeCount})
+                (<UntrustedCount value={scopeCount} trustworthy={!treeError} label={scopeType.label_plural} />)
               </span>
             )}
           </h2>
@@ -517,7 +523,7 @@ export function ScopesList({
             Context Items
             {items.length > 0 && (
               <span className="text-sm font-normal text-muted-foreground">
-                ({items.length})
+                (<UntrustedCount value={items.length} read={itemsRead} label="Context items" />)
               </span>
             )}
             <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" />

@@ -1,5 +1,7 @@
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Boxes, Check, Loader2, Pencil, X as XIcon } from "lucide-react";
@@ -224,6 +226,8 @@ export function ScopeDetailEditor({
 
   const filled = rows?.filter((r) => r.has_value).length ?? 0;
   const total = rows?.length ?? 0;
+  /** The scope's values read — the filled/total counts say "—" when it failed. */
+  const valuesRead = readOf({ loading, error: readError });
 
   return (
     <div className="space-y-6">
@@ -297,7 +301,9 @@ export function ScopeDetailEditor({
               </div>
             )}
             <p className="text-xs text-muted-foreground mt-1">
-              {scopeType.label_singular} · {filled} of {total}{" "}
+              {scopeType.label_singular} ·{" "}
+              <UntrustedCount value={filled} read={valuesRead} label="Filled context items" /> of{" "}
+              <UntrustedCount value={total} read={valuesRead} label="Context items" />{" "}
               {total === 1 ? "context item" : "context items"} filled
             </p>
 
@@ -389,7 +395,8 @@ export function ScopeDetailEditor({
             Context items
             {total > 0 && (
               <span className="ml-2 text-sm font-normal text-muted-foreground">
-                {filled}/{total} filled
+                <UntrustedCount value={filled} read={valuesRead} label="Filled context items" />/
+                <UntrustedCount value={total} read={valuesRead} label="Context items" /> filled
               </span>
             )}
           </h2>

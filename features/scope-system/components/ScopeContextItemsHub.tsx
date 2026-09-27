@@ -1,5 +1,7 @@
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import { useEffect } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
@@ -136,6 +138,8 @@ export function ScopeContextItemsHub({
   const color = resolveColor(scopeType);
   const filled = rows?.filter((r) => r.has_value).length ?? 0;
   const total = rows?.length ?? 0;
+  /** The scope's values read — the filled/total counts say "—" when it failed. */
+  const valuesRead = readOf({ loading, error: readError });
 
   return (
     <div className="space-y-6">
@@ -158,7 +162,9 @@ export function ScopeContextItemsHub({
               Context items
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {filled} of {total} {total === 1 ? "field" : "fields"} filled for{" "}
+              <UntrustedCount value={filled} read={valuesRead} label="Filled fields" /> of{" "}
+              <UntrustedCount value={total} read={valuesRead} label="Fields" />{" "}
+              {total === 1 ? "field" : "fields"} filled for{" "}
               {scope.name}.{" "}
               <Link
                 href={contextItemsHref(orgSlugOrId, scopeType)}
