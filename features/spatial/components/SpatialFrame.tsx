@@ -11,6 +11,9 @@ import { useEffect } from "react";
 import type { Rect } from "../engine/camera";
 import { useSpatialStore } from "../engine/react";
 
+/** World px above a frame kept in view with it (its label at fit zoom). */
+const TITLE_BAND = 110;
+
 interface SpatialFrameProps {
   id: string;
   rect: Rect;
@@ -23,7 +26,12 @@ export function SpatialFrame({ id, rect, title, note }: SpatialFrameProps) {
   const store = useSpatialStore();
   const frameId = `frame:${id}`;
 
-  useEffect(() => store.registerItem(frameId, rect), [store, frameId, rect]);
+  // The label sits ABOVE the rect, so the flown-to area includes its band —
+  // flying to a frame shows its name, not just its contents.
+  useEffect(
+    () => store.registerItem(frameId, { ...rect, y: rect.y - TITLE_BAND, h: rect.h + TITLE_BAND }),
+    [store, frameId, rect],
+  );
 
   return (
     <div

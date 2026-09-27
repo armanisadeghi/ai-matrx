@@ -106,7 +106,7 @@ const DELETE_UNDO_MS = 6000;
 
 const PART_THROWS: Record<ThrowDirection, ThrowAction> = {
   right: "park",
-  down: "delete",
+  down: "remove",
   up: "none",
   left: "none",
 };
@@ -382,7 +382,7 @@ export function RoomBoardView({ sessionId }: { sessionId: string }) {
   const onThrow = (key: string, direction: ThrowDirection) => {
     const action = PART_THROWS[direction];
     if (action === "park") parkPart(key);
-    else if (action === "delete") removePart(key);
+    else if (action === "remove") removePart(key);
   };
 
   const unpark = (id: string) => (isPartKey(id) ? restorePart(id) : unparkThread(id));
