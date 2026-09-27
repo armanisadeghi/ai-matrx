@@ -463,6 +463,13 @@ describe("Education tool-family resolution", () => {
     expect(surfaceFromPathname("/education/learn/admin-guide/intro")).toBe(
       "matrx-user/education-learn",
     );
+    // One study guide is its own surface; the library keeps the list surface.
+    expect(surfaceFromPathname("/education/study-guides")).toBe(
+      "matrx-user/education-study-guides",
+    );
+    expect(
+      surfaceFromPathname("/education/study-guides/63ac076a-3cf9-48f8-9af6-e974a6789883"),
+    ).toBe("matrx-user/education-study-guide");
     // My Classes is the exact list route; a class hub is not that surface.
     expect(surfaceFromPathname("/education/classes")).toBe(
       "matrx-user/education-classes",

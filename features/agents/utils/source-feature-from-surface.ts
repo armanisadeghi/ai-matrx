@@ -64,6 +64,7 @@ const SURFACE_SLUG_TO_FEATURE: Record<string, SourceFeature> = {
   "education-start": "education-ingest",
   // Study guides are authored and persisted by the canonical Notes system.
   "education-study-guides": "notes",
+  "education-study-guide": "notes",
   "education-flashcards": "education-flashcards",
   "education-flashcard-set": "education-flashcards",
   "education-fastfire": "education-fastfire",

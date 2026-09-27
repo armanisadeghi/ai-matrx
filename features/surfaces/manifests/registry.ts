@@ -127,6 +127,7 @@ import { organizationPerformanceReviewsManifest } from "./organization-performan
 import { dashboardManifest } from "./dashboard.manifest";
 import { educationManifest } from "./education.manifest";
 import { educationStudyGuidesManifest } from "./education-study-guides.manifest";
+import { educationStudyGuideManifest } from "./education-study-guide.manifest";
 import { educationTutorManifest } from "./education-tutor.manifest";
 import { educationFlashcardsManifest } from "./education-flashcards.manifest";
 import { educationFlashcardSetManifest } from "./education-flashcard-set.manifest";
@@ -370,6 +371,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   dashboardManifest,
   educationManifest,
   educationStudyGuidesManifest,
+  educationStudyGuideManifest,
   educationTutorManifest,
   educationFlashcardsManifest,
   educationFlashcardSetManifest,
