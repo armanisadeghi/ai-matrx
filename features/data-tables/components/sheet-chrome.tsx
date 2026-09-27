@@ -30,9 +30,49 @@ import type { CleanableRow, RowPatch } from "@/lib/content-cleanup/value-types";
 import { effectiveLayoutMode, effectiveRowDensity, resolveTableLayout, resolveViewColumns } from "@/features/data-tables/table-view-url";
 import type { useTableViewUrlState } from "@/features/data-tables/hooks/useTableViewUrlState";
 import { GRID_FIELD_DOM_ATTR } from "@/features/data-tables/grid-context-menu";
-import ColumnHeaderMenu from "@/components/user-generated-table-data/ColumnHeaderMenu";
-import TableToolbar from "@/components/user-generated-table-data/TableToolbar";
-import type { TableField } from "@/utils/user-table-utls/table-utils";
+import type { ColumnFilter } from "@/features/data-tables/column-filters";
+
+/**
+ * THE CHROME NAMES NO OLD MODULE (lane GUARDS-GREEN, 2026-09-27; `check:old-system-unreachable`).
+ * This file holds the Sheet's toolbar slots and column headers; the Sheet that draws them
+ * (`components/user-generated-table-data/UserTableViewer.tsx`) is the older half of the Data tables
+ * screen and brings its own older parts: it wraps its toolbar in `memo` itself and hands its
+ * column menu to `SheetHeaderCell` as `menu`. So the only place that reaches the old modules is
+ * the Sheet, already in the census, and this file names none of them.
+ */
+/** The column facts the chrome reads (the Sheet's own field rows carry these and more). */
+export interface SheetField {
+  field_name: string;
+  display_name: string;
+  data_type: string;
+  field_order: number;
+}
+/** What `SheetHeaderCell` hands the column menu the Sheet gives it. */
+export interface SheetColumnMenuProps {
+  tableId?: string;
+  fieldName: string;
+  displayName: string;
+  dataType: string;
+  isSorted: boolean;
+  sortDirection: "asc" | "desc";
+  filter: ColumnFilter | undefined;
+  searchTerm?: string;
+  readLocalRows?: () => readonly { data?: Record<string, unknown> | null }[];
+  totalCount: number;
+  onSortAsc: () => void;
+  onSortDesc: () => void;
+  onClearSort: () => void;
+  onFilterChange: (next: ColumnFilter | undefined) => void;
+  onConfigure?: () => void;
+  onRename?: () => void;
+  labelForValue?: (value: string) => string;
+  onInsert?: (side: "left" | "right") => void;
+  onHide?: () => void;
+  onUseAsRowLabel?: () => void;
+  openRequest?: number;
+  onDelete?: () => void;
+}
+export type SheetColumnMenu = React.ComponentType<SheetColumnMenuProps>;
 
 type ViewUrl = ReturnType<typeof useTableViewUrlState>;
 type SavedViews = ReturnType<typeof useSavedViews>;
@@ -53,14 +93,7 @@ export function SheetInPageRow({ slot, children }: { slot: HTMLElement | null | 
 
 // ── The memo boundaries ────────────────────────────────────────────────────────────────────────
 
-/**
- * THE SHEET'S TOOLBAR, DRAWN ONLY WHEN A PROP MOVED (lane RENDER-3). The Sheet compiles, but its
- * render is one giant JSX tree the compiler does not hold (a ref-writing callback sits at its
- * root), so the toolbar element was new on every render and the toolbar — with every closed dialog
- * it holds — redrew with it. Every prop the Sheet hands it is a value that does not move on an
- * edit, so a shallow compare is the boundary.
- */
-export const SheetToolbar = memo(TableToolbar);
+// The toolbar's memo boundary (`SheetToolbar`) lives in the Sheet, beside the toolbar it wraps.
 
 // ── The Undo / Redo pair, reading its own source ──────────────────────────────────────────────
 
@@ -147,7 +180,7 @@ export interface SheetViewActions {
 export interface SheetViewProps {
   savedViews: SavedViews;
   readOnly: boolean;
-  fields: readonly TableField[];
+  fields: readonly SheetField[];
   hiddenColumns: ViewUrl["hiddenColumns"];
   columnOrder: ViewUrl["columnOrder"];
   layoutMode: ViewUrl["layoutMode"];
@@ -176,7 +209,7 @@ function useViewPieces(p: SheetViewProps) {
     p.layoutMode !== "default" || p.rowDensity !== "default" || p.freezeFirstColumn || p.wrapText || p.customWidthCount > 0;
   // Worked out here from the view's own values (the same pure functions the Sheet uses), so the
   // Sheet hands this component nothing it re-derives on every render.
-  const viewFieldCount = resolveViewColumns(p.fields as TableField[], { hidden: p.hiddenColumns, order: p.columnOrder }).length;
+  const viewFieldCount = resolveViewColumns(p.fields, { hidden: p.hiddenColumns, order: p.columnOrder }).length;
   const layoutProps: LayoutMenuProps = {
     layoutMode: effectiveLayoutMode(p.layoutMode, p.defaultLayout),
     autoResolvesTo: resolveTableLayout("auto", viewFieldCount, p.fitMaxColumns),
@@ -379,7 +412,7 @@ export function SheetCleanupControl({
   scopeLabel,
   onApply,
 }: {
-  fields: readonly TableField[];
+  fields: readonly SheetField[];
   readRows: () => readonly CleanableRow[];
   loadAllRows: () => Promise<CleanableRow[]>;
   scopeLabel: string;
@@ -429,8 +462,6 @@ export interface SheetHeaderActions {
   readLocalRows: (fieldName: string) => readonly { data?: Record<string, unknown> | null }[];
 }
 
-type HeaderMenuProps = React.ComponentProps<typeof ColumnHeaderMenu>;
-
 /** Everything the Sheet's chrome does, as one steady object (`useSteadyLate`). */
 export type SheetChromeActs = SheetHeaderActions &
   SheetViewActions & {
@@ -439,12 +470,14 @@ export type SheetChromeActs = SheetHeaderActions &
   };
 
 export interface SheetHeaderCellProps {
-  field: TableField;
+  field: SheetField;
+  /** The Sheet's column menu (a module-level component, so the memo holds). */
+  menu: SheetColumnMenu;
   tableId: string;
   readOnly: boolean;
   mobile: boolean;
   sortDirection: "asc" | "desc" | null;
-  filter: HeaderMenuProps["filter"];
+  filter: ColumnFilter | undefined;
   searchTerm: string;
   width: number | undefined;
   renaming: boolean;
@@ -472,7 +505,7 @@ export interface SheetHeaderCellProps {
  * `SheetBodyRow`); the body itself compiles.
  */
 export const SheetHeaderCell = memo(function SheetHeaderCell(p: SheetHeaderCellProps) {
-  const { field, act } = p;
+  const { field, act, menu: ColumnMenu } = p;
   const name = field.field_name;
   const style = p.width ? { width: p.width, minWidth: p.width, maxWidth: p.width } : undefined;
   return (
@@ -587,7 +620,7 @@ export const SheetHeaderCell = memo(function SheetHeaderCell(p: SheetHeaderCellP
             {p.sortDirection !== null && <span className="flex-shrink-0">{p.sortDirection === "asc" ? "↑" : "↓"}</span>}
           </button>
         )}
-        <ColumnHeaderMenu
+        <ColumnMenu
           // A formula column has no stored value, so the server facet RPC would return nothing for
           // it. Omitting the table identity makes the menu work from the rows the browser holds
           // (with computed values) and say when that is not every row — its own honest fallback.

@@ -60,8 +60,12 @@ Judge by who is looking at it and why.
 - **Adds:** output renders only through the one stream pipeline (never a
   hand-built renderer); a run survives a page refresh; a stalled or failed
   stream says so and offers a retry; the person's typed input is never lost.
-  Core 1: the agent that IS the page receives only its own engineered inputs,
-  never the page's values; outside helpers may still bind.
+  Core 1: the page's own conversation never sees the page — declare it on
+  the provider (`ownConversationId={id}` or `isOwnConversation={(id) => …}`;
+  its launcher passes `runtime: { surfaceName: null }`), so it gets no page
+  context and no surface tools while every other agent on the screen gets
+  both. A universal page (chat) offers "Run an agent on this page" instead of a
+  bound roster; `surface:probe --agent` uses that picker there.
 
 ## Dashboard or report
 - **Recognize it:** numbers, status and charts, read more than edited.

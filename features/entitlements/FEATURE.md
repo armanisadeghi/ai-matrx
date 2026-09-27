@@ -498,6 +498,8 @@ real (F6, 2026-07-13).
 
 ## Change Log
 
+- **2026-09-27** — page-pass 2026-09-27: `/pricing`, type promotional, posture after Linear's pricing page (CTA directly under each price), fixed: Premium card no longer shows the internal test product name/description ("AI Matrx Premium (TEST)", "Test-mode … P8 checkout verification"); removed the false "Priority generation on capacity" line (no tier-aware priority exists) and the "We email before every renewal" line (the pledge marks renewal reminders Before paid launch); Free limits phrased as units ("30 flashcard decks / month") and now include the daily AI tutor and live-grading caps; a refused `capability_limit` read throws instead of rendering a limitless Free card; signed-out visitors are told every new account gets Premium free before launch and are sent to sign-up instead of a $10 checkout (`PRELAUNCH_COMPLIMENTARY_PREMIUM` in `features/pricing/education/loadEducationPricing.ts` — un-flip with the signup trigger); complimentary Premium says so; hand-styled buttons → design-system `Button`; plan CTAs above the fold. No surface: the public shell mounts no Agents menu or agent right-click runtime, so a manifest here could never be reached.
+
 - **2026-08-30** — Advanced Stripe Connect creator payouts to Stripe's platform-review gate. Connect
   is enabled, the platform profile is complete, and the live/test standard webhook endpoints use
   the exact eight-event contract. Repaired the shared production webhook so

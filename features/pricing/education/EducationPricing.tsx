@@ -9,10 +9,12 @@
 // upgrade demos — see FEATURE.md for the structure decision).
 //
 // The Premium CTA starts a real Stripe Checkout session (/api/stripe/checkout,
-// authed) and degrades honestly: anon → login, billing-not-configured → a
-// respectful notice. No dark patterns — the pledge is the product.
+// authed) and degrades honestly: anon → sign-up while pre-launch signup grants
+// Premium (PRELAUNCH_COMPLIMENTARY_PREMIUM), else login; billing-not-configured
+// → a respectful notice. No dark patterns — the pledge is the product.
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
@@ -29,12 +31,19 @@ import {
   Check,
   Infinity as InfinityIcon,
   Loader2,
-  BadgeCheck,
+  Gift,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEntitlementTier } from "@/features/entitlements/state/selectors";
-import type { EducationPricing as EducationPricingData } from "./loadEducationPricing";
+import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectEntitlementTier,
+  selectIsSubscribed,
+} from "@/features/entitlements/state/selectors";
+import {
+  PRELAUNCH_COMPLIMENTARY_PREMIUM,
+  type EducationPricing as EducationPricingData,
+} from "./loadEducationPricing";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
 function formatPrice(amountCents: number, currency: string): string {
@@ -48,9 +57,22 @@ function formatPrice(amountCents: number, currency: string): string {
 const FREE_ALWAYS = [
   "Unlimited studying, review & spaced repetition",
   "Keep every deck, note & kit — forever",
-  "Export your data anytime",
+  "Export your library anytime",
   "Every card cited back to your own material",
 ];
+
+// Every line is true of the Premium tier today: billing.capability_limit holds
+// NO premium rows for these capabilities, so the resolver answers unlimited.
+// (A "priority generation" line used to sit here; no tier-aware priority
+// exists anywhere in either repo, so it was removed — never re-add a line
+// without the code that makes it true.)
+const PREMIUM_INCLUDES = [
+  "Unlimited flashcards, quizzes, mind maps & notes",
+  "Unlimited AI tutor & live grading",
+  "Unlimited study audio",
+];
+
+const CTA_CLASS = "w-full gap-2";
 
 export function EducationPricing({
   pricing,
@@ -58,9 +80,14 @@ export function EducationPricing({
   pricing: EducationPricingData;
 }) {
   const loginHref = useLoginHref();
+  const signUpHref = useLoginHref("/sign-up");
   const router = useRouter();
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const tier = useAppSelector(selectEntitlementTier);
-  const isPremium = tier === "premium" || tier === "trial";
+  const isSubscribed = useAppSelector(selectIsSubscribed);
+  const isPremium = isAuthenticated && tier === "premium";
+  // Premium without a Stripe subscription = a grant (pre-launch complimentary).
+  const isComplimentary = isPremium && !isSubscribed;
   const [isPending, startTransition] = useTransition();
   const [checkingOut, setCheckingOut] = useState(false);
 
@@ -103,12 +130,54 @@ export function EducationPricing({
 
   const premium = pricing.premium;
 
+  // The Premium card's one action, decided once:
+  //  - already Premium → a status, not a button;
+  //  - signed out while every new account is provisioned onto Premium free →
+  //    create the account (paying $10 for what signup grants would be a trap);
+  //  - otherwise → Stripe Checkout.
+  let premiumAction: ReactNode;
+  if (isPremium) {
+    premiumAction = (
+      <div className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-background/15 px-4 py-2.5 text-sm font-medium">
+        <Check className="h-4 w-4" />
+        {isComplimentary ? "Premium is on — complimentary" : "Your current plan"}
+      </div>
+    );
+  } else if (!isAuthenticated && PRELAUNCH_COMPLIMENTARY_PREMIUM) {
+    premiumAction = (
+      <Button
+        asChild
+        size="lg"
+        className={`${CTA_CLASS} bg-background text-foreground hover:bg-background/90`}
+      >
+        <Link href={signUpHref}>
+          Create a free account
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+      </Button>
+    );
+  } else {
+    premiumAction = (
+      <Button
+        type="button"
+        size="lg"
+        onClick={upgrade}
+        disabled={!premium || checkingOut}
+        className={`${CTA_CLASS} bg-background text-foreground hover:bg-background/90`}
+      >
+        {checkingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+        {premium ? "Upgrade to Premium" : "Not available yet"}
+        {premium && !checkingOut ? <ArrowRight className="h-3.5 w-3.5" /> : null}
+      </Button>
+    );
+  }
+
   return (
-    <section className="grid gap-6 py-10 lg:grid-cols-2 lg:py-14">
+    <section className="grid gap-6 py-8 lg:grid-cols-2 lg:py-10">
       {/* Free */}
-      <div className="flex flex-col gap-5 rounded-2xl border border-border bg-card p-6 lg:p-8">
+      <div className="matrx-touch-targets flex flex-col gap-5 rounded-2xl border border-border bg-card p-6 lg:p-8">
         <div className="flex flex-col gap-1">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             Free
           </span>
           <div className="flex items-baseline gap-1.5">
@@ -123,10 +192,23 @@ export function EducationPricing({
           </p>
         </div>
 
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          onClick={startFree}
+          disabled={isPending}
+          className={CTA_CLASS}
+        >
+          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {isPremium ? "Open study tools" : "Start free"}
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Button>
+
         <div className="flex flex-col gap-2.5">
           {pricing.freeHighlights.map((h) => (
             <div
-              key={h.capability}
+              key={`${h.capability}:${h.period}`}
               className="flex items-start gap-2.5 text-sm"
             >
               <Check
@@ -134,8 +216,8 @@ export function EducationPricing({
                 strokeWidth={2.25}
               />
               <span>
-                <span className="font-medium tabular-nums">{h.monthly}</span>{" "}
-                {h.label.toLowerCase()} / month
+                <span className="font-medium tabular-nums">{h.limit}</span>{" "}
+                {h.unit} / {h.period}
               </span>
             </div>
           ))}
@@ -152,27 +234,17 @@ export function EducationPricing({
             </div>
           ))}
         </div>
-
-        <button
-          type="button"
-          onClick={startFree}
-          disabled={isPending}
-          className="mt-auto inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-60"
-        >
-          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          Start free
-          <ArrowRight className="h-3.5 w-3.5" />
-        </button>
+        <p className="mt-auto text-xs text-muted-foreground">
+          AI generation is also paced over rolling 5-hour windows, so one
+          session can&apos;t spend the month.
+        </p>
       </div>
 
       {/* Premium */}
-      <div className="relative flex flex-col gap-5 rounded-2xl border border-foreground bg-foreground p-6 text-background lg:p-8">
-        <span className="absolute right-5 top-5 inline-flex items-center gap-1 rounded-full bg-background/15 px-2.5 py-1 text-[11px] font-medium">
-          <BadgeCheck className="h-3 w-3" /> Premium
-        </span>
+      <div className="matrx-touch-targets flex flex-col gap-5 rounded-2xl border border-foreground bg-foreground p-6 text-background lg:p-8">
         <div className="flex flex-col gap-1">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-background/60">
-            {premium ? premium.productName : "Premium"}
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-background/60">
+            Premium
           </span>
           {premium ? (
             <div className="flex items-baseline gap-1.5">
@@ -189,23 +261,29 @@ export function EducationPricing({
             </div>
           )}
           <p className="text-sm text-background/70">
-            {premium?.description ??
-              "Unlimited AI generation across every study tool."}
+            Unlimited AI generation across every study tool.
           </p>
           {premium?.isTest && (
-            <p className="text-xs italic text-background/50">
+            <p className="text-xs italic text-background/60">
               Introductory test pricing — final pricing coming soon.
             </p>
           )}
         </div>
 
+        {PRELAUNCH_COMPLIMENTARY_PREMIUM && !isAuthenticated ? (
+          <p className="inline-flex items-start gap-2 rounded-lg bg-background/10 px-3 py-2 text-sm">
+            <Gift className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              Before launch, every new account gets Premium free — no card
+              needed.
+            </span>
+          </p>
+        ) : null}
+
+        {premiumAction}
+
         <div className="flex flex-col gap-2.5 text-sm">
-          {[
-            "Unlimited flashcards, quizzes, mind maps & notes",
-            "Unlimited AI tutor & live grading",
-            "Unlimited study audio",
-            "Priority generation on capacity",
-          ].map((line) => (
+          {PREMIUM_INCLUDES.map((line) => (
             <div key={line} className="flex items-start gap-2.5">
               <InfinityIcon
                 className="mt-0.5 h-4 w-4 shrink-0 text-background/80"
@@ -215,29 +293,8 @@ export function EducationPricing({
             </div>
           ))}
         </div>
-
-        {isPremium ? (
-          <div className="mt-auto inline-flex items-center justify-center gap-2 rounded-lg bg-background/15 px-4 py-2.5 text-sm font-medium">
-            <Check className="h-4 w-4" /> Your current plan
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={upgrade}
-            disabled={!premium || checkingOut}
-            className={cn(
-              "mt-auto inline-flex items-center justify-center gap-2 rounded-lg bg-background px-4 py-2.5 text-sm font-medium text-foreground transition-transform hover:scale-[1.02] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60",
-            )}
-          >
-            {checkingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {premium ? "Upgrade to Premium" : "Not available yet"}
-            {premium && !checkingOut ? (
-              <ArrowRight className="h-3.5 w-3.5" />
-            ) : null}
-          </button>
-        )}
-        <p className="text-center text-xs text-background/60">
-          One-click cancel. We email before every renewal. No silent charges.
+        <p className="mt-auto text-center text-xs text-background/60">
+          One-click cancel. No silent charges.
         </p>
       </div>
     </section>

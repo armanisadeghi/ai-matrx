@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, ScrollText, Scale, ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { EducationPricing } from "@/features/pricing/education/EducationPricing";
 import { loadEducationPricing } from "@/features/pricing/education/loadEducationPricing";
 
@@ -18,10 +19,10 @@ export default async function PricingPage() {
     <div className="h-full overflow-y-auto bg-textured">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Trust banner — the billing-integrity promise, above the plans */}
-        <section className="pt-10 lg:pt-14">
-          <div className="flex flex-col gap-5 rounded-2xl border border-border bg-card/60 p-6 sm:flex-row sm:items-center sm:justify-between lg:p-8">
+        <section className="pt-8 lg:pt-10">
+          <div className="flex flex-col gap-5 rounded-2xl border border-border bg-card/60 p-6 sm:flex-row sm:items-center sm:justify-between lg:px-8 lg:py-6">
             <div className="flex flex-col gap-2">
-              <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                 <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2} />
                 Billing integrity, in writing
               </span>
@@ -34,22 +35,22 @@ export default async function PricingPage() {
                 generation, never the content you&apos;ve already made.
               </p>
             </div>
-            <div className="flex shrink-0 flex-col gap-2 sm:items-end">
-              <Link
-                href="/pricing/pledge"
-                className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2.5 text-sm font-medium text-background transition-transform hover:scale-[1.02] active:scale-[0.99]"
-              >
-                <ScrollText className="h-4 w-4" strokeWidth={2} />
-                Read our billing pledge
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-              <Link
-                href="/pricing/compare"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-              >
-                <Scale className="h-3.5 w-3.5" strokeWidth={2} />
-                How we compare to the incumbents
-              </Link>
+            {/* Secondary on purpose: the plan cards below carry this screen's
+                one primary action (start free / create an account). */}
+            <div className="matrx-touch-targets flex shrink-0 flex-col gap-1 sm:items-end">
+              <Button asChild variant="outline" className="gap-2">
+                <Link href="/pricing/pledge">
+                  <ScrollText className="h-4 w-4" strokeWidth={2} />
+                  Read our billing pledge
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" className="gap-1.5 text-muted-foreground">
+                <Link href="/pricing/compare">
+                  <Scale className="h-3.5 w-3.5" strokeWidth={2} />
+                  How we compare to the incumbents
+                </Link>
+              </Button>
             </div>
           </div>
         </section>

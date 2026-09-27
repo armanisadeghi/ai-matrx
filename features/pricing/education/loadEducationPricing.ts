@@ -6,16 +6,17 @@
 //     that's the seeded TEST row ("AI Matrx Premium (TEST)", $10/mo). The REAL
 //     Premium number is Arman's call (product decision) — seed the real
 //     billing.price row and this page reflects it with no code change.
-//   - Free-tier caps ← billing.capability_limit (tier=free, monthly window),
-//     the SAME single source the resolver/meters read. Labels come from the
-//     client capability registry (pure TS, import-safe on the server).
+//   - Free-tier caps ← billing.capability_limit (tier=free, month/day windows),
+//     the SAME single source the resolver/meters read. How each unit reads to
+//     a visitor is phrased here (HEADLINE_FREE), never the registry's action
+//     label.
 //
 // All three tables are public-read (RLS: anon+authenticated SELECT, deny-write),
 // so this runs for anonymous visitors. Reads go DIRECT to Supabase per the
 // data-flow doctrine (no Python hop).
 
 import { createClient } from "@/utils/supabase/server";
-import { CAPABILITY_REGISTRY, type Capability } from "@/features/entitlements/registry";
+import type { Capability } from "@/features/entitlements/registry";
 
 export interface PremiumPlan {
   /** billing.price.id — pass to /api/stripe/checkout to start a session. */
@@ -36,8 +37,11 @@ export interface PremiumPlan {
 
 export interface FreeHighlight {
   capability: Capability;
-  label: string;
-  monthly: number;
+  /** What one unit of the limit buys, phrased for a visitor ("flashcard decks"). */
+  unit: string;
+  limit: number;
+  /** The metering window the number is counted over. */
+  period: "month" | "day";
 }
 
 export interface EducationPricing {
@@ -45,16 +49,36 @@ export interface EducationPricing {
   freeHighlights: FreeHighlight[];
 }
 
-// The capabilities we headline on the Free card, in display order. A curated
-// subset of the metered set (the full matrix lives in billing.capability_limit).
-const HEADLINE_FREE: Capability[] = [
-  "education.ingest_document",
-  "education.generate_cards",
-  "education.quiz_generate",
-  "education.mindmap_generate",
-  "education.notes_generate",
-  "education.audio_generate",
+// The capabilities we headline on the Free card, in display order, each with
+// the window it is shown in and how one unit reads to a visitor. The NUMBER
+// always comes from billing.capability_limit (tier=free) — the same rows the
+// resolver enforces; a capability with no row for its window is not shown.
+// The registry labels are imperative action names ("Ingest a document"), which
+// read as machine text behind a number, so the pricing page phrases the unit.
+const HEADLINE_FREE: ReadonlyArray<{
+  capability: Capability;
+  period: "month" | "day";
+  unit: string;
+}> = [
+  { capability: "education.ingest_document", period: "month", unit: "documents to study from" },
+  { capability: "education.generate_cards", period: "month", unit: "flashcard decks" },
+  { capability: "education.quiz_generate", period: "month", unit: "quizzes" },
+  { capability: "education.mindmap_generate", period: "month", unit: "mind maps" },
+  { capability: "education.notes_generate", period: "month", unit: "sets of smart notes" },
+  { capability: "education.audio_generate", period: "month", unit: "study audio sessions" },
+  { capability: "education.tutor_message", period: "day", unit: "AI tutor messages" },
+  { capability: "education.live_grade", period: "day", unit: "live AI gradings" },
 ];
+
+/**
+ * PRELAUNCH_COMPLIMENTARY — every new account is provisioned onto Premium at no
+ * charge by the signup trigger `zzz_on_auth_user_created_prelaunch_plan`
+ * (`billing.seed_prelaunch_complimentary()`, source='complimentary', no Stripe
+ * object). A signed-out visitor cannot read that trigger, so the page states it
+ * from this constant. Un-flip at launch together with the trigger: grep
+ * `PRELAUNCH_COMPLIMENTARY` across both repos.
+ */
+export const PRELAUNCH_COMPLIMENTARY_PREMIUM = true;
 
 export async function loadEducationPricing(): Promise<EducationPricing> {
   const supabase = await createClient();
@@ -133,23 +157,37 @@ export async function loadEducationPricing(): Promise<EducationPricing> {
     }
   }
 
-  // --- Free-tier headline caps (monthly window) -----------------------------
-  const { data: limits } = await supabase
+  // --- Free-tier headline caps (monthly + daily windows) --------------------
+  const { data: limits, error: limitsError } = await supabase
     .schema("billing")
     .from("capability_limit")
     .select("capability, limit_value, period, tier")
     .eq("tier", "free")
-    .eq("period", "month");
+    .in("period", ["month", "day"]);
 
-  const monthlyByCap = new Map<string, number>();
-  for (const row of limits ?? []) {
-    if (row.limit_value != null) monthlyByCap.set(row.capability, row.limit_value);
+  // Same rule as the product/price reads: a Free card silently missing its
+  // limits would claim "no limits" over a refused query.
+  if (limitsError) {
+    throw new Error(
+      `The public pricing page could not read billing.capability_limit: ` +
+        `${limitsError.message}` +
+        (limitsError.code ? ` (${limitsError.code})` : "") +
+        `. The signed-out column bound for this table is declared in ` +
+        `lib/security/public-exposure.ts#ANON_COLUMN_SURFACE.`,
+    );
   }
 
-  const freeHighlights: FreeHighlight[] = HEADLINE_FREE.flatMap((cap) => {
-    const monthly = monthlyByCap.get(cap);
-    if (monthly == null) return [];
-    return [{ capability: cap, label: CAPABILITY_REGISTRY[cap].label, monthly }];
+  const limitByCapPeriod = new Map<string, number>();
+  for (const row of limits ?? []) {
+    if (row.limit_value != null) {
+      limitByCapPeriod.set(`${row.capability}:${row.period}`, row.limit_value);
+    }
+  }
+
+  const freeHighlights: FreeHighlight[] = HEADLINE_FREE.flatMap((h) => {
+    const limit = limitByCapPeriod.get(`${h.capability}:${h.period}`);
+    if (limit == null) return [];
+    return [{ capability: h.capability, unit: h.unit, limit, period: h.period }];
   });
 
   return { premium, freeHighlights };
