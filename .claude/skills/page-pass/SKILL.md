@@ -461,6 +461,13 @@ surface). Say which parts you judged as authored content.
   everything is); anything Arman should see → `agent-review-queue` row;
   unrelated defects → `FOUND_DEFECTS.md`.
 
+## Running it as a loop (coordinator)
+
+The tested loop: a worker per page (`loop/worker-brief.md`), then a blind judge
+per page who has never seen the worker's report (`loop/judge-brief.md`). The
+coordinator sends the judge's findings back as the next iteration, gives each
+shared defect one owner, and turns every miss into a rule here.
+
 ## Shared defects — report, don't skip, don't collide
 
 A defect you see on your page that lives in a shared piece (the shell header,
