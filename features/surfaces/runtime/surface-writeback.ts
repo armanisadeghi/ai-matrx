@@ -62,6 +62,13 @@ import {
   SURFACE_FEEDBACK_TARGET_NAME,
   validateSurfaceFeedback,
 } from "./surface-feedback";
+import {
+  applyCustomFieldsWrite,
+  CUSTOM_FIELDS_TARGET_NAME,
+  customFieldsTarget,
+  hasCustomFieldsDoors,
+  validateCustomFieldsWrite,
+} from "./custom-field-targets";
 import { toast } from "@/lib/toast";
 
 import type {
@@ -921,6 +928,9 @@ export async function applySurfaceWrite(
   if (targetName === SURFACE_FEEDBACK_TARGET_NAME) {
     return applySurfaceFeedbackWrite(rawValue, opts);
   }
+  if (targetName === CUSTOM_FIELDS_TARGET_NAME) {
+    return applyCustomFieldsTargetWrite(rawValue, opts);
+  }
   const stack = getSurfaceRuntimeStack().filter(
     (entry) => !opts?.surfaceName || entry.surfaceName === opts.surfaceName,
   );
@@ -1223,6 +1233,67 @@ async function applySurfaceFeedbackWrite(
 }
 
 /**
+ * The PLATFORM write target `custom_fields_add` (`custom-field-targets.ts`) —
+ * the agent twin of a custom-fields section's "Add field". It belongs to no
+ * manifest: it is offered while a section is mounted and goes to that
+ * section's own door. Same order as every write: declared type → the whole
+ * request checked (every problem at once, before any card) → policy (`ask`:
+ * the person approves) → the section adds each field and reads it back.
+ */
+async function applyCustomFieldsTargetWrite(
+  rawValue: unknown,
+  opts?: ApplySurfaceWriteOptions,
+): Promise<SurfaceWriteResult> {
+  if (!hasCustomFieldsDoors()) {
+    return failUnapplicable(
+      unapplicableMessage(CUSTOM_FIELDS_TARGET_NAME, "No custom-fields section is open on this page."),
+      { targetName: CUSTOM_FIELDS_TARGET_NAME },
+    );
+  }
+  const target = customFieldsTarget();
+  const primary = getSurfaceRuntimeStack()[0];
+  const surfaceName = primary?.surfaceName ?? "";
+  const typed = coerceDeclaredValueType(target, rawValue);
+  if (!typed.ok) {
+    return refuseBeforeApproval(typed.error, { targetName: target.name, surfaceName });
+  }
+  const value = typed.value;
+  try {
+    validateCustomFieldsWrite(value);
+  } catch (error) {
+    return refuseBeforeApproval(
+      error instanceof Error ? error.message : `"${target.label}" refused this value.`,
+      { targetName: target.name, surfaceName },
+    );
+  }
+  if ((opts?.origin ?? "user") === "agent") {
+    const verdict = await agentWriteAllowed(
+      target,
+      surfaceName,
+      opts?.actorLabel,
+      value,
+      opts?.requestApproval,
+      primary ?? { surfaceName, getScope: () => ({}) },
+    );
+    if (verdict !== true) return verdict;
+  }
+  try {
+    const outcome = await applyCustomFieldsWrite(value);
+    if (!opts?.quiet && outcome.summary) toast.success(outcome.summary);
+    return { ok: true, surfaceName, target, outcome, change: writeReceipt(target, value, NOT_READ) };
+  } catch (error) {
+    // The store's own refusal, or a part-way result naming what landed: the
+    // agent's to act on, not a platform fault.
+    return {
+      ok: false,
+      refused: true,
+      phase: "apply",
+      error: error instanceof Error ? error.message : `"${target.label}" did not complete.`,
+    };
+  }
+}
+
+/**
  * The ONE delegated tool name through which an agent's RUN reaches this seam.
  *
  * `buildToolInjection` offers it as an inline spec whenever the mounted
@@ -1362,6 +1433,16 @@ export function listLiveWriteTargets(): ReadonlyArray<{
     out.push({
       surfaceName: getSurfaceRuntimeStack()[0]?.surfaceName ?? "",
       target: WINDOW_FORM_TARGET,
+      hasHandler: true,
+    });
+  }
+  // The custom-fields target: offered while a custom-fields section is
+  // mounted (any record page that embeds EntityCustomFields), attributed to
+  // the primary surface — or none, like window forms.
+  if (hasCustomFieldsDoors()) {
+    out.push({
+      surfaceName: getSurfaceRuntimeStack()[0]?.surfaceName ?? "",
+      target: customFieldsTarget(),
       hasHandler: true,
     });
   }
