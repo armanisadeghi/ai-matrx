@@ -106,7 +106,7 @@ function PlanLabel({
         {name}
       </span>
       {badge ? (
-        <Badge variant="secondary" className="gap-1 text-xs font-medium">
+        <Badge variant="outline" className="gap-1 border-primary/40 text-xs font-medium text-primary">
           <Check className="h-3 w-3" />
           {badge}
         </Badge>
@@ -344,7 +344,7 @@ export function EducationPricing({
 
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card/60 px-6 py-4 lg:flex-row lg:items-center lg:gap-6 lg:px-8">
         <span className="shrink-0 text-sm font-medium">Every plan includes</span>
-        <ul className="grid gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:gap-x-6">
+        <ul className="grid flex-1 gap-2 sm:grid-cols-2 lg:gap-x-6">
           {EVERY_PLAN.map((line) => (
             <Line key={line} icon={Check} muted>
               {line}
