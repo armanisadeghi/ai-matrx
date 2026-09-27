@@ -59,6 +59,7 @@ import { useEntityListSelection } from "../useEntityListSelection";
 import type { MatrxDataTableSelectionConfig } from "@ai-matrx/design-system/data-table/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { EntitySourceFailures } from "./EntitySourceFailures";
+import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
 
 const EMPTY_ITEM_MENU_CONFIG: ItemMenuConfig = { sections: [] };
 
@@ -880,7 +881,9 @@ export function EntityListPage<TRow>({
             config={config}
             actions={actions}
             rows={list.rows}
+            // read-gate-exempt: totalUnknown below tells the table the read failed, and it prints no row count then
             total={list.total}
+            totalUnknown={Boolean(list.error)}
             page={list.query.page}
             pageSize={prefs.pageSize}
             sort={effectiveSort.sort}
@@ -962,6 +965,7 @@ export function EntityListPage<TRow>({
           <LoadMoreFooter
             loaded={list.rows.length}
             total={list.total}
+            read={{ status: list.error ? "error" : list.isLoading ? "loading" : "ready", error: list.error }}
             page={list.query.page}
             pageSize={prefs.pageSize}
             onPage={list.setPage}
@@ -1046,12 +1050,15 @@ function EntityListEmpty({
 function LoadMoreFooter({
   loaded,
   total,
+  read,
   page,
   pageSize,
   onPage,
 }: {
   loaded: number;
   total: number;
+  /** The list read behind `total` — a failed read shows "—", never a count. */
+  read: CountRead;
   page: number;
   pageSize: number;
   onPage: (page: number) => void;
@@ -1061,7 +1068,7 @@ function LoadMoreFooter({
   return (
     <div className="flex items-center justify-center gap-3 pt-4 text-xs text-muted-foreground">
       <span className="tabular-nums">
-        {shownThrough} of {total}
+        {shownThrough} of <UntrustedCount value={total} read={read} label="Total" />
       </span>
       <div className="flex items-center gap-1">
         <Button

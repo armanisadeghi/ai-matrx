@@ -147,6 +147,11 @@ interface Props<TRow> {
   emptyAction?: React.ReactNode;
   /** The outcome of the list read (RC-B12 r13) — the table shows `emptyState` only after it succeeded. */
   read?: ReadOutcome;
+  /**
+   * The list read failed and the page says so itself (RC-B12 r13): the footer prints no row
+   * count — "0 rows" under a failed read is a claim about the data nobody can make.
+   */
+  totalUnknown?: boolean;
   /** Resolved empty state from the page (which knows if a search/filter is on). */
   emptyState?: {
     title: string;
@@ -272,6 +277,7 @@ export function EntityListTable<TRow>({
   emptyAction,
   emptyState,
   read,
+  totalUnknown = false,
   selection,
   tableToolbar,
   pageToolbarSlot,
@@ -468,7 +474,7 @@ export function EntityListTable<TRow>({
       // No row count until the rows arrive (page-pass 2026-09-27): the footer
       // read "0 rows" under the loading skeleton.
       paginationLabelFormat={(start, end, count) =>
-        isLoading
+        isLoading || totalUnknown || read?.status === "error"
           ? ""
           : count === 0
             ? "0 rows"
