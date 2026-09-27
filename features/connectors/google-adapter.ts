@@ -281,6 +281,14 @@ export interface ConnectorProviderState {
   refetch: () => Promise<ConnectorAccount[] | null>;
 }
 
+/** A failed refresh invalidates cached admission data for new consent. */
+export function effectiveGoogleRollout(
+  cached: ConnectorCapabilityRollout[],
+  catalogFailed: boolean,
+): ConnectorCapabilityRollout[] {
+  return catalogFailed ? [] : cached;
+}
+
 /** Live Google state for the connector surfaces, in provider-agnostic shapes. */
 export function useGoogleConnectorState(): ConnectorProviderState {
   const inventory = useGoogleConnectionInventory();
@@ -288,8 +296,8 @@ export function useGoogleConnectorState(): ConnectorProviderState {
 
   const accounts = (inventory.data?.connections ?? []).map(googleAccount);
 
-  const rollout: ConnectorCapabilityRollout[] = (capabilities.data ?? []).map(
-    (row) => ({
+  const rollout = effectiveGoogleRollout(
+    (capabilities.data ?? []).map((row) => ({
       capabilityKey: row.key,
       phase: row.rollout_phase === "available" ? "available" : "pending",
       eligible: row.eligible,
@@ -297,7 +305,8 @@ export function useGoogleConnectorState(): ConnectorProviderState {
       ineligibleReason: row.eligible
         ? null
         : admissionLanguage(row.admission_error),
-    }),
+    })),
+    capabilities.isError,
   );
 
   const resourceCountByAccount: Record<string, number> = {};
@@ -308,8 +317,12 @@ export function useGoogleConnectorState(): ConnectorProviderState {
   }
 
   const refetch = useCallback(async () => {
-    const [latest] = await Promise.all([inventory.refetch(), capabilities.refetch()]);
-    if (latest.isError || !latest.data) return null;
+    const [latest, refreshedCatalog] = await Promise.all([
+      inventory.refetch(),
+      capabilities.refetch(),
+    ]);
+    if (latest.isError || !latest.data || refreshedCatalog.isError || !refreshedCatalog.data)
+      return null;
     return latest.data.connections.map(googleAccount);
   }, [inventory, capabilities]);
 

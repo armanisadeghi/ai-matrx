@@ -215,6 +215,11 @@ export function accountSummary(
   return live.join(", ");
 }
 
+/** Keep the disabled connected affordance; every other switch must be actionable. */
+export function productSwitchVisible(health: ConnectorProductHealth): boolean {
+  return health.togglable || health.state === "connected";
+}
+
 function ProductRow({
   provider,
   health,
@@ -234,8 +239,6 @@ function ProductRow({
 }) {
   const Icon = health.product.icon;
   const gated = health.state === "pending_rollout";
-  /** Blocked: no toggle at all, because no request could succeed (V17-1). */
-  const blocked = health.state === "unavailable";
   return (
     <div id={anchorId} tabIndex={anchorId ? -1 : undefined} className="scroll-mt-20 flex items-start gap-2 border-b border-border/60 px-1 py-2.5 outline-none last:border-b-0 focus:ring-2 focus:ring-primary sm:gap-2.5 sm:px-3">
       <Icon
@@ -356,7 +359,7 @@ function ProductRow({
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5">
-        {gated || blocked ? null : (
+        {productSwitchVisible(health) ? (
           <Switch
             checked={selected}
             disabled={busy || health.state === "connected"}
@@ -368,7 +371,7 @@ function ProductRow({
                 : undefined
             }
           />
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -800,8 +803,10 @@ export function ConnectorConsentBody({
             role="status"
             className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning"
           >
-            We could not reach {provider.name}&apos;s availability list, so no row
-            can be switched on right now. Nothing you have connected is affected.
+            {activeOrganizationId
+              ? `We could not reach ${provider.name}'s availability list, so no new row can be switched on right now.`
+              : `Choose an organization above to check which ${provider.name} products can be connected.`}
+            {" "}Nothing you have connected is affected.
             <ErrorAlchemyMenu />
           </div>
         ) : null}

@@ -633,6 +633,20 @@ export function productHealth({
     });
   }
 
+  // A missing catalog answer is not permission to offer a new grant. The
+  // planner already refuses it; the row must agree instead of showing a
+  // switch beside the availability warning. Existing complete grants can
+  // still report their current state while the catalog is unavailable.
+  if (rows.length !== product.capabilityKeys.length && missingScopes.length > 0) {
+    return row({
+      state: "unavailable",
+      label: "Availability unknown",
+      reason: `We could not confirm whether ${product.name} can be connected right now.`,
+      remedy: "Choose an organization if prompted, then try again.",
+      togglable: false,
+    });
+  }
+
   const blockedByServer = rows.find((r) => !r.eligible);
 
   if (!account || missingScopes.length === required.length) {
