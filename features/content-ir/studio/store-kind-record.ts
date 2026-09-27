@@ -172,12 +172,16 @@ export async function storeKindRecord(
       title: args.title,
       titleKey: args.titleKey,
       metadata,
+      producedByMessageId: args.provenance?.messageId ?? null,
     }),
     "Saving the record",
   );
 
   const messageId = args.provenance?.messageId;
-  const warning = messageId
+  // An organization that keeps its kind records in the record store got the edge IN THE
+  // SAME TRANSACTION as the record (`custom.record_write_graph`); writing it again here
+  // would point a second edge at a `content_ir_kind_instance` id that does not exist.
+  const warning = messageId && !saved.producedByEdgeWritten
     ? await withSaveTimeout(
         writeProducedByEdge({
           messageId,

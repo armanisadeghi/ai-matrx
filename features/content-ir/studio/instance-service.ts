@@ -27,6 +27,18 @@
  *
  * All functions throw `Error` with a human-readable message on failure; no
  * silent nulls.
+ *
+ * TWO STORES, ONE QUESTION (lane FINAL-SWITCH-KINDS, 2026-09-27). The relation is
+ * declared superseded by `custom.record`. Every function below asks
+ * `./kind-record-home.ts` — the browser half of aidream's ONE kind-record door — which
+ * store holds THIS organization's kind records. Today's table answers exactly as it
+ * always has; an organization that has adopted the record store for this source reads
+ * and writes its records through the store's own doors (`@ai-matrx/records`). The
+ * document there is the legacy relation's own columns, key for key — the shape aidream's
+ * server writers already store — so both writers fill one Table with one shape. The
+ * store has no derived-on-write validation trigger, so on that arm the verdict is the
+ * structural check THIS call ran (`passed` / `failed`), or `pending` when the kind has no
+ * schema to check against — never promoted.
  */
 
 import { supabase } from "@/utils/supabase/client";
@@ -39,6 +51,11 @@ import {
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import { validateStructuralLeg } from "@ai-matrx/content-ir";
 import { deriveInstanceTitle } from "./instance-title";
+import {
+  kindRecordClient,
+  whereKindRecordsLive,
+  type KindRecordHome,
+} from "./kind-record-home";
 import type { Json } from "@/types/database.types";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
@@ -116,6 +133,14 @@ export interface SaveKindInstanceArgs {
    * read to find what a chat produced.
    */
   metadata?: Record<string, unknown> | null;
+  /**
+   * The chat message that produced this record, when there is one. On the record-store
+   * arm the `produced_by` edge is written IN THE SAME TRANSACTION as the record
+   * (`custom.record_write_graph`), exactly as aidream's server store does, and the result
+   * says so (`producedByEdgeWritten`). Today's table ignores it: its edge is written by
+   * `storeKindRecord` after the row, as it always was.
+   */
+  producedByMessageId?: string | null;
 }
 
 export interface SaveKindInstanceResult extends KindInstanceWriteResult {
@@ -126,6 +151,53 @@ export interface SaveKindInstanceResult extends KindInstanceWriteResult {
    * trigger validates against it). Callers surface a small notice.
    */
   versionBumped: boolean;
+  /** Which store holds the record — carried so an edit goes back to the same one. */
+  home?: KindRecordHome;
+  /** True when the `produced_by` edge was written with the record (record-store arm only). */
+  producedByEdgeWritten?: boolean;
+}
+
+type RecordStoreHome = Extract<KindRecordHome, { store: "record" }>;
+
+/** The verdict a record-store write carries: what THIS call checked, never promoted. */
+function storeVerdict(data: unknown, emittedJsonSchema: Json | null): "passed" | "failed" | "pending" {
+  if (emittedJsonSchema === null || emittedJsonSchema === undefined) return "pending";
+  return validateStructuralLeg(data, emittedJsonSchema).ok ? "passed" : "failed";
+}
+
+function storeRefused(what: string, message: string): Error {
+  return new Error(`Failed to ${what} in this organization's record store: ${message}`);
+}
+
+/** One record of the kind-record Table, as its document. Throws when it is not readable here. */
+async function readStoreRecord(
+  home: RecordStoreHome,
+  id: string,
+): Promise<Record<string, unknown>> {
+  const client = await kindRecordClient(home);
+  const read = await client.recordRead({ record_id: id });
+  if (!read.ok) throw storeRefused("read the instance", read.error.message);
+  return read.data.document as Record<string, unknown>;
+}
+
+async function saveToRecordStore(
+  home: RecordStoreHome,
+  document: Record<string, unknown>,
+  producedByMessageId: string | null | undefined,
+): Promise<{ id: string; edge: boolean }> {
+  const client = await kindRecordClient(home);
+  if (producedByMessageId) {
+    const written = await client.recordWriteGraph({
+      table_id: home.tableId,
+      parent: document,
+      edges: [{ entity: "message", id: producedByMessageId, direction: "in", label: "produced_by" }],
+    });
+    if (!written.ok) throw storeRefused("save the instance", written.error.message);
+    return { id: written.data.parent_id, edge: true };
+  }
+  const written = await client.recordWrite({ table_id: home.tableId, data: document });
+  if (!written.ok) throw storeRefused("save the instance", written.error.message);
+  return { id: written.data, edge: false };
 }
 
 /** Live `version` + `emitted_json_schema` of a definition — freshness read. */
@@ -190,6 +262,36 @@ export async function saveKindInstance(
 
   const live = await fetchLiveDefinition(kindDefinitionId);
   const data = withRootKindMarker(value, live.kind);
+  const home = await whereKindRecordsLive(organizationId, userId);
+  if (home.store === "record") {
+    const verdict = storeVerdict(data, live.emittedJsonSchema);
+    const derivedTitle = deriveInstanceTitle(data, title, titleKey);
+    const saved = await saveToRecordStore(
+      home,
+      {
+        kind_definition_id: kindDefinitionId,
+        kind_version: live.version,
+        data,
+        title: derivedTitle,
+        validation_status: verdict,
+        created_by: userId,
+        organization_id: organizationId,
+        ...(metadata ? { metadata } : {}),
+      },
+      args.producedByMessageId,
+    );
+    return {
+      id: saved.id,
+      title: derivedTitle,
+      validationStatus: verdict,
+      kindVersion: live.version,
+      // A person saving from the browser, declared to the store as that person.
+      confirmation: "confirmed",
+      versionBumped: live.version !== kindVersion,
+      home,
+      producedByEdgeWritten: saved.edge,
+    };
+  }
   const { data: row, error } = await supabase
     .schema("content_ir")
     .from("kind_instance")
@@ -237,6 +339,56 @@ export interface KindInstanceListEntry {
   data: Json;
   /** Non-null when the row is archived — the tab badges it rather than lying. */
   archivedAt: string | null;
+  /** Which store answered this row — hand it back to update / repin / delete. */
+  home?: KindRecordHome;
+}
+
+async function listFromRecordStore(
+  home: RecordStoreHome,
+  kindDefinitionId: string,
+  archiveFilter: ArchiveFilterValue,
+  createdBy: string | null,
+): Promise<KindInstanceListEntry[]> {
+  const client = await kindRecordClient(home);
+  const filter: Record<string, string> = { kind_definition_id: kindDefinitionId };
+  if (createdBy) filter.created_by = createdBy;
+  const rows: Array<{ id: string; document: Record<string, unknown>; archivedAt: string | null }> = [];
+  if (archiveFilter !== "archived") {
+    const live = await client.list({ table_id: home.tableId, filter, limit: 1000 });
+    if (!live.ok) throw storeRefused("list instances", live.error.message);
+    for (const row of live.data.rows) {
+      rows.push({ id: row.id, document: row.document as Record<string, unknown>, archivedAt: null });
+    }
+  }
+  if (archiveFilter !== "active") {
+    const gone = await client.listArchived({ table_id: home.tableId, limit: 1000 });
+    if (!gone.ok) throw storeRefused("list archived instances", gone.error.message);
+    for (const row of gone.data.rows) {
+      const document = row.document as Record<string, unknown>;
+      // The archived door takes no filter, so the same filter is applied to what it answered.
+      if (Object.entries(filter).some(([key, value]) => String(document[key]) !== value)) continue;
+      rows.push({ id: row.id, document, archivedAt: row.archivedAt });
+    }
+  }
+  const updated = new Map<string, string>();
+  if (rows.length > 0) {
+    const headers = await client.recordHeaders({ ids: rows.map((r) => r.id) });
+    if (!headers.ok) throw storeRefused("read when instances changed", headers.error.message);
+    for (const header of headers.data) updated.set(header.id, header.updated_at);
+  }
+  return rows
+    .map((row) => ({
+      id: row.id,
+      title: typeof row.document.title === "string" ? row.document.title : null,
+      validationStatus:
+        typeof row.document.validation_status === "string" ? row.document.validation_status : "pending",
+      kindVersion: Number(row.document.kind_version ?? 0),
+      updatedAt: updated.get(row.id) ?? row.archivedAt ?? "",
+      data: (row.document.data ?? null) as Json,
+      archivedAt: row.archivedAt,
+      home,
+    }))
+    .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0));
 }
 
 /**
@@ -266,6 +418,12 @@ export async function listKindInstances(
    * records, never a tenant's (Arman, 2026-09-26).
    */
   homeOrganizationId?: string,
+  /**
+   * The person's active organization — the one whose store is asked where its kind
+   * records live. Without it (and without `homeOrganizationId`) the list reads today's
+   * table, as it always did.
+   */
+  activeOrganizationId?: string | null,
 ): Promise<KindInstanceListEntry[]> {
   const { data: auth, error: authError } = await getClaimsUser(supabase);
   if (authError)
@@ -276,6 +434,16 @@ export async function listKindInstances(
   if (!userId) throw new Error("Not signed in — cannot list instances.");
 
   const ownerOnly = await scopeToOwner("content_ir_kind_instance", scope);
+
+  const home = await whereKindRecordsLive(homeOrganizationId ?? activeOrganizationId, userId);
+  if (home.store === "record") {
+    return listFromRecordStore(
+      home,
+      kindDefinitionId,
+      archiveFilter,
+      !homeOrganizationId && ownerOnly ? userId : null,
+    );
+  }
 
   let query = supabase
     .schema("content_ir")
@@ -311,6 +479,40 @@ export interface UpdateKindInstanceArgs {
   value: Record<string, unknown>;
   /** The kind's `metadata.title_key` override — same contract as save. */
   titleKey?: string | null;
+  /** The store the row was listed from (`KindInstanceListEntry.home`). Absent = today's table. */
+  home?: KindRecordHome;
+}
+
+/** The kind slug a record-store document is pinned to, read live. */
+async function recordKind(document: Record<string, unknown>): Promise<{
+  kindDefinitionId: string;
+  live: Awaited<ReturnType<typeof fetchLiveDefinition>>;
+}> {
+  const kindDefinitionId = String(document.kind_definition_id ?? "");
+  if (!kindDefinitionId) {
+    throw new Error("The instance's kind no longer resolves (deleted or access revoked).");
+  }
+  return { kindDefinitionId, live: await fetchLiveDefinition(kindDefinitionId) };
+}
+
+async function updateInRecordStore(
+  home: RecordStoreHome,
+  id: string,
+  patch: Record<string, unknown>,
+  what: string,
+): Promise<KindInstanceWriteResult> {
+  const client = await kindRecordClient(home);
+  const written = await client.recordUpdate({ record_id: id, patch });
+  if (!written.ok) throw storeRefused(what, written.error.message);
+  const document = await readStoreRecord(home, id);
+  return {
+    id,
+    title: typeof document.title === "string" ? document.title : null,
+    validationStatus:
+      typeof document.validation_status === "string" ? document.validation_status : "pending",
+    kindVersion: Number(document.kind_version ?? 0),
+    confirmation: "confirmed",
+  };
 }
 
 /** The kind slug an instance row is pinned to. Throws if it no longer resolves. */
@@ -347,6 +549,24 @@ async function currentUserId(): Promise<string> {
 export async function updateKindInstance(
   args: UpdateKindInstanceArgs,
 ): Promise<KindInstanceWriteResult> {
+  if (args.home?.store === "record") {
+    const document = await readStoreRecord(args.home, args.id);
+    const { live } = await recordKind(document);
+    const data = withRootKindMarker(args.value, live.kind);
+    const pinnedToCurrent = Number(document.kind_version) === live.version;
+    return updateInRecordStore(
+      args.home,
+      args.id,
+      {
+        data,
+        title: deriveInstanceTitle(data, null, args.titleKey),
+        // Judged against the schema the instance is pinned to only when that IS the live
+        // one; pinned behind it, the verdict is `pending` until a repin — never guessed.
+        validation_status: pinnedToCurrent ? storeVerdict(data, live.emittedJsonSchema) : "pending",
+      },
+      "update the instance",
+    );
+  }
   // The kind is re-read from the row being updated, never trusted from the
   // caller — the marker written must be the row's ACTUAL kind.
   const data = withRootKindMarker(args.value, await instanceKindSlug(args.id));
@@ -385,6 +605,8 @@ export interface RepinKindInstanceArgs {
    * re-read here at repin time, never trusted from a page-load snapshot.
    */
   kindDefinitionId: string;
+  /** The store the row was listed from (`KindInstanceListEntry.home`). Absent = today's table. */
+  home?: KindRecordHome;
 }
 
 /**
@@ -400,6 +622,14 @@ export async function repinKindInstance(
   if (!leg.ok) {
     throw new Error(
       `Repin refused — the data does not validate against the CURRENT schema (v${live.version}): ${leg.detail ?? "validation failed"}. Edit the instance to match the current schema, then repin.`,
+    );
+  }
+  if (args.home?.store === "record") {
+    return updateInRecordStore(
+      args.home,
+      args.id,
+      { kind_version: live.version, validation_status: "passed" },
+      "repin the instance",
     );
   }
   const { data: row, error } = await supabase
@@ -422,7 +652,14 @@ export async function repinKindInstance(
 }
 
 /** Soft delete (platform tombstone) — `deleted_at` set, row retained. */
-export async function softDeleteKindInstance(id: string): Promise<void> {
+export async function softDeleteKindInstance(id: string, home?: KindRecordHome): Promise<void> {
+  if (home?.store === "record") {
+    // The store's delete is soft and reversible within the Table's retention.
+    const client = await kindRecordClient(home);
+    const done = await client.recordDelete({ record_id: id });
+    if (!done.ok) throw storeRefused("delete the instance", done.error.message);
+    return;
+  }
   const { error } = await tryWriteOne(
     supabase
       .schema("content_ir")

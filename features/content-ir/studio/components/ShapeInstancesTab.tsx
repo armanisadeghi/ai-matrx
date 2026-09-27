@@ -54,6 +54,8 @@ import {
 } from "@/features/content-ir/studio/instance-service";
 import { resolveListScope, type ListScopeWord } from "@/lib/list-scope";
 import { adminDoorOpen } from "@/lib/api/adminDoor";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { shapeTestHref } from "@/features/content-ir/studio/constants";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -163,6 +165,9 @@ export default function ShapeInstancesTab({
   // of this kind, never a tenant's, and there is no Mine / Organization
   // toggle. The PAGE decides (adminDoorOpen).
   const [adminSeat] = useState(() => adminDoorOpen());
+  // The organization whose store is asked where its kind records live (the list reads
+  // the record store for an organization that has adopted it for this source).
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
   const [scope, setScope] = useState<ListScopeWord | null>(() =>
     adminSeat ? "organization" : null,
   );
@@ -185,6 +190,7 @@ export default function ShapeInstancesTab({
         archiveFilter,
         scope ?? undefined,
         adminSeat ? SYSTEM_ORGANIZATION_ID : undefined,
+        activeOrganizationId,
       );
       setList({ status: "ready", entries });
       return entries;
@@ -193,7 +199,7 @@ export default function ShapeInstancesTab({
       setList({ status: "error", message });
       return null;
     }
-  }, [kindDefinitionId, archiveFilter, scope, adminSeat]);
+  }, [kindDefinitionId, archiveFilter, scope, adminSeat, activeOrganizationId]);
 
   useEffect(() => {
     void (async () => {
@@ -276,6 +282,7 @@ export default function ShapeInstancesTab({
         id: selected.id,
         value,
         titleKey,
+        home: selected.home,
       });
       await reload();
       setEditing(false);
@@ -316,6 +323,7 @@ export default function ShapeInstancesTab({
         id: selected.id,
         data: selectedData,
         kindDefinitionId,
+        home: selected.home,
       });
       await reload();
       setVerdictWarning(null);
@@ -340,7 +348,10 @@ export default function ShapeInstancesTab({
     if (!pendingDeleteId) return;
     setDeleting(true);
     try {
-      await softDeleteKindInstance(pendingDeleteId);
+      await softDeleteKindInstance(
+        pendingDeleteId,
+        entries.find((e) => e.id === pendingDeleteId)?.home,
+      );
       if (selectedId === pendingDeleteId) {
         setSelectedId(null);
         setEditing(false);
