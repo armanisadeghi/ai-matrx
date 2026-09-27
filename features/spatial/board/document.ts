@@ -21,12 +21,24 @@ export type NodeSource =
   | { kind: "stream"; requestId: string; conversationId?: string }
   /** Text or markdown kept on the board itself (a note, a saved stream's text). */
   | { kind: "text"; markdown: string }
+  /** A large on-board label (the Text tool) — board-only, no record. */
+  | { kind: "label"; text: string }
   | { kind: "html"; url?: string; html?: string }
   | { kind: "image"; fileId?: string; url?: string }
   | { kind: "file"; fileId: string }
   | { kind: "record"; tableId: string; recordId: string }
   | { kind: "document"; documentId: string }
-  | { kind: "thread"; threadId: string };
+  | { kind: "thread"; threadId: string }
+  /**
+   * Any platform record a registered board item type renders
+   * (`features/spatial/items`): `entity` is the item type key ("note",
+   * "chat", "task", "war-room"…), `id` the record's id. `id` is null while
+   * the record does not exist yet (a draft note is created by its first
+   * words; a new chat by its first launch). `meta` carries small strings the
+   * type needs to re-mount — or a `seed` for a record not created yet (pasted
+   * text becoming a note), dropped once the record exists.
+   */
+  | { kind: "entity"; entity: string; id: string | null; meta?: Record<string, string> };
 
 export interface BoardNode {
   id: string;
@@ -131,6 +143,8 @@ export function toJsonCanvas(doc: BoardDocument, origin: string) {
       switch (s.kind) {
         case "text":
           return { id: n.id, type: "text", ...box(n.rect), text: s.markdown };
+        case "label":
+          return { id: n.id, type: "text", ...box(n.rect), text: s.text };
         case "html":
           return s.url
             ? { id: n.id, type: "link", ...box(n.rect), url: new URL(s.url, origin).href, matrx: s }
@@ -171,6 +185,8 @@ function isSource(v: unknown): v is NodeSource {
       return typeof v.requestId === "string";
     case "text":
       return typeof v.markdown === "string";
+    case "label":
+      return typeof v.text === "string";
     case "html":
       return typeof v.url === "string" || typeof v.html === "string";
     case "image":
@@ -183,6 +199,13 @@ function isSource(v: unknown): v is NodeSource {
       return typeof v.documentId === "string";
     case "thread":
       return typeof v.threadId === "string";
+    case "entity":
+      return (
+        typeof v.entity === "string" &&
+        (v.id === null || typeof v.id === "string") &&
+        (v.meta === undefined ||
+          (isObject(v.meta) && Object.values(v.meta).every((m) => typeof m === "string")))
+      );
     default:
       return false;
   }
