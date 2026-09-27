@@ -16,8 +16,7 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useState, useTransition } from "react";
 import { LayoutGrid, Pencil, Plus } from "lucide-react";
 import { ChatCanvasWorkspace } from "@/features/canvas/workspace/ChatCanvasWorkspace";
-import type { CanvasNavPersisted } from "@/features/shell/canvas-chrome/canvas-nav-cookie";
-import type { CanvasChatPlacement } from "@/features/canvas/workspace/workspace-cookies";
+import type { CanvasWorkspaceLayout } from "@/features/canvas/workspace/workspace-cookies";
 import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -40,15 +39,13 @@ const UserBoard = dynamic(() => import("./UserBoard").then((m) => m.UserBoard), 
 export function BoardPage({
   target,
   workspaceId,
-  initialNav,
-  initialChat,
+  initialLayout,
   initialMode,
 }: {
   target: SavedBoardTarget;
   /** Cookies + the chat's surface key. */
   workspaceId: string;
-  initialNav: CanvasNavPersisted;
-  initialChat: CanvasChatPlacement;
+  initialLayout: CanvasWorkspaceLayout;
   initialMode: ComposerMode | null;
 }) {
   const saved = useSavedBoard(target);
@@ -88,8 +85,7 @@ export function BoardPage({
         id={workspaceId}
         title={title}
         byline={byline}
-        initialNav={initialNav}
-        initialChat={initialChat}
+        initialLayout={initialLayout}
         initialMode={initialMode}
         titleMenu={
           <>

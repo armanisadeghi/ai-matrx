@@ -1,8 +1,7 @@
 // /board — the person's own board (their home board in the active
 // organization): the platform's main way in. Mechanics: features/spatial/FEATURE.md.
 
-import { readCanvasNavCookie } from "@/features/shell/canvas-chrome/canvas-nav.server";
-import { readCanvasChatCookie } from "@/features/canvas/workspace/workspace-cookies.server";
+import { readCanvasWorkspaceLayout } from "@/features/canvas/workspace/workspace-cookies.server";
 import { readComposerModeCookie } from "@/features/agents/components/inputs/smart-input/composer/composer-mode.server";
 import { BoardPage } from "@/features/spatial/home/BoardPage";
 
@@ -10,9 +9,8 @@ import { BoardPage } from "@/features/spatial/home/BoardPage";
 const WORKSPACE_ID = "board-home";
 
 export default async function HomeBoardPage() {
-  const [initialNav, initialChat, initialMode] = await Promise.all([
-    readCanvasNavCookie(),
-    readCanvasChatCookie(WORKSPACE_ID),
+  const [initialLayout, initialMode] = await Promise.all([
+    readCanvasWorkspaceLayout(WORKSPACE_ID),
     readComposerModeCookie(),
   ]);
   return (
@@ -20,8 +18,7 @@ export default async function HomeBoardPage() {
       <BoardPage
         target={{ home: true }}
         workspaceId={WORKSPACE_ID}
-        initialNav={initialNav}
-        initialChat={initialChat}
+        initialLayout={initialLayout}
         initialMode={initialMode}
       />
     </div>
