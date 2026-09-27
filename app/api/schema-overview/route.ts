@@ -12,6 +12,7 @@
 
 import { NextResponse } from "next/server";
 import { requireSuperAdminDatabaseClient } from "@/features/administration/database-hub/require-super-admin-database-client";
+import { requireAdminQueryRows } from "@/lib/integrity/unwrap";
 import type {
     SchemaColumn,
     SchemaOverview,
@@ -147,10 +148,10 @@ async function loadOverview(
     if (fkResult.error) throw fkResult.error;
     if (pkResult.error) throw pkResult.error;
 
-    const tableRows = (tablesResult.data ?? []) as unknown as InformationSchemaTableRow[];
-    const columnRows = (columnsResult.data ?? []) as unknown as InformationSchemaColumnRow[];
-    const fkRows = (fkResult.data ?? []) as unknown as ForeignKeyRow[];
-    const pkRows = (pkResult.data ?? []) as unknown as PrimaryKeyRow[];
+    const tableRows = requireAdminQueryRows<InformationSchemaTableRow>(tablesResult.data, "tables");
+    const columnRows = requireAdminQueryRows<InformationSchemaColumnRow>(columnsResult.data, "columns");
+    const fkRows = requireAdminQueryRows<ForeignKeyRow>(fkResult.data, "foreign keys");
+    const pkRows = requireAdminQueryRows<PrimaryKeyRow>(pkResult.data, "primary keys");
 
     const relationKey = (schema: string, table: string) => `${schema}.${table}`;
 

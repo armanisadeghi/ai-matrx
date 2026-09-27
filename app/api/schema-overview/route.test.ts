@@ -53,11 +53,17 @@ describe("schema overview authorization boundary", () => {
   });
 
   it("rechecks authority before returning a process-cached payload", async () => {
-    const rpc = jest.fn().mockResolvedValue({ data: [], error: null });
+    const rpc = jest.fn()
+      .mockResolvedValueOnce({
+        data: { result: [{ table_schema: "public", table_name: "fixture", table_type: "BASE TABLE" }] },
+        error: null,
+      })
+      .mockResolvedValue({ data: { result: [] }, error: null });
     requireSuperAdminDatabaseClient.mockResolvedValueOnce({ rpc });
 
     const first = await GET();
     expect(first.status).toBe(200);
+    expect((await first.json()).tables["public.fixture"].table_name).toBe("public.fixture");
     expect(first.headers.get("Cache-Control")).toBe("private, no-store");
     expect(rpc).toHaveBeenCalledTimes(4);
 

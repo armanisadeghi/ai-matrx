@@ -14,3 +14,16 @@ export function unwrapRows(data: unknown): IntegrityFinding[] {
   }
   return [];
 }
+
+/** Require the row envelope when an empty answer would misrepresent a failed admin read. */
+export function requireAdminQueryRows<T>(data: unknown, label: string): T[] {
+  const rows = Array.isArray(data)
+    ? data
+    : data && typeof data === "object"
+      ? (data as { result?: unknown }).result
+      : undefined;
+  if (!Array.isArray(rows)) {
+    throw new Error(`Admin query ${label} returned an invalid row envelope`);
+  }
+  return rows as T[];
+}
