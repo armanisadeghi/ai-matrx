@@ -40,6 +40,8 @@ export const GOOGLE_SCOPE = {
   // Pending all-calendar event writes; catalog and consent remain internal test.
   calendarEventsWrite: "https://www.googleapis.com/auth/calendar.events",
   tasksReadonly: "https://www.googleapis.com/auth/tasks.readonly",
+  // Internal-only reviewed Task changes; excluded from consent bundles until provider approval.
+  tasksWrite: "https://www.googleapis.com/auth/tasks",
   tagManagerReadonly: "https://www.googleapis.com/auth/tagmanager.readonly",
   googleAds: "https://www.googleapis.com/auth/adwords",
 } as const;
