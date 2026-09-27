@@ -31,15 +31,17 @@ is a layout change, not a slide).
   cookie `side-panel:<panelId>:width`.
 - `side-panel-width.server.ts` — `readSidePanelWidth(panelId, sizes)` for the first paint.
 
-**Consumers:** `features/canvas/workspace/ChatCanvasWorkspace.tsx` (nav, docked chat, properties),
-`features/shell/chat-dock/ShellChatDock.tsx` (the shell's chat dock).
+**Consumers:** `features/canvas/workspace/ChatCanvasWorkspace.tsx` (nav, docked chat, properties).
 
 ---
 
 ## Invariants & gotchas
 
 - **The slide animates the panel's WIDTH while its content keeps its own width** — content slides out of view,
-  never reflows mid-animation. The transition is off while dragging so the edge follows the pointer exactly.
+  never reflows mid-animation. Pace: `SIDE_PANEL_SLIDE_CLASS` — the shell sidebar's own 600ms even ease-in-out
+  (Arman, 2026-09-27: 200ms was "far too fast"). Off while dragging so the edge follows the pointer exactly.
+- **`onCollapse`: drag past the minimum and keep going (80px) and the panel closes** — it slides shut while the
+  pointer is still down; dragging back out undoes it; the width it had is kept for reopening.
 - **A closed panel stays mounted and is `inert` + `aria-hidden`.** A host that must not keep something alive
   while closed (a second copy of a chat column) renders it conditionally inside.
 - **The width shown is always clamped to the space the panel has NOW** — `sizes` and `maxShare` of the parent,
@@ -51,7 +53,7 @@ is a layout change, not a slide).
 - **Handle:** drag · double-click = default · focused ← / → (Shift = ×4), Home / End = min / max. It is a real
   `role="separator"` with `aria-valuenow`.
 - **Hosts that care about first paint pass `initialWidth`** from `readSidePanelWidth` (or a host reader that
-  wraps it, e.g. `readCanvasWorkspaceLayout`, `readChatDockInitial`); otherwise the first paint is the default.
+  wraps it, e.g. `readCanvasWorkspaceLayout`); otherwise the first paint is the default.
 
 ---
 
@@ -60,3 +62,5 @@ is a layout change, not a slide).
 - **2026-09-27** — Created for the canvas workspace's three panels and the shell chat dock.
 - **2026-09-27** — Review fixes: window-level drag, parent-share clamp re-checked on resize, `publishWidthAs`,
   hover reported for the whole panel.
+- **2026-09-27** — 600ms shell-sidebar pace; `onCollapse` (drag past the minimum closes). The shell chat dock was
+  removed (Arman rejected a right-side dock under the app header).

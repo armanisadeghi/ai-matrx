@@ -22,21 +22,19 @@ island stays mounted) and draws its own nav + headers: read
 state, in this order:
 
 ```
-[ route-injected actions (#shell-header-right) ] [ Search ] [ Agents ] [ Chat ] [ Canvas ] [ Inbox ]
+[ route-injected actions (#shell-header-right) ] [ Search ] [ Agents ] [ Canvas ] [ Inbox ]
 ```
 
 | Control | File | Inactive state |
 |---|---|---|
 | Agents | `features/surfaces/components/chrome/SurfaceAgentsHeaderButton.tsx` | Guest → the same button opens the auth gate. |
-| Chat | `features/shell/chat-dock/ChatDockHeaderButton.tsx` (via `ChatDockHeaderSlot`) | Guest → auth gate. `/chat` and canvas pages → `disabled`, tooltip says why. Open → pressed; hides the dock. The chat dock itself: [`chat-dock/FEATURE.md`](./chat-dock/FEATURE.md). |
 | Canvas | `features/canvas/core/CanvasHeaderToggle.tsx` | Empty → `disabled`, tooltip says why. Open → pressed, puts the canvas away. The 44px slot never unmounts (`canvas-header-slot-reserved.test.tsx`). |
 | Inbox | `features/notifications/components/InboxHeaderButton.tsx` | Guest → auth gate. Badge absent at 0; a partially-unknown count says so. |
 
-**On a phone (below 640px) the five fold into ONE control** —
+**On a phone (below 640px) the four fold into ONE control** —
 `components/header/HeaderPhoneOverflow.tsx`, a bottom sheet holding Search,
-Agents (its panel opens in the sheet), Chat (the chat dock's bottom sheet; a
-page that is its own chat is a disabled row that says why), Canvas (same three
-states; empty is a disabled row that says why) and Inbox (its panel in the sheet; the unread count
+Agents (its panel opens in the sheet), Canvas (same three states; empty is a
+disabled row that says why) and Inbox (its panel in the sheet; the unread count
 rides the button). The four stay mounted in `.shell-header-secondary`; the swap
 is CSS (`styles/shell.css`), so the server-rendered row never shifts, and the
 phone always shows that one button — consistent per device, nothing removed.
@@ -85,7 +83,7 @@ sign out.
 
 - `2026-09-27` — **No nav item sits under the account block**: the `--shell-user-block-h` reservation moved from `.shell-sidebar-footer` (hidden on the settings route, so /user-settings' last item sat under the avatar) to the `.shell-sidebar` column at desktop widths. Landed in sweep commit `591d465ff0`. Guard: `__tests__/sidebar-reserves-the-account-block.test.ts` (2 of 2 red against the old CSS).
 
-- **2026-09-27** — The header right set gains Chat (the chat dock, `chat-dock/`); the shell grid gains the `chatdock` column the header spans.
+- **2026-09-27** — Chat beside a page is the canvas workspace (`features/canvas/workspace/`), not a shell column: the short-lived right-side chat dock and its header control were removed (Arman). Signed-in `/education` renders in canvas chrome (`SIGNED_IN_CANVAS_CHROME_ROUTES`, `data-signed-in`).
 - `2026-09-27` — **The phone header keeps the title**: below 640px Search / Agents / Canvas / Inbox fold into `HeaderPhoneOverflow` (one button → bottom sheet with the same four). `AGENTS_AUTH_GATE`, `INBOX_AUTH_GATE`, `useOpenBarOrGate`, `useCanvasHeaderToggle`, `SurfaceAgentsPanelImpl` are exported so the sheet reuses each control's own copy and state.
 
 - `2026-09-27` — **"Choose org" is a call to action, not an alarm** (page-pass shared defects): the header nudge, the avatar ring and the account menu's Organization icon move from red to primary. Guards: `HeaderChooseOrgButton.test.tsx`, `UserMenuOrgSection.test.tsx`.

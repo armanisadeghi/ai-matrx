@@ -16,8 +16,10 @@ switches — nav (collapsed / hover / open), chat (docked / floating, and open /
 closed), input (grows to a knob share of the panel). Every side panel is a `DockedSidePanel`
 (`components/official/side-panel`): it slides open and closed and the person drags its edge to any width
 between its min and max — nav 240 (200–360), chat 440 (340–760), properties 250 (220–420) — remembered per
-person across canvas pages. Ordinary pages with the app's own header and sidebar get the shell chat dock
-instead (`features/shell/chat-dock/`). Generic: any canvas (a spatial board, a document, a Matrx UI) is a host. There must be only one
+person across canvas pages; dragging a panel past its minimum closes it. A MODULE can be hosted too: its layout
+renders the workspace with the module's pages as the canvas (education does, for signed-in people), and every
+`<PageHeader>` / `<RouteHeader>` inside portals into the workspace header — the module's own menu sits in the
+canvas header, the app's menu is the canvas nav. Generic: any canvas (a spatial board, a document, a Matrx UI) is a host. There must be only one
 such layout in the app.
 
 ---
@@ -28,7 +30,10 @@ such layout in the app.
   `canvas`, `title`, `titleMenu?`, `byline?`, `record?` (Share + comments; absent = those controls absent),
   `properties?` (tabs; absent = no panel), `getCanvasContext?`, `contextChip?`, `initialLayout?`
   (`readCanvasWorkspaceLayout(id, { defaultChatOpen })` — nav, chat, properties, the three widths),
-  `defaultChatOpen?` (default true; many pages start with the chat closed), `initialMode?`, `onClose?`.
+  `defaultChatOpen?` (default true; many pages start with the chat closed), `followPageSurface?` (the chat sees
+  the page on screen and follows the person from page to page — a hosted module; its "Sees <page>" row is the
+  visible switch, `PageContextRow`), `initialMode?`, `onClose?`. `title` is optional (a hosted module brings its
+  own header).
 - **`CanvasChatColumn`** — the platform's ONE chat column (`AgentConversationColumn`) with the COMPACT
   composer; `buildCanvasSmartInputProps` is the single place its composer props are built.
 - **`useCanvasWorkspaceConversation(surfaceKey, { enabled })`** — the surface-owned conversation: `startNew`,
@@ -36,7 +41,7 @@ such layout in the app.
   organization and offers the ONE org gate (`ensureOrganizationContext`) — never picks one. With
   `enabled: false` nothing launches: a chat that starts closed launches when it is first opened.
 - **`ChatPanelTitleMenu` / `useChatPanelTitle`** — the chat's name ▾ (New chat · Rename · Open in full chat),
-  shared with the shell chat dock.
+  shared by every chat panel.
 - **`CanvasPropertiesPanel`** — tabs; lists scroll with a bottom fade, scrollbar on hover.
 - **Cookies** — `workspace-cookies.ts` (chat `side` · `floating` · `…:closed`, properties open/closed, sizes,
   panel ids) + `workspace-cookies.server.ts` (`readCanvasWorkspaceLayout`).
@@ -66,7 +71,8 @@ user block and dock. The attribute is stamped at SSR for listed routes and kept 
 navigation; a mounted `<ShellChromeMode/>` sets it on unlisted routes after hydration.
 
 **Chat open / closed.** The chat panel header has Pop out and Hide; the floating window has Dock and ×
-(hide). A hidden chat is reopened by the canvas header's **Chat** button or ⌘\ (which shows / hides it). The
+(hide). A hidden chat is reopened by the **Chat** button at the LEFT of the canvas header — where the chat opens
+— or ⌘\ (which shows / hides it). The
 chat column lives in exactly ONE place: the docked panel while docked (the panel stays mounted while hidden,
 so the conversation keeps its place), the floating window while floating, the drawer below 1024px. The nav's
 "+" and a history row open the chat if it is hidden.
@@ -78,6 +84,15 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
 
 ## Invariants & gotchas
 
+- **The page header slot:** the canvas header renders `[data-page-header-target="workspace"]` (center) and
+  `[data-page-header-right-target="workspace"]`; `PageHeaderPortal` / `PageHeaderRightPortal` prefer them over
+  the (hidden) shell header slots.
+- **Hosted modules for signed-in people only** are listed in `SIGNED_IN_CANVAS_CHROME_ROUTES` (education): a
+  guest keeps the ordinary shell (the chat needs an account). `AppShell` stamps `data-signed-in`.
+- **The nav's click-collapse suppresses hover preview** until the pointer moves 40px from the click (the nav
+  slides away for 600ms and carries the toggle icon under a still pointer).
+- **More** in the canvas nav lists every app destination; one with sub-destinations opens them in a submenu
+  (grouped as the sidebar groups them).
 - **List a route in `CANVAS_CHROME_ROUTES` only once its page renders `ChatCanvasWorkspace`** — listing it
   earlier hides the shell's nav with nothing to replace it.
 - **The Agents menu and Inbox live in the canvas header** on canvas pages (agent disclosure: a surface's
@@ -113,3 +128,6 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
 - **2026-09-27** — Every side panel is a `DockedSidePanel` (slide + drag-resize + remembered width); the chat
   can be hidden completely (Chat button / ⌘\ reopens it) and starts closed where the host says
   (`defaultChatOpen`), launching only on first open; properties can be hidden; hosts pass `initialLayout`.
+- **2026-09-27** — Education hosted in the workspace (signed in); page headers portal into the canvas header;
+  `followPageSurface`; the Chat reopen button moved to the left; drag past the minimum closes a panel; 600ms slide;
+  click-collapse no longer re-opens on hover; More shows every sub-destination.

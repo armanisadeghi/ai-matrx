@@ -32,7 +32,11 @@ export default function PageHeaderPortal({
   // stayed missing until the tab was shown. If the slot is not there yet
   // (a shell that mounts later), watch for it instead of guessing a delay.
   useEffect(() => {
-    const find = () => document.getElementById("shell-header-center");
+    // Inside a ChatCanvasWorkspace the shell header is hidden (canvas chrome);
+    // the workspace's own header carries the page's header content instead.
+    const find = () =>
+      document.querySelector<HTMLElement>('[data-page-header-target="workspace"]') ??
+      document.getElementById("shell-header-center");
     const now = find();
     if (now) {
       setTarget(now);

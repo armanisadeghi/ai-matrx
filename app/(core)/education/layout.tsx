@@ -6,6 +6,13 @@ import { EducationHeader } from "@/features/education/components/EducationHeader
 import { OfflineStudySyncMount } from "@/features/education/study/offline/OfflineStudySyncMount";
 import { EducationAgeGateMount } from "@/features/education/compliance/EducationAgeGateMount";
 import { ScrollAssistantLauncher } from "@/features/agents/components/ambient-assistant/ScrollAssistantLauncher";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { ChatCanvasWorkspace } from "@/features/canvas/workspace/ChatCanvasWorkspace";
+import { readCanvasWorkspaceLayout } from "@/features/canvas/workspace/workspace-cookies.server";
+import { readComposerModeCookie } from "@/features/agents/components/inputs/smart-input/composer/composer-mode.server";
+
+/** The education workspace's id: its chat, its remembered layout. */
+const EDUCATION_WORKSPACE_ID = "education";
 
 export const metadata = {
   ...createRouteMetadata("/education", {
@@ -21,12 +28,12 @@ export const metadata = {
   manifest: "/education.webmanifest",
 };
 
-export default function EducationLayout({
+export default async function EducationLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
+  const body = (
     <>
       <EducationHeader />
       {/* Drains the offline study outbox on every education route, on `online`,
@@ -46,5 +53,32 @@ export default function EducationLayout({
       </div>
       <ScrollAssistantLauncher inputVariant="text-voice" />
     </>
+  );
+
+  // A guest (education is public and crawlable) keeps the ordinary shell: the
+  // chat needs an account.
+  const { isAuthenticated } = await getServerAuth();
+  if (!isAuthenticated) return body;
+
+  // Signed in: THE chat-beside-a-canvas layout (features/canvas/workspace) —
+  // the new left nav, the chat beside it (closed until opened), and education
+  // as the canvas. EducationHeader's module menu portals into the workspace
+  // header; the chat sees whichever education page is on screen and follows
+  // the person from page to page. Listed in SIGNED_IN_CANVAS_CHROME_ROUTES so
+  // the first paint already has canvas chrome.
+  const [initialLayout, initialMode] = await Promise.all([
+    readCanvasWorkspaceLayout(EDUCATION_WORKSPACE_ID, { defaultChatOpen: false }),
+    readComposerModeCookie(),
+  ]);
+  return (
+    <ChatCanvasWorkspace
+      id={EDUCATION_WORKSPACE_ID}
+      initialLayout={initialLayout}
+      defaultChatOpen={false}
+      followPageSurface
+      initialMode={initialMode}
+      // Canvas chrome stops `.shell-main` scrolling; the education pages scroll here.
+      canvas={<div className="h-full min-h-0 overflow-y-auto">{body}</div>}
+    />
   );
 }

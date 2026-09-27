@@ -7,14 +7,12 @@
  * (Search, Agents, Canvas, Inbox — 44px each) plus the route's own actions and
  * the "Choose org" chip took ~260px of the header, and the page's title in the
  * center collapsed to "C.", "Fla…", "O…", "Fa…". The title is the one thing
- * the header exists to show. Below `sm` (640px) the four controls fold into
+ * the header exists to show. Below 768px (`useIsMobile`) the four controls fold into
  * this ONE button, which opens a bottom sheet holding all four — the same
  * controls, the same states, the same auth gates:
  *
  *   Search  → the ⌘K bar (the dock's Search door, too)
  *   Agents  → the page's agents panel, in this sheet
- *   Chat    → the chat beside this page (its own bottom sheet); a page that is
- *             its own chat = disabled row that says why
  *   Canvas  → open / put away; empty = disabled row that says why
  *   Inbox   → the inbox panel, in this sheet; the unread count rides the button
  *
@@ -26,14 +24,13 @@
  * so the server-rendered header never shifts on hydrate.
  */
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import {
   Bell,
   ChevronLeft,
   ChevronRight,
   EllipsisVertical,
   Layers,
-  MessageSquare,
   Search,
 } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
@@ -58,8 +55,10 @@ import { INBOX_AUTH_GATE } from "@/features/notifications/components/InboxHeader
 import { InboxPanel } from "@/features/notifications/components/InboxPanel";
 import { useInboxCounts } from "@/features/notifications/useInbox";
 import { cn } from "@/lib/utils";
-import { CHAT_DOCK_AUTH_GATE, CHAT_DOCK_TOOLTIP_CLOSED } from "@/features/shell/chat-dock/ChatDockHeaderButton";
-import { useChatDock } from "@/features/shell/chat-dock/useChatDock";
+import {
+  setPhonePageActionsHost,
+  usePhonePageActions,
+} from "./phone-page-actions";
 
 type View = "menu" | "agents" | "inbox";
 
@@ -113,7 +112,7 @@ function CountBadge({ count }: { count: number }) {
   );
 }
 
-const TRIGGER_LABEL = "Search, agents, chat, canvas and inbox";
+const TRIGGER_LABEL = "Search, agents, canvas and inbox";
 
 /**
  * 🚨 THE UNREAD MARK NEVER SITS ON THE ⋮ (page-pass shared defects,
@@ -155,6 +154,46 @@ function InboxRowTrailing() {
   );
 }
 
+/**
+ * The page's own header actions, at the top of the sheet. The host node (which
+ * `RouteHeader` portals its actions into) is MOVED in while the section shows
+ * and back to the hidden holder when it goes — the actions never unmount.
+ * A press on an action closes the sheet, unless it opens a menu of its own.
+ */
+function PageActionsSection({
+  host,
+  holder,
+  onDone,
+}: {
+  host: HTMLElement;
+  holder: HTMLElement | null;
+  onDone: () => void;
+}) {
+  const slotRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const slot = slotRef.current;
+    if (!slot) return;
+    slot.appendChild(host);
+    return () => {
+      if (holder) holder.appendChild(host);
+    };
+  }, [host, holder]);
+  return (
+    <section aria-label="This page" data-header-page-actions className="border-b border-border pb-1">
+      <p className="px-3 pb-1 pt-1 text-xs font-medium text-muted-foreground">This page</p>
+      <div
+        ref={slotRef}
+        className="[&_[data-route-header-overflow-item]]:min-h-12 [&_[data-route-header-overflow-item]]:px-2 [&_[data-route-header-overflow-item]_span]:text-base [&_[data-route-header-overflow-item]_span]:text-foreground"
+        onClick={(event) => {
+          const target = event.target as HTMLElement;
+          if (target.closest("[aria-haspopup]")) return;
+          if (target.closest("button, a, [role='button'], [role='menuitem']")) onDone();
+        }}
+      />
+    </section>
+  );
+}
+
 export function HeaderPhoneOverflow({
   isAuthenticated,
 }: {
@@ -165,8 +204,24 @@ export function HeaderPhoneOverflow({
   const openSearch = useOpenBarOrGate(isAuthenticated);
   const openAuthGate = useOpenAuthGateDialog();
   const canvas = useCanvasHeaderToggle();
-  // On a phone the dock is always a sheet; its remembered desktop state is irrelevant here.
-  const chatDock = useChatDock(false);
+  const pageActions = usePhonePageActions();
+
+  // The persistent node route headers portal their actions into (see
+  // `phone-page-actions.ts`); it rests in a hidden holder beside the button.
+  const [holder, setHolder] = useState<HTMLDivElement | null>(null);
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!holder) return;
+    const node = document.createElement("div");
+    node.setAttribute("data-header-page-actions-host", "");
+    holder.appendChild(node);
+    setHost(node);
+    setPhonePageActionsHost(node);
+    return () => {
+      setPhonePageActionsHost(null);
+      node.remove();
+    };
+  }, [holder]);
 
   const close = () => setOpen(false);
   const onOpenChange = (next: boolean) => {
@@ -182,6 +237,7 @@ export function HeaderPhoneOverflow({
 
   return (
     <div className="shell-header-overflow relative shrink-0" data-header-phone-overflow>
+      <div ref={setHolder} hidden aria-hidden />
       {isAuthenticated ? (
         <SignedInOverflowTrigger onOpen={() => setOpen(true)} />
       ) : (
@@ -202,6 +258,9 @@ export function HeaderPhoneOverflow({
 
           {view === "menu" ? (
             <div className="matrx-touch-targets flex flex-col gap-0.5 px-2 pb-4">
+              {host && pageActions.count > 0 ? (
+                <PageActionsSection host={host} holder={holder} onDone={close} />
+              ) : null}
               <Row
                 icon={<Search className="h-5 w-5" />}
                 label="Search"
@@ -222,20 +281,6 @@ export function HeaderPhoneOverflow({
                   setView("agents");
                 }}
                 trailing={<ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />}
-              />
-              <Row
-                icon={<MessageSquare className="h-5 w-5 text-primary" />}
-                label={CHAT_DOCK_TOOLTIP_CLOSED}
-                detail={isAuthenticated ? (chatDock.unavailableReason ?? undefined) : undefined}
-                disabled={isAuthenticated && chatDock.unavailableReason !== null}
-                onClick={() => {
-                  close();
-                  if (!isAuthenticated) {
-                    openAuthGate(CHAT_DOCK_AUTH_GATE);
-                    return;
-                  }
-                  chatDock.toggle();
-                }}
               />
               {canvas.isAvailable ? (
                 <Row

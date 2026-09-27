@@ -1,7 +1,9 @@
 "use client";
 
 // PageHeaderRightPortal — Client-only portal for the header right slot
-// (#shell-header-right), immediately left of the user avatar.
+// (#shell-header-right), immediately left of the user avatar. Inside a
+// ChatCanvasWorkspace (canvas chrome hides the shell header) it portals into
+// the workspace header's right slot instead.
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -16,7 +18,10 @@ export default function PageHeaderRightPortal({
   const [target, setTarget] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    setTarget(document.getElementById("shell-header-right"));
+    setTarget(
+      document.querySelector<HTMLElement>('[data-page-header-right-target="workspace"]') ??
+        document.getElementById("shell-header-right"),
+    );
   }, []);
 
   if (!target) return null;

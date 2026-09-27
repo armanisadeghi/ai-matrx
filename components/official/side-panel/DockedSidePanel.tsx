@@ -17,6 +17,9 @@
  *     so a width chosen on a wide monitor never crushes the page in a small
  *     window. The person's chosen width is kept and comes back when there is
  *     room again.
+ *   - With `onCollapse`, dragging past the minimum and KEEPING ON (80px past
+ *     it) closes the panel — it slides shut while the pointer is still down,
+ *     and dragging back out undoes it. The width it had is kept for reopening.
  *   - `overlay` lays the same panel OVER the page (the hover preview of a
  *     collapsed nav) instead of beside it.
  *
@@ -40,6 +43,15 @@ const KEY_STEP_PX = 16;
 const KEY_STEP_LARGE_PX = 64;
 /** A panel never takes more than this share of the space it sits in. */
 const DEFAULT_MAX_SHARE = 0.6;
+/** How far past the minimum a drag must go before it closes the panel. */
+const COLLAPSE_PAST_PX = 80;
+/**
+ * THE slide — every docked panel opens and closes at this pace: the shell
+ * sidebar's own motion (600ms, `--shell-ease-smooth`, an even ease-in-out),
+ * never a front-loaded snap (Arman, 2026-09-27: 200ms was "far too fast").
+ */
+export const SIDE_PANEL_SLIDE_CLASS =
+  "transition-[width] duration-[600ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none";
 
 export interface DockedSidePanelProps {
   /** Stable id: the remembered width is stored under it. */
@@ -63,6 +75,8 @@ export interface DockedSidePanelProps {
    */
   publishWidthAs?: `--${string}`;
   onWidthChange?: (width: number) => void;
+  /** Present = dragging well past the minimum closes the panel (the host sets `open` false). */
+  onCollapse?: () => void;
   "aria-label": string;
   children: ReactNode;
   /** Classes for the panel body (background, border, padding). */
@@ -85,6 +99,7 @@ export function DockedSidePanel({
   resizable = true,
   publishWidthAs,
   onWidthChange,
+  onCollapse,
   children,
   className,
   outerClassName,
@@ -97,6 +112,7 @@ export function DockedSidePanel({
   const [chosenWidth, setChosenWidth] = useState(initialWidth ?? sizes.defaultPx);
   const [parentWidth, setParentWidth] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [collapsePending, setCollapsePending] = useState(false);
   const drag = useRef<{ startX: number; startWidth: number; latest: number } | null>(null);
 
   // The space the panel sits in, tracked so the clamp follows the window.
@@ -114,7 +130,7 @@ export function DockedSidePanel({
       : sizes.maxPx;
   const limits: SidePanelSizes = { defaultPx: sizes.defaultPx, minPx: sizes.minPx, maxPx: maxNow };
   const width = clampSidePanelWidth(chosenWidth, limits);
-  const occupied = open ? width : 0;
+  const occupied = open && !collapsePending ? width : 0;
 
   useEffect(() => {
     if (!publishWidthAs) return undefined;
@@ -147,14 +163,26 @@ export function DockedSidePanel({
   const onDragMove = useEffectEvent((e: PointerEvent) => {
     const current = drag.current;
     if (!current) return;
-    current.latest = clampSidePanelWidth(current.startWidth + (e.clientX - current.startX) * grow, limits);
+    const raw = current.startWidth + (e.clientX - current.startX) * grow;
+    const pending = onCollapse !== undefined && raw < limits.minPx - COLLAPSE_PAST_PX;
+    setCollapsePending(pending);
+    if (pending) return;
+    current.latest = clampSidePanelWidth(raw, limits);
     setChosenWidth(current.latest);
   });
   const onDragEnd = useEffectEvent(() => {
     const current = drag.current;
     drag.current = null;
     setDragging(false);
-    if (current) commit(current.latest);
+    if (!current) return;
+    if (collapsePending) {
+      // Closed by dragging: reopen at the width it had before this drag.
+      setCollapsePending(false);
+      setChosenWidth(current.startWidth);
+      onCollapse?.();
+      return;
+    }
+    commit(current.latest);
   });
   useEffect(() => {
     if (!dragging) return undefined;
@@ -210,8 +238,9 @@ export function DockedSidePanel({
       className={cn(
         "relative flex h-full min-h-0 shrink-0 overflow-hidden",
         edge === "right" ? "justify-end" : "justify-start",
-        // The slide. Off while dragging, so the edge follows the pointer exactly.
-        !dragging && "transition-[width] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
+        // The slide. Off while dragging, so the edge follows the pointer exactly —
+        // except when a drag past the minimum is closing it.
+        (!dragging || collapsePending) && SIDE_PANEL_SLIDE_CLASS,
         overlay && cn("absolute inset-y-0 z-40 shadow-2xl", edge === "right" ? "right-0" : "left-0"),
         outerClassName,
       )}

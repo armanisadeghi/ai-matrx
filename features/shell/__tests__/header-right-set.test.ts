@@ -10,10 +10,8 @@
  * `features/canvas/__tests__/canvas-header-slot-reserved.test.tsx` and the
  * Playwright gate `features/shell/layout-gate/canvas-one-presentation.spec.ts`):
  *
- *   1. `Header.tsx` mounts exactly Search → Agents → Chat → Canvas → Inbox, in
- *      that order, each unconditionally (no `isAuthenticated &&` in front of
- *      them). Chat (the chat dock) joined 2026-09-27: disabled with the reason
- *      on a page that is its own chat, the auth gate for a guest.
+ *   1. `Header.tsx` mounts exactly Search → Agents → Canvas → Inbox, in that
+ *      order, each unconditionally (no `isAuthenticated &&` in front of them).
  *   2. The avatar is not in the header: no `UserMenuTrigger`, no
  *      `.shell-user-menu-wrapper`; it lives in `ShellUserBlock`, which both
  *      shells (`AppShell`, the dev layout) mount.
@@ -35,22 +33,19 @@ const read = (file: string) => readFileSync(path.join(REPO, file), "utf8");
 describe("the header right set", () => {
   const header = read("features/shell/components/header/Header.tsx");
 
-  it("mounts Search, Agents, Chat, Canvas and Inbox in that order, unconditionally", () => {
+  it("mounts Search, Agents, Canvas and Inbox in that order, unconditionally", () => {
     const search = header.indexOf("<CommandBarHeaderButton");
     const agents = header.indexOf("<SurfaceAgentsHeaderButton");
     expect(search).toBeGreaterThan(-1);
     expect(agents).toBeGreaterThan(search);
-    const chat = header.indexOf("<ChatDockHeaderSlot");
     const canvas = header.indexOf("<CanvasShellHeaderToggle");
     const inbox = header.indexOf("<InboxHeaderButton");
     expect(agents).toBeGreaterThan(-1);
-    expect(chat).toBeGreaterThan(agents);
-    expect(canvas).toBeGreaterThan(chat);
+    expect(canvas).toBeGreaterThan(agents);
     expect(inbox).toBeGreaterThan(canvas);
     for (const control of [
       "<CommandBarHeaderButton",
       "<SurfaceAgentsHeaderButton",
-      "<ChatDockHeaderSlot",
       "<CanvasShellHeaderToggle",
       "<InboxHeaderButton",
     ]) {

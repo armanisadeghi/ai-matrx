@@ -5,7 +5,6 @@ import { SurfaceAgentsHeaderButton } from "@/features/surfaces/components/chrome
 import { InboxHeaderButton } from "@/features/notifications/components/InboxHeaderButton";
 import { CommandBarHeaderButton } from "@/features/knowledge/command-bar/OpenCommandBarButtons";
 import { HeaderPhoneOverflow } from "./HeaderPhoneOverflow";
-import { ChatDockHeaderSlot } from "@/features/shell/chat-dock/ChatDockSlots";
 
 interface HeaderProps {
   isAuthenticated: boolean;
@@ -17,20 +16,19 @@ interface HeaderProps {
  * things for that top-right section … never hiding things and only disabling
  * when inactive"):
  *
- *   [ route-injected actions ] [ Search ] [ Agents ] [ Chat ] [ Canvas ] [ Inbox ]
+ *   [ route-injected actions ] [ Search ] [ Agents ] [ Canvas ] [ Inbox ]
  *
  * Search opens the ⌘K bar — the phone's way in, where there is no keyboard.
  *
  * Each control owns a fixed 44px slot and is ALWAYS mounted. A control with
  * nothing to do is `disabled` with a tooltip that says why (Canvas with
- * nothing in it, Chat on a page that is its own chat); a control a guest
- * cannot use opens the auth gate (Agents, Chat, Inbox). Nothing here unmounts
- * on state, so the row never shifts.
+ * nothing in it); a control a guest cannot use opens the auth gate (Agents,
+ * Inbox). Nothing here unmounts on state, so the row never shifts.
  *
  * The one conditional element is the "Choose org" nudge, which exists only
  * while no organization is chosen (primary call-to-action tint, never alarm red).
  *
- * ON A PHONE (below 640px) the four fold into ONE control — `HeaderPhoneOverflow`,
+ * ON A PHONE (below 768px) the four fold into ONE control — `HeaderPhoneOverflow`,
  * a bottom sheet holding the same four with the same states — so the page title
  * in the center stays readable (page-pass shared defects, 2026-09-27: titles
  * collapsed to "C." and "Fla…"). The swap is CSS, so the server-rendered row
@@ -55,7 +53,6 @@ export default function Header({ isAuthenticated }: HeaderProps) {
         <div className="shell-header-secondary">
           <CommandBarHeaderButton isAuthenticated={isAuthenticated} />
           <SurfaceAgentsHeaderButton isAuthenticated={isAuthenticated} />
-          <ChatDockHeaderSlot isAuthenticated={isAuthenticated} />
           <CanvasShellHeaderToggle />
           <InboxHeaderButton isAuthenticated={isAuthenticated} />
         </div>
