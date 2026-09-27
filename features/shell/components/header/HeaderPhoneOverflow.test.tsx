@@ -57,6 +57,20 @@ jest.mock("@/features/notifications/components/InboxPanel", () => ({
 jest.mock("@/features/notifications/useInbox", () => ({
   useInboxCounts: () => ({ total: 3, partial: false }),
 }));
+const toggleChatDock = jest.fn();
+let chatDockUnavailable: string | null = null;
+jest.mock("@/features/shell/chat-dock/useChatDock", () => ({
+  useChatDock: () => ({
+    dockOpen: false,
+    sheetOpen: false,
+    compact: true,
+    unavailableReason: chatDockUnavailable,
+    pressed: false,
+    toggle: toggleChatDock,
+    closeDock: jest.fn(),
+    closeSheet: jest.fn(),
+  }),
+}));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { TooltipProvider } = require("@/components/ui/tooltip") as typeof import("@/components/ui/tooltip");
@@ -87,7 +101,7 @@ function click(el: Element | null | undefined) {
 }
 
 function openSheet() {
-  click(host.querySelector('button[aria-label="Search, agents, canvas and inbox"]'));
+  click(host.querySelector('button[aria-label="Search, agents, chat, canvas and inbox"]'));
 }
 
 function row(label: string): HTMLButtonElement | undefined {
@@ -101,6 +115,7 @@ afterEach(() => {
   document.body.innerHTML = "";
   jest.clearAllMocks();
   canvasState = { isOpen: false, isAvailable: true, itemCount: 0, headlineTitle: "Canvas" };
+  chatDockUnavailable = null;
 });
 
 describe("the header right set on a phone — source", () => {
@@ -108,7 +123,7 @@ describe("the header right set on a phone — source", () => {
     const header = read("features/shell/components/header/Header.tsx");
     const secondary = header.indexOf('className="shell-header-secondary"');
     expect(secondary).toBeGreaterThan(-1);
-    for (const control of ["<CommandBarHeaderButton", "<SurfaceAgentsHeaderButton", "<CanvasShellHeaderToggle", "<InboxHeaderButton"]) {
+    for (const control of ["<CommandBarHeaderButton", "<SurfaceAgentsHeaderButton", "<ChatDockHeaderSlot", "<CanvasShellHeaderToggle", "<InboxHeaderButton"]) {
       expect(header.indexOf(control)).toBeGreaterThan(secondary);
     }
     expect(header.indexOf("<HeaderPhoneOverflow")).toBeGreaterThan(header.indexOf("<InboxHeaderButton"));
@@ -170,6 +185,28 @@ describe("HeaderPhoneOverflow — the same four, the same states", () => {
     openSheet();
     click(row("Agents for this page"));
     expect(document.querySelector('[data-testid="agents-panel"]')).not.toBeNull();
+  });
+
+  it("Chat opens the chat beside the page; on a page that is its own chat the row is disabled and says why", () => {
+    mount(true);
+    openSheet();
+    click(row("Chat beside this page"));
+    expect(toggleChatDock).toHaveBeenCalled();
+    chatDockUnavailable = "This page is a chat — the chat panel is for every other page";
+    act(() => root.unmount());
+    mount(true);
+    openSheet();
+    const chat = row("Chat beside this page");
+    expect(chat?.disabled).toBe(true);
+    expect(chat?.textContent).toContain("This page is a chat");
+  });
+
+  it("a guest reaching for Chat gets the auth gate", () => {
+    mount(false);
+    openSheet();
+    click(row("Chat beside this page"));
+    expect(openAuthGate).toHaveBeenCalledWith(expect.objectContaining({ featureName: "Chat" }));
+    expect(toggleChatDock).not.toHaveBeenCalled();
   });
 
   it("a guest reaching for Agents or Inbox gets the auth gate, never a dead row", () => {

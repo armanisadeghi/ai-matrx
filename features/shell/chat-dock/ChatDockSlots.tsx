@@ -6,13 +6,22 @@
 
 import { readComposerModeCookie } from "@/features/agents/components/inputs/smart-input/composer/composer-mode.server";
 import { readChatDockInitial } from "./chat-dock.server";
+import { CHAT_DOCK_WIDTH_VAR } from "./chat-dock-cookie";
 import { ChatDockHeaderButton } from "./ChatDockHeaderButton";
 import { ShellChatDock } from "./ShellChatDock";
 
 /** In `.shell-root`, right after `<main>`: the dock's grid column. */
 export async function ShellChatDockSlot() {
   const [initial, initialMode] = await Promise.all([readChatDockInitial(), readComposerModeCookie()]);
-  return <ShellChatDock initial={initial} initialMode={initialMode} />;
+  return (
+    <>
+      {/* First paint of the dock's width variable; ShellChatDock keeps it current. */}
+      {initial.open ? (
+        <style>{`@media (min-width: 1024px) { .shell-root { ${CHAT_DOCK_WIDTH_VAR}: ${initial.width}px; } }`}</style>
+      ) : null}
+      <ShellChatDock initial={initial} initialMode={initialMode} />
+    </>
+  );
 }
 
 /** In THE HEADER RIGHT SET. */

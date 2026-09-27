@@ -13,6 +13,8 @@
  *
  *   Search  → the ⌘K bar (the dock's Search door, too)
  *   Agents  → the page's agents panel, in this sheet
+ *   Chat    → the chat beside this page (its own bottom sheet); a page that is
+ *             its own chat = disabled row that says why
  *   Canvas  → open / put away; empty = disabled row that says why
  *   Inbox   → the inbox panel, in this sheet; the unread count rides the button
  *
@@ -31,6 +33,7 @@ import {
   ChevronRight,
   EllipsisVertical,
   Layers,
+  MessageSquare,
   Search,
 } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
@@ -55,6 +58,8 @@ import { INBOX_AUTH_GATE } from "@/features/notifications/components/InboxHeader
 import { InboxPanel } from "@/features/notifications/components/InboxPanel";
 import { useInboxCounts } from "@/features/notifications/useInbox";
 import { cn } from "@/lib/utils";
+import { CHAT_DOCK_AUTH_GATE, CHAT_DOCK_TOOLTIP_CLOSED } from "@/features/shell/chat-dock/ChatDockHeaderButton";
+import { useChatDock } from "@/features/shell/chat-dock/useChatDock";
 
 type View = "menu" | "agents" | "inbox";
 
@@ -142,6 +147,8 @@ export function HeaderPhoneOverflow({
   const openSearch = useOpenBarOrGate(isAuthenticated);
   const openAuthGate = useOpenAuthGateDialog();
   const canvas = useCanvasHeaderToggle();
+  // On a phone the dock is always a sheet; its remembered desktop state is irrelevant here.
+  const chatDock = useChatDock(false);
 
   const close = () => setOpen(false);
   const onOpenChange = (next: boolean) => {
@@ -159,7 +166,7 @@ export function HeaderPhoneOverflow({
     <div className="shell-header-overflow relative shrink-0" data-header-phone-overflow>
       <TapTargetButton
         icon={<EllipsisVertical />}
-        ariaLabel="Search, agents, canvas and inbox"
+        ariaLabel="Search, agents, chat, canvas and inbox"
         onClick={() => setOpen(true)}
       />
       {isAuthenticated ? <SignedInTriggerBadge /> : null}
@@ -198,6 +205,20 @@ export function HeaderPhoneOverflow({
                   setView("agents");
                 }}
                 trailing={<ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />}
+              />
+              <Row
+                icon={<MessageSquare className="h-5 w-5 text-primary" />}
+                label={CHAT_DOCK_TOOLTIP_CLOSED}
+                detail={isAuthenticated ? (chatDock.unavailableReason ?? undefined) : undefined}
+                disabled={isAuthenticated && chatDock.unavailableReason !== null}
+                onClick={() => {
+                  close();
+                  if (!isAuthenticated) {
+                    openAuthGate(CHAT_DOCK_AUTH_GATE);
+                    return;
+                  }
+                  chatDock.toggle();
+                }}
               />
               {canvas.isAvailable ? (
                 <Row

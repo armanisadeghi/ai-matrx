@@ -14,6 +14,12 @@ export const CHAT_DOCK_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 export const CHAT_DOCK_SIZES: SidePanelSizes = { defaultPx: 420, minPx: 340, maxPx: 720 };
 
+/**
+ * The width the dock takes from the page, on `.shell-root` (0px when closed).
+ * Anything pinned to the viewport that must stay clear of the dock reads it.
+ */
+export const CHAT_DOCK_WIDTH_VAR = "--shell-chat-dock-w";
+
 /** What a server render hands the dock and its header button. */
 export interface ChatDockInitial {
   open: boolean;

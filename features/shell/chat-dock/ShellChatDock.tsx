@@ -24,7 +24,7 @@
  * Below 1024px the same chat opens as a bottom sheet (never remembered).
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff, PanelRightClose } from "lucide-react";
 import { DockedSidePanel } from "@/components/official/side-panel/DockedSidePanel";
 import {
@@ -44,6 +44,7 @@ import { useConversationFollowsPage } from "@/features/surfaces/runtime/useConve
 import {
   CHAT_DOCK_PANEL_ID,
   CHAT_DOCK_SIZES,
+  CHAT_DOCK_WIDTH_VAR,
   writeChatDockFollowsPage,
   type ChatDockInitial,
 } from "./chat-dock-cookie";
@@ -64,6 +65,15 @@ export function ShellChatDock({
 }) {
   const dock = useChatDock(initial.open);
   const [followsPage, setFollowsPageState] = useState(initial.followsPage);
+  const [width, setWidth] = useState(initial.width);
+
+  // Page elements pinned to the viewport (the ambient assistant bar, …) read
+  // `--shell-chat-dock-w` to stay clear of the dock. The server paints the
+  // first value (ChatDockSlots); this keeps it current.
+  const occupied = dock.dockOpen && !dock.compact ? width : 0;
+  useEffect(() => {
+    document.querySelector<HTMLElement>(".shell-root")?.style.setProperty(CHAT_DOCK_WIDTH_VAR, `${occupied}px`);
+  }, [occupied]);
   // The chat is SHOWN in exactly one place: the column on a wide screen, the
   // sheet below 1024px. Nothing launches until it is first shown.
   const shown = dock.compact ? dock.sheetOpen : dock.dockOpen;
@@ -97,6 +107,7 @@ export function ShellChatDock({
         open={dock.dockOpen}
         sizes={CHAT_DOCK_SIZES}
         initialWidth={initial.width}
+        onWidthChange={setWidth}
         aria-label="Chat"
         outerClassName="shell-chat-dock max-lg:hidden"
         className="border-l border-border bg-card"
