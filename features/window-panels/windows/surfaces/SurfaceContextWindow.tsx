@@ -194,9 +194,12 @@ export default function SurfaceContextWindow({
   const supplied = declared.filter((value) =>
     hasValue(live.scope[value.name]),
   ).length;
-  const missingRequired = declared.filter(
-    (value) => value.alwaysAvailable && !hasValue(live.scope[value.name]),
-  ).length;
+  // "Missing" means ABSENT: a loaded-and-empty value ([] / "" / 0) is a real,
+  // supplied answer (the surface contract), never a missing one.
+  const missingRequiredNames = declared
+    .filter((value) => value.alwaysAvailable && live.scope[value.name] === undefined)
+    .map((value) => value.name);
+  const missingRequired = missingRequiredNames.length;
   // What could be WRITTEN into this page right now — the write half of the
   // contract, beside the values. This is also the ONLY place a declared target
   // with no registered handler becomes visible BEFORE an agent tries it and
@@ -504,9 +507,13 @@ export default function SurfaceContextWindow({
             supplied
           </span>
           {missingRequired > 0 ? (
-            <span className="flex items-center gap-1 text-destructive">
+            <span
+              className="flex items-center gap-1 text-destructive"
+              title={`Promised on every open but absent: ${missingRequiredNames.join(", ")}`}
+            >
               <TriangleAlert className="h-3 w-3" />
-              {missingRequired} required missing
+              {missingRequired} required missing: {missingRequiredNames.slice(0, 3).join(", ")}
+              {missingRequiredNames.length > 3 ? "…" : ""}
             </span>
           ) : declared.length > 0 ? (
             <span className="text-emerald-600 dark:text-emerald-400">
