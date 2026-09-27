@@ -16,8 +16,15 @@
 //                                       every item to have an icon, else this
 //                                       stage is skipped)
 //   menu  → single dropdown trigger   (not even icons fit)
-//   none  → nothing drawn             (not even the trigger fits: the TITLE
-//                                       wins. Page-pass 2026-09-27: the
+//           · in flow                 (the trigger does not fit the centered
+//                                       slot: it leaves the true center and
+//                                       takes RouteHeader's whole center cell,
+//                                       beside the title — `data-route-nav-inflow`)
+//           · icon only               (not even the labelled trigger fits: the
+//                                       current mode's icon + chevron, the name
+//                                       kept for assistive tech)
+//   none  → nothing drawn             (not even the icon trigger fits: the
+//                                       TITLE wins. Page-pass 2026-09-27: the
 //                                       trigger used to draw anyway, clipped —
 //                                       "nu" after a phone title, a "Menu"
 //                                       stub on top of "Flashcard St…")
@@ -25,6 +32,10 @@
 // It measures the BOUNDED center slot from RouteHeader (viewport-centered,
 // width = total − 2×max(left, right)) via a ResizeObserver and picks the
 // densest variant that fits, so it can never spill into the left/right regions.
+// Before "none" it tries RouteHeader's in-flow center cell — at 768px the
+// agent-app header's centered slot was 0px wide and its whole mode nav
+// vanished (2026-09-27). RouteHeader reserves room in that cell for the icon
+// trigger by reading `data-route-nav-min`.
 //
 // cmd/ctrl+click on any item opens that sub-route in a new tab (Link + href),
 // per the repo navigation-feedback rule.
@@ -60,7 +71,10 @@ import {
   NavItemTooltip,
   NavTooltipProvider,
 } from "@/features/shell/components/header/NavItemTooltip";
-import { centerSlotWidth } from "@/features/shell/components/header/RouteHeader";
+import {
+  CENTER_INFLOW_GUTTER,
+  centerSlotWidth,
+} from "@/features/shell/components/header/RouteHeader";
 import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
 
 export interface RouteNavItem {
@@ -81,6 +95,14 @@ export interface RouteNavItem {
 }
 
 type Variant = "full" | "icons" | "menu" | "none";
+
+interface NavLayout {
+  variant: Variant;
+  /** Out of the centered slot, in RouteHeader's whole center cell. */
+  inflow: boolean;
+  /** The menu trigger shows the current mode's icon only. */
+  iconTrigger: boolean;
+}
 
 interface RouteModeNavProps {
   items: RouteNavItem[];
@@ -130,7 +152,12 @@ export function RouteModeNav({
 }: RouteModeNavProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [variant, setVariant] = useState<Variant>(maxVariant === "menu" ? "menu" : "full");
+  const [layout, setLayout] = useState<NavLayout>({
+    variant: maxVariant === "menu" ? "menu" : "full",
+    inflow: false,
+    iconTrigger: false,
+  });
+  const { variant, inflow, iconTrigger } = layout;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -138,6 +165,7 @@ export function RouteModeNav({
   const fullRef = useRef<HTMLDivElement>(null);
   const compactRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLSpanElement>(null);
+  const menuIconRef = useRef<HTMLSpanElement>(null);
 
   const canIcons = items.every((i) => i.icon);
   const itemsKey = items.map((i) => i.href).join("|");
@@ -161,6 +189,9 @@ export function RouteModeNav({
     const routeHeaderRight = routeHeader?.querySelector<HTMLElement>(
       "[data-route-header-right]",
     );
+    const routeHeaderCenter = cell.closest<HTMLElement>(
+      "[data-route-header-center]",
+    );
 
     const compute = () => {
       // RouteHeader normally writes this bound onto the absolute center. Read
@@ -178,14 +209,36 @@ export function RouteModeNav({
       const fullW = fullRef.current?.scrollWidth ?? 0;
       const compactW = compactRef.current?.scrollWidth ?? 0;
       const menuW = menuRef.current?.scrollWidth ?? 0;
+      const menuIconW = menuIconRef.current?.scrollWidth ?? menuW;
+      // The whole center cell — its track, not the centered inset inside it
+      // that the in-flow layout drops — so the choice never depends on itself.
+      const inflowAvail = routeHeaderCenter
+        ? routeHeaderCenter.clientWidth - CENTER_INFLOW_GUTTER
+        : -Infinity;
+      const centered = (w: number) => w <= avail + FLANK_GUTTER / 2;
+      let next: NavLayout;
+      if (maxVariant !== "menu" && fullW <= avail)
+        next = { variant: "full", inflow: false, iconTrigger: false };
+      else if (maxVariant !== "menu" && canIcons && compactW > 0 && compactW <= avail)
+        next = { variant: "icons", inflow: false, iconTrigger: false };
+      else if (centered(menuW))
+        next = { variant: "menu", inflow: false, iconTrigger: false };
+      else if (menuW <= inflowAvail)
+        next = { variant: "menu", inflow: true, iconTrigger: false };
+      else if (centered(menuIconW))
+        next = { variant: "menu", inflow: false, iconTrigger: true };
+      else if (menuIconW <= inflowAvail)
+        next = { variant: "menu", inflow: true, iconTrigger: true };
       // The title always wins: a trigger that does not fit is not drawn at
       // all — a clipped one reads as garbage beside the title.
-      if (menuW > avail + FLANK_GUTTER / 2) setVariant("none");
-      else if (maxVariant === "menu") setVariant("menu");
-      else if (fullW <= avail) setVariant("full");
-      else if (canIcons && compactW > 0 && compactW <= avail)
-        setVariant("icons");
-      else setVariant("menu");
+      else next = { variant: "none", inflow: false, iconTrigger: false };
+      setLayout((prev) =>
+        prev.variant === next.variant &&
+        prev.inflow === next.inflow &&
+        prev.iconTrigger === next.iconTrigger
+          ? prev
+          : next,
+      );
     };
 
     compute();
@@ -194,9 +247,11 @@ export function RouteModeNav({
     if (fullRef.current) ro.observe(fullRef.current);
     if (compactRef.current) ro.observe(compactRef.current);
     if (menuRef.current) ro.observe(menuRef.current);
+    if (menuIconRef.current) ro.observe(menuIconRef.current);
     if (routeHeader) ro.observe(routeHeader);
     if (routeHeaderLeft) ro.observe(routeHeaderLeft);
     if (routeHeaderRight) ro.observe(routeHeaderRight);
+    if (routeHeaderCenter) ro.observe(routeHeaderCenter);
     return () => ro.disconnect();
     // Keyed on WHAT the items are, not on the array's identity. Callers build
     // this list inline, so a parent that re-renders often — a live agent run, a
@@ -252,7 +307,11 @@ export function RouteModeNav({
     // w-full is load-bearing: the measured width must be the CELL's available
     // space, not the currently-rendered variant's content width — otherwise a
     // compact first render (portal not yet laid out) locks the nav in "menu".
-    <div ref={cellRef} className="relative flex w-full min-w-0 justify-center">
+    <div
+      ref={cellRef}
+      className="relative flex w-full min-w-0 justify-center"
+      data-route-nav-inflow={inflow ? "" : undefined}
+    >
       {/* Hidden measurers — always at natural width, never affect layout.
           `w-max` on EACH measurer is load-bearing: they are block-level
           siblings inside one shrink-to-fit absolute box, so without it both
@@ -282,6 +341,18 @@ export function RouteModeNav({
             <ChevronDown className="opacity-60" />
           </span>
         </span>
+        {/* The smallest trigger: the icon alone. RouteHeader reserves room for
+            it beside the title (`data-route-nav-min`). */}
+        <span
+          ref={menuIconRef}
+          data-route-nav-min
+          className={cn(PILL, "w-max px-1")}
+        >
+          <span className={cn(ITEM, NAV_ITEM_SELECTED)}>
+            {ActiveIcon ? <ActiveIcon /> : <span>{current?.name ?? fallbackLabel}</span>}
+            <ChevronDown className="opacity-60" />
+          </span>
+        </span>
       </div>
 
       {/* Visible variant */}
@@ -296,7 +367,11 @@ export function RouteModeNav({
             >
               <span className={cn(ITEM, NAV_ITEM_SELECTED)}>
                 {ActiveIcon && <ActiveIcon />}
-                <span className={cn(ActiveIcon && "hidden sm:inline")}>
+                <span
+                  className={cn(
+                    ActiveIcon && (iconTrigger ? "sr-only" : "hidden sm:inline"),
+                  )}
+                >
                   {current?.name ?? fallbackLabel}
                 </span>
                 <ChevronDown className="opacity-60" />
@@ -364,7 +439,9 @@ export function RouteModeNav({
               >
                 <span className={cn(ITEM, NAV_ITEM_SELECTED)}>
                   {ActiveIcon && <ActiveIcon />}
-                  <span>{current?.name ?? fallbackLabel}</span>
+                  <span className={cn(iconTrigger && ActiveIcon && "sr-only")}>
+                    {current?.name ?? fallbackLabel}
+                  </span>
                   <ChevronDown className="opacity-60" />
                 </span>
               </button>

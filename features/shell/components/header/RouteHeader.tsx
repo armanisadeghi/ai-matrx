@@ -3,12 +3,18 @@
 // Pass three nodes; it handles everything else:
 //   - Injects into the shell header center slot via <PageHeader> (transparent,
 //     no border/background — children bring their own glass).
-//   - LEFT and RIGHT sit in normal flow at the edges; CENTER is absolutely
-//     pinned to the viewport center of the injection zone (`left-1/2 -translate-x-1/2`)
-//     so its position never shifts when left/right text or actions change width.
-//     A ResizeObserver derives the bounded width available to the center slot
-//     (`total - 2 * max(left, right)`) so RouteModeNav can still collapse
-//     full → icons → menu without overlapping the flanks.
+//   - LEFT | CENTER | RIGHT are three IN-FLOW grid cells, so the center can
+//     never paint over the title or the actions — not before the first
+//     measurement, not in a hidden tab whose ResizeObservers are frozen.
+//     (2026-09-27: the center used to be `absolute left-1/2`; a stale
+//     measurement drew /agent-apps/<id>'s "Switch view" over "Fact Checker
+//     Published" at 768px.) Inside its clipping cell the center is inset to the
+//     symmetric slot (`total - 2 * max(left, right)`), so it still sits on the
+//     header's true center and never shifts when left/right widths change.
+//   - When not even the collapsed nav fits that symmetric slot, RouteModeNav
+//     drops the inset (`data-route-nav-inflow`) and sits in the whole cell
+//     beside the title, instead of vanishing. The title yields down to its
+//     floor to make room for the nav's smallest trigger (`data-route-nav-min`).
 //
 //   <RouteHeader
 //     left={<><BackButton /><span>{title}</span></>}
@@ -81,6 +87,9 @@ interface RouteHeaderProps {
   /** Yield to any page-specific header mounted deeper in the route tree. */
   fallback?: boolean;
 }
+
+/** Breathing room an in-flow center keeps from the title and the actions. */
+export const CENTER_INFLOW_GUTTER = 16;
 
 export function centerSlotWidth(
   total: number,
@@ -176,9 +185,12 @@ export default function RouteHeader({
   const rightRef = useRef<HTMLDivElement>(null);
   const overflowRef = useRef<HTMLSpanElement>(null);
   const widthsRef = useRef(new Map<string, number>());
-  // null = not measured yet (portal still laying out); 0 = measured, and the
-  // flanks leave the center no room at all.
-  const [boundedCenterWidth, setBoundedCenterWidth] = useState<number | null>(null);
+  // The center cell's inset that puts its content box on the header's true
+  // center, and the cap on the title that keeps room for the nav's smallest
+  // trigger. Unmeasured (null) is safe: the cells are in flow, so a stale or
+  // missing measurement can only leave the nav off-center, never on top.
+  const [centerPad, setCenterPad] = useState<{ left: number; right: number } | null>(null);
+  const [leftMax, setLeftMax] = useState<number | null>(null);
   const [folded, setFolded] = useState(0);
   const [compactPrimary, setCompactPrimary] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
@@ -193,6 +205,7 @@ export default function RouteHeader({
   const primary = actions.length > 0 ? actions[actions.length - 1] : null;
   const primaryCanCompact = primary != null && iconOnlyLabel(primary.node) != null;
   const compact = compactPrimary && primaryCanCompact;
+  const hasCenter = Boolean(center);
 
   // Latest render's inputs for the (stable) observer callback.
   const liveRef = useRef({ actions, fold, compact });
@@ -250,13 +263,16 @@ export default function RouteHeader({
       if (next.compactPrimary !== currentCompact)
         setCompactPrimary(next.compactPrimary);
 
-      setBoundedCenterWidth(
-        root.clientWidth > 0
-          ? centerSlotWidth(
-              root.clientWidth,
-              leftEl?.offsetWidth ?? 0,
-              rightEl?.offsetWidth ?? 0,
-            )
+      if (!hasCenter || root.clientWidth <= 0) return;
+      const leftWidth = leftEl?.offsetWidth ?? 0;
+      const rightWidth = rightEl?.offsetWidth ?? 0;
+      const pad = { left: Math.max(0, rightWidth - leftWidth), right: Math.max(0, leftWidth - rightWidth) };
+      setCenterPad((prev) => (prev?.left === pad.left && prev.right === pad.right ? prev : pad));
+      // Room for the nav's smallest trigger comes out of the title, down to its floor.
+      const navMin = root.querySelector<HTMLElement>("[data-route-nav-min]")?.scrollWidth ?? 0;
+      setLeftMax(
+        navMin > 0
+          ? Math.max(floor, root.clientWidth - rightWidth - navMin - CENTER_INFLOW_GUTTER)
           : null,
       );
     };
@@ -271,13 +287,15 @@ export default function RouteHeader({
     if (root.parentElement) ro.observe(root.parentElement);
     if (leftRef.current) ro.observe(leftRef.current);
     if (rightRef.current) ro.observe(rightRef.current);
+    const navMinEl = root.querySelector<HTMLElement>("[data-route-nav-min]");
+    if (navMinEl) ro.observe(navMinEl);
     return () => {
       cancelAnimationFrame(frame);
       ro.disconnect();
     };
-    // Re-measure when the row mounts and whenever the set of actions or the
-    // fold point changes.
-  }, [root, actionKeys, fold, compact]);
+    // Re-measure when the row mounts and whenever the set of actions, the
+    // fold point, or the presence of a center changes.
+  }, [root, actionKeys, fold, compact, hasCenter]);
 
   // 🚨 ON A PHONE THE ACTIONS LIVE IN THE SHELL'S ⋮ (page-pass shared
   // defects, 2026-09-27): one overflow button per phone header, and the title
@@ -301,7 +319,20 @@ export default function RouteHeader({
       <div
         ref={setRoot}
         data-route-header-root
-        className="relative flex w-full min-w-0 items-center justify-between"
+        className={
+          hasCenter
+            ? "relative grid w-full min-w-0 items-center"
+            : "relative flex w-full min-w-0 items-center justify-between"
+        }
+        style={
+          hasCenter
+            ? {
+                // The title takes its natural width up to the cap that keeps
+                // the nav's smallest trigger on screen; the center takes the rest.
+                gridTemplateColumns: `${leftMax != null ? `fit-content(${leftMax}px)` : "auto"} minmax(0, 1fr) auto`,
+              }
+            : undefined
+        }
       >
         <div
           ref={leftRef}
@@ -312,6 +343,28 @@ export default function RouteHeader({
         >
           {leftNode}
         </div>
+        {hasCenter ? (
+          <div
+            data-route-header-center
+            // In flow and clipping, so it can never overdraw the flanks: its
+            // width is its grid track, whatever its content asks for.
+            className="flex min-w-0 items-center overflow-hidden [&:has([data-route-nav-inflow])>div]:!ml-0 [&:has([data-route-nav-inflow])>div]:!mr-0"
+          >
+            <div
+              // The margins narrow this box to the symmetric slot around the
+              // header's true center. Margins, not padding: padding cannot
+              // shrink, and a stale measurement pushed the whole cell over
+              // the actions (768px, 2026-09-27). A too-wide margin is clipped.
+              className="min-w-0 flex-1"
+              style={{
+                marginLeft: centerPad?.left ?? 0,
+                marginRight: centerPad?.right ?? 0,
+              }}
+            >
+              {center}
+            </div>
+          </div>
+        ) : null}
         <div
           ref={rightRef}
           data-route-header-right
@@ -375,23 +428,6 @@ export default function RouteHeader({
             );
           })}
         </div>
-        {center ? (
-          <div
-            className="pointer-events-none absolute left-1/2 top-1/2 z-0 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center overflow-hidden"
-            // `width: 100%` is the safe portal-mount fallback. An auto-width
-            // absolute child shrink-wraps the currently rendered nav variant;
-            // once that variant becomes the menu, the measurement can never
-            // grow again to discover that the full or compact nav fits.
-            // A MEASURED 0 stays 0: the title wins (page-pass 2026-09-27 —
-            // treating 0 as "unmeasured" drew the whole-width fallback, and
-            // the nav's "Menu" pill sat on top of a phone's title).
-            style={{
-              width: boundedCenterWidth ?? "100%",
-            }}
-          >
-            <div className="pointer-events-auto w-full min-w-0">{center}</div>
-          </div>
-        ) : null}
       </div>
     </PageHeader>
   );
