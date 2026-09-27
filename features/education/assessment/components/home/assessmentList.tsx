@@ -421,7 +421,8 @@ export function buildAssessmentListConfig(input: {
       showToolbar: false,
     },
     emptyState: {
-      title: `No ${plural} yet`,
+      // Per lane, not absolute: an empty Mine can sit beside a full My Orgs.
+      title: `No ${plural} here yet`,
       description: `A ${config.noun} is a set of graded questions generated from a topic, a flashcard deck or a document.`,
     },
   };
