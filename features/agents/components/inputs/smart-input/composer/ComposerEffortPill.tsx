@@ -17,7 +17,7 @@ import {
   resetOverride,
   setOverrides,
 } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
-import { selectModelById } from "@/features/ai-models/redux/modelRegistrySlice";
+import { useModelFull } from "@/features/ai-models/hooks/useModels";
 import { resolveModelControls } from "@/features/agents/hooks/useModelControls";
 import { ComposerMenuDivider, ComposerMenuLabel, ComposerMenuRow } from "./ComposerMenu";
 import { composerPillClass } from "./ComposerAgentPill";
@@ -54,7 +54,9 @@ export function ComposerEffortPill({
 }) {
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
-  const model = useAppSelector((state) => (modelId ? selectModelById(state, modelId) : undefined));
+  // The FULL record carries the model's `controls`; asking for it here means the
+  // pill never depends on some other screen having loaded the model first.
+  const model = useModelFull(modelId);
   const overrideState = useAppSelector(selectInstanceOverrideState(conversationId));
 
   if (!model || !modelId) return null;
