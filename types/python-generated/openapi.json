@@ -196135,8 +196135,9 @@
           "limit": {
             "type": "integer",
             "maximum": 100.0,
-            "minimum": 1.0,
+            "minimum": 0.0,
             "title": "Limit",
+            "description": "Results per section. 0 = count only: each section returns its exact count and no items.",
             "default": 20
           },
           "cursors": {
@@ -196564,8 +196565,9 @@
           "limit": {
             "type": "integer",
             "maximum": 100.0,
-            "minimum": 1.0,
+            "minimum": 0.0,
             "title": "Limit",
+            "description": "Results per section. 0 = count only: each section returns its exact count and no items.",
             "default": 20
           },
           "cursors": {
@@ -196798,6 +196800,12 @@
             "title": "Withheld",
             "description": "Set when the section was withheld (Private class): why, in words."
           },
+          "count_only": {
+            "type": "boolean",
+            "title": "Count Only",
+            "description": "True when the query asked for counts (limit 0): count is exact.",
+            "default": false
+          },
           "note": {
             "anyOf": [
               {
@@ -196930,6 +196938,12 @@
             ],
             "title": "Withheld",
             "description": "Set when the section was withheld (Private class): why, in words."
+          },
+          "count_only": {
+            "type": "boolean",
+            "title": "Count Only",
+            "description": "True when the query asked for counts (limit 0): count is exact.",
+            "default": false
           },
           "note": {
             "anyOf": [
