@@ -15,7 +15,7 @@ component set (`kindConfig` parameterizes labels/routes/timer/capability).
 ## Entry points
 
 - Routes (thin server shells → client islands):
-  - `/education/quizzes` + `/education/practice-tests` — list (`AssessmentHome`, `kind` prop)
+  - `/education/quizzes` + `/education/practice-tests` — list (`AssessmentHome`, `kind` prop) on `EntityListPage` over `education.assessment_list_scoped` / `_counts` / `_facets` (`data/assessmentListService.ts`, config + row menu + agent surface in `components/home/`). Each list is its own surface: `matrx-user/education-quizzes` / `matrx-user/education-practice-tests` (`_assessment-list.manifest.ts`); the record views keep `matrx-user/education-assessment`.
   - `…/new` — generate (`AssessmentCreate`): topic / deck / document, depth, type mix, exam-type, (tests) time limit
   - `…/[id]` — detail + shareable take URL (`AssessmentDetail`). `?start=1` renders the taker; `?phase=baseline|post`+`?gain=<uuid>` drive learning-gain takings
   - `…/[id]/results?r=<resultId>` — scored report (`AssessmentResults`)
@@ -151,6 +151,7 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
 
 ## Change log
 
+- `2026-09-27` — page-pass 2026-09-27: type list, posture sharp after Linear, fixed: hand-built card list → `EntityListPage` over the server-side `assessment_list_scoped` RPC family (lanes by OWNERSHIP — "Mine" used to mean visibility — real counts, sort/filter every column, archive axis, paging instead of `select("*")`); per-row menu (Open, Take, Edit questions, Results, Archive/Restore); own list surfaces with the `assessment_list` XML bundle and `create_/update_/delete_<quizzes|practice_tests>`; topic shown only when it differs from the title, no CSS `capitalize`, no doubled error menu; titles/topics (and deck names in `fcService`) projected to plain text at the write boundary; tab + nav name "Quiz Builder" → "Quizzes".
 - `2026-09-17` — **Assessment items carry the parent assessment's organization explicitly.** `addItems` omitted `organization_id` and relied on the `_inherit_org` trigger; an omitted key is indistinguishable from a NULL, and `public._stamp_org_default` fires first, filing questions in the writer's personal workspace. The service now reads the parent assessment's `organization_id` and puts it on every row, and refuses in plain words when the parent cannot be read. Guard: `pnpm check:organization-context`.
 
 - **2026-09-08** — `GradedAnswerBlock` is THE verdict render (`answer_grade` kind → `answer_grade_verdict`): `take/QuestionView` `FeedbackBlock` and `grade-work/GradeWorkSurface` mount it and their two copies of the verdict pill + misconception + explanation + transcription are deleted; `StepBreakdown` stays beside it (steps are not part of the kind).
