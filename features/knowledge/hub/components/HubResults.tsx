@@ -32,6 +32,7 @@ import {
   originLabel,
 } from "@/features/knowledge/hub/hubPresentation";
 import {
+  HitTitle,
   ResultCard,
   ResultRow,
   type ResultHandlers,
@@ -256,7 +257,7 @@ const STAGE_SORT_ORDER = ["Failed", "Couldn't read status", "Index stale", "Inde
  * Filed under). Every column sorts by clicking its header (the design
  * system's local sort) and filters from its header menu.
  */
-export function hubTableColumns(stage?: HubStageColumn): MatrxColumnDef<KnowledgeHit>[] {
+export function hubTableColumns(stage?: HubStageColumn, handlers?: ResultHandlers): MatrxColumnDef<KnowledgeHit>[] {
   const when = (h: KnowledgeHit) => h.updated_at ?? h.created_at ?? "";
   return [
     {
@@ -264,7 +265,15 @@ export function hubTableColumns(stage?: HubStageColumn): MatrxColumnDef<Knowledg
       header: "Name",
       accessorFn: (h) => h.title,
       sortValue: (h) => h.title.toLowerCase(),
-      cell: (h) => <span className="font-medium">{h.title}</span>,
+      cell: (h) =>
+        handlers ? (
+          <div className="flex min-w-0 items-center gap-1">
+            <HitTitle hit={h} handlers={handlers} className="min-w-0 flex-1 truncate font-medium" />
+            {handlers.rowMenu?.(h)}
+          </div>
+        ) : (
+          <span className="font-medium">{h.title}</span>
+        ),
       filter: "text",
     },
     { id: "kind", header: "Kind", accessorFn: (h) => kindLabel(h), filter: "select" },
@@ -318,7 +327,7 @@ function TableLayout({
   onRetry: () => void;
   stage?: HubStageColumn;
 }) {
-  const columns = hubTableColumns(stage);
+  const columns = hubTableColumns(stage, handlers);
   return (
     <div className="min-h-0 flex-1 overflow-hidden">
       <MatrxDataTable<KnowledgeHit>

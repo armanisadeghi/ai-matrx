@@ -14,7 +14,12 @@ import {
   exportTranscriptSelection,
 } from "./bulkExport";
 import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
-import { transcriptRowSummary } from "@/features/transcripts/format";
+import {
+  TRANSCRIPT_COPY_LIST_KIND,
+  TRANSCRIPT_COPY_ROW_KIND,
+  transcriptCopyAgent,
+  transcriptCopyHuman,
+} from "./copyRows";
 import { TRANSCRIPT_COLUMNS } from "./columns";
 import { TranscriptBrowseCards } from "./TranscriptBrowseCards";
 import {
@@ -25,10 +30,8 @@ import {
 } from "./service";
 import { useTranscriptRowActions } from "./useTranscriptRowActions";
 import {
-  KIND_META,
   primaryRowHref,
   TRANSCRIPT_LIST_SCOPES,
-  type TranscriptListKind,
   type TranscriptListRow,
   type TranscriptRowEdit,
 } from "./types";
@@ -181,42 +184,14 @@ export const transcriptListConfig: EntityListConfig<TranscriptListRow> = {
     label: "Transcript item",
     listLabel: "Transcripts",
     location: "/transcripts",
-    rowKind: "transcript-hub-item",
-    listKind: "transcript-hub-list",
+    rowKind: TRANSCRIPT_COPY_ROW_KIND,
+    listKind: TRANSCRIPT_COPY_LIST_KIND,
     rowDescription:
       "One row of the transcripts hub — a transcript, studio session, cleanup session or unsorted recording. Metadata only; no transcript body.",
     listDescription:
       "The transcripts hub as currently filtered and sorted. Metadata only; no transcript bodies.",
-    humanRow: (row) =>
-      transcriptRowSummary({
-        kind: KIND_META[row.kind as TranscriptListKind]?.label ?? row.kind,
-        title: row.title,
-        updated_at: row.updated_at,
-        duration_seconds: row.duration_seconds,
-        word_count: row.word_count,
-        scope: row.organization_name,
-        id: row.id,
-      }),
-    agentRow: (row) => ({
-      id: row.id,
-      kind: row.kind,
-      title: row.title,
-      description: row.description,
-      status: row.status,
-      folder_name: row.folder_name,
-      tags: row.tags,
-      duration_seconds: row.duration_seconds,
-      word_count: row.word_count,
-      is_draft: row.is_draft,
-      visibility: row.visibility,
-      organization_name: row.organization_name,
-      owner_email: row.owner_email,
-      access_level: row.access_level,
-      updated_at: row.updated_at,
-      created_at: row.created_at,
-      href: primaryRowHref(row),
-      body_included: false,
-    }),
+    humanRow: (row) => transcriptCopyHuman(row),
+    agentRow: (row) => transcriptCopyAgent(row),
     rowAttributes: (row) => ({
       id: row.id,
       kind: row.kind,

@@ -42,9 +42,25 @@ const EXPORT_COLUMNS = [
   { key: "id", header: "Id" },
 ];
 
-function projectRow(row: TranscriptListRow): Record<string, unknown> {
+/**
+ * How a row is named and linked in the file. The list page uses the defaults;
+ * the Knowledge hub (which lists transcript Sources beside the records, H6d)
+ * passes its own so a Source is called "Source" and links to its own page.
+ */
+export interface TranscriptExportOptions {
+  linkFor?: (row: TranscriptListRow) => string;
+  kindLabel?: (row: TranscriptListRow) => string;
+}
+
+function projectRow(
+  row: TranscriptListRow,
+  opts: TranscriptExportOptions = {},
+): Record<string, unknown> {
   return {
-    type: KIND_META[row.kind as TranscriptListKind]?.label ?? row.kind,
+    type:
+      opts.kindLabel?.(row) ??
+      KIND_META[row.kind as TranscriptListKind]?.label ??
+      row.kind,
     title: row.title,
     status: row.status,
     folder: row.folder_name,
@@ -55,7 +71,7 @@ function projectRow(row: TranscriptListRow): Record<string, unknown> {
     owner: row.owner_email,
     updated_at: row.updated_at,
     created_at: row.created_at,
-    link: primaryRowHref(row),
+    link: opts.linkFor ? opts.linkFor(row) : primaryRowHref(row),
     id: row.id,
   };
 }
@@ -70,14 +86,18 @@ function projectRow(row: TranscriptListRow): Record<string, unknown> {
 export function confirmTranscriptExport(
   selection: EntityBulkSelection<TranscriptListRow>,
 ) {
-  const held = selection.rows.length;
-  const short = held < selection.count;
+  return transcriptExportConfirm(selection.rows.length, selection.count);
+}
+
+/** The sentence for `held` loaded rows out of `count` selected (list page and hub). */
+export function transcriptExportConfirm(held: number, count: number) {
+  const short = held < count;
   return {
     title: short
-      ? `Export ${held.toLocaleString()} of the ${selection.count.toLocaleString()} selected items?`
-      : `Export ${selection.count.toLocaleString()} selected item${selection.count === 1 ? "" : "s"}?`,
+      ? `Export ${held.toLocaleString()} of the ${count.toLocaleString()} selected items?`
+      : `Export ${count.toLocaleString()} selected item${count === 1 ? "" : "s"}?`,
     description: short
-      ? `This downloads a CSV of the ${held.toLocaleString()} selected items this page currently holds — the other ${(selection.count - held).toLocaleString()} are selected but were loaded on a page you have moved off, so they cannot be written. Use "Select all matching this filter" to include every one of them. The file carries titles, folders, tags, durations, word counts, owners and links — never the transcript text.`
+      ? `This downloads a CSV of the ${held.toLocaleString()} selected items this page currently holds — the other ${(count - held).toLocaleString()} are selected but were loaded on a page you have moved off, so they cannot be written. Use "Select all matching this filter" to include every one of them. The file carries titles, folders, tags, durations, word counts, owners and links — never the transcript text.`
       : `This downloads a CSV to your computer carrying each item's title, type, status, folder, tags, duration, word count, organization, owner and link. It does NOT carry the transcript text, and nothing here is changed, moved or deleted.`,
     confirmLabel: "Download CSV",
   };
@@ -86,7 +106,15 @@ export function confirmTranscriptExport(
 export function exportTranscriptSelection(
   selection: EntityBulkSelection<TranscriptListRow>,
 ): EntityBulkActionResult {
-  const rows = selection.rows.map(projectRow);
+  return exportTranscriptRows(selection.rows);
+}
+
+/** Write `rows` as the CSV (the list page's selection, or the hub's). */
+export function exportTranscriptRows(
+  selected: TranscriptListRow[],
+  opts: TranscriptExportOptions = {},
+): EntityBulkActionResult {
+  const rows = selected.map((r) => projectRow(r, opts));
   if (rows.length === 0) {
     // Never a silent no-op file: the action says why nothing came out.
     throw new Error(

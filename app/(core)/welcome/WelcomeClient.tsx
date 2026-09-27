@@ -67,7 +67,7 @@ const OPTIONS: WelcomeOption[] = [
   {
     label: "Transcripts",
     description: "Record, transcribe, and manage audio",
-    href: "/transcripts",
+    href: "/knowledge?view=transcripts",
     icon: Mic,
     gradient: "from-orange-500 to-orange-700",
   },

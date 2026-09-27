@@ -37,7 +37,26 @@ export type HubView =
    * Library catalog) — the retired list pages' job (H6b). Each row opens the
    * container's own record page; its filters live in `group`.
    */
-  | { kind: "group"; token: HubGroupToken };
+  | { kind: "group"; token: HubGroupToken }
+  /**
+   * A platform preset by its key (`/knowledge?view=transcripts`) — the address
+   * a retired list page redirects to (H6d). Its query is the installed preset
+   * row's definition; its extra facets (a retired list's own filters) live in
+   * `group` as `g.*`, like a container group's.
+   */
+  | { kind: "preset"; key: HubPresetViewKey };
+
+/** Presets addressable by key (each is a retired list page's home). */
+export const HUB_PRESET_VIEW_KEYS = ["transcripts"] as const;
+export type HubPresetViewKey = (typeof HUB_PRESET_VIEW_KEYS)[number];
+export function isHubPresetViewKey(v: string): v is HubPresetViewKey {
+  return (HUB_PRESET_VIEW_KEYS as readonly string[]).includes(v);
+}
+
+/** Views whose own filters ride in `group` (`g.*` in the address). */
+export function viewCarriesGroup(view: HubView): boolean {
+  return view.kind === "group" || view.kind === "preset";
+}
 
 /** The container groups the hub lists as a whole (containerGroups/). */
 export const HUB_GROUP_TOKENS = ["data_store", "media_source_library", "library_catalog"] as const;
@@ -178,6 +197,7 @@ export function selectionQuery(
       };
     }
     case "saved":
+    case "preset":
       return savedDefinition
         ? { query: savedDefinition.query, layout: savedDefinition.layout }
         : { query: { mode: "find" } };
@@ -207,6 +227,8 @@ function viewToParam(v: HubView): string {
       return `kind:${v.key}`;
     case "group":
       return `group:${v.token}`;
+    case "preset":
+      return v.key;
   }
 }
 
@@ -214,6 +236,7 @@ function viewFromParam(p: string | null): HubView {
   if (!p) return { kind: "everything" };
   if (p === "inbox" || p === "kept" || p === "archived" || p === "everything" || p === "favorites" || p === "trash")
     return { kind: p };
+  if (isHubPresetViewKey(p)) return { kind: "preset", key: p };
   if (p.startsWith("saved:") && p.length > 6) return { kind: "saved", id: p.slice(6) };
   if (p.startsWith("kind:") && p.length > 5) return { kind: "kind", key: p.slice(5) };
   if (p.startsWith("group:") && isHubGroupToken(p.slice(6))) return { kind: "group", token: p.slice(6) as HubGroupToken };
@@ -314,7 +337,7 @@ export function hubStateToParams(s: HubState): URLSearchParams {
   if (s.peek) p.set("peek", `${s.peek.entity}:${s.peek.id}`);
   const stages = HUB_STAGES.filter((x) => (s.stage ?? []).includes(x));
   if (stages.length) p.set("stage", stages.join(","));
-  if (s.view.kind === "group")
+  if (viewCarriesGroup(s.view))
     for (const k of Object.keys(s.group ?? {}).sort()) {
       const v = s.group[k];
       if (k && typeof v === "string" && v) p.set(`${GROUP_PARAM_PREFIX}${k}`, v);
@@ -362,7 +385,7 @@ export function hubStateFromParams(p: URLSearchParams | ReadonlyURLSearchParamsL
   }
   const view = viewFromParam(get("view"));
   const group: Record<string, string> = {};
-  if (view.kind === "group" && p.forEach)
+  if (viewCarriesGroup(view) && p.forEach)
     p.forEach((value, key) => {
       if (key.startsWith(GROUP_PARAM_PREFIX) && key.length > GROUP_PARAM_PREFIX.length && value)
         group[key.slice(GROUP_PARAM_PREFIX.length)] = value;

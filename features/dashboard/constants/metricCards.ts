@@ -91,7 +91,7 @@ export const METRIC_CARDS: MetricCardConfig[] = [
     singular: "transcript",
     iconName: "Mic",
     color: "rose",
-    href: "/transcripts",
+    href: "/knowledge?view=transcripts",
     emptyHint: "Record a transcript",
   },
   {

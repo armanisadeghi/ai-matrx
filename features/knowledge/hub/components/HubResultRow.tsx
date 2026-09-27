@@ -29,6 +29,37 @@ export interface ResultHandlers {
   onOpenFull: (hit: KnowledgeHit) => void;
   /** Clicking a `#tag` chip filters the hub by that tag. */
   onFilterTag?: (name: string) => void;
+  /** A row's own "…" menu (transcript rows carry the Transcripts list's menu, H6d). */
+  rowMenu?: (hit: KnowledgeHit) => React.ReactNode;
+  /** The row being renamed inline, and what Enter / Esc do. */
+  renamingKey?: string | null;
+  onRenameCommit?: (hit: KnowledgeHit, title: string) => void;
+  onRenameCancel?: () => void;
+}
+
+/** The title, or — while this row is being renamed — the inline editor (Enter saves, Esc cancels). */
+export function HitTitle({ hit, handlers, className }: { hit: KnowledgeHit; handlers: ResultHandlers; className?: string }) {
+  if (handlers.renamingKey && handlers.renamingKey === hitKey(hit))
+    return (
+      <input
+        autoFocus
+        defaultValue={hit.title}
+        aria-label={`Rename ${hit.title}`}
+        className="w-full rounded border border-ring bg-background px-1 py-0.5 text-sm font-medium text-foreground outline-none"
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === "Enter") handlers.onRenameCommit?.(hit, e.currentTarget.value);
+          if (e.key === "Escape") handlers.onRenameCancel?.();
+        }}
+        onBlur={(e) => {
+          if (e.currentTarget.value.trim() !== hit.title.trim()) handlers.onRenameCommit?.(hit, e.currentTarget.value);
+          else handlers.onRenameCancel?.();
+        }}
+      />
+    );
+  return <div className={className}>{hit.title}</div>;
 }
 
 function filedWords(hit: KnowledgeHit): string | null {
@@ -113,7 +144,7 @@ export function ResultRow({
       </div>
       <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
-        <div className="truncate font-medium text-foreground">{hit.title}</div>
+        <HitTitle hit={hit} handlers={handlers} className="truncate font-medium text-foreground" />
         {hit.snippet ? (
           <div className="line-clamp-1 text-xs text-muted-foreground">{hit.snippet}</div>
         ) : null}
@@ -122,6 +153,7 @@ export function ResultRow({
           <TagChips tags={hitTags(hit)} onFilter={handlers.onFilterTag} className="shrink-0 flex-nowrap" />
         </div>
       </div>
+      {handlers.rowMenu?.(hit)}
     </div>
   );
 }
@@ -154,8 +186,9 @@ export function ResultCard({
       <div className="flex items-center gap-2">
         <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
         <span className="truncate text-[11px] text-muted-foreground">{kindLabel(hit)}</span>
+        <div className="ml-auto">{handlers.rowMenu?.(hit)}</div>
         <div
-          className={cn("ml-auto", isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}
+          className={cn( isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}
           onClick={(e) => e.stopPropagation()}
         >
           <Checkbox
@@ -165,7 +198,7 @@ export function ResultCard({
           />
         </div>
       </div>
-      <div className="line-clamp-2 font-medium text-foreground">{hit.title}</div>
+      <HitTitle hit={hit} handlers={handlers} className="line-clamp-2 font-medium text-foreground" />
       {hit.snippet ? (
         <div className={cn("text-xs text-muted-foreground", tall ? "line-clamp-4" : "line-clamp-2")}>
           {hit.snippet}

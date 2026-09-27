@@ -26,6 +26,13 @@
  *       ?from=rulebook&rulebook_id= → g.from + g.rulebook_id
  *       (/libraries/<id> is the library's record page)
  *
+ * H6d — the Transcripts list (every processing page stays its record page):
+ *   /transcripts → view=transcripts (the Transcripts preset)
+ *       ?q= → q · ?scope=mine → by=me · ?scope=orgs:<org> → orgs=<org>
+ *       ?scope=shared|public → g.scope · ?sort=title → sort=title (else recent)
+ *       ?filters={kind,status,folder_name,visibility,tags: {values:[…]}} → g.kind,
+ *       g.status, g.folder, g.visibility, g.tag
+ *
  * Pure: the route files call these and `redirect()`; the tests call them too.
  * `/rag/*` itself is a config redirect to `/knowledge/*` (next.config.js).
  */
@@ -155,3 +162,52 @@ export function researchTopicHubHref(topicId: string): string {
     query: { mode: "find", within: [{ type: "research_topic", id: topicId }], origin: ["research"] },
   });
 }
+
+// ─── H6d: the Transcripts list → the Transcripts preset view ────────────────
+
+/** The entity-list filter keys → the hub's transcript facet keys. */
+const TRANSCRIPT_FILTER_TO_FACET: Record<string, string> = {
+  kind: "kind",
+  status: "status",
+  folder_name: "folder",
+  visibility: "visibility",
+  tags: "tag",
+};
+
+function transcriptFacetsFromFilters(raw: string | undefined): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!raw) return out;
+  try {
+    const bag = JSON.parse(raw) as Record<string, { values?: unknown }>;
+    if (!bag || typeof bag !== "object" || Array.isArray(bag)) return out;
+    for (const [key, facet] of Object.entries(TRANSCRIPT_FILTER_TO_FACET)) {
+      const values = bag[key]?.values;
+      if (!Array.isArray(values)) continue;
+      const clean = values.filter((v): v is string => typeof v === "string" && Boolean(v.trim()));
+      if (clean.length) out[facet] = clean.join(",");
+    }
+  } catch {
+    return out;
+  }
+  return out;
+}
+
+/** `/transcripts?…` → `/knowledge?view=transcripts&…`, its search, scope, sort and filters kept. */
+export function transcriptsToHubHref(params: LegacySearchParams): string {
+  const text = first(params, "q") ?? first(params, "search");
+  const [scopeKind, scopeOrg] = (first(params, "scope") ?? "").split(":", 2);
+  const sort = first(params, "sort");
+  const query: KnowledgeQuery = {
+    mode: "find",
+    ...(text ? { text } : {}),
+    ...(scopeKind === "mine" ? { captured_by: "me" as const } : {}),
+    ...(scopeKind === "orgs" && scopeOrg ? { organizations: [scopeOrg] } : {}),
+    ...(sort === "title" ? { sort: "title" as const } : {}),
+  };
+  const group: Record<string, string> = transcriptFacetsFromFilters(first(params, "filters"));
+  if (scopeKind === "shared" || scopeKind === "public") group.scope = scopeKind;
+  return hubHref({ ...DEFAULT_HUB_STATE, view: { kind: "preset", key: "transcripts" }, query, group });
+}
+
+/** Where the Transcripts list lives now — the link every retired "/transcripts" pointer uses. */
+export const HUB_TRANSCRIPTS_HREF = transcriptsToHubHref({});

@@ -5,7 +5,8 @@
 // Server component — no client state needed.
 
 import Link from "next/link";
-import { Columns2, FileUp, Import, Mic, Eraser } from "lucide-react";
+import { Columns2, FileUp, Import, Mic, Eraser, Library } from "lucide-react";
+import { HUB_LIBRARIES_HREF, HUB_TRANSCRIPTS_HREF } from "@/features/knowledge/hub/legacyRoutes";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
@@ -56,6 +57,16 @@ const OPTIONS: CreationOption[] = [
     description:
       "Paste a transcript generated elsewhere. Useful for moving content in from other tools.",
     icon: Import,
+  },
+  {
+    // A WHOLE CHANNEL IS NOT FIVE MORE CLICKS OF "Upload". Someone who wants a
+    // creator's entire back catalogue gets a Library (the Knowledge hub's
+    // Libraries group) — this door moved here from the retired list (H6d).
+    href: HUB_LIBRARIES_HREF,
+    title: "Whole channel",
+    description:
+      "Catalogue a whole YouTube channel or feed as a Library, then transcribe the episodes you want.",
+    icon: Library,
   },
 ];
 
@@ -129,7 +140,7 @@ export default async function NewTranscriptPage() {
 
           <p className="mt-6 text-xs text-muted-foreground">
             Already have a transcript?{" "}
-            <Link href="/transcripts" className="text-primary hover:underline">
+            <Link href={HUB_TRANSCRIPTS_HREF} className="text-primary hover:underline">
               See all transcripts
             </Link>
             .

@@ -42,6 +42,7 @@ import {
   Sparkles,
   Activity,
   SlidersHorizontal,
+  Download,
 } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { useEntityTitles } from "@ai-matrx/associations/react";
@@ -67,6 +68,7 @@ import { keepSource, sourceRefusalSentence } from "@/features/sources/api/source
 import type { EntityRef, FiledRef, KnowledgeHit, KnowledgeQuery } from "@/features/knowledge/api/knowledgeSearch";
 import {
   HUB_KINDS,
+  isHubPresetViewKey,
   normalizeQuery,
   selectionQuery,
   type HubLayout,
@@ -90,7 +92,14 @@ import {
   type FileUnderContainer,
 } from "@/features/knowledge/hub/hubActions";
 import { hitKey, openFullHref, tokenLabel } from "@/features/knowledge/hub/hubPresentation";
-import { expandAnyContainers, isViewLinkOnly, viewIsDirty } from "@/features/knowledge/hub/hubSavedViews";
+import {
+  HUB_PRESETS,
+  expandAnyContainers,
+  isViewLinkOnly,
+  mergePresetQuery,
+  presetDefinition,
+  viewIsDirty,
+} from "@/features/knowledge/hub/hubSavedViews";
 import {
   createHubView,
   deleteView,
@@ -168,6 +177,36 @@ import { HubContainerGroupView } from "@/features/knowledge/hub/containerGroups/
 import { HUB_GROUP_LABEL, catalogFiltersToGroup } from "@/features/knowledge/hub/containerGroups/groupFilters";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import Link from "next/link";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
+import { writeClipboard } from "@/components/agent-copy/clipboard";
+import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
+import { saveTranscriptRowEdit } from "@/features/transcripts/browse/service";
+import { exportTranscriptRows, transcriptExportConfirm } from "@/features/transcripts/browse/bulkExport";
+import {
+  TRANSCRIPT_COPY_LIST_KIND,
+  TRANSCRIPT_COPY_ROW_KIND,
+  transcriptCopyAgent,
+  transcriptCopyHuman,
+} from "@/features/transcripts/browse/copyRows";
+import type { TranscriptListRow } from "@/features/transcripts/browse/types";
+import { useTranscriptFacts } from "@/features/knowledge/hub/transcripts/useTranscriptFacts";
+import { TranscriptRowMenu } from "@/features/knowledge/hub/transcripts/TranscriptRowMenu";
+import { TranscriptFacetBar } from "@/features/knowledge/hub/transcripts/TranscriptFacetBar";
+import {
+  TRANSCRIPT_KIND_LABEL,
+  facetSelectionFromGroup,
+  facetSelectionToGroup,
+  hasFacetSelection,
+  isTranscriptHit,
+  narrowByTranscriptFacets,
+  transcriptFacetCounts,
+  transcriptMenu,
+  transcriptReferenceType,
+  transcriptRowHref,
+  type HubTranscriptKind,
+  type TranscriptMenuAction,
+} from "@/features/knowledge/hub/transcripts/transcriptRows";
 
 const GROUP_ID = "knowledge-hub";
 const GROUP_KEY = "knowledge-hub";
@@ -208,6 +247,8 @@ function viewTitle(view: HubView, sidebar: HubSidebarData): string {
       return HUB_KINDS.find((k) => k.key === view.key)?.label ?? view.key;
     case "group":
       return HUB_GROUP_LABEL[view.token];
+    case "preset":
+      return sidebar.savedViews.items.find((v) => v.preset === view.key)?.name ?? "Transcripts";
     case "container": {
       const token = view.type as (typeof HUB_CONTAINER_TOKENS)[number];
       const rows = sidebar.containers[token]?.items ?? [];
@@ -235,6 +276,8 @@ function emptySentence(view: HubView, title: string, filtered: boolean): string 
       return `No ${title.toLowerCase()} yet.`;
     case "saved":
       return "Nothing matches this saved view right now.";
+    case "preset":
+      return `No ${title.toLowerCase()} yet. Record or upload one from New transcript.`;
     case "group":
       return "";
     case "everything":
@@ -264,8 +307,27 @@ export function KnowledgeHubPage({
       ? sidebar.containers.media_source_library.items.map((l) => l.id)
       : undefined;
   const idsByType = { media_source_library: libraryIds };
+  // A preset opened by its key (`view=transcripts`, the retired list's address,
+  // H6d): the installed row's definition (the code copy until rows load), with
+  // what the address itself carries (words, reach, sort) on top — once per
+  // visit, so clearing the preset's filters on purpose is never undone.
+  const presetKey = state.view.kind === "preset" ? state.view.key : null;
+  const presetRows = presetKey ? sidebar.savedViews.items.filter((v) => v.preset === presetKey) : [];
+  const presetSavedView = presetRows.find((v) => !v.builtIn) ?? presetRows[0] ?? null;
+  const codePreset = presetKey ? HUB_PRESETS.find((p) => p.key === presetKey) : undefined;
+  const presetDef = presetSavedView?.definition ?? (codePreset ? presetDefinition(codePreset) : null);
+  const appliedPreset = useRef<string | null>(null);
+  const presetDefFor = (key: string) => {
+    const rows = sidebar.savedViews.items.filter((v) => v.preset === key);
+    const row = rows.find((v) => !v.builtIn) ?? rows[0];
+    const code = HUB_PRESETS.find((p) => p.key === key);
+    return row?.definition ?? (code ? presetDefinition(code) : null);
+  };
+  const presetPending = Boolean(presetKey && presetDef && appliedPreset.current !== presetKey);
+  const effectiveQuery =
+    presetPending && presetDef ? mergePresetQuery(presetDef.query, state.query) : state.query;
   // `library:*` (the Libraries preset) → every library this person can see.
-  const expanded = expandAnyContainers(state.query, idsByType);
+  const expanded = expandAnyContainers(effectiveQuery, idsByType);
   // Ask (H4) answers over the same filter in a docked panel; the results keep listing it.
   const asking = state.query.mode === "ask";
   // Advanced → "Rerank results": undefined follows the organization's setting.
@@ -361,7 +423,15 @@ export function KnowledgeHubPage({
   // Stage (Sources only): read from source_list_facts for the loaded Sources.
   const loadedSourceIds = baseHits.map(stageSourceId).filter((id): id is string => Boolean(id));
   const stages = useSourceStages(loadedSourceIds, !sample && !trashView);
-  const hits: KnowledgeHit[] = narrowByStage(baseHits, state.stage, stages.stageFor);
+  // Transcript rows' own fields (Status, Folder, Visibility, session vs cleanup) — H6d.
+  const transcriptFacts = useTranscriptFacts(baseHits, !sample && !trashView);
+  const transcriptsView = presetKey === "transcripts";
+  const facetSel = transcriptsView ? facetSelectionFromGroup(state.group) : {};
+  const hits: KnowledgeHit[] = narrowByTranscriptFacets(
+    narrowByStage(baseHits, state.stage, stages.stageFor),
+    facetSel,
+    transcriptFacts.factFor,
+  );
   const moreToLoad = results.sections.some((s) => s.key !== "top_hit" && Boolean(s.section?.next_cursor));
   const stageNote = moreToLoad
     ? `Stage narrows the ${loadedSourceIds.length} Sources loaded so far; load more to check the rest.`
@@ -372,7 +442,9 @@ export function KnowledgeHubPage({
   const selectedHits = [...selected].map((k) => byKey.get(k)).filter((h): h is KnowledgeHit => !!h);
   const title = viewTitle(state.view, sidebar);
   const openSavedView =
-    state.view.kind === "saved" ? (sidebar.savedViews.items.find((v) => v.id === (state.view as { id: string }).id) ?? null) : null;
+    state.view.kind === "saved"
+      ? (sidebar.savedViews.items.find((v) => v.id === (state.view as { id: string }).id) ?? null)
+      : presetSavedView;
   const dirty = openSavedView ? viewIsDirty(openSavedView.definition, { query: state.query, layout: state.layout }) : false;
   const noLibraries = expanded.status === "empty";
   const expanding = expanded.status === "pending";
@@ -393,6 +465,14 @@ export function KnowledgeHubPage({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.view, openSavedView?.id, openSavedView?.definition]);
+  // The preset's own address: land its definition in the URL once rows have loaded.
+  useEffect(() => {
+    if (!presetKey || !presetDef || sidebar.savedViews.status === "loading") return;
+    if (appliedPreset.current === presetKey) return;
+    appliedPreset.current = presetKey;
+    write({ query: mergePresetQuery(presetDef.query, state.query) }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presetKey, presetDef, sidebar.savedViews.status]);
   const total = results.sections.every((s) => typeof s.section?.count === "number")
     ? results.sections
         .filter((s) => s.key !== "top_hit" && s.key !== "segments")
@@ -402,7 +482,13 @@ export function KnowledgeHubPage({
   const write = (next: Partial<HubState>, opts?: { replace?: boolean }) =>
     setState({ ...state, ...next }, opts);
 
-  const select = (view: HubView) => {
+  const select = (picked: HubView) => {
+    // A saved view that IS an addressable preset opens as the preset (its facets and address, H6d).
+    const pickedPreset =
+      picked.kind === "saved" ? sidebar.savedViews.items.find((v) => v.id === picked.id)?.preset : null;
+    const view: HubView =
+      pickedPreset && isHubPresetViewKey(pickedPreset) ? { kind: "preset", key: pickedPreset } : picked;
+    if (view.kind === "preset") appliedPreset.current = view.key;
     const def =
       view.kind === "saved"
         ? (sidebar.savedViews.items.find((v) => v.id === view.id)?.definition ?? null)
@@ -411,13 +497,13 @@ export function KnowledgeHubPage({
       toast.error("This saved view's definition could not be read, so it cannot be opened. It still exists; nothing was changed.");
       return;
     }
-    const { query, layout } = selectionQuery(view, def);
+    const { query, layout } = selectionQuery(view, view.kind === "preset" ? presetDefFor(view.key) : def);
     setSelected(new Set());
     setFocusedKey(null);
     setMobilePane("main");
     write({ view, query, layout: layout ?? state.layout, peek: null, group: {} });
-    if (view.kind === "saved") {
-      const sv = sidebar.savedViews.items.find((v) => v.id === view.id);
+    if (picked.kind === "saved") {
+      const sv = sidebar.savedViews.items.find((v) => v.id === picked.id);
       if (sv?.mine && !sample)
         void touchView(sv)
           .then(() => sidebar.savedViews.retry())
@@ -569,6 +655,107 @@ export function KnowledgeHubPage({
       return next;
     });
 
+  // ─── transcript rows (the retired Transcripts list's actions, H6d) ─────────
+
+  const [renamingKey, setRenamingKey] = useState<string | null>(null);
+  const sourceHref = (id: string) => tryGetEntityInfo("processed_document")?.hrefFor?.(id) ?? null;
+  const transcriptKindLabel = (row: TranscriptListRow) =>
+    TRANSCRIPT_KIND_LABEL[row.kind as HubTranscriptKind] ?? row.kind;
+  const transcriptLink = (row: TranscriptListRow) => transcriptRowHref(row, sourceHref);
+  const absolute = (href: string) => (href.startsWith("http") ? href : `${window.location.origin}${href}`);
+
+  const copyText = async (text: string, done: string) => {
+    try {
+      await writeClipboard(text);
+      toast.success(done);
+    } catch (err) {
+      toast.error(`Nothing was copied: ${err instanceof Error ? err.message : "the clipboard refused."}`);
+    }
+  };
+
+  const transcriptAgentPayload = (rows: TranscriptListRow[]) =>
+    buildAgentPayload({
+      kind: rows.length === 1 ? TRANSCRIPT_COPY_ROW_KIND : TRANSCRIPT_COPY_LIST_KIND,
+      location: "/knowledge?view=transcripts",
+      description:
+        rows.length === 1
+          ? "One transcript item from the Knowledge hub — a transcript, studio session, cleanup session or transcript Source. Metadata only; no transcript body."
+          : "Transcript items selected in the Knowledge hub. Metadata only; no transcript bodies.",
+      data: rows.length === 1 ? transcriptCopyAgent(rows[0], transcriptLink(rows[0])) : rows.map((r) => transcriptCopyAgent(r, transcriptLink(r))),
+      attributes: { rows: rows.length },
+    });
+
+  const onTranscriptAction = (hit: KnowledgeHit, action: TranscriptMenuAction) => {
+    const fact = transcriptFacts.factFor(hit);
+    const href = fact ? transcriptLink(fact) : (openFullHref(hit) ?? `/knowledge?peek=${hit.entity}:${hit.id}`);
+    switch (action) {
+      case "rename":
+        if (sample) return toast.info(SAMPLE_WRITE_REFUSAL);
+        setRenamingKey(hitKey(hit));
+        return;
+      case "copy":
+        if (fact) void copyText(transcriptCopyHuman(fact, transcriptKindLabel(fact)), "Copied");
+        return;
+      case "copy-ai":
+        if (fact) void copyText(transcriptAgentPayload([fact]), "Copied for AI");
+        return;
+      case "copy-link":
+        void copyText(absolute(href), "Link copied");
+        return;
+      case "copy-reference":
+        void copyText(
+          buildRecordReferenceFence({ type: transcriptReferenceType(hit), id: hit.id, label: hit.title }),
+          "Reference copied",
+        );
+        return;
+    }
+  };
+
+  const commitRename = async (hit: KnowledgeHit, title: string) => {
+    setRenamingKey(null);
+    const fact = transcriptFacts.factFor(hit);
+    const ref = { type: hit.entity, id: hit.id, title: hit.title };
+    if (!fact) {
+      recordToast.error(ref, `"${hit.title}" was not renamed: its record has not been read yet. Try again in a moment.`);
+      return;
+    }
+    if (title.trim() === hit.title.trim()) return;
+    try {
+      await saveTranscriptRowEdit(fact, { title });
+      recordToast.success({ ...ref, title: title.trim() }, `Renamed to "${title.trim()}".`);
+      transcriptFacts.refresh();
+      results.refresh();
+    } catch (err) {
+      recordToast.error(ref, `"${hit.title}" was not renamed: ${err instanceof Error ? err.message : "the server refused."}`);
+    }
+  };
+
+  const transcriptMenuNode = (hit: KnowledgeHit) =>
+    isTranscriptHit(hit) ? (
+      <TranscriptRowMenu
+        title={hit.title}
+        entries={transcriptMenu(hit, transcriptFacts.factFor(hit), sourceHref)}
+        onAction={(a) => onTranscriptAction(hit, a)}
+      />
+    ) : null;
+
+  const selectedTranscriptRows = selectedHits
+    .map((h) => transcriptFacts.factFor(h))
+    .filter((r): r is TranscriptListRow => Boolean(r));
+  const selectedTranscriptHits = selectedHits.filter(isTranscriptHit).length;
+
+  const doTranscriptExport = async () => {
+    const copy = transcriptExportConfirm(selectedTranscriptRows.length, selectedTranscriptHits);
+    const ok = await confirm({ title: copy.title, description: copy.description, confirmLabel: copy.confirmLabel });
+    if (!ok) return;
+    try {
+      const out = exportTranscriptRows(selectedTranscriptRows, { linkFor: (r) => absolute(transcriptLink(r)), kindLabel: transcriptKindLabel });
+      toast.success(out.message ?? "Exported.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Nothing was exported.");
+    }
+  };
+
   const handlers: ResultHandlers = {
     selected,
     focusedKey,
@@ -578,6 +765,10 @@ export function KnowledgeHubPage({
     onOpen: openPeek,
     onOpenFull: openFull,
     onFilterTag: (name) => filterByTag(name),
+    rowMenu: transcriptMenuNode,
+    renamingKey,
+    onRenameCommit: (h, title) => void commitRename(h, title),
+    onRenameCancel: () => setRenamingKey(null),
   };
 
   // ─── writes ───────────────────────────────────────────────────────────────
@@ -1058,6 +1249,35 @@ export function KnowledgeHubPage({
           </Button>
         </>
       ) : null}
+      {selectedTranscriptHits ? (
+        <>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 gap-1 text-xs"
+            disabled={busy || !selectedTranscriptRows.length}
+            onClick={() => void doTranscriptExport()}
+            title={
+              selectedTranscriptRows.length
+                ? "Download a CSV of the selected transcript items"
+                : "Reading the selected transcripts' details…"
+            }
+          >
+            <Download className="h-3.5 w-3.5" /> Export
+          </Button>
+          {selectedTranscriptRows.length ? (
+            <CopyButtons
+              label="Transcripts"
+              size="sm"
+              human={() =>
+                selectedTranscriptRows.map((r) => transcriptCopyHuman(r, transcriptKindLabel(r))).join("\n")
+              }
+              agent={() => transcriptAgentPayload(selectedTranscriptRows)}
+              hide={["export"]}
+            />
+          ) : null}
+        </>
+      ) : null}
       <Button
         size="sm"
         variant="ghost"
@@ -1216,6 +1436,26 @@ export function KnowledgeHubPage({
       </div>
       {!searching && !trashView ? <div className="sm:hidden">{layoutSwitch}</div> : null}
       {bulkBar}
+      {transcriptsView && !trashView ? (
+        <TranscriptFacetBar
+          counts={transcriptFacetCounts(baseHits, transcriptFacts.factFor)}
+          selection={facetSel}
+          onChange={(next) => write({ group: facetSelectionToGroup(next, state.group) }, { replace: true })}
+          note={
+            hasFacetSelection(facetSel) && moreToLoad
+              ? `These filters narrow the ${baseHits.length} rows loaded so far; load more to check the rest.`
+              : null
+          }
+        />
+      ) : null}
+      {transcriptFacts.status === "error" && transcriptFacts.error ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs" role="status">
+          <span className="min-w-0 flex-1">{transcriptFacts.error} Other rows are unaffected.</span>
+          <button type="button" className="font-medium underline-offset-2 hover:underline" onClick={transcriptFacts.retry}>
+            Retry
+          </button>
+        </div>
+      ) : null}
       {state.stage.length && !trashView ? (
         <div className="flex flex-wrap items-center gap-1.5 text-xs" role="status">
           <span className="text-muted-foreground">Stage:</span>
@@ -1317,7 +1557,7 @@ export function KnowledgeHubPage({
 
   const sidebarNode = (
     <HubSidebar
-      view={state.view}
+      view={state.view.kind === "preset" && presetSavedView ? { kind: "saved", id: presetSavedView.id } : state.view}
       data={sidebar}
       sample={sample}
       onSelect={select}
@@ -1371,6 +1611,7 @@ export function KnowledgeHubPage({
       extraActions={
         peekHit ? (
           <>
+            {transcriptMenuNode(peekHit)}
             <Button size="sm" variant="outline" className="h-8 gap-1.5" disabled={busy} onClick={() => setTagFor([peekHit])} title="Tag (t)">
               <Hash className="h-3.5 w-3.5" /> Tag
             </Button>
