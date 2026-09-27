@@ -66,13 +66,10 @@ type RowModule = typeof asWritten;
 function compiledRowModule(file: string): RowModule {
   const pnpm = join(ROOT, "node_modules/.pnpm");
   const dirs = readdirSync(pnpm);
-  const core = dirs.filter((d) => d.startsWith("@babel+core@7.")).sort().at(-1)!;
-  const syntax = dirs.filter((d) => d.startsWith("@babel+plugin-syntax-typescript@7.")).sort().at(-1)!;
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const core = dirs.filter((d) => d.startsWith("@babel+core@7.")).sort().at(-1) ?? "missing-babel-core-7";
+  const syntax = dirs.filter((d) => d.startsWith("@babel+plugin-syntax-typescript@7.")).sort().at(-1) ?? "missing-syntax-typescript-7";
   const babel = require(join(pnpm, core, "node_modules/@babel/core"));
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const tsSyntax = require(join(pnpm, syntax, "node_modules/@babel/plugin-syntax-typescript"));
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const reactCompiler = require("babel-plugin-react-compiler");
   const compiled = babel.transformSync(readFileSync(file, "utf8"), {
     filename: file,
@@ -85,7 +82,6 @@ function compiledRowModule(file: string): RowModule {
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true },
   }).outputText;
   const mod = { exports: {} as RowModule };
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval
   new Function("require", "module", "exports", js)(require, mod, mod.exports);
   return mod.exports;
 }
@@ -140,7 +136,7 @@ describe.each(MODULES)("the Sheet's row boundary (%s)", (_label, load) => {
     latest.put(scope);
     lastScope = scope;
     const S = latest.get;
-    const [render] = useState(() => (row: Row) => {
+    function drawRow(row: Row) {
       drawn.push(row.id);
       return (
         <tr data-row={row.id} data-ticked={S().ticked === row.id ? "yes" : "no"}>
@@ -151,7 +147,8 @@ describe.each(MODULES)("the Sheet's row boundary (%s)", (_label, load) => {
           </td>
         </tr>
       );
-    });
+    }
+    const [render] = useState(() => drawRow);
     return (
       <table>
         <tbody>

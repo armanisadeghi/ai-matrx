@@ -51,6 +51,34 @@ export function useLatestBox<T>(): { put: (value: T) => void; get: () => T } {
   return box;
 }
 
+/**
+ * ONE STEADY FUNCTION PER HANDLER NAME (lane RENDER-2). The object returned never changes
+ * identity, nor does any function read from it; calling one runs the handler of the LATEST render.
+ * A big component the compiler compiles can still leave its handlers unmemoised (the Sheet's
+ * `loadTableData`, `handleSort` … are plain values in the compiled output), so every toolbar and
+ * header it hands them to redrew on every edit. Route EVENT handlers through this — never a
+ * function called while rendering (a steady `columnWidthStyle(field)` would let the compiler
+ * cache its answer): those stay direct.
+ */
+export function useSteadyHandlers<T extends Record<string, (...args: never[]) => unknown>>(handlers: T): T {
+  const latest = useSlot<T>(handlers);
+  latest.set(handlers);
+  const [steady] = useState(() => {
+    const made = new Map<PropertyKey, (...args: unknown[]) => unknown>();
+    return new Proxy({} as T, {
+      get: (_target, key) => {
+        let fn = made.get(key);
+        if (!fn) {
+          fn = (...args: unknown[]) => Reflect.apply(latest.get()[key as keyof T], undefined, args);
+          made.set(key, fn);
+        }
+        return fn;
+      },
+    });
+  });
+  return steady;
+}
+
 /** A getter for the latest `value` (a handler reads it when it runs, never a stale render). */
 export function useLatest<T>(value: T): () => T {
   const box = useLatestBox<T>();

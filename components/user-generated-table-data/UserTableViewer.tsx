@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useEffectEvent, useRef, useState } from "react";
-import { SheetBodyRow, choiceMapSignature, contentSignature, shareUnchangedRows, useLatest, useLatestBox, useRowEpoch, useSlot } from "@/features/data-tables/components/sheet-body-row";
+import { SheetBodyRow, choiceMapSignature, contentSignature, shareUnchangedRows, useLatest, useLatestBox, useRowEpoch, useSlot, useSteadyHandlers } from "@/features/data-tables/components/sheet-body-row";
 import { createPortal } from "react-dom";
 import * as RecordsUi from "@ai-matrx/records-ui";
 import {
@@ -3356,6 +3356,44 @@ const UserTableViewer = ({
     anyUniqueColumn ? (fullDatasetCache ?? data) : null,
   ]);
 
+  // EVENT handlers the toolbar, the headers, the menus and the rows are handed, through ONE steady
+  // function each (`useSteadyHandlers`): the compiler leaves these as plain values, so without it
+  // every Sheet render redrew the toolbar and every header (lane RENDER-2). Never a function the
+  // render itself calls (`columnWidthStyle`, `displayValueOf`, `isFormulaField` stay direct).
+  const steady = useSteadyHandlers({
+    dropColumn,
+    beginColumnResize,
+    loadTableData,
+    writeStylePath,
+    handleColumnFilterChange,
+    handlePageChange,
+    handleLimitChange,
+    handleSort,
+    clearSort,
+    loadRowsForCopy,
+    handleSearch,
+    clearSearch,
+    handleCleanupExpandedText,
+    handleSaveExpandedText,
+    handleExpandedTextChange,
+    disableRowOrdering,
+    saveDefaultSort,
+    clearDefaultSort,
+    loadAllRowsForCleanup,
+    applyCleanupPatches,
+    startColumnRename,
+    cancelColumnRename,
+    commitColumnRename,
+    handleDeleteColumn,
+    runBulkOps,
+    runRowAction,
+    answerPasteRefusals,
+    handleBulkSetColumn,
+    handleFillDown,
+    getMenuApplicationScope,
+    resolveGridMenu,
+  });
+
   if (loading && !tableInfo)
     return (
       <div className="space-y-4 p-2">
@@ -3608,13 +3646,13 @@ const UserTableViewer = ({
             );
         },
         highlight: (address, color) =>
-          void writeStylePath(
+          void steady.writeStylePath(
             stylePath.cell(address.rowId, address.fieldName),
             color,
           ),
         highlightMany: (addresses, color) => {
           for (const address of addresses) {
-            void writeStylePath(
+            void steady.writeStylePath(
               stylePath.cell(address.rowId, address.fieldName),
               color,
             );
@@ -3645,7 +3683,7 @@ const UserTableViewer = ({
       on: {
         add: () => setShowAddRowModal(true),
         highlight: (rowId, color) =>
-          void writeStylePath(stylePath.row(rowId), color),
+          void steady.writeStylePath(stylePath.row(rowId), color),
         edit: (rowId) => {
           const row = displayRows.find((r) => r.id === rowId);
           if (row) handleEditRow(row.id, row.data);
@@ -3661,7 +3699,7 @@ const UserTableViewer = ({
           setShowReferenceModal(true);
         },
         remove: (rowId) => handleDeleteRow(rowId),
-        runAction: (rowId, actionId) => void runRowAction(actionId, [rowId]),
+        runAction: (rowId, actionId) => void steady.runRowAction(actionId, [rowId]),
       },
       actions: rowActionMenuItems,
     });
@@ -3720,7 +3758,7 @@ const UserTableViewer = ({
       readOnlyReason: readOnlyReason,
       isOnlyColumn: fields.length <= 1,
       on: {
-        rename: (fieldName) => startColumnRename(fieldName),
+        rename: (fieldName) => steady.startColumnRename(fieldName),
         insert: (fieldName, side) => {
           const field = fields.find((f) => f.field_name === fieldName);
           if (!field) return;
@@ -3730,9 +3768,9 @@ const UserTableViewer = ({
           setShowAddColumnModal(true);
         },
         highlight: (fieldName, color) =>
-          void writeStylePath(stylePath.column(fieldName), color),
+          void steady.writeStylePath(stylePath.column(fieldName), color),
         colorBy: (fieldName, on) =>
-          void writeStylePath(
+          void steady.writeStylePath(
             stylePath.colorBy(),
             on ? { field: fieldName, target: "row" } : null,
           ),
@@ -3744,9 +3782,9 @@ const UserTableViewer = ({
             () => setFilterOpenRequest((prev) => ({ field: fieldName, n: (prev?.n ?? 0) + 1 })),
             0,
           ),
-        sortAsc: (fieldName) => void handleSort(fieldName, "asc"),
-        sortDesc: (fieldName) => void handleSort(fieldName, "desc"),
-        clearSort,
+        sortAsc: (fieldName) => void steady.handleSort(fieldName, "asc"),
+        sortDesc: (fieldName) => void steady.handleSort(fieldName, "desc"),
+        clearSort: steady.clearSort,
         hide: (fieldName) =>
           setHiddenColumns(
             hiddenColumns.includes(fieldName)
@@ -3758,7 +3796,7 @@ const UserTableViewer = ({
           setColumnSummary(fieldName, isColumnSummaryKind(kind) ? kind : null),
         remove: (fieldName) => {
           const field = fields.find((f) => f.field_name === fieldName);
-          if (field) void handleDeleteColumn(field);
+          if (field) void steady.handleDeleteColumn(field);
         },
       },
     });
@@ -3839,12 +3877,12 @@ const UserTableViewer = ({
               line={`Sorted by ${sortName} ${arrow}, so the order set by hand is set aside for now.`}
               attention
               actions={[
-                { key: "back", label: "Back to manual", title: "Go back to the order set by hand", onPress: clearSort },
+                { key: "back", label: "Back to manual", title: "Go back to the order set by hand", onPress: steady.clearSort },
                 {
                   key: "instead",
                   label: savingSortPreference ? "Saving…" : "Use this sort",
                   title: "Keep this sort as the table's order. It replaces the hand-set order.",
-                  onPress: saveDefaultSort,
+                  onPress: steady.saveDefaultSort,
                   primary: true,
                   disabled: savingSortPreference,
                 },
@@ -3860,9 +3898,9 @@ const UserTableViewer = ({
             actions={[
               ...(isSortSaved
                 ? []
-                : [{ key: "save", label: savingSortPreference ? "Saving…" : "Save as default", onPress: saveDefaultSort, primary: true, disabled: savingSortPreference }]),
+                : [{ key: "save", label: savingSortPreference ? "Saving…" : "Save as default", onPress: steady.saveDefaultSort, primary: true, disabled: savingSortPreference }]),
               ...(savedSortField
-                ? [{ key: "clear", label: "Clear saved sort", onPress: clearDefaultSort, disabled: savingSortPreference }]
+                ? [{ key: "clear", label: "Clear saved sort", onPress: steady.clearDefaultSort, disabled: savingSortPreference }]
                 : []),
             ]}
           />
@@ -3895,7 +3933,7 @@ const UserTableViewer = ({
     renderCellMarkdown,
     rowActions,
     rowTintClass,
-    runRowAction,
+    runRowAction: steady.runRowAction,
     selectedRowId,
     selectedRowIdSet,
     setHistoryRowId,
@@ -3911,7 +3949,7 @@ const UserTableViewer = ({
     viewFields,
     wrapText,
     freezeFirstColumn,
-    reloadCurrentPage: () => loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true),
+    reloadCurrentPage: () => steady.loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true),
   };
   sheetLatest.put(sheetRowScope);
   const S = sheetLatest.get;
@@ -4538,7 +4576,7 @@ const UserTableViewer = ({
                 variant="ghost"
                 size="sm"
                 className="h-6 px-2 text-xs text-gray-600 dark:text-gray-300"
-                onClick={clearSort}
+                onClick={steady.clearSort}
                 title="Go back to the order set by hand"
               >
                 Back to manual
@@ -4547,7 +4585,7 @@ const UserTableViewer = ({
                 variant="ghost"
                 size="sm"
                 className="h-6 px-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-                onClick={saveDefaultSort}
+                onClick={steady.saveDefaultSort}
                 disabled={savingSortPreference}
                 title="Keep this sort as the table's order. It replaces the hand-set order."
               >
@@ -4564,7 +4602,7 @@ const UserTableViewer = ({
               variant="ghost"
               size="sm"
               className="h-6 px-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-              onClick={saveDefaultSort}
+              onClick={steady.saveDefaultSort}
               disabled={savingSortPreference}
             >
               {savingSortPreference ? "Saving..." : "Save as default"}
@@ -4575,7 +4613,7 @@ const UserTableViewer = ({
               variant="ghost"
               size="sm"
               className="h-6 px-2 text-xs text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
-              onClick={clearDefaultSort}
+              onClick={steady.clearDefaultSort}
               disabled={savingSortPreference}
               title="Clear saved sort"
             >
@@ -4595,7 +4633,7 @@ const UserTableViewer = ({
         tableInfo={tableInfo}
         fields={fields}
         loadTableData={(forceReload) =>
-          loadTableData(
+          steady.loadTableData(
             currentPage,
             limit,
             sortField,
@@ -4610,8 +4648,8 @@ const UserTableViewer = ({
         // Search props
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
-        handleSearch={handleSearch}
-        clearSearch={clearSearch}
+        handleSearch={steady.handleSearch}
+        clearSearch={steady.clearSearch}
         // Modal visibility state
         showEditModal={showEditModal}
         showDeleteModal={showDeleteModal}
@@ -4816,14 +4854,14 @@ const UserTableViewer = ({
           setSelectedRowData(null);
           // Clear sorted data cache when data is modified
           setAllSortedData(null);
-          loadTableData(currentPage, limit);
+          steady.loadTableData(currentPage, limit);
         }}
         onDeleteSuccess={() => {
           setShowDeleteModal(false);
           setSelectedRowId(null);
           // Clear sorted data cache when data is modified
           setAllSortedData(null);
-          loadTableData(currentPage, limit);
+          steady.loadTableData(currentPage, limit);
         }}
         // Sort state for export
         sortField={sortField}
@@ -4840,22 +4878,22 @@ const UserTableViewer = ({
                 label: f.display_name,
               }))}
               rows={data}
-              loadAllRows={loadAllRowsForCleanup}
+              loadAllRows={steady.loadAllRowsForCleanup}
               scopeLabel={tableInfo.table_name}
-              onApply={applyCleanupPatches}
+              onApply={steady.applyCleanupPatches}
             />
           )
         }
         // Row ordering functions
         rowOrderingEnabled={rowOrderingEnabled}
-        disableRowOrdering={disableRowOrdering}
+        disableRowOrdering={steady.disableRowOrdering}
         onRowOrderingSuccess={() => {
           // Clear any active sorting when row ordering is updated
           setSortField(null);
           setSortDirection("asc");
           // Clear sorted data cache when row ordering changes
           setAllSortedData(null);
-          loadTableData(currentPage, limit, null, "asc", searchTerm, true);
+          steady.loadTableData(currentPage, limit, null, "asc", searchTerm, true);
         }}
         copyControls={(onChooseReference) => (
           <TableCopyControls
@@ -4864,11 +4902,11 @@ const UserTableViewer = ({
             fields={fields}
             hiddenColumns={hiddenColumns}
             selectedRowIds={selectedRowIds}
-            loadRows={loadRowsForCopy}
+            loadRows={steady.loadRowsForCopy}
             loadAllRows={async () => {
               const complete = await getCompleteTable({ tableId, sortField, sortDirection });
               if (isServiceFailure(complete)) failWith(complete.error);
-              // Same rule as `loadRowsForCopy`: formula columns are computed
+              // Same rule as `steady.loadRowsForCopy`: formula columns are computed
               // before anything downstream (export, sort) reads the rows.
               const rows = computeColumns(complete.data.rows, fields, displayValueOf).rows;
               const ordered: typeof rows = sortField
@@ -4904,7 +4942,7 @@ const UserTableViewer = ({
                   {sortDirection === "asc" ? "↑" : "↓"} · hand-set order set aside
                 </div>
                 <div className="flex gap-2">
-                  <Button type="button" variant="ghost" size="sm" className="h-11 flex-1 text-xs" onClick={clearSort}>
+                  <Button type="button" variant="ghost" size="sm" className="h-11 flex-1 text-xs" onClick={steady.clearSort}>
                     Back to manual
                   </Button>
                   <Button
@@ -4912,7 +4950,7 @@ const UserTableViewer = ({
                     variant="ghost"
                     size="sm"
                     className="h-11 flex-1 text-xs text-primary"
-                    onClick={saveDefaultSort}
+                    onClick={steady.saveDefaultSort}
                     disabled={savingSortPreference}
                   >
                     {savingSortPreference ? "Saving…" : "Use this sort instead"}
@@ -4942,7 +4980,7 @@ const UserTableViewer = ({
                       variant="ghost"
                       size="sm"
                       className="h-11 shrink-0 px-2 text-xs text-primary"
-                      onClick={saveDefaultSort}
+                      onClick={steady.saveDefaultSort}
                       disabled={savingSortPreference}
                     >
                       {savingSortPreference ? "Saving…" : "Make default"}
@@ -4955,7 +4993,7 @@ const UserTableViewer = ({
                     variant="ghost"
                     size="sm"
                     className="h-11 w-full justify-start px-2 text-xs text-muted-foreground"
-                    onClick={clearDefaultSort}
+                    onClick={steady.clearDefaultSort}
                     disabled={savingSortPreference}
                   >
                     Clear default sort
@@ -5150,11 +5188,11 @@ const UserTableViewer = ({
           setSelectedRowIds([]);
           lastSelectedRowIndex.set(null);
         }}
-        onRunOps={runBulkOps}
-        onSetColumn={handleBulkSetColumn}
-        onFillDown={handleFillDown}
+        onRunOps={steady.runBulkOps}
+        onSetColumn={steady.handleBulkSetColumn}
+        onFillDown={steady.handleFillDown}
         rowActions={rowActionMenuItems}
-        onRunAction={(actionId) => runRowAction(actionId, selectedRowIds)}
+        onRunAction={(actionId) => steady.runRowAction(actionId, selectedRowIds)}
       />
 
       {/* One column's settings (ColumnSettingsDialog) — from the header menu
@@ -5173,12 +5211,12 @@ const UserTableViewer = ({
         summary={settingsFieldName ? (columnSummaries[settingsFieldName] ?? null) : null}
         onSummaryChange={(kind) => settingsFieldName && setColumnSummary(settingsFieldName, kind)}
         onSaved={() =>
-          void loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true)
+          void steady.loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true)
         }
         onHide={(fieldName) =>
           setHiddenColumns(hiddenColumns.includes(fieldName) ? hiddenColumns : [...hiddenColumns, fieldName])
         }
-        onDelete={fields.length > 1 ? (field) => void handleDeleteColumn(field) : undefined}
+        onDelete={fields.length > 1 ? (field) => void steady.handleDeleteColumn(field) : undefined}
       />
 
       {/* Table colors — color-by a column + rules (table-style.ts). */}
@@ -5211,7 +5249,7 @@ const UserTableViewer = ({
             ].sort(),
           ]),
         )}
-        onSetPath={(path, value) => writeStylePath(path, value)}
+        onSetPath={(path, value) => steady.writeStylePath(path, value)}
       />
 
       {/* Table. In fillHeight mode the grid is the ONLY flexible band and owns
@@ -5227,8 +5265,8 @@ const UserTableViewer = ({
         // surface's window the menu resolves the host surface instead.
         surfaceName={emitSurfaceScope ? DATA_TABLES_SURFACE_NAME : undefined}
         menuVersion={1}
-        getApplicationScope={getMenuApplicationScope}
-        resolveContextOnOpen={resolveGridMenu}
+        getApplicationScope={steady.getMenuApplicationScope}
+        resolveContextOnOpen={steady.resolveGridMenu}
         entity={
           datasetTableEntityRef({
             id: tableId,
@@ -5355,7 +5393,7 @@ const UserTableViewer = ({
                     }}
                     onDrop={(e) => {
                       e.preventDefault();
-                      if (headerDrag) dropColumn(headerDrag.from, field.field_name, headerDrag.side);
+                      if (headerDrag) steady.dropColumn(headerDrag.from, field.field_name, headerDrag.side);
                       setHeaderDrag(null);
                     }}
                     onDragEnd={() => setHeaderDrag(null)}
@@ -5386,7 +5424,7 @@ const UserTableViewer = ({
                         aria-orientation="vertical"
                         aria-label={`Resize the ${field.display_name} column`}
                         title="Drag to resize · double-click to reset"
-                        onMouseDown={(e) => beginColumnResize(e, field.field_name)}
+                        onMouseDown={(e) => steady.beginColumnResize(e, field.field_name)}
                         onDoubleClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -5413,8 +5451,8 @@ const UserTableViewer = ({
                             // The grid owns arrow keys / typing; none of it
                             // may fire while a name is being typed.
                             e.stopPropagation();
-                            if (e.key === "Enter") void commitColumnRename();
-                            if (e.key === "Escape") cancelColumnRename();
+                            if (e.key === "Enter") void steady.commitColumnRename();
+                            if (e.key === "Escape") steady.cancelColumnRename();
                           }}
                           onBlur={(e) => {
                             // A closing menu / popover hands focus back to its
@@ -5427,7 +5465,7 @@ const UserTableViewer = ({
                               window.setTimeout(() => input.focus(), 0);
                               return;
                             }
-                            void commitColumnRename();
+                            void steady.commitColumnRename();
                           }}
                           className="min-w-0 flex-1 rounded border border-primary bg-background px-1.5 py-0.5 text-sm font-semibold text-foreground outline-none ring-2 ring-primary/30"
                         />
@@ -5439,7 +5477,7 @@ const UserTableViewer = ({
                             ? "current_column_name"
                             : undefined
                         }
-                        onClick={() => handleSort(field.field_name)}
+                        onClick={() => steady.handleSort(field.field_name)}
                         className="flex min-w-0 flex-1 items-center gap-1 rounded px-1 py-0.5"
                         title={`Sort by ${field.display_name}`}
                       >
@@ -5483,16 +5521,16 @@ const UserTableViewer = ({
                             : (fullDatasetCache ?? data)
                         }
                         totalCount={totalCount}
-                        onSortAsc={() => handleSort(field.field_name, "asc")}
-                        onSortDesc={() => handleSort(field.field_name, "desc")}
-                        onClearSort={clearSort}
+                        onSortAsc={() => steady.handleSort(field.field_name, "asc")}
+                        onSortDesc={() => steady.handleSort(field.field_name, "desc")}
+                        onClearSort={steady.clearSort}
                         onFilterChange={(value) =>
-                          handleColumnFilterChange(field.field_name, value)
+                          steady.handleColumnFilterChange(field.field_name, value)
                         }
                         onRename={
                           isReadOnly
                             ? undefined
-                            : () => startColumnRename(field.field_name)
+                            : () => steady.startColumnRename(field.field_name)
                         }
                         // A choice column's stored values may differ from what
                         // people read (a Person column stores user ids) — the
@@ -5558,7 +5596,7 @@ const UserTableViewer = ({
                         onDelete={
                           isReadOnly || fields.length <= 1
                             ? undefined
-                            : () => void handleDeleteColumn(field)
+                            : () => void steady.handleDeleteColumn(field)
                         }
                       />
                     </div>
@@ -5814,7 +5852,7 @@ const UserTableViewer = ({
           }
         >
           <div className="flex min-w-0 items-center gap-1 text-sm text-gray-600 dark:text-gray-400 md:gap-2">
-            <Select value={String(limit)} onValueChange={handleLimitChange}>
+            <Select value={String(limit)} onValueChange={steady.handleLimitChange}>
               <SelectTrigger className="h-10 w-16 md:h-8 md:w-[70px]">
                 <SelectValue />
               </SelectTrigger>
@@ -5869,7 +5907,7 @@ const UserTableViewer = ({
                   <PaginationLink
                     aria-label="Go to previous page"
                     onClick={() =>
-                      handlePageChange(Math.max(1, currentPage - 1))
+                      steady.handlePageChange(Math.max(1, currentPage - 1))
                     }
                     className={`h-10 w-10 ${
                       currentPage === 1
@@ -5882,7 +5920,7 @@ const UserTableViewer = ({
                 ) : (
                   <PaginationPrevious
                     onClick={() =>
-                      handlePageChange(Math.max(1, currentPage - 1))
+                      steady.handlePageChange(Math.max(1, currentPage - 1))
                     }
                     className={`h-8 ${
                       currentPage === 1
@@ -5902,7 +5940,7 @@ const UserTableViewer = ({
                 pageNum <= effectiveTotalPages ? (
                   <PaginationItem key={pageNum}>
                     <PaginationLink
-                      onClick={() => handlePageChange(pageNum)}
+                      onClick={() => steady.handlePageChange(pageNum)}
                       isActive={currentPage === pageNum}
                       className="h-10 w-10 md:h-8 md:w-8"
                     >
@@ -5917,7 +5955,7 @@ const UserTableViewer = ({
                   <PaginationLink
                     aria-label="Go to next page"
                     onClick={() =>
-                      handlePageChange(
+                      steady.handlePageChange(
                         Math.min(effectiveTotalPages, currentPage + 1),
                       )
                     }
@@ -5932,7 +5970,7 @@ const UserTableViewer = ({
                 ) : (
                   <PaginationNext
                     onClick={() =>
-                      handlePageChange(
+                      steady.handlePageChange(
                         Math.min(effectiveTotalPages, currentPage + 1),
                       )
                     }
@@ -5953,7 +5991,7 @@ const UserTableViewer = ({
       <Dialog
         open={pasteRefusals !== null}
         onOpenChange={(open) => {
-          if (!open) answerPasteRefusals(false);
+          if (!open) steady.answerPasteRefusals(false);
         }}
       >
         <DialogContent className="sm:max-w-[36rem] max-h-[80dvh] overflow-y-auto">
@@ -5973,11 +6011,11 @@ const UserTableViewer = ({
             ))}
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => answerPasteRefusals(false)}>
+            <Button variant="ghost" onClick={() => steady.answerPasteRefusals(false)}>
               Cancel the paste
             </Button>
             <Button
-              onClick={() => answerPasteRefusals(true)}
+              onClick={() => steady.answerPasteRefusals(true)}
               disabled={(pasteRefusals?.remaining ?? 0) === 0}
             >
               {(pasteRefusals?.remaining ?? 0) === 0
@@ -6013,7 +6051,7 @@ const UserTableViewer = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleCleanupExpandedText}
+                  onClick={steady.handleCleanupExpandedText}
                   className="flex items-center gap-2"
                   title="Clean up HTML formatting"
                   disabled={savingExpandedText}
@@ -6027,7 +6065,7 @@ const UserTableViewer = ({
           <div className="max-h-[50dvh] overflow-y-auto">
             <Textarea
               value={expandedText || ""}
-              onChange={(e) => handleExpandedTextChange(e.target.value)}
+              onChange={(e) => steady.handleExpandedTextChange(e.target.value)}
               className="min-h-[300px] resize-none font-mono text-sm"
               placeholder="No content"
               disabled={savingExpandedText}
@@ -6049,7 +6087,7 @@ const UserTableViewer = ({
               </Button>
               {expandedTextModified && (
                 <Button
-                  onClick={handleSaveExpandedText}
+                  onClick={steady.handleSaveExpandedText}
                   disabled={savingExpandedText}
                 >
                   {savingExpandedText ? "Saving..." : "Save Changes"}
@@ -6092,7 +6130,7 @@ const UserTableViewer = ({
           )}
           onRowChanged={() => {
             setAllSortedData(null);
-            loadTableData(
+            steady.loadTableData(
               currentPage,
               limit,
               sortField,

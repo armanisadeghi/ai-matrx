@@ -76,7 +76,7 @@
       const changed = [];
       const keys = new Set([...Object.keys(pp || {}), ...Object.keys(np || {})]);
       for (const k of keys) if ((pp || {})[k] !== (np || {})[k]) changed.push(k);
-      reasons.push(changed.length ? "props:" + changed.slice(0, 8).join(",") : "props:same-shallow(parent)");
+      reasons.push(changed.length ? "props:" + changed.slice(0, 24).join(",") : "props:same-shallow(parent)");
     }
     const ph = prev.hooks, nh = hooksOf(f);
     const hc = [];
