@@ -8,6 +8,7 @@
  */
 
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import { getManifest } from "@/features/surfaces/manifests/registry";
 import {
   createAdminUiSurfacesScope,
   type UiSurfaceScopeEntry,
@@ -83,6 +84,7 @@ export function toSurfaceScopeEntry(
     readiness_note: row.readiness_note ?? null,
     has_manifest: manifestedNames.has(row.name),
     value_count: row.surfaceValueCount,
+    declared_value_count: getManifest(row.name)?.values.length ?? null,
     agent_count: row.agentCount,
     tool_count: row.toolCount,
     check_state: surfaceCheckState(row),
@@ -115,6 +117,7 @@ export function buildSurfaceListBundle(
           tier: `${tierFor(row.sort_order).label} ${row.sort_order}`,
           readiness: readinessBucketOf(row),
           values: row.surfaceValueCount,
+          declared: getManifest(row.name)?.values.length,
           agents: row.agentCount,
           tools: row.toolCount,
           checked: surfaceCheckState(row),

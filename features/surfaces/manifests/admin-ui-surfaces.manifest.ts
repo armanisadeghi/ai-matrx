@@ -67,7 +67,7 @@ const groups: SurfaceValueGroup[] = [
 ];
 
 const SURFACE_SHAPE =
-  "{ name, label, client_name, executor_name, parent_surface_name, sort_order, tier, is_active, readiness, readiness_note, has_manifest, value_count, agent_count, tool_count, check_state, last_checked_at, last_checked_by, url_pattern, description }";
+  "{ name, label, client_name, executor_name, parent_surface_name, sort_order, tier, is_active, readiness, readiness_note, has_manifest, value_count (values saved in the database), declared_value_count (values its code manifest declares; null with no manifest — when the two differ, Sync manifests brings the database up to date), agent_count, tool_count, check_state, last_checked_at, last_checked_by, url_pattern, description }";
 
 const surfaceSpecific: SurfaceValue[] = [
   {
@@ -85,7 +85,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "surface_list",
     label: "Surfaces on screen",
     description:
-      "The rows the list shows after the page's own filters (client, status, check age, manifests, parent, readiness tile), condensed as one XML bundle: <surfaces total shown filters…><s name label client parent tier readiness values agents tools checked active manifest/>…</surfaces>, first 40 in the page's default order (tier, then name). The table's own search box and column sort are not reflected (the table does not report them). Absent until the registry has loaded.",
+      "The rows the list shows after the page's own filters (client, status, check age, manifests, parent, readiness tile), condensed as one XML bundle: <surfaces total shown filters…><s name label client parent tier readiness values declared agents tools checked active manifest/> (values = saved in the database, declared = in its code manifest)…</surfaces>, first 40 in the page's default order (tier, then name). The table's own search box and column sort are not reflected (the table does not report them). Absent until the registry has loaded.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 3500,
@@ -107,7 +107,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "registry_counts",
     label: "Registry counts",
     description:
-      "{ total, active, manifests, unused, visible, readiness: { verified, partial, stub, unregistered }, candidates_available, drift_issues? } — the numbers in the page's toolbar and readiness tiles. readiness counts follow the client filter, as the tiles do; unused = no agents and no tools; drift_issues = the Drift report's total issue count (what its button badge shows), omitted until that report loads. Absent until the registry has loaded.",
+      "{ total, active, manifests, unused, visible, readiness: { verified, partial, stub, unregistered }, candidates_available, drift_issues? } — the numbers in the page's toolbar and readiness tiles. readiness counts follow the client filter, as the tiles do; unused = surfaces with no agents and no tools (the toolbar says 'with no agents or tools'); drift_issues = the Drift report's total issue count (what its button badge shows), omitted until that report loads. Absent until the registry has loaded.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 200,
@@ -271,6 +271,8 @@ export interface UiSurfaceScopeEntry {
   readiness_note: string | null;
   has_manifest: boolean;
   value_count: number;
+  /** Values the code manifest declares (with inherited ones); null = no manifest. */
+  declared_value_count: number | null;
   agent_count: number;
   tool_count: number;
   check_state: string;
