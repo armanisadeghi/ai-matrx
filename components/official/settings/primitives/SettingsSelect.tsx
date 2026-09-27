@@ -32,10 +32,10 @@ const triggerSize: Record<SettingsControlSize, "sm" | "default" | "lg"> = {
 };
 
 const triggerMinHeight: Record<SettingsControlSize, string> = {
-  // 44px on phones/tablets (the settings canvas floor is a components-layer
-  // rule, so a min-h utility here would beat it); desktop keeps its density.
-  sm: "min-h-11 sm:min-h-7",
-  md: "min-h-11 sm:min-h-9",
+  // 44px under touch or below lg — the same condition as the
+  // matrx-touch-targets floor, which a min-h utility here would otherwise beat.
+  sm: "min-h-7 max-lg:min-h-11 pointer-coarse:min-h-11",
+  md: "min-h-9 max-lg:min-h-11 pointer-coarse:min-h-11",
   lg: "min-h-10",
 };
 

@@ -91,7 +91,7 @@ export function SettingsMultiSelect<T extends string = string>({
               id={id}
               type="button"
               disabled={rowProps.disabled}
-              className="w-full flex items-center justify-between min-h-11 sm:min-h-9 rounded-md border border-border bg-card px-3 text-sm text-foreground shadow-sm transition-colors hover:bg-accent/50 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full flex items-center justify-between min-h-9 max-lg:min-h-11 pointer-coarse:min-h-11 rounded-md border border-border bg-card px-3 text-sm text-foreground shadow-sm transition-colors hover:bg-accent/50 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span
                 className={cn(

@@ -1911,7 +1911,7 @@ export function ModelListDropdown({
           ? selectTriggerVariants({
               size: "default",
               className:
-                "h-auto min-h-9 w-full min-w-0 max-w-full whitespace-normal text-left font-medium text-foreground",
+                "h-auto min-h-9 max-lg:min-h-11 pointer-coarse:min-h-11 w-full min-w-0 max-w-full whitespace-normal text-left font-medium text-foreground",
             })
           : "inline-flex h-7 min-w-0 max-w-full items-center gap-1 overflow-hidden rounded-md bg-transparent px-1 text-xs font-medium text-foreground/80 transition-colors hover:text-foreground",
         disabled && "cursor-not-allowed opacity-50 hover:text-foreground/80",
