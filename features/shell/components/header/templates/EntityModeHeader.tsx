@@ -100,6 +100,11 @@ export interface EntityModeHeaderProps {
    * (`?view=grid`) — pathname matching alone cannot tell those apart.
    */
   activeModeHref?: string;
+  /**
+   * Switch modes without `router.push` — for modes that are client-side views
+   * of one page (a shallow `?mode=` URL update, no server round-trip).
+   */
+  onModeSelect?: (href: string) => void;
   /** Declarative actions — glass tap targets on desktop, drawer rows on mobile. */
   actions?: EntityHeaderAction[];
   /** Desktop-only extra controls (e.g. a Switch). Hidden below sm. */
@@ -154,11 +159,13 @@ function EntitySheetRows({
   modes,
   actions,
   activeHref,
+  onModeSelect,
   onDone,
 }: {
   modes?: EntityModeHeaderProps["modes"];
   actions?: EntityHeaderAction[];
   activeHref?: string;
+  onModeSelect?: (href: string) => void;
   onDone: () => void;
 }) {
   const router = useRouter();
@@ -174,7 +181,8 @@ function EntitySheetRows({
             key={m.href}
             onClick={() => {
               setSheetOpen(false);
-              router.push(m.href);
+              if (onModeSelect) onModeSelect(m.href);
+              else router.push(m.href);
             }}
             className="flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge"
           >
@@ -246,6 +254,7 @@ export function EntityModeHeader({
   entityOptions,
   modes,
   activeModeHref,
+  onModeSelect,
   actions,
   right,
 }: EntityModeHeaderProps) {
@@ -266,10 +275,11 @@ export function EntityModeHeader({
   );
 
   const label = (
-    <span className="flex min-w-0 max-w-[55vw] items-center gap-1.5 sm:max-w-[220px]">
+    <span className="flex min-w-0 items-center gap-1.5">
       {/* A floor under the name: on a phone the shell's right-side icons
-          squeezed it to nothing ("Fa…", then blank beside its status). */}
-      <span className="min-w-12 truncate text-sm font-medium text-foreground">
+          squeezed it to nothing ("Fa…", then blank beside its status). The
+          cap is on the NAME only, so a status beside it never steals its room. */}
+      <span className="min-w-12 max-w-[55vw] truncate text-sm font-medium text-foreground sm:max-w-[min(360px,32vw)]">
         {entityLabel}
       </span>
       {entityStatus}
@@ -329,7 +339,11 @@ export function EntityModeHeader({
         center={
           modes && modes.length > 0 ? (
             <div className="hidden sm:flex w-full min-w-0 justify-center">
-              <RouteModeNav items={modes} activeHref={activeModeHref} />
+              <RouteModeNav
+                items={modes}
+                activeHref={activeModeHref}
+                onNavigate={onModeSelect}
+              />
             </div>
           ) : undefined
         }
@@ -340,6 +354,7 @@ export function EntityModeHeader({
                 modes={modes}
                 actions={actions}
                 activeHref={activeMode?.href}
+                onModeSelect={onModeSelect}
                 onDone={() => {}}
               />
             ) : undefined
@@ -388,6 +403,7 @@ export function EntityModeHeader({
               modes={modes}
               actions={actions}
               activeHref={activeMode?.href}
+              onModeSelect={onModeSelect}
               onDone={() => setSheetOpen(false)}
             />
           </BottomSheetBody>

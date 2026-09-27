@@ -82,6 +82,12 @@ interface RouteModeNavProps {
   /** Optional explicit active href. Defaults to matching the current pathname. */
   activeHref?: string;
   /**
+   * Take the navigation instead of `router.push` — for modes that are
+   * client-side views of one page (a `?mode=` shallow URL update, no server
+   * round-trip).
+   */
+  onNavigate?: (href: string) => void;
+  /**
    * The densest variant allowed. `"menu"` keeps the nav as ONE labeled dropdown
    * trigger at every width — for a page whose own labeled tab bar is the primary
    * nav, so the header never becomes a second row of unlabeled icons.
@@ -104,7 +110,12 @@ const ITEM =
 // on /marketing at ~700px: 365px of content into a 368px slot).
 const FLANK_GUTTER = 32;
 
-export function RouteModeNav({ items, activeHref, maxVariant = "full" }: RouteModeNavProps) {
+export function RouteModeNav({
+  items,
+  activeHref,
+  maxVariant = "full",
+  onNavigate,
+}: RouteModeNavProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [variant, setVariant] = useState<Variant>(maxVariant === "menu" ? "menu" : "full");
@@ -123,7 +134,8 @@ export function RouteModeNav({ items, activeHref, maxVariant = "full" }: RouteMo
 
   const navigate = (href: string) => {
     if (href === current?.href) return;
-    router.push(href);
+    if (onNavigate) onNavigate(href);
+    else router.push(href);
   };
 
   useLayoutEffect(() => {
