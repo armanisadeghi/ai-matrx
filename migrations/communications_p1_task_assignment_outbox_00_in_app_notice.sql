@@ -2,6 +2,7 @@
 -- task's assignee transition. The browser-owned DM remains actionable, but a
 -- lost browser POST no longer leaves the in-app inbox empty.
 -- Apply after communications_p1_task_assignment_outbox.sql.
+-- based-on: communication._task_assignment_outbox() a5c98725f02ccfd0926209064f01eb68cd68005efb94786892f973f419dbe63b
 -- allows: revoke communication
 set local lock_timeout = '2s';
 set local statement_timeout = '120s';
