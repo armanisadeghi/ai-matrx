@@ -27,7 +27,7 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import type { ScopedKnob } from "@/lib/scoped-config/types";
-import { useSetting } from "../hooks/useSetting";
+import { useSetting, useSettingReset } from "../hooks/useSetting";
 import { THEME_MODE_OPTIONS, type ThemeMode } from "../agent-writable-settings";
 import { useUniversalSettings } from "../universal/UniversalSettingsContext";
 import {
@@ -52,6 +52,7 @@ export const FIRST_SCREEN_MORE_KEYS = [
 
 export default function FirstScreenTab() {
   const [mode, setMode] = useSetting<ThemeMode>("theme.mode");
+  const themeReset = useSettingReset<ThemeMode>("theme.mode");
   const [defaultOrganizationId, setDefaultOrganizationId] = useSetting<string | null>(
     "userPreferences.organization.defaultOrganizationId",
   );
@@ -125,10 +126,8 @@ export default function FirstScreenTab() {
           value={mode}
           onValueChange={setMode}
           options={THEME_MODE_OPTIONS}
-          // A new browser follows the device (the boot script honours
-          // prefers-color-scheme), so "Use system setting" IS the default.
-          modified={mode !== "system"}
-          onReset={() => setMode("system")}
+          modified={themeReset.modified}
+          onReset={themeReset.reset}
           resetLabel="Reset theme to Use system setting"
           last
         />

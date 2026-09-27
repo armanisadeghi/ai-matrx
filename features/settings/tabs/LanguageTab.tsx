@@ -4,8 +4,7 @@ import { Globe } from "lucide-react";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
-import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
-import { useSetting } from "../hooks/useSetting";
+import { useSetting, useSettingReset } from "../hooks/useSetting";
 import { LANGUAGE_OPTIONS } from "../agent-writable-settings";
 import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
@@ -21,19 +20,16 @@ export default function LanguageTab() {
   const [textLang, setTextLang] = useSetting<string>(
     "userPreferences.textGeneration.language",
   );
+  const voiceReset = useSettingReset<string>("userPreferences.voice.language");
+  const textReset = useSettingReset<string>("userPreferences.textGeneration.language");
 
   return (
     <>
       <SettingsSubHeader
         title="Language & Region"
-        description="Per-feature language defaults."
+        description="Each feature keeps its own language; there is no single app language."
         icon={Globe}
       />
-
-      <SettingsCallout tone="info">
-        Language is set per feature — there's no global language override yet.
-        Change each domain's default here.
-      </SettingsCallout>
 
       <PreferencesLoadGate what="your language defaults">
         <SettingsSection title="Language defaults">
@@ -43,6 +39,9 @@ export default function LanguageTab() {
             value={voiceLang}
             onValueChange={setVoiceLang}
             options={LANGUAGE_OPTIONS}
+            modified={voiceReset.modified}
+            onReset={voiceReset.reset}
+            resetLabel="Reset voice input language to its default"
           />
           <SettingsSelect
             label="Text generation"
@@ -50,6 +49,9 @@ export default function LanguageTab() {
             value={textLang}
             onValueChange={setTextLang}
             options={LANGUAGE_OPTIONS}
+            modified={textReset.modified}
+            onReset={textReset.reset}
+            resetLabel="Reset text generation language to its default"
             last
           />
         </SettingsSection>

@@ -52,3 +52,30 @@ export function useSettingPersistence(
   const { slice } = parseSettingsPath(path);
   return getSliceBinding(slice).persistence;
 }
+
+/**
+ * The default for a path and a one-call reset, for the settings rows'
+ * `modified` / `onReset` props. `hasDefault` is false for a path whose slice
+ * declares none — then pass no `onReset`, so no reset is offered.
+ *
+ *   const reset = useSettingReset<string>("userPreferences.voice.language");
+ *   <SettingsSelect … modified={reset.modified} onReset={reset.reset} />
+ */
+export function useSettingReset<T>(path: SettingsPath): {
+  defaultValue: T | undefined;
+  hasDefault: boolean;
+  modified: boolean;
+  reset: (() => void) | undefined;
+} {
+  const [value, setValue] = useSetting<T>(path);
+  const { slice, key } = parseSettingsPath(path);
+  const binding = getSliceBinding(slice);
+  const defaultValue = binding.defaultValue?.(key) as T | undefined;
+  const hasDefault = defaultValue !== undefined;
+  return {
+    defaultValue,
+    hasDefault,
+    modified: hasDefault && JSON.stringify(value) !== JSON.stringify(defaultValue),
+    reset: hasDefault ? () => setValue(defaultValue as T) : undefined,
+  };
+}

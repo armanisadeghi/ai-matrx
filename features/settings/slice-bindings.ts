@@ -1,6 +1,7 @@
 import type { AnyAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import {
+  initializeUserPreferencesState,
   setPreference,
   type UserPreferences,
 } from "@/lib/redux/preferences/userPreferencesSlice";
@@ -30,7 +31,20 @@ export type SliceBinding = {
   write: (key: string, value: unknown) => AnyAction;
   /** Persistence tier used for UI badges. */
   persistence: SettingsPersistence;
+  /**
+   * The value a key has before the person ever changes it — what "Reset to
+   * default" writes back. Absent for slices with no declared default (then
+   * no reset is offered: a reset that guesses is worse than none).
+   */
+  defaultValue?: (key: string) => unknown;
 };
+
+let userPreferenceDefaults: ReturnType<typeof initializeUserPreferencesState> | null = null;
+/** The slice's own initial state — the ONE declared default for every preference. */
+function preferenceDefaults() {
+  userPreferenceDefaults ??= initializeUserPreferencesState();
+  return userPreferenceDefaults;
+}
 
 /**
  * Read a dotted key (e.g. "prompts.defaultTemperature") from an object by
@@ -72,6 +86,7 @@ export const sliceBindings: Record<string, SliceBinding> = {
       });
     },
     persistence: "synced",
+    defaultValue: (key) => readDotted(preferenceDefaults(), key),
   },
 
   // ── theme — single "mode" field ───────────────────────────────────────────
@@ -91,7 +106,12 @@ export const sliceBindings: Record<string, SliceBinding> = {
       }
       throw new Error(`theme has no writable key "${key}"`);
     },
-    persistence: "synced",
+    // Saved in this browser (localStorage `matrx:theme`, every tab follows),
+    // never to the account — see `themePolicy`.
+    persistence: "local-only",
+    // A new browser follows the device (the boot script honours
+    // prefers-color-scheme), so the default is "system".
+    defaultValue: (key) => (key === "mode" ? "system" : undefined),
   },
 
   // ── adminPreferences — flagged local-only until migrated ──────────────────
