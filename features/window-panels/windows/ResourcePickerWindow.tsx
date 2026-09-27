@@ -6,6 +6,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 
 import type { WindowPosition } from "@/features/window-panels/hooks/useWindowPanel";
 import type { Resource } from "@/features/agents/resources/types";
+import type { ResourcePickerViewId } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
 
 interface ResourcePickerWindowProps {
   isOpen: boolean;
@@ -31,6 +32,12 @@ interface ResourcePickerWindowProps {
   height?: number;
   /** Where to open the window (default "center") */
   position?: WindowPosition;
+  /** The composer this picker attaches to (Voice, Tools and Skills need it). */
+  conversationId?: string;
+  allowedViewIds?: readonly Exclude<ResourcePickerViewId, null>[];
+  selectionMode?: "single" | "multiple";
+  /** Open straight into one view (a ⌘K picker command). */
+  initialView?: ResourcePickerViewId;
 }
 
 export function ResourcePickerWindow({
@@ -45,6 +52,10 @@ export function ResourcePickerWindow({
   width = 340,
   height = 480,
   position = "center",
+  conversationId,
+  allowedViewIds,
+  selectionMode,
+  initialView,
 }: ResourcePickerWindowProps) {
   if (!isOpen) return null;
 
@@ -68,6 +79,10 @@ export function ResourcePickerWindow({
           onResourceSelected={onResourceSelected}
           onResourceDeselected={onResourceDeselected}
           onClose={onClose}
+          conversationId={conversationId}
+          allowedViewIds={allowedViewIds}
+          selectionMode={selectionMode}
+          initialView={initialView}
           attachmentCapabilities={attachmentCapabilities}
           onSettingsClick={onSettingsClick}
           onDebugClick={onDebugClick}

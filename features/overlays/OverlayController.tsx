@@ -14,6 +14,7 @@
 "use client";
 
 import { isPreparedResourceIdentity } from "@/features/agents/components/chat/usePreparedResourceSeed";
+import type { ResourcePickerViewId } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
 import { isMandateKey } from "@ai-matrx/agents/mandates";
 import type { ReactNode } from "react";
@@ -925,6 +926,10 @@ const ReferencePickerOverlay = lazyOverlay(
   () => import("@/features/overlays/components/ReferencePickerOverlay"),
   { ssr: false },
 );
+const ResourcePickerWindowOverlay = lazyOverlay(
+  () => import("@/features/overlays/components/ResourcePickerWindowOverlay"),
+  { ssr: false },
+);
 const KnowledgeCommandBar = lazyOverlay(
   () => import("@/features/knowledge/command-bar/KnowledgeCommandBar"),
   { ssr: false },
@@ -1498,6 +1503,9 @@ export default function OverlayController() {
     knowledgeCommandBar: useAppSelector((s) =>
       selectIsOverlayOpen(s, "knowledgeCommandBar"),
     ),
+    resourcePickerWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "resourcePickerWindow"),
+    ),
     surfaceContextInspector: useAppSelector((s) =>
       selectIsOverlayOpen(s, "surfaceContextInspector"),
     ),
@@ -1950,6 +1958,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     knowledgeCommandBar: useAppSelector((s) =>
       selectOverlayData(s, "knowledgeCommandBar"),
+    ) as Record<string, unknown> | null,
+    resourcePickerWindow: useAppSelector((s) =>
+      selectOverlayData(s, "resourcePickerWindow"),
     ) as Record<string, unknown> | null,
     surfaceContextInspector: useAppSelector((s) =>
       selectOverlayData(s, "surfaceContextInspector"),
@@ -7411,6 +7422,31 @@ export default function OverlayController() {
                 : null
             }
             mode={data?.mode === "insert" ? "insert" : "copy"}
+          />
+        );
+      })()}
+
+      {/* resourcePickerWindow — a picker view opened from the ⌘K bar */}
+      {(() => {
+        const isOpen = isOpenById.resourcePickerWindow;
+        const data = dataById.resourcePickerWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <ResourcePickerWindowOverlay
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "resourcePickerWindow" }))
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+            initialView={
+              typeof data?.initialView === "string"
+                ? (data.initialView as ResourcePickerViewId)
+                : null
+            }
           />
         );
       })()}
