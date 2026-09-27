@@ -174,7 +174,7 @@ export function ColorRulesDialog({
    * The colour-by the table had when the dialog opened (DATA-V2-BASICS-2 C2). Picking a column
    * repaints at once — the preview — and Cancel puts this back: Cancel changes nothing.
    */
-  const [openedColorBy, setOpenedColorBy] = useState<TableStyle["colorBy"] | null>(() => style.colorBy ?? null);
+  const [openedColorBy, setOpenedColorBy] = useState<NonNullable<TableStyle["colorBy"]> | null>(() => style.colorBy ?? null);
   if (open !== lastOpen) {
     setLastOpen(open);
     if (open) {

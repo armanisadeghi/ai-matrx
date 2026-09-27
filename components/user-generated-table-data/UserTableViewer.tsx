@@ -249,6 +249,7 @@ import {
   type ColumnFilterMap,
 } from "@/features/data-tables/column-filters";
 import { TableSkeleton } from "./TableSkeleton";
+import { sheetBodyState } from "@/features/data-tables/sheet-loading";
 import { editMovesTheView, leftTheViewSentence, rowsThatLeft, type EditedCell } from "@/features/data-tables/edit-keeps-the-view";
 import { CellCleanupButton } from "@/components/content-cleanup/CellCleanupButton";
 import { cleanValue } from "@/lib/content-cleanup/clean-cells";
@@ -2497,7 +2498,10 @@ const UserTableViewer = ({
   // True while we're fetching the full dataset for a freshly-applied filter.
   const filteringInProgress =
     hasColumnFilters && loadingFullDataset && !fullDatasetCache;
-  const showLoadingRow = loading || filteringInProgress;
+  // THE SKELETON IS FOR A TABLE WITH NOTHING ON SCREEN YET (DATA-V2-BASICS-2 C3, `sheet-loading.ts`).
+  const bodyState = sheetBodyState({ loading, rowsHeld: data.length, filteringInProgress });
+  const showLoadingRow = bodyState === "skeleton";
+  const rereading = bodyState === "rereading";
 
   const selectedRowIdSet = new Set(selectedRowIds);
   // ─── Cell selection, keyboard navigation and undo ────────────────────────
@@ -5418,7 +5422,7 @@ const UserTableViewer = ({
           </TableHeader>
             )}
           />
-          <TableBody>
+          <TableBody aria-busy={rereading || undefined} className={rereading ? "opacity-70 transition-opacity" : undefined}>
             {showLoadingRow ? (
               // Table-shaped skeleton rows that match the real column layout —
               // header is already rendered above, so we fill the body with
@@ -5484,7 +5488,7 @@ const UserTableViewer = ({
             )}
             {/* Where every spreadsheet puts it: the line under the last row
                 adds a row. Absent on read-only tables and while loading. */}
-            {!isReadOnly && !loading && displayRows.length > 0 && (
+            {!isReadOnly && !showLoadingRow && displayRows.length > 0 && (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={viewFields.length + 3} className="p-0">
                   <button
@@ -5556,7 +5560,7 @@ const UserTableViewer = ({
       </NonEditableContextMenu>
 
       {/* Pagination — pinned band in fillHeight mode, normal flow otherwise. */}
-      {!loading && displayRows.length > 0 && (
+      {!showLoadingRow && displayRows.length > 0 && (
         <div
           className={
             fillHeight
