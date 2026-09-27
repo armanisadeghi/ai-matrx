@@ -12,13 +12,20 @@
  *
  * Result contract back to the model (via the single `submitToolResult`
  * funnel, so the hard-suspended loop always resumes exactly once):
- *  - applied        → `{ ok: true, surface_name, target, mode }` — for draft
- *    mode the output says the user still has to save.
+ *  - applied        → `{ ok: true, surface_name, target, mode, message,
+ *    result? }` — for draft mode the output says the user still has to save;
+ *    `message` carries the handler's `SurfaceWriteOutcome.summary` and
+ *    `result` its `data` (what landed: ids, names), so the model never has to
+ *    re-read a list that may not show the new rows yet.
  *  - user declined  → is_error FALSE with `{ ok: false, declined: true }`.
  *    A decline is an answer, not a failure — an error result would invite the
  *    model to retry the exact write the user just refused.
- *  - refused/failed → is_error TRUE. `applySurfaceWrite` already reported it
- *    loudly (toast + captureError); the error message tells the model why.
+ *  - refused/failed → is_error TRUE with `reason` (`surface_write_refused`
+ *    before the card / `surface_write_failed` otherwise), `stage`
+ *    (`before_approval` | `after_approval` | `apply` | `not_applied`) and ONE self-contained
+ *    sentence — identical in `output.message` and `error_message` — naming
+ *    whether the user was asked/approved, the page's own message, and the
+ *    next step (`surfaceWriteFailureSentence`).
  *  - nothing open can apply it → is_error TRUE with `reason:
  *    "surface_not_available"`. Wall W49 (2026-09-12): the conversation outlives
  *    the page it was launched from, so this tool can be armed on a tab (a plain
@@ -42,6 +49,36 @@ import { requestInlineApproval } from "@/features/agents/ui-first-tools/redux/re
 import { buildSurfaceWriteApprovalChange } from "./surface-write-approval-change";
 import { upsertToolLifecycle } from "../active-requests/active-requests.slice";
 import { setInstanceStatus } from "../conversations/conversations.slice";
+
+/**
+ * The sentence the model reads when a write did not land. It always says
+ * whether the person was asked, whether they approved, what the page said,
+ * that nothing (or not all of it) was written, and what to do next.
+ */
+export function surfaceWriteFailureSentence(
+  target: string,
+  result: { error: string; phase?: "before_approval" | "apply"; refused?: true },
+  approvedByUser: boolean,
+): string {
+  const reason = result.error.trim().replace(/[.\s]*$/, ".");
+  if (result.phase === "before_approval") {
+    return (
+      `apply_surface_write("${target}") was refused before the user was asked: ${reason} ` +
+      `Nothing was changed. Correct the value and call apply_surface_write again.`
+    );
+  }
+  if (approvedByUser) {
+    return (
+      `The user approved the "${target}" write, but the page could not apply it: ${reason} ` +
+      `The write did not complete. Tell the user what went wrong; if the value was the problem, ` +
+      `correct it and call apply_surface_write again (the user will be asked again).`
+    );
+  }
+  return (
+    `apply_surface_write("${target}") did not complete: ${reason} ` +
+    `Nothing was changed. Tell the user, or correct the value and call apply_surface_write again.`
+  );
+}
 
 export interface DispatchSurfaceWritePayload {
   conversationId: string;
@@ -112,6 +149,11 @@ export const dispatchSurfaceWrite = createAsyncThunk<
     // Honest state while the seam runs — an `ask` target awaits the user.
     dispatch(setInstanceStatus({ conversationId, status: "paused" }));
 
+    // Whether the person pressed Approve on the card for THIS call — so a
+    // handler failure after approval tells the model the person agreed and
+    // the page still could not apply it (not "the user was never asked").
+    let approvedByUser = false;
+
     try {
       const state = getState();
       const agentId = state.conversations.byConversationId[conversationId]?.agentId;
@@ -147,7 +189,10 @@ export const dispatchSurfaceWrite = createAsyncThunk<
             change,
             dispatch,
           });
-          if (decision.kind === "approved") return { kind: "approved" };
+          if (decision.kind === "approved") {
+            approvedByUser = true;
+            return { kind: "approved" };
+          }
           if (decision.kind === "instructions") {
             return { kind: "declined", instructions: decision.text };
           }
@@ -158,27 +203,41 @@ export const dispatchSurfaceWrite = createAsyncThunk<
       });
 
       if (result.ok) {
+        const label = result.target.label;
+        const base =
+          result.target.mode === "draft"
+            ? `"${label}" staged into the page's draft — the user still reviews and saves.`
+            : result.target.mode === "entity"
+              ? `"${label}" applied and saved.`
+              : `"${label}" applied.`;
+        const summary = result.outcome?.summary;
         finish({
           ok: true,
           surface_name: result.surfaceName,
           target: result.target.name,
           mode: result.target.mode,
-          message:
-            result.target.mode === "draft"
-              ? `"${result.target.label}" staged into the page's draft — the user still reviews and saves.`
-              : result.target.mode === "entity"
-                ? `"${result.target.label}" applied and saved.`
-                : `"${result.target.label}" applied.`,
+          message: summary ? `${base} ${summary}` : base,
+          // WHAT LANDED (ids, names) as the page reported it — the page's list
+          // may not show the new rows yet if you re-read it immediately, so
+          // trust this over an immediate re-read and do not retry the write.
+          ...(result.outcome?.data !== undefined
+            ? { result: result.outcome.data }
+            : {}),
         });
         return;
       }
 
       if (result.declined) {
         // The user answered "keep as is". Deliberately NOT an error result.
+        const message =
+          `${result.error} Nothing was changed. Do not retry the same write` +
+          (result.instructions
+            ? " — follow the user's instructions below instead."
+            : " unless the user asks for it.");
         finish({
           ok: false,
           declined: true,
-          message: result.error,
+          message,
           ...(result.instructions ? { instructions: result.instructions } : {}),
         });
         return;
@@ -204,11 +263,30 @@ export const dispatchSurfaceWrite = createAsyncThunk<
         return;
       }
 
-      // Refusal (manual policy), unwired handler, handler throw — already
-      // reported loudly by the seam; tell the model why so it can adjust.
+      // Refused before the card (declared type, value contract, the page's
+      // own `validate`) or failed in the handler. Every branch hands the model
+      // ONE self-contained sentence — the same text in `output.message` and
+      // `error_message`, so it arrives whichever the server forwards.
+      const message = surfaceWriteFailureSentence(target, result, approvedByUser);
       finish(
-        { ok: false, reason: "surface_write_failed", message: result.error },
-        result.error,
+        {
+          ok: false,
+          reason:
+            result.phase === "before_approval"
+              ? "surface_write_refused"
+              : "surface_write_failed",
+          stage:
+            result.phase === "before_approval"
+              ? "before_approval"
+              : approvedByUser
+                ? "after_approval"
+                : result.phase === "apply"
+                  ? "apply"
+                  : "not_applied",
+          ...(approvedByUser ? { user_approved: true } : {}),
+          message,
+        },
+        message,
       );
     } catch (cause) {
       // applySurfaceWrite never throws by contract — reaching here means the

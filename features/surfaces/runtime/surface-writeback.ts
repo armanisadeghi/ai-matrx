@@ -32,6 +32,12 @@
  *    against that registered kind's schema BEFORE approval and BEFORE the
  *    handler — for every origin. An unverifiable contract (kind unregistered,
  *    catalog unreachable) FAILS naming the reason; a skip is never a pass.
+ *  - THE ORDER, for every write: anchored patch → declared valueType (a
+ *    JSON-encoded string for an object/array target is parsed; a wrong type
+ *    is refused) → valueKind contract → the handler's own `validate` →
+ *    approval card (agent origin, `ask`) → the handler's `apply`. Everything
+ *    before the card refuses WITHOUT asking the person; whatever `apply`
+ *    returns as `{ summary?, data? }` rides back on the success result.
  */
 
 import { kindValidator } from "@/features/content-ir/registry/kind-schema-source";
@@ -60,7 +66,13 @@ import {
   getRegisteredWriteHandlers,
   getSurfaceRuntimeStack,
   type SurfaceRuntimeValue,
+  type SurfaceWriteApply,
+  type SurfaceWriteHandler,
+  type SurfaceWriteHandlers,
+  type SurfaceWriteOutcome,
 } from "./SurfaceRuntimeContext";
+
+export type { SurfaceWriteOutcome } from "./SurfaceRuntimeContext";
 
 /**
  * Every handler that can service `surfaceName` right now: the provider's own
@@ -70,23 +82,208 @@ import {
  */
 function resolveHandlers(runtime: {
   surfaceName: string;
-  getWriteHandlers?: () => Record<
-    string,
-    (value: unknown) => void | Promise<void>
-  >;
-}) {
+  getWriteHandlers?: () => SurfaceWriteHandlers;
+}): SurfaceWriteHandlers {
   return {
     ...(runtime.getWriteHandlers?.() ?? {}),
     ...getRegisteredWriteHandlers(runtime.surfaceName),
   };
 }
 
+/**
+ * A handler entry split into its two phases. A plain function is `apply` with
+ * no pre-approval `validate`. Null when the entry is not a usable handler (an
+ * object with no `apply` function) — treated exactly like a missing handler.
+ */
+function splitHandler(entry: SurfaceWriteHandler | undefined): {
+  validate?: (value: unknown) => void | Promise<void>;
+  apply: SurfaceWriteApply;
+} | null {
+  if (!entry) return null;
+  if (typeof entry === "function") return { apply: entry };
+  if (typeof entry === "object" && typeof entry.apply === "function") {
+    return {
+      apply: entry.apply,
+      ...(typeof entry.validate === "function"
+        ? { validate: entry.validate }
+        : {}),
+    };
+  }
+  return null;
+}
+
+/**
+ * Keep what a handler returned ONLY when it is deliberately an outcome
+ * (`{ summary?, data? }` and nothing else). A plain handler's incidental
+ * return value — a dispatched action, a promise of a row count — is not an
+ * answer to forward to a model.
+ */
+function toWriteOutcome(returned: unknown): SurfaceWriteOutcome | undefined {
+  if (!returned || typeof returned !== "object" || Array.isArray(returned)) {
+    return undefined;
+  }
+  const keys = Object.keys(returned);
+  if (keys.length === 0 || keys.some((k) => k !== "summary" && k !== "data")) {
+    return undefined;
+  }
+  const candidate = returned as { summary?: unknown; data?: unknown };
+  if (candidate.summary !== undefined && typeof candidate.summary !== "string") {
+    return undefined;
+  }
+  const out: SurfaceWriteOutcome = {};
+  if (typeof candidate.summary === "string" && candidate.summary.trim()) {
+    out.summary = candidate.summary.trim();
+  }
+  if (candidate.data !== undefined) {
+    try {
+      JSON.stringify(candidate.data);
+      out.data = candidate.data;
+    } catch (error) {
+      console.warn(
+        "[surface-writeback] a write handler returned outcome.data that is not JSON-serializable; it was dropped.",
+        error,
+      );
+    }
+  }
+  return out.summary !== undefined || out.data !== undefined ? out : undefined;
+}
+
+// ---------------------------------------------------------------------------
+// The declared valueType, enforced (and a JSON-encoded string forgiven).
+// ---------------------------------------------------------------------------
+
+const EXCERPT_MAX = 160;
+
+/** The JSON-ish type name of a value, as a model would say it. */
+function jsonTypeOf(value: unknown): string {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "array";
+  return typeof value;
+}
+
+function withArticle(typeName: string): string {
+  if (typeName === "null") return "null";
+  return /^[aeiou]/.test(typeName) ? `an ${typeName}` : `a ${typeName}`;
+}
+
+/** A ≤160-char excerpt of what was received, for the refusal sentence. */
+export function excerptOf(value: unknown): string {
+  let text: string;
+  if (typeof value === "string") {
+    text = value;
+  } else {
+    try {
+      text = JSON.stringify(value) ?? String(value);
+    } catch {
+      text = String(value);
+    }
+  }
+  text = text.replace(/\s+/g, " ").trim();
+  return text.length > EXCERPT_MAX ? `${text.slice(0, EXCERPT_MAX - 1)}…` : text;
+}
+
+/** Strip one surrounding ``` / ```json fence, if the whole string is fenced. */
+function stripJsonFence(text: string): string {
+  const match = /^```[a-zA-Z0-9_-]*[ \t]*\r?\n?([\s\S]*?)\r?\n?```$/.exec(
+    text.trim(),
+  );
+  return match ? match[1].trim() : text.trim();
+}
+
+function matchesStructuredType(
+  valueType: "object" | "array",
+  value: unknown,
+): boolean {
+  return valueType === "array"
+    ? Array.isArray(value)
+    : typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * THE DECLARED TYPE, BOUND BEFORE ANYONE IS ASKED. For a target whose
+ * `valueType` is `object` or `array`:
+ *
+ *  - a STRING that parses as JSON of that type (optionally inside a ```json
+ *    fence) is parsed — smaller models routinely JSON-encode the value, and
+ *    the tool schema cannot forbid it because other targets take strings;
+ *  - anything else of the wrong JS type is refused with a sentence naming the
+ *    expected type, the received type and an excerpt, so the model can
+ *    correct itself.
+ *
+ * `null` passes through untouched: several handlers read it as "clear", and
+ * the handler (or its `validate`) decides. Scalar targets are not coerced.
+ */
+export function coerceDeclaredValueType(
+  target: Pick<SurfaceWriteTarget, "name" | "label" | "valueType">,
+  value: unknown,
+): { ok: true; value: unknown } | { ok: false; error: string } {
+  const valueType = target.valueType;
+  if (valueType !== "object" && valueType !== "array") {
+    return { ok: true, value };
+  }
+  if (value === null || value === undefined) return { ok: true, value };
+  if (matchesStructuredType(valueType, value)) return { ok: true, value };
+
+  const expected = valueType === "array" ? "a JSON array" : "a JSON object";
+  let detail = "";
+  if (typeof value === "string") {
+    const body = stripJsonFence(value);
+    try {
+      const parsed: unknown = JSON.parse(body);
+      if (matchesStructuredType(valueType, parsed)) {
+        return { ok: true, value: parsed };
+      }
+      detail = ` (it parses as JSON, but as ${withArticle(jsonTypeOf(parsed))})`;
+    } catch (error) {
+      detail = ` that is not valid JSON (${error instanceof Error ? error.message : "parse failed"})`;
+    }
+  }
+  const received = jsonTypeOf(value);
+  return {
+    ok: false,
+    error:
+      `"${target.label}" (${target.name}) expects \`value\` to be ${expected}, ` +
+      `but received ${withArticle(received)}${detail}: ` +
+      `${excerptOf(value)} — send the ${valueType} itself as \`value\`, not a JSON-encoded string. ` +
+      `Nothing was changed and the user was not asked.`,
+  };
+}
+
+/**
+ * A value the platform refused BEFORE the approval card: the model's to fix,
+ * not a platform defect — no toast, no capture (the tool result carries the
+ * reason, and the run's tool lifecycle shows it on screen).
+ */
+function refuseBeforeApproval(
+  message: string,
+  raw: Record<string, unknown>,
+): SurfaceWriteResult {
+  console.warn(`[surface-writeback] refused before approval: ${message}`, raw);
+  return { ok: false, refused: true, phase: "before_approval", error: message };
+}
+
 /** The envelope every write returns. A skip/failure is never a silent pass. */
 export type SurfaceWriteResult =
-  | { ok: true; surfaceName: string; target: SurfaceWriteTarget }
+  | {
+      ok: true;
+      surfaceName: string;
+      target: SurfaceWriteTarget;
+      /**
+       * What the handler reported landing (`SurfaceWriteOutcome`) — present
+       * only when the handler returned one. Forwarded to the agent.
+       */
+      outcome?: SurfaceWriteOutcome;
+    }
   | {
       ok: false;
       error: string;
+      /**
+       * Where it stopped. `before_approval`: the value was refused by the type
+       * check, the value contract or the handler's `validate` — the person
+       * was never shown a card. `apply`: the handler itself failed (for an
+       * `ask` target, AFTER the person approved).
+       */
+      phase?: "before_approval" | "apply";
       /**
        * The user was asked and said no. NOT a failure — nothing toasts,
        * nothing is captured. A caller that treats decline as an error trains
@@ -618,7 +815,7 @@ export async function applySurfaceWrite(
     if (!target) continue;
 
     const handlers = resolveHandlers(runtime);
-    const handler = handlers[targetName];
+    const handler = splitHandler(handlers[targetName]);
     if (!handler) {
       // Declared but not wired — a real defect on the page, not the caller.
       return fail(
@@ -647,6 +844,20 @@ export async function applySurfaceWrite(
       value = resolved.value;
     }
 
+    // THE DECLARED TYPE binds next: a JSON-encoded string for an object/array
+    // target is parsed here (so the card, the contract and the handler all see
+    // the real structure), and a value of the wrong type is refused BEFORE
+    // anyone is asked — never an approval card for a value that cannot apply.
+    const typed = coerceDeclaredValueType(target, value);
+    if (!typed.ok) {
+      return refuseBeforeApproval(typed.error, {
+        targetName: target.name,
+        surfaceName: runtime.surfaceName,
+        valueType: target.valueType,
+      });
+    }
+    value = typed.value;
+
     // The declared value contract binds before anything else looks at the
     // value — no approval card for a malformed payload, no handler asked to
     // re-validate what the kind already describes.
@@ -655,7 +866,26 @@ export async function applySurfaceWrite(
       runtime.surfaceName,
       value,
     );
-    if (contract !== true) return contract;
+    if (contract !== true) {
+      return contract.ok ? contract : { ...contract, phase: "before_approval" };
+    }
+
+    // THE PAGE'S OWN PRE-APPROVAL CHECK (`{ validate, apply }` handlers). Runs
+    // for every origin, before the approval card: a throw is the value's
+    // refusal, handed back with its message, and the person is never asked to
+    // approve something the page already knows it will reject.
+    if (handler.validate) {
+      try {
+        await handler.validate(value);
+      } catch (error) {
+        return refuseBeforeApproval(
+          error instanceof Error && error.message
+            ? error.message
+            : `"${target.label}" refused this value.`,
+          { targetName: target.name, surfaceName: runtime.surfaceName, error },
+        );
+      }
+    }
 
     if ((opts?.origin ?? "user") === "agent") {
       // Returns `true` to proceed, or the exact result to hand back (already
@@ -672,30 +902,40 @@ export async function applySurfaceWrite(
     }
 
     try {
-      await handler(value);
+      const outcome = toWriteOutcome(await handler.apply(value));
       // ui-mode writes are self-evident on screen (selection moved, view
       // changed) — no toast. Draft/entity writes confirm what landed where.
       if (!opts?.quiet && target.mode !== "ui") {
-        toast.success(
+        const headline =
           target.mode === "entity"
             ? `${target.label} — done.`
-            : `${target.label} staged — review and save.`,
-        );
+            : `${target.label} staged — review and save.`;
+        if (outcome?.summary) {
+          toast.success(headline, { description: outcome.summary });
+        } else {
+          toast.success(headline);
+        }
       }
-      return { ok: true, surfaceName: runtime.surfaceName, target };
+      return {
+        ok: true,
+        surfaceName: runtime.surfaceName,
+        target,
+        ...(outcome ? { outcome } : {}),
+      };
     } catch (error) {
       const message =
-        error instanceof Error
+        error instanceof Error && error.message
           ? error.message
           : `Applying "${target.label}" failed.`;
       if (error instanceof SurfaceWriteRefusalError) {
-        return { ok: false, refused: true, error: message };
+        return { ok: false, refused: true, phase: "apply", error: message };
       }
-      return fail(message, {
+      const failure = fail(message, {
         targetName,
         surfaceName: runtime.surfaceName,
         error,
       });
+      return failure.ok ? failure : { ...failure, phase: "apply" };
     }
   }
 

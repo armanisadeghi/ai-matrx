@@ -220,7 +220,18 @@ async function buildSurfaceWriteInlineSpec(
     // window over them (the surface chain): the agent reads that level's
     // values under `<surface>::<value>` and writes it here.
     const where = surfaceName ? `on ${surfaceName}, ` : "";
-    return `- ${target.name} (${where}type=${target.valueType}, ${landing}, ${applied})${contract}${patch}: ${target.description}`;
+    // THE TYPE, SAID IN WORDS. `type=object` alone did not stop smaller models
+    // from JSON-encoding the value into a string (education classes,
+    // 2026-09-27) — the tool schema cannot forbid it, because other targets
+    // legitimately take strings. The seam parses such a string when it can,
+    // but the line tells the model the right shape up front.
+    const typeRule =
+      target.valueType === "array"
+        ? "value must be a JSON array (the array itself, not a string)"
+        : target.valueType === "object"
+          ? "value must be a JSON object (the object itself, not a string)"
+          : `type=${target.valueType}`;
+    return `- ${target.name} (${where}${typeRule}, ${landing}, ${applied})${contract}${patch}: ${target.description}`;
   });
 
   return {
@@ -232,10 +243,16 @@ async function buildSurfaceWriteInlineSpec(
       "through its own handler — you never touch storage directly, and " +
       "targets not listed here cannot be written. Depending on the target's " +
       "policy the user may be asked to approve in place; a decline is a " +
-      "normal outcome (respect it, do not retry). A target marked " +
-      "[kind=<slug> {...}] has a REGISTERED value contract: send exactly that " +
-      "shape — a value that fails it is refused before the user is even " +
-      "asked.\n\n" +
+      "normal outcome (respect it, do not retry). Each target states the " +
+      "type its value must be: an object or array target takes the object " +
+      "or array ITSELF as `value`, never a JSON-encoded string. A value of " +
+      "the wrong type, one that fails a [kind=<slug> {...}] REGISTERED value " +
+      "contract, or one the page's own pre-check rejects is refused BEFORE " +
+      "the user is asked, with the reason — correct it and call again. A " +
+      "page can still fail while applying an approved value; the result then " +
+      "says so with the page's message. A successful result may carry " +
+      "`result` — what actually landed (ids, names); trust it rather than " +
+      "re-reading the page and never repeat a write that succeeded.\n\n" +
       (writable.some(({ target }) => target.patchable)
         ? `${surfacePatchContractLine()}\n\n`
         : "") +
@@ -259,7 +276,8 @@ async function buildSurfaceWriteInlineSpec(
           type: ["string", "number", "boolean", "array", "object", "null"],
           description:
             "The value for the chosen target, shaped exactly as that " +
-            "target's description specifies.",
+            "target's description specifies. For an object or array target " +
+            "send the object/array itself — not a JSON-encoded string.",
         },
       },
       required: ["target", "value"],

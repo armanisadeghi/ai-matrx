@@ -42,15 +42,43 @@ import {
 import type { SurfaceHandle } from "@ai-matrx/kit/content-transfer";
 
 /**
+ * What a write handler may RETURN so the caller (and, for an agent write, the
+ * model) learns what landed without re-reading the page — ids, names, counts.
+ * `summary` is one plain sentence; `data` is any JSON-serializable value.
+ * Both are forwarded verbatim in the `apply_surface_write` tool result.
+ */
+export interface SurfaceWriteOutcome {
+  summary?: string;
+  data?: unknown;
+}
+
+/** Applies the value into the page. May throw; may return an outcome. */
+export type SurfaceWriteApply = (
+  value: unknown,
+) => void | SurfaceWriteOutcome | Promise<void | SurfaceWriteOutcome>;
+
+/**
+ * The two-phase handler shape. `validate` runs BEFORE the person is shown the
+ * approval card (after JSON-string parsing, anchored-patch resolution and the
+ * declared `valueKind` contract): a throw is handed back to the agent as a
+ * refusal with its message and no card is shown. `apply` runs only after
+ * approval (or immediately for `auto` / user-origin writes).
+ */
+export interface SurfaceWriteHandlerEntry {
+  validate?: (value: unknown) => void | Promise<void>;
+  apply: SurfaceWriteApply;
+}
+
+/** A plain apply function, or `{ validate?, apply }`. */
+export type SurfaceWriteHandler = SurfaceWriteApply | SurfaceWriteHandlerEntry;
+
+/**
  * One write handler per declared `SurfaceWriteTarget.name`. A handler applies
  * the value into the page (draft state, canonical service write, or UI state
  * per the target's declared `mode`) and may throw — the writeback runtime
  * (`surface-writeback.ts`) wraps every call in a safe envelope.
  */
-export type SurfaceWriteHandlers = Record<
-  string,
-  (value: unknown) => void | Promise<void>
->;
+export type SurfaceWriteHandlers = Record<string, SurfaceWriteHandler>;
 
 export interface SurfaceBeforeExecuteInput {
   conversationId: string;
@@ -388,11 +416,31 @@ export function useSurfaceWriteHandlers(
   useEffect(() => {
     if (!surfaceName) return;
     const id = ++nextId;
-    // Indirect through the ref so the registered functions always call the
-    // LATEST closure (fresh page state), never the one from mount.
+    // Indirect through the ref so the registered handlers always call the
+    // LATEST closure (fresh page state), never the one from mount. The proxy
+    // is always the two-phase shape so a handler may switch between a plain
+    // function and `{ validate, apply }` across renders without re-registering.
     const proxied: SurfaceWriteHandlers = {};
     for (const key of Object.keys(handlersRef.current)) {
-      proxied[key] = (value: unknown) => handlersRef.current[key]?.(value);
+      proxied[key] = {
+        validate: async (value: unknown) => {
+          const current = handlersRef.current[key];
+          if (current && typeof current !== "function") {
+            await current.validate?.(value);
+          }
+        },
+        apply: (value: unknown) => {
+          const current = handlersRef.current[key];
+          if (!current) {
+            throw new Error(
+              `The handler for "${key}" on ${surfaceName} was unregistered before it could run.`,
+            );
+          }
+          return typeof current === "function"
+            ? current(value)
+            : current.apply(value);
+        },
+      };
     }
     const list = extraHandlers.get(surfaceName) ?? [];
     extraHandlers.set(surfaceName, [...list, { id, handlers: proxied }]);

@@ -78,6 +78,7 @@ describe("surface writeback handler outcomes", () => {
     expect(result).toEqual({
       ok: false,
       refused: true,
+      phase: "apply",
       error: "Use the correction target for agent columns.",
     });
     expect(mockToastError).not.toHaveBeenCalled();
@@ -102,7 +103,11 @@ describe("surface writeback handler outcomes", () => {
 
     const result = await applySurfaceWrite("review_field", "value");
 
-    expect(result).toEqual({ ok: false, error: "Database write failed." });
+    expect(result).toEqual({
+      ok: false,
+      phase: "apply",
+      error: "Database write failed.",
+    });
     expect(mockToastError).toHaveBeenCalledWith("Database write failed.");
     expect(mockCaptureError).toHaveBeenCalledWith(
       expect.objectContaining({

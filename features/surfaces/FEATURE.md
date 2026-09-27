@@ -202,6 +202,21 @@ internal platform use — never a washed-down user variant beside a private one:
   `keyword_search_metrics`, DB components) call
   `runAction("apply_surface_write", …)` — same seam users' agent-authored
   components get.
+- **Handler shape, order, and what the agent is told (2026-09-27).** A
+  handler entry is a plain `(value) => void | SurfaceWriteOutcome` OR
+  `{ validate?(value), apply(value) }` (`SurfaceWriteHandler` in
+  `runtime/SurfaceRuntimeContext.tsx`). The seam's order for every write:
+  anchored patch → declared `valueType` (a JSON-encoded string for an
+  `object`/`array` target is parsed, ```json fence tolerated; any other type
+  mismatch is refused with expected vs received type + a 160-char excerpt;
+  `null` passes to the handler) → `valueKind` contract → `validate` →
+  approval card → `apply`. Everything before the card refuses WITHOUT asking
+  the person (`phase: "before_approval"`). `apply` may return
+  `{ summary?, data? }`; it rides back as `SurfaceWriteResult.outcome` and in
+  the tool result as `message` + `result`, so an agent never re-reads a list
+  that has not caught up. Every failure reaches the model as ONE sentence
+  (`surfaceWriteFailureSentence`) in both `output.message` and
+  `error_message`, stating whether the person was asked/approved.
 - **Agent-origin writes (the stream side)** — a run launched on a surface with
   agent-writable targets (declared + handled + resolving to ask/auto) is
   offered ONE inline delegated tool, **`apply_surface_write`**
@@ -2026,6 +2041,8 @@ regex/uniqueness) are the second and third chips of that campaign, not blockers
 on the first.
 
 ## Change Log
+
+- **2026-09-27 — Writes refuse bad values before the card, and tell the agent what landed.** From the education classes incident (a smaller model JSON-encoded an array value; the handler refused only after the person pressed Apply; the agent then re-read a stale list). `applySurfaceWrite` now parses a JSON string for `object`/`array` targets and refuses a type mismatch before approval; handlers may be `{ validate, apply }` (validate runs pre-card; `useSurfaceWriteHandlers` proxies both); `apply`'s `{ summary?, data? }` is returned as `outcome` and forwarded to the model; `dispatch-surface-write.thunk.ts` sends one self-contained sentence for every refusal/failure/decline. `apply_surface_write`'s per-target lines now say "value must be a JSON array/object (not a string)". Tests: `runtime/__tests__/surface-write-shape-and-outcome.test.tsx`, `thunks/__tests__/dispatch-surface-write.test.ts`.
 
 - **2026-09-26 — The surface chain, second pass (independent verifier findings).** Follow-up turns: aidream's continue / fork+run / resume pipelines now run `apply_surface_context` like turn 1 (they never did — the chain and window forms were dropped on turn 2+; guard `test_continue_turn_surface_context.py`). A screen that CLOSED since launch (a window shut) stops sending its old values: `refresh-surface-scope` replaces the surface tier with `surface_closed` (platform key) plus the live chain and window forms, using the registry's `wasSurfaceMountedThisSession` so server-emitted surfaces keep their launch context. The resume after an approved write re-reads the live screen first. Window forms: labels found up to six levels up; the approval card names each field by its on-screen label. No "finished without writing an answer" while the run waits on the person (`answerless-turn.ts` `awaitingPerson`). Table settings gained `table_details` and `column_changes` (label, data type, required, formula) — live-verified: "rename Capital to Capital city and make it required" staged both, unsaved. Live-verified the overlay-controller path: the Tasks window (`?panels=quick_tasks`) over a data table launched with `client.surface = matrx-user/quick-tasks` and the table as the `page` level.
 - **2026-09-26 — The surface chain (register ai-reachable-everywhere ARE-010/011/012).** Every run and every follow-up turn carries `surface_chain` (every other open registered screen, nearest first, with declared values + descriptions) and `window_forms` (every open unregistered window's fields); `SurfaceLayerBoundary` makes layers outrank pages wherever they mount and `lazyOverlay` applies it to every overlay; contributions merge in the registry; platform write target `window_form_fields`; new layer surface `matrx-user/table-settings` (tab, pending edits, saved/edited row actions, `formula_language`; targets `editing_row_action`, `row_action_step_formula`, `settings_tab`) synced to the mirror. Live-verified 2026-09-26 on `/data/dd073d8c…`: the Agents menu over Table settings launched with `client.surface = matrx-user/table-settings` plus the data table as the `page` level; the agent proposed `{Capital} & ", " & {Country}` for the open action's Capital step and it landed after Apply, unsaved; on the unregistered Add New Column dialog it filled Column Name after approval and was refused (honestly) on the two list pickers. See § The surface chain.
