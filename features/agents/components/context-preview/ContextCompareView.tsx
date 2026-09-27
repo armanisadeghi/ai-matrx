@@ -495,7 +495,18 @@ function Summary({ compare }: { compare: ContextCompare }) {
           {CLASS_ORDER.filter((c) => counts[c]).map((c) => ` · ${counts[c]} ${CLASS_LOOK[c].label.toLowerCase()}`)}
         </p>
         <p className="mt-1.5 text-xs text-foreground/90">{compare.ruling}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{compare.follow.says}</p>
+        {/* The follow's lag turns red once the oldest waiting edit is older than the knob
+            context/follow_lag_alert_seconds (lane PROOF-DEFECTS, D3); `alert` is new in the
+            server's answer, so an older server simply reads as not alerting. */}
+        <p
+          className={cn(
+            "mt-1 text-xs",
+            (compare.follow as { alert?: boolean }).alert ? "font-medium text-destructive" : "text-muted-foreground",
+          )}
+          data-follow-alert={(compare.follow as { alert?: boolean }).alert ? "true" : undefined}
+        >
+          {compare.follow.says}
+        </p>
         {(compare.excluded ?? []).map((e) => (
           <p key={e} className="mt-1 text-xs text-muted-foreground">
             {e}
