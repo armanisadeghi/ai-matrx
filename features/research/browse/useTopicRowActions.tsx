@@ -7,7 +7,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ExternalLink, Link2, Settings, Trash2 } from "lucide-react";
+import { ArrowRight, ExternalLink, Link2, Settings, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { WriteDidNotLandError } from "@/utils/supabase/writeOne";
@@ -38,7 +38,7 @@ export function useTopicRowActions(
           {
             id: "open",
             label: "Open",
-            icon: ExternalLink,
+            icon: ArrowRight,
             onSelect: () => open(row),
           },
           {
