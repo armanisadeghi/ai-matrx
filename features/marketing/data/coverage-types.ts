@@ -5,6 +5,11 @@ import type { Database } from "@/types/database.types";
  * alongside itself so share-of-voice has a denominator. Written by the server
  * (a human through `/coverage/trackers`, or WP2/WP3 through IC-8); this client
  * only reads.
+ *
+ * Since aidream migration 1411 a tracker is the ONE news monitor record with
+ * `lenses` (`coverage` and/or `opportunity`). A coverage tracker always has a
+ * `site_id` and a `brand_key`; an opportunity-only monitor may have neither
+ * (it is read through `parent_brand_id`), which is why both are nullable here.
  */
 export type CoverageTrackerRow =
   Database["seo"]["Tables"]["coverage_tracker"]["Row"];

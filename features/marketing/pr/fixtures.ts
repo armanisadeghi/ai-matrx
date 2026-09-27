@@ -922,6 +922,8 @@ function buildCoverage(now: number, angles: readonly StoryAngle[]): CoverageMent
       hit_score: seed.prominenceScore,
       hit_reason: "Brand name in body",
       outcome_event_id: null,
+      // A sample mention came from no news sighting (seo.coverage_mention.news_item_id, migration 1412).
+      news_item_id: null,
       external_id: null,
       language: "en",
       source_capture: {},
