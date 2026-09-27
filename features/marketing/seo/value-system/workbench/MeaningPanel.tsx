@@ -441,7 +441,7 @@ export function MeaningPanel({
               onRetry={() => void rules.refetch()}
             />
           ) : null}
-          {rules.data && rules.data.length === 0 ? (
+          {!rules.isError && rules.data && rules.data.length === 0 ? (
             <EmptyLine>
               No value rules yet. Rules like “free” ×0.2 or “certification
               seeking” ×3 are how qualifier words change what a keyword is
@@ -561,7 +561,7 @@ export function MeaningPanel({
               onRetry={() => void geoAreas.refetch()}
             />
           ) : null}
-          {geoAreas.data && geoAreas.data.length === 0 ? (
+          {!geoAreas.isError && geoAreas.data && geoAreas.data.length === 0 ? (
             <EmptyLine>
               No geo areas defined yet, so no geo gate applies. Add the places
               this business serves (and the ones it never will) to make
@@ -636,7 +636,7 @@ export function MeaningPanel({
               onRetry={() => void topicValues.refetch()}
             />
           ) : null}
-          {topicValues.data && topicValues.data.values.length === 0 ? (
+          {!topicValues.isError && topicValues.data && topicValues.data.values.length === 0 ? (
             <EmptyLine>
               No offering worth expressed yet — this is why keywords sit in
               Unvalued. Weighting even a handful of top-level topics values

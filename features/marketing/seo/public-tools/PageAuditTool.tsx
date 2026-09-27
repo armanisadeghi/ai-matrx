@@ -122,6 +122,7 @@ export function PageAuditTool() {
 
           {result.issues.length === 0 ? (
             <Card className="rounded-2xl border-border bg-muted/30">
+              {/* read-gate-exempt: the verdict of a finished, successful audit run (result exists only on success; the run error renders above) — not an empty read */}
               <CardContent className="p-5 text-sm text-muted-foreground">
                 No issues found — this page looks clean on every check this tool runs.
               </CardContent>

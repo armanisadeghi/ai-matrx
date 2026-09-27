@@ -30,6 +30,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -229,7 +230,14 @@ export function DigStampPanel({
           <Tag className="h-3 w-3" />
           Saves matches as
         </span>
-        {rows.length === 0 ? (
+        {stamps.isError && rows.length === 0 ? (
+          <ReadFailure
+            error={stamps.error}
+            what="what this rule saves matches as"
+            onRetry={() => void stamps.refetch()}
+            className="m-0 w-full"
+          />
+        ) : stamps.isSuccess && rows.length === 0 ? (
           <span className="text-[11px] text-muted-foreground">
             nothing yet — these matches are a list, not a segment
           </span>

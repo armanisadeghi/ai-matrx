@@ -17,6 +17,7 @@
  * "seo agency pricing" has no location is noise in every receipt on the site.
  */
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useQuery } from "@tanstack/react-query";
 import { Building2, MapPinOff } from "lucide-react";
 import Link from "next/link";
@@ -44,6 +45,18 @@ export function KeywordLocationLine({
     staleTime: 5 * 60_000,
     queryFn: ({ signal }) => getKeywordLocations(siteId, [keywordId], signal),
   });
+
+  // A failed read is said — never read as "no location".
+  if (located.isError && !located.data) {
+    return (
+      <ReadFailure
+        error={located.error}
+        what="this keyword's location"
+        onRetry={() => void located.refetch()}
+        className="m-0"
+      />
+    );
+  }
 
   // Silent while unknown: a receipt that flickers a wrong answer then corrects
   // itself is worse than one that fills in a beat later.

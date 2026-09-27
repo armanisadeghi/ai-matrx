@@ -1165,7 +1165,7 @@ export function MeaningRulesWorkbench() {
                 onRetry={() => void rules.refetch()}
               />
             ) : null}
-            {rules.data && rules.data.length === 0 ? (
+            {!rules.isError && rules.data && rules.data.length === 0 ? (
               <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-4 text-[11px] text-muted-foreground">
                 No value rules yet. This is where “free” costs a keyword four
                 fifths of its worth, or a certification-seeking search triples
@@ -1180,7 +1180,8 @@ export function MeaningRulesWorkbench() {
                 .
               </p>
             ) : null}
-            {rules.data &&
+            {!rules.isError &&
+            rules.data &&
             rules.data.length > 0 &&
             visibleRules.length === 0 ? (
               <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-3 text-[11px] text-muted-foreground">
@@ -1211,6 +1212,7 @@ export function MeaningRulesWorkbench() {
                   <p className="text-[11px] font-semibold text-destructive">
                     {disconnectedRules.length} value rule
                     {disconnectedRules.length === 1 ? "" : "s"} change
+                    {/* read-gate-exempt: a warning sentence ("…change no score") about rules that ARE loaded, not an empty view */}
                     {disconnectedRules.length === 1 ? "s" : ""} no score
                   </p>
                   <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
@@ -1338,7 +1340,7 @@ export function MeaningRulesWorkbench() {
                 onRetry={() => void areas.refetch()}
               />
             ) : null}
-            {areas.data && areas.data.length === 0 ? (
+            {!areas.isError && areas.data && areas.data.length === 0 ? (
               <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-4 text-[11px] text-muted-foreground">
                 No service areas yet, so location plays no part in any
                 keyword&apos;s worth. Add the places you serve — and the ones
@@ -1364,6 +1366,7 @@ export function MeaningRulesWorkbench() {
                     {disconnectedAreas.length === 1
                       ? "it changes"
                       : "they change"}{" "}
+                    {/* read-gate-exempt: a warning sentence ("…change no score") about service areas that ARE loaded, not an empty view */}
                     no score
                   </p>
                   <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">

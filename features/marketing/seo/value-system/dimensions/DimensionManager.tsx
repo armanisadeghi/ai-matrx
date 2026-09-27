@@ -382,6 +382,7 @@ export function DimensionManager() {
                   </p>
                 </div>
                 {shared.length === 0 ? (
+                  // read-gate-exempt: inside `catalog.data && …`, so only after a successful catalog read; a failed refresh is said by the InlineQueryError above
                   <p className="rounded-lg border border-dashed border-border px-3 py-4 text-[11px] text-muted-foreground">
                     No shared dimensions are published yet.
                   </p>

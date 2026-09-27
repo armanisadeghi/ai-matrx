@@ -139,6 +139,7 @@ export function TopicalMapHomeCard({
             </span>
           ) : (
             <span>
+              {/* read-gate-exempt: consequence copy in the retire dialog ("no restore button yet"), not an empty view over a read */}
               This removes the map from {"the brand"}
               {typeof d?.topics_total === "number" ? ` with its ${d.topics_total} topics` : ""}
               . Every page placed on its topics and every proposed destination stays recorded
@@ -208,7 +209,7 @@ export function TopicalMapHomeCard({
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Sites
         </h3>
-        {d && d.sites_using_map.length === 0 ? (
+        {diagnostics.isSuccess && d && d.sites_using_map.length === 0 ? (
           <p className="mt-1 text-sm text-muted-foreground">
             No site uses this map yet, so no page can be placed on its topics. Bind one below.
           </p>

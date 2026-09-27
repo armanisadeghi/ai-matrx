@@ -95,6 +95,20 @@ export function KeywordMeaningPanel({
     );
   }
 
+  // A failed read with nothing ever read: every field below would say
+  // "Unvalued" / "no score" over data we never saw — say the failure instead.
+  if (meaning.isError && meaning.dataUpdatedAt === 0) {
+    return (
+      <section className="grid gap-2 rounded-lg border border-border p-3">
+        <InlineQueryError
+          what="this keyword's meaning"
+          error={meaning.error}
+          onRetry={() => void meaning.refetch()}
+        />
+      </section>
+    );
+  }
+
   const { value, service, stamps, unanswered } = meaning.data;
   const row: KeywordMenuRow = {
     phrase,

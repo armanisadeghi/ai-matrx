@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -1125,7 +1126,14 @@ export default function KeywordResearchWorkbench() {
               stagedKeywordRef.current = keyword;
             }}
           />
-          {deepLinkNeedsResearch ? (
+          {initialKeyword && deepLinkSaved.isError ? (
+            <ReadFailure
+              error={deepLinkSaved.error}
+              what={`the saved research for “${initialKeyword}”`}
+              onRetry={() => void deepLinkSaved.refetch()}
+              className="mt-2"
+            />
+          ) : deepLinkNeedsResearch ? (
             <p className="mt-2 text-xs text-muted-foreground">
               No saved research for{" "}
               <span className="font-medium text-foreground">

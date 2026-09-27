@@ -829,7 +829,7 @@ export function SearchConsoleWorkspace() {
               ) : null}
             </div>
 
-            {knownEmpty ? (
+            {freshness.isSuccess && !hasAnyData ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-card/60 p-8 text-center">
                 <p className="text-sm font-medium text-foreground">
                   No Search Console data for this site yet

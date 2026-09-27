@@ -55,6 +55,7 @@ export function TopicHoverCard({ mapId, slug, onOpen }: TopicHoverCardProps) {
           {topic.description}
         </p>
       ) : (
+        // read-gate-exempt: an empty field on a topic row that is already loaded (the card returns null without the row), not an empty list
         <p className="text-xs italic text-muted-foreground">No description yet.</p>
       )}
 

@@ -124,6 +124,7 @@ export function StructuredDataValidatorTool() {
 
           {result.blocks.length === 0 ? (
             <Card className="rounded-2xl border-border bg-muted/30">
+              {/* read-gate-exempt: the verdict of a finished, successful audit run (result exists only on success; the run error renders above) — not an empty read */}
               <CardContent className="p-5 text-sm text-muted-foreground">
                 No JSON-LD or microdata structured data was found on this page.
               </CardContent>
@@ -149,6 +150,7 @@ export function StructuredDataValidatorTool() {
                     ) : null}
                   </div>
                   {block.issues.length === 0 ? (
+                    // read-gate-exempt: the verdict of a finished, successful audit run (result exists only on success; the run error renders above) — not an empty read
                     <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <CheckCircle2 className="h-3.5 w-3.5 text-success" /> No issues found.
                     </p>

@@ -1666,12 +1666,14 @@ export function ValueWorkbench() {
                     icon: (
                       <CircleDollarSign className="h-8 w-8 text-muted-foreground" />
                     ),
-                    title:
-                      bandFilter || sourceFilter || state.search
+                    title: review.isError
+                      ? "Keywords unknown — the review above did not load"
+                      : bandFilter || sourceFilter || state.search
                         ? "No keywords match this view"
                         : "No GSC-active keywords in this window",
-                    description:
-                      bandFilter || sourceFilter || state.search
+                    description: review.isError
+                      ? "This list is unknown until the read succeeds — use Try again on the notice above."
+                      : bandFilter || sourceFilter || state.search
                         ? "Clear the tier tile, the filters, or the search to widen the view."
                         : "Connect Search Console and run a sync — keyword value starts from real search traffic.",
                   }}
