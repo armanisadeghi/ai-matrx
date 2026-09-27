@@ -173,7 +173,11 @@ describe("OfferingTable", () => {
     expect(tableProps.detail).toEqual({ enabled: false });
     expect(tableProps.onRowOpen).toBe(onSelect);
     expect(tableProps.pageSize).toBe(25);
-    expect(tableProps.localPagination).toEqual({ mode: "progressive" });
+    expect(tableProps.localPagination).toEqual({
+      mode: "numbered",
+      reason: "The page-size choice must show exact pages and retain the canonical footer controls.",
+      approvedBy: "Arman, September 27 2026 footer rule",
+    });
     expect(tableProps.tableId).toBe("ai/offerings");
     expect(tableProps.columns.map((column) => column.id ?? column.accessorKey)).toEqual([
       "model",

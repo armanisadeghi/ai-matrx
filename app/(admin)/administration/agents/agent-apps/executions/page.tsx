@@ -635,7 +635,7 @@ function ExecutionsTable({
             isFetching={refreshing}
             stickyHeader
             pageSize={50}
-            localPagination={{ mode: "progressive" }}
+            localPagination={{ mode: "numbered", reason: "Execution rows keep exact page sizes and stable canonical footer controls.", approvedBy: "Arman, September 27 2026 footer rule" }}
             coverage={EXECUTIONS_COVERAGE}
             toolbar={{
               title: "Executions",
@@ -847,7 +847,7 @@ function ErrorsTable({
             isFetching={refreshing}
             stickyHeader
             pageSize={50}
-            localPagination={{ mode: "progressive" }}
+            localPagination={{ mode: "numbered", reason: "Error rows keep exact page sizes and stable canonical footer controls.", approvedBy: "Arman, September 27 2026 footer rule" }}
             coverage={ERRORS_COVERAGE}
             toolbar={{
               title: "Errors",

@@ -507,7 +507,7 @@ export default function AgentAppsAnalyticsPage() {
               isFetching={refreshing}
               stickyHeader
               pageSize={50}
-              localPagination={{ mode: "progressive" }}
+              localPagination={{ mode: "numbered", reason: "App analytics keeps exact page sizes and stable canonical footer controls.", approvedBy: "Arman, September 27 2026 footer rule" }}
               query={{ mode: "controlled-local", state: tableQuery.state, onStateChange: tableQuery.onStateChange }}
               coverage={{ ...ANALYTICS_COVERAGE, total: apps.length }}
               toolbar={{

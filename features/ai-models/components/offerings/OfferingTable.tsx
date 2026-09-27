@@ -268,7 +268,7 @@ export default function OfferingTable({
         isFetching={loading && offerings.length > 0}
         pageSize={25}
         pageSizeOptions={[10, 25, 50, 100]}
-        localPagination={{ mode: "progressive" }}
+        localPagination={{ mode: "numbered", reason: "The page-size choice must show exact pages and retain the canonical footer controls.", approvedBy: "Arman, September 27 2026 footer rule" }}
         defaultSort={{ id: "priority", direction: "asc" }}
         detail={{ enabled: false }}
         onRowOpen={onSelect}

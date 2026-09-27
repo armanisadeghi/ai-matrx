@@ -381,7 +381,7 @@ export function RateLimitsClient() {
           isFetching={loading && rateLimits.length > 0}
           stickyHeader
           pageSize={25}
-          localPagination={{ mode: "progressive" }}
+          localPagination={{ mode: "numbered", reason: "Rate-limit rows keep exact page sizes and stable canonical footer controls.", approvedBy: "Arman, September 27 2026 footer rule" }}
           query={{
             mode: "controlled-local",
             state: tableQuery.state,
