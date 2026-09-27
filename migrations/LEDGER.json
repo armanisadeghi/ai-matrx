@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-27T17:36:05.281Z",
+  "generated_at": "2026-09-27T17:52:59.415Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3031,6 +3031,12 @@
       "filename": "listsafter_b_the_switch_says_when_a_pick_list_is_not_copied.sql",
       "checksum": "b30e8ad42181302cf96ecd3ad81103e1cfdac83a54cb667c7a793a70c6dd024c",
       "applied_at": "2026-09-26 16:22:00.290219+00"
+    },
+    "migrations/campaign/listsindex_the_lists_page_reads_one_store_door.sql": {
+      "source": "matrx-frontend",
+      "filename": "listsindex_the_lists_page_reads_one_store_door.sql",
+      "checksum": "2e62c23df53e2f09dad905895d8508c61614b9b53702b70dacb643d78b9045d3",
+      "applied_at": "2026-09-27 17:52:57.598918+00"
     },
     "migrations/campaign/lockhyg_a_lock_row_carries_a_lease.sql": {
       "source": "matrx-frontend",
