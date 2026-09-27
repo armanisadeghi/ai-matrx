@@ -1,5 +1,8 @@
 import {
   calendarDays,
+  calendarDayDurationMinutes,
+  calendarEventAccessibleName,
+  calendarHourTicks,
   calendarSegments,
   positionTimedSegments,
 } from "./calendarView";
@@ -95,6 +98,45 @@ describe("calendar Day/Week layout", () => {
 
     expect(segment.day).toBe("2026-11-01");
     expect(segment.endMinute - segment.startMinute).toBe(60);
+  });
+
+  it("positions the two repeated fall-back times sixty elapsed minutes apart", () => {
+    const segments = calendarSegments(
+      [
+        event({ id: "first-130", title: "First 1:30", starts_at: "2026-11-01T05:30:00Z", ends_at: "2026-11-01T05:45:00Z" }),
+        event({ id: "second-130", title: "Second 1:30", starts_at: "2026-11-01T06:30:00Z", ends_at: "2026-11-01T06:45:00Z" }),
+      ],
+      calendarDays("2026-11-01", 1),
+      "America/New_York",
+    );
+
+    expect(segments.map((segment) => segment.startMinute)).toEqual([90, 150]);
+    expect(segments.map((segment) => segment.endMinute - segment.startMinute)).toEqual([15, 15]);
+  });
+
+  it("builds DST day ticks from instants, including both fall-back 1 AM hours", () => {
+    const ticks = calendarHourTicks("2026-11-01", "America/New_York");
+
+    expect(calendarDayDurationMinutes("2026-11-01", "America/New_York")).toBe(1500);
+    expect(ticks).toHaveLength(25);
+    expect(ticks.filter((tick) => /^1 AM/.test(tick.label)).map((tick) => tick.minute)).toEqual([60, 120]);
+    expect(ticks.filter((tick) => /^1 AM/.test(tick.label)).map((tick) => tick.label)).toEqual(["1 AM EDT", "1 AM EST"]);
+    expect(ticks.at(-1)?.label).toMatch(/^11 PM/);
+  });
+
+  it("skips the nonexistent spring-forward hour", () => {
+    const ticks = calendarHourTicks("2026-03-08", "America/New_York");
+
+    expect(calendarDayDurationMinutes("2026-03-08", "America/New_York")).toBe(1380);
+    expect(ticks).toHaveLength(23);
+    expect(ticks.some((tick) => /^2 AM/.test(tick.label))).toBe(false);
+    expect(ticks.map((tick) => tick.label).slice(1, 3)).toEqual(["1 AM EST", "3 AM EDT"]);
+  });
+
+  it("names every event with its day, displayed time range, and title", () => {
+    const early = event({ id: "accessible", title: "First 1:30", starts_at: "2026-11-01T05:30:00Z", ends_at: "2026-11-01T05:45:00Z" });
+
+    expect(calendarEventAccessibleName(early, "2026-11-01", "America/New_York")).toBe("Sunday, Nov 1: 1:30 AM – 1:45 AM: First 1:30");
   });
 
   it("places a past local day without consulting a provider", () => {

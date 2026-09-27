@@ -1,4 +1,4 @@
-import { addDaysToKey, dayKeyInZone, eventLocalDay } from "./record";
+import { addDaysToKey, dayKeyInZone, eventLocalDay, eventTimeText } from "./record";
 import type { CalendarEventRow } from "./types";
 
 export type CalendarViewMode = "day" | "week";
@@ -18,7 +18,7 @@ export interface PositionedCalendarEvent extends CalendarEventSegment {
 
 /** A UTC-built date is only a carrier for the local calendar-day key. */
 export function dateForCalendarDay(day: string): Date {
-const [year, month, date] = day.split("-").map(Number);
+  const [year, month, date] = day.split("-").map(Number);
   return new Date(Date.UTC(year, (month ?? 1) - 1, date ?? 1, 12));
 }
 
@@ -53,6 +53,31 @@ export function calendarDayDurationMinutes(day: string, timeZone: string): numbe
   return (next - start) / 60_000;
 }
 
+export interface CalendarHourTick {
+  minute: number;
+  label: string;
+}
+
+/**
+ * Hour lines are instants after local midnight, rather than clock-hour labels.
+ * A fall-back day therefore has two distinct 1 AM ticks, while spring-forward
+ * simply has no tick for the local hour that never occurred.
+ */
+export function calendarHourTicks(day: string, timeZone: string): CalendarHourTick[] {
+  const start = dayStartInstant(day, timeZone).getTime();
+  const end = dayStartInstant(addDaysToKey(day, 1), timeZone).getTime();
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    timeZone,
+    hour: "numeric",
+    timeZoneName: "short",
+  });
+  const ticks: CalendarHourTick[] = [];
+  for (let instant = start; instant < end; instant += 60 * 60_000) {
+    ticks.push({ minute: (instant - start) / 60_000, label: formatter.format(new Date(instant)) });
+  }
+  return ticks;
+}
+
 export function calendarDays(startDay: string, count: number): string[] {
   return Array.from({ length: count }, (_, index) => addDaysToKey(startDay, index));
 }
@@ -65,18 +90,6 @@ export function calendarDayLabel(day: string, compact = false): string {
     month: compact ? undefined : "short",
     day: "numeric",
   }).format(new Date(Date.UTC(year, (month ?? 1) - 1, date ?? 1)));
-}
-
-function minuteInZone(value: Date, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(value);
-  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
-  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
-  return hour * 60 + minute;
 }
 
 function endDayOf(event: CalendarEventRow, startDay: string, timeZone: string): string {
@@ -124,15 +137,23 @@ export function calendarSegments(
       const segmentStart = start > dayStart ? start : dayStart;
       const segmentEnd = end < dayEnd ? end : dayEnd;
       if (segmentEnd <= segmentStart) continue;
-      // Position comes from the local clock; height comes from the actual
-      // instants. That is what keeps 23:00–00:00 one hour long and keeps the
-      // repeated 1:30 AM during fall-back from collapsing to fifteen minutes.
-      const startMinute = day === startDay ? minuteInZone(segmentStart, timeZone) : 0;
-      const endMinute = startMinute + (segmentEnd.getTime() - segmentStart.getTime()) / 60_000;
+      // Both placement and height are elapsed time from this day's local
+      // midnight instant. A fall-back day has two 1:30 AM instants 60 minutes
+      // apart, and they must have different positions rather than overlap.
+      const startMinute = (segmentStart.getTime() - dayStart.getTime()) / 60_000;
+      const endMinute = (segmentEnd.getTime() - dayStart.getTime()) / 60_000;
       out.push({ event, day, allDay: false, startMinute, endMinute });
     }
   }
   return out;
+}
+
+export function calendarEventAccessibleName(
+  event: CalendarEventRow,
+  day: string,
+  timeZone: string,
+): string {
+  return `${calendarDayLabel(day)}: ${eventTimeText(event, timeZone)}: ${event.title || "Untitled event"}`;
 }
 
 /** Positions colliding timed segments side-by-side so neither meeting disappears. */

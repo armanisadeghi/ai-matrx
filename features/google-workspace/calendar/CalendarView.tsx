@@ -21,6 +21,8 @@ import {
 import {
   calendarDayLabel,
   calendarDayDurationMinutes,
+  calendarEventAccessibleName,
+  calendarHourTicks,
   calendarDays,
   calendarSegments,
   dateForCalendarDay,
@@ -107,26 +109,30 @@ function dateShift(day: string, by: number): string {
 function CalendarGrid({ days, segments, timeZone, today }: { days: string[]; segments: ReturnType<typeof calendarSegments>; timeZone: string; today: string }) {
   const openDetail = useOpenDetail(CALENDAR_EVENT_TYPE);
   const timelineMinutes = Math.max(1440, ...days.map((day) => calendarDayDurationMinutes(day, timeZone)));
+  const timelineDay = days.reduce((longest, day) => (
+    calendarDayDurationMinutes(day, timeZone) > calendarDayDurationMinutes(longest, timeZone) ? day : longest
+  ), days[0] ?? today);
   const timelineHeight = timelineMinutes / 60 * HOUR_HEIGHT;
   const allDay = new Map(days.map((day) => [day, segments.filter((segment) => segment.day === day && segment.allDay)]));
   const timed = new Map(days.map((day) => [day, positionTimedSegments(segments.filter((segment) => segment.day === day && !segment.allDay))]));
   const open = (event: CalendarEventRow) => void openDetail({ type: CALENDAR_EVENT_TYPE, id: event.id, seed: { name: event.title } });
   return (
-    <div className="min-w-[560px]" data-calendar-grid>
-      <div role="grid" aria-label="Calendar schedule" className="grid" style={{ gridTemplateColumns: `48px repeat(${days.length}, minmax(0, 1fr))` }}>
+    <section aria-label="Calendar schedule" className="min-w-[560px]" data-calendar-grid>
+      <div className="grid" style={{ gridTemplateColumns: `48px repeat(${days.length}, minmax(0, 1fr))` }}>
         <div />
-        {days.map((day) => <div key={day} role="columnheader" id={`calendar-day-${day}`} className={cn("border-b border-l border-border px-1.5 py-1 text-center text-xs font-medium", day === today && "bg-primary/10 text-primary")}><span className="sm:hidden">{calendarDayLabel(day, true)}</span><span className="hidden sm:inline">{calendarDayLabel(day)}</span></div>)}
-        <div id="calendar-all-day" role="rowheader" className="border-b border-border px-1 text-xs text-muted-foreground">All-day</div>
-        {days.map((day) => <div key={day} role="gridcell" aria-labelledby={`calendar-day-${day} calendar-all-day`} className="min-h-8 border-b border-l border-border p-0.5">{(allDay.get(day) ?? []).map((segment) => <CalendarEventButton key={`${segment.event.id}:${day}`} event={segment.event} day={day} compact onClick={() => open(segment.event)} />)}</div>)}
-        <div className="relative border-r border-border" style={{ height: timelineHeight }}>{Array.from({ length: Math.ceil(timelineMinutes / 60) }, (_, hour) => <span key={hour} className="absolute -top-2 right-1 text-[10px] text-muted-foreground" style={{ top: hour * HOUR_HEIGHT }}>{hour === 0 ? "12a" : hour < 12 ? `${hour}a` : hour === 12 ? "12p" : `${hour - 12}p`}</span>)}</div>
-        {days.map((day) => <div key={day} role="gridcell" aria-labelledby={`calendar-day-${day}`} className="relative border-l border-border bg-[linear-gradient(to_bottom,transparent_47px,hsl(var(--border))_48px)] bg-[length:100%_48px]" style={{ height: timelineHeight }}>{(timed.get(day) ?? []).map((segment) => <CalendarEventButton key={`${segment.event.id}:${day}`} event={segment.event} day={day} onClick={() => open(segment.event)} style={{ top: segment.startMinute / 60 * HOUR_HEIGHT + 1, height: Math.max(24, (segment.endMinute - segment.startMinute) / 60 * HOUR_HEIGHT - 2), left: `calc(${segment.lane / segment.lanes * 100}% + 2px)`, width: `calc(${100 / segment.lanes}% - 4px)` }} timeZone={timeZone} />)}</div>)}
+        {days.map((day) => <div key={day} className={cn("border-b border-l border-border px-1.5 py-1 text-center text-xs font-medium", day === today && "bg-primary/10 text-primary")}><span className="sm:hidden">{calendarDayLabel(day, true)}</span><span className="hidden sm:inline">{calendarDayLabel(day)}</span></div>)}
+        <div className="border-b border-border px-1 text-xs text-muted-foreground">All-day</div>
+        {days.map((day) => <div key={day} className="min-h-8 border-b border-l border-border p-0.5">{(allDay.get(day) ?? []).map((segment) => <CalendarEventButton key={`${segment.event.id}:${day}`} event={segment.event} day={day} compact onClick={() => open(segment.event)} timeZone={timeZone} />)}</div>)}
+        <div className="relative border-r border-border" style={{ height: timelineHeight }}>{calendarHourTicks(timelineDay, timeZone).map((tick) => <span key={tick.minute} className="absolute -top-2 right-1 text-[10px] text-muted-foreground" style={{ top: tick.minute / 60 * HOUR_HEIGHT }}>{tick.label}</span>)}</div>
+        {days.map((day) => <div key={day} className="relative border-l border-border bg-[linear-gradient(to_bottom,transparent_47px,hsl(var(--border))_48px)] bg-[length:100%_48px]" style={{ height: timelineHeight }}>{(timed.get(day) ?? []).map((segment) => <CalendarEventButton key={`${segment.event.id}:${day}`} event={segment.event} day={day} onClick={() => open(segment.event)} style={{ top: segment.startMinute / 60 * HOUR_HEIGHT + 1, height: Math.max(24, (segment.endMinute - segment.startMinute) / 60 * HOUR_HEIGHT - 2), left: `calc(${segment.lane / segment.lanes * 100}% + 2px)`, width: `calc(${100 / segment.lanes}% - 4px)` }} timeZone={timeZone} />)}</div>)}
       </div>
-    </div>
+    </section>
   );
 }
 
 function CalendarEventButton({ event, day, onClick, compact = false, style, timeZone }: { event: CalendarEventRow; day: string; onClick: () => void; compact?: boolean; style?: CSSProperties; timeZone?: string }) {
   const frozen = frozenEventNotice(event);
   const title = event.title || "Untitled event";
-  return <button type="button" onClick={onClick} style={style} aria-label={`${calendarDayLabel(day)}: ${title}`} className={cn("absolute overflow-hidden rounded border border-primary/30 bg-primary/10 px-1.5 py-1 text-left text-[11px] leading-tight text-foreground hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", compact && "relative mb-0.5 block w-full truncate py-0.5")} title={frozen?.sentence ?? title}><span className="block truncate font-medium">{title}</span>{!compact ? <span className="block truncate text-[10px] text-muted-foreground">{eventTimeText(event, timeZone)}</span> : null}</button>;
+  const eventTime = eventTimeText(event, timeZone);
+  return <button type="button" onClick={onClick} style={style} aria-label={calendarEventAccessibleName(event, day, timeZone ?? "UTC")} className={cn("absolute overflow-hidden rounded border border-primary/30 bg-primary/10 px-1.5 py-1 text-left text-[11px] leading-tight text-foreground hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", compact && "relative mb-0.5 block w-full truncate py-0.5")} title={frozen?.sentence ?? title}><span className="block truncate font-medium">{title}</span>{!compact ? <span className="block truncate text-[10px] text-muted-foreground">{eventTime}</span> : null}</button>;
 }
