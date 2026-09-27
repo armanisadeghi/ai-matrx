@@ -133,7 +133,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_filters",
     label: "Filters",
     description:
-      'The column filters in force, keyed by column: status / autonomy_level / project take { kind: "select", values: [...] } (project values are project ids, "__none__" = no project); updated_at / created_at take bucket values "1h", "24h", "7d", "30d", "90d", "1y"; name takes { kind: "text", value }. {} when none.',
+      'The column filters in force, keyed by column: status / autonomy_level / project / organization_name take { kind: "select", values: [...] } (project values are project ids, "__none__" = no project; organization_name values are organization ids); updated_at / created_at take bucket values "1h", "24h", "7d", "30d", "90d", "1y"; name takes { kind: "text", value }. {} when none.',
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 60,

@@ -12,7 +12,7 @@
 
 import type { EntityListConfig } from "@/lib/entity-list/config";
 import { RESEARCH_TOPIC_COLUMNS, formatAutonomy, formatTopicStatus } from "./columns";
-import { projectLabel, researchTopicListService } from "./service";
+import { organizationLabel, projectLabel, researchTopicListService } from "./service";
 import { useTopicRowActions } from "./useTopicRowActions";
 import {
   RESEARCH_TOPIC_LIST_SCOPES,
@@ -32,7 +32,7 @@ export const RESEARCH_TOPIC_LIST_CONFIG: EntityListConfig<ResearchTopicListRow> 
   registryToken: "research_topic",
   service: researchTopicListService,
   columns: RESEARCH_TOPIC_COLUMNS,
-  prefsVersion: 1,
+  prefsVersion: 2,
   prefsDefaults: { sort: "updated_at", direction: "desc", pageSize: 50 },
   getRowId: (row) => row.id,
   getRowName: (row) => row.name,
@@ -59,6 +59,13 @@ export const RESEARCH_TOPIC_LIST_CONFIG: EntityListConfig<ResearchTopicListRow> 
       label: "Project",
       noneLabel: "No project",
       formatValue: projectLabel,
+    },
+    {
+      facet: "organization_name",
+      filterId: "organization_name",
+      label: "Organization",
+      noneLabel: "No organization",
+      formatValue: organizationLabel,
     },
     {
       facet: "autonomy_level",

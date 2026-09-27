@@ -127,6 +127,12 @@ via `<CostValue>`/`useCostDisplay`; never `toFixed(2)` a dollar figure in a rese
   agent surface `matrx-user/research-topics` (`browse/surface.ts`: the visible page as one XML
   bundle, full rows, create_topics / update_topics / delete_topics through the page's own save
   paths); `matrx-user/research` keeps the landing, wizard and topic workspace.
+  Phase B (same day): the list reads through new SECURITY INVOKER RPCs `public.rsx_list_scoped`
+  / `rsx_list_scope_counts` / `rsx_list_facets` (applied via MCP; sort, every column filter,
+  paging, scope totals and facets on the server; project from the association edge). The first
+  direct-read version showed a platform admin every topic on the platform under "My orgs"
+  (row security is not a view) and counted in the browser; both fixed. Organization column +
+  filter added; project cell no longer overprints the Updated column.
 
 - 2026-09-26 — Removed the old direct "Google managed agents" card
   (`GoogleBackgroundAgentCard.tsx` + `service/google-background.ts`) and its mount in

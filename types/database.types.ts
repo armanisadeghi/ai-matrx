@@ -18317,10 +18317,41 @@ export type Database = {
     }
     Functions: {
       _meet_actor: { Args: { p_claimed: string }; Returns: string }
+      _meet_grant: {
+        Args: {
+          p_actor: string
+          p_force?: boolean
+          p_level: string
+          p_meeting_id: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       _meet_is_host: {
         Args: { p_actor: string; p_meeting_id: string }
         Returns: boolean
       }
+      _meet_knob: {
+        Args: { p_key: string; p_organization_id: string; p_user_id: string }
+        Returns: string
+      }
+      _meet_may: {
+        Args: { p_actor: string; p_level: string; p_meeting_id: string }
+        Returns: boolean
+      }
+      _meet_overrides_json: { Args: { p_meeting_id: string }; Returns: Json }
+      _meet_rsvp_payload: { Args: { p_invitee_id: string }; Returns: Json }
+      _meet_rsvp_token: {
+        Args: { p_secret: string }
+        Returns: Database["platform"]["Tables"]["actor_token"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "actor_token"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      _meet_valid_tz: { Args: { p_tz: string }; Returns: string }
       _set_notification_outcome: {
         Args: {
           p_acted_at?: string
@@ -18946,6 +18977,38 @@ export type Database = {
         Args: { p_channel: string; p_notification_id: string }
         Returns: boolean
       }
+      meet_add_invitees: {
+        Args: { p_by_user_id: string; p_invitees: Json; p_meeting_id: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_name: string | null
+          email: string | null
+          id: string
+          invited_by: string | null
+          invitee_user_id: string | null
+          last_sent_at: string | null
+          last_sent_sequence: number | null
+          meeting_id: string
+          metadata: Json
+          organization_id: string
+          responded_at: string | null
+          role: string
+          rsvp_note: string | null
+          rsvp_state: string
+          rsvp_token_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "meet_invitees"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       meet_admit_participant: {
         Args: {
           p_admitted: boolean
@@ -18954,6 +19017,92 @@ export type Database = {
           p_meeting_id: string
         }
         Returns: undefined
+      }
+      meet_archive_meeting: {
+        Args: { p_by_user_id: string; p_meeting_id: string }
+        Returns: {
+          agenda: string | null
+          ai_enabled: boolean
+          calendar_sequence: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          ended_at: string | null
+          host_user_id: string
+          id: string
+          join_before_host: boolean
+          kind: string
+          lobby_enabled: boolean
+          locked: boolean
+          metadata: Json
+          organization_id: string
+          recording_policy: string
+          recurrence_rule: string | null
+          room_name: string
+          scheduled_duration_minutes: number | null
+          scheduled_for: string | null
+          slug: string
+          started_at: string | null
+          time_zone: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_meetings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      meet_cancel_meeting: {
+        Args: { p_by_user_id: string; p_meeting_id: string; p_reason: string }
+        Returns: {
+          agenda: string | null
+          ai_enabled: boolean
+          calendar_sequence: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          ended_at: string | null
+          host_user_id: string
+          id: string
+          join_before_host: boolean
+          kind: string
+          lobby_enabled: boolean
+          locked: boolean
+          metadata: Json
+          organization_id: string
+          recording_policy: string
+          recurrence_rule: string | null
+          room_name: string
+          scheduled_duration_minutes: number | null
+          scheduled_for: string | null
+          slug: string
+          started_at: string | null
+          time_zone: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_meetings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       meet_create_call_invite: {
         Args: {
@@ -19041,6 +19190,17 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      meet_expand_occurrences: {
+        Args: {
+          p_dtstart: string
+          p_from: string
+          p_limit?: number
+          p_rule: string
+          p_to: string
+          p_tz: string
+        }
+        Returns: string[]
+      }
       meet_get_or_create_meeting: {
         Args: {
           p_ai_enabled: boolean
@@ -19095,6 +19255,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      meet_invitation_by_token: { Args: { p_secret: string }; Returns: Json }
       meet_meeting_by_slug: {
         Args: { p_slug: string }
         Returns: {
@@ -19138,6 +19299,66 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      meet_meeting_occurrences: {
+        Args: {
+          p_from: string
+          p_limit?: number
+          p_meeting_id: string
+          p_to: string
+        }
+        Returns: {
+          duration_minutes: number
+          meeting_id: string
+          occurrence_start: string
+          original_start: string
+          sequence: number
+          state: string
+        }[]
+      }
+      meet_occurrences_between: {
+        Args: {
+          p_from: string
+          p_limit?: number
+          p_organization_id?: string
+          p_to: string
+        }
+        Returns: {
+          duration_minutes: number
+          host_user_id: string
+          kind: string
+          meeting_cancelled: boolean
+          meeting_id: string
+          my_role: string
+          my_rsvp: string
+          occurrence_start: string
+          organization_id: string
+          original_start: string
+          sequence: number
+          slug: string
+          state: string
+          time_zone: string
+          title: string
+        }[]
+      }
+      meet_occurrences_of: {
+        Args: {
+          p_dtstart: string
+          p_duration_minutes: number
+          p_from: string
+          p_limit?: number
+          p_overrides: Json
+          p_rule: string
+          p_to: string
+          p_tz: string
+        }
+        Returns: {
+          duration_minutes: number
+          occurrence_start: string
+          original_start: string
+          sequence: number
+          state: string
+        }[]
+      }
       meet_pending_call_invites: {
         Args: { p_user_id: string }
         Returns: {
@@ -19178,6 +19399,208 @@ export type Database = {
           p_meeting_id: string
         }
         Returns: undefined
+      }
+      meet_remove_invitee: {
+        Args: { p_by_user_id: string; p_invitee_id: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_name: string | null
+          email: string | null
+          id: string
+          invited_by: string | null
+          invitee_user_id: string | null
+          last_sent_at: string | null
+          last_sent_sequence: number | null
+          meeting_id: string
+          metadata: Json
+          organization_id: string
+          responded_at: string | null
+          role: string
+          rsvp_note: string | null
+          rsvp_state: string
+          rsvp_token_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_invitees"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      meet_respond: {
+        Args: {
+          p_by_user_id: string
+          p_meeting_id: string
+          p_note: string
+          p_response: string
+        }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_name: string | null
+          email: string | null
+          id: string
+          invited_by: string | null
+          invitee_user_id: string | null
+          last_sent_at: string | null
+          last_sent_sequence: number | null
+          meeting_id: string
+          metadata: Json
+          organization_id: string
+          responded_at: string | null
+          role: string
+          rsvp_note: string | null
+          rsvp_state: string
+          rsvp_token_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_invitees"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      meet_respond_by_token: {
+        Args: { p_note: string; p_response: string; p_secret: string }
+        Returns: Json
+      }
+      meet_restore_meeting: {
+        Args: { p_by_user_id: string; p_meeting_id: string }
+        Returns: {
+          agenda: string | null
+          ai_enabled: boolean
+          calendar_sequence: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          ended_at: string | null
+          host_user_id: string
+          id: string
+          join_before_host: boolean
+          kind: string
+          lobby_enabled: boolean
+          locked: boolean
+          metadata: Json
+          organization_id: string
+          recording_policy: string
+          recurrence_rule: string | null
+          room_name: string
+          scheduled_duration_minutes: number | null
+          scheduled_for: string | null
+          slug: string
+          started_at: string | null
+          time_zone: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_meetings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      meet_rrule_parse: { Args: { p_rule: string }; Returns: Json }
+      meet_schedule_meeting: {
+        Args: {
+          p_agenda: string
+          p_duration_minutes: number
+          p_host_user_id: string
+          p_organization_id: string
+          p_recurrence_rule: string
+          p_scheduled_for: string
+          p_settings: Json
+          p_time_zone: string
+          p_title: string
+        }
+        Returns: {
+          agenda: string | null
+          ai_enabled: boolean
+          calendar_sequence: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          ended_at: string | null
+          host_user_id: string
+          id: string
+          join_before_host: boolean
+          kind: string
+          lobby_enabled: boolean
+          locked: boolean
+          metadata: Json
+          organization_id: string
+          recording_policy: string
+          recurrence_rule: string | null
+          room_name: string
+          scheduled_duration_minutes: number | null
+          scheduled_for: string | null
+          slug: string
+          started_at: string | null
+          time_zone: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_meetings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      meet_set_invitee_role: {
+        Args: { p_by_user_id: string; p_invitee_id: string; p_role: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_name: string | null
+          email: string | null
+          id: string
+          invited_by: string | null
+          invitee_user_id: string | null
+          last_sent_at: string | null
+          last_sent_sequence: number | null
+          meeting_id: string
+          metadata: Json
+          organization_id: string
+          responded_at: string | null
+          role: string
+          rsvp_note: string | null
+          rsvp_state: string
+          rsvp_token_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_invitees"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       meet_set_lock: {
         Args: { p_by_user_id: string; p_locked: boolean; p_meeting_id: string }
@@ -19222,6 +19645,42 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      meet_set_occurrence: {
+        Args: {
+          p_action: string
+          p_by_user_id: string
+          p_meeting_id: string
+          p_new_duration_minutes: number
+          p_new_start: string
+          p_original_start: string
+          p_reason: string
+        }
+        Returns: {
+          calendar_sequence: number
+          changed_by: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          meeting_id: string
+          metadata: Json
+          new_duration_minutes: number | null
+          new_start: string | null
+          organization_id: string
+          original_start: string
+          reason: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_occurrence_overrides"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       meet_settle_call_invite: {
         Args: {
           p_decline_message: string
@@ -19255,6 +19714,54 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "meet_call_invites"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      meet_update_meeting: {
+        Args: {
+          p_by_user_id: string
+          p_changes: Json
+          p_expected_version: number
+          p_meeting_id: string
+        }
+        Returns: {
+          agenda: string | null
+          ai_enabled: boolean
+          calendar_sequence: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          ended_at: string | null
+          host_user_id: string
+          id: string
+          join_before_host: boolean
+          kind: string
+          lobby_enabled: boolean
+          locked: boolean
+          metadata: Json
+          organization_id: string
+          recording_policy: string
+          recurrence_rule: string | null
+          room_name: string
+          scheduled_duration_minutes: number | null
+          scheduled_for: string | null
+          slug: string
+          started_at: string | null
+          time_zone: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_meetings"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -28372,6 +28879,88 @@ export type Database = {
       edu_purge_expired_study_data: {
         Args: { p_max_users?: number; p_retention_days?: number }
         Returns: Json
+      }
+      fc_set_folder_ids: { Args: { p_set_id: string }; Returns: string[] }
+      fc_set_list_counts: {
+        Args: { p_archived?: string; p_filters?: Json; p_search?: string }
+        Returns: {
+          scope: string
+          total: number
+        }[]
+      }
+      fc_set_list_facets: {
+        Args: {
+          p_archived?: string
+          p_filters?: Json
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+        }
+        Returns: {
+          facet: string
+          total: number
+          value: string
+        }[]
+      }
+      fc_set_list_filter_ok: {
+        Args: {
+          p_filters: Json
+          p_key: string
+          p_skip?: string
+          p_value: string
+        }
+        Returns: boolean
+      }
+      fc_set_list_match: {
+        Args: {
+          p_archived: string
+          p_created_by: string
+          p_deleted_at: string
+          p_description: string
+          p_difficulty: string
+          p_filters: Json
+          p_folder_ids: string[]
+          p_id: string
+          p_lesson: string
+          p_name: string
+          p_org_id: string
+          p_organization_id: string
+          p_scope: string
+          p_search: string
+          p_skip?: string
+          p_topic: string
+          p_visibility: string
+        }
+        Returns: boolean
+      }
+      fc_set_list_scoped: {
+        Args: {
+          p_archived?: string
+          p_ascending?: boolean
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: {
+          created_at: string
+          created_by: string
+          deleted_at: string
+          description: string
+          difficulty: string
+          folder_ids: string[]
+          id: string
+          lesson: string
+          name: string
+          organization_id: string
+          topic: string
+          total_count: number
+          updated_at: string
+          visibility: string
+        }[]
       }
       reap_stale_study_sessions: {
         Args: { p_max_age?: string }
@@ -71722,6 +72311,7 @@ export type Database = {
           is_pinned: boolean
           last_viewed_at: string | null
           metadata: Json
+          open_count: number
           updated_at: string
           user_id: string
         }
@@ -71735,6 +72325,7 @@ export type Database = {
           is_pinned?: boolean
           last_viewed_at?: string | null
           metadata?: Json
+          open_count?: number
           updated_at?: string
           user_id: string
         }
@@ -71748,6 +72339,7 @@ export type Database = {
           is_pinned?: boolean
           last_viewed_at?: string | null
           metadata?: Json
+          open_count?: number
           updated_at?: string
           user_id?: string
         }
@@ -73605,6 +74197,14 @@ export type Database = {
         Args: { p_objids: unknown[] }
         Returns: undefined
       }
+      frecency: {
+        Args: {
+          p_entity_id: string
+          p_entity_token: string
+          p_user_id?: string
+        }
+        Returns: number
+      }
       get_change_policy_divergence: { Args: never; Returns: Json }
       heal_reachability_drift: { Args: never; Returns: Json }
       held_by_its_organization: {
@@ -74385,6 +74985,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: number
+      }
+      record_view: {
+        Args: { p_entity_id: string; p_entity_token: string }
+        Returns: undefined
       }
       reference_gate: {
         Args: { p_token: string }
@@ -85234,6 +85838,52 @@ export type Database = {
       rs_topic_append_output: {
         Args: { p_asset: Json; p_kind: string; p_topic_id: string }
         Returns: Json
+      }
+      rsx_list_facets: {
+        Args: { p_org_id?: string; p_scope?: string; p_search?: string }
+        Returns: {
+          kind: string
+          label: string
+          total: number
+          value: string
+        }[]
+      }
+      rsx_list_scope_counts: {
+        Args: { p_filters?: Json; p_search?: string }
+        Returns: {
+          label: string
+          narrow_id: string
+          scope: string
+          total: number
+        }[]
+      }
+      rsx_list_scoped: {
+        Args: {
+          p_dir?: string
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: {
+          autonomy_level: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          name: string
+          organization_id: string
+          organization_name: string
+          project_id: string
+          project_name: string
+          status: string
+          template_id: string
+          total_count: number
+          updated_at: string
+        }[]
       }
       rulebook_archive: { Args: { p_rulebook_id: string }; Returns: Json }
       rulebook_create: {

@@ -7,8 +7,8 @@
 // the list reads what each topic is for without opening it — the old card grid
 // cut both to two lines in a quarter-width card.
 //
-// SORTING IS HONEST: the columns the service whitelists sort; project comes
-// from an association edge and declares `sortable: false`.
+// SORTING IS HONEST: every column sorts and filters on the server
+// (`public.rsx_list_scoped` whitelists exactly these ids).
 
 import { FolderKanban } from "lucide-react";
 import {
@@ -19,7 +19,7 @@ import {
   type EntityColumnSpec,
 } from "@/lib/entity-list/columns";
 import { StatusBadge } from "../components/shared/StatusBadge";
-import { projectLabel } from "./service";
+import { organizationLabel, projectLabel } from "./service";
 import {
   AUTONOMY_LABELS,
   TOPIC_STATUS_LABELS,
@@ -84,17 +84,35 @@ export const RESEARCH_TOPIC_COLUMNS: EntityColumnSpec<ResearchTopicListRow>[] = 
       accessorFn: (row) => row.project_name ?? "",
       header: "Project",
       filter: "select",
-      sortable: false,
-      width: 180,
+      width: 200,
       cell: (row) =>
         row.project_name ? (
-          <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+          // `flex w-full min-w-0` — an inline-flex wrapper sizes to its text
+          // and printed long project names over the Updated column (live
+          // look 2026-09-27).
+          <span className="flex w-full min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
             <FolderKanban className="h-3.5 w-3.5 shrink-0" />
-            <TextCell value={row.project_name} />
+            <TextCell value={row.project_name} className="min-w-0" />
           </span>
         ) : (
           <Muted>—</Muted>
         ),
+    },
+  },
+  {
+    id: "organization_name",
+    label: "Organization",
+    facet: "organization_name",
+    scopedToShared: true,
+    phone: "meta",
+    formatFacetValue: organizationLabel,
+    column: {
+      id: "organization_name",
+      accessorKey: "organization_name",
+      header: "Organization",
+      filter: "select",
+      width: 180,
+      cell: (row) => <TextCell value={row.organization_name} className="text-xs" muted />,
     },
   },
   {

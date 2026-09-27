@@ -18,12 +18,14 @@ const row = (id: string, name: string): ResearchTopicListRow => ({
   status: "draft",
   autonomy_level: "semi",
   organization_id: "org-1",
+  organization_name: "Acme Energy",
   created_by: "user-1",
   created_at: "2026-09-01T00:00:00Z",
   updated_at: "2026-09-02T00:00:00Z",
-  template_id: null,
-  project_id: null,
-  project_name: null,
+  template_id: "",
+  project_id: "",
+  project_name: "",
+  total_count: 2,
 });
 
 const ROWS = [row("t-1", "Battery supply chain"), row("t-2", "Grid storage")];

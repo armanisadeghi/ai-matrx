@@ -1,32 +1,21 @@
 // features/research/browse/types.ts
 //
 // The research TOPICS list (/research/topics) as a canonical entity list.
-// One row = one `research.rs_topic`, read directly with the columns the list
-// shows, plus its project (a `research_topic → project` association edge —
-// never a topic column; `rs_topic.project_id` is dead).
+// One row = one `research.rs_topic`, read through the rsx_* scoped-list RPCs
+// (sort, filter, paging and counts on the server), plus its project (a
+// `research_topic → project` association edge — never a topic column).
 
 import type { Database } from "@/types/database.types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
 
-type TopicRow = Database["research"]["Tables"]["rs_topic"]["Row"];
-
-export type ResearchTopicListRow = Pick<
-  TopicRow,
-  | "id"
-  | "name"
-  | "description"
-  | "status"
-  | "autonomy_level"
-  | "organization_id"
-  | "created_by"
-  | "created_at"
-  | "updated_at"
-  | "template_id"
-> & {
-  /** The topic's project, from its association edge. Null when it has none. */
-  project_id: string | null;
-  project_name: string | null;
-};
+/**
+ * One row, exactly as `public.rsx_list_scoped` returns it (never hand-mirrored).
+ * `project_id` / `project_name` come from the topic's `research_topic → project`
+ * association edge and are null when it has none (the generator cannot express
+ * a nullable OUT column); `total_count` is the filtered total.
+ */
+export type ResearchTopicListRow =
+  Database["public"]["Functions"]["rsx_list_scoped"]["Returns"][number];
 
 /**
  * A topic belongs to an organization (`research_topic` is registered
