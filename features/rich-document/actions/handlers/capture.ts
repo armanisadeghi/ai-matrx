@@ -15,8 +15,8 @@ import {
   GraduationCap,
   Layers,
   LayoutTemplate,
+  FolderOpen,
 } from "lucide-react";
-import { FilesRouteIcon } from "@/components/branding/RouteFaviconIcon";
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
@@ -173,7 +173,8 @@ registerAction({
 registerAction({
   id: "save-to-files",
   label: "Save to Files",
-  icon: FilesRouteIcon,
+  // A glyph, never the route's letter badge (a stray "F" in every menu).
+  icon: FolderOpen,
   category: "save",
   supportedSources: "*",
   renderSlot: "overflow",
