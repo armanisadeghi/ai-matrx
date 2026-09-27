@@ -17,6 +17,10 @@ import { useRouter } from "next/navigation";
 import { Layers } from "lucide-react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useFlashcardStudy } from "../../data/useFlashcardStudy";
+import {
+  StudyOrganizationGate,
+  useStudyOrganizationReady,
+} from "@/features/education/study/components/StudyOrganizationGate";
 import { StudyDeck } from "./StudyDeck";
 import { StudyDeckHeader } from "./StudyDeckHeader";
 import { getVoiceTestForCard } from "./voiceTestExtra";
@@ -30,6 +34,9 @@ export function LearnSurface({ setId }: { setId: string }) {
     withSession: true,
     mode: "learn",
     reshuffleWeighted: true,
+    // Nothing loads or is written until an organization is chosen — the
+    // notice shows in place instead of the blocking workspace prompt.
+    enabled: useStudyOrganizationReady(),
   });
   const title = study.set?.name ?? "Learn";
 
@@ -41,6 +48,7 @@ export function LearnSurface({ setId }: { setId: string }) {
           backHref={`${EDU_BASE}/${setId}`}
         />
       </PageHeader>
+      <StudyOrganizationGate what="Learn mode">
       <div className="h-full overflow-hidden">
         <StudyDeck
           loading={study.loading}
@@ -72,6 +80,7 @@ export function LearnSurface({ setId }: { setId: string }) {
           }}
         />
       </div>
+      </StudyOrganizationGate>
     </>
   );
 }

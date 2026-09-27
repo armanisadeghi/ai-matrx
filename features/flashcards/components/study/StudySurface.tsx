@@ -15,6 +15,10 @@ import { useRouter } from "next/navigation";
 import { Layers } from "lucide-react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useFlashcardStudy } from "../../data/useFlashcardStudy";
+import {
+  StudyOrganizationGate,
+  useStudyOrganizationReady,
+} from "@/features/education/study/components/StudyOrganizationGate";
 import { StudyDeck } from "./StudyDeck";
 import { FlashcardStudyWindowDevTrigger } from "./FlashcardStudyWindowDevTrigger";
 import { OfflineDeckButton } from "../set-detail/OfflineDeckButton";
@@ -25,7 +29,14 @@ const EDU_BASE = "/education/flashcards";
 
 export function StudySurface({ setId }: { setId: string }) {
   const router = useRouter();
-  const study = useFlashcardStudy({ setId, withSession: true });
+  // A study session is filed under one organization. With none chosen, the
+  // notice shows in place and nothing is loaded or written until one is picked
+  // — never the blocking "Which workspace?" prompt on arrival.
+  const study = useFlashcardStudy({
+    setId,
+    withSession: true,
+    enabled: useStudyOrganizationReady(),
+  });
   const title = study.set?.name ?? "Study";
 
   return (
@@ -53,6 +64,7 @@ export function StudySurface({ setId }: { setId: string }) {
           }
         />
       </PageHeader>
+      <StudyOrganizationGate what="Studying this set">
       <div className="h-full overflow-hidden">
         <StudyDeck
           loading={study.loading}
@@ -83,6 +95,7 @@ export function StudySurface({ setId }: { setId: string }) {
           }}
         />
       </div>
+      </StudyOrganizationGate>
     </>
   );
 }

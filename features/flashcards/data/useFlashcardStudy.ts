@@ -137,6 +137,13 @@ export interface UseFlashcardStudyOptions {
    * `cards` stays the static, ordered set.
    */
   reshuffleWeighted?: boolean;
+  /**
+   * False until an organization is chosen — see StudyOrganizationGate. Nothing
+   * loads and no `study_session` is written while it is false, so a surface
+   * with no organization never raises the blocking "Which workspace?" prompt.
+   * Defaults true (the canvas inline view writes no session).
+   */
+  enabled?: boolean;
 }
 
 function clampIndex(index: number, length: number): number {
@@ -154,6 +161,7 @@ export function useFlashcardStudy(
     withSession = false,
     mode = STUDY_MODE,
     reshuffleWeighted = false,
+    enabled = true,
   } = options;
 
   const [set, setSet] = useState<FcSetRow | null>(null);
@@ -211,6 +219,7 @@ export function useFlashcardStudy(
   // All state writes happen inside the async body so none fire synchronously in
   // the effect (which would trigger cascading renders).
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
 
     void (async () => {
@@ -357,7 +366,7 @@ export function useFlashcardStudy(
     return () => {
       cancelled = true;
     };
-  }, [setId, withSession, mode]);
+  }, [setId, withSession, mode, enabled]);
 
   // Re-read the card rows (details/layers/sub-cards) WITHOUT restarting the
   // session — used after an in-session enrich/deepen so the new material shows

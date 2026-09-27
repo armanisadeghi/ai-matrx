@@ -49,6 +49,11 @@ function clampIndex(index: number, length: number): number {
 export interface UseQuizStudyOptions {
   setId?: string | null;
   withSession?: boolean;
+  /**
+   * False until an organization is chosen — see StudyOrganizationGate. Nothing
+   * loads and no `study_session` is written while it is false. Defaults true.
+   */
+  enabled?: boolean;
 }
 
 export interface QuizStudyProgress {
@@ -83,7 +88,7 @@ export interface UseQuizStudyResult {
 export function useQuizStudy(
   options: UseQuizStudyOptions = {},
 ): UseQuizStudyResult {
-  const { setId, withSession = true } = options;
+  const { setId, withSession = true, enabled = true } = options;
   const dispatch = useAppDispatch();
   // Whose queue an offline answer joins. Empty only when signed out, and a
   // signed-out learner cannot open a study session at all.
@@ -108,6 +113,7 @@ export function useQuizStudy(
   );
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     void (async () => {
       if (!setId) {
@@ -164,7 +170,7 @@ export function useQuizStudy(
     return () => {
       cancelled = true;
     };
-  }, [setId, withSession]);
+  }, [setId, withSession, enabled]);
 
   // Top up the current question's options via the AI fallback when the
   // in-set distractor pool came up short (small sets). Fires once per card,

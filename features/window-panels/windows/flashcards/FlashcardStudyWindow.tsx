@@ -16,6 +16,10 @@ import FlashcardItem from "@/components/mardown-display/blocks/flashcards/Flashc
 import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
 import { useFlashcardStudy } from "@/features/flashcards/data/useFlashcardStudy";
 import {
+  StudyOrganizationGate,
+  useStudyOrganizationReady,
+} from "@/features/education/study/components/StudyOrganizationGate";
+import {
   FlashcardStudySidebar,
   StudyCompletionSummary,
   StudyWindowFooter,
@@ -50,7 +54,14 @@ export function FlashcardStudyWindow({
   setId,
   title,
 }: FlashcardStudyWindowProps) {
-  const study = useFlashcardStudy({ setId, withSession: true });
+  // A study session is filed under one organization. With none chosen, the
+  // window shows the organization notice in place and nothing is loaded or
+  // written until one is picked — never the blocking workspace prompt.
+  const study = useFlashcardStudy({
+    setId,
+    withSession: true,
+    enabled: useStudyOrganizationReady(),
+  });
   const isMobile = useIsMobile();
   const [mobileDismissed, setMobileDismissed] = useState(false);
   const [completed, restartCompletion] = useStudyCompletion(
@@ -184,7 +195,7 @@ export function FlashcardStudyWindow({
   const displayTitle =
     title ?? study.set?.name ?? (setId ? "Study" : "Flashcard Study");
 
-  const body = (() => {
+  const deckBody = (() => {
     if (study.loading) {
       return (
         <div className="flex flex-1 items-center justify-center">
@@ -245,6 +256,9 @@ export function FlashcardStudyWindow({
       </>
     );
   })();
+  const body = (
+    <StudyOrganizationGate what="Studying this set">{deckBody}</StudyOrganizationGate>
+  );
 
   return (
     <WindowPanel

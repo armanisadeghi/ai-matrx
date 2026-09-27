@@ -50,6 +50,11 @@ export interface MatchTile {
 export interface UseMatchGameOptions {
   setId?: string | null;
   withSession?: boolean;
+  /**
+   * False until an organization is chosen — see StudyOrganizationGate. Nothing
+   * loads and no `study_session` is written while it is false. Defaults true.
+   */
+  enabled?: boolean;
 }
 
 export interface UseMatchGameResult {
@@ -87,7 +92,7 @@ function pickRoundCards(cards: CardWithDetails[]): CardWithDetails[] {
 export function useMatchGame(
   options: UseMatchGameOptions = {},
 ): UseMatchGameResult {
-  const { setId, withSession = true } = options;
+  const { setId, withSession = true, enabled = true } = options;
 
   const [set, setSet] = useState<FcSetRow | null>(null);
   const [roundCards, setRoundCards] = useState<CardWithDetails[]>([]);
@@ -128,6 +133,7 @@ export function useMatchGame(
   };
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     void (async () => {
       if (!setId) {
@@ -187,7 +193,7 @@ export function useMatchGame(
     return () => {
       cancelled = true;
     };
-  }, [setId, withSession, roundKey]);
+  }, [setId, withSession, roundKey, enabled]);
 
   // Live elapsed-time ticker, stopped once the round completes.
   useEffect(() => {

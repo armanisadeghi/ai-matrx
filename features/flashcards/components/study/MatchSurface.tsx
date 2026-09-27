@@ -24,6 +24,10 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { cn } from "@/lib/utils";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useMatchGame } from "../../data/useMatchGame";
+import {
+  StudyOrganizationGate,
+  useStudyOrganizationReady,
+} from "@/features/education/study/components/StudyOrganizationGate";
 import { StudyDeckHeader } from "./StudyDeckHeader";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 
@@ -31,7 +35,14 @@ const EDU_BASE = "/education/flashcards";
 
 export function MatchSurface({ setId }: { setId: string }) {
   const router = useRouter();
-  const game = useMatchGame({ setId, withSession: true });
+  // A study session is filed under one organization. With none chosen, the
+  // notice shows in place and nothing is loaded or written until one is picked
+  // — never the blocking "Which workspace?" prompt on arrival.
+  const game = useMatchGame({
+    setId,
+    withSession: true,
+    enabled: useStudyOrganizationReady(),
+  });
   const title = game.set?.name ?? "Match";
 
   return (
@@ -42,6 +53,7 @@ export function MatchSurface({ setId }: { setId: string }) {
           backHref={`${EDU_BASE}/${setId}`}
         />
       </PageHeader>
+      <StudyOrganizationGate what="This match game">
       <div className="h-full overflow-y-auto overscroll-contain bg-background">
         <div className="mx-auto max-w-3xl px-2 pb-safe pt-14 sm:px-6">
           {game.loading ? (
@@ -81,6 +93,7 @@ export function MatchSurface({ setId }: { setId: string }) {
           )}
         </div>
       </div>
+      </StudyOrganizationGate>
     </>
   );
 }

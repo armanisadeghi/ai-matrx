@@ -27,6 +27,10 @@ import { Input } from "@ai-matrx/design-system";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useFlashcardStudy } from "../../data/useFlashcardStudy";
+import {
+  StudyOrganizationGate,
+  useStudyOrganizationReady,
+} from "@/features/education/study/components/StudyOrganizationGate";
 import { StudyDeckHeader } from "./StudyDeckHeader";
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
 import { gradeTypedAnswer, type TypedGrade } from "../../utils/textSimilarity";
@@ -54,7 +58,15 @@ const AUTO_GRADE_LABEL: Record<TypedGrade, string> = {
 export function WriteSurface({ setId }: { setId: string }) {
   useFlashcardMandates(["gradeTypedAnswer"]);
   const router = useRouter();
-  const study = useFlashcardStudy({ setId, withSession: true, mode: "write" });
+  // A study session is filed under one organization. With none chosen, the
+  // notice shows in place and nothing is loaded or written until one is picked
+  // — never the blocking "Which workspace?" prompt on arrival.
+  const study = useFlashcardStudy({
+    setId,
+    withSession: true,
+    mode: "write",
+    enabled: useStudyOrganizationReady(),
+  });
   const title = study.set?.name ?? "Write";
   const current = study.cards[study.currentIndex];
   // The LIVE current-card id, for the async verdict guard below. A closure
@@ -152,6 +164,7 @@ export function WriteSurface({ setId }: { setId: string }) {
           backHref={`${EDU_BASE}/${setId}`}
         />
       </PageHeader>
+      <StudyOrganizationGate what="Write mode">
       <div className="h-full overflow-y-auto overscroll-contain bg-background">
         <div className="mx-auto max-w-2xl px-2 pb-safe pt-14 sm:px-6">
           {study.loading ? (
@@ -317,6 +330,7 @@ export function WriteSurface({ setId }: { setId: string }) {
           ) : null}
         </div>
       </div>
+      </StudyOrganizationGate>
     </>
   );
 }
