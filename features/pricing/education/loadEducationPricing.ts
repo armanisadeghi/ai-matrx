@@ -72,6 +72,37 @@ const HEADLINE_FREE: ReadonlyArray<{
 // PRELAUNCH_COMPLIMENTARY_PREMIUM lives in ./pricingPolicy.ts — a plain module,
 // because the client card needs it and this loader is server-only.
 
+/**
+ * Every read here is BOUNDED. This loader runs inside the server render of a
+ * public page; an unanswered database read used to hold that render until the
+ * hosting platform killed it (504 FUNCTION_INVOCATION_TIMEOUT at ~15 s, seen
+ * 2026-09-27 while every anon PostgREST read hung). A bounded read fails fast
+ * with a sentence naming the table, and the route's error boundary renders —
+ * never a silent empty card, never a platform timeout page.
+ */
+export const PRICING_READ_TIMEOUT_MS = 6000;
+
+async function bounded<T>(table: string, query: PromiseLike<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () =>
+        reject(
+          new Error(
+            `The public pricing page could not read ${table}: the database did not ` +
+              `answer within ${PRICING_READ_TIMEOUT_MS} ms.`,
+          ),
+        ),
+      PRICING_READ_TIMEOUT_MS,
+    );
+  });
+  try {
+    return await Promise.race([Promise.resolve(query), timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function loadEducationPricing(): Promise<EducationPricing> {
   const supabase = await createClient();
 
@@ -86,14 +117,17 @@ export async function loadEducationPricing(): Promise<EducationPricing> {
   // silently set `premium = null` and the page rendered "Coming soon" over a
   // live, active product. Measured on production that morning: five
   // `product?select=id,name,description,metadata` 401s with no JWT in 24 h.
-  const { data: product, error: productError } = await supabase
-    .schema("billing")
-    .from("product")
-    .select("id, name, description, tier, active")
-    .eq("active", true)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  const { data: product, error: productError } = await bounded(
+    "billing.product",
+    supabase
+      .schema("billing")
+      .from("product")
+      .select("id, name, description, tier, active")
+      .eq("active", true)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  );
 
   // Nothing fails silently: "Coming soon" is a claim about the catalogue, and a
   // refused query cannot support it.
@@ -108,15 +142,18 @@ export async function loadEducationPricing(): Promise<EducationPricing> {
   }
 
   if (product) {
-    const { data: price, error: priceError } = await supabase
-      .schema("billing")
-      .from("price")
-      .select("id, unit_amount, currency, interval, active")
-      .eq("product_id", product.id)
-      .eq("active", true)
-      .order("unit_amount", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+    const { data: price, error: priceError } = await bounded(
+      "billing.price",
+      supabase
+        .schema("billing")
+        .from("price")
+        .select("id, unit_amount, currency, interval, active")
+        .eq("product_id", product.id)
+        .eq("active", true)
+        .order("unit_amount", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+    );
 
     if (priceError) {
       throw new Error(
@@ -141,12 +178,15 @@ export async function loadEducationPricing(): Promise<EducationPricing> {
   }
 
   // --- Free-tier headline caps (monthly + daily windows) --------------------
-  const { data: limits, error: limitsError } = await supabase
-    .schema("billing")
-    .from("capability_limit")
-    .select("capability, limit_value, period, tier")
-    .eq("tier", "free")
-    .in("period", ["month", "day"]);
+  const { data: limits, error: limitsError } = await bounded(
+    "billing.capability_limit",
+    supabase
+      .schema("billing")
+      .from("capability_limit")
+      .select("capability, limit_value, period, tier")
+      .eq("tier", "free")
+      .in("period", ["month", "day"]),
+  );
 
   // Same rule as the product/price reads: a Free card silently missing its
   // limits would claim "no limits" over a refused query.
