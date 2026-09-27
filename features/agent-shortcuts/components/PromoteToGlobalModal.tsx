@@ -1,5 +1,6 @@
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
@@ -77,6 +78,8 @@ export function PromoteToGlobalModal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
+  /** Why the global categories read failed — its per-placement counts say "—" then. */
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -89,10 +92,12 @@ export function PromoteToGlobalModal({
     setCategoriesLoading(true);
     dispatch(fetchCategoriesForScope({ scope: "global", scopeId: null }))
       .unwrap()
+      .then(() => setCategoriesError(null))
       .catch((e) => {
         const message =
           e instanceof Error ? e.message : "Failed to load global categories";
         setError(message);
+        setCategoriesError(message);
       })
       .finally(() => setCategoriesLoading(false));
   }, [isOpen, shortcut.label, sourceCategory, dispatch]);
@@ -222,7 +227,14 @@ export function PromoteToGlobalModal({
                   <div className="flex items-center justify-between w-full gap-3">
                     <span>{meta.label}</span>
                     <Badge variant="outline" className="text-xs">
-                      {count}
+                      <UntrustedCount
+                        value={count}
+                        read={{
+                          status: categoriesError ? "error" : categoriesLoading ? "loading" : "ready",
+                          error: categoriesError,
+                        }}
+                        label={`${meta.label} categories`}
+                      />
                     </Badge>
                   </div>
                 </SelectItem>

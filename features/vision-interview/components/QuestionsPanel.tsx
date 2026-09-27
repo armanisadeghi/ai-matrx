@@ -337,7 +337,9 @@ export function QuestionsPanel() {
           Questions for you
         </h2>
         <span className="ml-auto flex items-center gap-1">
+          {/* read-gate-exempt: the room renders AccessGate instead of this panel when the session read fails, so this is never a failed read */}
           <Count value={openCount} tone="open" />
+          {/* read-gate-exempt: the room renders AccessGate instead of this panel when the session read fails, so this is never a failed read */}
           {pendingCount > 0 && <Count value={pendingCount} tone="pending" />}
         </span>
       </header>
@@ -364,6 +366,7 @@ export function QuestionsPanel() {
               <Accordion type="single" collapsible>
                 <AccordionItem value="settled" className="border-none">
                   <AccordionTrigger className="rounded-lg px-2 py-2 text-xs font-medium text-muted-foreground hover:no-underline">
+                    {/* read-gate-exempt: the room renders AccessGate instead of this panel when the session read fails, so this is never a failed read */}
                     Answered &amp; dismissed ({settled.length})
                   </AccordionTrigger>
                   <AccordionContent className="space-y-2 pb-1 pt-1">

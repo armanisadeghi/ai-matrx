@@ -1,5 +1,7 @@
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
@@ -436,7 +438,12 @@ export function LinkAgentToShortcutModal({
           </div>
           <div className="flex items-center justify-between">
             <div className="text-xs text-muted-foreground">
-              {filteredShortcuts.length} shortcut
+              <UntrustedCount
+                value={filteredShortcuts.length}
+                read={readOf({ isLoading, error: shortcutsError })}
+                label="Shortcuts"
+              />{" "}
+              shortcut
               {filteredShortcuts.length !== 1 ? "s" : ""}
             </div>
             <div className="flex items-center gap-2">

@@ -178,6 +178,7 @@ export function DocumentPane() {
         </span>
         <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground">
           <History className="h-3 w-3" aria-hidden />
+          {/* read-gate-exempt: the room renders AccessGate instead of this pane when the session read fails, so this is never a failed read */}
           {revisions.length} revision{revisions.length === 1 ? "" : "s"}
         </span>
         <button

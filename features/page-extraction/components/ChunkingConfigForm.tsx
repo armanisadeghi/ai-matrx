@@ -1134,6 +1134,7 @@ function TemplateEditor({
               {draft.scopePages.length > 0 && (
                 <p className="mt-1 text-[10px] text-muted-foreground">
                   <span className="font-mono text-foreground/80">
+                    {/* read-gate-exempt: computed from the local draft being edited in this form, not a read */}
                     {draft.scopePages.length}
                   </span>{" "}
                   in scope
@@ -1180,6 +1181,7 @@ function TemplateEditor({
               <p className="text-[10px] text-muted-foreground -mt-2">
                 →{" "}
                 <span className="font-mono text-foreground/80">
+                  {/* read-gate-exempt: computed from the local draft being edited in this form, not a read */}
                   {chunks.length}
                 </span>{" "}
                 chunk{chunks.length === 1 ? "" : "s"}

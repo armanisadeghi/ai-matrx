@@ -1,5 +1,6 @@
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -27,6 +28,7 @@ import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShor
 import {
   selectShortcutById,
   selectShortcutsByAgentId,
+  selectShortcutsSliceError,
 } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { fetchFullShortcut } from "@/features/agents/redux/agent-shortcuts/thunks";
 import {
@@ -147,6 +149,7 @@ export function BatchShortcutsEditor({
   const shortcutsForAgent = useAppSelector((s) =>
     selectShortcutsByAgentId(s, agent.id),
   );
+  const shortcutsError = useAppSelector(selectShortcutsSliceError);
 
   // ── Editor state ──────────────────────────────────────────────────────────
   const [templateId, setTemplateId] = useState<string>(STANDARD);
@@ -664,7 +667,9 @@ export function BatchShortcutsEditor({
                   : "SHORTCUT_STORAGE_CUTOVER is OFF, so the active storage supplies no mandate identity. The grid is already storage-agnostic — it reads and writes through the router — but until the switch flips these rows have no mandate behind them."
               }
             >
-              mandate-backed {mandateBackedRows}/{shortcutsForAgent.length}
+              mandate-backed{" "}
+              <UntrustedCount value={mandateBackedRows} trustworthy={!shortcutsError} label="Mandate-backed rows" />/
+              <UntrustedCount value={shortcutsForAgent.length} trustworthy={!shortcutsError} label="Shortcuts" />
             </span>
           </div>
 
@@ -818,6 +823,7 @@ export function BatchShortcutsEditor({
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5 text-foreground font-medium">
               <Layers className="h-3.5 w-3.5" />
+              {/* read-gate-exempt: tally of unsaved edits in this local editor grid, not a read */}
               {tally.createCount} add · {tally.updateCount} update
             </span>
             {doneCount > 0 && (

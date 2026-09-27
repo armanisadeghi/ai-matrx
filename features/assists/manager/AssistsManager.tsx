@@ -16,6 +16,8 @@
  * triage, restore), never a second way to act.
  */
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import { useMemo, useState } from "react";
 import {
   Clock,
@@ -494,7 +496,12 @@ export function AssistsManager() {
               onClick={() => setTab(entry.value)}
             >
               {entry.label}
-              <span className="text-[11px] text-muted-foreground">{count}</span>
+              <UntrustedCount
+                className="text-[11px] text-muted-foreground"
+                value={count}
+                read={readOf({ loading, error })}
+                label={entry.label}
+              />
             </Button>
           );
         })}
@@ -553,9 +560,12 @@ export function AssistsManager() {
         >
           <VolumeX className="h-3 w-3" />
           Silenced
-          <span className="text-[11px] text-muted-foreground">
-            {sourceSuppressions.length}
-          </span>
+          <UntrustedCount
+            className="text-[11px] text-muted-foreground"
+            value={sourceSuppressions.length}
+            read={readOf({ loading, error })}
+            label="Silenced sources"
+          />
         </Button>
         <div className="ml-auto flex items-center gap-1.5">
           {shownIds.length > 0 && (
@@ -788,6 +798,7 @@ export function AssistsManager() {
       <ConfirmDialog
         open={confirmDismissAll}
         onOpenChange={setConfirmDismissAll}
+        // read-gate-exempt: the dialog opens only from a button over rows already on screen, so this counts shown rows
         title={`Dismiss ${shownIds.length} assist${shownIds.length === 1 ? "" : "s"}?`}
         description="Dismissing is durable — these will not come back on their own. Snooze instead if you only want them out of the way for now."
         confirmLabel="Dismiss them"

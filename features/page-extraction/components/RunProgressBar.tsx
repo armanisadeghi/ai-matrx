@@ -99,6 +99,7 @@ export function RunProgressBar({ jobId }: { jobId: string | null }) {
         <span>{statusLabel}</span>
         <div className="flex items-center gap-1.5">
           <span>
+            {/* read-gate-exempt: live progress of the extraction run streamed into redux, not a list read */}
             {progress.resultCount} result{progress.resultCount === 1 ? "" : "s"}
             {progress.failedChunks > 0
               ? ` · ${progress.failedChunks} failed`
