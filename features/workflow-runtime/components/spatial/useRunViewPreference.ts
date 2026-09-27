@@ -40,9 +40,15 @@ function subscribe(listener: () => void) {
 
 function writeAddress(view: RunView) {
   const params = new URLSearchParams(window.location.search);
-  if (view === "board") params.set("view", "board");
-  else params.delete("view");
-  replaceAddressWithoutNavigating(currentPathWithSearch(params));
+  if (view === "board") {
+    params.set("view", "board");
+    replaceAddressWithoutNavigating(currentPathWithSearch(params));
+    return;
+  }
+  params.delete("view");
+  // The board's camera (`#cam=`) means nothing on the page — drop it.
+  const qs = params.toString();
+  replaceAddressWithoutNavigating(`${window.location.pathname}${qs ? `?${qs}` : ""}`);
 }
 
 export function useRunViewPreference(

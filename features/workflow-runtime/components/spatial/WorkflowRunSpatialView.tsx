@@ -305,7 +305,12 @@ function RunBoard({
   return (
     <SpatialBoardMenu
       store={store}
-      actions={{ park, saveAndClose: (id) => void saveAndClose(id), remove: (id) => void remove(id) }}
+      actions={{
+        park,
+        saveAndClose: (id) => void saveAndClose(id),
+        remove: (id) => void remove(id),
+        removeLabel: "Take off this board…",
+      }}
       parked={board.parked.map((t) => ({ id: t.id, title: t.title }))}
       onUnpark={unpark}
       wheelMode={wheelMode}
