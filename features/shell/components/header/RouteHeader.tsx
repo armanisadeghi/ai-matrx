@@ -284,18 +284,34 @@ export default function RouteHeader({
     measure();
     // PageHeader mounts through a portal. Its first layout pass can happen
     // before the injection slot has its final width, so measure once more on
-    // the next frame instead of leaving the absolute center at auto width.
+    // the next frame instead of leaving the center unmeasured.
     const frame = requestAnimationFrame(measure);
     const ro = new ResizeObserver(measure);
     ro.observe(root);
     if (root.parentElement) ro.observe(root.parentElement);
     if (leftRef.current) ro.observe(leftRef.current);
     if (rightRef.current) ro.observe(rightRef.current);
-    const navMinEl = root.querySelector<HTMLElement>("[data-route-nav-min]");
-    if (navMinEl) ro.observe(navMinEl);
+    // A nav can mount after this effect (a center that waits for data): watch
+    // the center's content so its smallest trigger still gets its room.
+    let navMinEl: HTMLElement | null = null;
+    const watchNav = () => {
+      const next = root.querySelector<HTMLElement>("[data-route-nav-min]");
+      if (next === navMinEl) return;
+      if (navMinEl) ro.unobserve(navMinEl);
+      navMinEl = next;
+      if (navMinEl) {
+        ro.observe(navMinEl);
+        measure();
+      }
+    };
+    watchNav();
+    const centerEl = root.querySelector<HTMLElement>("[data-route-header-center]");
+    const mo = new MutationObserver(watchNav);
+    if (centerEl) mo.observe(centerEl, { childList: true, subtree: true });
     return () => {
       cancelAnimationFrame(frame);
       ro.disconnect();
+      mo.disconnect();
     };
     // Re-measure when the row mounts and whenever the set of actions, the
     // fold point, or the presence of a center changes.
@@ -352,7 +368,11 @@ export default function RouteHeader({
             data-route-header-center
             // In flow and clipping, so it can never overdraw the flanks: its
             // width is its grid track, whatever its content asks for.
-            className="flex min-w-0 items-center overflow-hidden"
+            className="flex min-w-0 items-center"
+            // Zero-height and clipped only sideways: a 44px phone trigger
+            // overhangs vertically instead of growing the row (the admin
+            // header is 40px), while the flanks stay out of reach.
+            style={{ height: 0, overflowX: "clip", overflowY: "visible" }}
           >
             <div
               // The margins narrow this box to the symmetric slot around the

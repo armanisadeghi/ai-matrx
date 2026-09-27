@@ -388,9 +388,9 @@ export function AccessRequestsSurface() {
           </span>
         }
         center={
-          // RouteHeader's center slot is a full-width absolutely-centered box:
-          // the pill has to center ITSELF inside it, or it sits at the slot's
-          // left edge and lands on top of the title.
+          // RouteHeader's center slot is a full-width box inset around the
+          // header's center: the pill has to center ITSELF inside it, or it
+          // sits at the slot's left edge.
           <div className="flex w-full justify-center">
             <div className="matrx-glass-thin-border inline-flex items-center gap-1 rounded-full p-1">
               {tab("inbox", "To me", inboxCount)}

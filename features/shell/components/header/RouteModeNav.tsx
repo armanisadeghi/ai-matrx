@@ -23,7 +23,10 @@
 //           · icon only               (not even the labelled trigger fits: the
 //                                       current mode's icon + chevron, the name
 //                                       kept for assistive tech)
-//   none  → nothing drawn             (not even the icon trigger fits: the
+//   none  → nothing drawn             (not even the icon trigger fits beside
+//                                       the title at its floor — RouteHeader
+//                                       truncates a title down to that floor
+//                                       to make room first; below it the
 //                                       TITLE wins. Page-pass 2026-09-27: the
 //                                       trigger used to draw anyway, clipped —
 //                                       "nu" after a phone title, a "Menu"
@@ -194,8 +197,8 @@ export function RouteModeNav({
     );
 
     const compute = () => {
-      // RouteHeader normally writes this bound onto the absolute center. Read
-      // the same geometry here as well so portal-mount timing can never make
+      // RouteHeader insets its center cell to this bound. Read the same
+      // geometry here as well so portal-mount timing can never make
       // the nav mistake its own compact intrinsic width for all available
       // space (or treat the full header width as safe around unequal flanks).
       const boundedWidth = routeHeader
@@ -212,8 +215,10 @@ export function RouteModeNav({
       const menuIconW = menuIconRef.current?.scrollWidth ?? menuW;
       // The whole center cell — its track, not the centered inset inside it
       // that the in-flow layout drops — so the choice never depends on itself.
+      // +1: clientWidth rounds, a fit-content track need not — the reserve
+      // RouteHeader made for the icon trigger must never read 1px short.
       const inflowAvail = routeHeaderCenter
-        ? routeHeaderCenter.clientWidth - CENTER_INFLOW_GUTTER
+        ? routeHeaderCenter.clientWidth - CENTER_INFLOW_GUTTER + 1
         : -Infinity;
       const centered = (w: number) => w <= avail + FLANK_GUTTER / 2;
       let next: NavLayout;
@@ -229,8 +234,8 @@ export function RouteModeNav({
         next = { variant: "menu", inflow: false, iconTrigger: true };
       else if (menuIconW <= inflowAvail)
         next = { variant: "menu", inflow: true, iconTrigger: true };
-      // The title always wins: a trigger that does not fit is not drawn at
-      // all — a clipped one reads as garbage beside the title.
+      // Below the title's floor the title wins: a trigger that does not fit
+      // is not drawn at all — a clipped one reads as garbage beside the title.
       else next = { variant: "none", inflow: false, iconTrigger: false };
       setLayout((prev) =>
         prev.variant === next.variant &&
