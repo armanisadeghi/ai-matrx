@@ -6,6 +6,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from '@/components/ui/command';
 import {
   Popover,
@@ -78,26 +79,31 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
               onValueChange={setSearch}
               className="text-sm"
             />
-            <CommandEmpty className="text-sm py-2 px-2">{noResultsText}</CommandEmpty>
-            <CommandGroup className="max-h-60 overflow-auto">
-              {/* onSelect, not a click on an inner div (lane HANDOVER, 2026-09-27): the div's click
-                  was the only way to choose, so arrow keys and Enter highlighted an option and
-                  chose nothing. cmdk calls onSelect for Enter and for a click alike. */}
-              {filteredOptions.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.value}
-                  onSelect={() => {
-                    onChange(option);
-                    setOpen(false);
-                    setSearch('');
-                  }}
-                  className="text-ellipsis overflow-hidden hover:bg-primary hover:text-primary-foreground"
-                >
-                  <span className="flex-1 truncate">{option.label}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            {/* INSIDE A CommandList (lane HANDOVER, 2026-09-27): cmdk finds its items for the arrow
+                keys, Enter and the first-item highlight through the list; with no list there were
+                none, so typing filtered the options and Enter chose nothing. */}
+            <CommandList>
+              <CommandEmpty className="text-sm py-2 px-2">{noResultsText}</CommandEmpty>
+              <CommandGroup className="max-h-60 overflow-auto">
+                {/* onSelect, not a click on an inner div (lane HANDOVER, 2026-09-27): the div's click
+                    was the only way to choose, so arrow keys and Enter highlighted an option and
+                    chose nothing. cmdk calls onSelect for Enter and for a click alike. */}
+                {filteredOptions.map((option) => (
+                  <CommandItem
+                    key={option.value}
+                    value={option.value}
+                    onSelect={() => {
+                      onChange(option);
+                      setOpen(false);
+                      setSearch('');
+                    }}
+                    className="text-ellipsis overflow-hidden hover:bg-primary hover:text-primary-foreground"
+                  >
+                    <span className="flex-1 truncate">{option.label}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
           </Command>
         </PopoverContent>
       </Popover>
