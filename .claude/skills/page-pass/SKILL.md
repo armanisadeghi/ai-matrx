@@ -69,7 +69,10 @@ procedure — open it only when you are doing that job or the check fails.
    (exit 3 = not live yet). On the live result, run
    `page:look --full` (and `--signed-out` where visitors come) and review it as
    a demanding customer who never saw your work: list every flaw you can still
-   see, rule or no rule. Fix them, or report each as open. Blind reviewers
+   see, rule or no rule. Look at EVERY mode and state the page has (each
+   view/edit mode, each tab, empty/loading/error, the phone path to each), not
+   just its default screen: a notes pass once graded its Read view and missed a
+   stock third-party Write view with no app menu. Fix them, or report each as open. Blind reviewers
    grade the page after you; a flaw they find that your final look missed
    counts against the pass.
 7. **Record it.** One Change Log line in the owning feature's `FEATURE.md` (no
