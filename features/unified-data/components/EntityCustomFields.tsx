@@ -36,7 +36,13 @@ import { createClient } from "@/utils/supabase/client";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { askAsMember } from "@/features/organizations/organizationsIAmIn";
-import { registerCustomFieldsDoor } from "@/features/surfaces/runtime/custom-field-targets";
+import {
+  CUSTOM_FIELDS_VALUE_NAME,
+  customFieldsScopeValue,
+  registerCustomFieldsDoor,
+} from "@/features/surfaces/runtime/custom-field-targets";
+import { useSurfaceRuntime, useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { getManifest } from "@/features/surfaces/manifests/registry";
 
 export interface EntityCustomFieldsProps {
   /** The standard table's registry token (REC-33) — `party`, `crm_deal`, `crm_interaction`. */
@@ -58,6 +64,17 @@ export function EntityCustomFields({
   className,
 }: EntityCustomFieldsProps) {
   const userId = useAppSelector(selectUserId);
+  // WHAT THE AGENT SEES: the fields and this record's values, contributed as the
+  // `custom_fields` value of the surface this page is on — when that surface
+  // declares it (`pickBaseline("custom_fields")`); a surface that does not keeps
+  // the targets but no value (an undeclared value is a contract error).
+  const runtime = useSurfaceRuntime();
+  const declares = Boolean(
+    runtime && getManifest(runtime.surfaceName)?.values?.some((v) => v.name === CUSTOM_FIELDS_VALUE_NAME),
+  );
+  useSurfaceScopeContribution(declares ? runtime!.surfaceName : null, "custom-fields-section", () => ({
+    [CUSTOM_FIELDS_VALUE_NAME]: customFieldsScopeValue(),
+  }));
   const organizationId = rowOrganizationId ?? null;
   // ONE switch: does this organization keep its data in the record store? Set
   // once, for everybody, on the unified data ramp screen (lane NAV-FIX).

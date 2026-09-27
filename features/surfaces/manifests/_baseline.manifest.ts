@@ -56,6 +56,17 @@ export const BASELINE_VALUES = {
     typicalCharCount: 5000,
     sortOrder: 200,
   },
+  custom_fields: {
+    name: "custom_fields",
+    label: "Custom fields",
+    description:
+      "The organization's custom fields shown on this record, with this record's values: a list of { entity, record_id, fields: [{ name, key, type, value }] } (value null = empty). Contributed by the custom-fields section itself. Add a field with the platform target custom_fields_add; fill values in with custom_fields_set.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 800,
+    inlineUpTo: 2000,
+    sortOrder: 9990,
+  },
   context: {
     name: "context",
     label: "Free-form context",
@@ -139,7 +150,7 @@ export const PLATFORM_CONTEXT_VALUES = {
 /** Names only the platform writes — a manifest declaring one is refused. */
 export const PLATFORM_RESERVED_NAMES = {
   values: Object.keys(PLATFORM_CONTEXT_VALUES) as ReadonlyArray<string>,
-  writeTargets: ["window_form_fields", "surface_feedback", "custom_fields_add"] as ReadonlyArray<string>,
+  writeTargets: ["window_form_fields", "surface_feedback", "custom_fields_add", "custom_fields_set"] as ReadonlyArray<string>,
 };
 
 export type BaselineKey = keyof typeof BASELINE_VALUES;

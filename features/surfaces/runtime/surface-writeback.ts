@@ -63,10 +63,15 @@ import {
   validateSurfaceFeedback,
 } from "./surface-feedback";
 import {
+  applyCustomFieldsSetWrite,
   applyCustomFieldsWrite,
+  CUSTOM_FIELDS_SET_TARGET_NAME,
   CUSTOM_FIELDS_TARGET_NAME,
+  customFieldsSetTarget,
   customFieldsTarget,
   hasCustomFieldsDoors,
+  hasCustomFieldsSetDoors,
+  validateCustomFieldsSetWrite,
   validateCustomFieldsWrite,
 } from "./custom-field-targets";
 import { toast } from "@/lib/toast";
@@ -929,7 +934,10 @@ export async function applySurfaceWrite(
     return applySurfaceFeedbackWrite(rawValue, opts);
   }
   if (targetName === CUSTOM_FIELDS_TARGET_NAME) {
-    return applyCustomFieldsTargetWrite(rawValue, opts);
+    return applyCustomFieldsTargetWrite(rawValue, opts, "add");
+  }
+  if (targetName === CUSTOM_FIELDS_SET_TARGET_NAME) {
+    return applyCustomFieldsTargetWrite(rawValue, opts, "set");
   }
   const stack = getSurfaceRuntimeStack().filter(
     (entry) => !opts?.surfaceName || entry.surfaceName === opts.surfaceName,
@@ -1242,15 +1250,17 @@ async function applySurfaceFeedbackWrite(
  */
 async function applyCustomFieldsTargetWrite(
   rawValue: unknown,
-  opts?: ApplySurfaceWriteOptions,
+  opts: ApplySurfaceWriteOptions | undefined,
+  mode: "add" | "set",
 ): Promise<SurfaceWriteResult> {
-  if (!hasCustomFieldsDoors()) {
+  const name = mode === "add" ? CUSTOM_FIELDS_TARGET_NAME : CUSTOM_FIELDS_SET_TARGET_NAME;
+  if (mode === "add" ? !hasCustomFieldsDoors() : !hasCustomFieldsSetDoors()) {
     return failUnapplicable(
-      unapplicableMessage(CUSTOM_FIELDS_TARGET_NAME, "No custom-fields section is open on this page."),
-      { targetName: CUSTOM_FIELDS_TARGET_NAME },
+      unapplicableMessage(name, "No custom-fields section is open on this page."),
+      { targetName: name },
     );
   }
-  const target = customFieldsTarget();
+  const target = mode === "add" ? customFieldsTarget() : customFieldsSetTarget();
   const primary = getSurfaceRuntimeStack()[0];
   const surfaceName = primary?.surfaceName ?? "";
   const typed = coerceDeclaredValueType(target, rawValue);
@@ -1259,7 +1269,8 @@ async function applyCustomFieldsTargetWrite(
   }
   const value = typed.value;
   try {
-    validateCustomFieldsWrite(value);
+    if (mode === "add") validateCustomFieldsWrite(value);
+    else validateCustomFieldsSetWrite(value);
   } catch (error) {
     return refuseBeforeApproval(
       error instanceof Error ? error.message : `"${target.label}" refused this value.`,
@@ -1278,7 +1289,7 @@ async function applyCustomFieldsTargetWrite(
     if (verdict !== true) return verdict;
   }
   try {
-    const outcome = await applyCustomFieldsWrite(value);
+    const outcome = mode === "add" ? await applyCustomFieldsWrite(value) : await applyCustomFieldsSetWrite(value);
     if (!opts?.quiet && outcome.summary) toast.success(outcome.summary);
     return { ok: true, surfaceName, target, outcome, change: writeReceipt(target, value, NOT_READ) };
   } catch (error) {
@@ -1443,6 +1454,13 @@ export function listLiveWriteTargets(): ReadonlyArray<{
     out.push({
       surfaceName: getSurfaceRuntimeStack()[0]?.surfaceName ?? "",
       target: customFieldsTarget(),
+      hasHandler: true,
+    });
+  }
+  if (hasCustomFieldsSetDoors()) {
+    out.push({
+      surfaceName: getSurfaceRuntimeStack()[0]?.surfaceName ?? "",
+      target: customFieldsSetTarget(),
       hasHandler: true,
     });
   }

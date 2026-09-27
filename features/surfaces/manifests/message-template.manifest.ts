@@ -93,7 +93,8 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 1200,
-    inlineUpTo: 10000,
+    // Record with a companion: the template 8,000, its custom_fields 2,000.
+    inlineUpTo: 8000,
     group: "template",
     sortOrder: 100,
   },
@@ -236,14 +237,15 @@ export const messageTemplateManifest: SurfaceManifest = {
   urlPattern: "/chat/message-templates/[id]",
   readiness: "partial",
   readinessNote:
-    "Record, merge fields, mode and edit form emitted from TemplateViewPage; template_draft and archive_template validate through unit-tested parsers; template_draft live-tested with a real agent 2026-09-27. Not yet verified: archive_template live agent run, no outside-helper binding test; custom fields have no agent twin (shared section).",
+    "Record, merge fields, mode and edit form emitted from TemplateViewPage; template_draft and archive_template validate through unit-tested parsers; template_draft live-tested with a real agent 2026-09-27. Custom fields: the shared section contributes custom_fields and brings the platform targets custom_fields_add (live-tested with a real agent 2026-09-27) and custom_fields_set. Not yet verified: archive_template live agent run, no outside-helper binding test.",
   intro: `<surface_intro>
 You are on one saved message template at /chat/message-templates/[id]. message_template is the template itself (name, role, visibility, tags, email subject and the whole body, which may hold {{variable}} merge fields filled in when the template is used). If it names managed_by, a platform job uses this template, and a change alters what that job sends.
 To rewrite, rename, retag, change the subject, or otherwise edit the template, use template_draft: it fills the page's edit form and the person presses Save. To archive it (move it to Trash), use archive_template. Send only the fields you change; content replaces the whole body. Do not use generic tools to update agent.message_template rows for this page — they skip the person's review.
 If can_edit is false, the template belongs to someone else; say so instead of drafting.
+custom_fields lists the organization's custom fields on templates with this template's values; fill them in with custom_fields_set, add a new one with custom_fields_add.
 </surface_intro>`,
   groups,
-  values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
+  values: mergeBaselineValues(pickBaseline("selection", "context", "custom_fields"), surfaceSpecific),
   writeTargets,
 };
 

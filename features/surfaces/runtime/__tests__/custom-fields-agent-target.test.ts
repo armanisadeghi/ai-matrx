@@ -24,6 +24,7 @@ import {
 } from "@/features/surfaces/runtime/surface-writeback";
 import {
   __resetCustomFieldsDoors,
+  customFieldsScopeValue,
   customFieldsProblems,
   registerCustomFieldsDoor,
   type CustomFieldAddRequest,
@@ -36,8 +37,8 @@ const TYPES = [
 ];
 
 function templatesDoor(opts: { mayAdd?: boolean; failOn?: string } = {}) {
-  const fields: Array<{ key: string; label: string; type: string }> = [
-    { key: "tone", label: "Tone", type: "text" },
+  const fields: Array<{ key: string; label: string; type: string; value?: unknown }> = [
+    { key: "tone", label: "Tone", type: "text", value: "Warm" },
   ];
   const added: CustomFieldAddRequest[] = [];
   const door: CustomFieldsAgentDoor = {
@@ -68,6 +69,18 @@ function templatesDoor(opts: { mayAdd?: boolean; failOn?: string } = {}) {
       added.push(request);
       fields.push({ key: request.label.toLowerCase(), label: request.label, type: request.type ?? "text" });
       return { ok: true, field_id: `f-${added.length}`, label: request.label, type: request.type ?? "text" };
+    },
+    checkValues: (values) =>
+      Object.keys(values)
+        .filter((k) => !fields.some((f) => f.label.toLowerCase() === k.toLowerCase() || f.key === k))
+        .map((k) => `There is no custom field "${k}".`),
+    setValues: async (values) => {
+      const written = Object.entries(values).map(([k, value]) => {
+        const f = fields.find((x) => x.label.toLowerCase() === k.toLowerCase() || x.key === k)!;
+        f.value = value;
+        return { key: f.key, label: f.label, value };
+      });
+      return { ok: true, written };
     },
   };
   return { door, added, fields };
@@ -173,5 +186,37 @@ describe("custom_fields_add — the platform target every custom-fields section 
     const { problems } = customFieldsProblems({ fields: [{ label: "Source" }] }, [a, b]);
     expect(problems).toEqual(['Several sections are open (message_template, crm_deal); name one with "entity".']);
     expect(customFieldsProblems({ entity: "crm_deal", fields: [{ label: "Source" }] }, [a, b]).problems).toEqual([]);
+  });
+});
+
+describe("custom_fields_set and the custom_fields value", () => {
+  beforeEach(() => {
+    __resetCustomFieldsDoors();
+    jest.clearAllMocks();
+  });
+
+  it("the value carries each field with this record's value", () => {
+    registerCustomFieldsDoor(templatesDoor().door);
+    expect(customFieldsScopeValue()).toEqual([
+      {
+        entity: "message_template",
+        record_id: "9a4b2c1d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+        fields: [{ name: "Tone", key: "tone", type: "text", value: "Warm" }],
+      },
+    ]);
+  });
+
+  it("sets a value after approval, and refuses an unknown field before the card", async () => {
+    registerCustomFieldsDoor(templatesDoor().door);
+    const offered = listAgentWritableTargets().find((t) => t.target.name === "custom_fields_set");
+    expect(offered?.target.description).toContain('Tone (text) = "Warm"');
+    const requestApproval = jest.fn(async () => ({ kind: "approved" as const }));
+    const bad = await applySurfaceWrite("custom_fields_set", { values: { Chair: "3" } }, { origin: "agent", quiet: true, requestApproval });
+    expect(requestApproval).not.toHaveBeenCalled();
+    expect(!bad.ok && bad.error).toContain('There is no custom field "Chair".');
+    const good = await applySurfaceWrite("custom_fields_set", { values: { tone: "Brisk" } }, { origin: "agent", quiet: true, requestApproval });
+    expect(requestApproval).toHaveBeenCalledTimes(1);
+    expect(good.ok && good.outcome?.summary).toBe('Saved Tone = "Brisk".');
+    expect(customFieldsScopeValue()[0]?.fields[0]?.value).toBe("Brisk");
   });
 });

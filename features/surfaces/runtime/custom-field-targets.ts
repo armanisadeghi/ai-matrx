@@ -25,6 +25,9 @@ import type { SurfaceWriteTarget } from "@/features/surfaces/types";
 import type { SurfaceWriteOutcome } from "./SurfaceRuntimeContext";
 
 export const CUSTOM_FIELDS_TARGET_NAME = "custom_fields_add";
+export const CUSTOM_FIELDS_SET_TARGET_NAME = "custom_fields_set";
+/** The surface value a section contributes when its surface declares it (baseline `custom_fields`). */
+export const CUSTOM_FIELDS_VALUE_NAME = "custom_fields";
 export const CUSTOM_FIELDS_MAX_PER_WRITE = 10;
 
 export interface CustomFieldAddRequest {
@@ -42,9 +45,15 @@ export interface CustomFieldsAgentState {
   entityLabel: string | null;
   mayAdd: boolean | null;
   refusal: string | null;
-  fields: ReadonlyArray<{ key: string; label: string; type: string }>;
+  fields: ReadonlyArray<{ key: string; label: string; type: string; value?: unknown }>;
   types: ReadonlyArray<{ value: string; label: string }>;
+  /** records-ui ≥ 0.93.11; absent on older sections. */
+  mayFill?: boolean | null;
 }
+
+export type CustomFieldSetResult =
+  | { ok: true; written: Array<{ key: string; label: string; value: unknown }> }
+  | { ok: false; message: string };
 
 export interface CustomFieldsAgentDoor {
   entityToken: string;
@@ -52,6 +61,9 @@ export interface CustomFieldsAgentDoor {
   state: () => CustomFieldsAgentState;
   check: (requests: readonly CustomFieldAddRequest[]) => string[];
   addField: (request: CustomFieldAddRequest) => Promise<CustomFieldAddResult>;
+  /** records-ui ≥ 0.93.11 — the values half. Absent on an older section: no set target is offered. */
+  checkValues?: (values: Record<string, unknown>) => string[];
+  setValues?: (values: Record<string, unknown>) => Promise<CustomFieldSetResult>;
 }
 
 export interface CustomFieldsWriteValue {
@@ -92,7 +104,12 @@ export function __resetCustomFieldsDoors(): void {
 function describeDoor(door: CustomFieldsAgentDoor): string {
   const s = door.state();
   const what = s.entityLabel ?? s.entityToken;
-  const held = s.fields.length > 0 ? s.fields.map((f) => `${f.label} (${f.type})`).join(", ") : "none yet";
+  const held =
+    s.fields.length > 0
+      ? s.fields
+          .map((f) => `${f.label} (${f.type}) = ${f.value === undefined || f.value === null || f.value === "" ? "empty" : JSON.stringify(f.value).slice(0, 120)}`)
+          .join(", ")
+      : "none yet";
   const may =
     s.mayAdd === true
       ? "you may add"
@@ -232,5 +249,93 @@ export async function applyCustomFieldsWrite(value: unknown): Promise<SurfaceWri
   return {
     summary: `Added ${added.length} field${added.length === 1 ? "" : "s"} to ${what}: ${added.map((a) => `"${a.label}" (${a.type})`).join(", ")}.`,
     data: { entity: door.entityToken, fields: added },
+  };
+}
+
+// ── the values: what the agent SEES (a surface value) and SETS (a target) ────
+
+/**
+ * The fields of every mounted section with this record's values — contributed
+ * as the `custom_fields` surface value by any surface that declares it
+ * (`pickBaseline("custom_fields")`), so the agent reads them up front.
+ */
+export function customFieldsScopeValue(
+  mounted: readonly CustomFieldsAgentDoor[] = listCustomFieldsDoors(),
+): Array<{ entity: string; record_id: string; fields: Array<{ name: string; key: string; type: string; value: unknown }> }> {
+  return mounted.map((door) => {
+    const s = door.state();
+    return {
+      entity: s.entityToken,
+      record_id: s.recordId,
+      fields: s.fields.map((f) => ({ name: f.label, key: f.key, type: f.type, value: f.value ?? null })),
+    };
+  });
+}
+
+export function hasCustomFieldsSetDoors(): boolean {
+  return listCustomFieldsDoors().some((d) => typeof d.setValues === "function");
+}
+
+export function customFieldsSetTarget(): SurfaceWriteTarget {
+  const mounted = listCustomFieldsDoors().filter((d) => typeof d.setValues === "function");
+  const sections =
+    mounted.length > 0 ? ` Sections on this page: ${mounted.map(describeDoor).join(" | ")}.` : "";
+  return {
+    name: CUSTOM_FIELDS_SET_TARGET_NAME,
+    label: "Fill in custom fields",
+    description:
+      "Set this record's custom-field values — SAVED immediately after the person approves; a field left out is left alone. " +
+      'Value: { "entity": "<entity token, only when more than one section is listed>", "values": { "<field name or key>": <value> } }. ' +
+      "A number field takes a number, a date field an ISO date (YYYY-MM-DD), text fields a string; null clears a value. " +
+      "Refused before the person is asked: a field that does not exist (the existing ones are named), or a person who may not fill them in. " +
+      `To add a NEW field use ${CUSTOM_FIELDS_TARGET_NAME}.${sections}`,
+    valueType: "object",
+    mode: "entity",
+    applyPolicy: "ask",
+  };
+}
+
+export function customFieldsSetProblems(
+  value: unknown,
+  mounted: readonly CustomFieldsAgentDoor[] = listCustomFieldsDoors().filter((d) => typeof d.setValues === "function"),
+): { problems: string[]; door: CustomFieldsAgentDoor | null; values: Record<string, unknown> } {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { problems: ['Send an object: { "entity"?: "<token>", "values": { "<field>": <value> } }. Nothing was changed.'], door: null, values: {} };
+  }
+  const record = value as Record<string, unknown>;
+  const problems: string[] = [];
+  const extra = Object.keys(record).filter((k) => !["entity", "record_id", "values"].includes(k));
+  if (extra.length > 0) problems.push(`It does not take ${extra.map((k) => `"${k}"`).join(", ")} — only entity, record_id and values.`);
+  const values =
+    record.values && typeof record.values === "object" && !Array.isArray(record.values)
+      ? (record.values as Record<string, unknown>)
+      : {};
+  if (Object.keys(values).length === 0) problems.push('"values" must name at least one field and its value.');
+  const entity = typeof record.entity === "string" ? record.entity.trim() : "";
+  const recordId = typeof record.record_id === "string" ? record.record_id.trim() : "";
+  let door: CustomFieldsAgentDoor | null = null;
+  const matches = mounted.filter((d) => (!entity || d.entityToken === entity) && (!recordId || d.recordId === recordId));
+  const tokens = new Set(matches.map((d) => d.entityToken));
+  if (mounted.length === 0) problems.push("No custom-fields section that can be filled in is open on this page.");
+  else if (matches.length === 0) problems.push(`No open section matches${entity ? ` entity "${entity}"` : ""}.`);
+  else if (tokens.size > 1 || matches.length > 1) problems.push('Several sections are open; name one with "entity" (and "record_id").');
+  else door = matches[0];
+  if (door && Object.keys(values).length > 0) problems.push(...(door.checkValues?.(values) ?? []));
+  return { problems, door, values };
+}
+
+export function validateCustomFieldsSetWrite(value: unknown): void {
+  const { problems } = customFieldsSetProblems(value);
+  if (problems.length > 0) throw new Error(refusalSentence(problems));
+}
+
+export async function applyCustomFieldsSetWrite(value: unknown): Promise<SurfaceWriteOutcome> {
+  const { problems, door, values } = customFieldsSetProblems(value);
+  if (problems.length > 0 || !door?.setValues) throw new Error(refusalSentence(problems));
+  const result = await door.setValues(values);
+  if (!result.ok) throw new Error(`Nothing was saved: ${result.message}`);
+  return {
+    summary: `Saved ${result.written.map((w) => `${w.label} = ${JSON.stringify(w.value)}`).join(", ")}.`,
+    data: { entity: door.entityToken, record_id: door.recordId, written: result.written },
   };
 }
