@@ -61,6 +61,10 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
 import { useTextDraft } from "@/lib/drafts/useTextDraft";
+import {
+  ensureOrganizationForWrite,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useScreenCapture } from "@/hooks/useScreenCapture";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -618,11 +622,18 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
   const handleSubmit = useCallback(async () => {
     if (!description.trim() || isSubmitting) return;
 
-    if (!selectedOrganizationId) {
-      // The action files the report in the organization the person is acting
-      // in and refuses without one; say so instead of a dead click.
+    // Every report is filed under one organization. With none selected the
+    // submit is HELD: the canonical workspace picker asks, and the report
+    // continues with the pick (never an error box, never a guess).
+    let organizationId: string;
+    try {
+      organizationId = await ensureOrganizationForWrite(selectedOrganizationId, {
+        interactive: true,
+      });
+    } catch (err) {
+      if (isOrganizationSelectionCancelled(err)) return;
       setError(
-        "Select an organization before sending feedback — every report is filed under one organization. Pick yours from the avatar menu; your text is still here.",
+        "Choose a workspace to send feedback — your text is still here.",
       );
       return;
     }
@@ -671,7 +682,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
         route: pathname,
         // The organization the person is acting in — a Server Action carries
         // no header, so the selection travels as an argument.
-        organization_id: selectedOrganizationId ?? "",
+        organization_id: organizationId,
         // A report about a passage carries it twice: readable at the top of the
         // description for whoever triages it, and structured for tools.
         description: subject ? `${describeSubject(subject)}\n\n${description.trim()}` : description.trim(),
