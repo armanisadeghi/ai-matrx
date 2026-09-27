@@ -11,7 +11,7 @@ import { ChevronDown, Search, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
-import { toast } from "@/lib/toast";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 import {
   listWorkflowVersions,
@@ -70,6 +70,8 @@ function WorkflowSelect({
   const [query, setQuery] = useState("");
   const [choices, setChoices] = useState<WorkflowChoice[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState<unknown>(null);
+  const [searchAttempt, setSearchAttempt] = useState(0);
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,9 +82,11 @@ function WorkflowSelect({
       void (async () => {
         try {
           const results = await searchWorkflows(query);
-          if (live) setChoices(results);
+          if (!live) return;
+          setChoices(results);
+          setSearchError(null);
         } catch (err) {
-          if (live) toast.error(err instanceof Error ? err.message : String(err));
+          if (live) setSearchError(err ?? new Error("The workflow search failed"));
         } finally {
           if (live) setLoading(false);
         }
@@ -92,7 +96,7 @@ function WorkflowSelect({
       live = false;
       clearTimeout(handle);
     };
-  }, [open, query]);
+  }, [open, query, searchAttempt]);
 
   useEffect(() => {
     if (!open) return;
@@ -133,12 +137,20 @@ function WorkflowSelect({
                 Searching…
               </div>
             )}
-            {!loading && choices.length === 0 && (
+            {!loading && Boolean(searchError) && (
+              <ReadFailure
+                error={searchError}
+                what="your workflows"
+                onRetry={() => setSearchAttempt((n) => n + 1)}
+                className="m-1"
+              />
+            )}
+            {!loading && !searchError && choices.length === 0 && (
               <div className="px-2 py-1.5 text-xs text-muted-foreground">
                 No workflows match.
               </div>
             )}
-            {choices.map((c) => (
+            {!searchError && choices.map((c) => (
               <button
                 key={c.id}
                 type="button"

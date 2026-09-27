@@ -491,6 +491,7 @@ export function SurfaceDetailPanel({
                       />
                     ) : (
                       <span className="min-w-0 flex-1 text-[11px] text-muted-foreground">
+                        {/* read-gate-exempt: per-row label for a loaded binding whose agent_id is null, not a list's empty view */}
                         No agent assigned
                       </span>
                     )}

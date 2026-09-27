@@ -258,10 +258,16 @@ function UserSearchWindowInner({
             ) : (
               <UserRound className="h-5 w-5" />
             ),
-            title: loading ? "Loading users" : "No matching users",
-            description: loading
-              ? "Reading the available user directory."
-              : "Change the search or clear column filters.",
+            title: error
+              ? "The user directory could not be read"
+              : loading
+                ? "Loading users"
+                : "No matching users",
+            description: error
+              ? "This is not an empty directory — the read failed; the message above says why."
+              : loading
+                ? "Reading the available user directory."
+                : "Change the search or clear column filters.",
           }}
           onRowOpen={select}
           rowActions={(row) => (

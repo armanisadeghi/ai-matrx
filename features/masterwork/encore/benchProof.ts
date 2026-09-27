@@ -334,6 +334,11 @@ export type BenchProofState =
        * prompt when this is true.
        */
       retryIsPointless?: boolean;
+      /**
+       * Present only when this is a FAILED READ (not a permission answer or a
+       * missing organization): the failure itself, for the Alchemy Menu.
+       */
+      error?: unknown;
       canRunHere: false;
     } & Omit<BenchRunAbility, "canRunHere">);
 
@@ -403,6 +408,7 @@ export const ORGANIZATION_UNAVAILABLE: BenchProofState = {
     "Something went wrong while reading which organization you are working in, " +
     "so the bench proof was not checked. This does not mean you need to pick " +
     "one — we simply could not check. Reload to try again.",
+  error: new Error("The organization read failed, so the bench proof was not checked."),
   canRunHere: false,
   form: null,
   howToRun: "",
@@ -438,6 +444,7 @@ export function checkFailed(raw: unknown): BenchProofState {
         "This is not a permission problem — reload to try again.",
     traceId: refusal.traceId ?? null,
     retryIsPointless: refusal.retryIsPointless,
+    error: raw ?? new Error(CHECK_FAILED_HEADLINE),
     canRunHere: false,
     form: null,
     howToRun: "",

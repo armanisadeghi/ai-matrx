@@ -28,6 +28,7 @@
 
 import { BadgeCheck, FlaskConical, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { withoutRepeatedLead } from "@/lib/copy/withoutRepeatedLead";
 import { formatRelativeTime } from "@/utils/datetime";
 import type { BenchProofState } from "./benchProof";
@@ -179,6 +180,9 @@ function BenchRecordLine({ bench }: { bench: BenchProofState }) {
       </p>
       <p className="mt-0.5 text-xs text-muted-foreground">
         {withoutRepeatedLead(bench.reason, benchHeadline)}
+        {bench.status === "unavailable" && bench.error != null ? (
+          <ErrorAlchemyMenu error={bench.error} operation="Check the bench proof" />
+        ) : null}
       </p>
       {/* THE TRACE ID BELONGS HERE AND NOWHERE ELSE (fifteenth cold walk).
           It sat in the middle of the sentence above, 32 hex characters at a

@@ -16,6 +16,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { loadSurfaceValues } from "@/features/surfaces/redux/thunks";
 import {
   makeSelectSurfaceValues,
+  makeSelectSurfaceValuesError,
   makeSelectSurfaceValuesStatus,
   selectAllSurfaces,
 } from "@/features/surfaces/redux/selectors";
@@ -25,6 +26,7 @@ import { formatVariableDisplayName } from "@/features/agents/utils/variable-util
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { useSurfacesAdminSelection } from "../useSurfacesAdminSelection";
 import { SurfaceRolesSection } from "./SurfaceRolesSection";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const TYPE_ICONS: Record<
   SurfaceValue["valueType"],
@@ -63,6 +65,9 @@ export function SurfaceDetailsColumn({ agent }: { agent: AgentDefinition }) {
   );
   const values = useAppSelector(selectValues);
   const status = useAppSelector(selectValuesStatus);
+  const valuesError = useAppSelector(
+    makeSelectSurfaceValuesError(surfaceName ?? ""),
+  );
 
   useEffect(() => {
     if (!surfaceName) return;
@@ -149,7 +154,17 @@ export function SurfaceDetailsColumn({ agent }: { agent: AgentDefinition }) {
             Loading values…
           </div>
         )}
-        {status !== "loading" && sortedValues.length === 0 && (
+        {status === "failed" && values.length === 0 && surfaceName && (
+          <ReadFailure
+            error={valuesError ?? true}
+            what="this surface's values"
+            onRetry={() =>
+              void dispatch(loadSurfaceValues({ surfaceName, force: true }))
+            }
+            className="m-0"
+          />
+        )}
+        {status === "succeeded" && sortedValues.length === 0 && (
           <div className="px-1 py-3 text-xs text-muted-foreground italic">
             This surface declares no values yet.
           </div>

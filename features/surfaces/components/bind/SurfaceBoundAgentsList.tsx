@@ -28,6 +28,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import type { SurfaceBoundAgentEntry } from "@/features/surfaces/services/surface-bound-agents.service";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export interface SurfaceBoundAgentsListProps {
   surfaceName: string;
@@ -72,7 +73,7 @@ export function SurfaceBoundAgentsList({
   const surfaceLabel = getSurfaceDisplayLabel(surfaceName);
   const openBind = useOpenSurfaceAgentBindWindow();
   const openSettings = useOpenAgentSettingsWindow();
-  const { sections, loading, hasAgents, refresh } = useSurfaceBoundAgents(
+  const { sections, loading, error, hasAgents, refresh } = useSurfaceBoundAgents(
     surfaceName,
     { isEditable, includeDefaults },
   );
@@ -107,7 +108,7 @@ export function SurfaceBoundAgentsList({
     });
   };
 
-  if (hideWhenEmpty && !loading && !hasAgents && !hasRoleRows) return null;
+  if (hideWhenEmpty && !loading && !error && !hasAgents && !hasRoleRows) return null;
 
   // A manifest role may intentionally point at the same agent as a direct
   // association: the role declares that the surface USES the agent, while the
@@ -134,7 +135,16 @@ export function SurfaceBoundAgentsList({
         </div>
       )}
 
-      {!loading && !hasAgents && !hasRoleRows && (
+      {!loading && error && !hasAgents && (
+        <ReadFailure
+          error={error}
+          what="the agents on this surface"
+          onRetry={() => void refresh()}
+          className="m-0"
+        />
+      )}
+
+      {!loading && !error && !hasAgents && !hasRoleRows && (
         <p className="rounded-md border border-dashed border-border px-2.5 py-3 text-center text-[10px] text-muted-foreground">
           {emptyMessage}
         </p>
@@ -290,6 +300,7 @@ export function SurfaceBoundAgentsList({
                 labelClassName="font-semibold"
               />
             ) : null}{" "}
+            {/* read-gate-exempt: confirmation copy for removing an agent, not an empty view of any read */}
             from <b>{surfaceLabel}</b>? It will no longer appear here or in this
             surface&apos;s context menu.
           </>

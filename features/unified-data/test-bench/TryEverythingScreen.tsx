@@ -480,10 +480,12 @@ function Bench({
         needs: ["pipelineRead", "pipelineBoard", "pipelineTransitionRefusal", "pipelineMove"],
         cannotRun: workingTable
             ? null
-            : tables.loading
-              ? "we are still reading this organization's tables, so there is no table to ask the board about yet."
-              : "this organization has no table of its own yet, so there is nothing for the board to be about. " +
-                "Make one in section 1 and this checks itself.",
+            : tables.error
+              ? "this organization's tables could not be read (section 1 says why), so there is no table to ask the board about — this is not \"no tables\"."
+              : tables.loading
+                ? "we are still reading this organization's tables, so there is no table to ask the board about yet."
+                : "this organization has no table of its own yet, so there is nothing for the board to be about. " +
+                  "Make one in section 1 and this checks itself.",
         ask: (client) => client.pipelineRead({ table_id: workingTable!.id }),
         whenItAnswers:
             "The pipeline doors answer this browser: the board asks the store before every drag, and a move the " +

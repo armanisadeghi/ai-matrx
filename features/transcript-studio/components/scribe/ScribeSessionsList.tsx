@@ -17,6 +17,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   selectAllSessions,
+  selectFetchError,
   selectFetchStatus,
   selectUnsortedCount,
 } from "../../redux/selectors";
@@ -29,6 +30,7 @@ import {
 } from "../../redux/thunks";
 import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
 import { SwipeableRow, type SwipeAction } from "./SwipeableRow";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface ScribeSessionsListProps {
   onOpenSession: (sessionId: string) => void;
@@ -55,6 +57,7 @@ export function ScribeSessionsList({
   const userId = useAppSelector(selectUserId);
   const sessions = useAppSelector(selectAllSessions);
   const fetchStatus = useAppSelector(selectFetchStatus);
+  const fetchError = useAppSelector(selectFetchError);
   const unsortedCount = useAppSelector(selectUnsortedCount);
   const [creating, setCreating] = useState(false);
   const [menuSessionId, setMenuSessionId] = useState<string | null>(null);
@@ -182,6 +185,12 @@ export function ScribeSessionsList({
           <div className="flex justify-center py-10">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
+        ) : fetchStatus === "error" && sessions.length === 0 ? (
+          <ReadFailure
+            error={fetchError ?? true}
+            what="your recording sessions"
+            onRetry={() => void dispatch(fetchSessionsThunk())}
+          />
         ) : sessions.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
             <p className="text-sm text-muted-foreground">

@@ -43,6 +43,11 @@ export const makeSelectSurfaceValuesStatus =
   (surfaceName: string) => (state: RootState) =>
     selectCatalog(state).valuesStatus[surfaceName] ?? "idle";
 
+/** The surface-values read's failure message (null unless the last read failed). */
+export const makeSelectSurfaceValuesError =
+  (surfaceName: string) => (state: RootState) =>
+    selectCatalog(state).valuesError[surfaceName] ?? null;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Bindings (agentSurfaceBindings)
 // ─────────────────────────────────────────────────────────────────────────────
