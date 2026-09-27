@@ -403,7 +403,12 @@ export function ContactPointsCard({
                       Allow contact
                     </Button>
                   )}
-                  <TapTargetButtonTransparent
+                  <span
+                    className={cn(
+                      "inline-flex",
+                      !point.is_primary && "opacity-100 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100",
+                    )}
+                  ><TapTargetButtonTransparent
                     ariaLabel={
                       point.is_primary
                         ? "Primary contact method"
@@ -415,7 +420,7 @@ export function ContactPointsCard({
                     className={
                       point.is_primary
                         ? "text-amber-500"
-                        : "text-muted-foreground/60 hover:text-amber-500 opacity-100 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100"
+                        : "text-muted-foreground/60 hover:text-amber-500"
                     }
                     icon={
                       <Star
@@ -426,11 +431,12 @@ export function ContactPointsCard({
                       />
                     }
                   />
-                  <TrashTapButton
+                  </span>
+                  <span className="inline-flex opacity-100 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"><TrashTapButton
                     ariaLabel="Remove contact method"
                     onClick={() => void remove(point)}
-                    className="opacity-100 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100"
-                  />
+                    className="text-muted-foreground hover:text-destructive"
+                  /></span>
                 </span>
               </li>
             );

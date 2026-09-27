@@ -16,7 +16,29 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { Briefcase, Building2, LogOut, Users, X } from "lucide-react";
+import {
+  Briefcase,
+  Building2,
+  Check,
+  ChevronsUpDown,
+  LogOut,
+  Plus,
+  Users,
+} from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@ai-matrx/design-system";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -29,6 +51,7 @@ import {
   endAffiliation,
   fetchPartiesByIds,
   searchEmployerCandidates,
+  resolveParty,
 } from "../../service";
 import { parseEmployment } from "../../agent-context/crmRecordSurfaceWrite";
 import type {
@@ -70,6 +93,13 @@ interface CompanyProps {
 
 type Props = PersonProps | CompanyProps;
 
+/**
+ * The employer choice — the standard searchable picker (Popover + Command, the
+ * parts OptionCombobox is built from), searching this organization's companies
+ * on the server. A company that is not in the CRM yet is one click away:
+ * `Create "what you typed"` resolves it through the governed find-or-create
+ * door, so a name that already exists is matched instead of duplicated.
+ */
 function EmployerPicker({
   orgId,
   excludeId,
@@ -87,12 +117,15 @@ function EmployerPicker({
   // (RC-B12 r13).
   const [searchError, setSearchError] = useState<unknown>(null);
   const [searchAttempt, setSearchAttempt] = useState(0);
+  const [searching, setSearching] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [open, setOpen] = useState(false);
   const generationRef = useRef(0);
 
   useEffect(() => {
     if (!open) return;
     const gen = ++generationRef.current;
+    setSearching(true);
     const timer = setTimeout(() => {
       void (async () => {
         try {
@@ -107,69 +140,127 @@ function EmployerPicker({
           }
         } catch (e) {
           console.error("[crm] employer search failed:", e);
-          if (generationRef.current === gen) setSearchError(e ?? new Error("The company search failed"));
+          if (generationRef.current === gen)
+            setSearchError(e ?? new Error("The company search failed"));
+        } finally {
+          if (generationRef.current === gen) setSearching(false);
         }
       })();
     }, 200);
     return () => clearTimeout(timer);
   }, [open, search, orgId, excludeId, searchAttempt]);
 
-  if (selected) {
-    return (
-      <span className="inline-flex h-11 items-center gap-1.5 rounded border border-border bg-background px-2 text-sm text-foreground sm:h-7 sm:text-xs">
-        <Building2 className="h-3 w-3 text-muted-foreground" />
-        {selected.display_name}
-        <button
-          type="button"
-          aria-label="Clear employer"
-          onClick={() => onSelect(null)}
-          className="ml-auto inline-flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground sm:h-6 sm:w-6"
-        >
-          <X className="h-3 w-3" />
-        </button>
-      </span>
-    );
-  }
+  const typed = search.trim();
+  const exact = options.some(
+    (option) => option.display_name.toLowerCase() === typed.toLowerCase(),
+  );
+
+  const create = async () => {
+    if (!typed) return;
+    setCreating(true);
+    try {
+      const resolved = await resolveParty({
+        kind: "organization",
+        displayName: typed,
+        orgId,
+        source: "manual",
+        sourceDetail: "employment card",
+      });
+      if (!resolved.created) {
+        toast.success(`Matched the existing company ${resolved.displayName}`);
+      }
+      onSelect({
+        id: resolved.partyId,
+        display_name: resolved.displayName,
+        party_kind: "organization",
+      });
+      setOpen(false);
+      setSearch("");
+    } catch (e) {
+      toast.error(extractErrorMessage(e));
+    } finally {
+      setCreating(false);
+    }
+  };
 
   return (
-    <div className="relative min-w-[11rem] flex-1">
-      <Input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder="Search companies…"
-        className="h-11 text-base sm:h-7 sm:text-xs"
-      />
-      {searchError != null && (
-        <ReadFailure
-          error={searchError}
-          what="matching companies"
-          onRetry={() => setSearchAttempt((n) => n + 1)}
-          className="m-0 mt-1"
-        />
-      )}
-      {open && options.length > 0 && (
-        <ul className="absolute z-20 mt-1 max-h-44 w-full overflow-y-auto rounded-md border border-border bg-popover py-1 shadow-md">
-          {options.map((option) => (
-            <li key={option.id}>
-              <button
-                type="button"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  onSelect(option);
-                  setOpen(false);
-                }}
-                className="flex w-full items-center gap-1.5 px-2 py-1 text-left text-xs text-foreground hover:bg-accent"
-              >
-                <Building2 className="h-3 w-3 shrink-0 text-muted-foreground" />
-                <span className="truncate">{option.display_name}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          role="combobox"
+          aria-expanded={open}
+          className="h-11 min-w-[11rem] flex-1 justify-between gap-1.5 px-2 text-sm font-normal sm:h-7 sm:text-xs"
+        >
+          <span className="flex min-w-0 items-center gap-1.5">
+            <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span
+              className={
+                selected ? "truncate" : "truncate text-muted-foreground"
+              }
+            >
+              {selected ? selected.display_name : "Employer company"}
+            </span>
+          </span>
+          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            value={search}
+            onValueChange={setSearch}
+            placeholder="Search companies…"
+          />
+          <CommandList>
+            {searchError != null ? (
+              <ReadFailure
+                error={searchError}
+                what="matching companies"
+                onRetry={() => setSearchAttempt((n) => n + 1)}
+                className="m-2"
+              />
+            ) : null}
+            {!searching && searchError == null && options.length === 0 && !typed ? (
+              <CommandEmpty>No companies yet — type a name to add one.</CommandEmpty>
+            ) : null}
+            {options.length > 0 && (
+              <CommandGroup>
+                {options.map((option) => (
+                  <CommandItem
+                    key={option.id}
+                    value={option.id}
+                    onSelect={() => {
+                      onSelect(option);
+                      setOpen(false);
+                    }}
+                  >
+                    <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{option.display_name}</span>
+                    {selected?.id === option.id && (
+                      <Check className="ml-auto h-3.5 w-3.5" />
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            {typed && !exact && searchError == null && (
+              <CommandGroup>
+                <CommandItem
+                  value={`create:${typed}`}
+                  disabled={creating}
+                  onSelect={() => void create()}
+                >
+                  <Plus className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">Create &ldquo;{typed}&rdquo;</span>
+                </CommandItem>
+              </CommandGroup>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -418,7 +509,7 @@ export function EmploymentCard(props: Props) {
                     {stintDates(a.start_date, a.end_date)}
                   </span>
                   {a.is_current ? (
-                    <TapTargetButtonTransparent
+                    <span className="inline-flex shrink-0 opacity-100 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"><TapTargetButtonTransparent
                       ariaLabel="End this stint"
                       onClick={() =>
                         void end(
@@ -426,9 +517,10 @@ export function EmploymentCard(props: Props) {
                           a.employer?.display_name ?? "this company",
                         )
                       }
-                      className="shrink-0 text-muted-foreground/60 hover:text-destructive opacity-100 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100"
+                      className="text-muted-foreground/60 hover:text-destructive"
                       icon={<LogOut className="h-3.5 w-3.5" />}
                     />
+                    </span>
                   ) : (
                     <span className="shrink-0 rounded-full border border-border bg-muted px-1.5 py-0.5 text-xs leading-none text-muted-foreground">
                       Past

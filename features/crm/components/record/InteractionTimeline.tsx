@@ -7,6 +7,8 @@
 // party row: touch history derives from crm.interaction (party is versioned;
 // a stored column would snapshot the whole row on every dial).
 
+import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@ai-matrx/design-system";
 import { TrashTapButton } from "@ai-matrx/tap-target/buttons";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useState } from "react";
@@ -269,14 +271,15 @@ export function InteractionTimeline({
               opens the compose window OVER the record, which stays readable
               while the message is written about it. */}
           {partyLabel && (
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => openCompose()}
-              className="mr-1 inline-flex h-11 items-center gap-1 rounded border border-border px-2 text-xs font-medium text-foreground hover:bg-accent sm:h-6"
+              className="mr-1 h-6 gap-1 px-2 text-xs"
             >
               <Send className="h-3 w-3" />
               Send email
-            </button>
+            </Button>
           )}
           {copyParent && interactions.length > 0 && (
             <CrmRecordCopyButtons
@@ -289,54 +292,71 @@ export function InteractionTimeline({
               }
             />
           )}
-          <CollapsibleTextGroupControls
-            allExpanded={allExpanded}
-            anyExpanded={anyExpanded}
-            disabled={expandableRowIds.length === 0}
-            onExpandAll={() => setExpandedRows(new Set(expandableRowIds))}
-            onCollapseAll={() => setExpandedRows(new Set())}
-          />
+          {/* Absent, never disabled-looking, when nothing can expand. */}
+          {expandableRowIds.length > 0 && (
+            <CollapsibleTextGroupControls
+              allExpanded={allExpanded}
+              anyExpanded={anyExpanded}
+              onExpandAll={() => setExpandedRows(new Set(expandableRowIds))}
+              onCollapseAll={() => setExpandedRows(new Set())}
+            />
+          )}
         </div>
       }
     >
       {/* Composer — one tight strip: type, direction, subject, minutes, log. */}
       <div className="mb-2 space-y-1.5 rounded border border-border bg-muted/30 p-1.5">
         <div className="flex flex-wrap items-center gap-1">
-          {COMPOSER_CHANNELS.map((c) => {
-            const meta = CHANNEL_META[c];
-            return (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setChannel(c)}
-                className={cn(
-                  "inline-flex h-11 items-center gap-1 rounded px-2 text-xs font-medium transition-colors sm:h-6",
-                  channel === c
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                )}
-              >
-                <meta.Icon className="h-3 w-3" />
-                {meta.label}
-              </button>
-            );
-          })}
-          <span className="mx-1 h-4 w-px bg-border" />
-          <button
-            type="button"
-            onClick={() =>
-              setDirection(direction === "outbound" ? "inbound" : "outbound")
+          <SegmentedControl
+            size="sm"
+            value={channel}
+            onValueChange={(next) => {
+              const picked = COMPOSER_CHANNELS.find((c) => c === next);
+              if (picked) setChannel(picked);
+            }}
+            data={COMPOSER_CHANNELS.map((c) => {
+              const meta = CHANNEL_META[c];
+              return {
+                value: c,
+                ariaLabel: meta.label,
+                label: (
+                  <span className="inline-flex items-center gap-1">
+                    <meta.Icon className="h-3 w-3" />
+                    {meta.label}
+                  </span>
+                ),
+              };
+            })}
+          />
+          <SegmentedControl
+            size="sm"
+            value={direction}
+            onValueChange={(next) =>
+              setDirection(next === "inbound" ? "inbound" : "outbound")
             }
-            title="Toggle direction"
-            className="inline-flex h-11 items-center gap-1 rounded px-2 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground sm:h-6"
-          >
-            {direction === "outbound" ? (
-              <ArrowUpRight className="h-3 w-3" />
-            ) : (
-              <ArrowDownLeft className="h-3 w-3" />
-            )}
-            {direction === "outbound" ? "Outbound" : "Inbound"}
-          </button>
+            data={[
+              {
+                value: "outbound",
+                ariaLabel: "Outbound",
+                label: (
+                  <span className="inline-flex items-center gap-1">
+                    <ArrowUpRight className="h-3 w-3" />
+                    Outbound
+                  </span>
+                ),
+              },
+              {
+                value: "inbound",
+                ariaLabel: "Inbound",
+                label: (
+                  <span className="inline-flex items-center gap-1">
+                    <ArrowDownLeft className="h-3 w-3" />
+                    Inbound
+                  </span>
+                ),
+              },
+            ]}
+          />
           {channel === "call" && (
             <Input
               value={minutes}
@@ -489,11 +509,11 @@ export function InteractionTimeline({
                       }
                     />
                   )}
-                  <TrashTapButton
+                  <span className="inline-flex shrink-0 opacity-100 lg:pointer-fine:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100"><TrashTapButton
                     ariaLabel="Delete entry"
                     onClick={() => void remove(row)}
-                    className="shrink-0 opacity-100 lg:pointer-fine:opacity-0 lg:group-hover:opacity-100"
-                  />
+                    className="text-muted-foreground hover:text-destructive"
+                  /></span>
                 </span>
               </li>
             );

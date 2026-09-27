@@ -8,6 +8,7 @@
 // (2026-09-22) cmt_add would also read it off the party record itself, and it
 // REFUSES a p_org_id that disagrees with the record's own organization.
 
+import { Button } from "@/components/ui/button";
 import { TrashTapButton } from "@ai-matrx/tap-target/buttons";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
@@ -210,17 +211,19 @@ export function PartyNotes({
               ]}
             />
           )}
-          <CollapsibleTextGroupControls
-            allExpanded={allExpanded}
-            anyExpanded={anyExpanded}
-            disabled={comments.length === 0}
-            onExpandAll={() =>
-              setExpandedComments(
-                new Set(comments.map((comment) => comment.id)),
-              )
-            }
-            onCollapseAll={() => setExpandedComments(new Set())}
-          />
+          {/* Absent, never disabled-looking, when there is nothing to expand. */}
+          {comments.length > 0 && (
+            <CollapsibleTextGroupControls
+              allExpanded={allExpanded}
+              anyExpanded={anyExpanded}
+              onExpandAll={() =>
+                setExpandedComments(
+                  new Set(comments.map((comment) => comment.id)),
+                )
+              }
+              onCollapseAll={() => setExpandedComments(new Set())}
+            />
+          )}
         </div>
       }
     >
@@ -249,13 +252,14 @@ export function PartyNotes({
         <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-destructive" />
           <span>Couldn&apos;t load notes — {loadError} <ErrorAlchemyMenu error={loadError} /></span>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-6 px-2 text-xs"
             onClick={() => setReloadNonce((current) => current + 1)}
-            className="rounded px-1.5 py-0.5 font-medium text-primary hover:bg-accent"
           >
             Retry
-          </button>
+          </Button>
         </div>
       ) : comments.length === 0 ? (
         <SectionEmpty>No notes yet</SectionEmpty>
@@ -289,11 +293,11 @@ export function PartyNotes({
                         json={() => copyView}
                       />
                     )}
-                    <TrashTapButton
+                    <span className="inline-flex opacity-100 lg:pointer-fine:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100"><TrashTapButton
                       ariaLabel="Delete note"
                       onClick={() => void remove(comment)}
-                      className="opacity-100 lg:pointer-fine:opacity-0 lg:group-hover:opacity-100"
-                    />
+                      className="text-muted-foreground hover:text-destructive"
+                    /></span>
                   </span>
                 </div>
                 <CollapsibleText

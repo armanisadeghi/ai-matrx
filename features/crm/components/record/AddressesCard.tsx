@@ -233,11 +233,11 @@ export function AddressesCard({
               <span className="min-w-0 truncate text-sm text-foreground">
                 {formatAddress(address) || "—"}
               </span>
-              <TrashTapButton
+              <span className="inline-flex ml-auto shrink-0 opacity-100 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"><TrashTapButton
                 ariaLabel="Remove address"
                 onClick={() => void remove(address)}
-                className="ml-auto shrink-0 opacity-100 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100"
-              />
+                className="text-muted-foreground hover:text-destructive"
+              /></span>
             </li>
           ))}
         </ul>
