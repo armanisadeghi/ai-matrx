@@ -42,7 +42,12 @@ export function actionsAlreadyHere(where: WhereTheMenuIs): string[] {
   // its editor — its Write / Read toggle is the door — so the preview offers no
   // second one (live 2026-09-27, /notes/<id> in Read mode). Editor and preview
   // menus now carry the same set.
-  const ownPage = SAVE_INTO_WHERE_YOU_ARE.some((rule) => where.surfaceName === rule.surface);
+  // Matched by the SOURCE as well as the surface: live, the Read-mode menu on
+  // /notes/<id> carried the note source under a surface name other than the
+  // notes one, so a surface-only match missed it.
+  const ownPage = SAVE_INTO_WHERE_YOU_ARE.some(
+    (rule) => where.sourceType === rule.sourceType || where.surfaceName === rule.surface,
+  );
   if (where.isEditable || ownPage) out.push(...EDITOR_DOORS);
   return [...new Set(out)];
 }

@@ -19,6 +19,11 @@ describe("actionsAlreadyHere", () => {
       ["edit", "open-fullscreen-editor", "save-to-notes"],
     );
   });
+  it("a note source under another surface name (live Read mode): still no editor doors", () => {
+    expect(actionsAlreadyHere({ sourceType: "note", surfaceName: "matrx-user/note-preview", isEditable: false }).sort()).toEqual(
+      ["edit", "open-fullscreen-editor", "save-to-notes"],
+    );
+  });
   it("a chat answer keeps every action", () => {
     expect(actionsAlreadyHere({ sourceType: "chat-message", surfaceName: "matrx-user/chat", isEditable: false })).toEqual([]);
   });
