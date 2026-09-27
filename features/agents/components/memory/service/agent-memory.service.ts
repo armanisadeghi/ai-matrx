@@ -48,6 +48,38 @@ function keyFromTitle(title: string): string {
 
 const UNIQUE_VIOLATION = "23505";
 
+/**
+ * The memory's scope target — the SAME rule the agent tool uses
+ * (matrx_ai `_scope_id`): an organization memory is about that organization,
+ * a personal one has none. A null here on an organization memory made it
+ * invisible to the agent's organization-scope recall.
+ */
+function scopeIdFor(scope: CreateAgentMemoryInput["scope"], organizationId: string): string | null {
+  return scope === "organization" ? organizationId : null;
+}
+
+/**
+ * Rows of mine already holding this key in this scope, live or archived.
+ *
+ * A key the person FORGOT (archived) is revived, never shadowed — the same
+ * rule as the agent tool's `memory:store`, so there is one row per key and
+ * the agent's recall-by-key and this list agree. A LIVE memory with the same
+ * key is never overwritten: the new one gets a suffixed key. The check is
+ * explicit because the unique index treats a NULL scope_id as distinct, so a
+ * personal memory's duplicate key would never raise 23505 on its own.
+ */
+async function rowsWithKey(
+  scope: CreateAgentMemoryInput["scope"],
+  scopeId: string | null,
+  key: string,
+): Promise<AgentMemoryRow[]> {
+  let query = memoryTable().select("*").eq("scope", scope).eq("key", key);
+  query = scopeId === null ? query.is("scope_id", null) : query.eq("scope_id", scopeId);
+  const { data, error } = await query.order("updated_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as AgentMemoryRow[];
+}
+
 export async function createAgentMemory(
   userId: string,
   input: CreateAgentMemoryInput,
@@ -57,6 +89,28 @@ export async function createAgentMemory(
   let lastError: unknown = null;
 
   const organizationId = await ensureOrgId(undefined);
+  const scopeId = scopeIdFor(input.scope, organizationId);
+
+  const existing = await rowsWithKey(input.scope, scopeId, baseKey);
+  const liveTaken = existing.some((row) => row.deleted_at === null);
+  const archived = liveTaken ? undefined : existing[0];
+  if (liveTaken) attempt = 1; // never overwrite a live memory — suffix the key
+  if (archived) {
+    const { data, error } = await memoryTable()
+      .update({
+        deleted_at: null,
+        memory_type: DEFAULT_MEMORY_TYPE,
+        content: input.content,
+        importance: input.importance,
+        // CONVERGE: C-7 — see the insert below. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-060
+        metadata: { title: input.title },
+      })
+      .eq("id", archived.id)
+      .select("*")
+      .single();
+    if (error) throw error;
+    return data as AgentMemoryRow;
+  }
 
   while (attempt < 4) {
     const key =
@@ -68,6 +122,7 @@ export async function createAgentMemory(
         created_by: userId,
         organization_id: organizationId,
         scope: input.scope,
+        scope_id: scopeId,
         memory_type: DEFAULT_MEMORY_TYPE,
         key,
         content: input.content,
