@@ -177,7 +177,9 @@ export function EducationPricing({
   const invertedCta = `${CTA} bg-background text-foreground hover:bg-background/90`;
 
   return (
-    <section className="grid gap-6 lg:grid-cols-2">
+    // items-start: each card is its own height — stretching the shorter one
+    // to match only manufactures an empty block (final look, 2026-09-27).
+    <section className="grid items-start gap-6 lg:grid-cols-2">
       {/* Free */}
       <div className="matrx-touch-targets flex flex-col gap-5 rounded-2xl border border-border bg-card p-6 lg:p-8">
         <div className="flex flex-col gap-1">
@@ -235,7 +237,7 @@ export function EducationPricing({
             </li>
           ))}
         </ul>
-        <p className="mt-auto text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           AI generation is also paced over rolling 5-hour windows, so one
           session can&apos;t spend the month.
         </p>
@@ -321,7 +323,7 @@ export function EducationPricing({
           ))}
         </ul>
         {!isAuthenticated && PRELAUNCH_COMPLIMENTARY_PREMIUM ? (
-          <p className="mt-auto text-xs text-background/60">
+          <p className="text-xs text-background/60">
             Every new account gets Premium at no charge until launch. No card
             needed.
           </p>
