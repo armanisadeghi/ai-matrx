@@ -63,7 +63,7 @@ and enqueue retroactive rechecks; old ledger evidence is never relabeled.
 ## S3 · Write targets (write-backs) — `surface-write-targets`
 
 - MUST: every field an agent could sensibly edit on this surface is a declared `writeTarget` with a handler registered (`getWriteHandlers` / `useSurfaceWriteHandlers`); declared-but-unwired fails LOUDLY at apply time — that is a fail here too.
-- MUST: `mode` is `draft` wherever the user saves (preferred), `applyPolicy` `ask` for agent-drivable targets; each target's `description` is the model-facing contract.
+- MUST: the target set follows `surface-write-targets` Step 0 — create/update/delete over lists per record type (`entity`), `<record>_draft` for a "New ___" dialog and `draft` for authored fields; `applyPolicy` `ask`; each target's `description` is the model-facing contract.
 - MUST: the live verification protocol in the skill (ask dialog → Apply lands → "Keep as is" declines → undeclared refused → invalid value throws verbatim → Error Inspector clean).
 - **No browser? `deferred-visual`, not skipped.** Ship the declaration + handler (a declared-but-unwired target fails loudly, so shipping half is worse than shipping none), verify the handler's logic by reading it, and hand over the exact run to perform: which target, what to type, what Apply should change on screen. Never record `pass` for a target no agent has actually applied.
 - Evidence: target names, live-run proof (screenshot or Error Inspector clean line) — or the deferred run description.
