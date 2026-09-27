@@ -70,15 +70,8 @@ const HEADLINE_FREE: ReadonlyArray<{
   { capability: "education.live_grade", period: "day", unit: "live AI gradings" },
 ];
 
-/**
- * PRELAUNCH_COMPLIMENTARY — every new account is provisioned onto Premium at no
- * charge by the signup trigger `zzz_on_auth_user_created_prelaunch_plan`
- * (`billing.seed_prelaunch_complimentary()`, source='complimentary', no Stripe
- * object). A signed-out visitor cannot read that trigger, so the page states it
- * from this constant. Un-flip at launch together with the trigger: grep
- * `PRELAUNCH_COMPLIMENTARY` across both repos.
- */
-export { PRELAUNCH_COMPLIMENTARY_PREMIUM } from "./pricingPolicy";
+// PRELAUNCH_COMPLIMENTARY_PREMIUM lives in ./pricingPolicy.ts — a plain module,
+// because the client card needs it and this loader is server-only.
 
 export async function loadEducationPricing(): Promise<EducationPricing> {
   const supabase = await createClient();

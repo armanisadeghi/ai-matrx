@@ -15,6 +15,18 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D355 — Any signed-in person can grant themselves Premium: `billing.user_plan` is client-writable (2026-09-27)
+
+Measured live 2026-09-27 (read-only): `authenticated` holds INSERT/UPDATE/DELETE on
+`billing.user_plan` (column UPDATE on `tier` included), and the RLS policies `std_insert` /
+`std_update` / `std_delete` admit any row where `user_id = auth.uid()`. The only triggers are
+`_touch_row` and `custom_fields_validation`. `billing.resolve_tier` takes the max of the Stripe
+tier and this grant row, so a browser `update billing.user_plan set tier='premium'` (or an insert
+for a user with no row) is a paid tier for free — and would stay one after the pre-launch grant is
+un-flipped. Fix: the client keeps only `std_select` (own row); grants are written by the signup
+trigger, Stripe webhook and admin paths only — revoke client INSERT/UPDATE/DELETE and drop the three
+write policies. Found by page-pass(/pricing); not fixed there (security DDL, out of scope).
+
 ### D353 — "Use template" (and Generate conductor) inserts an agent with no organization (2026-09-26)
 
 `public.agx_create_agent_from_template(p_template_id uuid)` — called by
