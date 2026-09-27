@@ -108,6 +108,15 @@ describe("how the mode is chosen (A1/A7)", () => {
     });
   });
 
+  it("a mode the person picked before the knobs answered is never snapped back", () => {
+    expect(
+      modeAfterKnobs({ cookieMode: "advanced", rememberKnob: false, defaultModeKnob: "chat", choseThisTab: true }),
+    ).toEqual({ apply: null, clearCookie: true });
+    expect(
+      modeAfterKnobs({ cookieMode: "work", rememberKnob: true, defaultModeKnob: "chat", choseThisTab: true }),
+    ).toEqual({ apply: null, clearCookie: false });
+  });
+
   it("the cookie parser admits only real modes", () => {
     expect(parseComposerModeCookie("work")).toBe("work");
     expect(parseComposerModeCookie("Work")).toBeNull();

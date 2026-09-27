@@ -138,6 +138,17 @@ function isToggleShortcut(e: KeyboardEvent): boolean {
   return (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key === "\\";
 }
 
+/** Like the global canvas sheet: a shortcut never fires while the person is typing. */
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target.isContentEditable ||
+    target.tagName === "INPUT" ||
+    target.tagName === "TEXTAREA" ||
+    target.tagName === "SELECT"
+  );
+}
+
 function readFloatingSize(value: unknown): { width: number; height: number } {
   if (typeof value === "object" && value !== null) {
     const record = value as Record<string, unknown>;
@@ -206,7 +217,7 @@ export function ChatCanvasWorkspace({
   });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!isToggleShortcut(e)) return;
+      if (!isToggleShortcut(e) || isTypingTarget(e.target)) return;
       e.preventDefault();
       onShortcut();
     };

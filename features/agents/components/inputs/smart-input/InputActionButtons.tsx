@@ -199,11 +199,6 @@ export function InputActionButtons({
       ? "h-11 w-11 lg:h-9 lg:w-9 p-0 shrink-0 rounded-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-30 disabled:shadow-none text-white shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_1px_2px_0_rgba(0,0,0,0.25)]"
       : "h-11 w-11 lg:h-9 lg:w-9 p-0 shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90 disabled:opacity-25 disabled:shadow-none shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_1px_2px_0_rgba(0,0,0,0.25)]";
 
-  const charCount = useAppSelector(selectInputCharCount(conversationId));
-  const hasUnsentResources = useAppSelector(
-    selectHasUnsentResources(conversationId),
-  );
-
   const micButton = showMicrophone ? (
     <AgentMicrophoneButton
       conversationId={conversationId}
@@ -284,10 +279,6 @@ export function InputActionButtons({
 
   if (composer) {
     const compact = composer.size === "compact";
-    // Send appears when there is something to send (brief §2): text, an
-    // attachment not yet sent, or a form of variables to submit.
-    const hasSendable =
-      charCount > 0 || hasUnsentResources || shouldShowVariables;
     const plusMenu = (
       <RunControlsMenu
         conversationId={conversationId}
@@ -327,7 +318,12 @@ export function InputActionButtons({
           {compact ? null : micButton}
           {compact ? null : voice}
           {stopButton}
-          {hasSendable || isExecuting ? sendButton : null}
+          <ComposerSendSlot
+            conversationId={conversationId}
+            always={isExecuting || shouldShowVariables}
+          >
+            {sendButton}
+          </ComposerSendSlot>
         </div>
       </div>
     );
@@ -416,4 +412,27 @@ export function InputActionButtons({
       </div>
     </div>
   );
+}
+
+/**
+ * Send appears when there is something to send (brief §2): text, an
+ * attachment not yet sent, or a form of variables (`always`). Its own
+ * component so ONLY the composer arrangement subscribes to the draft — the
+ * classic toolbar must not re-render on every keystroke.
+ */
+function ComposerSendSlot({
+  conversationId,
+  always,
+  children,
+}: {
+  conversationId: string;
+  always: boolean;
+  children: React.ReactNode;
+}) {
+  const charCount = useAppSelector(selectInputCharCount(conversationId));
+  const hasUnsentResources = useAppSelector(
+    selectHasUnsentResources(conversationId),
+  );
+  if (!always && charCount === 0 && !hasUnsentResources) return null;
+  return <>{children}</>;
 }

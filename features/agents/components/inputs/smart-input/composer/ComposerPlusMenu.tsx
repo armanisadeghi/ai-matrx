@@ -62,6 +62,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
+  clearMemoryToggleRequest,
   requestMemoryToggle,
   setBuilderAdvancedSettings,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
@@ -300,7 +301,12 @@ export function ComposerPlusMenu({
               : undefined
           }
           checked={memoryOn}
-          onClick={() => dispatch(requestMemoryToggle({ conversationId, enabled: !memoryOn }))}
+          onClick={() => {
+            const next = !memoryOn;
+            // Back to what the conversation already has = nothing to send.
+            if (next === memoryEnabled) dispatch(clearMemoryToggleRequest({ conversationId }));
+            else dispatch(requestMemoryToggle({ conversationId, enabled: next }));
+          }}
         />
         {shows("plus.documents") ? (
           <>

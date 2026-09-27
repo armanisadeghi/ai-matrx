@@ -31,6 +31,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
+  clearMemoryToggleRequest,
   requestMemoryToggle,
   setMemoryScope,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
@@ -74,9 +75,14 @@ export function MemoryControls({
 
   const handleToggle = useCallback(
     (enabled: boolean) => {
-      dispatch(requestMemoryToggle({ conversationId, enabled }));
+      // Back to what the conversation already has = nothing to send.
+      if (enabled === isPersistedEnabled) {
+        dispatch(clearMemoryToggleRequest({ conversationId }));
+      } else {
+        dispatch(requestMemoryToggle({ conversationId, enabled }));
+      }
     },
-    [dispatch],
+    [dispatch, conversationId, isPersistedEnabled],
   );
 
   const handleScopeChange = useCallback(

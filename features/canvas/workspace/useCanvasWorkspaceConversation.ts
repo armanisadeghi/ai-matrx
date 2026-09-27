@@ -45,7 +45,7 @@ export type CanvasWorkspaceConversation =
   | { state: "failed"; purpose: "new" | "open"; reason: string; retry: () => void };
 
 type Request =
-  | { kind: "new"; nonce: number }
+  | { kind: "new"; nonce: number; mandateKey?: AnyMandateKey }
   | { kind: "agent"; agentId: string; nonce: number }
   | { kind: "open"; conversationId: string; nonce: number };
 
@@ -88,7 +88,7 @@ export function useCanvasWorkspaceConversation(surfaceKey: string): CanvasWorksp
       const launch =
         request.kind === "agent"
           ? launchAgent(request.agentId, { surfaceKey, sourceFeature: "chat" })
-          : launchMandate(DEFAULT_NEW_CHAT_MANDATE_KEY, {
+          : launchMandate(request.mandateKey ?? DEFAULT_NEW_CHAT_MANDATE_KEY, {
               surfaceKey,
               // A REGISTERED feature, never a new string: this surface IS the chat.
               sourceFeature: "chat",
@@ -128,7 +128,7 @@ export function useCanvasWorkspaceConversation(surfaceKey: string): CanvasWorksp
     setFailure(null);
     setRequest((current) =>
       via?.mandateKey
-        ? { kind: "new", nonce: current.nonce + 1 }
+        ? { kind: "new", nonce: current.nonce + 1, mandateKey: via.mandateKey }
         : { kind: "agent", agentId, nonce: current.nonce + 1 },
     );
   };

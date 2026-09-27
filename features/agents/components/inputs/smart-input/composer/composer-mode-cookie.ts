@@ -52,15 +52,21 @@ export const COMPOSER_KNOBS = {
  * remembering + a cookie → keep the cookie's mode (apply nothing);
  * remembering + no cookie → the default-mode knob;
  * not remembering → the default-mode knob, and the cookie is cleared.
+ * A choice the person made in this tab before the knobs answered stands (the
+ * cookie is still cleared when not remembering).
  * A default the register does not recognise falls back to Chat.
  */
 export function modeAfterKnobs(args: {
   cookieMode: ComposerMode | null;
   rememberKnob: unknown;
   defaultModeKnob: unknown;
+  /** The person already picked a mode in this tab before the knobs answered. */
+  choseThisTab?: boolean;
 }): { apply: ComposerMode | null; clearCookie: boolean } {
   const remember = args.rememberKnob !== false;
   const knobDefault: ComposerMode = isComposerMode(args.defaultModeKnob) ? args.defaultModeKnob : "chat";
+  // An explicit choice is never snapped back; only the cookie follows the setting.
+  if (args.choseThisTab) return { apply: null, clearCookie: !remember };
   if (!remember) return { apply: knobDefault, clearCookie: true };
   if (!args.cookieMode) return { apply: knobDefault, clearCookie: false };
   return { apply: null, clearCookie: false };

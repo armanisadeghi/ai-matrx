@@ -40,6 +40,8 @@ import type { ComposerMode } from "./composer-types";
  * person has already chosen one in this tab.
  */
 let knobsAppliedThisTab = false;
+/** The person picked a mode in this tab (an explicit choice is never undone by the knobs). */
+let choseModeThisTab = false;
 
 export interface UseComposerModeResult {
   mode: ComposerMode;
@@ -71,13 +73,17 @@ export function useComposerMode(initialMode?: ComposerMode | null): UseComposerM
       cookieMode: readComposerModeCookieClient(),
       rememberKnob,
       defaultModeKnob,
+      choseThisTab: choseModeThisTab,
     });
     if (decision.clearCookie) clearComposerModeCookie();
     if (decision.apply) dispatch(setComposerMode(decision.apply));
   }, [defaultModeKnob, rememberKnob, dispatch]);
 
   const setMode = (next: ComposerMode) => {
+    choseModeThisTab = true;
     dispatch(setComposerMode(next));
+    // Before the knobs answer the cookie is written; if "remember last mode"
+    // turns out to be off, the knob pass clears it (modeAfterKnobs).
     if (rememberKnob !== false) writeComposerModeCookie(next);
   };
 
