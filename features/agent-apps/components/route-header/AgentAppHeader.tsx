@@ -20,7 +20,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
 import { setAgentAppPublication } from "@/features/agents/redux/agent-apps/thunks";
 import { useOpenAgentRunHistoryWindow } from "@/features/overlays/openers/agentRunHistoryWindow";
-import { toast } from "@/lib/toast-service";
+import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { AppStatus, AppVisibility } from "@/features/agent-apps/types";
 
 export type AgentAppHeaderTab =
@@ -90,6 +91,24 @@ export function AgentAppHeader({
     primary: !isPublished,
     disabled: publicationBusy,
     onPress: async () => {
+      // A publication change reaches strangers, so the click says what it
+      // will do before it happens (the destructive-click rule).
+      const publicUrl = app?.slug ? `aimatrx.com/p/${app.slug}` : "its public link";
+      const ok = await confirm(
+        isPublished
+          ? {
+              title: `Unpublish ${appName}?`,
+              description: `${publicUrl} stops working for everyone who has it. You can publish it again later.`,
+              confirmLabel: "Unpublish",
+              variant: "destructive",
+            }
+          : {
+              title: `Publish ${appName}?`,
+              description: `Anyone with the link can open and run it at ${publicUrl}, without signing in.`,
+              confirmLabel: "Publish",
+            },
+      );
+      if (!ok) return;
       setPublicationBusy(true);
       try {
         await dispatch(

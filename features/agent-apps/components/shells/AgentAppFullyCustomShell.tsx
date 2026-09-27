@@ -24,6 +24,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { AlertCircle } from "lucide-react";
 import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
+import { APP_RUN_ERROR_TITLE } from "@/features/agent-apps/components/app-run-error";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { useApiAuth } from "@/hooks/useApiAuth";
 import { useGuestLimit } from "@/hooks/useGuestLimit";
@@ -247,7 +248,9 @@ export function AgentAppFullyCustomShell({
     streamEvents: [],
     isStreaming: ctx.isStreaming,
     isExecuting: ctx.isExecuting,
-    error: error ? { type: "execution_error", message: error } : null,
+    // `type` is rendered as the error's HEADING by every template and sample
+    // app (`{error.type}`), so it is a sentence a person reads, never a code.
+    error: error ? { type: APP_RUN_ERROR_TITLE, message: error } : null,
     rateLimitInfo: !isAuthenticated
       ? { remaining: guestLimit.remaining, total: 5 }
       : null,

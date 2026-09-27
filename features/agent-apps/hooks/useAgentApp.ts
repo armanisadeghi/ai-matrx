@@ -29,6 +29,9 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+/** How long a submit pressed during load waits for the app before it says so. */
+const SUBMIT_READY_WAIT_MS = 30_000;
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
@@ -699,15 +702,39 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
 
   // ── Submit ────────────────────────────────────────────────────────────
 
+  // A submit pressed while the app is still loading is HELD, not refused:
+  // the person has just typed their input (often right after choosing a
+  // workspace, which re-resolves the agent), and "still loading — try again"
+  // threw that input away. The submit waits, bounded, on the live values.
+  const readinessRef = useRef({ isReady, conversationId, payloadRefusal, holderError: holder.error });
+  useEffect(() => {
+    readinessRef.current = { isReady, conversationId, payloadRefusal, holderError: holder.error };
+  }, [isReady, conversationId, payloadRefusal, holder.error]);
+
   const submit = useCallback(
     async (submitArgs?: SubmitArgs) => {
+      const deadline = Date.now() + SUBMIT_READY_WAIT_MS;
+      while (
+        !readinessRef.current.payloadRefusal &&
+        // A holder that REFUSED (no runnable agent) will not become ready by
+        // waiting — say so now.
+        !readinessRef.current.holderError &&
+        !(readinessRef.current.isReady && readinessRef.current.conversationId) &&
+        Date.now() < deadline
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+      const live = readinessRef.current;
       // Refuse loudly rather than return: every shell shows a thrown submit
       // as its run error, and a silent return read as "clicked, nothing".
-      if (payloadRefusal) throw new Error(payloadRefusal);
-      if (!isReady) {
-        throw new Error("This app is still loading — try again in a moment.");
+      if (live.payloadRefusal) throw new Error(live.payloadRefusal);
+      if (!live.isReady || !live.conversationId) {
+        throw new Error(
+          live.holderError ??
+            "This app did not finish loading. Reload the page and try again.",
+        );
       }
-      if (!conversationId) return;
+      const conversationId = live.conversationId;
       const submittedVariables = {
         ...(variables as Record<string, unknown>),
         ...(submitArgs?.variables ?? {}),
@@ -743,15 +770,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       }
       await dispatch(smartExecute({ conversationId, surfaceKey }));
     },
-    [
-      conversationId,
-      dispatch,
-      isReady,
-      payloadRefusal,
-      surfaceKey,
-      text,
-      variables,
-    ],
+    [dispatch, surfaceKey, text, variables],
   );
 
   const loadConversationCb = useCallback(

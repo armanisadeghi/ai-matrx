@@ -36,6 +36,8 @@ import { useRetainRequestForViewer } from "@/features/agents/redux/execution-sys
 import { useWarmAgent } from "@/features/agents/hooks/useWarmAgent";
 import { useAppHolder } from "@/features/agent-apps/lib/appHolder";
 import { AppWorkspaceGate } from "./AppWorkspaceGate";
+import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { APP_RUN_ERROR_TITLE } from "./app-run-error";
 import { SHELL_REGISTRY } from "./shells";
 import { AgentAppFullyCustomShell } from "./shells/AgentAppFullyCustomShell";
 import { useAgentAppTracker } from "../tracking/useAgentAppTracker";
@@ -85,6 +87,19 @@ interface AgentAppPublicRendererProps {
 }
 
 export function AgentAppPublicRenderer(props: AgentAppPublicRendererProps) {
+  // The app's job is a fixed mandate this page runs, so it is listed once in
+  // the top Agents menu (disclosure law) — no visible page content added.
+  const holder = useAppHolder(props.app);
+  useDeclaredSurfaceMandates(
+    holder.mandateKey
+      ? [
+          {
+            mandateKey: holder.mandateKey,
+            does: `Runs ${props.app.name?.trim() || "this app"}`,
+          },
+        ]
+      : [],
+  );
   return (
     <AppWorkspaceGate app={props.app}>
       <AgentAppShellDispatch {...props} />
@@ -259,7 +274,7 @@ function CustomComponentRenderer({
   const requestError =
     requestStatus === "error"
       ? {
-          type: "stream_error",
+          type: APP_RUN_ERROR_TITLE,
           message:
             (request as unknown as { errorMessage?: string })?.errorMessage ??
             "Agent execution failed",
@@ -389,7 +404,7 @@ function CustomComponentRenderer({
 
         if (validationErrors.length > 0) {
           setLocalError({
-            type: "execution_error",
+            type: APP_RUN_ERROR_TITLE,
             message: validationErrors.join("; "),
           });
           return;
@@ -397,7 +412,7 @@ function CustomComponentRenderer({
 
         if (!isAuthenticated && !guestLimit.allowed) {
           setLocalError({
-            type: "execution_error",
+            type: APP_RUN_ERROR_TITLE,
             message:
               "You have reached the maximum number of free executions. Please sign up to continue.",
           });
@@ -417,7 +432,7 @@ function CustomComponentRenderer({
           // No tracker call: we refuse BEFORE `startRun`, so there is no run
           // row to fail — inventing one would put a phantom execution in the
           // app's analytics.
-          setLocalError({ type: "execution_error", message: msg });
+          setLocalError({ type: APP_RUN_ERROR_TITLE, message: msg });
           setIsExecuting(false);
           return;
         }
@@ -521,7 +536,7 @@ function CustomComponentRenderer({
           // from outright errors.
         } else {
           const errMsg = e?.message || "Execution failed";
-          setLocalError({ type: "execution_error", message: errMsg });
+          setLocalError({ type: APP_RUN_ERROR_TITLE, message: errMsg });
           runTracker?.error({
             errorType: "execution_error",
             errorMessage: errMsg,
