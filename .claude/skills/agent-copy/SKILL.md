@@ -13,7 +13,7 @@ agent reading that context directly and acting on the page.
 
 Source + full docs: [`components/agent-copy/README.md`](../../../components/agent-copy/README.md).
 **Sibling skill (doctrine twin):** aidream
-`/Users/armanisadeghi/code/aidream/.claude/skills/copy-for-ai/SKILL.md` — its
+`../aidream/.claude/skills/copy-for-ai/SKILL.md` — its
 cx-explorer implementation is the platform's best-of-breed reference; keep the
 two skills and the two `AiCopyMenu`s in step.
 

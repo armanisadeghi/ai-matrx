@@ -48,7 +48,7 @@ someone fixes it.
    amputated by one missed class.
 3. **Title/description block in a dashboard page** — marketing copy inside app chrome. **Delete it**; the header center carries a `text-sm` title at most.
 4. **Missing top clearance for floating/static content** — content that must NOT slide behind the glass (grid of cards with action buttons, sticky toolbars) needs `pt-[var(--shell-header-h)]` (never a hardcoded `pt-12`); freely-scrolling content gets **no** top padding so it floats behind the glass. This is the `/agents/all` mobile bug: card buttons float up into the header.
-5. **Desktop actions vanish on mobile** — `hidden lg:flex` with no mobile counterpart. The rule: desktop actions collapse into one or two **bottom sheets** on mobile (`HeaderActions` in `components/header-variants/` renders `BottomSheet` below `lg`; or `BottomSheet` from `@ai-matrx/design-system` directly). `features/agents/components/shared/AgentHeaderMobile.tsx` exists but is commented out in `AgentHeader.tsx` — that class of gap.
+5. **Desktop actions vanish on mobile** — `hidden lg:flex` with no mobile counterpart. The rule: desktop actions collapse into one or two **bottom sheets** on mobile (`HeaderActions` in `features/shell/components/header/variants/shared/` renders `BottomSheet` below `lg`; or `BottomSheet` from `@ai-matrx/design-system` directly). `features/agents/components/shared/AgentHeaderMobile.tsx` exists but is commented out in `AgentHeader.tsx` — that class of gap.
 6. **Double menus** — a page-level nav next to the sidebar. Large routes register ONE menu in `features/shell/constants/route-menu-registry.ts` (desktop `RouteMenuSlot` + `MobileRouteMenuSlot` come free).
 7. **Avatar collision** — `ml-auto` / `justify-between` actions in the body drifting behind the fixed avatar (the old `pr-14` hack). Fixed automatically by moving actions into the bounded center zone.
 
@@ -78,7 +78,7 @@ Sibling routes sharing one header (e.g. `/cms` + `/cms/html-pages`) get ONE shar
 ## Fix recipe by route archetype
 
 - **List/gallery page** → copy `/agents/all`: `PageHeader` with a small injected header (search / filters / New), body `h-full overflow-hidden`, scroll container inside, floating grid content gets `pt-[var(--shell-header-h)]` if it has interactive elements at the top.
-- **Detail/editor `[id]` page** → copy `/agents/[id]/build`: `ChevronLeftTapButton` back (from `components/icons/tap-buttons.tsx`), entity **dropdown** (not a static title) for `[id]` routes, actions right. No title/description prose.
+- **Detail/editor `[id]` page** → copy `/agents/[id]/build`: `ChevronLeftTapButton` back (from `@ai-matrx/tap-target/buttons`), entity **dropdown** (not a static title) for `[id]` routes, actions right. No title/description prose.
 - **Sub-mode family** (build/run/templates…) → `RouteModeNav` (`features/shell/components/header/RouteModeNav.tsx`) — measurement-driven full → icons → menu collapse. It is the ONE control for mode switching; never pair it with a second selector. **Give every item an `icon`** — the icon-only stage is skipped entirely when even one lacks it, so the nav jumps straight from full text to a dropdown.
 - **Drill-down hierarchy** (org → type → item…) → `ScopesRouteHeader` pattern: one layout-level breadcrumb header, pathname-gated, per-level sibling dropdowns, mobile drawer.
 - **Actions overflow** → `HeaderStructured` / `HeaderActions` (see USAGE.md variants) — inline on `lg+`, glass dropdown for overflow, `BottomSheet` on mobile.

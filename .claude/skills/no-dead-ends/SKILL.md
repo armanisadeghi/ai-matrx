@@ -5,7 +5,7 @@ description: "Recipe for THE DOOR LAW (every record the UI names opens; every de
 
 # no-dead-ends — every identity is a door, every capability is on the table
 
-**Read the doctrine first:** `/Users/armanisadeghi/code/common-docs/policies/no-dead-ends.md`.
+**Read the doctrine first:** `../common-docs/policies/no-dead-ends.md`.
 It is canonical and cross-repo. This skill is the *frontend mechanics*: which
 primitive to reach for, how to wire it, and how to prove it. **Out of scope:**
 page-level chrome (use the `core-route-headers` skill) and choosing WHAT data a

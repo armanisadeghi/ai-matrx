@@ -32,7 +32,7 @@ The matrx-admin file system has one registry (`FILE_TYPES`), one preview dispatc
 | 8. Creation | "New <type>" entry, templates, virtual-source provisioning | Future work |
 | 9. Bundle/Ops | dynamic-import declaration, bundle weight, codec caveats | `FilePreview.tsx`, this doc |
 
-Full slot list (numbered 1–55) lives in `/Users/armanisadeghi/code/common-docs/systems/media/file-service/FILE_SURFACES.md` → **Part 1 — Capability framework**. Read that section before scoping any non-trivial change.
+Full slot list (numbered 1–55) lives in `../common-docs/systems/media/file-service/FILE_SURFACES.md` → **Part 1 — Capability framework**. Read that section before scoping any non-trivial change.
 
 ## Workflow
 
@@ -65,7 +65,7 @@ If unsure which slot a request maps to, scan Part 1 of the inventory.
 
 ### Step 2 — Read the inventory entry
 
-Open `/Users/armanisadeghi/code/common-docs/systems/media/file-service/FILE_SURFACES.md` and read:
+Open `../common-docs/systems/media/file-service/FILE_SURFACES.md` and read:
 
 1. **Part 2's wishlist** for the type you're touching (Image / PDF / HTML / Markdown / Video / Code — these have full per-type wishlists today). If your type doesn't have a Part 2 entry yet, find it in Part 3's matrix.
 2. **Part 1** to confirm which slot # you're filling.
@@ -144,7 +144,7 @@ NODE_OPTIONS="--max-old-space-size=8192" pnpm tsc --noEmit
 
 ### Step 7 — Update the inventory
 
-Open `/Users/armanisadeghi/code/common-docs/systems/media/file-service/FILE_SURFACES.md` and update:
+Open `../common-docs/systems/media/file-service/FILE_SURFACES.md` and update:
 
 1. **Part 3 (matrix)** — change the ✅/🟡/🔴/🐛 marker in the relevant row + update the Notes column
 2. **Part 2 (wishlist)** — if you completed a wishlist item, either strike it through (`~~item~~ ✅ **Shipped.** …`) or remove it. Add any newly-discovered follow-up items.
@@ -198,7 +198,7 @@ Previewers are dynamically imported (`next/dynamic`). Heavy deps (PDF.js, SheetJ
 
 ## Additional resources
 
-- **Inventory + framework + wishlists:** `/Users/armanisadeghi/code/common-docs/systems/media/file-service/FILE_SURFACES.md`
+- **Inventory + framework + wishlists:** `../common-docs/systems/media/file-service/FILE_SURFACES.md`
 - **Files feature doc:** `features/files/FEATURE.md`
 - **File handler skill:** `features/files/handler/FEATURE.md` (for upload / asset URL questions — different concern)
 - **Print system skill:** `.claude/skills/block-print-system/SKILL.md` (for slot #43 — print)
