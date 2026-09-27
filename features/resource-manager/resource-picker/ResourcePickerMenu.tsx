@@ -41,6 +41,7 @@ import {
 import { useRunControlCounts } from "./useRunControlCounts";
 import type { Resource } from "@/features/agents/resources/types";
 import { useOpenKnowledgeCommandBar } from "@/features/overlays/openers/knowledgeCommandBar";
+import { useOpenResourcePickerWindow } from "@/features/overlays/openers/resourcePickerWindow";
 import { useKnowledgeAttachTarget } from "@/features/knowledge/command-bar/useKnowledgeAttachTarget";
 import type { KnowledgeCommand } from "@/features/knowledge/command-bar/commands";
 import type { LucideIcon } from "lucide-react";
@@ -107,9 +108,11 @@ interface ResourcePickerMenuProps {
   /** Open straight into one view (a host re-opening the picker at a command). */
   initialView?: ResourcePickerViewId;
   /**
-   * The host can re-open this picker at a view after it closed. When given,
-   * the picker's non-search views (Upload, URL entry, Voice, Tools…) appear as
-   * commands in the ⌘K bar its search row opens.
+   * The host can re-open its own picker at a view after it closed. The
+   * picker's non-search views (Upload, URL entry, Voice, Tools…) are ALWAYS
+   * commands in the ⌘K bar its search row opens: with this, they re-open the
+   * host's picker there; without it, they open the same picker in a window at
+   * that view, wired to this host's own handlers.
    */
   onReopenAt?: (view: Exclude<ResourcePickerViewId, null>) => void;
   /**
@@ -169,6 +172,7 @@ export function ResourcePickerMenu({
   // The search step hands off to ⌘K: one search over everything, with
   // "Attach to this chat" as the primary action for this composer.
   const openKnowledgeBar = useOpenKnowledgeCommandBar();
+  const openPickerWindow = useOpenResourcePickerWindow();
   const knowledgeAttach = useKnowledgeAttachTarget({
     conversationId,
     onResourceSelected,
@@ -179,18 +183,28 @@ export function ResourcePickerMenu({
     },
   });
   const openKnowledgeSearch = () => {
-    const commands: KnowledgeCommand[] = onReopenAt
-      ? menuItems
-          .filter((item) => COMMAND_VIEW_IDS.has(item.id) && visibleViewIds.has(item.id))
-          .map((item) => ({
-            id: `picker:${item.id}`,
-            label: item.id === "files" ? "Upload or browse files" : item.label,
-            group: "Attach",
-            icon: item.icon as LucideIcon,
-            keywords: ["attach", "add", item.id],
-            run: () => onReopenAt(item.id),
-          }))
-      : [];
+    const reopenAt = (view: Exclude<ResourcePickerViewId, null>) =>
+      onReopenAt
+        ? onReopenAt(view)
+        : openPickerWindow({
+            initialView: view,
+            onResourceSelected,
+            onResourceDeselected,
+            conversationId,
+            attachmentCapabilities,
+            allowedViewIds,
+            selectionMode,
+          });
+    const commands: KnowledgeCommand[] = menuItems
+      .filter((item) => COMMAND_VIEW_IDS.has(item.id) && visibleViewIds.has(item.id))
+      .map((item) => ({
+        id: `picker:${item.id}`,
+        label: item.id === "files" ? "Upload or browse files" : item.label,
+        group: "Attach",
+        icon: item.icon as LucideIcon,
+        keywords: ["attach", "add", item.id],
+        run: () => reopenAt(item.id),
+      }));
     onClose();
     openKnowledgeBar({
       primaryAction: "attach",

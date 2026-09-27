@@ -33,6 +33,11 @@ jest.mock("@/features/overlays/openers/knowledgeCommandBar", () => ({
   useOpenKnowledgeCommandBar: () => openBar,
 }));
 
+const openPickerWindow = jest.fn();
+jest.mock("@/features/overlays/openers/resourcePickerWindow", () => ({
+  useOpenResourcePickerWindow: () => openPickerWindow,
+}));
+
 const note = { id: "note-1", label: "Grant budget assumptions", content: "…" };
 jest.mock("@/features/notes/service/notesService", () => ({
   fetchNoteById: jest.fn(async () => note),
@@ -105,6 +110,37 @@ it("opens the ⌘K bar with attach-here as the primary action and the picker's o
   expect(onResourceSelected).toHaveBeenCalledWith({ type: "note", data: note });
 });
 
+it("every host keeps Upload / URL / Voice / Tools as commands wired to ITS OWN handlers", () => {
+  const onResourceSelected = jest.fn();
+  const onResourceDeselected = jest.fn();
+  act(() => {
+    root.render(
+      <ResourcePickerMenu
+        onResourceSelected={onResourceSelected}
+        onResourceDeselected={onResourceDeselected}
+        onClose={jest.fn()}
+        conversationId="conv-1"
+        attachmentCapabilities={{ supportsAudio: true, supportsYoutubeVideos: true }}
+      />,
+    );
+  });
+  clickSearchRow();
+  const opts = openBar.mock.calls[0][0] as OpenKnowledgeCommandBarOptions;
+  const labels = (opts.commands ?? []).map((c) => c.label);
+  for (const label of ["Upload or browse files", "Webpage", "YouTube", "Voice Pad", "Tools"]) {
+    expect(labels).toContain(label);
+  }
+  opts.commands!.find((c) => c.label === "Voice Pad")!.run();
+  expect(openPickerWindow).toHaveBeenCalledWith(
+    expect.objectContaining({
+      initialView: "audio",
+      onResourceSelected,
+      onResourceDeselected,
+      conversationId: "conv-1",
+    }),
+  );
+});
+
 it("does not offer kinds the host cannot take", () => {
   act(() => {
     root.render(
@@ -119,6 +155,6 @@ it("does not offer kinds the host cannot take", () => {
   const opts = openBar.mock.calls[0][0] as OpenKnowledgeCommandBarOptions;
   expect(opts.attach!.accepts({ entity: "note", id: "n", title: "x" })).toBe(false);
   expect(opts.attach!.accepts({ entity: "file", id: "f", title: "x.pdf" })).toBe(true);
-  // No host to re-open at → no picker commands in the bar (never a dead row).
-  expect(opts.commands).toEqual([]);
+  // Only the kinds this host takes become commands.
+  expect((opts.commands ?? []).map((c) => c.label)).toEqual(["Upload or browse files"]);
 });
