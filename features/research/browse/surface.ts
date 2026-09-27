@@ -10,6 +10,7 @@ import type {
   EntityListSurfaceController,
 } from "@/lib/entity-list/components/EntityListPage";
 import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
+import { makeScope } from "@/lib/list-scope/types";
 import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
 import {
   RESEARCH_TOPICS_SURFACE_NAME,
@@ -25,6 +26,7 @@ import {
   parseCreateTopics,
   parseDeleteTopics,
   parseUpdateTopics,
+  parseListView,
   type CreatePlan,
   type UpdatePlan,
 } from "./topicAgentWrites";
@@ -144,7 +146,32 @@ export function createResearchTopicsWriteHandlers(list: List) {
     },
     refuseSurfaceWrite,
   );
-  return handlers;
+  return {
+    ...handlers,
+    // UI state only: which topics the list shows (no record changes).
+    list_view: {
+      validate: (value: unknown) => {
+        parseListView(value);
+      },
+      apply: (value: unknown) => {
+        const plan = parseListView(value);
+        list.patchQuery({
+          ...(plan.scope ? { scope: makeScope(plan.scope) } : {}),
+          ...(plan.archived ? { archived: plan.archived } : {}),
+          ...(plan.search !== undefined ? { search: plan.search } : {}),
+        });
+        return {
+          summary: `The list now shows ${[
+            plan.scope ? `scope ${plan.scope}` : "",
+            plan.archived ? `${plan.archived} topics` : "",
+            plan.search !== undefined ? `search "${plan.search}"` : "",
+          ]
+            .filter(Boolean)
+            .join(", ")}. Read topic_list again once it has loaded.`,
+        };
+      },
+    },
+  };
 }
 
 export const RESEARCH_TOPICS_SURFACE: EntityListSurface<ResearchTopicListRow> = {

@@ -180,6 +180,18 @@ const TOPIC_FIELDS =
 
 const writeTargets: SurfaceWriteTarget[] = [
   {
+    name: "list_view",
+    label: "List view",
+    description:
+      'Changes WHICH topics the list shows — nothing is saved or changed on any topic. Value is a JSON OBJECT with any of { scope?: "mine" | "orgs", archived?: "active" | "archived" | "all", search?: string (matches names and research questions; "" clears it) }, e.g. { "archived": "all" }. update_topics and delete_topics act only on topics on screen, so switch the view first to reach an archived topic (archived: "archived" or "all") or one outside the current scope. Read topic_list again after it applies.',
+    valueType: "object",
+    updatesValue: "list_archived",
+    mode: "ui",
+    applyPolicy: "auto",
+    group: "list_query",
+    sortOrder: 90,
+  },
+  {
     name: "create_topics",
     label: "Create topics",
     description: `Creates one or more research topics, saved immediately, exactly as the New topic page does. Value is a JSON ARRAY (not a string) of 1-10 objects, each { ${TOPIC_FIELDS} }, e.g. [{ "name": "EV battery recycling", "description": "Which EV battery recycling methods are commercially viable in the US in 2026?" }]. The topic lands in the person's active organization (they are asked to choose one if none is active). Creating a topic does NOT start any research — no search, reading or analysis runs, nothing is spent; the person starts it on the topic's page. Every entry is checked first: a missing name, an unknown autonomy_level or a repeated name refuses the whole list with nothing created. Returns the new topics' ids.`,
@@ -193,7 +205,7 @@ const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "update_topics",
     label: "Update topics",
-    description: `Changes one or more topics by id, saved immediately. Value is a JSON ARRAY (not a string) of 1-25 objects, each { id: string (from topics / topic_list), name?, description?, autonomy_level?, archived?: boolean } with the fields read as in create_topics. Only the fields you send change. description REPLACES the whole research question; send "" to clear it. name may not be empty. archived: true archives the topic (same as delete_topics); archived: false RESTORES an archived one (it must be on screen — the list shows archived topics when list_archived is "archived" or "all"). An unknown or repeated id, or no field to change, refuses the whole list with nothing changed. Changing a topic never starts or re-runs research.`,
+    description: `Changes one or more topics by id, saved immediately. Value is a JSON ARRAY (not a string) of 1-25 objects, each { id: string (from topics / topic_list), name?, description?, autonomy_level?, archived?: boolean } with the fields read as in create_topics. Only the fields you send change. description REPLACES the whole research question; send "" to clear it. name may not be empty. archived: true archives the topic (same as delete_topics); archived: false RESTORES an archived one (it must be on screen — switch with list_view { "archived": "archived" } or "all" first). An unknown or repeated id, or no field to change, refuses the whole list with nothing changed. Changing a topic never starts or re-runs research.`,
     valueType: "array",
     updatesValue: "topics",
     mode: "entity",
@@ -229,7 +241,7 @@ export const researchTopicsManifest: SurfaceManifest = {
   intro: `<surface_intro>
 You are on the Research topics list at /research/topics. A research topic is a question worth answering; opening one (/research/topics/<id>) runs search -> read -> analyze -> report on it. topic_list is the page on screen (condensed, in the person's order); topics has the same rows with every field; total_count, list_scope, search_query, active_filters and sort say what the list is showing.
 
-Changes go through three targets, each a JSON array the person approves once:
+Switch what the list shows with list_view (scope, archived, search) — it changes nothing on any topic. Changes go through three targets, each a JSON array the person approves once:
 - create_topics — start new topics (name + the research question as description). Creating never starts research or spends anything.
 - update_topics — rename, rewrite the research question, change autonomy, or archive / restore, by id.
 - delete_topics — archive topics by id (nothing is destroyed); update_topics with archived: false restores one.

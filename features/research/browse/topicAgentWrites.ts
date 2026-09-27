@@ -133,3 +133,41 @@ export function parseDeleteTopics(value: unknown, rows: ResearchTopicListRow[]):
   refuseRepeats(target, ids, "id");
   return ids.map((id) => known(target, rows, id));
 }
+
+export interface ListViewPlan {
+  scope?: "mine" | "orgs";
+  archived?: "active" | "archived" | "all";
+  search?: string;
+}
+
+/**
+ * `list_view`: which topics the list shows. The agent needs it to reach an
+ * archived topic (to restore it) or to find one on another scope; the write
+ * targets only act on topics on screen. Live 2026-09-27: an agent restored a
+ * topic from the Archived view, then could not archive it again because it had
+ * left that view and nothing let the agent switch.
+ */
+export function parseListView(value: unknown): ListViewPlan {
+  const target = "list_view";
+  if (value === null || typeof value !== "object" || Array.isArray(value))
+    throw new Error(`${target} expects an OBJECT like { "archived": "all" }.`);
+  const obj = value as Record<string, unknown>;
+  const plan: ListViewPlan = {};
+  if (obj.scope !== undefined) {
+    if (obj.scope !== "mine" && obj.scope !== "orgs")
+      throw new Error(`${target}: scope must be "mine" or "orgs".`);
+    plan.scope = obj.scope;
+  }
+  if (obj.archived !== undefined) {
+    if (obj.archived !== "active" && obj.archived !== "archived" && obj.archived !== "all")
+      throw new Error(`${target}: archived must be "active", "archived" or "all".`);
+    plan.archived = obj.archived;
+  }
+  if (obj.search !== undefined) {
+    if (typeof obj.search !== "string") throw new Error(`${target}: search must be a string.`);
+    plan.search = obj.search;
+  }
+  if (Object.keys(plan).length === 0)
+    throw new Error(`${target} changes nothing — send scope, archived or search.`);
+  return plan;
+}

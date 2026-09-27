@@ -111,3 +111,17 @@ describe("delete_topics", () => {
     expect(() => parseDeleteTopics(["t-9"], ROWS)).toThrow(/no topic with id/);
   });
 });
+
+describe("list_view", () => {
+  it("reads scope, archive view and search", () => {
+    const { parseListView } = jest.requireActual("../topicAgentWrites") as typeof import("../topicAgentWrites");
+    expect(parseListView({ archived: "all", scope: "mine", search: "heat pump" })).toEqual({
+      archived: "all",
+      scope: "mine",
+      search: "heat pump",
+    });
+    expect(() => parseListView({ archived: "deleted" })).toThrow(/"active", "archived" or "all"/);
+    expect(() => parseListView({})).toThrow(/changes nothing/);
+    expect(() => parseListView(["all"])).toThrow(/OBJECT/);
+  });
+});
