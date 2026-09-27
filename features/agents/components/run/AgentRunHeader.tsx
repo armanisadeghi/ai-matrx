@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AgentSelectorIsland } from "../shared/AgentSelectorIsland";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { AgentNewRunButton } from "../shared/AgentNewRunButton";
+import { AgentHeaderMobile } from "../shared/AgentHeaderMobile";
 
 interface AgentRunHeaderProps {
   agentId: string;
@@ -25,6 +26,18 @@ export function AgentRunHeader({
   currentPath,
 }: AgentRunHeaderProps) {
   return (
+    <>
+    {/* Below lg: the agent family's phone header — the agent's name keeps the
+        row; the modes, New run and the options fold into the shell's ⋮. It
+        showed nothing at all on a phone before (page-pass, 2026-09-27). */}
+    <div className="lg:hidden w-full">
+      <AgentHeaderMobile
+        agentId={agentId}
+        agentName={agentName}
+        basePath={basePath}
+        extraActions={<AgentNewRunButton surfaceKey={surfaceKey} />}
+      />
+    </div>
     <div className="@container/agent-header hidden lg:flex items-center justify-between w-full gap-2 shrink-0">
       <div className="flex items-center">
         <ChevronLeftTapButton href={backHref} aria-label="Back to Agents" />
@@ -54,5 +67,6 @@ export function AgentRunHeader({
         <AgentOptionsMenu agentId={agentId} basePath={basePath} />
       </div>
     </div>
+    </>
   );
 }

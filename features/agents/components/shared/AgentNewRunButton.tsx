@@ -36,5 +36,5 @@ export function AgentNewRunButton({ surfaceKey }: AgentNewRunButtonProps) {
       .catch((err) => console.error("Failed to create new run:", err));
   }, [conversationId, surfaceKey, dispatch, pathname, router, searchParams]);
 
-  return <PlusTapButton onClick={handleNewRun} />;
+  return <PlusTapButton onClick={handleNewRun} ariaLabel="New run" tooltip="New run" />;
 }

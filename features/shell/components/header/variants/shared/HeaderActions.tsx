@@ -23,6 +23,9 @@ import BottomSheet from "./BottomSheet";
 import GlassDropdown from "./GlassDropdown";
 import type { HeaderAction } from "../types";
 import type { DeclaresRouteHeaderActions } from "../../route-header-layout";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { usePhonePageActions } from "../../phone-page-actions";
+import { HeaderActionsSlot } from "../../HeaderActionsSlot";
 
 interface HeaderActionsProps {
   actions: HeaderAction[];
@@ -39,8 +42,28 @@ export default function HeaderActions({
 }: HeaderActionsProps) {
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [desktopOverflowOpen, setDesktopOverflowOpen] = useState(false);
+  const isPhone = useIsMobile();
+  const { host } = usePhonePageActions();
 
   if (!actions.length) return null;
+
+  // 🚨 ONE OVERFLOW PER PHONE HEADER (page-pass shared defects, 2026-09-27):
+  // with the shell's ⋮ mounted, the actions ARE rows in its "This page"
+  // section — one step, never this component's own ⋮ and a second sheet.
+  if (isPhone && host) {
+    return (
+      <HeaderActionsSlot>
+        {actions.map((action) => (
+          <GlassButton
+            key={action.label}
+            icon={action.icon}
+            onClick={action.onPress}
+            ariaLabel={action.label}
+          />
+        ))}
+      </HeaderActionsSlot>
+    );
+  }
 
   // Desktop: split inline vs overflow
   const inlineActions = actions.slice(0, maxInline);

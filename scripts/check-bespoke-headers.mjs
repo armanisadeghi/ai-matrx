@@ -105,6 +105,21 @@ function resolveImport(file, source, name) {
   return null;
 }
 
+/**
+ * A header component honours the contract when it composes the shared header or
+ * wraps its actions in HeaderActionsSlot — itself, or through a header
+ * component it imports (AgentHeader → AgentHeaderMobile), one level further.
+ */
+const CONTRACT = /<(RouteHeader|EntityModeHeader|CrumbTrailHeader|HeaderActionsSlot|HeaderActions|HeaderStructured)\b/;
+function honoursContract(file, body) {
+  if (CONTRACT.test(body)) return true;
+  for (const m of body.matchAll(/<([A-Z][A-Za-z0-9]*Header[A-Za-z0-9]*)\b/g)) {
+    const child = resolveImport(file, body, m[1]);
+    if (child && CONTRACT.test(withoutComments(readFileSync(child, "utf8")))) return true;
+  }
+  return false;
+}
+
 export function componentFindings(file, raw) {
   const source = withoutComments(raw);
   const hits = [];
@@ -112,12 +127,17 @@ export function componentFindings(file, raw) {
     const rest = source.slice(m.index);
     const close = rest.indexOf("</PageHeader>");
     const seg = (close < 0 ? rest.slice(0, 1500) : rest.slice(0, close)).replace(/<HeaderActionsSlot\b[\s\S]*?<\/HeaderActionsSlot>/g, "");
-    for (const name of new Set([...seg.matchAll(/<([A-Z][A-Za-z0-9]+)\b/g)].map((x) => x[1]))) {
+    // Only a feature's own HEADER component (AgentHeader, TasksHeaderControls…):
+    // a single control dropped into a row (a chip, a tab strip, a title editor)
+    // is judged with the row, never as a header of its own.
+    for (const name of new Set([...seg.matchAll(/<([A-Z][A-Za-z0-9]*Header[A-Za-z0-9]*)\b/g)].map((x) => x[1]))) {
       const target = resolveImport(file, source, name);
       if (!target || /features[\\/]shell[\\/]components[\\/]header[\\/]/.test(target)) continue;
       const body = withoutComments(readFileSync(target, "utf8"));
-      if (SHARED.test(body)) continue;
+      if (honoursContract(target, body)) continue;
       const controls = body
+        // An import line naming a control is not a control on screen.
+        .replace(/^import[\s\S]*?from\s+["'][^"']+["'];?$/gm, "")
         .replace(/<(ChevronLeftTapButton|HeaderBack)\b[\s\S]*?\/>/g, "")
         .replace(/<HeaderActionsSlot\b[\s\S]*?<\/HeaderActionsSlot>/g, "");
       if (CONTROL.test(controls)) {
