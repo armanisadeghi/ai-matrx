@@ -150,6 +150,24 @@ describe("operators become removable chips", () => {
   });
 });
 
+describe("typing runs the instant pass; a pause runs the content pass", () => {
+  it("never asks for Segments per keystroke, says 'Searching content…', then fills Segments after the pause", async () => {
+    mount();
+    type("budget");
+    await settle();
+    const instant = runner.mock.calls.map((c) => c[1]);
+    expect(instant.length).toBeGreaterThan(0);
+    expect(instant.every((o) => o?.pass === "instant")).toBe(true);
+    expect(document.body.textContent).toContain("Searching content…");
+
+    await settle(700);
+    const content = runner.mock.calls.filter((c) => c[1]?.pass === "content");
+    expect(content).toHaveLength(1);
+    expect(content[0][0].text).toBe("budget");
+    expect(document.body.textContent).not.toContain("Searching content…");
+  });
+});
+
 describe("typed sections from a streamed search", () => {
   it("renders each section with its count, an honest empty sentence, and a failed lane with Retry", async () => {
     mount();

@@ -460,7 +460,7 @@ export default function KnowledgeCommandBar({
       <CommandGroup key={key} heading={heading}>
         {state.status === "loading" && !items.length ? (
           <div className="flex flex-col gap-1.5 px-2 py-1.5" aria-busy>
-            <span className="text-xs text-muted-foreground">Still searching {label}…</span>
+            <span className="text-xs text-muted-foreground">{state.message ?? `Still searching ${label}…`}</span>
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
           </div>

@@ -289,7 +289,11 @@ export function createFixtureRunner(opts: FixtureRunnerOptions = {}): KnowledgeS
     const sorted = sortHits(pool, query);
     const only = query.cursors ? Object.keys(query.cursors) : null;
     const out: KnowledgeSection[] = [];
-    const keys = KNOWLEDGE_SECTION_KEYS.filter((k) => (only ? only.includes(k) : true));
+    // The service's passes: typing / `instant` never runs Segments; `content` is Segments only.
+    const pass = options.pass ?? (options.asYouType ? "instant" : undefined);
+    const keys = KNOWLEDGE_SECTION_KEYS.filter((k) => (only ? only.includes(k) : true)).filter((k) =>
+      pass === "instant" ? k !== "segments" : pass === "content" ? k === "segments" : true,
+    );
     for (const key of keys) {
       if (key === "segments") await sleep(delay * 3, options.signal);
       else await sleep(delay, options.signal);

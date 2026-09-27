@@ -1,11 +1,12 @@
 "use client";
 
 /**
- * Drives one search at a time for the bar: debounce while typing (~120 ms,
- * `as_you_type: true`), immediate on submit (`as_you_type: false`), abort the
- * previous run, and keep an honest per-section state — loading, answered,
- * failed — as each section streams in (Spotlight fills sections as they
- * arrive; nothing waits for the slowest lane).
+ * Drives the bar's searches: while typing, the INSTANT pass (top hit, items,
+ * messages) debounced ~120 ms, then the CONTENT pass (Segments) once typing pauses
+ * for ~600 ms — Segments never run per keystroke (their floor is ~0.4–0.8 s even
+ * with a cached vector). Submit runs both passes in one stream. The previous run
+ * is aborted, and every section keeps an honest state — loading, answered, failed —
+ * as it streams in (Spotlight fills sections as they arrive).
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -22,12 +23,16 @@ import {
 import { withMentionResolution } from "@/features/knowledge/api/mentionResolution";
 
 export const AS_YOU_TYPE_DEBOUNCE_MS = 120;
+/** How long typing must pause before the content pass (Segments) runs. */
+export const CONTENT_PASS_PAUSE_MS = 600;
+/** What the Segments section says while its pass is waiting for a typing pause. */
+export const SEARCHING_CONTENT = "Searching content…";
 
 export interface SectionState {
   status: "idle" | "loading" | "ready" | "error";
   /** Last answer for this section (kept while re-loading, so rows don't flash). */
   section: KnowledgeSection | null;
-  /** Set when status is `error`. */
+  /** Set when status is `error`, or a loading section's own words (e.g. "Searching content…"). */
   message?: string;
   retryable?: boolean;
 }
@@ -62,20 +67,50 @@ export function useKnowledgeSearchStream(
   );
   const [engine, setEngine] = useState<KnowledgeSearchEngine | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const contentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const controller = useRef<AbortController | null>(null);
+  const contentController = useRef<AbortController | null>(null);
   const seq = useRef(0);
   const lastQuery = useRef<KnowledgeQuery | null>(null);
 
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current);
+      if (contentTimer.current) clearTimeout(contentTimer.current);
       controller.current?.abort();
+      contentController.current?.abort();
     },
     [],
   );
 
+  /** The content pass: Segments only, into the Segments section alone. */
+  const runContent = (query: KnowledgeQuery) => {
+    contentController.current?.abort();
+    const ctrl = new AbortController();
+    contentController.current = ctrl;
+    const mine = seq.current;
+    runner(query, { signal: ctrl.signal, pass: "content" })
+      .then((result) => {
+        if (seq.current !== mine || ctrl.signal.aborted) return;
+        const seg = result.find((s) => s.key === "segments");
+        setSections((prev) => ({
+          ...prev,
+          segments: seg ? stateFor(seg) : { status: "idle", section: null },
+        }));
+      })
+      .catch((err: unknown) => {
+        if (ctrl.signal.aborted || seq.current !== mine) return;
+        const message = err instanceof Error ? err.message : "The content search could not run.";
+        setSections((prev) => ({
+          ...prev,
+          segments: { status: "error", section: null, message, retryable: true },
+        }));
+      });
+  };
+
   const run = (query: KnowledgeQuery, asYouType: boolean) => {
     controller.current?.abort();
+    contentController.current?.abort();
     const ctrl = new AbortController();
     controller.current = ctrl;
     const mine = ++seq.current;
@@ -85,13 +120,16 @@ export function useKnowledgeSearchStream(
       Object.fromEntries(
         KNOWLEDGE_SECTION_KEYS.map((k) => [
           k,
-          { status: "loading", section: prev[k].section },
+          asYouType && k === "segments"
+            ? { status: "loading", section: prev[k].section, message: SEARCHING_CONTENT }
+            : { status: "loading", section: prev[k].section },
         ]),
       ) as SectionStates,
     );
     runner(query, {
       signal: ctrl.signal,
       asYouType,
+      ...(asYouType ? { pass: "instant" as const } : {}),
       onEngine: (e) => {
         if (seq.current === mine) setEngine(e);
       },
@@ -110,6 +148,8 @@ export function useKnowledgeSearchStream(
         setSections((prev) => {
           const next = { ...prev };
           for (const k of KNOWLEDGE_SECTION_KEYS) {
+            // While typing, Segments belong to the content pass that follows the pause.
+            if (asYouType && k === "segments") continue;
             if (!arrived.has(k) && next[k].status === "loading") {
               next[k] = narrowed
                 ? { status: "idle", section: null }
@@ -140,14 +180,18 @@ export function useKnowledgeSearchStream(
       });
   };
 
-  /** Typing: debounced, `as_you_type`. Submit: immediate, full lanes. */
+  /**
+   * Typing: the instant pass (debounced), then the content pass once typing pauses.
+   * Submit: immediate, both passes in one stream.
+   */
   const search = (query: KnowledgeQuery, opts: { asYouType: boolean }) => {
     if (timer.current) clearTimeout(timer.current);
+    if (contentTimer.current) clearTimeout(contentTimer.current);
     if (opts.asYouType) {
-      timer.current = setTimeout(
-        () => run(query, true),
-        AS_YOU_TYPE_DEBOUNCE_MS,
-      );
+      timer.current = setTimeout(() => run(query, true), AS_YOU_TYPE_DEBOUNCE_MS);
+      if (query.text?.trim()) {
+        contentTimer.current = setTimeout(() => runContent(query), CONTENT_PASS_PAUSE_MS);
+      }
     } else {
       run(query, false);
     }

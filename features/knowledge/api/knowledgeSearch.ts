@@ -174,8 +174,13 @@ export interface KnowledgeSearchOptions {
   signal?: AbortSignal;
   /** Called as each section arrives (streaming). */
   onSection?: (section: KnowledgeSection) => void;
-  /** Typing (debounced; rerank skipped) vs submit (full lanes + rerank). */
+  /** Typing: the instant pass only (top hit, items, messages — never Segments). */
   asYouType?: boolean;
+  /**
+   * Ask for one pass: `instant` (top hit, items, messages) or `content` (Segments,
+   * fired after a ~600 ms typing pause and on submit). Omitted = both in one stream.
+   */
+  pass?: "instant" | "content";
   /** Called once with the engine that actually answered. */
   onEngine?: (engine: KnowledgeSearchEngine) => void;
 }
@@ -194,7 +199,8 @@ export const KNOWLEDGE_SEARCH_PATH = "/knowledge/search";
 export function toServerRequest(
   query: KnowledgeQuery,
   asYouType: boolean,
-): KnowledgeQuery & { mode: "find" | "ask"; as_you_type: boolean } {
+  pass?: "instant" | "content",
+): KnowledgeQuery & { mode: "find" | "ask"; as_you_type: boolean; pass?: "instant" | "content" } {
   // `id: "*"` ("any container of this type", a preset's `library:*`) is a
   // client-side marker the service cannot read; never send it as an id. The
   // hub announces the unsupported filter itself (hubSavedViews.anyContainerTypes).
@@ -205,6 +211,7 @@ export function toServerRequest(
     ...(within && within.length ? { within } : {}),
     mode: query.mode ?? "find",
     as_you_type: asYouType,
+    ...(pass ? { pass } : {}),
   };
 }
 
@@ -389,7 +396,7 @@ export const searchKnowledgeServer: KnowledgeSearchRunner = async (
   try {
     const stream = postNdjson(
       KNOWLEDGE_SEARCH_PATH,
-      toServerRequest(query, options.asYouType ?? false),
+      toServerRequest(query, options.asYouType ?? false, options.pass),
       { signal: options.signal, bodyCarriedRead: true },
     );
     for await (const evt of stream) {
