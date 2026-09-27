@@ -46,10 +46,12 @@ import {
 const FOOD_BANK = {
   id: "6f3b1c52-1d4a-4f7e-9c21-5b0a7d9e4411",
   name: "Second Harvest Valley Food Bank",
+  slug: "second-harvest",
 };
 const PLUMBING = {
   id: "0a9d7e31-6c58-4b22-8e17-2f4c6a1b8890",
   name: "Bluejacket Plumbing & Drain",
+  slug: "bluejacket-plumbing",
 };
 /** She is NOT a member of this one. Its name must never reach her screen. */
 const LAB_ID = "c41e8a06-7b93-4d15-9a6f-3e8b02d7c5aa";
@@ -89,15 +91,65 @@ describe("readLinkOrganizationParam", () => {
     expect(readLinkOrganizationParam(null)).toEqual({ kind: "absent" });
   });
 
-  it("calls a value that is not a uuid MALFORMED rather than passing it on", () => {
-    expect(readLinkOrganizationParam("?org=second-harvest")).toEqual({
-      kind: "malformed",
-      raw: "second-harvest",
+  it("reads an organization's ADDRESS (slug) as an address, lowercased — the /hr routes write it", () => {
+    expect(readLinkOrganizationParam("?org=Second-Harvest")).toEqual({
+      kind: "addressed",
+      slug: "second-harvest",
     });
+  });
+
+  it("calls a value that is neither a uuid nor an address MALFORMED rather than passing it on", () => {
     expect(readLinkOrganizationParam("?org=")).toEqual({
       kind: "malformed",
       raw: "",
     });
+    expect(readLinkOrganizationParam("?org=%25%25%25")).toEqual({
+      kind: "malformed",
+      raw: "%%%",
+    });
+    expect(readLinkOrganizationParam("?org=second%20harvest")).toEqual({
+      kind: "malformed",
+      raw: "second harvest",
+    });
+  });
+});
+
+/**
+ * Page-pass shared defects (2026-09-27). Choosing an employer on
+ * `/hr/settings/employer` navigates to `?org=<slug>`; the page switched to that
+ * employer while a toast said "This link's organization could not be read …
+ * nothing was switched". An address is matched against her own memberships
+ * exactly like an id — and like an id, it can open nothing she does not belong to.
+ */
+describe("a link that names an organization by its ADDRESS (slug)", () => {
+  it("is honoured when the address is one of hers — never 'could not be read'", () => {
+    const d = decide("second-harvest", { current: PLUMBING });
+    expect(d.kind).toBe("honoured");
+    if (d.kind !== "honoured") return;
+    expect(d.organizationId).toBe(FOOD_BANK.id);
+    expect(d.announcement).toMatch(/now working in Second Harvest/);
+  });
+
+  it("is a silent no-op when the address is the organization she is already in", () => {
+    expect(decide("second-harvest", { current: FOOD_BANK }).kind).toBe("already-current");
+  });
+
+  it("is refused as not hers — without naming it — when no membership carries that address", () => {
+    const d = decide("some-other-lab", { current: FOOD_BANK });
+    expect(d.kind).toBe("refused");
+    if (d.kind !== "refused") return;
+    expect(d.reason).toBe("not-a-member");
+    expect(d.message).not.toContain("some-other-lab");
+  });
+
+  it("is never admitted by a share — a share admits by id, never by address", () => {
+    const d = decideLinkOrganization({
+      param: readLinkOrganizationParam("?org=some-other-lab"),
+      memberships: MEMBERSHIPS,
+      currentOrganizationId: null,
+      admittedByAShare: true,
+    });
+    expect(d.kind).toBe("refused");
   });
 });
 
@@ -187,7 +239,7 @@ describe("the knob: switch organization when a link asks", () => {
 
 describe("a malformed or unknown org= value", () => {
   it("is refused in words, never used, and never crashes", () => {
-    const d = decide("second-harvest");
+    const d = decide("second%20harvest");
     expect(d.kind).toBe("refused");
     if (d.kind !== "refused") return;
     expect(d.message).toMatch(/link/i);

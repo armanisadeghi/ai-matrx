@@ -52,16 +52,47 @@
  */
 export const LINK_ORGANIZATION_QUERY_KEY = "org";
 
-/** Canonical UUID. A value that is not one is MALFORMED, never a lookup key. */
+/** Canonical UUID. */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * An organization's ADDRESS — its slug (`validateOrgSlug`: lowercase letters,
+ * digits and hyphens). Read case-insensitively, matched against nothing but
+ * the person's own live memberships.
+ *
+ * 🚨 WHY A SLUG IS NOT MALFORMED (page-pass shared defects, 2026-09-27).
+ * `?org=` has two writers: the server stamps a uuid on every deep link it
+ * emits, and the `/hr` routes put the employer's SLUG there
+ * (`hrSwitchEmployerHref`), because the address is what a person reads in the
+ * URL. Until this date the slug was called malformed, so choosing an employer
+ * on `/hr/settings/employer` raised "This link's organization could not be
+ * read … nothing was switched" over a page that HAD switched to that employer.
+ * A slug is never a lookup key here: it is compared with the slugs of the
+ * organizations the person already belongs to, exactly as a uuid is compared
+ * with their ids, so it can open nothing a uuid could not.
+ */
+const SLUG = /^[a-z0-9][a-z0-9-]{0,99}$/i;
 
 export type LinkOrganizationParam =
   /** No link said anything about an organization. The ladder is untouched. */
   | { kind: "absent" }
-  /** Something was said and it is not a uuid. Refused in words, never used. */
+  /** Something was said and it is neither a uuid nor an address. Refused in words, never used. */
   | { kind: "malformed"; raw: string }
   /** A well-formed organization id. Still has to survive the membership check. */
-  | { kind: "named"; organizationId: string };
+  | { kind: "named"; organizationId: string }
+  /** An organization's address (slug). Survives only by matching a membership's slug. */
+  | { kind: "addressed"; slug: string };
+
+/**
+ * Classify one bare `org=` value. The ONE rule for what a value may be, shared
+ * by the URL reader below and the boot resolver's bare-value path.
+ */
+export function classifyLinkOrganizationValue(raw: string): LinkOrganizationParam {
+  const value = raw.trim();
+  if (UUID.test(value)) return { kind: "named", organizationId: value };
+  if (SLUG.test(value)) return { kind: "addressed", slug: value.toLowerCase() };
+  return { kind: "malformed", raw: value };
+}
 
 /**
  * Read the key out of a query string, a `URLSearchParams`, or a full URL.
@@ -84,14 +115,14 @@ export function readLinkOrganizationParam(
     }
   }
   if (!params.has(LINK_ORGANIZATION_QUERY_KEY)) return { kind: "absent" };
-  const raw = (params.get(LINK_ORGANIZATION_QUERY_KEY) ?? "").trim();
-  if (!UUID.test(raw)) return { kind: "malformed", raw };
-  return { kind: "named", organizationId: raw };
+  return classifyLinkOrganizationValue(params.get(LINK_ORGANIZATION_QUERY_KEY) ?? "");
 }
 
 export interface LinkOrganizationMembership {
   id: string;
   name: string;
+  /** The organization's address, so an `addressed` link can be matched. */
+  slug?: string | null;
 }
 
 export interface LinkOrganizationDecisionInput {
@@ -226,8 +257,12 @@ export function decideLinkOrganization(
     };
   }
 
-  const match = memberships.find((o) => o.id === param.organizationId);
-  if (!match && input.admittedByAShare) {
+  const match =
+    param.kind === "named"
+      ? memberships.find((o) => o.id === param.organizationId)
+      : memberships.find((o) => o.slug?.trim().toLowerCase() === param.slug);
+  // A share admits by id; an address that matches no membership is simply not theirs.
+  if (!match && param.kind === "named" && input.admittedByAShare) {
     return { kind: "admitted", organizationId: param.organizationId };
   }
   if (!match) {

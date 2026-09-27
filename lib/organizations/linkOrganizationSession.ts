@@ -57,12 +57,13 @@ export function readLinkOrganizationFromLocation(): string | null {
   const param = readLinkOrganizationParam(window.location.search);
   if (param.kind === "absent") return null;
   // A malformed value is handed on DELIBERATELY: it has to be refused in
-  // words, and swallowing it here would make it vanish silently instead.
-  return param.kind === "malformed"
-    ? (new URLSearchParams(window.location.search).get(
+  // words, and swallowing it here would make it vanish silently instead. An
+  // address (slug) is handed on as typed; the resolver classifies it again.
+  return param.kind === "named"
+    ? param.organizationId
+    : (new URLSearchParams(window.location.search).get(
         LINK_ORGANIZATION_QUERY_KEY,
-      ) ?? "")
-    : param.organizationId;
+      ) ?? "");
 }
 
 /**

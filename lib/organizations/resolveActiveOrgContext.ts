@@ -53,6 +53,7 @@
 import { getUserOrganizations } from "@/features/organizations/service";
 import { activeOrgCookie } from "@/lib/organizations/activeOrgCookie";
 import {
+  classifyLinkOrganizationValue,
   decideLinkOrganization,
   readLinkOrganizationParam,
   type LinkOrganizationDecision,
@@ -147,24 +148,18 @@ export async function resolveActiveOrgContext(
   //     seat-level tests exercise. `decideLinkOrganization` checks it against
   //     `orgs`, which is the LIVE membership list: a link can open an
   //     organization, never grant one.
-  const linkParam =
+  // A bare value is classified by the ONE rule (uuid, address, or malformed) —
+  // judged, never trusted.
+  const param =
     typeof options.linkOrganizationId === "string"
       ? options.linkOrganizationId.includes("=")
         ? readLinkOrganizationParam(options.linkOrganizationId)
-        : ({ kind: "named", organizationId: options.linkOrganizationId } as const)
+        : classifyLinkOrganizationValue(options.linkOrganizationId)
       : readLinkOrganizationParam(options.linkOrganizationId ?? null);
-  // A bare id that is not a uuid must still be judged, not trusted.
-  const param =
-    linkParam.kind === "named" &&
-    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      linkParam.organizationId,
-    )
-      ? ({ kind: "malformed", raw: linkParam.organizationId } as const)
-      : linkParam;
 
   const linkInput = {
     param,
-    memberships: orgs.map((o) => ({ id: o.id, name: o.name })),
+    memberships: orgs.map((o) => ({ id: o.id, name: o.name, slug: o.slug })),
     currentOrganizationId: laddered?.id ?? null,
     currentOrganizationName: laddered?.name ?? null,
     switchWhenALinkAsks: options.switchWhenALinkAsks,

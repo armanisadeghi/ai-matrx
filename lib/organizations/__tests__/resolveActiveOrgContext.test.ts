@@ -41,6 +41,7 @@ type Org = {
   id: string;
   name: string;
   created_by?: string;
+  slug?: string | null;
 };
 
 let orgs: Org[] = [];
@@ -292,7 +293,7 @@ describe("resolveActiveOrgContext — a link that names an organization", () => 
     orgs = twoBusinesses();
 
     const resolved = await resolveActiveOrgContext(USER, {
-      linkOrganizationId: "second-harvest",
+      linkOrganizationId: "second harvest!",
     });
 
     // The ladder ran exactly as if no link existed: two memberships, nothing
@@ -302,6 +303,21 @@ describe("resolveActiveOrgContext — a link that names an organization", () => 
     if (resolved!.link?.kind === "refused") {
       expect(resolved!.link.reason).toBe("malformed");
     }
+  });
+
+  it("an ADDRESS (slug) she belongs to is honoured like an id — the /hr routes write it", async () => {
+    orgs = [
+      { ...membership(FOOD_BANK, "Second Harvest Valley Food Bank"), slug: "second-harvest" },
+      { ...membership(PLUMBING, "Bluejacket Plumbing & Drain"), slug: "bluejacket" },
+    ];
+    cookieOrgId = PLUMBING;
+
+    const resolved = await resolveActiveOrgContext(USER, {
+      linkOrganizationId: "second-harvest",
+    });
+
+    expect(resolved!.organization_id).toBe(FOOD_BANK);
+    expect(resolved!.link?.kind).toBe("honoured");
   });
 
   it("with the knob OFF, a differing-organization link does not switch her — it offers the switch", async () => {

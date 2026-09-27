@@ -83,7 +83,9 @@ function LinkOrganizationWatcherInner(): null {
       const { getUserOrganizations } = await import(
         "@/features/organizations/service"
       );
-      let memberships: Array<{ id: string; name: string }>;
+      // `slug` rides along so an address link (`/hr/...?org=<slug>`) is
+      // matched exactly like an id link.
+      let memberships: Array<{ id: string; name: string; slug?: string | null }>;
       try {
         memberships = (await getUserOrganizations()) ?? [];
       } catch (error) {
