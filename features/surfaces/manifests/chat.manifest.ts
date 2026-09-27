@@ -1,14 +1,21 @@
 /**
  * Surface manifest — Chat / conversation (`matrx-user/chat`).
  *
- * AI chat / conversation surfaces. The user sees a thread of messages with
- * an active agent, composes user messages, gets assistant responses (often
- * streaming), and can take actions against any message in the thread.
+ * The live chat route (/chat/new, /chat/a/[agentId], /chat/[conversationId]):
+ * a threaded conversation between the person and an agent, with a composer
+ * for the person's next message. ONE provider — `ChatRoomClient`.
  *
- * Agents bound here typically operate on the last message, the user's
- * draft input, or the full conversation history. The `current_message_*`
- * family targets a specific message (e.g. the one the user right-clicked);
- * the `last_*` family auto-points at the most recent of each role.
+ * WHO THIS SURFACE SERVES: OUTSIDE agents only — an agent the person runs
+ * from the header Agents menu into a window panel, sidebar or overlay while
+ * the chat page is open. The page's OWN conversation never receives this
+ * surface as context (its launcher passes `runtime: { surfaceName: null }`)
+ * and is never offered its tools. So every value here describes SOMEONE
+ * ELSE's conversation to the agent reading it, and every target changes it.
+ *
+ * The open conversation is THE record: `conversation` (identity + state) and
+ * `transcript` (every loaded message with its tool calls) are passed whole up
+ * front at the `record` tier; the older scalar values stay for bindings.
+ * Agent guide: `features/surfaces/guides/chat.md`.
  */
 
 import type {
@@ -18,7 +25,12 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { INLINE_TIER } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import type {
+  ChatConversationRecord,
+  ChatTranscriptEntry,
+} from "@/features/agents/components/chat/agent-context/chatTranscriptScope";
 
 // ---------------------------------------------------------------------------
 // Write-contract vocabulary — ONE definition, imported by both the manifest
@@ -59,6 +71,15 @@ export const CHAT_INPUT_DRAFT_MAX = 20_000;
  * and past a couple of hundred characters it is prose in the wrong place.
  */
 export const CHAT_CONVERSATION_TITLE_MAX = 200;
+
+/** Upper bound on one message's text written by `update_messages`. */
+export const CHAT_MESSAGE_TEXT_MAX = 100_000;
+
+/** Most messages one `update_messages` / `delete_messages` write may name. */
+export const CHAT_MESSAGES_PER_WRITE = 25;
+
+/** Longest tool-call arguments/result excerpt in `transcript` (characters). */
+export const CHAT_TRANSCRIPT_TOOL_EXCERPT_MAX = 300;
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -112,6 +133,31 @@ const groups: SurfaceValueGroup[] = [
 ];
 
 const surfaceSpecific: SurfaceValue[] = [
+  // ── THE record: the open conversation + its transcript (290-299) ──────
+  {
+    name: "conversation",
+    label: "Conversation",
+    description:
+      "The open conversation, whole: { id, title, agent_id, agent_name, model, status, is_streaming, message_count, older_messages_not_loaded }. `status` is the run status (\"ready\", \"running\", \"streaming\", \"complete\", \"error\", \"cancelled\"…); `message_count` counts the loaded messages in `transcript`; `older_messages_not_loaded` is true when the page shows only the newest messages and earlier ones exist. message_count 0 means the conversation has not been saved yet (a fresh chat before its first turn completes). Omitted until a conversation is open.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 300,
+    inlineUpTo: INLINE_TIER.record,
+    sortOrder: 290,
+    group: "conversation",
+  },
+  {
+    name: "transcript",
+    label: "Transcript",
+    description: `Every loaded message of the open conversation, oldest first: [{ id, role ("user" | "assistant" | "system"), text, created_at, tool_calls: [{ id, name, arguments_excerpt, status, result_excerpt }], streaming?: true, edited?: true }]. \`text\` is the message as the page shows it — patch it with update_messages. Tool calls sit on the assistant message that made them; \`arguments_excerpt\` and \`result_excerpt\` are the first ${CHAT_TRANSCRIPT_TOOL_EXCERPT_MAX} characters as one line (marked … when cut), so they tell you WHAT was called and roughly what came back, not the full payload. \`streaming: true\` = still being written (cannot be edited). Only the newest messages are loaded on open (see conversation.older_messages_not_loaded). [] for a conversation with no messages; omitted until one is open.`,
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 6000,
+    inlineUpTo: INLINE_TIER.record,
+    sortOrder: 295,
+    group: "thread",
+  },
+
   // ── Conversation (300-329) ────────────────────────────────────────────
   {
     name: "conversation_id",
@@ -231,10 +277,11 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "full_conversation_text",
     label: "Full conversation",
     description:
-      "All messages in the active conversation joined into a single text block with role prefixes (e.g. `User: ...\\n\\nAssistant: ...`). Can be very large — bind with care.",
+      "All messages in the active conversation joined into a single text block with role prefixes (e.g. `User: ...\\n\\nAssistant: ...`). Can be very large — bind with care. Bindable-only: `transcript` carries the same messages (with ids and tool calls) up front.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 8000,
+    autoContext: false,
     sortOrder: 370,
     group: "thread",
   },
@@ -242,10 +289,11 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "all_messages",
     label: "All messages",
     description:
-      "Array of `{ id, role, text, created_at }` for every message in the active conversation, in order. Empty array when the conversation has no messages.",
+      "Array of `{ id, role, text, created_at }` for every loaded message in the active conversation, in order (tool stubs included). Bindable-only: `transcript` is the same list with tool calls, passed up front.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 6000,
+    autoContext: false,
     sortOrder: 375,
     group: "thread",
   },
@@ -255,10 +303,11 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "input_draft",
     label: "Input draft",
     description:
-      "Current text in the chat composer (what the user has typed but not yet sent). Empty when the composer is empty or no conversation is active.",
+      "Current text in the chat composer (what the person has typed but not yet sent) — what an input_draft patch anchors against. Omitted when the composer is empty or no conversation is active.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 500,
+    inlineUpTo: INLINE_TIER.record,
     sortOrder: 400,
     group: "composer",
   },
@@ -394,82 +443,101 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Write targets (2026-08-10) — the judgment bar, written down.
+// Write targets — the judgment bar, written down (rewritten 2026-09-27).
 //
-// Chat is a RECORD of a conversation wrapped around ONE authored field. That
-// asymmetry decides the whole list:
+// ARMAN'S RULING (2026-09-27), which replaces the 2026-08-10 "NO — editing
+// what was already said" line: "Any agent who runs on the page in a window
+// panel or something else must have full context of it, including the
+// conversation id, the messages, tool calls and all of that. Provide really
+// great tools for the agent to be able to modify the assistant messages using
+// patch and also the user message, or to take various actions, and also update
+// things in the user message input."
 //
-//   YES — `input_draft`: the message the user has not sent yet. This is the
-//   textbook "authored content an agent drafts better/faster" case: help me
-//   phrase this, turn my notes into a question, extend what I started. The
-//   user still presses send, so the draft target is fully reversible.
+// The agents these serve are OUTSIDE agents. The page's own conversation is
+// never offered them (launcher `surfaceName: null` + the provider's
+// `ownConversationId`), so no run edits its own history. Every target is
+// `ask`: the person approves each write on a card, and every one goes through
+// the SAME canonical function the page's own button calls — never a parallel
+// write:
 //
-//   YES — `conversation_title`: an authored label, trivially derivable from
-//   the transcript the agent can already read, and the one field on this
-//   surface a user routinely leaves at its auto-generated default.
+//   update_messages   — user message: `editMessageText` (the "Save only" edit);
+//                       assistant message: `saveAnswerEdit` (the in-place answer
+//                       editor's save). Both end in `cx_message_edit`, which
+//                       archives the prior text into `content_history`, marks
+//                       the row edited and busts the conversation cache.
+//   delete_messages   — `deleteMessage` (the message menu's "Delete here").
+//   regenerate_last_answer — `regenerateAnswer` (the answer menu's Regenerate).
+//   fork_conversation — `forkConversation` + `promptForkOutcome` (Fork here).
+//   stop_response     — `cancelExecution` (the composer's Stop button).
+//   send_draft        — `smartExecute` (the composer's Send button).
+//   input_draft       — `setUserInputText` (the composer's own keystrokes).
+//   conversation_title — `renameConversation` (the sidebar's rename).
 //
-//   NO — SENDING the message. The send is the outward-facing act: it spends a
-//   turn, bills a model, and (with the inbox modes) can steer or interrupt a
-//   run in flight. The human press is the gate, exactly as `podcast-studio`
-//   and `image-generate` kept Generate human.
-//
-//   NO — editing what was already said (`all_messages`, `last_user_message`,
-//   `current_message_text`, `full_conversation_text`). Those are the RECORD of
-//   what was actually said by whom. An agent rewriting them does not edit a
-//   draft, it fabricates history — the captured-evidence line. Note the route
-//   HAS a user-driven edit path ("Edit & resubmit" → fork / overwriteAndResend);
-//   it stays a human affordance because the value of the record is that a human
-//   wrote it.
-//
-//   NO — the run configuration (`added_tools`, `added_skills`, `model`,
-//   `sandbox_binding`). Following `agent-builder`: changing what an agent may
-//   REACH is a capability change, not a copy edit.
-//
-//   NO — `attached_resources`. The read half publishes lean `{id, block_type,
-//   status}` refs of what is ALREADY attached, never the user's library, so an
-//   agent could only guess UUIDs — the same reason `education-fastfire` left
-//   its set picker and `education-assessment` its deck picker out.
-//
-//   NO — switching the bound agent (identity/provenance: `initial_agent_id` is
-//   read-only by this feature's own model), and deleting/archiving a
-//   conversation (destructive stays human).
-//
-//   NO — `working_document` / `scratchpad`. Lean refs here; their bodies ride
-//   their own surfaces and belong to those surfaces' write targets.
-//
-//   NO — `variable_values` (added to this list 2026-08-11). It reads as the
-//   tempting case — resolved agent-variable values look like fill-in-the-blank
-//   authored content, and they are NOT capability governance (a variable is
-//   substituted into a prompt; it does not change what a run may REACH). It
-//   still fails an earlier test: THIS surface owns no editor for it. Every
-//   component that dispatches `setUserVariableValue` (`AgentVariablesInline`,
-//   `BoundVariableChips`, the `variable-input-variations/*` family,
-//   `ChatAssistantVariableInputs`) lives outside `components/chat/`, and
-//   `ChatRoomClient` only ever READS the value via `selectResolvedVariables`
-//   to publish it — the read half even marks it bindable-only. A target here
-//   would stage into state no one on this page can see or correct, which is
-//   the "declared target with no canonical write path on this mount" trap.
-//   It earns a target on whichever surface actually mounts a variable editor,
-//   not on this one.
-//
-// PER-MOUNT POSTURE: `matrx-user/chat` has exactly ONE `SurfaceRuntimeProvider`
-// — `ChatRoomClient`, which backs all three routes (/chat/new via
-// ChatNewClient's landingContent, /chat/a/[agentId], /chat/[conversationId])
-// and owns the conversation id both handlers key off. The surface name appears
-// in three OTHER places, none of which mount a runtime and none of which
-// therefore offer an agent anything: `RunSettingsEditor` and
-// `RunControlsTabPanel` pass it to a v3 context menu over Chat Options (whose
-// fields are run capability — see the NO above), and `NewChatLandingInput`
-// passes it to its `EditableContextMenu`, and that composer already sits
-// INSIDE ChatRoomClient's provider, so its draft is covered by `input_draft`
-// through the same Redux key.
+// STILL NO targets for: the run configuration (added tools/skills, model,
+// sandbox — capability, not content); attaching resources or setting variable
+// values (the agent can see no library ids to name, and this page mounts no
+// variable editor); switching the bound agent; deleting the conversation;
+// Edit & resubmit (a composition of update_messages + regenerate the agent can
+// do in two approved steps).
 // ---------------------------------------------------------------------------
 
 const writeTargets: SurfaceWriteTarget[] = [
   {
+    name: "update_messages",
+    label: "Edit messages",
+    description: `Changes the text of past messages in this conversation, user or assistant, SAVED IMMEDIATELY after the person approves. Value: a JSON ARRAY (1-${CHAT_MESSAGES_PER_WRITE}) of { "message_id": string, "text": string } (the whole new text) OR { "message_id": string, "patch": { "old_str": string, "new_str": string } } (replace exactly one occurrence of old_str in the message's current text; new_str "" deletes it). Ids and current text come from the \`transcript\` value. Prefer patch for any change smaller than the whole message. Refused before the card, with EVERY problem listed: an id not in the transcript, a message still streaming, a system/tool message, an old_str that is missing or matches more than once, an empty result, a repeated id. What it changes: the message's text for everyone who views this conversation (the previous text is kept in the message's edit history). A user-message edit is what the model sees from the next turn on; an assistant-message edit is too, unless the organization turned off "The model sees edited answers". Nothing is re-run and no turn is spent. Returns the edited ids.`,
+    valueType: "array",
+    updatesValue: "transcript",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "thread",
+    sortOrder: 295,
+  },
+  {
+    name: "delete_messages",
+    label: "Delete messages",
+    description: `Deletes messages from this conversation, SAVED IMMEDIATELY after approval. Value: a JSON ARRAY (1-${CHAT_MESSAGES_PER_WRITE}) of message ids, or of { "message_id": string }, from the \`transcript\` value. What is lost: each message disappears from the conversation for everyone, together with the tool calls it made and what they produced, and the model no longer sees it on later turns; the page offers no undo. Later messages keep their places. Refused before the card: an unknown id, a message still streaming, a repeated id. Prefer update_messages when the text only needs fixing.`,
+    valueType: "array",
+    updatesValue: "transcript",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "thread",
+    sortOrder: 296,
+  },
+  {
+    name: "regenerate_last_answer",
+    label: "Regenerate last answer",
+    description: `Asks this conversation's agent to answer its LAST question again. Value: { "message_id": "<id of the latest assistant message in transcript>" }. The current answer (and anything after that question) is archived, not deleted, and the conversation's agent runs again: this SPENDS A TURN (model cost) and the new answer streams into the page. Only the latest answer can be regenerated; refused while a response is streaming.`,
+    valueType: "object",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "thread",
+    sortOrder: 297,
+  },
+  {
+    name: "fork_conversation",
+    label: "Fork conversation",
+    description: `Branches this conversation at a message: a NEW conversation is created holding every message up to and including that one (with their tool calls); the original is untouched. Value: { "message_id": "<id from transcript>" }. Nothing is run and no turn is spent. After it lands the person is asked whether to open the new branch. Returns the new conversation's id.`,
+    valueType: "object",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "thread",
+    sortOrder: 298,
+  },
+  {
+    name: "stop_response",
+    label: "Stop response",
+    description: `Stops the response this conversation's agent is writing right now — the same as the person pressing Stop. Value: true. What was already written stays; the rest of that answer is never produced. Refused when nothing is running (read conversation.is_streaming).`,
+    valueType: "boolean",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "session_state",
+    sortOrder: 410,
+  },
+  {
     name: "conversation_title",
     label: "Conversation title",
-    description: `Renames the open conversation — the label it carries in the chat history sidebar. Value: a plain non-empty string, trimmed, at most ${CHAT_CONVERSATION_TITLE_MAX} characters; an empty or blank title is REFUSED, because clearing a conversation's name back to "Untitled" is a human decision. Saved IMMEDIATELY through the canonical rename path. Refused when the conversation has not been persisted yet — a brand-new chat on /chat/new or /chat/a/[agentId] holds a client-minted id and has no row to rename until its first turn finishes; read \`conversation_message_count\` first. This changes the label only and never touches a message.`,
+    description: `Renames the open conversation — the label it carries in the chat history sidebar. Value: a plain non-empty string, trimmed, at most ${CHAT_CONVERSATION_TITLE_MAX} characters; an empty or blank title is REFUSED, because clearing a conversation's name back to "Untitled" is a human decision. Saved IMMEDIATELY through the canonical rename path. Refused when the conversation has not been saved yet — a brand-new chat holds a client-minted id and has no row to rename until its first turn finishes (conversation.message_count 0). This changes the label only and never touches a message.`,
     valueType: "string",
     updatesValue: "conversation_title",
     mode: "entity",
@@ -480,13 +548,23 @@ const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "input_draft",
     label: "Composer draft",
-    description: `Types text into THIS conversation's composer for the user to review and send. Value: { "text": string (1-${CHAT_INPUT_DRAFT_MAX} characters), "mode"?: ${CHAT_DRAFT_WRITE_MODES.map((m) => `"${m}"`).join(" | ")} } — "${CHAT_DRAFT_WRITE_MODES[0]}" (the default) swaps whatever is in the composer, "${CHAT_DRAFT_WRITE_MODES[1]}" adds after it on a new line, so read the \`input_draft\` value first if you mean to extend what the user already typed rather than discard it. This ONLY stages text: nothing is sent, no turn is spent, no run is steered or interrupted, and the user still presses send. It lands in the CONVERSATION's composer on the page — never in the message box of whatever agent run you are executing inside.`,
+    description: `Writes into THIS conversation's composer (the person's next, unsent message) for them to review. Value: { "text": string, "mode"?: ${CHAT_DRAFT_WRITE_MODES.map((m) => `"${m}"`).join(" | ")} } — "replace" (the default) swaps the whole draft, "append" adds after it on a new line — OR { "patch": { "old_str": string, "new_str": string } } to change one exact occurrence inside the current draft (read the \`input_draft\` value first; refused when the draft is empty or old_str is missing or ambiguous). Result at most ${CHAT_INPUT_DRAFT_MAX} characters. NOTHING is sent and no turn is spent: the person still presses Send (or approves send_draft). It lands in the page's composer, never in the message box of the run you are executing inside.`,
     valueType: "object",
     updatesValue: "input_draft",
     mode: "draft",
     applyPolicy: "ask",
     group: "composer",
     sortOrder: 400,
+  },
+  {
+    name: "send_draft",
+    label: "Send the draft",
+    description: `Sends what is in the composer now as the person's next message, exactly as pressing Send does — this SPENDS A TURN: the conversation's agent answers it (model cost). Value: true. Refused when the draft is empty or a response is still streaming. Stage the text with input_draft first; the person approves the send on its own card.`,
+    valueType: "boolean",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "composer",
+    sortOrder: 402,
   },
 ];
 
@@ -495,18 +573,21 @@ export const chatManifest: SurfaceManifest = {
   client: "matrx-user",
   executionMode: "python-stream",
   description:
-    "AI chat and conversation surfaces",
+    "The live chat route: one conversation between the person and an agent, its full transcript with tool calls, and the composer for the next message. Outside agents can read all of it and edit messages, the draft and the run.",
   // Chat is the universal conversation host: every agent may be selected here,
   // so defaults and surface bindings must never masquerade as a page roster.
   agentRosterMode: "universal",
-  readiness: "verified",
+  readiness: "partial",
+  readinessNote:
+    "Contract rewritten 2026-09-27 (conversation + transcript record values; update_messages, delete_messages, regenerate_last_answer, fork_conversation, stop_response, send_draft; input_draft patch). The earlier conversation_title and input_draft replace/append were proven on production 2026-08. Not yet proven by a live outside-agent run for the new values and targets; pending the production probe.",
+  guide: "features/surfaces/guides/chat.md",
   label: "Chat",
   urlPattern: "/chat",
   intro: `<surface_intro>
-You are on the live chat route — a threaded conversation between the user and an agent, with a composer for the user's next message.
-Values arrive in seven families: the conversation identity (id, title, driving agent), the active message the user explicitly targeted (current_message_*), the thread history (last turns + full transcript), the composer (draft text, attached resources, variable values), session state (streaming flag, status, effective model), lean references to the conversation's working document and scratchpad, and the run configuration (how the user customized this run via Chat Options: added tools/skills, setting overrides, sandbox binding).
-Baselines mirror the composer: content/selection/text_before/text_after are the user's DRAFT, not the transcript — the transcript rides full_conversation_text / all_messages.
-No value is guaranteed: launches also happen from the pre-conversation hero composer on /chat/new, where only the draft and agent exist. The working_document and scratchpad values are references only — their bodies belong to their own surfaces.
+You are an OUTSIDE agent looking at someone else's live chat: a conversation between the person and another agent. You are not that agent and this is not your conversation.
+Everything is up front: \`conversation\` (id, title, agent, model, status, streaming, message count) and \`transcript\` (every loaded message with id, role, text and its tool calls). Do not look them up again.
+To fix or rewrite past messages use update_messages (prefer a patch); to remove them delete_messages. To help with the person's next message use input_draft (text, append, or patch) — it sends nothing. Actions: regenerate_last_answer and send_draft each spend a turn; stop_response stops a running answer; fork_conversation branches; conversation_title renames.
+Every write asks the person first. Do not use generic context or scope tools for this conversation's messages.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -568,6 +649,8 @@ export function createChatScope(values: {
   text_after?: string;
   content?: string;
   context?: Record<string, unknown>;
+  conversation?: ChatConversationRecord;
+  transcript?: ChatTranscriptEntry[];
   conversation_id?: string;
   conversation_title?: string;
   conversation_message_count?: number;
