@@ -41,7 +41,10 @@ import {
   AssistantMessageContextMenu,
   AssistantMessageFooter,
 } from "./AssistantMessageFooter";
-import { membersForRender } from "./collapse-by-request-id";
+import {
+  membersForRender,
+  rendersFromPersistedRows,
+} from "./collapse-by-request-id";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   AgentWorkTurnProvider,
@@ -88,11 +91,10 @@ export function AssistantTurnGroup({
   // from its persisted rows so that row has its own spot — see
   // `membersForRender`. A primitive boolean: no memoization needed.
   const persistedView = useAppSelector((state) =>
-    rawMembers.some((m) => {
-      if (!m.messageId || m.isStreamActive) return false;
-      const row = state.messages.byConversationId[conversationId]?.byId?.[m.messageId];
-      return !!row?._editingInPlace || row?.status === "edited";
-    }),
+    rendersFromPersistedRows(
+      rawMembers,
+      state.messages.byConversationId[conversationId]?.byId,
+    ),
   );
   const members = membersForRender(rawMembers, persistedView);
 

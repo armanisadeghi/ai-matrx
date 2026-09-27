@@ -28,9 +28,59 @@ export function collapseByRequestId<T extends { requestId: string | null }>(
   );
 }
 
+/** The slice of a message row the render decision reads. */
+export interface TurnRowState {
+  status?: string;
+  _editingInPlace?: boolean | "expanded";
+}
+
 /**
- * The members a turn renders when a person is editing (or has edited) one of
- * its rows (RC-B5).
+ * Whether a turn renders from its persisted rows (one member per row, no
+ * stream source) instead of one collapsed stream-anchored member. True when:
+ *
+ * - A person is editing (or has edited) one of its rows (RC-B5), or
+ * - Its stream has SETTLED: no member is streaming and every stream-anchored
+ *   row is committed (no longer `reserved`). A settled member renders from
+ *   its OWN committed record ("the final screen is the reload",
+ *   `renderSettledFromRecord`), so the collapsed single member would show
+ *   only the last row's parts — every earlier iteration's tool cards, text
+ *   and thinking vanished the moment the answer completed and came back only
+ *   on reload (verifier 2026-09-26 r2, Defect 1). Rendering every row gives
+ *   the settled turn exactly the reload's members.
+ *
+ * While any row is still streaming or only reserved, the collapsed stream
+ * member stays: it renders the whole request from the live source, so
+ * nothing is missing in between.
+ */
+export function rendersFromPersistedRows(
+  members: ReadonlyArray<{
+    messageId: string | null;
+    requestId: string | null;
+    isStreamActive: boolean;
+  }>,
+  rowsById: Readonly<Record<string, TurnRowState | undefined>> | undefined,
+): boolean {
+  const edited = members.some((m) => {
+    if (!m.messageId || m.isStreamActive) return false;
+    const row = rowsById?.[m.messageId];
+    return !!row?._editingInPlace || row?.status === "edited";
+  });
+  if (edited) return true;
+  const anchored = members.filter((m) => m.requestId);
+  return (
+    anchored.length > 1 &&
+    anchored.every((m) => {
+      if (!m.messageId || m.isStreamActive) return false;
+      const row = rowsById?.[m.messageId];
+      return !!row && row.status !== "reserved";
+    })
+  );
+}
+
+/**
+ * The members a turn renders. `persistedView` (see `rendersFromPersistedRows`:
+ * an edited row, or a settled multi-row request) renders one member per row;
+ * otherwise one stream-anchored member per request.
  *
  * A stream-anchored member renders the WHOLE request — every iteration's text
  * from one source — so (a) the row being edited has no spot of its own when a
