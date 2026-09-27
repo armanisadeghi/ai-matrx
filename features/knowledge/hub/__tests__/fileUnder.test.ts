@@ -3,7 +3,7 @@
  * door — a Segment files its Source, duplicates collapse — and the sentence
  * names the container by its REGISTRY label.
  */
-import { fileUnder, keepItems, trashItems } from "@/features/knowledge/hub/hubActions";
+import { fileUnder, trashItems } from "@/features/knowledge/hub/hubActions";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 
@@ -57,14 +57,7 @@ describe("file under", () => {
   });
 });
 
-describe("keep and trash", () => {
-  it("keep saves Sources through the Source door and says other kinds are already kept", async () => {
-    const keep = jest.fn().mockResolvedValue(undefined);
-    const out = await keepItems([note, source], keep);
-    expect(keep).toHaveBeenCalledWith("d1", "o1");
-    expect(keep).toHaveBeenCalledTimes(1);
-    expect(out.sentence).toBe("Kept 1 Source. 1 other item is already kept — only Sources wait to be kept.");
-  });
+describe("trash", () => {
   it("trash archives each record once through the one archive", async () => {
     const archive = jest.fn().mockResolvedValue(undefined);
     const out = await trashItems([source, segmentOfSource, note], archive);

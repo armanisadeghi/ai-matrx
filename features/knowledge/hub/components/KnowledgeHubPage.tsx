@@ -121,10 +121,10 @@ import { nextFocusAfterRemoval, triageCommandForKey, triageItems, undoTriage } f
 import { countText, useTriage } from "@/features/knowledge/hub/triage/useTriage";
 import { TriageHelpSheet } from "@/features/knowledge/hub/triage/TriageHelpSheet";
 import { fileUnderTag } from "@/features/knowledge/hub/tags/tagApi";
-import { hitTags, tagItems, TAG_REF_TYPE } from "@/features/knowledge/hub/tags/tagActions";
+import { tagItems, TAG_REF_TYPE } from "@/features/knowledge/hub/tags/tagActions";
 import { useHubTags } from "@/features/knowledge/hub/tags/useHubTags";
 import { TagDialog } from "@/features/knowledge/hub/tags/TagDialog";
-import { TagChips } from "@/features/knowledge/hub/tags/TagChips";
+import { PeekTags } from "@/features/knowledge/hub/tags/PeekTags";
 import { TagsSidebarGroup } from "@/features/knowledge/hub/tags/TagsSidebarGroup";
 
 const GROUP_ID = "knowledge-hub";
@@ -280,8 +280,15 @@ export function KnowledgeHubPage({
         },
       ]
     : [];
+  // Triage lists read the person's own rows; they filter by words only. Any
+  // other filter (a #tag, a type…) is said, with the way to apply it.
+  const triageFiltered =
+    Boolean(triageView) &&
+    Object.keys(normalizeQuery(state.query)).some((k) => !["text", "mode", "state", "sort"].includes(k));
   const [tagFor, setTagFor] = useState<KnowledgeHit[] | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
+  /** Bumped after a tag/file write: the peek remounts and re-reads where the item is filed. */
+  const [filedVersion, setFiledVersion] = useState(0);
 
   const hits: KnowledgeHit[] =
     triageView
@@ -526,7 +533,10 @@ export function KnowledgeHubPage({
       });
       if (outcome.failed.length) toast.error(outcome.sentence);
       else toast.success(outcome.sentence);
-      if (outcome.ok) results.refresh();
+      if (outcome.ok) {
+        setFiledVersion((n) => n + 1);
+        results.refresh();
+      }
     } finally {
       setBusy(false);
     }
@@ -538,10 +548,10 @@ export function KnowledgeHubPage({
   // ─── triage (Readwise Reader) and tags ────────────────────────────────────
 
   /** Keep a Source through its keep door (which starts its processing), then file it. */
-  const triageDoor = async (token: string, id: string, next: TriageState) => {
+  const triageDoor = async (token: string, id: string, next: TriageState, orgId?: string | null) => {
     if (next === "kept" && token === "processed_document") {
       try {
-        await keepSource(id, { organizationId: await ensureOrgId(activeOrgId) });
+        await keepSource(id, { organizationId: await ensureOrgId(orgId ?? activeOrgId) });
       } catch (err) {
         throw new Error(sourceRefusalSentence(err));
       }
@@ -608,6 +618,7 @@ export function KnowledgeHubPage({
       if (outcome.failed.length || !outcome.ok) toast.error(outcome.sentence);
       else toast.success(outcome.sentence);
       if (outcome.ok) {
+        setFiledVersion((n) => n + 1);
         hubTags.retry();
         results.refresh();
         triage.refresh();
@@ -914,6 +925,20 @@ export function KnowledgeHubPage({
       </div>
       {!searching ? <div className="sm:hidden">{layoutSwitch}</div> : null}
       {bulkBar}
+      {triageFiltered ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground" role="status">
+          <span className="min-w-0 flex-1">
+            {title} lists your own triage and filters by words only, so these filters are not applied here.
+          </span>
+          <button
+            type="button"
+            className="font-medium text-foreground underline-offset-2 hover:underline"
+            onClick={() => write({ view: { kind: "everything" }, query: normalizeQuery({ ...state.query, state: undefined }), peek: null })}
+          >
+            Apply them to Everything
+          </button>
+        </div>
+      ) : null}
       {noLibraries ? (
         <p className="px-2 py-4 text-sm text-muted-foreground" role="status">
           You have no libraries you can open yet, so nothing is in any library. Create a library and add Sources to it.
@@ -998,6 +1023,7 @@ export function KnowledgeHubPage({
 
   const peekNode = peekKey ? (
     <HubPeek
+      key={`${peekKey}:${filedVersion}`}
       hit={peekHit}
       peekKey={peekKey}
       sample={sample}
@@ -1031,20 +1057,7 @@ export function KnowledgeHubPage({
           </>
         ) : null
       }
-      tagsSection={
-        peekHit ? (
-          <section>
-            <h3 className="pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Tags</h3>
-            {hitTags(peekHit).length ? (
-              <TagChips tags={hitTags(peekHit)} onFilter={filterByTag} max={20} />
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                No tags yet. Press t to tag it; typing #name in the search box finds everything with that tag.
-              </p>
-            )}
-          </section>
-        ) : null
-      }
+      tagsSection={peekHit ? <PeekTags hit={peekHit} live={!sample} onFilter={filterByTag} /> : null}
     />
   ) : null;
 

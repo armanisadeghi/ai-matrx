@@ -24,8 +24,18 @@ keep working until H6 and link to the hub.
   `in:`, `by:`, `from:`, `sort:`), shared with ⌘K.
 - `features/knowledge/hub/hubState.ts` — the whole hub state IS the URL (`view`, `q`, filters,
   `layout`, `peek`, `data`); `selectionQuery` = what a sidebar click does.
-- `features/knowledge/hub/hubActions.ts` — File under (association door), Keep (Source keep door),
-  Trash (`archiveRecord`); Archive is the registered promise `knowledge.hub-archive` until H5.
+- `features/knowledge/hub/hubActions.ts` — File under (association door), Trash (`archiveRecord`).
+- `features/knowledge/hub/triage/` — personal triage (H5, Readwise Reader): sidebar Inbox / Kept /
+  Archived read `platform.triage_items` with live counts (exact to 200, then "200+"); Keep / Archive /
+  Back to Inbox write `platform.set_triage_state` (a Source's Keep also calls its keep door, which
+  starts processing). Keys: `s` keep · `e` archive · `i` back to Inbox · `m` file under · `t` tag ·
+  `?` the shortcut sheet — `k`/`f` stay Linear's move-up / filter. The toast's Undo puts each item back.
+- `features/knowledge/hub/tags/` — tags are filing (§4): `t` / Tag calls `platform.file_under_tag`
+  (tag scope by slug in the item's org). `#tag` resolves client-side in `withMentionResolution`
+  (hub and ⌘K): tag scopes by slug first, else a scope of that exact name, else every section says
+  no tag has the name. Container refs go out as `{type, id}` (the service's `EntityRef` forbids
+  `name`). Sidebar Tags group counts live associations per tag; rows and the peek show `#tag` chips
+  (click = filter); the filter menu has a Tags facet.
 - `features/knowledge/hub/hooks/` — URL state, the per-section results runner, sidebar reads
   (saved views `surface_key='knowledge/hub'`, favorites `ues_list`, containers via the registry
   candidate reader; libraries read `media.source_library` directly — no title column).

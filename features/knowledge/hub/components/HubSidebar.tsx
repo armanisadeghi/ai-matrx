@@ -12,6 +12,8 @@ import {
   ChevronDown,
   ChevronRight,
   Inbox,
+  Archive,
+  CheckCircle2,
   Layers,
   Bookmark,
   BookmarkPlus,
@@ -68,6 +70,10 @@ interface HubSidebarProps {
   viewCounts?: Record<string, ViewCount | undefined>;
   onSaveView?: () => void;
   onViewAction?: (view: HubSavedView, action: SavedViewAction) => void;
+  /** Inbox / Kept / Archived counts ("12", "200+"); null while counting. */
+  triageCounts?: { inbox?: string | null; kept?: string | null; archived?: string | null };
+  /** The Tags group (features/knowledge/hub/tags), shown under "Filed under". */
+  tagsGroup?: React.ReactNode;
 }
 
 const ROW =
@@ -84,7 +90,7 @@ function Row({
   active: boolean;
   icon?: React.ComponentType<{ className?: string }>;
   label: string;
-  count?: number | null;
+  count?: number | string | null;
   onClick: () => void;
   indent?: boolean;
 }) {
@@ -97,7 +103,7 @@ function Row({
     >
       {Icon ? <Icon className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
       <span className="min-w-0 flex-1 truncate">{label}</span>
-      {typeof count === "number" ? (
+      {typeof count === "number" || typeof count === "string" ? (
         <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{count}</span>
       ) : null}
     </button>
@@ -323,7 +329,17 @@ function ContainerGroup({
   );
 }
 
-export function HubSidebar({ view, data, sample, onSelect, viewCounts, onSaveView, onViewAction }: HubSidebarProps) {
+export function HubSidebar({
+  view,
+  data,
+  sample,
+  onSelect,
+  viewCounts,
+  onSaveView,
+  onViewAction,
+  triageCounts,
+  tagsGroup,
+}: HubSidebarProps) {
   const [allOpen, setAllOpen] = useState(false);
   const items = data.savedViews.items;
   const pinnedViews = items.filter((v) => v.pinned);
@@ -348,8 +364,23 @@ export function HubSidebar({ view, data, sample, onSelect, viewCounts, onSaveVie
         <Row
           icon={Inbox}
           label="Inbox"
+          count={triageCounts?.inbox}
           active={view.kind === "inbox"}
           onClick={() => onSelect({ kind: "inbox" })}
+        />
+        <Row
+          icon={CheckCircle2}
+          label="Kept"
+          count={triageCounts?.kept}
+          active={view.kind === "kept"}
+          onClick={() => onSelect({ kind: "kept" })}
+        />
+        <Row
+          icon={Archive}
+          label="Archived"
+          count={triageCounts?.archived}
+          active={view.kind === "archived"}
+          onClick={() => onSelect({ kind: "archived" })}
         />
         <Row
           icon={Layers}
@@ -424,6 +455,7 @@ export function HubSidebar({ view, data, sample, onSelect, viewCounts, onSaveVie
             onSelect={onSelect}
           />
         ))}
+        {tagsGroup}
 
         <GroupHeading>Kinds</GroupHeading>
         {HUB_KINDS.map((k) => {

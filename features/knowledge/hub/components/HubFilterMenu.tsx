@@ -37,6 +37,7 @@ import {
   tokenLabel,
 } from "@/features/knowledge/hub/hubPresentation";
 import { RELATIVE_DATE_LABEL } from "@/features/knowledge/api/knowledgeQueryText";
+import { hitTags } from "@/features/knowledge/hub/tags/tagActions";
 
 interface HubFilterMenuProps {
   open: boolean;
@@ -107,6 +108,7 @@ export function HubFilterMenu({
   const capturedBy = facet("captured_by", (h) => capturedByLabel(h));
   const filed = countMulti(hits, (h) => (h.filed_under ?? []).map((f) => `${f.type}\u0000${f.id}\u0000${f.name ?? ""}`));
   const entities = countMulti(hits, (h) => h.entities ?? []);
+  const tags = countMulti(hits, hitTags);
   const partialNote = describeFacetSource(origin, "items");
 
   const toggle = (chip: QueryChip, on: boolean) =>
@@ -191,6 +193,24 @@ export function HubFilterMenu({
               {filed.size === 0 ? (
                 <p className="px-2 py-1.5 text-xs text-muted-foreground">
                   None of the loaded items report where they are filed.
+                </p>
+              ) : null}
+            </CommandGroup>
+            <CommandGroup heading="Tags">
+              {[...tags.entries()].slice(0, 30).map(([t, count]) => (
+                <FilterItem
+                  onToggle={toggle}
+                  key={t}
+                  value={`tag #${t}`}
+                  label={`#${t}`}
+                  count={count}
+                  on={(query.within ?? []).some((w) => w.type === "tag" && (w.name ?? "").toLowerCase() === t.toLowerCase())}
+                  chip={{ kind: "within", ref: { type: "tag", name: t } }}
+                />
+              ))}
+              {tags.size === 0 ? (
+                <p className="px-2 py-1.5 text-xs text-muted-foreground">
+                  None of the loaded items are tagged. Press t on an item to tag it.
                 </p>
               ) : null}
             </CommandGroup>

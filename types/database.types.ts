@@ -71594,6 +71594,7 @@ export type Database = {
           data_class: Database["platform"]["Enums"]["data_class"]
           entity_id: string
           entity_token: string
+          filed_tags: string[]
           kernel_only: boolean
           organization_id: string
           origin_client: string | null
@@ -71612,6 +71613,7 @@ export type Database = {
           data_class: Database["platform"]["Enums"]["data_class"]
           entity_id: string
           entity_token: string
+          filed_tags?: string[]
           kernel_only?: boolean
           organization_id: string
           origin_client?: string | null
@@ -71630,6 +71632,7 @@ export type Database = {
           data_class?: Database["platform"]["Enums"]["data_class"]
           entity_id?: string
           entity_token?: string
+          filed_tags?: string[]
           kernel_only?: boolean
           organization_id?: string
           origin_client?: string | null
@@ -73277,6 +73280,10 @@ export type Database = {
       _search_item_drop: {
         Args: { p_id: string; p_token: string }
         Returns: undefined
+      }
+      _search_item_filed_tags: {
+        Args: { p_id: string; p_token: string }
+        Returns: string[]
       }
       _search_item_put: {
         Args: {
@@ -75568,6 +75575,21 @@ export type Database = {
         Returns: boolean
       }
       trash_is_owner_only: { Args: { p_token: string }; Returns: boolean }
+      triage_items: {
+        Args: { p_cursor?: string; p_limit?: number; p_state?: string }
+        Returns: {
+          entity_id: string
+          entity_token: string
+          filed_at: string
+          next_cursor: string
+          organization_id: string
+          origin_client: string
+          source_kind: string
+          subtitle: string
+          title: string
+          triage_state: string
+        }[]
+      }
       undeclared_carrying_cycles: {
         Args: never
         Returns: {
@@ -85028,6 +85050,18 @@ export type Database = {
         }
         Returns: Json
       }
+      mnd_run_history: {
+        Args: {
+          p_limit?: number
+          p_mandate_key: string
+          p_offset?: number
+          p_org_id?: string
+          p_status?: string
+          p_user_id?: string
+          p_view?: string
+        }
+        Returns: Json
+      }
       move_file: {
         Args: { p_file_id: string; p_new_parent_folder_id: string }
         Returns: Json
@@ -89867,6 +89901,20 @@ export type Database = {
       }
     }
     Functions: {
+      chunk_passes_recall_filters: {
+        Args: {
+          c: Database["rag"]["Tables"]["kg_chunks"]["Row"]
+          p_filters: Json
+        }
+        Returns: boolean
+      }
+      chunk_visible_beyond_readable: {
+        Args: {
+          c: Database["rag"]["Tables"]["kg_chunks"]["Row"]
+          p_user: string
+        }
+        Returns: boolean
+      }
       fn_bulk_delete_library_documents: {
         Args: { p_ids?: string[]; p_status?: string }
         Returns: Json
@@ -90034,6 +90082,63 @@ export type Database = {
         Returns: undefined
       }
       member_source_entity_token: { Args: { p_kind: string }; Returns: string }
+      recall_entities: {
+        Args: {
+          p_limit?: number
+          p_phrase: string
+          p_tokens: string[]
+          p_user: string
+        }
+        Returns: {
+          cluster_id: string
+          entity_id: string
+          kind: string
+          name: string
+          organization_id: string
+        }[]
+      }
+      recall_entity_chunks: {
+        Args: {
+          p_entity_ids: string[]
+          p_filters?: Json
+          p_k: number
+          p_min_chars?: number
+          p_readable: string[]
+          p_user: string
+        }
+        Returns: {
+          chunk_id: string
+          mentions: number
+        }[]
+      }
+      recall_lexical: {
+        Args: {
+          p_filters?: Json
+          p_k: number
+          p_query: string
+          p_readable: string[]
+          p_user: string
+        }
+        Returns: {
+          chunk_id: string
+          rank: number
+        }[]
+      }
+      recall_vector: {
+        Args: {
+          p_ef_search?: number
+          p_embedding_table: string
+          p_filters?: Json
+          p_k: number
+          p_query_vector: string
+          p_readable: string[]
+          p_user: string
+        }
+        Returns: {
+          chunk_id: string
+          distance: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
