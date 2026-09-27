@@ -82,6 +82,11 @@ export interface FilePickerWindowProps {
   /** Human-readable scope for the window id (debugging / tray labels). */
   scopeId: string;
   initialFilter?: FilesResourcePickerFilter;
+  /**
+   * Only this organization's files are listed and an upload is filed there (a filter on what is
+   * shown, not a permission). The data grid's attachment cell passes the table's organization.
+   */
+  organizationId?: string | null;
 }
 
 export function FilePickerWindow({
@@ -96,6 +101,7 @@ export function FilePickerWindow({
   title = "Choose a file",
   scopeId,
   initialFilter,
+  organizationId = null,
 }: FilePickerWindowProps) {
   // Window ids MUST be unique per mounted instance. The same logical picker
   // can legitimately be on screen twice — e.g. the scope context-item editor
@@ -183,7 +189,8 @@ export function FilePickerWindow({
             selectedFileIds={attached?.ids}
             initialFilter={initialFilter}
             fillHost
-            topSlot={<InlineUploadArea onSelect={handleUpload} selectionMode="single" />}
+            organizationId={organizationId}
+            topSlot={<InlineUploadArea onSelect={handleUpload} selectionMode="single" organizationId={organizationId} />}
           />
         </div>
         {attached && (
