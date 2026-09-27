@@ -25,8 +25,11 @@
  *    after a live agent could not fix a class's description or exam dates.
  *  - `delete_classes` (entity, 2026-09-27) deletes a list of classes by id.
  * Every list is validated whole (`features/education/classes/classAgentWrites.ts`)
- * before the first write, so a bad entry writes nothing. Each handler returns
- * a summary naming the classes it touched, with ids and slugs.
+ * before the first write, so a bad entry writes nothing. Every target is
+ * registered as `{ validate, apply }`: the parse runs as `validate`, before the
+ * person's approval card, so a bad value is refused with no card; `apply`
+ * returns `{ summary, data }` naming the classes it touched, with ids and
+ * slugs, which goes back to the agent.
  *
  * What delete does (checked against the live DB 2026-09-27): `delete_scope`
  * is a SOFT delete — it stamps deleted_at on the class and every child scope,

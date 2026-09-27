@@ -23,7 +23,10 @@ import { ClassFormDialog, type ClassFormValue } from "./ClassFormDialog";
 import { AccessModeBadge } from "./AccessModeBadge";
 import { daysUntil, nextExamDate } from "../settings";
 import type { ClassSettings, StudyClass } from "../types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteOutcome,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
 import {
   EDUCATION_CLASSES_SURFACE_NAME,
@@ -81,17 +84,6 @@ function partialFailure(
       error instanceof Error && error.message ? error.message : "unknown error"
     }.${notAttempted.length ? ` Not attempted: ${notAttempted.join(", ")}.` : ""}`,
   );
-}
-
-/** `{ validate, apply }` as one plain handler (see getWriteHandlers). */
-function plainHandler(target: {
-  validate: (value: unknown) => void;
-  apply: (value: unknown) => Promise<ClassWriteOutcome>;
-}): (value: unknown) => Promise<void> {
-  return (value) => {
-    target.validate(value);
-    return target.apply(value) as unknown as Promise<void>;
-  };
 }
 
 function todayIso(): string {
@@ -221,7 +213,7 @@ export function ClassesHome() {
           allOwned.map((c) => c.name),
         );
       },
-      apply: async (value: unknown): Promise<ClassWriteOutcome> => {
+      apply: async (value: unknown): Promise<SurfaceWriteOutcome> => {
         const inputs = parseCreateClassesValue(
           value,
           allOwned.map((c) => c.name),
@@ -246,7 +238,7 @@ export function ClassesHome() {
       validate: (value: unknown) => {
         parseUpdateClassesValue(value, allOwned);
       },
-      apply: async (value: unknown): Promise<ClassWriteOutcome> => {
+      apply: async (value: unknown): Promise<SurfaceWriteOutcome> => {
         const plans = parseUpdateClassesValue(value, allOwned);
         const done: StudyClass[] = [];
         for (const [i, plan] of plans.entries()) {
@@ -269,7 +261,7 @@ export function ClassesHome() {
       validate: (value: unknown) => {
         parseDeleteClassesValue(value, allOwned);
       },
-      apply: async (value: unknown): Promise<ClassWriteOutcome> => {
+      apply: async (value: unknown): Promise<SurfaceWriteOutcome> => {
         const targets = parseDeleteClassesValue(value, allOwned);
         const done: StudyClass[] = [];
         for (const [i, cls] of targets.entries()) {
@@ -286,15 +278,10 @@ export function ClassesHome() {
     },
   };
 
-  // The platform seam still takes plain functions (the two-phase
-  // `{ validate, apply }` shape is in flight). Until it lands, each target
-  // registers as one function that validates the whole list, then applies,
-  // and still returns its outcome — ignored today, forwarded once it lands.
-  const getWriteHandlers = () => ({
-    create_classes: plainHandler(classWriteTargets.create_classes),
-    update_classes: plainHandler(classWriteTargets.update_classes),
-    delete_classes: plainHandler(classWriteTargets.delete_classes),
-  });
+  // Two-phase registration: `validate` runs before the person's approval
+  // card (a bad list is refused and no card is shown), `apply` after approval;
+  // its outcome goes back to the agent in the tool result.
+  const getWriteHandlers = () => classWriteTargets;
 
   async function handleCreate(value: ClassFormValue) {
     const created = await createClass(value);

@@ -113,25 +113,27 @@ export function ClassFormDialog({
   // open it. Validated whole before any setter runs, so a partly-bad value
   // stages nothing. Only useState setters and a parent callback are closed
   // over. Nothing is saved — the person presses Create.
-  // Registered as a plain function: the platform's two-phase
-  // `{ validate, apply }` handler shape is in flight. The outcome is returned
-  // anyway (ignored today, forwarded to the agent once that lands).
   useSurfaceWriteHandlers(agentSurfaceName ?? null, {
-    new_class_draft: (value: unknown) => {
-      const fields = parseNewClassDraftValue(value);
-      if (fields.name !== undefined) setName(fields.name);
-      if (fields.description !== undefined) setDescription(fields.description);
-      if (fields.teacher !== undefined) setTeacher(fields.teacher);
-      if (fields.term !== undefined) setTerm(fields.term);
-      if (fields.period !== undefined) setPeriod(fields.period);
-      if (fields.accessMode !== undefined) setAccessMode(fields.accessMode);
-      if (fields.price !== undefined) setPrice(String(fields.price));
-      if (fields.examDates !== undefined) setExamDates(fields.examDates);
-      onOpenChange(true);
-      const outcome = {
-        summary: `Filled the New class dialog (${Object.keys(fields).join(", ")}). Nothing is saved until the person presses Create class.`,
-      };
-      return outcome as unknown as void;
+    new_class_draft: {
+      // Before the approval card: a bad value is refused with no card.
+      validate: (value: unknown) => {
+        parseNewClassDraftValue(value);
+      },
+      apply: (value: unknown) => {
+        const fields = parseNewClassDraftValue(value);
+        if (fields.name !== undefined) setName(fields.name);
+        if (fields.description !== undefined) setDescription(fields.description);
+        if (fields.teacher !== undefined) setTeacher(fields.teacher);
+        if (fields.term !== undefined) setTerm(fields.term);
+        if (fields.period !== undefined) setPeriod(fields.period);
+        if (fields.accessMode !== undefined) setAccessMode(fields.accessMode);
+        if (fields.price !== undefined) setPrice(String(fields.price));
+        if (fields.examDates !== undefined) setExamDates(fields.examDates);
+        onOpenChange(true);
+        return {
+          summary: `Filled the New class dialog (${Object.keys(fields).join(", ")}). Nothing is saved until the person presses Create class.`,
+        };
+      },
     },
   });
   const layerProps = agentSurfaceName
