@@ -45,6 +45,15 @@ export interface ContainerInventory {
   /** catalogue key → count for this container, or null when uncountable. */
   counts: Record<string, number | null>;
   loading: boolean;
+  /**
+   * The inventory merges three reads (items shared with the organization, the
+   * direct counts, the new system's pick lists). Each one that failed is named
+   * here — the counts on screen are then short, and the surface says so
+   * (RC-B12 round 12: a failed source is never silently a smaller number).
+   */
+  failures: string[];
+  /** Re-run every read. */
+  retry: () => void;
 }
 
 export function useContainerInventory({
@@ -56,10 +65,13 @@ export function useContainerInventory({
 }): ContainerInventory {
   const [counts, setCounts] = React.useState<Record<string, number | null>>({});
   const [loading, setLoading] = React.useState(true);
+  const [failures, setFailures] = React.useState<string[]>([]);
+  const [attempt, setAttempt] = React.useState(0);
 
   React.useEffect(() => {
     if (!value) {
       setCounts({});
+      setFailures([]);
       setLoading(false);
       return undefined;
     }
@@ -67,22 +79,25 @@ export function useContainerInventory({
 
     (async () => {
       setLoading(true);
+      const failed: string[] = [];
 
       // Shared-with-org pass — org containers only (permission grants).
       const sharedByTable = new Map<string, number>();
       if (column === "organization_id") {
         try {
-          const { data } = await supabase
+          const { data, error: sharedError } = await supabase
             .schema("iam").from("permissions")
             .select("resource_type")
             .eq("granted_to_organization_id", value)
             .neq("status", "rejected");
+          if (sharedError) throw sharedError;
           for (const row of data ?? []) {
             const t = (row as { resource_type: string }).resource_type;
             sharedByTable.set(t, (sharedByTable.get(t) ?? 0) + 1);
           }
         } catch (err) {
           console.error("[useContainerInventory] shared query failed:", err);
+          failed.push("items shared with this organization");
         }
       }
 
@@ -112,9 +127,11 @@ export function useContainerInventory({
           }
         } else {
           console.error("[useContainerInventory] count rpc failed:", error);
+          failed.push("the item counts");
         }
       } catch (err) {
         console.error("[useContainerInventory] count rpc threw:", err);
+        failed.push("the item counts");
       }
 
       // THE NEW SYSTEM'S SHARE OF A KIND (lane MOVER-DELETIONS): a switched organization's pick
@@ -129,6 +146,7 @@ export function useContainerInventory({
             }
           } catch (err) {
             console.error("[useContainerInventory] lists in the new system failed:", err);
+            failed.push("pick lists");
           }
         }
       }
@@ -152,13 +170,14 @@ export function useContainerInventory({
       }
 
       setCounts(next);
+      setFailures(failed);
       setLoading(false);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [column, value]);
+  }, [column, value, attempt]);
 
-  return { counts, loading };
+  return { counts, loading, failures, retry: () => setAttempt((n) => n + 1) };
 }

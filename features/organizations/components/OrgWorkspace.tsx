@@ -89,6 +89,7 @@ import {
   selectScopeTypesByOrg,
   selectScopesByOrg,
 } from "@/features/scopes/redux/selectors/admin";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 export function OrgWorkspace() {
   const params = useParams();
@@ -165,8 +166,12 @@ export function OrgWorkspace() {
   // Legacy iam.permissions sharing inventory — feeds the "Resources by content
   // role" grid (OrgResourceRoleSection) + the contribute flow. Kept ALONGSIDE
   // the canonical association cards until the sharing surface is reconciled.
-  const { counts: inventoryCounts, loading: inventoryLoading } =
-    useOrgResourceInventory(organization?.id ?? null);
+  const {
+    counts: inventoryCounts,
+    loading: inventoryLoading,
+    failures: inventoryFailures,
+    retry: retryInventory,
+  } = useOrgResourceInventory(organization?.id ?? null);
 
   const suggestions = useScopeSuggestions();
   const orgSuggestions = orgScopes.flatMap((sc) => suggestions.forScope(sc.id));
@@ -631,6 +636,16 @@ export function OrgWorkspace() {
             </div>
           </div>
 
+          {inventoryFailures.length > 0 ? (
+            // Some of the counts' sources failed: the numbers below are short, and say so.
+            <StaleDataNotice
+              hasData
+              partial
+              what={inventoryFailures.join(", ")}
+              onRetry={retryInventory}
+              className="mb-3"
+            />
+          ) : null}
           {CONTENT_ROLES.map((role) => (
             <OrgResourceRoleSection
               key={role.id}

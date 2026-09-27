@@ -17,12 +17,13 @@ import {
 import { useContainerInventory } from "@/features/organizations/hooks/useContainerInventory";
 import { OrgResourceRoleSection } from "@/features/organizations/components/OrgResourceRoleSection";
 import { ContainerResourceSheet } from "@/features/organizations/components/ContainerResourceSheet";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 // Tasks/projects have their own surfaces; don't list them as task "resources".
 const EXCLUDE = new Set(["task", "project"]);
 
 export function TaskAssociatedResources({ taskId }: { taskId: string }) {
-  const { counts, loading } = useContainerInventory({
+  const { counts, loading, failures, retry } = useContainerInventory({
     column: "task_id",
     value: taskId,
   });
@@ -37,7 +38,8 @@ export function TaskAssociatedResources({ taskId }: { taskId: string }) {
   );
 
   // Hide entirely once loaded with nothing linked — keeps the editor uncluttered.
-  if (!loading && total === 0) return null;
+  // A read that failed is not "nothing linked": the section stays and says so.
+  if (!loading && total === 0 && failures.length === 0) return null;
 
   return (
     <section>
@@ -50,6 +52,15 @@ export function TaskAssociatedResources({ taskId }: { taskId: string }) {
           Linked to this task
         </span>
       </div>
+      {failures.length > 0 ? (
+        <StaleDataNotice
+          hasData={total > 0}
+          partial={total > 0}
+          what={failures.join(", ")}
+          onRetry={retry}
+          className="mb-3"
+        />
+      ) : null}
       <div className="space-y-4">
         {CONTENT_ROLES.map((r) => {
           const entries = entriesByRole(r.id).filter(
