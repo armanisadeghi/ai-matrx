@@ -38,6 +38,14 @@ Of ~16 sub-pickers:
 
 ## Change Log
 
+- 2026-09-27 — The main menu opens with **Search your knowledge… ⌘K**: the search steps hand off
+  to the ⌘K bar (`features/knowledge/command-bar/`) with "Attach here" as the primary action,
+  through the host's own `onResourceSelected` (a note is fetched in full first — never a bare id).
+  A host that can re-open the picker (`onReopenAt`, today `PlusAttachMenu`) also gets its
+  non-search views (Upload, URL entry, Voice, Tools…) as bar commands that re-open the picker at
+  that view (`initialView`). The drill-in views all stay. The conversation-reference writer moved
+  to `conversation-reference-context.ts` (shared with the bar).
+
 - 2026-09-14 — The canonical top-level attach rows now keep a 44px touch
   target through tablet widths and return to the compact 24px desktop density
   at `lg`. This fixes the shared Smart Input mobile bottom sheet for every
