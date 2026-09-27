@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
 import { fetchTranscriptsPaginated } from "@/features/transcripts/service/transcriptsService";
 import { Transcript } from "@/features/transcripts/types";
+import { useRead } from "@/components/read-state/useRead";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export function VoicePadHistorySidebar({
   onClose,
@@ -9,20 +10,11 @@ export function VoicePadHistorySidebar({
   onClose: () => void;
   onSelectTranscript: (text: string) => void;
 }) {
-  const [transcripts, setTranscripts] = useState<Transcript[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchTranscriptsPaginated(20)
-      .then((data) => {
-        setTranscripts(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to load transcripts history", err);
-        setLoading(false);
-      });
-  }, []);
+  const read = useRead<Transcript[]>(() => fetchTranscriptsPaginated(20), [], {
+    initialData: [],
+  });
+  const transcripts = read.data ?? [];
+  const loading = read.isLoading;
 
   return (
     <div className="flex flex-col min-h-0 h-full w-full">
@@ -31,6 +23,13 @@ export function VoicePadHistorySidebar({
           <div className="text-[10px] text-muted-foreground text-center py-4 animate-pulse">
             Loading...
           </div>
+        ) : read.isError && transcripts.length === 0 ? (
+          <ReadFailure
+            error={read.error}
+            what="your recording history"
+            onRetry={read.retry}
+            className="m-1"
+          />
         ) : transcripts.length === 0 ? (
           <div className="text-[10px] text-muted-foreground text-center py-4">
             No history found

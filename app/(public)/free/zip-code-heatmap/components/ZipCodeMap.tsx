@@ -239,6 +239,7 @@ export default function ZipCodeMap({
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/30 rounded-lg z-[999]">
           <MapPin className="w-16 h-16 text-muted-foreground mb-4" />
           <p className="text-lg font-medium text-muted-foreground mb-1">
+            {/* read-gate-exempt: data is what the person uploaded or picked; FileUpload and TableDataSource show their own load failures */}
             No Data Loaded
           </p>
           <p className="text-sm text-muted-foreground">

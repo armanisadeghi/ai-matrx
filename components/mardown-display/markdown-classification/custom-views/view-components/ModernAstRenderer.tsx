@@ -262,6 +262,7 @@ const ModernAstRenderer: React.FC<AstRendererProps> = ({ data, className = "", a
     if (!processedNodes || processedNodes.length === 0) {
         return (
             <div className={`flex items-center max-w-3xljustify-center py-8 text-gray-500 dark:text-gray-400 ${className}`}>
+                {/* read-gate-exempt: renders the AST its caller parsed from markdown it already holds; no read happens here */}
                 <span className="text-sm">No content available</span>
             </div>
         );

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { catWriteArgs, categoryRow } from "@/lib/db/category-door";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
 import { useSearchParams } from "next/navigation";
@@ -206,6 +207,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [loadFailure, setLoadFailure] = useState<unknown>(null);
   // ─── Selection + the ?block=<uuid|block_id> deep link (THE DOOR LAW) ─────
   // A content block is an addressable record: `?block=` opens ONE, so a surface
   // that names a block (the Kind Registry's Assets tab) reaches that block
@@ -525,8 +527,9 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
         (skillData ?? []).map((s) => ({ id: s.id, label: s.label ?? s.id })),
       );
       setLoadFailed(false);
+      setLoadFailure(null);
     } catch (error) {
-      console.error("Error loading data:", error);
+      setLoadFailure(error);
       // The roster was never read. Without this the deep-link notice would
       // state a definitive negative ("not in this list") about data we could
       // not load at all.
@@ -1113,6 +1116,18 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
       <div className="flex items-center justify-center h-96">
         <MatrxMiniLoader />
       </div>
+    );
+  }
+
+  // The blocks, categories and skills are one read: a partial roster would
+  // offer "No skill" and "No Block Selected" over data that never arrived.
+  if (loadFailed) {
+    return (
+      <ReadFailure
+        error={loadFailure ?? true}
+        what="the content blocks"
+        onRetry={() => void loadData()}
+      />
     );
   }
 

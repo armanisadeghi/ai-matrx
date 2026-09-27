@@ -236,6 +236,7 @@ const AstRenderer: React.FC<AstRendererProps> = ({
       <div className={`flex items-center justify-center p-8 text-gray-500 dark:text-gray-400 italic bg-gray-50 dark:bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 ${className}`}>
         <div className="text-center">
           <FileText className="mx-auto mb-2 size-6" aria-hidden="true" />
+          {/* read-gate-exempt: renders the AST its caller parsed from markdown it already holds; no read happens here */}
           <div>No content to display</div>
         </div>
       </div>

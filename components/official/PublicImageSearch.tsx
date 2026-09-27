@@ -25,6 +25,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import IconButton from "@/components/official/IconButton";
 import { Badge } from "@/components/ui/badge";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 /**
  * Search Unsplash via our own server route (`app/api/unsplash/route.ts`).
@@ -148,6 +149,7 @@ export function PublicImageSearch({
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState<unknown>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "natural">("grid");
@@ -184,7 +186,7 @@ export function PublicImageSearch({
           15,
         );
         if (error) {
-          console.error("Unsplash search failed:", error);
+          setSearchError(new Error(error));
           toast({
             title: "Search failed",
             description: error ?? "Unable to fetch images. Please try again.",
@@ -198,10 +200,9 @@ export function PublicImageSearch({
           setPhotos((prev) => [...prev, ...results]);
         }
         setHasMore(results.length > 0);
+        setSearchError(null);
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error occurred";
-        console.error("Error searching photos:", errorMessage);
+        setSearchError(error);
         toast({
           title: "Search Error",
           description: "Failed to search for images. Please try again later.",
@@ -660,7 +661,13 @@ function SearchDialog({
 
           {/* Image gallery */}
           <div className="flex-1 overflow-y-auto p-4">
-            {photos.length === 0 && !loading ? (
+            {searchError && photos.length === 0 && !loading ? (
+              <ReadFailure
+                error={searchError}
+                what="images for this search"
+                onRetry={() => void searchPhotos(searchQuery, 1)}
+              />
+            ) : photos.length === 0 && !loading ? (
               <div className="flex flex-col items-center justify-center h-full text-center p-8">
                 <ImagePlus className="h-12 w-12 text-gray-400 dark:text-gray-600 mb-4" />
                 <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">

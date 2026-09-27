@@ -76,6 +76,7 @@ export function TranscriptionCleanupContextPanel({
   /** null = not yet fetched; array = loaded (may be empty) */
   const [contextNotes, setContextNotes] = useState<Note[] | null>(null);
   const [loadingNotes, setLoadingNotes] = useState(false);
+  const [notesError, setNotesError] = useState<unknown>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const organizationId = useAppSelector(selectOrganizationId);
@@ -153,8 +154,11 @@ export function TranscriptionCleanupContextPanel({
       const all = await NotesAPI.getAll();
       const filtered = all.filter((n) => n.folder_name === CONTEXT_FOLDER);
       setContextNotes(filtered);
+      setNotesError(null);
       return filtered;
-    } catch {
+    } catch (error) {
+      // contextNotes stays null, so the next open re-reads.
+      setNotesError(error);
       toast.error("Could not load context notes");
       return [];
     } finally {
@@ -358,7 +362,9 @@ export function TranscriptionCleanupContextPanel({
                 <option value="" disabled>
                   {loadingNotes
                     ? "Loading notes…"
-                    : contextNotes?.length === 0
+                    : notesError && contextNotes === null
+                      ? "Couldn't load your notes — close and reopen to retry"
+                      : contextNotes?.length === 0
                       ? "No notes in Transcription Contexts yet"
                       : "Choose a note…"}
                 </option>

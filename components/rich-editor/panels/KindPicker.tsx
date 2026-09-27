@@ -137,7 +137,9 @@ export function KindPicker({
                 <ErrorAlchemyMenu />
               </div>
             )}
-            <CommandEmpty>{state === "loading" ? "Searching the shape registry…" : "No kind matches that search."}</CommandEmpty>
+            {state !== "error" && (
+              <CommandEmpty>{state === "loading" ? "Searching the shape registry…" : "No kind matches that search."}</CommandEmpty>
+            )}
             <CommandGroup>
               {rows.map((row) => (
                 <CommandItem key={row.id} value={row.id} onSelect={() => void choose(row)}>

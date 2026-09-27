@@ -886,6 +886,7 @@ export function EntityListPage<TRow>({
           // the empty state (and its emptyAction door) existed only in the table
           // branch, so a user whose saved view style was "cards" met a blank
           // page with no title, no explanation, and no way forward.
+          // read-gate-exempt: resolvedEmptyState becomes failureEmptyState when list.error is set, and the alert slot above shows the failure with its menu
           <EntityListEmpty state={resolvedEmptyState} />
         ) : view === "cards" && cardsView ? (
           cardsView(altViewProps)

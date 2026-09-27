@@ -37,6 +37,7 @@ import {
 } from "@/features/data-tables/service";
 import { isServiceFailure } from "@/features/data-tables/types";
 import { toast } from "@/components/ui/use-toast";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface RowOrderingModalProps {
   isOpen: boolean;
@@ -117,6 +118,7 @@ export default function RowOrderingModal({
   // actual row label — field or formula) or an explicit field_name override.
   const [labelSelection, setLabelSelection] = useState<string>(DEFAULT_LABEL_OPTION);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [saving, setSaving] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -198,8 +200,9 @@ export default function RowOrderingModal({
 
       setRows(rowItems);
       setHasChanges(false);
+      setLoadError(null);
     } catch (err) {
-      console.error("Error loading rows:", err);
+      setLoadError(err);
     } finally {
       setLoading(false);
     }
@@ -419,6 +422,8 @@ export default function RowOrderingModal({
             <div className="flex items-center justify-center h-32">
               <div className="text-muted-foreground">Loading rows...</div>
             </div>
+          ) : loadError && rows.length === 0 ? (
+            <ReadFailure error={loadError} what="this table's rows" onRetry={() => void loadAllRows()} />
           ) : rows.length === 0 ? (
             <div className="flex items-center justify-center h-32">
               <div className="text-muted-foreground">No rows found</div>
