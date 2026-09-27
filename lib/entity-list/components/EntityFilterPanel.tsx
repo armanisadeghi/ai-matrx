@@ -281,7 +281,9 @@ export function EntityFilterPanel<TRow>({
             <>
               <span className="mx-0.5 hidden h-4 w-px bg-border sm:block" />
               <ArrowUpDown className="h-3.5 w-3.5" />
-              <span className="hidden max-w-28 truncate lg:inline">
+              {/* A FIXED width: the search beside this button no longer jumps
+                  as the sort label changes (page-pass 2026-09-27). */}
+              <span className="hidden w-40 truncate text-left lg:inline" title={sortLabel}>
                 {sortLabel}
               </span>
             </>

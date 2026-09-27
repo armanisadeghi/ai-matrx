@@ -415,6 +415,9 @@ export function EntityListTable<TRow>({
             }
           : {
               search: false,
+              // One row inside the page's toolbar row: the table's controls
+              // never wrap under its view tabs.
+              singleRow: true,
               ...(pageToolbarSlot !== undefined
                 ? { portalInto: pageToolbarSlot }
                 : {}),
@@ -445,7 +448,7 @@ export function EntityListTable<TRow>({
       // @ai-matrx/design-system after 0.48.1 (spread so this compiles before).
       {...(viewTabsStore ? { viewTabsStore } : {})}
       // Row click fires the surface's opener. Side panel / row-window stay off —
-      // the kebab menu already carries Quick look and every other record action.
+      // the kebab menu carries every record action the surface declares.
       detail={{ enabled: false }}
       window={{ enabled: false }}
       onRowOpen={actions.onOpenRow}

@@ -164,8 +164,13 @@ export function EntityListToolbar<TRow>({
   const placeholder =
     isMobile && shortSearchPlaceholder ? shortSearchPlaceholder : searchPlaceholder;
   return (
-    <div className="flex min-w-0 items-center gap-1.5 sm:flex-wrap sm:gap-2">
-      <div className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-2.5 lg:h-9 lg:min-w-56">
+    // ONE ROW ON A DESKTOP, TWO ON A PHONE (page-pass 2026-09-27, blind judge on
+    // /research/topics at 375px: the table's controls merged into this row
+    // crushed the search to an empty 22px pill). On a phone the search owns
+    // its line and the controls take the next; from `sm:` up everything sits
+    // on the search row and the view-tab strip scrolls inside its own box.
+    <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2 lg:flex-nowrap">
+      <div className="flex h-12 min-w-0 flex-1 basis-full items-center gap-2 rounded-lg border border-border bg-card px-2.5 sm:basis-auto sm:min-w-48 lg:h-9 lg:min-w-56">
         {isFetching ? (
           <Loader2
             role="status"
@@ -367,7 +372,10 @@ export function EntityListToolbar<TRow>({
         <div
           ref={tableControlsRef}
           data-entity-list-table-controls
-          className="flex shrink-0 items-center empty:hidden [&>*]:w-auto"
+          // The table's row (view tabs + its controls) drawn here: never
+          // wrapping, the tab strip bounded and scrolling sideways, so it can
+          // neither push a third row nor squeeze the search.
+          className="flex min-w-0 flex-1 items-center justify-end empty:hidden sm:flex-none [&>*]:w-auto [&>*]:min-w-0 [&_[data-matrx-table-toolbar]]:flex-nowrap [&_[data-matrx-table-toolbar-tabs]]:flex-none [&_[data-matrx-table-toolbar-tabs]]:basis-auto [&_[data-matrx-table-toolbar-tabs]]:max-w-[14rem] [&_[data-matrx-table-toolbar-tabs]]:min-w-0 [&_[data-matrx-table-tabs]]:border-b-0"
         />
       )}
     </div>
