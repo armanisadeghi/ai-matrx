@@ -21,14 +21,19 @@ Judge by who is looking at it and why.
   audience; the page wants them to understand, trust, or sign up. Home,
   `how-it-works`, `why-ai-matrx`, `pricing`, `free`, `developers`, `download`,
   a feature's public landing page, a course's public page.
-- **Changes:** core 3's "title stands alone" and "no wasted space" do NOT
-  apply — headlines, descriptions, pictures and generous space are the point.
+- **Changes:** core 3's "title stands alone" does NOT apply — headlines,
+  descriptions, pictures and generous space are the point. Space must still be
+  deliberate: no dead empty block (a stretched card with nothing in it), and
+  the headline states the offer, not a side topic.
   Core 1 is `na` when the page renders in the public layout (no Agents
   menu, no agent runtime there — a manifest would be inert); say so.
 - **Adds:** look signed out AND signed in (`page:look --signed-out`): each
   state says the right thing — a signed-in person never gets a sign-up pitch
   for what they already have; one clear primary action per screen (sign up,
-  try it, contact), above the fold;
+  try it, contact), above the fold, and every path to the same outcome goes
+  to the same place (sign-up returns the visitor to where they were); plans or
+  options shown side by side carry comparable weight ("Everything in Free,
+  plus …");
   every claim is true today (no promise of a feature that doesn't exist — a
   future feature goes through the Coming Soon registry); OG image and
   description set; fast first load; reads well on a phone before a desktop.

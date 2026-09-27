@@ -11,7 +11,7 @@ miss found in testing becomes a rule here. **This file plus
 below is complete as written. The skill named after a rule holds the step-by-step
 procedure — open it only when you are doing that job or the check fails.
 
-## What you do with a page — six steps, in order
+## What you do with a page — seven steps, in order
 
 1. **Look first.** Run `pnpm page:look --route <route>` (every route the page
    has, with a real record id): it signs in as the test admin and writes
@@ -46,7 +46,13 @@ procedure — open it only when you are doing that job or the check fails.
    audience** (signed out for a shared link or promotional page — a guest run,
    not an admin run), then re-checked (console
    and Error Inspector clean after, not just on load).
-6. **Record it.** One Change Log line in the owning feature's `FEATURE.md` (no
+6. **Look again as a stranger — the final look.** On the live result, run
+   `page:look --full` (and `--signed-out` where visitors come) and review it as
+   a demanding customer who never saw your work: list every flaw you can still
+   see, rule or no rule. Fix them, or report each as open. Blind reviewers
+   grade the page after you; a flaw they find that your final look missed
+   counts against the pass.
+7. **Record it.** One Change Log line in the owning feature's `FEATURE.md` (no
    FEATURE.md for this route? the nearest one that owns its code) in the same
    commit (`page-pass <date>: type <x>, posture <x> after <product>, fixed …`),
    then the report below.
@@ -302,6 +308,10 @@ surface). Say which parts you judged as authored content.
   engineering notes ("no read path…", ticket codes), no placeholder copy. An
   unbuilt part is absent, or a Coming Soon entry.
 - Semantic color tokens only; right in light AND dark.
+- **A link is a link.** Navigation is an `<a>`/`Link` (new tab, copy, crawl),
+  never a button calling `router.push`. **A status is never shaped like a
+  button** — a state ("Premium is on") is a badge or a line of text, not a
+  full-width filled pill where an action would be.
 - **One door per action.** No button that repeats navigation the header or
   section nav already gives (a Back beside the section tabs). One create button per page (not a header "+", a
   toolbar button AND a create card); one org/scope control (the header's
