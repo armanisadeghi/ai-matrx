@@ -435,6 +435,13 @@ export default function TableToolbar({
           />
           )}
 
+        </div>
+        {/* THE LAST DOORS NEVER SCROLL AWAY (lane DATA-V2-BASICS, 2026-09-27). A direct child of the
+            row that scrolls, so it can stick to that row's right end. The row scrolls
+            sideways when it runs out of width, and at 1600 px — once Undo and Redo appear — Table
+            settings and More actions (the overflow menu itself) sat past the right edge with
+            nothing saying so. They are pinned to the row's right end; the rest scrolls under them. */}
+        <div className="sticky right-0 z-10 hidden shrink-0 items-center gap-1 border-l border-border/60 bg-background pl-2 md:flex">
           {/* Settings - only show if not read-only */}
           {!isReadOnly && (
             <Button
@@ -443,11 +450,11 @@ export default function TableToolbar({
               onClick={() => setShowTableConfigModal(true)}
               className="h-7 w-7 p-0"
               title="Table settings"
+              aria-label="Table settings"
             >
               <Settings className="h-3.5 w-3.5" />
             </Button>
           )}
-
           {toolbarTrailing}
           {moreActions}
         </div>
