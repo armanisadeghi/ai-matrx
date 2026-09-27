@@ -132,10 +132,25 @@ describe("the conversation is ONE source; each format reads the right representa
     expect(conversationFromState(state(), "c1", false).markdown).toMatch(/^# Pool route plan\n\n> Earlier messages could not be loaded/);
   });
 
-  it("offers one section per message so the preparation workspace can choose messages", () => {
+  it("offers one section per message — a range of the transcript — so choosing a message keeps every format real text", async () => {
     const sections = conversationSections(conv);
-    expect(sections.map((s) => s.path)).toEqual(["/messages/0", "/messages/1", "/messages/2", "/messages/3"]);
+    expect(sections).toHaveLength(4);
     expect(sections[0]?.label).toMatch(/^1\. You: Plan Tuesday/);
+    for (const s of sections) expect(s.path).toMatch(/^\/text\/\d+-\d+$/);
+    const { capture, createDraft, applySectionSelection, serialize, directSource } = await import("@ai-matrx/alchemy/operate");
+    const signal = new AbortController().signal;
+    const { snapshot } = await capture(
+      { id: "c1", label: "Pool route plan", capture: async () => directSource({ kind: "markdown", text: conv.markdown }, { sections }) },
+      signal,
+    );
+    // Untick the assistant's route table.
+    const draft = applySectionSelection(createDraft(snapshot), snapshot, ["message-1", "message-3", "message-4"]);
+    const md = serialize(draft, "markdown").plainText;
+    expect(md.startsWith("# Pool route plan")).toBe(true);
+    expect(md).toContain("Plan Tuesday");
+    expect(md).toContain("Move Oakwood HOA before lunch");
+    expect(md).not.toContain("Chen residence");
+    expect(md).not.toMatch(/^\s*[{[]/);
   });
 
   it("gives the transcript page chrome without touching the markdown", () => {

@@ -17,7 +17,7 @@
 // app builds no document, clipboard write or download of its own.
 
 import type { ConversationTransferRow } from "./conversation-transfer-rows";
-import type { Payload, Section, Source } from "@ai-matrx/alchemy/operate";
+import type { Coverage, Payload, Section, Source } from "@ai-matrx/alchemy/operate";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { toast } from "@/lib/toast";
 import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
@@ -127,14 +127,30 @@ export function conversationJson(conv: CapturedConversation): Payload {
   };
 }
 
-/** One section per message: the preparation workspace's "choose messages". */
+/**
+ * One section per message: the preparation workspace's "choose messages". A
+ * section is the message's character range of the transcript
+ * (`/text/<start>-<end>`, @ai-matrx/alchemy prose sections), so every text
+ * format of the prepared draft stays the transcript's own text — Markdown is
+ * Markdown, never JSON — and an unticked message is gone from all of them.
+ */
 export function conversationSections(conv: CapturedConversation): Section[] {
+  const text = conv.markdown;
+  const starts: number[] = [];
+  let cursor = 0;
+  for (const m of conv.messages) {
+    const at = text.indexOf(`\n## ${m.author}`, cursor);
+    if (at === -1) return [];
+    starts.push(at + 1);
+    cursor = at + 1;
+  }
   return conv.messages.map((m, i) => {
     const words = m.text.replace(/\s+/g, " ").slice(0, 60);
+    const end = i + 1 < starts.length ? starts[i + 1]! : text.length;
     return {
       id: `message-${i + 1}`,
       label: `${i + 1}. ${m.author}: ${words}${m.text.length > 60 ? "…" : ""}`,
-      path: `/messages/${i}`,
+      path: `/text/${starts[i]}-${end}`,
       includedByDefault: true,
     };
   });
@@ -156,16 +172,20 @@ export function conversationPayloadFor(conv: CapturedConversation, format: strin
 type Capture = () => Promise<CapturedConversation>;
 
 /** An Alchemy `Source` over the captured conversation (one capture per session). */
-function sourceOf(id: string, label: string, read: () => Promise<{ payload: Payload; sections?: Section[] }>): Source {
+function sourceOf(
+  id: string,
+  label: string,
+  read: () => Promise<{ payload: Payload; sections?: Section[]; coverage?: Coverage }>,
+): Source {
   return {
     id,
     label,
     capture: async ({ signal }) => {
       signal.throwIfAborted();
-      const { payload, sections } = await read();
+      const { payload, sections, coverage } = await read();
       signal.throwIfAborted();
       const { directSource } = await import("@ai-matrx/alchemy/operate");
-      return directSource(payload, { id, sourceId: id, label, ...(sections ? { sections } : {}) });
+      return directSource(payload, { id, sourceId: id, label, ...(sections ? { sections } : {}), ...(coverage ? { coverage } : {}) });
     },
   };
 }
@@ -182,9 +202,16 @@ export function conversationTransferSources(conversationId: string, title: strin
       sourceOf(`${key}:${f}`, title, async () => ({ payload: conversationPayloadFor(await conv(), f) })),
     ]),
   );
+  // Copy for AI: the transcript itself (text formats are real text), one
+  // section per message, counted in messages.
   const chooseMessages = sourceOf(`${key}:choose`, title, async () => {
     const c = await conv();
-    return { payload: conversationJson(c), sections: conversationSections(c) };
+    const n = c.messages.length;
+    return {
+      payload: { kind: "markdown", text: c.markdown },
+      sections: conversationSections(c),
+      coverage: { status: c.complete ? "complete" : "partial", included: n, total: c.complete ? n : null, unit: "message" },
+    };
   });
   return { primary, formatSources, chooseMessages };
 }
