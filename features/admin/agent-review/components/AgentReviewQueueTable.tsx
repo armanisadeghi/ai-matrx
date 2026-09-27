@@ -39,6 +39,7 @@ import {
 } from "@/features/admin/agent-review/row-text";
 import { matchesTableSearch } from "@ai-matrx/design-system/data-table/filter-engine";
 import { useShare } from "@/features/sharing/hooks/useShare";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -557,9 +558,10 @@ export default function AgentReviewQueueTable() {
             {widened ? (
               <>
                 <span>
-                  Searching <strong>every step</strong> — {matchingRows.length}{" "}
+                  Searching <strong>every step</strong> —{" "}
+                  <UntrustedCount value={matchingRows.length} trustworthy={!loadError} label="Matches" />{" "}
                   {matchingRows.length === 1 ? "match" : "matches"},{" "}
-                  {matchesElsewhere} outside {stepLabel}.
+                  <UntrustedCount value={matchesElsewhere} trustworthy={!loadError} label="Matches elsewhere" /> outside {stepLabel}.
                 </span>
                 <Button
                   size="sm"
@@ -574,7 +576,7 @@ export default function AgentReviewQueueTable() {
               <>
                 <span>
                   Searching <strong>{stepLabel}</strong> only —{" "}
-                  {matchesElsewhere}{" "}
+                  <UntrustedCount value={matchesElsewhere} trustworthy={!loadError} label="Hidden matches" />{" "}
                   {matchesElsewhere === 1 ? "match is" : "matches are"} hidden
                   in other steps.
                 </span>

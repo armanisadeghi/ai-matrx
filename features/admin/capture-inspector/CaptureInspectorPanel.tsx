@@ -90,6 +90,7 @@ export default function CaptureInspectorPanel({
           {mode}
         </span>
         <span className="text-xs text-muted-foreground tabular-nums">
+          {/* read-gate-exempt: exchanges captured in this browser session by the capture hook, not a server read */}
           {exchanges.length} exchange{exchanges.length === 1 ? "" : "s"}
         </span>
 

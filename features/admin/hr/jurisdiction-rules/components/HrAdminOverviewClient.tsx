@@ -12,7 +12,7 @@ import { AlertTriangle, ClipboardCheck, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { useJurisdictionRulesAdminData } from "../useJurisdictionRulesAdminData";
-import { CA_PTO_PAYOUT_SEED_TASK } from "../types";
+import { CA_PTO_PAYOUT_SEED_TASK, type JurisdictionRulesAdminData } from "../types";
 import { RuleLoadGate } from "./rule-chrome";
 
 function Stat({
@@ -52,7 +52,12 @@ export function HrAdminOverviewClient() {
   const gate = <RuleLoadGate load={load} loading={loading} loadingLabel="Loading the rule library…" />;
   if (!load || load.state !== "ok") return gate;
 
-  const { rules, classes, seedProgress, overdue } = load.data;
+  return <HrAdminOverview data={load.data} />;
+}
+
+/** The section home, drawn only from a read that succeeded (the gate above owns loading and failure). */
+function HrAdminOverview({ data }: { data: JurisdictionRulesAdminData }) {
+  const { rules, classes, seedProgress, overdue } = data;
   const byStatus = (status: string) =>
     rules.filter((rule) => rule.status === status).length;
   const pendingVerification = rules.filter(

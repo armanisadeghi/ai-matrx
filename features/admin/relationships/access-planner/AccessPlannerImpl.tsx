@@ -1137,6 +1137,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>
+                      {/* read-gate-exempt: the server-rendered snapshot prop, kept as-is when a refresh fails, never emptied by a failed read */}
                       {selectedTable.issue_codes.length} decision blocker
                       {selectedTable.issue_codes.length === 1 ? "" : "s"}
                     </AlertTitle>
@@ -1156,6 +1157,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                   <div className="rounded-lg border border-border bg-muted/30 p-3">
                     <div className="flex items-center gap-2 text-xs font-medium">
                       <ArrowDownToLine className="h-4 w-4 text-primary" />
+                      {/* read-gate-exempt: the server-rendered snapshot prop, kept as-is when a refresh fails, never emptied by a failed read */}
                       Sharing this reaches {reach.tokens.length} related entity
                       type{reach.tokens.length === 1 ? "" : "s"}
                     </div>
@@ -1368,15 +1370,18 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                   </summary>
                   <div className="mt-3 space-y-2 text-muted-foreground">
                     <p>
+                      {/* read-gate-exempt: the server-rendered snapshot prop, kept as-is when a refresh fails, never emptied by a failed read */}
                       {selectedTable.columns.length} columns ·{" "}
                       {selectedTable.estimated_rows.toLocaleString()} estimated
                       rows
                     </p>
                     <p>
                       RLS {selectedTable.rls_enabled ? "enabled" : "disabled"} ·{" "}
+                      {/* read-gate-exempt: the server-rendered snapshot prop, kept as-is when a refresh fails, never emptied by a failed read */}
                       {selectedTable.policy_count} policies
                     </p>
                     <p>
+                      {/* read-gate-exempt: the server-rendered snapshot prop, kept as-is when a refresh fails, never emptied by a failed read */}
                       {parentOptions.length} candidate parent foreign keys ·{" "}
                       {selectedTable.is_many_to_many
                         ? "many-to-many junction candidate"

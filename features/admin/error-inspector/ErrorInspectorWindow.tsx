@@ -321,6 +321,7 @@ export default function ErrorInspectorWindow({
       }
       footerLeft={
         <span className="text-xs text-muted-foreground">
+          {/* read-gate-exempt: errors captured in memory during this browser session, not a server read */}
           {errors.length} distinct · {errors.reduce((s, e) => s + e.count, 0)}{" "}
           total occurrences
         </span>
@@ -434,6 +435,7 @@ export default function ErrorInspectorWindow({
                 token="conversation"
               />
               <Field label="Route" value={selected.route} />
+              {/* read-gate-exempt: errors captured in memory during this browser session, not a server read */}
               <Field label="Occurrences" value={selected.count} />
               <Field
                 label="First seen"

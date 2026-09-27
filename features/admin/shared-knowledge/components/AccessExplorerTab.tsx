@@ -21,6 +21,8 @@
 // /knowledge/data-stores?store_id= — and a pack opens in this console's own
 // Starter packs tab (`?tab=packs&pack=<id>`).
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import { useEffect, useMemo, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -124,7 +126,11 @@ export function AccessExplorerTab({
     "idle" | "loading" | "not_found"
   >("idle");
 
-  const { assignments } = useAllOrgIndustries();
+  const {
+    assignments,
+    loading: assignmentsLoading,
+    error: assignmentsError,
+  } = useAllOrgIndustries();
 
   const [packs, setPacks] = useState<StarterPackSummary[]>([]);
   const [grantsByResource, setGrantsByResource] = useState<
@@ -376,9 +382,15 @@ export function AccessExplorerTab({
               </div>
               <div className="text-xs text-muted-foreground">
                 Industries:{" "}
-                {(industriesByOrg.get(orgId) ?? []).length === 0
-                  ? "none assigned"
-                  : (industriesByOrg.get(orgId) ?? []).length}
+                <UntrustedCount
+                  value={
+                    (industriesByOrg.get(orgId) ?? []).length === 0
+                      ? "none assigned"
+                      : (industriesByOrg.get(orgId) ?? []).length
+                  }
+                  read={readOf({ loading: assignmentsLoading, error: assignmentsError })}
+                  label="Industries"
+                />
                 {" · "}
                 <AppLink
                   href={`/administration/users/organizations?org=${encodeURIComponent(orgId)}`}

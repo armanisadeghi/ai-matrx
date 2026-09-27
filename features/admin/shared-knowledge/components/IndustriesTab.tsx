@@ -14,6 +14,8 @@
 // registries. Industries themselves have no record route (this console IS their
 // home; the left list selects one), so they stay plain by design.
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import { useMemo, useState } from "react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
@@ -242,7 +244,8 @@ export function IndustriesTab({
       <div className="min-w-0">
         <div className="mb-2 flex items-center justify-between">
           <div className="text-sm font-medium text-foreground">
-            Taxonomy ({industries.length})
+            Taxonomy (
+            <UntrustedCount value={industries.length} read={readOf({ loading, error })} label="Industries" />)
           </div>
           <Button size="sm" onClick={openCreate}>
             <Plus className="mr-1.5 h-3.5 w-3.5" /> New industry
