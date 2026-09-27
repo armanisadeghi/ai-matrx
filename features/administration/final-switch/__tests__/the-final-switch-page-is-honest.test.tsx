@@ -127,7 +127,8 @@ test("not ready: the press is disabled with the database's sentence and every bl
   const press = byTestId("final-switch-press") as HTMLButtonElement | null;
   expect(press).not.toBeNull();
   expect(press!.disabled).toBe(true);
-  expect(byTestId("final-switch-press-why")!.textContent).toBe("Not ready: 2 things must be fixed first. Copying again cannot fix them.");
+  expect(container.textContent).toContain("Not ready: 2 things must be fixed first. Copying again cannot fix them.");
+  expect(byTestId("final-switch-press-why")!.textContent).toBe("Off until the 2 things below are fixed.");
   expect(container.textContent).toContain(BLOCKED_SAYS);
   expect(container.textContent).toContain(SCOPES_SAYS);
   expect(container.textContent).toContain("1 automations run on a change to any older table");
