@@ -44,7 +44,7 @@
 \endif
 
 begin;
-set local statement_timeout = '300s';
+set local statement_timeout = '60s';  -- provision_preflight refuses a ceiling over 60 s (2026-09-21)
 set local lock_timeout = '20s';
 
 -- Declarations travel in custom GUCs (CREATE TEMP TABLE fires the provision shape guard).

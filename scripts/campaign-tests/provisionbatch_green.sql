@@ -51,7 +51,7 @@ select substr(md5(clock_timestamp()::text || random()::text), 1, 6) as run,
 
 -- ── T1: the build ────────────────────────────────────────────────────────────────────────────
 begin;
-set local statement_timeout = '180s';
+set local statement_timeout = '60s';  -- provision_preflight refuses a ceiling over 60 s (2026-09-21)
 set local lock_timeout = '20s';
 select set_config('request.jwt.claims', json_build_object('sub', :'admin_id', 'role', 'authenticated', 'email', 'admin@admin.com')::text, true) \g /dev/null
 
@@ -126,10 +126,14 @@ select coalesce(string_agg(problem, E'\n  - '), '') as t1_problems from (
    where split_part(coalesce(c->>'detail', ''), ':', 1) in ('base_org_fk','base_created_by_fk','base_updated_by_fk')
      and c->>'status' <> 'PENDING'
   union all
-  select format('%s: certify carries %s PENDING rows (3 expected)', m->>'token',
-                (select count(*) from jsonb_array_elements(m->'certify') c where c->>'status' = 'PENDING'))
+  -- Lane PROVISION-LOCK (2026-09-27): the policy checks are PENDING too now (the policies are
+  -- written by the attach call, the access seal), so count the three base-contract rows by name.
+  select format('%s: certify carries %s base-contract PENDING rows (3 expected)', m->>'token',
+                (select count(*) from jsonb_array_elements(m->'certify') c where c->>'status' = 'PENDING'
+                   and split_part(coalesce(c->>'detail', ''), ':', 1) in ('base_org_fk','base_created_by_fk','base_updated_by_fk')))
     from jsonb_array_elements(:'t1'::jsonb->'tables') m
-   where (select count(*) from jsonb_array_elements(m->'certify') c where c->>'status' = 'PENDING') <> 3
+   where (select count(*) from jsonb_array_elements(m->'certify') c where c->>'status' = 'PENDING'
+            and split_part(coalesce(c->>'detail', ''), ':', 1) in ('base_org_fk','base_created_by_fk','base_updated_by_fk')) <> 3
 ) p \gset
 select (:'t1_problems' <> '') as t1_bad \gset
 \if :t1_bad
