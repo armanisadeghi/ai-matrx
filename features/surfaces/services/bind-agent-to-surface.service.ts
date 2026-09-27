@@ -667,6 +667,16 @@ export async function fetchSurfaceBindingLayers(
   const chain = [...getSurfaceAncestry(surfaceName), surfaceName];
 
   const sb = createClient();
+  // `agent.menu_surface` is a signed-in view. A sessionless caller — a guest
+  // running a public app at /p/<slug> — has no binding it could read, and
+  // asking only returned 42501, which the submit-time refresh turned into
+  // "Nothing was sent": every guest Run did nothing (page-pass 2026-09-27).
+  // No session = no layers, which is exactly what that guest has.
+  const {
+    data: { session },
+  } = await sb.auth.getSession();
+  if (!session) return [];
+
   const { data, error } = await sb
     .schema("agent")
     .from("menu_surface")

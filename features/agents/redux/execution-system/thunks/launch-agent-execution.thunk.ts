@@ -842,22 +842,17 @@ export const launchAgentExecution = createAsyncThunk<
         let surfaceValueMappings: ValueMappingMap | null = null;
         if (surfaceName) {
           let resolvedLayers: MergedValueMappings | null = null;
-          // Surface bindings live behind a signed-in view (`menu_surface`);
-          // a sessionless visitor has none it could read, so the lookup is
-          // skipped rather than answered with a 401 on every public run.
-          if (hasSignedInSession(getState() as RootState)) {
-            try {
-              resolvedLayers = await resolveLaunchMappingLayers(
-                agentId,
-                surfaceName,
-                null,
-              );
-            } catch (err) {
-              console.warn(
-                "[launchAgentExecution] surface binding lookup failed; falling back to legacy resolver",
-                err,
-              );
-            }
+          try {
+            resolvedLayers = await resolveLaunchMappingLayers(
+              agentId,
+              surfaceName,
+              null,
+            );
+          } catch (err) {
+            console.warn(
+              "[launchAgentExecution] surface binding lookup failed; falling back to legacy resolver",
+              err,
+            );
           }
           applyLaunchWritePolicies(resolvedLayers, agentId, surfaceName);
           bindingAutoRun = resolvedLayers?.autoRun ?? null;
