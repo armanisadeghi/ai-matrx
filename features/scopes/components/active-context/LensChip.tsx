@@ -105,6 +105,8 @@ export function LensChip({
       title={nodes.length === 0 ? "Set context" : summarizeLensSelection(nodes)}
       className={cn(
         "inline-flex h-7 min-w-0 max-w-full items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-card px-2.5 text-xs text-foreground hover:bg-muted",
+        // Icon-only on a phone (below): a round 28px button that never shrinks away.
+        nodes.length === 0 && "max-[480px]:w-7 max-[480px]:shrink-0 max-[480px]:justify-center max-[480px]:px-0",
         className,
       )}
     >
@@ -130,7 +132,7 @@ export function LensChip({
           </span>
         </>
       )}
-      <ChevronsUpDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+      <ChevronsUpDown className={cn("h-3 w-3 shrink-0 text-muted-foreground", nodes.length === 0 && "max-[480px]:hidden")} />
     </button>
   );
 }
