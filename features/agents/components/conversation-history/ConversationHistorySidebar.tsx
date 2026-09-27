@@ -100,7 +100,7 @@ import {
   conversationSearchRangeLabel,
   countConversationSearchCorpus,
 } from "@/features/agents/redux/conversation-history/conversation-search";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export interface ConversationHistorySidebarProps {
   /** Unique scope key (same across mounts that should share state). */
@@ -657,7 +657,7 @@ const DenseView: React.FC<
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {error && (
-          <div className="px-3 py-3 text-[11px] text-destructive">{error} <ErrorAlchemyMenu error={error} /></div>
+          <ReadFailure error={error} what="your conversations" onRetry={onRefresh} className="m-2" />
         )}
 
         {status === "loading" && count === 0 && (
@@ -964,7 +964,7 @@ const ConsumerView: React.FC<
 
       <div className="min-h-0 flex-1 overflow-y-auto pt-1">
         {error && !searchActive && (
-          <div className="px-3 py-3 text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></div>
+          <ReadFailure error={error} what="your conversations" onRetry={onRefresh} className="m-2" />
         )}
 
         {status === "loading" && count === 0 && !searchActive && (
