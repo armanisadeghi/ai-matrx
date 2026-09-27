@@ -524,7 +524,16 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
           ).unwrap();
         }
         await dispatch(
-          loadConversation({ conversationId: urlConversationId, surfaceKey }),
+          loadConversation({
+            conversationId: urlConversationId,
+            surfaceKey,
+            // A reopen from the address: a missing row is a failed read,
+            // reopening never spends a run, and the app's agent is one the
+            // person was never given directly.
+            expectMaterialized: true,
+            displayOverrides: { autoRun: false },
+            agentBehindApp: true,
+          }),
         ).unwrap();
       } catch (err) {
         // Loud, and the address stops pointing at a run we cannot show.

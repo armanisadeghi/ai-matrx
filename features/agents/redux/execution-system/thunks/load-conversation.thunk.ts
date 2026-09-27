@@ -144,6 +144,13 @@ export interface LoadConversationArgs {
    * because reopening an address is never a decision to spend a paid run.
    */
   displayOverrides?: Omit<InitInstanceUIStatePayload, "conversationId">;
+  /**
+   * The conversation's agent runs BEHIND something the person uses (an agent
+   * app) — they were never given the agent itself, so an unreadable agent is
+   * expected: it is logged, not announced as "isn't available to you anymore"
+   * (which told an app user they had lost something they never had).
+   */
+  agentBehindApp?: boolean;
 }
 
 interface ThunkApi {
@@ -178,6 +185,7 @@ export const loadConversation = createAsyncThunk<
       signal,
       expectMaterialized = false,
       displayOverrides,
+      agentBehindApp = false,
     },
     { dispatch },
   ) => {
@@ -499,11 +507,15 @@ export const loadConversation = createAsyncThunk<
           agentId: conv.initial_agent_id,
           error: capErr instanceof Error ? capErr.message : String(capErr),
         });
-        const { toast } = await import("@/lib/toast");
-        toast.info("This chat's agent isn't available to you anymore", {
-          description:
-            "The conversation opened with the default input settings. Ask the agent's owner to share it to use its own settings.",
-        });
+        if (agentBehindApp) {
+          // Expected — see `agentBehindApp`. The warn above is the record.
+        } else {
+          const { toast } = await import("@/lib/toast");
+          toast.info("This chat's agent isn't available to you anymore", {
+            description:
+              "The conversation opened with the default input settings. Ask the agent's owner to share it to use its own settings.",
+          });
+        }
       }
     }
     const persistedInputCapabilities = parsePersistedInputCapabilities(
