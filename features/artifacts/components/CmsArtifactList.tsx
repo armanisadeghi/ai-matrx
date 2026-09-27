@@ -472,31 +472,6 @@ export function CmsArtifactList() {
             Retry
           </Button>
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-start gap-2 py-10 text-muted-foreground">
-          <p className="text-sm font-medium text-foreground">
-            {allArtifacts.length === 0
-              ? "Nothing here yet"
-              : "No matches"}
-          </p>
-          <p className="max-w-md text-xs">
-            {allArtifacts.length === 0
-              ? "Content you generate from a conversation lands here."
-              : "Try a different search or filter."}
-          </p>
-          {allArtifacts.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs"
-              onClick={() =>
-                setFilters({ type: "all", status: "all", search: "" })
-              }
-            >
-              Clear filters
-            </Button>
-          )}
-        </div>
       ) : (
         <MatrxDataTable<CxArtifactRecord>
           tableId="artifacts/content-library"
@@ -506,6 +481,22 @@ export function CmsArtifactList() {
           isLoading={isLoading}
           density="condensed"
           pageSize={0}
+          emptyState={{
+            title: allArtifacts.length === 0 ? "Nothing here yet" : "No matches",
+            description: allArtifacts.length === 0
+              ? "Content you generate from a conversation lands here."
+              : "Try a different search or filter.",
+            action: allArtifacts.length > 0 ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => setFilters({ type: "all", status: "all", search: "" })}
+              >
+                Clear filters
+              </Button>
+            ) : undefined,
+          }}
           coverage={{ noun: "artifact", answeredBy: "client" }}
           copy={false}
           toolbar={{ search: false }}

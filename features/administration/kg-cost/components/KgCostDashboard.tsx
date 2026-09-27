@@ -380,7 +380,6 @@ function OrgLeaderboard({
       density="condensed"
       stickyHeader
       pageSize={0}
-      hidePagination
       copy={false}
       toolbar={{
         title: "Organizations",
@@ -511,7 +510,6 @@ function PendingBatchesTable({
       density="condensed"
       stickyHeader
       pageSize={0}
-      hidePagination
       copy={false}
       toolbar={{
         title: "In-flight batches",
@@ -770,7 +768,6 @@ function OrgDetailDialog({
                     density="condensed"
                     stickyHeader
                     pageSize={0}
-                    hidePagination
                     toolbar={{ title: "Last 30 days", search: false }}
                     emptyState={{ title: "No cost in this window." }}
                     detail={{ enabled: false }}
@@ -822,7 +819,6 @@ function OrgDetailDialog({
                     density="condensed"
                     stickyHeader
                     pageSize={0}
-                    hidePagination
                     toolbar={{ title: "Top sources (30 days)", search: false }}
                     emptyState={{ title: "No source breakdown available." }}
                     detail={{ enabled: false }}
@@ -872,7 +868,6 @@ function OrgDetailDialog({
                     density="condensed"
                     stickyHeader
                     pageSize={0}
-                    hidePagination
                     toolbar={{ title: "Batches by status", search: false }}
                     emptyState={{ title: "No batch submissions yet." }}
                     detail={{ enabled: false }}
@@ -1297,7 +1292,6 @@ function BySourceKindTable({
       density="condensed"
       stickyHeader
       pageSize={0}
-      hidePagination
       copy={false}
       toolbar={{
         title: "By source kind",
@@ -1527,7 +1521,6 @@ function RecentRunsTable({
       density="condensed"
       stickyHeader
       pageSize={0}
-      hidePagination
       copy={false}
       toolbar={{
         title: "Recent runs",

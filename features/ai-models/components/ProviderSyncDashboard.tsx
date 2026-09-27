@@ -1002,14 +1002,6 @@ function ComparisonTable({
     [cutoff],
   );
 
-  if (comparisons.length === 0) {
-    return (
-      <div className="px-4 py-6 text-center text-xs text-muted-foreground border-t">
-        No comparison data — sync this provider first.
-      </div>
-    );
-  }
-
   return (
     <div className="border-t overflow-x-auto">
       <MatrxDataTable<ModelComparison>
@@ -1020,6 +1012,7 @@ function ComparisonTable({
         density="condensed"
         defaultSort={{ id: "released", direction: "desc" }}
         pageSize={0}
+        emptyState={{ title: "No comparison data — sync this provider first." }}
         coverage={{ noun: "provider model", answeredBy: "client" }}
         copy={false}
         detail={{ enabled: false }}

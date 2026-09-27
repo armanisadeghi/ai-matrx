@@ -70,7 +70,7 @@ describe("KgCostDashboard canonical tables", () => {
       const props = table(id);
       expect(props.density).toBe("condensed");
       expect(props.stickyHeader).toBe(true);
-      expect(props.hidePagination).toBe(true);
+      expect(props.hidePagination).toBeUndefined();
       expect(props.pageSize).toBe(0);
       expect(props.toolbar?.search).toBe(true);
       expect(props.toolbar?.title).toBe(title);
@@ -201,7 +201,7 @@ describe("KgCostDashboard canonical tables", () => {
       expect(props.emptyState?.title).toEqual(expect.any(String));
       expect(props.density).toBe("condensed");
       expect(props.stickyHeader).toBe(true);
-      expect(props.hidePagination).toBe(true);
+      expect(props.hidePagination).toBeUndefined();
       expect(props.pageSize).toBe(0);
       expect(props.copy).toBeUndefined();
       expect(props.detail).toEqual({ enabled: false });
