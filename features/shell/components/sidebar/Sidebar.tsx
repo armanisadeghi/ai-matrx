@@ -28,13 +28,15 @@ import {
   settingsItem,
 } from "../../constants/nav-data";
 import { SETTINGS_BASE } from "@/features/settings/route-shell/routing";
+import { initialSidebarView } from "./sidebar-initial-view";
 
 interface SidebarProps {
   pathname: string;
   isAuthenticated: boolean;
 }
 
-export default function Sidebar({ isAuthenticated }: SidebarProps) {
+export default function Sidebar({ pathname, isAuthenticated }: SidebarProps) {
+  const initialView = initialSidebarView(pathname);
   const visibleItems = navItemsForViewer(primaryNavItems, isAuthenticated);
   const activeCandidates = [...visibleItems, settingsItem];
   return (
@@ -76,7 +78,7 @@ export default function Sidebar({ isAuthenticated }: SidebarProps) {
       <nav
         className="shell-sidebar-nav"
         aria-label="Main navigation"
-        data-sidebar-view="main"
+        data-sidebar-view={initialView}
       >
         {/* Route menu switch + content — client island, renders nothing on Small/Medium routes */}
         <RouteMenuSlot />
@@ -100,7 +102,15 @@ export default function Sidebar({ isAuthenticated }: SidebarProps) {
         </div>
 
         {/* Route menu — populated by RouteMenuSlot client island */}
-        <div className="shell-sidebar-route-nav" />
+        <div className="shell-sidebar-route-nav">
+          {initialView === "route" ? (
+            <div className="shell-sidebar-route-loading shell-route-ssr-skeleton" aria-hidden>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="shell-sidebar-route-loading-item" />
+              ))}
+            </div>
+          ) : null}
+        </div>
       </nav>
 
       {/* Footer — admin section + Windows + Settings. Lives OUTSIDE the nav so it

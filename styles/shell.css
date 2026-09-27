@@ -1380,6 +1380,12 @@ button.shell-nav-flyout-item {
 }
 
 /* Route nav loading skeleton */
+/* The server's first-paint skeleton gives way the moment the client island
+   portals anything (its own skeleton or the menu) into the route nav. */
+.shell-sidebar-route-nav > .shell-route-ssr-skeleton:not(:only-child) {
+  display: none;
+}
+
 .shell-sidebar-route-loading {
   display: flex;
   flex-direction: column;

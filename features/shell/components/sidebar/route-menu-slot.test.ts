@@ -83,3 +83,32 @@ describe("resolveSidebarView", () => {
     ).toBe("route");
   });
 });
+
+/**
+ * A LARGE ROUTE'S SIDEBAR IS RESOLVED ON THE SERVER (page-pass shared defects,
+ * 2026-09-27): /chat/* painted the whole main menu for ~1s and then swapped.
+ * PROVEN FAILING BEFORE PASSING: the Sidebar hard-coded `data-sidebar-view="main"`
+ * and RouteMenuSlot resolved "main" until the menu chunk loaded.
+ */
+describe("the first paint of a Large Route is already its route view", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { initialSidebarView } = require("./sidebar-initial-view") as typeof import("./sidebar-initial-view");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const fs = require("node:fs") as typeof import("node:fs");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const path = require("node:path") as typeof import("node:path");
+
+  it("resolves the route view from the request pathname", () => {
+    expect(initialSidebarView("/chat/abc")).toBe("route");
+    expect(initialSidebarView("/chat")).toBe("route");
+    expect(initialSidebarView("/tasks")).toBe("main");
+  });
+
+  it("the server Sidebar paints it, and the island never resolves 'main' while its menu loads", () => {
+    const sidebar = fs.readFileSync(path.join(__dirname, "Sidebar.tsx"), "utf8");
+    expect(sidebar).toContain("data-sidebar-view={initialView}");
+    expect(sidebar).not.toContain('data-sidebar-view="main"');
+    const slot = fs.readFileSync(path.join(__dirname, "RouteMenuSlot.tsx"), "utf8");
+    expect(slot).toContain("resolveSidebarView(manual, matchKey, !!match)");
+  });
+});

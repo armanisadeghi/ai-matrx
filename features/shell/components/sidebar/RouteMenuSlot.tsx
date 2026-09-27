@@ -120,7 +120,10 @@ export default function RouteMenuSlot() {
    * Large Route still opens that route's menu.
    */
   const [manual, setManual] = useState<ManualSidebarChoice | null>(null);
-  const currentView = resolveSidebarView(manual, matchKey, !!RouteMenu);
+  // A matched Large Route IS in the route view from the first render — the
+  // server already painted it that way (`initialSidebarView`); resolving to
+  // "main" while the menu chunk loads flipped it back and forth.
+  const currentView = resolveSidebarView(manual, matchKey, !!match);
 
   // Find the portal target on mount
   useEffect(() => {
