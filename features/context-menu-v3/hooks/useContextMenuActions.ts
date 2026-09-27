@@ -1237,7 +1237,9 @@ export function useContextMenuActions(
   return {
     scope,
     actionText,
-    fieldLabel: isEditable && selectionRange?.type === "editable" ? fieldLabelOf(selectionRange.element) : null,
+    // A textarea/input, or a contenteditable field (chip / rich editor), names
+    // itself in the header — never "Content: {{reply.body}}".
+    fieldLabel: isEditable && selectionRange ? fieldLabelOf(selectionRange.element) : null,
     jsonSection,
     resolvedPlacementMode,
     categoryGroups,

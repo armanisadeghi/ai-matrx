@@ -44,6 +44,8 @@ import {
   type MenuContentProps,
   type ResolvedContextMenuContext,
   CONTEXT_MENU_ENTITY_KEY,
+  CONTEXT_MENU_HEADING_KEY,
+  type ContextMenuHeading,
   type ContextMenuEntityRef,
 } from "./types";
 import {
@@ -488,7 +490,11 @@ export function ContextMenuV3({
       setSelectedText(captured?.text || "");
       setSelectionRange({
         type: "non-editable",
-        element: null,
+        // A contenteditable FIELD the right-click landed in (a rich or chip
+        // editor): recorded so the menu header can name the field instead of
+        // dumping its raw text. Every reader of `.element` gates on
+        // `type === "editable"`, so this changes nothing else.
+        element: target.closest<HTMLElement>('[contenteditable="true"], [contenteditable=""]'),
         start: 0,
         end: 0,
         range: captured?.range || null,
@@ -662,6 +668,7 @@ export function ContextMenuV3({
       ? () => ({ ...(getApplicationScope?.() ?? {}), ...getEffectiveContextData() })
       : getApplicationScope,
     contextData: getEffectiveContextData(),
+    heading: readContextMenuHeading(resolvedContext),
     contentSource,
     entity: effectiveEntity,
     excludedRichActions,
@@ -859,4 +866,15 @@ export function ContextMenuV3({
       </RegistryMenuSourceProvider>
     </MenuPresenceProvider>
   );
+}
+
+/** The header name a `resolveContextOnOpen` answer gave, when it is well-formed. */
+function readContextMenuHeading(resolved: unknown): ContextMenuHeading | null {
+  if (!resolved || typeof resolved !== "object") return null;
+  const heading = (resolved as Record<string, unknown>)[CONTEXT_MENU_HEADING_KEY];
+  if (!heading || typeof heading !== "object") return null;
+  const { label, text } = heading as Record<string, unknown>;
+  return typeof label === "string" && typeof text === "string" && label.trim()
+    ? { label: label.trim(), text }
+    : null;
 }
