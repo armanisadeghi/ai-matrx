@@ -70,6 +70,11 @@ interface Row {
   claims?: Partial<Record<Repo, string[]>>;
   /** Database functions this row answers for (schema.name). */
   functions?: string[];
+  /**
+   * Functions this row says write NO context table themselves (they go through the store's doors).
+   * One that the catalogue still finds writing context.* is an OLD WRITER LEFT and keeps the fact false.
+   */
+  writesNothingItself?: string[];
 }
 
 /**
@@ -106,7 +111,7 @@ export const WRITERS: Row[] = [
       "custom.context_type_write", "custom.context_type_archive", "custom.context_type_restore",
       "custom.context_scope_write", "custom.context_scope_archive", "custom.context_scope_restore",
       "custom.context_item_write", "custom.context_item_archive", "custom.context_item_restore",
-      "custom.context_value_write", "custom._ctx_value_write_store", "custom.context_template_apply", "custom.context_tags_set",
+      "custom.context_value_write", "custom._ctx_value_write_store", "custom.context_template_apply", "custom.context_template_define", "custom.context_tags_set",
       "custom._ctx_bridge", "custom._ctx_store_type", "custom._ctx_store_item", "custom._ctx_store_scope", "custom._ctx_store_value",
     ],
   },
@@ -164,11 +169,19 @@ export const WRITERS: Row[] = [
     claims: { aidream: ["tests_trials/**"] },
   },
   {
+    id: "S12",
+    what: "Tags are filing: the organization's Tag scope type and each tag (aidream 1378)",
+    status: "carried",
+    plain: "platform.tag_scope_type_id / platform.tag_scope_id (server only, called by platform.file_under_tag and platform.tags_backfill) find-or-create the organization's `tag` scope type and one tag scope by inserting into context.* directly; in an organization whose store is the writer the write-through carries each row into the store in the same statement. At the final switch: make them through custom.context_type_write / context_scope_write.",
+    functions: ["platform.tag_scope_id", "platform.tag_scope_type_id"],
+  },
+  {
     id: "S10",
-    what: "A template applied from a definition",
-    status: "flip_time",
-    plain: "public.apply_template_definition has no caller in any repository and no client grant; it carries the reference-field defect apply_template had. Retired (or fixed) by the final switch's retirement window.",
-    functions: ["public.apply_template_definition"],
+    what: "A template applied from a definition (and every catalogue template)",
+    status: "proven",
+    plain: "custom.context_template_define applies a template's scope types and fields through custom.context_type_write / custom.context_item_write (the store's doors, store first where the store writes); custom.context_template_apply hands the catalogue template's definition to it, and public.apply_template_definition is a SECURITY INVOKER wrapper over it that writes nothing itself (no caller, no client grant). Suite scopestails_templates_through_the_doors A1–A6 (red before scopestails_a_template_is_applied_through_the_store_doors.sql).",
+    functions: ["custom.context_template_define", "public.apply_template_definition"],
+    writesNothingItself: ["custom.context_template_define", "custom.context_template_apply", "public.apply_template_definition"],
   },
 ];
 
@@ -331,9 +344,13 @@ async function main(argv: string[]): Promise<number> {
   const listedFns = new Set(WRITERS.flatMap((r) => r.functions ?? []));
   const unlistedFns = dbWriters.filter((fn) => !listedFns.has(fn) && !fn.startsWith("custom._ctx_"));
 
+  // A ROW THAT SAYS "THROUGH THE DOORS" IS HELD TO IT: a function it names as writing nothing itself
+  // that the catalogue still finds writing context.* is an old writer left (lane SCOPES-TAILS, S10).
+  const oldWritersLeft = dbError ? [] : WRITERS.flatMap((r) => (r.writesNothingItself ?? []).filter((fn) => dbWriters.includes(fn)).map((fn) => ({ row: r.id, fn })));
   const unlisted = [
     ...unlistedFiles.map((h) => ({ kind: "file", repo: h.repo, where: h.file, names: h.names })),
     ...unlistedFns.map((fn) => ({ kind: "function", repo: "database", where: fn, names: [fn] })),
+    ...oldWritersLeft.map(({ row, fn }) => ({ kind: "old_writer_left", repo: "database", where: fn, names: [`${row} says ${fn} writes through the doors, but it writes context.* itself`] })),
   ];
   const census = {
     target,
