@@ -69,8 +69,8 @@ describe("study guide outline", () => {
     const headings = parseNoteOutline("## First\n### Child\n## Second");
     expect(studyGuideOutlineTitle(headings)).toBeNull();
     expect(renderToStaticMarkup(createElement(OutlineHeader, { title: studyGuideOutlineTitle(headings), active: false, onJump: () => undefined }))).toContain("On this page");
-    expect(studyGuideOutlineItems(headings)).toEqual(headings);
-    expect(initialOutlineExpansion(headings)).toEqual({ 0: true, 2: false });
+    expect(studyGuideOutlineItems(headings).map((item) => item.text)).toEqual(["First", "Child"]);
+    expect(initialOutlineExpansion(studyGuideOutlineItems(headings))).toEqual({ 0: true });
   });
 
   it("keeps a lone H1 visible when it is the entire document", () => {
@@ -79,7 +79,7 @@ describe("study guide outline", () => {
     expect(studyGuideOutlineItems(headings)).toEqual([]);
   });
 
-  it("nests H2-first material under its note title and excludes extraction fragments without changing heading indices", () => {
+  it("keeps only branches from the selected H2 hierarchy without changing heading indices", () => {
     const material = [
       "## Evolution of Atomic Theory",
       "The theory evolved.",
@@ -88,36 +88,45 @@ describe("study guide outline", () => {
       "### Cathode Ray Experiments",
       "## • Bromine is a red-orange liquid with an average atomic m... - <page number=\"41\">",
       "## 1. Characteristics of Bromine",
+      "## Relative Atomic Mass",
       "### Naturally Occurring Isotopes",
     ].join("\n");
     const headings = parseNoteOutline(material);
-    const items = studyGuideOutlineItems(headings, material);
+    const items = studyGuideOutlineItems(headings);
     expect(studyGuideOutlineDisplayTitle(headings, "Agent Test Note")).toMatchObject({ text: "Agent Test Note", headingIndex: -1 });
     expect(items.map((item) => [item.text, item.headingIndex, outlineIndentLevel(item, items)])).toEqual([
-      ["Evolution of Atomic Theory", 0, 1],
       ["J.J. Thomson and the Discovery of the Electron", 2, 1],
       ["Cathode Ray Experiments", 3, 2],
-      ["1. Characteristics of Bromine", 5, 1],
-      ["Naturally Occurring Isotopes", 6, 2],
+      ["Relative Atomic Mass", 6, 1],
+      ["Naturally Occurring Isotopes", 7, 2],
     ]);
     const tree = studyGuideOutlineTree(items);
     expect(tree.map((node) => [node.item.text, node.children.map((child) => child.item.text)])).toEqual([
-      ["Evolution of Atomic Theory", []],
       ["J.J. Thomson and the Discovery of the Electron", ["Cathode Ray Experiments"]],
-      ["1. Characteristics of Bromine", ["Naturally Occurring Isotopes"]],
+      ["Relative Atomic Mass", ["Naturally Occurring Isotopes"]],
     ]);
   });
 
-  it("preserves ordinary sibling headings while omitting a clipped source caption", () => {
+  it("does not switch to text-shape clues after choosing Markdown headings", () => {
     const material = "## What happened... - and why\n## First section\n## Second section\n## Safety - • Lab checklist\nA real section body.\n## 2) Fill-in the charges for the ions. On the top line, thi... - Example 2.8 (2 of 3)\n## Ion Charges and Polyatomic Patterns";
     const headings = parseNoteOutline(material);
-    expect(studyGuideOutlineItems(headings, material).map((item) => item.text)).toEqual([
-      "What happened... - and why",
-      "First section",
-      "Second section",
-      "Safety - • Lab checklist",
-      "Ion Charges and Polyatomic Patterns",
-    ]);
+    expect(studyGuideOutlineItems(headings)).toEqual([]);
+  });
+
+  it("does not attach a deeper heading after a shallower heading interrupts the chosen style", () => {
+    const headings = parseNoteOutline("## First\n### Child\n# Different style\n### Stray\n## Second\n### Child two");
+    expect(studyGuideOutlineItems(headings).map((item) => item.text)).toEqual(["First", "Child", "Second", "Child two"]);
+  });
+
+  it("keeps an H1 after prose as a section while accepting whitespace before a document title", () => {
+    const body = "Intro paragraph\n\n# Later H1\n## Child";
+    const headings = parseNoteOutline(body);
+    expect(studyGuideOutlineTitle(headings, body)).toBeNull();
+    expect(studyGuideOutlineItems(headings, body).map((item) => item.text)).toEqual(["Later H1", "Child"]);
+    const titled = "\n\n# Opening title\n## Section\n### Detail";
+    const titledHeadings = parseNoteOutline(titled);
+    expect(studyGuideOutlineTitle(titledHeadings, titled)?.text).toBe("Opening title");
+    expect(studyGuideOutlineItems(titledHeadings, titled).map((item) => item.text)).toEqual(["Section", "Detail"]);
   });
 });
 

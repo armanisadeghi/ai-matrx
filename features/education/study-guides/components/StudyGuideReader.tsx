@@ -126,7 +126,7 @@ function GuideList({ guides, activeId, activeLabel, content, onJump, loading, er
 
 function Outline({ content, titleLabel, onJump }: { content: string; titleLabel: string; onJump: (headingIndex: number) => void }) {
   const headings = parseNoteOutline(content);
-  const title = studyGuideOutlineDisplayTitle(headings, titleLabel);
+  const title = studyGuideOutlineDisplayTitle(headings, titleLabel, content);
   const outline = studyGuideOutlineItems(headings, content);
   const tree = studyGuideOutlineTree(outline);
   const [expanded, setExpanded] = useState(() => initialOutlineExpansion(outline));
