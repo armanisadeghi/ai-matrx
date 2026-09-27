@@ -1805,7 +1805,23 @@ export const fetchSharedNotesList = createAsyncThunk<void, void>(
 export const fetchAllNoteScopes = createAsyncThunk<NoteScopeAssignment[], void>(
   "notes/fetchAllNoteScopes",
   async () => {
-    const res = await scopesService.listEntityScopeTags("note");
+    // Tags are read from the notes' side (their outgoing scope edges), so
+    // first the ids of every note this person can see — shared ones
+    // included (row security decides). Ids only: the list read owns the rest.
+    const noteIds = (
+      await readAllRows<{ id: string }>(
+        ({ from, to }) =>
+          supabase
+            .schema("workbench")
+            .from("notes")
+            .select("id", { count: "exact" })
+            .is("deleted_at", null)
+            .order("id", { ascending: true })
+            .range(from, to),
+        { label: "workbench.notes (ids for scope tags)" },
+      )
+    ).map((row) => row.id);
+    const res = await scopesService.listEntityScopeTags("note", noteIds);
     if (isScopesRpcErr(res)) throw new Error(res.error.message);
     return res.data.tags.map((t) => ({
       entity_id: t.entity_id,

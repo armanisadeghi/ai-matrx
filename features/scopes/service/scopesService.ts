@@ -1315,37 +1315,53 @@ export const scopesService = {
   },
 
   // ──────────────────────────────────────────────────────────────────
-  //  READ — ALL TAGS FOR AN ENTITY TYPE, DENORMALIZED (sidebar grouping)
+  //  READ — ALL TAGS FOR A SET OF ENTITIES, DENORMALIZED (sidebar grouping)
   //
-  //  Every scope tag across every entity of `entityType`, flattened with
+  //  Every scope tag on the given entities of `entityType`, flattened with
   //  scope name + type label. Powers list/sidebar grouping (e.g. the notes
-  //  "by scope" view). Reads all visible scopes (RLS-scoped) for their
-  //  display fields, then folds the INCOMING `scope` edges from sources of
-  //  this type via `assoc_for_targets`. One scopes query + one assoc RPC.
+  //  "by scope" view). Reads the entities' OUTGOING `scope` edges from the
+  //  SOURCE side, then resolves display fields for exactly the scopes hit.
+  //
+  //  NEVER from the target side (2026-09-27, /notes/<id> answered
+  //  rpc/assoc_for_targets 500 = Postgres 57014 statement timeout on every
+  //  load): `assoc_for_targets('scope', <every visible scope>)` returned every
+  //  edge INTO every scope from every source type — 3,491 scopes and ~6,500
+  //  edges for admin@admin.com, 19 s — only to keep the 27 note edges. And the
+  //  "every visible scope" read was a bare select capped at 1000 rows, so tags
+  //  on scopes past row 1000 were dropped. The source-side read answers the
+  //  same question from the person's ~150 notes in ~1 s.
+  //  Guard: entity-scope-tags-read-from-the-source-side.test.ts.
   // ──────────────────────────────────────────────────────────────────
 
   async listEntityScopeTags(
     entityType: EntityType,
+    entityIds: string[],
   ): Promise<ScopesRpcResult<{ tags: EntityScopeTag[] }>> {
     try {
       requireUserId();
-      const disp = await fetchScopeDisplays(null);
+      const byEntity = await bulkEntityScopeIds(entityType, entityIds);
+      if (isScopesRpcErr(byEntity)) return byEntity;
+
+      const pairs = Object.entries(byEntity.data).flatMap(([entityId, scopeIds]) =>
+        scopeIds.map((scopeId) => ({ entityId, scopeId })),
+      );
+      if (pairs.length === 0) return ok({ tags: [] });
+
+      const disp = await fetchScopeDisplays(
+        Array.from(new Set(pairs.map((p) => p.scopeId))),
+      );
       if (isScopesRpcErr(disp)) return disp;
-
       const byId = new Map(disp.data.map((s) => [s.id, s]));
-      const scopeIds = disp.data.map((s) => s.id);
-      if (scopeIds.length === 0) return ok({ tags: [] });
 
-      const assoc = await associationsService.listForTargets("scope", scopeIds);
-      if (isScopesRpcErr(assoc)) return assoc;
-
-      const tags: EntityScopeTag[] = assoc.data.edges
-        .filter((e) => e.sourceType === entityType)
-        .map((e) => {
-          const s = byId.get(e.targetId);
+      // A tag whose scope is not a live, readable scope (removed, or not
+      // visible to this person) is not a tag anybody can be shown.
+      const tags: EntityScopeTag[] = pairs
+        .filter((p) => byId.has(p.scopeId))
+        .map((p) => {
+          const s = byId.get(p.scopeId);
           return {
-            entity_id: e.sourceId,
-            scope_id: e.targetId,
+            entity_id: p.entityId,
+            scope_id: p.scopeId,
             scope_name: s?.name ?? "",
             scope_type: s?.scope_type?.label_singular ?? "",
           };
