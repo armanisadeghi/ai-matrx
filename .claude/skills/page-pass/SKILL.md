@@ -124,6 +124,8 @@ session, never you.
 - **Commit right after each coherent edit, before running checks** — a sync sweeps the shared
   checkout every ~30 minutes and commits any dirty file under its own message,
   so a file left uncommitted loses your authorship and message.
+  It can still win the race by seconds. If it swept your edit, that is fine:
+  name its commit as yours in the report and move on — never rewrite it.
 - **Prove a test fails on a scratch copy, never by breaking the real file** —
   the sync sweep can commit the broken version in the seconds it sits there.
   Copy the file (or its old version from git) into your TMPDIR and point the
@@ -256,6 +258,12 @@ surface). Say which parts you judged as authored content.
 - **What a person typed is never lost** — on every page, window and dialog:
   closing, navigating or a refresh keeps the draft (or asks first). Any
   non-empty text counts — a minimum length before saving a draft loses short reports.
+- **A custom editing field keeps everything a plain field gives** — replacing a
+  textarea/input with a rich or chip editor must keep: undo/redo for every
+  change (inserts and auto-formatting included), plain-text paste, the caret
+  never landing inside a non-editable piece, Home/End/Enter at the edges, and
+  the standard field toolbar (voice and the page-agent door). Test each one
+  live by typing — every one of these failed on first build.
 - **A control the device cannot run is absent** (screen capture on a phone),
   never a button that fails.
 - **The screen shows what was saved.** After a save the view re-reads (or
