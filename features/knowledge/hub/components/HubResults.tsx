@@ -280,6 +280,7 @@ function TableLayout({
         getRowId={(h) => hitKey(h)}
         density="condensed"
         viewTabs={false}
+        hideToolbar
         facets={{ enabled: true, totalRows: hits.length }}
         searchText={(h) => `${h.title} ${h.snippet ?? ""}`}
         read={{ status: loading ? "loading" : error ? "error" : "ready", error, onRetry, what: "your knowledge" }}
