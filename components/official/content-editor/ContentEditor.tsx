@@ -53,8 +53,8 @@ export const MODE_CONFIGS: EditorModeConfig[] = [
   {
     value: "plain",
     icon: FileText,
-    label: "Markdown",
-    description: "Edit the Markdown source",
+    label: "Plain",
+    description: "Quick, unformatted text",
   },
   {
     value: "wysiwyg",
@@ -65,14 +65,14 @@ export const MODE_CONFIGS: EditorModeConfig[] = [
   {
     value: "markdown",
     icon: SplitSquareHorizontal,
-    label: "Markdown with toolbar",
-    description: "Markdown editor with a formatting toolbar and live preview",
+    label: "Split with toolbar",
+    description: "Text with a formatting toolbar and a live preview",
   },
   {
     value: "matrx-split",
     icon: Columns,
-    label: "Markdown + preview",
-    description: "Markdown source beside the formatted result",
+    label: "Split",
+    description: "Plain text on the left, the formatted result live on the right",
   },
   {
     value: "preview",

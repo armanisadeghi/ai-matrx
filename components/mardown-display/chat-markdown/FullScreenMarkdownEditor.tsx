@@ -99,11 +99,12 @@ const ALL_TAB_IDS: TabId[] = [
 ];
 
 const TAB_LABELS: Record<TabId, string> = {
-  // THE ONE VOCABULARY for editor views (same words as the Notes header):
-  // Write / Read / Markdown / Markdown + preview / Markdown with toolbar.
-  write: "Markdown",
-  matrx_split: "Markdown + preview",
-  markdown: "Markdown with toolbar",
+  // THE ONE VOCABULARY for editor views (the Notes header's words):
+  // Write / Read / Plain / Split. The toolbar Markdown editor has no
+  // counterpart there, so it is named as a Split variant.
+  write: "Plain",
+  matrx_split: "Split",
+  markdown: "Split with toolbar",
   wysiwyg: "Write",
   preview: "Read",
   analysis: "Analysis",

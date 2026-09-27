@@ -10,7 +10,7 @@
 // The active note is the is_active 'note' assignment edge — read via
 // selectActiveNoteId; the adapter is useThreadNoteSelectAdapter.
 //
-// Full view: one toolbar row (note select · Markdown / Markdown + preview / Read).
+// Full view: one toolbar row (note select · Plain / Split / Read).
 // Compact ("All"): same merged toolbar; editor fills the section below.
 
 import { useEffect } from "react";
@@ -44,8 +44,8 @@ import { cn } from "@/lib/utils";
 import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
 
 const MODES: { id: EditorMode; label: string; Icon: typeof Type }[] = [
-  { id: "plain", label: "Markdown", Icon: Type },
-  { id: "split", label: "Markdown + preview", Icon: Columns2 },
+  { id: "plain", label: "Plain", Icon: Type },
+  { id: "split", label: "Split", Icon: Columns2 },
   { id: "preview", label: "Read", Icon: Eye },
 ];
 

@@ -153,7 +153,7 @@ export default function HtmlPreviewFullScreenEditor({
     // 3. Plain text / raw markdown editor
     {
       id: "write",
-      label: "Markdown",
+      label: "Plain",
       content: (
         <MarkdownPlainTextTab
           state={htmlPreviewState}
@@ -167,7 +167,7 @@ export default function HtmlPreviewFullScreenEditor({
     // 4. Matrx split (custom split preview)
     {
       id: "matrx-split",
-      label: "Markdown + preview",
+      label: "Split",
       content: (
         <MatrxSplitTab state={htmlPreviewState} actions={htmlPreviewState} />
       ),
