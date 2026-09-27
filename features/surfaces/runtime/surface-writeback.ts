@@ -55,6 +55,13 @@ import {
   WINDOW_FORM_TARGET,
   WINDOW_FORM_TARGET_NAME,
 } from "./window-forms";
+import {
+  readActiveOrganizationId,
+  saveSurfaceFeedback,
+  SURFACE_FEEDBACK_TARGET,
+  SURFACE_FEEDBACK_TARGET_NAME,
+  validateSurfaceFeedback,
+} from "./surface-feedback";
 import { toast } from "@/lib/toast";
 
 import type {
@@ -371,6 +378,12 @@ export interface ApplySurfaceWriteOptions {
   requestApproval?: (
     proposal: SurfaceWriteApprovalProposal,
   ) => Promise<SurfaceWriteApprovalDecision>;
+  /**
+   * The agent run behind this write, when there is one. Only the platform
+   * `surface_feedback` target reads these (filed as provenance on the row).
+   */
+  conversationId?: string;
+  agentId?: string;
 }
 
 export interface SurfaceWriteApprovalProposal {
@@ -793,6 +806,9 @@ export async function applySurfaceWrite(
   if (targetName === WINDOW_FORM_TARGET_NAME) {
     return applyWindowFormWrite(rawValue, opts);
   }
+  if (targetName === SURFACE_FEEDBACK_TARGET_NAME) {
+    return applySurfaceFeedbackWrite(rawValue, opts);
+  }
   const stack = getSurfaceRuntimeStack().filter(
     (entry) => !opts?.surfaceName || entry.surfaceName === opts.surfaceName,
   );
@@ -994,6 +1010,101 @@ async function applyWindowFormWrite(
 }
 
 /**
+ * The PLATFORM write target `surface_feedback` (`surface-feedback.ts`) — feedback
+ * about a mounted surface, filed for the team in `users.user_feedback`. It
+ * belongs to no manifest; it goes to the primary (deepest) mounted surface, or
+ * to `opts.surfaceName` when that names another MOUNTED surface. Same order as
+ * every write: declared type → the target's own `validate` (refused before
+ * anything is written) → policy (`auto`: nobody is asked) → apply → outcome.
+ */
+async function applySurfaceFeedbackWrite(
+  rawValue: unknown,
+  opts?: ApplySurfaceWriteOptions,
+): Promise<SurfaceWriteResult> {
+  const target = SURFACE_FEEDBACK_TARGET;
+  const stack = getSurfaceRuntimeStack();
+  const mounted = stack.map((entry) => entry.surfaceName);
+  if (stack.length === 0) {
+    return failUnapplicable(
+      unapplicableMessage(target.name, "This screen mounts no registered surface to give feedback on."),
+      { targetName: target.name },
+    );
+  }
+  const runtime = opts?.surfaceName
+    ? stack.find((entry) => entry.surfaceName === opts.surfaceName)
+    : stack[0];
+  if (!runtime) {
+    return refuseBeforeApproval(
+      `Surface "${opts?.surfaceName}" is not open here, so feedback cannot be filed for it. Open surfaces: ${mounted.join(", ")}. Nothing was saved.`,
+      { targetName: target.name, surfaceName: opts?.surfaceName, mounted },
+    );
+  }
+  const surfaceName = runtime.surfaceName;
+
+  const typed = coerceDeclaredValueType(target, rawValue);
+  if (!typed.ok) {
+    return refuseBeforeApproval(typed.error, { targetName: target.name, surfaceName });
+  }
+  const value = typed.value;
+  try {
+    validateSurfaceFeedback(value);
+  } catch (error) {
+    return refuseBeforeApproval(
+      error instanceof Error ? error.message : `"${target.label}" refused this value.`,
+      { targetName: target.name, surfaceName },
+    );
+  }
+
+  if ((opts?.origin ?? "user") === "agent") {
+    const verdict = await agentWriteAllowed(
+      target,
+      surfaceName,
+      opts?.actorLabel,
+      value,
+      opts?.requestApproval,
+      runtime,
+    );
+    if (verdict !== true) return verdict;
+  }
+
+  // Filed under the organization the person is acting in. The table requires
+  // one; with none selected we refuse with the remedy rather than open an
+  // organization picker just for feedback.
+  const organizationId = readActiveOrganizationId();
+  if (!organizationId) {
+    return {
+      ok: false,
+      refused: true,
+      phase: "apply",
+      error:
+        "No organization is selected, and every feedback row is filed under one, so nothing was saved. " +
+        "Tell the person their feedback could not be filed until they pick their organization from the avatar menu, then send it again.",
+    };
+  }
+
+  try {
+    const outcome = await saveSurfaceFeedback(value, {
+      surfaceName,
+      route: typeof window === "undefined" ? "" : window.location.pathname,
+      organizationId,
+      ...(opts?.conversationId ? { conversationId: opts.conversationId } : {}),
+      ...(opts?.agentId ? { agentId: opts.agentId } : {}),
+      ...(opts?.actorLabel ? { agentName: opts.actorLabel } : {}),
+    });
+    if (!opts?.quiet) {
+      toast.success("Feedback saved for the team.", { description: surfaceName });
+    }
+    return { ok: true, surfaceName, target, outcome };
+  } catch (error) {
+    const failure = fail(
+      error instanceof Error && error.message ? error.message : `Saving "${target.label}" failed.`,
+      { targetName: target.name, surfaceName, error },
+    );
+    return failure.ok ? failure : { ...failure, phase: "apply" };
+  }
+}
+
+/**
  * The ONE delegated tool name through which an agent's RUN reaches this seam.
  *
  * `buildToolInjection` offers it as an inline spec whenever the mounted
@@ -1133,6 +1244,23 @@ export function listLiveWriteTargets(): ReadonlyArray<{
     out.push({
       surfaceName: getSurfaceRuntimeStack()[0]?.surfaceName ?? "",
       target: WINDOW_FORM_TARGET,
+      hasHandler: true,
+    });
+  }
+  // The platform feedback target: offered whenever a registered surface is
+  // mounted, attributed to the primary (deepest) one. The line names every
+  // open surface so the agent can pass `surface` to file it for another.
+  const mounted = getSurfaceRuntimeStack().map((entry) => entry.surfaceName);
+  if (mounted.length > 0) {
+    out.push({
+      surfaceName: mounted[0],
+      target:
+        mounted.length > 1
+          ? {
+              ...SURFACE_FEEDBACK_TARGET,
+              description: `${SURFACE_FEEDBACK_TARGET.description} Open surfaces: ${mounted.join(", ")}.`,
+            }
+          : SURFACE_FEEDBACK_TARGET,
       hasHandler: true,
     });
   }

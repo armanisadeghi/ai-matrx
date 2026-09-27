@@ -2040,7 +2040,19 @@ above (no DB mirror, no `check:surface-drift` validation of tool name
 regex/uniqueness) are the second and third chips of that campaign, not blockers
 on the first.
 
+## Agents leave feedback on the surface — `surface_feedback` (2026-09-27)
+
+Any agent on any page can file feedback about that page for the team ("the class list came as a lookup, not inline", "no target changes exam dates", "create_classes never said X"), on its own or when the person says "give feedback on this page".
+
+- **Platform write target `surface_feedback`** ([`runtime/surface-feedback.ts`](./runtime/surface-feedback.ts)), declared in no manifest (reserved in `PLATFORM_RESERVED_NAMES`). `listLiveWriteTargets` offers it whenever at least one registered surface is mounted, attributed to the primary (deepest) one; with several open, its line names them all and the tool's optional `surface` picks another (validated against the mounted stack). `mode: "entity"`, `applyPolicy: "auto"` — it changes nothing on the page, so nobody is asked.
+- **Value:** `{ kind: "missing_capability" | "wrong_or_unclear_description" | "bug" | "missing_data" | "suggestion", message: string (10–4000 chars), target_or_value?: string }`. A JSON string is parsed; an unknown key, bad kind or short message is refused before anything is written.
+- **Row:** `users.user_feedback` through `submitFeedback` (the in-app feedback window's own path) — `feedback_type` bug→`bug`, missing_capability→`feature`, else `suggestion`; `route` = pathname; `description` = `[surface feedback] <surface> · <kind>[ · <target>]` + blank line + message; `metadata = { source: "surface_agent_feedback", surface_name, kind, target_or_value, conversation_id?, agent_id?, agent_name? }`; filed in the active organization. The column is NOT NULL, so with none selected the write is refused with the remedy (no picker is opened for feedback). Outcome: `Feedback saved for <surface> (id …)` + `{ id }`.
+- **Read it before updating a surface:** `pnpm surface:feedback --surface <name> [--status open|all]` or `--all` (counts per surface) prints read-only SQL to run through the Supabase MCP.
+- Tests: `runtime/__tests__/surface-feedback.test.ts`.
+
 ## Change Log
+
+- **2026-09-27 — `surface_feedback`: agents file feedback about the page for the team.** Platform write target offered on every mounted surface (auto, entity), stored in `users.user_feedback` via `submitFeedback` with `metadata.source = "surface_agent_feedback"`; read back with `pnpm surface:feedback`. The thunk now passes `conversationId`/`agentId` to the seam for provenance. See § Agents leave feedback on the surface.
 
 - **2026-09-27 — Writes refuse bad values before the card, and tell the agent what landed.** From the education classes incident (a smaller model JSON-encoded an array value; the handler refused only after the person pressed Apply; the agent then re-read a stale list). `applySurfaceWrite` now parses a JSON string for `object`/`array` targets and refuses a type mismatch before approval; handlers may be `{ validate, apply }` (validate runs pre-card; `useSurfaceWriteHandlers` proxies both); `apply`'s `{ summary?, data? }` is returned as `outcome` and forwarded to the model; `dispatch-surface-write.thunk.ts` sends one self-contained sentence for every refusal/failure/decline. `apply_surface_write`'s per-target lines now say "value must be a JSON array/object (not a string)". Tests: `runtime/__tests__/surface-write-shape-and-outcome.test.tsx`, `thunks/__tests__/dispatch-surface-write.test.ts`.
 
