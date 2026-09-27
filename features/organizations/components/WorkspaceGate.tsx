@@ -57,7 +57,8 @@ export function WorkspaceGate({ sentence, description = "", blocked, children, c
   return (
     <div
       data-testid="workspace-gate"
-      className={className ?? "flex h-full min-h-0 w-full flex-col overflow-y-auto"}
+      // 44px targets on touch for the notice's own button (it was 32px).
+      className={`matrx-touch-targets ${className ?? "flex h-full min-h-0 w-full flex-col overflow-y-auto"}`}
     >
       <OrganizationContextNotice
         state={organizationState}
