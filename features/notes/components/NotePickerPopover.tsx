@@ -13,7 +13,7 @@
  */
 
 import { noteDisplayLabel } from "@/features/notes/format";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronRight, FileText, Loader2, Search } from "lucide-react";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -377,6 +377,61 @@ function NotePickerBody({
 }
 
 // ── Public component ─────────────────────────────────────────────────────────
+
+// ── Inline form (a host that already owns the frame: a dialog, a menu page) ──
+
+export interface NotePickerInlineProps {
+  /** The picked note, with its list row (label, folder) when known. */
+  onSelectNote: (noteId: string, note: NoteListItem | null) => void | Promise<void>;
+  /** When set, only notes in this folder are listed */
+  folderFilter?: string;
+}
+
+/**
+ * The same picker body, rendered in place — for hosts that are already a
+ * dialog or panel and must not stack a popover on top (the board's Add menu).
+ */
+export function NotePickerInline({ onSelectNote, folderFilter }: NotePickerInlineProps) {
+  const [state, setState] = useState<{
+    items: NoteListItem[];
+    isLoading: boolean;
+    error: string | null;
+  }>({ items: [], isLoading: true, error: null });
+
+  useEffect(() => {
+    let live = true;
+    loadNoteListItems().then(
+      (items) => {
+        if (live) setState({ items, isLoading: false, error: null });
+      },
+      (err: unknown) => {
+        if (live) {
+          setState({
+            items: [],
+            isLoading: false,
+            error: `Could not load notes: ${err instanceof Error ? err.message : String(err)}`,
+          });
+        }
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  return (
+    <NotePickerBody
+      items={state.items}
+      isLoading={state.isLoading}
+      error={state.error}
+      folderFilter={folderFilter}
+      onSelectNote={(noteId) =>
+        onSelectNote(noteId, state.items.find((n) => n.id === noteId) ?? null)
+      }
+      onClose={() => {}}
+    />
+  );
+}
 
 export function NotePickerPopover({
   trigger,
