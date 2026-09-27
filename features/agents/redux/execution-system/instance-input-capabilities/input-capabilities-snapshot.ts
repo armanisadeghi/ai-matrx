@@ -23,18 +23,26 @@ export async function fetchInputCapabilitiesSnapshot({
         .from("definition_version")
         .select("ui_gates")
         .eq("id", agentVersionId)
-        .single()
+        .maybeSingle()
     : supabase
         .schema("agent")
         .from("definition")
         .select("ui_gates")
         .eq("id", agentId)
-        .single();
+        .maybeSingle();
 
   const { data, error } = await query;
   if (error) {
     throw new Error(
       `Failed to load input capabilities for ${agentVersionId ?? agentId}: ${error.message}`,
+    );
+  }
+  // No row = the caller cannot read this agent (another organization's,
+  // behind a shared app). `.maybeSingle()` keeps that from being a 406 in the
+  // console on every reopen; it is still a refusal the caller handles.
+  if (!data) {
+    throw new Error(
+      `Input capabilities for ${agentVersionId ?? agentId} are not readable by you.`,
     );
   }
   return parseUiGates(data.ui_gates);
