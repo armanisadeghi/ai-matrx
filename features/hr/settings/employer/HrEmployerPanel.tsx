@@ -122,6 +122,15 @@ type EstablishmentEditor = {
   input: HrEstablishmentInput;
 };
 
+/** "2:41 PM" for a save today, the date otherwise. */
+function savedWhen(iso: string): string {
+  const at = new Date(iso);
+  const today = new Date();
+  return at.toDateString() === today.toDateString()
+    ? at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    : at.toLocaleDateString();
+}
+
 /** Radix Select cannot hold "" as an item value; this stands for "not set". */
 const NOT_SET = "__not_set__";
 
@@ -370,7 +379,7 @@ export function HrEmployerPanel() {
     >
       <HrSettingsShell
         section="employer"
-        title="Employer of record"
+        title="Employer"
         loading={loading}
         error={error}
         operation="This employer's profile"
@@ -508,6 +517,36 @@ function EmployerContextMenu({
     : "";
   const rowUsed = Boolean(clickedRow && locationEstablishmentIds.has(clickedRow.id));
 
+  const sectionText = (section: string): string | null => {
+    if (!profile) return null;
+    const identity = identityFromProfile(profile);
+    if (section === "identity") {
+      return [
+        `Legal name: ${identity.legal_name}`,
+        identity.dba_name ? `Doing business as: ${identity.dba_name}` : null,
+        identity.entity_form ? `Entity form: ${identity.entity_form}` : null,
+        identity.formation_state ? `Formation state: ${identity.formation_state}` : null,
+        `Primary address: ${formatAddress(identity.primary_address) || "not set"}`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+    }
+    if (section === "address") {
+      return `Primary address: ${formatAddress(identity.primary_address) || "not set"}`;
+    }
+    if (section === "laws") {
+      return applicabilityFlags(profile)
+        .map((flag) => `${flag.label}: ${flagValueText(flag)}`)
+        .join("\n");
+    }
+    if (section === "establishments") {
+      return establishments.length
+        ? establishments.map((e) => e.name).join("\n")
+        : "No establishments";
+    }
+    return null;
+  };
+
   return (
     <NonEditableContextMenu
       sourceFeature="hr"
@@ -525,7 +564,13 @@ function EmployerContextMenu({
         const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
         const row = (id && establishments.find((r) => r.id === id)) || null;
         setClickedRow(row);
-        if (!row) return null;
+        if (!row) {
+          // Outside a row: the right-clicked SECTION is the content — never the
+          // page's first text field.
+          const section = target?.closest("[data-hr-section]")?.getAttribute("data-hr-section");
+          const text = section ? sectionText(section) : null;
+          return text ? { content: text } : null;
+        }
         return {
           content: `${row.name}${row.is_headquarters ? " (headquarters)" : ""}`,
           [CONTEXT_MENU_ENTITY_KEY]: {
@@ -651,7 +696,7 @@ function IdentitySection({
   const entityKnown = HR_ENTITY_FORMS.some((option) => option.value === form.entity_form);
 
   return (
-    <section aria-labelledby="hr-employer-identity" className="py-6">
+    <section aria-labelledby="hr-employer-identity" data-hr-section="identity" className="py-6">
       <h2 id="hr-employer-identity" className="text-sm font-semibold text-foreground">
         Identity
       </h2>
@@ -714,11 +759,7 @@ function IdentitySection({
         <Field
           label="EIN"
           htmlFor="ein"
-          description={
-            knownLastFour
-              ? `Ends in ${knownLastFour}. Type a new one to replace it.`
-              : "Nine digits. Once saved it is never shown in a browser; typing one replaces what is stored."
-          }
+          help="Nine digits. Once saved it is never shown in a browser; typing one replaces what is stored."
           error={einCheck && !einCheck.ok ? einCheck.why : undefined}
         >
           {/* A tax identifier: plain input on purpose — no dictation, no copy menu. */}
@@ -729,12 +770,26 @@ function IdentitySection({
             autoComplete="off"
             onChange={(event) => onEinChange(formatEinInput(event.target.value))}
             aria-invalid={Boolean(einCheck && !einCheck.ok)}
+            aria-describedby="ein-hint"
             className="text-base sm:text-sm"
           />
+          {/* Under the input, never between label and input — the input stays on
+              its row's line with the fields beside it. */}
+          <p id="ein-hint" className="mt-1 text-xs text-muted-foreground">
+            {knownLastFour
+              ? `Ends in ${knownLastFour}. Type a new one to replace it.`
+              : "Never shown once saved. Typing one replaces it."}
+          </p>
         </Field>
       </div>
 
-      <h3 className="mt-6 text-sm font-medium text-foreground">Primary address</h3>
+      <h2
+        id="hr-employer-address"
+        data-hr-section="address"
+        className="mt-6 text-sm font-semibold text-foreground"
+      >
+        Primary address
+      </h2>
       <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Field label="Street" htmlFor="addr-line1" className="sm:col-span-2 lg:col-span-1">
           <ProInput
@@ -810,7 +865,7 @@ function IdentitySection({
           {dirty
             ? "Unsaved changes"
             : identityEquals(form, saved) && profile.updated_at
-              ? `Saved ${new Date(profile.updated_at).toLocaleDateString()}`
+              ? `Saved ${savedWhen(profile.updated_at)}`
               : null}
         </span>
       </div>
@@ -831,7 +886,7 @@ function ApplicabilitySection({
 }) {
   const flags = applicabilityFlags(profile);
   return (
-    <section aria-labelledby="hr-employer-laws" className="py-6">
+    <section aria-labelledby="hr-employer-laws" data-hr-section="laws" className="py-6">
       <h2
         id="hr-employer-laws"
         className="text-sm font-semibold text-foreground"
@@ -1185,7 +1240,11 @@ function EstablishmentsSection({
   ];
 
   return (
-    <section aria-labelledby="hr-employer-establishments" className="py-6">
+    <section
+      aria-labelledby="hr-employer-establishments"
+      data-hr-section="establishments"
+      className="py-6"
+    >
       <div className="flex items-center justify-between gap-2">
         <h2 id="hr-employer-establishments" className="text-sm font-semibold text-foreground">
           Establishments
