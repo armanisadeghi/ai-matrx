@@ -39,6 +39,8 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 // ── Surface write-target input validation ──────────────────────────────
 // The writeback seam (`features/surfaces/runtime/surface-writeback.ts`)
@@ -73,8 +75,14 @@ function readBodyWrite(
 
 export default function ComponentsPage() {
   const { siteId } = useParams() as { siteId: string };
-  const { site, pages, components, componentsLoading, refreshComponents } =
-    useSiteContext();
+  const {
+    site,
+    pages,
+    components,
+    componentsLoading,
+    componentsError,
+    refreshComponents,
+  } = useSiteContext();
   const [error, setError] = useState<string | null>(null);
   const htmlTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const cssTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -338,7 +346,22 @@ export default function ComponentsPage() {
             </div>
           )}
 
-          {components.length === 0 ? (
+          {componentsError && components.length > 0 && (
+            <StaleDataNotice
+              hasData
+              what="this site's components"
+              onRetry={() => void refreshComponents()}
+              retrying={componentsLoading}
+            />
+          )}
+
+          {componentsError && components.length === 0 ? (
+            <ReadFailure
+              error={componentsError}
+              what="this site's components"
+              onRetry={() => void refreshComponents()}
+            />
+          ) : components.length === 0 ? (
             <div className="flex flex-col items-center gap-3 text-muted-foreground py-16">
               <Puzzle className="h-10 w-10 opacity-30" />
               <p className="text-sm">No components yet</p>

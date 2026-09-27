@@ -64,9 +64,13 @@ interface SiteContextValue {
    */
   pages: ClientPageSummary[];
   pagesLoading: boolean;
+  /** The last pages read failed (RC-B12): `pages` is then not "no pages". */
+  pagesError: unknown;
   refreshPages: () => Promise<void>;
   components: ClientComponent[];
   componentsLoading: boolean;
+  /** The last components read failed: `components` is then not "none yet". */
+  componentsError: unknown;
   refreshComponents: () => Promise<void>;
   /** Builds the shared `site_structure` framing XML from the cached pages/components. */
   buildStructureXml: (current?: SiteStructureCurrent) => string;
@@ -187,8 +191,10 @@ export default function SiteLayoutClient({
 
   const [pages, setPages] = useState<ClientPageSummary[]>([]);
   const [pagesLoading, setPagesLoading] = useState(true);
+  const [pagesError, setPagesError] = useState<unknown>(null);
   const [components, setComponents] = useState<ClientComponent[]>([]);
   const [componentsLoading, setComponentsLoading] = useState(true);
+  const [componentsError, setComponentsError] = useState<unknown>(null);
 
   const fetchSite = useCallback(async () => {
     setIsLoading(true);
@@ -208,7 +214,9 @@ export default function SiteLayoutClient({
     try {
       const data = await CmsPageService.listPages(siteId);
       setPages(data);
+      setPagesError(null);
     } catch (err: unknown) {
+      setPagesError(err);
       // Non-fatal: the framing XML degrades to a smaller page list rather than blocking the route.
       console.error(
         "[cms] failed to refresh site_structure page cache:",
@@ -224,7 +232,9 @@ export default function SiteLayoutClient({
     try {
       const data = await CmsComponentService.listComponents(siteId);
       setComponents(data);
+      setComponentsError(null);
     } catch (err: unknown) {
+      setComponentsError(err);
       console.error(
         "[cms] failed to refresh site_structure component cache:",
         extractErrorMessage(err),
@@ -357,9 +367,11 @@ export default function SiteLayoutClient({
         refreshSite: fetchSite,
         pages,
         pagesLoading,
+        pagesError,
         refreshPages,
         components,
         componentsLoading,
+        componentsError,
         refreshComponents,
         buildStructureXml,
         allSites,
