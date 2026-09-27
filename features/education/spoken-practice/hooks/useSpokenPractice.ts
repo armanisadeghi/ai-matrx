@@ -47,6 +47,7 @@ import {
 import { uploadResponseClip } from "@/features/flashcards/fast-fire/agents/grading-core";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { studyService } from "@/features/education/study/service/studyService";
+import { useLazyStudySession } from "@/features/education/study/hooks/useLazyStudySession";
 import { verdictResult } from "@/features/education/trust/types";
 import type { ReviewSessionResult } from "@/features/education/tutor/lanes/reviewSession";
 import {
