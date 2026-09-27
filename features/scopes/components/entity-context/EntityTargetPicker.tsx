@@ -18,6 +18,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   Building,
   Check,
@@ -108,7 +109,7 @@ export type EntityTargetPickerProps = OrgProps | ProjectProps | TaskProps;
 
 export function EntityTargetPicker(props: EntityTargetPickerProps) {
   const dispatch = useAppDispatch();
-  useScopeTree();
+  const { error: treeError, refresh: refreshTree } = useScopeTree();
   const treeStatus = useAppSelector(selectTreeStatus);
   const activeOrgId = useAppSelector(selectActiveOrganizationId);
   const orgId = props.organizationId ?? activeOrgId;
@@ -303,11 +304,30 @@ export function EntityTargetPicker(props: EntityTargetPickerProps) {
           ? "Pick an org or project first"
           : taskBucket?.status === "loading"
             ? "Loading tasks…"
+            // read-gate-exempt: label text only; the list renders ReadFailure instead of emptyText when the task or tree read fails
             : taskBucket?.status === "empty"
               ? "No open tasks at this level"
               : "No tasks",
     };
   }, [props.kind, orgId, taskLevel, taskBucket?.status]);
+
+  // The read behind this picker: the task bucket for tasks, the scope tree
+  // for organizations and projects. A failed read is shown, never "none".
+  const readError: unknown =
+    props.kind === "task"
+      ? taskBucket?.status === "error"
+        ? (taskBucket.error ?? true)
+        : null
+      : treeStatus === "error"
+        ? (treeError ?? true)
+        : null;
+  const retryRead = () => {
+    if (props.kind === "task" && taskLevel) {
+      void dispatch(ensureScopeTasks(taskLevel.level, taskLevel.id, { refresh: true }));
+    } else {
+      void refreshTree();
+    }
+  };
 
   const label = props.label ?? meta.defaultLabel;
   const emptyText = props.emptyText ?? meta.defaultEmpty;
@@ -383,7 +403,18 @@ export function EntityTargetPicker(props: EntityTargetPickerProps) {
           )}
 
           <div className="max-h-48 overflow-y-auto">
-            {filteredMain.length === 0 &&
+            {readError != null &&
+            filteredMain.length === 0 &&
+            filteredOrphans.length === 0 ? (
+              <ReadFailure
+                error={readError}
+                what={`the ${label.toLowerCase()} list`}
+                className="m-1"
+                onRetry={retryRead}
+              />
+            ) : null}
+            {readError == null &&
+              filteredMain.length === 0 &&
               filteredOrphans.length === 0 &&
               treeStatus !== "loading" && (
                 <div className="px-2 py-2 text-[11px] text-muted-foreground">

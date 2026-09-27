@@ -20,6 +20,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { toast } from "@/lib/toast";
 import {
   ChevronDown,
@@ -107,7 +108,8 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
     allowMultiPerType = false,
   } = props;
 
-  useScopeTree(); // ensures the tree slice is populated (no-op if already)
+  // ensures the tree slice is populated (no-op if already)
+  const { error: treeError, refresh: refreshTree } = useScopeTree();
   const treeStatus = useAppSelector(selectTreeStatus);
   const activeOrgId = useAppSelector(selectActiveOrganizationId);
   const orgId = orgIdProp ?? activeOrgId;
@@ -292,6 +294,17 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
           <div key={i} className="h-4 w-24 rounded bg-muted animate-pulse" />
         ))}
       </div>
+    );
+  }
+
+  if (treeStatus === "error" && scopeTypes.length === 0) {
+    return (
+      <ReadFailure
+        error={treeError ?? true}
+        what="this organization's scopes"
+        className={cn("mx-3 my-2", className)}
+        onRetry={() => void refreshTree()}
+      />
     );
   }
 
