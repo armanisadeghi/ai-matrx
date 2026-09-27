@@ -195,28 +195,34 @@ export default function MobileNotesView({
             {/* The record's actions live in the shell's ⋮ sheet ("This page"),
                 so the title keeps the row — one overflow per phone header
                 (page-pass shared defects, 2026-09-27). */}
-            <PageHeaderRightPortal>
-            {/* Mode — Plain and Write, so one button in the same slot
-                that switches to the other (a two-pill toggle squeezed the title
-                away). Labels and icons come from the one mode list. */}
-              {(() => {
-                const next =
-                  NOTE_PHONE_VIEW_MODES.find((m) => m.mode !== editorMode) ??
-                  NOTE_PHONE_VIEW_MODES[0];
-                const NextIcon = next.icon;
-                return (
-                  <button
-                    type="button"
-                    onClick={() => setEditorMode(next.mode)}
-                    aria-label={`Switch to ${next.label}`}
-                    title={`${next.label} — ${next.hint}`}
-                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-                  >
-                    <NextIcon size={16} />
-                  </button>
-                );
-              })()}
+            {/* The view switch sits IN the header row, one tap per view, with
+                the same words as desktop — portaled into the ⋮ sheet it was
+                two taps away and easy to miss (page-pass 2026-09-27). */}
+            <div
+              role="group"
+              aria-label="Note view"
+              className="flex flex-shrink-0 items-center gap-0.5 rounded-full bg-muted/60 p-0.5"
+            >
+              {NOTE_PHONE_VIEW_MODES.map(({ mode, label, hint }) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setEditorMode(mode)}
+                  aria-pressed={editorMode === mode}
+                  title={hint}
+                  className={cn(
+                    "h-8 rounded-full px-3 text-xs font-medium transition-colors pointer-coarse:h-9",
+                    editorMode === mode
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
 
+            <PageHeaderRightPortal>
               {/* Clean up content — mutates the note, so viewers don't get it.
                   The reference copy lives in the More sheet (a bookmark glyph
                   here read as "bookmark", not "copy reference"). */}

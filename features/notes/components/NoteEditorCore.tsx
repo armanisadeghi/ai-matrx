@@ -53,6 +53,7 @@ import RichEditor, {
 } from "@/components/rich-editor/RichEditor";
 import { noteIdentityContentSource } from "../richDocumentSource";
 import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
+import { NOTE_EXCLUDED_ACTIONS } from "../constants/noteExcludedActions";
 
 function assignRef<T>(ref: React.Ref<T> | undefined, node: T | null) {
   if (!ref) return;
@@ -61,6 +62,7 @@ function assignRef<T>(ref: React.Ref<T> | undefined, node: T | null) {
 }
 
 // ── Types ────────────────────────────────────────────────────────────────────
+
 
 export type EditorMode = "plain" | "write" | "source" | "preview" | "split";
 
@@ -387,7 +389,10 @@ export function NoteEditorCore({
               className={cn(
                 "w-full h-full resize-none border-0 shadow-none",
                 "focus-visible:ring-0 focus-visible:ring-offset-0",
-                "text-sm leading-relaxed bg-transparent p-3",
+                // The same reading column and type size as Write and Read
+                // (max-w-3xl, 16px): the padding centres the text while the
+                // scrollbar stays at the pane's edge.
+                "text-base leading-relaxed bg-transparent py-6 px-[max(1.5rem,calc((100%-48rem)/2))]",
                 bottomPad,
                 largeScrollbar && "scrollbar-contrast-lg",
                 textareaClassName,
@@ -403,7 +408,10 @@ export function NoteEditorCore({
               className={cn(
                 "absolute inset-0 w-full h-full resize-none border-0",
                 "focus-visible:ring-0 focus-visible:ring-offset-0",
-                "text-sm leading-relaxed bg-transparent p-3",
+                // The same reading column and type size as Write and Read
+                // (max-w-3xl, 16px): the padding centres the text while the
+                // scrollbar stays at the pane's edge.
+                "text-base leading-relaxed bg-transparent py-6 px-[max(1.5rem,calc((100%-48rem)/2))]",
                 bottomPad,
                 // Notes get long — opt into the larger, persistent,
                 // higher-contrast scrollbar so it's easy to find and grab.
@@ -428,7 +436,10 @@ export function NoteEditorCore({
           placeholder={placeholder}
           className="absolute inset-0"
           syncScroll={syncScroll}
-          allowFullScreenEditor={true}
+          // Notes never open a second editor: the header's views are the one
+          // switch, so the full-screen editor (its own mode chooser) is off.
+          allowFullScreenEditor={false}
+          actionsExclude={NOTE_EXCLUDED_ACTIONS}
           editorOverlay={findOverlay}
           previewContainerRef={previewContainerRef}
           textareaClassName={cn(
@@ -458,7 +469,7 @@ export function NoteEditorCore({
         <div
           ref={setPreviewScrollRef}
           className={cn(
-            "h-full overflow-y-auto max-w-3xl mx-auto py-2 px-4",
+            "h-full overflow-y-auto max-w-3xl mx-auto py-6 px-6",
             bottomPad,
             previewScrollbarClass,
             previewClassName,
@@ -476,10 +487,10 @@ export function NoteEditorCore({
             enableContextMenu
             isStreamActive={false}
             hideCopyButton={true}
-            // Viewers must not reach the full-screen editor: its saves apply a
-            // LOCAL overlay that displays as saved while onContentChange is a
-            // no-op — the silent-lost-work class this feature exists to kill.
-            allowFullScreenEditor={!readOnly}
+            // No full-screen editor in Notes (a second editor with its own
+            // view chooser); "Edit content" is Write in the header instead.
+            allowFullScreenEditor={false}
+            actions={{ exclude: NOTE_EXCLUDED_ACTIONS }}
             onContentChange={
               readOnly
                 ? () =>

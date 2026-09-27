@@ -678,7 +678,9 @@ export function NotesView({
       {/* Center — view / style modes only */}
       <div className="flex min-w-0 flex-1 items-center justify-center">
         {activeTabId && (
-          <div className="matrx-glass-thin-border flex items-center gap-0.5 rounded-full p-0.5">
+          // Equal columns: the control's width never depends on which view
+          // is selected (a bolder selected label used to nudge it sideways).
+          <div className="matrx-glass-thin-border grid grid-cols-4 items-center gap-0.5 rounded-full p-0.5">
             {/* The four note modes, one click each, from the one
                 NOTE_VIEW_MODES list: Write (formatted, the default), Plain
                 (quick unformatted text), Source (Markdown with a live
@@ -689,7 +691,7 @@ export function NotesView({
                 type="button"
                 title={hint}
                 aria-pressed={editorMode === mode}
-                className={modeBtnClass(mode)}
+                className={cn(modeBtnClass(mode), "justify-center")}
                 onClick={() => setMode(mode)}
               >
                 <Icon /> {label}

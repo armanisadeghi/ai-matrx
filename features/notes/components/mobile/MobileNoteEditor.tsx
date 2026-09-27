@@ -14,6 +14,7 @@ import { toastErrorAlreadyCaptured } from "@/lib/toast";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { RichDocument } from "@/features/rich-document/RichDocument";
+import { NOTE_EXCLUDED_ACTIONS } from "../../constants/noteExcludedActions";
 import { noteIdentityContentSource } from "../../richDocumentSource";
 import { usePreparedNoteContentSource } from "../../usePreparedNoteContentSource";
 import type { Note } from "@/features/notes/types";
@@ -562,6 +563,8 @@ export default function MobileNoteEditor({
                 source={editableContentSource ?? noteIdentityContentSource(noteId, `mobile-preview:${noteId}`)}
                 actionsVariant="mini-bar"
                 actionsClassName="mb-2"
+                allowFullScreenEditor={false}
+                actions={{ exclude: NOTE_EXCLUDED_ACTIONS }}
               />
             ) : (
               <p className="text-muted-foreground text-sm">
