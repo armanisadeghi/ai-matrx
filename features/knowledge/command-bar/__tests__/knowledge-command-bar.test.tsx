@@ -164,6 +164,29 @@ describe("typed sections from a streamed search", () => {
   });
 });
 
+describe("a type chip narrows the search", () => {
+  it("leaves sections the query narrowed away out, instead of calling them failed", async () => {
+    // A runner that, like the service, answers only the sections a type: chip asks for.
+    runner = jest.fn(async (query, options) => {
+      const notes = {
+        key: "notes" as const,
+        label: "Notes",
+        count: 1,
+        items: [{ entity: "note", id: "n-1", title: "Photosynthesis" }],
+        next_cursor: null,
+      };
+      options?.onSection?.(notes);
+      return query.types?.includes("note") ? [notes] : [notes];
+    });
+    mount();
+    type("photosynthesis type:note ");
+    await settle();
+    expect(text()).toContain("Photosynthesis");
+    expect(text()).not.toContain("did not answer");
+    expect(text()).not.toContain("Sources");
+  });
+});
+
 describe("keyboard flow", () => {
   it("↵ opens the selected result at its own route", async () => {
     mount();

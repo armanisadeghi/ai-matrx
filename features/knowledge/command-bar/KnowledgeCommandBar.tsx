@@ -790,7 +790,7 @@ export default function KnowledgeCommandBar({
         <CommandList
           ref={listRef}
           id="knowledge-command-results"
-          className="max-h-[min(60dvh,32rem)]"
+          className="max-h-[min(60dvh,32rem)] sm:h-[min(60dvh,32rem)]"
         >
           {view.kind === "actions" ? (
             renderActions(view.hit)
@@ -809,7 +809,7 @@ export default function KnowledgeCommandBar({
           )}
         </CommandList>
 
-        <div className="hidden items-center gap-3 border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground sm:flex">
+        <div className="hidden items-center gap-3 overflow-hidden whitespace-nowrap border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground sm:flex">
           <span>
             ↵ {primaryAction === "attach" && attachTarget ? attachTarget.label : "Open"}
           </span>
@@ -817,7 +817,7 @@ export default function KnowledgeCommandBar({
             ⌘↵ Ask
           </button>
           <span>⌘K Actions</span>
-          <span>⌘1–8 Sections · ⌘9 Commands · ⌘0 All</span>
+          <span title="⌘1–8 one section · ⌘9 Commands · ⌘0 everything">⌘1–9 Filter</span>
           <span className="ml-auto">Esc {view.kind === "actions" ? "Back" : "Close"}</span>
         </div>
       </div>
