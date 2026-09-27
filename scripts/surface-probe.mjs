@@ -437,6 +437,17 @@ const context = await chromium.launchPersistentContext(profileDir, {
 });
 const page = context.pages()[0] ?? (await context.newPage());
 const results = [];
+// Credentials (never printed): the environment first, else .env.local / .env —
+// the same fallback page-look.mjs uses, so both proof tools sign in the same way.
+for (const file of [".env.local", ".env"]) {
+  if (process.env.AI_ADMIN_USERNAME && process.env.AI_ADMIN_PASSWORD) break;
+  if (!existsSync(file)) continue;
+  for (const line of readFileSync(file, "utf8").split("\n")) {
+    const m = line.match(/^\s*(AI_ADMIN_USERNAME|AI_ADMIN_PASSWORD)\s*=\s*"?([^"\n]*)"?\s*$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
+  }
+}
+
 let exitCode = 0;
 
 try {
@@ -451,7 +462,7 @@ try {
     if (await page.locator('input[type="email"]').count()) {
       const user = process.env.AI_ADMIN_USERNAME;
       const pass = process.env.AI_ADMIN_PASSWORD;
-      if (!user || !pass) fail("AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD are not set in the environment");
+      if (!user || !pass) fail("AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD are not set in the environment, .env.local or .env");
       await page.fill('input[type="email"]', user);
       await page.fill('input[type="password"]', pass);
       await page.evaluate(() => document.querySelector("form")?.requestSubmit());
