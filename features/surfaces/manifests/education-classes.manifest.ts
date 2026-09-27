@@ -95,7 +95,6 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 1200,
     sortOrder: 110,
-    inlineUpTo: 12000,
     group: "classes",
   },
   {
@@ -106,7 +105,6 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 400,
     sortOrder: 115,
-    inlineUpTo: 12000,
     group: "classes",
   },
   {
@@ -140,7 +138,6 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 400,
     sortOrder: 140,
-    inlineUpTo: 4000,
     group: "classes",
   },
   {
