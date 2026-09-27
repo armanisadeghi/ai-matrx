@@ -39,6 +39,7 @@ import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { toast } from "@/lib/toast";
 import type { ValueMappingMap } from "@/features/surfaces/types";
 import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
+import { isPageOwnConversation } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { withLiveSurfaceContext } from "@/features/surfaces/runtime/surface-chain";
 import {
   resolveEffectiveAutoRun,
@@ -279,7 +280,12 @@ export const launchAgentExecution = createAsyncThunk<
   // the page's mounted provider would feed the conversation its OWN
   // transcript/identity back to itself as "surface context" — a
   // self-referential loop. Skip adoption entirely and stamp nothing.
-  const surfaceOptOut = runtime?.surfaceName === null;
+  // Also an opt-out: a launch INTO a conversation a mounted page declares as
+  // its own (`ownConversationId`) — the same self-reference, reached through
+  // an existing conversation instead of the page's launcher.
+  const surfaceOptOut =
+    runtime?.surfaceName === null ||
+    isPageOwnConversation(providedConversationId);
   let surfaceName = runtime?.surfaceName ?? undefined;
   let adoptedScope: ApplicationScope | undefined;
   if (runtime?.applicationScope === undefined && !surfaceOptOut) {

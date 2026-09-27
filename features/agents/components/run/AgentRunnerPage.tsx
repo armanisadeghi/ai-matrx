@@ -483,6 +483,9 @@ export function AgentRunnerPage({
       surfaceName="matrx-user/agent-run"
       getScope={getAgentRunScope}
       getWriteHandlers={getSurfaceWriteHandlers}
+      // The run on this page IS the page: it never gets the page as context or
+      // the page's tools (isPageOwnConversation). Outside agents do.
+      ownConversationId={activeConversationId}
     >
       {body}
     </SurfaceRuntimeProvider>

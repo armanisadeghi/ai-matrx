@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectAgentReadyForBuilder } from "@/features/agents/redux/agent-definition/selectors";
 import { useAgentAutoSave } from "@/features/agents/hooks/useAgentAutoSave";
 import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
@@ -43,6 +43,15 @@ export function AgentBuilderClient({
   // the provider that owns the whole builder route, so the targets stay wired
   // no matter which panel or tab the user has open.
   const getAgentBuilderWriteHandlers = useAgentBuilderWriteHandlers(agentId);
+  // The builder's test-run panel (AgentBuilderRightPanel, surface key
+  // `agent-builder:<agentId>`) IS this page: its conversations never get the
+  // builder as context or the builder's tools (isPageOwnConversation).
+  const store = useAppStore();
+  const isOwnConversation = (id: string) => {
+    const focus =
+      store.getState().conversationFocus?.bySurface[`agent-builder:${agentId}`];
+    return focus?.input === id || focus?.display === id;
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -62,6 +71,7 @@ export function AgentBuilderClient({
         getScope={getAgentBuilderScope}
         isEditable
         getWriteHandlers={getAgentBuilderWriteHandlers}
+        isOwnConversation={isOwnConversation}
       >
         <AgentBuilderMobile agentId={agentId} />
       </SurfaceRuntimeProvider>
@@ -74,6 +84,7 @@ export function AgentBuilderClient({
       getScope={getAgentBuilderScope}
       isEditable
       getWriteHandlers={getAgentBuilderWriteHandlers}
+      isOwnConversation={isOwnConversation}
     >
       <DebugSessionActivator />
       {desktopContent}

@@ -133,6 +133,24 @@ export interface SurfaceRuntimeValue {
    * (`surface-chain.ts`).
    */
   layer?: boolean;
+  /**
+   * The conversation this page ITSELF runs, when it has one: the main chat's
+   * open conversation, the agent builder's test run, the runner's run, each
+   * battle lane. That conversation IS the page, so it must never receive the
+   * page as context or be offered the page's tools. Every OTHER agent on the
+   * screen (a window, sidebar, overlay) still gets both. Read live on every
+   * launch and every turn, so a conversation loaded from history is covered
+   * exactly like a freshly launched one. See `isPageOwnConversation`.
+   */
+  ownConversationId?: string | null;
+  /**
+   * For a page that runs SEVERAL conversations of its own (each battle lane,
+   * a builder's test panel whose id lives in Redux): true for any of them.
+   * Same meaning as `ownConversationId`; either may be given.
+   */
+  isOwnConversation?: (conversationId: string) => boolean;
+  /** Registry-internal live reader for `ownConversationId`; set by the provider. */
+  getOwnConversationId?: () => string | null | undefined;
 }
 
 type SurfaceScopeContribution = {
@@ -289,6 +307,23 @@ export function getSurfaceRuntime(): SurfaceRuntimeValue | null {
  * current global winner. Within the requested surface the normal provider
  * law still applies: deepest wins, registration recency breaks ties.
  */
+/**
+ * True when `conversationId` is a mounted page's OWN conversation (declared
+ * via `ownConversationId`). Such a conversation gets no page context and no
+ * surface tools: the main chat has no awareness of itself, while any agent
+ * opened over it (a window, a sidebar) sees and works on the page.
+ */
+export function isPageOwnConversation(
+  conversationId: string | null | undefined,
+): boolean {
+  if (!conversationId) return false;
+  return getSurfaceRuntimeStack().some(
+    (runtime) =>
+      (runtime.getOwnConversationId?.() ?? runtime.ownConversationId) ===
+        conversationId || runtime.isOwnConversation?.(conversationId) === true,
+  );
+}
+
 export function getSurfaceRuntimeForName(
   surfaceName: string,
 ): SurfaceRuntimeValue | null {
@@ -599,6 +634,8 @@ export function SurfaceRuntimeProvider({
   beforeExecute,
   isEditable,
   getWriteHandlers,
+  ownConversationId,
+  isOwnConversation,
 }: SurfaceRuntimeValue & { children: ReactNode }) {
   const depth = useContext(SurfaceRuntimeDepthContext) + 1;
   const layer = useContext(SurfaceLayerContext);
@@ -619,9 +656,13 @@ export function SurfaceRuntimeProvider({
   );
   const beforeExecuteRef = useRef(beforeExecute);
   const getWriteHandlersRef = useRef(getWriteHandlers);
+  const ownConversationIdRef = useRef(ownConversationId);
+  const isOwnConversationRef = useRef(isOwnConversation);
   useEffect(() => {
     beforeExecuteRef.current = beforeExecute;
     getWriteHandlersRef.current = getWriteHandlers;
+    ownConversationIdRef.current = ownConversationId;
+    isOwnConversationRef.current = isOwnConversation;
   });
 
   useEffect(() => {
@@ -633,6 +674,8 @@ export function SurfaceRuntimeProvider({
         getScope: stableGetScope,
         beforeExecute: (input) => beforeExecuteRef.current?.(input),
         getWriteHandlers: () => getWriteHandlersRef.current?.() ?? {},
+        getOwnConversationId: () => ownConversationIdRef.current,
+        isOwnConversation: (id) => isOwnConversationRef.current?.(id) === true,
       },
       depth,
     );
@@ -710,6 +753,9 @@ export function useSurfaceRuntimeRegistration(
         },
         beforeExecute: (input) => valueRef.current?.beforeExecute?.(input),
         getWriteHandlers: () => valueRef.current?.getWriteHandlers?.() ?? {},
+        getOwnConversationId: () => valueRef.current?.ownConversationId,
+        isOwnConversation: (id) =>
+          valueRef.current?.isOwnConversation?.(id) === true,
       },
       depth,
     );
