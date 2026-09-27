@@ -9,6 +9,7 @@ import {
   Bug,
   Camera,
   Check,
+  ChevronDown,
   CheckCheck,
   Clipboard,
   List,
@@ -30,6 +31,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
+import { updateWindowRect } from "@/lib/redux/slices/windowManagerSlice";
 import {
   WindowPanel,
   type WindowPanelProps,
@@ -48,7 +50,10 @@ import {
   FEEDBACK_SURFACE_NAME,
   createFeedbackScope,
 } from "@/features/surfaces/manifests/feedback.manifest";
-import { parseFeedbackDraft } from "@/features/feedback/feedbackDraftWrite";
+import {
+  parseFeedbackAttachment,
+  parseFeedbackDraft,
+} from "@/features/feedback/feedbackDraftWrite";
 import {
   Select,
   SelectContent,
@@ -61,7 +66,18 @@ import { useTextDraft } from "@/lib/drafts/useTextDraft";
 import {
   ensureOrganizationForWrite,
   isOrganizationSelectionCancelled,
+  withdrawOrganizationRequest,
 } from "@/lib/organization/organization-gate";
+import {
+  feedbackListHref,
+  inFeedbackGroup,
+  type FeedbackCountGroup,
+} from "@/features/feedback/feedback-status-groups";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useScreenCapture } from "@/hooks/useScreenCapture";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -77,16 +93,54 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+/**
+ * An attachment is LOCAL until Submit: captures, pastes, uploads and drops are
+ * held in memory (with a preview) and uploaded only when the report is filed,
+ * under the SAME organization the report uses — one "Which workspace?" at
+ * most, asked once, at Submit (page-pass 2026-09-27). `ready` is a file that
+ * already exists (a mark-up save, or one an agent attached by id).
+ */
 type AttachmentSlot =
-  | { status: "pending"; id: string }
-  | { status: "error"; id: string; message: string }
   | {
-      status: "ready";
+      status: "local";
       id: string;
-      url: string;
-      fileId: string;
-      filename?: string;
-    };
+      file: File;
+      /** Object URL for an image preview; null for video/PDF. */
+      previewUrl: string | null;
+      filename: string;
+    }
+  | { status: "pending"; id: string; file: File; previewUrl: string | null; filename: string }
+  | { status: "ready"; id: string; fileId: string; filename?: string };
+
+/**
+ * The unsent report outlives the window: text through the shared draft keeper,
+ * and the type and attachments (live `File`s + previews) here, for the life of
+ * the tab. Cancel then reopen restores all of it; only a successful submit or
+ * "New report" clears it.
+ */
+interface FeedbackDraftStash {
+  feedbackType: FeedbackType;
+  attachments: AttachmentSlot[];
+}
+const draftStash = new Map<string, FeedbackDraftStash>();
+
+function newSlotId(): string {
+  return `attachment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function localSlot(file: File): AttachmentSlot {
+  return {
+    status: "local",
+    id: newSlotId(),
+    file,
+    previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+    filename: file.name,
+  };
+}
+
+function releaseSlot(slot: AttachmentSlot): void {
+  if (slot.status !== "ready" && slot.previewUrl) URL.revokeObjectURL(slot.previewUrl);
+}
 
 interface FeedbackStats {
   total: number;
@@ -235,7 +289,9 @@ export function FeedbackWindow({
         minHeight={320}
         width={480}
         height={412}
-        position="top-right"
+        // Bottom-right: the corner a page's main action (a header "New …"
+        // button, the first toolbar) never sits in; it grows upward.
+        position="bottom-right"
         mobileSizeToContent
         urlSyncKey="feedback"
         urlSyncId="default"
@@ -302,8 +358,24 @@ function FeedbackFooterRight({ form }: { form: FeedbackFormState }) {
 
 type FeedbackFormState = ReturnType<typeof useFeedbackForm>;
 
-function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: FeedbackSubject }) {
+function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () => void; subject?: FeedbackSubject }) {
   const pathname = usePathname();
+  const draftKey = subject
+    ? `feedback:${subject.sourceToken}:${subject.sourceId}`
+    : "feedback";
+  // The workspace question this window asked, if it is still open: a window
+  // that closes withdraws it, so the picker never outlives the window.
+  const askingOrgRef = useRef(false);
+  const onClose = useCallback(() => {
+    if (askingOrgRef.current) withdrawOrganizationRequest();
+    closeOverlayNow();
+  }, [closeOverlayNow]);
+  useEffect(
+    () => () => {
+      if (askingOrgRef.current) withdrawOrganizationRequest();
+    },
+    [],
+  );
   // What the person SEES: the page's own name (its tab title, before the
   // " — AI Matrx" suffix) and the address bar — never the app-internal route
   // (`/agents` rewrites to `/agents/all`). Re-read on every navigation; the
@@ -330,9 +402,26 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
   // `X-Organization-Id` header, so the selection travels as an argument.
   const selectedOrganizationId = useAppSelector(selectOrganizationId);
 
-  const [feedbackType, setFeedbackType] = useState<FeedbackType>("bug");
+  const stashed = draftStash.get(draftKey);
+  const [feedbackType, setFeedbackType] = useState<FeedbackType>(
+    stashed?.feedbackType ?? "bug",
+  );
   const [description, setDescription] = useState("");
-  const [attachments, setAttachments] = useState<AttachmentSlot[]>([]);
+  const [attachments, setAttachments] = useState<AttachmentSlot[]>(
+    // A slot caught mid-upload by a close is local again on reopen.
+    () =>
+      (stashed?.attachments ?? []).map((a) =>
+        a.status === "pending" ? { ...a, status: "local" as const } : a,
+      ),
+  );
+  const [restoredExtras] = useState(
+    () => !!stashed && (stashed.attachments.length > 0 || stashed.feedbackType !== "bug"),
+  );
+  // Keep the stash current: type + attachments survive Cancel / close.
+  useEffect(() => {
+    if (feedbackType === "bug" && attachments.length === 0) draftStash.delete(draftKey);
+    else draftStash.set(draftKey, { feedbackType, attachments });
+  }, [draftKey, feedbackType, attachments]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSlowConnection, setIsSlowConnection] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -356,23 +445,34 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     FeedbackAssignableAdmin[]
   >([]);
   const [isLoadingAdminOptions, setIsLoadingAdminOptions] = useState(true);
+  // A failed load is SAID, with a retry — it used to become an empty list,
+  // indistinguishable from "no categories exist".
+  const [adminOptionsError, setAdminOptionsError] = useState<string | null>(null);
+  const [adminOptionsAttempt, setAdminOptionsAttempt] = useState(0);
+  const retryAdminOptions = () => setAdminOptionsAttempt((n) => n + 1);
 
-  // Fetch the admin-only dropdown data once when the window opens for an admin.
   useEffect(() => {
     if (!isAdmin) return undefined;
     let cancelled = false;
+    const load = async (url: string, what: string) => {
+      const r = await fetch(url, { cache: "no-store" });
+      if (!r.ok) throw new Error(`${what} could not load (${r.status})`);
+      return r.json();
+    };
+    setIsLoadingAdminOptions(true);
+    setAdminOptionsError(null);
     Promise.all([
-      fetch("/api/admin/feedback/categories", { cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : { categories: [] }))
-        .catch(() => ({ categories: [] })),
-      fetch("/api/admin/feedback/assignable-admins", { cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : { admins: [] }))
-        .catch(() => ({ admins: [] })),
+      load("/api/admin/feedback/categories", "Categories"),
+      load("/api/admin/feedback/assignable-admins", "Admins"),
     ])
       .then(([catRes, adminRes]) => {
         if (cancelled) return;
         setCategories(catRes?.categories ?? []);
         setAssignableAdmins(adminRes?.admins ?? []);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled)
+          setAdminOptionsError(err instanceof Error ? err.message : "Could not load");
       })
       .finally(() => {
         if (!cancelled) setIsLoadingAdminOptions(false);
@@ -380,16 +480,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     return () => {
       cancelled = true;
     };
-  }, [isAdmin]);
-
-  // Persist owned identity. URLs are derived views and never cross this
-  // storage boundary for newly uploaded feedback.
-  const uploadedImageFileIds = attachments
-    .filter(
-      (a): a is Extract<AttachmentSlot, { status: "ready" }> =>
-        a.status === "ready",
-    )
-    .map((a) => a.fileId);
+  }, [isAdmin, adminOptionsAttempt]);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const isMobile = useIsMobile();
@@ -397,12 +488,14 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
   // Typed text survives closing the window (Cancel, the close button, a
   // reload): the shared draft keeper restores it on the next open and says so;
   // only a successful submit forgets it.
-  const draft = useTextDraft(
-    subject ? `feedback:${subject.sourceToken}:${subject.sourceId}` : "feedback",
-    description,
-    setDescription,
-    true,
-  );
+  const draft = useTextDraft(draftKey, description, setDescription, true);
+  const [restoreNoticeDismissed, setRestoreNoticeDismissed] = useState(false);
+  const draftRestored =
+    !restoreNoticeDismissed && (draft.restored || restoredExtras);
+  const acknowledgeRestore = () => {
+    draft.acknowledge();
+    setRestoreNoticeDismissed(true);
+  };
 
   // The window body mounts through a portal AFTER this hook's first effect,
   // so an effect saw no textarea and nothing was focused. Focus when the
@@ -432,7 +525,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     };
   }, []);
 
-  // ── Image upload ─────────────────────────────────────────────────────────
+  // ── Attachments — held locally until Submit ──────────────────────────────
   const { upload: handlerUpload } = useFileUpload();
   const openImageAnnotation = useOpenImageAnnotationWindow();
 
@@ -440,195 +533,88 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     hideSelectors: [".feedback-window-panel"],
   });
 
-  // Add a pending slot and return its id
-  const addPendingSlot = useCallback((): string => {
-    // Unique per slot: several files chosen at once land in the same ms.
-    const id = `attachment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    setAttachments((prev) => [...prev, { status: "pending", id }]);
-    return id;
+  const addFiles = useCallback((files: FileList | File[] | null) => {
+    const list = Array.from(files ?? []);
+    if (!list.length) return;
+    setAttachments((prev) => [...prev, ...list.map(localSlot)]);
   }, []);
 
-  const resolveSlot = useCallback(
-    (
-      id: string,
-      result: { url: string; fileId: string; filename?: string },
-    ) => {
-      setAttachments((prev) =>
-        prev.map((attachment) =>
-          attachment.id === id
-            ? {
-                status: "ready",
-                id,
-                url: result.url,
-                fileId: result.fileId,
-                filename: result.filename,
-              }
-            : attachment,
-        ),
-      );
-    },
-    [],
-  );
-
-  // A failed capture/upload REMOVES its tile — the toast beside it names the
-  // reason. A broken red thumbnail left in the form was a dead end.
-  const errorSlot = useCallback((id: string, _message: string) => {
-    setAttachments((prev) => prev.filter((a) => a.id !== id));
+  const replaceSlot = useCallback((id: string, next: AttachmentSlot) => {
+    setAttachments((prev) => prev.map((a) => (a.id === id ? next : a)));
   }, []);
-
-  const uploadFile = useCallback(
-    async (file: File, slotId: string) => {
-      try {
-        const normalized = await handlerUpload(
-          { kind: "file", file },
-          {
-            folderPath: CloudFolders.FEEDBACK_IMAGES,
-            visibility: "public",
-            createShareLink: true,
-            shareLinkPermissionLevel: "viewer",
-          },
-        );
-        if (normalized.url) {
-          resolveSlot(slotId, {
-            url: normalized.url,
-            fileId: normalized.fileId,
-            filename: file.name,
-          });
-          toast.success("Screenshot attached!");
-        } else {
-          errorSlot(slotId, "no URL returned");
-          toast.error("Upload failed: no URL returned");
-        }
-      } catch (err) {
-        const reason =
-          err instanceof Error ? err.message : "Failed to upload screenshot";
-        errorSlot(slotId, reason);
-        toast.error(`Upload failed: ${reason}`);
-      }
-    },
-    [handlerUpload, resolveSlot, errorSlot],
-  );
 
   const handleTabCapture = useCallback(async () => {
-    const slotId = addPendingSlot();
     try {
       const { file } = await captureTab({
         ignoreSelector: ".feedback-window-panel",
       });
-      await uploadFile(file, slotId);
+      addFiles([file]);
     } catch (err) {
       const name = err instanceof Error ? err.name : "";
-      if (name === "NotAllowedError" || name === "AbortError") {
-        // User cancelled — remove the pending slot silently
-        setAttachments((prev) => prev.filter((a) => a.id !== slotId));
-      } else {
-        errorSlot(slotId, "Capture failed");
+      if (name !== "NotAllowedError" && name !== "AbortError")
         toast.error("Tab capture failed — try Screen Capture instead");
-      }
     }
-  }, [addPendingSlot, captureTab, uploadFile, errorSlot]);
+  }, [captureTab, addFiles]);
 
   const handleScreenCapture = useCallback(async () => {
-    const slotId = addPendingSlot();
     try {
       const { file } = await captureScreen();
-      await uploadFile(file, slotId);
+      addFiles([file]);
     } catch (err) {
       const name = err instanceof Error ? err.name : "";
-      if (name === "NotAllowedError" || name === "AbortError") {
-        setAttachments((prev) => prev.filter((a) => a.id !== slotId));
-      } else {
-        errorSlot(slotId, "Capture failed");
+      if (name !== "NotAllowedError" && name !== "AbortError")
         toast.error("Screen capture failed");
-      }
     }
-  }, [addPendingSlot, captureScreen, uploadFile, errorSlot]);
+  }, [captureScreen, addFiles]);
 
-  const uploadPastedImage = useCallback(
-    async (file: File) => {
-      const slotId = addPendingSlot();
-      try {
-        const normalized = await handlerUpload(
-          { kind: "file", file },
-          {
-            folderPath: CloudFolders.FEEDBACK_IMAGES,
-            visibility: "public",
-            createShareLink: true,
-            shareLinkPermissionLevel: "viewer",
-          },
-        );
-        if (normalized.url) {
-          resolveSlot(slotId, {
-            url: normalized.url,
-            fileId: normalized.fileId,
-            filename: file.name,
-          });
-          toast.success("Image pasted and uploaded");
-        } else {
-          errorSlot(slotId, "no URL returned");
-          toast.error("Paste upload failed: no URL returned");
-        }
-      } catch (err) {
-        const reason =
-          err instanceof Error ? err.message : "Failed to upload pasted image";
-        errorSlot(slotId, reason);
-        toast.error(`Paste upload failed: ${reason}`);
-      }
-    },
-    [addPendingSlot, handlerUpload, resolveSlot, errorSlot],
-  );
+  const namePasted = (file: File) => {
+    const ext = file.type.split("/")[1] || "png";
+    return new File([file], `pasted-${Date.now()}.${ext}`, { type: file.type });
+  };
 
-  // Ctrl+V paste handler
+  // Ctrl/⌘+V anywhere while the window is open.
   useEffect(() => {
-    const handler = async (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (const item of Array.from(items)) {
-        if (item.type.startsWith("image/")) {
-          e.preventDefault();
-          const file = item.getAsFile();
-          if (file) {
-            const ext = file.type.split("/")[1] || "png";
-            const named = new File([file], `pasted-${Date.now()}.${ext}`, {
-              type: file.type,
-            });
-            await uploadPastedImage(named);
-          }
-          break;
-        }
+    const handler = (e: ClipboardEvent) => {
+      for (const item of Array.from(e.clipboardData?.items ?? [])) {
+        if (!item.type.startsWith("image/")) continue;
+        const file = item.getAsFile();
+        if (!file) continue;
+        e.preventDefault();
+        addFiles([namePasted(file)]);
+        break;
       }
     };
     document.addEventListener("paste", handler);
     return () => document.removeEventListener("paste", handler);
-  }, [uploadPastedImage]);
+  }, [addFiles]);
 
-  // Files chosen with "Upload" or dropped on the form go through the SAME
-  // upload + tile path as a capture (one pipeline, one tile per file).
-  const handleFilesChosen = useCallback(
-    (files: FileList | File[] | null) => {
-      for (const file of Array.from(files ?? [])) {
-        void uploadFile(file, addPendingSlot());
-      }
-    },
-    [uploadFile, addPendingSlot],
-  );
+  // Files chosen with "Upload" or dropped on the form.
+  const handleFilesChosen = addFiles;
 
   const removeAttachment = useCallback((id: string) => {
-    setAttachments((prev) => prev.filter((a) => a.id !== id));
+    setAttachments((prev) => {
+      const gone = prev.find((a) => a.id === id);
+      if (gone) releaseSlot(gone);
+      return prev.filter((a) => a.id !== id);
+    });
   }, []);
 
   const annotateAttachment = useCallback(
-    (slot: Extract<AttachmentSlot, { status: "ready" }>) => {
+    (slot: AttachmentSlot) => {
+      if (slot.status === "pending") return;
+      if (slot.status === "local" && !slot.previewUrl) return; // video / PDF
       openImageAnnotation({
-        sourceFileId: slot.fileId,
-        sourceUrl: null,
+        sourceFileId: slot.status === "ready" ? slot.fileId : null,
+        sourceUrl: slot.status === "local" ? slot.previewUrl : null,
         sourceFilename: slot.filename ?? null,
         defaultFolder: CloudFolders.FEEDBACK_IMAGES,
         title: "Mark up feedback screenshot",
-        overwriteSource: true,
+        overwriteSource: slot.status === "ready",
         onSaved: ({ result }) => {
-          resolveSlot(slot.id, {
-            url: result.shareUrl,
+          releaseSlot(slot);
+          replaceSlot(slot.id, {
+            status: "ready",
+            id: slot.id,
             fileId: result.fileId,
             filename: result.filename,
           });
@@ -636,33 +622,68 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
         },
       });
     },
-    [openImageAnnotation, resolveSlot],
+    [openImageAnnotation, replaceSlot],
   );
 
   const handlePasteButton = useCallback(async () => {
     try {
       if (!navigator.clipboard?.read) {
-        toast.info("Use Ctrl+V to paste clipboard images");
+        toast.info(`Use ${modifierKeyLabel()}+V to paste an image`);
         return;
       }
-      const items = await navigator.clipboard.read();
-      for (const item of items) {
+      for (const item of await navigator.clipboard.read()) {
         const imageType = item.types.find((t) => t.startsWith("image/"));
-        if (imageType) {
-          const blob = await item.getType(imageType);
-          const ext = imageType.split("/")[1] || "png";
-          const file = new File([blob], `pasted-${Date.now()}.${ext}`, {
-            type: imageType,
-          });
-          await uploadPastedImage(file);
-          return;
-        }
+        if (!imageType) continue;
+        const blob = await item.getType(imageType);
+        addFiles([namePasted(new File([blob], "pasted", { type: imageType }))]);
+        return;
       }
-      toast.info("No image found in clipboard");
+      toast.info("No image found in the clipboard");
     } catch {
-      toast.info("Copy an image first, then click Paste or press Ctrl+V");
+      toast.info(`Copy an image first, then click Paste or press ${modifierKeyLabel()}+V`);
     }
-  }, [uploadPastedImage]);
+  }, [addFiles]);
+
+  /**
+   * Upload every local attachment under `organizationId` (the report's own),
+   * turning each into a `ready` slot. Returns every file id, or throws with
+   * the name of the file that failed (the rest stay attached).
+   */
+  const uploadAttachments = async (organizationId: string): Promise<string[]> => {
+    const ids: string[] = [];
+    for (const slot of attachments) {
+      if (slot.status === "ready") {
+        ids.push(slot.fileId);
+        continue;
+      }
+      replaceSlot(slot.id, { ...slot, status: "pending" });
+      try {
+        const normalized = await handlerUpload(
+          { kind: "file", file: slot.file },
+          {
+            folderPath: CloudFolders.FEEDBACK_IMAGES,
+            visibility: "public",
+            createShareLink: true,
+            shareLinkPermissionLevel: "viewer",
+            organizationId,
+          },
+        );
+        releaseSlot(slot);
+        replaceSlot(slot.id, {
+          status: "ready",
+          id: slot.id,
+          fileId: normalized.fileId,
+          filename: slot.filename,
+        });
+        ids.push(normalized.fileId);
+      } catch (err) {
+        replaceSlot(slot.id, { ...slot, status: "local" });
+        const reason = err instanceof Error ? err.message : "the upload failed";
+        throw new Error(`Couldn't upload ${slot.filename} (${reason}).`);
+      }
+    }
+    return ids;
+  };
 
   // ── Submit ────────────────────────────────────────────────────────────────
   const cancelSubmit = useCallback(() => {
@@ -677,19 +698,21 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     if (!description.trim() || isSubmitting) return;
 
     // Every report is filed under one organization. With none selected the
-    // submit is HELD: the canonical workspace picker asks, and the report
-    // continues with the pick (never an error box, never a guess).
+    // submit is HELD: the canonical workspace picker asks — ONCE, here — and
+    // the report AND its attachments continue with the pick. Cancelling the
+    // pick is "not now": nothing happened, no error.
     let organizationId: string;
+    askingOrgRef.current = true;
     try {
       organizationId = await ensureOrganizationForWrite(selectedOrganizationId, {
         interactive: true,
       });
     } catch (err) {
       if (isOrganizationSelectionCancelled(err)) return;
-      setError(
-        "Choose a workspace to send feedback — your text is still here.",
-      );
+      setError("Choose a workspace to send feedback — your report is still here.");
       return;
+    } finally {
+      askingOrgRef.current = false;
     }
 
     // Pre-flight: check that the client-side session is still valid before
@@ -710,6 +733,17 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     setIsSubmitting(true);
     setIsSlowConnection(false);
     setError(null);
+
+    let imageFileIds: string[];
+    try {
+      imageFileIds = await uploadAttachments(organizationId);
+    } catch (err) {
+      setIsSubmitting(false);
+      setError(
+        `${err instanceof Error ? err.message : "An attachment couldn't upload."} Nothing was sent — your report is still here; try again or remove it.`,
+      );
+      return;
+    }
 
     // Show a slow-connection hint after 5 s so the user knows it's still working.
     slowHintTimeoutRef.current = setTimeout(() => {
@@ -741,8 +775,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
         // description for whoever triages it, and structured for tools.
         description: subject ? `${describeSubject(subject)}\n\n${description.trim()}` : description.trim(),
         ...(subject ? { metadata: { report_subject: subjectMetadata(subject) } } : {}),
-        image_file_ids:
-          uploadedImageFileIds.length > 0 ? uploadedImageFileIds : undefined,
+        image_file_ids: imageFileIds.length > 0 ? imageFileIds : undefined,
         // Admin-only fields. Server silently drops these for non-admins, but we
         // also skip sending them entirely when the caller isn't an admin so
         // the wire payload stays clean.
@@ -763,6 +796,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
 
     if (result.success) {
       draft.forget();
+      draftStash.delete(draftKey);
       setSubmitted(true);
       if (result.data) setSubmittedItem(result.data);
       setDescription("");
@@ -773,10 +807,10 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
           if (res.success && res.data) {
             const items = res.data;
             const pending = items.filter((i) =>
-              ["new", "in_progress"].includes(i.status),
+              inFeedbackGroup(i.status, "pending"),
             ).length;
             const resolved = items.filter((i) =>
-              ["resolved", "closed"].includes(i.status),
+              inFeedbackGroup(i.status, "resolved"),
             ).length;
             setStats({ total: items.length, pending, resolved });
           }
@@ -790,7 +824,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     feedbackType,
     where.address,
     isSubmitting,
-    uploadedImageFileIds,
+    attachments,
     isAdmin,
     categoryId,
     assigneeId,
@@ -870,6 +904,23 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
           setFeedbackType(patch.feedbackType);
         if (patch.description !== undefined) setDescription(patch.description);
       },
+      // An agent attaches a file it ALREADY has, by id — staged beside the
+      // person's screenshots, filed when they press Submit.
+      feedback_attachment: (value: unknown) => {
+        if (submittedRef.current)
+          throw new Error("This feedback has already been submitted — nothing to attach to.");
+        if (isSubmittingRef.current)
+          throw new Error("This feedback is being submitted right now — refused.");
+        const patch = parseFeedbackAttachment(value);
+        setAttachments((prev) =>
+          prev.some((a) => a.status === "ready" && a.fileId === patch.fileId)
+            ? prev
+            : [
+                ...prev,
+                { status: "ready", id: newSlotId(), fileId: patch.fileId, filename: patch.name },
+              ],
+        );
+      },
     }),
     [],
   );
@@ -892,8 +943,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch {
-      toast.error("Clipboard unavailable — copy manually from the console.");
-      console.log("=== Copy for Agent ===\n", prompt);
+      toast.error("Couldn't copy — your browser blocked the clipboard. Try again, or open the report from View all and copy it there.");
     }
   }, [submittedItem]);
 
@@ -904,7 +954,11 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     setStats(null);
     setFeedbackType("bug");
     setDescription("");
-    setAttachments([]);
+    setAttachments((prev) => {
+      prev.forEach(releaseSlot);
+      return [];
+    });
+    draftStash.delete(draftKey);
     setError(null);
     setIsSlowConnection(false);
     setCopied(false);
@@ -946,11 +1000,14 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     categories,
     assignableAdmins,
     isLoadingAdminOptions,
+    adminOptionsError,
+    retryAdminOptions,
     // derived
-    uploadedImageFileIds,
     textareaRef,
     attachTextarea,
     draft,
+    draftRestored,
+    acknowledgeRestore,
     canCaptureScreen,
     isCapturing,
     // surface seam
@@ -1002,9 +1059,13 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
     categories,
     assignableAdmins,
     isLoadingAdminOptions,
+    adminOptionsError,
+    retryAdminOptions,
     textareaRef,
     attachTextarea,
     draft,
+    draftRestored,
+    acknowledgeRestore,
     canCaptureScreen,
     isCapturing,
     getApplicationScope,
@@ -1028,6 +1089,48 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
       tilesRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [attachments.length]);
 
+  // The window FITS its form (capped at the viewport, body scrolls beyond):
+  // a restore note or a new row of tiles grows the window instead of pushing
+  // the type choice or Screen Capture out of view. A window parked at the
+  // bottom stays anchored to the bottom as it grows.
+  const dispatch = useAppDispatch();
+  const isMobileView = useIsMobile();
+  const contentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const content = contentRef.current;
+    if (!content || isMobileView) return undefined;
+    const scroller = content.parentElement;
+    const root = content.closest<HTMLElement>("[data-window-panel]");
+    const id = root?.getAttribute("data-window-id");
+    if (!scroller || !root || !id) return undefined;
+    const fit = () => {
+      if (root.offsetHeight >= window.innerHeight - 1) return; // maximized
+      const cs = getComputedStyle(scroller);
+      const pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      const chrome = root.offsetHeight - scroller.clientHeight;
+      const TOP_CLEAR = 56;
+      const maxHeight = window.innerHeight - TOP_CLEAR - 16;
+      const height = Math.min(maxHeight, Math.ceil(chrome + content.offsetHeight + pad));
+      const rect = root.getBoundingClientRect();
+      if (Math.abs(rect.height - height) < 2) return;
+      const bottom = rect.top + rect.height;
+      const anchoredToBottom = bottom > window.innerHeight - 80;
+      dispatch(
+        updateWindowRect({
+          id,
+          rect: {
+            height,
+            ...(anchoredToBottom ? { y: Math.max(TOP_CLEAR, bottom - height) } : {}),
+          },
+        }),
+      );
+    };
+    const observer = new ResizeObserver(fit);
+    observer.observe(content);
+    fit();
+    return () => observer.disconnect();
+  }, [dispatch, isMobileView, submitted]);
+
   // ── Submitted state ───────────────────────────────────────────────────────
   if (submitted) {
     return (
@@ -1042,13 +1145,15 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
         {/* Your reports — each count opens the list behind it. */}
         {stats && (
           <div className="flex items-center gap-6 rounded-lg border border-border px-6 py-2">
-            <StatPill label="Submitted" value={stats.total} />
-            <StatPill label="Pending" value={stats.pending} />
-            <StatPill label="Resolved" value={stats.resolved} />
+            <StatPill label="Submitted" value={stats.total} onNavigate={onClose} />
+            <StatPill label="Pending" value={stats.pending} group="pending" onNavigate={onClose} />
+            <StatPill label="Resolved" value={stats.resolved} group="resolved" onNavigate={onClose} />
           </div>
         )}
 
-        {submittedItem && (
+        {/* An engineering hand-off, so it lives in the admin lane only (the
+            admin seat on a user page is an ordinary person). */}
+        {submittedItem && isAdmin && (
           <Button
             type="button"
             variant="outline"
@@ -1068,7 +1173,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             New report
           </Button>
           <Button asChild variant="outline">
-            <Link href="/settings/feedback" onClick={onClose}>
+            <Link href={feedbackListHref()} onClick={onClose}>
               <List />
               View all
             </Link>
@@ -1086,7 +1191,8 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
   // Content only — the Cancel/Submit bar and slow-connection hint are footer
   // slots owned by the WindowPanel root (see FeedbackFooterLeft/Right).
   return (
-    <div className="matrx-touch-targets flex-1 overflow-auto min-h-0 px-4 py-3 space-y-3">
+    <div className="matrx-touch-targets flex-1 overflow-auto min-h-0 px-4 py-3">
+      <div ref={contentRef} className="space-y-3">
       {/* Type selector — one standard single-choice group. */}
       <ToggleGroup
         type="single"
@@ -1108,7 +1214,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
               key={value}
               value={value}
               aria-label={label}
-              className="gap-1.5 px-2.5 text-xs [&_svg]:h-3.5 [&_svg]:w-3.5 data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+              className="gap-1.5 px-2.5 text-xs pointer-coarse:min-h-11 [&_svg]:h-3.5 [&_svg]:w-3.5 data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
             >
               <Icon />
               {label}
@@ -1120,14 +1226,9 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
       {/* Where the report is filed from — sent with it. */}
       <p className="text-xs text-muted-foreground">
         Filed from{" "}
-        {where.page ? (
-          <>
-            <span className="text-foreground">{where.page}</span>{" "}
-            <span className="text-muted-foreground">({where.address})</span>
-          </>
-        ) : (
-          <span className="text-foreground">{where.address}</span>
-        )}
+        <span className="text-foreground" title={where.address}>
+          {where.page || where.address}
+        </span>
       </p>
 
       {form.subject ? (
@@ -1169,14 +1270,14 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             disabled={isSubmitting}
           />
         </EditableContextMenu>
-        {draft.restored ? (
+        {draftRestored ? (
           <p className="flex items-center gap-2 text-xs text-muted-foreground">
-            Your unsent text was restored.
+            Your unsent report was restored.
             <Button
               type="button"
               variant="ghost"
               size="xs"
-              onClick={draft.acknowledge}
+              onClick={acknowledgeRestore}
             >
               OK
             </Button>
@@ -1193,93 +1294,97 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
         </p>
       </div>
 
-      {/* Admin-only: Category + Assignee */}
+      {/* Admin-only: Category + Assignee (admin lane only). */}
       {isAdmin && (
-        <div className="rounded-lg border border-border bg-muted/30">
-          <button
-            type="button"
-            onClick={() => setAdminOptionsOpen((v) => !v)}
-            className="flex items-center gap-1.5 w-full px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-            aria-expanded={adminOptionsOpen}
-            aria-controls="feedback-admin-options"
-          >
-            <Settings2 className="w-3.5 h-3.5" />
-            <span>Admin Options</span>
-            {(categoryId !== "none" || assigneeId !== "none") && (
-              <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-medium">
-                {(categoryId !== "none" ? 1 : 0) +
-                  (assigneeId !== "none" ? 1 : 0)}{" "}
-                set
-              </span>
-            )}
-            <span className="ml-auto text-xs opacity-60">
-              {adminOptionsOpen ? "Hide" : "Show"}
-            </span>
-          </button>
-          {adminOptionsOpen && (
-            <div
-              id="feedback-admin-options"
-              className="px-2.5 pb-2.5 pt-1 space-y-2 border-t border-border/60"
+        <Collapsible
+          open={adminOptionsOpen}
+          onOpenChange={setAdminOptionsOpen}
+          className="rounded-lg border border-border"
+        >
+          <CollapsibleTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start gap-1.5 text-muted-foreground"
             >
-              {/* Category */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                  Category
-                </label>
-                <Select
-                  value={categoryId}
-                  onValueChange={setCategoryId}
-                  disabled={isSubmitting || isLoadingAdminOptions}
-                >
-                  <SelectTrigger className="h-7 text-xs">
-                    <SelectValue placeholder="None" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Assignee */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                  Assign to
-                </label>
-                <Select
-                  value={assigneeId}
-                  onValueChange={setAssigneeId}
-                  disabled={isSubmitting || isLoadingAdminOptions}
-                >
-                  <SelectTrigger className="h-7 text-xs">
-                    <SelectValue placeholder="None" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {assignableAdmins.map((a) => (
-                      <SelectItem key={a.user_id} value={a.user_id}>
-                        {a.display_name || a.email || a.user_id.slice(0, 8)}
-                        {reduxUser?.id === a.user_id ? " (you)" : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {assigneeId !== "none" && reduxUser?.id !== assigneeId && (
-                  <p className="text-xs text-muted-foreground leading-snug">
-                    The assignee will get an in-app message and an email.
-                  </p>
-                )}
-              </div>
+              <Settings2 />
+              Admin options
+              {(categoryId !== "none" || assigneeId !== "none") && (
+                <span className="ml-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
+                  {(categoryId !== "none" ? 1 : 0) + (assigneeId !== "none" ? 1 : 0)} set
+                </span>
+              )}
+              <ChevronDown
+                className={`ml-auto transition-transform ${adminOptionsOpen ? "rotate-180" : ""}`}
+              />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-2 border-t border-border/60 px-2.5 pb-2.5 pt-2">
+            {adminOptionsError ? (
+              <p className="flex items-center gap-2 text-xs text-destructive">
+                {adminOptionsError}.
+                <Button type="button" variant="outline" size="xs" onClick={retryAdminOptions}>
+                  Retry
+                </Button>
+              </p>
+            ) : null}
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                Category
+              </label>
+              <Select
+                value={categoryId}
+                onValueChange={setCategoryId}
+                disabled={isSubmitting || isLoadingAdminOptions || !!adminOptionsError}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
-        </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                Assign to
+              </label>
+              <Select
+                value={assigneeId}
+                onValueChange={setAssigneeId}
+                disabled={isSubmitting || isLoadingAdminOptions || !!adminOptionsError}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {assignableAdmins.map((a) => (
+                    <SelectItem key={a.user_id} value={a.user_id}>
+                      {a.display_name || a.email || a.user_id.slice(0, 8)}
+                      {reduxUser?.id === a.user_id ? " (you)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {assigneeId !== "none" && reduxUser?.id !== assigneeId && (
+                <p className="text-xs text-muted-foreground leading-snug">
+                  The assignee will get an in-app message and an email.
+                </p>
+              )}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       )}
 
-      {/* Screenshots — upload, paste, capture, or drop files here. */}
+      {/* Attachments — upload, paste, capture, or drop files here. They stay
+          on this device until Submit. */}
       <div
         className="space-y-1.5"
         onDragOver={(e) => {
@@ -1292,7 +1397,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
         }}
       >
         <p className="text-xs font-medium text-muted-foreground">
-          Screenshots <span className="font-normal opacity-60">(optional)</span>
+          Attachments <span className="font-normal opacity-60">(optional)</span>
         </p>
 
         <input
@@ -1355,10 +1460,9 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
           ) : null}
         </div>
 
-        {/* Attachment thumbnails — pending / error / ready */}
-        {attachments.length > 0 && (
+        {attachments.some((a) => a.status === "ready" || a.previewUrl) && (
           <p className="text-xs text-muted-foreground">
-            Click a thumbnail to draw, circle, or write on it.
+            Click an image to draw, circle, or write on it.
           </p>
         )}
         {attachments.length > 0 && (
@@ -1366,24 +1470,15 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             {attachments.map((slot) => (
               <MediaAttachmentThumbnail
                 key={slot.id}
-                mediaRef={slot.status === "ready" ? slot.fileId : null}
-                status={slot.status}
-                title={
-                  slot.status === "ready"
-                    ? (slot.filename ?? "Feedback screenshot")
-                    : "Feedback screenshot"
-                }
-                openLabel="Mark up attachment"
-                removeLabel="Remove attachment"
+                mediaRef={slot.status === "ready" ? slot.fileId : slot.previewUrl}
+                status={slot.status === "pending" ? "pending" : "ready"}
+                title={slot.filename ?? "Attachment"}
+                openLabel={`Mark up ${slot.filename ?? "attachment"}`}
+                removeLabel={`Remove ${slot.filename ?? "attachment"}`}
                 readyIcon={
                   <PenLine className="h-4 w-4 text-white drop-shadow" />
                 }
-                errorMessage={
-                  slot.status === "error" ? slot.message : undefined
-                }
-                onOpen={() => {
-                  if (slot.status === "ready") annotateAttachment(slot);
-                }}
+                onOpen={() => annotateAttachment(slot)}
                 onRemove={() => removeAttachment(slot.id)}
               />
             ))}
@@ -1394,16 +1489,28 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
       {error && (
         <p className="text-xs text-destructive leading-snug">{error} <ErrorAlchemyMenu error={error} /></p>
       )}
+      </div>
     </div>
   );
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function StatPill({ label, value }: { label: string; value: number }) {
+function StatPill({
+  label,
+  value,
+  group,
+  onNavigate,
+}: {
+  label: string;
+  value: number;
+  group?: FeedbackCountGroup;
+  onNavigate: () => void;
+}) {
   return (
     <Link
-      href="/settings/feedback"
+      href={feedbackListHref(group)}
+      onClick={onNavigate}
       className="flex flex-col items-center gap-0.5 rounded-md px-2 py-1 hover:bg-accent transition-colors"
     >
       <span className="text-xl font-semibold tabular-nums text-foreground">
