@@ -16443,9 +16443,94 @@ export type Database = {
         }
         Relationships: []
       }
+      meet_invitees: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_name: string | null
+          email: string | null
+          id: string
+          invited_by: string | null
+          invitee_user_id: string | null
+          last_sent_at: string | null
+          last_sent_sequence: number | null
+          meeting_id: string
+          metadata: Json
+          organization_id: string
+          responded_at: string | null
+          role: string
+          rsvp_note: string | null
+          rsvp_state: string
+          rsvp_token_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          invited_by?: string | null
+          invitee_user_id?: string | null
+          last_sent_at?: string | null
+          last_sent_sequence?: number | null
+          meeting_id: string
+          metadata?: Json
+          organization_id: string
+          responded_at?: string | null
+          role?: string
+          rsvp_note?: string | null
+          rsvp_state?: string
+          rsvp_token_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          invited_by?: string | null
+          invitee_user_id?: string | null
+          last_sent_at?: string | null
+          last_sent_sequence?: number | null
+          meeting_id?: string
+          metadata?: Json
+          organization_id?: string
+          responded_at?: string | null
+          role?: string
+          rsvp_note?: string | null
+          rsvp_state?: string
+          rsvp_token_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meet_invitees_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meet_meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meet_meetings: {
         Row: {
+          agenda: string | null
           ai_enabled: boolean
+          calendar_sequence: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           created_by: string | null
           custom_fields: Json
@@ -16453,17 +16538,20 @@ export type Database = {
           ended_at: string | null
           host_user_id: string
           id: string
+          join_before_host: boolean
           kind: string
           lobby_enabled: boolean
           locked: boolean
           metadata: Json
           organization_id: string
           recording_policy: string
+          recurrence_rule: string | null
           room_name: string
           scheduled_duration_minutes: number | null
           scheduled_for: string | null
           slug: string
           started_at: string | null
+          time_zone: string
           title: string
           updated_at: string
           updated_by: string | null
@@ -16471,7 +16559,12 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          agenda?: string | null
           ai_enabled?: boolean
+          calendar_sequence?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
@@ -16479,17 +16572,20 @@ export type Database = {
           ended_at?: string | null
           host_user_id: string
           id?: string
+          join_before_host?: boolean
           kind?: string
           lobby_enabled?: boolean
           locked?: boolean
           metadata?: Json
           organization_id: string
           recording_policy?: string
+          recurrence_rule?: string | null
           room_name: string
           scheduled_duration_minutes?: number | null
           scheduled_for?: string | null
           slug: string
           started_at?: string | null
+          time_zone?: string
           title?: string
           updated_at?: string
           updated_by?: string | null
@@ -16497,7 +16593,12 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          agenda?: string | null
           ai_enabled?: boolean
+          calendar_sequence?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
@@ -16505,17 +16606,20 @@ export type Database = {
           ended_at?: string | null
           host_user_id?: string
           id?: string
+          join_before_host?: boolean
           kind?: string
           lobby_enabled?: boolean
           locked?: boolean
           metadata?: Json
           organization_id?: string
           recording_policy?: string
+          recurrence_rule?: string | null
           room_name?: string
           scheduled_duration_minutes?: number | null
           scheduled_for?: string | null
           slug?: string
           started_at?: string | null
+          time_zone?: string
           title?: string
           updated_at?: string
           updated_by?: string | null
@@ -16573,6 +16677,74 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "meet_notes_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meet_meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meet_occurrence_overrides: {
+        Row: {
+          calendar_sequence: number
+          changed_by: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          meeting_id: string
+          metadata: Json
+          new_duration_minutes: number | null
+          new_start: string | null
+          organization_id: string
+          original_start: string
+          reason: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          calendar_sequence?: number
+          changed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          meeting_id: string
+          metadata?: Json
+          new_duration_minutes?: number | null
+          new_start?: string | null
+          organization_id: string
+          original_start: string
+          reason?: string | null
+          state: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          calendar_sequence?: number
+          changed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          meeting_id?: string
+          metadata?: Json
+          new_duration_minutes?: number | null
+          new_start?: string | null
+          organization_id?: string
+          original_start?: string
+          reason?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meet_occurrence_overrides_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meet_meetings"
@@ -18829,7 +19001,12 @@ export type Database = {
       meet_end_meeting: {
         Args: { p_by_user_id: string; p_meeting_id: string }
         Returns: {
+          agenda: string | null
           ai_enabled: boolean
+          calendar_sequence: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           created_by: string | null
           custom_fields: Json
@@ -18837,17 +19014,20 @@ export type Database = {
           ended_at: string | null
           host_user_id: string
           id: string
+          join_before_host: boolean
           kind: string
           lobby_enabled: boolean
           locked: boolean
           metadata: Json
           organization_id: string
           recording_policy: string
+          recurrence_rule: string | null
           room_name: string
           scheduled_duration_minutes: number | null
           scheduled_for: string | null
           slug: string
           started_at: string | null
+          time_zone: string
           title: string
           updated_at: string
           updated_by: string | null
@@ -18875,7 +19055,12 @@ export type Database = {
           p_title: string
         }
         Returns: {
+          agenda: string | null
           ai_enabled: boolean
+          calendar_sequence: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           created_by: string | null
           custom_fields: Json
@@ -18883,17 +19068,20 @@ export type Database = {
           ended_at: string | null
           host_user_id: string
           id: string
+          join_before_host: boolean
           kind: string
           lobby_enabled: boolean
           locked: boolean
           metadata: Json
           organization_id: string
           recording_policy: string
+          recurrence_rule: string | null
           room_name: string
           scheduled_duration_minutes: number | null
           scheduled_for: string | null
           slug: string
           started_at: string | null
+          time_zone: string
           title: string
           updated_at: string
           updated_by: string | null
@@ -18910,7 +19098,12 @@ export type Database = {
       meet_meeting_by_slug: {
         Args: { p_slug: string }
         Returns: {
+          agenda: string | null
           ai_enabled: boolean
+          calendar_sequence: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           created_by: string | null
           custom_fields: Json
@@ -18918,17 +19111,20 @@ export type Database = {
           ended_at: string | null
           host_user_id: string
           id: string
+          join_before_host: boolean
           kind: string
           lobby_enabled: boolean
           locked: boolean
           metadata: Json
           organization_id: string
           recording_policy: string
+          recurrence_rule: string | null
           room_name: string
           scheduled_duration_minutes: number | null
           scheduled_for: string | null
           slug: string
           started_at: string | null
+          time_zone: string
           title: string
           updated_at: string
           updated_by: string | null
@@ -18986,7 +19182,12 @@ export type Database = {
       meet_set_lock: {
         Args: { p_by_user_id: string; p_locked: boolean; p_meeting_id: string }
         Returns: {
+          agenda: string | null
           ai_enabled: boolean
+          calendar_sequence: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           created_by: string | null
           custom_fields: Json
@@ -18994,17 +19195,20 @@ export type Database = {
           ended_at: string | null
           host_user_id: string
           id: string
+          join_before_host: boolean
           kind: string
           lobby_enabled: boolean
           locked: boolean
           metadata: Json
           organization_id: string
           recording_policy: string
+          recurrence_rule: string | null
           room_name: string
           scheduled_duration_minutes: number | null
           scheduled_for: string | null
           slug: string
           started_at: string | null
+          time_zone: string
           title: string
           updated_at: string
           updated_by: string | null
@@ -59457,39 +59661,6 @@ export type Database = {
           },
         ]
       }
-      reference_archive: {
-        Row: {
-          archived_at: string
-          id: string
-          identity_hash: string
-          kept_id: string | null
-          revision: string
-          revision_kind: string
-          row_created_at: string
-          row_data: Json
-        }
-        Insert: {
-          archived_at?: string
-          id: string
-          identity_hash: string
-          kept_id?: string | null
-          revision: string
-          revision_kind: string
-          row_created_at: string
-          row_data: Json
-        }
-        Update: {
-          archived_at?: string
-          id?: string
-          identity_hash?: string
-          kept_id?: string | null
-          revision?: string
-          revision_kind?: string
-          row_created_at?: string
-          row_data?: Json
-        }
-        Relationships: []
-      }
       scan: {
         Row: {
           absent_against_revision: string | null
@@ -60140,10 +60311,6 @@ export type Database = {
         }
         Returns: Record<string, unknown>
       }
-      _reference_gap_scans_build: {
-        Args: { p_min_ratio?: number }
-        Returns: number
-      }
       _reference_record_states: {
         Args: {
           p_kind: string
@@ -60186,10 +60353,6 @@ export type Database = {
           subject_user_id: string
           version_live: boolean
         }[]
-      }
-      archive_redundant_references_batch: {
-        Args: { p_after: string; p_identities?: number }
-        Returns: Record<string, unknown>
       }
       binding_holder_runnable: {
         Args: {
@@ -60305,10 +60468,6 @@ export type Database = {
       sanitize_shortcut_segment: { Args: { p_seg: string }; Returns: string }
       shortcut_slug: { Args: { p_text: string }; Returns: string }
       shortcut_treatment_config: { Args: { p_row: Json }; Returns: Json }
-      split_reference_runs_at_gaps_batch: {
-        Args: { p_after: string; p_identities?: number }
-        Returns: Record<string, unknown>
-      }
       submit_scan_report: { Args: { p_report: Json }; Returns: Json }
       validate_treatment_config: {
         Args: { p_config: Json; p_tier: string }
@@ -70833,6 +70992,63 @@ export type Database = {
         }
         Relationships: []
       }
+      search_item: {
+        Row: {
+          data_class: Database["platform"]["Enums"]["data_class"]
+          entity_id: string
+          entity_token: string
+          kernel_only: boolean
+          organization_id: string
+          origin_client: string | null
+          owner_id: string | null
+          projected_at: string
+          row_visibility: Database["platform"]["Enums"]["visibility"] | null
+          source_kind: string | null
+          subtitle: string | null
+          tags: string[]
+          title: string
+          title_norm: string
+          title_tsv: unknown
+          updated_at: string
+        }
+        Insert: {
+          data_class: Database["platform"]["Enums"]["data_class"]
+          entity_id: string
+          entity_token: string
+          kernel_only?: boolean
+          organization_id: string
+          origin_client?: string | null
+          owner_id?: string | null
+          projected_at?: string
+          row_visibility?: Database["platform"]["Enums"]["visibility"] | null
+          source_kind?: string | null
+          subtitle?: string | null
+          tags?: string[]
+          title: string
+          title_norm: string
+          title_tsv: unknown
+          updated_at: string
+        }
+        Update: {
+          data_class?: Database["platform"]["Enums"]["data_class"]
+          entity_id?: string
+          entity_token?: string
+          kernel_only?: boolean
+          organization_id?: string
+          origin_client?: string | null
+          owner_id?: string | null
+          projected_at?: string
+          row_visibility?: Database["platform"]["Enums"]["visibility"] | null
+          source_kind?: string | null
+          subtitle?: string | null
+          tags?: string[]
+          title?: string
+          title_norm?: string
+          title_tsv?: unknown
+          updated_at?: string
+        }
+        Relationships: []
+      }
       secure_delivery: {
         Row: {
           actor_token_id: string | null
@@ -72454,6 +72670,30 @@ export type Database = {
       _report_undeclared_confirmation_write: {
         Args: { p_org: string; p_relid: unknown; p_user: string }
         Returns: undefined
+      }
+      _search_item_drop: {
+        Args: { p_id: string; p_token: string }
+        Returns: undefined
+      }
+      _search_item_put: {
+        Args: {
+          p_id: string
+          p_org: string
+          p_origin_client: string
+          p_owner: string
+          p_source_kind: string
+          p_subtitle: string
+          p_tags: string[]
+          p_title: string
+          p_token: string
+          p_updated_at: string
+          p_visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Returns: undefined
+      }
+      _search_item_token_facts: {
+        Args: { p_token: string }
+        Returns: Record<string, unknown>
       }
       _secure_delivery_by_secret: {
         Args: { p_secret: string }
@@ -74421,6 +74661,22 @@ export type Database = {
       }
       schema_is_client_exposed: { Args: { p_schema: string }; Returns: boolean }
       schema_is_doors_only: { Args: { p_schema: string }; Returns: boolean }
+      search_item_backfill: {
+        Args: { p_after?: string; p_limit?: number; p_token: string }
+        Returns: Record<string, unknown>
+      }
+      search_item_parity: {
+        Args: { p_token?: string }
+        Returns: {
+          eligible: number
+          entity_token: string
+          extra: number
+          missing: number
+          projected: number
+        }[]
+      }
+      search_item_projected_tokens: { Args: never; Returns: string[] }
+      search_normalize: { Args: { p_text: string }; Returns: string }
       secure_delivery_close: {
         Args: {
           p_actor?: string
