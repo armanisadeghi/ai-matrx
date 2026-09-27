@@ -167,7 +167,10 @@ test rows you created so the person can remove them.
     (`xmlElement`, `xmlText` with `max`, `xmlList` with `maxRows`): attributes
     for scalars, empty parts omitted, clipped text marked
     `clipped="true" total_chars="N"`, dropped rows counted. Never raw JSON
-    rows with every column. Worked example: `features/marketing/lib/surface-context.ts`.
+    rows with every column. Worked examples: `features/research/browse/surface.ts`
+    and `features/flashcards/components/home/deckSurface.ts` (list bundles),
+    `features/marketing/lib/surface-context.ts` (overview bundles). Manifests that
+    still inline raw arrays (e.g. education-classes) predate this rule.
   - The record's OWN sub-lists (a guide's notes and comments, a conversation's
     messages) are part of the record's bundle. Long text fields in it are also
     `patchable` write targets.

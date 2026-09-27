@@ -63,6 +63,18 @@ session, never you.
 | A view you cannot see | `deferred-visual` with the exact step | same |
 
 **Both lanes:**
+- **A hot shared file holds someone else's uncommitted hunks** (the surface
+  registry, `route-to-surface.ts`)? Commit only your hunks through a private
+  index, then re-sync the real index for those paths:
+  ```
+  git diff -- <file> > /tmp/<you>.patch   # edit it down to your hunks only
+  GIT_INDEX_FILE=/tmp/<you>.idx git read-tree HEAD
+  GIT_INDEX_FILE=/tmp/<you>.idx git apply --cached /tmp/<you>.patch
+  GIT_INDEX_FILE=/tmp/<you>.idx git commit -m "page-pass(<route>): …"
+  git reset -q -- <file>                  # index only; the worktree keeps their hunks
+  ```
+- Admin routes redirect to `manage.aimatrx.com` by themselves; pass `--base
+  https://manage.aimatrx.com` only if a look lands on the wrong host.
 - A page that needs an organization or record opens with it in the URL
   (`/hr/settings/employer?org=<slug>`, `/crm/<id>`): pass that full route to
   `page:look` and the probe.
@@ -100,7 +112,10 @@ session, never you.
   record ~10,000; a record with its comments/folders ~7,000 + the rest shared;
   a list page's condensed visible list ~4,000; a broad page (SEO, dashboards)
   only a ~2,000-3,000 overview and a guide for discovery. Pack it as ONE XML
-  bundle with `features/surfaces/runtime/context-bundle.ts` — never raw JSON rows. Over budget
+  bundle with `features/surfaces/runtime/context-bundle.ts` — never raw JSON rows.
+  Worked bundles: `features/research/browse/surface.ts` (list),
+  `features/flashcards/components/home/deckSurface.ts` (list); older manifests
+  that inline raw arrays are not examples to copy. Over budget
   needs Arman's approval. Procedure: `surface-write-targets` Step 4.
 - **Can change what makes sense:** every record type the page lists gets
   `create_/update_/delete_<plural>` over lists (one set per type, built with
@@ -112,7 +127,10 @@ session, never you.
   numbers (scores, counts).
 - **Told how:** the intro names which target does which job; a page with more
   than one record type or rules the descriptions can't hold gets a guide.
-- **Right-click menu:** one menu per pane, delegated per row, wrapper carries
+- **Right-click menu:** one menu per pane, delegated per row (a `MatrxDataTable`
+  does it with `contextMenu={{ resolveRowContext }}` +
+  `createTableRowMenuDescriptor` — worked: `lib/entity-list/components/EntityListTable.tsx`;
+  `EntityListPage` lists get it for free), wrapper carries
   `sourceFeature` + `surfaceName` + `getApplicationScope`; the runtime
   provider goes AROUND the menu. A page showing a real record passes that
   record's own `contentSource` (and `entity` when it can be attached or
