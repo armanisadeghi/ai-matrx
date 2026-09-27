@@ -67,6 +67,7 @@ import {
   flattenActions,
   iconOnlyLabel,
   OverflowMenuItem,
+  overflowItemLabel,
   toIconOnly,
 } from "./route-header-layout";
 
@@ -110,6 +111,33 @@ function iconControlsWidth(el: HTMLElement): number {
     if (!c.textContent?.trim()) total += c.offsetWidth;
   });
   return total;
+}
+
+/**
+ * One action in the phone sheet's "This page" section: the control plus its
+ * name. The declared name first (`overflowItemLabel`); a control that declares
+ * none (a record's own "…" menu) is named by the accessible name it renders —
+ * in a list a bare icon is neither absent nor honest.
+ */
+function PhoneSheetAction({ action }: { action: ReturnType<typeof flattenActions>[number] }) {
+  const declared = overflowItemLabel(action.node);
+  const ref = useRef<HTMLDivElement>(null);
+  const [rendered, setRendered] = useState<string | null>(null);
+  useLayoutEffect(() => {
+    if (declared) return;
+    const control = ref.current?.querySelector<HTMLElement>("[aria-label], [title]");
+    const name = control?.getAttribute("aria-label") ?? control?.getAttribute("title") ?? null;
+    // Visible words already name it; a glyph ("…", "+") does not.
+    const words = /[\p{L}\p{N}]{2,}/u.test(ref.current?.textContent ?? "");
+    setRendered(words ? null : name);
+  }, [declared]);
+  const label = declared ?? rendered;
+  return (
+    <div ref={ref} data-route-header-overflow-item className="flex shrink-0 items-center gap-1.5 px-1">
+      {action.node}
+      {label ? <span className="whitespace-nowrap text-xs text-muted-foreground">{label}</span> : null}
+    </div>
+  );
 }
 
 /**
@@ -293,7 +321,7 @@ export default function RouteHeader({
             ? createPortal(
                 <div data-route-header-phone-actions className="flex flex-col gap-0.5">
                   {actions.map((a) => (
-                    <OverflowMenuItem key={a.key} action={a} />
+                    <PhoneSheetAction key={a.key} action={a} />
                   ))}
                 </div>,
                 phoneHost,

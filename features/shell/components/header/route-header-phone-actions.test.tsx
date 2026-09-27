@@ -87,3 +87,41 @@ describe("RouteHeader on a phone", () => {
     expect(store.getPhonePageActionCountForTest()).toBe(0);
   });
 });
+
+describe("the phone sheet names every action", () => {
+  it("a control that declares no name is named by the accessible name it renders", () => {
+    PHONE = true;
+    rowEl = document.createElement("div");
+    document.body.appendChild(rowEl);
+    root = createRoot(rowEl);
+    const RecordMenu = () => <button type="button" aria-label="Record actions">…</button>;
+    act(() => {
+      root.render(<RouteHeader left={<span>Cloud Codes</span>} right={<RecordMenu />} />);
+    });
+    expect(hostEl.textContent).toContain("Record actions");
+  });
+});
+
+describe("PageHeaderRightPortal on a phone", () => {
+  it("puts the page's right-slot controls in the sheet host, not the header row", () => {
+    PHONE = true;
+    const shellRight = document.createElement("div");
+    shellRight.id = "shell-header-right";
+    document.body.appendChild(shellRight);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const RightPortal = (require("./PageHeaderRightPortal") as typeof import("./PageHeaderRightPortal")).default;
+    rowEl = document.createElement("div");
+    document.body.appendChild(rowEl);
+    root = createRoot(rowEl);
+    act(() => {
+      root.render(
+        <RightPortal>
+          <button type="button">Notes agents</button>
+        </RightPortal>,
+      );
+    });
+    expect(shellRight.textContent).toBe("");
+    expect(hostEl.textContent).toContain("Notes agents");
+    expect(store.getPhonePageActionCountForTest()).toBe(1);
+  });
+});
