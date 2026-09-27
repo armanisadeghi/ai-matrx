@@ -6,6 +6,13 @@ import { PUBLIC_AGENT_APP_SURFACE_NAME } from "@/features/surfaces/manifests/pub
 import { getAgentAppIconsMetadata } from "@/features/agent-apps/utils/favicon-metadata";
 import type { Metadata } from "next";
 import type { PublicAgentApp } from "@/features/agent-apps/types";
+import { CanvasSideSheet } from "@/features/canvas/core/CanvasSideSheet";
+import { MadeWithAiMatrx } from "@/components/matrx/MadeWithAiMatrx";
+
+// A PUBLISHED APP IS A LINK SOMEBODY SENT (page-pass 2026-09-27). It lives in
+// the `(link)` group, not `(public)`: a stranger opening a shared app gets the
+// app and one slim attribution row — never the marketing site's Download /
+// Discover header or its How-It-Works footer. The URL is unchanged.
 
 export const revalidate = 3600;
 
@@ -106,7 +113,7 @@ export default async function PublicAppPage({
   if (!rpcRow) {
     if (isId) {
       return (
-        <div className="h-[calc(100dvh-var(--header-height,2.5rem))] bg-textured">
+        <div className="h-dvh bg-textured">
           <AccessGate token="app" id={slug} fallbackHref="/" fallbackLabel="Home" />
         </div>
       );
@@ -163,21 +170,32 @@ export default async function PublicAppPage({
   // row's configured shell_kind. One row, two deployments (full page + iframe).
   if (embed === "widget") {
     return (
-      <AgentAppPublicRenderer
-        app={{ ...app, shell_kind: "widget" }}
-        slug={app.slug}
-        surfaceName={PUBLIC_AGENT_APP_SURFACE_NAME}
-      />
+      <>
+        <AgentAppPublicRenderer
+          app={{ ...app, shell_kind: "widget" }}
+          slug={app.slug}
+          surfaceName={PUBLIC_AGENT_APP_SURFACE_NAME}
+        />
+        <CanvasSideSheet />
+      </>
     );
   }
 
   // This route is the ONLY one that emits `matrx-public/p` — the anonymous
   // visitor surface. Authed agent-app routes inherit `matrx-user/agent-apps`.
   return (
-    <AgentAppPublicRenderer
-      app={app}
-      slug={app.slug}
-      surfaceName={PUBLIC_AGENT_APP_SURFACE_NAME}
-    />
+    <>
+      <main className="min-h-0 flex-1 overflow-x-hidden">
+        <AgentAppPublicRenderer
+          app={app}
+          slug={app.slug}
+          surfaceName={PUBLIC_AGENT_APP_SURFACE_NAME}
+        />
+      </main>
+      <MadeWithAiMatrx />
+      {/* Agent output can open the canvas; `(link)` carries no canvas host of
+          its own, so the app page mounts the lazy front door itself. */}
+      <CanvasSideSheet />
+    </>
   );
 }

@@ -15,7 +15,7 @@ export default function PublicAppUnavailable() {
   const slug = typeof params?.slug === "string" ? params.slug : "";
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height,2.5rem))] bg-textured">
+    <div className="h-dvh bg-textured">
       <SlugAccessGate
         tokens={TOKENS}
         slug={slug}

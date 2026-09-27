@@ -5198,7 +5198,7 @@
     {
       "pattern": "/p/[slug]",
       "status": "live",
-      "source": "app/(public)/p/[slug]/page.tsx"
+      "source": "app/(link)/p/[slug]/page.tsx"
     },
     {
       "pattern": "/p/e/[resourceType]/[id]",
