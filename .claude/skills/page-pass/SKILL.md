@@ -218,6 +218,9 @@ surface). Say which parts you judged as authored content.
   generic upsert may refuse the kind you send); then, live, save a
   `PP test —` value and read the row back with SQL, and restore it. A button
   that "works" and saves nothing is the worst dead control.
+- **Read the field that exists.** Reading a property the type does not have
+  (`request.errorMessage` when the field is `request.error`) makes every failure
+  silent — let the type check catch it (no casts), and show the real reason.
 - **An empty read is not a success.** A lookup that returns no row where one
   must exist (access refused, wrong id) is an error the person and the agent
   see — never a silent return that leaves the page "still loading" forever.
