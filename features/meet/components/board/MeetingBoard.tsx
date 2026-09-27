@@ -42,6 +42,7 @@ import {
   Captions,
   ConsentNotice,
   ControlBar,
+  HostMenu,
   RecordingIndicator,
   participantSummary,
   useElapsed,
@@ -290,9 +291,11 @@ type Asking = "html" | "image" | null;
 export function MeetingBoard({
   meeting,
   onLayout,
+  headerControls,
 }: {
   meeting: MeetingRecord;
   onLayout: (next: MeetingLayoutChoice) => void;
+  headerControls?: ReactNode;
 }) {
   const meetingId = meeting.id;
   const tiles = useBoard<BoardSpec>(() => loadBoard(meetingId));
@@ -656,16 +659,9 @@ function BoardHeader({
             <Lock className="h-3 w-3" /> Locked
           </span>
         )}
-        {isHost && (
-          <button
-            type="button"
-            className="mx-meet__link shrink-0 whitespace-nowrap"
-            title="Locking and ending the meeting live in the Room layout"
-            onClick={() => onLayout("room")}
-          >
-            Host controls
-          </button>
-        )}
+        {/* The package's own host menu (lock / end), @ai-matrx/meet 0.7.5 — the
+            Board used to send a host back to the Room layout for it. */}
+        {isHost && <HostMenu />}
         {headerControls}
         <LayoutSwitch value="board" onChange={onLayout} />
       </header>
