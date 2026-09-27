@@ -317,7 +317,13 @@ const projectsSlice = createSlice({
         state.loading = false;
         state.error = action.error.message ?? "Failed to fetch project";
       })
+      // RC-B12 r12: a failed org-projects read is recorded, so a picker over
+      // this slice says the failure instead of "no projects".
+      .addCase(fetchOrgProjects.rejected, (state, action) => {
+        state.error = action.error.message ?? "Failed to fetch projects";
+      })
       .addCase(fetchOrgProjects.fulfilled, (state, action) => {
+        state.error = null;
         const now = Date.now();
         projectsAdapter.upsertMany(state, action.payload.projects);
         for (const p of action.payload.projects) {

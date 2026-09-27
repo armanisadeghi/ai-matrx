@@ -12,7 +12,11 @@ import {
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAllProjects } from "@/features/agent-context/redux/projectsSlice";
+import {
+  selectAllProjects,
+  selectProjectsError,
+} from "@/features/agent-context/redux/projectsSlice";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 
@@ -35,6 +39,7 @@ export function SkillProjectAssociations({
 }: SkillProjectAssociationsProps) {
   const { projectIds, associate, disassociate } = useSkillProjects(skillId);
   const allProjects = useAppSelector(selectAllProjects);
+  const projectsError = useAppSelector(selectProjectsError);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
 
@@ -134,7 +139,9 @@ export function SkillProjectAssociations({
                 className="h-8 mb-2"
               />
               <div className="max-h-56 overflow-y-auto scrollbar-thin">
-                {available.length === 0 ? (
+                {projectsError && available.length === 0 ? (
+                  <ReadFailure error={projectsError} what="your projects" className="m-0" />
+                ) : available.length === 0 ? (
                   <div className="px-2 py-4 text-center text-xs text-muted-foreground">
                     {search ? "No matches." : "All projects associated."}
                   </div>

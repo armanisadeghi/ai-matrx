@@ -42,7 +42,8 @@ import {
 import { runDurationMs, runHref, type RunListRow } from "../runs";
 import { useRunsList } from "../useRunsList";
 import { useWorkflowFacts } from "../useWorkflowFacts";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 /** A row plus the workflow facts resolved for it. */
 interface RunRowView extends RunListRow {
@@ -75,7 +76,7 @@ function Muted({ children }: { children: React.ReactNode }) {
 export function RunsList({ definitionId }: { definitionId?: string }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const { rows, loading, error, organizationState } = useRunsList({
+  const { rows, loading, error, organizationState, refresh } = useRunsList({
     definitionId,
   });
   const facts = useWorkflowFacts(rows.map((row) => row.definitionId));
@@ -196,9 +197,22 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {error && (
-        <ErrorNotice size="inline" className="px-3 pb-2 text-xs" message={error} />
-      )}
+      {error && view.length > 0 ? (
+        <StaleDataNotice
+          hasData
+          what={definitionId ? "this workflow's runs" : "your runs"}
+          onRetry={refresh}
+          detail={error}
+          className="mx-3 mb-2"
+        />
+      ) : null}
+      {error && view.length === 0 ? (
+        <ReadFailure
+          error={error}
+          what={definitionId ? "this workflow's runs" : "your runs"}
+          onRetry={refresh}
+        />
+      ) : (
       <NonEditableContextMenu
         sourceFeature="workflow_run"
         contentSource={{ type: "raw" }}
@@ -242,6 +256,7 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
           />
         </div>
       </NonEditableContextMenu>
+      )}
     </div>
   );
 }

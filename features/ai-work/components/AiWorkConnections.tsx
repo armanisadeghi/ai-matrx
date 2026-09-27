@@ -301,12 +301,18 @@ export function AiWorkConnections() {
                     <ConnectionFact label="Client detection">
                       {providerSessions.length > 0
                         ? "Detected from delivered session"
-                        : "Not detected"}
+                        : error
+                          ? "Unknown — see the notice above"
+                          : "Not detected"}
                     </ConnectionFact>
                     <ConnectionFact label="Session delivery">
                       {latest
                         ? `${providerSessions.length} recent binding${providerSessions.length === 1 ? "" : "s"}; ${formatSessionTimestamp(latest.last_seen_at)}`
-                        : "No session delivered"}
+                        : error
+                          ? "Unknown — see the notice above"
+                          : loading
+                            ? "Checking…"
+                            : "No session delivered"}
                     </ConnectionFact>
                     <ConnectionFact
                       label={

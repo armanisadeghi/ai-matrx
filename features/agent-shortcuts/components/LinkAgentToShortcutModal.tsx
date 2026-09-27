@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAgentShortcuts } from "../hooks/useAgentShortcuts";
 import { useAgentShortcutCrud } from "../hooks/useAgentShortcutCrud";
@@ -111,6 +112,7 @@ export function LinkAgentToShortcutModal({
     shortcuts,
     categories,
     isLoading,
+    error: shortcutsError,
     categoriesError,
     refetch: refetchShortcuts,
   } = useAgentShortcuts({
@@ -452,7 +454,26 @@ export function LinkAgentToShortcutModal({
             </div>
           </div>
 
-          {filteredShortcuts.length === 0 ? (
+          {shortcutsError && shortcuts.length > 0 ? (
+            <StaleDataNotice
+              hasData
+              what="the shortcuts"
+              onRetry={refetchShortcuts}
+              detail={shortcutsError}
+            />
+          ) : null}
+          {shortcutsError && shortcuts.length === 0 ? (
+            <ReadFailure
+              error={shortcutsError}
+              what="the shortcuts"
+              onRetry={refetchShortcuts}
+              className="m-0"
+            />
+          ) : isLoading && shortcuts.length === 0 ? (
+            <div className="py-4 text-center text-xs text-muted-foreground">
+              Loading shortcuts…
+            </div>
+          ) : filteredShortcuts.length === 0 ? (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
