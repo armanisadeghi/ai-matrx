@@ -84,7 +84,9 @@ session, never you.
 - **Sees everything:** every piece of data the page loads and a person could
   point at is a declared value, emitted by one pure scope module from state the
   page already rendered (`getScope` never fetches). Not loaded yet → omit the
-  key; loaded and empty → `[]`/`0`/`""`; a failed load reports only its status.
+  key; loaded and empty → `[]`/`0`/`""`; a failed load reports its status
+  (a `load_error`-style value the agent can see), never counts, rows or a
+  value that contradicts what the person sees.
   Keep existing value names (stored bindings use them).
 - **Sees what its jobs need up front — the context budget.** An agent that
   lacks what it needs fails or spends more tokens looking it up, so send it —
@@ -151,7 +153,11 @@ session, never you.
 - **The title stands alone.** One title, in the page header, with no
   description or subtitle under it and no second title or hero in the body.
   No welcome text, no "this page lets you…". Help is one short sentence next
-  to the thing it helps with, or a tooltip.
+  to the thing it helps with, or a tooltip. **The same holds for every section
+  and card:** a heading, not a heading plus an explanatory sentence.
+- **Empty is compact.** A thin record never shows a wall of "—" rows or a stack
+  of empty cards: empty fields collapse into one "Add …" affordance, and an
+  empty section is one line with its create action, not a full card.
 - **Nothing sits under the header.** The header is glass over the page. Content
   that must stay visible — buttons, toolbars, card grids, banners — starts
   below it with `pt-[var(--shell-header-h)]` (never a hand-typed `pt-12`), and
@@ -203,6 +209,16 @@ session, never you.
   for Intelligence, `AGENT_ICON` for Agents.
 - Text a person reads is 12px or larger; 10px only for small all-caps section
   labels and keyboard hints. Machine labels (`some_key`) are humanized.
+- **Show what a person recognizes, never an internal key.** A value is shown
+  as its display form (proper case, platform named, a link when it is a
+  link), never its normalized/dedupe key, slug, raw id or JSON. A person never
+  types JSON: structured input gets real fields (an address is address
+  fields, a state is a state picker, a fixed set is a select).
+- **One name per thing.** The header, tab title, buttons, placeholders, empty
+  and error states use the same noun (a "deck" is never also a "set").
+- **Nothing internal reaches a person.** No test/fixture product names, no
+  engineering notes ("no read path…", ticket codes), no placeholder copy. An
+  unbuilt part is absent, or a Coming Soon entry.
 - Semantic color tokens only; right in light AND dark.
 - A destructive or expensive click says what it will cost before it happens.
 - Tab title leads with the specific word; the route has a favicon entry.

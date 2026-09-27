@@ -43,6 +43,18 @@ Judge by who is looking at it and why.
   a row → that row's actions). Core 1: the condensed visible list as an XML
   bundle (~4,000 of the page budget), the full rows as a lookup value, and full
   create/update/delete targets for the record type.
+- **Server-side list:** a list of the person's own records that grows without
+  bound reads through a `<feature>_list_scoped` RPC written from the template
+  in `lib/list-scope/FEATURE.md` (sort, filter, paging, counts on the server).
+  `createMemoryListService` is only for a small, bounded, read-only corpus —
+  never load a whole library into the browser. Write the RPC yourself (DB
+  changes are part of the job; `lib/entity-list/FEATURE.md`).
+- **Archive:** a record type is archivable when its table has `is_archived` /
+  `archived_at` (the entity type's `user_artifact_kind` puts it in Trash).
+  When the table only soft-deletes, `delete_<plural>` archives and its
+  description says so.
+- **Duplicates are distinguishable:** two rows with the same name show what
+  differs (owner, date, source, count).
 
 ## Single-record page
 - **Recognize it:** one thing, viewed or edited — a note, an agent, a class, a

@@ -89,14 +89,16 @@ export function classifySource(file, source) {
 }
 
 function trackedTsxFiles() {
+  // git, not ripgrep: `rg` is often only a shell function (not on PATH for a
+  // child process), and every checkout that can run this has git.
   return execFileSync(
-    "rg",
-    ["--files", "app", "components", "features", "lib", "-g", "*.tsx"],
-    { cwd: ROOT, encoding: "utf8" },
+    "git",
+    ["ls-files", "--cached", "--others", "--exclude-standard", "--", "app", "components", "features", "lib"],
+    { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
   )
     .trim()
     .split("\n")
-    .filter(Boolean);
+    .filter((file) => file.endsWith(".tsx"));
 }
 
 function run() {
