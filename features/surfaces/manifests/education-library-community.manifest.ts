@@ -126,7 +126,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "is_signed_in",
     label: "Signed in",
     description:
-      "Whether the person is signed in. Signed out, copy_decks and create_deck_suggestions are refused. Always present.",
+      "Whether the person is signed in (the server's check or the browser session). Signed out, copy_decks and create_deck_suggestions are refused. Always present.",
     valueType: "boolean",
     alwaysAvailable: true,
     typicalCharCount: 5,

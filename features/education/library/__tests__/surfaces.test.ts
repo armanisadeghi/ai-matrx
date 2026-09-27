@@ -1,4 +1,4 @@
-import { parseLibraryViewValue } from "../librarySurface";
+import { condensedList, parseLibraryViewValue } from "../librarySurface";
 import {
   parseCopyDecksValue,
   parseCreateDeckSuggestionsValue,
@@ -110,5 +110,36 @@ describe("update_suggestions", () => {
     expect(() => parseUpdateSuggestionsValue([{ id: "s1", status: "accepted" }, { id: "s1", status: "declined" }], rows)).toThrow(/more than once/);
     expect(() => parseUpdateSuggestionsValue([{ id: "s1", status: "open" }], rows)).toThrow(/accepted" or "declined/);
     expect(() => parseUpdateSuggestionsValue([{ id: "s1", status: "accepted" }], null)).toThrow(/not loaded/);
+  });
+});
+
+describe("library_list stays inline", () => {
+  it("never passes the 4000-char list tier, even with long, fully studied rows", () => {
+    // Only the fields toLibraryListRow reads.
+    const long = Array.from({ length: 25 }, (_, i) => ({
+      id: `00000000-0000-0000-0000-${String(i).padStart(12, "0")}`,
+      title: "A very long study item title that keeps going and going past sixty characters",
+      kind: "assessment",
+      subtype: "practice_test",
+      is_owner: false,
+      item_count: 30,
+      studied_count: 30,
+      accuracy_pct: 0.87,
+      due_count: 12,
+      last_studied_at: "2026-09-27T10:00:00Z",
+    })) as unknown as Parameters<typeof condensedList>[0];
+    const list = condensedList(long);
+    expect(JSON.stringify(list).length).toBeLessThanOrEqual(4000);
+    expect(list.length).toBeGreaterThan(15);
+    expect(list[0]).toEqual({
+      id: "00000000-0000-0000-0000-000000000000",
+      title: "A very long study item title that keeps going and going pas…",
+      format: "practice_test",
+      items: 30,
+      due: 12,
+      accuracy_pct: 87,
+      last_studied: "2026-09-27",
+      mine: false,
+    });
   });
 });

@@ -45,21 +45,50 @@ function text(value: string | null | undefined): string | null {
   return t ? t : null;
 }
 
+/**
+ * One condensed row. Sized so 25 rows fit INLINE_TIER.list (4000 chars): the
+ * kind is implied by the format, and a field with nothing to say is OMITTED
+ * (no card count, never studied, owned by the person) rather than sent null.
+ */
 export function toLibraryListRow(
   row: EducationLibraryRow,
 ): EducationLibraryListRow {
   const stats = libraryRowStats(row);
+  const accuracy = pct(stats.accuracy);
   return {
     id: row.id,
-    title: row.title,
-    kind: row.kind,
-    format: text(row.subtype),
-    items: stats.itemCount,
-    due: stats.dueCount,
-    accuracy_pct: pct(stats.accuracy),
-    last_studied: stats.lastStudiedAt,
-    mine: row.is_owner,
+    title: row.title.length > 60 ? `${row.title.slice(0, 59)}…` : row.title,
+    format: text(row.subtype) ?? row.kind,
+    ...(stats.itemCount != null ? { items: stats.itemCount } : {}),
+    ...(stats.dueCount > 0 ? { due: stats.dueCount } : {}),
+    ...(accuracy != null ? { accuracy_pct: accuracy } : {}),
+    ...(stats.lastStudiedAt
+      ? { last_studied: stats.lastStudiedAt.slice(0, 10) }
+      : {}),
+    ...(row.is_owner ? {} : { mine: false }),
   };
+}
+
+/** Stay under INLINE_TIER.list with room for the envelope's own framing. */
+const LIBRARY_LIST_CHAR_BUDGET = 3900;
+
+/**
+ * The first 25 rows, condensed — fewer only when long rows would push the
+ * value past the inline budget (it would then be demoted to a lookup whole).
+ */
+export function condensedList(
+  rows: readonly EducationLibraryRow[],
+): EducationLibraryListRow[] {
+  const out: EducationLibraryListRow[] = [];
+  let size = 2;
+  for (const row of rows.slice(0, LIBRARY_LIST_INLINE_ROWS)) {
+    const entry = toLibraryListRow(row);
+    const add = JSON.stringify(entry).length + 1;
+    if (size + add > LIBRARY_LIST_CHAR_BUDGET) break;
+    out.push(entry);
+    size += add;
+  }
+  return out;
 }
 
 export function toLibraryFullRow(
@@ -150,9 +179,7 @@ export function buildEducationLibraryScope(list: LibraryList) {
     ...counts,
     ...facets,
     library_state: "ready",
-    library_list: list.rows
-      .slice(0, LIBRARY_LIST_INLINE_ROWS)
-      .map(toLibraryListRow),
+    library_list: condensedList(list.rows),
     library_total: list.total,
     library_rows: list.rows.map(toLibraryFullRow),
   });

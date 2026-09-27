@@ -26,10 +26,13 @@ and a sort.
   (and give `library_error` when it failed).
 - `library_list` (shown to you in full, no lookup needed): what is on screen, in the person's
   current tab, search, filters and sort; the first 25 rows, each
-  `{ id, title, kind, format, items, due, accuracy_pct, last_studied, mine }`.
-  - `items` is the card or question count (null for formats without one).
-  - `due` is how many items are due for review right now.
-  - `accuracy_pct` is 0-100, or null until the person has studied it. Null is never 0%.
+  `{ id, title, format, items?, due?, accuracy_pct?, last_studied?, mine? }`.
+  - `format` is the type (the table above); the kind follows from it.
+  - Fields with nothing to say are left out: `items` (card or question count) only for formats
+    that have one; `due` (items due for review now) only when above 0; `accuracy_pct` (0-100)
+    and `last_studied` (YYYY-MM-DD) only once studied — a missing accuracy is never 0%;
+    `mine: false` only on someone else's item.
+  - Titles over 60 characters are cut; `library_rows` has them whole.
 - `library_total`: how many items match in all (across pages). If it is larger than the rows
   you see, say so.
 - `tab_counts`: `{ mine, shared, public }` for the current search and filters.
@@ -41,7 +44,7 @@ and a sort.
 - `filter_options`: the filter values the library offers in this tab, with counts.
 
 "What's in my library?" is answered from `library_list`, `library_total` and `tab_counts`
-alone. Group by `kind`, name what is due, and mention the tab you are describing.
+alone — no lookup. Group by type, name what is due, and mention the tab you are describing.
 
 ## What you can write
 
