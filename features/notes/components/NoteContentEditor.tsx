@@ -106,6 +106,8 @@ import type { ContentSource } from "@/features/rich-document/types";
 import { UnbindSurfaceContext } from "@/features/canvas/materialization/UnbindSurfaceContext";
 import { useNoteArtifactMaterialization } from "../hooks/useNoteArtifactMaterialization";
 import { noteIdentityContentSource } from "../richDocumentSource";
+import { RECORD_MENU_ATTR } from "@/features/context-menu-v3/record-menu-registry";
+import { noteTabRecordMenuKey } from "./noteRecordMenu";
 import { usePreparedNoteContentSource } from "../usePreparedNoteContentSource";
 import { useNoteConflictChoreography } from "../hooks/useNoteConflictChoreography";
 import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
@@ -844,6 +846,9 @@ export function NoteContentEditor({
             ref={editorRootRef}
             className="flex-1 flex flex-col min-h-0 min-w-0"
             data-surface-value="current_note"
+            // This note's tab rows join every menu opened on its content, and
+            // the tab's ⋯ opens that menu — one menu for the note (R26).
+            {...{ [RECORD_MENU_ATTR]: noteTabRecordMenuKey(instanceId, noteId) }}
           >
             {access.readOnly && (
               <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-b border-border/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">

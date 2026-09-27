@@ -56,6 +56,7 @@ import { MenuPresenceProvider, RegistryMenuSourceProvider, contentSourceKey } fr
 import { useOptionalWidgetHandle } from "@/features/agents/hooks/useWidgetHandle";
 import { buildEditableWidgetHandle } from "./utils/widget-handle";
 import { resolveTableRowMenuDescriptor } from "./table-row-context-registry";
+import { resolveRecordMenu } from "./record-menu-registry";
 import { CONTEXT_REGION_TRIGGER_ATTRS } from "./region-trigger-attrs";
 
 /**
@@ -428,12 +429,21 @@ export function ContextMenuV3({
       rowMenu?.context ?? (resolveContextOnOpen ? resolveContextOnOpen(target) : null),
     );
     const surfaceSections = resolveExtraSectionsOnOpen?.(target);
-    setResolvedExtraSections(
+    const ownSections =
       rowMenu?.extraSections && surfaceSections
         ? [...rowMenu.extraSections, ...surfaceSections]
-        : (rowMenu?.extraSections ?? surfaceSections),
+        : (rowMenu?.extraSections ?? surfaceSections);
+    // The record whose content this is (a note's tab rows, drawn apart from its
+    // content): its rows join THIS menu, so the record's ⋯ and a right-click on
+    // its content are one menu (record-menu-registry.ts, R26).
+    const record = resolveRecordMenu(target);
+    setResolvedExtraSections(
+      record?.extraSections.length
+        ? [...(ownSections ?? extraSections ?? []), ...record.extraSections]
+        : ownSections,
     );
-    setSniffedEntity(sniffEntityFromDom(target));
+    // The record's entity fills a silence only — never over this menu's own.
+    setSniffedEntity(sniffEntityFromDom(target) ?? (entity ? null : (record?.entity ?? null)));
   };
 
   // Shared capture — populates selection/content state from a right-click target

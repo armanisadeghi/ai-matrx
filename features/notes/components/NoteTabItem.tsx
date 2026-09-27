@@ -75,6 +75,8 @@ import { cn } from "@/lib/utils";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
+import { openRecordMenu, registerRecordMenu } from "@/features/context-menu-v3/record-menu-registry";
+import { noteTabRecordMenuKey } from "./noteRecordMenu";
 import { MoveNoteDialog } from "./MoveNoteDialog";
 import { noteFolderReference, type FolderReference } from "../types";
 import { noteIdentityContentSource } from "../richDocumentSource";
@@ -513,6 +515,28 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
     },
   ];
 
+  // ONE MENU FOR THE NOTE (R26, ALC-15 round 5). The tab's ⋯ and a right-click
+  // on the note's content target the same thing — the note — and measured two
+  // menus (27 rows vs 25). The tab's rows and entity are registered for the
+  // note's content (NoteContentEditor marks its root with this key), and the
+  // ⋯ — like a right-click on the active tab — opens the CONTENT's menu, which
+  // now carries them. A tab whose note is not on screen keeps its own menu.
+  const recordMenuKey = noteTabRecordMenuKey(instanceId, noteId);
+  const recordRows = useRef({
+    entity: { type: "note" as const, id: noteId, title: label, resourceType: "note" as const },
+    extraSections: tabExtraSections,
+  });
+  recordRows.current = {
+    entity: { type: "note" as const, id: noteId, title: label, resourceType: "note" as const },
+    extraSections: tabExtraSections,
+  };
+  useEffect(
+    () => registerRecordMenu(recordMenuKey, () => recordRows.current),
+    [recordMenuKey],
+  );
+  const openNoteMenu = (anchor: HTMLElement): boolean =>
+    isActive && openRecordMenu(recordMenuKey, anchor);
+
   return (
     <>
       {/* Universal v3 right-click menu — asChild merges onto the tab div (no
@@ -554,6 +578,20 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
           data-active={isActive ? "true" : undefined}
           aria-selected={isActive}
           onClick={handleClick}
+          // The active tab IS the note on screen: its right-click opens the
+          // note's one menu (the content's), not a second one — unless the
+          // title is being renamed, where the native text menu stands.
+          onMouseDownCapture={(e) => {
+            if (e.button === 2 && isActive && !titleEditing) e.stopPropagation();
+          }}
+          onContextMenuCapture={(e) => {
+            if (titleEditing || !tabRef.current) return;
+            if (openNoteMenu(tabRef.current)) {
+              e.preventDefault();
+              e.stopPropagation();
+              bumpTabInteraction();
+            }
+          }}
         >
           {isDirty && (
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mr-1" />
@@ -621,7 +659,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
                 onClick={(e) => {
                   e.stopPropagation();
                   bumpTabInteraction();
-                  openContextMenuForElement(tabRef.current);
+                  if (!openNoteMenu(e.currentTarget)) openContextMenuForElement(tabRef.current);
                 }}
               >
                 <MoreHorizontal />
