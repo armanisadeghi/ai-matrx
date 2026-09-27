@@ -231,10 +231,20 @@ export const refreshSurfaceScope = createAsyncThunk<
         values: result.variableValues,
       }),
     );
+    // A value the agent has no labelled slot for would show its raw key
+    // ("board_tiles") on the composer's context pill; the surface's manifest
+    // names every value it declares, so a person reads "Tiles on the board".
+    const valueLabels = new Map(
+      (getManifest(surfaceName)?.values ?? []).map((v) => [v.name, v.label]),
+    );
     dispatch(
       replaceSurfaceContextEntries({
         conversationId,
-        entries: result.contextEntries,
+        entries: result.contextEntries.map((e) =>
+          e.label === e.key && valueLabels.has(e.key)
+            ? { ...e, label: valueLabels.get(e.key) ?? e.key }
+            : e,
+        ),
       }),
     );
     if (preparation?.contextEntries?.length) {
