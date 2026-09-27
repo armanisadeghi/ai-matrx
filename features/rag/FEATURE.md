@@ -11,13 +11,16 @@ This file is only what an agent editing `features/rag/` must obey.
 
 ## Routes owned here
 
-`/knowledge/library` (+ `[id]/preview`, `/knowledge/viewer/[id]`) · `/knowledge/data-stores` ·
-`/knowledge/repositories` · `/knowledge/search` ·
-`/knowledge/library-catalog` · `/knowledge/library-curate`. `/rag/*` is the retained compatibility
-family. The Google embedding lab is DEV-ONLY (`/demos/embedding-lab`, ruled 2026-09-25: it picks a raw
-embedding model outside the mandate system, so it is excluded from the product). 🚨 **`/knowledge` itself is NOT this feature** — it renders `features/knowledge`'s
-marketing showcase, while `RagHomePage` sits on `/rag`. Do not "fix" either side without the
-ruling tracked in the node's HANDOFF §3.
+`/knowledge/library/[id]/preview` and `/knowledge/viewer/[id]` (both redirect to the Source screen) ·
+`/knowledge/data-stores` · `/knowledge/repositories` · `/knowledge/library-catalog` ·
+`/knowledge/library-curate` · `/knowledge/admin`. The Google embedding lab is DEV-ONLY
+(`/demos/embedding-lab`, ruled 2026-09-25: it picks a raw embedding model outside the mandate system, so
+it is excluded from the product). 🚨 **`/knowledge` itself is NOT this feature** — it is the Knowledge hub
+(`features/knowledge/hub/`). Since H6a (2026-09-27) the Sources list, the Knowledge home and the Search
+Lab are retired into it: `/knowledge/library` and `/knowledge/search` redirect into the hub with their
+filters (`features/knowledge/hub/legacyRoutes.ts`), the Search Lab's developer tabs live only at
+`/administration/knowledge/search-lab`, and every `/rag/*` path is a config redirect to its
+`/knowledge/*` twin.
 
 ## Rules that bite
 
@@ -74,7 +77,7 @@ features/rag/
 │                 useMyCuratorships
 ├── types/        library.ts · data-stores.ts · data-stores-ext.ts · documents.ts
 ├── animations/   standalone HTML prototypes for the 6-stage pipeline
-└── components/   RagHomePage · RepositoriesPage · ProcessForRagButton
+└── components/   RepositoriesPage · ProcessForRagButton
     ├── library/            (own README — the job runner and its traps)
     ├── library-catalog/    LibraryCatalogPage
     ├── library-curate/     LibraryCuratePage
@@ -85,6 +88,8 @@ features/rag/
 ```
 
 ## Change log
+
+- 2026-09-27 — **H6a: the Sources page, the Knowledge home and the Search Lab retired into the Knowledge hub.** Deleted `RagHomePage`, `LibraryCatalogPane`, `LibraryTrashSheet` (its doors live on in `components/library/libraryTrash.ts`, rendered by `LibraryTrashList` in the hub's Trash view) and the `/rag/*` route files. `rag.fn_restore_library_document` now revives the document before its chunks — the soft-delete edge guard had refused every restore from the trash (23514). Parity walk: `common-docs/projects/knowledge-system/HUB-PARITY-CHECKLISTS.md`.
 
 - 2026-09-17 — **A knowledge base is never created without a tenant.** `hooks/useDataStores.ts` `createStore` wrote `organization_id: input.organizationId ?? null`, and `rag.data_stores.organization_id` is NULLABLE with NO `_stamp_org_default` trigger (verified live) — so unlike the trigger-stamped tables this did not misfile the store, it created one belonging to NO organization, invisible to every org-scoped read. It now resolves through `ensureOrgId(input.organizationId ?? null)` — the caller's explicit organization, else the SELECTED one, else a refusal that writes nothing — and the catch reports the remedy instead of the transport's programmer sentence. Both surfaces already render that string (`DataStoresPage` in its form error, `DataStoreBindPanel` in its error line), so the person sees what to do. `rag.data_store_members` has no organization column and is untouched. **Not fixed here:** the pre-existing tenant-less `rag.data_stores` rows need a data repair, which is a migration and outside this change. Law: `../../common-docs/policies/context-is-carried-never-rebuilt.md`.
 

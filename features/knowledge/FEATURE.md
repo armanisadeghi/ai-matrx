@@ -110,6 +110,12 @@ Plan: `common-docs/projects/knowledge-system/KNOWLEDGE-HUB.md` §5.1.
 
 ## Change log
 
+- **2026-09-27** — H6a: the hub absorbed the Sources page — Trash view (restore / delete forever), Stage facet
+  (`hubStage.ts`, `stage=` in the URL, narrows loaded items), Name/Kind/Captured by/Stage/When columns that sort,
+  bulk Attach… and Process now, the processing-jobs sheet, the Add menu (`features/sources/components/SourceCapture.tsx`),
+  getting-started tips as the Everything empty state, a Library catalog link, search reach in an Advanced menu, and the
+  `matrx-user/knowledge-library` agent surface (`hubAgentSurface.ts`). Retired routes land here via `legacyRoutes.ts`.
+
 - **2026-09-27** — `/knowledge` became the Knowledge hub (H3): sidebar, search with chips, typed
   sections, four layouts, peek, bulk File under / Keep / Trash, phone one-pane. Showcase moved to
   `/knowledge/about`; `/rag` redirects.
