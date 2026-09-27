@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { useRead } from '@/components/read-state/useRead';
+import { ReadFailure } from '@/components/read-state/ReadFailure';
 import { ExternalLink, Plus, Loader2, Link2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -11,33 +13,21 @@ import type { ExtractedLink } from '../../types';
 export default function LinkExplorer() {
     const { topicId, refresh } = useTopicContext();
     const api = useResearchApi();
-    const [links, setLinks] = useState<ExtractedLink[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const linksRead = useRead(
+        async () => {
+            const res = await api.getLinks(topicId);
+            if (!res.ok) {
+                throw new Error(`Links request failed (${res.status} ${res.statusText})`);
+            }
+            return (await res.json()) as ExtractedLink[];
+        },
+        [topicId],
+        { initialData: [] as ExtractedLink[] },
+    );
+    const links = linksRead.data ?? [];
+    const isLoading = linksRead.isLoading && links.length === 0;
+    const refetch = linksRead.retry;
     const [search, setSearch] = useState('');
-
-    useEffect(() => {
-        let cancelled = false;
-        setIsLoading(true);
-        api.getLinks(topicId)
-            .then(res => res.json())
-            .then((data: ExtractedLink[]) => {
-                if (!cancelled) setLinks(data);
-            })
-            .catch(() => {
-                if (!cancelled) setLinks([]);
-            })
-            .finally(() => {
-                if (!cancelled) setIsLoading(false);
-            });
-        return () => { cancelled = true; };
-    }, [api, topicId]);
-
-    const refetch = useCallback(() => {
-        api.getLinks(topicId)
-            .then(res => res.json())
-            .then((data: ExtractedLink[]) => setLinks(data))
-            .catch(() => setLinks([]));
-    }, [api, topicId]);
 
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [adding, setAdding] = useState(false);
@@ -109,6 +99,8 @@ export default function LinkExplorer() {
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     <span className="text-xs">Loading links...</span>
                 </div>
+            ) : linksRead.isError && linkList.length === 0 ? (
+                <ReadFailure error={linksRead.error} what="this topic's links" onRetry={refetch} />
             ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center min-h-[280px] gap-3 text-center px-4">
                     <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">

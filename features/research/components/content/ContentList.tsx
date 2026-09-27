@@ -22,6 +22,7 @@ import type { ResearchSource } from "../../types";
 import type { CurationAnalysisState } from "../../service";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { SourceResultsTable } from "../sources/SourceResultsTable";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import type { MatrxDataTableToolbar } from "@ai-matrx/design-system/data-table/types";
 
 function SourceScopeFilterPopover({ filters }: { filters: FilterDef[] }) {
@@ -66,7 +67,7 @@ export default function ContentList() {
   const [qualityFilter, setQualityFilter] = useState<string | null>(null);
   const [hostFilter, setHostFilter] = useState<string | null>(null);
 
-  const { data: sources, isLoading } = useResearchSources(topicId, {
+  const { data: sources, isLoading, error: sourcesError, refresh: refreshSources } = useResearchSources(topicId, {
     limit: 200,
   });
   const { data: importanceMap } = useSourceImportance(topicId);
@@ -247,6 +248,8 @@ export default function ContentList() {
               <Skeleton key={i} className="h-14 rounded-xl" />
             ))}
           </div>
+        ) : sourcesError && !sources?.length ? (
+          <ReadFailure error={sourcesError} what="this topic's sources" onRetry={refreshSources} />
         ) : (
           <div className="flex h-full min-h-0 flex-col">
             {sources?.length === 200 && (

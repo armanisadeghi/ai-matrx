@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { FileText, Loader2 } from "lucide-react";
 import { useResearchTemplates } from "../../hooks/useResearchState";
 import type { ResearchTemplate } from "../../types";
@@ -12,7 +13,7 @@ interface TemplatePickerProps {
 }
 
 export function TemplatePicker({ selected, onSelect }: TemplatePickerProps) {
-  const { data: templates, isLoading } = useResearchTemplates();
+  const { data: templates, isLoading, error, refresh } = useResearchTemplates();
 
   if (isLoading) {
     return (
@@ -27,6 +28,14 @@ export function TemplatePicker({ selected, onSelect }: TemplatePickerProps) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {error && items.length === 0 && (
+        <ReadFailure
+          error={error}
+          what="the research templates"
+          className="m-0 sm:col-span-2"
+          onRetry={refresh}
+        />
+      )}
       <button
         onClick={() => onSelect(null)}
         className={cn(
@@ -41,6 +50,7 @@ export function TemplatePicker({ selected, onSelect }: TemplatePickerProps) {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </div>
           <span className="font-semibold text-sm text-foreground">
+            {/* read-gate-exempt: the "start from scratch" option's label, not an empty list; a failed template read shows ReadFailure above */}
             No Template
           </span>
         </div>

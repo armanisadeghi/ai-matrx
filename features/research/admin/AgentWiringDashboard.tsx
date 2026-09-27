@@ -16,6 +16,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import MatrxMiniLoader from '@/components/loaders/MatrxMiniLoader';
+import { ReadFailure } from '@/components/read-state/ReadFailure';
 import type { ResearchTemplate } from '../types';
 import type { PromptBuiltinRef, AgentConfigKey } from './types';
 import {
@@ -39,6 +40,7 @@ export function AgentWiringDashboard() {
     const [templates, setTemplates] = useState<ResearchTemplate[]>([]);
     const [builtinNames, setBuiltinNames] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<unknown>(null);
     const [expandedTemplates, setExpandedTemplates] = useState<Set<string>>(new Set());
     const [editingCell, setEditingCell] = useState<{ templateId: string; key: AgentConfigKey } | null>(null);
     const [saving, setSaving] = useState(false);
@@ -75,7 +77,9 @@ export function AgentWiringDashboard() {
                 const names = await resolveBuiltinNames(uniqueIds);
                 setBuiltinNames(names);
             }
+            setLoadError(null);
         } catch (err) {
+            setLoadError(err ?? true);
             toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' });
         } finally {
             setLoading(false);
@@ -358,7 +362,11 @@ export function AgentWiringDashboard() {
                         );
                     })}
 
-                    {templates.length === 0 && (
+                    {loadError != null && templates.length === 0 && (
+                        <ReadFailure error={loadError} what="the research templates" onRetry={() => void loadData()} />
+                    )}
+
+                    {loadError == null && templates.length === 0 && (
                         <div className="text-center text-muted-foreground py-12 text-sm">
                             No templates found. Create templates in the Templates tab first.
                         </div>

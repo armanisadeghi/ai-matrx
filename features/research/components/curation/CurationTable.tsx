@@ -46,6 +46,7 @@ import { CurationBatchBar } from "./CurationBatchBar";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   MOBILE_TABLE,
 } from "@/components/official/mobile-table/mobileTable";
@@ -214,7 +215,7 @@ function SortHeader({
 
 export default function CurationTable() {
   const { topicId } = useTopicContext();
-  const { data, isLoading, refresh } = useCurationData(topicId);
+  const { data, isLoading, error: curationError, refresh } = useCurationData(topicId);
 
   const [search, setSearch] = useState("");
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
@@ -615,6 +616,8 @@ export default function CurationTable() {
               <Skeleton key={i} className="h-9 rounded-lg" />
             ))}
           </div>
+        ) : curationError && rows.length === 0 ? (
+          <ReadFailure error={curationError} what="this topic's sources" onRetry={refresh} />
         ) : rows.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-[280px] gap-3 text-center">
             <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">

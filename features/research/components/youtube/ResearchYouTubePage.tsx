@@ -12,6 +12,7 @@ import {
   Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
@@ -36,6 +37,7 @@ export default function ResearchYouTubePage() {
   const [videos, setVideos] = useState<YouTubeVideoLibraryRecord[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [libraryError, setLibraryError] = useState<unknown>(null);
   const [processing, setProcessing] = useState(false);
   const [batchProgress, setBatchProgress] = useState<string | null>(null);
   /** Adopted `activeRequests` rows for the bounded batch. */
@@ -68,7 +70,9 @@ export default function ResearchYouTubePage() {
     setLoading(true);
     try {
       setVideos(await getTopicYouTubeVideos(topicId));
+      setLibraryError(null);
     } catch (caught) {
+      setLibraryError(caught ?? true);
       toast.error(
         caught instanceof Error
           ? caught.message
@@ -84,10 +88,13 @@ export default function ResearchYouTubePage() {
     let active = true;
     getTopicYouTubeVideos(topicId)
       .then((result) => {
-        if (active) setVideos(result);
+        if (!active) return;
+        setVideos(result);
+        setLibraryError(null);
       })
       .catch((caught: unknown) => {
         if (!active) return;
+        setLibraryError(caught ?? true);
         toast.error(
           caught instanceof Error
             ? caught.message
@@ -250,6 +257,12 @@ export default function ResearchYouTubePage() {
             <div className="grid min-h-64 place-items-center text-muted-foreground">
               <LoaderCircle className="h-6 w-6 animate-spin" />
             </div>
+          ) : libraryError != null && videos.length === 0 ? (
+            <ReadFailure
+              error={libraryError}
+              what="this topic's YouTube library"
+              onRetry={() => void loadLibrary()}
+            />
           ) : videos.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-border p-12 text-center">
               <Library className="mx-auto h-8 w-8 text-muted-foreground" />

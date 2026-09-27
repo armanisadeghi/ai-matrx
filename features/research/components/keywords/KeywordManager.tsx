@@ -44,6 +44,7 @@ import type { ResearchKeyword, ResearchSource } from "../../types";
 import { Favicon } from "../overview/live-pipeline/ui/Favicon";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import KeywordOverlapMatrix from "./KeywordOverlapMatrix";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 /**
  * The keyword's FOCUSED LENS, viewable and editable in place. A goal changes
@@ -167,7 +168,7 @@ const MAX_RESULTS = 10;
 
 export default function KeywordManager() {
   const { topicId, topic, refreshProgress } = useTopicContext();
-  const { data: keywords, isLoading, refresh } = useResearchKeywords(topicId);
+  const { data: keywords, isLoading, error: keywordsError, refresh } = useResearchKeywords(topicId);
 
   const [newKeyword, setNewKeyword] = useState("");
   const [newGoal, setNewGoal] = useState("");
@@ -496,6 +497,8 @@ export default function KeywordManager() {
             <Skeleton key={i} className="h-12 rounded-xl" />
           ))}
         </div>
+      ) : keywordsError && items.length === 0 ? (
+        <ReadFailure error={keywordsError} what="this topic's keywords" onRetry={refresh} />
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[280px] gap-3 text-center px-4">
           <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">

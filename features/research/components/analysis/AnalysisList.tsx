@@ -47,6 +47,7 @@ import {
 import type { SourceImportance } from "../../ranking";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 /** A string with real (non-whitespace) content. */
 const hasText = (s: string | null | undefined): s is string =>
@@ -462,6 +463,7 @@ export default function AnalysisList() {
   const {
     data: analyses,
     isLoading,
+    error: analysesError,
     refresh: refetchAnalyses,
   } = useAnalysesForTopic(topicId);
   const { data: sources } = useResearchSources(topicId, { limit: 500 });
@@ -711,6 +713,8 @@ export default function AnalysisList() {
               <Skeleton key={i} className="h-12 rounded-lg" />
             ))}
           </div>
+        ) : analysesError && analysisList.length === 0 ? (
+          <ReadFailure error={analysesError} what="this topic's analyses" onRetry={refetchAnalyses} />
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-[240px] gap-3 text-center px-4">
             <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">
