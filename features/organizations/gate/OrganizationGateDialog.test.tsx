@@ -87,8 +87,23 @@ it("resumes the pending send when the selected organization arrives after the di
   });
   expect(resumedWith).toBe(ORG);
   expect(document.body.textContent).not.toContain(
-    "Which workspace is this for?",
+    "Which organization is this for?",
   );
+});
+
+it("speaks of an organization, never a workspace (a750830017: 'organization', never 'workspace')", async () => {
+  await act(async () => {
+    void ensureOrganizationContext().catch(() => {});
+  });
+  const dialog = document.querySelector("[data-organization-gate]");
+  expect(dialog).not.toBeNull();
+  // The dialog's own words — the title, description and buttons — not the names of the organizations listed.
+  const own = [...dialog!.querySelectorAll("h2, p, button")]
+    .filter((el) => !el.closest("[aria-pressed]"))
+    .map((el) => el.textContent ?? "")
+    .join(" ");
+  expect(own).toContain("Which organization is this for?");
+  expect(own.toLowerCase()).not.toContain("workspace");
 });
 
 it("offers the header's cached organizations even while the browser token is absent", async () => {

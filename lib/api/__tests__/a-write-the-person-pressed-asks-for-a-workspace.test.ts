@@ -22,11 +22,11 @@
 import { callApi } from "../call-api";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-const warnings: Array<{ title: string; action?: { label: string } }> = [];
+const warnings: Array<{ title: string; description?: string; action?: { label: string } }> = [];
 jest.mock("@/lib/toast", () => ({
   toast: {
-    warning: (title: string, options?: { action?: { label: string } }) => {
-      warnings.push({ title, action: options?.action });
+    warning: (title: string, options?: { description?: string; action?: { label: string } }) => {
+      warnings.push({ title, description: options?.description, action: options?.action });
       return "id";
     },
     error: () => "id",
@@ -272,6 +272,9 @@ describe("a write with no workspace selected", () => {
     await expect(ensureOrganizationForWrite()).rejects.toMatchObject({ code: "organization_context_required" });
     expect(opened).toBe(0);
     await new Promise((r) => setTimeout(r, 0));
-    expect(warnings.map((w) => w.action?.label)).toContain("Choose workspace");
+    expect(warnings.map((w) => w.action?.label)).toContain("Choose organization");
+    // a750830017: the picker and its toast say "organization", never "workspace".
+    const said = warnings.map((w) => `${w.title} ${w.description ?? ""} ${w.action?.label ?? ""}`).join(" ");
+    expect(said.toLowerCase()).not.toContain("workspace");
   });
 });

@@ -472,11 +472,11 @@ export async function ensureOrganizationForWrite(
 function announceWorkspaceNeeded(): void {
   markWorkspaceNeededAnnounced();
   void import("@/lib/toast").then(({ toast }) =>
-    toast.warning("Choose a workspace to save this", {
+    toast.warning("Choose an organization to save this", {
       id: "workspace-needed",
-      description: "Nothing was saved because no workspace is selected. Pick one, then do it again.",
+      description: "Nothing was saved because no organization is selected. Pick one, then do it again.",
       action: {
-        label: "Choose workspace",
+        label: "Choose organization",
         onClick: () => {
           void ensureOrganizationContext({ interactive: true }).catch(() => undefined);
         },

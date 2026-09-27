@@ -198,10 +198,10 @@ export function OrganizationGateDialog() {
     >
       <DialogContent className="sm:max-w-md" data-organization-gate="">
         <DialogHeader>
-          <DialogTitle>Which workspace is this for?</DialogTitle>
+          <DialogTitle>Which organization is this for?</DialogTitle>
           <DialogDescription>
-            Choose the workspace for this action. We&apos;ll continue where you
-            left off and use it as your active workspace.
+            Choose the organization for this action. We&apos;ll continue where
+            you left off and use it as your active organization.
           </DialogDescription>
         </DialogHeader>
 
