@@ -88,7 +88,10 @@ describe("weak-area drill — offline answers survive (STATE §4.1 B8)", () => {
       method: "weak_area",
       result: "incorrect",
       confidence: 2,
-      sessionId: SESSION,
+      // The session opens on the FIRST ANSWER (useLazyStudySession), and an
+      // answer given offline cannot open one — so an offline first answer
+      // queues session-less. The answer itself survives either way.
+      sessionId: null,
     });
 
     spine.goOnline();

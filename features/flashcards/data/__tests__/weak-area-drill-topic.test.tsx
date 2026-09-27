@@ -51,6 +51,10 @@ jest.mock("@/features/education/study/service/studyService", () => ({
       return { data: { id: "s1" }, error: null };
     },
     updateSession: async () => ({ data: null, error: null }),
+    recordAttempt: async () => ({
+      data: { attemptId: "a1", mastery: null },
+      error: null,
+    }),
   },
 }));
 
@@ -66,6 +70,11 @@ describe("weak-area drill — ?topic=", () => {
     const hook = await renderHook(() => useWeakAreaDrill({ topic: "Krebs Cycle" }));
     await settle(hook, (h) => !h.loading && h.cards.length > 0, "topic cards");
     expect(requested.at(-1)).toEqual(["c", "a"]);
+    // The session opens on the first answer (never on open), carrying the topic.
+    expect(sessions).toHaveLength(0);
+    await hook.act(async () => {
+      await hook.current.grade("correct");
+    });
     expect(sessions.at(-1)).toMatchObject({ sourceQuery: { topic: "Krebs Cycle" } });
   });
 
