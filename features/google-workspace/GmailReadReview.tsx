@@ -378,6 +378,7 @@ export function GmailReadReview() {
           className="rounded-md border"
         >
           {activeResult.messages.length === 0 ? (
+            // read-gate-exempt: result is set only by a search that succeeded (a failed search clears it and sets the error shown above)
             <p className="p-3 text-sm">No messages matched this search.</p>
           ) : (
             activeResult.messages.map((item) => (

@@ -217,6 +217,7 @@ export default function PersistenceTestPage() {
           title={`overlays (Redux state.overlays) — ${openOverlayCount} open`}
         >
           {Object.keys(overlaysState).length === 0 ? (
+            // read-gate-exempt: dumps in-browser overlay state for this tab; there is no read that can fail
             <Empty message="No overlay buckets initialized. Click 'Open' to open one." />
           ) : (
             <pre className="overflow-x-auto rounded-md border border-border bg-card p-2 font-mono text-[11px] leading-relaxed">
@@ -233,6 +234,7 @@ export default function PersistenceTestPage() {
 
         <Section title="Activity log">
           {log.length === 0 ? (
+            // read-gate-exempt: this page's own in-browser activity log; there is no read that can fail
             <Empty message="Click an action button to start the loop." />
           ) : (
             <ol className="space-y-0.5 font-mono text-[11px]">

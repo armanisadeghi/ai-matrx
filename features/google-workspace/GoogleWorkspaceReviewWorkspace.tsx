@@ -773,7 +773,14 @@ export function GoogleWorkspaceReviewWorkspace({
                     {googleWorkspacePickLabel()}
                   </Button>
                 </div>
-                {selectedResources.length === 0 ? (
+                {inventory.isError && selectedResources.length === 0 ? (
+                  <ReadFailure
+                    error={inventory.error}
+                    what="the files you picked for this account"
+                    onRetry={() => void inventory.refetch()}
+                    className="m-0"
+                  />
+                ) : selectedResources.length === 0 ? (
                   <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
                     No selected files for this account.
                   </div>

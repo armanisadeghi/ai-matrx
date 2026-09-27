@@ -2022,6 +2022,7 @@ const DiagramFlow: React.FC<{
                         }
                         className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
                       >
+                        {/* read-gate-exempt: a static select option label (no parent section), not an empty view */}
                         <option value="none">No section</option>
                         {sections.map((section) => (
                           <option key={section.id} value={section.id}>
@@ -2248,6 +2249,7 @@ const DiagramFlow: React.FC<{
                     <option value="end">Forward</option>
                     <option value="start">Backward</option>
                     <option value="both">Both ends</option>
+                    {/* read-gate-exempt: a static select option label (arrowhead choice), not an empty view */}
                     <option value="none">No arrowheads</option>
                   </select>
                 </label>

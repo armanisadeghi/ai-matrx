@@ -125,6 +125,14 @@ export interface UseIntakeSessionResult {
   /** Reopen an existing asset (review drawer / deep link). */
   resumeAsset: (assetId: string) => Promise<void>;
   removeArtifact: (localId: string) => void;
+  /**
+   * The mount-time resume read (deep-linked or mid-item asset and its saved
+   * artifacts) failed — the item on screen is NOT known to have no photos.
+   * Null while it succeeded or never ran (RC-B12 r12).
+   */
+  resumeError: unknown;
+  /** Run the mount-time resume read again. */
+  retryResume: () => void;
 }
 
 export interface UseIntakeSessionOptions {
@@ -529,6 +537,13 @@ export function useIntakeSession(
   // Resume on mount (once per org resolution): an explicit `?asset=` deep
   // link wins; otherwise the localStorage mid-item state after a reload.
   const resumeTriedRef = useRef(false);
+  const [resumeError, setResumeError] = useState<unknown>(null);
+  const [resumeAttempt, setResumeAttempt] = useState(0);
+  const retryResume = () => {
+    resumeTriedRef.current = false;
+    setResumeError(null);
+    setResumeAttempt((n) => n + 1);
+  };
   useEffect(() => {
     if (!organizationId || resumeTriedRef.current) return;
     resumeTriedRef.current = true;
@@ -550,6 +565,7 @@ export function useIntakeSession(
         }
         if (targetAsset) {
           await resumeAsset(targetAsset);
+          setResumeError(null);
           return;
         }
         if (targetBatch) {
@@ -562,12 +578,14 @@ export function useIntakeSession(
             sequenceRef.current = await maxSequenceIndex(b.id);
           }
         }
+        setResumeError(null);
       })().catch((err: unknown) => {
         console.error("[commerce-intake] resume failed", err);
+        setResumeError(err ?? true);
       });
     }, 0);
     return () => clearTimeout(timer);
-  }, [organizationId, resumeAsset, initialAssetId]);
+  }, [organizationId, resumeAsset, initialAssetId, resumeAttempt]);
 
   // ── Mode switch ───────────────────────────────────────────────────────────
 
@@ -1066,5 +1084,7 @@ export function useIntakeSession(
     nextItem,
     resumeAsset,
     removeArtifact,
+    resumeError,
+    retryResume,
   };
 }

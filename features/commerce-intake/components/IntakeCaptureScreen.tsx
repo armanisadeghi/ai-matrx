@@ -23,6 +23,7 @@
  *   control except itself, the recording timer and the QR confirmation.
  */
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import React, {
   useCallback,
   useEffect,
@@ -556,7 +557,9 @@ export function IntakeCaptureScreen({
               {itemLabel}
             </p>
             <p className="text-[11px] text-white/70">
-              {photoCount === 0
+              {session.resumeError && photoCount === 0
+                ? "Photos not loaded"
+                : photoCount === 0
                 ? "No photos yet"
                 : `${photoCount} photo${photoCount === 1 ? "" : "s"}`}
             </p>
@@ -591,6 +594,18 @@ export function IntakeCaptureScreen({
           )}
         </div>
       )}
+
+      {/* The resume read failed: this item's saved photos are unknown, not absent. */}
+      {session.resumeError ? (
+        <div className="absolute inset-x-3 top-16 z-40 mt-safe">
+          <ReadFailure
+            error={session.resumeError}
+            what="this item's saved photos"
+            onRetry={session.retryResume}
+            className="m-0"
+          />
+        </div>
+      ) : null}
 
       {/* Hide/show controls — always present, same spot in both states. */}
       <button

@@ -7,6 +7,8 @@
  * from the list side).
  */
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,7 +25,6 @@ import {
   selectAuthReady,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
-import { toast } from "@/lib/toast";
 
 import type { IntakeAsset } from "../types";
 import {
@@ -82,6 +83,13 @@ export function AssetsList() {
   });
   const router = useRouter();
   const [rows, setRows] = useState<ListRow[] | null>(null);
+  // The list read's failure — never "No intake assets yet" over it.
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const retryLoad = () => {
+    setLoadError(null);
+    setLoadAttempt((n) => n + 1);
+  };
 
   useEffect(() => {
     if (!loadKey || !organizationId) return;
@@ -95,6 +103,7 @@ export function AssetsList() {
           listPrimaryQrForAssets(ids),
         ]);
         if (cancelled) return;
+        setLoadError(null);
         setRows(
           assets.map((asset) => {
             const artifacts = artifactsByAsset.get(asset.id) ?? [];
@@ -114,14 +123,13 @@ export function AssetsList() {
         );
       } catch (err) {
         console.error("[commerce-intake] assets list load failed", err);
-        toast.error("Could not load the intake assets.");
-        if (!cancelled) setRows([]);
+        if (!cancelled) setLoadError(err ?? true);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [loadKey, organizationId]);
+  }, [loadKey, organizationId, loadAttempt]);
 
   if (organizationUnanswered) {
     // The canonical honest state — the refusal carries the picker and the
@@ -130,6 +138,16 @@ export function AssetsList() {
       <OrganizationContextNotice
         state={organizationState}
         what="Intake assets"
+      />
+    );
+  }
+
+  if (loadError && (rows === null || rows.length === 0)) {
+    return (
+      <ReadFailure
+        error={loadError}
+        what="the intake assets"
+        onRetry={retryLoad}
       />
     );
   }
@@ -157,6 +175,15 @@ export function AssetsList() {
   }
 
   return (
+    <>
+    {loadError ? (
+      <StaleDataNotice
+        hasData
+        what="the intake assets"
+        onRetry={retryLoad}
+        className="mx-auto mb-2 w-full max-w-2xl"
+      />
+    ) : null}
     <ul className="mx-auto w-full max-w-2xl space-y-2 pb-safe">
       {rows.map(({ asset, qrCode, thumbFileId, artifactCount }) => (
         <li
@@ -199,5 +226,6 @@ export function AssetsList() {
         </li>
       ))}
     </ul>
+    </>
   );
 }

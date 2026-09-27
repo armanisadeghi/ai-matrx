@@ -222,6 +222,7 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
               />
               {set.flashcards.length === 0 && (
                 <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  {/* read-gate-exempt: cards are parsed from this message's own streamed markdown; there is no read that can fail */}
                   No flashcards available yet...
                 </div>
               )}
@@ -311,6 +312,7 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
 
         {set.flashcards.length === 0 && (
           <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+            {/* read-gate-exempt: cards are parsed from this message's own streamed markdown; there is no read that can fail */}
             No flashcards available yet...
           </div>
         )}

@@ -981,6 +981,7 @@ export default function ResilienceLabPage() {
         <CardContent>
           {activeRequests.length === 0 ? (
             <div className="text-xs text-muted-foreground">
+              {/* read-gate-exempt: in-browser network-request tracker state for this tab; there is no read that can fail */}
               No active requests.
             </div>
           ) : (

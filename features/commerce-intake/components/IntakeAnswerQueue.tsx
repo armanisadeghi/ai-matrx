@@ -17,6 +17,8 @@
  *   Not a quick answer (deferred_at + reason — leaves this flow entirely).
  */
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -82,6 +84,8 @@ export function IntakeAnswerQueue() {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  // The queue read's failure — never "No open questions" over it.
+  const [loadError, setLoadError] = useState<unknown>(null);
 
   const load = useCallback(async () => {
     if (!organizationId) return;
@@ -115,10 +119,10 @@ export function IntakeAnswerQueue() {
         }),
       );
       setAnsweredCount(0);
+      setLoadError(null);
     } catch (err) {
       console.error("[commerce-intake] answer queue load failed", err);
-      toast.error("Could not load the question queue.");
-      setQueue([]);
+      setLoadError(err ?? true);
     }
   }, [organizationId]);
 
@@ -223,6 +227,16 @@ export function IntakeAnswerQueue() {
     );
   }
 
+  if (loadError && !current) {
+    return (
+      <ReadFailure
+        error={loadError}
+        what="the question queue"
+        onRetry={() => void load()}
+      />
+    );
+  }
+
   if (queue === null) {
     return (
       <div className="flex justify-center py-16">
@@ -255,6 +269,13 @@ export function IntakeAnswerQueue() {
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-3 pb-safe">
+      {loadError ? (
+        <StaleDataNotice
+          hasData
+          what="the question queue"
+          onRetry={() => void load()}
+        />
+      ) : null}
       <p className="text-center text-xs text-muted-foreground">
         Question {answeredCount + 1} of {total}
       </p>
