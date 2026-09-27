@@ -32,6 +32,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
+import type { ResourcePickerViewId } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
 import { ResourcePickerSubViewHeader } from "@/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
 import { QuickRunModelSelect } from "@/features/agents/components/run-controls/RunModelPicker";
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
@@ -205,6 +206,10 @@ export function PlusAttachMenu({
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<PlusMenuView>("menu");
+  // Set when the ⌘K bar (opened from this picker's search row) runs one of the
+  // picker's own commands — Upload, URL entry, Voice, Tools — re-opening here.
+  const [pickerInitialView, setPickerInitialView] =
+    useState<ResourcePickerViewId>(null);
 
   const attachmentCapabilities = useAppSelector(
     selectAttachmentCapabilities(conversationId),
@@ -228,11 +233,15 @@ export function PlusAttachMenu({
   const closeMenu = () => {
     setOpen(false);
     setView("menu");
+    setPickerInitialView(null);
   };
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
-    if (!next) setView("menu");
+    if (!next) {
+      setView("menu");
+      setPickerInitialView(null);
+    }
   };
 
   const insertTemplate = (templateText: string) => {
@@ -293,6 +302,13 @@ export function PlusAttachMenu({
                     list. min-height alone leaves percentage-height children
                     unbounded, so their overflow regions grow and clip. */}
                 <ResourcePickerMenu
+                  key={pickerInitialView ?? "menu"}
+                  initialView={pickerInitialView}
+                  onReopenAt={(pickerView) => {
+                    setPickerInitialView(pickerView);
+                    setView("menu");
+                    setOpen(true);
+                  }}
                   conversationId={conversationId}
                   fillHost
                   onResourceSelected={handleResourceSelected}

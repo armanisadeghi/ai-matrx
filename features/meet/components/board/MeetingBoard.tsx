@@ -376,8 +376,10 @@ export function MeetingBoard({
   const confirmUrl = (value: string) => {
     const kind = asking;
     setAsking(null);
-    const url = value.trim();
-    const host = new URL(url).hostname;
+    const normalized = normalizeUrl(value);
+    if (!normalized) return;
+    const url = normalized.href;
+    const host = normalized.hostname;
     if (kind === "html") {
       addUserTile({
         rect: { x: 0, y: 0, w: 640, h: 460 },
@@ -469,13 +471,26 @@ export function MeetingBoard({
   );
 }
 
-function validateUrl(value: string): string | null {
+/** Accepts a scheme-less address (e.g. pasted from a browser bar that hides
+ * "https://") by retrying with it assumed, instead of rejecting valid pages. */
+function normalizeUrl(value: string): URL | null {
+  const trimmed = value.trim();
   try {
-    const url = new URL(value.trim());
-    return url.protocol === "https:" || url.protocol === "http:" ? null : "Use an address that starts with https://";
+    return new URL(trimmed);
   } catch {
-    return "That is not a web address — it should start with https://";
+    // fall through
   }
+  try {
+    return new URL(`https://${trimmed}`);
+  } catch {
+    return null;
+  }
+}
+
+function validateUrl(value: string): string | null {
+  const url = normalizeUrl(value);
+  if (!url) return "That is not a web address";
+  return url.protocol === "https:" || url.protocol === "http:" ? null : "Use a web address, not a file or app link";
 }
 
 // ── header ───────────────────────────────────────────────────────────────────

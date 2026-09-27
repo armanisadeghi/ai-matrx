@@ -103,6 +103,8 @@ export type HrApplicabilityFlag = {
   isDeclared: boolean;
   declaredBy: string | null;
   declaredReason: string | null;
+  /** When the declaration was made (ISO), when this page recorded it. */
+  declaredAt?: string | null;
 };
 
 // ── Route 70 — pay groups ───────────────────────────────────────────────────

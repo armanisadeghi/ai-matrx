@@ -39,11 +39,12 @@ const CHIP_ICONS: Record<string, LucideIcon> = {
   diagram: Workflow,
 };
 
-export function ShapeChipsRow({
-  conversationId,
-}: {
-  conversationId: string;
-}) {
+/**
+ * The shape chips' state and toggle — shared by this row (Quickset) and the
+ * composer's Output → Shapes menu, so both write the SAME per-run
+ * `addedSkills` and can never disagree.
+ */
+export function useShapeChipToggles(conversationId: string) {
   const dispatch = useAppDispatch();
   // Same slice-backed list RunSkillPicker reads — the slice status guard makes
   // this a no-op re-read when the list is already loaded.
@@ -56,7 +57,6 @@ export function ShapeChipsRow({
   const added = new Set(addedList);
 
   const chips = resolveShapeChips(skills);
-  if (chips.length === 0) return null;
 
   const toggle = (registryId: string) =>
     dispatch(
@@ -69,6 +69,29 @@ export function ShapeChipsRow({
         },
       }),
     );
+
+  const clear = () => {
+    const chipIds = new Set(chips.map((chip) => chip.registryId));
+    dispatch(
+      setBuilderAdvancedSettings({
+        conversationId,
+        changes: { addedSkills: addedList.filter((id) => !chipIds.has(id)) },
+      }),
+    );
+  };
+
+  return { chips, added, toggle, clear };
+}
+
+export { CHIP_ICONS as SHAPE_CHIP_ICONS };
+
+export function ShapeChipsRow({
+  conversationId,
+}: {
+  conversationId: string;
+}) {
+  const { chips, added, toggle } = useShapeChipToggles(conversationId);
+  if (chips.length === 0) return null;
 
   // Full-width tag flow — NOT the quickset label-column grid: the control
   // column is too narrow for 5 chips (they stacked one per line). The label

@@ -216,6 +216,8 @@ export interface ScopeHolderBarProps {
     sentence: string;
     remedy: string | null;
     broken: boolean;
+    /** Runs, but carries the door's output warning — shown amber, never red. */
+    warning?: boolean;
   } | null;
 }
 
@@ -465,17 +467,21 @@ export function ScopeHolderBar({
             className={
               healthNote.broken
                 ? "mt-3 space-y-1 rounded-lg border border-destructive/40 bg-destructive/5 p-2.5"
-                : "mt-3 rounded-lg border border-border/50 bg-muted/30 p-2.5"
+                : healthNote.warning
+                  ? "mt-3 space-y-1 rounded-lg border border-amber-500/40 bg-amber-500/5 p-2.5"
+                  : "mt-3 rounded-lg border border-border/50 bg-muted/30 p-2.5"
             }
           >
             <p
               className={
                 healthNote.broken
                   ? "flex items-start gap-1.5 text-[12px] leading-relaxed text-destructive"
-                  : "text-[12px] leading-relaxed text-foreground"
+                  : healthNote.warning
+                    ? "flex items-start gap-1.5 text-[12px] leading-relaxed text-amber-800 dark:text-amber-200"
+                    : "text-[12px] leading-relaxed text-foreground"
               }
             >
-              {healthNote.broken ? (
+              {healthNote.broken || healthNote.warning ? (
                 <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               ) : null}
               <span>{healthNote.sentence}</span>

@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   MeetProvider,
+  asMeetingId,
   createMeetRepository,
   useMeetHost,
   type MeetingRecord,
@@ -41,6 +42,8 @@ import { OrganizationRequiredNotice } from "@/features/organizations/components/
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { MEET_PLACES } from "@/features/meet/intelligence-places";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { isUuidValue } from "@/components/official/entity-ref/doors";
+import { MeetingInviteButton } from "@/features/meet/components/invite/MeetingInviteButton";
 
 // The meeting's AI jobs (live notes, answers, the wrap-up), disclosed IN the
 // room through the package's `headerControls` slot (@ai-matrx/meet 0.7.0).
@@ -81,10 +84,16 @@ export function MeetingSurface({
   useEffect(() => {
     let live = true;
     const repository = createMeetRepository({ client: supabase });
-    void repository
-      .meetingBySlug(slug)
+    // A share notification names the meeting RECORD, so its door is
+    // `/meet/<meeting id>` (entity registry `meet_meeting.hrefFor`). A slug is
+    // never uuid-shaped, so a uuid here is an id: read it (the invitee's grant
+    // is what lets RLS answer) and put the durable slug link in the address bar.
+    const byId = isUuidValue(slug);
+    void (byId ? repository.meeting(asMeetingId(slug)) : repository.meetingBySlug(slug))
       .then((meeting) => {
-        if (live) setResolution({ state: "ready", meeting });
+        if (!live) return;
+        if (byId) window.history.replaceState(null, "", `/meet/${meeting.slug}`);
+        setResolution({ state: "ready", meeting });
       })
       .catch((thrown: unknown) => {
         if (!live) return;
@@ -188,18 +197,24 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
         meetingId={meeting.id}
         slug={meeting.slug}
         meeting={meeting}
-        // Signed-in lane only: a guest has no account to open the jobs with.
+        // INVITE (both lanes) + the AI jobs (signed-in lane only: a guest has
+        // no account to open the jobs with). Invite also sits in the pre-join
+        // corner, where the package draws no header.
+        preJoinControls={<MeetingInviteButton meeting={meeting} signedIn />}
         headerControls={
-          <IntelligenceIndicator
-            feature="meet"
-            mandateKeys={MEETING_JOBS}
-            label="The AI jobs in this meeting (live notes, answers, the wrap-up)"
-            size="md"
-            // The meeting stage is dark in both themes (--mx-meet-stage-bg), so the
-            // page-default primary-on-light chip reads as a dim dot here. Stage text
-            // on a light glass, a 44pt target on touch, 36px from `sm` up.
-            className="h-11 w-11 border-white/30 bg-white/10 text-[color:var(--mx-meet-stage-text)] hover:bg-white/20 focus-visible:ring-white/60 sm:h-9 sm:w-9 [&_svg]:h-[18px] [&_svg]:w-[18px]"
-          />
+          <span className="inline-flex items-center gap-2">
+            <MeetingInviteButton meeting={meeting} signedIn />
+            <IntelligenceIndicator
+              feature="meet"
+              mandateKeys={MEETING_JOBS}
+              label="The AI jobs in this meeting (live notes, answers, the wrap-up)"
+              size="md"
+              // The meeting stage is dark in both themes (--mx-meet-stage-bg), so the
+              // page-default primary-on-light chip reads as a dim dot here. Stage text
+              // on a light glass, a 44pt target on touch, 36px from `sm` up.
+              className="h-11 w-11 border-white/30 bg-white/10 text-[color:var(--mx-meet-stage-text)] hover:bg-white/20 focus-visible:ring-white/60 sm:h-9 sm:w-9 [&_svg]:h-[18px] [&_svg]:w-[18px]"
+            />
+          </span>
         }
       />
     </div>
@@ -290,6 +305,10 @@ function GuestRoom({ meeting, slug }: { meeting: MeetingRecord; slug: string }) 
           meetingId={meeting.id}
           slug={slug}
           meeting={meeting}
+          // A guest can pass the link on too; granting needs an account, so
+          // the panel shows them the link, the invitation and the calendar.
+          headerControls={<MeetingInviteButton meeting={meeting} signedIn={false} />}
+          preJoinControls={<MeetingInviteButton meeting={meeting} signedIn={false} />}
         />
       </div>
     </MeetProvider>

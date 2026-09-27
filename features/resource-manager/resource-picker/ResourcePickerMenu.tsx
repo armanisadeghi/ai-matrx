@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronRight, FolderOpen, Settings2, Bug } from "lucide-react";
+import { ChevronRight, FolderOpen, Settings2, Bug, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NotesResourcePicker } from "./NotesResourcePicker";
@@ -40,6 +40,38 @@ import {
 } from "./resource-picker-menu-items";
 import { useRunControlCounts } from "./useRunControlCounts";
 import type { Resource } from "@/features/agents/resources/types";
+import { useOpenKnowledgeCommandBar } from "@/features/overlays/openers/knowledgeCommandBar";
+import { useKnowledgeAttachTarget } from "@/features/knowledge/command-bar/useKnowledgeAttachTarget";
+import type { KnowledgeCommand } from "@/features/knowledge/command-bar/commands";
+import type { LucideIcon } from "lucide-react";
+
+/**
+ * The search steps the ⌘K bar replaces: a person looking for one of THEIR
+ * notes, chats, files or documents searches for it there (one search over
+ * everything). Each is also a hit kind the bar can attach here.
+ */
+const KNOWLEDGE_ATTACH_VIEW_FOR_ENTITY: Record<string, Exclude<ResourcePickerViewId, null>> = {
+  note: "notes",
+  conversation: "conversations",
+  file: "files",
+  processed_document: "files",
+};
+
+/** Views that are not a search: capture, URL entry, voice, run toggles. They
+ *  stay their own commands in the bar (Raycast: commands beside results). */
+const COMMAND_VIEW_IDS: ReadonlySet<Exclude<ResourcePickerViewId, null>> = new Set([
+  "files",
+  "webpage",
+  "youtube",
+  "image_url",
+  "file_url",
+  "audio",
+  "google",
+  "tables",
+  "context_values",
+  "tools",
+  "skills",
+]);
 
 
 interface ResourcePickerMenuProps {
@@ -72,6 +104,20 @@ interface ResourcePickerMenuProps {
   selectionMode?: "single" | "multiple";
   /** Fill a definite-height host and let each drill-in own its scroll area. */
   fillHost?: boolean;
+  /** Open straight into one view (a host re-opening the picker at a command). */
+  initialView?: ResourcePickerViewId;
+  /**
+   * The host can re-open this picker at a view after it closed. When given,
+   * the picker's non-search views (Upload, URL entry, Voice, Tools…) appear as
+   * commands in the ⌘K bar its search row opens.
+   */
+  onReopenAt?: (view: Exclude<ResourcePickerViewId, null>) => void;
+  /**
+   * With `initialView`: Back from that view calls this instead of revealing
+   * the list — the composer's cascading + menu hosts each picker directly and
+   * closes its cascade on Back.
+   */
+  onExitInitialView?: () => void;
 }
 
 export function ResourcePickerMenu({
@@ -86,8 +132,18 @@ export function ResourcePickerMenu({
   allowedViewIds,
   selectionMode = "multiple",
   fillHost = false,
+  initialView = null,
+  onReopenAt,
+  onExitInitialView,
 }: ResourcePickerMenuProps) {
-  const [activeView, setActiveView] = useState<ResourcePickerViewId>(null);
+  const [activeView, setActiveView] = useState<ResourcePickerViewId>(initialView);
+  const goBack = () => {
+    if (initialView && onExitInitialView) {
+      onExitInitialView();
+      return;
+    }
+    setActiveView(null);
+  };
   const [currentUrl, setCurrentUrl] = useState<string>("");
   const openCloudBrowser = useOpenCloudBrowserCanvas();
   const dispatch = useAppDispatch();
@@ -106,6 +162,42 @@ export function ResourcePickerMenu({
     attachmentCapabilities,
     { conversationId, allowedViewIds },
   );
+  const visibleViewIds = new Set(
+    visibleCategories.flatMap((c) => c.items.map((i) => i.id)),
+  );
+
+  // The search step hands off to ⌘K: one search over everything, with
+  // "Attach to this chat" as the primary action for this composer.
+  const openKnowledgeBar = useOpenKnowledgeCommandBar();
+  const knowledgeAttach = useKnowledgeAttachTarget({
+    conversationId,
+    onResourceSelected,
+    label: "Attach here",
+    accepts: (hit) => {
+      const view = KNOWLEDGE_ATTACH_VIEW_FOR_ENTITY[hit.entity];
+      return Boolean(view && visibleViewIds.has(view));
+    },
+  });
+  const openKnowledgeSearch = () => {
+    const commands: KnowledgeCommand[] = onReopenAt
+      ? menuItems
+          .filter((item) => COMMAND_VIEW_IDS.has(item.id) && visibleViewIds.has(item.id))
+          .map((item) => ({
+            id: `picker:${item.id}`,
+            label: item.id === "files" ? "Upload or browse files" : item.label,
+            group: "Attach",
+            icon: item.icon as LucideIcon,
+            keywords: ["attach", "add", item.id],
+            run: () => onReopenAt(item.id),
+          }))
+      : [];
+    onClose();
+    openKnowledgeBar({
+      primaryAction: "attach",
+      ...(knowledgeAttach ? { attach: knowledgeAttach } : {}),
+      commands,
+    });
+  };
   /**
    * Attached Google files ride the reserved `__google_files` context key rather
    * than a `content[]` block, because the server side of this is a context
@@ -196,7 +288,7 @@ export function ResourcePickerMenu({
               }}
             />
           }
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
           selectionMode={selectionMode}
           fillHost={fillHost}
           onSelect={(selection) =>
@@ -220,7 +312,7 @@ export function ResourcePickerMenu({
       return (
         <ConversationReferencePicker
           currentConversationId={conversationId}
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
           onSelect={(conversation) => {
             // A reference is a RESOURCE, not prose (THE USER-INPUT LAW) — the
             // one writer lives in conversation-reference-context.ts.
@@ -239,7 +331,7 @@ export function ResourcePickerMenu({
     if (activeView === "notes") {
       return (
         <NotesResourcePicker
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
           onSelect={(note) => {
             void selectFromList({ type: "note", data: note });
           }}
@@ -250,7 +342,7 @@ export function ResourcePickerMenu({
     if (activeView === "tasks") {
       return (
         <TasksResourcePicker
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
           onSelect={(selection) => {
             void selectFromList(selection);
           }}
@@ -261,7 +353,7 @@ export function ResourcePickerMenu({
     if (activeView === "google") {
       return (
         <GoogleResourcePicker
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
           attachedFileIds={attachedGoogleFileIds}
           onSelect={(file) => attachGoogleFile(file)}
         />
@@ -271,7 +363,7 @@ export function ResourcePickerMenu({
     if (activeView === "workbooks") {
       return (
         <WorkbooksResourcePicker
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
           onSelect={(workbook) => {
             void selectFromList({
               type: "workbook",
@@ -285,7 +377,7 @@ export function ResourcePickerMenu({
     if (activeView === "documents") {
       return (
         <DocumentsResourcePicker
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
           onSelect={(document) => {
             void selectFromList({
               type: "document",
@@ -299,7 +391,7 @@ export function ResourcePickerMenu({
     if (activeView === "tables") {
       return (
         <TablesResourcePicker
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
           onSelect={(reference) => {
             void selectFromList({ type: "table", data: reference });
           }}
@@ -310,7 +402,7 @@ export function ResourcePickerMenu({
     if (activeView === "webpage") {
       return (
         <WebpageResourcePicker
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
           onSelect={(content) => {
             void selectOne({ type: "webpage", data: content });
           }}
@@ -323,7 +415,7 @@ export function ResourcePickerMenu({
     if (activeView === "youtube") {
       return (
         <YouTubeResourcePicker
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
           onSelect={(video) => {
             void selectOne({ type: "youtube", data: video });
           }}
@@ -335,7 +427,7 @@ export function ResourcePickerMenu({
     if (activeView === "image_url") {
       return (
         <ImageUrlResourcePicker
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
           onSelect={(imageData) => {
             void selectOne({ type: "image_url", data: imageData });
           }}
@@ -348,7 +440,7 @@ export function ResourcePickerMenu({
     if (activeView === "file_url") {
       return (
         <FileUrlResourcePicker
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
           onSelect={(fileData) => {
             void selectOne({ type: "file_url", data: fileData });
           }}
@@ -369,7 +461,7 @@ export function ResourcePickerMenu({
       return (
         <AudioResourcePicker
           conversationId={conversationId}
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
           onSelect={(audioData) => {
             void selectOne(audioData);
           }}
@@ -380,7 +472,7 @@ export function ResourcePickerMenu({
     if (activeView === "context_values") {
       return (
         <ContextValuesResourcePicker
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
           onSelect={(resource) => void selectFromList(resource)}
         />
       );
@@ -390,7 +482,7 @@ export function ResourcePickerMenu({
       return (
         <ToolsResourcePicker
           conversationId={conversationId}
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
         />
       );
     }
@@ -399,7 +491,7 @@ export function ResourcePickerMenu({
       return (
         <SkillsResourcePicker
           conversationId={conversationId}
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
         />
       );
     }
@@ -411,7 +503,7 @@ export function ResourcePickerMenu({
       <div className="flex flex-col">
         <ResourcePickerSubViewHeader
           title={currentResource?.label ?? "Resource"}
-          onBack={() => setActiveView(null)}
+          onBack={goBack}
         />
         <div className="py-8 text-center text-xs text-muted-foreground">
           Coming soon…
@@ -423,6 +515,17 @@ export function ResourcePickerMenu({
   // Main menu view
   return (
     <div className={cn("py-1", fillHost && "h-full overflow-y-auto")}>
+      <Button
+        variant="ghost"
+        size="sm"
+        data-testid="picker-knowledge-search"
+        className="group h-11 w-full justify-start rounded-none px-2 py-0 text-xs hover:bg-muted/60 lg:h-6"
+        onClick={openKnowledgeSearch}
+      >
+        <Search className="mr-1.5 h-3.5 w-3.5 shrink-0 text-primary" />
+        <span className="font-normal text-foreground">Search your knowledge…</span>
+        <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">⌘K</span>
+      </Button>
       {visibleCategories.map((category) => (
         <div key={category.category || "primary"} className="flex flex-col">
           {category.category ? (

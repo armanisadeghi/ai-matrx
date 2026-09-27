@@ -25,7 +25,7 @@ export function CrmRecordCopyButtons({
       size="xs"
       appearance="bare"
       className={cn(
-        "shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:focus-within:opacity-100",
+        "shrink-0 opacity-100 transition-opacity sm:pointer-fine:opacity-0 sm:focus-within:opacity-100",
         revealFrom === "section"
           ? "sm:group-hover/section:opacity-100"
           : "sm:group-hover/item:opacity-100",

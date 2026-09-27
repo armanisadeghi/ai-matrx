@@ -74,6 +74,9 @@ export function useJob(row: FeatureIntelligenceRow, ctx: JobContext) {
     if (ladder.loading) return "Checking";
     if (ladder.error) return "Unavailable";
     if (entry?.dropped_reason) return "Needs attention";
+    // An output warning never sets the choice aside (aidream 1363): it runs,
+    // but its output may not fit. Active-with-a-warning, never "set aside".
+    if (entry?.chose_holder && entry.output_warning) return row.decidedRung === rung ? "Active · may not fit" : "Set · may not fit";
     if (entry?.chose_holder) return row.decidedRung === rung ? "Active" : "Set";
     return "No choice";
   };
@@ -221,17 +224,20 @@ export function LadderChips({ row, job, className }: { row: FeatureIntelligenceR
       {RUNGS.map((rung, index) => {
         const isWinner = row.decidedRung === rung;
         const entry = job.ladder.rows.find((item) => item.rung === rung);
+        const warned = Boolean(entry?.chose_holder && !entry.dropped_reason && entry.output_warning);
         return (
           <span key={rung} className="inline-flex items-center gap-1.5">
             {index > 0 ? <span className="text-muted-foreground/50" aria-hidden>→</span> : null}
             <span
               className={cn(
                 "rounded-full border px-2 py-0.5",
-                isWinner
-                  ? "border-primary/40 bg-primary/5 font-medium text-primary"
-                  : "border-border text-muted-foreground",
+                warned
+                  ? cn("border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-300", isWinner && "font-medium")
+                  : isWinner
+                    ? "border-primary/40 bg-primary/5 font-medium text-primary"
+                    : "border-border text-muted-foreground",
               )}
-              title={entry?.dropped_reason ?? undefined}
+              title={entry?.dropped_reason ?? entry?.output_warning ?? undefined}
             >
               {RUNG_LABEL[rung]}: {job.rungState(rung)}
             </span>

@@ -92,11 +92,11 @@ export type MandateListHealth =
   // and these three say which rung was dropped to get there.
   | "org rung dropped"
   | "user rung dropped"
-  // 🚨 THE OUTPUT HALF OF THE CONTRACT (2026-09-08, FIX-R5). Its holder cannot
-  // produce the keys this job's consumers require — `enforced_holder_contract`
-  // keeps that half in force ALWAYS, so the assignment fails at run time. The
-  // list used to call this `ok` while the single-mandate admin page called the
-  // same holder broken, on the same screen (FIX-R4, walk finding 1).
+  // 🚨 THE OUTPUT HALF OF THE CONTRACT — A WARNING, NEVER A BLOCK (aidream
+  // 1363, "validation offers, never blocks"). The deciding holder does not
+  // declare every output key this job expects. It STILL RUNS as chosen; an
+  // answer that comes back without a required key stops that run with a plain
+  // error instead of saving half of it. `resolved_layer` names the chosen rung.
   | "output contract unmet"
   | "disabled";
 
@@ -114,7 +114,7 @@ export const HEALTH_EXPLANATION: Partial<Record<MandateListHealth, string>> = {
   "user rung dropped":
     "Your own choice for this job names an agent you cannot open, so it could not be used and the job runs the rung below. Pick an agent you have access to.",
   "output contract unmet":
-    "The agent fulfilling this job does not declare the structured output the job requires, so whatever reads this job's result cannot be produced and the run fails. Give that agent an output schema declaring the required keys, or assign an agent that already does.",
+    "The agent chosen for this job runs anyway, as chosen, but it does not declare every output key the job expects, so its output may not fit: an answer that comes back without a required key stops the job with a plain error instead of saving half of it. Give that agent an output schema declaring those keys, or pick one that already does.",
 };
 
 /**
@@ -155,7 +155,7 @@ export const HEALTH_META: Record<MandateListHealth, BadgeMeta> = {
   "version unreachable": { label: "Version unreachable", className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400" },
   "org rung dropped": { label: "Org choice dropped", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
   "user rung dropped": { label: "Your choice dropped", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
-  "output contract unmet": { label: "Output contract unmet", className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400" },
+  "output contract unmet": { label: "Output may not fit", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
   disabled: { label: "Disabled", className: "border-border/70 text-muted-foreground" },
 };
 
@@ -164,11 +164,10 @@ const UNKNOWN_CLASS = "border-border/70 text-muted-foreground";
 /** Every render of a rung badge goes through here. See the header. */
 export function layerMeta(value: string | null | undefined): BadgeMeta {
   // 🚨 NO RUNG DECIDES — and the screen says so, rather than crashing the row
-  // or (worse) picking a rung to show. `mnd_list_scoped` returns a NULL
-  // `resolved_layer` for a mandate whose own default holder fails the output
-  // half of its contract: the run door refuses it, so there is genuinely no
-  // answer to name. The `health` badge beside this one carries the reason and
-  // the remedy (HEALTH_EXPLANATION["output contract unmet"]).
+  // or (worse) picking a rung to show. Since aidream 1363 an output mismatch
+  // never causes this (the chosen rung runs with a warning, and is named); a
+  // NULL `resolved_layer` now only means the list genuinely has no answer to
+  // name. Kept defensive: a screen is absent or honest, never a crash.
   if (value === null || value === undefined || value === "") {
     return { label: "No rung decides", className: UNKNOWN_CLASS };
   }

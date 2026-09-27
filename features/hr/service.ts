@@ -2029,6 +2029,27 @@ export function upsertHrStructure(args: {
   );
 }
 
+/**
+ * Route 68's ONE write door — identity, address, EIN replacement and applicability
+ * declarations all land through `hr_employer_profile_update(p_payload)`.
+ *
+ * Verified from `pg_proc` 2026-09-27: gated by `hr._l1_settings_gate(org,
+ * 'hr_employer_profile', 'update')`; only the keys present in the payload change
+ * (`dba_name`/`entity_form`/`formation_state` null when sent blank); an EIN must match
+ * `NN-NNNNNNN`; `applicability_override` is stored verbatim as
+ * `applicability_basis.declared`. It carries NO version check. Returns
+ * `{ok, employer_profile_id, issued_artifacts_unchanged, audit_id}`.
+ */
+export function updateHrEmployerProfile(
+  payload: { organization_id: string } & Record<string, unknown>,
+): Promise<HrResult<HrWriteAck>> {
+  return callHrWrite(
+    "hr_employer_profile_update",
+    { p_payload: payload },
+    { envelope: true, whatFailed: "Saving the employer profile" },
+  );
+}
+
 // ── Pay-group assignment and the activation seeds ───────────────────────────
 //
 // Both doors are LIVE (`pg_proc`, 2026-08-26) and both used to have ZERO callers

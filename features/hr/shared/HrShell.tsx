@@ -63,7 +63,10 @@ export type HrShellProps = {
   children: ReactNode;
   /** A short page name. Rendered as a breadcrumb leaf, never as marketing copy. */
   title?: string;
-  /** One line saying what a person DOES here. Optional; omitted more often than not. */
+  /**
+   * One line saying what a person DOES here. Shown as the title's tooltip, never as a
+   * line under it — the title stands alone.
+   */
   description?: string;
   /** Page actions. They land in the header's right slot, never in the body. */
   actions?: ReactNode;
@@ -165,7 +168,7 @@ export function HrShell({
             <div className="px-4 pt-3 empty:hidden sm:px-6">
               <HrEmployerSubstitutionNotice />
             </div>
-            {crumbs.length > 0 || description ? (
+            {crumbs.length > 0 ? (
               <div className="px-4 pt-3 sm:px-6">
                 {crumbs.length > 0 ? (
                   <nav aria-label="Breadcrumb" className="min-w-0">
@@ -181,15 +184,19 @@ export function HrShell({
                               {crumb.label}
                             </Link>
                           ) : (
-                            <span className="truncate text-foreground">{crumb.label}</span>
+                            // The page's one-line purpose rides the title as a tooltip —
+                            // never a line under it (page-pass core 3: the title stands alone).
+                            <span
+                              className="truncate text-foreground"
+                              title={index === crumbs.length - 1 ? description : undefined}
+                            >
+                              {crumb.label}
+                            </span>
                           )}
                         </li>
                       ))}
                     </ol>
                   </nav>
-                ) : null}
-                {description ? (
-                  <p className="mt-1 text-xs text-muted-foreground">{description}</p>
                 ) : null}
               </div>
             ) : null}

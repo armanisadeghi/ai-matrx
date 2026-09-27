@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-27T07:28:13.937Z",
+  "generated_at": "2026-09-27T09:20:34.482Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -1970,6 +1970,12 @@
       "checksum": "c8ac14375e3dd83d6b00f2bde77b0c78c14c78535a4f38214846c5d6e4538f23",
       "applied_at": "2026-09-27 07:28:07.644066+00"
     },
+    "migrations/campaign/finalswitch_c_the_page_says_one_set_of_counts.sql": {
+      "source": "matrx-frontend",
+      "filename": "finalswitch_c_the_page_says_one_set_of_counts.sql",
+      "checksum": "f7905cc69f16d2e844bacdca37dfb4e0f5295a0004dc0ebe14e03ae5c97b5fc6",
+      "applied_at": "2026-09-27 09:20:32.68824+00"
+    },
     "migrations/campaign/finalswitch_one_press_switches_every_organization_and_one_undo_reverses_it.sql": {
       "source": "matrx-frontend",
       "filename": "finalswitch_one_press_switches_every_organization_and_one_undo_reverses_it.sql",
@@ -3746,6 +3752,12 @@
       "checksum": "68563e566da1e04f8938222892ff88d524f8d1cf0ea896c9e6130b7a81760ffe",
       "applied_at": "2026-09-27 05:26:52.880041+00"
     },
+    "migrations/campaign/scopeswt_an_organization_with_nothing_to_compare_is_ready.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopeswt_an_organization_with_nothing_to_compare_is_ready.sql",
+      "checksum": "bc15ac0b9926a0847462f9c2144dacc063109d7aeafc19b7a8c2d675fd59a152",
+      "applied_at": "2026-09-27 08:50:36.976336+00"
+    },
     "migrations/campaign/scopeswt_scopes_are_written_in_the_store_first.sql": {
       "source": "matrx-frontend",
       "filename": "scopeswt_scopes_are_written_in_the_store_first.sql",
@@ -3757,6 +3769,24 @@
       "filename": "scopeswt_the_scope_doors.sql",
       "checksum": "c60ffc2d655e377b79d145b5ffb13675a6d160b34e33c8cb0bfda996fd016b23",
       "applied_at": "2026-09-27 05:26:34.413525+00"
+    },
+    "migrations/campaign/scopeswt_the_scope_doors_decide_who_is_asking.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopeswt_the_scope_doors_decide_who_is_asking.sql",
+      "checksum": "177350dca9373f34b109e2be74e95ddb310fb6e2c66901bfb5ddb5a4ee9528c9",
+      "applied_at": "2026-09-27 09:15:46.914009+00"
+    },
+    "migrations/campaign/scopeswt_the_scopes_switch_presses_for_one_organization_or_all.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopeswt_the_scopes_switch_presses_for_one_organization_or_all.sql",
+      "checksum": "794db71eb45ada13b7df4bb2281a54bbef12c0d67957e235801357ac074c39e3",
+      "applied_at": "2026-09-27 08:50:24.506594+00"
+    },
+    "migrations/campaign/scopeswt_the_scopes_writers_census_is_recorded.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopeswt_the_scopes_writers_census_is_recorded.sql",
+      "checksum": "4b5af4b34bc4ee065d9dbdfbc912b980c08a2f32b1c147a11ae7d3c49f985a48",
+      "applied_at": "2026-09-27 08:50:44.621463+00"
     },
     "migrations/campaign/scr_a_field_can_point_at_a_platform_entity.sql": {
       "source": "matrx-frontend",

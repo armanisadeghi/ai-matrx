@@ -189,6 +189,17 @@ export function PartyRecordPage({ partyId }: Props) {
         right={
           party ? (
             <>
+              {/* Lowest priority first: on a narrow header RouteHeader folds
+                  Delete into its "…" overflow and keeps Send email visible.
+                  Never CSS-hidden — a phone must be able to delete too. */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void onDelete()}
+                className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                Delete
+              </Button>
               {/* 🚨 EMAILING A PERSON IS A FIRST-CLASS ACTION ON THE RECORD.
                   Until 2026-09-17 the only door to the Gmail compose window was
                   hidden behind the "Email" chip of the log-a-past-activity strip
@@ -213,14 +224,6 @@ export function PartyRecordPage({ partyId }: Props) {
               >
                 <Send className="mr-1 h-3.5 w-3.5" />
                 Send email
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => void onDelete()}
-                className="hidden h-7 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive sm:inline-flex"
-              >
-                Delete
               </Button>
             </>
           ) : undefined
@@ -269,7 +272,7 @@ export function PartyRecordPage({ partyId }: Props) {
           >
             <div
               className={cn(
-                "grid items-start gap-3",
+                "matrx-touch-targets grid items-start gap-3",
                 "lg:grid-cols-[minmax(280px,26rem)_1fr]",
               )}
             >

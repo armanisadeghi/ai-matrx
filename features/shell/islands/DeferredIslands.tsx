@@ -22,6 +22,10 @@ import { useIdleReady } from "@ai-matrx/kit/idle-scheduler";
 // core itself and only fetches that chunk once a canvas item exists, so we
 // import it statically here instead of stacking a second dynamic() around it.
 import { CanvasSideSheet } from "@/features/canvas/core/CanvasSideSheet";
+// ⌘K "Search your knowledge" — a keydown listener and the overlay opener,
+// nothing else. The bar itself loads behind the overlay controller's single
+// lazy edge the first time it opens.
+import CommandBarHotkey from "@/features/knowledge/command-bar/CommandBarHotkey";
 
 const WindowTraySync = dynamic(
   () => import("@/features/window-panels/WindowTraySync"),
@@ -37,6 +41,7 @@ export default function DeferredIslands() {
           while the shell is still settling, and an open footer must remain
           reachable even if no later resize event occurs. */}
       <WindowTraySync />
+      <CommandBarHotkey />
       {ready && <CanvasSideSheet />}
     </>
   );

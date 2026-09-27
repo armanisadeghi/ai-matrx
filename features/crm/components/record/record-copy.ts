@@ -4,7 +4,11 @@ import {
   buildModelSafeInteractionReference,
   readInboundClassification,
 } from "@/features/crm/inbox/attributes";
-import { MEDIUM_BLOCK_LABELS, mediumBlocks } from "@/features/crm/reachability";
+import {
+  MEDIUM_BLOCK_LABELS,
+  mediumBlocks,
+  mediumDisplay,
+} from "@/features/crm/reachability";
 import { partyKindWord } from "@/features/crm/party-words";
 import type {
   AddressRow,
@@ -110,7 +114,7 @@ export function buildContactPointCopyView(point: ContactPoint) {
   const blocks = mediumBlocks(point.medium);
   return {
     channel: point.channel,
-    value: point.medium.display_value ?? point.medium.value_raw,
+    value: mediumDisplay(point.medium).text,
     label: point.label,
     purpose: point.purpose_code,
     is_primary: Boolean(point.is_primary),

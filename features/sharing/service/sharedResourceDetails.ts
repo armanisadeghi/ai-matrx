@@ -124,6 +124,21 @@ export async function getResourceDetails(
           : null;
       }
 
+      // A MEETING INVITATION (features/meet invite panel). The link is the meeting's own
+      // durable `/meet/<slug>` — it works for anyone, in any organization, so it carries no
+      // `?org=`; the invitee's grant is what lets them skip the waiting room.
+      case "meet_meeting": {
+        const { data } = await supabase
+          .schema("communication")
+          .from("meet_meetings")
+          .select("title, slug")
+          .eq("id", resourceId)
+          .maybeSingle();
+        return data
+          ? { title: data.title || "Meeting", url: `${siteUrl}/meet/${data.slug}` }
+          : null;
+      }
+
       default:
         // No backing table is known for this resource type, so no organization is
         // known either. The helper is still the one that decides — it returns the link

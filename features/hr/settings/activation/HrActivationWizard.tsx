@@ -78,6 +78,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
+import { HR_ENTITY_FORMS } from "../employer/employer-profile-model";
 import { cn } from "@/lib/utils";
 import { getOrganizationMembers } from "@/features/organizations/service";
 import type { OrganizationMemberWithUser } from "@/features/organizations/types";
@@ -120,15 +121,8 @@ const COMMON_TIMEZONES = [
   "UTC",
 ];
 
-const ENTITY_FORMS = [
-  { value: "llc", label: "LLC" },
-  { value: "c_corp", label: "C corporation" },
-  { value: "s_corp", label: "S corporation" },
-  { value: "partnership", label: "Partnership" },
-  { value: "sole_proprietorship", label: "Sole proprietorship" },
-  { value: "nonprofit", label: "Nonprofit" },
-  { value: "government", label: "Government entity" },
-];
+/** One list, shared with the employer profile page (route 68). */
+const ENTITY_FORMS = HR_ENTITY_FORMS;
 
 type Draft = {
   legalName: string;

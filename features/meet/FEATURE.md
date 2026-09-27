@@ -16,7 +16,8 @@ chrome, and the routes.
 | `<CallButton>` — the one place a person is shown on messaging surfaces | [`../messaging/components/MessagingChrome.tsx`](../messaging/components/MessagingChrome.tsx) |
 | `<IncomingCallHost>` — mounted ONCE, directly | [`../../providers/MeetHost.tsx`](../../providers/MeetHost.tsx) |
 | The room, both lanes | [`components/MeetingSurface.tsx`](./components/MeetingSurface.tsx) |
-| Create a meeting, list every meeting incl. ended ones | [`components/MeetingsWorkspace.tsx`](./components/MeetingsWorkspace.tsx) → `/meetings` |
+| Create a meeting, list every meeting incl. ended ones | [`components/MeetingsWorkspace.tsx`](./components/MeetingsWorkspace.tsx) → `/meetings`; rows with Copy link + Invite in [`components/MeetingsList.tsx`](./components/MeetingsList.tsx) |
+| The Invite panel (link, invitation, calendar, invite people) | [`components/invite/`](./components/invite/) (`MeetingInviteButton`, `MeetingInviteDialog`); text + calendar event in [`lib/invitation.ts`](./lib/invitation.ts); calendar links/.ics in [`../../lib/calendar/eventLinks.ts`](../../lib/calendar/eventLinks.ts) |
 | The meeting RECORD after `ended_at` | the package's `<MeetingRecordView>`, routed to by `<MeetingRoom>` — nothing here |
 | Room ⇄ Board layout choice (connected phase only; per viewer, this browser) | [`components/MeetingLayout.tsx`](./components/MeetingLayout.tsx) |
 | The Board layout — spatial board + floating people strip + live meeting-notes tiles | [`components/board/`](./components/board/) (`MeetingBoard`, `PeopleStrip`, `MeetingNotesBodies`, `LayoutSwitch`) |
@@ -84,6 +85,32 @@ belonged (C22, THE SAME-SESSION LAW):
 If a future defect tempts a fifth wrapper, the answer is the same: fix it in the
 package, release, adopt — never a crossing in here.
 
+## The Invite panel (2026-09-27)
+
+One panel, opened from **Invite** in the room header (`headerControls`, both
+lanes), the top-right corner before joining (`MeetingLayout` `preJoinControls` —
+the package draws no header there), every open row of `/meetings`, and
+automatically right after **Create meeting**. It offers: the link with **Copy
+link** and **Share…** (`useShare`), a ready-to-paste **invitation** (title, time
+with zone and length, "recurring" note, link, "No account needed…") with Copy
+invitation and Email invitation (`mailto:`), **Add to calendar** (Google,
+Outlook, `.ics`) for a meeting with a time, and **Invite people by name**.
+
+Inviting by name IS the platform share system on the `meet_meeting` record —
+`ShareWithUserTab` + `PermissionsList` over `useSharing`, composed directly
+because `ShareModal`'s Public tab would mint a second `/s/<token>` link and the
+meeting link already is the public link. The invitee gets the share system's
+email + in-app message; an invited person skips the waiting room (server side,
+aidream). Only whoever `useIsOwner` says may grant sees the form; a guest or a
+non-host sees a sentence saying the host can, never a dead control. An email
+with no account gets the Email invitation (the table-only outside-share lane
+does not apply to meetings).
+
+The share notification's door: `meet_meeting.hrefFor` → `/meet/<id>`;
+`MeetingSurface` reads a uuid-shaped path as a meeting id and replaces the
+address with `/meet/<slug>`. The share email names `/meet/<slug>`
+(`features/sharing/service/sharedResourceDetails.ts`).
+
 ## The Board layout (2026-09-27)
 
 While connected, a person can swap the package's room for a **Board**: the
@@ -137,6 +164,13 @@ reader of an older tag will otherwise conclude the package is broken.
 
 ## Change log
 
+- **2026-09-27 — Invite panel.** Invite in the room header, the pre-join corner
+  and every `/meetings` row, opened automatically after Create meeting; link,
+  invitation, calendar, invite people through the share system. `/meetings`
+  renders its own list (`MeetingsList`, the package's `useMeetings` + classes)
+  because the package's `MeetingList` has no row actions. Guards:
+  `components/invite/MeetingInviteDialog.test.tsx`, `lib/invitation.test.ts`,
+  `lib/calendar/eventLinks.test.ts`.
 - **2026-09-27 — Board layout.** A Room | Board switch inside the connected
   meeting; the Board mounts the spatial engine with a live "Meeting notes"
   frame fed by `useMeetAi`, a draggable `ParticipantTile` strip (active speaker

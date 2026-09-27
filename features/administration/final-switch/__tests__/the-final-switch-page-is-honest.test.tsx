@@ -84,7 +84,7 @@ function board(kind: "blocked" | "after_copy" | "switched"): FinalSwitchBoard {
         ready: false,
       }),
     ],
-    totals: { organizations: 2, ready: 0, need_copy_again: 1, blocked: blocked ? 1 : 0 },
+    totals: { organizations: 3, ready: 0, to_switch: 2, nothing_to_switch: 1, need_copy_again: 1, blocked: blocked ? 1 : 0 },
     blocking: blocked ? [`The platform — Every older pick list belongs to an organization: ${BLOCKED_SAYS}`, "Harbor Dental Group — Data tables: automations"] : [],
     ready: false,
     readyAfterCopyAgain: !blocked,
@@ -173,6 +173,18 @@ test("switched: no press, the undo is offered, the last run is said", async () =
   expect(container.textContent).toContain("Switched everything to the new system: 24 organizations.");
   expect(byTestId("final-switch-copy-again")).toBeNull();
   expect(byTestId("final-switch-no-owner")!.textContent).toContain("Onboarding Checklist");
+});
+
+test("one set of counts: every number on the page names its set and they agree (VERIFIER-27)", async () => {
+  readFinalSwitch.mockResolvedValue(board("after_copy"));
+  await mount();
+  const counts = byTestId("final-switch-counts")!.textContent!;
+  expect(counts).toContain("2 switch at the press");
+  expect(counts).toContain("1 already on the new system or with nothing old left");
+  expect(counts).toContain("1 of the listed need Copy again first");
+  expect(container.textContent).toContain("3 organizations listed (anything old, or a switch pressed)");
+  expect(container.textContent).toContain("The 3 organizations listed (2 switch at the press)");
+  expect(container.textContent).not.toMatch(/Every organization is ready/);
 });
 
 test("the last rehearsal on the dev clone is on the page with its date", async () => {

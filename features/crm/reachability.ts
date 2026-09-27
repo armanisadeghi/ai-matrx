@@ -152,3 +152,50 @@ export function isSuppressionExpired(medium: ContactMediumRow): boolean {
     new Date(medium.suppression_expires_at).getTime() <= Date.now()
   );
 }
+
+/**
+ * THE ONE way a contact medium becomes the text a person reads.
+ *
+ * `display_value` is right for email and phone (a formatted number, a
+ * lowercased mailbox). For an identity on a platform (`external_id`, a social
+ * handle) it is the LOWERCASED dedupe key — a YouTube channel id
+ * `UC0DZj1PNa_Fp0MU6uPSKv5w` printed as `uc0dzj1pna_fp0mu6upskv5w`, which is
+ * no longer the id and names no platform. Those read the case-preserved raw
+ * value, name their platform, and carry the profile link when we have one.
+ */
+const PLATFORM_WORDS: Record<string, string> = {
+  youtube: "YouTube",
+  linkedin: "LinkedIn",
+  github: "GitHub",
+  tiktok: "TikTok",
+  twitter: "X",
+  x: "X",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  substack: "Substack",
+  medium: "Medium",
+};
+
+export interface MediumDisplay {
+  /** The value as a person reads it. */
+  text: string;
+  /** The platform it lives on ("YouTube"), when the medium names one. */
+  platform: string | null;
+  /** A link that opens the identity on its platform, when we hold one. */
+  href: string | null;
+}
+
+export function mediumDisplay(medium: ContactMediumRow): MediumDisplay {
+  const slug = medium.platform_slug?.trim() || null;
+  const platform = slug
+    ? (PLATFORM_WORDS[slug.toLowerCase()] ??
+      slug.charAt(0).toUpperCase() + slug.slice(1).replaceAll("_", " "))
+    : null;
+  const caseMatters = medium.channel !== "email" && medium.channel !== "phone";
+  const text =
+    (caseMatters
+      ? (medium.value_raw ?? medium.handle ?? medium.display_value)
+      : (medium.display_value ?? medium.value_raw)) ?? "";
+  const href = medium.profile_url?.startsWith("http") ? medium.profile_url : null;
+  return { text, platform, href };
+}

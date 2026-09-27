@@ -82,47 +82,13 @@ function useServiceQuery<T>(
 // Topic hooks
 // ============================================================================
 
-// Project filtering is ASSOCIATION-BACKED (research-project decoupling):
-// the service reads `research_topic → project` edges then does one batched
-// RLS-visible topic read. Signatures unchanged to limit blast radius.
-export function useTopicsForProject(projectId: string | undefined) {
-  return useServiceQuery<ResearchTopic[]>(
-    () => {
-      if (!projectId) return Promise.resolve([]);
-      return service.getTopicsForProject(projectId);
-    },
-    [projectId],
-    !!projectId,
-  );
-}
-
-export function useTopicsForProjects(projectIds: string[]) {
-  const key = projectIds.join(",");
-  return useServiceQuery<ResearchTopic[]>(
-    () => service.getTopicsForProjects(projectIds),
-    [key],
-    projectIds.length > 0,
-  );
-}
-
-/**
- * topicId → projectId from the canonical association edges, one batched read.
- * This is how list surfaces label a topic's project now that
- * `rs_topic.project_id` is dead — never read a column for this.
- */
-export function useTopicProjectLinks(topicIds: string[]) {
-  const key = topicIds.join(",");
-  return useServiceQuery<Record<string, string>>(
-    () => service.getTopicProjectLinks(topicIds),
-    [key],
-    topicIds.length > 0,
-  );
-}
+// The topics LIST (/research/topics) reads through the entity-list service in
+// `features/research/browse/service.ts` (scope, filters, project edges); the
+// per-project topic hooks that served the old card grid went with it.
 
 /**
  * Fetch ALL topics the caller can read. No hierarchy narrowing — RLS is the
- * only filter. Used by `TopicList` when no specific filter is selected so
- * that "All" really means "All".
+ * only filter. Used by the content plan's research-topic picker.
  */
 export function useAllTopics(enabled = true) {
   return useServiceQuery<ResearchTopic[]>(

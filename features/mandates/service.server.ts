@@ -171,5 +171,6 @@ export async function resolveMandateServer(
     // it has no drop to report. The browser's resolution on hydration carries
     // the real answer, drops included.
     droppedRungs: [],
+    outputWarnings: [],
   };
 }

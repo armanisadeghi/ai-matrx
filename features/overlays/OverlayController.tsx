@@ -925,6 +925,10 @@ const ReferencePickerOverlay = lazyOverlay(
   () => import("@/features/overlays/components/ReferencePickerOverlay"),
   { ssr: false },
 );
+const KnowledgeCommandBar = lazyOverlay(
+  () => import("@/features/knowledge/command-bar/KnowledgeCommandBar"),
+  { ssr: false },
+);
 const SurfaceContextInspectorWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/admin/SurfaceContextInspectorWindow"),
@@ -1491,6 +1495,9 @@ export default function OverlayController() {
     referencePicker: useAppSelector((s) =>
       selectIsOverlayOpen(s, "referencePicker"),
     ),
+    knowledgeCommandBar: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "knowledgeCommandBar"),
+    ),
     surfaceContextInspector: useAppSelector((s) =>
       selectIsOverlayOpen(s, "surfaceContextInspector"),
     ),
@@ -1940,6 +1947,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     referencePicker: useAppSelector((s) =>
       selectOverlayData(s, "referencePicker"),
+    ) as Record<string, unknown> | null,
+    knowledgeCommandBar: useAppSelector((s) =>
+      selectOverlayData(s, "knowledgeCommandBar"),
     ) as Record<string, unknown> | null,
     surfaceContextInspector: useAppSelector((s) =>
       selectOverlayData(s, "surfaceContextInspector"),
@@ -7401,6 +7411,31 @@ export default function OverlayController() {
                 : null
             }
             mode={data?.mode === "insert" ? "insert" : "copy"}
+          />
+        );
+      })()}
+
+      {/* knowledgeCommandBar — ⌘K "Search your knowledge" */}
+      {(() => {
+        const isOpen = isOpenById.knowledgeCommandBar;
+        const data = dataById.knowledgeCommandBar as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <KnowledgeCommandBar
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "knowledgeCommandBar" }))
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+            initialText={
+              typeof data?.initialText === "string" ? data.initialText : null
+            }
+            primaryAction={data?.primaryAction === "attach" ? "attach" : "open"}
           />
         );
       })()}

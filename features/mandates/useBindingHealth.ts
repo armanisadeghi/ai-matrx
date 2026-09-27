@@ -21,13 +21,13 @@
  *    problems`) and runs the SYSTEM DEFAULT instead. Verdict kind `dropped`:
  *    "your agent isn't running; the built-in one is."
  *
- * 1b. THE OUTPUT SIDE — BOTH ERAS, ALWAYS. `enforced_holder_contract` strips
- *    the input side for a provisioned mandate but keeps `required_output_keys`
- *    in force, so a holder that does not declare them is DROPPED in either era
- *    (164 of 365 live mandates declare them; 161 are provisioned). This half
- *    was missing until 2026-08-26, which meant the dominant failure mode
- *    rendered as a healthy "Yours". Checked first, and it outranks any input
- *    finding: if the server drops the binding, "your agent still runs" is false.
+ * 1b. THE OUTPUT SIDE — BOTH ERAS, A WARNING. A holder that does not declare
+ *    every `required_output_keys` key is NEVER dropped (aidream 1363,
+ *    "validation offers, never blocks"): it runs anyway, as chosen, but its
+ *    output may not fit — an answer that comes back without a required key
+ *    stops the job with a plain error instead of saving half of it. Verdict
+ *    kind `output_warning`: "your agent runs, but its output may not fit."
+ *    Checked first so the person hears it before any input finding.
  *
  * 2. PROVISION mandate (`provision_key` set — the normal case since
  *    2026-08-22). The holder is NEVER checked against the input side; the
@@ -79,11 +79,15 @@ export interface BindingVerdict {
   /** False = something the user set up is not happening as they believe. */
   passing: boolean;
   /**
-   * dropped      — legacy rule failed; the server runs the SYSTEM DEFAULT.
-   * stale_inputs — provision rule failed; the bound agent still runs but the
-   *                named values no longer reach it.
+   * dropped        — legacy input rule failed; the server runs the SYSTEM
+   *                  DEFAULT.
+   * stale_inputs   — provision rule failed; the bound agent still runs but
+   *                  the named values no longer reach it.
+   * output_warning — the bound agent does not declare every output key the
+   *                  job expects. It STILL RUNS as chosen; an answer missing a
+   *                  required key stops with a plain error (aidream 1363).
    */
-  kind: "dropped" | "stale_inputs";
+  kind: "dropped" | "stale_inputs" | "output_warning";
   /** Contract names (legacy) or consumed-but-no-longer-offered values
    * (provision) — what the user must fix. */
   missing: string[];
@@ -92,8 +96,9 @@ export interface BindingVerdict {
   checking: boolean;
   /** The agent could not be read at all (deleted, or no longer shared). */
   unreadable: boolean;
-  /** True when the failure is the OUTPUT contract (the agent does not produce
-   * the keys this job's consumers require) rather than the input side. */
+  /** True when the finding is the OUTPUT contract (the agent does not declare
+   * the keys this job's consumers require) rather than the input side. A
+   * warning on a binding that runs — never a drop. */
   outputSide?: boolean;
 }
 
@@ -163,13 +168,13 @@ export function useBindingHealth(
     // store, so the memo must recompute once the fetches settle.
     void checkedAt;
     for (const ref of refs) {
-      // OUTPUT SIDE FIRST — enforced in both eras, and a failure here means the
-      // server DROPS the binding, which outranks any input-side finding.
+      // OUTPUT SIDE FIRST — both eras. A finding here is a WARNING: the
+      // binding still runs (aidream 1363), but its output may not fit.
       if (ref.contract.requiredOutputKeys.length > 0) {
         if (!outputChecked) {
           out[ref.mandateId] = {
             passing: true,
-            kind: "dropped",
+            kind: "output_warning",
             missing: [],
             layer: ref.layer,
             checking: true,
@@ -184,7 +189,7 @@ export function useBindingHealth(
         if (missingOut.length > 0) {
           out[ref.mandateId] = {
             passing: false,
-            kind: "dropped",
+            kind: "output_warning",
             missing: missingOut,
             layer: ref.layer,
             checking: false,

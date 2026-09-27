@@ -70,6 +70,7 @@ const SURFACE_SLUG_TO_FEATURE: Record<string, SourceFeature> = {
   "education-fastfire": "education-fastfire",
   "education-planner": "education-planner",
   "education-classes": "education-planner",
+  "hr-employer": "hr",
   "education-mind-maps": "education-mindmap",
   "education-quizzes": "education-assessment",
   "education-practice-tests": "education-assessment",

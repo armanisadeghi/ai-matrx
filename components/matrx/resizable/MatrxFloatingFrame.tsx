@@ -106,6 +106,16 @@ export interface MatrxFloatingFrameProps {
   contentClassName?: string;
   /** Move focus into the body on open, and back to the opener on close. */
   initialFocus?: boolean;
+  /**
+   * CONTAINER-BOUNDED mode. When set, the window lives INSIDE this element
+   * instead of over the whole viewport: it portals into it (position
+   * absolute — the element must be positioned), centres in it on open, and
+   * is dragged and clamped within its box (it follows the box when it
+   * resizes). Used by the canvas workspace's floating chat, which belongs to
+   * the canvas region, not the window. `null` = the element is not mounted
+   * yet; the frame waits for it. Omit for the viewport-wide default.
+   */
+  container?: HTMLElement | null;
 }
 
 const FIELD_SELECTOR = [
@@ -185,7 +195,9 @@ export function MatrxFloatingFrame({
   className,
   contentClassName = "px-4 py-3",
   initialFocus = true,
+  container,
 }: MatrxFloatingFrameProps) {
+  const bounded = container !== undefined;
   const dispatch = useAppDispatch();
   const zIndex = useAppSelector(selectTransientZIndex(id));
   const isNarrow = useIsMobile();
@@ -228,8 +240,12 @@ export function MatrxFloatingFrame({
   const view = clampRect(rect, viewport.w, viewport.h);
 
   useEffect(() => {
+    if (bounded) {
+      setPortalTarget(container ?? null);
+      return;
+    }
     setPortalTarget(document.getElementById("glass-layer") ?? document.body);
-  }, []);
+  }, [bounded, container]);
 
   // Join the shared z-order on mount, leave it on unmount.
   useEffect(() => {
@@ -253,6 +269,24 @@ export function MatrxFloatingFrame({
    */
   useLayoutEffect(() => {
     if (typeof window === "undefined") return undefined;
+    if (bounded) {
+      // Bounded: the "viewport" is the container's box.
+      if (!container) return undefined;
+      const measure = () => ({ w: container.clientWidth, h: container.clientHeight });
+      const box = measure();
+      setViewport(box);
+      if (!placed) {
+        setRect((current) => ({
+          ...current,
+          x: Math.round((box.w - current.width) / 2),
+          y: Math.round(Math.max(VIEWPORT_PADDING, (box.h - current.height) / 2.4)),
+        }));
+        setPlaced(true);
+      }
+      const observer = new ResizeObserver(() => setViewport(measure()));
+      observer.observe(container);
+      return () => observer.disconnect();
+    }
     if (!placed) {
       setRect((current) => ({
         ...current,
@@ -267,7 +301,7 @@ export function MatrxFloatingFrame({
       setViewport({ w: window.innerWidth, h: window.innerHeight });
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [placed]);
+  }, [placed, bounded, container]);
 
   // Escape closes the TOPMOST lite window, and only when no inner dismissable
   // layer is holding the key.
@@ -417,7 +451,9 @@ export function MatrxFloatingFrame({
 
   const frameClass = isNarrow
     ? "fixed inset-x-0 bottom-0 max-h-[88dvh] rounded-t-xl border-t"
-    : "fixed rounded-xl border";
+    : bounded
+      ? "absolute rounded-xl border"
+      : "fixed rounded-xl border";
 
   const canDismiss = !dismissDisabled;
 

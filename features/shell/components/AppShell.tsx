@@ -24,6 +24,8 @@ import NavActiveSync from "@/features/shell/components/NavActiveSync";
 import MobileMenuPathSync from "@/features/shell/components/MobileMenuPathSync";
 import VisualViewportSync from "@/features/shell/components/VisualViewportSync";
 import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCookieSync";
+import { ShellChromeRouteSync } from "@/features/shell/components/ShellChromeMode";
+import { shellChromeAttributes } from "@/features/shell/constants/canvas-chrome-routes";
 import DeferredIslands from "@/features/shell/islands/DeferredIslands";
 import type { UserData } from "@/utils/userDataMapper";
 import type { BaseReduxState } from "@/types/reduxTypes";
@@ -61,6 +63,7 @@ export default function AppShell({
         <div
           className="shell-root"
           data-pathname={pathname}
+          {...shellChromeAttributes(pathname)}
           {...(settingsRoute ? { "data-settings-route": "" } : {})}
           {...(FORCE_EXCLUDE_SIDEMENU ? { "data-no-sidebar": "" } : {})}
         >
@@ -97,6 +100,7 @@ export default function AppShell({
       <MobileMenuPathSync />
       <VisualViewportSync />
       <ShellSidebarCookieSync />
+      <ShellChromeRouteSync />
       {/* Active-organization hydration is owned by the sync engine
           (`appContextPolicy`, registered in lib/sync/registry) — it rehydrates
           the org from cache before first paint and reconciles via remote.fetch.

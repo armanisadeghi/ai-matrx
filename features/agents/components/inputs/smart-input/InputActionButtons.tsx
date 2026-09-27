@@ -49,6 +49,10 @@ import {
   cancelExecution,
 } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { setAutoClearMode } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
+import { selectInputCharCount } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { selectHasUnsentResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+import { MicDeviceMenu } from "@/components/audio/MicDeviceMenu";
+import type { ComposerMode, ComposerSize } from "./composer/composer-types";
 
 // ── Inline button primitive ──────────────────────────────────────────────────
 
@@ -108,6 +112,21 @@ interface InputActionButtonsProps {
   onVoiceBusyChange?: (busy: boolean) => void;
   extraRightControls?: React.ReactNode;
   onRequestInputExpand?: () => void;
+  /**
+   * The three-mode composer's arrangement (composer/composer-types.ts). The
+   * SAME buttons — send / queue / steer / stop, the mic, the + — arranged as
+   * the design draws them:
+   *   splash · page — `+` left; dictate · voice ▾ · send right (in the card);
+   *   compact       — `+` · dictate · voice ▾ left; `trailing` (agent pill ·
+   *                   Auto) · send right (the row under the card).
+   * Send appears when there is something to send (brief §2). Absent = the
+   * classic toolbar, unchanged.
+   */
+  composer?: {
+    size: ComposerSize;
+    mode: ComposerMode;
+    trailing?: React.ReactNode;
+  };
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -123,6 +142,7 @@ export function InputActionButtons({
   onVoiceBusyChange,
   extraRightControls,
   onRequestInputExpand,
+  composer,
 }: InputActionButtonsProps) {
   const dispatch = useAppDispatch();
   const [voiceBusy, setVoiceBusy] = useState(false);
@@ -178,6 +198,140 @@ export function InputActionButtons({
     sendButtonVariant === "blue"
       ? "h-11 w-11 lg:h-9 lg:w-9 p-0 shrink-0 rounded-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-30 disabled:shadow-none text-white shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_1px_2px_0_rgba(0,0,0,0.25)]"
       : "h-11 w-11 lg:h-9 lg:w-9 p-0 shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90 disabled:opacity-25 disabled:shadow-none shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_1px_2px_0_rgba(0,0,0,0.25)]";
+
+  const charCount = useAppSelector(selectInputCharCount(conversationId));
+  const hasUnsentResources = useAppSelector(
+    selectHasUnsentResources(conversationId),
+  );
+
+  const micButton = showMicrophone ? (
+    <AgentMicrophoneButton
+      conversationId={conversationId}
+      size="md"
+      label="Record audio"
+      className={INPUT_BUTTON_IDLE_TINT}
+      iconClassName=""
+      onRecordingStateChange={handleVoiceBusyChange}
+    />
+  ) : null;
+
+  const stopButton =
+    showSendButton && isExecuting ? (
+      <Button
+        onClick={handleStop}
+        className="h-11 w-11 lg:h-9 lg:w-9 p-0 shrink-0 rounded-full bg-muted text-foreground hover:bg-destructive/15 hover:text-destructive"
+        tabIndex={-1}
+        title="Stop the run (everything streamed so far is kept)"
+        aria-label="Stop the run"
+      >
+        <CircleStop className="w-4 h-4" />
+      </Button>
+    ) : null;
+
+  const sendButton = showSendButton ? (
+    <Button
+      onClick={handleSend}
+      disabled={isSendDisabled}
+      className={sendBtnClass}
+      tabIndex={-1}
+      title={
+        isExecuting
+          ? "Queue message — sends when the agent finishes (⌘Enter steers in now, ⌘⇧Enter interrupts)"
+          : voiceBusy
+            ? "Finish recording to send"
+            : "Send Message"
+      }
+      // An icon-only control needs a NAME, not just a hover tooltip: a
+      // screen reader reads "button" and nothing else, and a title=
+      // attribute is not an accessible name here. Live review, 2026-09-15:
+      // the loaded-chat composer's send control had title="Send Message"
+      // and no aria-label at all while the new-chat composer did — the
+      // same button, two different stories. Guard:
+      // __tests__/composer-controls-are-named.test.tsx.
+      aria-label={
+        isExecuting
+          ? "Queue message"
+          : voiceBusy
+            ? "Finish recording to send"
+            : "Send message"
+      }
+    >
+      <ArrowUp className="w-5 h-5" />
+    </Button>
+  ) : null;
+
+  const liveAudioButton = showSendButton ? (
+    <InputButton
+      icon={AudioLines}
+      tooltip="Live audio"
+      // A button that promises a live voice session and does literally
+      // nothing is worse than no button. Until the session exists it
+      // keeps the tracked promise instead (lib/coming-soon/registry.ts).
+      onClick={() => void announceComingSoon("chat.live-audio")}
+    />
+  ) : null;
+
+  // A form of variables stays reachable in every arrangement (never stranded).
+  const variablesToggle =
+    shouldShowVariables && showVariableIcon ? (
+      <InputButton
+        icon={Braces}
+        tooltip={showVariablePanel ? "Hide Form Inputs" : "Show Form Inputs"}
+        onClick={() => dispatch(toggleVariablePanel(conversationId))}
+        active={showVariablePanel}
+      />
+    ) : null;
+
+  if (composer) {
+    const compact = composer.size === "compact";
+    // Send appears when there is something to send (brief §2): text, an
+    // attachment not yet sent, or a form of variables to submit.
+    const hasSendable =
+      charCount > 0 || hasUnsentResources || shouldShowVariables;
+    const plusMenu = (
+      <RunControlsMenu
+        conversationId={conversationId}
+        variant="plus"
+        includeAttach={showAttachments}
+        side={composer.size === "splash" ? "bottom" : "top"}
+        onRequestInputExpand={onRequestInputExpand}
+        composer={{ mode: composer.mode, size: composer.size }}
+      />
+    );
+    const voice = showMicrophone ? (
+      <span className="inline-flex items-center">
+        {liveAudioButton}
+        <MicDeviceMenu className={INPUT_BUTTON_IDLE_TINT} />
+      </span>
+    ) : (
+      liveAudioButton
+    );
+    return (
+      <div
+        className={
+          compact
+            ? "flex min-w-0 items-center justify-between gap-1 shrink-0"
+            : "flex min-w-0 items-center justify-between px-1 shrink-0"
+        }
+      >
+        <div className="flex min-w-0 items-center gap-0.5">
+          {plusMenu}
+          <DesktopPresenceIndicator conversationId={conversationId} />
+          {variablesToggle}
+          {compact ? micButton : null}
+          {compact ? voice : null}
+        </div>
+        <div className="flex min-w-0 items-center gap-0.5">
+          {extraRightControls}
+          {composer.trailing}
+          {compact ? null : micButton}
+          {compact ? null : voice}
+          {stopButton}
+          {hasSendable || isExecuting ? sendButton : null}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-between px-1 shrink-0">
@@ -252,71 +406,13 @@ export function InputActionButtons({
           />
         )}
 
-        {showMicrophone && (
-          <AgentMicrophoneButton
-            conversationId={conversationId}
-            size="md"
-            label="Record audio"
-            className={INPUT_BUTTON_IDLE_TINT}
-            iconClassName=""
-            onRecordingStateChange={handleVoiceBusyChange}
-          />
-        )}
+        {micButton}
 
-        {showSendButton && isExecuting && (
-          <Button
-            onClick={handleStop}
-            className="h-11 w-11 lg:h-9 lg:w-9 p-0 shrink-0 rounded-full bg-muted text-foreground hover:bg-destructive/15 hover:text-destructive"
-            tabIndex={-1}
-            title="Stop the run (everything streamed so far is kept)"
-            aria-label="Stop the run"
-          >
-            <CircleStop className="w-4 h-4" />
-          </Button>
-        )}
+        {stopButton}
 
-        {showSendButton && (
-          <Button
-            onClick={handleSend}
-            disabled={isSendDisabled}
-            className={sendBtnClass}
-            tabIndex={-1}
-            title={
-              isExecuting
-                ? "Queue message — sends when the agent finishes (⌘Enter steers in now, ⌘⇧Enter interrupts)"
-                : voiceBusy
-                  ? "Finish recording to send"
-                  : "Send Message"
-            }
-            // An icon-only control needs a NAME, not just a hover tooltip: a
-            // screen reader reads "button" and nothing else, and a title=
-            // attribute is not an accessible name here. Live review, 2026-09-15:
-            // the loaded-chat composer's send control had title="Send Message"
-            // and no aria-label at all while the new-chat composer did — the
-            // same button, two different stories. Guard:
-            // __tests__/composer-controls-are-named.test.tsx.
-            aria-label={
-              isExecuting
-                ? "Queue message"
-                : voiceBusy
-                  ? "Finish recording to send"
-                  : "Send message"
-            }
-          >
-            <ArrowUp className="w-5 h-5" />
-          </Button>
-        )}
+        {sendButton}
 
-        {showSendButton && (
-          <InputButton
-            icon={AudioLines}
-            tooltip="Live audio"
-            // A button that promises a live voice session and does literally
-            // nothing is worse than no button. Until the session exists it
-            // keeps the tracked promise instead (lib/coming-soon/registry.ts).
-            onClick={() => void announceComingSoon("chat.live-audio")}
-          />
-        )}
+        {liveAudioButton}
       </div>
     </div>
   );

@@ -27,6 +27,7 @@ import {
   ClipboardType,
   FileAudio,
   Globe,
+  Layers,
   Link2,
   Loader2,
   Paperclip,
@@ -892,6 +893,14 @@ export function SourcesPage() {
       <RagHubHeader
         right={
           <>
+            {/* KNOWLEDGE-HUB §6: this page keeps working until H6 retires it
+                behind its parity checklist; the hub already lists every Source. */}
+            <TapTargetButton
+              icon={<Layers className="h-4 w-4" />}
+              ariaLabel="Open in the Knowledge hub"
+              label="Open in the Knowledge hub"
+              href="/knowledge?view=kind:processed_document&types=processed_document"
+            />
             <input
               id="sources-upload-input"
               type="file"

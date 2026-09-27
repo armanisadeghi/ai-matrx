@@ -19,11 +19,13 @@
 // the database's own words), and the SCOPE is the home's. This module turns
 // those two facts into the words on the screen and derives nothing else.
 
-/** The door's discriminator — `mandate._rungs`' 22nd column (aidream 0599). */
-export type DroppedCode =
-  | "platform_disabled"
-  | "holder_unreachable"
-  | "output_contract_unmet";
+/**
+ * The door's discriminator — `mandate._rungs`' 22nd column (aidream 0599).
+ * Since aidream 1363 ("validation offers, never blocks") an output mismatch is
+ * NEVER a drop: the chosen rung decides and runs, and the mismatch arrives as
+ * `output_warning` instead. So only these two remain.
+ */
+export type DroppedCode = "platform_disabled" | "holder_unreachable";
 
 export interface SystemRungHealth {
   /** What is true, in one sentence. Never a hedge, never a euphemism. */
@@ -32,6 +34,12 @@ export interface SystemRungHealth {
   remedy: string | null;
   /** `true` when the system answer cannot run as written. */
   broken: boolean;
+  /**
+   * `true` when the answer RUNS but carries the door's output warning: the
+   * chosen Holder does not declare every output key the job expects. A
+   * warning, never a break — it is shown amber, and it still decides.
+   */
+  warning?: boolean;
 }
 
 export interface HomeScope {
@@ -50,6 +58,12 @@ export interface SystemRungFacts {
    */
   droppedCode: DroppedCode | string | null;
   droppedReason: string | null;
+  /**
+   * The door's output warning (aidream 1363 `output_warning`), VERBATIM — set
+   * when the rung decides and runs but its Holder does not declare every
+   * output key the job expects. `null`/absent when there is nothing to warn.
+   */
+  outputWarning?: string | null;
   /** Who the rung names, for the healthy sentence. */
   holderName: string | null;
   holderIsWorkflow: boolean;
@@ -74,8 +88,6 @@ export function homeScopePhrase(home: HomeScope): string {
 /** The remedy for each thing the door can say. One sentence, always an action. */
 function remedyFor(code: string): string | null {
   switch (code) {
-    case "output_contract_unmet":
-      return "Assign a Mandate Holder that declares the output this job requires, or give this one that output schema.";
     case "holder_unreachable":
       return "Assign a Mandate Holder the organization this job answers for can open.";
     case "platform_disabled":
@@ -129,6 +141,15 @@ export function systemRungHealth(facts: SystemRungFacts): SystemRungHealth {
       ? `The workflow "${facts.holderName}"`
       : "The assigned workflow"
     : (facts.holderName ?? "The assigned agent");
+  if (facts.outputWarning) {
+    return {
+      // It still answers — say so first, then the door's own warning.
+      sentence: `${who} answers this job for ${scope}. ${facts.outputWarning}`,
+      remedy: null,
+      broken: false,
+      warning: true,
+    };
+  }
   return {
     sentence: `${who} answers this job for ${scope}.`,
     remedy: null,

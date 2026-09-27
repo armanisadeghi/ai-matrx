@@ -52,12 +52,19 @@ export function ContractMismatchNotice({
   const headline = check?.summary
     ? check.summary
     : "This Mandate Holder does not match the job's contract. You can still save it.";
+  // A saved check that still RUNS (aidream 1363: output-key / kind mismatches
+  // are never set aside) is a warning — amber. Red stays for what is set aside.
+  const runsAnyway = Boolean(check && !check.setAsideAtRun);
   return (
     <div
       role="alert"
       data-testid="contract-mismatch-notice"
+      data-runs-anyway={runsAnyway ? "true" : undefined}
       className={cn(
-        "flex items-start gap-2 rounded-xl border border-destructive/50 bg-destructive/10 px-3 py-2 text-[12px] leading-relaxed text-destructive",
+        "flex items-start gap-2 rounded-xl border px-3 py-2 text-[12px] leading-relaxed",
+        runsAnyway
+          ? "border-amber-500/50 bg-amber-500/10 text-amber-800 dark:text-amber-200"
+          : "border-destructive/50 bg-destructive/10 text-destructive",
         className,
       )}
     >
@@ -78,7 +85,7 @@ export function ContractMismatchNotice({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 gap-1.5 border-destructive/40 text-[11.5px]"
+            className={cn("h-7 gap-1.5 text-[11.5px]", runsAnyway ? "border-amber-500/40" : "border-destructive/40")}
             onClick={() => void announceComingSoon("mandates.holder-auto-heal")}
           >
             <INTELLIGENCE_ICON className="h-3.5 w-3.5" />

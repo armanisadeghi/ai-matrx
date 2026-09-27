@@ -22,6 +22,8 @@ import GlassPortal from "@/features/shell/components/GlassPortal";
 import NavActiveSync from "@/features/shell/components/NavActiveSync";
 import VisualViewportSync from "@/features/shell/components/VisualViewportSync";
 import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCookieSync";
+import { ShellChromeRouteSync } from "@/features/shell/components/ShellChromeMode";
+import { shellChromeAttributes } from "@/features/shell/constants/canvas-chrome-routes";
 import { readSidebarExpandedCookie } from "@/features/shell/utils/server-cookies";
 import DeferredIslands from "@/features/shell/islands/DeferredIslands";
 import type { UserData } from "@/utils/userDataMapper";
@@ -121,7 +123,11 @@ export default async function AppLayout({
 
   return (
     <Providers initialReduxState={initialReduxState}>
-      <div className="shell-root" data-pathname={pathname}>
+      <div
+        className="shell-root"
+        data-pathname={pathname}
+        {...shellChromeAttributes(pathname)}
+      >
         <input
           type="checkbox"
           id="shell-sidebar-toggle"
@@ -152,6 +158,7 @@ export default async function AppLayout({
       <NavActiveSync />
       <VisualViewportSync />
       <ShellSidebarCookieSync />
+      <ShellChromeRouteSync />
       <DeferredIslands />
     </Providers>
   );

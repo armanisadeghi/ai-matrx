@@ -341,9 +341,10 @@ describe("the version selector exposes unavailable states", () => {
 });
 
 /* ── (b) A DROPPED RUNG IS NEVER HEALTHY (V-PARITY/UX F2) ────────────────── */
+/*     … and an OUTPUT WARNING IS NEVER A DROP (aidream 1363).                 */
 
-/** The exact shape production served: holder LIVE, rung dropped anyway. */
-const OUTPUT_CONTRACT_DROP: MandateLadderRow = {
+/** A rung the door dropped although its holder reads as LIVE. */
+const DROPPED_LIVE_HOLDER: MandateLadderRow = {
   rung: "system",
   binding_id: null,
   organization_id: "39c38960-d30c-4840-b0c1-c9960de95582",
@@ -361,30 +362,37 @@ const OUTPUT_CONTRACT_DROP: MandateLadderRow = {
   definition_id: "59325dc2-4df9-4eb1-8d77-d4dd0d93a160",
   definition_enabled: true,
   fallback_mandate_key: null,
-  dropped_code: "output_contract_unmet",
+  dropped_code: "holder_unreachable",
   dropped_reason:
-    "The system default cannot run this job: its holder does not declare the structured output this job requires.",
+    "The system default cannot run this job: the organization this job answers for cannot open its holder.",
+};
+
+/** The shape aidream 1363 serves for an output mismatch: it DECIDES and RUNS. */
+const OUTPUT_WARNED: MandateLadderRow = {
+  ...DROPPED_LIVE_HOLDER,
+  dropped_code: null,
+  dropped_reason: null,
+  output_warning:
+    "The agent chosen here does not declare the output key(s) slides this job expects. It runs anyway, as chosen, but its output may not fit: if an answer comes back without that key, the job stops with a plain error instead of saving half an answer. Give that agent an output schema declaring it, or pick one that already does.",
+  output_missing_keys: ["slides"],
 };
 
 describe("a rung the database dropped is never rendered as a working rung", () => {
   it("is BROKEN even though its holder and its version are both live", () => {
-    expect(OUTPUT_CONTRACT_DROP.holder_live).toBe(true);
-    expect(OUTPUT_CONTRACT_DROP.version_live).toBeNull();
+    expect(DROPPED_LIVE_HOLDER.holder_live).toBe(true);
+    expect(DROPPED_LIVE_HOLDER.version_live).toBeNull();
     // RED before FIX-R9: `ladderRowIsBroken` keyed on those two columns only.
-    expect(ladderRowIsBroken(OUTPUT_CONTRACT_DROP)).toBe(true);
+    expect(ladderRowIsBroken(DROPPED_LIVE_HOLDER)).toBe(true);
   });
 
   it("prints the database's own sentence, not the client's cheerful one", () => {
-    const words = ladderRowWords(OUTPUT_CONTRACT_DROP, null);
-    expect(words.detail).toBe(OUTPUT_CONTRACT_DROP.dropped_reason);
-    // The exact sentence a walker read on production above a dropped floor.
-    expect(words.detail).not.toBe(
-      "Names an agent, running its latest version.",
-    );
+    const words = ladderRowWords(DROPPED_LIVE_HOLDER, null);
+    expect(words.detail).toBe(DROPPED_LIVE_HOLDER.dropped_reason);
+    expect(words.detail).not.toBe("Names an agent, running its latest version.");
   });
 
   it("still says the honest thing on a database that has no such column", () => {
-    const older = { ...OUTPUT_CONTRACT_DROP };
+    const older = { ...DROPPED_LIVE_HOLDER };
     delete (older as { dropped_code?: string | null }).dropped_code;
     delete (older as { dropped_reason?: string | null }).dropped_reason;
     expect(ladderRowIsBroken(older)).toBe(false);
@@ -396,18 +404,49 @@ describe("a rung the database dropped is never rendered as a working rung", () =
   it("the system rung's verdict is the door's words and a remedy for its code", () => {
     const health = systemRungHealth({
       status: "read",
-      droppedCode: OUTPUT_CONTRACT_DROP.dropped_code ?? null,
-      droppedReason: OUTPUT_CONTRACT_DROP.dropped_reason ?? null,
+      droppedCode: DROPPED_LIVE_HOLDER.dropped_code ?? null,
+      droppedReason: DROPPED_LIVE_HOLDER.dropped_reason ?? null,
       holderName: "Research → Slides Generator",
       holderIsWorkflow: false,
       holderSet: true,
       home: { systemHomed: true, organizationName: null },
     });
-    expect(health.sentence).toBe(OUTPUT_CONTRACT_DROP.dropped_reason);
+    expect(health.sentence).toBe(DROPPED_LIVE_HOLDER.dropped_reason);
     expect(health.broken).toBe(true);
-    expect(health.remedy).toContain(
-      "Assign a Mandate Holder that declares the output this job requires",
+    expect(health.remedy).toContain("can open");
+  });
+});
+
+describe("an output warning is a rung that RUNS, never a broken one (aidream 1363)", () => {
+  it("is not broken", () => {
+    // RED on the old rule: an output mismatch arrived as a dropped_code and
+    // `ladderRowIsBroken` called the rung broken.
+    expect(ladderRowIsBroken(OUTPUT_WARNED)).toBe(false);
+  });
+
+  it("says the door's warning sentence, which says it runs anyway", () => {
+    const words = ladderRowWords(OUTPUT_WARNED, null);
+    expect(words.detail).toBe(OUTPUT_WARNED.output_warning);
+    expect(words.detail).toContain("It runs anyway");
+  });
+
+  it("the system rung reads as answering, with the warning — amber, not broken", () => {
+    const health = systemRungHealth({
+      status: "read",
+      droppedCode: null,
+      droppedReason: null,
+      outputWarning: OUTPUT_WARNED.output_warning ?? null,
+      holderName: "Research → Slides Generator",
+      holderIsWorkflow: false,
+      holderSet: true,
+      home: { systemHomed: true, organizationName: null },
+    });
+    expect(health.broken).toBe(false);
+    expect(health.warning).toBe(true);
+    expect(health.sentence).toContain(
+      "Research → Slides Generator answers this job for every user on the platform.",
     );
+    expect(health.sentence).toContain("It runs anyway");
   });
 });
 

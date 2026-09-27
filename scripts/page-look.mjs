@@ -23,6 +23,17 @@
  * Usage:
  *   pnpm page:look --route /education/flashcards [--route /x/<id>] \
  *     [--base https://aimatrx.com] [--out <dir>] [--commit <sha>] [--settle 6000]
+ *     [--signed-out] [--full]
+ *
+ * --signed-out looks as a visitor (fresh profile, no sign-in) — promotional
+ * pages and shared links. --full adds a full-page screenshot per view
+ * (`*-full.png`) so everything below the fold is seen too.
+ * --click 'SELECTOR=>TEXT' (repeatable): on the desktop-light and phone-light
+ * views, after the screenshot, click the first SELECTOR whose text or
+ * aria-label starts with TEXT (TEXT optional), then screenshot the result
+ * (`*-click-N.png`) and record new console errors — open a menu, a dialog, a
+ * tab. Each click starts from a fresh load of the route. Never click
+ * something that writes real data.
  *
  * --base defaults to https://aimatrx.com (no dev server needed); a local
  * preview works too (http://<session>.localhost:3001 — sign in there first with
@@ -46,7 +57,7 @@ function fail(message, code = 1) {
 }
 
 // ── options ───────────────────────────────────────────────────────────────
-const opts = { routes: [], base: "https://aimatrx.com", out: null, commit: null, settle: 6000, loginUrl: null };
+const opts = { routes: [], base: "https://aimatrx.com", out: null, commit: null, settle: 6000, loginUrl: null, signedOut: false, full: false, clicks: [] };
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i += 1) {
   const a = argv[i];
@@ -57,6 +68,9 @@ for (let i = 0; i < argv.length; i += 1) {
   else if (a === "--commit") ((opts.commit = v), (i += 1));
   else if (a === "--settle") ((opts.settle = Number(v)), (i += 1));
   else if (a === "--login-url") ((opts.loginUrl = v), (i += 1));
+  else if (a === "--signed-out") opts.signedOut = true;
+  else if (a === "--full") opts.full = true;
+  else if (a === "--click") (opts.clicks.push(v), (i += 1));
   else fail(`unknown argument ${a}`);
 }
 if (!opts.routes.length) fail("pass at least one --route");
@@ -108,7 +122,7 @@ try {
 }
 const executablePath = ["/opt/pw-browsers/chromium", process.env.SURFACE_PROBE_CHROMIUM].filter(Boolean).find((p) => existsSync(p));
 const host = new URL(opts.base).host.replace(/[^a-z0-9.-]/gi, "_");
-const profileDir = path.join(os.tmpdir(), "page-look-profiles", host);
+const profileDir = path.join(os.tmpdir(), "page-look-profiles", opts.signedOut ? `${host}-signed-out-${Date.now()}` : host);
 mkdirSync(profileDir, { recursive: true });
 const isLocal = /\.localhost(:\d+)?$|\/\/localhost(:\d+)?$|127\.0\.0\.1/.test(opts.base);
 
@@ -238,7 +252,7 @@ try {
   if (opts.loginUrl) {
     await page.goto(opts.loginUrl, { timeout: 600000 });
     await page.waitForTimeout(5000);
-  } else if (!isLocal) {
+  } else if (!isLocal && !opts.signedOut) {
     await page.goto(`${opts.base}/login`, { timeout: 120000 });
     await page.waitForTimeout(4000);
     if (await page.locator('input[type="email"]').count()) {
@@ -270,9 +284,44 @@ try {
         const key = `${view.name}-${theme}`;
         const file = path.join(opts.out, `${slug}-${key}.png`);
         await page.screenshot({ path: file, animations: "disabled", timeout: 20000 }).catch(() => {});
+        let fullFile;
+        if (opts.full) {
+          fullFile = file.replace(/\.png$/, "-full.png");
+          await page.screenshot({ path: fullFile, fullPage: true, animations: "disabled", timeout: 30000 }).catch(() => {});
+        }
+        const clickResults = [];
+        if (theme === "light") {
+          for (const [n, spec] of opts.clicks.entries()) {
+            const [selector, text = ""] = spec.split("=>");
+            await page.goto(`${opts.base}${route}`, { timeout: 600000 });
+            await page.waitForTimeout(opts.settle);
+            consoleErrors.length = 0;
+            const clicked = await page.evaluate(
+              ([sel, prefix]) => {
+                const el = [...document.querySelectorAll(sel)].find((e) => {
+                  const label = (e.getAttribute("aria-label") || e.textContent || "").trim();
+                  return !prefix || label.startsWith(prefix);
+                });
+                if (!el) return false;
+                el.scrollIntoView({ block: "center" });
+                el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+                el.click();
+                return true;
+              },
+              [selector, text.trim()],
+            );
+            await page.waitForTimeout(1500);
+            const clickFile = file.replace(/\.png$/, `-click-${n + 1}.png`);
+            await page.screenshot({ path: clickFile, animations: "disabled", timeout: 20000 }).catch(() => {});
+            clickResults.push({ click: spec, found: clicked, screenshot: clickFile, consoleErrors: [...new Set(consoleErrors)].slice(0, 5) });
+          }
+        }
         entry.views[key] = {
+          ...(clickResults.length ? { clicks: clickResults } : {}),
           finalUrl: page.url().replace(/\?.*$/, ""),
           screenshot: file,
+          ...(fullFile ? { fullScreenshot: fullFile } : {}),
+          signedIn: !opts.signedOut && (await page.locator('input[type="email"]').count()) === 0,
           ...(await page.evaluate(measure, view.mobile)),
           consoleErrors: [...new Set(consoleErrors)].slice(0, 10),
           failedRequests: [...new Set(failedRequests)].slice(0, 10),

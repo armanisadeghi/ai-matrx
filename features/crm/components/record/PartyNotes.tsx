@@ -268,12 +268,12 @@ export function PartyNotes({
                 className="group group/item rounded border border-border bg-muted/20 px-2 py-1.5"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-medium text-foreground">
+                  <span className="text-xs font-medium text-foreground">
                     {comment.author.displayName ??
                       comment.author.email ??
                       "Unknown"}
                   </span>
-                  <span className="text-[11px] tabular-nums text-muted-foreground">
+                  <span className="text-xs tabular-nums text-muted-foreground">
                     {formatRelativeTime(comment.createdAt)}
                   </span>
                   <span className="ml-auto flex shrink-0 items-center gap-0.5">
@@ -292,7 +292,7 @@ export function PartyNotes({
                       type="button"
                       aria-label="Delete note"
                       onClick={() => void remove(comment)}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive lg:h-5 lg:w-5 lg:opacity-0 lg:group-hover:opacity-100"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive lg:h-5 lg:w-5 lg:pointer-fine:opacity-0 lg:group-hover:opacity-100"
                     >
                       <Trash2 className="size-[18px] lg:size-3" />
                     </button>

@@ -47,6 +47,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { TabbedBottomSheet } from "@ai-matrx/design-system";
 import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
 import { PlusAttachMenu } from "./PlusAttachMenu";
+import { ComposerPlusMenu } from "./composer/ComposerPlusMenu";
+import type { ComposerMode, ComposerSize } from "./composer/composer-types";
 import {
   useAttachResource,
   useDetachResource,
@@ -78,6 +80,12 @@ export interface RunControlsMenuProps {
    */
   foldToolbarExtras?: boolean;
   onRequestInputExpand?: () => void;
+  /**
+   * The three-mode composer (composer/composer-types.ts). Present = the
+   * desktop `+` opens the mode-aware cascading ComposerPlusMenu; absent =
+   * PlusAttachMenu exactly as before. Mobile keeps the bottom sheet either way.
+   */
+  composer?: { mode: ComposerMode; size: ComposerSize };
 }
 
 export function RunControlsMenu({
@@ -88,6 +96,7 @@ export function RunControlsMenu({
   side = variant === "plus" ? "top" : "bottom",
   foldToolbarExtras = false,
   onRequestInputExpand,
+  composer,
 }: RunControlsMenuProps) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
@@ -180,6 +189,18 @@ export function RunControlsMenu({
   );
 
   if (useWindowPresentation) {
+    if (variant === "plus" && composer) {
+      return (
+        <ComposerPlusMenu
+          conversationId={conversationId}
+          trigger={triggerButton}
+          mode={composer.mode}
+          size={composer.size}
+          side={side}
+          onRequestInputExpand={onRequestInputExpand}
+        />
+      );
+    }
     if (variant === "plus") {
       return (
         <PlusAttachMenu

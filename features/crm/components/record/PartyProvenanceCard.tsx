@@ -37,7 +37,7 @@ import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRunt
 import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
 import { updateParty } from "../../service";
 import type { PartyRow } from "../../types";
-import { SectionCard, SectionEmpty } from "./SectionCard";
+import { SectionCard } from "./SectionCard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The three provenance roles the SEO→CRM bridge writes. */
@@ -262,7 +262,9 @@ export function PartyProvenanceCard({
     <SectionCard
       title="Why this is in your CRM"
       Icon={Compass}
-      count={items?.length ?? undefined}
+      // The count is of provenance edges; a "0" beside an explanation that
+      // IS showing (origin stamp, discovered banner) reads as a contradiction.
+      count={items?.length ? items.length : undefined}
     >
       <div className="space-y-2">
         {discovered && (
@@ -326,7 +328,7 @@ export function PartyProvenanceCard({
             <Button
               size="sm"
               variant="outline"
-              className="h-6 gap-1 text-[11px]"
+              className="h-6 gap-1 text-xs"
               onClick={() => setAttempt((n) => n + 1)}
             >
               <RefreshCw className="h-3 w-3" /> Retry
@@ -342,11 +344,9 @@ export function PartyProvenanceCard({
           </p>
         )}
 
-        {items !== null && items.length === 0 && !error && (
-          <SectionEmpty>
-            No opportunity is recorded against this organization yet.
-          </SectionEmpty>
-        )}
+        {/* No "no opportunity yet" line: this card only renders an empty
+            edge list when the discovered banner or the origin stamp above is
+            already explaining the record, so the line was pure noise. */}
 
         {(items ?? []).map((item) => (
           <div key={item.key} className="rounded-md border bg-muted/20 p-2.5">
@@ -360,7 +360,7 @@ export function PartyProvenanceCard({
                 </Badge>
               )}
               {item.priority !== null && (
-                <span className="text-[11px] tabular-nums text-muted-foreground">
+                <span className="text-xs tabular-nums text-muted-foreground">
                   priority {item.priority}
                 </span>
               )}
@@ -369,11 +369,11 @@ export function PartyProvenanceCard({
               {item.title}
             </p>
             {item.pitchAngle && (
-              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 {item.pitchAngle}
               </p>
             )}
-            <div className="mt-1.5 flex flex-wrap gap-3 text-[11px]">
+            <div className="mt-1.5 flex flex-wrap gap-3 text-xs">
               {item.sourceUrl && (
                 <a
                   href={item.sourceUrl}

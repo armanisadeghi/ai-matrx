@@ -63,11 +63,12 @@ export const HEALTH_PRIORITY: Record<MandateHealth, number> = {
   "code ↔ contract drift": 5,
   // 🚨 A HOLDER THAT CANNOT PRODUCE THE JOB'S REQUIRED OUTPUT KEYS IS NOT
   // "healthy" (walk of v0.4.1720, FIX-R4). `research_client.output_slides`
-  // showed a RED "the assignment fails at run time" three inches above a GREEN
+  // showed a RED output-contract verdict three inches above a GREEN
   // "Healthy — System agent, tracking the latest version", about the same
   // holder: this model simply did not know about the output half of the
-  // contract, which `enforced_holder_contract` keeps in force ALWAYS. Ranked
-  // above version drift because a drifted pin still runs and this does not.
+  // contract. Since aidream 1363 ("validation offers, never blocks") the holder
+  // RUNS anyway; an answer missing a required key stops that run with a plain
+  // error. A warning, ranked where it was so it is still seen early.
   "output contract unmet": 5.5,
   "no Mandate Holder yet": 7,
   ok: 8,
@@ -491,7 +492,7 @@ export const HEALTH_CLASS: Record<MandateHealth, string> = {
   "code truth import failed":
     "text-foreground border-warning/40 bg-warning/10",
   "code ↔ contract drift": "text-foreground border-warning/40 bg-warning/10",
-  "output contract unmet": "text-foreground border-destructive/40 bg-destructive/10",
+  "output contract unmet": "text-foreground border-warning/40 bg-warning/10",
   "agent archived": "text-foreground border-destructive/40 bg-destructive/10",
   "workflow archived": "text-foreground border-destructive/40 bg-destructive/10",
   "not a system agent": "text-foreground border-destructive/40 bg-destructive/10",
@@ -514,7 +515,7 @@ export const HEALTH_HINT: Partial<Record<MandateHealth, string>> = {
   "workflow archived":
     "The workflow holding this job is archived — un-archive it or bind another before it breaks.",
   "output contract unmet":
-    "The Mandate Holder does not declare the structured output keys this job's consumers require, so the assignment fails at run time. Give the Mandate Holder an output schema that declares them, or bind one that already does.",
+    "The Mandate Holder does not declare every structured output key this job's consumers require. It runs anyway, as chosen, but its output may not fit: an answer that comes back without a required key stops the job with a plain error instead of saving half of it. Give the Mandate Holder an output schema that declares them, or bind one that already does.",
   "no Mandate Holder yet":
     "Nothing is bound to this mandate yet, which is where every new mandate starts. Choose a Mandate Holder above whenever the intelligence exists.",
 };

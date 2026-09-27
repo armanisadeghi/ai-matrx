@@ -238,6 +238,12 @@ function Ladder({ rows, loading, error }: { rows: MandateLadderRow[]; loading: b
               <span className="ml-auto shrink-0 text-xs text-destructive" title={row.dropped_reason}>
                 Needs attention
               </span>
+            ) : holderId && row?.output_warning ? (
+              // A warned rung is LIVE (aidream 1363): it runs, but its output
+              // may not fit. Amber, with the door's own sentence as the title.
+              <span className="ml-auto shrink-0 text-xs text-amber-700 dark:text-amber-300" title={row.output_warning}>
+                May not fit
+              </span>
             ) : null}
           </div>
         );

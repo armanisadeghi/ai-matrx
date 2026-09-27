@@ -73,17 +73,25 @@ export interface MandateLadderRow {
   dropped_reason?: string | null;
   /**
    * 🚨 THE DISCRIMINATOR BEHIND THAT SENTENCE — `mandate._rungs`' 22nd column
-   * (aidream `0599`): `platform_disabled` | `holder_unreachable` |
-   * `output_contract_unmet`, or `null`/empty when the rung can run.
+   * (aidream `0599`): `platform_disabled` | `holder_unreachable`, or
+   * `null`/empty when the rung can run. Since aidream 1363 ("validation
+   * offers, never blocks") an output mismatch is NEVER a drop — it arrives as
+   * `output_warning` on a rung that still decides.
    *
-   * V-PARITY/UX F2, on production v0.4.1728: this column had **zero consumers
-   * in the frontend**, so `ladderRowIsBroken()` — which keyed on `holder_live`
-   * / `version_live` only — called an output-contract drop *"Names an agent,
-   * running its latest version."* The holder IS live in that state; the rung
-   * still does not decide. A client that re-derives the door's judgement will
-   * always be one rule behind it, so it renders the judgement instead.
+   * V-PARITY/UX F2: a client that re-derives the door's judgement will always
+   * be one rule behind it, so it renders the judgement instead.
    */
   dropped_code?: string | null;
+  /**
+   * THE DOOR'S OUTPUT WARNING (aidream 1363) — a finished sentence, set only on
+   * a rung that DECIDES (not dropped, enabled, chose a holder) whose Holder does
+   * not declare every output key the job expects. The rung still runs; an
+   * answer that comes back without a required key stops the job with a plain
+   * error instead of saving half of it. A warning, never "broken".
+   */
+  output_warning?: string | null;
+  /** The keys behind that warning; may be set even with no warning sentence. */
+  output_missing_keys?: string[] | null;
 }
 
 /** Generated directly from the live `mandate.resolve` RPC contract. */
@@ -197,7 +205,8 @@ export function useMandateLadder(
 export function ladderRowIsBroken(row: MandateLadderRow): boolean {
   // THE DOOR'S OWN VERDICT FIRST. `dropped_code` is set whenever the rung will
   // not decide, for ANY reason the database judges — including the ones no
-  // client-side check can see (the output contract, a platform disable). The
+  // client-side check can see (a platform disable). An `output_warning` is
+  // NOT a drop: that rung runs, so it is never "broken". The
   // two reachability columns stay as the belt for a database that predates the
   // column: a browser newer than its database still says what it can back up.
   if (typeof row.dropped_code === "string" && row.dropped_code.length > 0) {
@@ -261,8 +270,8 @@ export function ladderRowWords(
     return {
       title,
       // The database's sentence when it has one: it knows WHICH principal
-      // cannot open the Holder, and it knows the drops no client can see (an
-      // unmet output contract, a platform disable) — which is the whole
+      // cannot open the Holder, and it knows the drops no client can see (a
+      // platform disable) — which is the whole
       // difference between "broken for you" and "broken for everyone".
       detail:
         row.dropped_reason ||
@@ -270,6 +279,10 @@ export function ladderRowWords(
           ? "Broken — the pinned version it names cannot be read."
           : "Broken — the agent it names cannot be read."),
     };
+  }
+  if (row.chose_holder && row.output_warning) {
+    // It still runs — the door's own warning is the news.
+    return { title, detail: row.output_warning };
   }
   if (row.chose_holder && row.holder_version_id !== null) {
     return { title, detail: "Names an agent, pinned to one version." };

@@ -15873,6 +15873,7 @@ export type Database = {
           all_day: boolean
           attendees: Json
           calendar_id: string
+          calendar_time_zone: string | null
           created_at: string
           created_by: string | null
           custom_fields: Json
@@ -15890,7 +15891,9 @@ export type Database = {
           source_calendar_key: string | null
           source_connection_owner_id: string | null
           source_connection_owner_type: string | null
+          source_original_start_time: Json | null
           source_provider_subject: string | null
+          source_recurring_event_id: string | null
           starts_at: string | null
           sync_status: string
           sync_status_reason: string | null
@@ -15906,6 +15909,7 @@ export type Database = {
           all_day?: boolean
           attendees?: Json
           calendar_id?: string
+          calendar_time_zone?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
@@ -15923,7 +15927,9 @@ export type Database = {
           source_calendar_key?: string | null
           source_connection_owner_id?: string | null
           source_connection_owner_type?: string | null
+          source_original_start_time?: Json | null
           source_provider_subject?: string | null
+          source_recurring_event_id?: string | null
           starts_at?: string | null
           sync_status?: string
           sync_status_reason?: string | null
@@ -15939,6 +15945,7 @@ export type Database = {
           all_day?: boolean
           attendees?: Json
           calendar_id?: string
+          calendar_time_zone?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
@@ -15956,7 +15963,9 @@ export type Database = {
           source_calendar_key?: string | null
           source_connection_owner_id?: string | null
           source_connection_owner_type?: string | null
+          source_original_start_time?: Json | null
           source_provider_subject?: string | null
+          source_recurring_event_id?: string | null
           starts_at?: string | null
           sync_status?: string
           sync_status_reason?: string | null
@@ -15967,6 +15976,63 @@ export type Database = {
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      calendar_selected_snapshot_state: {
+        Row: {
+          claimed_generation: number
+          complete_generation: number
+          complete_window_end: string | null
+          complete_window_start: string | null
+          completed_at: string | null
+          connection_id: string
+          created_at: string
+          id: string
+          organization_id: string
+          source_calendar_key: string
+          source_connection_owner_id: string
+          source_connection_owner_type: string
+          source_provider_subject: string
+          source_watermark_at: string | null
+          updated_at: string
+          viewer_id: string
+        }
+        Insert: {
+          claimed_generation?: number
+          complete_generation?: number
+          complete_window_end?: string | null
+          complete_window_start?: string | null
+          completed_at?: string | null
+          connection_id: string
+          created_at?: string
+          id?: string
+          organization_id: string
+          source_calendar_key: string
+          source_connection_owner_id: string
+          source_connection_owner_type: string
+          source_provider_subject: string
+          source_watermark_at?: string | null
+          updated_at?: string
+          viewer_id: string
+        }
+        Update: {
+          claimed_generation?: number
+          complete_generation?: number
+          complete_window_end?: string | null
+          complete_window_start?: string | null
+          completed_at?: string | null
+          connection_id?: string
+          created_at?: string
+          id?: string
+          organization_id?: string
+          source_calendar_key?: string
+          source_connection_owner_id?: string
+          source_connection_owner_type?: string
+          source_provider_subject?: string
+          source_watermark_at?: string | null
+          updated_at?: string
+          viewer_id?: string
         }
         Relationships: []
       }
@@ -59391,6 +59457,39 @@ export type Database = {
           },
         ]
       }
+      reference_archive: {
+        Row: {
+          archived_at: string
+          id: string
+          identity_hash: string
+          kept_id: string | null
+          revision: string
+          revision_kind: string
+          row_created_at: string
+          row_data: Json
+        }
+        Insert: {
+          archived_at?: string
+          id: string
+          identity_hash: string
+          kept_id?: string | null
+          revision: string
+          revision_kind: string
+          row_created_at: string
+          row_data: Json
+        }
+        Update: {
+          archived_at?: string
+          id?: string
+          identity_hash?: string
+          kept_id?: string | null
+          revision?: string
+          revision_kind?: string
+          row_created_at?: string
+          row_data?: Json
+        }
+        Relationships: []
+      }
       scan: {
         Row: {
           absent_against_revision: string | null
@@ -60080,11 +60179,17 @@ export type Database = {
           mandate_id: string
           mandate_key: string
           organization_id: string
+          output_missing_keys: string[]
+          output_warning: string
           rung: string
           rung_order: number
           subject_user_id: string
           version_live: boolean
         }[]
+      }
+      archive_redundant_references_batch: {
+        Args: { p_after: string; p_identities?: number }
+        Returns: Record<string, unknown>
       }
       binding_holder_runnable: {
         Args: {
@@ -60159,6 +60264,8 @@ export type Database = {
           holder_version_id: string
           is_enabled: boolean
           organization_id: string
+          output_missing_keys: string[]
+          output_warning: string
           rung: string
           subject_user_id: string
           version_live: boolean
@@ -60187,6 +60294,8 @@ export type Database = {
           holder_version_id: string
           is_enabled: boolean
           organization_id: string
+          output_missing_keys: string[]
+          output_warning: string
           rung: string
           subject_user_id: string
           version_live: boolean
@@ -66199,6 +66308,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cutover_seam_measure: {
+        Row: {
+          detail: Json
+          id: string
+          key: string
+          measured_at: string
+          measured_by: string
+          met: boolean
+          organization_id: string
+          says: string
+          seam_key: string
+        }
+        Insert: {
+          detail?: Json
+          id?: string
+          key: string
+          measured_at?: string
+          measured_by: string
+          met: boolean
+          organization_id: string
+          says: string
+          seam_key: string
+        }
+        Update: {
+          detail?: Json
+          id?: string
+          key?: string
+          measured_at?: string
+          measured_by?: string
+          met?: boolean
+          organization_id?: string
+          says?: string
+          seam_key?: string
+        }
+        Relationships: []
+      }
       cutover_seam_press: {
         Row: {
           did: Json
@@ -72146,6 +72291,59 @@ export type Database = {
         Args: { p_definition_id: string }
         Returns: boolean
       }
+      _final_switch_copy_again_state: { Args: never; Returns: Json }
+      _final_switch_is_on: { Args: never; Returns: boolean }
+      _final_switch_last: {
+        Args: never
+        Returns: {
+          did: Json
+          direction: string
+          id: string
+          note: string | null
+          organization_id: string
+          outcome: string
+          pressed_at: string
+          pressed_by: string | null
+          readiness: Json | null
+          refusal: string | null
+          says: string | null
+          seam_key: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cutover_seam_press"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      _final_switch_old_write_doors: { Args: never; Returns: unknown[] }
+      _final_switch_orphan_lists: { Args: never; Returns: Json }
+      _final_switch_person_refusal: { Args: never; Returns: Json }
+      _final_switch_platform_org: { Args: never; Returns: string }
+      _final_switch_readiness: { Args: never; Returns: Json }
+      _final_switch_record: {
+        Args: {
+          p_did: Json
+          p_direction: string
+          p_id: string
+          p_note: string
+          p_outcome: string
+          p_readiness: Json
+          p_refusal: string
+          p_says: string
+        }
+        Returns: undefined
+      }
+      _final_switch_scopes: {
+        Args: {
+          p_actor: string
+          p_note: string
+          p_orgs: string[]
+          p_to: string
+        }
+        Returns: Json
+      }
+      _final_switch_scopes_code: { Args: never; Returns: string }
       _is_store_pick_list: { Args: { p_metadata: Json }; Returns: boolean }
       _knob_override_write: {
         Args: {
@@ -72605,6 +72803,10 @@ export type Database = {
         Args: { p_objids: unknown[]; p_tag: string }
         Returns: undefined
       }
+      comment_trash_title: {
+        Args: { c: Database["platform"]["Tables"]["comments"]["Row"] }
+        Returns: string
+      }
       comments_topic_admits: { Args: { p_topic: string }; Returns: boolean }
       confirmation_stamp_coverage: {
         Args: never
@@ -72771,11 +72973,35 @@ export type Database = {
         Args: { p_now: Json; p_row: string; p_since: string; p_table: string }
         Returns: boolean
       }
+      cutover_scopes_census_record: { Args: { p_census: Json }; Returns: Json }
+      cutover_seam_measure_record: {
+        Args: {
+          p_detail: Json
+          p_key: string
+          p_measured_by: string
+          p_met: boolean
+          p_organization_id: string
+          p_says: string
+          p_seam: string
+        }
+        Returns: string
+      }
       cutover_seam_press: {
         Args: {
           p_accept_not_carried?: boolean
           p_note?: string
           p_organization_id: string
+          p_seam_key: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      cutover_seam_press_everyone: {
+        Args: {
+          p_dry_run?: boolean
+          p_note?: string
+          p_organization_ids?: string[]
+          p_pressed_for?: string
           p_seam_key: string
           p_to: string
         }
@@ -73097,6 +73323,30 @@ export type Database = {
       }
       feature_knob_set: {
         Args: { p_feature: string; p_key: string; p_value: Json }
+        Returns: Json
+      }
+      final_switch_adopt_orphan_lists: {
+        Args: { p_run: string }
+        Returns: Json
+      }
+      final_switch_copy_again_record: {
+        Args: {
+          p_event: string
+          p_ok: boolean
+          p_organization_id: string
+          p_report: Json
+          p_run: string
+        }
+        Returns: Json
+      }
+      final_switch_press: {
+        Args: { p_copy_again?: Json; p_note?: string }
+        Returns: Json
+      }
+      final_switch_readiness: { Args: never; Returns: Json }
+      final_switch_state: { Args: never; Returns: Json }
+      final_switch_undo: {
+        Args: { p_accept_not_carried?: boolean; p_note?: string }
         Returns: Json
       }
       find_custom_references_to: {
@@ -73620,6 +73870,10 @@ export type Database = {
       partitioned_row_attrs: {
         Args: { p_id: string; p_schema: string; p_table: string }
         Returns: Record<string, unknown>
+      }
+      passage_link_trash_title: {
+        Args: { a: Database["platform"]["Tables"]["associations"]["Row"] }
+        Returns: string
       }
       promote_custom_field_index: {
         Args: { p_concurrently?: boolean; p_definition_id: string }
@@ -74338,6 +74592,14 @@ export type Database = {
         Returns: string
       }
       token_is_detail: { Args: { p_token: string }; Returns: boolean }
+      trash_annotation_title_census: {
+        Args: never
+        Returns: {
+          empty_titles: number
+          kind: string
+          trashed: number
+        }[]
+      }
       trash_hides: {
         Args: {
           p_deleted_at: string
@@ -79116,6 +79378,7 @@ export type Database = {
         Args: { p_id: string; p_resolved?: boolean }
         Returns: undefined
       }
+      cmt_restore: { Args: { p_id: string }; Returns: undefined }
       component_created_by_report: { Args: never; Returns: Json }
       container_resource_counts: {
         Args: { p_column: string; p_container_id: string }
@@ -84069,6 +84332,7 @@ export type Database = {
         Returns: undefined
       }
       partition_runway_snapshot: { Args: never; Returns: Json }
+      passage_link_restore: { Args: { p_id: string }; Returns: undefined }
       people_you_share_an_organization_with: {
         Args: { p_user_ids: string[] }
         Returns: {
@@ -105622,6 +105886,7 @@ export type Database = {
           kind_key: string | null
           label: string
           live_slot: string | null
+          max_inline_chars: number | null
           metadata: Json
           name: string
           organization_id: string
@@ -105652,6 +105917,7 @@ export type Database = {
           kind_key?: string | null
           label?: string
           live_slot?: string | null
+          max_inline_chars?: number | null
           metadata?: Json
           name: string
           organization_id: string
@@ -105682,6 +105948,7 @@ export type Database = {
           kind_key?: string | null
           label?: string
           live_slot?: string | null
+          max_inline_chars?: number | null
           metadata?: Json
           name?: string
           organization_id?: string
@@ -115842,6 +116109,66 @@ export type Database = {
           start_date?: string | null
           status?: string
           target_date?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      spatial_boards: {
+        Row: {
+          camera: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          edges: Json
+          id: string
+          last_opened_at: string | null
+          metadata: Json
+          nodes: Json
+          organization_id: string
+          settings: Json
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          camera?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          edges?: Json
+          id?: string
+          last_opened_at?: string | null
+          metadata?: Json
+          nodes?: Json
+          organization_id: string
+          settings?: Json
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          camera?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          edges?: Json
+          id?: string
+          last_opened_at?: string | null
+          metadata?: Json
+          nodes?: Json
+          organization_id?: string
+          settings?: Json
+          title?: string
           updated_at?: string
           updated_by?: string | null
           version?: number

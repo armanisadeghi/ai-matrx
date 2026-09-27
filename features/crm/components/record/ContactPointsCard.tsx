@@ -52,6 +52,7 @@ import {
   isSuppressionExpired,
   isTenantSuppressed,
   mediumBlocks,
+  mediumDisplay,
 } from "../../reachability";
 import { parseContactPoint } from "../../agent-context/crmRecordSurfaceWrite";
 import {
@@ -103,7 +104,7 @@ function deliverabilityBadge(point: ContactPoint) {
       title={blocks
         .map((b) => `${MEDIUM_BLOCK_LABELS[b]} — ${MEDIUM_BLOCK_EXPLAINERS[b]}`)
         .join("\n")}
-      className="inline-flex shrink-0 items-center rounded-full border border-destructive/20 bg-destructive/15 px-1.5 py-0.5 text-[11px] font-medium leading-none text-destructive"
+      className="inline-flex shrink-0 items-center rounded-full border border-destructive/20 bg-destructive/15 px-1.5 py-0.5 text-xs font-medium leading-none text-destructive"
     >
       {MEDIUM_BLOCK_LABELS[blocks[0]]}
     </span>
@@ -175,7 +176,7 @@ export function ContactPointsCard({
    * rep is never told a number is open when it isn't.
    */
   const unsuppress = async (point: ContactPoint) => {
-    const value = point.medium.display_value ?? point.medium.value_raw;
+    const value = mediumDisplay(point.medium).text;
     const surviving = blocksSurvivingUnsuppress(point.medium);
     const expired = isSuppressionExpired(point.medium);
     const ok = await confirm({
@@ -222,7 +223,7 @@ export function ContactPointsCard({
 
   const remove = async (point: ContactPoint) => {
     const ok = await confirm({
-      title: `Remove ${point.medium.display_value ?? point.medium.value_raw}?`,
+      title: `Remove ${mediumDisplay(point.medium).text}?`,
       description:
         "The value itself (and its deliverability history) stays on the org — only this record's link is removed.",
       confirmLabel: "Remove",
@@ -364,19 +365,35 @@ export function ContactPointsCard({
         <ul className="space-y-0.5">
           {points.map((point) => {
             const Icon = CHANNEL_ICONS[point.channel ?? ""] ?? Globe;
-            const display =
-              point.medium.display_value ?? point.medium.value_raw;
+            const shown = mediumDisplay(point.medium);
             return (
               <li
                 key={point.id}
                 className="group flex items-center gap-2 rounded px-1.5 py-1 hover:bg-accent/50"
               >
                 <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 truncate text-sm text-foreground">
-                  {display}
-                </span>
+                {shown.href ? (
+                  <a
+                    href={shown.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="min-w-0 truncate text-sm text-foreground hover:underline"
+                    title={`Open on ${shown.platform ?? "the web"}`}
+                  >
+                    {shown.text}
+                  </a>
+                ) : (
+                  <span className="min-w-0 truncate text-sm text-foreground">
+                    {shown.text}
+                  </span>
+                )}
+                {shown.platform && (
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {shown.platform}
+                  </span>
+                )}
                 {point.label && (
-                  <span className="shrink-0 text-[11px] text-muted-foreground">
+                  <span className="shrink-0 text-xs text-muted-foreground">
                     {point.label}
                   </span>
                 )}
@@ -387,7 +404,7 @@ export function ContactPointsCard({
                     <button
                       type="button"
                       onClick={() => void unsuppress(point)}
-                      className="min-h-11 rounded px-2 text-xs font-medium text-primary hover:bg-primary/10 sm:min-h-6 sm:px-1.5 sm:text-[11px]"
+                      className="min-h-11 rounded px-2 text-xs font-medium text-primary hover:bg-primary/10 sm:min-h-6 sm:px-1.5 sm:text-xs"
                     >
                       Allow contact
                     </button>
@@ -406,7 +423,7 @@ export function ContactPointsCard({
                       "inline-flex h-11 w-11 items-center justify-center rounded sm:h-6 sm:w-6",
                       point.is_primary
                         ? "text-amber-500"
-                        : "text-muted-foreground/60 opacity-100 hover:text-amber-500 sm:opacity-0 sm:group-hover:opacity-100",
+                        : "text-muted-foreground/60 opacity-100 hover:text-amber-500 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100",
                     )}
                   >
                     <Star
@@ -420,7 +437,7 @@ export function ContactPointsCard({
                     type="button"
                     aria-label="Remove contact method"
                     onClick={() => void remove(point)}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive sm:h-6 sm:w-6 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>

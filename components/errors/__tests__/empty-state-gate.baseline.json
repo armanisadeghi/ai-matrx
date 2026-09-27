@@ -236,7 +236,6 @@
     "features/research/components/analysis/AnalysisList.tsx": 1,
     "features/research/components/curation/CurationTable.tsx": 1,
     "features/research/components/keywords/KeywordManager.tsx": 2,
-    "features/research/components/landing/TopicList.tsx": 1,
     "features/research/components/links/LinkExplorer.tsx": 1,
     "features/research/components/media/MediaGallery.tsx": 1,
     "features/research/components/overview/live-pipeline/stages/SearchStageView.tsx": 2,

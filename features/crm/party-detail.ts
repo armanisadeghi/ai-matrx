@@ -56,6 +56,7 @@ import { partyKindWord } from "./party-words";
 import {
   CONTACT_BLOCK_REASON_LABELS,
   contactPointBlockReason,
+  mediumDisplay,
 } from "./reachability";
 import { partyContactPointsQuery } from "./service";
 import type { ContactPoint } from "./types";
@@ -103,7 +104,7 @@ function employerOf(row: DetailRow): PartyEmployerRef | null {
 
 /** One contact line: the value, plus why it may not be used, if it may not. */
 function contactLine(row: DetailRow, point: ContactPoint): string {
-  const value = point.medium.display_value ?? point.medium.value_raw ?? "";
+  const value = mediumDisplay(point.medium).text;
   const blocked = contactPointBlockReason(
     { do_not_contact: row.do_not_contact === true },
     point,

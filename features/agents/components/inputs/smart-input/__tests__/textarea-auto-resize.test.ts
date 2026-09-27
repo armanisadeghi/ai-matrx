@@ -91,7 +91,11 @@ describe("AgentTextarea auto-resize", () => {
   });
 
   it("hard-caps the unexpanded textarea when a flex host reflows", () => {
-    expect(source).toContain("maxHeight: isExpanded ? undefined : 200");
+    // The cap is a host knob (the compact composer grows to ~half its
+    // panel) but it is ALWAYS present and defaults to the classic 200px.
+    expect(source).toContain("const unexpandedCapPx = maxHeightPx ?? 200;");
+    expect(source).toContain("maxHeight: isExpanded ? undefined : unexpandedCapPx");
+    expect(source).toContain("Math.min(snapped, unexpandedCapPx)");
     expect(stackedSource).toContain('"w-full shrink-0 border"');
   });
 

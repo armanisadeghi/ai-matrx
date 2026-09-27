@@ -34,6 +34,8 @@
 --   T12 a signed-in stranger (test@test.com, no member of Bayfront) cannot ask which system writes
 --       Bayfront's scopes: custom.context_writer is closed to her, custom._ctx_answer refuses her by
 --       name (RED before scopeswt_the_scope_doors_decide_who_is_asking.sql, VERIFIER-27)
+--   T13 a stranger's scope write is refused in the name of the door she called
+--       (RED before scopeswt_the_scope_doors_refuse_in_their_own_name.sql, census 17)
 --   T10 an industry template (Dental Practice) applies through the store's door: its types and fields
 --       land on both sides, and "Reports To" points at another team member (RED before
 --       scopeswt_a_template_applies_and_a_value_brings_its_field.sql: 26 of 34 templates refused)
@@ -328,6 +330,22 @@ begin
   end if;
   perform set_config('role', 'none', true);
 
+  -- ══ T13: refused in the door's own name ══
+  perform set_config('request.jwt.claims', json_build_object('sub', '4060701e-706a-4c76-b3ca-0bbc69fa5a14', 'role', 'authenticated', 'session_id', 'scopeswt')::text, true);
+  perform set_config('role', 'authenticated', true);
+  begin
+    perform custom.context_type_write(v_org, null, '{"label_singular": "Insurer", "label_plural": "Insurers"}'::jsonb);
+    perform set_config('role', 'none', true);
+    raise exception 'T13 RED: a stranger made a scope type in Bayfront';
+  exception when insufficient_privilege then
+    get stacked diagnostics v_msg = message_text;
+    perform set_config('role', 'none', true);
+    if v_msg not like '%custom.context_type_write%' then
+      raise exception 'T13 RED: the stranger was refused, but not in the name of the door she called: %', v_msg;
+    end if;
+  end;
+  perform set_config('role', 'none', true);
+
   -- ══ T10: an industry template, through the store's door ══
   select t.id into v_tmpl from context.templates t where t.name = 'Dental Practice' and t.is_active;
   if v_tmpl is null then
@@ -356,7 +374,7 @@ begin
     raise exception 'T10: Team Members'' "Reports To" is not a relation to another team member in the store';
   end if;
 
-  raise notice 'GREEN T1–T12: the store writes Bayfront Family Dentistry''s scopes (old doors carried, the value door store first, archive and restore, refusals refuse, generic writers held off, tags carried), Harbor Point Validation keeps the old tables until its switch, and the switch goes one organization at a time or all at once, and back; an industry template applies with its Reports To.';
+  raise notice 'GREEN T1–T13: the store writes Bayfront Family Dentistry''s scopes (old doors carried, the value door store first, archive and restore, refusals refuse, generic writers held off, tags carried), Harbor Point Validation keeps the old tables until its switch, and the switch goes one organization at a time or all at once, and back; an industry template applies with its Reports To.';
 end
 $t$;
 

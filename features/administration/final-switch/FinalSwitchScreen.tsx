@@ -273,6 +273,12 @@ export function FinalSwitchScreen() {
       o.plan.press_context ||
       o.plan.sweep_lists + o.plan.sweep_tables > 0,
   );
+  // ONE set of counts on the page, from the database when it says them (VERIFIER-27).
+  const counts = {
+    listed: board?.totals.organizations ?? orgs.length,
+    toSwitch: board?.totals.to_switch ?? toSwitch.length,
+    nothing: board?.totals.nothing_to_switch ?? orgs.length - toSwitch.length,
+  };
 
   const run = async (which: "press" | "undo") => {
     setRunning(true);
@@ -506,10 +512,14 @@ export function FinalSwitchScreen() {
             <section className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
               <p className="text-sm font-medium">{board.says}</p>
               <p className="text-xs text-muted-foreground">
-                {board.totals.organizations} organizations measured{" "}
-                {when(board.checkedAt)} · {board.totals.ready} ready ·{" "}
-                {board.totals.need_copy_again} need copying again ·{" "}
-                {board.totals.blocked} blocked
+                {counts.listed} organizations listed (anything old, or a switch
+                pressed), measured {when(board.checkedAt)}:{" "}
+                <span data-testid="final-switch-counts">
+                  {counts.toSwitch} switch at the press · {counts.nothing}{" "}
+                  already on the new system or with nothing old left ·{" "}
+                  {board.totals.need_copy_again} of the listed need Copy again
+                  first · {board.totals.blocked} blocked
+                </span>
                 {board.lastRun &&
                   ` · last run ${board.lastRun.direction === "new" ? "pressed" : "undone"} ${when(board.lastRun.at)}${board.lastRun.by ? ` by ${board.lastRun.by}` : ""}`}
               </p>
@@ -667,8 +677,8 @@ export function FinalSwitchScreen() {
 
             <section className="flex flex-col gap-1.5">
               <p className="text-xs font-medium text-muted-foreground">
-                Every organization with anything old ({toSwitch.length} switch
-                at the press)
+                The {counts.listed} organizations listed ({counts.toSwitch}{" "}
+                switch at the press)
               </p>
               <div className="overflow-x-auto rounded-md border border-border">
                 <table className="w-full min-w-[900px] text-left text-sm">
@@ -763,7 +773,7 @@ export function FinalSwitchScreen() {
           }
           description={
             confirm === "press"
-              ? `This switches ${toSwitch.length} organizations at once: their older tables and pick lists are archived with pointers to their copies (never deleted), "when a row changes" automations follow their tables, agents read the new copy of every organization's scopes, the Data page and the scope screens open the new pages for everyone, and the older write doors are closed to browsers. The older tables are copied again first where that clears a difference. One undo on this page reverses all of it.`
+              ? `This switches ${counts.toSwitch} organizations at once: their older tables and pick lists are archived with pointers to their copies (never deleted), "when a row changes" automations follow their tables, agents read the new copy of every organization's scopes, the Data page and the scope screens open the new pages for everyone, and the older write doors are closed to browsers. The older tables are copied again first where that clears a difference. One undo on this page reverses all of it.`
               : "Every organization goes back to its older tables in the same order backwards. Each one's Switch back carries what was written in the new system since the press into its older tables; the older write doors open again, the Data page and the scope screens go back."
           }
           content={

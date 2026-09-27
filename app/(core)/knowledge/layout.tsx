@@ -1,9 +1,9 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/knowledge", {
-  title: "Knowledge System",
+  title: "Knowledge",
   description:
-    "Source to knowledge to answer — the Matrx seven-phase knowledge pipeline.",
+    "Keep, organize and search everything you know — Sources, chats, notes, projects and more.",
   letter: "K",
 });
 

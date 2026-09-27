@@ -35,6 +35,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
 import type { SmartAgentInputSurfaceValueAnchors } from "./SmartAgentInput";
+import type { ComposerPresentation } from "./composer/composer-types";
+import { composerShows } from "./composer/composer-mode-visibility";
+import { ComposerChipsRow } from "./composer/ComposerChipsRow";
+import { ComposerMetaRow, ComposerPills } from "./composer/ComposerMetaRow";
 interface SmartAgentInputStackedProps {
   conversationId: string | null | undefined;
   presentation?: "default" | "ambient";
@@ -53,6 +57,8 @@ interface SmartAgentInputStackedProps {
   contextRailAttachedItems?: readonly AttachedContextRailItem[];
   extraRightControls?: React.ReactNode;
   surfaceValueAnchors?: SmartAgentInputSurfaceValueAnchors;
+  /** The three-mode composer. Absent = the classic stacked composer, unchanged. */
+  composer?: ComposerPresentation;
 }
 
 export function SmartAgentInputStacked({
@@ -73,6 +79,7 @@ export function SmartAgentInputStacked({
   contextRailAttachedItems,
   extraRightControls,
   surfaceValueAnchors,
+  composer,
 }: SmartAgentInputStackedProps) {
   const dispatch = useAppDispatch();
   const isAmbient = presentation === "ambient";
@@ -212,6 +219,109 @@ export function SmartAgentInputStacked({
             )}
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  // ── The three-mode composer (composer/composer-types.ts) ──────────────────
+  // The SAME engine pieces as the classic layout below — one drop target that
+  // wraps the variables and the textarea (AgentVariablesInline finds the
+  // textarea through it), one draft notice (inside AgentTextarea), the context
+  // rail (it owns the agent-lists realtime subscription), the resource chips
+  // and the toolbar whose + trigger owns the documents bridge — arranged as the
+  // design draws them.
+  if (composer) {
+    const compact = composer.size === "compact";
+    const menuSide = composer.size === "splash" ? "bottom" : "top";
+    const cardClassName = cn(
+      "relative flex w-full min-h-0 flex-col border border-border bg-card transition-colors focus-within:border-foreground/25",
+      compact
+        ? "rounded-[14px] px-1.5 py-1 gap-1"
+        : "rounded-[22px] px-2.5 pt-3 pb-2 gap-2 shadow-[0_2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
+    );
+    const textarea = (
+      <AgentTextarea
+        key={`composer-${composer.size}-${expandRequestKey}`}
+        conversationId={conversationId}
+        compact={compact}
+        uploadRoot={uploadRoot}
+        uploadPath={uploadPath}
+        enablePasteImages={enablePasteImages}
+        surfaceKey={surfaceKey}
+        disableSend={sendBlocked}
+        initiallyExpanded={expandRequestKey > 0}
+        showExpandToggle={!compact}
+        placeholder={composer.placeholder}
+        maxHeightPx={composer.maxInputHeightPx}
+      />
+    );
+    const toolbar = (
+      <InputActionButtons
+        conversationId={conversationId}
+        uploadRoot={uploadRoot}
+        uploadPath={uploadPath}
+        showSendButton={showSendButton}
+        showSubmitOnEnterToggle={false}
+        showVariableIcon={showVariableIcon}
+        sendButtonVariant="blue"
+        surfaceKey={surfaceKey}
+        disableSend={sendBlocked}
+        onVoiceBusyChange={setVoiceBusy}
+        extraRightControls={extraRightControls}
+        onRequestInputExpand={() => setExpandRequestKey((key) => key + 1)}
+        composer={{
+          size: composer.size,
+          mode: composer.mode,
+          trailing: compact ? (
+            <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} />
+          ) : undefined,
+        }}
+      />
+    );
+    return (
+      <div
+        className={cn(
+          "mx-auto flex w-full min-w-0 shrink-0 flex-col",
+          compact ? "gap-1.5" : "max-w-[760px] gap-2",
+        )}
+        data-composer-size={composer.size}
+        data-composer-mode={composer.mode}
+      >
+        {composerShows(composer.mode, "chips.row") ? (
+          <ComposerChipsRow conversationId={conversationId} menuSide={menuSide} />
+        ) : null}
+        <SmartInputFileDropTarget
+          conversationId={conversationId}
+          uploadRoot={uploadRoot}
+          uploadPath={uploadPath}
+          className={cardClassName}
+        >
+          <ConversationContextRail
+            conversationId={conversationId}
+            presentation={contextRailPresentation}
+            attachedItems={contextRailAttachedItems}
+            surfaceValueName={surfaceValueAnchors?.context}
+          />
+          <SmartAgentVariables
+            conversationId={conversationId}
+            compact={compact}
+            onSubmit={handleSubmit}
+            styleOverride={variablesPanelStyle}
+            surfaceValueName={surfaceValueAnchors?.variables}
+          />
+          <SmartAgentResourceChips
+            conversationId={conversationId}
+            surfaceValueName={surfaceValueAnchors?.resources}
+          />
+          <AttachedDocumentChips conversationId={conversationId} />
+          {textarea}
+          {compact ? null : toolbar}
+        </SmartInputFileDropTarget>
+        {compact ? (
+          toolbar
+        ) : (
+          <ComposerMetaRow conversationId={conversationId} composer={composer} menuSide={menuSide} />
+        )}
       </div>
     );
   }

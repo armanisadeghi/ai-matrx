@@ -61,17 +61,26 @@ export function MeetingLayout({
   slug,
   meeting,
   headerControls,
+  preJoinControls,
 }: {
   roomName: RoomName;
   meetingId: string;
   slug: string;
   meeting: MeetingRecord;
   headerControls?: ReactNode;
+  /**
+   * Drawn in the top-right corner before the room is joined (pre-join, the
+   * waiting room). The package has no header there, so the room's
+   * `headerControls` slot does not reach it. Not drawn over an ended
+   * meeting's record.
+   */
+  preJoinControls?: ReactNode;
 }) {
   const snapshot = useMeetSnapshot();
   const [layout, setLayout] = useMeetingLayoutPreference();
   const phase = snapshot?.phase ?? "idle";
   const inRoom = phase === "connected" || phase === "reconnecting";
+  const ended = (snapshot?.meeting ?? meeting).endedAt !== null;
 
   if (inRoom && layout === "board") {
     return (
@@ -92,6 +101,11 @@ export function MeetingLayout({
         meeting={meeting}
         headerControls={headerControls}
       />
+      {!inRoom && !ended && preJoinControls !== undefined ? (
+        <div className="absolute right-3 top-3 z-10 flex items-center gap-2 pt-[env(safe-area-inset-top)]">
+          {preJoinControls}
+        </div>
+      ) : null}
       {inRoom && (
         <LayoutSwitch
           value="room"

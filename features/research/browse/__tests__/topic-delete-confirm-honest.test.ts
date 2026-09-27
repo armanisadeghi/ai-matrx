@@ -1,5 +1,6 @@
 /**
- * `TopicList.tsx`'s delete-topic confirm said "Permanently delete ... This
+ * The topic list's delete-topic confirm (was `TopicList.tsx`, now
+ * `features/research/browse/useTopicRowActions.tsx`) said "Permanently delete ... This
  * cannot be undone" over a soft delete (`research.rs_topic.deleted_at`,
  * owner ruling 2026-09-20, db-rules §8 — the same handler's own comment says
  * so). UNDONE-COPY-CENSUS, continuing GATES-TAIL #4's census.
@@ -10,7 +11,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-const REPO_ROOT = join(__dirname, "..", "..", "..", "..", "..");
+const REPO_ROOT = join(__dirname, "..", "..", "..", "..");
 
 const PERMANENCE_PATTERNS: Array<{ label: string; re: RegExp }> = [
   { label: '"cannot be undone"', re: /cannot be undone/i },
@@ -57,7 +58,7 @@ describe("research topic delete confirm is honest about a soft delete", () => {
 
   it("the dialog names the truth: archive and restore, not permanence", () => {
     const source = readFileSync(
-      join(REPO_ROOT, "features/research/components/landing/TopicList.tsx"),
+      join(REPO_ROOT, "features/research/browse/useTopicRowActions.tsx"),
       "utf8",
     );
     expect(source).toMatch(/This archives /);

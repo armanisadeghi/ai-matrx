@@ -7,7 +7,8 @@ import type { UserData } from "@/utils/userDataMapper";
 import UserMenuTrigger from "./UserMenuTrigger";
 import UserMenuPanel from "./UserMenuPanel";
 
-function useShellUserData(): UserData | null {
+/** The signed-in person as the user menu reads them; `null` for a guest. */
+export function useShellUserData(): UserData | null {
   const user = useAppSelector(selectUser);
   if (!user.id) return null;
 

@@ -22,6 +22,7 @@ import { SmartAgentInputSingleRow } from "./SmartAgentInputSingleRow";
 import { InboxQueueStrip } from "./InboxQueueStrip";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
 import type { AttachedContextRailItem } from "./ConversationContextRail";
+import type { ComposerPresentation } from "./composer/composer-types";
 
 export interface SmartAgentInputSurfaceValueAnchors {
   variables?: string;
@@ -57,6 +58,13 @@ interface SmartAgentInputProps {
   extraRightControls?: React.ReactNode;
   /** Optional Locate anchors supplied by an owning surface. */
   surfaceValueAnchors?: SmartAgentInputSurfaceValueAnchors;
+  /**
+   * The three-mode, three-size composer (Chat · Work · Advanced; splash · page
+   * · compact) — common-docs/projects/ai-matrx-composer/MAP.md. ABSENT = this
+   * component renders exactly as it always has; every existing host is
+   * untouched. Present = the same engine in the composer's arrangement.
+   */
+  composer?: ComposerPresentation;
 }
 
 export function SmartAgentInput({
@@ -79,6 +87,7 @@ export function SmartAgentInput({
   contextRailAttachedItems,
   extraRightControls,
   surfaceValueAnchors,
+  composer,
 }: SmartAgentInputProps) {
   const isAmbient = presentation === "ambient";
   // Queued-while-running message cards render above EITHER variant, so every
@@ -89,7 +98,10 @@ export function SmartAgentInput({
       <InboxQueueStrip conversationId={conversationId} />
     ) : null;
 
-  if (singleRowTextarea || (isAmbient && ambientLayout === "single-line")) {
+  if (
+    !composer &&
+    (singleRowTextarea || (isAmbient && ambientLayout === "single-line"))
+  ) {
     return (
       <>
         {queueStrip}
@@ -135,6 +147,7 @@ export function SmartAgentInput({
         contextRailAttachedItems={contextRailAttachedItems}
         extraRightControls={extraRightControls}
         surfaceValueAnchors={surfaceValueAnchors}
+        composer={composer}
       />
     </>
   );

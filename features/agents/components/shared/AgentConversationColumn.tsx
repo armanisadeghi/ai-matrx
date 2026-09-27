@@ -12,6 +12,7 @@ import { ArrowDown } from "lucide-react";
 import { motion } from "motion/react";
 import { AgentConversationDisplay } from "../messages-display/AgentConversationDisplay";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
+import type { ComposerPresentation } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
 import type { AttachedContextRailItem } from "../inputs/smart-input/ConversationContextRail";
 import type { VariablesPanelStyle } from "../inputs/variable-input-variations/variable-input-options";
 import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
@@ -88,6 +89,8 @@ interface SmartInputForwardProps {
    * BEFORE the action, never mid-send (the entitlements TRUST mandate).
    */
   disableSend?: boolean;
+  /** The three-mode composer (SmartAgentInput `composer`). Absent = classic. */
+  composer?: ComposerPresentation;
 }
 
 interface AgentConversationColumnProps {

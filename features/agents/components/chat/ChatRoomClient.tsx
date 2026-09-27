@@ -109,6 +109,7 @@ import { selectAgentName } from "@/features/agents/redux/agent-definition/select
 import { selectCurrentSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
+import { useRegisterChatAttachTarget } from "@/features/knowledge/command-bar/useKnowledgeAttachTarget";
 import { selectUserId } from "@/lib/redux/slices/userSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
@@ -581,6 +582,8 @@ export function ChatRoomClient({
     handoffResourceSources,
   ]);
   const attachResource = useAttachResource(liveConversationId ?? "");
+  // ⌘K "Attach to this chat" targets the chat on screen (and only while it is).
+  useRegisterChatAttachTarget(liveConversationId);
   const draftAppliedRef = useRef<string | null>(null);
   const [pendingTransfer, setPendingTransfer] = useState<
     | (NonNullable<ReturnType<typeof consumeChatDraftTransfer>> & {

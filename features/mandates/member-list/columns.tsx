@@ -35,7 +35,15 @@ const HEALTH_TONE: Record<string, string> = {
   "Override set aside": "border-amber-500/40 text-amber-700 dark:text-amber-300",
   "Agent archived": "border-amber-500/40 text-amber-700 dark:text-amber-300",
   "Agent unavailable": "border-red-500/40 text-red-700 dark:text-red-300",
-  "Output does not match": "border-red-500/40 text-red-700 dark:text-red-300",
+  // A WARNING, never a break (aidream 1363): the chosen agent runs anyway;
+  // only an answer missing a required key stops, with a plain error.
+  "Output does not match": "border-amber-500/40 text-amber-700 dark:text-amber-300",
+};
+
+/** What a health word means when the word alone could mislead. */
+const HEALTH_TITLE: Record<string, string> = {
+  "Output does not match":
+    "The chosen agent runs anyway, but its output may not fit: an answer missing a key this job expects stops with a plain error instead of saving half of it.",
 };
 
 /** What a person reads for the stored visibility (the four visibility lanes). */
@@ -103,6 +111,7 @@ export function MemberHealthBadge({ health }: { health: string }) {
     <Badge
       variant="outline"
       className={cn("font-normal", HEALTH_TONE[health] ?? "text-muted-foreground")}
+      title={HEALTH_TITLE[health]}
     >
       {health}
     </Badge>

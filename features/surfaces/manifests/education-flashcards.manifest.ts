@@ -1,11 +1,12 @@
 /**
  * Surface manifest — Flashcards (`matrx-user/education-flashcards`).
  *
- * The `/education/flashcards` home: the list-first "savior" view over every
- * flashcard set the learner owns or can see (RLS-filtered, recent-first), with
- * client-side search, a visibility facet, and folder filtering, plus the
- * cross-mode study streak. Rows deep-link into set detail, spaced-repetition
- * study, and the FastFire spoken drill.
+ * The `/education/flashcards` home: the learner's deck library on the
+ * canonical list shell (scope lanes Mine / My Orgs / Shared / Public, search,
+ * sort and filter on every column, the archive axis), plus the cross-mode
+ * study streak. Rows open the deck, spaced-repetition study, and the Fast
+ * Fire drill. Agents create, change and archive the person's own decks
+ * through `create_decks` / `update_decks` / `delete_decks`.
  *
  * Scoped to the LIST surface. The set-detail / study / FastFire routes are their
  * own surfaces (a study session's vocabulary — the current card, the grade, the
@@ -25,6 +26,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -42,6 +44,13 @@ const groups: SurfaceValueGroup[] = [
     sortOrder: 200,
     description:
       "The live search / visibility / folder filter state — i.e. which subset of the library is actually on screen right now.",
+  },
+  {
+    key: "decks",
+    label: "Deck changes",
+    sortOrder: 50,
+    description:
+      "Create, change and archive the person's own decks — saved immediately after the person approves.",
   },
   {
     key: "study_signal",
@@ -69,7 +78,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "set_count",
     label: "Total set count",
     description:
-      "How many flashcard sets the learner can see in total, before any filter is applied. Zero for a learner with no sets yet. Absent until `sets_loaded` is true.",
+      "How many live (not archived) decks the learner can see across every lane, before any filter is applied. Zero for a learner with no decks yet. Absent until `sets_loaded` is true.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 3,
@@ -80,7 +89,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "all_sets",
     label: "All sets",
     description:
-      "Every set the learner can see, recent-first, as { id, name, topic, lesson, description, visibility, updated_at, folder_ids }. Absent until `sets_loaded` is true. Can be hundreds of rows — bindable-only, so it never silently consumes the context window; bind `visible_sets` for the on-screen subset.",
+      "Every live (not archived) deck the learner can see in any lane, recent-first, as { id, name, topic, lesson, description, visibility, updated_at, folder_ids }. Absent until `sets_loaded` is true. Can be hundreds of rows — bindable-only, so it never silently consumes the context window; bind `visible_sets` for the on-screen subset.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 12000,
@@ -92,7 +101,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "visible_sets",
     label: "Sets on screen",
     description:
-      "The sets currently passing the search + visibility + folder filters, in the order rendered, as { id, name, topic, lesson, description, visibility, updated_at, folder_ids }. Empty array when the filters match nothing. Absent until `sets_loaded` is true. This — not `all_sets` — is what the learner is looking at.",
+      "The decks on the current page of the list — the active lane, search, filters, archive filter and sort applied, in the order rendered — as { id, name, topic, lesson, description, visibility, updated_at, folder_ids }. Empty array when nothing matches. Absent until `sets_loaded` is true. This — not `all_sets` — is what the learner is looking at; `deck_list` is the same page condensed.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 3000,
@@ -125,12 +134,70 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "load_error",
     label: "Load error",
     description:
-      "The error message shown in place of the list when the set query failed. Absent on the happy path. Present here so an agent can help with a real failure instead of hallucinating an empty library.",
+      "The error message shown at the top of the list when the deck query failed. Absent on the happy path. Present here so an agent can help with a real failure instead of hallucinating an empty library.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 120,
     sortOrder: 360,
     group: "library",
+  },
+
+  {
+    name: "deck_list",
+    label: "Deck list",
+    description:
+      "The page of decks on screen, condensed as one XML bundle: <decks lane total shown sort> with one <deck id name topic lesson difficulty visibility folders updated archived/> per row (first 25). The ids are the ones update_decks / delete_decks take for the person's own decks. Absent until the list has loaded.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 2500,
+    inlineUpTo: 4000,
+    sortOrder: 325,
+    group: "library",
+  },
+  {
+    name: "my_decks",
+    label: "My decks",
+    description:
+      "Every deck the person made (the only decks update_decks / delete_decks may change), live and archived, as { id, name, topic, lesson, difficulty, description, archived }. Absent until the list has loaded; an empty array when they have made none.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 3000,
+    autoContext: false,
+    sortOrder: 345,
+    group: "library",
+  },
+  {
+    name: "list_sort",
+    label: "Sort",
+    description:
+      'How the list is sorted, as "<column> <asc|desc>" — e.g. "updated_at desc" (most recently edited first). Columns: name, topic, lesson, difficulty, visibility, updated_at, created_at. Always present.',
+    valueType: "string",
+    alwaysAvailable: true,
+    typicalCharCount: 20,
+    sortOrder: 430,
+    group: "list_view",
+  },
+  {
+    name: "archive_filter",
+    label: "Archive filter",
+    description:
+      'Which decks the list shows: "active" (live decks only, the default), "archived" (archived only) or "all". Archived decks are restorable (update_decks with archived: false, or Trash).',
+    valueType: "string",
+    alwaysAvailable: true,
+    typicalCharCount: 8,
+    sortOrder: 440,
+    group: "list_view",
+  },
+  {
+    name: "list_filters",
+    label: "Column filters",
+    description:
+      'Column filters the person applied, keyed by column id, e.g. { "difficulty": { "kind": "select", "values": ["hard"] }, "topic": { "kind": "text", "value": "bio" } }. An empty object when no column filter is set. Always present.',
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 80,
+    sortOrder: 450,
+    group: "list_view",
   },
 
   // ── List view state ───────────────────────────────────────────────────
@@ -149,7 +216,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "visibility_filter",
     label: "Visibility filter",
     description:
-      'The active visibility chip: "all", "mine" (personal + org), "shared" (link-shared), or "public". Always present — defaults to "all".',
+      'The active list lane (scope tab): "mine" (decks the person made), "orgs" (org-mates\' decks visible to the organization), "shared" (someone else\'s deck handed to the person by a grant or link) or "public" (someone else\'s published deck). Always present.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 8,
@@ -160,7 +227,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "selected_folder_ids",
     label: "Selected folders",
     description:
-      "UUIDs of the folder chips the learner has toggled on; a set matches if it is filed under ANY of them. Always present — an empty array means no folder filter is applied.",
+      "UUIDs of the folders the Folders filter is narrowed to; a deck matches if it is filed under ANY of them (\"__none__\" = decks in no folder). Always present — an empty array means no folder filter is applied.",
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 120,
@@ -194,25 +261,77 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+const DECK_FIELDS =
+  'name: string, description?: string, topic?: string, lesson?: string, difficulty?: "easy" | "medium" | "hard"';
+
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "create_decks",
+    label: "Create decks",
+    description: `Creates one or more EMPTY decks, saved immediately, in the person's active workspace (they may be asked to pick one). Value is a JSON ARRAY (not a string) of 1-25 objects, each { ${DECK_FIELDS} }, e.g. [{ "name": "Cell Biology", "topic": "Biology", "difficulty": "medium" }]. Cards are not created here — the person adds them on the deck's page (or with Create deck, which generates cards with AI). Every entry is checked before any is created: a missing name, an unknown key, a bad difficulty, a name repeated in the list or a name one of the person's live decks already has refuses the whole write with every reason, and nothing is created.`,
+    valueType: "array",
+    updatesValue: "my_decks",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "decks",
+    sortOrder: 110,
+  },
+  {
+    name: "update_decks",
+    label: "Update decks",
+    description: `Changes one or more of the person's OWN decks (ids from my_decks — decks other people shared cannot be changed here), saved immediately. Value is a JSON ARRAY (not a string) of 1-25 objects, each { id: string (required), name?, description?, topic?, lesson?, difficulty?: "easy" | "medium" | "hard" | null, archived?: boolean }. Only the fields you send change; send "" or null to clear description, topic, lesson or difficulty. archived: true archives the deck (it leaves the list and is restorable from Trash or the Archived filter); archived: false restores it — send it in the same item to edit an archived deck. The whole list is refused, with nothing changed, on an unknown id, the same id twice, an item that changes nothing, or a rename onto a name another of the person's live decks has. Example: [{ "id": "…", "lesson": "Mitosis" }, { "id": "…", "archived": true }].`,
+    valueType: "array",
+    updatesValue: "my_decks",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "decks",
+    sortOrder: 120,
+  },
+  {
+    name: "delete_decks",
+    label: "Delete decks",
+    description: `Removes one or more of the person's OWN live decks from the library. Value is a JSON ARRAY (not a string) of deck ids from my_decks, or of { id } objects, e.g. ["…"]. What happens: the deck is ARCHIVED — it leaves this list and every study mode, its cards and study history are kept, and it is restorable from Trash (or update_decks with archived: false); nothing on this page deletes a deck permanently. Prefer update_decks with archived: true when the person says "archive". Unknown, repeated or already-archived ids refuse the whole list, with nothing changed.`,
+    valueType: "array",
+    updatesValue: "my_decks",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "decks",
+    sortOrder: 130,
+  },
+];
+
 export const educationFlashcardsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-flashcards",
   client: "matrx-user",
   executionMode: "python-stream",
   description:
-    "",
+    "The Flashcards home — the learner's deck library with lanes, search, sort, filters and archive, plus their study streak; agents can create, change and archive the person's own decks.",
   readiness: "partial",
   readinessNote:
-    "Manifest + emitter shipped and complete for everything the flashcards home loads. Not yet stamped verified: the DB sync + a live non-matching-name binding test and the Matrx-vs-matrix context check have not been run, no agent roles are declared, and no `data-surface-value` Locate anchors are tagged on the page yet.",
+    "page-pass 2026-09-27: the list moved onto EntityListPage (lanes, sort/filter, archive, row menus) and gained create/update/delete_decks + the deck_list bundle. Unproven until the live surface:probe --agent run: create two decks, update one, archive one, one refused before the card.",
   label: "Flashcards",
   urlPattern: "/education/flashcards",
   intro: `<surface_intro>
-You are on the Flashcards home at /education/flashcards — the learner's LIBRARY of flashcard sets, not a study session. It lists every set they own or can see, recent-first, with a search box, a visibility facet, and folder chips; each row deep-links to the set, to spaced-repetition study, or to the FastFire spoken drill.
-Read the values in tiers. Check sets_loaded first — while it is false the library is still in flight (or load_error explains a real failure), and you must not describe the learner as having no sets. visible_sets is what is actually on screen after the learner's filters; all_sets is the whole library and is large, so reason from visible_sets unless the request is explicitly about everything. The List view group tells you WHY the two differ — if a search query or folder chip is narrowing things, say so rather than concluding a set does not exist.
+You are on the Flashcards home at /education/flashcards — the learner's LIBRARY of flashcard decks (called "sets" in older values), not a study session. The list has lanes (Mine, My Orgs, Shared, Public), a search box, sort and filter on every column, and an archive filter; each row opens the deck, spaced-repetition study, or the Fast Fire drill.
+Read deck_list first: it is the page on screen, with ids. Check sets_loaded — while it is false the library is still loading (or load_error explains a real failure), so never tell the learner they have no decks. If a lane, search, filter or the archive filter is narrowing the list (visibility_filter, search_query, list_filters, selected_folder_ids, archive_filter), say so rather than concluding a deck does not exist.
+To change decks use ONLY these targets, on decks the person made (my_decks): create_decks adds empty decks; update_decks renames, re-topics, sets difficulty, archives (archived: true) or restores (archived: false); delete_decks archives. Never use generic scope or context tools for deck data. Cards are edited on each deck's own page.
 The study streak is cross-mode: it reflects every study session the learner has run, not only flashcards. Treat it as encouragement context, never as a reason to pressure them.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
+  writeTargets,
 };
+
+/** One entry of `my_decks`. */
+export interface MyDeckSummary {
+  id: string;
+  name: string;
+  topic: string | null;
+  lesson: string | null;
+  difficulty: string | null;
+  description: string | null;
+  archived: boolean;
+}
 
 /** One entry in `all_sets` / `visible_sets`. */
 export interface FlashcardSetSummary {
@@ -242,7 +361,12 @@ export function createEducationFlashcardsScope(values: {
   folders: FlashcardFolderSummary[];
   visibility_filter: string;
   selected_folder_ids: string[];
+  list_sort: string;
+  archive_filter: string;
+  list_filters: Record<string, unknown>;
   // alwaysAvailable: false → optional
+  deck_list?: string;
+  my_decks?: MyDeckSummary[];
   selection?: string;
   context?: Record<string, unknown>;
   set_count?: number;

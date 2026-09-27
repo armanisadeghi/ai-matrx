@@ -893,6 +893,7 @@ export function systemRungFactsOf(
         : "read",
     droppedCode: row?.dropped_code ?? null,
     droppedReason: row?.dropped_reason ?? null,
+    outputWarning: row?.output_warning ?? null,
     holderName: holderIsWorkflow
       ? (() => {
           const workflowId = holder.holderId;

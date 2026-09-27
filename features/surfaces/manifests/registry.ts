@@ -60,6 +60,7 @@ import { scraperManifest } from "./scraper.manifest";
 import { searchManifest } from "./search.manifest";
 import { documentsManifest } from "./documents.manifest";
 import { researchManifest } from "./research.manifest";
+import { researchTopicsManifest } from "./research-topics.manifest";
 import { tasksManifest } from "./tasks.manifest";
 import { dataTablesManifest } from "./data-tables.manifest";
 import { filesManifest } from "./files.manifest";
@@ -80,6 +81,7 @@ import { workingDocumentManifest } from "./working-document.manifest";
 import { scratchpadManifest } from "./scratchpad.manifest";
 import { warRoomThreadManifest } from "./war-room-thread.manifest";
 import { warRoomManifest } from "./war-room.manifest";
+import { hrEmployerManifest } from "./hr-employer.manifest";
 import { cmsManifest } from "./cms.manifest";
 import { cmsSiteManifest } from "./cms-site.manifest";
 import { cmsPageManifest } from "./cms-page.manifest";
@@ -297,6 +299,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   searchManifest,
   documentsManifest,
   researchManifest,
+  researchTopicsManifest,
   tasksManifest,
   dataTablesManifest,
   filesManifest,
@@ -317,6 +320,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   scratchpadManifest,
   warRoomThreadManifest,
   warRoomManifest,
+  hrEmployerManifest,
   cmsManifest,
   cmsSiteManifest,
   cmsPageManifest,

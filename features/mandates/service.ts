@@ -205,6 +205,54 @@ export interface ResolvedMandate {
    * `reason` is a finished sentence written for a person; show it as-is.
    */
   droppedRungs: DroppedRung[];
+  /**
+   * 🚨 EVERY OUTPUT WARNING ON THE LADDER (aidream 1363, "validation offers,
+   * never blocks"). A chosen Holder whose declared output lacks keys the job
+   * expects is NEVER set aside — it runs, and the verdict names it here. An
+   * answer that comes back without a required key must then fail plainly
+   * rather than save half of it. Empty when nothing warns.
+   */
+  outputWarnings: OutputWarning[];
+}
+
+/** One rung whose chosen Holder runs, but may not produce the job's keys. */
+export interface OutputWarning {
+  rung: "system" | "org" | "user";
+  holderType: string | null;
+  holderId: string | null;
+  missingKeys: string[];
+  /** A finished sentence for a person; show it as-is. */
+  reason: string;
+}
+
+/**
+ * Read `output_warnings` off the verdict WITHOUT trusting the generated types
+ * (same reasoning as `parseDroppedRungs`): anything unrecognised is dropped,
+ * and an old server simply reports no warnings.
+ */
+export function parseOutputWarnings(verdict: unknown): OutputWarning[] {
+  const raw = (verdict as { output_warnings?: unknown })?.output_warnings;
+  if (!Array.isArray(raw)) return [];
+  const out: OutputWarning[] = [];
+  for (const entry of raw) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const e = entry as Record<string, unknown>;
+    const rung = e.rung;
+    if (rung !== "system" && rung !== "org" && rung !== "user") continue;
+    const missingKeys = Array.isArray(e.missing_keys)
+      ? e.missing_keys.filter((k): k is string => typeof k === "string" && k.length > 0)
+      : [];
+    const reason = typeof e.reason === "string" ? e.reason : "";
+    if (!reason && missingKeys.length === 0) continue;
+    out.push({
+      rung,
+      holderType: typeof e.holder_type === "string" ? e.holder_type : null,
+      holderId: typeof e.holder_id === "string" ? e.holder_id : null,
+      missingKeys,
+      reason,
+    });
+  }
+  return out;
 }
 
 /**
@@ -611,6 +659,7 @@ export async function resolveMandate(
       : null,
     autoRun: verdict.auto_run ?? null,
     droppedRungs: parseDroppedRungs(verdict),
+    outputWarnings: parseOutputWarnings(verdict),
     // The contract, input kind and output kind come from the SERVER VERDICT —
     // it applies the fallback chain, so for the 33 definitions carrying a
     // `fallback_mandate_key` these describe the mandate that actually answered,
@@ -653,6 +702,8 @@ export interface ResolvedMandateHolder {
   organizationId: string | null;
   freshness: string;
   droppedRungs: DroppedRung[];
+  /** See `ResolvedMandate.outputWarnings`. */
+  outputWarnings: OutputWarning[];
 }
 
 export async function resolveMandateHolder(
@@ -672,6 +723,7 @@ export async function resolveMandateHolder(
     organizationId,
     freshness: verdict.freshness,
     droppedRungs: parseDroppedRungs(verdict),
+    outputWarnings: parseOutputWarnings(verdict),
     versionNumber: verdict.version_number ?? null,
   };
   if (verdict.holder_type === "workflow") {

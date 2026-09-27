@@ -27,7 +27,13 @@ export interface ContractCheck {
   holderName: string;
   holderOutputKind: string | null;
   holderOutputKeys: string[];
-  /** Runs set this Holder aside before any provider call until it is fixed. */
+  /**
+   * Runs set this Holder aside before any provider call until it is fixed.
+   * Since aidream 1363 this is true ONLY for INPUT problems (and a workflow
+   * whose results cannot name one answer). An output-key or kind mismatch is
+   * `false`: the Holder is saved and runs as chosen, but its output may not
+   * fit — an answer missing a required key stops with `mandate_output_unusable`.
+   */
   setAsideAtRun: boolean;
   /** The server's plain-words sentence: expected vs emitted, and the effect. */
   summary: string;
@@ -93,7 +99,8 @@ export interface ContractMismatch {
 
 /**
  * Every red Holder on one mandate — its default and each live binding —
- * worst (set aside at run) first.
+ * worst (set aside at run — an input problem) first; output mismatches that
+ * still run follow.
  */
 export function unmetContractChecks(
   mandateRow: unknown,

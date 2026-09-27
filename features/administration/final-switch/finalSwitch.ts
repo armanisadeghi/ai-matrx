@@ -128,9 +128,16 @@ export type FinalSwitchBoard = {
   } | null;
   platform: FinalSwitchCheck[];
   organizations: FinalSwitchOrganization[];
+  /**
+   * One set of counts, each a named set (VERIFIER-27): `organizations` = every organization listed
+   * (anything old, or a switch pressed); `to_switch` = the ones the press itself switches;
+   * `nothing_to_switch` = the rest; `need_copy_again` and `blocked` are subsets of the listed ones.
+   */
   totals: {
     organizations: number;
     ready: number;
+    to_switch?: number;
+    nothing_to_switch?: number;
     need_copy_again: number;
     blocked: number;
   };

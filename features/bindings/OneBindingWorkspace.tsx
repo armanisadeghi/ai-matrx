@@ -240,6 +240,8 @@ export interface OneBindingWorkspaceProps {
     sentence: string;
     remedy: string | null;
     broken: boolean;
+    /** Runs, but carries the door's output warning — shown amber, never red. */
+    warning?: boolean;
   } | null;
   onChanged: () => void;
 }
@@ -543,6 +545,8 @@ function BindingDraft({
     sentence: string;
     remedy: string | null;
     broken: boolean;
+    /** Runs, but carries the door's output warning — shown amber, never red. */
+    warning?: boolean;
   } | null;
   mode: BindingMode;
   onModeChange: (next: BindingMode) => void;
@@ -2427,14 +2431,18 @@ function BindingDraft({
                             ? "unknown"
                             : healthNote.broken
                               ? "error"
-                              : "neutral"
+                              : healthNote.warning
+                                ? "caution"
+                                : "neutral"
                         }
                         label={
                           healthNote == null
                             ? "Not evaluated"
                             : healthNote.broken
                               ? "Unavailable"
-                              : "Resolved"
+                              : healthNote.warning
+                                ? "Runs — output may not fit"
+                                : "Resolved"
                         }
                       />
                     ),

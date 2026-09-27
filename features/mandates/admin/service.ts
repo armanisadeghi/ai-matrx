@@ -154,9 +154,9 @@ export interface MandateConsoleData {
    * with the server or with the single-mandate page.
    *
    * 🚨 IT IS READ HERE SO THE LIST CAN JUDGE THE OUTPUT HALF OF THE CONTRACT.
-   * `enforced_holder_contract` keeps that half in force ALWAYS, so a holder
-   * that cannot produce the mandate's required keys fails at run time — and
-   * until now the LIST called that `ok` while the single-mandate admin page,
+   * A holder that does not declare the mandate's required keys runs anyway
+   * (aidream 1363) but its output may not fit — a warning — and before this
+   * the LIST called that `ok` while the single-mandate admin page,
    * three inches away, printed the failure in red (FIX-R4, walk finding 1).
    * The column rides the by-id agent read that was already happening; a `null`
    * value means "this agent declares no structured output", which fails every

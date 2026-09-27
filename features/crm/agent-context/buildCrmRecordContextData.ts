@@ -25,6 +25,7 @@ import type { PlatformComment as Comment } from "@ai-matrx/associations";
 import {
   CONTACT_BLOCK_REASON_LABELS,
   contactPointBlockReason,
+  mediumDisplay,
 } from "../reachability";
 import {
   buildModelSafeInteractionReference,
@@ -65,7 +66,7 @@ function buildContactPoints(detail: PartyDetail): CrmRecordContactPointScope[] {
       id: point.id,
       channel: point.medium.channel,
       purpose: point.purpose_code,
-      value: point.medium.display_value ?? point.medium.value_key,
+      value: mediumDisplay(point.medium).text || point.medium.value_key,
       is_primary: Boolean(point.is_primary),
       is_identity_key: Boolean(point.is_identity_key),
       opted_out: Boolean(point.opt_out_at),

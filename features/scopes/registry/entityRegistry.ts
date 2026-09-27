@@ -76,6 +76,7 @@ import {
   Webhook,
   Workflow,
   UsersRound,
+  Video,
   Wrench,
   Zap,
 } from "lucide-react";
@@ -509,6 +510,14 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: CalendarDays,
     labelPlural: "Calendar Events",
     hrefFor: (id) => detailRecordHref("calendar_event", id),
+  },
+  // A MEETING opens its durable room: `/meet/<id>` resolves the record by id and
+  // replaces the address with `/meet/<slug>` (features/meet MeetingSurface). This
+  // is the door a "shared a meeting with you" message and email lead through.
+  meet_meeting: {
+    Icon: Video,
+    labelPlural: "Meetings",
+    hrefFor: (id) => `/meet/${encodeURIComponent(id)}`,
   },
   google_document: {
     Icon: FileText,

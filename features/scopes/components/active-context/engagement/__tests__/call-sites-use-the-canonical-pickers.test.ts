@@ -25,7 +25,6 @@ const SITES: Array<[file: string, module: string, tag: string, surfaceA?: boolea
   ["features/tasks/components/mobile/MobileProjectSelector.tsx", ENGAGEMENT, "<EngagementPicker"],
   ["features/projects/components/ProjectsWorkspace.tsx", ENGAGEMENT, "<EngagementPicker"],
   ["features/agents/components/settings/AgentSettingsForm.tsx", ENGAGEMENT, "<EngagementPicker"],
-  ["features/research/components/landing/TopicList.tsx", ENGAGEMENT, "<EngagementPicker"],
   ["app/(dev)/demos/api-tests/tool-testing/components/ContextScopeModal.tsx", ENGAGEMENT, "<EngagementPicker"],
   ["app/(dev)/demos/selection-demo/page.dev.tsx", ENGAGEMENT, "<EngagementPicker"],
   ["features/agent-shortcuts/components/ShortcutForm.tsx", TARGET, "<BindingTargetPicker"],

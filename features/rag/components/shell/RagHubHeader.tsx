@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 const HUB_NAV_ITEMS = [
-  { name: "Home", href: "/knowledge", icon: Home },
+  { name: "Hub", href: "/knowledge", icon: Home },
   { name: "Data Stores", href: "/knowledge/data-stores", icon: Database },
   { name: "Sources", href: "/knowledge/library", icon: FileText },
   { name: "Catalog", href: "/knowledge/library-catalog", icon: Library },

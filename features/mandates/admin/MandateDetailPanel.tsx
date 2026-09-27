@@ -1013,16 +1013,17 @@ function StatusBanner({
         </div>
       );
     // 🚨 THE OUTPUT HALF OF THE CONTRACT (walk of v0.4.1720). This banner sat
-    // three inches under "the assignment fails at run time" saying "Healthy"
-    // about the same holder. One screen, two verdicts, is the fourth law's lie.
+    // three inches under a red verdict saying "Healthy" about the same holder.
+    // Since aidream 1363 the holder RUNS anyway — a warning (amber), never
+    // "fails at run time": only an answer missing a required key stops.
     case "output contract unmet":
       return (
-        <div className="space-y-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-xs">
+        <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
           <div className="flex items-start gap-2">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <div className="space-y-1">
-              <p className="font-medium text-rose-700 dark:text-rose-400">
-                {row.agentName} does not produce what this job promises.
+              <p className="font-medium text-amber-700 dark:text-amber-400">
+                {row.agentName} runs anyway; its output may not fit what this job promises.
               </p>
               <p className="text-muted-foreground">
                 {HEALTH_HINT["output contract unmet"]}

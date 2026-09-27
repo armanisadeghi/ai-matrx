@@ -606,3 +606,11 @@ describe("commerce label routes", () => {
     expect(surfaceFromPathname("/commerce/labels/printers/certify")).toBeNull();
   });
 });
+
+describe("HR employer route", () => {
+  it("maps only the employer tab of HR settings to the HR employer surface", () => {
+    expect(surfaceFromPathname("/hr/settings/employer")).toBe("matrx-user/hr-employer");
+    expect(surfaceFromPathname("/hr/settings/structure")).toBeNull();
+    expect(surfaceFromPathname("/hr/settings")).toBeNull();
+  });
+});

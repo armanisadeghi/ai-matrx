@@ -418,7 +418,7 @@ export function EmploymentCard(props: Props) {
                       {a.title}
                     </span>
                   )}
-                  <span className="ml-auto shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                  <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground">
                     {stintDates(a.start_date, a.end_date)}
                   </span>
                   {a.is_current ? (
@@ -432,12 +432,12 @@ export function EmploymentCard(props: Props) {
                           a.employer?.display_name ?? "this company",
                         )
                       }
-                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100"
+                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive sm:h-6 sm:w-6 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100"
                     >
                       <LogOut className="h-3.5 w-3.5" />
                     </button>
                   ) : (
-                    <span className="shrink-0 rounded-full border border-border bg-muted px-1.5 py-0.5 text-[11px] leading-none text-muted-foreground">
+                    <span className="shrink-0 rounded-full border border-border bg-muted px-1.5 py-0.5 text-xs leading-none text-muted-foreground">
                       Past
                     </span>
                   )}
@@ -471,11 +471,11 @@ export function EmploymentCard(props: Props) {
                       {a.title}
                     </span>
                   )}
-                  <span className="ml-auto shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                  <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground">
                     {stintDates(a.start_date, a.end_date)}
                   </span>
                   {!a.is_current && (
-                    <span className="shrink-0 rounded-full border border-border bg-muted px-1.5 py-0.5 text-[11px] leading-none text-muted-foreground">
+                    <span className="shrink-0 rounded-full border border-border bg-muted px-1.5 py-0.5 text-xs leading-none text-muted-foreground">
                       Past
                     </span>
                   )}

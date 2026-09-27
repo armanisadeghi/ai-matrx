@@ -272,7 +272,7 @@ export function InteractionTimeline({
             <button
               type="button"
               onClick={() => openCompose()}
-              className="mr-1 inline-flex h-11 items-center gap-1 rounded border border-border px-2 text-[11px] font-medium text-foreground hover:bg-accent sm:h-6"
+              className="mr-1 inline-flex h-11 items-center gap-1 rounded border border-border px-2 text-xs font-medium text-foreground hover:bg-accent sm:h-6"
             >
               <Send className="h-3 w-3" />
               Send email
@@ -310,7 +310,7 @@ export function InteractionTimeline({
                 type="button"
                 onClick={() => setChannel(c)}
                 className={cn(
-                  "inline-flex h-11 items-center gap-1 rounded px-2 text-[11px] font-medium transition-colors sm:h-6",
+                  "inline-flex h-11 items-center gap-1 rounded px-2 text-xs font-medium transition-colors sm:h-6",
                   channel === c
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -328,7 +328,7 @@ export function InteractionTimeline({
               setDirection(direction === "outbound" ? "inbound" : "outbound")
             }
             title="Toggle direction"
-            className="inline-flex h-11 items-center gap-1 rounded px-2 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground sm:h-6"
+            className="inline-flex h-11 items-center gap-1 rounded px-2 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground sm:h-6"
           >
             {direction === "outbound" ? (
               <ArrowUpRight className="h-3 w-3" />
@@ -425,7 +425,7 @@ export function InteractionTimeline({
                       </span>
                     )}
                     {row.duration_seconds != null && (
-                      <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                         {/* Collapsed onto the kit formatter (2026-09-12).
                             Coarse voice: a call length in a dense timeline row
                             is read at a glance, never to the second. */}
@@ -434,7 +434,7 @@ export function InteractionTimeline({
                         })}
                       </span>
                     )}
-                    <span className="ml-auto shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                    <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground">
                       {formatRelativeTime(row.occurred_at ?? row.created_at)}
                     </span>
                   </div>
@@ -463,7 +463,7 @@ export function InteractionTimeline({
                     />
                   )}
                   {classification?.evidence && (
-                    <p className="mt-0.5 text-[11px] italic text-muted-foreground/80">
+                    <p className="mt-0.5 text-xs italic text-muted-foreground/80">
                       {classification.evidence}
                     </p>
                   )}
@@ -471,7 +471,7 @@ export function InteractionTimeline({
                   {row.outreach_list_id && (
                     <Link
                       href={`/crm/outreach-lists/${row.outreach_list_id}`}
-                      className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                      className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
                     >
                       <Megaphone className="h-3 w-3" aria-hidden />
                       View the campaign this came from
@@ -493,7 +493,7 @@ export function InteractionTimeline({
                     type="button"
                     aria-label="Delete entry"
                     onClick={() => void remove(row)}
-                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive lg:h-5 lg:w-5 lg:opacity-0 lg:group-hover:opacity-100"
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive lg:h-5 lg:w-5 lg:pointer-fine:opacity-0 lg:group-hover:opacity-100"
                   >
                     <Trash2 className="size-[18px] lg:size-3" />
                   </button>

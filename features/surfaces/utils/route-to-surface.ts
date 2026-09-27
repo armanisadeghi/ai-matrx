@@ -128,6 +128,9 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/tools/pdf-extractor", surface: "matrx-user/pdf-extractor" },
   { prefix: "/tools/scanner", surface: "matrx-user/scanner" },
   { prefix: "/documents", surface: "matrx-user/documents" },
+  // HR route 68 — the employer of record. Its own surface: each /hr/settings tab
+  // holds a different record type.
+  { prefix: "/hr/settings/employer", surface: "matrx-user/hr-employer" },
   { prefix: "/settings", surface: "matrx-user/settings" },
   { prefix: "/user-settings", surface: "matrx-user/settings" },
   { prefix: "/data-tables", surface: "matrx-user/data-tables" },
@@ -742,6 +745,13 @@ export function surfaceFromPathname(
   // `/education/study-guides` keeps the list surface via the prefix table.
   if (/^\/education\/study-guides\/[^/]+\/?$/.test(stripped)) {
     return "matrx-user/education-study-guide";
+  }
+
+  // The research topics LIST is exactly `/research/topics`. One topic's
+  // workspace (`/research/topics/[id]/…`), the wizard and the landing keep the
+  // `/research` prefix mapping — they describe one topic, not a list.
+  if (/^\/research\/topics\/?$/.test(stripped)) {
+    return "matrx-user/research-topics";
   }
 
   // My Classes is exactly `/education/classes`. A class HUB

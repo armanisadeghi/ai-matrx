@@ -1,61 +1,63 @@
 // features/hr/settings/employer/HrEmployerPanel.tsx
 //
-// ROUTE 68 — THE EMPLOYER OF RECORD. Identity · establishments · tax registrations ·
-// applicability flags.
+// ROUTE 68 — THE EMPLOYER OF RECORD. Identity · address · which laws apply ·
+// establishments · tax registrations. Surface: `matrx-user/hr-employer`.
+//
+// ── 🚨 THE WRITE DOOR (fixed 2026-09-27) ───────────────────────────────────
+// Every save goes through `updateHrEmployerProfile` → `hr_employer_profile_update`.
+// Until 2026-09-27 this panel sent `hr_structure_upsert('employer_profile' | …)`, which
+// refuses every kind but department/location/job_title — Save and every Declare
+// button raised and nothing had ever been saved. The pure rules (address shape,
+// declarations, agent-write parsing, the surface scope) live in
+// `employer-profile-model.ts`, unit-tested.
 //
 // ── 🚨 THE EIN, AND WHY THERE IS NO MASK ───────────────────────────────────
-// SPEC-EMPLOYEES §2.4 asks for the EIN "masked to last-4 with an audited reveal".
-// The shipped door cannot do either half: `platform.entity_types` declares
-// `client_excluded_columns = {ein}` for `hr_employer_profile`, and `hr._project_row`
-// deletes every excluded column before the envelope is built. So the browser never
-// receives the EIN, never receives a last-4 of it, and a "reveal" returns the same
-// row minus the same column.
+// `platform.entity_types` declares `client_excluded_columns = {ein}` for
+// `hr_employer_profile`; the browser never receives the EIN, not even a last-4. A mask
+// over a value we do not hold would be a lie shaped like a security control (§1.3:
+// ABSENT, NEVER MASKED). The panel renders `ein_last4` the moment the server publishes
+// it. Typing a new EIN replaces the stored one; an agent can never set it.
 //
-// A mask over a value we do not hold would be a lie shaped like a security control.
-// §1.3 already rules on the alternative: ABSENT, NEVER MASKED — with a worded
-// existence statement where the viewer is entitled to know the value exists. That is
-// what renders. The moment the server publishes `ein_last4` (or a reveal door), the
-// last-4 lights up on its own: the panel renders whichever of `ein_last4` / `ein`
-// the envelope actually carries.
-//
-// ── 🚨 TAX REGISTRATIONS HAVE NO READ DOOR AT ALL ─────────────────────────
-// `hr_tax_registration` is a real table with a real entity token, and it is NOT in
-// `hr._door_spec` — so `hr_confidential_get`/`_list` raise "not an audited-tier
-// token" for it, and the `hr` schema is not in PostgREST. There is no way to read a
-// tax registration from a browser today. The section says so rather than rendering
-// an empty list that reads as "this employer has none", which is the one lie a
-// compliance surface must never tell.
-//
-// ── THE EDGE, STATED ON THE PAGE ───────────────────────────────────────────
-// Changing the legal name does NOT rewrite issued letters, notices or exports —
-// those carry their own snapshots taken at the moment they were produced.
+// ── 🚨 TAX REGISTRATIONS HAVE NO READ DOOR ─────────────────────────────────
+// `hr_tax_registration` is not in `hr._door_spec`, so no browser can read one. The
+// section says so rather than rendering an empty list that reads as "none".
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  AlertTriangle,
-  Building2,
-  Factory,
-  Info,
-  Landmark,
-  Loader2,
-  Save,
-  ScrollText,
-  Scale,
-} from "lucide-react";
+import { AlertTriangle, Factory, Loader2, RotateCcw, Save } from "lucide-react";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
-import { Label } from "@/components/ui/label";
-import { recordToast, toast } from "@/lib/toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Field } from "@/components/official/Field";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { toast } from "@/lib/toast";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import {
+  HR_EMPLOYER_SURFACE_NAME,
+  createHrEmployerScope,
+} from "@/features/surfaces/manifests/hr-employer.manifest";
 
-import { upsertHrStructure } from "../../service";
+import { updateHrEmployerProfile } from "../../service";
 import { isHrDenied } from "../../types";
 import { hrSettingsHref } from "../../routes";
 import { useHrContext } from "../../shared/useHrContext";
@@ -68,109 +70,54 @@ import type {
   HrEmployerProfileRead,
   HrEstablishment,
 } from "../types";
-import { ProTextarea } from "@/components/official/ProTextarea";
-import { Textarea } from "@/components/ui/textarea";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
-import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import {
+  HR_ENTITY_FORMS,
+  applicabilityFlags,
+  buildHrEmployerScope,
+  declarationPayload,
+  flagLabel,
+  flagValueText,
+  formatAddress,
+  identityEquals,
+  identityFromProfile,
+  identityPayload,
+  identityProblems,
+  mergeIdentityDraft,
+  parseDeclarations,
+  type HrDeclarableKey,
+  type HrDeclarationRequest,
+  type HrEmployerAddress,
+  type HrEmployerIdentityForm,
+} from "./employer-profile-model";
 
-// ── Applicability derivation ────────────────────────────────────────────────
+/** Radix Select cannot hold "" as an item value; this stands for "not set". */
+const NOT_SET = "__not_set__";
 
-/**
- * Build each flag's DERIVATION SENTENCE from `applicability_basis` + headcount.
- *
- * A flag with no basis renders "Nobody has established this yet" — never a confident
- * `false`. The difference matters: "we counted and you are under 50" and "nobody has
- * counted" carry completely different obligations, and a UI that renders them
- * identically is how an employer misses an FMLA notice requirement.
- */
-function applicabilityFlags(profile: HrEmployerProfileRead): HrApplicabilityFlag[] {
-  const basis = (profile.applicability_basis ?? {}) as Record<
-    string,
-    { as_of?: string; count?: number; declared_by?: string; reason?: string } | undefined
-  >;
-
-  const headcountLine =
-    profile.headcount_total !== null && profile.headcount_asof_date
-      ? `Derived: ${profile.headcount_total} employees as of ${profile.headcount_asof_date}`
-      : null;
-
-  const build = (
-    key: HrApplicabilityFlag["key"],
-    label: string,
-    test: string,
-    value: boolean | string[] | null,
-    derived: string | null,
-  ): HrApplicabilityFlag => {
-    const entry = basis[key];
-    const declaredBy = entry?.declared_by ?? null;
-    return {
-      key,
-      label,
-      test,
-      value,
-      derivation: entry?.as_of && entry?.count !== undefined
-        ? `Derived: ${entry.count} employees as of ${entry.as_of}`
-        : derived,
-      isDeclared: Boolean(declaredBy),
-      declaredBy,
-      declaredReason: entry?.reason ?? null,
-    };
-  };
-
-  return [
-    build(
-      "is_fmla_covered",
-      "FMLA covered employer",
-      "50 or more employees for 20 or more workweeks in the current or preceding calendar year.",
-      profile.is_fmla_covered,
-      headcountLine,
-    ),
-    build(
-      "is_aca_ale",
-      "ACA applicable large employer",
-      "50 or more full-time-equivalent employees in the preceding calendar year.",
-      profile.is_aca_ale,
-      headcountLine,
-    ),
-    build(
-      "is_eeo1_filer",
-      "EEO-1 filer",
-      "100 or more employees, or a federal contractor with 50 or more.",
-      profile.is_eeo1_filer,
-      headcountLine,
-    ),
-    build(
-      "is_federal_contractor",
-      "Federal contractor",
-      "Holds a covered federal contract or subcontract. This is declared, not counted.",
-      profile.is_federal_contractor,
-      null,
-    ),
-    build(
-      "everify_required_states",
-      "E-Verify required",
-      "States that require E-Verify enrolment for some or all employers.",
-      profile.everify_required_states ?? [],
-      null,
-    ),
-  ];
+function refusalText(result: { ok: false } & Record<string, unknown>): string {
+  if (isHrDenied(result as never)) {
+    const denied = result as unknown as { detail?: string; reason?: string };
+    return denied.detail || `The server refused this change (${denied.reason ?? "refused"}).`;
+  }
+  return String((result as { message?: unknown }).message ?? "The save failed.");
 }
 
 // ── The panel ───────────────────────────────────────────────────────────────
 
 export function HrEmployerPanel() {
-  const { active, orgRef } = useHrContext();
+  const { active, employers, orgRef } = useHrContext();
   const organizationId = active?.organization_id ?? null;
+  const organizationName =
+    employers.find((e) => e.organization_id === organizationId)?.name ?? null;
 
   const [profile, setProfile] = useState<HrEmployerProfileRead | null>(null);
+  const [form, setForm] = useState<HrEmployerIdentityForm | null>(null);
+  const [ein, setEin] = useState("");
   // Derived, never set synchronously in an effect body (react-hooks/set-state-in-effect).
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [reload, setReload] = useState(0);
+  /** The identity as last loaded — a reload keeps unsaved edits instead of wiping them. */
+  const lastSaved = useRef<HrEmployerIdentityForm | null>(null);
 
   const structure = useHrSettingsStructure(organizationId);
 
@@ -181,7 +128,14 @@ export function HrEmployerPanel() {
       const result = await fetchHrEmployerProfile({ organizationId });
       if (cancelled) return;
       if (result.ok) {
-        setProfile(result.data.profile);
+        const next = result.data.profile;
+        const fresh = next ? identityFromProfile(next) : null;
+        const previous = lastSaved.current;
+        setForm((current) =>
+          current && previous && fresh && !identityEquals(current, previous) ? current : fresh,
+        );
+        lastSaved.current = fresh;
+        setProfile(next);
         setError(null);
       } else {
         setError(result);
@@ -193,84 +147,291 @@ export function HrEmployerPanel() {
     };
   }, [organizationId, reload]);
 
+  const saved = profile ? identityFromProfile(profile) : null;
+  const einCheck = ein.trim() === "" ? null : checkEin(ein);
+  const dirty = Boolean(form && saved && (!identityEquals(form, saved) || ein.trim() !== ""));
+
+  // Leaving with unsaved edits asks first.
+  useEffect(() => {
+    if (!dirty) return undefined;
+    const handler = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
+
+  const loading =
+    (organizationId !== null && loadedFor !== organizationId) || structure.isLoading;
+  const loadStatus: "loading" | "loaded" | "failed" | "no_profile" = error
+    ? "failed"
+    : loadedFor !== organizationId
+      ? "loading"
+      : profile
+        ? "loaded"
+        : "no_profile";
+
+  const establishments = structure.structure?.establishments ?? null;
+  /** Establishment ids a location points at. */
+  const usedEstablishmentIds = new Set(
+    (structure.structure?.locations ?? [])
+      .map((location) => location.establishment_id)
+      .filter((id): id is string => Boolean(id)),
+  );
+
+  const getScope = () =>
+    createHrEmployerScope(
+      buildHrEmployerScope({
+        organization: organizationId ? { id: organizationId, name: organizationName } : null,
+        loadStatus,
+        profile: loadStatus === "loaded" ? profile : null,
+        form: loadStatus === "loaded" ? form : null,
+        establishments: structure.isLoading ? null : establishments,
+      }),
+    );
+
+  /** The ONE save for declarations — the page's Declare button and the agent target. */
+  const declare = async (requests: HrDeclarationRequest[]) => {
+    if (!profile) throw new Error("The employer profile has not loaded yet.");
+    const result = await updateHrEmployerProfile({
+      organization_id: profile.organization_id,
+      ...declarationPayload(profile, requests, new Date().toISOString()),
+    });
+    if (!result.ok) throw new Error(refusalText(result as never));
+    setReload((n) => n + 1);
+    return result.data;
+  };
+
+  const getWriteHandlers = () => ({
+    employer_identity_draft: {
+      validate: (value: unknown) => {
+        if (!form) refuseSurfaceWrite("The employer profile has not loaded yet.");
+        mergeIdentityDraft(form as HrEmployerIdentityForm, value);
+      },
+      apply: (value: unknown) => {
+        if (!form) refuseSurfaceWrite("The employer profile has not loaded yet.");
+        const next = mergeIdentityDraft(form as HrEmployerIdentityForm, value);
+        setForm(next);
+        return {
+          summary:
+            "The Identity form is filled in. Nothing is saved until the person presses Save changes.",
+          data: { ...next, primary_address: formatAddress(next.primary_address) },
+        };
+      },
+    },
+    applicability_declarations: {
+      validate: (value: unknown) => {
+        if (!profile) refuseSurfaceWrite("The employer profile has not loaded yet.");
+        parseDeclarations(value);
+      },
+      apply: async (value: unknown) => {
+        const requests = parseDeclarations(value);
+        const ack = await declare(requests);
+        return {
+          summary: `Saved: ${requests
+            .map((r) => `${flagLabel(r.flag)} ${r.applies ? "applies" : "does not apply"}`)
+            .join("; ")}.`,
+          data: { employer_profile_id: ack.employer_profile_id ?? profile?.id, declared: requests },
+        };
+      },
+    },
+  });
+
   return (
-    <HrSettingsShell
-      section="employer"
-      title="Employer of record"
-      description="The legal entity that employs people here."
-      loading={
-        (organizationId !== null && loadedFor !== organizationId) || structure.isLoading
-      }
-      error={error}
-      operation="This employer's profile"
-      onRetry={() => setReload((n) => n + 1)}
+    <SurfaceRuntimeProvider
+      surfaceName={HR_EMPLOYER_SURFACE_NAME}
+      getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
     >
-      <div className="space-y-6 p-4 sm:p-6">
-        {profile === null ? (
-          <div
-            role="alert"
-            className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/5 p-4"
-          >
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
-            <div className="min-w-0 space-y-1">
-              <h2 className="text-sm font-semibold text-foreground">
-                No employer profile came back for this organization
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                HR says this employer is set up, but the audited read returned no
-                profile row — which usually means the record is not reachable by your
-                capabilities rather than that it is missing. Send this screen to
-                whoever runs HR here.
-              </p>
-            </div>
-            <ErrorAlchemyMenu className="ml-auto" />
+      <HrSettingsShell
+        section="employer"
+        title="Employer of record"
+        loading={loading}
+        error={error}
+        operation="This employer's profile"
+        onRetry={() => setReload((n) => n + 1)}
+      >
+        <EmployerContextMenu
+          profile={profile}
+          establishments={establishments ?? []}
+          orgRef={orgRef}
+          getScope={getScope}
+          locationEstablishmentIds={usedEstablishmentIds}
+        >
+          <div className="matrx-touch-targets divide-y divide-border px-4 pb-8 sm:px-6">
+            {profile === null || form === null || saved === null ? (
+              <div
+                role="alert"
+                className="my-4 flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/5 p-4"
+              >
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                <div className="min-w-0 space-y-1">
+                  <h2 className="text-sm font-semibold text-foreground">
+                    No employer profile came back for this organization
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    HR is set up here, but the profile could not be read with your access.
+                    Send this screen to whoever runs HR for this employer.
+                  </p>
+                </div>
+                <ErrorAlchemyMenu className="ml-auto" />
+              </div>
+            ) : (
+              <>
+                <IdentitySection
+                  form={form}
+                  saved={saved}
+                  profile={profile}
+                  ein={ein}
+                  einCheck={einCheck}
+                  dirty={dirty}
+                  onChange={setForm}
+                  onEinChange={setEin}
+                  onDiscard={() => {
+                    setForm(saved);
+                    setEin("");
+                  }}
+                  onSaved={() => {
+                    setEin("");
+                    lastSaved.current = null;
+                    setForm(null);
+                    setReload((n) => n + 1);
+                  }}
+                />
+                <ApplicabilitySection profile={profile} onDeclare={declare} />
+                <EstablishmentsSection
+                  establishments={establishments ?? []}
+                  locationEstablishmentIds={usedEstablishmentIds}
+                  orgRef={orgRef}
+                />
+                <section aria-labelledby="hr-employer-tax" className="py-6">
+                  <h2 id="hr-employer-tax" className="text-sm font-semibold text-foreground">
+                    Tax registrations
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Tax registrations can&apos;t be shown here yet. That is not the same as
+                    having none.
+                  </p>
+                </section>
+              </>
+            )}
           </div>
-        ) : (
-          <>
-            <IdentitySection
-              profile={profile}
-              onSaved={() => setReload((n) => n + 1)}
-            />
-            <ApplicabilitySection
-              profile={profile}
-              onSaved={() => setReload((n) => n + 1)}
-            />
-            <EstablishmentsSection
-              establishments={structure.structure?.establishments ?? []}
-              locationEstablishmentIds={
-                new Set(
-                  (structure.structure?.locations ?? [])
-                    .map((location) => location.establishment_id)
-                    .filter((id): id is string => Boolean(id)),
-                )
-              }
-              orgRef={orgRef}
-            />
-            <TaxRegistrationsSection />
-          </>
-        )}
-      </div>
-    </HrSettingsShell>
+        </EmployerContextMenu>
+      </HrSettingsShell>
+    </SurfaceRuntimeProvider>
+  );
+}
+
+// ── The right-click menu — one for the whole page, rows delegated ───────────
+
+function EmployerContextMenu({
+  profile,
+  establishments,
+  locationEstablishmentIds,
+  orgRef,
+  getScope,
+  children,
+}: {
+  profile: HrEmployerProfileRead | null;
+  establishments: HrEstablishment[];
+  locationEstablishmentIds: Set<string>;
+  orgRef: string | null;
+  getScope: () => ReturnType<typeof createHrEmployerScope>;
+  children: React.ReactNode;
+}) {
+  const router = useRouter();
+  const [clickedRow, setClickedRow] = useState<HrEstablishment | null>(null);
+  const summary = profile
+    ? [
+        profile.legal_name,
+        profile.dba_name ? `doing business as ${profile.dba_name}` : null,
+        formatAddress(identityFromProfile(profile).primary_address) || null,
+      ]
+        .filter(Boolean)
+        .join(" — ")
+    : "";
+  const rowUsed = Boolean(clickedRow && locationEstablishmentIds.has(clickedRow.id));
+
+  return (
+    <NonEditableContextMenu
+      sourceFeature="hr"
+      surfaceName={HR_EMPLOYER_SURFACE_NAME}
+      menuVersion={1}
+      getApplicationScope={getScope}
+      contentSource={{ type: "raw" }}
+      contextData={{ content: summary }}
+      entity={
+        profile
+          ? { type: "hr_employer_profile", id: profile.id, title: profile.legal_name }
+          : undefined
+      }
+      resolveContextOnOpen={(target) => {
+        const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+        const row = (id && establishments.find((r) => r.id === id)) || null;
+        setClickedRow(row);
+        if (!row) return null;
+        return {
+          content: `${row.name}${row.is_headquarters ? " (headquarters)" : ""}`,
+          [CONTEXT_MENU_ENTITY_KEY]: {
+            type: "hr_establishment",
+            id: row.id,
+            title: row.name,
+          },
+        };
+      }}
+      extraSections={
+        clickedRow
+          ? [
+              {
+                id: "hr-establishment-row",
+                label: "This establishment",
+                anchor: "after-compare",
+                items: [
+                  {
+                    kind: "item",
+                    id: "hr-establishment-see-locations",
+                    label: "See locations",
+                    icon: Factory,
+                    disabled: !rowUsed,
+                    description: rowUsed ? undefined : "No location uses this establishment",
+                    onSelect: () => {
+                      router.push(hrSettingsHref("structure", { org: orgRef }));
+                    },
+                  },
+                ] satisfies ContextMenuExtraItem[],
+              },
+            ]
+          : []
+      }
+    >
+      <div className="contents">{children}</div>
+    </NonEditableContextMenu>
   );
 }
 
 // ── Identity ────────────────────────────────────────────────────────────────
 
 function IdentitySection({
+  form,
+  saved,
   profile,
+  ein,
+  einCheck,
+  dirty,
+  onChange,
+  onEinChange,
+  onDiscard,
   onSaved,
 }: {
+  form: HrEmployerIdentityForm;
+  saved: HrEmployerIdentityForm;
   profile: HrEmployerProfileRead;
+  ein: string;
+  einCheck: ReturnType<typeof checkEin> | null;
+  dirty: boolean;
+  onChange: (next: HrEmployerIdentityForm) => void;
+  onEinChange: (next: string) => void;
+  onDiscard: () => void;
   onSaved: () => void;
 }) {
-  const [legalName, setLegalName] = useState(profile.legal_name);
-  const [dbaName, setDbaName] = useState(profile.dba_name ?? "");
-  const [entityForm, setEntityForm] = useState(profile.entity_form ?? "");
-  const [formationState, setFormationState] = useState(profile.formation_state ?? "");
-  const [ein, setEin] = useState("");
-  const [address, setAddress] = useState(() =>
-    JSON.stringify(profile.primary_address ?? {}, null, 2),
-  );
   const [busy, setBusy] = useState(false);
   const [why, setWhy] = useState<string | null>(null);
 
@@ -279,225 +440,232 @@ function IdentitySection({
     profile.ein_last4 ??
     einLastFour((profile as unknown as { ein?: string | null }).ein ?? null);
 
-  const einCheck = ein.trim() === "" ? null : checkEin(ein);
+  const problems = identityProblems(form);
+  const set = <K extends keyof HrEmployerIdentityForm>(key: K, value: HrEmployerIdentityForm[K]) =>
+    onChange({ ...form, [key]: value });
+  const setAddress = (key: keyof HrEmployerAddress, value: string) =>
+    onChange({ ...form, primary_address: { ...form.primary_address, [key]: value } });
 
   const save = async () => {
+    if (problems.length > 0) {
+      setWhy(problems.join(" "));
+      return;
+    }
     if (einCheck && !einCheck.ok) {
       setWhy(einCheck.why);
       return;
     }
-    let parsedAddress: unknown;
-    try {
-      parsedAddress = JSON.parse(address) as unknown;
-    } catch {
-      setWhy("The primary address is not valid JSON.");
-      return;
-    }
-
     setBusy(true);
     setWhy(null);
-    const result = await upsertHrStructure({
-      kind: "employer_profile",
-      payload: {
-        id: profile.id,
-        organization_id: profile.organization_id,
-        legal_name: legalName.trim(),
-        dba_name: dbaName.trim() || null,
-        entity_form: entityForm.trim() || null,
-        formation_state: formationState.trim() || null,
-        primary_address: parsedAddress,
-        // Only sent when the admin actually typed a new one. An empty box must never
-        // be read as "clear the EIN".
-        ...(einCheck?.ok ? { ein: einCheck.value } : {}),
-        // CONVERGE: C-6 — NOT a client-side CAS: `expected_version` is handed to a
-        // Postgres RPC that does the compare-and-swap server-side, so guardedUpdate()
-        // (which owns a client `.update().eq("version", …)`) does not apply.
-        // Data Doctrine §3.2, Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
-        expected_version: profile.version,
-      },
+    const result = await updateHrEmployerProfile({
+      organization_id: profile.organization_id,
+      ...identityPayload(form),
+      // Only sent when a new one was typed. An empty box never clears the EIN.
+      ...(einCheck?.ok ? { ein: einCheck.value } : {}),
     });
     setBusy(false);
-
     if (!result.ok) {
-      setWhy(
-        isHrDenied(result)
-          ? result.detail || `The server refused this change (${result.reason}).`
-          : result.message,
-      );
+      setWhy(refusalText(result as never));
       return;
     }
-    setEin("");
-    toast.success("The employer profile is saved.");
+    toast.success("Employer profile saved.");
     onSaved();
   };
 
+  const entityKnown = HR_ENTITY_FORMS.some((option) => option.value === form.entity_form);
+
   return (
-    <section className="rounded-lg border border-border bg-card">
-      <header className="flex items-start gap-3 border-b border-border p-4">
-        <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 space-y-1">
-          <h2 className="text-sm font-semibold text-foreground">Identity</h2>
-          <p className="text-sm text-muted-foreground">
-            One employer profile per organization — this is that one.
-          </p>
-        </div>
-      </header>
+    <section aria-labelledby="hr-employer-identity" className="py-6">
+      <h2 id="hr-employer-identity" className="text-sm font-semibold text-foreground">
+        Identity
+      </h2>
 
-      <div className="space-y-4 p-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="legal-name" className="text-sm font-medium">
-              Legal name
-            </Label>
-            <Input
-              id="legal-name"
-              value={legalName}
-              onChange={(event) => setLegalName(event.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="dba-name" className="text-sm font-medium">
-              Doing business as
-            </Label>
-            <Input
-              id="dba-name"
-              value={dbaName}
-              onChange={(event) => setDbaName(event.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="entity-form" className="text-sm font-medium">
-              Entity form
-            </Label>
-            <Input
-              id="entity-form"
-              value={entityForm}
-              onChange={(event) => setEntityForm(event.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="formation-state" className="text-sm font-medium">
-              Formation state
-            </Label>
-            <Input
-              id="formation-state"
-              value={formationState}
-              onChange={(event) => setFormationState(event.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* 🚨 THE EIN — absent, never masked. See the file header. */}
-        <div className="space-y-1.5 rounded-md border border-border bg-muted/40 p-3">
-          <Label htmlFor="ein" className="text-sm font-medium">
-            EIN
-          </Label>
-          {knownLastFour ? (
-            <p className="font-mono text-sm text-foreground">••-•••{knownLastFour}</p>
-          ) : (
-            <p className="text-sm text-foreground">
-              This employer&apos;s EIN is on file and is not returned to a browser —
-              not in full and not in part. It is used server-side for payroll exports,
-              W-2s and new-hire reports. Typing a new one below replaces it.
-            </p>
-          )}
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Field
+          label="Legal name"
+          htmlFor="legal-name"
+          required
+          value={form.legal_name}
+          help="Letters, notices and exports already issued keep the name they were issued with."
+        >
+          <ProInput
+            id="legal-name"
+            value={form.legal_name}
+            onChange={(event) => set("legal_name", event.target.value)}
+          />
+        </Field>
+        <Field label="Doing business as" htmlFor="dba-name" optional>
+          <ProInput
+            id="dba-name"
+            value={form.dba_name}
+            onChange={(event) => set("dba_name", event.target.value)}
+          />
+        </Field>
+        <Field label="Entity form" htmlFor="entity-form">
+          <Select
+            value={form.entity_form || NOT_SET}
+            onValueChange={(value) => set("entity_form", value === NOT_SET ? "" : value)}
+          >
+            <SelectTrigger id="entity-form" className="text-base sm:text-sm">
+              <SelectValue placeholder="Not set" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NOT_SET}>Not set</SelectItem>
+              {HR_ENTITY_FORMS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+              {form.entity_form && !entityKnown ? (
+                <SelectItem value={form.entity_form}>{form.entity_form}</SelectItem>
+              ) : null}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field
+          label="Formation state"
+          htmlFor="formation-state"
+          optional
+          help="The state the entity was formed in — two letters, like DE."
+        >
+          <ProInput
+            id="formation-state"
+            value={form.formation_state}
+            maxLength={2}
+            autoCapitalize="characters"
+            placeholder="DE"
+            onChange={(event) => set("formation_state", event.target.value.toUpperCase())}
+          />
+        </Field>
+        <Field
+          label="EIN"
+          htmlFor="ein"
+          description={
+            knownLastFour
+              ? `On file, ending ${knownLastFour}. Type a new one to replace it.`
+              : "On file and never shown. Type a new one to replace it."
+          }
+          error={einCheck && !einCheck.ok ? einCheck.why : undefined}
+        >
+          {/* A tax identifier: plain input on purpose — no dictation, no copy menu. */}
           <Input
             id="ein"
             value={ein}
             inputMode="numeric"
-            placeholder="Type a new EIN to replace it — 12-3456789"
-            onChange={(event) => setEin(formatEinInput(event.target.value))}
+            autoComplete="off"
+            placeholder="12-3456789"
+            onChange={(event) => onEinChange(formatEinInput(event.target.value))}
             aria-invalid={Boolean(einCheck && !einCheck.ok)}
-            className="max-w-[16rem]"
+            className="text-base sm:text-sm"
           />
-          {einCheck && !einCheck.ok ? (
-            <ErrorNotice size="inline" className="text-sm" message={einCheck.why} />
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Nine digits, written NN-NNNNNNN. Leave blank to keep the current number.
-            </p>
-          )}
-        </div>
+        </Field>
+      </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="primary-address" className="text-sm font-medium">
-            Primary address
-          </Label>
-          <Textarea
-            id="primary-address"
-            value={address}
-            rows={6}
-            className="font-mono text-xs"
-            onChange={(event) => setAddress(event.target.value)}
+      <h3 className="mt-6 text-sm font-medium text-foreground">Primary address</h3>
+      <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Field label="Street" htmlFor="addr-line1" className="sm:col-span-2 lg:col-span-1">
+          <ProInput
+            id="addr-line1"
+            value={form.primary_address.line1}
+            autoComplete="address-line1"
+            onChange={(event) => setAddress("line1", event.target.value)}
           />
+        </Field>
+        <Field label="Suite or unit" htmlFor="addr-line2" optional>
+          <ProInput
+            id="addr-line2"
+            value={form.primary_address.line2}
+            autoComplete="address-line2"
+            onChange={(event) => setAddress("line2", event.target.value)}
+          />
+        </Field>
+        <Field label="City" htmlFor="addr-city">
+          <ProInput
+            id="addr-city"
+            value={form.primary_address.city}
+            autoComplete="address-level2"
+            onChange={(event) => setAddress("city", event.target.value)}
+          />
+        </Field>
+        <div className="grid grid-cols-3 gap-4 sm:col-span-2 lg:col-span-3 lg:grid-cols-6">
+          <Field label="State" htmlFor="addr-region">
+            <ProInput
+              id="addr-region"
+              value={form.primary_address.region}
+              maxLength={2}
+              autoComplete="address-level1"
+              placeholder="CA"
+              onChange={(event) => setAddress("region", event.target.value.toUpperCase())}
+            />
+          </Field>
+          <Field label="ZIP" htmlFor="addr-postal">
+            <ProInput
+              id="addr-postal"
+              value={form.primary_address.postal_code}
+              inputMode="numeric"
+              autoComplete="postal-code"
+              onChange={(event) => setAddress("postal_code", event.target.value)}
+            />
+          </Field>
+          <Field label="Country" htmlFor="addr-country">
+            <ProInput
+              id="addr-country"
+              value={form.primary_address.country}
+              maxLength={2}
+              autoComplete="country"
+              onChange={(event) => setAddress("country", event.target.value.toUpperCase())}
+            />
+          </Field>
         </div>
+      </div>
 
-        {/* The edge, stated on the page */}
-        <div className="flex items-start gap-2 rounded-md border border-dashed border-border p-3">
-          <ScrollText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            Changing the legal name here does <span className="font-medium">not</span>{" "}
-            rewrite letters, notices or exports that have already been issued. Each of
-            those carries the name that was true when it was produced, which is what
-            makes them evidence.
-          </p>
-        </div>
+      {why ? <ErrorNotice size="inline" className="mt-4 text-sm" message={why} /> : null}
 
-        {why ? (
-          <ErrorNotice size="inline" className="text-sm" message={why} />
-        ) : null}
-
-        <Button
-          type="button"
-          size="sm"
-          onClick={save}
-          disabled={busy}
-          className="min-h-11 sm:min-h-9"
-        >
+      <div className="mt-5 flex flex-wrap items-center gap-2">
+        <Button type="button" size="sm" onClick={save} disabled={busy || !dirty}>
           {busy ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
             <Save className="mr-2 h-4 w-4" />
           )}
-          Save identity
+          Save changes
         </Button>
+        {dirty ? (
+          <Button type="button" size="sm" variant="ghost" onClick={onDiscard} disabled={busy}>
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Discard
+          </Button>
+        ) : null}
+        <span className="text-sm text-muted-foreground" aria-live="polite">
+          {dirty
+            ? "Unsaved changes"
+            : identityEquals(form, saved) && profile.updated_at
+              ? `Saved ${new Date(profile.updated_at).toLocaleDateString()}`
+              : null}
+        </span>
       </div>
     </section>
   );
 }
 
-// ── Applicability flags ─────────────────────────────────────────────────────
+// ── Applicability ───────────────────────────────────────────────────────────
 
 function ApplicabilitySection({
   profile,
-  onSaved,
+  onDeclare,
 }: {
   profile: HrEmployerProfileRead;
-  onSaved: () => void;
+  onDeclare: (requests: HrDeclarationRequest[]) => Promise<unknown>;
 }) {
   const flags = applicabilityFlags(profile);
-
   return (
-    <section className="rounded-lg border border-border bg-card">
-      <header className="flex items-start gap-3 border-b border-border p-4">
-        <Scale className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 space-y-1">
-          <h2 className="text-sm font-semibold text-foreground">Which laws apply</h2>
-          <p className="text-sm text-muted-foreground">
-            Each of these is derived from what the system can count. Where the count is
-            wrong or the answer is not countable, an admin declares it — and that
-            declaration is recorded with who made it and why.
-          </p>
-        </div>
-      </header>
-      <ul className="divide-y divide-border">
+    <section aria-labelledby="hr-employer-laws" className="py-6">
+      <h2 id="hr-employer-laws" className="text-sm font-semibold text-foreground">
+        Which laws apply
+      </h2>
+      <ul className="mt-2 divide-y divide-border">
         {flags.map((flag) => (
-          <ApplicabilityRow
-            key={flag.key}
-            flag={flag}
-            profile={profile}
-            onSaved={onSaved}
-          />
+          <ApplicabilityRow key={flag.key} flag={flag} onDeclare={onDeclare} />
         ))}
       </ul>
     </section>
@@ -506,114 +674,81 @@ function ApplicabilitySection({
 
 function ApplicabilityRow({
   flag,
-  profile,
-  onSaved,
+  onDeclare,
 }: {
   flag: HrApplicabilityFlag;
-  profile: HrEmployerProfileRead;
-  onSaved: () => void;
+  onDeclare: (requests: HrDeclarationRequest[]) => Promise<unknown>;
 }) {
   const [declaring, setDeclaring] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [why, setWhy] = useState<string | null>(null);
-
   const isList = Array.isArray(flag.value);
-  const valueText = isList
-    ? (flag.value as string[]).length
-      ? (flag.value as string[]).join(", ")
-      : "None"
-    : flag.value === true
-      ? "Yes"
-      : flag.value === false
-        ? "No"
-        : "Not established";
 
-  const declare = async (next: boolean) => {
-    if (reason.trim().length < 4) {
+  const declare = async (applies: boolean) => {
+    let requests: HrDeclarationRequest[];
+    try {
+      requests = parseDeclarations([
+        { flag: flag.key as HrDeclarableKey, applies, reason },
+      ]);
+    } catch {
       setWhy("Say why in a sentence. An undocumented override is an audit finding.");
       return;
     }
     setBusy(true);
     setWhy(null);
-    const result = await upsertHrStructure({
-      kind: "employer_profile_applicability",
-      payload: {
-        id: profile.id,
-        organization_id: profile.organization_id,
-        flag: flag.key,
-        value: next,
-        reason: reason.trim(),
-        expected_version: profile.version,
-      },
-    });
-    setBusy(false);
-    if (!result.ok) {
-      setWhy(
-        isHrDenied(result)
-          ? result.detail || `The server refused this declaration (${result.reason}).`
-          : result.message,
-      );
-      return;
+    try {
+      await onDeclare(requests);
+      setDeclaring(false);
+      setReason("");
+      toast.success(`${flag.label}: declared ${applies ? "applies" : "does not apply"}.`);
+    } catch (err) {
+      setWhy(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
     }
-    setDeclaring(false);
-    setReason("");
-    recordToast.success(
-      { type: "hr_employer_profile_applicability", id: profile.id },
-      `${flag.label} is now declared for this employer.`,
-    );
-    onSaved();
   };
 
+  const basis = flag.isDeclared
+    ? `Declared${flag.declaredAt ? ` ${new Date(flag.declaredAt).toLocaleDateString()}` : ""}${
+        flag.declaredReason ? ` — ${flag.declaredReason}` : ""
+      }`
+    : (flag.derivation ?? "Nobody has counted or declared this yet — that is not a no.");
+
   return (
-    <li className="space-y-2 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0 space-y-1">
+    <li className="py-3">
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div className="min-w-0 flex-1 space-y-0.5">
           <p className="text-sm font-medium text-foreground">{flag.label}</p>
           <p className="text-sm text-muted-foreground">{flag.test}</p>
+          <p className="text-sm text-muted-foreground">{basis}</p>
         </div>
-        <Badge variant={flag.isDeclared ? "default" : "secondary"} className="shrink-0">
-          {valueText}
-        </Badge>
+        <div className="flex shrink-0 items-center gap-2">
+          <Badge variant={flag.isDeclared ? "default" : "secondary"}>
+            {flagValueText(flag.value)}
+          </Badge>
+          {isList || declaring ? null : (
+            <Button type="button" size="sm" variant="outline" onClick={() => setDeclaring(true)}>
+              Declare
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* 🚨 THE DERIVATION IS ALWAYS RENDERED — never a bare true/false. */}
-      <p className="text-sm text-muted-foreground">
-        {flag.isDeclared ? (
-          <>
-            Declared by {flag.declaredBy ?? "an administrator"}
-            {asClause(flag.declaredReason ? ` — ${flag.declaredReason}` : "")}.
-          </>
-        ) : flag.derivation ? (
-          flag.derivation
-        ) : (
-          "Nobody has established this yet. That is different from a 'no' — nothing has been counted or declared."
-        )}
-      </p>
-
-      {isList ? null : declaring ? (
-        <div className="space-y-2">
-          <Label htmlFor={`declare-${flag.key}`} className="text-sm font-medium">
-            Why are you overriding the derived answer?
-          </Label>
-          <ProTextarea
-            id={`declare-${flag.key}`}
-            value={reason}
-            rows={2}
-            onChange={(event) => setReason(event.target.value)}
-            placeholder="Counsel advised us we are covered from 1 January."
-          />
-          {why ? (
-            <ErrorNotice size="inline" className="text-sm" message={why} />
-          ) : null}
+      {declaring ? (
+        <div className="mt-3 space-y-2">
+          <Field label="Why are you overriding the counted answer?" htmlFor={`declare-${flag.key}`}>
+            <ProTextarea
+              id={`declare-${flag.key}`}
+              value={reason}
+              rows={2}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="Counsel advised us we are covered from 1 January."
+            />
+          </Field>
+          {why ? <ErrorNotice size="inline" className="text-sm" message={why} /> : null}
           <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              size="sm"
-              disabled={busy}
-              onClick={() => declare(true)}
-              className="min-h-11 sm:min-h-9"
-            >
+            <Button type="button" size="sm" disabled={busy} onClick={() => declare(true)}>
               Declare it applies
             </Button>
             <Button
@@ -622,7 +757,6 @@ function ApplicabilityRow({
               variant="outline"
               disabled={busy}
               onClick={() => declare(false)}
-              className="min-h-11 sm:min-h-9"
             >
               Declare it does not
             </Button>
@@ -631,24 +765,16 @@ function ApplicabilityRow({
               size="sm"
               variant="ghost"
               disabled={busy}
-              onClick={() => setDeclaring(false)}
-              className="min-h-11 sm:min-h-9"
+              onClick={() => {
+                setDeclaring(false);
+                setWhy(null);
+              }}
             >
               Cancel
             </Button>
           </div>
         </div>
-      ) : (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => setDeclaring(true)}
-          className="min-h-11 sm:min-h-9"
-        >
-          Declare this instead
-        </Button>
-      )}
+      ) : null}
     </li>
   );
 }
@@ -661,12 +787,10 @@ function EstablishmentsSection({
   orgRef,
 }: {
   establishments: HrEstablishment[];
-  /** Establishment ids a location points at — those cannot be deleted. */
+  /** Establishment ids a location points at. */
   locationEstablishmentIds: Set<string>;
   orgRef: string | null;
 }) {
-  const router = useRouter();
-  const [clickedRow, setClickedRow] = useState<HrEstablishment | null>(null);
   const columns: MatrxColumnDef<HrEstablishment>[] = [
     {
       id: "name",
@@ -702,8 +826,7 @@ function EstablishmentsSection({
     },
     {
       id: "referenced",
-      accessorFn: (row) =>
-        locationEstablishmentIds.has(row.id) ? "In use" : "Not referenced",
+      accessorFn: (row) => (locationEstablishmentIds.has(row.id) ? "In use" : "Not used"),
       header: "Locations",
       filter: "select",
       cell: (row) =>
@@ -715,64 +838,17 @@ function EstablishmentsSection({
             In use — see locations
           </Link>
         ) : (
-          <span className="text-sm text-muted-foreground">Not referenced</span>
+          <span className="text-sm text-muted-foreground">Not used</span>
         ),
     },
   ];
 
   return (
-    <section className="rounded-lg border border-border bg-card">
-      <header className="flex items-start gap-3 border-b border-border p-4">
-        <Factory className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 space-y-1">
-          <h2 className="text-sm font-semibold text-foreground">Establishments</h2>
-          <p className="text-sm text-muted-foreground">
-            The physical sites this employer reports on for EEO-1 and OSHA. An
-            establishment a location points at cannot be deleted — remove the
-            location&apos;s link first.
-          </p>
-        </div>
-      </header>
-      <div className="p-4">
-        <NonEditableContextMenu
-          sourceFeature="admin"
-          contentSource={{ type: "raw" }}
-          contextData={{ content: "" }}
-          resolveContextOnOpen={(target) => {
-            const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
-            const row = (id && establishments.find((r) => r.id === id)) || null;
-            setClickedRow(row);
-            if (!row) return null;
-            return {
-              content: `${row.name}${row.is_headquarters ? " (headquarters)" : ""}`,
-              [CONTEXT_MENU_ENTITY_KEY]: {
-                type: "hr_establishment",
-                id: row.id,
-                title: row.name,
-              },
-            };
-          }}
-          extraSections={[
-            {
-              id: "hr-establishment-row",
-              label: "This establishment",
-              anchor: "after-compare",
-              items: [
-                {
-                  kind: "item",
-                  id: "hr-establishment-see-locations",
-                  label: "See locations",
-                  icon: Factory,
-                  disabled: !clickedRow || !locationEstablishmentIds.has(clickedRow.id),
-                  description: "No location currently points at this establishment",
-                  onSelect: () => {
-                    router.push(hrSettingsHref("structure", { org: orgRef }));
-                  },
-                },
-              ] satisfies ContextMenuExtraItem[],
-            },
-          ]}
-        >
+    <section aria-labelledby="hr-employer-establishments" className="py-6">
+      <h2 id="hr-employer-establishments" className="text-sm font-semibold text-foreground">
+        Establishments
+      </h2>
+      <div className="mt-3">
         <MatrxDataTable
           data={establishments}
           columns={columns}
@@ -781,42 +857,10 @@ function EstablishmentsSection({
           urlState={{ id: "hr-establishments" }}
           toolbar={{ search: true, searchPlaceholder: "Search establishments" }}
           emptyState={{
-            title: "No establishments yet",
-            description:
-              "An employer with one site does not need one. Add them when EEO-1 or OSHA reporting asks you to report per site.",
+            title: "No establishments",
+            description: "An employer that reports as one site does not need any.",
           }}
         />
-        </NonEditableContextMenu>
-      </div>
-    </section>
-  );
-}
-
-// ── Tax registrations — the honest gap ──────────────────────────────────────
-
-function TaxRegistrationsSection() {
-  return (
-    <section className="rounded-lg border border-border bg-card">
-      <header className="flex items-start gap-3 border-b border-border p-4">
-        <Landmark className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 space-y-1">
-          <h2 className="text-sm font-semibold text-foreground">Tax registrations</h2>
-          <p className="text-sm text-muted-foreground">
-            One per jurisdiction and kind — the account numbers withholding and
-            unemployment filings are made under.
-          </p>
-        </div>
-      </header>
-      <div className="flex items-start gap-3 p-4">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">
-          There is no read path to tax registrations from a browser yet — the record
-          type is not registered on the audited-door list, so nothing can fetch one.
-          This section is deliberately empty rather than showing a list that would read
-          as &quot;this employer has none&quot;, which for a compliance record is the
-          worse of the two mistakes. It fills itself in the moment the door is
-          registered.
-        </p>
       </div>
     </section>
   );

@@ -73,6 +73,9 @@ export function CanvasSideSheet() {
         t?.tagName === "TEXTAREA" ||
         t?.isContentEditable;
       if (typing) return;
+      // Canvas-chrome pages (ChatCanvasWorkspace) own ⌘\ — there it docks /
+      // undocks the chat. Stand down so one key never does two things.
+      if (document.querySelector('.shell-root[data-shell-chrome="canvas"]')) return;
       e.preventDefault();
       dispatch(toggleCanvas());
     };

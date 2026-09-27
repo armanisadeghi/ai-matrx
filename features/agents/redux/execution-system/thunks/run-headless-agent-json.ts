@@ -58,6 +58,7 @@ import {
 import { setUserInputMessageParts } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { launchAgentExecution } from "./launch-agent-execution.thunk";
 import { resolveMandate } from "@/features/mandates/service";
+import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import {
   judgeDeclaredFlattening,
   judgeHarvestedFlattening,
@@ -388,12 +389,97 @@ async function deliverResult(
   }
 }
 
+/**
+ * 🚨 A WARNED CHOICE THAT ANSWERS WITHOUT A REQUIRED KEY FAILS PLAINLY.
+ *
+ * Validation offers, never blocks (aidream 1363): a person or organization may
+ * choose an agent whose declared output lacks keys the job expects, and that
+ * choice RUNS. The resolution names it in `outputWarnings`. The server's own
+ * run path refuses such an answer with `mandate_output_unusable`; this is the
+ * same rule for the ONE client funnel, so a client-run job never saves half an
+ * answer. Only a WARNED resolution is judged — an unwarned holder keeps
+ * today's behaviour exactly. A decision artifact answers inside `answers`, so a
+ * key present there counts as present.
+ *
+ * A resolution read failure is the launch's to report, not this guard's: the
+ * result passes through untouched.
+ */
+export async function failWarnedOutputMissingKeys(
+  getState: () => RootState,
+  opts: Pick<HeadlessAgentJsonOptions, "mandateKey" | "surfaceKey">,
+  result: HeadlessAgentJsonResult,
+): Promise<HeadlessAgentJsonResult> {
+  if (!opts.mandateKey || !result.success) return result;
+  const data = result.data;
+  if (typeof data !== "object" || data === null || Array.isArray(data)) return result;
+  let resolved: Awaited<ReturnType<typeof resolveMandate>>;
+  try {
+    resolved = await resolveMandate(opts.mandateKey);
+  } catch {
+    return result;
+  }
+  if (!resolved?.outputWarnings?.length) return result;
+  const required = resolved.contract?.requiredOutputKeys ?? [];
+  if (required.length === 0) return result;
+  const record = data as Record<string, unknown>;
+  const answers =
+    typeof record.answers === "object" && record.answers !== null && !Array.isArray(record.answers)
+      ? (record.answers as Record<string, unknown>)
+      : null;
+  const missing = required.filter((key) => !(key in record) && !(answers && key in answers));
+  if (missing.length === 0) return result;
+
+  const warning = resolved.outputWarnings[0];
+  const holderId = warning.holderId ?? resolved.agentId;
+  let holderName: string | undefined;
+  try {
+    holderName = holderId ? selectAgentName(getState(), holderId) ?? undefined : undefined;
+  } catch {
+    holderName = undefined;
+  }
+  const who = holderName ?? (warning.holderType === "workflow" ? "The chosen workflow" : "The chosen agent");
+  const keys = missing.join(", ");
+  const sentence =
+    `${who} ran, but its answer is missing ${keys} this job needs, so nothing was saved. ` +
+    `It was chosen although it does not declare those keys — pick one that does.`;
+  captureError({
+    source: "agent-json-result",
+    code: "mandate_output_unusable",
+    level: "medium",
+    recoverable: false,
+    message: sentence,
+    userMessage: sentence,
+    ...(result.requestId ? { requestId: result.requestId } : {}),
+    ...(result.conversationId ? { conversationId: result.conversationId } : {}),
+    raw: {
+      defect: "warned-holder-answer-missing-required-keys",
+      mandateKey: opts.mandateKey,
+      surfaceKey: opts.surfaceKey,
+      holderId,
+      warnedRung: warning.rung,
+      missingKeys: missing,
+      requiredOutputKeys: required,
+    },
+  });
+  return {
+    ...result,
+    success: false,
+    data: null,
+    error: sentence,
+    errorDetail: `mandate_output_unusable: missing ${keys}`,
+  };
+}
+
 export async function runHeadlessAgentJson(
   dispatch: AppDispatch,
   getState: () => RootState,
   opts: HeadlessAgentJsonOptions,
 ): Promise<HeadlessAgentJsonResult> {
-  const result = await launchAndWait(dispatch, getState, opts);
+  const result = await failWarnedOutputMissingKeys(
+    getState,
+    opts,
+    await launchAndWait(dispatch, getState, opts),
+  );
   await deliverResult(
     {
       onResult: opts.onResult,

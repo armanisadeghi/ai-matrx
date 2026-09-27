@@ -67,6 +67,17 @@ interface AgentTextareaProps {
   autoFocus?: boolean;
   /** Hide the expansion control when the host deliberately keeps sparse chrome. */
   showExpandToggle?: boolean;
+  /**
+   * Literal placeholder from the host (the composer's `placeholder`). Absent =
+   * the conversation's configured placeholder in Redux, as before.
+   */
+  placeholder?: string;
+  /**
+   * Cap on the unexpanded grown height, in px. Absent = the classic 200px.
+   * The compact composer passes `panel height × knob%` (A5: grows to about
+   * half the panel, then scrolls inside).
+   */
+  maxHeightPx?: number;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -88,7 +99,10 @@ export function AgentTextarea({
   initiallyExpanded = false,
   autoFocus = true,
   showExpandToggle = true,
+  placeholder,
+  maxHeightPx,
 }: AgentTextareaProps) {
+  const unexpandedCapPx = maxHeightPx ?? 200;
   const dispatch = useAppDispatch();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -304,13 +318,13 @@ export function AgentTextarea({
       parseFloat(style.lineHeight),
       readVerticalChrome(style),
     );
-    const natural = Math.max(minH, Math.min(snapped, 200));
+    const natural = Math.max(minH, Math.min(snapped, unexpandedCapPx));
     // Same line count → same height → no write. This is the whole guarantee:
     // the rendered height changes the instant a line is added or removed and
     // at no other moment.
     if (natural === startHeight) return;
     el.style.height = `${natural}px`;
-  }, [visibleText, isExpanded, singleRow, compact]);
+  }, [visibleText, isExpanded, singleRow, compact, unexpandedCapPx]);
 
   // ── Auto-focus ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -320,6 +334,7 @@ export function AgentTextarea({
   }, [autoFocus, conversationId]);
 
   const placeholderText =
+    placeholder ??
     reduxPlaceholder ??
     (isExpanded ? "Add a message..." : "Type your message...");
 
@@ -378,7 +393,7 @@ export function AgentTextarea({
           }`}
           style={{
             minHeight: compact ? 28 : 40,
-            maxHeight: isExpanded ? undefined : 200,
+            maxHeight: isExpanded ? undefined : unexpandedCapPx,
           }}
           rows={1}
           data-agent-main-input

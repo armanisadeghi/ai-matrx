@@ -115,13 +115,17 @@ function InlineField({
 
   return (
     <div className="flex min-h-11 items-start gap-2 py-0.5 sm:min-h-0">
-      <span className="w-24 shrink-0 pt-0.5 text-right text-xs text-muted-foreground">
+      {/* Phone rows are 44px tall with a centred value — centre the label
+          too, or it floats above its value. Desktop keeps top alignment so a
+          multiline Bio reads from its first line. */}
+      <span className="w-24 shrink-0 self-center text-right text-xs text-muted-foreground sm:self-start sm:pt-0.5">
         {spec.label}
       </span>
       {editing ? (
         spec.multiline ? (
           <ProTextarea
             autoFocus
+            surfaceName={CRM_RECORD_SURFACE_NAME}
             rows={3}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -133,6 +137,9 @@ function InlineField({
             className={inputClasses}
           />
         ) : (
+          // Bare input on purpose: this is a click-to-edit cell that commits on
+          // blur, and ProInput's mic / "…" controls take focus from the field —
+          // pressing them would blur, commit and close the editor mid-dictation.
           <input
             autoFocus
             value={draft}
@@ -439,7 +446,7 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
           </div>
         </div>
 
-        <div className="mt-1.5 flex items-center gap-2 border-t border-border pt-2">
+        <label className="matrx-tap-area mt-1.5 flex cursor-pointer items-center gap-2 border-t border-border pt-2">
           <PhoneOff
             className={cn(
               "h-3.5 w-3.5",
@@ -456,7 +463,7 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
               aria-label="Do not contact"
             />
           </div>
-        </div>
+        </label>
       </div>
     </SectionCard>
   );

@@ -557,6 +557,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: false,
   },
+  knowledgeCommandBar: {
+    label: "Search your knowledge",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
   fullScreenEditor: {
     label: "Full Screen Editor",
     instanceMode: "multi",
