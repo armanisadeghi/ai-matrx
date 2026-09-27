@@ -384,6 +384,7 @@ export function QuicksetPanel({
           )?.name ??
           sandboxBinding?.name ??
           sandboxBinding?.proxyUrl.match(/\/sandboxes\/([^/]+)/)?.[1] ??
+          // read-gate-exempt: binding summary of the open conversation's own record in the store, not a list read's answer
           (sandboxBinding
             ? sandboxBinding.rowId.slice(0, 8)
             : "No sandbox bound")

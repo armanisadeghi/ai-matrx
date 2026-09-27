@@ -45,6 +45,7 @@ export function SandboxInsightPanel({
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
         <Box className="h-6 w-6 text-muted-foreground/60" />
+        {/* read-gate-exempt: binding status of the open conversation's own record already in the store, not a list read */}
         <p className="text-sm font-medium text-foreground">No sandbox bound</p>
         <p className="text-xs text-muted-foreground max-w-xs">
           This conversation isn&apos;t bound to a sandbox. Attach one from the

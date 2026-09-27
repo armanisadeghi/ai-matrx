@@ -280,7 +280,8 @@ export function ContextInspector({
                 shown: chosenValue,
                 stored: chosenItem.value,
               }
-            : "No context item chosen.",
+            : // read-gate-exempt: the person has not picked an item yet; a failed items read is listed in `errors` above
+              "No context item chosen.",
         },
         {
           id: "compare-selection",
@@ -296,7 +297,7 @@ export function ContextInspector({
           value: [
             caption,
             outsideTree ? "This scope belongs to an organization you are not a member of." : null,
-            typeIsEmpty ? "This scope type has no scopes yet." : null,
+            universe.treeStatus === "ready" && typeIsEmpty ? "This scope type has no scopes yet." : null,
             !selection.org && !needsHome ? "Choose an organization." : null,
           ].filter(Boolean),
         },
@@ -353,7 +354,7 @@ export function ContextInspector({
           after it narrows the preview.
         </p>
       )}
-      {typeIsEmpty && (
+      {universe.treeStatus === "ready" && typeIsEmpty && (
         <p className="text-xs text-muted-foreground">
           This scope type has no scopes yet, so there is nothing more to preview for it.
         </p>

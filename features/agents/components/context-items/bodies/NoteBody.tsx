@@ -17,6 +17,7 @@ import { NotesInstanceProvider } from "@/features/notes/context/NotesInstanceCon
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectNoteById,
+  selectNoteContentLoadStatus,
   selectInstanceHistoryOpen,
 } from "@/features/notes/redux/selectors";
 import {
@@ -33,6 +34,7 @@ import {
 } from "@/components/ui/tooltip";
 import type { ContextItemBodyProps } from "../types";
 import { ResourceSnapshotView } from "./ResourceSnapshotView";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 function notesDrawerInstanceId(noteId: string): string {
   return `ctx-drawer:${noteId}`;
@@ -71,6 +73,9 @@ export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
   const historyOpen = useAppSelector(
     noteId ? selectInstanceHistoryOpen(instanceId) : () => false,
   );
+  const contentLoadStatus = useAppSelector(
+    noteId ? selectNoteContentLoadStatus(noteId) : () => "idle" as const,
+  );
 
   useEffect(() => {
     if (!noteId) return;
@@ -96,13 +101,19 @@ export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
   if (!item.editable) {
     return (
       <div className="h-full min-h-0 overflow-y-auto p-4">
-        {note?.content?.trim() ? (
+        {contentLoadStatus === "error" && !note?.content?.trim() ? (
+          <ReadFailure
+            error
+            what="this note"
+            onRetry={() => void dispatch(fetchNoteContent(noteId))}
+          />
+        ) : note?.content?.trim() ? (
           <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
             {note.content}
           </p>
         ) : (
           <p className="text-xs italic text-muted-foreground">
-            {note ? "This note is empty." : "Loading note…"}
+            {note && contentLoadStatus === "loaded" ? "This note is empty." : "Loading note…"}
           </p>
         )}
       </div>

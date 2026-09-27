@@ -3,8 +3,11 @@
 import { RefObject, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import {
+  selectAgentError,
   selectAgentConversationMessageIndices,
   selectAgentMessages,
   selectAgentModelId,
@@ -32,6 +35,8 @@ export function Messages({
   const messages = useAppSelector((state) => selectAgentMessages(state, agentId));
   const modelId = useAppSelector((state) => selectAgentModelId(state, agentId));
   const profile = useMessageFlagProfile(modelId);
+  const agentReadError = useAppSelector((state) => selectAgentError(state, agentId));
+  const dispatch = useAppDispatch();
   // Example runs start collapsed; the key is the run's first message index.
   const [expandedRuns, setExpandedRuns] = useState<Set<number>>(() => new Set());
 
@@ -109,7 +114,13 @@ export function Messages({
   return (
     <div className="space-y-2">
       <MessageFlagsPreview preview={preview} profile={profile} />
-      {conversationIndices.length === 0 ? (
+      {agentReadError && conversationIndices.length === 0 ? (
+        <ReadFailure
+          error={agentReadError}
+          what="this agent's messages"
+          onRetry={() => void dispatch(fetchFullAgent(agentId))}
+        />
+      ) : conversationIndices.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-4 text-center">
           <p className="text-xs text-muted-foreground">
             No conversation examples yet. Add user/assistant message pairs to

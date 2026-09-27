@@ -166,6 +166,7 @@ export function MessagePreviewContent({
           {truncated}
         </p>
       ) : (
+        // read-gate-exempt: describes one message record already loaded in the store (non-text message), not a read's empty answer
         <p className="text-xs text-muted-foreground italic">No text content</p>
       )}
 

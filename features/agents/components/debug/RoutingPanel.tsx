@@ -88,6 +88,7 @@ export function RoutingPanel({ conversationId }: { conversationId: string }) {
   if (routed.length === 0) {
     return (
       <div className="p-4 text-xs text-muted-foreground">
+        {/* read-gate-exempt: routing records are captured in this browser as turns are sent; there is no read that can fail */}
         No turns sent yet. Send a message and this tab will show exactly where
         each request went and whether the sandbox bound.
       </div>

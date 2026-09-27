@@ -130,6 +130,7 @@ export function SandboxActivityFeed({
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
         <Terminal className="size-5 text-muted-foreground/60" />
+        {/* read-gate-exempt: built from this conversation's tool calls already in the store (live stream); the chat surface owns the conversation load's failure */}
         <p className="text-sm font-medium text-foreground">
           No sandbox work yet
         </p>

@@ -45,6 +45,7 @@ export function RequestStatsPanel({
     return (
       <EmptyStats
         text={
+          // read-gate-exempt: request stats are captured live in this browser as turns stream; there is no read that can fail
           requestId
             ? "No debug data for this response in the current session. Request info is only captured live."
             : "No requests yet. Fire a turn to see stats here."

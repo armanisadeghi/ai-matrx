@@ -45,6 +45,7 @@ export function ClientMetricsPanel({
     return (
       <EmptyStats
         text={
+          // read-gate-exempt: client metrics are captured live in this browser at stream end; there is no read that can fail
           requestId
             ? "No client metrics for this response in the current session."
             : "Client metrics populate at stream end. No completed request yet for this conversation."

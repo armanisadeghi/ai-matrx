@@ -199,6 +199,7 @@ function ScratchRow({
         </div>
         <p className="mt-0.5 truncate text-[11px] leading-snug text-muted-foreground">
           {enabled
+            // read-gate-exempt: states what this chat will send from the scratchpad slot in the store, which is exactly what the agent receives
             ? hasContent
               ? `Sharing "${title?.trim() || "Untitled"}" — pick which ones in the canvas.`
               : "On — your scratchpad is empty, so nothing is sent yet."

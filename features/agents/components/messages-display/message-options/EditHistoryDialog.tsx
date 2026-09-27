@@ -246,6 +246,7 @@ function HistoryContent({
   if (ordered.length === 0) {
     return (
       <div className="py-8 text-center text-sm text-muted-foreground">
+        {/* read-gate-exempt: history is a field of the message record already loaded and on screen; no separate read can fail */}
         No edit history yet. Inline edits and saves will appear here.
       </div>
     );

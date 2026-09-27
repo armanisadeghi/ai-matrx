@@ -57,6 +57,7 @@ import {
   Braces,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast-service";
 import { setPeekedAgentId } from "./agent-peek-tracker";
@@ -284,6 +285,9 @@ export function AgentSneakPeekContent({
   const toolsReady = useAppSelector(selectToolsReady);
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  // The full-agent read's failure, so the peek never spins forever over it.
+  const [agentReadError, setAgentReadError] = useState<unknown>(null);
+  const [readAttempt, setReadAttempt] = useState(0);
   const advancedContentRef = useRef<HTMLDivElement>(null);
 
   // When the user opens Advanced, scroll the newly-revealed content into view
@@ -302,11 +306,14 @@ export function AgentSneakPeekContent({
   useEffect(() => {
     if (!active) return;
     if (!isReady) {
-      dispatch(fetchFullAgent(agentId));
+      dispatch(fetchFullAgent(agentId))
+        .unwrap()
+        .then(() => setAgentReadError(null))
+        .catch((err: unknown) => setAgentReadError(err ?? true));
     }
     dispatch(fetchModelOptions());
     dispatch(fetchAvailableTools());
-  }, [active, isReady, agentId, dispatch]);
+  }, [active, isReady, agentId, dispatch, readAttempt]);
 
   const systemPromptText = useMemo(() => {
     const sys = record?.messages?.find((m) => m.role === "system");
@@ -350,6 +357,20 @@ export function AgentSneakPeekContent({
     () => outputSchemaRequiredKeys(outputSchema),
     [outputSchema],
   );
+
+  if (agentReadError && (!isReady || !record)) {
+    return (
+      <ReadFailure
+        error={agentReadError}
+        what="this agent's details"
+        onRetry={() => {
+          setAgentReadError(null);
+          setReadAttempt((n) => n + 1);
+        }}
+        className={className}
+      />
+    );
+  }
 
   if (!isReady || !record) {
     return (

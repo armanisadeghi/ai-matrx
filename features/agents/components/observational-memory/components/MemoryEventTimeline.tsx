@@ -123,6 +123,7 @@ export function MemoryEventTimeline({
         <div className="flex-1 flex flex-col items-center justify-center gap-2 py-6 text-muted-foreground">
           <Braces className="w-8 h-8 opacity-20" />
           <div className="text-xs text-center">
+            {/* read-gate-exempt: events arrive only on the live stream into this browser; there is no read that can fail */}
             No memory events yet.
             <br />
             Events stream in while the conversation is active.

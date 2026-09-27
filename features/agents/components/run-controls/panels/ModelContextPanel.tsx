@@ -21,7 +21,7 @@
  */
 
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
@@ -38,6 +38,7 @@ import {
 } from "@/features/agents/redux/execution-system/context-state/context-state.selectors";
 import { EmptyStats, StatRow, StatSection, fmtTokens } from "./shared";
 import { cn } from "@/lib/utils";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export interface ModelContextPanelProps {
   conversationId: string;
@@ -108,12 +109,23 @@ export function ModelContextPanel({ conversationId }: ModelContextPanelProps) {
   // notice renders each of them, Try again included.
   const { canLoad, organizationState } = useOrganizationRequired();
 
+  // The snapshot read's own failure (the thunk's rejection used to be dropped,
+  // leaving "No context measurements yet" over a read that never answered).
+  const [contextReadError, setContextReadError] = useState<unknown>(null);
+  const [readAttempt, setReadAttempt] = useState(0);
+
   useEffect(() => {
     if (!canLoad) return undefined;
     const controller = new AbortController();
-    dispatch(fetchContextState({ conversationId, signal: controller.signal }));
+    dispatch(fetchContextState({ conversationId, signal: controller.signal }))
+      .unwrap()
+      .then(() => setContextReadError(null))
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return;
+        setContextReadError(err ?? true);
+      });
     return () => controller.abort();
-  }, [canLoad, conversationId, dispatch]);
+  }, [canLoad, conversationId, dispatch, readAttempt]);
 
   if (
     !state &&
@@ -126,6 +138,19 @@ export function ModelContextPanel({ conversationId }: ModelContextPanelProps) {
         what="Context measurements"
         title="Choose an organization to read context"
         description="Context measurements are read in one organization's context, and none is selected for this session."
+      />
+    );
+  }
+
+  if (!state && contextReadError) {
+    return (
+      <ReadFailure
+        error={contextReadError}
+        what="this conversation's context measurements"
+        onRetry={() => {
+          setContextReadError(null);
+          setReadAttempt((n) => n + 1);
+        }}
       />
     );
   }

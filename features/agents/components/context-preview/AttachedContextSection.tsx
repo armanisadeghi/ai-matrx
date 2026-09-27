@@ -407,6 +407,7 @@ export function AttachedContextSection({
                           {item.preview.length > 600 ? "…" : ""}
                         </span>
                       ) : (
+                        /* read-gate-exempt: describes what this request will send for one attached item, not a read's empty answer */
                         <span className="italic text-muted-foreground">
                           (empty — sent, but has no content yet)
                         </span>
