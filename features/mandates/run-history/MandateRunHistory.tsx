@@ -436,7 +436,7 @@ function RunRow({
   const outputHref =
     run.runKind === "workflow"
       ? runHref(run.runId)
-      : run.conversationId
+      : run.conversationId && run.hasTranscript
         ? conversationHref(run.conversationId, audience)
         : null;
   const outputLabel = run.runKind === "workflow" ? "workflow run" : "conversation";
@@ -507,7 +507,14 @@ function RunRow({
             <NewTabLink href={outputHref} label={`This run's ${outputLabel}`} />
           </span>
         ) : (
-          <span className="text-muted-foreground" title="This run left no conversation to open.">
+          <span
+            className="text-muted-foreground"
+            title={
+              run.conversationId
+                ? "A background run: it kept no transcript to open. Its cost, status and output check are above."
+                : "This run left no conversation to open."
+            }
+          >
             —
           </span>
         )}

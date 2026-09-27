@@ -53,6 +53,8 @@ export interface MandateRun {
   cost: number | null;
   durationMs: number | null;
   conversationId: string | null;
+  /** The conversation holds messages to read (a background run keeps none). */
+  hasTranscript: boolean;
 }
 
 export interface RunFacet {
@@ -169,6 +171,7 @@ function parseRun(value: Json): MandateRun | null {
     cost: num(value.cost),
     durationMs: num(value.duration_ms),
     conversationId: str(value.conversation_id),
+    hasTranscript: value.has_transcript === true,
   };
 }
 

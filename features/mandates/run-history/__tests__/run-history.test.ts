@@ -40,6 +40,7 @@ const conversationRow = {
   cost: 0.026889,
   duration_ms: 6214,
   conversation_id: "035594c3-dff1-4302-bc3f-9e03922c941c",
+  has_transcript: true,
 };
 
 const workflowRow = {
@@ -69,6 +70,7 @@ describe("reading the run history answer", () => {
     expect(run.holderType).toBe("agent");
     expect(run.cost).toBeCloseTo(0.026889);
     expect(run.conversationId).toBe(conversationRow.conversation_id);
+    expect(run.hasTranscript).toBe(true);
   });
 
   it("reads a workflow run as a workflow Holder, with its warning and numeric cost", () => {
@@ -80,6 +82,7 @@ describe("reading the run history answer", () => {
     expect(run.outputMissingKeys).toEqual(["letter"]);
     expect(run.cost).toBeCloseTo(0.0123);
     expect(run.durationMs).toBeNull();
+    expect(parseRunPage({ total: 1, rows: [{ ...conversationRow, has_transcript: false }] }).rows[0].hasTranscript).toBe(false);
   });
 
   it("keeps the org and platform views' facets", () => {
