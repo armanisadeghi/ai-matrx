@@ -182,7 +182,7 @@ export function CreateFromTopic() {
 
       if (setRes.error || !setRes.data) {
         toast.error(
-          setRes.error ?? "Could not save the generated flashcard set",
+          setRes.error ?? "Could not save the generated deck",
         );
         return;
       }
@@ -221,7 +221,7 @@ export function CreateFromTopic() {
             className="h-9 w-9 shrink-0"
             onClick={goBack}
             disabled={busy}
-            aria-label="Back to flashcards"
+            aria-label="Back to Flashcard Studio"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -230,10 +230,10 @@ export function CreateFromTopic() {
           </div>
           <div>
             <h1 className="text-xl font-semibold tracking-tight text-foreground">
-              New flashcard set
+              New flashcard deck
             </h1>
             <p className="text-sm text-muted-foreground">
-              Describe a topic and AI builds a study set to review right away.
+              Describe a topic and AI builds a deck to review right away.
               Upload a document to get cards grounded in — and cited to — your
               own material.
             </p>

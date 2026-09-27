@@ -270,7 +270,7 @@ export function CreateFromSource() {
 
       if (setRes.error || !setRes.data) {
         toast.error(
-          setRes.error ?? "Could not save the generated flashcard set",
+          setRes.error ?? "Could not save the generated deck",
         );
         return;
       }
@@ -313,7 +313,7 @@ export function CreateFromSource() {
             aria-label={
               step === "curate"
                 ? "Back to document picker"
-                : "Back to flashcards"
+                : "Back to Flashcard Studio"
             }
           >
             <ArrowLeft className="h-5 w-5" />
@@ -323,7 +323,7 @@ export function CreateFromSource() {
           </div>
           <div>
             <h1 className="text-xl font-semibold tracking-tight text-foreground">
-              A study set grounded in your material
+              A deck grounded in your material
             </h1>
             <p className="text-sm text-muted-foreground">
               {step === "pick-doc"

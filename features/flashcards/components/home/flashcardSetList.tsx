@@ -159,6 +159,9 @@ export function buildFlashcardSetColumns(
       phone: "title",
       column: {
         id: "name",
+        // The name is what people scan for: give it the room, cap the rest.
+        width: 420,
+        className: "max-w-[26rem] overflow-hidden",
         accessorKey: "name",
         header: "Name",
         filter: "text",
@@ -173,6 +176,8 @@ export function buildFlashcardSetColumns(
       phone: "primary",
       column: {
         id: "topic",
+        width: 220,
+        className: "max-w-[14rem] overflow-hidden",
         accessorKey: "topic",
         header: "Topic",
         filter: "text",
@@ -231,6 +236,8 @@ export function buildFlashcardSetColumns(
       phone: "rest",
       column: {
         id: "folders",
+        width: 160,
+        className: "max-w-[10rem] overflow-hidden",
         header: "Folders",
         filter: "select",
         sortable: false,
