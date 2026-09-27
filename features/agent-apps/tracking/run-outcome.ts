@@ -135,3 +135,25 @@ interface RunTrackerLike {
 export function recordRunOutcome(tracker: RunTrackerLike, outcome: RunOutcome): void {
   tracker.settle(outcome);
 }
+
+/**
+ * True once the page is going away (reload, navigation, tab close). A run
+ * whose fetch dies because the PAGE left is not a failed run — the server
+ * keeps working (detach_on_disconnect) and the reopened page rejoins it. It
+ * was being recorded `success = false, "Failed to fetch"` on every reload.
+ */
+let pageLeaving = false;
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", () => {
+    pageLeaving = true;
+  });
+  window.addEventListener("beforeunload", () => {
+    pageLeaving = true;
+  });
+  window.addEventListener("pageshow", () => {
+    pageLeaving = false;
+  });
+}
+export function isPageLeaving(): boolean {
+  return pageLeaving;
+}

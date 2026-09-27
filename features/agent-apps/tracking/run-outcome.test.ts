@@ -109,3 +109,12 @@ it("a refusal records the server's friendly words as the reason and the HTTP tex
     detail: "API error: Guest run limit reached",
   });
 });
+
+it("a page leaving (reload) is known, so its dying fetch is not recorded as a failed run", async () => {
+  const { isPageLeaving } = await import("./run-outcome");
+  expect(isPageLeaving()).toBe(false);
+  window.dispatchEvent(new Event("pagehide"));
+  expect(isPageLeaving()).toBe(true);
+  window.dispatchEvent(new Event("pageshow"));
+  expect(isPageLeaving()).toBe(false);
+});

@@ -45,6 +45,7 @@ import type { UseAgentAppReturn } from "@/features/agent-apps/hooks/useAgentApp"
 import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import { useAgentAppTracker } from "@/features/agent-apps/tracking/useAgentAppTracker";
 import {
+  isPageLeaving,
   recordRunOutcome,
   waitForRunOutcome,
 } from "@/features/agent-apps/tracking/run-outcome";
@@ -174,6 +175,9 @@ export function AgentAppFullyCustomShell({
       } catch (err) {
         const e = err as { name?: string; message?: string };
         if (e?.name === "AbortError") return;
+        // The page is reloading or leaving: the run lives on server-side and
+        // the reopened page rejoins it — never record it as failed.
+        if (isPageLeaving()) return;
         const msg = e?.message ?? "Execution failed";
         setLocalError(msg);
         tracker.error({
