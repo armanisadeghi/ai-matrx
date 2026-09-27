@@ -190,6 +190,28 @@ export function invalidateSurfaceBoundAgents(_surfaceName?: string): void {
 }
 
 /**
+ * The sections already in hand for this key, or null when they have not been
+ * fetched yet. A hook that mounts after the first fetch starts from these rows
+ * instead of an empty list that reads as "loaded, nothing here".
+ */
+export function peekSurfaceMenuAgentsGrouped(
+  surfaceName: string | null,
+  currentUserId: string | null,
+  opts?: { isEditable?: boolean; includeDefaults?: boolean },
+): SurfaceBoundAgentSection[] | null {
+  return (
+    menuAgentsCache.get(
+      menuAgentsKey(
+        surfaceName,
+        currentUserId,
+        opts?.isEditable ?? false,
+        opts?.includeDefaults ?? true,
+      ),
+    ) ?? null
+  );
+}
+
+/**
  * Surface-specific + qualifying-default agents for the surface's context menu,
  * bucketed into sections. Deduped: a default agent already shown as a
  * surface-bound agent is NOT repeated.

@@ -2,7 +2,10 @@
 
 import { useMemo, useState, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { fetchUnifiedMenu } from "@/features/agents/redux/agent-shortcuts/thunks";
+import {
+  fetchUnifiedMenu,
+  unifiedMenuLoadedKey,
+} from "@/features/agents/redux/agent-shortcuts/thunks";
 import { withMenuDeadline } from "../utils/menu-deadline";
 import { selectAllShortcutsArray } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { selectAllCategoriesArray } from "@/features/agents/redux/agent-shortcut-categories/selectors";
@@ -333,22 +336,32 @@ export function useUnifiedAgentContextMenu(
   const categories = useAppSelector(selectAllCategoriesArray);
   const contentBlocks = useAppSelector(selectAllContentBlocksArray);
 
-  const [loading, setLoading] = useState(false);
+  // A load is finished only when its rows are in hand: the menu's own
+  // rows-in-hand flag in the store, not this hook's promise. A local
+  // "loading" boolean read false on the first render (before the effect
+  // fires) and false again when a skipped dispatch rejected at once — both
+  // read as "loaded, nothing here", so My Items / Org Items vanished from the
+  // first open and appeared on the next (round 6, 2026-09-27).
+  const rowsInHand = useAppSelector(
+    (state) =>
+      state.agentShortcut.contextLoaded?.[
+        unifiedMenuLoadedKey({ scope, scopeId })
+      ] ?? false,
+  );
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!enabled || placementTypes.length === 0) return;
     try {
-      setLoading(true);
       setError(null);
       await withMenuDeadline(
         dispatch(fetchUnifiedMenu({ scope, scopeId })).unwrap(),
         "Loading the menu's AI actions",
       );
     } catch (err) {
+      // Skipped because the rows are already in hand: not a failure.
+      if ((err as { name?: string } | null)?.name === "ConditionError") return;
       setError(err instanceof Error ? err.message : "Failed to load menu");
-    } finally {
-      setLoading(false);
     }
   }, [dispatch, enabled, placementTypes.length, scope, scopeId]);
 
@@ -385,7 +398,8 @@ export function useUnifiedAgentContextMenu(
 
   return {
     categoryGroups,
-    loading: loading && categoryGroups.length === 0,
+    loading:
+      enabled && placementTypes.length > 0 && !rowsInHand && error === null,
     error,
     refresh,
   };

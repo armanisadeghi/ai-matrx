@@ -5,6 +5,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   fetchSurfaceMenuAgentsGrouped,
+  peekSurfaceMenuAgentsGrouped,
   type SurfaceBoundAgentSection,
 } from "@/features/surfaces/services/surface-bound-agents.service";
 import { withMenuDeadline } from "@/features/context-menu-v3/utils/menu-deadline";
@@ -25,7 +26,15 @@ export interface UseSurfaceBoundAgentsOptions {
 
 export interface UseSurfaceBoundAgentsResult {
   sections: SurfaceBoundAgentSection[];
+  /** A fetch this hook started is running. */
   loading: boolean;
+  /**
+   * The rows are in hand: a fetch settled (rows or error), or they were
+   * already cached when the hook mounted. Before that, an empty `sections`
+   * means "not loaded yet", never "nothing here" — a menu that reads it as
+   * empty drops the library on its first open (round 6, 2026-09-27).
+   */
+  settled: boolean;
   error: string | null;
   hasAgents: boolean;
   refresh: () => Promise<void>;
@@ -38,7 +47,12 @@ export function useSurfaceBoundAgents(
   const currentUserId = useAppSelector(selectUserId);
   const isEditable = options?.isEditable ?? false;
   const includeDefaults = options?.includeDefaults ?? true;
-  const [sections, setSections] = useState<SurfaceBoundAgentSection[]>([]);
+  const cached = peekSurfaceMenuAgentsGrouped(surfaceName ?? null, currentUserId, {
+    isEditable,
+    includeDefaults,
+  });
+  const [sections, setSections] = useState<SurfaceBoundAgentSection[]>(cached ?? []);
+  const [settled, setSettled] = useState(cached !== null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,10 +81,11 @@ export function useSurfaceBoundAgents(
       setSections([]);
     } finally {
       setLoading(false);
+      setSettled(true);
     }
   }, [surfaceName, currentUserId, isEditable, includeDefaults]);
 
   const hasAgents = sections.some((s) => s.agents.length > 0);
 
-  return { sections, loading, error, hasAgents, refresh };
+  return { sections, loading, settled, error, hasAgents, refresh };
 }

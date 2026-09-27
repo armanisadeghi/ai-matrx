@@ -453,10 +453,14 @@ export function useContextMenuActions(
 
   const {
     sections: boundAgentSections,
-    loading: boundAgentsLoading,
+    loading: boundAgentsFetching,
+    settled: boundAgentsSettled,
     error: boundAgentsError,
     refresh: refreshBoundAgents,
   } = useSurfaceBoundAgents(surfaceName, { isEditable });
+  // Loading until the rows are in hand — an unsettled empty list is never
+  // "no agents" (round 6: the first open dropped the library).
+  const boundAgentsLoading = boundAgentsFetching || !boundAgentsSettled;
 
   const { launchShortcut, launchAgent } = useAgentLauncher();
   const { speak } = useSpeech({ processMarkdown: true, label: "Selected text" });

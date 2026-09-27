@@ -1297,6 +1297,17 @@ interface UnifiedMenuFetchArgs extends ScopeRef {
 
 const inflightUnifiedMenu = new Map<string, Promise<UnifiedMenuResult>>();
 
+/**
+ * The unified menu's OWN "rows in hand" flag (in `contextLoaded`). It is not
+ * `scopeLoaded`: `fetchShortcutsForScope` sets that flag after loading
+ * shortcuts only — no categories, no content blocks — so a menu that trusted
+ * it skipped its fetch and drew My Items / Org Items empty (round 6,
+ * 2026-09-27). The flag flips only after the menu's rows are upserted.
+ */
+export function unifiedMenuLoadedKey(ref: ScopeRef): string {
+  return `unified-menu:${scopeIndexKey(ref)}`;
+}
+
 export const fetchUnifiedMenu = createAsyncThunk<
   UnifiedMenuResult,
   UnifiedMenuFetchArgs | ScopeRef | void,
@@ -1440,6 +1451,7 @@ export const fetchUnifiedMenu = createAsyncThunk<
         }
 
         dispatch(setShortcutScopeLoaded({ scopeRef: ref, loaded: true }));
+        dispatch(setContextLoaded({ key: unifiedMenuLoadedKey(ref), loaded: true }));
         dispatch(setShortcutsStatus("succeeded"));
 
         return { placements: payload.data ?? [] };
@@ -1476,9 +1488,11 @@ export const fetchUnifiedMenu = createAsyncThunk<
           ? { scope: arg.scope, scopeId: arg.scopeId ?? null }
           : { scope: "global", scopeId: null };
       const state = getState() as RootState;
-      const key = scopeIndexKey(ref);
-      if (state.agentShortcut.scopeLoaded?.[key]) return false;
-      if (inflightUnifiedMenu.has(key)) return false;
+      // Only the menu's own rows-in-hand flag skips the fetch. A fetch already
+      // in flight is NOT skipped here: the payload creator hands this caller
+      // the same promise, so its `.unwrap()` settles when the rows arrive —
+      // never an instant ConditionError that reads as "finished" (round 6).
+      if (state.agentShortcut.contextLoaded?.[unifiedMenuLoadedKey(ref)]) return false;
       return true;
     },
   },

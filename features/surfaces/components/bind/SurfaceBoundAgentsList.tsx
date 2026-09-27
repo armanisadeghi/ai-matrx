@@ -73,7 +73,7 @@ export function SurfaceBoundAgentsList({
   const surfaceLabel = getSurfaceDisplayLabel(surfaceName);
   const openBind = useOpenSurfaceAgentBindWindow();
   const openSettings = useOpenAgentSettingsWindow();
-  const { sections, loading, error, hasAgents, refresh } = useSurfaceBoundAgents(
+  const { sections, loading, settled, error, hasAgents, refresh } = useSurfaceBoundAgents(
     surfaceName,
     { isEditable, includeDefaults },
   );
@@ -108,7 +108,7 @@ export function SurfaceBoundAgentsList({
     });
   };
 
-  if (hideWhenEmpty && !loading && !error && !hasAgents && !hasRoleRows) return null;
+  if (hideWhenEmpty && settled && !loading && !error && !hasAgents && !hasRoleRows) return null;
 
   // A manifest role may intentionally point at the same agent as a direct
   // association: the role declares that the surface USES the agent, while the
