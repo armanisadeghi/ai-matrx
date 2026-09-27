@@ -260,6 +260,46 @@
       "index": "custom.anon_submission:anon_submission_booking_ref_key",
       "reason": "booking_ref is an EXTERNAL REFERENCE: it is handed to an anonymous submitter, who quotes it back by phone, email or a status link. If an archived submission released its reference, a later submission in the same organization could be issued a booking_ref a real person is still holding, and both the person and the operator would be looking at a different row than they think. A reference given out is spent forever, archived or not.",
       "ruled": "CI-FIX-2, 2026-09-22"
+    },
+    {
+      "index": "tool.mcp_user_conn:mcp_user_conn_created_by_server_key",
+      "reason": "One connection per person per MCP server, EVER: public.upsert_mcp_connection does ON CONFLICT (created_by, server_id) ... SET deleted_at = NULL, so reconnecting a removed server RESTORES the old row with its config and name. A partial index would break that ON CONFLICT inference and a reconnect would insert a second row beside the removed one.",
+      "ruled": "soft-delete-unique sweep, 2026-09-27 (migrations/soft_delete_partial_unique_mcp_and_parsed_page.sql)"
+    },
+    {
+      "index": "tool.mcp_user_conn:tool_mcp_user_conn_user_id_server_id_key",
+      "reason": "Same rule as mcp_user_conn_created_by_server_key: a trigger keeps user_id equal to created_by, so this is the same one-connection-per-server identity that upsert_mcp_connection and the aidream reconnect paths revive in place (deleted_at = NULL) rather than duplicate.",
+      "ruled": "soft-delete-unique sweep, 2026-09-27 (migrations/soft_delete_partial_unique_mcp_and_parsed_page.sql)"
+    },
+    {
+      "index": "platform.comments:comments_author_client_request_uidx",
+      "reason": "client_request_id is an IDEMPOTENCY KEY minted by the writing client per create: cmt_add answers a repeat of the same (author, id) with the first row. A retry that arrives after the comment was removed is still the same request and must not create a new comment; a real re-post mints a new id.",
+      "ruled": "soft-delete-unique sweep, 2026-09-27 (migrations/soft_delete_partial_unique_mcp_and_parsed_page.sql)"
+    },
+    {
+      "index": "platform.secure_delivery:secure_delivery_actor_token_uq",
+      "reason": "actor_token_id is a single-use outsider link: one protected delivery per token. If a removed delivery released its token, the same link a recipient still holds could be bound to a different payload. A token given out is spent forever, removed or not.",
+      "ruled": "soft-delete-unique sweep, 2026-09-27 (migrations/soft_delete_partial_unique_mcp_and_parsed_page.sql)"
+    },
+    {
+      "index": "ops.check_run:check_run_identity_key",
+      "reason": "A check run's identity (check, start time, commit, host) is a log fact, not a name a person reuses; DB functions upsert on it so a re-reported run updates the same row. Removing a run must not let the same run be recorded twice.",
+      "ruled": "soft-delete-unique sweep, 2026-09-27 (migrations/soft_delete_partial_unique_mcp_and_parsed_page.sql)"
+    },
+    {
+      "index": "ops.check_item:check_item_check_key",
+      "reason": "check_key is the registry identity a DB function upserts on; a removed check that is re-registered with the same key must revive its history, not start a second row the ON CONFLICT can no longer infer.",
+      "ruled": "soft-delete-unique sweep, 2026-09-27 (migrations/soft_delete_partial_unique_mcp_and_parsed_page.sql)"
+    },
+    {
+      "index": "ops.proof_check:proof_check_repo_stable_id_key",
+      "reason": "(repo, stable_id) is an external identity the proof registry upserts on; a re-declared check with the same stable id is the same check, and a partial index would break the upsert's ON CONFLICT inference.",
+      "ruled": "soft-delete-unique sweep, 2026-09-27 (migrations/soft_delete_partial_unique_mcp_and_parsed_page.sql)"
+    },
+    {
+      "index": "mandate.reference:reference_head_uq",
+      "reason": "The head of a mandate reference's revision chain: _reference_record_states decides whether to write a new head by testing is_head WITHOUT a deleted_at filter, so the global head rule is what that logic assumes. Making it partial would let a removed head and a live head coexist and change the scanner's revision semantics.",
+      "ruled": "soft-delete-unique sweep, 2026-09-27 (migrations/soft_delete_partial_unique_mcp_and_parsed_page.sql)"
     }
   ]
 }
