@@ -5,6 +5,7 @@ import { GITHUB_OAUTH_COOKIE, parseGitHubOAuthSession, requestBaseUrl } from "..
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { operationFailed } from "@/utils/errors";
 
 type GitHubCompletion = {
   status: string;
@@ -22,6 +23,30 @@ function errorRedirect(
   url.searchParams.set("return_url", returnUrl);
   url.searchParams.set("github_error", message);
   return NextResponse.redirect(url);
+}
+
+/**
+ * The completion popup can only report a same-origin message. Backend details
+ * may contain provider or vault internals, so retain only a fixed stage and
+ * HTTP status in server diagnostics and send the popup a safe action message.
+ */
+function completionFailureRedirect(
+  request: NextRequest,
+  returnUrl: string,
+  stage:
+    | "complete_request"
+    | "complete_response"
+    | "completion_payload"
+    | "continuation_url",
+  status: number,
+): NextResponse {
+  const failure = operationFailed("complete your GitHub connection");
+  console.error("[github-oauth:callback]", {
+    stage,
+    status,
+    message: failure.message,
+  });
+  return errorRedirect(request, returnUrl, failure.message);
 }
 
 function refreshNoticeRedirect(request: NextRequest) {
@@ -72,6 +97,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const backendBase = AIDREAM_PRODUCTION_URL;
+  let failureStage:
+    | "complete_request"
+    | "completion_payload"
+    | "continuation_url" = "complete_request";
+  let failureStatus = 503;
   try {
     const response = await fetch(
       `${backendBase}/api/github-integrations/complete`,
@@ -89,18 +119,24 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       },
     );
     if (!response.ok) {
-      const body: unknown = await response.json().catch(() => null);
-      const detail =
-        typeof body === "object" &&
-        body !== null &&
-        "detail" in body &&
-        typeof body.detail === "string"
-          ? body.detail
-          : "GitHub connection failed.";
-      throw new Error(detail);
+      return completionFailureRedirect(
+        request,
+        oauthSession.returnUrl,
+        "complete_response",
+        response.status,
+      );
     }
+    failureStage = "completion_payload";
+    failureStatus = 502;
     const completed: unknown = await response.json();
-    if (!completed || typeof completed !== "object" || !("status" in completed) || typeof completed.status !== "string") throw new Error("GitHub returned an invalid connection response.");
+    if (!completed || typeof completed !== "object" || !("status" in completed) || typeof completed.status !== "string") {
+      return completionFailureRedirect(
+        request,
+        oauthSession.returnUrl,
+        failureStage,
+        failureStatus,
+      );
+    }
     const completion = completed as GitHubCompletion;
     if (completion.next_authorization_url || completion.next_state || completion.next_flow) {
       if (
@@ -108,11 +144,22 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         !completion.next_state ||
         (completion.next_flow !== "authorize" && completion.next_flow !== "install")
       ) {
-        throw new Error("GitHub returned an invalid continuation response.");
+        return completionFailureRedirect(
+          request,
+          oauthSession.returnUrl,
+          failureStage,
+          failureStatus,
+        );
       }
+      failureStage = "continuation_url";
       const continuationUrl = new URL(completion.next_authorization_url);
       if (continuationUrl.protocol !== "https:" || continuationUrl.hostname !== "github.com") {
-        throw new Error("GitHub returned an unsafe continuation URL.");
+        return completionFailureRedirect(
+          request,
+          oauthSession.returnUrl,
+          failureStage,
+          failureStatus,
+        );
       }
       cookieStore.set(
         GITHUB_OAUTH_COOKIE,
@@ -129,13 +176,18 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       return errorRedirect(request, oauthSession.returnUrl, "GitHub connection was cancelled.");
     }
     if (completion.status !== "connected") {
-      throw new Error("GitHub authorization finished, but AI Matrx is not installed on an approved account yet. Complete the GitHub installation or ask an owner to approve it, then try again.");
+      return errorRedirect(
+        request,
+        oauthSession.returnUrl,
+        "GitHub authorization finished, but AI Matrx is not installed on an approved account yet. Complete the GitHub installation or ask an owner to approve it, then try again.",
+      );
     }
-  } catch (cause) {
-    return errorRedirect(
+  } catch {
+    return completionFailureRedirect(
       request,
       oauthSession.returnUrl,
-      cause instanceof Error ? cause.message : "GitHub connection failed.",
+      failureStage,
+      failureStatus,
     );
   }
 
