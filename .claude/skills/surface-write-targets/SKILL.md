@@ -139,10 +139,29 @@ test rows you created so the person can remove them.
 
 ## Step 4 — what the agent sees up front, the guide, and feedback
 
-- **What the agent sees in full up front is NOT a worker's call.** Do not set
-  `inlineUpTo` (or any other "how much the agent sees" knob). The policy for it
-  is pending Arman's ruling; until then leave every value at the platform
-  default and report "agent had to look up <value>" as a finding instead.
+- **What the agent sees in full up front — the inline policy (Arman,
+  2026-09-27).** The platform default (200 chars; anything bigger becomes a
+  "look it up" item) stays for almost every value. A page lifts it ONLY for
+  what an agent cannot work without, using exactly these tiers
+  (`INLINE_TIER`, `features/surfaces/types.ts`; the declaration check refuses
+  any other number):
+  - `record` — the ONE record the page is about (a note, a class, a study
+    guide, an agent definition, an article): one structured object, passed
+    whole. Long text fields in it are also `patchable` write targets.
+  - `list` — a list page's CONDENSED list: only the fields a person scans
+    (id, name, 3-6 key fields), in the person's current sort and filter, the
+    first 25 rows; the total count and the active sort/filter are their own
+    small values. Full rows stay a separate default (lookup) value.
+  - `recent` — a sidebar's recent items (up to 5) or open tabs (up to 10),
+    each `{ id, title }`.
+  Anything else — a bigger number, more rows, another kind of value — needs
+  Arman's approval: leave the default, file the question (skill `ask-arman`)
+  with the evidence, and only after he approves set `inlineApproval: "Arman
+  <date>: <why>"` beside the number.
+- **Judge it by what agents do first.** A surface is failing when most agent
+  runs on it open with `context` lookups for the same value. The live agent
+  test (Step 3) must show the agent answering "what is on this page" with no
+  lookups; report any lookup it made.
 - **A guide for any page with more than one record type or any rule the
   descriptions can't hold.** Write `features/surfaces/guides/<surface-slug>.md`
   (80-150 lines: what the page is, each value, each target with a worked
