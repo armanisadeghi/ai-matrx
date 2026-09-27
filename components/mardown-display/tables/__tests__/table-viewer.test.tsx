@@ -17,6 +17,7 @@ jest.mock("@/lib/redux/hooks", () => ({
     selector({ userAuth: { id: mockSignedIn ? "u-1" : null } }),
   useAppDispatch: () => jest.fn(),
 }));
+jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn(), refresh: jest.fn() }) }));
 jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => mockMobile }));
 jest.mock("@/components/rich-content/RichContent", () => ({
   RichContent: ({ source }: { source: string }) => <span>{source}</span>,
