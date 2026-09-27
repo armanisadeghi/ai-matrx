@@ -26,6 +26,7 @@ import type {
   CodeAgentFilter,
   ConversationHistoryGrouping,
 } from "@/lib/redux/preferences/userPreferencesSlice";
+import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
 /**
  * Settings tab for the /code workspace. Covers the agent filter that seeds
@@ -96,128 +97,130 @@ export default function CodeWorkspaceTab() {
         icon={Code}
       />
 
-      <SettingsSection title="Agent filter" icon={Filter}>
-        <SettingsSegmented<CodeAgentFilter["mode"]>
-          label="Which agents should appear?"
-          description="Applies to the Chat picker and the History sidebar. Users can always clear this filter in the picker."
-          value={filter.mode}
-          onValueChange={(mode) => patchFilter({ mode })}
-          options={[
-            { value: "all", label: "All" },
-            { value: "tags", label: "By tag" },
-            { value: "categories", label: "By category" },
-            { value: "favorites", label: "Favorites" },
-            { value: "explicit", label: "Specific" },
-          ]}
-        />
+      <PreferencesLoadGate what="your code workspace settings">
+        <SettingsSection title="Agent filter" icon={Filter}>
+          <SettingsSegmented<CodeAgentFilter["mode"]>
+            label="Which agents should appear?"
+            description="Applies to the Chat picker and the History sidebar. Users can always clear this filter in the picker."
+            value={filter.mode}
+            onValueChange={(mode) => patchFilter({ mode })}
+            options={[
+              { value: "all", label: "All" },
+              { value: "tags", label: "By tag" },
+              { value: "categories", label: "By category" },
+              { value: "favorites", label: "Favorites" },
+              { value: "explicit", label: "Specific" },
+            ]}
+          />
 
-        {catalogFailed &&
-          (filter.mode === "tags" || filter.mode === "categories") && (
-            <ReadFailure
-              error={catalogError ?? true}
-              what="your agents' tags and categories"
-              onRetry={retryCatalog}
+          {catalogFailed &&
+            (filter.mode === "tags" || filter.mode === "categories") && (
+              <ReadFailure
+                error={catalogError ?? true}
+                what="your agents' tags and categories"
+                onRetry={retryCatalog}
+              />
+            )}
+
+          {filter.mode === "tags" && (
+            <SettingsMultiSelect<string>
+              label="Tags"
+              description="Show agents that have at least one of these tags."
+              value={filter.tags}
+              onValueChange={(tags) => patchFilter({ tags })}
+              options={tagOptions}
+              placeholder={
+                tagOptions.length > 0
+                  ? "Pick tags"
+                  : catalogFailed
+                    ? "Your agents could not be read"
+                    : !catalogLoaded
+                      ? "Loading your agents…"
+                      : "No tags on your agents yet"
+              }
             />
           )}
 
-        {filter.mode === "tags" && (
-          <SettingsMultiSelect<string>
-            label="Tags"
-            description="Show agents that have at least one of these tags."
-            value={filter.tags}
-            onValueChange={(tags) => patchFilter({ tags })}
-            options={tagOptions}
-            placeholder={
-              tagOptions.length > 0
-                ? "Pick tags"
-                : catalogFailed
-                  ? "Your agents could not be read"
-                  : !catalogLoaded
-                    ? "Loading your agents…"
-                    : "No tags on your agents yet"
-            }
-          />
-        )}
+          {filter.mode === "categories" && (
+            <SettingsMultiSelect<string>
+              label="Categories"
+              description="Show agents whose category matches one of these."
+              value={filter.categories}
+              onValueChange={(categories) => patchFilter({ categories })}
+              options={categoryOptions}
+              placeholder={
+                categoryOptions.length > 0
+                  ? "Pick categories"
+                  : catalogFailed
+                    ? "Your agents could not be read"
+                    : !catalogLoaded
+                      ? "Loading your agents…"
+                      : "No categories on your agents yet"
+              }
+            />
+          )}
 
-        {filter.mode === "categories" && (
-          <SettingsMultiSelect<string>
-            label="Categories"
-            description="Show agents whose category matches one of these."
-            value={filter.categories}
-            onValueChange={(categories) => patchFilter({ categories })}
-            options={categoryOptions}
-            placeholder={
-              categoryOptions.length > 0
-                ? "Pick categories"
-                : catalogFailed
-                  ? "Your agents could not be read"
-                  : !catalogLoaded
-                    ? "Loading your agents…"
-                    : "No categories on your agents yet"
-            }
-          />
-        )}
+          {filter.mode === "explicit" && (
+            <SettingsMultiSelect<string>
+              label="Agents"
+              description="Only these agents will show up."
+              value={filter.agentIds}
+              onValueChange={(agentIds) => patchFilter({ agentIds })}
+              options={agentOptions}
+              placeholder="Pick agents"
+              countOnly={agentOptions.length > 30}
+              last
+            />
+          )}
 
-        {filter.mode === "explicit" && (
-          <SettingsMultiSelect<string>
-            label="Agents"
-            description="Only these agents will show up."
-            value={filter.agentIds}
-            onValueChange={(agentIds) => patchFilter({ agentIds })}
-            options={agentOptions}
-            placeholder="Pick agents"
-            countOnly={agentOptions.length > 30}
+          {filter.mode === "favorites" && (
+            <SettingsCallout tone="info">
+              Any agent marked as a favorite will show up here. Star an agent from
+              its settings or the agents grid to add it.
+            </SettingsCallout>
+          )}
+
+          {filter.mode === "all" && (
+            <SettingsCallout tone="info">
+              No filter is active — every agent you can access will appear in the
+              /code chat.
+            </SettingsCallout>
+          )}
+        </SettingsSection>
+
+        <SettingsSection title="History sidebar" icon={History}>
+          <SettingsSegmented<ConversationHistoryGrouping>
+            label="Default grouping"
+            description="How the history sidebar groups conversations on first load. Users can still flip between groupings per session."
+            value={grouping}
+            onValueChange={setGrouping}
+            options={[
+              { value: "date", label: "By date" },
+              { value: "agent", label: "By agent" },
+            ]}
+          />
+          <SettingsNumberInput
+            label="Conversations per page"
+            description="Batch size used when loading the history list. 30 is a good default."
+            value={pageSize}
+            onValueChange={setPageSize}
+            min={10}
+            max={100}
+            step={5}
             last
           />
-        )}
+        </SettingsSection>
 
-        {filter.mode === "favorites" && (
-          <SettingsCallout tone="info">
-            Any agent marked as a favorite will show up here. Star an agent from
-            its settings or the agents grid to add it.
-          </SettingsCallout>
-        )}
-
-        {filter.mode === "all" && (
-          <SettingsCallout tone="info">
-            No filter is active — every agent you can access will appear in the
-            /code chat.
-          </SettingsCallout>
-        )}
-      </SettingsSection>
-
-      <SettingsSection title="History sidebar" icon={History}>
-        <SettingsSegmented<ConversationHistoryGrouping>
-          label="Default grouping"
-          description="How the history sidebar groups conversations on first load. Users can still flip between groupings per session."
-          value={grouping}
-          onValueChange={setGrouping}
-          options={[
-            { value: "date", label: "By date" },
-            { value: "agent", label: "By agent" },
-          ]}
-        />
-        <SettingsNumberInput
-          label="Conversations per page"
-          description="Batch size used when loading the history list. 30 is a good default."
-          value={pageSize}
-          onValueChange={setPageSize}
-          min={10}
-          max={100}
-          step={5}
-          last
-        />
-      </SettingsSection>
-
-      <SettingsSection title="Editor type environments" icon={Layers}>
-        <SettingsSwitch
-          label="Load per-tab type definitions"
-          description="Load curated React/Lucide/ShadCN/Node typings for prompt-app, aga-app, tool-ui, and sandbox tabs. Disable to see vanilla TypeScript errors instead."
-          checked={monacoEnvironmentsEnabled ?? true}
-          onCheckedChange={setMonacoEnvironmentsEnabled}
-          last
-        />
-      </SettingsSection>
+        <SettingsSection title="Editor type environments" icon={Layers}>
+          <SettingsSwitch
+            label="Load per-tab type definitions"
+            description="Load curated React/Lucide/ShadCN/Node typings for prompt-app, aga-app, tool-ui, and sandbox tabs. Disable to see vanilla TypeScript errors instead."
+            checked={monacoEnvironmentsEnabled ?? true}
+            onCheckedChange={setMonacoEnvironmentsEnabled}
+            last
+          />
+        </SettingsSection>
+      </PreferencesLoadGate>
 
       <SettingsCallout tone="info">
         The /code workspace is designed for working with a focused set of coding

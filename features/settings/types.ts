@@ -44,14 +44,6 @@ export type SettingsTabDef = {
   requiresAuth?: boolean;
   /** Where every setting on this tab is ultimately persisted. Used to surface badges ("Local only"). */
   persistence: SettingsPersistence;
-  /**
-   * True when the tab renders the person's saved `userPreferences`. The tab
-   * host then shows a wait while they load and the failure (menu + retry) if
-   * the load failed — never the built-in defaults as if they were theirs.
-   * Kept honest by `features/settings/__tests__/reads-user-preferences.test.ts`,
-   * which derives the flag from each tab's source.
-   */
-  readsUserPreferences?: boolean;
 };
 
 /** Derived tab with children pre-resolved. Returned by the tree builder. */

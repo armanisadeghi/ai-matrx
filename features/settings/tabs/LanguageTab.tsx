@@ -7,6 +7,7 @@ import { SettingsSubHeader } from "@/components/official/settings/layout/Setting
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { useSetting } from "../hooks/useSetting";
 import { LANGUAGE_OPTIONS } from "../agent-writable-settings";
+import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
 /**
  * Language defaults. Right now there's no single "app language" slice — each
@@ -34,23 +35,25 @@ export default function LanguageTab() {
         Change each domain's default here.
       </SettingsCallout>
 
-      <SettingsSection title="Language defaults">
-        <SettingsSelect
-          label="Voice input"
-          description="Speech-to-text recognition language."
-          value={voiceLang}
-          onValueChange={setVoiceLang}
-          options={LANGUAGE_OPTIONS}
-        />
-        <SettingsSelect
-          label="Text generation"
-          description="Default language for generated text."
-          value={textLang}
-          onValueChange={setTextLang}
-          options={LANGUAGE_OPTIONS}
-          last
-        />
-      </SettingsSection>
+      <PreferencesLoadGate what="your language defaults">
+        <SettingsSection title="Language defaults">
+          <SettingsSelect
+            label="Voice input"
+            description="Speech-to-text recognition language."
+            value={voiceLang}
+            onValueChange={setVoiceLang}
+            options={LANGUAGE_OPTIONS}
+          />
+          <SettingsSelect
+            label="Text generation"
+            description="Default language for generated text."
+            value={textLang}
+            onValueChange={setTextLang}
+            options={LANGUAGE_OPTIONS}
+            last
+          />
+        </SettingsSection>
+      </PreferencesLoadGate>
     </>
   );
 }

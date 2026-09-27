@@ -46,6 +46,7 @@ import {
   READ_ALOUD_VOICE_KEY,
 } from "./voices/voiceSettingDoors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
 export default function VoicesTab() {
   const settings = useUniversalSettings();
@@ -128,14 +129,16 @@ export default function VoicesTab() {
           onValueChange={(v) => void update({ language: v })}
           options={LANGUAGE_OPTIONS}
         />
-        <SettingsSelect
-          label="Read-aloud emotion"
-          description="The tone your read-aloud voice speaks in — the chat speaker, the Listen panel and spoken replies. Live conversation uses a different engine and is not affected."
-          value={emotion}
-          onValueChange={setEmotion}
-          options={VOICE_EMOTION_OPTIONS}
-          last
-        />
+        <PreferencesLoadGate what="your read-aloud emotion">
+          <SettingsSelect
+            label="Read-aloud emotion"
+            description="The tone your read-aloud voice speaks in — the chat speaker, the Listen panel and spoken replies. Live conversation uses a different engine and is not affected."
+            value={emotion}
+            onValueChange={setEmotion}
+            options={VOICE_EMOTION_OPTIONS}
+            last
+          />
+        </PreferencesLoadGate>
       </SettingsSection>
 
       <SettingsSection

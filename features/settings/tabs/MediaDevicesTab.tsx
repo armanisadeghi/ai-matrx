@@ -24,6 +24,7 @@ import { SettingsCallout } from "@/components/official/settings/layout/SettingsC
 import { useAudioDevices } from "@/features/audio/useAudioDevices";
 import { useOpenAudioDevices } from "@/features/overlays/openers/audioDevices";
 import { useSetting } from "../hooks/useSetting";
+import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
 export default function MediaDevicesTab() {
   const {
@@ -63,99 +64,101 @@ export default function MediaDevicesTab() {
         icon={Camera}
       />
 
-      <SettingsSection title="Microphone" icon={Mic}>
-        {micDenied && (
-          <SettingsCallout tone="error" title="Microphone access blocked">
-            Enable microphone access for this site in your browser settings,
-            then refresh the device list.
-          </SettingsCallout>
-        )}
-        <SettingsDeviceSelect
-          label="Microphone"
-          description={
-            micGranted
-              ? undefined
-              : "Grant access to see your device names."
-          }
-          devices={inputs}
-          selectedId={selectedInputId}
-          onSelect={setInput}
-          deviceKindLabel="Microphone"
-          width="lg"
-          last={micGranted || micDenied}
-        />
-        {!micGranted && !micDenied && (
-          <SettingsButton
-            label="Microphone access"
-            description="Prompts once; the grant is remembered by your browser."
-            actionLabel="Grant access"
-            onClick={() => void requestPermission()}
-            last
-          />
-        )}
-      </SettingsSection>
-
-      <SettingsSection title="Speaker" icon={Speaker}>
-        {outputSelectionSupported ? (
+      <PreferencesLoadGate what="your saved devices">
+        <SettingsSection title="Microphone" icon={Mic}>
+          {micDenied && (
+            <SettingsCallout tone="error" title="Microphone access blocked">
+              Enable microphone access for this site in your browser settings,
+              then refresh the device list.
+            </SettingsCallout>
+          )}
           <SettingsDeviceSelect
-            label="Speaker"
-            devices={outputs}
-            selectedId={selectedOutputId}
-            onSelect={setOutput}
-            deviceKindLabel="Speaker"
+            label="Microphone"
+            description={
+              micGranted
+                ? undefined
+                : "Grant access to see your device names."
+            }
+            devices={inputs}
+            selectedId={selectedInputId}
+            onSelect={setInput}
+            deviceKindLabel="Microphone"
             width="lg"
+            last={micGranted || micDenied}
+          />
+          {!micGranted && !micDenied && (
+            <SettingsButton
+              label="Microphone access"
+              description="Prompts once; the grant is remembered by your browser."
+              actionLabel="Grant access"
+              onClick={() => void requestPermission()}
+              last
+            />
+          )}
+        </SettingsSection>
+
+        <SettingsSection title="Speaker" icon={Speaker}>
+          {outputSelectionSupported ? (
+            <SettingsDeviceSelect
+              label="Speaker"
+              devices={outputs}
+              selectedId={selectedOutputId}
+              onSelect={setOutput}
+              deviceKindLabel="Speaker"
+              width="lg"
+              last
+            />
+          ) : (
+            <SettingsCallout tone="info" title="Speaker selection unavailable">
+              This browser can&apos;t switch the audio output device. Choose your
+              speaker or headphones in your macOS / iOS sound settings instead.
+            </SettingsCallout>
+          )}
+        </SettingsSection>
+
+        <SettingsSection title="Camera" icon={Camera}>
+          {camDenied && (
+            <SettingsCallout tone="error" title="Camera access blocked">
+              Enable camera access for this site in your browser settings, then
+              refresh the device list.
+            </SettingsCallout>
+          )}
+          <SettingsDeviceSelect
+            label="Camera"
+            description={
+              camGranted ? undefined : "Grant access to see your camera names."
+            }
+            devices={cameras}
+            selectedId={selectedCameraId}
+            onSelect={setCamera}
+            defaultOptionLabel="Automatic"
+            deviceKindLabel="Camera"
+            width="lg"
+          />
+          {!camGranted && !camDenied && (
+            <SettingsButton
+              label="Camera access"
+              description="Prompts once; the camera turns off again immediately."
+              actionLabel="Grant access"
+              onClick={() => void requestCameraPermission()}
+            />
+          )}
+          <SettingsSelect
+            label="Preferred direction"
+            description="On phones and tablets: front or rear camera by default."
+            value={facingMode === "" ? "auto" : facingMode}
+            onValueChange={(v) =>
+              setFacingMode(v === "auto" ? "" : (v as "user" | "environment"))
+            }
+            options={[
+              { value: "auto", label: "Automatic" },
+              { value: "user", label: "Front (facing you)" },
+              { value: "environment", label: "Rear (facing away)" },
+            ]}
             last
           />
-        ) : (
-          <SettingsCallout tone="info" title="Speaker selection unavailable">
-            This browser can&apos;t switch the audio output device. Choose your
-            speaker or headphones in your macOS / iOS sound settings instead.
-          </SettingsCallout>
-        )}
-      </SettingsSection>
-
-      <SettingsSection title="Camera" icon={Camera}>
-        {camDenied && (
-          <SettingsCallout tone="error" title="Camera access blocked">
-            Enable camera access for this site in your browser settings, then
-            refresh the device list.
-          </SettingsCallout>
-        )}
-        <SettingsDeviceSelect
-          label="Camera"
-          description={
-            camGranted ? undefined : "Grant access to see your camera names."
-          }
-          devices={cameras}
-          selectedId={selectedCameraId}
-          onSelect={setCamera}
-          defaultOptionLabel="Automatic"
-          deviceKindLabel="Camera"
-          width="lg"
-        />
-        {!camGranted && !camDenied && (
-          <SettingsButton
-            label="Camera access"
-            description="Prompts once; the camera turns off again immediately."
-            actionLabel="Grant access"
-            onClick={() => void requestCameraPermission()}
-          />
-        )}
-        <SettingsSelect
-          label="Preferred direction"
-          description="On phones and tablets: front or rear camera by default."
-          value={facingMode === "" ? "auto" : facingMode}
-          onValueChange={(v) =>
-            setFacingMode(v === "auto" ? "" : (v as "user" | "environment"))
-          }
-          options={[
-            { value: "auto", label: "Automatic" },
-            { value: "user", label: "Front (facing you)" },
-            { value: "environment", label: "Rear (facing away)" },
-          ]}
-          last
-        />
-      </SettingsSection>
+        </SettingsSection>
+      </PreferencesLoadGate>
 
       <SettingsSection title="Testing & tools">
         <SettingsButton

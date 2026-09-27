@@ -43,6 +43,8 @@ import {
   type SyncEngineApi,
 } from "@/lib/sync/engine/middleware";
 import { bootSync, resyncForIdentity } from "@/lib/sync/engine/boot";
+import { announceLoadFailure } from "@/lib/sync/engine/remoteFetchStatus";
+import { extractErrorMessage } from "@/utils/errors";
 import { openSyncChannel, type SyncChannel } from "@/lib/sync/channel";
 import { deriveIdentity, onIdentityChange } from "@/lib/sync/identity";
 import { syncPolicies } from "@/lib/sync/registry";
@@ -333,6 +335,10 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         .catch((error: unknown) => {
           // Loud recovery: allow a later mount to retry a failed bootstrap.
           bootPromise = null;
+          // …and no slice waits forever on a boot that threw after bootSync
+          // returned (the identity watch, the awaited IDB pass): each
+          // remotely-loaded slice hears its load failed, with the reason.
+          announceLoadFailure(store, syncPolicies, extractErrorMessage(error));
           throw error;
         })
         .finally(() => {

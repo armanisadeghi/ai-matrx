@@ -7,6 +7,7 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { useSetting } from "../hooks/useSetting";
+import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
 /**
  * Settings truth sweep (2026-09-25, lane ai-media-editor): resolution, color
@@ -35,37 +36,39 @@ export default function ImageGenerationTab() {
         description="Default model and style for the /images/generate page and the image-generate picker."
         icon={ImageIcon}
       />
-      <SettingsSection title="Output">
-        <SettingsModelPicker
-          label="Model"
-          value={model}
-          onValueChange={setModel}
-          scope="all"
-          allowPlatformDefault
-          platformDefaultLabel="AI Matrx default (chosen by the platform)"
-          description="Leave on the AI Matrx default to use whichever image model the platform has set for image generation."
-          defaultModality="image"
-        />
-        <SettingsSelect
-          label="Style"
-          description="Seeds the style field when you open image generation — you can still change it per image."
-          value={style}
-          onValueChange={setStyle}
-          placeholder="None — no style added"
-          options={[
-            { value: "realistic", label: "Realistic" },
-            { value: "artistic", label: "Artistic" },
-            { value: "anime", label: "Anime" },
-            { value: "cartoon", label: "Cartoon" },
-            { value: "3d-render", label: "3D render" },
-            { value: "digital-art", label: "Digital art" },
-            { value: "oil-painting", label: "Oil painting" },
-            { value: "watercolor", label: "Watercolor" },
-            { value: "sketch", label: "Sketch" },
-          ]}
-          last
-        />
-      </SettingsSection>
+      <PreferencesLoadGate what="your image generation defaults">
+        <SettingsSection title="Output">
+          <SettingsModelPicker
+            label="Model"
+            value={model}
+            onValueChange={setModel}
+            scope="all"
+            allowPlatformDefault
+            platformDefaultLabel="AI Matrx default (chosen by the platform)"
+            description="Leave on the AI Matrx default to use whichever image model the platform has set for image generation."
+            defaultModality="image"
+          />
+          <SettingsSelect
+            label="Style"
+            description="Seeds the style field when you open image generation — you can still change it per image."
+            value={style}
+            onValueChange={setStyle}
+            placeholder="None — no style added"
+            options={[
+              { value: "realistic", label: "Realistic" },
+              { value: "artistic", label: "Artistic" },
+              { value: "anime", label: "Anime" },
+              { value: "cartoon", label: "Cartoon" },
+              { value: "3d-render", label: "3D render" },
+              { value: "digital-art", label: "Digital art" },
+              { value: "oil-painting", label: "Oil painting" },
+              { value: "watercolor", label: "Watercolor" },
+              { value: "sketch", label: "Sketch" },
+            ]}
+            last
+          />
+        </SettingsSection>
+      </PreferencesLoadGate>
       <SettingsCallout tone="info">
         Resolution, color palette, and automatic enhancement passes aren't
         supported by image generation yet, so there's nothing to default here

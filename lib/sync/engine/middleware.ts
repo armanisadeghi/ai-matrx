@@ -328,6 +328,45 @@ export function createSyncMiddleware(ctx: SyncMiddlewareContext): Middleware {
       // Neither may the engine's own load-status bookkeeping: a `failed` load
       // leaves the slice on defaults, and persisting then would write those
       // defaults over the person's saved record.
+      const persistPolicy = (
+        policy: (typeof ctx.policies)[number],
+        sliceState: unknown,
+      ): void => {
+        const caps = getPreset(policy.config.preset);
+        lastPersistedRef.set(policy.config.sliceName, sliceState);
+
+        const body = serializeBody(policy, sliceState);
+
+        if (caps.writeStrategy === "sync") {
+          // boot-critical: synchronous localStorage write-through.
+          adapterFor(policy).write(policy.storageKey, {
+            version: policy.config.version,
+            identityKey: ctx.getIdentity().key,
+            body,
+          });
+        } else if (caps.writeStrategy === "debounced") {
+          // warm-cache: debounced write — both IDB and remote.write
+          // (if declared) flush after quiescence. Lazy scheduler
+          // construction on first use. The scheduler's flush is the ONE
+          // place a warm-cache slice reaches storage, and it honours
+          // `policy.persistWhen` (a slice whose saved record has not
+          // loaded is HELD there, never written).
+          if (!remoteWriteScheduler) {
+            remoteWriteScheduler = createRemoteWriteScheduler({
+              policies: ctx.policies,
+              store: {
+                getState: api.getState,
+                dispatch: api.dispatch,
+              } as Parameters<typeof createRemoteWriteScheduler>[0]["store"],
+              getIdentity: ctx.getIdentity,
+              ...(ctx.defaultDebounceMs !== undefined
+                ? { defaultDebounceMs: ctx.defaultDebounceMs }
+                : {}),
+            });
+          }
+          remoteWriteScheduler.schedule(policy.config.sliceName, body);
+        }
+      };
       if (!isRehydrateAction(a) && !isRemoteFetchStatusAction(a)) {
         for (const policy of ctx.policies) {
           const caps = getPreset(policy.config.preset);
@@ -340,45 +379,27 @@ export function createSyncMiddleware(ctx: SyncMiddlewareContext): Middleware {
           if (sliceState === undefined) continue;
           if (lastPersistedRef.get(policy.config.sliceName) === sliceState)
             continue;
-          lastPersistedRef.set(policy.config.sliceName, sliceState);
-
-          const body = serializeBody(policy, sliceState);
-
-          if (caps.writeStrategy === "sync") {
-            // boot-critical: synchronous localStorage write-through.
-            adapterFor(policy).write(policy.storageKey, {
-              version: policy.config.version,
-              identityKey: ctx.getIdentity().key,
-              body,
-            });
-          } else if (caps.writeStrategy === "debounced") {
-            // warm-cache: debounced write — both IDB and remote.write
-            // (if declared) flush after quiescence. Lazy scheduler
-            // construction on first use.
-            if (!remoteWriteScheduler) {
-              remoteWriteScheduler = createRemoteWriteScheduler({
-                policies: ctx.policies,
-                store: {
-                  getState: api.getState,
-                  dispatch: api.dispatch,
-                } as Parameters<typeof createRemoteWriteScheduler>[0]["store"],
-                getIdentity: ctx.getIdentity,
-                ...(ctx.defaultDebounceMs !== undefined
-                  ? { defaultDebounceMs: ctx.defaultDebounceMs }
-                  : {}),
-              });
-            }
-            remoteWriteScheduler.schedule(policy.config.sliceName, body);
-          }
+          persistPolicy(policy, sliceState);
         }
       } else {
-        // REHYDRATE path: the reducer just replaced slice state with data
-        // pulled from a persistent source (IDB, LS fallback, remote.fetch,
-        // or peer HYDRATE_RESPONSE). That new state IS the persisted
-        // baseline — update `lastPersistedRef` so the first subsequent
-        // mutation is compared against it. Without this, a user edit
-        // right after rehydrate would be detected as "changed since boot
+        // REHYDRATE / load-outcome path: the reducer just replaced slice
+        // state with data pulled from a persistent source (IDB, LS fallback,
+        // remote.fetch, or peer HYDRATE_RESPONSE). That new state IS the
+        // persisted baseline — update `lastPersistedRef` so the first
+        // subsequent mutation is compared against it. Without this, a user
+        // edit right after rehydrate would be detected as "changed since boot
         // seed" and flushed back to the same source we just read from.
+        //
+        // EXCEPT when the slice says the load just landed edits that were
+        // never persisted (`policy.persistAfterLoad`): edits made while the
+        // saved record had not loaded were held, the reducer reapplied them
+        // on top of the REAL record, and that merged state must be saved now.
+        // Only the slice this load outcome is ABOUT is asked.
+        const loadedSlice = isRehydrateAction(a)
+          ? a.payload.sliceName
+          : isRemoteFetchStatusAction(a)
+            ? a.payload.sliceName
+            : null;
         for (const policy of ctx.policies) {
           const caps = getPreset(policy.config.preset);
           if (caps.writeStrategy === "none") continue;
@@ -386,7 +407,29 @@ export function createSyncMiddleware(ctx: SyncMiddlewareContext): Middleware {
             api.getState(),
             policy.config.sliceName,
           );
-          if (sliceState !== undefined) {
+          if (sliceState === undefined) continue;
+          let unsaved = false;
+          const afterLoad = policy.config.persistAfterLoad;
+          if (
+            typeof afterLoad === "function" &&
+            policy.config.sliceName === loadedSlice
+          ) {
+            try {
+              unsaved = afterLoad(sliceState) === true;
+            } catch (err) {
+              logger.error("persist.afterLoad.threw", {
+                sliceName: policy.config.sliceName,
+                meta: { error: extractErrorMessage(err) },
+              });
+            }
+          }
+          if (unsaved) {
+            logger.info("persist.afterLoad", {
+              sliceName: policy.config.sliceName,
+              meta: { detail: "saving edits held until the saved record loaded" },
+            });
+            persistPolicy(policy, sliceState);
+          } else {
             lastPersistedRef.set(policy.config.sliceName, sliceState);
           }
         }

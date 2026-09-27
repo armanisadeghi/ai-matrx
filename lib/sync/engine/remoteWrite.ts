@@ -79,6 +79,40 @@ export function createRemoteWriteScheduler(
         const policy = bySlice.get(sliceName);
         if (!record || !policy) return;
 
+        // THE PERSIST GATE. Every warm-cache write — debounce, pagehide flush,
+        // programmatic flush — lands here, so this is the one place a slice
+        // that is not ready (its saved record has not loaded) is refused.
+        // The body is HELD, never written; the next schedule replaces it.
+        const persistWhen = policy.config.persistWhen;
+        if (typeof persistWhen === "function") {
+            let ready = false;
+            try {
+                const live = (store.getState() as Record<string, unknown>)[sliceName];
+                ready = persistWhen(live) === true;
+            } catch (err) {
+                logger.error("persist.gate.threw", {
+                    sliceName,
+                    meta: { error: extractErrorMessage(err) },
+                });
+            }
+            if (!ready) {
+                // DROP the body — never keep it for a later flush (a pagehide
+                // after the load would write this pre-load body, defaults and
+                // all). The slice holds the edits itself and asks for one save
+                // when its record loads (`policy.persistAfterLoad`).
+                if (record.timerHandle) clearTimeout(record.timerHandle);
+                record.inFlightController?.abort();
+                pending.delete(sliceName);
+                logger.warn("persist.held", {
+                    sliceName,
+                    meta: {
+                        detail: "saved record not loaded — nothing written, so defaults never overwrite it",
+                    },
+                });
+                return;
+            }
+        }
+
         // Abort any previous in-flight for this slice so the latest body
         // supersedes.
         record.inFlightController?.abort();

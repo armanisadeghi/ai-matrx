@@ -37,6 +37,7 @@ import {
 } from "../universal/UniversalSettingsPane";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
 /** The registry keys the first screen shows, in order (USD-12). */
 export const FIRST_SCREEN_MODEL_KEY = "agents.model_prefs.chat_default_model";
@@ -104,32 +105,34 @@ export default function FirstScreenTab() {
       </SettingsSection>
       }
 
-      {settings.editingContext === "user" && <SettingsSection title="Account defaults" icon={Building2}>
-        <SettingsSelect
-          label="Default organization"
-          description="Where you land when you sign in. You can switch organizations any time from the header."
-          value={defaultOrganizationId ?? ""}
-          options={settings.organizations.map((org) => ({ value: org.id, label: org.name }))}
-          placeholder={
-            settings.organizations.length > 0
-              ? "Choose one"
-              : settings.organizationsStatus === "error"
-                ? "Your organizations could not be read"
-                : settings.organizationsStatus === "loading"
-                  ? "Loading your organizations…"
-                  : "No organizations yet"
-          }
-          onValueChange={(value) => setDefaultOrganizationId(value || null)}
-          last={settings.organizationsStatus !== "error"}
-        />
-        {settings.organizationsStatus === "error" && (
-          <ReadFailure
-            error={settings.organizationsError ?? true}
-            what="your organizations"
-            onRetry={settings.refreshOrganizations}
+      {settings.editingContext === "user" && <PreferencesLoadGate what="your account defaults">
+        <SettingsSection title="Account defaults" icon={Building2}>
+          <SettingsSelect
+            label="Default organization"
+            description="Where you land when you sign in. You can switch organizations any time from the header."
+            value={defaultOrganizationId ?? ""}
+            options={settings.organizations.map((org) => ({ value: org.id, label: org.name }))}
+            placeholder={
+              settings.organizations.length > 0
+                ? "Choose one"
+                : settings.organizationsStatus === "error"
+                  ? "Your organizations could not be read"
+                  : settings.organizationsStatus === "loading"
+                    ? "Loading your organizations…"
+                    : "No organizations yet"
+            }
+            onValueChange={(value) => setDefaultOrganizationId(value || null)}
+            last={settings.organizationsStatus !== "error"}
           />
-        )}
-      </SettingsSection>
+          {settings.organizationsStatus === "error" && (
+            <ReadFailure
+              error={settings.organizationsError ?? true}
+              what="your organizations"
+              onRetry={settings.refreshOrganizations}
+            />
+          )}
+        </SettingsSection>
+      </PreferencesLoadGate>
       }
 
       {settings.isLoading && (
@@ -175,5 +178,4 @@ export const FIRST_SCREEN_TAB: SettingsTabDef = {
   description: "The basics, then everything else on the left.",
   component: FirstScreenTab,
   persistence: "server",
-  readsUserPreferences: true,
 };

@@ -1,11 +1,14 @@
 /**
- * The settings tab host gates a tab on the load of the person's saved
- * preferences only when the tab is flagged `readsUserPreferences`. A flag that
- * drifts from the code puts defaults back on screen as the person's settings
- * (or blocks a tab that never needed them). So the flag is DERIVED here from
- * each tab component's source: it reads preferences when it names a
- * `"userPreferences.…"` setting path, touches `<x>.userPreferences`, or
- * imports the preferences slice or its selectors.
+ * A settings screen that reads the person's saved `userPreferences` must not
+ * render the built-in defaults as their settings while those preferences are
+ * loading or failed to load. Each tab gates ONLY the section that reads them,
+ * with `<PreferencesLoadGate>` — never the whole tab, so a failed load never
+ * hides the tab's unrelated settings (the tab host gates nothing).
+ *
+ * The obligation is DERIVED here from each registered tab's source: a tab
+ * reads preferences when it names a `"userPreferences.…"` setting path,
+ * touches `<x>.userPreferences`, or imports the preferences slice or its
+ * selectors at runtime. Every such tab must render the gate.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -33,15 +36,16 @@ function resolveModule(spec: string, fromFile: string): string | null {
   return null;
 }
 
+function parse(source: string, fileName: string): ts.SourceFile {
+  return ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+}
+
 export function sourceReadsUserPreferences(source: string, fileName = "tab.tsx"): boolean {
-  const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   let hit = false;
   const visit = (n: ts.Node) => {
     if (hit) return;
     if ((ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) && n.text.startsWith("userPreferences.")) {
-      const parent = n.parent;
-      const isImportPath = parent && ts.isImportDeclaration(parent);
-      if (!isImportPath) hit = true;
+      if (!(n.parent && ts.isImportDeclaration(n.parent))) hit = true;
     } else if (ts.isPropertyAccessExpression(n) && n.name.text === "userPreferences") {
       hit = true;
     } else if (
@@ -54,15 +58,25 @@ export function sourceReadsUserPreferences(source: string, fileName = "tab.tsx")
     }
     n.forEachChild(visit);
   };
-  visit(sf);
+  visit(parse(source, fileName));
   return hit;
 }
 
-/** { tab id → { component identifier, flag } } straight from the registry source. */
-function registryEntries(file: string): { id: string; component: string; flagged: boolean }[] {
-  const src = fs.readFileSync(file, "utf8");
-  const sf = ts.createSourceFile(file, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  const out: { id: string; component: string; flagged: boolean }[] = [];
+/** Does the source render `<PreferencesLoadGate>` (or gate itself with `usePreferencesLoad`)? */
+export function sourceGatesPreferences(source: string, fileName = "tab.tsx"): boolean {
+  let hit = false;
+  const visit = (n: ts.Node) => {
+    if (hit) return;
+    if ((ts.isJsxOpeningElement(n) || ts.isJsxSelfClosingElement(n)) && n.tagName.getText() === "PreferencesLoadGate") hit = true;
+    else if (ts.isCallExpression(n) && n.expression.getText() === "usePreferencesLoad") hit = true;
+    n.forEachChild(visit);
+  };
+  visit(parse(source, fileName));
+  return hit;
+}
+
+function tabEntries(file: string): { id: string; component: string }[] {
+  const out: { id: string; component: string }[] = [];
   const visit = (n: ts.Node) => {
     if (ts.isObjectLiteralExpression(n)) {
       const prop = (name: string) =>
@@ -73,24 +87,18 @@ function registryEntries(file: string): { id: string; component: string; flagged
       const id = prop("id");
       const component = prop("component");
       if (id && component && ts.isStringLiteral(id.initializer) && ts.isIdentifier(component.initializer)) {
-        const flag = prop("readsUserPreferences");
-        out.push({
-          id: id.initializer.text,
-          component: component.initializer.text,
-          flagged: flag?.initializer.kind === ts.SyntaxKind.TrueKeyword,
-        });
+        out.push({ id: id.initializer.text, component: component.initializer.text });
       }
     }
     n.forEachChild(visit);
   };
-  visit(sf);
+  visit(parse(fs.readFileSync(file, "utf8"), file));
   return out;
 }
 
 /** identifier → file: the file's default and named imports, and components it declares itself. */
-function registryImports(file: string): Map<string, string> {
-  const src = fs.readFileSync(file, "utf8");
-  const sf = ts.createSourceFile(file, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+function componentFiles(file: string): Map<string, string> {
+  const sf = parse(fs.readFileSync(file, "utf8"), file);
   const map = new Map<string, string>();
   for (const st of sf.statements) {
     if (ts.isFunctionDeclaration(st) && st.name) map.set(st.name.text, file);
@@ -104,36 +112,35 @@ function registryImports(file: string): Map<string, string> {
   return map;
 }
 
-describe("settings registry: readsUserPreferences matches what each tab reads", () => {
-  it("the detector sees a real read and ignores a comment", () => {
+describe("settings tabs: every section over saved preferences is gated on their load", () => {
+  it("the detectors see a real read / gate and ignore a comment", () => {
     expect(sourceReadsUserPreferences(`const [v] = useSetting("userPreferences.voice.language");`)).toBe(true);
     expect(sourceReadsUserPreferences(`const v = useSelector((s) => s.userPreferences.system);`)).toBe(true);
     expect(sourceReadsUserPreferences(`// each saving to \`userPreferences.flashcard.*\`\nexport default function T() { return null; }`)).toBe(false);
+    expect(sourceGatesPreferences(`const x = <PreferencesLoadGate what="a"><p /></PreferencesLoadGate>;`)).toBe(true);
+    expect(sourceGatesPreferences(`// <PreferencesLoadGate>\nconst x = <p />;`)).toBe(false);
   });
 
-  it("every tab that reads the person's preferences is gated, and no other tab is", () => {
+  it("every tab that reads the person's preferences renders PreferencesLoadGate", () => {
     const entries = TAB_DEF_FILES.flatMap((defFile) => {
-      const imports = registryImports(defFile);
-      return registryEntries(defFile).map((e) => ({ ...e, file: imports.get(e.component) }));
+      const files = componentFiles(defFile);
+      return tabEntries(defFile).map((e) => ({ ...e, file: files.get(e.component) }));
     });
     expect(entries.length).toBeGreaterThan(20);
     expect(entries.some((e) => e.id === "firstScreen")).toBe(true);
-    const unresolved: string[] = [];
-    const mismatches: string[] = [];
-    for (const e of entries) {
-      const file = e.file;
-      if (!file) {
-        unresolved.push(`${e.id} (${e.component})`);
-        continue;
-      }
-      const reads = sourceReadsUserPreferences(fs.readFileSync(file, "utf8"), file);
-      if (reads !== e.flagged) {
-        mismatches.push(
-          `${e.id}: component ${e.component} ${reads ? "READS" : "does not read"} userPreferences but readsUserPreferences is ${e.flagged}`,
-        );
-      }
-    }
+    const unresolved = entries.filter((e) => !e.file).map((e) => `${e.id} (${e.component})`);
     expect(unresolved).toEqual([]);
-    expect(mismatches).toEqual([]);
+    const resolved = entries.flatMap((e) => (e.file ? [{ id: e.id, file: e.file }] : []));
+    const readers = resolved.filter((e) => sourceReadsUserPreferences(fs.readFileSync(e.file, "utf8"), e.file));
+    expect(readers.length).toBeGreaterThan(10);
+    const ungated = readers
+      .filter((e) => !sourceGatesPreferences(fs.readFileSync(e.file, "utf8"), e.file))
+      .map((e) => `${e.id}: ${path.relative(ROOT, e.file)} reads userPreferences with no <PreferencesLoadGate>`);
+    expect(ungated).toEqual([]);
+  });
+
+  it("the tab host never gates a whole tab", () => {
+    const host = fs.readFileSync(path.join(ROOT, "features/settings/components/SettingsTabHost.tsx"), "utf8");
+    expect(sourceGatesPreferences(host)).toBe(false);
   });
 });

@@ -15,7 +15,6 @@ import type { SettingsTreeNode } from "@/components/official/settings/tree/types
 import type { SettingsTabDef } from "../types";
 import { SettingsPage } from "@/components/official/settings/SettingsPage";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
 type SettingsTabHostProps = {
   activeTab: SettingsTabDef | null;
@@ -81,15 +80,11 @@ export function SettingsTabHost({
           <TabErrorBoundary key={activeTab.id} tabLabel={activeTab.label}>
             <ActiveSettingsTabIdContext.Provider value={activeTab.id}>
               <Suspense fallback={<TabLoading tabLabel={activeTab.label} />}>
-                {activeTab.readsUserPreferences ? (
-                  <PreferencesLoadGate
-                    what={`your ${activeTab.label} settings`}
-                  >
-                    <TabComponent />
-                  </PreferencesLoadGate>
-                ) : (
-                  <TabComponent />
-                )}
+                {/* A tab never gets gated whole on the preferences load: each
+                    tab gates only the SECTION that reads saved preferences
+                    (PreferencesLoadGate), so a failed load never hides its
+                    unrelated settings. */}
+                <TabComponent />
               </Suspense>
             </ActiveSettingsTabIdContext.Provider>
           </TabErrorBoundary>

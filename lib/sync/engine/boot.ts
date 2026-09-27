@@ -31,6 +31,7 @@ import { readSlices as readIdbSlices, type IdbSliceRecord } from "../persistence
 import { getPreset } from "../policies/presets";
 import { buildIdentityResetAction } from "./identityReset";
 import { buildRehydrateAction } from "./rehydrate";
+import { announceLoadFailure } from "./remoteFetchStatus";
 import { createStaleRefreshScheduler, invokeRemoteFetch, type StaleRefreshRegistration } from "./remoteFetch";
 import { extractErrorMessage } from "@/utils/errors";
 import { setMode, type ThemeMode, type ResolvedThemeMode } from "@/styles/themes/themeSlice";
@@ -402,6 +403,19 @@ export async function resyncForIdentity(options: {
     policies: readonly Policy<any>[];
     getIdentity: () => IdentityKey;
 }): Promise<void> {
+    try {
+        await resyncForIdentityInner(options);
+    } catch (err) {
+        // "Never rejects" — and never leaves a slice loading forever either.
+        const message = extractErrorMessage(err);
+        logger.error("boot.identity.resync.failed", { meta: { error: message } });
+        announceLoadFailure(options.store, options.policies, message);
+    }
+}
+
+type ResyncOptions = Parameters<typeof resyncForIdentity>[0];
+
+async function resyncForIdentityInner(options: ResyncOptions): Promise<void> {
     const { store, identity, previousIdentity, policies, getIdentity } = options;
     logger.info("boot.identity.resync", {
         meta: { from: previousIdentity.key, identity: identity.key },
@@ -511,6 +525,20 @@ function attachChannelListener(
  * on one stable contract.
  */
 export async function bootSync(options: BootOptions): Promise<BootResult> {
+    try {
+        return await bootSyncInner(options);
+    } catch (err) {
+        // A boot that throws must not leave a slice "loading" forever: every
+        // remotely-loaded slice hears its load failed, then the caller hears
+        // the throw (store.ts lets a later mount retry the boot).
+        const message = extractErrorMessage(err);
+        logger.error("boot.failed", { meta: { error: message } });
+        announceLoadFailure(options.store, options.policies, message);
+        throw err;
+    }
+}
+
+async function bootSyncInner(options: BootOptions): Promise<BootResult> {
     const started = typeof performance !== "undefined" ? performance.now() : 0;
     const { store, identity, policies } = options;
     const openChannel = options.openChannel ?? openSyncChannel;
@@ -550,7 +578,13 @@ export async function bootSync(options: BootOptions): Promise<BootResult> {
         // them against state that is no longer this identity's.
         if (getIdentity().key !== identity.key) return hydrated;
         const after = new Set<string>([...hydratedFromLocal, ...hydrated]);
-        scheduleColdBootFallbacks(policies, after, store, getIdentity);
+        try {
+            scheduleColdBootFallbacks(policies, after, store, getIdentity);
+        } catch (err) {
+            const message = extractErrorMessage(err);
+            logger.error("boot.fallbacks.failed", { meta: { error: message } });
+            announceLoadFailure(store, policies, message);
+        }
         return hydrated;
     })();
 

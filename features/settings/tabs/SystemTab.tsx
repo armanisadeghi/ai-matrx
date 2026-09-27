@@ -7,6 +7,7 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsReadOnlyValue } from "@/components/official/settings/layout/SettingsReadOnlyValue";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
+import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
 export default function SystemTab() {
   const viewedAnnouncements = useSelector(
@@ -29,19 +30,21 @@ export default function SystemTab() {
         need to look at them. They're shown here for transparency.
       </SettingsCallout>
 
-      <SettingsSection title="Announcements" icon={Megaphone}>
-        <SettingsReadOnlyValue
-          label="Announcements viewed"
-          description="Unique announcement IDs you've dismissed."
-          value={String(viewedAnnouncements.length)}
-        />
-        <SettingsReadOnlyValue
-          label="Feedback prompts seen"
-          description="How many times the feedback callout has appeared."
-          value={String(feedbackViews)}
-          last
-        />
-      </SettingsSection>
+      <PreferencesLoadGate what="your usage counters">
+        <SettingsSection title="Announcements" icon={Megaphone}>
+          <SettingsReadOnlyValue
+            label="Announcements viewed"
+            description="Unique announcement IDs you've dismissed."
+            value={String(viewedAnnouncements.length)}
+          />
+          <SettingsReadOnlyValue
+            label="Feedback prompts seen"
+            description="How many times the feedback callout has appeared."
+            value={String(feedbackViews)}
+            last
+          />
+        </SettingsSection>
+      </PreferencesLoadGate>
     </>
   );
 }

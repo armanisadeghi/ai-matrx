@@ -61,3 +61,33 @@ export function isRemoteFetchStatusAction(action: unknown): action is RemoteFetc
         (action as { type?: unknown }).type === REMOTE_FETCH_STATUS_ACTION_TYPE
     );
 }
+
+/** The part of a policy `announceLoadFailure` reads (any `Policy<T>` fits). */
+interface LoadablePolicy {
+    config: { sliceName: string; remote?: { fetch?: unknown } };
+}
+
+/**
+ * A startup sync that THREW — boot, an identity resync, or anything they
+ * await — must not leave a slice "loading" forever. Every slice that loads
+ * from a remote source is told its load failed, with the error in words.
+ * (A slice that already loaded keeps its record; the reducer decides.)
+ */
+export function announceLoadFailure(
+    store: { dispatch: (action: RemoteFetchStatusAction) => unknown },
+    policies: readonly LoadablePolicy[],
+    error: string,
+    reason: FallbackContext["reason"] = "cold-boot",
+): void {
+    for (const policy of policies) {
+        if (!policy.config.remote?.fetch) continue;
+        try {
+            store.dispatch(
+                buildRemoteFetchStatusAction(policy.config.sliceName, "failed", reason, error),
+            );
+        } catch {
+            // A reducer that throws on its own failure notice cannot be told
+            // any other way; the other slices still must be.
+        }
+    }
+}

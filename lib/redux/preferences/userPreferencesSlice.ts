@@ -3,7 +3,13 @@
 // which imports `userPreferencesPolicy` back from this file. Routing through
 // the barrel creates a runtime initialization cycle under Turbopack/Next
 // ("Cannot access 'userPreferencesPolicy' before initialization").
-import { createSlice, type PayloadAction, type Draft } from "@reduxjs/toolkit";
+import {
+  createSlice,
+  current,
+  isDraft,
+  type PayloadAction,
+  type Draft,
+} from "@reduxjs/toolkit";
 import type { CatalogVoice } from "@/features/audio/service/engines";
 import { definePolicy } from "@/lib/sync/policies/define";
 import {
@@ -754,7 +760,23 @@ export interface UserPreferencesState extends UserPreferences {
     lastSaved: string | null;
     hasUnsavedChanges: boolean;
     loadedPreferences: UserPreferences | null; // Store original loaded state for reset
+    /**
+     * Edits made while the saved record had NOT loaded. They show on screen
+     * at once, but are never persisted then (the policy's `persistWhen`
+     * holds every write) — persisting would put the defaults under them
+     * over the saved record. When the record loads they are replayed on top
+     * of it, and the merged result is saved (`persistAfterLoad`).
+     */
+    pendingEdits: PendingPreferenceEdit[];
+    /** True right after a load replayed `pendingEdits` — the engine saves once. */
+    unsavedAfterLoad: boolean;
   };
+}
+
+/** One held edit: which edit reducer, with the payload it was dispatched with. */
+export interface PendingPreferenceEdit {
+  reducer: PreferenceEditName;
+  payload: unknown;
 }
 
 /**
@@ -986,6 +1008,8 @@ export const initializeUserPreferencesState = (
     lastSaved: null,
     hasUnsavedChanges: false,
     loadedPreferences: null,
+    pendingEdits: [],
+    unsavedAfterLoad: false,
   };
 
   const defaultPreferences: UserPreferences = {
@@ -1329,176 +1353,231 @@ export const initializeUserPreferencesState = (
   };
 };
 
+/**
+ * Every reducer that EDITS the person's preferences. Kept outside
+ * `createSlice` so an edit held while the saved record had not loaded can be
+ * replayed through the very same reducer once it does (`replayPendingEdits`).
+ */
+const preferenceEditReducers = {
+  // MATRX-EXCEPTION: generic single-field setter dispatched by string key across 20+
+  // heterogeneous preference module shapes (UserPreferences[keyof UserPreferences]).
+  // A fully-typed version needs a per-module mapped-type overload set threaded through
+  // every setPreference callsite (features/settings, code/chat, organizations, etc.) —
+  // an architecture change, not a boundary fix. See setModulePreferences below for the
+  // typed alternative used where the caller knows the module at the call site.
+  setPreference: <T extends keyof UserPreferences>(
+    state: Draft<UserPreferencesState>,
+    action: PayloadAction<{
+      module: T;
+      preference: string;
+      value: unknown;
+    }>,
+  ) => {
+    const { module, preference, value } = action.payload;
+    state[module] = {
+      ...state[module],
+      [preference]: value,
+    } as Draft<UserPreferencesState>[T];
+    // Persistence is engine-managed (definePolicy → debounced 250ms remote
+    // upsert + pagehide flush). The flag was leftover from a pre-engine
+    // manual-save workflow; setting it produced a "Unsaved changes" banner
+    // with no user-actionable Save button. Leaving the flag at its current
+    // value (which is `false` once REHYDRATE has fired) means the UI never
+    // surfaces a phantom dirty state.
+    // `_meta.error` is the LOAD failure (see extraReducers) — an edit does
+    // not make a failed read succeed, so edits never clear it.
+  },
+  setModulePreferences: <T extends keyof UserPreferences>(
+    state: Draft<UserPreferencesState>,
+    action: PayloadAction<{
+      module: T;
+      preferences: Partial<UserPreferences[T]>;
+    }>,
+  ) => {
+    const { module, preferences } = action.payload;
+    state[module] = {
+      ...state[module],
+      ...preferences,
+    } as Draft<UserPreferencesState>[T];
+    // See note in `setPreference` — auto-save handles persistence.
+  },
+  resetModulePreferences: <T extends keyof UserPreferences>(
+    state: Draft<UserPreferencesState>,
+    action: PayloadAction<T>,
+  ) => {
+    const moduleKey = action.payload;
+    state[moduleKey] = initializeUserPreferencesState()[
+      moduleKey
+    ] as Draft<UserPreferencesState>[T];
+    // See note in `setPreference` — auto-save handles persistence.
+  },
+  // Resetting the person's CHOICES must not forget whether their saved
+  // record ever loaded — the load status belongs to the read, not the values.
+  // Mutates (rather than returning a fresh state) so a held reset can be
+  // replayed on top of the loaded record like every other edit.
+  resetAllPreferences: (state: Draft<UserPreferencesState>) => {
+    const fresh = initializeUserPreferencesState();
+    Object.assign(state, { ...fresh, _meta: state._meta });
+    state._meta.loadedPreferences = null;
+    state._meta.hasUnsavedChanges = false;
+    state._meta.lastSaved = null;
+  },
+  resetToLoadedPreferences: (state: Draft<UserPreferencesState>) => {
+    if (state._meta.loadedPreferences) {
+      // Restore each module from loaded preferences
+      state.favorites = { ...state._meta.loadedPreferences.favorites };
+      state.display = { ...state._meta.loadedPreferences.display };
+      state.prompts = { ...state._meta.loadedPreferences.prompts };
+      state.voice = { ...state._meta.loadedPreferences.voice };
+      state.textToSpeech = { ...state._meta.loadedPreferences.textToSpeech };
+      state.assistant = { ...state._meta.loadedPreferences.assistant };
+      state.email = { ...state._meta.loadedPreferences.email };
+      state.videoConference = {
+        ...state._meta.loadedPreferences.videoConference,
+      };
+      state.photoEditing = { ...state._meta.loadedPreferences.photoEditing };
+      state.imageGeneration = {
+        ...state._meta.loadedPreferences.imageGeneration,
+      };
+      state.textGeneration = {
+        ...state._meta.loadedPreferences.textGeneration,
+      };
+      state.coding = { ...state._meta.loadedPreferences.coding };
+      state.sandbox = { ...state._meta.loadedPreferences.sandbox };
+      state.flashcard = { ...state._meta.loadedPreferences.flashcard };
+      state.tutor = { ...state._meta.loadedPreferences.tutor };
+      state.playground = { ...state._meta.loadedPreferences.playground };
+      state.aiModels = { ...state._meta.loadedPreferences.aiModels };
+      state.system = { ...state._meta.loadedPreferences.system };
+      state.messaging = { ...state._meta.loadedPreferences.messaging };
+      state.agentContext = { ...state._meta.loadedPreferences.agentContext };
+      state.agentConnections = {
+        ...state._meta.loadedPreferences.agentConnections,
+      };
+      state.mermaid = { ...state._meta.loadedPreferences.mermaid };
+      state.conversationFilters = {
+        ...state._meta.loadedPreferences.conversationFilters,
+      };
+      state.mediaDevices = {
+        ...state._meta.loadedPreferences.mediaDevices,
+      };
+      state.organization = {
+        ...state._meta.loadedPreferences.organization,
+      };
+      state.scratchpad = {
+        ...state._meta.loadedPreferences.scratchpad,
+      };
+      state.siteWorkbench = {
+        ...state._meta.loadedPreferences.siteWorkbench,
+      };
+      state.listViews = {
+        ...state._meta.loadedPreferences.listViews,
+      };
+      state.lists = {
+        ...state._meta.loadedPreferences.lists,
+      };
+      state._meta.hasUnsavedChanges = false;
+    }
+  },
+  // ── Favorites / pinning ────────────────────────────────────────────────
+  // Dedupe + cap live HERE (single source of truth) so every callsite —
+  // dashboard PinButton, sidebar, future surfaces — gets identical behavior.
+  addFavorite: (
+    state: Draft<UserPreferencesState>,
+    action: PayloadAction<FavoriteItem>,
+  ) => {
+    const item = action.payload;
+    const next = state.favorites.items.filter((f) => f.id !== item.id);
+    next.unshift(item); // newest first
+    state.favorites.items = next.slice(0, FAVORITES_MAX);
+  },
+  removeFavorite: (
+    state: Draft<UserPreferencesState>,
+    action: PayloadAction<string>,
+  ) => {
+    state.favorites.items = state.favorites.items.filter(
+      (f) => f.id !== action.payload,
+    );
+  },
+  toggleFavorite: (
+    state: Draft<UserPreferencesState>,
+    action: PayloadAction<FavoriteItem>,
+  ) => {
+    const item = action.payload;
+    const exists = state.favorites.items.some((f) => f.id === item.id);
+    if (exists) {
+      state.favorites.items = state.favorites.items.filter(
+        (f) => f.id !== item.id,
+      );
+    } else {
+      const next = state.favorites.items.filter((f) => f.id !== item.id);
+      next.unshift(item);
+      state.favorites.items = next.slice(0, FAVORITES_MAX);
+    }
+  },
+  reorderFavorites: (
+    state: Draft<UserPreferencesState>,
+    action: PayloadAction<string[]>,
+  ) => {
+    // payload = new ordered list of ids; unknown ids dropped, missing ones appended
+    const byId = new Map(state.favorites.items.map((f) => [f.id, f]));
+    const next: FavoriteItem[] = [];
+    for (const id of action.payload) {
+      const f = byId.get(id);
+      if (f) {
+        next.push(f);
+        byId.delete(id);
+      }
+    }
+    for (const f of byId.values()) next.push(f);
+    state.favorites.items = next;
+  },
+  setFavorites: (
+    state: Draft<UserPreferencesState>,
+    action: PayloadAction<FavoriteItem[]>,
+  ) => {
+    state.favorites.items = action.payload.slice(0, FAVORITES_MAX);
+  },
+};
+
+export type PreferenceEditName = keyof typeof preferenceEditReducers;
+
+type EditReducer = (
+  state: Draft<UserPreferencesState>,
+  action: PayloadAction<never>,
+) => void;
+
+/** `userPreferences/<edit>` → the edit reducer's name. */
+const PREFERENCE_EDIT_BY_TYPE = new Map<string, PreferenceEditName>(
+  (Object.keys(preferenceEditReducers) as PreferenceEditName[]).map((name) => [
+    `userPreferences/${name}`,
+    name,
+  ]),
+);
+
+/**
+ * Replay the edits held while the saved record had not loaded, on top of the
+ * record that just landed. Returns how many were replayed.
+ */
+function replayPendingEdits(state: Draft<UserPreferencesState>): number {
+  const pending = state._meta.pendingEdits;
+  const held = isDraft(pending) ? current(pending) : pending;
+  state._meta.pendingEdits = [];
+  for (const edit of held) {
+    const reduce: EditReducer = preferenceEditReducers[edit.reducer];
+    reduce(state, {
+      type: `userPreferences/${edit.reducer}`,
+      payload: edit.payload as never,
+    });
+  }
+  return held.length;
+}
+
 const userPreferencesSlice = createSlice({
   name: "userPreferences",
   initialState: initializeUserPreferencesState(),
   reducers: {
-    // MATRX-EXCEPTION: generic single-field setter dispatched by string key across 20+
-    // heterogeneous preference module shapes (UserPreferences[keyof UserPreferences]).
-    // A fully-typed version needs a per-module mapped-type overload set threaded through
-    // every setPreference callsite (features/settings, code/chat, organizations, etc.) —
-    // an architecture change, not a boundary fix. See setModulePreferences below for the
-    // typed alternative used where the caller knows the module at the call site.
-    setPreference: <T extends keyof UserPreferences>(
-      state: Draft<UserPreferencesState>,
-      action: PayloadAction<{
-        module: T;
-        preference: string;
-        value: unknown;
-      }>,
-    ) => {
-      const { module, preference, value } = action.payload;
-      state[module] = {
-        ...state[module],
-        [preference]: value,
-      } as Draft<UserPreferencesState>[T];
-      // Persistence is engine-managed (definePolicy → debounced 250ms remote
-      // upsert + pagehide flush). The flag was leftover from a pre-engine
-      // manual-save workflow; setting it produced a "Unsaved changes" banner
-      // with no user-actionable Save button. Leaving the flag at its current
-      // value (which is `false` once REHYDRATE has fired) means the UI never
-      // surfaces a phantom dirty state.
-      // `_meta.error` is the LOAD failure (see extraReducers) — an edit does
-      // not make a failed read succeed, so edits never clear it.
-    },
-    setModulePreferences: <T extends keyof UserPreferences>(
-      state: Draft<UserPreferencesState>,
-      action: PayloadAction<{
-        module: T;
-        preferences: Partial<UserPreferences[T]>;
-      }>,
-    ) => {
-      const { module, preferences } = action.payload;
-      state[module] = {
-        ...state[module],
-        ...preferences,
-      } as Draft<UserPreferencesState>[T];
-      // See note in `setPreference` — auto-save handles persistence.
-    },
-    resetModulePreferences: <T extends keyof UserPreferences>(
-      state: Draft<UserPreferencesState>,
-      action: PayloadAction<T>,
-    ) => {
-      const moduleKey = action.payload;
-      state[moduleKey] = initializeUserPreferencesState()[
-        moduleKey
-      ] as Draft<UserPreferencesState>[T];
-      // See note in `setPreference` — auto-save handles persistence.
-    },
-    // Resetting the person's CHOICES must not forget whether their saved
-    // record ever loaded — the load status belongs to the read, not the values.
-    resetAllPreferences: (state) => {
-      const fresh = initializeUserPreferencesState();
-      return {
-        ...fresh,
-        _meta: {
-          ...fresh._meta,
-          loadStatus: state._meta.loadStatus,
-          error: state._meta.error,
-        },
-      };
-    },
-    resetToLoadedPreferences: (state) => {
-      if (state._meta.loadedPreferences) {
-        // Restore each module from loaded preferences
-        state.favorites = { ...state._meta.loadedPreferences.favorites };
-        state.display = { ...state._meta.loadedPreferences.display };
-        state.prompts = { ...state._meta.loadedPreferences.prompts };
-        state.voice = { ...state._meta.loadedPreferences.voice };
-        state.textToSpeech = { ...state._meta.loadedPreferences.textToSpeech };
-        state.assistant = { ...state._meta.loadedPreferences.assistant };
-        state.email = { ...state._meta.loadedPreferences.email };
-        state.videoConference = {
-          ...state._meta.loadedPreferences.videoConference,
-        };
-        state.photoEditing = { ...state._meta.loadedPreferences.photoEditing };
-        state.imageGeneration = {
-          ...state._meta.loadedPreferences.imageGeneration,
-        };
-        state.textGeneration = {
-          ...state._meta.loadedPreferences.textGeneration,
-        };
-        state.coding = { ...state._meta.loadedPreferences.coding };
-        state.sandbox = { ...state._meta.loadedPreferences.sandbox };
-        state.flashcard = { ...state._meta.loadedPreferences.flashcard };
-        state.tutor = { ...state._meta.loadedPreferences.tutor };
-        state.playground = { ...state._meta.loadedPreferences.playground };
-        state.aiModels = { ...state._meta.loadedPreferences.aiModels };
-        state.system = { ...state._meta.loadedPreferences.system };
-        state.messaging = { ...state._meta.loadedPreferences.messaging };
-        state.agentContext = { ...state._meta.loadedPreferences.agentContext };
-        state.agentConnections = {
-          ...state._meta.loadedPreferences.agentConnections,
-        };
-        state.mermaid = { ...state._meta.loadedPreferences.mermaid };
-        state.conversationFilters = {
-          ...state._meta.loadedPreferences.conversationFilters,
-        };
-        state.mediaDevices = {
-          ...state._meta.loadedPreferences.mediaDevices,
-        };
-        state.organization = {
-          ...state._meta.loadedPreferences.organization,
-        };
-        state.scratchpad = {
-          ...state._meta.loadedPreferences.scratchpad,
-        };
-        state.siteWorkbench = {
-          ...state._meta.loadedPreferences.siteWorkbench,
-        };
-        state.listViews = {
-          ...state._meta.loadedPreferences.listViews,
-        };
-        state.lists = {
-          ...state._meta.loadedPreferences.lists,
-        };
-        state._meta.hasUnsavedChanges = false;
-      }
-    },
-    // ── Favorites / pinning ────────────────────────────────────────────────
-    // Dedupe + cap live HERE (single source of truth) so every callsite —
-    // dashboard PinButton, sidebar, future surfaces — gets identical behavior.
-    addFavorite: (state, action: PayloadAction<FavoriteItem>) => {
-      const item = action.payload;
-      const next = state.favorites.items.filter((f) => f.id !== item.id);
-      next.unshift(item); // newest first
-      state.favorites.items = next.slice(0, FAVORITES_MAX);
-    },
-    removeFavorite: (state, action: PayloadAction<string>) => {
-      state.favorites.items = state.favorites.items.filter(
-        (f) => f.id !== action.payload,
-      );
-    },
-    toggleFavorite: (state, action: PayloadAction<FavoriteItem>) => {
-      const item = action.payload;
-      const exists = state.favorites.items.some((f) => f.id === item.id);
-      if (exists) {
-        state.favorites.items = state.favorites.items.filter(
-          (f) => f.id !== item.id,
-        );
-      } else {
-        const next = state.favorites.items.filter((f) => f.id !== item.id);
-        next.unshift(item);
-        state.favorites.items = next.slice(0, FAVORITES_MAX);
-      }
-    },
-    reorderFavorites: (state, action: PayloadAction<string[]>) => {
-      // payload = new ordered list of ids; unknown ids dropped, missing ones appended
-      const byId = new Map(state.favorites.items.map((f) => [f.id, f]));
-      const next: FavoriteItem[] = [];
-      for (const id of action.payload) {
-        const f = byId.get(id);
-        if (f) {
-          next.push(f);
-          byId.delete(id);
-        }
-      }
-      for (const f of byId.values()) next.push(f);
-      state.favorites.items = next;
-    },
-    setFavorites: (state, action: PayloadAction<FavoriteItem[]>) => {
-      state.favorites.items = action.payload.slice(0, FAVORITES_MAX);
-    },
+    ...preferenceEditReducers,
     clearUnsavedChanges: (state) => {
       state._meta.hasUnsavedChanges = false;
     },
@@ -1626,6 +1705,9 @@ const userPreferencesSlice = createSlice({
       // The person's saved record is what the slice now holds.
       state._meta.loadStatus = "loaded";
       state._meta.error = null;
+      // Edits made before it landed go on top of the REAL record now, and the
+      // engine saves the merged result once (policy.persistAfterLoad).
+      state._meta.unsavedAfterLoad = replayPendingEdits(state) > 0;
     });
     // The engine's load outcomes for this slice (lib/sync/engine/remoteFetchStatus.ts).
     // Success is the REHYDRATE above; these are the other three answers.
@@ -1634,6 +1716,7 @@ const userPreferencesSlice = createSlice({
       (state, action: RemoteFetchStatusAction) => {
         const { sliceName, phase, reason, error } = action.payload;
         if (sliceName !== "userPreferences") return;
+        state._meta.unsavedAfterLoad = false;
         if (phase === "started") {
           // A background refresh over a loaded record changes nothing on
           // screen; a cold-boot fetch or a retry means the saved record is
@@ -1645,18 +1728,32 @@ const userPreferencesSlice = createSlice({
         }
         if (phase === "empty") {
           // The source answered: there is no saved record, so the defaults
-          // ARE this person's preferences.
+          // ARE this person's preferences — and any edits held until now
+          // (already applied on top of them) are saved once.
           state._meta.loadStatus = "loaded";
           state._meta.error = null;
+          state._meta.unsavedAfterLoad = state._meta.pendingEdits.length > 0;
+          state._meta.pendingEdits = [];
           return;
         }
-        // failed — say why. A failed background refresh keeps the record that
-        // already loaded (still true, just not re-confirmed); anything else
-        // leaves defaults on screen that are NOT the person's settings.
+        // failed — say why. A record that already loaded stays (still true,
+        // just not re-confirmed); otherwise the defaults on screen are NOT
+        // the person's settings, and the status says so.
         state._meta.error = error ?? "Your saved preferences could not be loaded.";
-        if (reason !== "stale-refresh" || state._meta.loadStatus !== "loaded") {
+        if (state._meta.loadStatus !== "loaded") {
           state._meta.loadStatus = "failed";
         }
+      },
+    );
+    // HOLD every edit made before the saved record loaded (runs after the
+    // edit's own case reducer, so the edit is already on screen).
+    builder.addMatcher(
+      (action): action is PayloadAction<unknown> =>
+        PREFERENCE_EDIT_BY_TYPE.has(action.type),
+      (state, action) => {
+        if (state._meta.loadStatus === "loaded") return;
+        const reducer = PREFERENCE_EDIT_BY_TYPE.get(action.type);
+        if (reducer) state._meta.pendingEdits.push({ reducer, payload: action.payload });
       },
     );
   },
@@ -1755,6 +1852,12 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
   },
   // `_meta` intentionally excluded: transient UI/load state (A15).
   partialize: PREFERENCE_MODULE_KEYS,
+  // The persisted body is the WHOLE record, so nothing is stored until the
+  // saved record has loaded — a write before that would put the defaults
+  // over it. Edits made meanwhile are held in `_meta.pendingEdits`, replayed
+  // on the loaded record, and saved once (`persistAfterLoad`).
+  persistWhen: (state) => state._meta.loadStatus === "loaded",
+  persistAfterLoad: (state) => state._meta.unsavedAfterLoad === true,
   staleAfter: 60_000, // background refresh after 1 min idle
   remote: {
     debounceMs: 250, // prefs edits are noisy (typing, slider drags)

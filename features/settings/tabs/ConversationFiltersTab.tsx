@@ -28,6 +28,7 @@ import {
   FILTERABLE_SURFACES,
   getSurfaceDefault,
 } from "@/features/agents/redux/conversation-history/source-registry";
+import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
 /** Feature options for the multi-select — every known feature, minus the
  * empty sentinel (which is its own switch). */
@@ -74,52 +75,54 @@ export default function ConversationFiltersTab() {
         the history sidebar — these settings just decide where it starts.
       </SettingsCallout>
 
-      {FILTERABLE_SURFACES.map((surface) => {
-        const pref = effectivePref(surface.id);
-        const overridden = surface.id in surfaceMap;
-        return (
-          <SettingsSection
-            key={surface.id}
-            title={surface.label}
-            icon={ListFilter}
-            description={surface.description}
-          >
-            <SettingsMultiSelect
-              label="Show features"
-              description={
-                pref.includeFeatures.length === 0
-                  ? "Nothing selected — this surface shows every conversation."
-                  : "Only conversations from these features show by default."
-              }
-              value={pref.includeFeatures}
-              onValueChange={(value) =>
-                updateSurface(surface.id, { includeFeatures: value })
-              }
-              options={FEATURE_OPTIONS}
-              placeholder="Show everything"
-              modified={overridden}
-            />
-            <SettingsSwitch
-              label="Include generic / system conversations"
-              description="Conversations with no recorded source (automations, scripted runs)."
-              checked={pref.includeEmptySource}
-              onCheckedChange={(checked) =>
-                updateSurface(surface.id, { includeEmptySource: checked })
-              }
-            />
-            <SettingsButton
-              label="Reset to default"
-              description="Restore this surface to the built-in default filter."
-              actionLabel="Reset"
-              actionIcon={RotateCcw}
-              kind="outline"
-              onClick={() => resetSurface(surface.id)}
-              disabled={!overridden}
-              last
-            />
-          </SettingsSection>
-        );
-      })}
+      <PreferencesLoadGate what="your conversation filters">
+        {FILTERABLE_SURFACES.map((surface) => {
+          const pref = effectivePref(surface.id);
+          const overridden = surface.id in surfaceMap;
+          return (
+            <SettingsSection
+              key={surface.id}
+              title={surface.label}
+              icon={ListFilter}
+              description={surface.description}
+            >
+              <SettingsMultiSelect
+                label="Show features"
+                description={
+                  pref.includeFeatures.length === 0
+                    ? "Nothing selected — this surface shows every conversation."
+                    : "Only conversations from these features show by default."
+                }
+                value={pref.includeFeatures}
+                onValueChange={(value) =>
+                  updateSurface(surface.id, { includeFeatures: value })
+                }
+                options={FEATURE_OPTIONS}
+                placeholder="Show everything"
+                modified={overridden}
+              />
+              <SettingsSwitch
+                label="Include generic / system conversations"
+                description="Conversations with no recorded source (automations, scripted runs)."
+                checked={pref.includeEmptySource}
+                onCheckedChange={(checked) =>
+                  updateSurface(surface.id, { includeEmptySource: checked })
+                }
+              />
+              <SettingsButton
+                label="Reset to default"
+                description="Restore this surface to the built-in default filter."
+                actionLabel="Reset"
+                actionIcon={RotateCcw}
+                kind="outline"
+                onClick={() => resetSurface(surface.id)}
+                disabled={!overridden}
+                last
+              />
+            </SettingsSection>
+          );
+        })}
+      </PreferencesLoadGate>
     </>
   );
 }

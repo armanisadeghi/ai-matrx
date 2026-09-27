@@ -197,6 +197,28 @@ export interface PolicyConfig<TState = unknown> {
     };
 
     /**
+     * "May this slice reach storage right now?" (2026-09-26.) Evaluated by the
+     * debounced write scheduler at FLUSH time — the one place a warm-cache
+     * slice is written to IDB, its localStorage mirror, and `remote.write` —
+     * against the live slice state. False = nothing is stored and the body is
+     * DROPPED (never kept for a later flush); the slice keeps its own edits
+     * and asks for one save via `persistAfterLoad`. Declared by a slice
+     * whose persisted body is its WHOLE record, so persisting before the saved
+     * record has loaded would overwrite it with defaults
+     * (`userPreferences`: ready only once `_meta.loadStatus === "loaded"`).
+     * Only legal on warm-cache. Must be pure; a throw counts as "not ready".
+     */
+    persistWhen?: (state: TState) => boolean;
+    /**
+     * Asked after every load outcome (REHYDRATE / `sync/remoteFetchStatus`),
+     * which are otherwise never persisted: "does the slice now hold local
+     * edits that were never saved?" True = persist this state now — the edits
+     * held by `persistWhen`, reapplied by the reducer on top of the REAL
+     * loaded record. Only legal on warm-cache.
+     */
+    persistAfterLoad?: (state: TState) => boolean;
+
+    /**
      * Phase 5 — per-record auto-save capability. Layered on top of `warm-cache`
      * (no new preset). When present, the engine schedules a per-record write
      * pipeline distinct from the slice-wide `remote.write` path. Useful for

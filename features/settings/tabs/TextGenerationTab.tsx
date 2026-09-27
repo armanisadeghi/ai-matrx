@@ -13,6 +13,7 @@ import {
   LANGUAGE_OPTIONS,
   TEXT_TONE_OPTIONS,
 } from "../agent-writable-settings";
+import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
 export default function TextGenerationTab() {
   const [tone, setTone] = useSetting<string>(
@@ -47,25 +48,27 @@ export default function TextGenerationTab() {
           })}
           actionLabel="Change"
         />
-        <SettingsSelect
-          label="Tone"
-          value={tone}
-          onValueChange={setTone}
-          options={TEXT_TONE_OPTIONS}
-        />
-        <SettingsSelect
-          label="Creativity"
-          value={creativity}
-          onValueChange={setCreativity}
-          options={CREATIVITY_LEVEL_OPTIONS}
-        />
-        <SettingsSelect
-          label="Language"
-          value={language}
-          onValueChange={setLanguage}
-          options={LANGUAGE_OPTIONS}
-          last
-        />
+        <PreferencesLoadGate what="your text generation defaults">
+          <SettingsSelect
+            label="Tone"
+            value={tone}
+            onValueChange={setTone}
+            options={TEXT_TONE_OPTIONS}
+          />
+          <SettingsSelect
+            label="Creativity"
+            value={creativity}
+            onValueChange={setCreativity}
+            options={CREATIVITY_LEVEL_OPTIONS}
+          />
+          <SettingsSelect
+            label="Language"
+            value={language}
+            onValueChange={setLanguage}
+            options={LANGUAGE_OPTIONS}
+            last
+          />
+        </PreferencesLoadGate>
       </SettingsSection>
     </>
   );

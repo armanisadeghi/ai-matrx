@@ -135,6 +135,17 @@ export function definePolicy<TState>(config: PolicyConfig<TState>): Policy<TStat
     const prePaintDescriptors = toDescriptorArray(config.prePaint);
     prePaintDescriptors.forEach((d, i) => validatePrePaintDescriptor(d, sliceName, i));
 
+    // Rule: persistWhen / persistAfterLoad gate the debounced write scheduler,
+    // the only writer that honours them — warm-cache only.
+    for (const key of ["persistWhen", "persistAfterLoad"] as const) {
+        const fn = config[key];
+        if (fn === undefined) continue;
+        if (typeof fn !== "function") fail(`"${sliceName}": ${key} must be a function`);
+        if (caps.writeStrategy !== "debounced") {
+            fail(`"${sliceName}": ${key} is only legal on a debounced (warm-cache) preset`);
+        }
+    }
+
     // Rule: remote only valid on presets that allow it (warm-cache + live-data).
     if (config.remote !== undefined && !caps.allowsRemote) {
         fail(`"${sliceName}": preset "${preset}" does not allow remote.fetch / remote.write`);

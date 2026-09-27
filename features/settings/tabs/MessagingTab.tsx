@@ -20,6 +20,7 @@ import { SmsEnrollmentSettingsSection } from "@/features/sms/components/SmsEnrol
 import { SmsNotificationPreferencesSettingsSection } from "@/features/sms/components/SmsNotificationPreferencesSettingsSection";
 import { SmsAssistantSettingsSection } from "@/features/sms/components/SmsAssistantSettingsSection";
 import { useIsMounted } from "@/hooks/use-is-mounted";
+import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
 type PermissionStatus = "granted" | "denied" | "default" | "unsupported";
 
@@ -64,87 +65,89 @@ export default function MessagingTab() {
         icon={Bell}
       />
 
-      <SettingsSection title="Sound" icon={Volume2}>
-        <SettingsSwitch
-          label="Notification sound"
-          description="Play a sound when a new message arrives."
-          checked={soundEnabled}
-          onCheckedChange={setSoundEnabled}
-          last={!soundEnabled}
-        />
-        {soundEnabled && (
-          <>
-            <SettingsSlider
-              label="Volume"
-              description="How loud notification sounds should play."
-              value={volume}
-              onValueChange={setVolume}
-              min={0}
-              max={100}
-              step={5}
-              unit="%"
-              minLabel="Silent"
-              midLabel="50%"
-              maxLabel="Loud"
-            />
-            <SettingsButton
-              label="Test sound"
-              description="Play a sample at the current volume."
-              actionLabel="Play"
-              actionIcon={Volume2}
-              kind="outline"
-              onClick={() => playNotificationSound(volume)}
-              last
-            />
-          </>
-        )}
-      </SettingsSection>
-
-      <SettingsSection title="Desktop" icon={Monitor}>
-        {permission === "unsupported" && (
-          <SettingsReadOnlyValue
-            label="Desktop notifications"
-            description="Your browser doesn't support the Notifications API."
-            value="Not supported"
-            icon={BellOff}
-            last
+      <PreferencesLoadGate what="your message notification settings">
+        <SettingsSection title="Sound" icon={Volume2}>
+          <SettingsSwitch
+            label="Notification sound"
+            description="Play a sound when a new message arrives."
+            checked={soundEnabled}
+            onCheckedChange={setSoundEnabled}
+            last={!soundEnabled}
           />
-        )}
+          {soundEnabled && (
+            <>
+              <SettingsSlider
+                label="Volume"
+                description="How loud notification sounds should play."
+                value={volume}
+                onValueChange={setVolume}
+                min={0}
+                max={100}
+                step={5}
+                unit="%"
+                minLabel="Silent"
+                midLabel="50%"
+                maxLabel="Loud"
+              />
+              <SettingsButton
+                label="Test sound"
+                description="Play a sample at the current volume."
+                actionLabel="Play"
+                actionIcon={Volume2}
+                kind="outline"
+                onClick={() => playNotificationSound(volume)}
+                last
+              />
+            </>
+          )}
+        </SettingsSection>
 
-        {permission === "denied" && (
-          <>
+        <SettingsSection title="Desktop" icon={Monitor}>
+          {permission === "unsupported" && (
             <SettingsReadOnlyValue
               label="Desktop notifications"
-              description="Permission was denied at the browser level."
-              value="Blocked"
+              description="Your browser doesn't support the Notifications API."
+              value="Not supported"
               icon={BellOff}
               last
             />
-          </>
-        )}
+          )}
 
-        {permission === "default" && (
-          <SettingsButton
-            label="Desktop notifications"
-            description="Browser permission is required. You'll be prompted once."
-            actionLabel="Enable"
-            actionIcon={Bell}
-            kind="default"
-            onClick={handleEnableDesktop}
-            last
-          />
-        )}
+          {permission === "denied" && (
+            <>
+              <SettingsReadOnlyValue
+                label="Desktop notifications"
+                description="Permission was denied at the browser level."
+                value="Blocked"
+                icon={BellOff}
+                last
+              />
+            </>
+          )}
 
-        {permission === "granted" && (
-          <SettingsSwitch
-            label="Show desktop notifications"
-            description="Display system banners for new messages."
-            checked={desktopEnabled}
-            onCheckedChange={setDesktopEnabled}
-            last
-          />
-        )}
-      </SettingsSection>
+          {permission === "default" && (
+            <SettingsButton
+              label="Desktop notifications"
+              description="Browser permission is required. You'll be prompted once."
+              actionLabel="Enable"
+              actionIcon={Bell}
+              kind="default"
+              onClick={handleEnableDesktop}
+              last
+            />
+          )}
+
+          {permission === "granted" && (
+            <SettingsSwitch
+              label="Show desktop notifications"
+              description="Display system banners for new messages."
+              checked={desktopEnabled}
+              onCheckedChange={setDesktopEnabled}
+              last
+            />
+          )}
+        </SettingsSection>
+      </PreferencesLoadGate>
 
       {permission === "denied" && (
         <SettingsCallout tone="warning">

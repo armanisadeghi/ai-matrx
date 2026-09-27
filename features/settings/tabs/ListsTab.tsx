@@ -23,6 +23,7 @@ import { SettingsRadioGroup } from "@/components/official/settings/primitives/Se
 import type { SettingsOption } from "@/components/official/settings/types";
 
 import { useSetting } from "../hooks/useSetting";
+import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
 type ArchivedDefault = "active" | "all";
 
@@ -53,16 +54,18 @@ export default function ListsTab() {
         description="How lists across the product start out for you."
         icon={Archive}
       />
-      <SettingsSection title="Archived items">
-        <SettingsRadioGroup<ArchivedDefault>
-          label="Archived items"
-          description="Archiving never deletes anything — this only decides what a list shows before you touch it."
-          value={archivedDefault ?? "active"}
-          onValueChange={setArchivedDefault}
-          options={OPTIONS}
-          last
-        />
-      </SettingsSection>
+      <PreferencesLoadGate what="your list defaults">
+        <SettingsSection title="Archived items">
+          <SettingsRadioGroup<ArchivedDefault>
+            label="Archived items"
+            description="Archiving never deletes anything — this only decides what a list shows before you touch it."
+            value={archivedDefault ?? "active"}
+            onValueChange={setArchivedDefault}
+            options={OPTIONS}
+            last
+          />
+        </SettingsSection>
+      </PreferencesLoadGate>
     </>
   );
 }

@@ -9,6 +9,7 @@ import { SettingsSubHeader } from "@/components/official/settings/layout/Setting
 import { settingDoorHref } from "@/features/settings/doors/settingDoorTarget";
 import { CHAT_DEFAULT_MODEL_KNOB } from "@/features/ai-models/preferredChatModel";
 import { useSetting } from "../hooks/useSetting";
+import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
 export default function AssistantTab() {
   // Settings truth sweep (2026-09-26): Always active, Always watching, Use
@@ -28,28 +29,30 @@ export default function AssistantTab() {
         icon={SquareStack}
       />
 
-      <SettingsSection title="Identity" icon={User}>
-        <SettingsTextInput
-          label="Assistant name"
-          description="What the assistant calls itself."
-          value={name}
-          onValueChange={setName}
-          placeholder="e.g., Assistant, Jarvis"
-          commitOnBlur
-          stacked
-          last
-        />
-      </SettingsSection>
+      <PreferencesLoadGate what="your assistant settings">
+        <SettingsSection title="Identity" icon={User}>
+          <SettingsTextInput
+            label="Assistant name"
+            description="What the assistant calls itself."
+            value={name}
+            onValueChange={setName}
+            placeholder="e.g., Assistant, Jarvis"
+            commitOnBlur
+            stacked
+            last
+          />
+        </SettingsSection>
 
-      <SettingsSection title="Composing" icon={PenLine}>
-        <SettingsSwitch
-          label="Put unsent drafts back"
-          description="If you reload or crash while writing a message, we keep what you typed in that tab and put it back in the box, per conversation. A sent message is never put back."
-          checked={restoreUnsentDrafts !== false}
-          onCheckedChange={setRestoreUnsentDrafts}
-          last
-        />
-      </SettingsSection>
+        <SettingsSection title="Composing" icon={PenLine}>
+          <SettingsSwitch
+            label="Put unsent drafts back"
+            description="If you reload or crash while writing a message, we keep what you typed in that tab and put it back in the box, per conversation. A sent message is never put back."
+            checked={restoreUnsentDrafts !== false}
+            onCheckedChange={setRestoreUnsentDrafts}
+            last
+          />
+        </SettingsSection>
+      </PreferencesLoadGate>
 
       <SettingsSection title="Model">
         {/* The model that answers when a surface doesn't choose one is ONE

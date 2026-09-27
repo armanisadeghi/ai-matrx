@@ -144,7 +144,6 @@ export const settingsRegistry: SettingsTabDef[] = [
     description: "Per-feature language defaults.",
     searchKeywords: ["locale", "region", "language"],
     component: LanguageTab,
-    readsUserPreferences: true,
     persistence: "synced",
   },
   {
@@ -176,7 +175,6 @@ export const settingsRegistry: SettingsTabDef[] = [
       "hide",
     ],
     component: ConversationFiltersTab,
-    readsUserPreferences: true,
     persistence: "synced",
   },
   {
@@ -197,7 +195,6 @@ export const settingsRegistry: SettingsTabDef[] = [
       "filter",
     ],
     component: ListsTab,
-    readsUserPreferences: true,
     persistence: "synced",
   },
   {
@@ -207,7 +204,6 @@ export const settingsRegistry: SettingsTabDef[] = [
     parentId: "general",
     description: "Internal counters and onboarding state.",
     component: SystemTab,
-    readsUserPreferences: true,
     persistence: "synced",
   },
 
@@ -257,7 +253,6 @@ export const settingsRegistry: SettingsTabDef[] = [
     description: "Built-in and personal bookmarks for the embedded browser.",
     searchKeywords: ["bookmark", "iframe", "browser", "lucide"],
     component: SiteWorkbenchTab,
-    readsUserPreferences: true,
     persistence: "synced",
   },
 
@@ -287,7 +282,6 @@ export const settingsRegistry: SettingsTabDef[] = [
     parentId: "ai",
     description: "Default assistant behaviour.",
     component: AssistantTab,
-    readsUserPreferences: true,
     persistence: "synced",
   },
   {
@@ -314,7 +308,6 @@ export const settingsRegistry: SettingsTabDef[] = [
     icon: Type,
     parentId: "ai",
     component: TextGenerationTab,
-    readsUserPreferences: true,
     persistence: "synced",
   },
   {
@@ -323,7 +316,6 @@ export const settingsRegistry: SettingsTabDef[] = [
     icon: ImageIcon,
     parentId: "ai",
     component: ImageGenerationTab,
-    readsUserPreferences: true,
     persistence: "synced",
   },
   {
@@ -369,7 +361,6 @@ export const settingsRegistry: SettingsTabDef[] = [
       "favorites",
     ],
     component: CodeWorkspaceTab,
-    readsUserPreferences: true,
     persistence: "synced",
   },
   {
@@ -403,7 +394,6 @@ export const settingsRegistry: SettingsTabDef[] = [
       "facing",
     ],
     component: MediaDevicesTab,
-    readsUserPreferences: true,
     persistence: "synced",
   },
 
@@ -461,7 +451,6 @@ export const settingsRegistry: SettingsTabDef[] = [
       "voice library",
     ],
     component: VoicesTab,
-    readsUserPreferences: true,
     persistence: "server",
   },
   {
@@ -535,7 +524,6 @@ export const settingsRegistry: SettingsTabDef[] = [
       "chief of staff",
     ],
     component: MessagingTab,
-    readsUserPreferences: true,
     persistence: "synced",
   },
 
@@ -692,7 +680,6 @@ export const settingsRegistry: SettingsTabDef[] = [
     description: "Manage organizations you belong to and create new ones.",
     searchKeywords: ["org", "orgs", "team", "teams", "workspace", "members"],
     component: OrganizationsTab,
-    readsUserPreferences: true,
     persistence: "synced",
   },
   {

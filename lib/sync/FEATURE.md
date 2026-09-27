@@ -31,6 +31,18 @@ hydration errors.
 
 ## Change log
 
+- 2026-09-26 (later) — Two policy hooks close the "failed load overwrites
+  the saved record" hole. `persistWhen(state)` is checked by the debounced
+  write scheduler's flush (`engine/remoteWrite.ts` `flushOne`) — the ONE path
+  every warm-cache write takes (debounce, pagehide, programmatic flush) — and
+  a not-ready slice's body is DROPPED, never stored to IDB, its mirror, or
+  `remote.write`. `persistAfterLoad(state)` is asked after a load outcome for
+  THAT slice; true = persist now (the slice replayed held edits onto the real
+  record). Warm-cache only (`definePolicy` refuses otherwise). And a startup
+  sync that throws — `bootSync`, `resyncForIdentity`, the fallback scheduling,
+  or store.ts's boot chain — calls `announceLoadFailure`, so every
+  remotely-loaded slice gets a `failed` outcome with the error, never
+  "loading" forever. Guard: `lib/redux/preferences/__tests__/preferences-load-status.test.tsx`.
 - 2026-09-26 — Every `invokeRemoteFetch` now announces its load outcome as
   `sync/remoteFetchStatus` (`engine/remoteFetchStatus.ts`): phase `started`,
   then `empty` (answered, no record) or `failed` (threw / undeserializable, with

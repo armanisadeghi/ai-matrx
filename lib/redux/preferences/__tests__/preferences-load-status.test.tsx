@@ -62,6 +62,11 @@ import userPreferencesReducer, {
 } from "@/lib/redux/preferences/userPreferencesSlice";
 import { invokeRemoteFetch } from "@/lib/sync/engine/remoteFetch";
 import { createSyncMiddleware } from "@/lib/sync/engine/middleware";
+import { bootSync, resyncForIdentity } from "@/lib/sync/engine/boot";
+import { clearAll, readSlice } from "@/lib/sync/persistence/idb";
+import { retryPreferencesLoad } from "@/lib/redux/preferences/preferencesLoad";
+import { addFavorite } from "@/lib/redux/preferences/userPreferencesSlice";
+import type { AppStore } from "@/lib/redux/store";
 import type { SyncChannel } from "@/lib/sync/channel";
 import type { IdentityKey } from "@/lib/sync/types";
 import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
@@ -135,6 +140,170 @@ describe("userPreferences load status", () => {
     expect(state._meta.loadStatus).toBe("loaded");
     expect(state._meta.error).toContain("timeout");
     expect(state.sandbox.tier).toBe("ec2");
+  });
+});
+
+function makeSyncedStore() {
+  const channel: SyncChannel = {
+    available: true,
+    post: () => {},
+    subscribe: () => () => {},
+    setIdentity: () => {},
+    close: () => {},
+  };
+  return configureStore({
+    reducer: { userPreferences: userPreferencesReducer },
+    middleware: (gDM) =>
+      gDM({ serializableCheck: false, immutableCheck: false }).concat(
+        createSyncMiddleware({ policies: [userPreferencesPolicy], channel, getIdentity: () => person }),
+      ),
+  });
+}
+
+/** Past the policy's 250ms debounce. */
+const pastDebounce = () => new Promise((r) => setTimeout(r, 450));
+
+type WrittenBody = {
+  sandbox?: { tier?: string; template?: string };
+  favorites?: { items?: { id: string }[] };
+};
+
+describe("edits before the saved record loads are held, then merged onto it", () => {
+  beforeEach(async () => {
+    window.localStorage.clear();
+    await clearAll();
+  });
+
+  it("with the load FAILED, an edit reaches neither the server nor the local cache", async () => {
+    const store = makeSyncedStore();
+    nextAnswer = { data: null, error: { message: "network down" } };
+    await load(store);
+    store.dispatch(setPreference({ module: "sandbox", preference: "tier", value: "ec2" }));
+    // The edit is on screen at once…
+    expect(store.getState().userPreferences.sandbox.tier).toBe("ec2");
+    await pastDebounce();
+    // …but nothing was written anywhere: the defaults under it never replace the saved record.
+    expect(remoteWrites).toEqual([]);
+    expect(await readSlice(person.key, "userPreferences", userPreferencesPolicy.config.version)).toBeNull();
+    expect(store.getState().userPreferences._meta.pendingEdits).toHaveLength(1);
+  });
+
+  it("when a retry loads the REAL record, the held edits are replayed on it and saved once", async () => {
+    const store = makeSyncedStore();
+    nextAnswer = { data: null, error: { message: "network down" } };
+    await load(store);
+    store.dispatch(setPreference({ module: "sandbox", preference: "tier", value: "ec2" }));
+    store.dispatch(addFavorite({ id: "fav-new", kind: "nav", label: "New", href: "/new" }));
+    await pastDebounce();
+    expect(remoteWrites).toEqual([]);
+
+    // The saved record: a different template and an existing favorite.
+    nextAnswer = {
+      data: {
+        preferences: {
+          sandbox: { template: "aidream", tier: "hosted" },
+          favorites: { items: [{ id: "fav-saved", kind: "nav", label: "Saved", href: "/saved" }] },
+        },
+      },
+      error: null,
+    };
+    await load(store, "manual");
+    const state = store.getState().userPreferences;
+    expect(state._meta.loadStatus).toBe("loaded");
+    expect(state._meta.pendingEdits).toEqual([]);
+    // Merged: the saved template survives, the held edit wins where it spoke.
+    expect(state.sandbox.template).toBe("aidream");
+    expect(state.sandbox.tier).toBe("ec2");
+    expect(state.favorites.items.map((f) => f.id)).toEqual(["fav-new", "fav-saved"]);
+
+    await pastDebounce();
+    expect(remoteWrites).toHaveLength(1);
+    const body = remoteWrites[0] as { preferences: WrittenBody };
+    expect(body.preferences.sandbox?.template).toBe("aidream");
+    expect(body.preferences.sandbox?.tier).toBe("ec2");
+    expect(body.preferences.favorites?.items?.map((f) => f.id)).toEqual(["fav-new", "fav-saved"]);
+  });
+
+  it("once loaded, an edit saves normally", async () => {
+    const store = makeSyncedStore();
+    nextAnswer = { data: { preferences: { sandbox: { tier: "hosted" } } }, error: null };
+    await load(store);
+    await pastDebounce();
+    expect(remoteWrites).toEqual([]);
+    store.dispatch(setPreference({ module: "sandbox", preference: "tier", value: "ec2" }));
+    await pastDebounce();
+    expect(remoteWrites).toHaveLength(1);
+  });
+});
+
+describe("a startup sync that throws never leaves preferences loading forever", () => {
+  it("boot throws → failed, with the error", async () => {
+    const store = makeStore();
+    await expect(
+      bootSync({
+        store,
+        identity: person,
+        policies: [userPreferencesPolicy],
+        openChannel: () => {
+          throw new Error("sync channel could not open");
+        },
+      }),
+    ).rejects.toThrow("sync channel could not open");
+    const meta = store.getState().userPreferences._meta;
+    expect(meta.loadStatus).toBe("failed");
+    expect(meta.error).toContain("sync channel could not open");
+  });
+
+  it("an identity resync that throws → failed, with the error (and it still never rejects)", async () => {
+    const store = makeStore();
+    await expect(
+      resyncForIdentity({
+        store,
+        identity: person,
+        previousIdentity: { type: "guest", fingerprintId: "g", key: "guest:g" },
+        policies: [userPreferencesPolicy],
+        getIdentity: () => {
+          throw new Error("identity unreadable");
+        },
+      }),
+    ).resolves.toBeUndefined();
+    const meta = store.getState().userPreferences._meta;
+    expect(meta.loadStatus).toBe("failed");
+    expect(meta.error).toContain("identity unreadable");
+  });
+
+  it("a retry that throws before the read → failed, with the error", async () => {
+    const store = makeStore();
+    const noSync = Object.assign(store, {
+      _sync: {
+        getIdentity: () => {
+          throw new Error("no sync context");
+        },
+      },
+    }) as unknown as AppStore;
+    await retryPreferencesLoad(noSync);
+    const meta = store.getState().userPreferences._meta;
+    expect(meta.loadStatus).toBe("failed");
+    expect(meta.error).toContain("no sync context");
+  });
+
+  it("a failure notice never downgrades a record that already loaded", async () => {
+    const store = makeStore();
+    nextAnswer = { data: { preferences: { sandbox: { tier: "ec2" } } }, error: null };
+    await load(store);
+    await expect(
+      bootSync({
+        store,
+        identity: person,
+        policies: [userPreferencesPolicy],
+        openChannel: () => {
+          throw new Error("late boot failure");
+        },
+      }),
+    ).rejects.toThrow();
+    const meta = store.getState().userPreferences._meta;
+    expect(meta.loadStatus).toBe("loaded");
+    expect(meta.error).toContain("late boot failure");
   });
 });
 

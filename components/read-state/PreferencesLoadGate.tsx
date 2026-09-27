@@ -11,8 +11,13 @@
  *   failed  → the failure with the Alchemy Menu and a retry (never the defaults)
  *   loaded  → the form
  *
- * Every settings tab flagged `readsUserPreferences` in the registry gets this
- * from `SettingsTabHost`; a page outside the tab host gates itself:
+ * Gate ONLY the section that reads saved preferences — never a whole tab or
+ * page — so a failed load never hides settings that do not depend on it:
+ *
+ *   <PreferencesLoadGate what="your link setting"><SettingsSection …/></PreferencesLoadGate>
+ *
+ * (guard: features/settings/__tests__/reads-user-preferences.test.ts). A page
+ * whose whole body is one preferences form may gate itself with an early return:
  *
  *   const prefsLoad = usePreferencesLoad();
  *   …other hooks…
