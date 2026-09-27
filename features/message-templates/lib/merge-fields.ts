@@ -10,8 +10,7 @@
 // knows at send time whether a value exists; this file never claims a field
 // will resolve.
 
-/** Same grammar as the server renderer: dotted identifiers inside {{ }}. */
-const MERGE_FIELD = /\{\{\s*([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*\}\}/g;
+import { mergeFieldRegex } from "@/components/merge-field-input/merge-field-dom";
 
 const ROOT_WORDS: Record<string, string> = {
   party: "Recipient",
@@ -71,7 +70,7 @@ export function mergeFieldInfo(path: string): MergeFieldInfo {
 export function mergeFieldsIn(...texts: string[]): MergeFieldInfo[] {
   const seen: string[] = [];
   for (const text of texts) {
-    for (const m of text.matchAll(MERGE_FIELD)) {
+    for (const m of text.matchAll(mergeFieldRegex())) {
       if (!seen.includes(m[1])) seen.push(m[1]);
     }
   }
@@ -86,7 +85,7 @@ export type PreviewPart =
 export function previewParts(text: string): PreviewPart[] {
   const parts: PreviewPart[] = [];
   let last = 0;
-  for (const m of text.matchAll(MERGE_FIELD)) {
+  for (const m of text.matchAll(mergeFieldRegex())) {
     const at = m.index ?? 0;
     if (at > last) parts.push({ kind: "text", text: text.slice(last, at) });
     parts.push({ kind: "field", field: mergeFieldInfo(m[1]) });
