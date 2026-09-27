@@ -1800,7 +1800,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
           bulk-action bar lives at the top (below the toolbar) instead. */}
       <div className="shrink-0 px-2 py-1.5 border-t border-border/30 flex items-center gap-1">
         <button
-          className="flex items-center gap-1.5 flex-1 px-2 py-1 text-[0.6875rem] text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 rounded-md [&_svg]:w-3 [&_svg]:h-3"
+          className="flex items-center gap-1.5 flex-1 px-2 py-1 text-xs text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 rounded-md [&_svg]:w-3 [&_svg]:h-3"
           onClick={() => { void handleNewNote("Draft").catch(() => undefined); }}
           disabled={draftControl.pending}
           aria-busy={draftControl.pending}

@@ -218,7 +218,7 @@ export function NoteMetadataBar({
             type="button"
             ref={folderBtnRef}
             onClick={toggleFolderMenu}
-            className="flex cursor-pointer items-center gap-1 text-[0.6875rem] text-foreground transition-colors hover:text-primary [&_svg]:h-3 [&_svg]:w-3"
+            className="flex cursor-pointer items-center gap-1 text-xs text-foreground transition-colors hover:text-primary [&_svg]:h-3 [&_svg]:w-3"
           >
             <FolderOpen />
             <span className="max-w-[100px] truncate">{folder}</span>
@@ -230,7 +230,7 @@ export function NoteMetadataBar({
           type="button"
           onClick={() => setScopePickerOpen((v) => !v)}
           className={cn(
-            "flex shrink-0 cursor-pointer items-center gap-1 rounded-full px-1.5 py-0 text-[0.6875rem] transition-colors",
+            "flex shrink-0 cursor-pointer items-center gap-1 rounded-full px-1.5 py-0 text-xs transition-colors",
             noteOrgId || noteProjId || noteTaskId
               ? "bg-primary/10 text-primary"
               : "border border-dashed border-border text-muted-foreground hover:text-primary",
@@ -295,7 +295,7 @@ export function NoteMetadataBar({
                 }
               }}
               onBlur={handleAddTag}
-              className="w-24 shrink-0 rounded-md border border-border bg-muted px-1.5 py-0.5 text-[0.6875rem] outline-none focus:border-primary"
+              className="w-24 shrink-0 rounded-md border border-border bg-muted px-1.5 py-0.5 text-xs outline-none focus:border-primary"
               placeholder="Add tag…"
               style={{ fontSize: "16px" }}
             />
