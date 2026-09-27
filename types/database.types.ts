@@ -3901,6 +3901,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           referer: string | null
+          runner_user_id: string | null
           success: boolean | null
           task_id: string
           tokens_used: number | null
@@ -3928,6 +3929,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           referer?: string | null
+          runner_user_id?: string | null
           success?: boolean | null
           task_id: string
           tokens_used?: number | null
@@ -3955,6 +3957,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           referer?: string | null
+          runner_user_id?: string | null
           success?: boolean | null
           task_id?: string
           tokens_used?: number | null
@@ -3993,6 +3996,7 @@ export type Database = {
           last_execution_at: string
           metadata: Json
           organization_id: string
+          runner_user_id: string | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -4015,6 +4019,7 @@ export type Database = {
           last_execution_at?: string
           metadata?: Json
           organization_id: string
+          runner_user_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -4037,6 +4042,7 @@ export type Database = {
           last_execution_at?: string
           metadata?: Json
           organization_id?: string
+          runner_user_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -11186,6 +11192,8 @@ export type Database = {
         Args: { c: Database["chat"]["Tables"]["conversation"]["Row"] }
         Returns: string
       }
+      message_search_text: { Args: { p_content: Json }; Returns: string }
+      message_search_tsv: { Args: { p_content: Json }; Returns: unknown }
       recompute_user_request_totals: {
         Args: { p_id?: string; p_limit?: number }
         Returns: {
@@ -26062,7 +26070,7 @@ export type Database = {
           validates_job_id?: string | null
           variable_mapping?: Json
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           agent_id?: string | null
@@ -72312,6 +72320,7 @@ export type Database = {
           last_viewed_at: string | null
           metadata: Json
           open_count: number
+          triage_state: string | null
           updated_at: string
           user_id: string
         }
@@ -72326,6 +72335,7 @@ export type Database = {
           last_viewed_at?: string | null
           metadata?: Json
           open_count?: number
+          triage_state?: string | null
           updated_at?: string
           user_id: string
         }
@@ -72340,6 +72350,7 @@ export type Database = {
           last_viewed_at?: string | null
           metadata?: Json
           open_count?: number
+          triage_state?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -74056,6 +74067,21 @@ export type Database = {
         Returns: boolean
       }
       detail_parent_columns: { Args: { p_token: string }; Returns: string[] }
+      detail_parent_of: {
+        Args: { p_row: Json; p_token: string }
+        Returns: Record<string, unknown>
+      }
+      detail_parent_token: {
+        Args: { p_token: string; p_value: string }
+        Returns: string
+      }
+      detail_readable_parents: {
+        Args: { p_token: string }
+        Returns: {
+          id_value: string
+          type_value: string
+        }[]
+      }
       doctrine_shape_vocabulary: {
         Args: never
         Returns: {
@@ -74156,6 +74182,14 @@ export type Database = {
       feature_knob_set: {
         Args: { p_feature: string; p_key: string; p_value: Json }
         Returns: Json
+      }
+      file_under_tag: {
+        Args: {
+          p_entity_id: string
+          p_entity_token: string
+          p_tag_name: string
+        }
+        Returns: string
       }
       final_switch_adopt_orphan_lists: {
         Args: { p_run: string }
@@ -75280,6 +75314,54 @@ export type Database = {
         }[]
       }
       search_item_projected_tokens: { Args: never; Returns: string[] }
+      search_items: {
+        Args: {
+          p_captured_by?: string[]
+          p_cursor?: string
+          p_date_from?: string
+          p_date_to?: string
+          p_limit?: number
+          p_org_ids?: string[]
+          p_origins?: string[]
+          p_query?: string
+          p_source_kinds?: string[]
+          p_types?: string[]
+          p_within?: string[]
+        }
+        Returns: {
+          data_class: Database["platform"]["Enums"]["data_class"]
+          entity_id: string
+          entity_token: string
+          match_kind: string
+          next_cursor: string
+          organization_id: string
+          origin_client: string
+          owner_id: string
+          score: number
+          source_kind: string
+          subtitle: string
+          tags: string[]
+          title: string
+          updated_at: string
+        }[]
+      }
+      search_messages: {
+        Args: {
+          p_date_from?: string
+          p_date_to?: string
+          p_limit?: number
+          p_org_ids?: string[]
+          p_query: string
+        }
+        Returns: {
+          conversation_id: string
+          created_at: string
+          message_id: string
+          position: number
+          role: string
+          snippet: string
+        }[]
+      }
       search_normalize: { Args: { p_text: string }; Returns: string }
       secure_delivery_close: {
         Args: {
@@ -75359,6 +75441,10 @@ export type Database = {
           p_token: string
         }
         Returns: Json
+      }
+      set_triage_state: {
+        Args: { p_entity_id: string; p_entity_token: string; p_state?: string }
+        Returns: undefined
       }
       settle_deferred_checks: {
         Args: { p_immediate: boolean; p_rel: unknown }
@@ -75446,6 +75532,18 @@ export type Database = {
         }[]
       }
       table_lives_in: { Args: { p_table_id: string }; Returns: string }
+      tag_scope_id: {
+        Args: { p_actor: string; p_name: string; p_org: string }
+        Returns: string
+      }
+      tag_scope_type_id: {
+        Args: { p_actor: string; p_org: string }
+        Returns: string
+      }
+      tags_backfill: {
+        Args: { p_after?: string; p_limit?: number; p_token: string }
+        Returns: Record<string, unknown>
+      }
       text_anchor_problem: { Args: { p: Json }; Returns: string }
       text_anchor_target_problem: {
         Args: { p: Json; p_target_id: string; p_target_type: string }
@@ -75672,6 +75770,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      uuid_or_null: { Args: { p_value: string }; Returns: string }
       validate_custom_row: {
         Args: {
           p_definition_id?: string
@@ -82108,6 +82207,7 @@ export type Database = {
           mandate_key: string
           name: string
           preview_image_url: string
+          publisher_name: string
           shell_config: Json
           shell_kind: string
           slot_code: Json
@@ -82120,6 +82220,20 @@ export type Database = {
           total_executions: number
           use_latest: boolean
           variable_schema: Json
+        }[]
+      }
+      get_aga_public_execution: {
+        Args: { p_app_id: string }
+        Returns: {
+          auto_context_disabled: boolean
+          context_policies: Json
+          custom_tools: Json
+          id: string
+          model_id: string
+          settings: Json
+          tools: string[]
+          ui_gates: Json
+          variable_definitions: Json
         }[]
       }
       get_agent_conversations: {
