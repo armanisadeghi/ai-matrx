@@ -21,7 +21,6 @@ import { ExternalLink, History, LibraryBig, MonitorCog } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DiffViewer } from "@ai-matrx/diff/react";
-import { useToast } from "@/components/ui/use-toast";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -76,12 +75,13 @@ export function ApplicationsHistoryClient({
   initialEntries,
   limit,
 }: ApplicationsHistoryClientProps) {
-  const { toast } = useToast();
   const adminEmails = useAdminEmails();
   const [entries, setEntries] =
     useState<ApplicationsHistoryEntry[]>(initialEntries);
   const [fetchLimit, setFetchLimit] = useState(limit);
   const [loadingMore, setLoadingMore] = useState(false);
+  // A failed read of more history: the rows stay and the table says they are incomplete (RC-B12 r13).
+  const [loadMoreError, setLoadMoreError] = useState<unknown>(null);
   const [clickedRow, setClickedRow] = useState<ApplicationsHistoryEntry | null>(
     null,
   );
@@ -107,13 +107,10 @@ export function ApplicationsHistoryClient({
     setLoadingMore(false);
     const error = configResult.error ?? catalogResult.error;
     if (error) {
-      toast({
-        title: "Failed to load more history",
-        description: error.message,
-        variant: "destructive",
-      });
+      setLoadMoreError(error);
       return;
     }
+    setLoadMoreError(null);
     setEntries(
       buildApplicationsTimeline(
         configResult.data ?? [],
@@ -121,7 +118,7 @@ export function ApplicationsHistoryClient({
       ),
     );
     setFetchLimit(nextLimit);
-  }, [fetchLimit, limit, toast]);
+  }, [fetchLimit, limit]);
 
   const whoLabel = useCallback(
     (changedBy: string | null): string => {
@@ -308,6 +305,7 @@ export function ApplicationsHistoryClient({
             getRowId={(row) => row.rowId}
             isFetching={loadingMore}
             pageSize={50}
+            read={{ status: loadMoreError ? "error" : "ready", error: loadMoreError, onRetry: () => void loadMore(), what: "the change history" }}
             emptyState={{
               icon: <History className="h-5 w-5" />,
               title: "No history yet",

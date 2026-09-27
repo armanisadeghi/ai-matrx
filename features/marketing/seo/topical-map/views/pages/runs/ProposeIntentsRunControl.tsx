@@ -208,6 +208,7 @@ export function ProposeIntentsRunControl({
               <strong>{limitValue === "invalid" || limitValue === undefined ? knobs.intent_daily_page_ceiling : limitValue}</strong>
               {limitValue === undefined ? " (the daily ceiling knob)" : ""}{" "}
               mapped pages
+              {/* read-gate-exempt: topicSlugs is the person's local chip selection (useState seeded from a UI filter), not a read's rows */}
               {topicSlugs.length > 0
                 ? ` under ${topicSlugs.length} topic(s)`
                 : ""}{" "}

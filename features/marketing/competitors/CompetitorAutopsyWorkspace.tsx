@@ -105,6 +105,7 @@ import {
 } from "./copy";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 type Artifact = {
   executive_verdict?: string;
@@ -1015,8 +1016,22 @@ export default function CompetitorAutopsyWorkspace({
                   Run a fresh autopsy
                 </h2>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                  <span>{data?.competitors.length ?? 0} competitors</span>
-                  <span>{openActions} open actions</span>
+                  <span>
+                    <UntrustedCount
+                      value={data?.competitors.length ?? 0}
+                      trustworthy={!workspace.isError}
+                      label="Competitors"
+                    />{" "}
+                    competitors
+                  </span>
+                  <span>
+                    <UntrustedCount
+                      value={openActions}
+                      trustworthy={!workspace.isError}
+                      label="Open actions"
+                    />{" "}
+                    open actions
+                  </span>
                   <span>
                     {latestArtifact?.already_have_percentage ?? "—"}
                     {typeof latestArtifact?.already_have_percentage === "number"
@@ -1232,6 +1247,7 @@ export default function CompetitorAutopsyWorkspace({
             <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
               <div className="min-w-0">
                 <p className="text-sm font-medium">
+                  {/* read-gate-exempt: this card renders only when proposed.length > 0, so the number is always rows actually read, never a failed read's 0 */}
                   {proposed.length} {proposed.length === 1 ? "call is" : "calls are"} waiting on you
                 </p>
                 {/* read-gate-exempt: explanatory copy under a non-empty proposal count ("nothing here drives spend"), not an empty view */}

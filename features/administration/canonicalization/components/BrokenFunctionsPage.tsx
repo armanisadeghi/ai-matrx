@@ -37,7 +37,7 @@ import {
 
 export function BrokenFunctionsPage() {
   const searchParams = useSearchParams();
-  const { rows, loading, reload } = useAuditDataset<BrokenFunctionRow>(
+  const { rows, loading, error, reload } = useAuditDataset<BrokenFunctionRow>(
     "broken-functions",
     isBrokenFunctionRow,
   );
@@ -242,6 +242,7 @@ export function BrokenFunctionsPage() {
           rows={keywordFilteredRows}
           columns={columns}
           loading={loading}
+          error={error}
           csvFilename="canonicalization-broken-functions.csv"
           defaultSort={{ key: "schema_name", dir: "asc" }}
           initialColumnFilters={initialColumnFilters}

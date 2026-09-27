@@ -534,6 +534,7 @@ export function CoverageTab({ siteId }: { siteId: string }) {
               : "border-warning/40 bg-warning/5 text-warning",
           )}
         >
+          {/* read-gate-exempt: this banner renders only when incomplete.length > 0 — it names trackers actually read as failing, never a zero */}
           {incomplete.length === 1
             ? `“${incomplete[0].name}”: ${incomplete[0].last_error}`
             : `${incomplete.length} trackers could not see everything on their last pass, so this feed may be missing stories.`}

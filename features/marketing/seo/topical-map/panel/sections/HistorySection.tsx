@@ -33,7 +33,7 @@ export function HistorySection({ mapId, slug }: HistorySectionProps) {
   const entries = (history.data?.items ?? []).filter((entry) => entry.slug === slug);
 
   return (
-    <PanelSection title="History" count={history.data ? entries.length : undefined}>
+    <PanelSection title="History" count={history.data && !history.isError ? entries.length : undefined}>
       {history.isPending ? (
         <SuspenseLoader centered={false} message="Loading this topic's history…" />
       ) : history.isError ? (

@@ -54,6 +54,8 @@ export interface UseClassInvitesReturn {
   /** Pending (and recent) canonical invitations for this class. */
   invites: Invitation[];
   invitesLoading: boolean;
+  /** Why the invitations read failed (null when it succeeded or has not run). */
+  invitesError: string | null;
   sending: boolean;
   refreshInvites: () => Promise<void>;
   ensureCode: () => Promise<void>;
@@ -73,6 +75,7 @@ export function useClassInvites(
   const [codeLoading, setCodeLoading] = useState(false);
   const [invites, setInvites] = useState<Invitation[]>([]);
   const [invitesLoading, setInvitesLoading] = useState(false);
+  const [invitesError, setInvitesError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
   const refreshInvites = useCallback(async () => {
@@ -80,7 +83,12 @@ export function useClassInvites(
     setInvitesLoading(true);
     try {
       const result = await invitationsService.listForTarget("scope", classId);
-      setInvites(result.ok ? result.data.invitations : []);
+      if (result.ok) {
+        setInvites(result.data.invitations);
+        setInvitesError(null);
+      } else {
+        setInvitesError(result.error.message);
+      }
     } finally {
       setInvitesLoading(false);
     }
@@ -209,6 +217,7 @@ export function useClassInvites(
     codeLoading,
     invites,
     invitesLoading,
+    invitesError,
     sending,
     refreshInvites,
     ensureCode,

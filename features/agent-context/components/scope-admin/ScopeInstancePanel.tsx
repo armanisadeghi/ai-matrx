@@ -32,6 +32,9 @@ import {
   selectScopeTreeByType,
   selectScopeTypesLoading,
 } from "@/features/scopes/redux/selectors/admin";
+import { selectTreeError } from "@/features/scopes/redux/selectors/tree";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { toast } from "@/lib/toast";
 
@@ -73,6 +76,7 @@ export function ScopeInstancePanel({
     selectScopeTreeByType(state, scopeType.id),
   ) as ScopeTreeNode[];
   const loading = useAppSelector(selectScopeTypesLoading);
+  const treeError = useAppSelector(selectTreeError);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingScope, setEditingScope] = useState<Scope | null>(null);
@@ -122,7 +126,12 @@ export function ScopeInstancePanel({
           <div>
             <h2 className="text-sm font-semibold">{scopeType.label_plural}</h2>
             <p className="text-[11px] text-muted-foreground">
-              {totalCount} {totalCount === 1 ? "instance" : "instances"}
+              <UntrustedCount
+                value={totalCount}
+                trustworthy={!treeError}
+                label="Instances"
+              />{" "}
+              {totalCount === 1 && !treeError ? "instance" : "instances"}
               {scopeType.description && ` \u00b7 ${scopeType.description}`}
             </p>
           </div>
@@ -139,7 +148,12 @@ export function ScopeInstancePanel({
       </div>
 
       <div className="flex-1 overflow-y-auto p-3">
-        {tree.length === 0 && !loading ? (
+        {treeError && tree.length === 0 ? (
+          <ReadFailure
+            error={treeError}
+            what={scopeType.label_plural.toLowerCase()}
+          />
+        ) : tree.length === 0 && !loading ? (
           <div className="text-center py-12">
             <div
               className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-muted mb-3"

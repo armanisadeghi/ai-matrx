@@ -55,6 +55,7 @@ import {
 } from "../redux/skillsThunks";
 import type { ResourceRow } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 interface SkillResourcesPanelProps {
   skillId: string;
@@ -128,7 +129,13 @@ export function SkillResourcesPanel({
         <FileText className="h-3.5 w-3.5" />
         Resources
         <span className="text-muted-foreground/70 tabular-nums">
-          ({resources.length})
+          (
+          <UntrustedCount
+            value={resources.length}
+            trustworthy={status !== "error"}
+            label="Resources"
+          />
+          )
         </span>
         {editable && (
           <button

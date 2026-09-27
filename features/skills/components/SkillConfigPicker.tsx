@@ -1,6 +1,7 @@
 "use client";
 
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import * as React from "react";
 import {
   Check,
@@ -181,7 +182,10 @@ export function SkillConfigPicker({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
-          <span>{skills.length} available</span>
+          <span>
+            <UntrustedCount value={skills.length} trustworthy={!error} label="Available skills" />{" "}
+            available
+          </span>
           <span aria-hidden="true">·</span>
           <span className="font-medium text-foreground">
             {totalConfigured} configured
@@ -207,13 +211,21 @@ export function SkillConfigPicker({
           <ScrollArea className="min-h-0 flex-1 px-2 pb-3">
             <CategoryButton
               label="All skills"
-              count={skills.length}
+              count={
+                <UntrustedCount value={skills.length} trustworthy={!error} label="All skills" />
+              }
               selected={categoryId === null}
               onClick={() => setCategoryId(null)}
             />
             <CategoryButton
               label="Uncategorized"
-              count={skills.filter((skill) => !skill.categoryId).length}
+              count={
+                <UntrustedCount
+                  value={skills.filter((skill) => !skill.categoryId).length}
+                  trustworthy={!error}
+                  label="Uncategorized skills"
+                />
+              }
               selected={categoryId === UNCATEGORIZED_CATEGORY_ID}
               onClick={() => setCategoryId(UNCATEGORIZED_CATEGORY_ID)}
             />
@@ -221,7 +233,13 @@ export function SkillConfigPicker({
               <CategoryButton
                 key={category.id}
                 label={category.label}
-                count={skillCountByCategory.get(category.id) ?? 0}
+                count={
+                  <UntrustedCount
+                    value={skillCountByCategory.get(category.id) ?? 0}
+                    trustworthy={!error}
+                    label={`${category.label} skills`}
+                  />
+                }
                 selected={categoryId === category.id}
                 onClick={() => setCategoryId(category.id)}
                 depth={depth}
@@ -273,7 +291,7 @@ export function SkillConfigPicker({
                 </Button>
               ))}
               <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground">
-                {visibleSkills.length} result
+                <UntrustedCount value={visibleSkills.length} trustworthy={!error} label="Results" /> result
                 {visibleSkills.length === 1 ? "" : "s"}
               </span>
             </div>
@@ -403,7 +421,7 @@ function CategoryButton({
   depth = 0,
 }: {
   label: string;
-  count: number;
+  count: React.ReactNode;
   selected: boolean;
   onClick: () => void;
   depth?: number;

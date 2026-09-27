@@ -47,6 +47,7 @@ import type {
   ContentSource,
   RichDocumentActionsProp,
 } from "@/features/rich-document/types";
+import type { AnnotationRecord } from "@/features/rich-document/annotations/record-of-source";
 import { getBlockTypeStyle } from "./block-type-colors";
 import { StreamSimControls } from "./lab/StreamSimControls";
 import {
@@ -120,6 +121,8 @@ interface PreviewPanelProps {
    * live here — write-back ones act on the real record, seeded from it.
    */
   sourceActions?: RichDocumentActionsProp;
+  /** The saved record the preview shows (null = an edited copy / typed text: no reading set). */
+  annotationRecord?: AnnotationRecord | null;
   mode: PreviewMode;
   onModeChange: (mode: PreviewMode) => void;
   /** Document title for the print preview / print window. */
@@ -140,7 +143,7 @@ interface PreviewPanelProps {
 
 export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
   function PreviewPanel(
-    { content, contentSource, sourceActions, mode, onModeChange, title, onContentChange, onShowSource, onPreviewScroll },
+    { content, contentSource, sourceActions, annotationRecord, mode, onModeChange, title, onContentChange, onShowSource, onPreviewScroll },
     ref,
   ) {
     const [serverMode, setServerMode] = useState<BlockProcessingMode>("stream");
@@ -331,6 +334,7 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
                   content={renderedText}
                   isStreamActive={isReplaying}
                   source={contentSource}
+                  annotationRecord={annotationRecord ?? null}
                   actionsVariant="remote"
                   actionsSurfaceId={STUDIO_ACTION_SURFACE_ID}
                   actions={sourceActions}

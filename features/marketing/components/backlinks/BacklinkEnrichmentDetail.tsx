@@ -43,6 +43,8 @@ import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThum
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { extractErrorMessage } from "@/utils/errors";
 
 function fact(label: string, value: ReactNode) {
   return (
@@ -430,6 +432,15 @@ export function BacklinkEnrichmentDetail({
   return (
     <div className="h-full overflow-y-auto bg-background p-3 sm:p-4">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-3">
+        {backlink.isError ? (
+          <StaleDataNotice
+            hasData
+            what="this backlink's latest record"
+            onRetry={() => void backlink.refetch()}
+            retrying={backlink.isFetching}
+            detail={extractErrorMessage(backlink.error)}
+          />
+        ) : null}
         <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -442,6 +453,7 @@ export function BacklinkEnrichmentDetail({
               <StatusBadge value={row.state} />
               <StatusBadge value={row.enrichment_status} />
               <span>
+                {/* read-gate-exempt: row is the refreshed record or the parent's already-loaded row (initialData), never an emptied read; a failed refresh shows the StaleDataNotice above */}
                 {row.enrichment_attempt_count} analysis attempt
                 {row.enrichment_attempt_count === 1 ? "" : "s"}
               </span>

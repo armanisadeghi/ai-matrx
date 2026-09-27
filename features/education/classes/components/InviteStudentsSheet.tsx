@@ -27,6 +27,8 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useClassInvites, extractEmails } from "../hooks/useClassInvites";
 import { classJoinUrl, classInviteAcceptUrl } from "../service";
 import { Textarea } from "@/components/ui/textarea";
@@ -244,12 +246,25 @@ export function InviteStudentsSheet({
           </section>
 
           {/* ── Pending invitations ──────────────────────────────────── */}
-          {(pending.length > 0 || inv.invitesLoading) && (
+          {(pending.length > 0 || inv.invitesLoading || inv.invitesError) && (
             <section className="space-y-2">
               <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Invited ({pending.length})
+                Invited (
+                <UntrustedCount
+                  value={pending.length}
+                  trustworthy={!inv.invitesError}
+                  label="Invited"
+                />
+                )
               </h3>
-              {inv.invitesLoading && pending.length === 0 ? (
+              {inv.invitesError ? (
+                <ReadFailure
+                  error={inv.invitesError}
+                  what="the invitations"
+                  onRetry={() => void inv.refreshInvites()}
+                  className="m-0"
+                />
+              ) : inv.invitesLoading && pending.length === 0 ? (
                 <Skeleton className="h-9 w-full" />
               ) : (
                 <ul className="space-y-1.5">

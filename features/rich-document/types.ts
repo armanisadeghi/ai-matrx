@@ -190,6 +190,8 @@ export type RichDocumentActionId =
   | "ask-followup"
   // Hand the content to ANY agent (picker → destination → prefilled window)
   | "send-to-agent"
+  // The Notes & comments dock of a saved record (annotations/RecordAnnotations)
+  | "notes-and-comments"
   // Text-field AI powers (ProTextarea hosts them)
   | "text-cleanup"
   | "text-help"

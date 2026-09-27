@@ -14,7 +14,7 @@ import type { ColumnFilter } from "@/features/administration/kg-inspector/utils/
 
 export function FunctionDepsPage() {
   const searchParams = useSearchParams();
-  const { rows, loading, reload } = useAuditDataset<FunctionDepRow>(
+  const { rows, loading, error, reload } = useAuditDataset<FunctionDepRow>(
     "function-deps",
     isFunctionDepRow,
   );
@@ -115,6 +115,7 @@ export function FunctionDepsPage() {
           rows={rows}
           columns={columns}
           loading={loading}
+          error={error}
           csvFilename="canonicalization-function-deps.csv"
           defaultSort={{ key: "function_schema", dir: "asc" }}
           initialColumnFilters={initialColumnFilters}

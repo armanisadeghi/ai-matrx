@@ -18,6 +18,11 @@ import {
   type CopyButtonsProps,
 } from "@/components/agent-copy/CopyButtons";
 import { cn } from "@/lib/utils";
+import {
+  countReadState,
+  unavailableCountLabel,
+  type CountRead,
+} from "@/components/official/stale-data/UntrustedCount";
 import { isRecordUnavailableError } from "@/lib/records/recordUnavailable";
 import { RecordUnavailableNotice } from "@/features/marketing/components/shared/RecordUnavailableNotice";
 import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
@@ -286,9 +291,16 @@ export function MetricCell({
   anchor,
   href,
   copy,
+  read,
 }: {
   label: string;
   value: string | number;
+  /**
+   * The read behind `value` (`{ status, error }` — a table's `read=` fits). A
+   * failed read renders "—" with an "unavailable" label, never a confident 0;
+   * an in-flight read renders a loading mark.
+   */
+  read?: CountRead | null;
   detail?: string;
   tone?: "default" | "good" | "warning" | "bad";
   icon?: React.ReactNode;
@@ -304,6 +316,7 @@ export function MetricCell({
    */
   copy?: Pick<CopyButtonsProps, "label" | "human" | "agent" | "json">;
 }) {
+  const readState = countReadState({ read });
   const className = cn(
     "group/metric relative min-w-0",
     variant === "strip"
@@ -347,7 +360,17 @@ export function MetricCell({
           tone === "bad" && "text-destructive",
         )}
       >
-        {value}
+        {readState === "failed" ? (
+          <span aria-label={unavailableCountLabel(label)} title="Couldn't be read">
+            —
+          </span>
+        ) : readState === "loading" ? (
+          <span aria-busy="true" aria-label={`${label} loading`}>
+            …
+          </span>
+        ) : (
+          value
+        )}
       </p>
       {detail ? (
         <p

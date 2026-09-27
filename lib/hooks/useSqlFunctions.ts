@@ -31,6 +31,8 @@ export function useSqlFunctions({
     useState<SqlFunction[]>(functions);
   const [loading, setLoading] = useState<boolean>(!initialData);
   const [error, setError] = useState<Error | null>(null);
+  /** The list read's own failure (fetch/search) — never a create/update/delete refusal (RC-B12 r13). */
+  const [loadError, setLoadError] = useState<Error | null>(null);
   // MATRX-EXCEPTION: React state initializer default for a genuinely optional
   // hook prop (no filters applied) — not a boundary write.
   const [filter, setFilter] = useState<SqlFunctionFilter>(defaultFilter ?? {});
@@ -47,16 +49,18 @@ export function useSqlFunctions({
 
       setLoading(true);
       setError(null);
+      setLoadError(null);
 
       try {
         const data = await getSqlFunctions();
         setFunctions(data);
       } catch (err) {
-        setError(
+        const failure =
           err instanceof Error
             ? err
-            : new Error("An error occurred while fetching SQL functions"),
-        );
+            : new Error("An error occurred while fetching SQL functions");
+        setError(failure);
+        setLoadError(failure);
       } finally {
         setLoading(false);
         setIsRefreshing(false);
@@ -76,17 +80,19 @@ export function useSqlFunctions({
     async (searchFilter: SqlFunctionFilter) => {
       setLoading(true);
       setError(null);
+      setLoadError(null);
 
       try {
         const data = await searchSqlFunctions(searchFilter);
         setFunctions(data);
         setFilter(searchFilter);
       } catch (err) {
-        setError(
+        const failure =
           err instanceof Error
             ? err
-            : new Error("An error occurred while searching SQL functions"),
-        );
+            : new Error("An error occurred while searching SQL functions");
+        setError(failure);
+        setLoadError(failure);
       } finally {
         setLoading(false);
       }
@@ -259,6 +265,7 @@ export function useSqlFunctions({
     allFunctions: functions,
     loading,
     error,
+    loadError,
     isRefreshing,
     selectedFunction,
     filter,

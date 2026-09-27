@@ -129,7 +129,12 @@ export function TopicalMapHomeCard({
         busy={retire.isPending}
         title={`Retire "${map.name}"?`}
         description={
-          usingIds.size > 0 ? (
+          diagnostics.isError ? (
+            <span>
+              Couldn&rsquo;t read which sites use this map, so it can&rsquo;t be retired safely
+              right now: {topicalMapErrorText(diagnostics.error)}
+            </span>
+          ) : usingIds.size > 0 ? (
             <span>
               {usingIds.size === 1 ? "One site still uses" : `${usingIds.size} sites still use`} this map
               {" ("}
@@ -141,7 +146,7 @@ export function TopicalMapHomeCard({
             <span>
               {/* read-gate-exempt: consequence copy in the retire dialog ("no restore button yet"), not an empty view over a read */}
               This removes the map from {"the brand"}
-              {typeof d?.topics_total === "number" ? ` with its ${d.topics_total} topics` : ""}
+              {!diagnostics.isError && typeof d?.topics_total === "number" ? ` with its ${d.topics_total} topics` : ""}
               . Every page placed on its topics and every proposed destination stays recorded
               with it but is no longer shown anywhere, and there is no restore button yet — an
               administrator can bring it back. A new map starts empty: the author reads nothing
@@ -151,7 +156,7 @@ export function TopicalMapHomeCard({
           )
         }
         confirmLabel="Retire map"
-        confirmDisabled={usingIds.size > 0}
+        confirmDisabled={diagnostics.isError || usingIds.size > 0}
         onConfirm={() => {
           retire.mutate(map.id, {
             onSuccess: () => {

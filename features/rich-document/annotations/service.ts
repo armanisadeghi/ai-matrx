@@ -676,6 +676,35 @@ export async function linkableKinds(targetToken: string): Promise<string[]> {
 }
 
 /**
+ * THE DOOR LAW for the passage actions: what the installed association vocabulary lets a reader
+ * file on a record of this kind — a highlight is an annotation document on an `annotates` edge
+ * (document → token), a passage link any `anchored_to` pair into the token. Highlight and Link are
+ * ABSENT on a kind with no pair, never offered to refuse. One read per kind per session.
+ */
+const pairsByToken = new Map<string, Promise<{ highlights: boolean; links: boolean }>>();
+export function annotationPairs(token: string): Promise<{ highlights: boolean; links: boolean }> {
+  let pending = pairsByToken.get(token);
+  if (!pending) {
+    pending = (async () => {
+      const [annotates, anchored] = await Promise.all([
+        supabase.rpc("association_link_sources", { p_target_type: token, p_label: ANNOTATES_ROLE }),
+        supabase.rpc("association_link_sources", { p_target_type: token, p_label: ANCHORED_TO_ROLE }),
+      ]);
+      if (annotates.error) throw sentence("finding what can be filed on this record", annotates.error);
+      if (anchored.error) throw sentence("finding what can be linked here", anchored.error);
+      const kinds = (rows: { source_type: string }[] | null) => (rows ?? []).map((r) => r.source_type);
+      return {
+        highlights: kinds(annotates.data).includes("document"),
+        links: kinds(anchored.data).length > 0,
+      };
+    })();
+    pending.catch(() => pairsByToken.delete(token));
+    pairsByToken.set(token, pending);
+  }
+  return pending;
+}
+
+/**
  * May this person EDIT the record itself (the rung an accepted suggestion writes at)? Controls that
  * change the record are absent for anyone who cannot use them (door law); a failed check answers
  * "no" — a control that might refuse is worse than none.

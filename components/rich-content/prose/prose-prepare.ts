@@ -11,6 +11,9 @@
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 import { splitFrontmatter } from "@/components/markdown-core/syntax/frontmatter";
 import { fenceLineKinds } from "@ai-matrx/content-ir/source";
+import { fromMarkdown } from "mdast-util-from-markdown";
+import { gfmFromMarkdown } from "mdast-util-gfm";
+import { gfm } from "micromark-extension-gfm";
 import { findTableEnd, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 /** Private-use sentinel for a standalone `===` line. The `p` renderer swaps a
@@ -269,11 +272,36 @@ export function preprocessCellProse(rawContent: string): string {
 }
 
 /**
- * Massage raw model prose into the markdown the core parses: escape non-HTML
- * angle-bracket tokens, keep indentation, normalize list/bold spacing, turn
- * `===` into the thick rule sentinel and extra blank lines into spacers.
- * Math is NOT touched here — the core's math normalizer owns it.
+ * What GFM says a block IS, for the checks below: its lists (ordered or not,
+ * how many items), tables, quotes and headings, in document order. Paragraph breaks and spacing
+ * are deliberately not part of it — they are what readability rules may adjust.
  */
+function gfmStructure(markdown: string): string {
+  type Node = { type: string; ordered?: boolean | null; depth?: number; children?: Node[] };
+  const tree = fromMarkdown(markdown, { extensions: [gfm()], mdastExtensions: [gfmFromMarkdown()] }) as Node;
+  const out: string[] = [];
+  const walk = (node: Node) => {
+    if (node.type === "list") out.push(`${node.ordered ? "ol" : "ul"}${node.children?.length ?? 0}`);
+    else if (node.type === "table") out.push(`table${node.children?.length ?? 0}`);
+    else if (node.type === "blockquote") out.push("quote");
+    else if (node.type === "heading") out.push(`h${node.depth ?? 0}`);
+    (node.children ?? []).forEach(walk);
+  };
+  walk(tree);
+  return out.join(" ");
+}
+
+/**
+ * THE rule for every readability rewrite of prose (verify-RC-B4 round 9 ruling):
+ * the one core never changes what GFM says a document IS. A rewrite is kept only
+ * when GFM's lists, tables, quotes and headings are the same before and after it;
+ * otherwise the text stays as it was.
+ */
+function keepGfmStructure(before: string, after: string): string {
+  if (after === before) return after;
+  return gfmStructure(after) === gfmStructure(before) ? after : before;
+}
+
 const LIST_MARKER_LINE = /^\s*(?:[-+*]|\d{1,9}[.)])(?:[ \t]|$)/;
 const SETEXT_UNDERLINE = /^ {0,3}(?:=+|-+)[ \t]*$/;
 const ENDS_IN_EMPHASIS = /(?:\*\*[^*]+\*\*|\*[^*]+\*)$/;
@@ -332,6 +360,12 @@ function separateSetextUnderlines(text: string): string {
   return out.join("\n");
 }
 
+/**
+ * Massage raw model prose into the markdown the core parses: escape non-HTML
+ * angle-bracket tokens, keep indentation, normalize list/bold spacing, turn
+ * `===` into the thick rule sentinel and extra blank lines into spacers.
+ * Math is NOT touched here — the core's math normalizer owns it.
+ */
 export function preprocessProse(rawContent: string): string {
   // A leading byte-order mark is an encoding mark, not content: dropped for
   // display so `\uFEFF---` front matter is hidden like `---` (RC-B3r round 3, C1).
@@ -363,7 +397,7 @@ export function preprocessProse(rawContent: string): string {
   // space short, the lookahead then sees " -" (a space, not a marker) and the
   // nested bullet is flattened to text (verifier F2, 2026-09-25; guard
   // __tests__/prose-prepare-nested-lists.test.ts).
-  processed = preserveIndentation(processed);
+  processed = keepGfmStructure(processed, preserveIndentation(processed));
 
   processed = linkBracketedUrls(processed);
 
@@ -409,7 +443,7 @@ export function preprocessProse(rawContent: string): string {
   // underline). The one core never changes what GFM says a document IS
   // (verify-RC-B4 round 9 ruling; the screen census found 112 stored rows whose
   // lists these rules used to restructure).
-  processed = spaceEmphasisLines(processed);
+  processed = keepGfmStructure(processed, spaceEmphasisLines(processed));
 
   // A line right under a list item's text is that item's text (CommonMark 5.2
   // lazy continuation) — no blank line is inserted after a list item, so the

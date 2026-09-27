@@ -415,6 +415,7 @@ export const AgentExecutionDebugPanel: React.FC<
                 <span className="text-gray-600 dark:text-gray-400">
                   Messages:
                 </span>
+                {/* read-gate-exempt: developer inspector of the in-memory execution-instance Redux snapshot; the count describes that local slice, not a fetch */}
                 <p className="font-medium">{messageCount} committed</p>
               </div>
               <div>
@@ -422,6 +423,7 @@ export const AgentExecutionDebugPanel: React.FC<
                   Resources:
                 </span>
                 <p className="font-medium">
+                  {/* read-gate-exempt: developer inspector of the in-memory execution-instance Redux snapshot; the count describes that local slice, not a fetch */}
                   {allResources.length} total ({readyResources.length} ready,{" "}
                   {pendingResources.length} pending)
                 </p>
@@ -431,6 +433,7 @@ export const AgentExecutionDebugPanel: React.FC<
                   Variables:
                 </span>
                 <p className="font-medium">
+                  {/* read-gate-exempt: developer inspector of the in-memory execution-instance Redux snapshot; the count describes that local slice, not a fetch */}
                   {variableDefinitions.length} defs
                   {missingRequiredVariables.length > 0
                     ? `, ${missingRequiredVariables.length} missing`
@@ -442,6 +445,7 @@ export const AgentExecutionDebugPanel: React.FC<
                   User Input:
                 </span>
                 <p className="font-medium">
+                  {/* read-gate-exempt: developer inspector of the in-memory execution-instance Redux snapshot; the count describes that local slice, not a fetch */}
                   {hasUserInput
                     ? `${userInputText.length} chars · ${userInputContentBlocks?.length ?? 0} parts · ${allResources.length} attachments`
                     : "Empty"}
@@ -614,6 +618,7 @@ export const AgentExecutionDebugPanel: React.FC<
                   <strong>conversationId:</strong>{" "}
                   {latestConversationId ?? instanceId ?? "Not yet set"}
                   <br />
+                  {/* read-gate-exempt: developer inspector of the in-memory execution-instance Redux snapshot; the count describes that local slice, not a fetch */}
                   <strong>Mode:</strong> {apiEndpointMode} |{" "}
                   <strong>Messages:</strong> {messageCount} |{" "}
                   <strong>Has History:</strong> {String(hasHistory)}
@@ -731,6 +736,7 @@ export const AgentExecutionDebugPanel: React.FC<
               {pendingToolCalls && pendingToolCalls.length > 0 && (
                 <div>
                   <h5 className="text-xs font-semibold mb-2">
+                    {/* read-gate-exempt: developer inspector of the in-memory execution-instance Redux snapshot; the count describes that local slice, not a fetch */}
                     Pending Tool Calls ({pendingToolCalls.length})
                   </h5>
                   <CodeBlock
@@ -750,6 +756,7 @@ export const AgentExecutionDebugPanel: React.FC<
                     {accumulatedText}
                   </pre>
                   <p className="text-[10px] text-gray-400 mt-1">
+                    {/* read-gate-exempt: developer inspector of the in-memory execution-instance Redux snapshot; the count describes that local slice, not a fetch */}
                     {accumulatedText.length.toLocaleString()} chars
                   </p>
                 </div>
@@ -802,6 +809,7 @@ export const AgentExecutionDebugPanel: React.FC<
             id="variables"
             currentSection={expandedSection}
             onToggle={handleToggle}
+            // read-gate-exempt: developer inspector of the in-memory execution-instance Redux snapshot; the count describes that local slice, not a fetch
             title={`Variables (${variableDefinitions.length})`}
             icon={Cpu}
           >
@@ -870,6 +878,7 @@ export const AgentExecutionDebugPanel: React.FC<
             id="resources"
             currentSection={expandedSection}
             onToggle={handleToggle}
+            // read-gate-exempt: developer inspector of the in-memory execution-instance Redux snapshot; the count describes that local slice, not a fetch
             title={`Resources (${allResources.length})`}
             icon={Database}
           >
@@ -931,6 +940,7 @@ export const AgentExecutionDebugPanel: React.FC<
                 <StatusBadge value={hasOverrides} />
                 {overriddenKeys && (
                   <span className="text-gray-400">
+                    {/* read-gate-exempt: developer inspector of the in-memory execution-instance Redux snapshot; the count describes that local slice, not a fetch */}
                     ({overriddenKeys.changed.length} changed,{" "}
                     {overriddenKeys.removed.length} removed)
                   </span>

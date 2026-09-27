@@ -73,6 +73,7 @@ import {
 } from "@/features/tasks/components/TasksListContextMenu";
 import { toast } from "@/lib/toast";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 
 /**
@@ -241,7 +242,7 @@ export default function TaskListPane() {
           className="text-[11px] text-muted-foreground tabular-nums shrink-0 pl-1"
           data-surface-value="task_count"
         >
-          {totalCount}
+          <UntrustedCount value={totalCount} trustworthy={tasksRead.status !== "error"} label="Tasks" />
         </span>
         <div className="flex items-center rounded-md border border-border p-0.5 shrink-0">
           <Button

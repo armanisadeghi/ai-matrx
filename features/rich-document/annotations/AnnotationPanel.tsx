@@ -26,6 +26,7 @@ import {
   RotateCcw,
   Trash2,
   Unlink,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
@@ -101,7 +102,14 @@ async function removeWithUndo(
   });
 }
 
-export function AnnotationPanel({ className }: { className?: string }) {
+export function AnnotationPanel({
+  className,
+  onClose,
+}: {
+  className?: string;
+  /** A host that floats the panel (the Notes & comments dock) gets its close in this header row — no extra row. */
+  onClose?: () => void;
+}) {
   const { api, source, activeKey } = useSidecar();
   const { items, loading, error, capabilities } = api.state;
   const [filter, setFilter] = useState<Filter>("all");
@@ -155,9 +163,11 @@ export function AnnotationPanel({ className }: { className?: string }) {
             <DropdownMenuItem onSelect={() => setComposer("comment")}>
               <MessageSquare className="mr-2 h-3.5 w-3.5" aria-hidden />Comment on the document
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setComposer("note")}>
-              <NotebookPen className="mr-2 h-3.5 w-3.5" aria-hidden />Private note
-            </DropdownMenuItem>
+            {capabilities.highlights && (
+              <DropdownMenuItem onSelect={() => setComposer("note")}>
+                <NotebookPen className="mr-2 h-3.5 w-3.5" aria-hidden />Private note
+              </DropdownMenuItem>
+            )}
             {capabilities.links && (
               <DropdownMenuItem onSelect={() => setLinkOpen(true)}>
                 <Link2 className="mr-2 h-3.5 w-3.5" aria-hidden />Link a record to the document
@@ -165,6 +175,11 @@ export function AnnotationPanel({ className }: { className?: string }) {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+        {onClose && (
+          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" aria-label="Close notes and comments" onClick={onClose}>
+            <X className="h-3.5 w-3.5" aria-hidden />
+          </Button>
+        )}
       </div>
 
       <div className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto p-2">

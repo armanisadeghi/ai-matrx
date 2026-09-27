@@ -15,7 +15,7 @@ import type { ColumnFilter } from "@/features/administration/kg-inspector/utils/
 export function FindingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { rows, loading, reload } = useAuditDataset<CanonicalFindingRow>(
+  const { rows, loading, error, reload } = useAuditDataset<CanonicalFindingRow>(
     "findings",
     isCanonicalFindingRow,
   );
@@ -107,6 +107,7 @@ export function FindingsPage() {
           rows={rows}
           columns={columns}
           loading={loading}
+          error={error}
           csvFilename="canonicalization-findings.csv"
           defaultSort={{ key: "schema_name", dir: "asc" }}
           initialColumnFilters={initialColumnFilters}

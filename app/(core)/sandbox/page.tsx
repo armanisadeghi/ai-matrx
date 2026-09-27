@@ -44,6 +44,7 @@ import { LIST_ACTIVE_STATUSES, getEffectiveStatus } from "@/lib/sandbox/status";
 import { CreateSandboxFormFields } from "@/features/code/views/sandboxes/CreateSandboxFormFields";
 import { SandboxInstancesTable } from "@/features/code/views/sandboxes/SandboxInstancesTable";
 import { useSandboxCreate } from "@/features/code/views/sandboxes/useSandboxCreate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import type { SandboxCreateRequest, SandboxInstance } from "@/types/sandbox";
 
 export default function SandboxListPage() {
@@ -335,7 +336,8 @@ export default function SandboxListPage() {
               Sandboxes
             </span>
             <span className="hidden sm:inline text-xs text-muted-foreground shrink-0">
-              {activeCount} active of {total} total
+              <UntrustedCount value={activeCount} trustworthy={!error} label="Active" /> active of{" "}
+              <UntrustedCount value={total} trustworthy={!error} label="Total" /> total
             </span>
           </div>
         }
@@ -602,6 +604,7 @@ export default function SandboxListPage() {
           <>
             Permanently remove{" "}
             <strong>
+              {/* read-gate-exempt: the rows the person chose to delete; the dialog only opens from buttons disabled while the list read has an error */}
               {historyDeleteCount} sandbox record
               {historyDeleteCount === 1 ? "" : "s"}
             </strong>{" "}

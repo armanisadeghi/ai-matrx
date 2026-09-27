@@ -2,6 +2,9 @@
 -- chair-step: REVOKEs execute on the NEW invoker writer workbench.udt_archive_rows from public/anon (DD-197: a SECURITY INVOKER function that writes is never an anonymous door); nothing live loses a grant. Replaces 16 live bodies (based-on below) and sets user_artifact_kind on ONE existing registry row.
 -- based-on: public.delete_data_row_from_user_table(uuid) 5a83e81dd7b2615b121fef2b0ae5879d138a0a243af67376a2f4d3d8bb78bd49
 -- based-on: public.udt_bulk_write(uuid, jsonb) 9474e71d1bf1c548e413fe5b453109d56ea03d9ffd5e453967bd577ffb4bf1c5
+-- based-on: public.udt_upsert_row(uuid, uuid, jsonb) d46c5f7365bd65793002b2969302ff4182bea96e02155d8c2aca68ac57dbbd23
+-- based-on: public.udt_upsert_cell(uuid, uuid, text, jsonb) 5e3509af0071494f0365eb82ff9ce5664738daf468a4fea0d82a6b191694b076
+-- based-on: public.update_data_row_in_user_table(uuid, jsonb) fd4fbbcaf69e381c693dc81337987085fcb7a1cc8d33aa397a008a13e4dcafdf
 -- based-on: public._d31_impl_get_user_table_complete(uuid, text, text) e0aab26e0ca685099fe8b0f1dfffd2ae0e8d8980a8c41443ae8cd974bdeba8fe
 -- based-on: public.get_full_table(jsonb) e0b2a564f2ef39cfcbb3cfe8efc4914f1aca285e9e7bcc2fa39c582bf3f2ec20
 -- based-on: public.get_table_row(jsonb) b0975e06062f3da28f41146d01397b0c47498fe8edc8da1c403cd2c6fdb9c803
@@ -37,10 +40,17 @@
 -- 3. Every DB reader of the rows skips archived ones: census of pg_proc.prosrc for
 --    udt_dataset_rows on 2026-09-26. Each body below is the LIVE pg_get_functiondef read that day
 --    plus only the deleted_at filter (declared with -- based-on so a newer body refuses this file).
---    Not changed, on purpose: the row writers (udt_upsert_row / udt_upsert_cell /
---    update_data_row_in_user_table / bulk update|merge|cell), the whole-table rewrites
---    (udt_change_field_type, udt_delete_field) and the platform cutover copiers, which already
---    read deleted_at themselves.
+--    Not changed, on purpose: the whole-table rewrites (udt_change_field_type, udt_delete_field,
+--    add_column_to_user_table's backfill — an archived row keeps its shape so a restore is whole)
+--    and the platform cutover copiers, which already read deleted_at themselves.
+-- 3b. Every per-row WRITER refuses an archived row, in its own error shape, with one sentence:
+--    "This row is in Trash. Restore it from Trash to edit it."
+--      udt_upsert_row / udt_upsert_cell  RAISE, errcode 55000 (object not in prerequisite state)
+--      update_data_row_in_user_table     its {success:false, error} envelope
+--      udt_bulk_write update|merge|cell  a per-op {error:'row_in_trash', row_id, message}; the
+--                                        rest of the batch continues, as row_not_found does
+--    Each UPDATE also carries `deleted_at IS NULL`, so a row archived between the check and the
+--    write answers not-found rather than being edited.
 -- 4. /trash: THE trash registry is platform.entity_types.user_artifact_kind (public._trash_kind_rows
 --    / _trash_kind_counts iterate it; public.entity_undelete restores through iam.has_access
 --    'editor', which walks a row to its dataset). Registering the udt_dataset_rows token as
@@ -102,7 +112,7 @@ BEGIN
 END;
 $function$;
 
--- ── public.udt_bulk_write — the grid's bulk delete op: archives instead of DELETE
+-- ── public.udt_bulk_write — the grid's bulk writer: delete archives; update/merge/cell refuse an archived row
 CREATE OR REPLACE FUNCTION public.udt_bulk_write(p_table_id uuid, p_operations jsonb)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -142,19 +152,33 @@ BEGIN
       IF v_op -> 'data' IS NULL OR jsonb_typeof(v_op -> 'data') <> 'object' THEN
         RAISE EXCEPTION 'udt_bulk_write: update op for row % needs a "data" object', v_row_id;
       END IF;
+      IF EXISTS (SELECT 1 FROM workbench.udt_dataset_rows
+                  WHERE id = v_row_id AND table_id = p_table_id AND deleted_at IS NOT NULL) THEN
+        -- An archived row is not edited: it says so, and the rest of the batch continues.
+        v_results := v_results || jsonb_build_array(jsonb_build_object(
+          'error', 'row_in_trash', 'row_id', v_row_id, 'message', 'This row is in Trash. Restore it from Trash to edit it.'));
+        CONTINUE;
+      END IF;
       UPDATE workbench.udt_dataset_rows
          SET data = v_op -> 'data', updated_at = now()
-       WHERE id = v_row_id AND table_id = p_table_id
+       WHERE id = v_row_id AND table_id = p_table_id AND deleted_at IS NULL
        RETURNING to_jsonb(workbench.udt_dataset_rows.*) INTO v_result;
       v_results := v_results || jsonb_build_array(
         COALESCE(v_result, jsonb_build_object('error', 'row_not_found', 'row_id', v_row_id))
       );
 
     ELSIF v_op_kind = 'merge' THEN
+      IF EXISTS (SELECT 1 FROM workbench.udt_dataset_rows
+                  WHERE id = v_row_id AND table_id = p_table_id AND deleted_at IS NOT NULL) THEN
+        -- An archived row is not edited: it says so, and the rest of the batch continues.
+        v_results := v_results || jsonb_build_array(jsonb_build_object(
+          'error', 'row_in_trash', 'row_id', v_row_id, 'message', 'This row is in Trash. Restore it from Trash to edit it.'));
+        CONTINUE;
+      END IF;
       UPDATE workbench.udt_dataset_rows
          SET data = COALESCE(data, '{}'::jsonb) || COALESCE(v_op -> 'data', '{}'::jsonb),
              updated_at = now()
-       WHERE id = v_row_id AND table_id = p_table_id
+       WHERE id = v_row_id AND table_id = p_table_id AND deleted_at IS NULL
        RETURNING to_jsonb(workbench.udt_dataset_rows.*) INTO v_result;
       v_results := v_results || jsonb_build_array(
         COALESCE(v_result, jsonb_build_object('error', 'row_not_found', 'row_id', v_row_id))
@@ -168,6 +192,13 @@ BEGIN
         RAISE EXCEPTION 'udt_bulk_write: cell op references undeclared field % on table %',
           v_op ->> 'field_name', p_table_id;
       END IF;
+      IF EXISTS (SELECT 1 FROM workbench.udt_dataset_rows
+                  WHERE id = v_row_id AND table_id = p_table_id AND deleted_at IS NOT NULL) THEN
+        -- An archived row is not edited: it says so, and the rest of the batch continues.
+        v_results := v_results || jsonb_build_array(jsonb_build_object(
+          'error', 'row_in_trash', 'row_id', v_row_id, 'message', 'This row is in Trash. Restore it from Trash to edit it.'));
+        CONTINUE;
+      END IF;
       UPDATE workbench.udt_dataset_rows
          SET data = jsonb_set(
                       COALESCE(data, '{}'::jsonb),
@@ -177,7 +208,7 @@ BEGIN
                       true
                     ),
              updated_at = now()
-       WHERE id = v_row_id AND table_id = p_table_id
+       WHERE id = v_row_id AND table_id = p_table_id AND deleted_at IS NULL
        RETURNING to_jsonb(workbench.udt_dataset_rows.*) INTO v_result;
       v_results := v_results || jsonb_build_array(
         COALESCE(v_result, jsonb_build_object('error', 'row_not_found', 'row_id', v_row_id))
@@ -201,6 +232,139 @@ BEGIN
   END LOOP;
 
   RETURN jsonb_build_object('table_id', p_table_id, 'count', jsonb_array_length(v_results), 'results', v_results);
+END;
+$function$;
+
+-- ── public.udt_upsert_row — writer: refuses to edit an archived row
+CREATE OR REPLACE FUNCTION public.udt_upsert_row(p_table_id uuid, p_row_id uuid DEFAULT NULL::uuid, p_data jsonb DEFAULT NULL::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_caller  UUID := auth.uid();
+  v_dataset workbench.udt_datasets%ROWTYPE;
+  v_row     workbench.udt_dataset_rows%ROWTYPE;
+BEGIN
+  IF v_caller IS NULL THEN
+    RAISE EXCEPTION 'udt_upsert_row: not authenticated';
+  END IF;
+  IF p_data IS NULL THEN
+    RAISE EXCEPTION 'udt_upsert_row: p_data is required';
+  END IF;
+
+  SELECT * INTO v_dataset FROM workbench.udt_datasets WHERE id = p_table_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'udt_upsert_row: table % not found', p_table_id;
+  END IF;
+  IF NOT workbench.udt_dataset_access(p_table_id, 'editor') THEN
+    RAISE EXCEPTION 'udt_upsert_row: caller lacks editor permission on table %', p_table_id;
+  END IF;
+
+  IF p_row_id IS NULL THEN
+    INSERT INTO workbench.udt_dataset_rows(table_id, data, user_id)
+    VALUES (p_table_id, p_data, v_caller) RETURNING * INTO v_row;
+  ELSE
+    -- lane OLDER-DOORS-AFTER-SWITCH: an update MERGES p_data into the row (cells it does not name
+    -- stay); it used to replace the whole row. A moved table refuses in the row guard.
+    IF jsonb_typeof(p_data) <> 'object' THEN
+      RAISE EXCEPTION 'udt_upsert_row: p_data must be an object' USING errcode = '22023';
+    END IF;
+    IF EXISTS (SELECT 1 FROM workbench.udt_dataset_rows
+                WHERE id = p_row_id AND table_id = p_table_id AND deleted_at IS NOT NULL) THEN
+      RAISE EXCEPTION 'This row is in Trash. Restore it from Trash to edit it.' USING errcode = '55000', hint = 'Open Trash, restore the row, then edit it.';
+    END IF;
+    UPDATE workbench.udt_dataset_rows SET data = COALESCE(data, '{}'::jsonb) || p_data, updated_at = now()
+     WHERE id = p_row_id AND table_id = p_table_id AND deleted_at IS NULL RETURNING * INTO v_row;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'udt_upsert_row: row % not found in table %', p_row_id, p_table_id;
+    END IF;
+  END IF;
+  RETURN to_jsonb(v_row);
+END;
+$function$;
+
+-- ── public.udt_upsert_cell — writer: refuses to edit an archived row
+CREATE OR REPLACE FUNCTION public.udt_upsert_cell(p_table_id uuid, p_row_id uuid, p_field_name text, p_value jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_caller UUID := auth.uid(); v_dataset workbench.udt_datasets%ROWTYPE; v_row workbench.udt_dataset_rows%ROWTYPE;
+BEGIN
+  IF v_caller IS NULL THEN RAISE EXCEPTION 'udt_upsert_cell: not authenticated'; END IF;
+  SELECT * INTO v_dataset FROM workbench.udt_datasets WHERE id = p_table_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'udt_upsert_cell: table % not found', p_table_id; END IF;
+  IF NOT workbench.udt_dataset_access(p_table_id, 'editor') THEN
+    RAISE EXCEPTION 'udt_upsert_cell: caller lacks editor permission';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM workbench.udt_dataset_fields WHERE table_id = p_table_id AND field_name = p_field_name) THEN
+    RAISE EXCEPTION 'udt_upsert_cell: field % not in table %', p_field_name, p_table_id;
+  END IF;
+  IF EXISTS (SELECT 1 FROM workbench.udt_dataset_rows
+              WHERE id = p_row_id AND table_id = p_table_id AND deleted_at IS NOT NULL) THEN
+    RAISE EXCEPTION 'This row is in Trash. Restore it from Trash to edit it.' USING errcode = '55000', hint = 'Open Trash, restore the row, then edit it.';
+  END IF;
+  UPDATE workbench.udt_dataset_rows
+     SET data = jsonb_set(
+                  COALESCE(data, '{}'::jsonb),
+                  ARRAY[p_field_name],
+                  -- SQL NULL here would make jsonb_set return NULL for the
+                  -- WHOLE document. Clearing a cell means this key becomes
+                  -- JSON null; every other field is untouched.
+                  COALESCE(p_value, 'null'::jsonb),
+                  true
+                ),
+         updated_at = now()
+   WHERE id = p_row_id AND table_id = p_table_id AND deleted_at IS NULL RETURNING * INTO v_row;
+  IF NOT FOUND THEN RAISE EXCEPTION 'udt_upsert_cell: row % not found in table %', p_row_id, p_table_id; END IF;
+  RETURN to_jsonb(v_row);
+END;
+$function$;
+
+-- ── public.update_data_row_in_user_table — writer: refuses to edit an archived row (its own envelope)
+CREATE OR REPLACE FUNCTION public.update_data_row_in_user_table(p_row_id uuid, p_data jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_result JSONB;
+    v_updated BOOLEAN;
+    v_data JSONB;
+BEGIN
+    -- lane OLDER-DOORS-AFTER-SWITCH: the patch MERGES into the row (the cells it names change,
+    -- every other cell stays). It used to REPLACE the whole row, so a one-cell patch wiped the
+    -- rest (VERIFIER-26, 2026-09-26). A table that moved with its organization's switch refuses
+    -- the write in the row guard (workbench._moved_older_table_takes_no_writes) — never a
+    -- success line over a table nothing reads.
+    IF p_data IS NULL OR jsonb_typeof(p_data) <> 'object' THEN
+        RAISE EXCEPTION 'update_data_row_in_user_table: p_data must be an object of the cells to change'
+          USING errcode = '22023';
+    END IF;
+    IF EXISTS (SELECT 1 FROM workbench.udt_dataset_rows WHERE id = p_row_id AND deleted_at IS NOT NULL) THEN
+        RETURN jsonb_build_object('success', false, 'row_id', p_row_id, 'error', 'This row is in Trash. Restore it from Trash to edit it.');
+    END IF;
+    UPDATE workbench.udt_dataset_rows
+    SET data = COALESCE(data, '{}'::jsonb) || p_data, updated_at = NOW()
+    WHERE id = p_row_id
+      AND deleted_at IS NULL
+    RETURNING true, data INTO v_updated, v_data;
+
+    IF v_updated THEN
+        v_result := jsonb_build_object(
+            'success', true,
+            'row_id', p_row_id,
+            'data', v_data,
+            'updated_at', NOW()
+        );
+    ELSE
+        v_result := jsonb_build_object('success', false, 'error', 'Row not found or update failed');
+    END IF;
+
+    RETURN v_result;
 END;
 $function$;
 

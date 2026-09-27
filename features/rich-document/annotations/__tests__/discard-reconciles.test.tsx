@@ -32,6 +32,7 @@ if (!("randomUUID" in globalThis.crypto)) {
 const service = {
   listCommentThreads: jest.fn(),
   listEdgeItems: jest.fn(),
+  annotationPairs: jest.fn(async () => ({ highlights: true, links: true })),
   addComment: jest.fn(),
   editComment: jest.fn(),
   deleteComment: jest.fn(),

@@ -243,6 +243,7 @@ export default function CodeWorkspaceDebug() {
       </Section>
 
       {/* ── Per-conversation overrides ──────────────────────────────────── */}
+      {/* read-gate-exempt: counts per-conversation sandbox overrides held in client-only instanceUIState, never fetched */}
       <Section title={`Conversations bound to a sandbox (${overrides.length})`}>
         {overrides.length === 0 ? (
           <p className="text-[11px] opacity-70">

@@ -76,6 +76,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderToggle from "@/features/shell/components/header/variants/variants/HeaderToggle";
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";
 import { ArchiveRecordDialog } from "@/features/trash/components/ArchiveRecordButton";
+import { annotationRecordOf } from "@/features/rich-document/annotations/record-of-source";
 
 /**
  * The studio's modes an agent may switch to — the ONE vocabulary. `StudioMode`
@@ -465,6 +466,13 @@ export function MarkdownStudio() {
     () => (loadedSource ? { ...loadedSource.contentSource, readOnly: true } : RAW_SOURCE),
     [loadedSource],
   );
+
+  // The preview IS the saved record only while the buffer still equals it: then it
+  // carries the reading set on that record; an edited copy carries none.
+  const previewRecord =
+    loadedSource && previewContent === loadedSource.content
+      ? (loadedSource.annotationRecord ?? annotationRecordOf(loadedSource.contentSource))
+      : null;
 
   const handleCopySource = async () => {
     if (!content) {
@@ -961,6 +969,7 @@ export function MarkdownStudio() {
                 // The studio holds a COPY: the source rides read-only, so the
                 // registry offers nothing that would change the original.
                 contentSource={previewSource}
+                annotationRecord={previewRecord}
                 sourceActions={loadedSource?.sourceActions}
                 mode={previewMode}
                 onModeChange={setPreviewMode}

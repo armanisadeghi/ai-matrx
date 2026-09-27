@@ -142,7 +142,7 @@ const COLUMNS: AuditColumnDef<AuditSchemaSummaryRow>[] = [
 
 export function SchemaSummaryPage() {
   const router = useRouter();
-  const { rows, loading, reload } = useAuditDataset<AuditSummaryRow>(
+  const { rows, loading, error, reload } = useAuditDataset<AuditSummaryRow>(
     "summary",
     isAuditSummaryRow,
   );
@@ -163,6 +163,7 @@ export function SchemaSummaryPage() {
           rows={schemaRows}
           columns={COLUMNS}
           loading={loading}
+          error={error}
           csvFilename="canonicalization-summary-by-schema.csv"
           defaultSort={{ key: "fails", dir: "desc" }}
           emptyMessage="No registered tables found."

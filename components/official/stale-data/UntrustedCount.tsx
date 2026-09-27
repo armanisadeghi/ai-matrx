@@ -18,47 +18,105 @@
  * half — a surface that shows the notice and still prints `0` beside it is
  * contradicting itself, and the number wins because it looks like data.
  *
- * Renders the value when `trustworthy`, an em dash otherwise, and carries the
- * screen-reader explanation itself so a caller cannot forget it: an em dash is
- * mute to a screen reader, so without the label the failure is invisible to
- * exactly the users least able to infer it from context.
+ * Renders the value when the read succeeded, an em dash when it failed, and a
+ * quiet ellipsis while it is still in flight. It carries the screen-reader
+ * explanation itself so a caller cannot forget it: an em dash is mute to a
+ * screen reader, so without the label the failure is invisible to exactly the
+ * users least able to infer it from context.
+ *
+ * Tell it the read's outcome ONE of two ways:
+ *   - `read={{ status, error }}` — the same `ReadOutcome` a table's `read=`
+ *     takes (structurally the design-system `MatrxDataTableRead`);
+ *   - `trustworthy={!loadFailed}` — when all you hold is the failure flag.
  *
  * Styling is entirely the caller's — this owns the VALUE, never the chrome, so
- * it drops unchanged into a stat card, a pill badge, or a sentence.
+ * it drops unchanged into a stat card, a pill badge, or a sentence. The shared
+ * count primitives (KpiTile, MetricCell, ResearchFilterBar) take the same
+ * `read=` and resolve it with `countReadState` below, so every stat tile on the
+ * platform says "—" the same way.
  */
 
 import React from "react";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
-export interface UntrustedCountProps {
-  /** The derived count. Ignored (never rendered) when not trustworthy. */
-  value: number;
-  /**
-   * Whether the read behind this number succeeded. Pass `!loadFailed` — the
-   * same flag that drives the surface's `StaleDataNotice`, so the banner and
-   * the number can never disagree.
-   */
-  trustworthy: boolean;
+/** The read outcome a count primitive is told: a `ReadOutcome` (or a `MatrxDataTableRead`). */
+export type CountRead = Pick<ReadOutcome, "status" | "error">;
+
+/** What a count may honestly show for its read: the number, a failure dash, or a loading mark. */
+export type CountReadState = "ready" | "loading" | "failed";
+
+/**
+ * Fold a count's read input into what it may show. A failure wins over
+ * loading — a retry in flight after a failure is still a failed number.
+ * With neither input the number is shown (nothing was said about a read).
+ */
+export function countReadState(input: {
+  read?: CountRead | null;
+  trustworthy?: boolean;
+}): CountReadState {
+  const { read, trustworthy } = input;
+  if (trustworthy === false) return "failed";
+  if (read) {
+    if (read.status === "error" || (read.error != null && read.error !== false && read.error !== "")) return "failed";
+    if (read.status === "loading") return "loading";
+  }
+  return "ready";
+}
+
+/** The screen-reader sentence for a count that could not be read. */
+export function unavailableCountLabel(label: string): string {
+  return `${label} unavailable — could not be read`;
+}
+
+type UntrustedCountRead =
+  | {
+      /**
+       * Whether the read behind this number succeeded. Pass `!loadFailed` — the
+       * same flag that drives the surface's `StaleDataNotice`, so the banner and
+       * the number can never disagree.
+       */
+      trustworthy: boolean;
+      read?: never;
+    }
+  | {
+      /** The read behind this number — `{ status, error }` (a table's `read=` value fits). */
+      read: CountRead;
+      trustworthy?: never;
+    };
+
+export type UntrustedCountProps = UntrustedCountRead & {
+  /** The derived count (or its formatted text). Never rendered unless the read succeeded. */
+  value: number | string;
   /**
    * What this counts, as the user reads it on screen ("Total", "Unresolved").
    * Becomes "<label> unavailable" for screen readers when the read failed.
    */
   label: string;
   className?: string;
-}
+};
 
 export function UntrustedCount({
   value,
   trustworthy,
+  read,
   label,
   className,
 }: UntrustedCountProps) {
-  if (trustworthy) {
+  const state = countReadState({ read, trustworthy });
+  if (state === "ready") {
     return <span className={className}>{value}</span>;
+  }
+  if (state === "loading") {
+    return (
+      <span className={className} aria-busy="true" aria-label={`${label} loading`}>
+        …
+      </span>
+    );
   }
   return (
     <span
       className={className}
-      aria-label={`${label} unavailable — could not be read`}
+      aria-label={unavailableCountLabel(label)}
       title="Couldn't be read"
     >
       —

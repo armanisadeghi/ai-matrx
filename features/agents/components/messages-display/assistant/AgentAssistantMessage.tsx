@@ -39,6 +39,9 @@ import {
   useRef,
 } from "react";
 import MarkdownStream from "@/components/MarkdownStream";
+import { RecordAnnotations } from "@/features/rich-document/annotations/RecordAnnotations";
+import { annotationRecordOf } from "@/features/rich-document/annotations/record-of-source";
+import type { AnnotationSource } from "@/features/rich-document/annotations/types";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { PrefillNote } from "@/features/agents/message-flags/PrefillNote";
 import { useDebugContext } from "@/hooks/useDebugContext";
@@ -119,6 +122,12 @@ interface AgentAssistantMessageProps {
   streamSlotStart?: number;
   streamSlotEnd?: number;
   /**
+   * Every committed row this ONE render stands for (a multi-iteration turn
+   * collapsed to its last row, `messageId`). Settled, the body renders all of
+   * their records; see EnhancedChatMarkdown `recordMessageIds`.
+   */
+  recordMessageIds?: readonly string[];
+  /**
    * Optional surface key for routing fork / retry outcomes via the
    * surfaces registry. Threaded down to AssistantMessageFooter.
    */
@@ -154,6 +163,7 @@ export function AgentAssistantMessage({
   requestId,
   messageId,
   isStreamActive = false,
+  recordMessageIds,
   streamSlotStart,
   streamSlotEnd,
   surfaceKey,
@@ -587,6 +597,22 @@ export function AgentAssistantMessage({
   // and let the parent's ref wrap the full group.
   const containerRef = hideActionBar ? undefined : captureRef;
 
+  // The saved answer this is (never a stream in flight, never an empty turn).
+  const answerRecord =
+    messageId && !isStreamActive && renderedText?.trim()
+      ? annotationRecordOf({ type: "chat-message", messageId, conversationId })
+      : null;
+  const annotationRecord: AnnotationSource | null = answerRecord
+    ? {
+        token: answerRecord.token,
+        id: answerRecord.id,
+        title: answerRecord.title ?? "Chat answer",
+        body: renderedText,
+        contentVersion: 1,
+        ...(answerRecord.href ? { href: answerRecord.href } : {}),
+      }
+    : null;
+
   const body = (
     <div
       ref={containerRef}
@@ -634,9 +660,13 @@ export function AgentAssistantMessage({
               startExpanded={record?._editingInPlace === "expanded"}
             />
           ) : (
+          // THE READING SET on a saved chat answer (highlight, comment, suggest, link +
+          // the Notes & comments dock) — the same mount every note and saved document uses.
+          <RecordAnnotations record={annotationRecord}>
           <div data-message-content>
             <MarkdownStream imagePolicy="ai"
               requestId={effectiveRequestId}
+              recordMessageIds={recordMessageIds}
               streamSlotStart={streamSlotStart ?? record?._streamSlotStart}
               streamSlotEnd={streamSlotEnd ?? record?._streamSlotEnd}
               turnId={messageId}
@@ -656,6 +686,7 @@ export function AgentAssistantMessage({
               applyLocalEdits={false}
             />
           </div>
+          </RecordAnnotations>
           )}
           {/* Per-message citation sources footer — numbered chips matching
               the inline markers above; renders only when sources exist.

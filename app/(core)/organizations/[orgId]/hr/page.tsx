@@ -80,6 +80,7 @@ export default function OrgHrPage() {
           <Card className="p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <dl className="flex flex-1 flex-wrap gap-6">
+                {/* read-gate-exempt: summary is non-null only after a successful fetchHrOrgSummary — a failed read sets it to null and takes the branch above */}
                 <Stat label="People" value={summary.headcount} />
                 {summary.prehire_count > 0 ? (
                   <Stat label="Starting soon" value={summary.prehire_count} />

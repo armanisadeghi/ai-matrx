@@ -197,6 +197,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
           <Database size={14} />
           <span className="text-xs font-semibold">RESOURCES</span>
           <span className="text-[10px] bg-green-700 px-1 rounded">
+            {/* read-gate-exempt: developer debug overlay counting resources attached to the in-memory execution instance, not a fetched list */}
             {resources.length}
           </span>
 
@@ -338,6 +339,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
         >
           <div className="flex items-center gap-2">
             <Database className="h-5 w-5 text-green-600" />
+            {/* read-gate-exempt: developer debug overlay counting resources attached to the in-memory execution instance, not a fetched list */}
             <h3 className="font-semibold">Resources ({resources.length})</h3>
           </div>
           <div className="flex items-center gap-1">
@@ -427,6 +429,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
           <div className="p-2 border-t bg-muted/50">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground">
+                {/* read-gate-exempt: developer debug overlay counting resources attached to the in-memory execution instance, not a fetched list */}
                 {resources.length} resource{resources.length !== 1 ? "s" : ""}
               </span>
               <Button

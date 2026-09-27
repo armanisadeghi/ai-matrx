@@ -101,7 +101,7 @@ export function ClassRosterPanel({
         <h2 className="flex items-center gap-1.5 text-sm font-medium text-foreground">
           <Users className="h-4 w-4 text-muted-foreground" />
           Members
-          {roster.members.length > 0 && (
+          {!roster.error && roster.members.length > 0 && (
             <span className="text-muted-foreground">({active.length})</span>
           )}
         </h2>

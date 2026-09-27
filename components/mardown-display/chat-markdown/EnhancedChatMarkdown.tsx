@@ -75,15 +75,13 @@ import {
 import { getToolDisplayMode } from "@/features/tool-call-visualization/registry/registry";
 import { isCloudBrowserToolName } from "@/features/tool-call-visualization/renderers/cloud-browser/cloudBrowserRun";
 import { collectCloudBrowserRun } from "@/features/tool-call-visualization/grouping/groupCloudBrowserRuns";
-import { selectMessageInterleavedContent } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import {
+  selectMessageInterleavedContent,
+  selectMessagesInterleavedRuns,
+} from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  InlineToolCard,
-  DbToolCard,
-  InlineToolBatch,
-  DbToolBatch,
-} from "./internal-handlers/ToolHandlers";
+import { ToolCard, ToolBatch } from "./internal-handlers/ToolHandlers";
 import { InlineAssistantError } from "./internal-handlers/InlineAssistantError";
 import { PlainTextFallback } from "./internal-handlers/PlainTextFallback";
 import { SafeBlockRenderer } from "./internal-handlers/SafeBlockRenderer";
@@ -105,6 +103,13 @@ export interface ServerProcessedBlock {
 
 export interface ChatMarkdownDisplayProps {
   requestId?: string;
+  /**
+   * Every committed row this render stands for, in transcript order, when a
+   * multi-iteration turn renders as ONE member (its last row is `messageId`).
+   * Settled, the turn renders every row's record — each as its own run, so
+   * grouping and folding match a per-row reload.
+   */
+  recordMessageIds?: readonly string[];
   streamSlotStart?: number;
   streamSlotEnd?: number;
   /** Turn ID for DB-loaded turn rendering */
@@ -149,6 +154,7 @@ const _EMPTY_SLOTS: UnifiedSlot[] = [];
 const _selectEmptyString = () => "";
 const _selectFalse = () => false;
 const _selectEmptySegments = () => _EMPTY_SEGMENTS;
+const _selectNoRuns = () => null as ContentSegment[][] | null;
 const _selectEmptySlots = () => _EMPTY_SLOTS;
 const _selectEmptyRenderBlocks = () =>
   undefined as RenderBlockPayload[] | undefined;
@@ -396,6 +402,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
   ChatMarkdownDisplayProps
 > = ({
   requestId,
+  recordMessageIds,
   streamSlotStart,
   streamSlotEnd,
   turnId,
@@ -469,10 +476,34 @@ export const EnhancedChatMarkdownInternal: React.FC<
   );
   const unifiedSlots = useAppSelector(unifiedSlotsSelector);
 
-  const messageInterleavedContent = useAppSelector(
+  const singleRecordContent = useAppSelector(
     messageId && conversationId
       ? selectMessageInterleavedContent(conversationId, messageId)
       : _selectEmptySegments,
+  );
+  const recordRunsKey =
+    recordMessageIds && recordMessageIds.length > 1
+      ? recordMessageIds.join("|")
+      : "";
+  const recordRunsSelector = useMemo(
+    () =>
+      recordRunsKey && conversationId
+        ? selectMessagesInterleavedRuns(conversationId, recordRunsKey.split("|"))
+        : _selectNoRuns,
+    [recordRunsKey, conversationId],
+  );
+  const recordRuns = useAppSelector(recordRunsSelector);
+  // One run per committed row; a single-row turn is one run.
+  const messageInterleavedRuns = useMemo(
+    () => recordRuns ?? [singleRecordContent],
+    [recordRuns, singleRecordContent],
+  );
+  const messageInterleavedContent = useMemo(
+    () =>
+      messageInterleavedRuns.length === 1
+        ? messageInterleavedRuns[0]
+        : messageInterleavedRuns.flat(),
+    [messageInterleavedRuns],
   );
 
   const renderBlocksSelector = useMemo(
@@ -622,10 +653,13 @@ export const EnhancedChatMarkdownInternal: React.FC<
       ),
     [unifiedSlots, toolLifecycleMap, renderBlocksMap],
   );
-  const groupedSegments = useMemo(
+  // Grouped PER RUN (one run per committed row): a batch never spans two
+  // rows, exactly as when each row renders on its own after a reload.
+  const groupedSegmentRuns = useMemo(
     () =>
+      messageInterleavedRuns.map((run) =>
       groupConsecutiveDbTools(
-        messageInterleavedContent,
+        run,
         (seg) => {
           const toolName = seg.record?.toolName ?? seg.stubName;
           if (getToolDisplayMode(toolName) !== "auto") return null;
@@ -640,7 +674,15 @@ export const EnhancedChatMarkdownInternal: React.FC<
           );
         },
       ),
-    [messageInterleavedContent],
+      ),
+    [messageInterleavedRuns],
+  );
+  const groupedSegments = useMemo(
+    () =>
+      groupedSegmentRuns.length === 1
+        ? groupedSegmentRuns[0]
+        : groupedSegmentRuns.flat(),
+    [groupedSegmentRuns],
   );
 
   // ── Settled-turn fold: thinking / tool calls / short asides → one
@@ -708,7 +750,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
     if (!machineFramesVisible) return groupedSegments;
     const dbToolSpan = (seg: ContentSegmentDbTool) =>
       toolSpan(seg.record?.startedAt, seg.record?.completedAt);
-    return foldAgentWork(groupedSegments, {
+    // Folded PER RUN too — the same "Worked for" boundaries a reload draws.
+    return groupedSegmentRuns.flatMap((runSegments) => foldAgentWork(runSegments, {
       classify: (seg) => {
         if (
           seg.type === "thinking" ||
@@ -730,8 +773,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
         }
         return null;
       },
-    });
-  }, [isSettled, groupedSegments, machineFramesVisible]);
+    }));
+  }, [isSettled, groupedSegments, groupedSegmentRuns, machineFramesVisible]);
 
   // NB: materialized artifacts are plain text now (vision R1) — both the
   // interleaved-segment path and the plain processedBlocks path split text via
@@ -1199,8 +1242,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
       // A batch is several machine frames folded into one — still machine.
       if (!machineFramesVisible) return null;
       return (
-        <InlineToolBatch
-          key={`tool-batch-${slot.seq}`}
+        <ToolBatch
+          key={`tool-batch-${slot.callIds[0]}`}
           requestId={requestId}
           callIds={slot.callIds}
           conversationId={conversationId ?? ""}
@@ -1293,14 +1336,14 @@ export const EnhancedChatMarkdownInternal: React.FC<
         // the result; the frame that produced them is not the Expert's business.
         return settled ? null : (
           <InlineStatusIndicator
-            key={`tool-${slot.seq}-${slot.callId}`}
+            key={`tool-${slot.callId}`}
             label={EXPERT_WORKING_LABEL}
           />
         );
       }
       return (
-        <InlineToolCard
-          key={`tool-${slot.seq}-${slot.callId}`}
+        <ToolCard
+          key={`tool-${slot.callId}`}
           requestId={requestId}
           callId={slot.callId}
           conversationId={conversationId ?? ""}
@@ -1377,8 +1420,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
     if (segment.type === "db_tool_batch") {
       if (!machineFramesVisible) return null;
       return (
-        <DbToolBatch
-          key={segment.key}
+        <ToolBatch
+          key={`tool-batch-${segment.segments[0]?.callId ?? segment.key}`}
           segments={segment.segments}
           conversationId={conversationId ?? ""}
           browserRunOrder={segment.browserRunOrder}
@@ -1391,8 +1434,9 @@ export const EnhancedChatMarkdownInternal: React.FC<
       // A reloaded turn shows what was SAID, never the call that produced it.
       if (!machineFramesVisible) return null;
       return (
-        <DbToolCard
-          key={`db-tool-${segIdx}-${segment.callId}`}
+        <ToolCard
+          key={`tool-${segment.callId}`}
+          callId={segment.callId}
           segment={segment}
           conversationId={conversationId ?? ""}
         />

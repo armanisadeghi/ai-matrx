@@ -16,7 +16,7 @@ if (typeof globalThis.ResizeObserver === "undefined") {
 }
 
 const service = {
-  listCommentThreads: jest.fn(), listEdgeItems: jest.fn(), addComment: jest.fn(), editComment: jest.fn(),
+  listCommentThreads: jest.fn(), listEdgeItems: jest.fn(), annotationPairs: jest.fn(async () => ({ highlights: true, links: true })), addComment: jest.fn(), editComment: jest.fn(),
   deleteComment: jest.fn(), resolveComment: jest.fn(), createHighlight: jest.fn(), deleteHighlight: jest.fn(),
   linkRecord: jest.fn(), unlinkRecord: jest.fn(), notifyMentions: jest.fn(), rewriteHighlightEdge: jest.fn(),
   saveHighlightNote: jest.fn(), mentionCandidates: jest.fn(async () => []), canEditSource: jest.fn(async () => true),

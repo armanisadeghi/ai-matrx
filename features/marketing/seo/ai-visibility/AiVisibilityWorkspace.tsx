@@ -54,6 +54,7 @@ import {
 import { useAiVisibility } from "./useAiVisibility";
 import type { AiVisibilityEvidenceView } from "./evidence-views";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { readOf } from "@/components/read-state/ReadGate";
 
 interface ClaimRow extends AiVisibilityClaim {
@@ -997,7 +998,7 @@ export function AiVisibilityWorkspace({
             Latest citation coverage
           </p>
           <p className="text-lg font-semibold tabular-nums">
-            {latestCited}/{latestProviderCount}
+            {evidence.isError ? "—" : `${latestCited}/${latestProviderCount}`}
           </p>
           <p className="text-xs text-muted-foreground">
             providers cited this managed site
@@ -1008,7 +1009,7 @@ export function AiVisibilityWorkspace({
             Critical claim posture
           </p>
           <p className="text-lg font-semibold tabular-nums text-destructive">
-            {unverifiedCount}
+            <UntrustedCount value={unverifiedCount} trustworthy={!evidence.isError} label="Unverified claims" />
           </p>
           <p className="text-xs text-muted-foreground">
             unverified claims still influencing answers
@@ -1019,7 +1020,7 @@ export function AiVisibilityWorkspace({
             Evidence captured
           </p>
           <p className="text-lg font-semibold tabular-nums">
-            {citationRows.length}
+            <UntrustedCount value={citationRows.length} trustworthy={!evidence.isError} label="Cited pages" />
           </p>
           <p className="text-xs text-muted-foreground">
             cited pages preserved for analysis

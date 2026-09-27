@@ -109,7 +109,9 @@ export interface SidecarCapabilities {
   anchoredWrites: boolean;
   /** The RC-B11 comment doors (resolution, suggestions, mentions) are live. */
   collaborationDoors: boolean;
-  /** The installed association vocabulary knows this source type, so links can be written. */
+  /** An annotation document may sit on this kind of record (document → token, role annotates). */
+  highlights: boolean;
+  /** The installed association vocabulary has an anchored_to pair into this kind, so links can be written. */
   links: boolean;
   /** CSS Custom Highlight API present — otherwise the panel still lists everything. */
   paint: boolean;

@@ -31,7 +31,9 @@ test("editing view: every row renders from its persisted content", () => {
 
 test("a single-row request keeps its stream source even while edited", () => {
   const single: Member[] = [{ key: "a", requestId: "req-2", messageId: "only-row" }];
-  expect(membersForRender(single, true)).toEqual(single);
+  expect(membersForRender(single, true)).toMatchObject([
+    { requestId: "req-2", messageId: "only-row", key: "req:req-2" },
+  ]);
 });
 
 test("not editing: unchanged cardinality", () => {

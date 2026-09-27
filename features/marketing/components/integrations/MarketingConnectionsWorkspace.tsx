@@ -362,16 +362,20 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                       variant={
                         inventory.isLoading
                           ? "secondary"
-                          : connectedGoogleAccounts?.length
-                            ? "success"
-                            : availableGoogleAccounts?.length
-                              ? "warning"
-                              : "secondary"
+                          : inventory.isError
+                            ? "destructive"
+                            : connectedGoogleAccounts?.length
+                              ? "success"
+                              : availableGoogleAccounts?.length
+                                ? "warning"
+                                : "secondary"
                       }
                     >
                       {inventory.isLoading
                         ? "Checking connection…"
-                        : connectedGoogleAccounts?.length
+                        : inventory.isError
+                          ? "Couldn't check connection"
+                          : connectedGoogleAccounts?.length
                           ? `${connectedGoogleAccounts.length} account${connectedGoogleAccounts.length === 1 ? "" : "s"} · ${searchConsoleProperties?.length ?? 0} properties`
                           : availableGoogleAccounts?.length
                             ? "Needs attention"
@@ -598,10 +602,17 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-sm font-semibold">YouTube</h2>
                   <Badge
-                    variant={youtubeChannels?.length ? "success" : "secondary"}
+                    variant={
+                      inventory.isError
+                        ? "destructive"
+                        : youtubeChannels?.length
+                          ? "success"
+                          : "secondary"
+                    }
                   >
-                    {youtubeChannels?.length ?? 0} owned channel
-                    {youtubeChannels?.length === 1 ? "" : "s"}
+                    {inventory.isError
+                      ? "Couldn't check channels"
+                      : `${youtubeChannels?.length ?? 0} owned channel${youtubeChannels?.length === 1 ? "" : "s"}`}
                   </Badge>
                   <Badge variant="outline">Read only</Badge>
                 </div>
@@ -717,13 +728,16 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                           >
                             {youtubePreview.data.title}
                           </a>
+                          {/* read-gate-exempt: inside the youtubePreview.data guard — the provider's own reported channel stats, each "—" when the provider omits it, never a failed read's 0 */}
                           <p className="mt-0.5 text-[10px] text-muted-foreground">
                             {youtubePreview.data.subscriber_count?.toLocaleString() ??
                               "—"}
                             {" subscribers · "}
+                            {/* read-gate-exempt: provider-reported stat inside the youtubePreview.data guard, "—" when omitted */}
                             {youtubePreview.data.video_count?.toLocaleString() ??
                               "—"}
                             {" public videos · "}
+                            {/* read-gate-exempt: provider-reported stat inside the youtubePreview.data guard, "—" when omitted */}
                             {youtubePreview.data.view_count?.toLocaleString() ??
                               "—"}
                             {" channel views"}

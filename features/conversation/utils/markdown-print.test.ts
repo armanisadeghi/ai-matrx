@@ -55,3 +55,30 @@ describe("printMarkdownContent — blocked Chat popup", () => {
         expect(revokeObjectURL).toHaveBeenCalledWith("blob:chat-print-test");
     });
 });
+
+describe("printMarkdownContent — diagrams print as pictures (verifier round 2)", () => {
+    it("draws each mermaid fence and writes it into the print window as an image", async () => {
+        jest.resetModules();
+        jest.doMock("@/components/mermaid/print-render", () => ({
+            drawMermaidForPrint: async () => ({
+                pictures: new Map([["flowchart LR\n  A --> B", '<svg xmlns="http://www.w3.org/2000/svg"></svg>']]),
+                failed: 0,
+            }),
+        }));
+        const writes: string[] = [];
+        const fakeWin = {
+            closed: false,
+            document: { open: () => {}, write: (h: string) => writes.push(h), close: () => {} },
+        };
+        jest.spyOn(window, "open").mockReturnValue(fakeWin as unknown as Window);
+        const { printMarkdownContent: print } = await import("./markdown-print");
+        const outcome = await print("# Runbook\n\n```mermaid\nflowchart LR\n  A --> B\n```\n", "Runbook");
+        expect(outcome).toBe("opened");
+        const doc = writes[writes.length - 1] as string;
+        expect(doc).toContain("matrx-fence-picture");
+        expect(doc).toContain("data:image/svg+xml;base64,");
+        expect(doc).not.toContain("flowchart LR");
+        // The window opened first, inside the click, with "Preparing…".
+        expect(writes[0]).toContain("Preparing");
+    });
+});

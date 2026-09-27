@@ -17,6 +17,7 @@ import {
   selectProjectsError,
 } from "@/features/agent-context/redux/projectsSlice";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 
@@ -72,7 +73,13 @@ export function SkillProjectAssociations({
         <FolderKanban className="h-3.5 w-3.5" />
         Projects
         <span className="text-muted-foreground/70 tabular-nums">
-          ({associated.length})
+          (
+          <UntrustedCount
+            value={associated.length}
+            trustworthy={!projectsError}
+            label="Associated projects"
+          />
+          )
         </span>
       </div>
 

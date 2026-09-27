@@ -34,6 +34,7 @@ import {
   linkRecord,
   listCommentThreads,
   listEdgeItems,
+  annotationPairs,
   notifyMentions,
   resolveComment,
   rewriteHighlightEdge,
@@ -537,10 +538,30 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
     [doors, reload],
   );
 
+  // What the association vocabulary lets a reader file on this kind (Highlight / Link absent otherwise).
+  const [pairs, setPairs] = useState<{ token: string; highlights: boolean; links: boolean } | null>(null);
+  const token = source?.token ?? null;
+  useEffect(() => {
+    if (!token) return;
+    let stale = false;
+    annotationPairs(token)
+      .then((p) => {
+        if (!stale) setPairs({ token, ...p });
+      })
+      .catch((e: unknown) => {
+        if (!stale) setError(message(e));
+      });
+    return () => {
+      stale = true;
+    };
+  }, [token]);
+  const pairsHere = pairs && pairs.token === token ? pairs : null;
+
   const capabilities: SidecarCapabilities = {
     anchoredWrites: ANCHOR_WRITES_ENABLED,
     collaborationDoors: doors,
-    links: !!(source && tryGetEntityInfo(source.token)),
+    highlights: !!pairsHere?.highlights,
+    links: !!(source && tryGetEntityInfo(source.token)) && !!pairsHere?.links,
     paint: typeof CSS !== "undefined" && "highlights" in CSS,
     canEdit,
   };

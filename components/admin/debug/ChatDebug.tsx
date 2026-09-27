@@ -268,7 +268,9 @@ export default function ChatDebug() {
             />
             <Row label="Agent ID" value={String(session.agentId ?? "")} />
             <Row label="API Mode" value={String(session.apiMode ?? "")} />
+            {/* read-gate-exempt: admin debug panel counting the in-memory chat session's messages/tool calls in Redux, not a fetch */}
             <Row label="Messages" value={String(messages.length)} />
+            {/* read-gate-exempt: admin debug panel counting the in-memory chat session's messages/tool calls in Redux, not a fetch */}
             <Row
               label="Tool Calls"
               value={String(Object.keys(toolCalls).length)}

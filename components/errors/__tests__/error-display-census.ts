@@ -1085,7 +1085,7 @@ function gatedByAncestors(node: ts.Node, fn: ts.Node): boolean {
 }
 
 /** `if (error) return …` / `if (status !== "ready") return …` before the empty view. */
-function gatedByEarlyReturn(node: ts.Node, fn: ts.FunctionLikeDeclaration): boolean {
+function gatedByEarlyReturn(node: ts.Node, fn: ts.FunctionLikeDeclaration, notOk = false): boolean {
   const body = fn.body;
   if (!body || !ts.isBlock(body)) return false;
   const at = node.getStart();
@@ -1093,10 +1093,12 @@ function gatedByEarlyReturn(node: ts.Node, fn: ts.FunctionLikeDeclaration): bool
     (st) =>
       st.getEnd() <= at &&
       ts.isIfStatement(st) &&
-      READ_GATE.test(st.expression.getText()) &&
+      (READ_GATE.test(st.expression.getText()) || (notOk && NOT_OK_RETURN.test(st.expression.getText()))) &&
       /\breturn\b/.test(st.thenStatement.getText()),
   );
 }
+/** `if (!load || load.state !== "ok") return gate;` — everything after it saw a successful read. */
+const NOT_OK_RETURN = /!==?\s*["'`](?:ok|ready|success|succeeded|loaded|done)["'`]/;
 
 /**
  * A reasoned, per-view exemption: `read-gate-exempt: <why this view is not a
@@ -1278,7 +1280,7 @@ export function findUngatedEmptyStateProps(source: string, fileName = "file.tsx"
           const readBacked =
             props.some((p) => READ_SIGNAL_ATTR.test(p.name.getText())) ||
             props.some((p) => ROWS_ATTR.test(p.name.getText()) && p.initializer !== undefined && mentionsAny(p.initializer, names!));
-          if (readBacked && !gatedByAncestors(n, fn) && !gatedByEarlyReturn(n, fn)) {
+          if (readBacked && !gatedByAncestors(n, fn) && !gatedByEarlyReturn(n, fn, true)) {
             const at = sf.getLineAndCharacterOfPosition(empty.getStart()).line + 1;
             const start = sf.getLineAndCharacterOfPosition(n.getStart()).line + 1;
             if (!exemptAround(sourceLines, [at, start])) lines.add(at);
@@ -1304,6 +1306,48 @@ const COUNT_PROP = /^(?:value|count|total|badge|number|stat|label|title|descript
 /** Components whose `value`/`label` is not a count shown to the person. */
 const NOT_A_COUNT_TAG =
   /^(?:UntrustedCount|ReadGate|ReadFailure|Input|Textarea|Select\w*|Slider|Progress|Checkbox|Switch|Radio\w*|Tabs\w*|Toggle\w*|Option|Command\w*|DropdownMenu\w*|Tooltip\w*|Label|input|option|select|textarea|progress|meter|data|li|ol)$/;
+
+/**
+ * The shared count primitives that take their read's outcome
+ * (`read={{ status, error }}`) and render "—" plus an "unavailable" label when
+ * it failed, loading while it is in flight. A count handed to one of them WITH
+ * `read=` is gated; without it, it is a count like any other.
+ */
+export const COUNT_READ_PRIMITIVES = /^(?:UntrustedCount|KpiTile|MetricCell|ResearchFilterBar)$/;
+
+/**
+ * Does `<Tag read={…}>` go to a primitive that honours `read`? A shared count
+ * primitive, or a component defined in this same file whose props take `read`
+ * (so a local `StatChip` that renders through `UntrustedCount` counts, and a
+ * `read=` sprinkled on a component that ignores it does not).
+ */
+function honoursCountRead(el: JsxLike, sf: ts.SourceFile): boolean {
+  const readAttr = jsxAttr(el, "read");
+  if (!readAttr || !readAttr.initializer) return false;
+  const tag = tagName(el);
+  if (COUNT_READ_PRIMITIVES.test(tag)) return true;
+  let honours = false;
+  const takesRead = (fn: ts.SignatureDeclaration | undefined) => {
+    const first = fn?.parameters[0];
+    if (!first) return false;
+    if (ts.isObjectBindingPattern(first.name)) {
+      return first.name.elements.some((e) => (e.propertyName ?? e.name).getText() === "read");
+    }
+    return false;
+  };
+  sf.forEachChild((st) => {
+    if (honours) return;
+    if (ts.isFunctionDeclaration(st) && st.name?.text === tag) honours = takesRead(st);
+    else if (ts.isVariableStatement(st)) {
+      for (const d of st.declarationList.declarations) {
+        if (ts.isIdentifier(d.name) && d.name.text === tag && d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer))) {
+          honours = takesRead(d.initializer);
+        }
+      }
+    }
+  });
+  return honours;
+}
 
 /** Is this expression a count derived from read data (`rows.length`, `stats.total`, `count`)? */
 function isReadCount(e: ts.Expression, names: Set<string>): boolean {
@@ -1350,6 +1394,8 @@ export function findUngatedCounts(source: string, fileName = "file.tsx"): number
   };
   const insideTag = (n: ts.Node, re: RegExp): boolean => jsxAncestors(n).some((a) => re.test(tagName(a)));
   const consider = (holder: ts.Node, value: ts.Expression) => {
+    // A count handed to a primitive that is told its read's outcome is gated.
+    if (ts.isJsxAttribute(holder) && honoursCountRead(holder.parent.parent as JsxLike, sf)) return;
     const fn = enclosingFunction(holder);
     if (!fn || !fn.body) return;
     const names = namesFor(fn);

@@ -14,6 +14,7 @@ import type {
   ContentSource,
   RichDocumentActionsProp,
 } from "@/features/rich-document/types";
+import type { AnnotationRecord } from "@/features/rich-document/annotations/record-of-source";
 import { AGENT_ICON_NAME } from "@/components/icons/domain-icons";
 import { buildChatMessageActions } from "@/features/rich-document/chat/chatMessageActions";
 import { NotesAPI } from "@/features/notes/service/notesApi";
@@ -79,6 +80,12 @@ export interface LoadedStudioContent {
    * the /chat bars use, so the proving route shows exactly that action set.
    */
   sourceActions?: RichDocumentActionsProp;
+  /**
+   * The saved record this content is, when `contentSource` does not say (a
+   * document rides as raw). While the buffer still equals the loaded text the
+   * preview carries the reading set on it (highlight, comment, suggest, link).
+   */
+  annotationRecord?: AnnotationRecord;
   /** The title is rich text — render it through <RichContent level="inline">. */
   titleIsRich?: boolean;
   /** Human note shown beside the title (e.g. "structured payload shown as JSON"). */
@@ -339,6 +346,13 @@ export const STUDIO_SOURCES: Record<StudioSourceKind, StudioSourceDef> = {
         title: doc.title,
         content: doc.body,
         contentSource: { type: "raw" },
+        annotationRecord: {
+          token: "document",
+          id,
+          title: doc.title,
+          contentVersion: doc.contentVersion,
+          href: `/markdown-studio?source=document&id=${id}`,
+        },
         notice: "Annotate shows the live document; Studio and Editor work on a copy.",
       };
     },

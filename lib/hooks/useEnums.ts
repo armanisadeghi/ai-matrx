@@ -34,6 +34,8 @@ export function useEnums({
   const [filteredEnums, setFilteredEnums] = useState<DatabaseEnum[]>(enums);
   const [loading, setLoading] = useState<boolean>(!initialData);
   const [error, setError] = useState<Error | null>(null);
+  /** The list read's own failure (fetch/search) — never a create/update/delete refusal (RC-B12 r13). */
+  const [loadError, setLoadError] = useState<Error | null>(null);
   // MATRX-EXCEPTION: React state initializer default for a genuinely optional
   // hook prop (no filters applied) — not a boundary write.
   const [filter, setFilter] = useState<EnumFilter>(defaultFilter ?? {});
@@ -48,16 +50,18 @@ export function useEnums({
 
       setLoading(true);
       setError(null);
+      setLoadError(null);
 
       try {
         const data = await getDatabaseEnums();
         setEnums(data);
       } catch (err) {
-        setError(
+        const failure =
           err instanceof Error
             ? err
-            : new Error("An error occurred while fetching enums"),
-        );
+            : new Error("An error occurred while fetching enums");
+        setError(failure);
+        setLoadError(failure);
       } finally {
         setLoading(false);
         setIsRefreshing(false);
@@ -76,17 +80,19 @@ export function useEnums({
   const searchEnumsFiltered = useCallback(async (searchFilter: EnumFilter) => {
     setLoading(true);
     setError(null);
+    setLoadError(null);
 
     try {
       const data = await searchEnums(searchFilter);
       setEnums(data);
       setFilter(searchFilter);
     } catch (err) {
-      setError(
+      const failure =
         err instanceof Error
           ? err
-          : new Error("An error occurred while searching enums"),
-      );
+          : new Error("An error occurred while searching enums");
+      setError(failure);
+      setLoadError(failure);
     } finally {
       setLoading(false);
     }
@@ -310,6 +316,7 @@ export function useEnums({
     allEnums: enums,
     loading,
     error,
+    loadError,
     isRefreshing,
     selectedEnum,
     filter,

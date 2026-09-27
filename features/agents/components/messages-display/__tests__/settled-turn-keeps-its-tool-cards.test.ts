@@ -38,7 +38,10 @@ import activeRequestsReducer, {
 import { selectUnifiedSlotRange } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import messagesReducer from "@/features/agents/redux/execution-system/messages/messages.slice";
 import observabilityReducer from "@/features/agents/redux/execution-system/observability/observability.slice";
-import { selectMessageInterleavedContent } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import {
+  selectMessageInterleavedContent,
+  selectMessagesInterleavedRuns,
+} from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { processStream } from "@/features/agents/redux/execution-system/thunks/process-stream";
 import {
   buildDisplayEntries,
@@ -272,9 +275,16 @@ function toolCardsOnScreen(state: RootState, streamActive: boolean): CardOnScree
       rendersFromPersistedRows(group.members, conv.byId),
     );
     for (const m of members) {
-      const segments = m.messageId
-        ? selectMessageInterleavedContent(CONV, m.messageId)(state)
-        : [];
+      // A member stands for every row of its request (`recordMessageIds`).
+      const recordIds =
+        m.recordMessageIds && m.recordMessageIds.length > 0
+          ? m.recordMessageIds
+          : m.messageId
+            ? [m.messageId]
+            : [];
+      const segments = selectMessagesInterleavedRuns(CONV, recordIds)(
+        state,
+      ).flat();
       const fromRecord =
         !m.requestId ||
         renderSettledFromRecord({

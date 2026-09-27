@@ -57,6 +57,9 @@ import type {
   RichDocumentActionsPosition,
   RichDocumentActionsBehavior,
 } from "./types";
+import { RecordAnnotations } from "./annotations/RecordAnnotations";
+import { annotationRecordOf, type AnnotationRecord } from "./annotations/record-of-source";
+import type { AnnotationSource } from "./annotations/types";
 import type { ServerProcessedBlock } from "@/components/mardown-display/chat-markdown/EnhancedChatMarkdown";
 import type { TypedStreamEvent } from "@/components/mardown-display/chat-markdown/types";
 
@@ -123,6 +126,16 @@ export interface RichDocumentProps {
         exclude?: (RichDocumentActionId | string)[];
       };
 
+  /**
+   * The SAVED RECORD this content is, for the reading set (highlight, comment,
+   * suggest, link) and its Notes & comments dock. Derived from `source` for a
+   * note, a chat answer and a saved working document; pass it when the source
+   * does not say (the studio previewing a loaded document), or `null` to turn
+   * the reading set off. A read-only copy, a stream in flight and a specimen
+   * never get one.
+   */
+  annotationRecord?: AnnotationRecord | null;
+
   // ---- Layout ----
   className?: string;
   contentClassName?: string;
@@ -179,6 +192,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
     onPhaseUpdate,
     strictServerData,
     imagePolicy,
+    annotationRecord,
   } = props;
 
   // A DECLARED SPECIMEN CARRIES NO ACTIONS. Resolved before anything else so
@@ -327,7 +341,24 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
     className,
   );
 
+  // THE READING SET on a saved record: the one mount (annotations/RecordAnnotations)
+  // every note, chat answer and saved document inherits from here.
+  const record =
+    annotationRecord !== undefined ? annotationRecord : source.readOnly ? null : annotationRecordOf(source);
+  const annotationSource: AnnotationSource | null =
+    record && !specimenMode && !isStreamActive && typeof content === "string" && content.trim()
+      ? {
+          token: record.token,
+          id: record.id,
+          title: record.title ?? "",
+          body: content,
+          contentVersion: Math.max(1, record.contentVersion ?? 1),
+          ...(record.href ? { href: record.href } : {}),
+        }
+      : null;
+
   const engineInner = (
+    <RecordAnnotations record={annotationSource}>
     <div className={cn("rich-document__content", contentClassName)}>
       <MarkdownStream
         imagePolicy={imagePolicy}
@@ -350,6 +381,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
         strictServerData={strictServerData}
       />
     </div>
+    </RecordAnnotations>
   );
 
   // Optionally wrap the content in the UNIVERSAL context menu (v3). The menu

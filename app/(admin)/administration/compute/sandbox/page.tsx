@@ -70,6 +70,7 @@ import {
   type AdminSandboxInstanceEntry,
 } from "@/features/surfaces/manifests/admin-sandbox.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const STATUS_BADGE_MAP: Record<
   string,
@@ -176,6 +177,8 @@ export default function AdminSandboxManagementPage() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // The list read's own failure — lifecycle refusals use `error` (RC-B12 r13).
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const instances =
@@ -224,10 +227,10 @@ export default function AdminSandboxManagementPage() {
       );
       if (generation !== fetchGeneration.current) return;
       setAccessibleSandboxes(rows);
-      setError(null);
+      setLoadError(null);
     } catch (err) {
       if (generation === fetchGeneration.current)
-        setError(err instanceof Error ? err.message : "Unknown error");
+        setLoadError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       if (generation === fetchGeneration.current) setLoading(false);
     }
@@ -386,7 +389,7 @@ export default function AdminSandboxManagementPage() {
       accessible_sandbox_status_filter: statusFilter,
       accessible_sandbox_instances: instances.map(toScopeEntry),
       accessible_sandbox_list_loading: loading,
-      ...(error ? { accessible_sandbox_list_error: error } : {}),
+      ...(loadError ? { accessible_sandbox_list_error: loadError } : {}),
       // `expandedRow` can name a row that the next poll dropped from the list
       // (an admin expands an instance, it expires out of the active filter).
       // The id still describes what the page thinks is open, but the detail
@@ -860,6 +863,7 @@ export default function AdminSandboxManagementPage() {
                 answeredBy: "client",
                 noun: "sandbox instance",
               }}
+              read={readOf({ loading, error: loadError }, { what: "sandbox instances", onRetry: () => void fetchInstances() })}
               emptyState={{
                 title:
                   "No accessible sandbox instances found for the selected filter.",

@@ -17,6 +17,7 @@ import {
 } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
 
 export interface FilterDef {
   key: string;
@@ -30,6 +31,11 @@ export interface FilterDef {
 interface ResearchFilterBarProps {
   title: string;
   count?: string;
+  /**
+   * The read behind `count` (`{ status, error }` — a table's `read=` fits). A
+   * failed read shows "—" with an "unavailable" label instead of the count.
+   */
+  read?: CountRead | null;
   filters: FilterDef[];
   search?: string;
   onSearchChange?: (value: string) => void;
@@ -250,6 +256,7 @@ function FilterDrawerContent({
 export function ResearchFilterBar({
   title,
   count,
+  read,
   filters,
   search,
   onSearchChange,
@@ -291,7 +298,7 @@ export function ResearchFilterBar({
         </span>
         {count && (
           <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
-            {count}
+            {read ? <UntrustedCount value={count} read={read} label={title} /> : count}
           </span>
         )}
 

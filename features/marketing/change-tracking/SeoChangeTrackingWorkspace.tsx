@@ -92,6 +92,7 @@ import {
   type UntrackedSnapshotChange,
 } from "./data";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const STATUS_OPTIONS = [
@@ -693,12 +694,15 @@ function Kpi({
   value,
   detail,
   tone,
+  trustworthy,
 }: {
   icon: React.ReactNode;
   label: string;
   value: number;
   detail: string;
   tone?: string;
+  /** False when the read behind `value` failed — the tile shows "—", never 0. */
+  trustworthy: boolean;
 }) {
   return (
     <div className="min-w-0 rounded-lg border bg-card p-3">
@@ -708,7 +712,12 @@ function Kpi({
         </span>
         <span className={tone}>{icon}</span>
       </div>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
+      <UntrustedCount
+        value={value}
+        trustworthy={trustworthy}
+        label={label}
+        className="mt-1 block text-2xl font-semibold tabular-nums"
+      />
       <p className="truncate text-[11px] text-muted-foreground" title={detail}>
         {detail}
       </p>
@@ -2089,12 +2098,14 @@ export function SeoChangeTrackingWorkspace({
         <Kpi
           icon={<FlaskConical className="h-4 w-4" />}
           label="Active theories"
+          trustworthy={!changes.isError}
           value={active}
           detail="Planned, underway, or measuring"
         />
         <Kpi
           icon={<Clock3 className="h-4 w-4" />}
           label="Measuring now"
+          trustworthy={!changes.isError}
           value={measuring}
           detail="Deployed interventions collecting evidence"
           tone="text-amber-500"
@@ -2102,6 +2113,7 @@ export function SeoChangeTrackingWorkspace({
         <Kpi
           icon={<CheckCircle2 className="h-4 w-4" />}
           label="Supported"
+          trustworthy={!changes.isError}
           value={supported}
           detail="Theory assessments supporting the prediction"
           tone="text-emerald-500"
@@ -2109,6 +2121,7 @@ export function SeoChangeTrackingWorkspace({
         <Kpi
           icon={<AlertTriangle className="h-4 w-4" />}
           label="Mismatches"
+          trustworthy={!changes.isError}
           value={mismatches}
           detail="Live implementation differs from the plan"
           tone="text-destructive"
@@ -2116,6 +2129,8 @@ export function SeoChangeTrackingWorkspace({
         <Kpi
           icon={<CircleDashed className="h-4 w-4" />}
           label="Untracked changes"
+          trustworthy={!untracked.isError}
+          // read-gate-exempt: the file-local Kpi renders this through UntrustedCount with trustworthy={!untracked.isError}, so a failed read shows "—"
           value={untracked.data?.length ?? 0}
           detail="Observed crawl milestones missing intent"
           tone="text-amber-500"

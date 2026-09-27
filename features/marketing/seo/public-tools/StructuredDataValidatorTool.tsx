@@ -108,12 +108,15 @@ export function StructuredDataValidatorTool() {
       {result ? (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3 text-sm">
+            {/* read-gate-exempt: counts of a successful validation run; result is null until success and each launch resets it, so a failed run never shows 0 */}
             <Badge variant={result.error_count > 0 ? "destructive" : "default"}>
               {result.error_count} error{result.error_count === 1 ? "" : "s"}
             </Badge>
+            {/* read-gate-exempt: counts of a successful validation run; result is null until success and each launch resets it, so a failed run never shows 0 */}
             <Badge variant="outline">
               {result.warning_count} warning{result.warning_count === 1 ? "" : "s"}
             </Badge>
+            {/* read-gate-exempt: counts of a successful validation run; result is null until success and each launch resets it, so a failed run never shows 0 */}
             <Badge variant="outline">{result.block_count} structured-data block(s)</Badge>
             {result.rich_result_eligible_types.length > 0 ? (
               <span className="text-xs text-muted-foreground">

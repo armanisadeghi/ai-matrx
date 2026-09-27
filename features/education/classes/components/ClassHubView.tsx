@@ -342,7 +342,7 @@ function ClassHubBody({
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-medium text-foreground">
             Study content
-            {content.totalCount > 0 && (
+            {!content.error && content.totalCount > 0 && (
               <span className="ml-1.5 text-muted-foreground">
                 ({content.totalCount})
               </span>
@@ -443,7 +443,7 @@ function MemberClassView({
           <section className="space-y-3">
             <h2 className="text-sm font-medium text-foreground">
               Study content
-              {content.totalCount > 0 && (
+              {!content.error && content.totalCount > 0 && (
                 <span className="ml-1.5 text-muted-foreground">
                   ({content.totalCount})
                 </span>

@@ -924,3 +924,36 @@ export const selectMessageInterleavedContent = (
       return segments.length === 0 ? EMPTY_SEGMENTS : segments;
     },
   );
+
+/**
+ * The interleaved segments of SEVERAL rows, one run per row, in the given
+ * order. A multi-iteration turn is one logical answer stored as one assistant
+ * row per server iteration; the turn renders them as ONE member (so a tool
+ * card keeps its identity from the live stream into the settled turn) while
+ * each row's segments stay a separate run — grouping and folding happen per
+ * run, exactly as they would if each row rendered on its own (a reload).
+ *
+ * Factory — callers must memoize the instance. The result is stable while
+ * every row's own segments are unchanged.
+ */
+export const selectMessagesInterleavedRuns = (
+  conversationId: string,
+  messageIds: readonly string[],
+) => {
+  const perRow = messageIds.map((id) =>
+    selectMessageInterleavedContent(conversationId, id),
+  );
+  let last: ContentSegment[][] | null = null;
+  return (state: RootState): ContentSegment[][] => {
+    const next = perRow.map((select) => select(state));
+    if (
+      last &&
+      last.length === next.length &&
+      last.every((run, i) => run === next[i])
+    ) {
+      return last;
+    }
+    last = next;
+    return next;
+  };
+};

@@ -37,7 +37,7 @@ export function AssignedToYouPanel({ classId }: { classId: string }) {
       <h2 className="flex items-center gap-1.5 text-sm font-medium text-foreground">
         <ClipboardList className="h-4 w-4 text-muted-foreground" />
         Assigned to you
-        {assignments.assignments.length > 0 && (
+        {!assignments.error && assignments.assignments.length > 0 && (
           <span className="text-muted-foreground">
             ({assignments.assignments.length})
           </span>

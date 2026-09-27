@@ -615,7 +615,7 @@ export function SiteKeywordPerformanceWorkspace() {
               Matching queries
             </span>
             <span className="text-sm font-semibold tabular-nums">
-              {Intl.NumberFormat().format(total)}
+              {loadFailed ? "—" : Intl.NumberFormat().format(total)}
             </span>
           </div>
           <CopyButtons

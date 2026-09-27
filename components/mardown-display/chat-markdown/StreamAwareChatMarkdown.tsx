@@ -87,6 +87,7 @@ export const StreamAwareChatMarkdown: React.FC<
   StreamAwareChatMarkdownProps
 > = ({
   requestId,
+  recordMessageIds,
   streamSlotStart,
   streamSlotEnd,
   turnId,
@@ -365,6 +366,7 @@ export const StreamAwareChatMarkdown: React.FC<
               <EnhancedChatMarkdownInternal
                 key={`text-${index}`}
                 requestId={requestId}
+                recordMessageIds={recordMessageIds}
                 streamSlotStart={streamSlotStart}
                 streamSlotEnd={streamSlotEnd}
                 turnId={turnId}
@@ -435,6 +437,7 @@ export const StreamAwareChatMarkdown: React.FC<
   return (
     <EnhancedChatMarkdownInternal
       requestId={requestId}
+      recordMessageIds={recordMessageIds}
       streamSlotStart={streamSlotStart}
       streamSlotEnd={streamSlotEnd}
       turnId={turnId}

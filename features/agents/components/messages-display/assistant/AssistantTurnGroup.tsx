@@ -178,6 +178,7 @@ export function AssistantTurnGroup({
             <AgentAssistantMessage
               conversationId={conversationId}
               requestId={m.requestId ?? undefined}
+              recordMessageIds={m.recordMessageIds}
               streamSlotStart={m.streamSlotStart}
               streamSlotEnd={m.streamSlotEnd}
               messageId={m.messageId ?? undefined}
@@ -208,7 +209,11 @@ export function AssistantTurnGroup({
           via the collapsed stream-anchored member. Renders nothing when the
           row has no snapshots. */}
       {rawMembers
-        .filter((m) => m.messageId && !members.includes(m))
+        .filter(
+          (m) =>
+            m.messageId &&
+            !members.some((rendered) => rendered.messageId === m.messageId),
+        )
         .map((m) => (
           <MessageFilesStrip
             key={`files-${m.key}`}

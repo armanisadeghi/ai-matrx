@@ -14,18 +14,41 @@
  * stay on the final answer row). Rows without a requestId (DB-hydrated
  * history) pass through untouched. Order is preserved.
  */
-export function collapseByRequestId<T extends { requestId: string | null }>(
-  items: T[],
-): T[] {
+export function collapseByRequestId<
+  T extends { requestId: string | null; key?: string; messageId?: string | null },
+>(items: T[]): Array<T & { recordMessageIds?: string[] }> {
   const lastIndexByRequestId = new Map<string, number>();
+  const rowsByRequestId = new Map<string, string[]>();
   items.forEach((item, i) => {
-    if (item.requestId) lastIndexByRequestId.set(item.requestId, i);
+    if (!item.requestId) return;
+    lastIndexByRequestId.set(item.requestId, i);
+    if (item.messageId) {
+      const rows = rowsByRequestId.get(item.requestId) ?? [];
+      rows.push(item.messageId);
+      rowsByRequestId.set(item.requestId, rows);
+    }
   });
   if (lastIndexByRequestId.size === 0) return items;
-  return items.filter(
-    (item, i) =>
-      !item.requestId || lastIndexByRequestId.get(item.requestId) === i,
-  );
+  const out: Array<T & { recordMessageIds?: string[] }> = [];
+  items.forEach((item, i) => {
+    if (!item.requestId) {
+      out.push(item);
+      return;
+    }
+    if (lastIndexByRequestId.get(item.requestId) !== i) return;
+    // ONE identity per request for the request's whole life: while rows are
+    // announced one by one (often after their iteration ran) the winning row
+    // changes, but the rendered member must not — a key built from the row id
+    // unmounted the whole answer, tool cards included, every time a later row
+    // arrived. The member stands for every row of the request: settled, it
+    // renders all of their records (`recordMessageIds`).
+    out.push({
+      ...item,
+      key: `req:${item.requestId}`,
+      recordMessageIds: rowsByRequestId.get(item.requestId) ?? [],
+    });
+  });
+  return out;
 }
 
 /** The slice of a message row the render decision reads. */
@@ -36,21 +59,12 @@ export interface TurnRowState {
 
 /**
  * Whether a turn renders from its persisted rows (one member per row, no
- * stream source) instead of one collapsed stream-anchored member. True when:
+ * stream source) instead of one collapsed stream-anchored member: a person is
+ * editing (or has edited) one of its rows (RC-B5).
  *
- * - A person is editing (or has edited) one of its rows (RC-B5), or
- * - Its stream has SETTLED: no member is streaming and every stream-anchored
- *   row is committed (no longer `reserved`). A settled member renders from
- *   its OWN committed record ("the final screen is the reload",
- *   `renderSettledFromRecord`), so the collapsed single member would show
- *   only the last row's parts — every earlier iteration's tool cards, text
- *   and thinking vanished the moment the answer completed and came back only
- *   on reload (verifier 2026-09-26 r2, Defect 1). Rendering every row gives
- *   the settled turn exactly the reload's members.
- *
- * While any row is still streaming or only reserved, the collapsed stream
- * member stays: it renders the whole request from the live source, so
- * nothing is missing in between.
+ * A SETTLED turn does not need it: the collapsed member renders every row's
+ * committed record (`recordMessageIds`, one run per row), which is what a
+ * reload shows — while staying the same instance it was live.
  */
 export function rendersFromPersistedRows(
   members: ReadonlyArray<{
@@ -60,27 +74,17 @@ export function rendersFromPersistedRows(
   }>,
   rowsById: Readonly<Record<string, TurnRowState | undefined>> | undefined,
 ): boolean {
-  const edited = members.some((m) => {
+  return members.some((m) => {
     if (!m.messageId || m.isStreamActive) return false;
     const row = rowsById?.[m.messageId];
     return !!row?._editingInPlace || row?.status === "edited";
   });
-  if (edited) return true;
-  const anchored = members.filter((m) => m.requestId);
-  return (
-    anchored.length > 1 &&
-    anchored.every((m) => {
-      if (!m.messageId || m.isStreamActive) return false;
-      const row = rowsById?.[m.messageId];
-      return !!row && row.status !== "reserved";
-    })
-  );
 }
 
 /**
- * The members a turn renders. `persistedView` (see `rendersFromPersistedRows`:
- * an edited row, or a settled multi-row request) renders one member per row;
- * otherwise one stream-anchored member per request.
+ * The members a turn renders. `persistedView` (an edited row, see
+ * `rendersFromPersistedRows`) renders one member per row; otherwise one
+ * stream-anchored member per request.
  *
  * A stream-anchored member renders the WHOLE request — every iteration's text
  * from one source — so (a) the row being edited has no spot of its own when a
@@ -91,10 +95,9 @@ export function rendersFromPersistedRows(
  * A turn with no multi-row request keeps the stream path: a single row edits
  * against its own request without either problem.
  */
-export function membersForRender<T extends { requestId: string | null }>(
-  items: T[],
-  persistedView: boolean,
-): T[] {
+export function membersForRender<
+  T extends { requestId: string | null; key?: string; messageId?: string | null },
+>(items: T[], persistedView: boolean): Array<T & { recordMessageIds?: string[] }> {
   if (!persistedView) return collapseByRequestId(items);
   const rowsPerRequest = new Map<string, number>();
   for (const item of items) {

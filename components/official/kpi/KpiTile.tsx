@@ -6,7 +6,10 @@
 // number that names a set of records opens that set.
 //
 // A number that could not be measured is never shown as 0: pass
-// `value={null}` and the tile renders "—" with the hint saying why.
+// `value={null}` and the tile renders "—" with the hint saying why. A number
+// read from the database takes that read's outcome — `read={{ status, error }}`
+// (a table's `read=` value fits): a failed read renders "—" with an
+// "unavailable" label for screen readers, an in-flight read renders loading.
 
 "use client";
 
@@ -14,6 +17,11 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import {
+  countReadState,
+  unavailableCountLabel,
+  type CountRead,
+} from "@/components/official/stale-data/UntrustedCount";
 
 export type KpiTone = "neutral" | "good" | "warn" | "bad";
 
@@ -42,6 +50,8 @@ export interface KpiTileProps {
   /** Tooltip — what the number counts, in one sentence. */
   title?: string;
   loading?: boolean;
+  /** The read behind `value`. Failed → "—" (never 0); loading → the loading bar. */
+  read?: CountRead | null;
   className?: string;
 }
 
@@ -52,9 +62,14 @@ export function KpiTile({
   tone = "neutral",
   href,
   title,
-  loading = false,
+  loading: loadingProp = false,
+  read,
   className,
 }: KpiTileProps) {
+  const readState = countReadState({ read });
+  const loading = loadingProp || readState === "loading";
+  const failed = readState === "failed";
+  const shown = failed ? null : value;
   const dot = TONE_DOT[tone];
   const body = (
     <>
@@ -73,10 +88,12 @@ export function KpiTile({
         <div
           className={cn(
             "truncate text-lg font-semibold leading-tight tabular-nums",
-            value === null ? "text-muted-foreground" : TONE_VALUE[tone],
+            shown === null ? "text-muted-foreground" : TONE_VALUE[tone],
           )}
+          aria-label={failed ? unavailableCountLabel(label) : undefined}
+          title={failed ? "Couldn't be read" : undefined}
         >
-          {value === null ? "—" : value}
+          {shown === null ? "—" : shown}
         </div>
       )}
       {hint ? (
@@ -90,7 +107,7 @@ export function KpiTile({
     className,
   );
 
-  if (href && !loading && value !== null) {
+  if (href && !loading && shown !== null) {
     return (
       <Link
         href={href}

@@ -34,6 +34,7 @@ import {
 } from "@ai-matrx/kit/url-state";
 import type { EnumFilter, EnumSort } from "@/types/enum-types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 interface EnumsContainerProps {
   initialEnums?: DatabaseEnum[];
@@ -92,6 +93,7 @@ export default function EnumsContainer({
     allEnums,
     loading,
     error,
+    loadError,
     isRefreshing,
     selectedEnum,
     filter,
@@ -398,16 +400,17 @@ export default function EnumsContainer({
             </div>
 
             {/* Enums list */}
-            {error ? (
+            {/* A create/update/delete refusal; the list read's own failure is the table's (RC-B12 r13). */}
+            {error && !loadError ? (
               <div className="bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4 text-red-800 dark:text-red-300">
                 {error.message}
                 <ErrorAlchemyMenu error={error.message} />
               </div>
-            ) : (
-              <>
+            ) : null}
                 <EnumsList
                   enums={enums}
                   loading={loading || isRefreshing}
+                  read={readOf({ loading, error: loadError }, { what: "enums", onRetry: () => void refreshEnums() })}
                   onViewDetails={handleViewDetails}
                   onEditEnum={handleEditEnum}
                   onDeleteEnum={handleDeleteEnum}
@@ -415,8 +418,6 @@ export default function EnumsContainer({
                   sortField={sort.field}
                   sortDirection={sort.direction}
                 />
-              </>
-            )}
           </TabsContent>
 
           <TabsContent value="create" className="mt-0">

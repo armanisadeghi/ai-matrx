@@ -283,6 +283,7 @@ export function AuthorityRouterWorkspace({
               <Kpi
                 icon={Waypoints}
                 label="Recommended routes"
+                // read-gate-exempt: renders only inside `result ?` — a present result is a successful read; a failed rerun keeps the last good result under the QueryError above
                 value={visibleRecommendations?.length ?? 0}
                 detail={`${approved.size} added to the plan`}
                 tone="emerald"

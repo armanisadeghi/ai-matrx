@@ -339,8 +339,15 @@ function RunDetail({
           {run.execution_id?.slice(0, 8)}
         </span>
         <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
-          {calls.data?.length ?? 0} AI call
-          {(calls.data?.length ?? 0) === 1 ? "" : "s"} ·{" "}
+          {calls.isError ? (
+            "AI calls unavailable"
+          ) : (
+            <>
+              {calls.data?.length ?? 0} AI call
+              {(calls.data?.length ?? 0) === 1 ? "" : "s"}
+            </>
+          )}{" "}
+          ·{" "}
           {formatUsd(run.total_cost, { digits: "adaptive" })}
         </span>
       </div>

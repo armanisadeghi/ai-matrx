@@ -38,6 +38,7 @@ import {
 } from "@/features/marketing/seo/keyword-research/data/queries";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 /**
  * The list's cache key. Omitting `archiveFilter` yields the PREFIX, which is
@@ -94,9 +95,12 @@ export default function SavedResearchLibrary({
           <FolderOpen className="h-3.5 w-3.5" />
           Saved research
           {saved.data?.length ? (
-            <span className="rounded-full bg-muted px-1.5 text-[10px] tabular-nums text-muted-foreground">
-              {saved.data.length}
-            </span>
+            <UntrustedCount
+              className="rounded-full bg-muted px-1.5 text-[10px] tabular-nums text-muted-foreground"
+              value={saved.data.length}
+              trustworthy={!saved.isError}
+              label="Saved research"
+            />
           ) : null}
         </Button>
       </PopoverTrigger>

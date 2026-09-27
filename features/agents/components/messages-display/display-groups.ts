@@ -218,7 +218,12 @@ export function groupDisplayEntries(
     if (buffer.length === 0) return;
     groups.push({
       kind: "assistant",
-      key: `grp:${buffer[0].key}`,
+      // A live turn keeps ONE group identity while its rows are announced
+      // (the synthetic stream entry becomes a row, later rows arrive) — a key
+      // built from whichever row came first remounted the whole turn.
+      key: buffer[0].requestId
+        ? `grp:req:${buffer[0].requestId}:${buffer[0].streamSlotStart ?? 0}`
+        : `grp:${buffer[0].key}`,
       members: buffer,
     });
     buffer = [];

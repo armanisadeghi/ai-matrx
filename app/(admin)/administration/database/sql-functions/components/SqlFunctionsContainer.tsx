@@ -28,6 +28,7 @@ import {
 } from "@ai-matrx/kit/url-state";
 import type { SqlFunctionFilter, SqlFunctionSort } from "@/types/sql-functions";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 interface SqlFunctionsContainerProps {
   initialFunctions?: SqlFunction[];
@@ -84,6 +85,7 @@ export default function SqlFunctionsContainer({
     allFunctions,
     loading,
     error,
+    loadError,
     isRefreshing,
     selectedFunction,
     filter,
@@ -404,15 +406,17 @@ export default function SqlFunctionsContainer({
                   className="shrink-0 overflow-auto"
                   style={{ maxHeight: "260px" }}
                 >
-                  {error ? (
+                  {/* A create/update/delete refusal; the list read's own failure is the table's (RC-B12 r13). */}
+                  {error && !loadError ? (
                     <div className="bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3 m-2 text-red-800 dark:text-red-300 text-sm">
                       {error.message}
                       <ErrorAlchemyMenu error={error.message} />
                     </div>
-                  ) : (
+                  ) : null}
                     <SqlFunctionsList
                       functions={functions}
                       loading={loading || isRefreshing}
+                      read={readOf({ loading, error: loadError }, { what: "SQL functions", onRetry: refreshFunctions })}
                       selectedFunctionKey={selectedFunctionKey}
                       onViewDetails={(func) => selectFunction(func)}
                       onEditFunction={handleEditFunction}
@@ -421,7 +425,6 @@ export default function SqlFunctionsContainer({
                       sortField={sort.field}
                       sortDirection={sort.direction}
                     />
-                  )}
                 </div>
 
                 {/* Divider */}
@@ -448,15 +451,17 @@ export default function SqlFunctionsContainer({
               /* No selection: list fills everything */
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 <div className="flex-1 overflow-auto">
-                  {error ? (
+                  {/* A create/update/delete refusal; the list read's own failure is the table's (RC-B12 r13). */}
+                  {error && !loadError ? (
                     <div className="bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3 m-2 text-red-800 dark:text-red-300 text-sm">
                       {error.message}
                       <ErrorAlchemyMenu error={error.message} />
                     </div>
-                  ) : (
+                  ) : null}
                     <SqlFunctionsList
                       functions={functions}
                       loading={loading || isRefreshing}
+                      read={readOf({ loading, error: loadError }, { what: "SQL functions", onRetry: refreshFunctions })}
                       selectedFunctionKey={selectedFunctionKey}
                       onViewDetails={(func) => selectFunction(func)}
                       onEditFunction={handleEditFunction}
@@ -465,7 +470,6 @@ export default function SqlFunctionsContainer({
                       sortField={sort.field}
                       sortDirection={sort.direction}
                     />
-                  )}
                 </div>
               </div>
             )}

@@ -256,6 +256,7 @@ export function CandidatesPage() {
             rows={m2m.rows}
             columns={m2mColumns}
             loading={m2m.loading}
+            error={m2m.error}
             csvFilename="canonicalization-m2m-candidates.csv"
             defaultSort={{ key: "payload_cols", dir: "asc" }}
             emptyMessage="No M2M candidates found."
@@ -267,6 +268,7 @@ export function CandidatesPage() {
             rows={unregistered.rows}
             columns={unregisteredColumns}
             loading={unregistered.loading}
+            error={unregistered.error}
             csvFilename="canonicalization-unregistered-candidates.csv"
             defaultSort={{ key: "base_col_score", dir: "desc" }}
             emptyMessage="No unregistered candidates found."
@@ -278,6 +280,7 @@ export function CandidatesPage() {
             rows={stale.rows}
             columns={staleColumns}
             loading={stale.loading}
+            error={stale.error}
             csvFilename="canonicalization-stale-registry.csv"
             defaultSort={{ key: "token", dir: "asc" }}
             emptyMessage="No retired tokens." 

@@ -28,7 +28,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useToast } from "@/components/ui/use-toast";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
@@ -119,12 +118,13 @@ export function InstallationsClient({
   minSupportedVersion,
   app,
 }: InstallationsClientProps) {
-  const { toast } = useToast();
   // Clock captured once on mount (lazy initializer) — the 7-day activity
   // window must not drift on every re-render.
   const [nowMs] = useState(() => Date.now());
   const [rows, setRows] = useState<AppInstanceRow[]>(initialRows);
   const [refreshing, setRefreshing] = useState(false);
+  // A failed refresh: the rows stay and the table says they may be out of date (RC-B12 r13).
+  const [refreshError, setRefreshError] = useState<unknown>(null);
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
@@ -132,15 +132,12 @@ export function InstallationsClient({
     const { data, error } = await supabase.rpc("admin_list_app_instances");
     setRefreshing(false);
     if (error) {
-      toast({
-        title: "Failed to refresh installations",
-        description: error.message,
-        variant: "destructive",
-      });
+      setRefreshError(error);
       return;
     }
+    setRefreshError(null);
     setRows(data ?? []);
-  }, [toast]);
+  }, []);
 
   const standingOf = useCallback(
     (row: AppInstanceRow): VersionStanding =>
@@ -414,6 +411,7 @@ export function InstallationsClient({
             getRowId={(row) => row.id}
             isFetching={refreshing}
             pageSize={50}
+            read={{ status: refreshError ? "error" : "ready", error: refreshError, onRetry: () => void refresh(), what: "installations" }}
             emptyState={{
               icon: <HardDrive className="h-5 w-5" />,
               title: "No installations",

@@ -15,7 +15,7 @@ import type { ColumnFilter } from "@/features/administration/kg-inspector/utils/
 export function SummaryPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { rows, loading, reload } = useAuditDataset<AuditSummaryRow>(
+  const { rows, loading, error, reload } = useAuditDataset<AuditSummaryRow>(
     "summary",
     isAuditSummaryRow,
   );
@@ -125,6 +125,7 @@ export function SummaryPage() {
           rows={rows}
           columns={columns}
           loading={loading}
+          error={error}
           csvFilename="canonicalization-summary.csv"
           defaultSort={{ key: "fails", dir: "desc" }}
           initialColumnFilters={initialColumnFilters}

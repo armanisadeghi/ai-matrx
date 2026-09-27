@@ -100,7 +100,8 @@ const HIGHLIGHTS: Action[] = HIGHLIGHT_COLORS.map((color, index) => {
     order: index,
     placement: "primary",
     preserveSelection: true,
-    eligible: (t) => eligibleHere(id, t),
+    // Absent where no annotation document may sit on this kind of record (no document → token pair).
+    eligible: (t) => eligibleHere(id, t, (h) => h.api.state.capabilities.highlights),
     run: async (t) => {
       const host = annotationHostOf(t);
       const selection = host?.capture();

@@ -24,6 +24,8 @@ export interface UseClassContentReturn {
   groups: ClassContentGroup[];
   totalCount: number;
   loading: boolean;
+  /** Why the class-content read failed (null when it succeeded). */
+  error: string | null;
   attach: ReturnType<typeof useContainerLinks>["attach"];
   detach: ReturnType<typeof useContainerLinks>["detach"];
   /** Attached ids keyed `${token}:${id}` (for the picker's attached state). */
@@ -95,6 +97,7 @@ export function useClassContent(
     // Count only the content edges we actually surface (assignment edges excluded).
     totalCount: rows.length,
     loading: links.status === "loading" || titlesLoading,
+    error: links.error,
     attach: links.attach,
     detach: links.detach,
     attachedKeys,

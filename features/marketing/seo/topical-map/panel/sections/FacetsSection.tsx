@@ -77,7 +77,7 @@ export function FacetsSection({ mapId, slug, organizationId, brandId, readOnly }
   const unset = (catalogue.data ?? []).filter((facet) => !(facet.key in set));
 
   return (
-    <PanelSection title="Facets" count={facets.data ? setKeys.length : undefined}>
+    <PanelSection title="Facets" count={facets.data && !facets.isError ? setKeys.length : undefined}>
       {facets.isPending ? (
         <SuspenseLoader centered={false} message="Loading this topic's facets…" />
       ) : facets.isError ? (

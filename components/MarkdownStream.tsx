@@ -15,6 +15,8 @@ export interface MarkdownStreamProps {
   /** Optional task ID for streaming updates (legacy mode with Redux) */
   taskId?: string;
   requestId?: string;
+  /** Every committed row a multi-iteration turn's one render stands for (see EnhancedChatMarkdown). */
+  recordMessageIds?: readonly string[];
   /** Inclusive/exclusive source timeline range for one live transcript segment. */
   streamSlotStart?: number;
   streamSlotEnd?: number;

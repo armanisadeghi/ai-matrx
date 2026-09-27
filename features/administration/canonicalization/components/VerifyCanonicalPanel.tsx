@@ -216,6 +216,7 @@ export function VerifyCanonicalPanel() {
   const [autofilling, setAutofilling] = useState(false);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<VerifyResult | null>(null);
+  const [runError, setRunError] = useState<string | null>(null);
   // Registered token for the current schema.table (from audit.summary). The gate
   // is keyed on the TOKEN, not the table name — and many tokens are singular
   // while the table is plural (code_file ⟷ code_files). A token that isn't the
@@ -258,6 +259,7 @@ export function VerifyCanonicalPanel() {
         return;
       }
       setRunning(true);
+      setRunError(null);
       try {
         const res = await fetch("/api/admin/canonicalization/verify", {
           method: "POST",
@@ -275,7 +277,9 @@ export function VerifyCanonicalPanel() {
           throw new Error("Unexpected verify response shape");
         setResult(data);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : String(err));
+        const message = err instanceof Error ? err.message : String(err);
+        toast.error(message);
+        setRunError(message);
         setResult(null);
       } finally {
         setRunning(false);
@@ -454,6 +458,7 @@ export function VerifyCanonicalPanel() {
                 rows={result?.checks ?? []}
                 columns={checklistColumns}
                 loading={running}
+                error={runError}
                 csvFilename="canonicalization-verify-checklist.csv"
                 defaultSort={{ key: "status", dir: "asc" }}
                 emptyMessage="No checks returned."
@@ -464,7 +469,7 @@ export function VerifyCanonicalPanel() {
                     variant="outline"
                     className="h-6 shrink-0 whitespace-nowrap text-[10px]"
                   >
-                    Checklist · {result?.checks.length ?? 0}
+                    Checklist · {runError ? "—" : (result?.checks.length ?? 0)}
                   </Badge>
                 }
               />
@@ -474,6 +479,7 @@ export function VerifyCanonicalPanel() {
                 rows={result?.certifyBlocking ?? []}
                 columns={blockingColumns}
                 loading={running}
+                error={runError}
                 csvFilename="canonicalization-verify-blocking.csv"
                 emptyMessage="Empty — perfect. Nothing is blocking certification."
                 copyForAi={VERIFY_BLOCKING_TABLE_COPY}
@@ -484,7 +490,7 @@ export function VerifyCanonicalPanel() {
                       variant="outline"
                       className="h-6 shrink-0 whitespace-nowrap text-[10px]"
                     >
-                      Blocking · {result?.certifyBlocking.length ?? 0}
+                      Blocking · {runError ? "—" : (result?.certifyBlocking.length ?? 0)}
                     </Badge>
                     {/*
                       Where this verdict came from. `broken_dependent_fn` is

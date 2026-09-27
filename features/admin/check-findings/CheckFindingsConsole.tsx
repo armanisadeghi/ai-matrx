@@ -98,6 +98,7 @@ import {
 } from "./service";
 import { fetchAidreamAcceptAdapters, markFindingOk } from "./acceptApi";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
 /** What the server page knows about matrx-frontend's accept adapters (scripts/findings/registry.mjs). */
 /** How a check's findings are accepted (model.ts AcceptInfo); the route builds it from accept-rules.json. */
@@ -283,6 +284,7 @@ function ConsoleBody({ frontendAccept, source = liveCheckFindingsSource, banner 
           <CheckBoard
             rows={rows}
             loading={snapshot.status === "loading"}
+            read={{ status: snapshot.status === "loading" ? "loading" : "ready", what: "the checks store" }}
             onOpen={(row) => navigate({ check: row.check.id, state: "open" }, true)}
           />
         )}
@@ -381,10 +383,13 @@ function verdictSortKey(row: CheckSummaryRow): string {
 function CheckBoard({
   rows,
   loading,
+  read,
   onOpen,
 }: {
   rows: CheckSummaryRow[];
   loading: boolean;
+  /** The snapshot read's outcome (RC-B12 r13); the parent renders LoadError for a failure. */
+  read: ReadOutcome;
   onOpen: (row: CheckSummaryRow) => void;
 }) {
   const columns: MatrxColumnDef<CheckSummaryRow>[] = [
@@ -565,6 +570,7 @@ function CheckBoard({
             Findings
           </Button>
         )}
+        read={read}
         emptyState={{
           icon: <Clock className="h-5 w-5" />,
           title: "No check has reported to this database yet",

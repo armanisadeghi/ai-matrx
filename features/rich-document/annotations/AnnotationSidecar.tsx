@@ -65,10 +65,51 @@ export function useSidecar(): SidecarContextValue {
   return ctx;
 }
 
-export function AnnotationSidecarProvider({ source, children }: { source: AnnotationSource; children: ReactNode }) {
-  const api = useAnnotationSidecar(source);
+/** The sidecar when one is installed above, else null (a host that mounts one only where none exists). */
+export function useOptionalSidecar(): SidecarContextValue | null {
+  return useContext(SidecarContext);
+}
+
+export function AnnotationSidecarProvider({
+  source,
+  children,
+  live = true,
+  onActivity,
+}: {
+  source: AnnotationSource;
+  children: ReactNode;
+  /**
+   * False = hold the reads and the live channel (a chat answer scrolled far out of view):
+   * the content renders unchanged and nothing is fetched until it turns true.
+   */
+  live?: boolean;
+  /** The person just made or focused an item here (a host opens its Notes & comments dock). */
+  onActivity?: () => void;
+}) {
+  const raw = useAnnotationSidecar(live ? source : null);
+  const api: AnnotationSidecarApi = onActivity
+    ? {
+        ...raw,
+        addHighlight: (...args) => {
+          onActivity();
+          return raw.addHighlight(...args);
+        },
+        postComment: (...args) => {
+          onActivity();
+          return raw.postComment(...args);
+        },
+        link: (...args) => {
+          onActivity();
+          return raw.link(...args);
+        },
+      }
+    : raw;
   const instance = useId().replace(/[^a-zA-Z0-9]/g, "");
-  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [activeKey, setActiveKeyState] = useState<string | null>(null);
+  const setActiveKey = (key: string | null) => {
+    setActiveKeyState(key);
+    if (key) onActivity?.();
+  };
   const [pendingReattach, setPendingReattach] = useState<string | null>(null);
   const revealRef = useRef<(key: string) => void>(() => {});
   return (

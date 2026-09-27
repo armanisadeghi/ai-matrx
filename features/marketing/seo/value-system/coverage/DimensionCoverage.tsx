@@ -262,7 +262,9 @@ export function DimensionCoverage({
   }
 
   const rows = coverage.data;
-  if (!rows) {
+  // A failed refetch keeps the old rows in the cache: every count below would
+  // then report a window (or a threshold) the server just refused to confirm.
+  if (!rows || coverage.isError || knobs.isError) {
     return (
       <InlineQueryError
         what="how much of your traffic each dimension actually describes"

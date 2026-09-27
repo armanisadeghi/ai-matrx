@@ -453,6 +453,8 @@ describe("a list primitive's emptyState waits for its read (RC-B12 round 13)", (
     expect(props('const q = useTasks(); return q.isError ? <ReadFailure error={q.error} /> : <MatrxDataTable data={q.rows} isLoading={q.isLoading} emptyState={{ title: "No tasks yet" }} />;')).toBe(0);
     // The empty state's own copy is gated once the primitive is told the read (no second finding).
     expect(findUngatedEmptyStates('export function C(p: any) { const { rows, isLoading } = useTasks(); return <MatrxDataTable data={rows} isLoading={isLoading} read={readOf({ isLoading })} emptyState={{ title: p.x ? "No tasks found" : "Pick one" }} />; }').length).toBe(0);
+    // An early return unless the read succeeded gates everything after it.
+    expect(props('const { load } = useRules(); if (!load || load.state !== "ok") return <Gate />; return <MatrxDataTable data={load.data.rules} emptyState={{ title: "No rules" }} />;')).toBe(0);
     // A page-state wrapper handed the error renders the failure instead of its children.
     expect(props('const q = useTasks(); return <HrPageState loading={q.isLoading} error={q.error}><MatrxDataTable data={q.rows} isLoading={q.isLoading} emptyState={{ title: "No tasks yet" }} /></HrPageState>;')).toBe(0);
     expect(props('const q = useTasks(); return <HrPageState loading={q.isLoading}><MatrxDataTable data={q.rows} isLoading={q.isLoading} emptyState={{ title: "No tasks yet" }} /></HrPageState>;')).toBe(1);
@@ -490,6 +492,23 @@ describe("a count from a failed read is a lie too (RC-B12 round 13)", () => {
     expect(counts("const { rows, isError } = useRateLimits(); return <p><UntrustedCount value={rows.length} trustworthy={!isError} label=\"Limits\" /> rate limits</p>;")).toBe(0);
     expect(counts("const [rows] = useState<string[]>([]); const loading = false; return <p>{rows.length} drafts</p>;")).toBe(0);
     expect(counts("return <p>{p.rows.length} rows</p>;")).toBe(0);
+  });
+  it("self-test: a count primitive told its read's outcome (read=) is gated; one that ignores read= is not", () => {
+    const read = "read={{ status: q.status, error: q.error }}";
+    expect(counts(`const q = useRateLimits(); return <KpiTile label="Limits" value={q.rows.length} ${read} />;`)).toBe(0);
+    expect(counts(`const q = useRateLimits(); return <MetricCell label="Limits" value={q.rows.length} ${read} />;`)).toBe(0);
+    expect(counts(`const q = useKeywords(); return <ResearchFilterBar title="Keywords" count={\`\${q.rows.length}\`} ${read} filters={[]} />;`)).toBe(0);
+    expect(counts(`const q = useRateLimits(); return <UntrustedCount value={q.rows.length} ${read} label="Limits" />;`)).toBe(0);
+    // Without read= the primitive is a number like any other.
+    expect(counts("const q = useRateLimits(); return <KpiTile label=\"Limits\" value={q.rows.length} loading={q.isLoading} />;")).toBe(1);
+    // read= on a component that never takes it proves nothing.
+    expect(counts(`const q = useRateLimits(); return <StatTile label="Limits" value={q.rows.length} ${read} />;`)).toBe(1);
+    // A same-file component whose props take `read` honours it.
+    expect(
+      findUngatedCounts(
+        `function StatChip({ value, read }: any) { return <UntrustedCount value={value} read={read} label="x" />; }\nexport function C(p: any) { const q = useX(); return <StatChip value={q.rows.length} ${read} />; }`,
+      ).length,
+    ).toBe(0);
   });
 });
 

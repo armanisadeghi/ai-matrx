@@ -257,14 +257,18 @@ export function BingConnectionsWorkspace() {
                       variant={
                         inventory.isLoading
                           ? "secondary"
-                          : usableConnections.length
-                            ? "success"
-                            : "secondary"
+                          : inventory.isError
+                            ? "destructive"
+                            : usableConnections.length
+                              ? "success"
+                              : "secondary"
                       }
                     >
                       {inventory.isLoading
                         ? "Checking connection…"
-                        : usableConnections.length
+                        : inventory.isError
+                          ? "Couldn't check connection"
+                          : usableConnections.length
                           ? `${usableConnections.length} connection${usableConnections.length === 1 ? "" : "s"}`
                           : "Not connected"}
                     </Badge>

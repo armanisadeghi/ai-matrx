@@ -3,18 +3,17 @@
 /**
  * ToolHandlers — inline tool-call cards for the markdown stream.
  *
- * Two active surfaces:
- *   - `InlineToolCard`    — live stream path, one card per tool callId
- *     inside an active request. Reads `ToolLifecycleEntry` from Redux.
- *   - `DbToolCard`        — DB-loaded turn path. Builds a synthetic
- *     `ToolLifecycleEntry` from a persisted content segment.
+ * ONE card component (`ToolCard`) and ONE batch component (`ToolBatch`) for
+ * both sources: the live stream (`requestId` → `ToolLifecycleEntry` from
+ * Redux) and a committed/reloaded turn (a persisted content segment →
+ * `persistedToolEntry`). One element type under one key is what keeps a card
+ * the same instance when a turn swaps from stream to record.
  *
  * Both route through the canonical shell at
- * `@/features/tool-call-visualization` — there is no more reshaping
- * into the deprecated `ToolCallObject` format.
+ * `@/features/tool-call-visualization`.
  */
 
-import React, { useEffect, useMemo } from "react";
+import React from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectHideToolResults } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
@@ -29,12 +28,16 @@ import { ToolCallBatch } from "@/features/tool-call-visualization/components/Too
 import { persistedToolEntry } from "@/features/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
 
 // ============================================================================
-// INLINE TOOL CARD — subscribes to a single tool's lifecycle by callId.
-// Renders independently; only re-renders when this specific tool changes.
+// TOOL CARD — THE one element for a tool call in a transcript, live or
+// persisted. The live stream feeds it `requestId` (it subscribes to that one
+// call's lifecycle); a committed/reloaded turn feeds it the persisted
+// `segment`. Because both paths render THIS component under the same key
+// (`tool-<callId>`), the card is the SAME React instance — and the same DOM
+// node — when a turn swaps from its live stream to its committed record: no
+// unmount, no blank frame, no lost expand state (verifier 2026-09-26 r4).
 // ============================================================================
 
-interface InlineToolCardProps {
-  requestId: string;
+export interface ToolCardProps {
   callId: string;
   /**
    * Owning conversation id. Required so this card can self-gate on the
@@ -44,86 +47,94 @@ interface InlineToolCardProps {
    * conditionals.
    */
   conversationId: string;
+  /** Live source: the request whose lifecycle carries this call. */
+  requestId?: string;
+  /** Persisted source: the committed tool_call part joined to its row. */
+  segment?: ContentSegmentDbTool;
 }
 
-export const InlineToolCard: React.FC<InlineToolCardProps> = ({
-  requestId,
+const _selectNoLifecycle = () => undefined;
+
+export const ToolCard: React.FC<ToolCardProps> = ({
   callId,
   conversationId,
+  requestId,
+  segment,
 }) => {
   const hidden = useAppSelector(selectHideToolResults(conversationId));
-  const lifecycle = useAppSelector(selectToolLifecycle(requestId, callId));
+  const lifecycle = useAppSelector(
+    !segment && requestId
+      ? selectToolLifecycle(requestId, callId)
+      : _selectNoLifecycle,
+  );
 
-  // TEMP DIAGNOSTIC (stream-result loss) — remove once pinpointed. Logs on the
-  // transition: if `hasResult` flips true→false (or `lifecycle` goes undefined)
-  // when a stream ends, the live entry is being cleared in Redux; if it stays
-  // true while the card empties, the loss is in the renderer/overlay path; if
-  // this card STOPS logging at stream-end (and DbToolCard starts), the render
-  // flipped to the persisted DB path.
-  useEffect(() => {
-    console.log("[STREAM-RESULT-DEBUG] InlineToolCard", {
-      requestId,
-      callId,
-      toolName: lifecycle?.toolName,
-      status: lifecycle?.status,
-      hasLifecycle: !!lifecycle,
-      hasResult: lifecycle?.result != null,
-      eventCount: lifecycle?.events?.length ?? 0,
-    });
-  }, [
-    requestId,
-    callId,
-    lifecycle?.toolName,
-    lifecycle?.status,
-    lifecycle,
-    lifecycle?.result,
-    lifecycle?.events?.length,
-  ]);
+  // Canonical persisted→lifecycle conversion lives in `persistedToolEntry`:
+  // it reads the full `execution_events` log + real timestamps off the joined
+  // `cx_tool_call` row, so a persisted tool renders identically to the live one.
+  const entry: ToolLifecycleEntry | undefined = segment
+    ? persistedToolEntry(segment)
+    : lifecycle;
 
   if (hidden) return null;
-  if (!lifecycle) return null;
+  if (!entry) return null;
 
   return (
     <ToolCallVisualization
-      entries={[lifecycle]}
-      requestId={requestId}
+      entries={[entry]}
+      requestId={segment ? undefined : requestId}
       conversationId={conversationId}
       hasContent
+      isPersisted={!!segment}
     />
   );
 };
 
 // ============================================================================
-// INLINE TOOL BATCH — folds a run of consecutive LIVE tool calls into one
-// expandable line. Subscribes once to the request's lifecycle map, derives the
-// run's entries (count + streaming state), and renders the normal single-tool
-// cards as children — no reshaping, no nesting that deforms the cards.
+// TOOL BATCH — folds a run of consecutive tool calls into one expandable
+// line, live (`requestId` + `callIds`) or persisted (`segments`), rendering
+// the normal `ToolCard`s as children. Same one-component rule as the card:
+// the batch and every card inside it keep their identity across the swap.
 // ============================================================================
 
-interface InlineToolBatchProps {
-  requestId: string;
-  callIds: string[];
+export interface ToolBatchProps {
   conversationId: string;
+  /** Live source. */
+  requestId?: string;
+  callIds?: string[];
+  /** Persisted source. */
+  segments?: ContentSegmentDbTool[];
   browserRunOrder?: number;
   browserBreakBefore?: boolean;
   browserBreakAfter?: boolean;
 }
 
-export const InlineToolBatch: React.FC<InlineToolBatchProps> = ({
+const _selectNoLifecycleMap = () => undefined;
+
+export const ToolBatch: React.FC<ToolBatchProps> = ({
+  conversationId,
   requestId,
   callIds,
-  conversationId,
+  segments,
   browserRunOrder,
   browserBreakBefore,
   browserBreakAfter,
 }) => {
   const hidden = useAppSelector(selectHideToolResults(conversationId));
-  const lifecycleMap = useAppSelector(selectToolLifecycleMap(requestId));
+  const lifecycleMap = useAppSelector(
+    !segments && requestId
+      ? selectToolLifecycleMap(requestId)
+      : _selectNoLifecycleMap,
+  );
 
   // React Compiler memoizes this — no manual useMemo (per repo convention).
+  const ids: string[] = segments
+    ? segments.map((s) => s.callId)
+    : (callIds ?? []);
   const entries: ToolLifecycleEntry[] = [];
-  if (lifecycleMap) {
-    for (const id of callIds) {
+  if (segments) {
+    for (const s of segments) entries.push(persistedToolEntry(s));
+  } else if (lifecycleMap) {
+    for (const id of ids) {
       const e = lifecycleMap[id];
       if (e) entries.push(e);
     }
@@ -136,124 +147,66 @@ export const InlineToolBatch: React.FC<InlineToolBatchProps> = ({
     <ToolCallBatch
       entries={entries}
       conversationId={conversationId}
+      isPersisted={!!segments}
       browserRunOrder={browserRunOrder}
       browserBreakBefore={browserBreakBefore}
       browserBreakAfter={browserBreakAfter}
     >
-      {callIds.map((callId) => (
-        <InlineToolCard
-          key={callId}
-          requestId={requestId}
-          callId={callId}
-          conversationId={conversationId}
-        />
-      ))}
+      {segments
+        ? segments.map((segment) => (
+            <ToolCard
+              key={segment.callId}
+              callId={segment.callId}
+              segment={segment}
+              conversationId={conversationId}
+            />
+          ))
+        : ids.map((callId) => (
+            <ToolCard
+              key={callId}
+              callId={callId}
+              requestId={requestId}
+              conversationId={conversationId}
+            />
+          ))}
     </ToolCallBatch>
   );
 };
 
 // ============================================================================
-// DB TOOL CARD — renders a completed tool call from DB-loaded message parts.
+// Named entry points kept for the other surfaces that render one source only.
 // ============================================================================
 
-interface DbToolCardProps {
-  segment: ContentSegmentDbTool;
-  /** Owning conversation id — drives the `hideToolResults` check. */
+export const InlineToolCard: React.FC<{
+  requestId: string;
+  callId: string;
   conversationId: string;
-}
+}> = (props) => <ToolCard {...props} />;
 
-export const DbToolCard: React.FC<DbToolCardProps> = ({
-  segment,
-  conversationId,
-}) => {
-  const hidden = useAppSelector(selectHideToolResults(conversationId));
+export const InlineToolBatch: React.FC<{
+  requestId: string;
+  callIds: string[];
+  conversationId: string;
+  browserRunOrder?: number;
+  browserBreakBefore?: boolean;
+  browserBreakAfter?: boolean;
+}> = (props) => <ToolBatch {...props} />;
 
-  // Canonical persisted→lifecycle conversion lives in `persistedToolEntry`:
-  // it reads the full `execution_events` log + real timestamps off the joined
-  // `cx_tool_call` row, so a reloaded tool renders identically to the live one.
-  const entry = useMemo(
-    () => persistedToolEntry(segment),
-    [segment.callId, segment.record, segment.stubName, segment.stubArguments],
-  );
+export const DbToolCard: React.FC<{
+  segment: ContentSegmentDbTool;
+  conversationId: string;
+}> = ({ segment, conversationId }) => (
+  <ToolCard
+    callId={segment.callId}
+    segment={segment}
+    conversationId={conversationId}
+  />
+);
 
-  // TEMP DIAGNOSTIC (stream-result loss) — remove once pinpointed. If this
-  // starts firing the instant a stream ends (while InlineToolCard stops), the
-  // renderer flipped to the persisted DB path mid-session; `hasResult` then
-  // tells us whether that path has the result (observability row populated) or
-  // is empty (the real gap).
-  useEffect(() => {
-    const e = persistedToolEntry(segment);
-    console.log("[STREAM-RESULT-DEBUG] DbToolCard", {
-      callId: segment.callId,
-      toolName: e.toolName,
-      status: e.status,
-      hasRecord: !!segment.record,
-      recordHasOutput: !!segment.record?.output,
-      hasResult: e.result != null,
-    });
-  }, [segment.callId, segment.record, segment.stubName, segment.stubArguments]);
-
-  if (hidden) return null;
-
-  return (
-    <ToolCallVisualization
-      entries={[entry]}
-      conversationId={conversationId}
-      hasContent
-      isPersisted
-    />
-  );
-};
-
-// ============================================================================
-// DB TOOL BATCH — folds a run of consecutive PERSISTED tool calls (DB-loaded)
-// into one expandable line. Mirror of InlineToolBatch for the reload path:
-// converts each segment to a lifecycle entry, renders the normal DbToolCards
-// as children. All persisted tools are terminal, so the batch defaults
-// collapsed.
-// ============================================================================
-
-interface DbToolBatchProps {
+export const DbToolBatch: React.FC<{
   segments: ContentSegmentDbTool[];
   conversationId: string;
   browserRunOrder?: number;
   browserBreakBefore?: boolean;
   browserBreakAfter?: boolean;
-}
-
-export const DbToolBatch: React.FC<DbToolBatchProps> = ({
-  segments,
-  conversationId,
-  browserRunOrder,
-  browserBreakBefore,
-  browserBreakAfter,
-}) => {
-  const hidden = useAppSelector(selectHideToolResults(conversationId));
-
-  // React Compiler memoizes this — no manual useMemo (per repo convention).
-  const entries: ToolLifecycleEntry[] = segments.map((s) =>
-    persistedToolEntry(s),
-  );
-
-  if (hidden) return null;
-  if (segments.length === 0) return null;
-
-  return (
-    <ToolCallBatch
-      entries={entries}
-      conversationId={conversationId}
-      isPersisted
-      browserRunOrder={browserRunOrder}
-      browserBreakBefore={browserBreakBefore}
-      browserBreakAfter={browserBreakAfter}
-    >
-      {segments.map((segment, i) => (
-        <DbToolCard
-          key={`${segment.callId}-${i}`}
-          segment={segment}
-          conversationId={conversationId}
-        />
-      ))}
-    </ToolCallBatch>
-  );
-};
+}> = (props) => <ToolBatch {...props} />;

@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 import {
   KgInspectorColumnHeader,
@@ -234,6 +235,12 @@ export interface AdminAuditTableProps<T> {
   rows: T[];
   columns: AuditColumnDef<T>[];
   loading?: boolean;
+  /**
+   * The failure of the read behind `rows` (the parent hook's `error`). When
+   * set, the body shows the failure instead of `emptyMessage` and the footer
+   * never reports "0 loaded" — a count from a failed read is a lie.
+   */
+  error?: unknown;
   emptyMessage?: string;
   onRowClick?: (row: T) => void;
   /** Filename for the CSV export button. Omit to hide the button. */
@@ -258,6 +265,7 @@ export function AdminAuditTable<T>({
   rows,
   columns,
   loading = false,
+  error = null,
   emptyMessage = "No rows.",
   onRowClick,
   csvFilename,
@@ -497,6 +505,8 @@ export function AdminAuditTable<T>({
                 <Skeleton key={i} className="h-7 w-full" />
               ))}
             </div>
+          ) : error ? (
+            <ReadFailure error={error} what="these rows" />
           ) : processed.length === 0 ? (
             <div className="px-3 py-10 text-center text-sm text-muted-foreground">
               {emptyMessage}
@@ -560,7 +570,11 @@ export function AdminAuditTable<T>({
         role="status"
         className="shrink-0 border-t border-border px-3 py-1.5 text-xs tabular-nums text-muted-foreground"
       >
-        {loading ? "Loading…" : `${processed.length} shown / ${rows.length} loaded`}
+        {loading
+          ? "Loading…"
+          : error
+            ? "Couldn't load — counts unavailable"
+            : `${processed.length} shown / ${rows.length} loaded`}
       </div>
     </div>
   );

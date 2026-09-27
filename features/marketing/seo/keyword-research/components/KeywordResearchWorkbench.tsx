@@ -97,6 +97,7 @@ import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 function usMarket(row: KeywordWithMarket): KeywordMarketRow | null {
   return (
@@ -982,7 +983,8 @@ export default function KeywordResearchWorkbench() {
     leading:
       clusterPhrases && clusterPrimaryKeyword ? (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 px-2.5 py-1 text-xs text-foreground">
-          Cluster: “{clusterPrimaryKeyword}” · {sorted.length}
+          Cluster: “{clusterPrimaryKeyword}” ·{" "}
+          <UntrustedCount value={sorted.length} trustworthy={!loadError} label="Keywords in cluster" />
           <button
             type="button"
             onClick={() => {
@@ -1003,6 +1005,8 @@ export default function KeywordResearchWorkbench() {
               size="xs"
               message="Loading keyword library…"
             />
+          ) : loadError ? (
+            "Keyword library couldn't be read"
           ) : (
             `${sorted.length} keywords in the library`
           )}

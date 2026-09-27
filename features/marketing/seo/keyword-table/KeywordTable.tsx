@@ -1144,7 +1144,7 @@ export function KeywordTable({
           </span>
         ) : (
           <span className="whitespace-nowrap text-[11px] text-muted-foreground">
-            {formatCount(total)} keywords · {rangeLabel}
+            {data.error ? "—" : formatCount(total)} keywords · {rangeLabel}
             {dataThrough ? ` · through ${dataThrough}` : ""}
             {SERVER_SORTABLE.has(state.sort)
               ? ""

@@ -113,6 +113,7 @@ export function PageAuditTool() {
               <div className="text-sm text-muted-foreground">
                 <div className="font-medium text-foreground">On-page SEO score</div>
                 <div>
+                  {/* read-gate-exempt: result is non-null only after a successful audit run; each launch resets it to null, so a failed run never shows 0 issues */}
                   HTTP {result.status_code} · {result.issues.length} issue
                   {result.issues.length === 1 ? "" : "s"} found
                 </div>
