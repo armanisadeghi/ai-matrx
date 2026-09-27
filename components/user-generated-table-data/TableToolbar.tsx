@@ -218,8 +218,8 @@ export default function TableToolbar({
   setShowPasteRowsDialog,
 
   // Success callbacks
-  onEditSuccess = () => loadTableData(),
-  onDeleteSuccess = () => loadTableData(),
+  onEditSuccess: onEditSuccessProp,
+  onDeleteSuccess: onDeleteSuccessProp,
 
   // Cell cleanup
   cleanCellValue,
@@ -246,6 +246,11 @@ export default function TableToolbar({
   inPageRow = false,
   sortState,
 }: TableToolbarProps) {
+  // The defaults live in the body, not the parameter list: an arrow-function default there makes
+  // the React Compiler skip this whole toolbar ("cannot be safely reordered"), and a skipped
+  // toolbar re-renders every dialog it holds on every render of the Sheet (lane RENDER-AUDIT).
+  const onEditSuccess = onEditSuccessProp ?? (() => loadTableData());
+  const onDeleteSuccess = onDeleteSuccessProp ?? (() => loadTableData());
   const isMobile = useIsMobile();
   /** An older table always keeps a hand order; a record-store one only once G13's doors answer. */
   const handOrderAvailable =

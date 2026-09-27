@@ -173,13 +173,18 @@ try {
     [...document.querySelectorAll("header button")].map((b) => b.getAttribute("aria-label") || b.textContent.trim().slice(0, 30)),
   );
   if (actions.has("settings")) {
+    // Leave whatever the earlier phases left open (an editor, a selection) the way a person would.
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+    await page.mouse.click(1200, 900);
+    await sleep(800);
     const menus = page.getByRole("button", { name: /^table menu$/i });
     const n = await menus.count();
     let opened = false;
     for (let i = n - 1; i >= 0 && !opened; i--) {
       await menus.nth(i).click().catch(() => undefined);
-      await sleep(700);
-      const item = page.getByRole("menuitem", { name: /^settings$/i }).first();
+      await sleep(2000);
+      const item = page.locator('[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]', { hasText: /^Settings$/ }).first();
       if (await item.count()) {
         await mark("settings");
         await item.click();
@@ -187,6 +192,8 @@ try {
       } else await page.keyboard.press("Escape");
     }
     report.settingsOpened = opened;
+    report.settingsMenuButtons = n;
+    report.settingsItemsSeen = await page.evaluate(() => [...document.querySelectorAll('[role="menuitem"]')].map((e) => e.textContent.trim().slice(0, 30)));
     if (opened) {
       await settle(10000);
       await take("open-settings-rail");
@@ -227,16 +234,24 @@ try {
   }
 
   // ── A TOAST ───────────────────────────────────────────────
+  // One the page raises itself: the page-capture menu's plain Copy says "Copied".
   if (actions.has("toast")) {
-    // A toast the page raises itself: the toolbar's copy-link button says "Link copied".
     await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: ORIGIN }).catch(() => undefined);
-    const link = page.getByRole("button", { name: /copy.*link|link/i }).first();
-    report.toastButton = (await link.count()) ? await link.getAttribute("aria-label") : null;
-    await mark("toast");
-    if (await link.count()) await link.click();
-    report.toastSeen = await page.locator("[data-sonner-toast]").count().catch(() => 0);
-    await settle(6000);
-    await take("toast");
+    const capture = page.getByRole("button", { name: /copy, transform or export/i }).first();
+    report.toastButton = (await capture.count()) ? await capture.getAttribute("aria-label") : null;
+    if (await capture.count()) {
+      await capture.click();
+      await sleep(2000);
+      report.toastMenu = await page.evaluate(() =>
+        [...document.querySelectorAll('[role="menuitem"]')].map((e) => e.textContent.trim().slice(0, 40)),
+      );
+      const copy = page.locator("[data-radix-popper-content-wrapper] button", { hasText: /Everything on this page/ }).first();
+      await mark("toast");
+      if (await copy.count()) await copy.click();
+      await settle(6000);
+      report.toastSeen = await page.locator("[data-sonner-toast]").count().catch(() => 0);
+      await take("toast");
+    }
   }
 } finally {
   writeFileSync(`${OUT}/${LABEL}.json`, JSON.stringify(report, null, 2));

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SheetBodyRow, choiceMapSignature, shareUnchangedRows, useRowEpoch } from "@/features/data-tables/components/sheet-body-row";
 import { createPortal } from "react-dom";
 import * as RecordsUi from "@ai-matrx/records-ui";
 import {
@@ -1056,7 +1057,7 @@ const UserTableViewer = ({
         );
       }
 
-      setData(processedData);
+      setData((prev) => shareUnchangedRows(prev, processedData));
       setTotalCount(pagePayload.pagination.total_count);
       setTotalPages(pagePayload.pagination.page_count);
       setCurrentPage(pagePayload.pagination.current_page);
@@ -1503,7 +1504,7 @@ const UserTableViewer = ({
     if (allSortedData && allSortedData.length > 0 && sortField) {
       const startIndex = (page - 1) * limit;
       const pageData = allSortedData.slice(startIndex, startIndex + limit);
-      setData(pageData);
+      setData((prev) => shareUnchangedRows(prev, pageData));
     } else {
       loadTableData(page, limit);
     }
@@ -1524,7 +1525,7 @@ const UserTableViewer = ({
     // If we have client-side sorted data cached, use it
     if (allSortedData && allSortedData.length > 0 && sortField) {
       const pageData = allSortedData.slice(0, numLimit);
-      setData(pageData);
+      setData((prev) => shareUnchangedRows(prev, pageData));
       setTotalPages(Math.ceil(allSortedData.length / numLimit));
     } else {
       loadTableData(1, numLimit);
@@ -1672,7 +1673,7 @@ const UserTableViewer = ({
         // Show the appropriate page slice
         const startIndex = (currentPage - 1) * limit;
         const pageData = resortedData.slice(startIndex, startIndex + limit);
-        setData(pageData);
+        setData((prev) => shareUnchangedRows(prev, pageData));
         return;
       }
 
@@ -1698,7 +1699,7 @@ const UserTableViewer = ({
         // Show the appropriate page slice
         const startIndex = (currentPage - 1) * limit;
         const pageData = sortedData.slice(startIndex, startIndex + limit);
-        setData(pageData);
+        setData((prev) => shareUnchangedRows(prev, pageData));
       } catch (err) {
         console.error("Error during client-side sorting:", err);
         // Fallback to server-side sorting
@@ -3392,6 +3393,32 @@ const UserTableViewer = ({
     });
   };
 
+  // The Sheet's shape for its memoised rows (`sheet-body-row.tsx`) — hooks, so above the returns.
+  const sheetLatest = useRef<typeof sheetRowScope | null>(null);
+  const anyUniqueColumn = fields.some((field) => validationByField.get(field.field_name)?.unique);
+  const sheetEpoch = useRowEpoch([
+    ...viewFields,
+    fields,
+    // The choices by their CONTENT: the map is rebuilt whenever its inputs are, which is every render.
+    choiceMapSignature(choiceMap),
+    // The colours by their SOURCE: `tableStyle` is parsed and `choiceColorFor` built afresh on
+    // every render, so their identities say nothing.
+    localStyle && localStyle.base === tableInfo?.metadata ? localStyle.style : tableInfo?.metadata,
+    onTheRecordStoreForColors,
+    columnWidths,
+    [...computedPage.formulaFieldNames].sort().join("\u0000"),
+    ...Array.from(validationByField.keys()),
+    isReadOnly,
+    renderCellMarkdown,
+    wrapText,
+    freezeFirstColumn,
+    firstViewFieldName,
+    rowActions,
+    tableId,
+    // A unique column checks every OTHER row, so any row's change can change every row's check.
+    anyUniqueColumn ? (fullDatasetCache ?? data) : null,
+  ]);
+
   if (loading && !tableInfo)
     return (
       <div className="space-y-4 p-2">
@@ -3904,6 +3931,597 @@ const UserTableViewer = ({
           />
         )
         : null;
+
+  // ── ONE SHEET ROW AT A TIME (lane RENDER-AUDIT, 2026-09-26; `sheet-body-row.tsx`) ──────────
+  // Every body row reads the viewer through `S()` — the LATEST scope — so a row the memo kept
+  // never acts on an old render; it is drawn again only when its record, its facts or the
+  // table's shape (`sheetEpoch`) changed.
+  const sheetRowScope = {
+    cellTintClass,
+    cellUndo,
+    choiceMap,
+    columnWidthStyle,
+    existingValuesFor,
+    fields,
+    firstViewFieldName,
+    formatCellValue,
+    formulaErrors,
+    grid,
+    handleCleanupText,
+    handleDeleteRow,
+    handleEditRow,
+    handleExpandText,
+    handleShowReference,
+    isFormulaField,
+    isReadOnly,
+    patchLocalCell,
+    renderCellMarkdown,
+    rowActions,
+    rowTintClass,
+    runRowAction,
+    selectedRowId,
+    selectedRowIdSet,
+    setHistoryRowId,
+    shiftSelectionRequested,
+    showEditModal,
+    showReadOnlyToast,
+    surfaceOpenCell,
+    tableId,
+    toggleRowSelection,
+    validationByField,
+    viewFields,
+    wrapText,
+    freezeFirstColumn,
+    reloadCurrentPage: () => loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true),
+  };
+  sheetLatest.current = sheetRowScope;
+  const S = () => sheetLatest.current!;
+  /** The facts of ONE row that change without its record changing. */
+  const sheetRowFacts = (row: TableDataRow): readonly unknown[] => {
+    let cells = "";
+    let editingHere = false;
+    for (const field of viewFields) {
+      const editing = grid.isEditing(row.id, field.field_name);
+      if (editing) editingHere = true;
+      cells +=
+        (grid.isSelected(row.id, field.field_name) ? "s" : "-") +
+        (editing ? "e" : "-") +
+        (grid.isInRange(row.id, field.field_name) ? "r" : "-") +
+        (formulaErrors.get(`${row.id}::${field.field_name}`) ?? "") +
+        "|";
+    }
+    return [
+      selectedRowIdSet.has(row.id),
+      surfaceOpenCell?.rowId === row.id,
+      showEditModal && selectedRowId === row.id,
+      cells,
+      editingHere ? grid.editSeed : null,
+    ];
+  };
+  const renderSheetRow = (row: TableDataRow, index: number): React.ReactNode => (
+    <TableRow
+      key={row.id}
+      {...{ [GRID_ROW_DOM_ATTR]: row.id }}
+      data-surface-value={
+        S().surfaceOpenCell?.rowId === row.id ||
+        (S().showEditModal && S().selectedRowId === row.id)
+          ? "current_row_json"
+          : undefined
+      }
+      // Zebra → color tint (table-style.ts) → selection. `cn`
+      // (tailwind-merge) keeps the LAST background, so a tinted
+      // row shows its tint and a selected row still reads selected.
+      className={cn(
+        index % 2 === 0
+          ? "bg-white dark:bg-gray-950"
+          : "bg-gray-50 dark:bg-gray-900",
+        S().selectedRowIdSet.has(row.id) && "bg-primary/5",
+        // The tint is LAST so a colored row stays colored while
+        // selected — the checkbox already says it is selected.
+        S().rowTintClass(row),
+        !S().rowTintClass(row) &&
+          "hover:bg-gray-100 dark:hover:bg-gray-800",
+        "transition-colors",
+      )}
+    >
+      <TableCell
+        data-surface-value={
+          S().surfaceOpenCell?.rowId === row.id ||
+          (S().showEditModal && S().selectedRowId === row.id)
+            ? "current_row_id"
+            : undefined
+        }
+        className="sticky left-0 z-10 w-10 bg-inherit px-2 md:px-3"
+        // The checkbox ticks the row for bulk actions; the cell
+        // AROUND it selects the row's cells as a range (Shift+
+        // Space from the keyboard) — the Sheets row-number gesture.
+        onClick={(event) => {
+          event.stopPropagation();
+          if ((event.target as HTMLElement).closest("button")) return;
+          S().grid.selectRow(row.id);
+          S().grid.refocusGrid();
+        }}
+        title="Click beside the checkbox to select this row's cells"
+      >
+        <Checkbox
+          checked={S().selectedRowIdSet.has(row.id)}
+          onClick={(event) => {
+            event.stopPropagation();
+            S().shiftSelectionRequested.current = event.shiftKey;
+          }}
+          onCheckedChange={(checked) =>
+            S().toggleRowSelection(index, checked === true)
+          }
+          aria-label={`Select row ${index + 1}`}
+        />
+      </TableCell>
+      {S().viewFields.map((field) => {
+        const rawValue = row.data[field.field_name];
+        // A column the record store withheld from this reader says so, with the
+        // store's reason — never "—", which means empty (records-ui's one helper).
+        const withheldCell = withheldCellOf(row, field.field_name);
+        const cellData =
+          rawValue !== null
+            ? S().formatCellValue(rawValue, field.data_type)
+            : null;
+        // A column with a declared display format renders through
+        // the shared format layer (currency, percent, link, chips,
+        // amber mismatch fallback). Columns with no format take the
+        // original path unchanged, so nothing that worked before
+        // can shift.
+        const declaredFormat = resolveFieldFormat(
+          field.data_type,
+          field.metadata,
+        );
+        // A choice column's options may live in a shared pick list
+        // (loaded once for the whole grid), and a DEPENDENT column's
+        // options narrow to the group this row's controlling cell
+        // names. Both fold back into the format so the pure
+        // registry renderer needs to know about neither.
+        const rowChoices = choicesForRow(
+          S().choiceMap.get(field.field_name),
+          row.data,
+        );
+        const fieldFormat = withResolvedChoices(
+          declaredFormat,
+          rowChoices.choices,
+        );
+        const hasCustomFormat =
+          fieldFormat.id !== defaultFormatForBase(field.data_type);
+        const formulaError = S().formulaErrors.get(
+          `${row.id}::${field.field_name}`,
+        );
+        const display = withheldCell ? (
+          <SheetWithheldCell cell={withheldCell} />
+        ) : formulaError ? (
+          <span
+            className="text-amber-700 dark:text-amber-300"
+            title={formulaError}
+          >
+            #ERROR
+            <ErrorAlchemyMenu />
+          </span>
+        ) : hasCustomFormat || S().validationByField.has(field.field_name) ? (
+          <FormattedFieldValue
+            value={rawValue}
+            format={fieldFormat}
+            dataType={field.data_type}
+            validationRules={S().validationByField.get(field.field_name) ?? null}
+            className={S().wrapText ? "whitespace-pre-wrap break-words text-left" : "truncate text-left"}
+          />
+        ) : cellData ? (
+          <div className="flex items-center justify-between group min-w-0">
+            <div className="flex-1 min-w-0">
+              <div
+                className={S().wrapText ? "whitespace-pre-wrap break-words text-left" : "truncate text-left"}
+                title={
+                  cellData.isTruncated
+                    ? cellData.fullText
+                    : undefined
+                }
+              >
+                {S().renderCellMarkdown &&
+                typeof rawValue === "string" ? (
+                  <RichContent
+                    level="inline"
+                    source={String(S().wrapText ? cellData.fullText : cellData.display)}
+                    isStreaming={false}
+                  />
+                ) : (
+                  String(S().wrapText ? cellData.fullText : cellData.display)
+                )}
+              </div>
+              {cellData.multilineIndicator && !S().wrapText && (
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {cellData.multilineIndicator}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        );
+        return (
+          <TableCell
+            style={S().columnWidthStyle(field.field_name)}
+            key={`${row.id}-${field.id}`}
+            data-cell={cellDomKey({
+              rowId: row.id,
+              fieldName: field.field_name,
+            })}
+            data-surface-value={
+              S().grid.isSelected(row.id, field.field_name)
+                ? "current_cell_value"
+                : S().grid.isInRange(row.id, field.field_name)
+                  ? "selected_range_tsv"
+                  : undefined
+            }
+            // THE SELECTION RING OUTLINES THE WHOLE CELL. An inset
+            // ring on the <td> follows the cell's real edges; drawn
+            // on the inner content div it boxed the text and left
+            // the padding outside, which looked like a glitch
+            // rather than a selection. `ring-inset` matters — an
+            // outset ring is clipped by the neighbouring cells.
+            // 🚨 THE WHOLE CELL IS THE TARGET. Click and
+            // double-click live on the <td>, not on the content
+            // inside it, because the content is smaller than the
+            // cell — often much smaller, and for an EMPTY cell
+            // there is barely anything to hit at all. Handling
+            // clicks on the inner element meant only the middle of
+            // a cell responded, and an empty cell could not be
+            // edited whatsoever.
+            // THE CELL CARRIES THE STATE, so the editor inside it
+            // needs no chrome of its own. Selected is a soft ring;
+            // EDITING is a heavier solid ring plus a stronger tint.
+            //
+            // That distinction is load-bearing. Stripping the
+            // input's border (so it stops looking like a component
+            // nested inside a component) also removed the only
+            // signal that an editor was open at all — a cell with
+            // unsaved text became indistinguishable from a saved
+            // one, which is how you lose an edit without knowing.
+            // 🚨 THE SELECTION WASH IS AN OVERLAY, NOT A
+            // BACKGROUND. `cn` is tailwind-merge: a selection fill
+            // written as `bg-primary/10` and a manual highlight
+            // written as `bg-red-100` are the same utility group,
+            // so the LAST one wins and the other is deleted from
+            // the class list entirely. The tint is applied last —
+            // so every highlighted cell inside a selected block
+            // silently lost its selection shading, and a block
+            // drawn across coloured cells appeared to have holes in
+            // it while Cmd-C happily copied the cells that looked
+            // excluded (found on live review 2026-09-15). Painting
+            // the wash on the `after:` pseudo-element puts it in a
+            // different utility group, so the two genuinely survive
+            // together the way the comment below always claimed.
+            className={cn(
+              // `overflow-hidden`: past FIXED_LAYOUT_MAX_COLUMNS the
+              // table is `table-auto`, where `max-w-0` caps the
+              // column's width but NOT the content's paint — a long
+              // email was drawn straight across the phone number
+              // beside it (clientWidth 150, scrollWidth 192; found
+              // on independent review 2026-09-15). Clipping at the
+              // cell is what lets the inner `truncate` end in an
+              // ellipsis, the way Sheets and Airtable clip. The
+              // selection ring is inset and the wash is `inset-0`,
+              // so neither is cut.
+              "group relative max-w-[70vw] overflow-hidden py-2 md:max-w-0 md:py-3",
+              S().freezeFirstColumn &&
+                field.field_name === S().firstViewFieldName &&
+                "sticky left-10 z-10 bg-inherit shadow-[inset_-1px_0_0_theme(colors.gray.200)] dark:shadow-[inset_-1px_0_0_theme(colors.gray.700)]",
+              "after:pointer-events-none after:absolute after:inset-0 after:content-['']",
+              // A computed cell keeps the default cursor: the
+              // text-cursor is a promise that you can type here,
+              // and on a formula column that promise is false.
+              !S().isReadOnly &&
+                (S().isFormulaField(field.field_name)
+                  ? "cursor-default"
+                  : "cursor-cell"),
+              S().grid.isSelected(row.id, field.field_name) &&
+                !S().grid.isEditing(row.id, field.field_name) &&
+                "ring-2 ring-inset ring-primary/70 after:bg-primary/5",
+              S().grid.isEditing(row.id, field.field_name) &&
+                "ring-[3px] ring-inset ring-primary after:bg-primary/10",
+              // A cell inside the extended range — softer than the
+              // anchor's ring, so the anchor stays findable.
+              S().grid.isInRange(row.id, field.field_name) &&
+                !S().grid.isSelected(row.id, field.field_name) &&
+                "after:bg-primary/10",
+              // Tint LAST: the ring says "selected", the tint says
+              // "highlighted", and both must survive together.
+              S().cellTintClass(row, field.field_name),
+            )}
+            // Press starts a drag-select (or, with Shift, extends
+            // the range to here); sweeping over cells while the
+            // button is down grows it; release anywhere ends it.
+            onPointerDown={(e) => {
+              if (e.button !== 0) return;
+              const address = { rowId: row.id, fieldName: field.field_name };
+              if (e.shiftKey) S().grid.extendTo(address);
+              else if (!S().grid.isEditing(row.id, field.field_name))
+                S().grid.beginDrag(address);
+            }}
+            onPointerEnter={() =>
+              S().grid.dragOver({ rowId: row.id, fieldName: field.field_name })
+            }
+            onClick={(e) => {
+              // A shift-click already extended the range on press;
+              // a plain click after a drag must not collapse it.
+              if (e.shiftKey || S().grid.range) {
+                S().grid.refocusGrid();
+                return;
+              }
+              S().grid.select({
+                rowId: row.id,
+                fieldName: field.field_name,
+              });
+              // Hand focus back to the grid, or the very next arrow
+              // key goes nowhere and the grid reads as broken.
+              S().grid.refocusGrid();
+            }}
+            onDoubleClick={() => {
+              // Direct-click editors (checkbox, rating, choice)
+              // handle their own interaction and stop propagation;
+              // a double-click that reaches here is on a plain
+              // cell and means "edit me".
+              // 🚨 A COMPUTED CELL SAYS NO OUT LOUD. Refusing in
+              // silence is the same defect as a dead control: the
+              // cell carries the normal text-cursor, opens nothing,
+              // and leaves the person to conclude the grid is
+              // broken rather than that the column is calculated
+              // (found on live review 2026-09-15). The sentence is
+              // the one the row forms already use for these
+              // columns, so the explanation reads the same
+              // wherever you meet it.
+              if (S().isFormulaField(field.field_name)) {
+                toast({
+                  title: `${field.display_name} is calculated`,
+                  description:
+                    "Calculated from the other columns in this row — it updates on its own. Change its formula in Table settings.",
+                });
+                return;
+              }
+              // A double-click that opens nothing and says nothing
+              // reads as a broken grid. Say why the editor did not
+              // open — for an example table the notice names it as
+              // one. (Found on independent review 2026-09-15: this
+              // was a silent return.)
+              if (S().isReadOnly) {
+                S().showReadOnlyToast();
+                return;
+              }
+              S().grid.beginEdit({
+                rowId: row.id,
+                fieldName: field.field_name,
+              });
+            }}
+          >
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <div className="flex-1 min-w-0">
+                <EditableCell
+                  tableId={S().tableId}
+                  rowId={row.id}
+                  fieldName={field.field_name}
+                  fieldDisplayName={field.display_name}
+                  dataType={field.data_type as FieldDataType}
+                  format={fieldFormat}
+                  row={row.data}
+                  value={rawValue}
+                  display={display}
+                  validationRules={S().validationByField.get(field.field_name) ?? null}
+                  existingValues={S().existingValuesFor(field.field_name, row.id)}
+                  editable={!S().isReadOnly && !S().isFormulaField(field.field_name)}
+                  selected={S().grid.isSelected(
+                    row.id,
+                    field.field_name,
+                  )}
+                  editing={S().grid.isEditing(row.id, field.field_name)}
+                  seed={S().grid.editSeed}
+                  onSelect={() => {
+                    S().grid.select({
+                      rowId: row.id,
+                      fieldName: field.field_name,
+                    });
+                    // Clicking a cell must hand focus back to the
+                    // grid, or the very next arrow key goes
+                    // nowhere and the grid reads as broken.
+                    S().grid.refocusGrid();
+                  }}
+                  onBeginEdit={() =>
+                    S().grid.beginEdit({
+                      rowId: row.id,
+                      fieldName: field.field_name,
+                    })
+                  }
+                  onEndEdit={(move) => S().grid.endEdit(move)}
+                  onRecordEdit={(priorValue, nextValue) =>
+                    S().cellUndo.record({
+                      tableId: S().tableId,
+                      rowId: row.id,
+                      fieldName: field.field_name,
+                      fieldDisplayName: field.display_name,
+                      priorValue,
+                      nextValue,
+                    })
+                  }
+                  // Patch, never refetch — a full reload remounts
+                  // the body and throws away the user's place.
+                  onSaved={(newValue, serverUpdatedAt) => {
+                    S().patchLocalCell(
+                      row.id,
+                      field.field_name,
+                      newValue,
+                      serverUpdatedAt,
+                    );
+                    // An off-list value on a choice column: offer to
+                    // make it an option, one click, never blocking.
+                    offerToAddChoiceOption({
+                      tableId: S().tableId,
+                      field,
+                      saved: newValue,
+                      onAdded: () =>
+                        void S().reloadCurrentPage(),
+                    });
+                  }}
+                />
+              </div>
+              {cellData && (
+                <div className="matrx-touch-targets flex items-center space-x-1 ml-2 flex-shrink-0">
+                  {cellData.hasCleanableHtml && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-100 transition-opacity h-6 w-6 p-0 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                      onClick={(e) =>
+                        S().handleCleanupText(
+                          field.field_name,
+                          cellData.fullText,
+                          row.id,
+                          e,
+                        )
+                      }
+                      title={`Clean up HTML formatting in ${field.display_name}`}
+                    >
+                      <Zap className="h-3 w-3 text-purple-500 dark:text-purple-400" />
+                    </Button>
+                  )}
+                  {cellData.isTruncated && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-100 transition-opacity h-6 w-6 p-0 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                      onClick={(e) =>
+                        S().handleExpandText(
+                          cellData.fullText,
+                          field.display_name,
+                          row.id,
+                          field.field_name,
+                          e,
+                        )
+                      }
+                      title={`Expand ${field.display_name}`}
+                    >
+                      <Expand className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </TableCell>
+        );
+      })}
+      {!S().isReadOnly && <TableCell className="w-8 p-0" />}
+      <TableCell className="px-1 py-0 text-center">
+        <div className="flex items-center justify-center gap-0 [&_button]:h-7 [&_button]:w-7 [&_button_svg]:h-3.5 [&_button_svg]:w-3.5">
+          {/* The table's own one-click buttons (row-actions.ts),
+              always behind ONE icon that opens the list — never
+              inline chips (Arman, 2026-09-21: they were giant and
+              unreadable). Absent when the table has none. */}
+          {S().rowActions.length > 0 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => e.stopPropagation()}
+                  title="Run an action on this row"
+                >
+                  {S().rowActions.length === 1 ? (
+                    <RowActionIcon action={S().rowActions[0]} className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  ) : (
+                    <Zap className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Run on this row</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {S().rowActions.map((a) => (
+                  <DropdownMenuItem
+                    key={a.id}
+                    className="flex flex-col items-start gap-0.5"
+                    onSelect={() => void S().runRowAction(a.id, [row.id])}
+                  >
+                    <span className="flex items-center gap-1.5 text-sm font-medium">
+                      <span className={cn("inline-flex h-5 w-5 items-center justify-center rounded border", rowActionButtonClass(a.color))}>
+                        <RowActionIcon action={a} className="h-3 w-3" />
+                      </span>
+                      {a.name}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{describeRowAction(a, S().fields)}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              S().handleShowReference(row.id, row.data, e);
+            }}
+            title="Get Reference"
+          >
+            <Link className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+          </Button>
+          {S().isReadOnly ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                S().showReadOnlyToast();
+              }}
+              title="View only - no edit access"
+              className="cursor-not-allowed"
+            >
+              <Eye className="h-4 w-4 text-purple-400 dark:text-purple-500" />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                S().handleEditRow(row.id, row.data);
+              }}
+              title="Edit Row"
+            >
+              <Pencil className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+            </Button>
+          )}
+          {/* History is a READ — viewers of shared tables get it
+              too (RLS scopes what they see); restore actions
+              inside the panel stay gated by `editable`. */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              S().setHistoryRowId(row.id);
+            }}
+            title="View row history"
+          >
+            <History className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+          </Button>
+          {!S().isReadOnly && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                S().handleDeleteRow(row.id);
+              }}
+              title="Delete Row"
+            >
+              <Trash className="h-4 w-4 text-red-500 dark:text-red-400" />
+            </Button>
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
+  );
 
   const body = (
     // fillHeight: a three-band column (chrome / grid / pagination) where only
@@ -5171,528 +5789,7 @@ const UserTableViewer = ({
               </TableRow>
             ) : (
               displayRows.map((row, index) => (
-                <TableRow
-                  key={row.id}
-                  {...{ [GRID_ROW_DOM_ATTR]: row.id }}
-                  data-surface-value={
-                    surfaceOpenCell?.rowId === row.id ||
-                    (showEditModal && selectedRowId === row.id)
-                      ? "current_row_json"
-                      : undefined
-                  }
-                  // Zebra → color tint (table-style.ts) → selection. `cn`
-                  // (tailwind-merge) keeps the LAST background, so a tinted
-                  // row shows its tint and a selected row still reads selected.
-                  className={cn(
-                    index % 2 === 0
-                      ? "bg-white dark:bg-gray-950"
-                      : "bg-gray-50 dark:bg-gray-900",
-                    selectedRowIdSet.has(row.id) && "bg-primary/5",
-                    // The tint is LAST so a colored row stays colored while
-                    // selected — the checkbox already says it is selected.
-                    rowTintClass(row),
-                    !rowTintClass(row) &&
-                      "hover:bg-gray-100 dark:hover:bg-gray-800",
-                    "transition-colors",
-                  )}
-                >
-                  <TableCell
-                    data-surface-value={
-                      surfaceOpenCell?.rowId === row.id ||
-                      (showEditModal && selectedRowId === row.id)
-                        ? "current_row_id"
-                        : undefined
-                    }
-                    className="sticky left-0 z-10 w-10 bg-inherit px-2 md:px-3"
-                    // The checkbox ticks the row for bulk actions; the cell
-                    // AROUND it selects the row's cells as a range (Shift+
-                    // Space from the keyboard) — the Sheets row-number gesture.
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if ((event.target as HTMLElement).closest("button")) return;
-                      grid.selectRow(row.id);
-                      grid.refocusGrid();
-                    }}
-                    title="Click beside the checkbox to select this row's cells"
-                  >
-                    <Checkbox
-                      checked={selectedRowIdSet.has(row.id)}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        shiftSelectionRequested.current = event.shiftKey;
-                      }}
-                      onCheckedChange={(checked) =>
-                        toggleRowSelection(index, checked === true)
-                      }
-                      aria-label={`Select row ${index + 1}`}
-                    />
-                  </TableCell>
-                  {viewFields.map((field) => {
-                    const rawValue = row.data[field.field_name];
-                    // A column the record store withheld from this reader says so, with the
-                    // store's reason — never "—", which means empty (records-ui's one helper).
-                    const withheldCell = withheldCellOf(row, field.field_name);
-                    const cellData =
-                      rawValue !== null
-                        ? formatCellValue(rawValue, field.data_type)
-                        : null;
-                    // A column with a declared display format renders through
-                    // the shared format layer (currency, percent, link, chips,
-                    // amber mismatch fallback). Columns with no format take the
-                    // original path unchanged, so nothing that worked before
-                    // can shift.
-                    const declaredFormat = resolveFieldFormat(
-                      field.data_type,
-                      field.metadata,
-                    );
-                    // A choice column's options may live in a shared pick list
-                    // (loaded once for the whole grid), and a DEPENDENT column's
-                    // options narrow to the group this row's controlling cell
-                    // names. Both fold back into the format so the pure
-                    // registry renderer needs to know about neither.
-                    const rowChoices = choicesForRow(
-                      choiceMap.get(field.field_name),
-                      row.data,
-                    );
-                    const fieldFormat = withResolvedChoices(
-                      declaredFormat,
-                      rowChoices.choices,
-                    );
-                    const hasCustomFormat =
-                      fieldFormat.id !== defaultFormatForBase(field.data_type);
-                    const formulaError = formulaErrors.get(
-                      `${row.id}::${field.field_name}`,
-                    );
-                    const display = withheldCell ? (
-                      <SheetWithheldCell cell={withheldCell} />
-                    ) : formulaError ? (
-                      <span
-                        className="text-amber-700 dark:text-amber-300"
-                        title={formulaError}
-                      >
-                        #ERROR
-                        <ErrorAlchemyMenu />
-                      </span>
-                    ) : hasCustomFormat || validationByField.has(field.field_name) ? (
-                      <FormattedFieldValue
-                        value={rawValue}
-                        format={fieldFormat}
-                        dataType={field.data_type}
-                        validationRules={validationByField.get(field.field_name) ?? null}
-                        className={wrapText ? "whitespace-pre-wrap break-words text-left" : "truncate text-left"}
-                      />
-                    ) : cellData ? (
-                      <div className="flex items-center justify-between group min-w-0">
-                        <div className="flex-1 min-w-0">
-                          <div
-                            className={wrapText ? "whitespace-pre-wrap break-words text-left" : "truncate text-left"}
-                            title={
-                              cellData.isTruncated
-                                ? cellData.fullText
-                                : undefined
-                            }
-                          >
-                            {renderCellMarkdown &&
-                            typeof rawValue === "string" ? (
-                              <RichContent
-                                level="inline"
-                                source={String(wrapText ? cellData.fullText : cellData.display)}
-                                isStreaming={false}
-                              />
-                            ) : (
-                              String(wrapText ? cellData.fullText : cellData.display)
-                            )}
-                          </div>
-                          {cellData.multilineIndicator && !wrapText && (
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                              {cellData.multilineIndicator}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    );
-                    return (
-                      <TableCell
-                        style={columnWidthStyle(field.field_name)}
-                        key={`${row.id}-${field.id}`}
-                        data-cell={cellDomKey({
-                          rowId: row.id,
-                          fieldName: field.field_name,
-                        })}
-                        data-surface-value={
-                          grid.isSelected(row.id, field.field_name)
-                            ? "current_cell_value"
-                            : grid.isInRange(row.id, field.field_name)
-                              ? "selected_range_tsv"
-                              : undefined
-                        }
-                        // THE SELECTION RING OUTLINES THE WHOLE CELL. An inset
-                        // ring on the <td> follows the cell's real edges; drawn
-                        // on the inner content div it boxed the text and left
-                        // the padding outside, which looked like a glitch
-                        // rather than a selection. `ring-inset` matters — an
-                        // outset ring is clipped by the neighbouring cells.
-                        // 🚨 THE WHOLE CELL IS THE TARGET. Click and
-                        // double-click live on the <td>, not on the content
-                        // inside it, because the content is smaller than the
-                        // cell — often much smaller, and for an EMPTY cell
-                        // there is barely anything to hit at all. Handling
-                        // clicks on the inner element meant only the middle of
-                        // a cell responded, and an empty cell could not be
-                        // edited whatsoever.
-                        // THE CELL CARRIES THE STATE, so the editor inside it
-                        // needs no chrome of its own. Selected is a soft ring;
-                        // EDITING is a heavier solid ring plus a stronger tint.
-                        //
-                        // That distinction is load-bearing. Stripping the
-                        // input's border (so it stops looking like a component
-                        // nested inside a component) also removed the only
-                        // signal that an editor was open at all — a cell with
-                        // unsaved text became indistinguishable from a saved
-                        // one, which is how you lose an edit without knowing.
-                        // 🚨 THE SELECTION WASH IS AN OVERLAY, NOT A
-                        // BACKGROUND. `cn` is tailwind-merge: a selection fill
-                        // written as `bg-primary/10` and a manual highlight
-                        // written as `bg-red-100` are the same utility group,
-                        // so the LAST one wins and the other is deleted from
-                        // the class list entirely. The tint is applied last —
-                        // so every highlighted cell inside a selected block
-                        // silently lost its selection shading, and a block
-                        // drawn across coloured cells appeared to have holes in
-                        // it while Cmd-C happily copied the cells that looked
-                        // excluded (found on live review 2026-09-15). Painting
-                        // the wash on the `after:` pseudo-element puts it in a
-                        // different utility group, so the two genuinely survive
-                        // together the way the comment below always claimed.
-                        className={cn(
-                          // `overflow-hidden`: past FIXED_LAYOUT_MAX_COLUMNS the
-                          // table is `table-auto`, where `max-w-0` caps the
-                          // column's width but NOT the content's paint — a long
-                          // email was drawn straight across the phone number
-                          // beside it (clientWidth 150, scrollWidth 192; found
-                          // on independent review 2026-09-15). Clipping at the
-                          // cell is what lets the inner `truncate` end in an
-                          // ellipsis, the way Sheets and Airtable clip. The
-                          // selection ring is inset and the wash is `inset-0`,
-                          // so neither is cut.
-                          "group relative max-w-[70vw] overflow-hidden py-2 md:max-w-0 md:py-3",
-                          freezeFirstColumn &&
-                            field.field_name === firstViewFieldName &&
-                            "sticky left-10 z-10 bg-inherit shadow-[inset_-1px_0_0_theme(colors.gray.200)] dark:shadow-[inset_-1px_0_0_theme(colors.gray.700)]",
-                          "after:pointer-events-none after:absolute after:inset-0 after:content-['']",
-                          // A computed cell keeps the default cursor: the
-                          // text-cursor is a promise that you can type here,
-                          // and on a formula column that promise is false.
-                          !isReadOnly &&
-                            (isFormulaField(field.field_name)
-                              ? "cursor-default"
-                              : "cursor-cell"),
-                          grid.isSelected(row.id, field.field_name) &&
-                            !grid.isEditing(row.id, field.field_name) &&
-                            "ring-2 ring-inset ring-primary/70 after:bg-primary/5",
-                          grid.isEditing(row.id, field.field_name) &&
-                            "ring-[3px] ring-inset ring-primary after:bg-primary/10",
-                          // A cell inside the extended range — softer than the
-                          // anchor's ring, so the anchor stays findable.
-                          grid.isInRange(row.id, field.field_name) &&
-                            !grid.isSelected(row.id, field.field_name) &&
-                            "after:bg-primary/10",
-                          // Tint LAST: the ring says "selected", the tint says
-                          // "highlighted", and both must survive together.
-                          cellTintClass(row, field.field_name),
-                        )}
-                        // Press starts a drag-select (or, with Shift, extends
-                        // the range to here); sweeping over cells while the
-                        // button is down grows it; release anywhere ends it.
-                        onPointerDown={(e) => {
-                          if (e.button !== 0) return;
-                          const address = { rowId: row.id, fieldName: field.field_name };
-                          if (e.shiftKey) grid.extendTo(address);
-                          else if (!grid.isEditing(row.id, field.field_name))
-                            grid.beginDrag(address);
-                        }}
-                        onPointerEnter={() =>
-                          grid.dragOver({ rowId: row.id, fieldName: field.field_name })
-                        }
-                        onClick={(e) => {
-                          // A shift-click already extended the range on press;
-                          // a plain click after a drag must not collapse it.
-                          if (e.shiftKey || grid.range) {
-                            grid.refocusGrid();
-                            return;
-                          }
-                          grid.select({
-                            rowId: row.id,
-                            fieldName: field.field_name,
-                          });
-                          // Hand focus back to the grid, or the very next arrow
-                          // key goes nowhere and the grid reads as broken.
-                          grid.refocusGrid();
-                        }}
-                        onDoubleClick={() => {
-                          // Direct-click editors (checkbox, rating, choice)
-                          // handle their own interaction and stop propagation;
-                          // a double-click that reaches here is on a plain
-                          // cell and means "edit me".
-                          // 🚨 A COMPUTED CELL SAYS NO OUT LOUD. Refusing in
-                          // silence is the same defect as a dead control: the
-                          // cell carries the normal text-cursor, opens nothing,
-                          // and leaves the person to conclude the grid is
-                          // broken rather than that the column is calculated
-                          // (found on live review 2026-09-15). The sentence is
-                          // the one the row forms already use for these
-                          // columns, so the explanation reads the same
-                          // wherever you meet it.
-                          if (isFormulaField(field.field_name)) {
-                            toast({
-                              title: `${field.display_name} is calculated`,
-                              description:
-                                "Calculated from the other columns in this row — it updates on its own. Change its formula in Table settings.",
-                            });
-                            return;
-                          }
-                          // A double-click that opens nothing and says nothing
-                          // reads as a broken grid. Say why the editor did not
-                          // open — for an example table the notice names it as
-                          // one. (Found on independent review 2026-09-15: this
-                          // was a silent return.)
-                          if (isReadOnly) {
-                            showReadOnlyToast();
-                            return;
-                          }
-                          grid.beginEdit({
-                            rowId: row.id,
-                            fieldName: field.field_name,
-                          });
-                        }}
-                      >
-                        <div className="flex items-center justify-between gap-2 min-w-0">
-                          <div className="flex-1 min-w-0">
-                            <EditableCell
-                              tableId={tableId}
-                              rowId={row.id}
-                              fieldName={field.field_name}
-                              fieldDisplayName={field.display_name}
-                              dataType={field.data_type as FieldDataType}
-                              format={fieldFormat}
-                              row={row.data}
-                              value={rawValue}
-                              display={display}
-                              validationRules={validationByField.get(field.field_name) ?? null}
-                              existingValues={existingValuesFor(field.field_name, row.id)}
-                              editable={!isReadOnly && !isFormulaField(field.field_name)}
-                              selected={grid.isSelected(
-                                row.id,
-                                field.field_name,
-                              )}
-                              editing={grid.isEditing(row.id, field.field_name)}
-                              seed={grid.editSeed}
-                              onSelect={() => {
-                                grid.select({
-                                  rowId: row.id,
-                                  fieldName: field.field_name,
-                                });
-                                // Clicking a cell must hand focus back to the
-                                // grid, or the very next arrow key goes
-                                // nowhere and the grid reads as broken.
-                                grid.refocusGrid();
-                              }}
-                              onBeginEdit={() =>
-                                grid.beginEdit({
-                                  rowId: row.id,
-                                  fieldName: field.field_name,
-                                })
-                              }
-                              onEndEdit={(move) => grid.endEdit(move)}
-                              onRecordEdit={(priorValue, nextValue) =>
-                                cellUndo.record({
-                                  tableId,
-                                  rowId: row.id,
-                                  fieldName: field.field_name,
-                                  fieldDisplayName: field.display_name,
-                                  priorValue,
-                                  nextValue,
-                                })
-                              }
-                              // Patch, never refetch — a full reload remounts
-                              // the body and throws away the user's place.
-                              onSaved={(newValue, serverUpdatedAt) => {
-                                patchLocalCell(
-                                  row.id,
-                                  field.field_name,
-                                  newValue,
-                                  serverUpdatedAt,
-                                );
-                                // An off-list value on a choice column: offer to
-                                // make it an option, one click, never blocking.
-                                offerToAddChoiceOption({
-                                  tableId,
-                                  field,
-                                  saved: newValue,
-                                  onAdded: () =>
-                                    void loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true),
-                                });
-                              }}
-                            />
-                          </div>
-                          {cellData && (
-                            <div className="matrx-touch-targets flex items-center space-x-1 ml-2 flex-shrink-0">
-                              {cellData.hasCleanableHtml && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="opacity-100 transition-opacity h-6 w-6 p-0 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
-                                  onClick={(e) =>
-                                    handleCleanupText(
-                                      field.field_name,
-                                      cellData.fullText,
-                                      row.id,
-                                      e,
-                                    )
-                                  }
-                                  title={`Clean up HTML formatting in ${field.display_name}`}
-                                >
-                                  <Zap className="h-3 w-3 text-purple-500 dark:text-purple-400" />
-                                </Button>
-                              )}
-                              {cellData.isTruncated && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="opacity-100 transition-opacity h-6 w-6 p-0 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
-                                  onClick={(e) =>
-                                    handleExpandText(
-                                      cellData.fullText,
-                                      field.display_name,
-                                      row.id,
-                                      field.field_name,
-                                      e,
-                                    )
-                                  }
-                                  title={`Expand ${field.display_name}`}
-                                >
-                                  <Expand className="h-3 w-3" />
-                                </Button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                    );
-                  })}
-                  {!isReadOnly && <TableCell className="w-8 p-0" />}
-                  <TableCell className="px-1 py-0 text-center">
-                    <div className="flex items-center justify-center gap-0 [&_button]:h-7 [&_button]:w-7 [&_button_svg]:h-3.5 [&_button_svg]:w-3.5">
-                      {/* The table's own one-click buttons (row-actions.ts),
-                          always behind ONE icon that opens the list — never
-                          inline chips (Arman, 2026-09-21: they were giant and
-                          unreadable). Absent when the table has none. */}
-                      {rowActions.length > 0 ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => e.stopPropagation()}
-                              title="Run an action on this row"
-                            >
-                              {rowActions.length === 1 ? (
-                                <RowActionIcon action={rowActions[0]} className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                              ) : (
-                                <Zap className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                              )}
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-64" onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenuLabel className="text-xs text-muted-foreground">Run on this row</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            {rowActions.map((a) => (
-                              <DropdownMenuItem
-                                key={a.id}
-                                className="flex flex-col items-start gap-0.5"
-                                onSelect={() => void runRowAction(a.id, [row.id])}
-                              >
-                                <span className="flex items-center gap-1.5 text-sm font-medium">
-                                  <span className={cn("inline-flex h-5 w-5 items-center justify-center rounded border", rowActionButtonClass(a.color))}>
-                                    <RowActionIcon action={a} className="h-3 w-3" />
-                                  </span>
-                                  {a.name}
-                                </span>
-                                <span className="text-xs text-muted-foreground">{describeRowAction(a, fields)}</span>
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : null}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleShowReference(row.id, row.data, e);
-                        }}
-                        title="Get Reference"
-                      >
-                        <Link className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-                      </Button>
-                      {isReadOnly ? (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            showReadOnlyToast();
-                          }}
-                          title="View only - no edit access"
-                          className="cursor-not-allowed"
-                        >
-                          <Eye className="h-4 w-4 text-purple-400 dark:text-purple-500" />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditRow(row.id, row.data);
-                          }}
-                          title="Edit Row"
-                        >
-                          <Pencil className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                        </Button>
-                      )}
-                      {/* History is a READ — viewers of shared tables get it
-                          too (RLS scopes what they see); restore actions
-                          inside the panel stay gated by `editable`. */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setHistoryRowId(row.id);
-                        }}
-                        title="View row history"
-                      >
-                        <History className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                      </Button>
-                      {!isReadOnly && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteRow(row.id);
-                          }}
-                          title="Delete Row"
-                        >
-                          <Trash className="h-4 w-4 text-red-500 dark:text-red-400" />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <SheetBodyRow key={row.id} row={row} index={index} epoch={sheetEpoch} facts={sheetRowFacts(row)} render={renderSheetRow} />
               ))
             )}
             {/* Where every spreadsheet puts it: the line under the last row

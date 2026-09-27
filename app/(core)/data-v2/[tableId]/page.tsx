@@ -264,14 +264,14 @@ export default function UnifiedDataTableRoute({
    * history write, not `router.replace`: switching a layout is bookkeeping on
    * this page, never a server round trip (lane URL-STATE).
    */
-  const onViewChanged = useCallback(
-    (view: PageView | string) => {
-      const next = new URLSearchParams(searchParams.toString());
-      next.set("view", view);
-      replaceAddressWithoutNavigating(currentPathWithSearch(next));
-    },
-    [searchParams],
-  );
+  // The address is read when the view changes, not when the page rendered: a handler that closed
+  // over `searchParams` was a new function on every parameter move (the Sheet's own search writes
+  // one per keystroke), and the table page re-rendered for it (lane RENDER-AUDIT).
+  const onViewChanged = useCallback((view: PageView | string) => {
+    const next = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
+    next.set("view", view);
+    replaceAddressWithoutNavigating(currentPathWithSearch(next));
+  }, []);
   const userId = useAppSelector(selectUserId);
   /**
    * THE ONE DATA SEAM, built once. It was built inline in `config` before,
@@ -599,6 +599,65 @@ export default function UnifiedDataTableRoute({
    * the table page, its view bar and every cell rendered again. As their own statements each is
    * rebuilt only when what it is made of changes. Null until the table can mount.
    */
+  /** Archiving leaves to the table's organization's list (its own statement: its own memo scope). */
+  const leaveTable = () => router.push(allTablesHref);
+  /**
+   * WHAT THE MOUNT HOLDS, AS ITS OWN VALUE (lane RENDER-AUDIT): the fallback header, the capture
+   * and the table page. Inline in the JSX below it was rebuilt with the whole conditional tree on
+   * every render of this route, and a new element re-renders the table page even when every prop
+   * is the same. Built here, it is new only when something the table page is handed changes.
+   */
+  const mountedTable = mountsTheTable ? (
+    <>
+      {/* The header before records-ui hands over its actions (and, on an older build that
+          never calls `header`, the header itself): back, the title switcher, the capture. */}
+      <TableRouteHeader
+        fallback
+        tableId={tableId}
+        organizationId={readingOrganizationId}
+        allTablesHref={allTablesHref}
+        switcherFooter={whereItLives}
+      />
+      <TableCapture tableId={tableId} filter={filter} recordId={activeRecordId} />
+      {/* A new record lands in the TABLE'S organization: the shell's organization indicator
+          lights when the table lives somewhere other than the organization she works in,
+          and switches on one click (TABLE-PAGE-CHROME — no notice row on the page). */}
+      {/* SIDE BY SIDE IS A FACT, NOT A BANNER (owner, 2026-09-24): no notice that this table
+          also lives in the older system, and no "shared with you" paragraph — the table's
+          row names its organization and the level it was shared at. */}
+      {/* A table this organization cannot see says so and offers the way
+          back — never the blank frame the 19 September verdict found. */}
+      {/* `activeDashboardId` is a DECLARED prop of TablePage from
+          records-ui 0.38.0 onwards. It used to ride through a spread
+          because 0.16.1 did not declare it and the excess-property check
+          does not judge a spread — which meant the compiler could not
+          tell us if the prop was ever renamed. It is passed by name now,
+          so a rename is a build failure instead of a dashboard that
+          silently stops opening. */}
+      <RecordStoreTableSurface channel={gridContext} enabled={mergedGrid}>
+        <TablePage
+          tableId={tableId}
+          /* THE WAY BACK NAMES THE TABLE'S ORGANIZATION (ACCESS-FIX-18, VERIFIER-18 H4).
+             Archiving calls this; it used to land on the bare list, which reads the ACTIVE
+             organization and, with none picked, said "An organization is needed for data
+             records" about a table that had just named its own. */
+          onLeave={leaveTable}
+          activeDashboardId={activeDashboardId}
+          activeRecordId={activeRecordId}
+          activeView={activeView}
+          activeGroupField={activeGroupField}
+          {...shownViewReport}
+          cameFrom={cameFrom}
+          filter={filter}
+          onViewChanged={onViewChanged}
+          activeRail={activeRail}
+          activeItemId={activeItemId}
+          menuExtras={menuExtras}
+          {...pageHeader}
+        />
+      </RecordStoreTableSurface>
+    </>
+  ) : null;
   const recordsConfig = mountsTheTable
     ? {
           dataSource,
@@ -725,53 +784,7 @@ export default function UnifiedDataTableRoute({
             config={recordsConfig!}
             host={recordsHost!}
           >
-            {/* The header before records-ui hands over its actions (and, on an older build that
-                never calls `header`, the header itself): back, the title switcher, the capture. */}
-            <TableRouteHeader
-              fallback
-              tableId={tableId}
-              organizationId={readingOrganizationId}
-              allTablesHref={allTablesHref}
-              switcherFooter={whereItLives}
-            />
-            <TableCapture tableId={tableId} filter={filter} recordId={activeRecordId} />
-            {/* A new record lands in the TABLE'S organization: the shell's organization indicator
-                lights when the table lives somewhere other than the organization she works in,
-                and switches on one click (TABLE-PAGE-CHROME — no notice row on the page). */}
-            {/* SIDE BY SIDE IS A FACT, NOT A BANNER (owner, 2026-09-24): no notice that this table
-                also lives in the older system, and no "shared with you" paragraph — the table's
-                row names its organization and the level it was shared at. */}
-            {/* A table this organization cannot see says so and offers the way
-                back — never the blank frame the 19 September verdict found. */}
-            {/* `activeDashboardId` is a DECLARED prop of TablePage from
-                records-ui 0.38.0 onwards. It used to ride through a spread
-                because 0.16.1 did not declare it and the excess-property check
-                does not judge a spread — which meant the compiler could not
-                tell us if the prop was ever renamed. It is passed by name now,
-                so a rename is a build failure instead of a dashboard that
-                silently stops opening. */}
-            <RecordStoreTableSurface channel={gridContext} enabled={mergedGrid}>
-              <TablePage
-                tableId={tableId}
-                /* THE WAY BACK NAMES THE TABLE'S ORGANIZATION (ACCESS-FIX-18, VERIFIER-18 H4).
-                   Archiving calls this; it used to land on the bare list, which reads the ACTIVE
-                   organization and, with none picked, said "An organization is needed for data
-                   records" about a table that had just named its own. */
-                onLeave={() => router.push(allTablesHref)}
-                activeDashboardId={activeDashboardId}
-                activeRecordId={activeRecordId}
-                activeView={activeView}
-                activeGroupField={activeGroupField}
-                {...shownViewReport}
-                cameFrom={cameFrom}
-                filter={filter}
-                onViewChanged={onViewChanged}
-                activeRail={activeRail}
-                activeItemId={activeItemId}
-                menuExtras={menuExtras}
-                {...pageHeader}
-              />
-            </RecordStoreTableSurface>
+            {mountedTable}
           </RecordsMount>
         )}
         </div>
