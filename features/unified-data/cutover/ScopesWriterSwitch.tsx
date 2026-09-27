@@ -63,8 +63,8 @@ export function ScopesWriterSwitch({ organizationId }: { organizationId: string 
   };
 
   return (
-    <div className="flex items-center gap-2 text-xs" data-testid="scopes-writer-switch">
-      <span className="text-muted-foreground">Scopes written in</span>
+    <div className="flex min-w-0 items-center gap-2 text-xs" data-testid="scopes-writer-switch">
+      <span className="whitespace-nowrap text-muted-foreground">Scopes written in</span>
       <Badge variant={seam.state === "new" ? "default" : "secondary"} className="whitespace-nowrap">
         {seam.state === "new" ? "Record store" : "Old tables"}
       </Badge>
@@ -79,12 +79,14 @@ export function ScopesWriterSwitch({ organizationId }: { organizationId: string 
         </Button>
       )}
       {notReady.length > 0 && (
-        <span className="text-muted-foreground" title={notReady.join("\n")}>
+        <span className="min-w-0 max-w-[32rem] truncate text-muted-foreground" title={notReady.join("\n")}>
           Not ready: {notReady[0]}
         </span>
       )}
       {said && (
-        <span className={said.ok ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}>{said.says}</span>
+        <span className={`min-w-0 max-w-[24rem] truncate ${said.ok ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`} title={said.says}>
+          {said.says}
+        </span>
       )}
       <ConfirmDialog
         open={pending != null}
