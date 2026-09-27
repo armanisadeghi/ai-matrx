@@ -103,6 +103,17 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "request",
   },
   {
+    name: "available_outputs",
+    label: "Outputs that can be made",
+    description:
+      'The output kinds that can be chosen right now (not shown as "soon"), in the grid\'s order, e.g. ["deck", "summary", "mind_map", "audio", "quiz", "notes"]. The only kinds kit_request_draft accepts in outputs. Always present.',
+    valueType: "array",
+    alwaysAvailable: true,
+    typicalCharCount: 90,
+    sortOrder: 135,
+    group: "request",
+  },
+  {
     name: "can_build",
     label: "Ready to build",
     description:
@@ -196,7 +207,7 @@ const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "kit_request_draft",
     label: "Fill the kit form",
-    description: `Fills the Create a study kit form. NOTHING is built — the person reviews it and presses Build my study kit (building spends their kit allowance). Value is a JSON OBJECT (not a string, not an array) with any of: { input_mode?: "paste" | "link" | "files", paste_text?: string (the notes or text to study), url?: string (an http(s) page or YouTube link), file_id?: string (a file the person owns, e.g. from their files; checked before the card), outputs?: string[] (REPLACES the chosen outputs; kinds: ${OUTPUT_KINDS}; only kinds with available: true in output_options), depth?: "quick" | "standard" | "thorough", count?: integer 1-150 or null (null = size to the material), focus?: string ("" clears it) }. Only the fields you send change. paste_text, url and file_id each switch to their tab when input_mode is not given; send only one of them unless you also send input_mode. Refused, with nothing changed: "upload" (only the person can drop a file — use file_id for a file they already own), a bad URL, an unknown file id, an unknown or unavailable output, an empty outputs list, a count outside 1-150, unknown fields, and any fill while a build is running or its results are showing. Example: { "paste_text": "Photosynthesis turns light into…", "outputs": ["deck", "quiz"], "depth": "quick", "focus": "exam on chapter 3" }.`,
+    description: `Fills the Create a study kit form. NOTHING is built — the person reviews it and presses Build my study kit (building spends their kit allowance). Value is a JSON OBJECT (not a string, not an array) with any of: { input_mode?: "paste" | "link" | "files", paste_text?: string (the notes or text to study), url?: string (an http(s) page or YouTube link), file_id?: string (a file the person owns, e.g. from their files; checked before the card), outputs?: string[] (REPLACES the chosen outputs; kinds: ${OUTPUT_KINDS}; only kinds listed in available_outputs), depth?: "quick" | "standard" | "thorough", count?: integer 1-150 or null (null = size to the material), focus?: string ("" clears it) }. Only the fields you send change. paste_text, url and file_id each switch to their tab when input_mode is not given; send only one of them unless you also send input_mode. Refused, with nothing changed: "upload" (only the person can drop a file — use file_id for a file they already own), a bad URL, an unknown file id, an unknown or unavailable output, an empty outputs list, a count outside 1-150, unknown fields, and any fill while a build is running or its results are showing. Example: { "paste_text": "Photosynthesis turns light into…", "outputs": ["deck", "quiz"], "depth": "quick", "focus": "exam on chapter 3" }.`,
     valueType: "object",
     updatesValue: "kit_request_draft",
     mode: "draft",
@@ -219,8 +230,8 @@ export const educationStartManifest: SurfaceManifest = {
   urlPattern: "/education/start",
   intro: `<surface_intro>
 You are on Create a study kit at /education/start. The person gives one piece of material and picks what to make from it; the page builds a grounded, cited study kit.
-kit_request_draft is everything the form holds; output_options says which outputs can be made; can_build says whether the Build button is enabled; kit_phase and kit_outputs show a build in progress or finished.
-To set up a kit for the person, use the kit_request_draft target: it fills the form (pasted text, a link, or a file they own by id, plus outputs, depth, count and focus). It does not build — tell the person to press Build my study kit. Only the person can upload a new file.
+kit_request_draft is everything the form holds; available_outputs lists the outputs that can be made (output_options has their labels); can_build says whether the Build button is enabled; kit_phase and kit_outputs show a build in progress or finished.
+To set up a kit for the person, use the kit_request_draft target: it fills the form (pasted text, a link, or a file they own by id, plus outputs, depth, count and focus). It does not build — tell the person to press Build my study kit. Its result lists the form as it stands after the fill; trust that over the values you were given at the start of your run. Only the person can upload a new file.
 Do not create flashcards, quizzes or summaries with other tools for this: the page's build grounds and cites every item in the material and files them as one kit.
 </surface_intro>`,
   groups,
@@ -243,6 +254,7 @@ export interface KitRequestDraftScope {
 export function createEducationStartScope(values: {
   kit_request_draft: KitRequestDraftScope;
   output_options: { kind: string; label: string; available: boolean; selected: boolean }[];
+  available_outputs: string[];
   can_build: boolean;
   kit_phase: string;
   selection?: string;
