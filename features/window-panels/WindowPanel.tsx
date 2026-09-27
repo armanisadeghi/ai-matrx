@@ -202,7 +202,7 @@ function WindowPanelBodyShell({
           bodyClassName,
         )}
       >
-        <WindowSelectionSurface>{children}</WindowSelectionSurface>
+        {children}
       </div>
     </div>
   );
@@ -1282,16 +1282,22 @@ export function WindowPanel({
       children
     );
 
-  const bodyContent = isDeprecated ? (
-    <div className="h-full flex flex-col min-h-0">
-      <DeprecationBanner
-        replacedBy={deprecation?.replacedBy}
-        note={deprecation?.note}
-      />
-      <div className="flex-1 min-h-0">{innerBody}</div>
-    </div>
-  ) : (
-    innerBody
+  // Every desktop body path (windowed, maximized, popped out, with a sidebar) is
+  // one selection surface: the ONE selection toolbar and the menu work in every window.
+  const bodyContent = (
+    <WindowSelectionSurface>
+      {isDeprecated ? (
+        <div className="h-full flex flex-col min-h-0">
+          <DeprecationBanner
+            replacedBy={deprecation?.replacedBy}
+            note={deprecation?.note}
+          />
+          <div className="flex-1 min-h-0">{innerBody}</div>
+        </div>
+      ) : (
+        innerBody
+      )}
+    </WindowSelectionSurface>
   );
 
   const hasZonedFooter = footerLeft || footerCenter || footerRight;
