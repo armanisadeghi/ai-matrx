@@ -90,6 +90,7 @@ Structure, demos, AND the full marketing/content fanout are shipped + live-verif
 
 ## Change log
 
+- `2026-09-27` — **The Study Hub home (`/education/overview`) has its own surface, `matrx-user/education-overview`.** It had published the public hub surface, which declares none of what the dashboard shows. Now it emits the plan, streak, goals, due/weak by mode, next actions, library counts per tool, recent items and kits (`home/overviewSurfaceScope.ts`), each omitted while its snapshot lane is loading or failed. Read-only: every action on the page is a link.
 - `2026-09-19` — **`/education/notes/new` stops claiming it is creating a note
   when the organization read FAILED (R37, the fourth state).** The page's only
   other content is a spinner reading "Creating your note…", and the boolean pair
