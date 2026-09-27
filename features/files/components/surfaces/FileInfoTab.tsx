@@ -305,6 +305,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
                   {docState.state.doc.chunk_count != null ? (
                     <Row
                       label={RAG_VOCAB.segmentsShort}
+                      // read-gate-exempt: inside the docState.state.status found arm; the unavailable (failed read) arm renders its own message
                       value={docState.state.doc.chunk_count.toLocaleString()}
                     />
                   ) : null}

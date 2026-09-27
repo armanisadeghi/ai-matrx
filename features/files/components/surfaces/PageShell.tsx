@@ -1099,6 +1099,7 @@ function PageShellDesktop({
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>
+                    {/* read-gate-exempt: ids the user just asked to delete via keyboard shortcut (pendingDelete), a local selection, not a read */}
                     {shortcuts.pendingDelete?.kind === "batch"
                       ? `Delete ${shortcuts.pendingDelete.ids.length} files?`
                       : "Delete file?"}

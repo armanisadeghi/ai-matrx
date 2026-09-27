@@ -224,6 +224,7 @@ export function FileGrid({
         <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-1.5 text-xs text-muted-foreground shrink-0">
           <SearchIcon className="h-3.5 w-3.5" />
           <span>
+            {/* read-gate-exempt: rows come from the whole-tree read; PageShell shows FilesTreeErrorState on treeStatus error and never mounts this view then */}
             Showing {rows.length} {rows.length === 1 ? "result" : "results"}{" "}
             from all folders for &ldquo;
             <span className="font-medium text-foreground">{searchQuery}</span>
@@ -296,6 +297,7 @@ export function FileGrid({
           </div>
         ) : rows.length > 60 ? (
           <div className="pt-6 pb-2 text-center text-[11px] text-muted-foreground">
+            {/* read-gate-exempt: rows come from the whole-tree read; PageShell shows FilesTreeErrorState on treeStatus error and never mounts this view then */}
             Showing all {rows.length.toLocaleString()} items.
           </div>
         ) : null}
