@@ -20,6 +20,13 @@ import { buildDataTablesScope } from "@/features/data-tables/agent-context/build
 import { scopeInputFromGrid } from "../grid-agent-context/recordStoreTableScope";
 import { recordStoreWriteHandlers } from "../grid-agent-context/RecordStoreTableSurface";
 import { recordsCleanText } from "../recordsCleanText";
+import type { SurfaceWriteApply, SurfaceWriteHandler } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+
+/** A handler is a plain apply function or `{ validate?, apply }` (7abe79cd12) — call its apply. */
+function applyOf(h: SurfaceWriteHandler | undefined): SurfaceWriteApply {
+  if (!h) throw new Error("no handler");
+  return typeof h === "function" ? h : h.apply;
+}
 
 jest.mock("@/components/official/icons/IconInputWithValidation.dynamic", () => ({ IconInputCompact: () => null }));
 jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({ SurfaceRuntimeProvider: () => null }));
@@ -96,9 +103,9 @@ describe("the agent's one cell write goes to the record store", () => {
       writes.push([id, key, value]);
       return value === "Lost" ? { ok: false, says: "Visit status offers Scheduled, Checked in, Completed." } : { ok: true };
     });
-    await handlers["cell_value"]!({ row_id: PEPPER, field_name: "visit_status", value: "Checked in" });
+    await applyOf(handlers["cell_value"])({ row_id: PEPPER, field_name: "visit_status", value: "Checked in" });
     expect(writes).toEqual([[PEPPER, "visit_status", "Checked in"]]);
-    await expect(handlers["cell_value"]!({ row_id: PEPPER, field_name: "visit_status", value: "Lost" })).rejects.toThrow(
+    await expect(applyOf(handlers["cell_value"])({ row_id: PEPPER, field_name: "visit_status", value: "Lost" })).rejects.toThrow(
       /The store refused visit_status .*offers Scheduled/,
     );
   });
@@ -106,9 +113,9 @@ describe("the agent's one cell write goes to the record store", () => {
   it("refuses a worked-out column, a row that is not on screen, a display name and a read-only table — before any write", async () => {
     const writes: unknown[] = [];
     const handlers = recordStoreWriteHandlers(latest, async (...a) => (writes.push(a), { ok: true }));
-    await expect(handlers["cell_value"]!({ row_id: MAPLE, field_name: "balance_due", value: 0 })).rejects.toThrow(/works it out/);
-    await expect(handlers["cell_value"]!({ row_id: BISCUIT, field_name: "visit_status", value: "Checked in" })).rejects.toThrow(/not one of the 2 row/);
-    await expect(handlers["cell_value"]!({ row_id: MAPLE, field_name: "Visit status", value: "x" })).rejects.toThrow(/not a column/);
+    await expect(applyOf(handlers["cell_value"])({ row_id: MAPLE, field_name: "balance_due", value: 0 })).rejects.toThrow(/works it out/);
+    await expect(applyOf(handlers["cell_value"])({ row_id: BISCUIT, field_name: "visit_status", value: "Checked in" })).rejects.toThrow(/not one of the 2 row/);
+    await expect(applyOf(handlers["cell_value"])({ row_id: MAPLE, field_name: "Visit status", value: "x" })).rejects.toThrow(/not a column/);
     const readOnly = recordStoreWriteHandlers({ current: { ...SNAPSHOT, canWrite: false } }, async (...a) => (writes.push(a), { ok: true }));
     await expect(readOnly["cell_value"]!({ row_id: MAPLE, field_name: "visit_status", value: "x" })).rejects.toThrow(/is_read_only/);
     expect(writes).toEqual([]);

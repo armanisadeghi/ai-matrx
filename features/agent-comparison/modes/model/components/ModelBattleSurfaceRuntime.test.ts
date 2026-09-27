@@ -5,6 +5,13 @@ import { initInstanceVariables } from "@/features/agents/redux/execution-system/
 import { createInstance } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import { createModelBattleWriteHandlers } from "./ModelBattleSurfaceRuntime";
+import type { SurfaceWriteApply, SurfaceWriteHandler } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+
+/** A handler is a plain apply function or `{ validate?, apply }` (7abe79cd12) — call its apply. */
+function applyOf(h: SurfaceWriteHandler | undefined): SurfaceWriteApply {
+  if (!h) throw new Error("no handler");
+  return typeof h === "function" ? h : h.apply;
+}
 
 const reducer = createSlimRootReducer();
 const initialState = reducer(undefined, { type: "test/init" });
@@ -48,7 +55,7 @@ describe("Model Battle surface write handlers", () => {
     });
 
     expect(() =>
-      handlers.shared_user_input_draft({ text: "new request" }),
+      applyOf(handlers["shared_user_input_draft"])({ text: "new request" }),
     ).toThrow(/submitting/);
     expect(dispatch).not.toHaveBeenCalled();
   });
@@ -85,7 +92,7 @@ describe("Model Battle surface write handlers", () => {
       dispatch,
     });
 
-    expect(() => handlers.shared_variables({ topic: "value" })).toThrow(
+    expect(() => applyOf(handlers["shared_variables"])({ topic: "value" })).toThrow(
       /model run is active/,
     );
     expect(dispatch).not.toHaveBeenCalled();
@@ -108,7 +115,7 @@ describe("Model Battle surface write handlers", () => {
     });
 
     expect(() =>
-      handlers.shared_user_input_draft({ text: "b", mode: "append" }),
+      applyOf(handlers["shared_user_input_draft"])({ text: "b", mode: "append" }),
     ).toThrow(/would be/);
     expect(dispatch).not.toHaveBeenCalled();
   });
@@ -120,7 +127,7 @@ describe("Model Battle surface write handlers", () => {
       dispatch,
     });
 
-    expect(() => handlers.shared_variables({ undeclared: "value" })).toThrow(
+    expect(() => applyOf(handlers["shared_variables"])({ undeclared: "value" })).toThrow(
       /not a variable/,
     );
     expect(dispatch).not.toHaveBeenCalled();
