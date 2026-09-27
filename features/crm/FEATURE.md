@@ -1065,6 +1065,14 @@ module in the folder + the two deleted filenames).
 
 ## Change log
 
+- page-pass 2026-09-27 round 4 (/crm/[partyId]), after a blind "mediocre":
+  every person-action has an agent twin (create_deal, create_task, company-side
+  add/end_employment; files stay a human upload); People card adds a person to
+  a company through crm.affiliation; Delete is "Move to trash…" in the record's
+  More menu; one Send email door (header); flat provenance card and Activity
+  composer; Deals + Files/Tasks moved into the left rail; platform ids show a
+  handle or the record's name; origin reads "YouTube · Open on YouTube"; the
+  call box is labelled Minutes; tab-title read bounded at 1.5s.
 - page-pass 2026-09-27 round 3 (/crm/[partyId]): the employer picker is the
   standard searchable picker (Popover + Command) with `Create "typed"` through
   `resolveParty`; the Activity composer's channel and direction are
