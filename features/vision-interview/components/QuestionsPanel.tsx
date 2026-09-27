@@ -350,6 +350,7 @@ export function QuestionsPanel() {
           </>
         ) : questions.length === 0 ? (
           <p className="px-1 py-6 text-center text-xs text-muted-foreground">
+            {/* read-gate-exempt: hydrated is set only by roomHydrated, dispatched only after the room read succeeded; VisionInterviewRoom renders the failed read (useInterviewRoom().unavailable) and never mounts this panel then */}
             No questions yet — the room files them here as it works, and you
             answer them whenever you like.
           </p>

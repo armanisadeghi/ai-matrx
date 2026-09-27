@@ -139,6 +139,7 @@ import {
 import { cn } from "@/utils/cn";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 /** Canonical `ui_surface.name` this page emits (unchanged from the old library). */
 const RAG_LIBRARY_SURFACE = "matrx-user/knowledge-library";
@@ -935,14 +936,15 @@ export function SourcesPage() {
       />
 
       <div className="flex h-full min-h-0 flex-col gap-2 overflow-auto px-3 pb-4 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
-        {error ? (
-          <div
-            className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
-            role="alert"
-          >
-            {error}
-            <ErrorAlchemyMenu className="ml-auto" />
-          </div>
+        {error && rows.length > 0 ? (
+          // A refresh failed with rows on screen: keep them, say they may be stale.
+          <StaleDataNotice
+            hasData
+            what="your Sources"
+            detail={error}
+            onRetry={refresh}
+            retrying={loading}
+          />
         ) : null}
         {factsError ? (
           <p className="text-xs text-amber-600 dark:text-amber-400">
@@ -973,6 +975,10 @@ export function SourcesPage() {
           </p>
         ) : null}
 
+        {error && rows.length === 0 ? (
+          // The list read failed: say so — the table's "No Sources yet." would be a lie.
+          <ReadFailure error={error} what="your Sources" onRetry={refresh} />
+        ) : (
         <MatrxDataTable<SourceListRow>
           tableId="knowledge-sources"
           data={visibleRows}
@@ -1138,6 +1144,7 @@ export function SourcesPage() {
               "Add one with Add: upload a file, paste a web address or text, or save a page from the browser extension.",
           }}
         />
+        )}
         {/* The list is paged by the server: say how much is listed and offer the rest. */}
         {rows.length > 0 && total !== null ? (
           <div className="flex items-center justify-center gap-3 py-2 text-xs text-muted-foreground">
