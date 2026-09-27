@@ -1,4 +1,4 @@
--- Run only after the task-assignment outbox base and activation migrations on
+-- Run only after the task-assignment outbox base, in-app, and activation migrations on
 -- an isolated database clone. Uses admin@admin.com alone; rolls fixtures back.
 begin;
 
@@ -25,6 +25,14 @@ begin
    where event_key = 'task.assigned';
   update users.user_email_preferences
      set task_notifications = true where user_id = v_admin;
+  insert into communication.notification_preference
+    (user_id, organization_id, event_key, channel, enabled, created_by)
+  values (v_admin, v_org, 'task.assigned', 'sms', true, v_admin)
+  on conflict (user_id, organization_id, event_key, channel)
+    do update set enabled = true, deleted_at = null;
+  if not ('sms' = any (hr._notify_channels('task.assigned', v_org, v_admin, null))) then
+    raise exception 'The fixture did not enable SMS; its no-SMS assertion is vacuous';
+  end if;
 
   -- The privileged test connection has no signed-in actor. Only the designated
   -- admin account is a recipient; no SMS or voice transport is invoked.
@@ -41,6 +49,15 @@ begin
   if v_count <> 1 then
     raise exception 'Expected one transactional email task assignment intent; got %', v_count;
   end if;
+  select count(*) into v_count from communication.notification
+   where dedupe_key = format('task.assigned:%s:%s:in_app', v_task, v_first_version)
+     and recipient_user_id = v_admin and organization_id = v_org
+     and target_kind = 'task' and target_id = v_task
+     and deep_link = '/tasks?task=' || v_task::text
+     and subject like 'Task assigned:%' and body like '%assigned you a task:%';
+  if v_count <> 1 then
+    raise exception 'Expected one transactionally visible in-app assignment notice; got %', v_count;
+  end if;
 
   update workspace.tasks set title = 'A revised title' where id = v_task;
   update workspace.tasks set assignee_id = v_admin where id = v_task;
@@ -49,6 +66,12 @@ begin
      and channel = 'email';
   if v_count <> 1 then
     raise exception 'A title edit or unchanged assignee replay created % intents', v_count;
+  end if;
+  select count(*) into v_count from communication.notification
+   where target_kind = 'task' and target_id = v_task and event_key = 'task.assigned'
+     and channel = 'in_app';
+  if v_count <> 1 then
+    raise exception 'A title edit or unchanged assignee replay created % in-app notices', v_count;
   end if;
 
   update workspace.tasks set assignee_id = null where id = v_task;
@@ -62,6 +85,51 @@ begin
      and channel = 'email';
   if v_count <> 2 then
     raise exception 'A genuine second assignment should create a second intent; got %', v_count;
+  end if;
+  select count(*) into v_count from communication.notification
+   where target_kind = 'task' and target_id = v_task and event_key = 'task.assigned'
+     and channel = 'in_app';
+  if v_count <> 2 then
+    raise exception 'A genuine second assignment should create a second in-app notice; got %', v_count;
+  end if;
+
+  -- The recipient's in-app switch is the nearest rung. A third saved
+  -- assignment still produces email but must not expose a task title in-app.
+  insert into communication.notification_preference
+    (user_id, organization_id, event_key, channel, enabled, created_by)
+  values (v_admin, v_org, 'task.assigned', 'in_app', false, v_admin)
+  on conflict (user_id, organization_id, event_key, channel)
+    do update set enabled = false, deleted_at = null;
+  update workspace.tasks set assignee_id = null where id = v_task;
+  update workspace.tasks set assignee_id = v_admin where id = v_task;
+  select count(*) into v_count from communication.notification
+   where target_kind = 'task' and target_id = v_task and event_key = 'task.assigned'
+     and channel = 'in_app';
+  if v_count <> 2 then
+    raise exception 'The recipient disabled in-app notices but got %', v_count;
+  end if;
+  delete from communication.notification_preference
+   where user_id = v_admin and organization_id = v_org
+     and event_key = 'task.assigned' and channel = 'in_app';
+
+  -- The organization rung can also turn in-app off while leaving email on.
+  update communication.notification_event_override
+     set enabled = true,
+         default_channels = '{"email":true,"in_app":false}'::jsonb
+   where organization_id = v_org and event_key = 'task.assigned'
+     and deleted_at is null;
+  if not found then
+    insert into communication.notification_event_override
+      (organization_id, event_key, default_channels, created_by)
+    values (v_org, 'task.assigned', '{"email":true,"in_app":false}'::jsonb, v_admin);
+  end if;
+  update workspace.tasks set assignee_id = null where id = v_task;
+  update workspace.tasks set assignee_id = v_admin where id = v_task;
+  select count(*) into v_count from communication.notification
+   where target_kind = 'task' and target_id = v_task and event_key = 'task.assigned'
+     and channel = 'in_app';
+  if v_count <> 2 then
+    raise exception 'The organization disabled in-app notices but got %', v_count;
   end if;
 
   perform set_config('request.jwt.claim.sub', v_admin::text, true);
@@ -82,8 +150,14 @@ begin
   select count(*) into v_count from communication.notification
    where target_kind = 'task' and target_id = v_task and event_key = 'task.assigned'
      and channel = 'email';
-  if v_count <> 2 then
+  if v_count <> 4 then
     raise exception 'The disabled event still enqueued assignment email';
+  end if;
+  select count(*) into v_count from communication.notification
+   where target_kind = 'task' and target_id = v_task and event_key = 'task.assigned'
+     and channel = 'in_app';
+  if v_count <> 2 then
+    raise exception 'The disabled event still enqueued an in-app notice';
   end if;
 
   select count(*) into v_count from communication.notification
