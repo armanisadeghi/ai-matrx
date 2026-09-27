@@ -7,11 +7,16 @@
 -- a record names it.
 
 do $$
+declare
+  v_state text;
 begin
-  if to_regprocedure('platform._final_switch_last()') is not null
-     and coalesce((platform._final_switch_last()).direction, 'old') = 'new' then
-    raise exception 'The final switch is on. Undo it from Administration → Database → Final switch before removing it.'
-      using errcode = '55000';
+  -- Dynamic, so this file also runs where the final switch is already gone.
+  if to_regprocedure('platform._final_switch_last()') is not null then
+    execute 'select (platform._final_switch_last()).direction' into v_state;
+    if coalesce(v_state, 'old') = 'new' then
+      raise exception 'The final switch is on. Undo it from Administration → Database → Final switch before removing it.'
+        using errcode = '55000';
+    end if;
   end if;
 end $$;
 
@@ -19,7 +24,12 @@ delete from platform.client_callable_door
  where schema_name = 'platform'
    and function_name in ('final_switch_state', 'final_switch_readiness', 'final_switch_press', 'final_switch_undo');
 
-drop trigger if exists final_switch_holds_every_organization on platform.cutover_seam_press;
+-- The press log's hold (trigger final_switch_holds_every_organization on platform.cutover_seam_press)
+-- goes with its function: DROP FUNCTION … CASCADE, never DROP TRIGGER — a DROP TRIGGER fires
+-- Supabase's supautils hook (ACCESS EXCLUSIVE on 23 auth/storage/realtime relations); the cascade
+-- takes the lock on platform.cutover_seam_press alone, for the moment of the drop.
+-- ground-standing-ok: a — CASCADE drops the trigger with its function in this one statement; no trigger is left over a missing body.
+drop function if exists platform._final_switch_holds_every_organization() cascade;
 
 -- The body as it was.
 CREATE OR REPLACE FUNCTION platform.older_tables_switched(p_organization_id uuid)
@@ -38,7 +48,6 @@ drop function if exists platform.final_switch_undo(text, boolean);
 drop function if exists platform.final_switch_press(text, jsonb);
 drop function if exists platform.final_switch_readiness();
 drop function if exists platform.final_switch_state();
-drop function if exists platform._final_switch_holds_every_organization();
 drop function if exists platform._final_switch_record(text, text, text, text, jsonb, jsonb, text, uuid);
 drop function if exists platform._final_switch_person_refusal();
 drop function if exists platform._final_switch_readiness();
