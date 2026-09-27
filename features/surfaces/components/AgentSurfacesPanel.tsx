@@ -1,4 +1,6 @@
 "use client";
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
@@ -359,7 +361,12 @@ export function AgentSurfacesPanel({ agent }: Props) {
         <Layers className="h-4 w-4 text-muted-foreground" />
         <h1 className="text-sm font-medium">Surface bindings</h1>
         <Badge variant="outline" className="text-[10px]">
-          {bindings.length} active
+          <UntrustedCount
+            read={readOf({ status: bindingsStatus, error: bindingsError })}
+            value={bindings.length}
+            label="Active bindings"
+          />{" "}
+          active
         </Badge>
         {loading && (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />

@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useRead } from '@/components/read-state/useRead';
 import { ReadFailure } from '@/components/read-state/ReadFailure';
+import { UntrustedCount } from '@/components/official/stale-data/UntrustedCount';
 import { ExternalLink, Plus, Loader2, Link2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -71,7 +72,9 @@ export default function LinkExplorer() {
         <div className="p-3 sm:p-4 space-y-3">
             <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5">
                 <span className="text-xs font-medium text-foreground/80">Links</span>
-                <span className="text-[10px] text-muted-foreground tabular-nums">{filtered.length}/{linkList.length}</span>
+                <span className="text-[10px] text-muted-foreground tabular-nums">
+                    <UntrustedCount read={linksRead} value={`${filtered.length}/${linkList.length}`} label="Links" />
+                </span>
                 <div className="flex-1 relative">
                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
                     <input

@@ -971,6 +971,7 @@ export default function ResilienceLabPage() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">
+            {/* read-gate-exempt: requests this browser tab is running right now, held in memory, not a fetched list */}
             Live netRequests ({activeRequests.length})
           </CardTitle>
           <CardDescription className="text-xs">

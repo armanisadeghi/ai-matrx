@@ -153,9 +153,11 @@ export default function PersistenceTestPage() {
             value={persistence.hydrated ? "true" : "false"}
             ok={persistence.hydrated}
           />
+          {/* read-gate-exempt: overlays open in this browser tab right now, in memory, not a fetched list */}
           <Field label="overlays open" value={String(openOverlayCount)} />
           <Field
             label="local sessions"
+            // read-gate-exempt: windows open in this browser tab right now, in memory, not a fetched list
             value={String(
               Object.values(windowManagerState.windows).filter(
                 (entry) => entry.persistence && !entry.persistence.closing,
@@ -214,6 +216,7 @@ export default function PersistenceTestPage() {
 
       <main className="grid flex-1 grid-cols-1 gap-3 overflow-auto p-3 lg:grid-cols-2">
         <Section
+          // read-gate-exempt: overlays open in this browser tab right now, in memory, not a fetched list
           title={`overlays (Redux state.overlays) — ${openOverlayCount} open`}
         >
           {Object.keys(overlaysState).length === 0 ? (

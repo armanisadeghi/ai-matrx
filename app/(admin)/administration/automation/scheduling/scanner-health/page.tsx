@@ -286,6 +286,7 @@ export default function ScannerHealthPage() {
           data-surface-value="schedule_alarms_clear"
         >
           No schedule needs attention — nothing suspended, overdue, or failing
+          {/* read-gate-exempt: inside the branch that renders only when schedules.status is ok, so the read succeeded */}
           {mutedAlarms.length > 0 ? ` (${mutedAlarms.length} muted below)` : ""}
           .
         </p>

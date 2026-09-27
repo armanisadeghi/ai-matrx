@@ -267,6 +267,7 @@ export function SurfaceMandatesSection({
           >
             <Radar className="h-3 w-3 shrink-0" aria-hidden="true" />
             <span className="truncate">
+              {/* read-gate-exempt: drawn only when discovery found some; a failed discovery hides this row instead of printing 0 */}
               Also available here ({discovered.available.length})
             </span>
             {discoveredOpen ? (

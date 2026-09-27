@@ -234,6 +234,7 @@ export function AgentRoleCard({
             <div className="space-y-3">
               {systemRows.variables.length > 0 ? (
                 <SectionList
+                  // read-gate-exempt: drawn only when the agent has variables, so a missing or failed record never prints 0
                   label={`Variables (${systemRows.variables.length})`}
                 >
                   <ul className="divide-y divide-border/30">
@@ -251,6 +252,7 @@ export function AgentRoleCard({
               ) : null}
 
               {systemRows.slots.length > 0 ? (
+                // read-gate-exempt: drawn only when the agent has context policies, so a missing record never prints 0
                 <SectionList label={`Context policies (${systemRows.slots.length})`}>
                   <ul className="divide-y divide-border/30">
                     {systemRows.slots.map((row) => (

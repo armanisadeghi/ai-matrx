@@ -1,5 +1,7 @@
 "use client";
 
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, Layers, Layers3, Search, Link2 } from "lucide-react";
@@ -7,7 +9,9 @@ import { Input } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/styles/themes/utils";
 import {
+  makeSelectBindingsErrorForAgent,
   makeSelectBindingsForAgent,
+  makeSelectBindingsStatusForAgent,
   selectActiveSurfaces,
   selectSurfacesError,
   selectSurfacesStatus,
@@ -136,6 +140,17 @@ export function SurfacesListColumn({
     [agentId],
   );
   const bindings = useAppSelector(selectBindings);
+  const bindingsStatus = useAppSelector(makeSelectBindingsStatusForAgent(agentId));
+  const bindingsError = useAppSelector(makeSelectBindingsErrorForAgent(agentId));
+  // Surface counts answer the surfaces read; bound/unbound need the bindings
+  // read too. A failed read is "—", never "0 bound".
+  const surfacesRead = readOf({ status, error });
+  const bindingsRead = readOf({ status: bindingsStatus, error: bindingsError });
+  const boundRead = readOf({
+    isLoading: surfacesRead.status === "loading" || bindingsRead.status === "loading",
+    isError: surfacesRead.status === "error" || bindingsRead.status === "error",
+    error: error ?? bindingsError,
+  });
   const { surfaceName: selectedSurface, selectSurface } =
     useSurfacesAdminSelection();
   const [query, setQuery] = useState("");
@@ -249,7 +264,8 @@ export function SurfacesListColumn({
               Surfaces
             </div>
             <div className="mt-0.5 text-xs text-muted-foreground">
-              {surfaces.length} active
+              <UntrustedCount read={surfacesRead} value={surfaces.length} label="Active surfaces" />{" "}
+              active
             </div>
           </div>
           <Link
@@ -270,35 +286,47 @@ export function SurfacesListColumn({
         <div className="space-y-1 text-[11px] text-muted-foreground">
           <div className="flex items-center gap-3">
             <span>
-              <span className="font-medium text-emerald-700 dark:text-emerald-400 tabular-nums">
-                {boundCount}
-              </span>{" "}
+              <UntrustedCount
+                className="font-medium text-emerald-700 dark:text-emerald-400 tabular-nums"
+                read={boundRead}
+                value={boundCount}
+                label="Bound"
+              />{" "}
               bound
             </span>
             <span aria-hidden className="opacity-50">
               ·
             </span>
             <span>
-              <span className="font-medium text-foreground/80 tabular-nums">
-                {unboundCount}
-              </span>{" "}
+              <UntrustedCount
+                className="font-medium text-foreground/80 tabular-nums"
+                read={boundRead}
+                value={unboundCount}
+                label="Unbound"
+              />{" "}
               unbound
             </span>
           </div>
           <div className="flex items-center gap-3">
             <span>
-              <span className="font-medium text-sky-700 dark:text-sky-400 tabular-nums">
-                {setupCount}
-              </span>{" "}
+              <UntrustedCount
+                className="font-medium text-sky-700 dark:text-sky-400 tabular-nums"
+                read={surfacesRead}
+                value={setupCount}
+                label="Set up"
+              />{" "}
               set up
             </span>
             <span aria-hidden className="opacity-50">
               ·
             </span>
             <span>
-              <span className="font-medium text-foreground/80 tabular-nums">
-                {notSetupCount}
-              </span>{" "}
+              <UntrustedCount
+                className="font-medium text-foreground/80 tabular-nums"
+                read={surfacesRead}
+                value={notSetupCount}
+                label="Not set up"
+              />{" "}
               not set up
             </span>
           </div>

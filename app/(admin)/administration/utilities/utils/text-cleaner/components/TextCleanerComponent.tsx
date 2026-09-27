@@ -145,6 +145,7 @@ export const TextCleanerComponent: React.FC = () => {
     return (
       <div className="space-y-2">
         <div className="flex items-center gap-2">
+          {/* read-gate-exempt: problems found in the text the person pasted, computed in this browser, not a read */}
           <Badge variant="outline">{errorStats.total} Total Errors</Badge>
           {errorStats.bySeverity.error && (
             <Badge variant="destructive" className="flex items-center gap-1">
@@ -437,6 +438,7 @@ export const TextCleanerComponent: React.FC = () => {
           <Card className="border bg-muted">
             <CardContent className="p-3">
               <p className="text-sm text-muted-foreground">
+                {/* read-gate-exempt: length of the text the person pasted, computed in this browser, not a read */}
                 Characters: {formatNumber(inputText.length)}
               </p>
             </CardContent>
@@ -467,6 +469,7 @@ export const TextCleanerComponent: React.FC = () => {
           <Card className="border bg-muted">
             <CardContent className="p-3">
               <p className="text-sm text-muted-foreground">
+                {/* read-gate-exempt: length of the cleaned text computed in this browser, not a read */}
                 Characters: {formatNumber(cleanedText.length)}
               </p>
             </CardContent>
@@ -493,6 +496,7 @@ export const TextCleanerComponent: React.FC = () => {
               <Button variant="ghost" className="w-full justify-between">
                 Pattern Selection
                 <span className="text-muted-foreground">
+                  {/* read-gate-exempt: cleaning patterns the person switched on in this tool, not a fetched list */}
                   {activePatterns.length} active
                 </span>
               </Button>

@@ -1,5 +1,7 @@
 "use client";
 
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useState } from "react";
 import { ChevronDown, Loader2, Users } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
@@ -133,9 +135,12 @@ export function SurfaceRolesSection({
             Agent roles
           </div>
         </div>
-        <span className="shrink-0 text-xs font-medium text-foreground tabular-nums">
-          {roleList.length}
-        </span>
+        <UntrustedCount
+          className="shrink-0 text-xs font-medium text-foreground tabular-nums"
+          read={readOf({ status })}
+          value={roleList.length}
+          label="Agent roles"
+        />
         <ChevronDown
           className={cn(
             "h-3.5 w-3.5 text-muted-foreground transition-transform shrink-0",
