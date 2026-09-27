@@ -240,6 +240,8 @@ export default function FirstScreenTab() {
             label="Default organization"
             description="Where you land when you sign in. You can switch organizations any time from the header."
             id="settings-default-organization"
+            // Stacks under its label on a narrow screen, like every select row.
+            controlLayout="wide"
             modified={Boolean(defaultOrganizationId)}
             onReset={() => setDefaultOrganizationId(null)}
             resetLabel="Clear default organization"

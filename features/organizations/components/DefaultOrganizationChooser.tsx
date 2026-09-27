@@ -53,7 +53,7 @@ export function DefaultOrganizationChooser({
           <ChevronDown className="h-4 w-4 shrink-0 opacity-50" aria-hidden />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-1">
+      <PopoverContent align="end" className="matrx-touch-targets w-80 max-w-[calc(100vw-2rem)] p-1">
         <OrganizationPicker
           hideHeading
           hideStatus
