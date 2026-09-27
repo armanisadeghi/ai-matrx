@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@ai-matrx/design-system";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { useLiveSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
 import { useAvailableHere } from "@/features/surfaces/runtime/available-here";
@@ -121,6 +122,11 @@ export function SurfaceMandatesSection({
   const [identities, setIdentities] = useState<
     Record<string, MandateIdentity>
   >({});
+  // The key the identities were read for. Until the read for the CURRENT keys
+  // has answered, a row shows a placeholder, never a name guessed from its key
+  // that then renames itself ("Prepare Content" → "Alchemy Content
+  // Distillation", page-pass 2026-09-27).
+  const [settledFor, setSettledFor] = useState<string | null>(null);
   const [openNotesFor, setOpenNotesFor] = useState<string | null>(null);
   const [discoveredOpen, setDiscoveredOpen] = useState(false);
   // THE DERIVED HALF (#16). Same gate as the context menu — never a second one.
@@ -139,6 +145,9 @@ export function SurfaceMandatesSection({
       .catch((err: unknown) => {
         // Listing survives without labels; the failure is still loud.
         console.error("[surface-mandates] identity read failed", err);
+      })
+      .finally(() => {
+        if (!cancelled) setSettledFor(keyList);
       });
     return () => {
       cancelled = true;
@@ -182,9 +191,16 @@ export function SurfaceMandatesSection({
                   className="group min-w-0 flex-1 rounded-md border border-border bg-card px-2 py-1 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
                 >
                   <span className="flex min-w-0 items-center gap-1">
-                    <span className="truncate text-xs font-medium text-foreground">
-                      {mandateDisplayName(row.mandateKey, identity?.label)}
-                    </span>
+                    {identity || settledFor === keyList ? (
+                      <span className="truncate text-xs font-medium text-foreground">
+                        {mandateDisplayName(row.mandateKey, identity?.label)}
+                      </span>
+                    ) : (
+                      <Skeleton
+                        aria-label="Loading this job's name"
+                        className="h-3 w-32"
+                      />
+                    )}
                     {identity && !identity.isEnabled && (
                       <span className="shrink-0 rounded border border-amber-500/40 px-1 text-[9px] text-amber-600 dark:text-amber-400">
                         off
