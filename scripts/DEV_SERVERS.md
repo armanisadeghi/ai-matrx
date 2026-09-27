@@ -23,7 +23,7 @@ The failure classes are:
 
 | Command | Effect |
 |---|---|
-| `pnpm preview:start` | Reuse the preview only when this exact checkout owns it; otherwise fail loudly so another worktree's code can never be mistaken for the diff under test. |
+| `pnpm preview:start` | Reuse the running preview and its PID when this checkout owns it. Source edits here hot-reload. A different checkout cannot claim its own diff was served. |
 | `pnpm preview:status` | Show the machine-wide lease owner, pid, port, and process-group RSS from every worktree. |
 | `pnpm preview:stop` | Stop the preview only from its owning checkout; preserve its build cache for the next run. |
 
@@ -33,8 +33,10 @@ worktrees cannot both acquire the slot. It is provider-neutral:
 Claude and Codex start the same process. `preview:start` prints the owning
 session's exact `http://<session>.localhost:3001` URL; bare `localhost` is not
 the supported login URL because it shares cookies across sessions. The state
-records the exact owning checkout; another checkout must wait for an explicit
-release and then start its own build.
+records the exact owning checkout. In this repo's normal shared-main workflow,
+put the change in the primary checkout and use the running preview. A lease
+mismatch from a worktree means that worktree's files are not being served; it
+does **not** by itself mean localhost is down or that a private server is needed.
 
 **Browser access and checkout ownership are separate gates.** A working server
 can answer `curl` while Codex's in-app or extension browser rejects local HTTP
