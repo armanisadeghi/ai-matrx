@@ -13,8 +13,10 @@
 // caller; a telling that fails after a successful write says the meeting IS
 // saved and only the notice did not go out.
 
+import { useState } from "react";
 import {
   announceMeeting,
+  createMeetRepository,
   asUserId,
   useMeetHost,
   type InviteeRole,
@@ -25,6 +27,9 @@ import {
   type RsvpAnswer,
 } from "@ai-matrx/meet/react";
 import { toast } from "@/lib/toast";
+import { supabase } from "@/utils/supabase/client";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   draftSchedule,
   type DraftInvitee,
@@ -54,6 +59,12 @@ function inviteeInputs(people: readonly DraftInvitee[]) {
 
 export function useMeetingActions() {
   const host = useMeetHost();
+  // READS need no organization (access is personal); without one the Meet
+  // provider is inert, so reads go through a plain repository on the same client.
+  const [plainRepository] = useState(() =>
+    createMeetRepository({ client: supabase }),
+  );
+  const reduxUserId = useAppSelector(selectUserId);
 
   const require = () => {
     if (host === null || host.identity.userId === null) {
@@ -89,9 +100,9 @@ export function useMeetingActions() {
 
   return {
     ready: host !== null && host.identity.userId !== null,
-    userId: host?.identity.userId ?? null,
+    userId: host?.identity.userId ?? reduxUserId,
     organizationId: host?.identity.organizationId ?? null,
-    repository: host?.repository ?? null,
+    repository: host?.repository ?? plainRepository,
     announce,
 
     async create(

@@ -83,40 +83,52 @@ export function MeetingRowMenu({
         className="w-52"
         onClick={(e) => e.stopPropagation()}
       >
-        <DropdownMenuItem onSelect={() => onAction("open")}>
+        <DropdownMenuItem className="gap-2" onSelect={() => onAction("open")}>
           <ExternalLink className="h-4 w-4" aria-hidden="true" /> Open details
         </DropdownMenuItem>
         {open && !ended ? (
-          <DropdownMenuItem onSelect={() => onAction("join")}>
+          <DropdownMenuItem className="gap-2" onSelect={() => onAction("join")}>
             <Video className="h-4 w-4" aria-hidden="true" />{" "}
             {isHost ? "Start" : "Join"}
           </DropdownMenuItem>
         ) : null}
         {ended && !archived ? (
-          <DropdownMenuItem onSelect={() => onAction("join")}>
+          <DropdownMenuItem className="gap-2" onSelect={() => onAction("join")}>
             <Video className="h-4 w-4" aria-hidden="true" /> Open the record
           </DropdownMenuItem>
         ) : null}
         {!archived ? (
-          <DropdownMenuItem onSelect={() => onAction("copy")}>
+          <DropdownMenuItem className="gap-2" onSelect={() => onAction("copy")}>
             <Copy className="h-4 w-4" aria-hidden="true" /> Copy link
           </DropdownMenuItem>
         ) : null}
         {open && !ended && canManage ? (
-          <DropdownMenuItem onSelect={() => onAction("invite")}>
+          <DropdownMenuItem
+            className="gap-2"
+            onSelect={() => onAction("invite")}
+          >
             <UserPlus className="h-4 w-4" aria-hidden="true" /> Invite…
           </DropdownMenuItem>
         ) : null}
         {open && isInvitee && !ended ? (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => onAction({ rsvp: "accepted" })}>
+            <DropdownMenuItem
+              className="gap-2"
+              onSelect={() => onAction({ rsvp: "accepted" })}
+            >
               <Check className="h-4 w-4" aria-hidden="true" /> Going
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onAction({ rsvp: "tentative" })}>
+            <DropdownMenuItem
+              className="gap-2"
+              onSelect={() => onAction({ rsvp: "tentative" })}
+            >
               <HelpCircle className="h-4 w-4" aria-hidden="true" /> Maybe
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onAction({ rsvp: "declined" })}>
+            <DropdownMenuItem
+              className="gap-2"
+              onSelect={() => onAction({ rsvp: "declined" })}
+            >
               <X className="h-4 w-4" aria-hidden="true" /> Not going
             </DropdownMenuItem>
           </>
@@ -124,35 +136,50 @@ export function MeetingRowMenu({
         {canManage ? <DropdownMenuSeparator /> : null}
         {open && !ended && canManage ? (
           <>
-            <DropdownMenuItem onSelect={() => onAction("edit")}>
+            <DropdownMenuItem
+              className="gap-2"
+              onSelect={() => onAction("edit")}
+            >
               <Pencil className="h-4 w-4" aria-hidden="true" /> Edit…
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onAction("reschedule")}>
+            <DropdownMenuItem
+              className="gap-2"
+              onSelect={() => onAction("reschedule")}
+            >
               <CalendarClock className="h-4 w-4" aria-hidden="true" />{" "}
               Reschedule…
             </DropdownMenuItem>
           </>
         ) : null}
         {canManage ? (
-          <DropdownMenuItem onSelect={() => onAction("duplicate")}>
+          <DropdownMenuItem
+            className="gap-2"
+            onSelect={() => onAction("duplicate")}
+          >
             <CopyPlus className="h-4 w-4" aria-hidden="true" /> Duplicate…
           </DropdownMenuItem>
         ) : null}
         {open && !ended && canManage ? (
           <DropdownMenuItem
             onSelect={() => onAction("cancel")}
-            className="text-destructive focus:text-destructive"
+            className="gap-2 text-destructive focus:text-destructive"
           >
             <XCircle className="h-4 w-4" aria-hidden="true" /> Cancel meeting…
           </DropdownMenuItem>
         ) : null}
         {!archived && canManage ? (
-          <DropdownMenuItem onSelect={() => onAction("archive")}>
+          <DropdownMenuItem
+            className="gap-2"
+            onSelect={() => onAction("archive")}
+          >
             <Archive className="h-4 w-4" aria-hidden="true" /> Archive…
           </DropdownMenuItem>
         ) : null}
         {archived && canManage ? (
-          <DropdownMenuItem onSelect={() => onAction("restore")}>
+          <DropdownMenuItem
+            className="gap-2"
+            onSelect={() => onAction("restore")}
+          >
             <ArchiveRestore className="h-4 w-4" aria-hidden="true" /> Restore
           </DropdownMenuItem>
         ) : null}

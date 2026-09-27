@@ -532,7 +532,7 @@ export function MeetingFormDialog({
             )}
           </div>
 
-          <DialogFooter className="flex-row flex-wrap items-center gap-2 border-t border-border px-5 py-3 sm:justify-between">
+          <DialogFooter className="flex-row flex-wrap items-center gap-2 border-t border-border px-5 py-3 sm:justify-between mx-0 pb-3">
             {hasGuests ? (
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox

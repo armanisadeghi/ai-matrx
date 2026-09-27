@@ -152,12 +152,33 @@ export function duplicateDraft(
   draft: MeetingDraft,
   now: Date = new Date(),
 ): MeetingDraft {
-  const start = nextHalfHour(now, draft.timeZone);
+  // Same time of day. The original date if it is still ahead; otherwise the
+  // next date on the SAME weekday, so a copied "every Tuesday" still starts on
+  // a Tuesday.
+  let date = draft.date;
+  let when = zonedToUtcIso(date, draft.time, draft.timeZone);
+  if (new Date(when).getTime() <= now.getTime()) {
+    const weekday = utcToZoned(when, draft.timeZone).weekday;
+    const today = utcToZoned(now.toISOString(), draft.timeZone);
+    const [y, m, d] = today.date.split("-").map(Number);
+    for (let add = 0; add <= 7; add += 1) {
+      const candidate = new Date(Date.UTC(y!, m! - 1, d! + add))
+        .toISOString()
+        .slice(0, 10);
+      when = zonedToUtcIso(candidate, draft.time, draft.timeZone);
+      if (
+        utcToZoned(when, draft.timeZone).weekday === weekday &&
+        new Date(when).getTime() > now.getTime()
+      ) {
+        date = candidate;
+        break;
+      }
+    }
+  }
   return {
     ...draft,
     title: `${draft.title} (copy)`,
-    date: start.date,
-    time: start.time,
+    date,
     invitees: draft.invitees.map((i) => ({
       ...i,
       key: i.email ?? i.userId ?? i.key,

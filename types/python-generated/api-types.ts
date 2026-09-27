@@ -86038,6 +86038,7 @@ export interface components {
             sort?: "recent" | "relevance" | "title";
             /**
              * Limit
+             * @description Results per section. 0 = count only: each section returns its exact count and no items.
              * @default 20
              */
             limit?: number;
@@ -86174,6 +86175,7 @@ export interface components {
             sort?: "recent" | "relevance" | "title";
             /**
              * Limit
+             * @description Results per section. 0 = count only: each section returns its exact count and no items.
              * @default 20
              */
             limit?: number;
@@ -86257,6 +86259,12 @@ export interface components {
              */
             withheld?: string | null;
             /**
+             * Count Only
+             * @description True when the query asked for counts (limit 0): count is exact.
+             * @default false
+             */
+            count_only?: boolean;
+            /**
              * Note
              * @description What narrowed or changed this section, in words.
              */
@@ -86325,6 +86333,12 @@ export interface components {
              * @description Set when the section was withheld (Private class): why, in words.
              */
             withheld?: string | null;
+            /**
+             * Count Only
+             * @description True when the query asked for counts (limit 0): count is exact.
+             * @default false
+             */
+            count_only?: boolean;
             /**
              * Note
              * @description What narrowed or changed this section, in words.

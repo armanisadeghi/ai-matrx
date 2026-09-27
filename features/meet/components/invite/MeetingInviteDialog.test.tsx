@@ -48,6 +48,14 @@ jest.mock("@/features/messaging/hooks/useUserConnections", () => ({
     error: null,
   }),
 }));
+jest.mock("@/lib/redux/hooks", () => ({
+  useAppSelector: () => null,
+  useAppDispatch: () => jest.fn(),
+  useAppStore: () => ({ getState: () => ({}) }),
+}));
+jest.mock("@/utils/supabase/client", () => ({
+  supabase: { schema: () => ({}) },
+}));
 jest.mock("@/lib/toast", () => ({
   toast: { success: jest.fn(), error: jest.fn() },
 }));

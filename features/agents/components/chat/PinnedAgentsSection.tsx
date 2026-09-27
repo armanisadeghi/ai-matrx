@@ -37,8 +37,8 @@ function pinnedAgentHref(agentId: string): string {
  * `AgentListDropdown` — we register a dedicated consumer ("chat-sidebar-pinned")
  * with `favFilter: "yes"`, then read `makeSelectFilteredAgents()`.
  * This means the section reflects whatever the user has favorited via the
- * canonical FavoriteAgentButton (toggling persists through `saveAgentField`
- * → `agent.definition.is_favorite`), respects archive/access filters consistently
+ * canonical FavoriteAgentButton (the caller's own star, read and written in
+ * `platform.user_entity_state` by the catalog), respects archive/access filters consistently
  * with the rest of the app, and shares the agent registry with the dropdown
  * (no parallel fetches).
  *

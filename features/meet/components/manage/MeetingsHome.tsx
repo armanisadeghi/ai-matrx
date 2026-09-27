@@ -267,7 +267,7 @@ export function MeetingsHome() {
       <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
         <div className="mx-auto max-w-4xl px-3 pb-10 sm:px-6">
           <div className="sticky top-0 z-10 -mx-3 flex flex-wrap items-center gap-2 bg-textured/95 px-3 py-2 backdrop-blur sm:-mx-6 sm:px-6">
-            <div className="relative min-w-0 flex-1 sm:max-w-xs">
+            <div className="relative min-w-0 basis-full sm:max-w-xs sm:flex-1 sm:basis-auto">
               <Search
                 className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                 aria-hidden="true"
