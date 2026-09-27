@@ -33,6 +33,8 @@ import {
   organizationOrder,
   pressFinalSwitch,
   runCopyAgain,
+  readFinalSwitchCapabilities,
+  type FinalSwitchCapabilities,
   readFinalSwitch,
   undoFinalSwitch,
   type FinalSwitchBoard,
@@ -85,10 +87,10 @@ function OrganizationRow({ org }: { org: FinalSwitchOrganization }) {
               className="h-3.5 w-3.5 shrink-0 text-destructive"
               aria-label="Blocked"
             />
-          ) : org.needs_copy_again ? (
+          ) : org.needs_copy_again || org.needs_context_copy ? (
             <CircleDashed
               className="h-3.5 w-3.5 shrink-0 text-amber-600"
-              aria-label="Copying again clears it"
+              aria-label="Step 1 clears it"
             />
           ) : (
             <Check
@@ -125,13 +127,21 @@ function OrganizationRow({ org }: { org: FinalSwitchOrganization }) {
         )}
       </td>
       <td className="px-2 py-1.5 text-xs">
-        {org.rerun_clears.length === 0 ? (
+        {org.rerun_clears.length === 0 &&
+        (org.context_clears?.length ?? 0) === 0 ? (
           <span className="text-muted-foreground">Nothing</span>
         ) : (
           <ul className="flex flex-col gap-0.5">
             {org.rerun_clears.map((d) => (
               <li key={d.key} title={d.detail ?? undefined}>
+                <span className="text-muted-foreground">Copy again:</span>{" "}
                 {d.says} ({d.clears})
+              </li>
+            ))}
+            {(org.context_clears ?? []).map((d) => (
+              <li key={d.key} title={d.detail ?? undefined}>
+                <span className="text-muted-foreground">Context copy:</span>{" "}
+                {d.says}
               </li>
             ))}
           </ul>
@@ -197,6 +207,25 @@ export function FinalSwitchScreen() {
   React.useEffect(() => {
     void load();
   }, [load]);
+
+  // Whether THIS server's context copy carries a large organization (aidream 991ff424b5).
+  const [capabilities, setCapabilities] =
+    React.useState<FinalSwitchCapabilities | null>(null);
+  const [capabilitiesError, setCapabilitiesError] = React.useState<
+    string | null
+  >(null);
+  const needsContext = (board?.needsContextCopy.length ?? 0) > 0;
+  React.useEffect(() => {
+    if (!needsContext) return;
+    readFinalSwitchCapabilities(dispatch)
+      .then((c) => {
+        setCapabilities(c);
+        setCapabilitiesError(null);
+      })
+      .catch((e: unknown) =>
+        setCapabilitiesError(e instanceof Error ? e.message : String(e)),
+      );
+  }, [dispatch, needsContext, board?.checkedAt]);
 
   usePageCaptureContribution(
     "final-switch",
@@ -389,7 +418,9 @@ export function FinalSwitchScreen() {
                 data-testid="final-switch-copy-again"
               >
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-medium">Step 1 · Copy again</p>
+                  <p className="text-sm font-medium">
+                    Step 1 · Copy again and the context copy
+                  </p>
                   <span className="text-xs text-muted-foreground">
                     Its own step, one organization at a time; the press stays
                     off until it finishes green.
@@ -407,9 +438,27 @@ export function FinalSwitchScreen() {
                     ) : (
                       <RefreshCw className="mr-1 h-3.5 w-3.5" />
                     )}
-                    {copyUnfinished ? "Resume Copy again" : "Copy again"}
+                    {copyUnfinished ? "Resume Step 1" : "Run Step 1"}
                   </Button>
                 </div>
+                <p className="text-xs" data-testid="final-switch-step-one-plan">
+                  {board.totals.need_copy_again === 0 &&
+                  board.needsContextCopy.length === 0 &&
+                  board.orphans.every((o) => o.resolution !== "organization")
+                    ? "Nothing to copy: every organization's tables and context copy are current."
+                    : `It will copy the tables again for ${board.totals.need_copy_again} ${board.totals.need_copy_again === 1 ? "organization" : "organizations"} and run the context copy for ${board.needsContextCopy.length} (the edits waiting for it carried, then parity measured again).`}
+                </p>
+                {needsContext && (
+                  <p
+                    className={`text-xs ${capabilities?.contextCopyReady ? "text-muted-foreground" : "text-destructive"}`}
+                    data-testid="final-switch-context-gate"
+                  >
+                    {capabilities
+                      ? capabilities.says
+                      : (capabilitiesError ??
+                        "Asking the server whether its context copy carries a large organization…")}
+                  </p>
+                )}
                 <p
                   className="text-xs text-muted-foreground"
                   data-testid="final-switch-copy-again-state"
@@ -518,7 +567,8 @@ export function FinalSwitchScreen() {
                   {counts.toSwitch} switch at the press · {counts.nothing}{" "}
                   already on the new system or with nothing old left ·{" "}
                   {board.totals.need_copy_again} of the listed need Copy again
-                  first · {board.totals.blocked} blocked
+                  first · {board.totals.need_context_copy ?? 0} need the
+                  context copy first · {board.totals.blocked} blocked
                 </span>
                 {board.lastRun &&
                   ` · last run ${board.lastRun.direction === "new" ? "pressed" : "undone"} ${when(board.lastRun.at)}${board.lastRun.by ? ` by ${board.lastRun.by}` : ""}`}
@@ -688,10 +738,10 @@ export function FinalSwitchScreen() {
                       <th className="px-2 py-1.5 font-medium">Data tables</th>
                       <th className="px-2 py-1.5 font-medium">Pick lists</th>
                       <th className="px-2 py-1.5 font-medium">
-                        Copying again clears
+                        Step 1 clears
                       </th>
                       <th className="px-2 py-1.5 font-medium">
-                        Cannot be cleared by copying
+                        Step 1 cannot clear
                       </th>
                       <th className="px-2 py-1.5 font-medium">Scopes</th>
                       <th className="px-2 py-1.5 text-right font-medium">

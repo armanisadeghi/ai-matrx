@@ -8,7 +8,10 @@
 //      there is no undo;
 //   2. ready after copying again: the press is enabled (the server copies again first);
 //   3. switched: no press, the undo is offered, the last run's sentence is shown;
-//   4. the last rehearsal on the dev clone is on the page with its date.
+//   4. the last rehearsal on the dev clone is on the page with its date;
+//   5. Step 1 covers the context copy (coordinator 2026-09-27): the organizations only the context copy
+//      clears are named as Step 1's, and the page says whether THIS server's context copy carries a
+//      large organization (aidream 991ff424b5) — in red when it does not.
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
@@ -17,10 +20,12 @@ import type { FinalSwitchBoard, FinalSwitchOrganization } from "../finalSwitch";
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const readFinalSwitch = jest.fn();
+const readFinalSwitchCapabilities = jest.fn();
 
 jest.mock("../finalSwitch", () => ({
   ...jest.requireActual("../finalSwitch"),
   readFinalSwitch: (...args: unknown[]) => readFinalSwitch(...args),
+  readFinalSwitchCapabilities: (...args: unknown[]) => readFinalSwitchCapabilities(...args),
   pressFinalSwitch: jest.fn(),
   undoFinalSwitch: jest.fn(),
 }));
@@ -56,8 +61,9 @@ function org(over: Partial<FinalSwitchOrganization> & { name: string }): FinalSw
   };
 }
 
-function board(kind: "blocked" | "after_copy" | "switched"): FinalSwitchBoard {
+function board(kind: "blocked" | "after_copy" | "switched" | "context"): FinalSwitchBoard {
   const blocked = kind === "blocked";
+  const context = kind === "context";
   return {
     checkedAt: "2026-09-27T05:00:00Z",
     state: kind === "switched" ? "new" : "old",
@@ -77,6 +83,20 @@ function board(kind: "blocked" | "after_copy" | "switched"): FinalSwitchBoard {
           : [],
         ready: !blocked,
       }),
+      ...(context
+        ? [
+            org({
+              name: "Aamir's Org",
+              context_clears: [
+                { switch: "Where agents get their context", key: "follow_current", says: "No scope edit is waiting to be copied", detail: "432 edits made in the current scope screens are waiting for the copy (the oldest since 2026-09-27 10:49 UTC)." },
+                { switch: "Scope and context screens", key: "scopes_screens.own_words_copied", says: "Every scope type's and context field's own words are on its copy", detail: "1 copy does not say what the current screens show: Tags (description)." },
+              ],
+              needs_context_copy: true,
+              follow_lag: 432,
+              ready: false,
+            }),
+          ]
+        : []),
       org({
         name: "Coastal Pool Service",
         rerun_clears: kind === "switched" ? [] : [{ switch: "Data tables", key: "rows_current", says: "No row was edited in an older table after it was copied", detail: "4 rows were edited.", clears: 4 }],
@@ -84,7 +104,7 @@ function board(kind: "blocked" | "after_copy" | "switched"): FinalSwitchBoard {
         ready: false,
       }),
     ],
-    totals: { organizations: 3, ready: 0, to_switch: 2, nothing_to_switch: 1, need_copy_again: 1, blocked: blocked ? 1 : 0 },
+    totals: { organizations: 3, ready: 0, to_switch: 2, nothing_to_switch: 1, need_copy_again: 1, need_context_copy: context ? 1 : 0, blocked: blocked ? 1 : 0 },
     blocking: blocked ? [`The platform — Every older pick list belongs to an organization: ${BLOCKED_SAYS}`, "Harbor Dental Group — Data tables: automations"] : [],
     ready: false,
     readyAfterCopyAgain: !blocked,
@@ -108,7 +128,8 @@ function board(kind: "blocked" | "after_copy" | "switched"): FinalSwitchBoard {
         ? { run_id: "r1", started_at: "2026-09-27T07:00:00Z", by: "admin@admin.com", finished: false, finished_at: null, ok: true, resumes: 0, organizations_done: 1, adopted: null,
             organizations: [{ id: "id-Harbor Dental Group", name: "Harbor Dental Group", ok: true, says: "Copied 2 tables again.", at: "2026-09-27T07:01:00Z", ms: 60000 }] }
         : null,
-    copyAgainNeeded: kind === "after_copy",
+    copyAgainNeeded: kind === "after_copy" || context,
+    needsContextCopy: context ? ["id-Aamir's Org"] : [],
     noOwnerArchived: kind === "switched" ? [{ id: "l2", name: "Onboarding Checklist", maker: "admin@admin.com", why: "its maker belongs to 46 organizations" }] : [],
   };
 }
@@ -133,6 +154,7 @@ afterEach(() => {
   act(() => root.unmount());
   container.remove();
   readFinalSwitch.mockReset();
+  readFinalSwitchCapabilities.mockReset();
 });
 
 test("not ready: the press is disabled with the database's sentence and every blocker is named", async () => {
@@ -157,7 +179,7 @@ test("copy again is its own step: while a run is unfinished the press is off and
   expect(press.disabled).toBe(true);
   const copy = byTestId("final-switch-copy-again-button") as HTMLButtonElement;
   expect(copy.disabled).toBe(false);
-  expect(copy.textContent).toContain("Resume Copy again");
+  expect(copy.textContent).toContain("Resume Step 1");
   expect(byTestId("final-switch-copy-again-state")!.textContent).toContain("not finished — 1 organizations done");
   expect(byTestId("final-switch-copy-again-organizations")!.textContent).toContain("Harbor Dental Group");
   expect(byTestId("final-switch-orphans")!.textContent).toContain("goes to Developer111's Org at Copy again");
@@ -194,4 +216,32 @@ test("the last rehearsal on the dev clone is on the page with its date", async (
   expect(rehearsal).not.toBeNull();
   expect(rehearsal!.textContent).toContain("Last rehearsal on the dev clone");
   expect(rehearsal!.textContent).toMatch(/hykobnqyuxspbcijrodb|clone/);
+});
+
+test("Step 1 covers the context copy: the organizations only it clears are Step 1's, and the server's gate is said", async () => {
+  readFinalSwitch.mockResolvedValue({ ...board("context"), says: "Ready once Step 1 has run: Copy again for 1 organization, the context copy for 1 organization. Run it first; the press stays off until it finishes green." });
+  readFinalSwitchCapabilities.mockResolvedValue({
+    gitSha: "18d16a9bb26e6319da820aee4bde2c4b33ed5a10",
+    contextCopyReady: false,
+    contextCopyFix: "991ff424b5",
+    says: "The context copy waits for the server: build 18d16a9bb2 does not have aidream 991ff424b5 (the tag copy that is not cut off by the database's 30-second clock), so a large organization's copy would stop half way.",
+  });
+  await mount();
+  await act(async () => {});
+  expect((byTestId("final-switch-press") as HTMLButtonElement).disabled).toBe(true);
+  expect(byTestId("final-switch-step-one-plan")!.textContent).toContain("run the context copy for 1");
+  const gate = byTestId("final-switch-context-gate")!;
+  expect(gate.textContent).toContain("does not have aidream 991ff424b5");
+  expect(gate.className).toContain("text-destructive");
+  // Aamir's Org's waiting edits are Step 1's to clear — not a blocker a person must fix.
+  expect(container.textContent).toContain("Context copy: No scope edit is waiting to be copied");
+  expect(byTestId("final-switch-counts")!.textContent).toContain("1 need the context copy first");
+  expect(byTestId("final-switch-counts")!.textContent).toContain("0 blocked");
+});
+
+test("no context copy needed: the page does not ask the server about it", async () => {
+  readFinalSwitch.mockResolvedValue(board("after_copy"));
+  await mount();
+  expect(byTestId("final-switch-context-gate")).toBeNull();
+  expect(readFinalSwitchCapabilities).not.toHaveBeenCalled();
 });

@@ -4741,6 +4741,56 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/meet/meetings/{meeting_id}/follow-up": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Meeting Follow Up Draft
+         * @description THE RECAP DRAFT (Meet wave 3). Subject and body arranged from the wrap-up's own
+         *     rows (no model call), and every invitee / signed-in attendee it can go to. The host,
+         *     a co-host or an editor only.
+         */
+        get: operations["meeting_follow_up_draft_v1_meet_meetings__meeting_id__follow_up_get"];
+        put?: never;
+        /**
+         * Meeting Follow Up Send
+         * @description SEND THE RECAP the host reviewed, to the people they chose (Meet wave 3). Never
+         *     called automatically. `dry_run` resolves and renders everything and queues nothing.
+         *     A key the draft did not offer is skipped with a reason — this is not a mailer.
+         */
+        post: operations["meeting_follow_up_send_v1_meet_meetings__meeting_id__follow_up_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/meet/meetings/{meeting_id}/rsvp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Meeting Rsvp
+         * @description A SIGNED-IN invitee's Going? answer (Meet wave 1). The write is
+         *     `communication.meet_respond` for the caller; a changed answer tells the host
+         *     (`meet.rsvp_received`), exactly as an answer through the emailed link does.
+         */
+        post: operations["meeting_rsvp_v1_meet_meetings__meeting_id__rsvp_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/meet/rsvp": {
         parameters: {
             query?: never;
@@ -5040,6 +5090,26 @@ export interface paths {
          * @description Copy one older data table again; streams progress and the report.
          */
         post: operations["copy_table_again_cutover_tables__table_id__copy_again_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cutover/final-switch/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Final Switch Capabilities
+         * @description Whether Step 1's context copy runs on this server, and the build it runs.
+         */
+        get: operations["final_switch_capabilities_cutover_final_switch_capabilities_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -75405,6 +75475,22 @@ export interface components {
             changed?: boolean;
         };
         /**
+         * FinalSwitchCapabilities
+         * @description What this server can do for Step 1 (read off the code it is running).
+         */
+        FinalSwitchCapabilities: {
+            /** Git Sha */
+            git_sha: string;
+            /** Built At */
+            built_at?: string | null;
+            /** Context Copy Ready */
+            context_copy_ready: boolean;
+            /** Context Copy Fix */
+            context_copy_fix: string;
+            /** Says */
+            says: string;
+        };
+        /**
          * FinalSwitchPressRequest
          * @description What the page sends with the press.
          */
@@ -76279,6 +76365,82 @@ export interface components {
             updated_at?: string | null;
             /** Deleted At */
             deleted_at?: string | null;
+        };
+        /**
+         * FollowUpDraftResponse
+         * @description `GET /v1/meet/meetings/{meeting_id}/follow-up` — the recap draft the host reviews.
+         */
+        FollowUpDraftResponse: {
+            /** Subject */
+            subject: string;
+            /** Body */
+            body: string;
+            /** Recipients */
+            recipients: components["schemas"]["FollowUpRecipientOut"][];
+            /** Wrap Up Written */
+            wrap_up_written: boolean;
+            last_sent?: components["schemas"]["FollowUpLastSent"] | null;
+        };
+        /** FollowUpLastSent */
+        FollowUpLastSent: {
+            /** At */
+            at: string;
+            /**
+             * Count
+             * @default 0
+             */
+            count?: number;
+        };
+        /** FollowUpRecipientOut */
+        FollowUpRecipientOut: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Email */
+            email?: string | null;
+            /** User Id */
+            user_id?: string | null;
+            /** Sources */
+            sources?: ("attendee" | "invitee")[];
+            /**
+             * Reachable
+             * @default true
+             */
+            reachable?: boolean;
+        };
+        /**
+         * FollowUpSendRequest
+         * @description `POST /v1/meet/meetings/{meeting_id}/follow-up` — send what the host reviewed.
+         */
+        FollowUpSendRequest: {
+            /** Subject */
+            subject: string;
+            /** Body */
+            body: string;
+            /** Recipient Keys */
+            recipient_keys: string[];
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+        };
+        /** FollowUpSendResponse */
+        FollowUpSendResponse: {
+            /** Dry Run */
+            dry_run: boolean;
+            /** Queued */
+            queued: string[];
+            /** Skipped */
+            skipped: components["schemas"]["FollowUpSkipped"][];
+        };
+        /** FollowUpSkipped */
+        FollowUpSkipped: {
+            /** Key */
+            key: string;
+            /** Reason */
+            reason: string;
         };
         /** FoodishImage */
         FoodishImage: {
@@ -112663,6 +112825,31 @@ export interface components {
             };
         };
         /**
+         * RsvpInAppRequest
+         * @description `POST /v1/meet/meetings/{id}/rsvp` — a signed-in invitee's Going? answer.
+         */
+        RsvpInAppRequest: {
+            /**
+             * Answer
+             * @enum {string}
+             */
+            answer: "accepted" | "declined" | "tentative";
+            /** Note */
+            note?: string | null;
+        };
+        /** RsvpInAppResponse */
+        RsvpInAppResponse: {
+            /** Ok */
+            ok: boolean;
+            /** Rsvp State */
+            rsvp_state: string;
+            /**
+             * Host Notified
+             * @default false
+             */
+            host_notified?: boolean;
+        };
+        /**
          * RsvpLinkRequest
          * @description `POST /v1/meet/rsvp` — the answer given on the page an emailed Yes / No /
          *     Maybe link opens. The secret travels in the BODY, never the path: a bearer
@@ -146667,6 +146854,107 @@ export interface operations {
             };
         };
     };
+    meeting_follow_up_draft_v1_meet_meetings__meeting_id__follow_up_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                meeting_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpDraftResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    meeting_follow_up_send_v1_meet_meetings__meeting_id__follow_up_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                meeting_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FollowUpSendRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpSendResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    meeting_rsvp_v1_meet_meetings__meeting_id__rsvp_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                meeting_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RsvpInAppRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RsvpInAppResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     rsvp_by_link_v1_meet_rsvp_post: {
         parameters: {
             query?: never;
@@ -147161,6 +147449,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    final_switch_capabilities_cutover_final_switch_capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinalSwitchCapabilities"];
                 };
             };
         };

@@ -54,6 +54,7 @@ declare
   v_run uuid;
   v_noowner jsonb;
   v_id uuid;
+  v_name text;
 begin
   -- 0. The doors exist, and nothing private is reachable.
   if to_regprocedure('platform.final_switch_press(text, jsonb)') is null
@@ -152,7 +153,11 @@ begin
   end if;
   perform set_config('role', 'authenticated', true);
   v := platform.final_switch_press('suite', null);
-  if v ->> 'reason' <> 'not_ready' or position('has not finished' in coalesce(v ->> 'says', '')) = 0 then
+  -- (Its sentence leads with what Step 1 still has to do; the unfinished run is named in its check.)
+  if v ->> 'reason' <> 'not_ready'
+     or position('has not finished' in coalesce(v ->> 'says', '')
+                                       || coalesce((select p ->> 'detail' from jsonb_array_elements(v -> 'readiness' -> 'platform') p
+                                                     where p ->> 'key' = 'copy_again_finished' and not (p ->> 'met')::boolean), '')) = 0 then
     raise exception '4c: an unfinished Copy again did not hold the press, by name: %', left(v::text, 400);
   end if;
   perform set_config('role', 'postgres', true);
@@ -160,6 +165,44 @@ begin
   if (platform._final_switch_readiness() ->> 'ready')::boolean then
     raise exception '4d: the press is offered after a Copy again that finished with a refusal';
   end if;
+  -- 4e. STEP 1 COVERS THE CONTEXT COPY (fourth file, coordinator 2026-09-27). An edit waiting for the
+  -- context copy is Step 1's to clear: the organization is named in needs_context_copy and is NOT a
+  -- blocker. Once a finished Step 1 ran the context copy for it and read the edit back still waiting,
+  -- it IS a blocker, saying when the copy ran. (Its red: on the third file alone 4e fails — a waiting
+  -- edit reads "must be fixed first" and there is no needs_context_copy.)
+  perform set_config('role', 'postgres', true);
+  select (x ->> 'id')::uuid, x ->> 'name' into v_org, v_name
+    from jsonb_array_elements(platform._final_switch_readiness() -> 'organizations') x
+   where (x -> 'scopes' ->> 'types')::int > 0
+   order by (x ->> 'ready')::boolean desc, x ->> 'created_at' limit 1;
+  if v_org is null then raise exception '4e: the clone has no organization with scopes to try the context copy on'; end if;
+  insert into custom.io_outbox (event_key, record_id, operation, dedupe_key, organization_id, actor)
+  values ('context.follow', gen_random_uuid(), 'updated', 'finalswitch_green:' || gen_random_uuid()::text, v_org,
+          '{"declared": "finalswitch_green"}'::jsonb)
+  returning id into v_id;
+  v := platform._final_switch_readiness();
+  if not (v -> 'needs_context_copy') @> to_jsonb(v_org) then
+    raise exception '4e: an organization with an edit waiting for the context copy is not named for Step 1''s context copy: %', left(v::text, 400);
+  end if;
+  if exists (select 1 from jsonb_array_elements_text(v -> 'blocking') b where b like v_name || ' — %waiting to be copied%') then
+    raise exception '4e: an edit the context copy carries reads as a blocker a person must fix';
+  end if;
+  if (v ->> 'ready')::boolean or position('context copy' in coalesce(v ->> 'says', '')) = 0 then
+    raise exception '4e: the page is not told Step 1''s context copy must run first: %', v ->> 'says';
+  end if;
+  v_run := gen_random_uuid();
+  perform platform.final_switch_copy_again_record(v_run, 'start', null, true, '{"says": "finalswitch_green: a Step 1 whose context copy left an edit"}'::jsonb);
+  perform platform.final_switch_copy_again_record(v_run, 'organization', v_org, false,
+    jsonb_build_object('says', 'finalswitch_green: the context copy left an edit waiting',
+                       'context', jsonb_build_object('ran', true, 'left', jsonb_build_array('follow_current'), 'finished_at', clock_timestamp())));
+  perform platform.final_switch_copy_again_record(v_run, 'finish', null, false, '{"says": "finalswitch_green: finished with a refusal"}'::jsonb);
+  v := platform._final_switch_readiness();
+  if not exists (select 1 from jsonb_array_elements_text(v -> 'blocking') b
+                  where b like v_name || ' — %waiting to be copied%' and b like '%The context copy ran at%left them waiting%') then
+    raise exception '4e: an edit Step 1''s context copy already left is not a named blocker: %', left((v -> 'blocking')::text, 400);
+  end if;
+  delete from custom.io_outbox where id = v_id;
+
   v_run := gen_random_uuid();
   perform platform.final_switch_copy_again_record(v_run, 'start', null, true, '{"says": "finalswitch_green: a green run"}'::jsonb);
   perform platform.final_switch_copy_again_record(v_run, 'finish', null, true, '{"says": "finalswitch_green: finished green"}'::jsonb);

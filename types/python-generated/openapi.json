@@ -10988,6 +10988,153 @@
         }
       }
     },
+    "/v1/meet/meetings/{meeting_id}/follow-up": {
+      "get": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Meeting Follow Up Draft",
+        "description": "THE RECAP DRAFT (Meet wave 3). Subject and body arranged from the wrap-up's own\nrows (no model call), and every invitee / signed-in attendee it can go to. The host,\na co-host or an editor only.",
+        "operationId": "meeting_follow_up_draft_v1_meet_meetings__meeting_id__follow_up_get",
+        "parameters": [
+          {
+            "name": "meeting_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Meeting Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowUpDraftResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Meeting Follow Up Send",
+        "description": "SEND THE RECAP the host reviewed, to the people they chose (Meet wave 3). Never\ncalled automatically. `dry_run` resolves and renders everything and queues nothing.\nA key the draft did not offer is skipped with a reason — this is not a mailer.",
+        "operationId": "meeting_follow_up_send_v1_meet_meetings__meeting_id__follow_up_post",
+        "parameters": [
+          {
+            "name": "meeting_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Meeting Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FollowUpSendRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowUpSendResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meet/meetings/{meeting_id}/rsvp": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Meeting Rsvp",
+        "description": "A SIGNED-IN invitee's Going? answer (Meet wave 1). The write is\n`communication.meet_respond` for the caller; a changed answer tells the host\n(`meet.rsvp_received`), exactly as an answer through the emailed link does.",
+        "operationId": "meeting_rsvp_v1_meet_meetings__meeting_id__rsvp_post",
+        "parameters": [
+          {
+            "name": "meeting_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Meeting Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RsvpInAppRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RsvpInAppResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/meet/rsvp": {
       "post": {
         "tags": [
@@ -11691,6 +11838,28 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cutover/final-switch/capabilities": {
+      "get": {
+        "tags": [
+          "Cutover"
+        ],
+        "summary": "Final Switch Capabilities",
+        "description": "Whether Step 1's context copy runs on this server, and the build it runs.",
+        "operationId": "final_switch_capabilities_cutover_final_switch_capabilities_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinalSwitchCapabilities"
                 }
               }
             }
@@ -173808,6 +173977,46 @@
         ],
         "title": "FinalMileResult"
       },
+      "FinalSwitchCapabilities": {
+        "properties": {
+          "git_sha": {
+            "type": "string",
+            "title": "Git Sha"
+          },
+          "built_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Built At"
+          },
+          "context_copy_ready": {
+            "type": "boolean",
+            "title": "Context Copy Ready"
+          },
+          "context_copy_fix": {
+            "type": "string",
+            "title": "Context Copy Fix"
+          },
+          "says": {
+            "type": "string",
+            "title": "Says"
+          }
+        },
+        "type": "object",
+        "required": [
+          "git_sha",
+          "context_copy_ready",
+          "context_copy_fix",
+          "says"
+        ],
+        "title": "FinalSwitchCapabilities",
+        "description": "What this server can do for Step 1 (read off the code it is running)."
+      },
       "FinalSwitchPressRequest": {
         "properties": {
           "note": {
@@ -175848,6 +176057,207 @@
           "folder_name"
         ],
         "title": "FolderRecord"
+      },
+      "FollowUpDraftResponse": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "recipients": {
+            "items": {
+              "$ref": "#/components/schemas/FollowUpRecipientOut"
+            },
+            "type": "array",
+            "title": "Recipients"
+          },
+          "wrap_up_written": {
+            "type": "boolean",
+            "title": "Wrap Up Written"
+          },
+          "last_sent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FollowUpLastSent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "subject",
+          "body",
+          "recipients",
+          "wrap_up_written"
+        ],
+        "title": "FollowUpDraftResponse",
+        "description": "`GET /v1/meet/meetings/{meeting_id}/follow-up` — the recap draft the host reviews."
+      },
+      "FollowUpLastSent": {
+        "properties": {
+          "at": {
+            "type": "string",
+            "title": "At"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "at"
+        ],
+        "title": "FollowUpLastSent"
+      },
+      "FollowUpRecipientOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "sources": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "attendee",
+                "invitee"
+              ]
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "reachable": {
+            "type": "boolean",
+            "title": "Reachable",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name"
+        ],
+        "title": "FollowUpRecipientOut"
+      },
+      "FollowUpSendRequest": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Body"
+          },
+          "recipient_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Recipient Keys"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "subject",
+          "body",
+          "recipient_keys"
+        ],
+        "title": "FollowUpSendRequest",
+        "description": "`POST /v1/meet/meetings/{meeting_id}/follow-up` — send what the host reviewed."
+      },
+      "FollowUpSendResponse": {
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run"
+          },
+          "queued": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Queued"
+          },
+          "skipped": {
+            "items": {
+              "$ref": "#/components/schemas/FollowUpSkipped"
+            },
+            "type": "array",
+            "title": "Skipped"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dry_run",
+          "queued",
+          "skipped"
+        ],
+        "title": "FollowUpSendResponse"
+      },
+      "FollowUpSkipped": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "reason"
+        ],
+        "title": "FollowUpSkipped"
       },
       "FoodishImage": {
         "properties": {
@@ -256527,6 +256937,60 @@
           "data"
         ],
         "title": "RowUpdate"
+      },
+      "RsvpInAppRequest": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "declined",
+              "tentative"
+            ],
+            "title": "Answer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer"
+        ],
+        "title": "RsvpInAppRequest",
+        "description": "`POST /v1/meet/meetings/{id}/rsvp` — a signed-in invitee's Going? answer."
+      },
+      "RsvpInAppResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "rsvp_state": {
+            "type": "string",
+            "title": "Rsvp State"
+          },
+          "host_notified": {
+            "type": "boolean",
+            "title": "Host Notified",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "rsvp_state"
+        ],
+        "title": "RsvpInAppResponse"
       },
       "RsvpLinkRequest": {
         "properties": {

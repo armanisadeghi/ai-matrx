@@ -66,6 +66,12 @@ export type FinalSwitchOrganization = {
   rerun_clears: FinalSwitchDifference[];
   cannot_clear: FinalSwitchDifference[];
   needs_copy_again: boolean;
+  /**
+   * What Step 1's CONTEXT COPY clears for this organization (fourth file, coordinator 2026-09-27):
+   * agent context not all copied, scope words not on their copy, edits waiting, parity to measure again.
+   */
+  context_clears?: { switch: string; key: string; says: string; detail: string | null }[];
+  needs_context_copy?: boolean;
   ready: boolean;
   plan: {
     press_tables: boolean;
@@ -139,6 +145,8 @@ export type FinalSwitchBoard = {
     to_switch?: number;
     nothing_to_switch?: number;
     need_copy_again: number;
+    /** Listed organizations Step 1's context copy has something to do for. */
+    need_context_copy?: number;
     blocked: number;
   };
   blocking: string[];
@@ -152,8 +160,10 @@ export type FinalSwitchBoard = {
   orphans: FinalSwitchOrphanList[];
   /** The last Copy again run (its own step, before the press); null when none ran. */
   copyAgain: FinalSwitchCopyAgainState | null;
-  /** Copy again has something to do: an organization to copy, a list to give its organization, or an unfinished/red run. */
+  /** Step 1 has something to do: an organization to copy (tables or context), a list to give its organization, or an unfinished/red run. */
   copyAgainNeeded: boolean;
+  /** The organizations Step 1's context copy runs for. */
+  needsContextCopy: string[];
   /** After a press: the pick lists it archived with no owner organization (restorable by Undo). */
   noOwnerArchived: { id: string; name: string; maker: string; why: string }[];
 };
@@ -177,6 +187,7 @@ type RawBoard =
       orphans?: FinalSwitchOrphanList[];
       copy_again?: FinalSwitchCopyAgainState | null;
       copy_again_needed?: boolean;
+      needs_context_copy?: string[];
       no_owner_archived?: FinalSwitchBoard["noOwnerArchived"] | null;
     }
   | { ok: false; reason: string; says: string };
@@ -220,6 +231,7 @@ export async function readFinalSwitch(): Promise<FinalSwitchBoard> {
     orphans: raw.orphans ?? [],
     copyAgain: raw.copy_again ?? null,
     copyAgainNeeded: Boolean(raw.copy_again_needed),
+    needsContextCopy: raw.needs_context_copy ?? [],
     noOwnerArchived: raw.no_owner_archived ?? [],
   };
 }
@@ -227,7 +239,8 @@ export async function readFinalSwitch(): Promise<FinalSwitchBoard> {
 /** Sort for the table: what blocks first, then what copying again clears, then the ready. */
 export function organizationOrder(o: FinalSwitchOrganization): number {
   if (o.cannot_clear.length > 0) return 0;
-  if (o.rerun_clears.length > 0) return 1;
+  if (o.rerun_clears.length > 0 || (o.context_clears?.length ?? 0) > 0)
+    return 1;
   if (
     o.plan.press_tables ||
     o.plan.press_context ||
@@ -393,6 +406,50 @@ export async function runCopyAgain(
   return r.ok
     ? { ok: true, says: r.says, result: r }
     : { ok: false, says: r.says, result: r };
+}
+
+/**
+ * WHETHER THIS SERVER'S CONTEXT COPY CARRIES A LARGE ORGANIZATION (aidream 991ff424b5: the tag copy
+ * is not cut off by the database's 30-second clock). Read off the code the server runs, with its
+ * build; Step 1 refuses the context copy by name on a server without it.
+ */
+export type FinalSwitchCapabilities = {
+  gitSha: string;
+  contextCopyReady: boolean;
+  contextCopyFix: string;
+  says: string;
+};
+
+export async function readFinalSwitchCapabilities(
+  dispatch: AppDispatch,
+): Promise<FinalSwitchCapabilities> {
+  const result = await dispatch(
+    callApi({
+      path: "/cutover/final-switch/capabilities",
+      method: "GET",
+      expectedErrorStatuses: [401, 403, 404],
+    }),
+  );
+  if (result.error) {
+    // An older server has no such door: that server has no answer to give, so the gate stays shut.
+    throw new Error(
+      result.error.status === 404
+        ? "The server does not say whether its context copy carries a large organization (it has no capabilities door yet), so Step 1's context copy waits for the next server release."
+        : `The server's Step 1 capabilities could not be read: ${result.error.message}`,
+    );
+  }
+  const d = result.data as {
+    git_sha: string;
+    context_copy_ready: boolean;
+    context_copy_fix: string;
+    says: string;
+  };
+  return {
+    gitSha: d.git_sha,
+    contextCopyReady: Boolean(d.context_copy_ready),
+    contextCopyFix: d.context_copy_fix,
+    says: d.says,
+  };
 }
 
 /** Switch every organization at once (Copy again is its own step before this). */
