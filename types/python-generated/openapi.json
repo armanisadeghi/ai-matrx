@@ -11085,6 +11085,183 @@
         }
       }
     },
+    "/v1/meet/moderate": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Meeting Moderate",
+        "description": "EVERY IN-MEETING HOST POWER (Meet wave 2) — mute, stop video/screen, mute all, ask\nto unmute, spotlight, lower hands, co-host, hand over, rename, remove, report.\n\nNo authentication dependency, like `/token`: a guest may rename themselves and\nreport, proving who they are with the room pass (`x-meet-room-token`). Every host\npower is decided in `services/meet/moderation.py` from the meeting itself — the\nclient's view of who is host decides nothing.",
+        "operationId": "meeting_moderate_v1_meet_moderate_post",
+        "parameters": [
+          {
+            "name": "x-meet-room-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Meet-Room-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeetModerationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeetModerationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meet/chat": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Meeting Chat Send",
+        "description": "Send a chat message to everyone in the meeting; it is SAVED (Meet wave 2).\n\nThe row is written, then the room is told on `matrx.meet.chat`. The sender's\nname is the durable attendance row's, never the body's. Guests prove who they\nare with the room pass.",
+        "operationId": "meeting_chat_send_v1_meet_chat_post",
+        "parameters": [
+          {
+            "name": "x-meet-room-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Meet-Room-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeetChatSendRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeetChatMessage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Meeting Chat History",
+        "description": "The meeting's saved chat, oldest first — what a late joiner reads (Meet wave 2).",
+        "operationId": "meeting_chat_history_v1_meet_chat_get",
+        "parameters": [
+          {
+            "name": "meeting_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Meeting Id"
+            }
+          },
+          {
+            "name": "x-meet-room-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Meet-Room-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeetChatHistoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/meet/webhooks/livekit": {
       "post": {
         "tags": [
@@ -196164,8 +196341,24 @@
           "as_you_type": {
             "type": "boolean",
             "title": "As You Type",
-            "description": "True while the person is still typing: instant lanes only, no Segments.",
+            "description": "True while the person is still typing: the INSTANT pass only (top hit, items, messages) — Segments never run while typing. Same as pass='instant'.",
             "default": false
+          },
+          "pass": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "content",
+                  "instant"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pass",
+            "description": "Which pass to run: 'instant' = top hit, items and messages (every keystroke); 'content' = Segments only (after a ~600 ms typing pause and on submit). Omitted = both, in one stream."
           },
           "sources_used": {
             "anyOf": [
@@ -210150,6 +210343,186 @@
         },
         "type": "object",
         "title": "MediaUpdate"
+      },
+      "MeetChatHistoryResponse": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MeetChatMessage"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "saved": {
+            "type": "boolean",
+            "title": "Saved",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "MeetChatHistoryResponse"
+      },
+      "MeetChatMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "meeting_id": {
+            "type": "string",
+            "title": "Meeting Id"
+          },
+          "sender_identity": {
+            "type": "string",
+            "title": "Sender Identity"
+          },
+          "sender_name": {
+            "type": "string",
+            "title": "Sender Name"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "saved": {
+            "type": "boolean",
+            "title": "Saved",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "meeting_id",
+          "sender_identity",
+          "sender_name",
+          "body",
+          "created_at"
+        ],
+        "title": "MeetChatMessage"
+      },
+      "MeetChatSendRequest": {
+        "properties": {
+          "meeting_id": {
+            "type": "string",
+            "title": "Meeting Id"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "meeting_id",
+          "body"
+        ],
+        "title": "MeetChatSendRequest"
+      },
+      "MeetModerationRequest": {
+        "properties": {
+          "meeting_id": {
+            "type": "string",
+            "title": "Meeting Id"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "ask_all_unmute",
+              "ask_unmute",
+              "lower_all_hands",
+              "lower_hand",
+              "make_cohost",
+              "mute",
+              "mute_all",
+              "remove",
+              "rename",
+              "report",
+              "revoke_cohost",
+              "spotlight",
+              "stop_screen",
+              "stop_video",
+              "transfer_host"
+            ],
+            "title": "Action"
+          },
+          "identity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identity"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "meeting_id",
+          "action"
+        ],
+        "title": "MeetModerationRequest"
+      },
+      "MeetModerationResponse": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "affected": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Affected"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "affected",
+          "message"
+        ],
+        "title": "MeetModerationResponse"
       },
       "MeetQuestionRequest": {
         "properties": {

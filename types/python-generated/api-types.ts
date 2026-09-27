@@ -4786,6 +4786,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/meet/moderate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Meeting Moderate
+         * @description EVERY IN-MEETING HOST POWER (Meet wave 2) — mute, stop video/screen, mute all, ask
+         *     to unmute, spotlight, lower hands, co-host, hand over, rename, remove, report.
+         *
+         *     No authentication dependency, like `/token`: a guest may rename themselves and
+         *     report, proving who they are with the room pass (`x-meet-room-token`). Every host
+         *     power is decided in `services/meet/moderation.py` from the meeting itself — the
+         *     client's view of who is host decides nothing.
+         */
+        post: operations["meeting_moderate_v1_meet_moderate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/meet/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Meeting Chat History
+         * @description The meeting's saved chat, oldest first — what a late joiner reads (Meet wave 2).
+         */
+        get: operations["meeting_chat_history_v1_meet_chat_get"];
+        put?: never;
+        /**
+         * Meeting Chat Send
+         * @description Send a chat message to everyone in the meeting; it is SAVED (Meet wave 2).
+         *
+         *     The row is written, then the room is told on `matrx.meet.chat`. The sender's
+         *     name is the durable attendance row's, never the body's. Guests prove who they
+         *     are with the room pass.
+         */
+        post: operations["meeting_chat_send_v1_meet_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/meet/webhooks/livekit": {
         parameters: {
             query?: never;
@@ -86057,10 +86111,15 @@ export interface components {
             parse_operators?: boolean;
             /**
              * As You Type
-             * @description True while the person is still typing: instant lanes only, no Segments.
+             * @description True while the person is still typing: the INSTANT pass only (top hit, items, messages) — Segments never run while typing. Same as pass='instant'.
              * @default false
              */
             as_you_type?: boolean;
+            /**
+             * Pass
+             * @description Which pass to run: 'instant' = top hit, items and messages (every keystroke); 'content' = Segments only (after a ~600 ms typing pause and on submit). Omitted = both, in one stream.
+             */
+            pass?: ("content" | "instant") | null;
             /**
              * Sources Used
              * @description Ask only: per-Source on/off keyed by Source id (the `sources` section's ids). A Source set to false is not used; a Source absent from the map is used.
@@ -91894,6 +91953,68 @@ export interface components {
         MediaUpdate: {
             /** Is Relevant */
             is_relevant?: boolean | null;
+        };
+        /** MeetChatHistoryResponse */
+        MeetChatHistoryResponse: {
+            /** Messages */
+            messages: components["schemas"]["MeetChatMessage"][];
+            /**
+             * Saved
+             * @default true
+             */
+            saved?: boolean;
+        };
+        /** MeetChatMessage */
+        MeetChatMessage: {
+            /** Id */
+            id: string;
+            /** Meeting Id */
+            meeting_id: string;
+            /** Sender Identity */
+            sender_identity: string;
+            /** Sender Name */
+            sender_name: string;
+            /** Body */
+            body: string;
+            /** Created At */
+            created_at: string;
+            /**
+             * Saved
+             * @default true
+             */
+            saved?: boolean;
+        };
+        /** MeetChatSendRequest */
+        MeetChatSendRequest: {
+            /** Meeting Id */
+            meeting_id: string;
+            /** Body */
+            body: string;
+        };
+        /** MeetModerationRequest */
+        MeetModerationRequest: {
+            /** Meeting Id */
+            meeting_id: string;
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "ask_all_unmute" | "ask_unmute" | "lower_all_hands" | "lower_hand" | "make_cohost" | "mute" | "mute_all" | "remove" | "rename" | "report" | "revoke_cohost" | "spotlight" | "stop_screen" | "stop_video" | "transfer_host";
+            /** Identity */
+            identity?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Reason */
+            reason?: string | null;
+        };
+        /** MeetModerationResponse */
+        MeetModerationResponse: {
+            /** Action */
+            action: string;
+            /** Affected */
+            affected: string[];
+            /** Message */
+            message: string;
         };
         /**
          * MeetQuestionRequest
@@ -146598,6 +146719,109 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    meeting_moderate_v1_meet_moderate_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-meet-room-token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeetModerationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeetModerationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    meeting_chat_history_v1_meet_chat_get: {
+        parameters: {
+            query: {
+                meeting_id: string;
+            };
+            header?: {
+                "x-meet-room-token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeetChatHistoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    meeting_chat_send_v1_meet_chat_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-meet-room-token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeetChatSendRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeetChatMessage"];
                 };
             };
             /** @description Validation Error */
