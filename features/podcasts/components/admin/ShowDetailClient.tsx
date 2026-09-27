@@ -41,6 +41,7 @@ import { podcastEpisodeAdminHref, podcastPublicHref } from "../../utils";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { pushAppHref, replaceAppHref } from "@/lib/deployment/navigate";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 /** An episode length reads at a glance: "45 min" / "1h 30m". */
 function formatDuration(seconds: number): string {
@@ -82,6 +83,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
   const [show, setShow] = useState<PcShow | null>(null);
   const [episodes, setEpisodes] = useState<PcEpisodeWithShow[]>([]);
   const [isLoading, setIsLoading] = useState(!isNew);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [pendingDeleteEpId, setPendingDeleteEpId] = useState<string | null>(
     null,
   );
@@ -110,8 +112,10 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
       ]);
       setShow(foundShow);
       setEpisodes(allEps);
+      setLoadError(null);
     } catch (e) {
       console.error("Failed to load show", e);
+      setLoadError(e ?? new Error("Failed to load show"));
     } finally {
       setIsLoading(false);
     }
@@ -228,6 +232,13 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading…
           </div>
+        ) : loadError && !isNew ? (
+          <ReadFailure
+            error={loadError}
+            what="this show and its episodes"
+            onRetry={() => void load()}
+            size="default"
+          />
         ) : panel === "show" || isNew ? (
           /* Show form */
           <div className="p-4 max-w-2xl">

@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import { Loader2, RefreshCcw, ExternalLink, Globe, Hash, Newspaper } from "lucide-react";
 import { fetchNews } from "@/actions/ai-actions/news-api";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { InlineMediaRef } from "@ai-matrx/media/react";
+import { useRead } from "@/components/read-state/useRead";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const CATEGORIES = [
   "general",
@@ -39,29 +41,21 @@ interface Article {
 }
 
 export function NewsFloatingWorkspace() {
-  const [news, setNews] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(false);
   const [category, setCategory] = useState("general");
   const [country, setCountry] = useState("us");
 
-  const handleFetchNews = useCallback(async () => {
-    setLoading(true);
-    try {
+  const newsRead = useRead(
+    async (): Promise<Article[]> => {
       const result = await fetchNews(category, country);
-      if (result.data?.articles) {
-        setNews(result.data.articles);
-      } else {
-        setNews([]);
-      }
-    } catch (error) {
-      console.error("Error fetching news:", error);
-    }
-    setLoading(false);
-  }, [category, country]);
-
-  useEffect(() => {
-    handleFetchNews();
-  }, [handleFetchNews]);
+      if (result.error) throw new Error(result.error);
+      return (result.data?.articles as Article[] | undefined) ?? [];
+    },
+    [category, country],
+    { initialData: [] },
+  );
+  const news = newsRead.data ?? [];
+  const loading = newsRead.isLoading;
+  const handleFetchNews = newsRead.retry;
 
   return (
     <div className="flex h-full w-full bg-background overflow-hidden relative">
@@ -145,6 +139,12 @@ export function NewsFloatingWorkspace() {
                  </div>
                </div>
              ))
+           ) : newsRead.isError && news.length === 0 ? (
+             <ReadFailure
+               error={newsRead.error}
+               what="the news for this selection"
+               onRetry={newsRead.retry}
+             />
            ) : news.length > 0 ? (
              news.map((article, i) => (
                <NewsItem key={i} article={article} />

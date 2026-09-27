@@ -563,6 +563,7 @@ export function ShowManageClient({ showId }: { showId: string }) {
         <SectionCard title={`Episodes (${episodes.length})`} icon={<Music className="h-4 w-4" />}>
           <div className="mb-3 flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
+              {/* read-gate-exempt: a failed show/episodes read sets loadError + notFound and returns the AccessGate (with the error) before this renders */}
               {episodes.length === 0
                 ? "No episodes yet."
                 : `${episodes.length} episode${episodes.length === 1 ? "" : "s"}`}

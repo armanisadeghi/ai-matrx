@@ -16,7 +16,6 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { toast } from "@/lib/toast";
 
 import type { PipelineStage } from "../../pipeline-types";
 import {
@@ -45,6 +44,8 @@ export function PipelineWorkspace({
   const [stage, setStage] = useState<PipelineStage>("intake");
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [entries, setEntries] = useState<StageListEntry[] | null>(null);
+  // The stage-list read's failure — the list says it instead of "No items".
+  const [listError, setListError] = useState<unknown>(null);
   // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class MandatesConsole and
   // useMandateInputSurface already fixed. `entries` starts null and null is the
   // list's loading state, so with no organization the load effect's early
@@ -94,9 +95,10 @@ export function PipelineWorkspace({
             };
           }),
         );
+        setListError(null);
       } catch (err) {
         console.error("[product-pipeline] stage list failed", err);
-        toast.error("Could not load the stage items.");
+        setListError(err ?? new Error("Could not load the stage items."));
         setEntries([]);
       }
     },
@@ -157,6 +159,8 @@ export function PipelineWorkspace({
         <StageItemList
           entries={entries ?? []}
           loading={entries === null}
+          error={listError}
+          onRetry={() => void refreshList(stage)}
           selectedId={selectedId}
           onSelect={selectItem}
         />

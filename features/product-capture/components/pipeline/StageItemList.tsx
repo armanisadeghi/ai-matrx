@@ -10,6 +10,7 @@ import { Camera, Loader2 } from "lucide-react";
 
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { cn } from "@/lib/utils";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 import type { PipelineItem } from "../../pipeline-service";
 
@@ -24,11 +25,16 @@ export interface StageListEntry {
 export function StageItemList({
   entries,
   loading,
+  error = null,
+  onRetry,
   selectedId,
   onSelect,
 }: {
   entries: StageListEntry[];
   loading: boolean;
+  /** The stage-list read's failure: shown instead of "No items at this stage". */
+  error?: unknown;
+  onRetry?: () => void;
   selectedId: string | null;
   onSelect: (item: PipelineItem) => void;
 }) {
@@ -38,6 +44,9 @@ export function StageItemList({
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
+  }
+  if (error && entries.length === 0) {
+    return <ReadFailure error={error} what="the items at this stage" onRetry={onRetry} />;
   }
   if (entries.length === 0) {
     return (

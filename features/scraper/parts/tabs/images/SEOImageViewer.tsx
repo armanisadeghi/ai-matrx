@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface SEOImageMetadata {
   url: string;
@@ -31,6 +32,8 @@ export function SEOImageViewer({
   const [showSEO, setShowSEO] = useState(false);
   const [isCopied, setIsCopied] = useState<string | null>(null);
   const [imageMetadata, setImageMetadata] = useState<Record<string, SEOImageMetadata>>(metadata);
+  // Per-image metadata read failures — the panel says "couldn't load", never "No … available".
+  const [metadataErrors, setMetadataErrors] = useState<Record<string, unknown>>({});
   const { toast } = useToast();
 
   // Current image URL
@@ -40,7 +43,7 @@ export function SEOImageViewer({
   // Fetch metadata for the current image if not available
   useEffect(() => {
     const fetchMetadata = async () => {
-      if (!imageMetadata[currentImageUrl] && onRequestMetadata) {
+      if (!imageMetadata[currentImageUrl] && !(currentImageUrl in metadataErrors) && onRequestMetadata) {
         setIsLoading(true);
         try {
           const data = await onRequestMetadata(currentImageUrl);
@@ -50,11 +53,10 @@ export function SEOImageViewer({
           }));
         } catch (error) {
           console.error("Failed to fetch metadata:", error);
-          toast({
-            title: "Error",
-            description: "Failed to fetch image metadata",
-            variant: "destructive"
-          });
+          setMetadataErrors(prev => ({
+            ...prev,
+            [currentImageUrl]: error ?? new Error("Failed to fetch image metadata"),
+          }));
         } finally {
           setIsLoading(false);
         }
@@ -62,7 +64,15 @@ export function SEOImageViewer({
     };
     
     fetchMetadata();
-  }, [currentImageUrl, imageMetadata, onRequestMetadata, toast]);
+  }, [currentImageUrl, imageMetadata, metadataErrors, onRequestMetadata]);
+
+  const metadataError = currentImageUrl in metadataErrors ? metadataErrors[currentImageUrl] : null;
+  const retryMetadata = () =>
+    setMetadataErrors(prev => {
+      const next = { ...prev };
+      delete next[currentImageUrl];
+      return next;
+    });
 
   // Navigate to next/previous image
   const goToNextImage = () => {
@@ -201,6 +211,13 @@ export function SEOImageViewer({
                 <Skeleton className="h-32 w-full mb-4" />
                 <Skeleton className="h-10 w-40" />
               </>
+            ) : metadataError ? (
+              <ReadFailure
+                error={metadataError}
+                what="this image's SEO metadata"
+                onRetry={retryMetadata}
+                className="m-0"
+              />
             ) : (
               <>
                 {/* Meta Title */}
