@@ -667,7 +667,7 @@ export default function IntegrationsPage({
               : "No integrations match your filters."}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {sorted.map((entry) => (
               <ServerCard
                 key={entry.serverId}
@@ -854,7 +854,7 @@ function ServerCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
-              <h3 className="font-medium text-sm text-foreground truncate">
+              <h3 className="min-w-0 line-clamp-2 break-words text-sm font-medium leading-5 text-foreground">
                 {entry.name}
               </h3>
               {entry.isOfficial && (
@@ -952,15 +952,14 @@ function ServerCard({
                 className="h-11 min-w-0 flex-1 px-2 text-sm sm:h-7 sm:px-3 sm:text-xs"
                 onClick={() => onOAuthConnect()}
                 disabled={isConnecting}
-                aria-label="Connect with OAuth"
+                aria-label={`Connect to ${entry.name}`}
               >
                 {isConnecting ? (
                   <Loader2 className="h-3 w-3 animate-spin mr-1" />
                 ) : (
                   <Lock className="h-3 w-3 mr-1" />
                 )}
-                <span className="sm:hidden">Connect</span>
-                <span className="hidden sm:inline">Connect with OAuth</span>
+                Connect
               </Button>
               <Button
                 variant="outline"

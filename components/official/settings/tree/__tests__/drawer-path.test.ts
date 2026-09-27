@@ -1,5 +1,5 @@
 import type { SettingsTreeNode } from "../types";
-import { getDrawerPathForActiveId } from "../types";
+import { flattenLeaves, getDrawerPathForActiveId } from "../types";
 
 const nodes: SettingsTreeNode[] = [
   {
@@ -26,4 +26,18 @@ describe("getDrawerPathForActiveId", () => {
     expect(getDrawerPathForActiveId(nodes, null)).toEqual([]);
     expect(getDrawerPathForActiveId(nodes, "missing")).toEqual([]);
   });
+});
+
+it("includes a folder with its own page among settings destinations", () => {
+  const connectors: SettingsTreeNode = {
+    id: "integrations",
+    label: "Connectors",
+    navigable: true,
+    children: [{ id: "integrations.microsoft", label: "Microsoft" }],
+  };
+
+  expect(flattenLeaves([connectors]).map(({ id }) => id)).toEqual([
+    "integrations",
+    "integrations.microsoft",
+  ]);
 });
