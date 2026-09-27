@@ -70,6 +70,7 @@ export const MergeFieldTextarea = forwardRef<MergeFieldInputHandle, MergeFieldTe
         auxiliaryControlsLabel={auxiliaryControlsLabel}
         editor={{
           handle: inner,
+          singleLine: !multiline,
           render: (field) => (
             <MergeFieldInput
               ref={inner}

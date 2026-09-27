@@ -1117,8 +1117,10 @@ export const ProTextarea = React.forwardRef<
     // typing and reappears on motion. The controls float OVER the text (no
     // reserved right gutter), so they only overlap content while hovering —
     // never while the user is typing.
+    // Also while the field has focus — so a keyboard user who Tabs in sees the
+    // mic and "…" (they sit in a reserved row, never over text).
     const showControls =
-      (isHovered || isRecording || isTranscribing) && !disabled;
+      (isHovered || isFocused || isRecording || isTranscribing) && !disabled;
     const isVoiceDisabled =
       !isAudioAvailable || disabled || (isTranscribing && !isRecording);
 
@@ -1190,7 +1192,11 @@ export const ProTextarea = React.forwardRef<
       // AFTER the consumer's className: a caller's own padding (`py-2`) used
       // to erase the reserved row and the cluster sat on the last line again
       // (page-pass 2026-09-27, Feedback window). The reserve always wins.
-      hasCoarseControls && !onSubmit && "pb-10 pointer-coarse:pb-12",
+      // A one-line hosted editor keeps its single line: the cluster takes a
+      // right gutter beside it instead of a reserved row below.
+      hasCoarseControls &&
+        !onSubmit &&
+        (editor?.singleLine ? "pr-24" : "pb-10 pointer-coarse:pb-12"),
       // Bottom padding for the submit button — TapTargetButtonSolid is
       // 44px tall (h-11), so reserve enough vertical clearance.
       onSubmit && "pb-14",
@@ -1292,6 +1298,7 @@ export const ProTextarea = React.forwardRef<
                 // (beside the submit button when there is one) —
                 // proTextareaControlPlacement.ts.
                 proTextareaClusterPlacement(!!onSubmit).className,
+                editor?.singleLine && "top-1/2 bottom-auto -translate-y-1/2",
                 "pointer-coarse:opacity-100 pointer-coarse:pointer-events-auto",
                 showControls || menuOpen
                   ? "opacity-100"

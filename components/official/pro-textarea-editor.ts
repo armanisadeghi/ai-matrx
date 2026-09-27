@@ -36,5 +36,7 @@ export interface ProTextareaEditorRenderProps {
 
 export interface ProTextareaEditorSlot {
   handle: RefObject<ProTextareaEditorHandle | null>;
+  /** A one-line editor: the toolbar sits in a right gutter, not a row below. */
+  singleLine?: boolean;
   render: (props: ProTextareaEditorRenderProps) => ReactNode;
 }

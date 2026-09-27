@@ -70,7 +70,7 @@ export interface MergeFieldInputProps {
 
 /** Token-styled chip: readable in light and dark (foreground on a faint primary wash). */
 export const MERGE_FIELD_CHIP_CLASS =
-  "mx-0.5 inline-flex items-center rounded bg-primary/15 px-1 text-foreground ring-1 ring-inset ring-primary/40 font-sans font-medium select-all align-baseline";
+  "mx-0.5 inline-flex items-center rounded bg-primary/15 px-1 text-foreground ring-1 ring-inset ring-primary/40 font-sans font-medium align-baseline";
 
 export const MergeFieldInput = forwardRef<MergeFieldInputHandle, MergeFieldInputProps>(
   function MergeFieldInput(
