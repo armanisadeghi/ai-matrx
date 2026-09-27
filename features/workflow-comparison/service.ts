@@ -13,6 +13,7 @@ import { callApi, type ApiCallConfig } from "@/lib/api/call-api";
 import type { paths } from "@/types/python-generated/api-types";
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { runScope } from "@/features/workflow-runtime/runOrganization";
 
 import type { ComparisonRow } from "./types";
 
@@ -231,6 +232,8 @@ export async function cancelArmRun(
       path,
       method: "POST",
       pathParams: { run_id: runId },
+      // The run's own organization — a run control never asks for a workspace.
+      ...(await runScope(runId)),
     }),
   );
   if (result.error) {

@@ -24,6 +24,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi, type ApiCallConfig, type ApiCallResult } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 import { parseCallApiError } from "@/lib/api/errors";
+import { runScope } from "../runOrganization";
 
 export interface StartRunArgs {
   definitionId: string;
@@ -195,6 +196,7 @@ export function useWorkflowRunControls(): WorkflowRunControls {
             path: "/runs/{run_id}/nodes/{node_id}/execute",
             method: "POST",
             pathParams: { run_id: runId, node_id: nodeId },
+            ...(await runScope(runId)),
             body: inputs ? { inputs } : {},
             stream: true,
             consumeStream: drainBody,
@@ -210,6 +212,7 @@ export function useWorkflowRunControls(): WorkflowRunControls {
             path: "/runs/{run_id}/pause",
             method: "POST",
             pathParams: { run_id: runId },
+            ...(await runScope(runId)),
             stream: true,
             consumeStream: drainBody,
           }),
@@ -224,6 +227,7 @@ export function useWorkflowRunControls(): WorkflowRunControls {
             path: "/runs/{run_id}/resume-paused",
             method: "POST",
             pathParams: { run_id: runId },
+            ...(await runScope(runId)),
             stream: true,
             consumeStream: drainBody,
           }),
@@ -238,6 +242,7 @@ export function useWorkflowRunControls(): WorkflowRunControls {
             path: "/runs/{run_id}/cancel",
             method: "POST",
             pathParams: { run_id: runId },
+            ...(await runScope(runId)),
             queryParams: { mode: mode ?? "graceful" },
             stream: true,
             consumeStream: drainBody,
@@ -253,6 +258,7 @@ export function useWorkflowRunControls(): WorkflowRunControls {
             path: "/runs/{run_id}/resume",
             method: "POST",
             pathParams: { run_id: runId },
+            ...(await runScope(runId)),
             body: { checkpoint_id: checkpointId, resume_value: resumeValue },
             stream: true,
             consumeStream: drainBody,
@@ -268,6 +274,7 @@ export function useWorkflowRunControls(): WorkflowRunControls {
             path: "/runs/{run_id}/nodes/{node_id}/retry",
             method: "POST",
             pathParams: { run_id: runId, node_id: nodeId },
+            ...(await runScope(runId)),
             stream: true,
             consumeStream: drainBody,
           }),
@@ -282,6 +289,7 @@ export function useWorkflowRunControls(): WorkflowRunControls {
             path: "/runs/{run_id}/nodes/{node_id}/skip",
             method: "POST",
             pathParams: { run_id: runId, node_id: nodeId },
+            ...(await runScope(runId)),
             stream: true,
             consumeStream: drainBody,
           }),

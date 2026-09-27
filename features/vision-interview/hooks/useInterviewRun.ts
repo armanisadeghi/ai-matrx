@@ -31,6 +31,7 @@ import { reloadResumeVerdict } from "./reloadResume";
 import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
+import { runScope } from "@/features/workflow-runtime/runOrganization";
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { createRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import {
@@ -478,11 +479,14 @@ export function useInterviewRun(sessionId: string) {
       return false;
     }
     const consume = adopt();
+    // The run's own organization — answering a run never asks for a workspace.
+    const scope = await runScope(runId);
     const accepted = await runStream(() =>
       callApi({
         path: "/runs/{run_id}/resume",
         method: "POST",
         pathParams: { run_id: runId },
+        ...scope,
         body: {
           checkpoint_id: checkpointId,
           resume_value: {
