@@ -405,6 +405,36 @@ export function sourceStage(
   return "not_searchable";
 }
 
+/**
+ * THE STAGE RE-READ RULE. "Indexing…" is a claim about a job that is running
+ * right now, so a screen that shows it must keep asking until the job ends —
+ * a facts row read once and never again showed "Indexing…" for ten minutes on
+ * a Source whose job finished twelve seconds after the save (2026-09-27).
+ *
+ * Returns how long to wait before re-reading the facts, or null when nothing
+ * is running and the stage is settled (stop asking). Fast while a job is
+ * young (most finish in seconds), slower once it has run a while, never
+ * stopping while the server still says a job is open.
+ */
+export function factsPollDelayMs(
+  indexing: boolean,
+  elapsedMs: number,
+): number | null {
+  if (!indexing) return null;
+  if (elapsedMs < 60_000) return 2_000;
+  if (elapsedMs < 5 * 60_000) return 5_000;
+  return 15_000;
+}
+
+/** The listed rows whose facts say a job is open — the rows a list re-reads. */
+export function indexingIds(facts: ReadonlyMap<string, SourceFacts>): string[] {
+  const out: string[] = [];
+  facts.forEach((f, id) => {
+    if (f.indexing) out.push(id);
+  });
+  return out.sort();
+}
+
 /** What one row's Stage cell shows: the stage, or the state of reading it. */
 export type StageCellState = SourceStage | "checking" | "read_failed";
 

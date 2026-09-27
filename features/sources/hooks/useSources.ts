@@ -29,6 +29,8 @@ import {
   sourcesListFilter,
   listedSource,
   sourceFactsFromRow,
+  factsPollDelayMs,
+  indexingIds,
   type SourceFacts,
   type SourceFactsRow,
   type SourceListRow,
@@ -378,6 +380,40 @@ export function useSources(
       });
     });
   }, []);
+
+  // THE STAGE RE-READ RULE (sourceRows `factsPollDelayMs`): a row that says
+  // "Indexing…" is re-read until its job ends, so the list never shows a job
+  // that finished long ago. Only the indexing rows are asked again, silently.
+  const pollingKey = indexingIds(state.facts).join(",");
+  const pollStart = useRef<number | null>(null);
+  useEffect(() => {
+    if (!pollingKey) {
+      pollStart.current = null;
+      return undefined;
+    }
+    const now = Date.now();
+    if (pollStart.current === null) pollStart.current = now;
+    const delay = factsPollDelayMs(true, now - pollStart.current);
+    if (delay === null) return undefined;
+    const gen = generation.current;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void readSourceFacts(pollingKey.split(",")).then(({ facts }) => {
+        if (cancelled || gen !== generation.current) return;
+        setState((s) => {
+          const merged = new Map(s.facts);
+          facts.forEach((f, id) => merged.set(id, f));
+          return { ...s, facts: merged };
+        });
+      });
+    }, delay);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // `state.facts` identity changes on every merge, so an unchanged set of
+    // indexing rows schedules the next re-read after each answer.
+  }, [pollingKey, state.facts]);
 
   return { ...state, retryFacts, loadMore };
 }
