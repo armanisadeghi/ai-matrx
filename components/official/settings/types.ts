@@ -43,6 +43,14 @@ export type SettingsCommonProps = {
   id?: string;
   /** Tooltip or long-form help, shown via help icon. */
   helpText?: ReactNode;
+  /**
+   * Puts the setting back to its default. When given AND `modified` is true,
+   * the row shows one reset button (labelled with `resetLabel`) beside the
+   * control; an unmodified row shows none, so the button never does nothing.
+   */
+  onReset?: () => void;
+  /** What resetting does, for the button's label ("Reset to Use system setting"). */
+  resetLabel?: string;
 };
 
 /**

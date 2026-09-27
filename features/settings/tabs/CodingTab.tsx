@@ -24,7 +24,7 @@ export default function CodingTab() {
   return (
     <>
       <SettingsSubHeader
-        title="Coding"
+        title="Code editor"
         description="The code editor doesn't have its own preferences yet — see what's already live below."
         icon={Code}
       />

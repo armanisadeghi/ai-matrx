@@ -57,8 +57,10 @@ import {
   Radar,
   Repeat,
   ScanText,
+  Scale,
   Search,
   Send,
+  Server,
   Shapes,
   Share2,
   Smartphone,
@@ -72,7 +74,7 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
-import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { AGENT_ICON, INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 
 /** Registry Feature id → icon. */
 const FEATURE_ICONS: Readonly<Record<string, LucideIcon>> = {
@@ -173,23 +175,39 @@ const FEATURE_ICONS: Readonly<Record<string, LucideIcon>> = {
 /** Registry Domain id → icon (a Domain's "not yet assigned" group wears it). */
 const DOMAIN_ICONS: Readonly<Record<string, LucideIcon>> = {
   agents: AGENT_ICON,
+  chat: MessageCircle,
   clients: Laptop,
   coding: Code2,
   communications: MessagesSquare,
   "content-ir": Shapes,
   crm: Handshake,
   education: GraduationCap,
+  "human-resources": Users,
   improvement: Repeat,
+  infrastructure: Server,
   integrations: Plug,
+  intelligence: INTELLIGENCE_ICON,
   knowledge: Library,
+  legal: Scale,
   marketing: TrendingUp,
   masterwork: BookOpen,
   media: Clapperboard,
   platform: Boxes,
+  "public-web": Globe,
+  "scopes-context": Layers,
   "website-platform": Newspaper,
   workflows: Workflow,
   workspace: BriefcaseBusiness,
 };
+
+/**
+ * A registry Domain's icon (the settings nav's Configuration folders wear it),
+ * or the neutral Boxes icon for a domain not listed — never a gear, which
+ * would make every domain look the same.
+ */
+export function domainIcon(domain: string): LucideIcon {
+  return DOMAIN_ICONS[domain] ?? Boxes;
+}
 
 export function featureIcon(
   feature: string,

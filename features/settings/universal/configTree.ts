@@ -16,6 +16,7 @@ import type { ScopedKnob } from "@/lib/scoped-config/types";
 import type { SettingsTabDef } from "../types";
 import UniversalSettingsPane from "./UniversalSettingsPane";
 import { SETTINGS_BASE, tabIdToHref } from "../route-shell/routing";
+import { domainIcon } from "@/features/mandates/feature-intelligence/feature-icons";
 import {
   CONFIG_TAB_ROOT,
   slugToTabSegment,
@@ -79,6 +80,9 @@ export function buildConfigTreeNodes(domains: SettingsDomain[]): SettingsTreeNod
       children: domains.map((domain) => ({
         id: domain.id,
         label: domain.name,
+        // Each domain wears its own registry mark; without one the nav drew
+        // the same gear on ~25 rows in a row.
+        icon: domainIcon(domain.slug),
         description: sectionCountDescription(countKeys(domain)),
         searchKeywords: domain.features.flatMap((f) => f.knobs.map((k) => k.label)),
         children: [

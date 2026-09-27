@@ -16,11 +16,6 @@ export const staticSettingsControlIndex = [
     "controlId": "settings-control-who-these-settings-are-about-applies-to"
   },
   {
-    "tabId": "general.notifications",
-    "label": "Loading…",
-    "controlId": "settings-control-loading-your-notification-events-loading"
-  },
-  {
     "tabId": "general.language",
     "label": "Voice input",
     "description": "Speech-to-text recognition language.",

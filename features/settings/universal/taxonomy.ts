@@ -36,7 +36,7 @@ export type TaxonomyIndex = {
 
 /** The bucket a key falls into when nothing can say which domain it belongs to. */
 export const UNFILED_DOMAIN_SLUG = "not-filed-yet";
-export const UNFILED_DOMAIN_NAME = "Not filed under a domain yet";
+export const UNFILED_DOMAIN_NAME = "Other settings";
 
 export async function fetchTaxonomyIndex(): Promise<TaxonomyIndex> {
   const supabase = createClient();

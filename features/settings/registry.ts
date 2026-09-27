@@ -25,6 +25,7 @@ import {
   Camera,
   MonitorSmartphone,
   AppWindow,
+  LayoutGrid,
   Activity,
   Building2,
   Plug,
@@ -337,7 +338,9 @@ export const settingsRegistry: SettingsTabDef[] = [
   },
   {
     id: "editor.coding",
-    label: "Coding",
+    // "Code editor", not "Coding": Configuration › Coding (the registry domain)
+    // sits in the same nav, and one name must mean one thing.
+    label: "Code editor",
     icon: Code,
     parentId: "editor",
     component: CodingTab,
@@ -372,9 +375,21 @@ export const settingsRegistry: SettingsTabDef[] = [
     persistence: "synced",
   },
 
-  // ── Devices ───────────────────────────────────────────────────────────────
+  // ── Devices & storage (folder) ────────────────────────────────────────────
+  // Groups the hardware, synced computers and sandbox storage that used to
+  // float ungrouped in the nav. Children keep their ids, so every URL and
+  // deep link is unchanged.
+  {
+    id: "hardware",
+    label: "Devices & storage",
+    icon: MonitorSmartphone,
+    description: "Your camera, microphone and speakers, your synced computers, and sandbox storage.",
+    component: Placeholder,
+    persistence: "synced",
+  },
   {
     id: "devices",
+    parentId: "hardware",
     label: "Camera, microphone & speakers",
     icon: Camera,
     description:
@@ -400,7 +415,8 @@ export const settingsRegistry: SettingsTabDef[] = [
   // ── Devices & sync (folder sync: the machines, their folders, their state) ─
   {
     id: "files.devices",
-    label: "Devices & sync",
+    label: "Computers & sync",
+    parentId: "hardware",
     icon: MonitorSmartphone,
     description:
       "Every computer signed in to this account, the folders each one syncs, and what is happening with them right now.",
@@ -491,9 +507,19 @@ export const settingsRegistry: SettingsTabDef[] = [
     persistence: "synced",
   },
 
-  // ── Communication ─────────────────────────────────────────────────────────
+  // ── Apps (folder) ─────────────────────────────────────────────────────────
+  // Per-app preferences that used to float ungrouped. Ids unchanged.
+  {
+    id: "apps",
+    label: "Apps",
+    icon: LayoutGrid,
+    description: "Preferences for Email, Video conference, Messaging and Flashcards.",
+    component: Placeholder,
+    persistence: "synced",
+  },
   {
     id: "communication.email",
+    parentId: "apps",
     label: "Email",
     icon: Mail,
     component: EmailTab,
@@ -501,6 +527,7 @@ export const settingsRegistry: SettingsTabDef[] = [
   },
   {
     id: "communication.video",
+    parentId: "apps",
     label: "Video conference",
     icon: Video,
     component: VideoConferenceTab,
@@ -508,6 +535,7 @@ export const settingsRegistry: SettingsTabDef[] = [
   },
   {
     id: "communication.messaging",
+    parentId: "apps",
     label: "Messaging",
     icon: MessageSquare,
     description: "Notification sounds and desktop alerts.",
@@ -530,6 +558,7 @@ export const settingsRegistry: SettingsTabDef[] = [
   // ── Learning ──────────────────────────────────────────────────────────────
   {
     id: "learning.flashcards",
+    parentId: "apps",
     label: "Flashcards",
     icon: BookOpen,
     component: FlashcardsTab,
@@ -651,6 +680,7 @@ export const settingsRegistry: SettingsTabDef[] = [
   // looks for their plan, not for an org admin screen.
   {
     id: "plan",
+    parentId: "account",
     label: "Plan & usage",
     icon: Gauge,
     description:
@@ -764,6 +794,7 @@ export const settingsRegistry: SettingsTabDef[] = [
   // ── Sandbox storage ───────────────────────────────────────────────────────
   {
     id: "sandboxStorage",
+    parentId: "hardware",
     label: "Sandbox storage",
     icon: HardDrive,
     description: "Persistent storage for your Matrx sandboxes.",
@@ -775,6 +806,7 @@ export const settingsRegistry: SettingsTabDef[] = [
   // ── Feedback ──────────────────────────────────────────────────────────────
   {
     id: "feedback",
+    parentId: "general",
     label: "My feedback",
     icon: MessageSquareMore,
     description: "Track the bugs, features, and suggestions you've reported.",
@@ -786,6 +818,7 @@ export const settingsRegistry: SettingsTabDef[] = [
   // ── Chrome extension ──────────────────────────────────────────────────────
   {
     id: "extension",
+    parentId: "integrations",
     label: "Chrome extension",
     icon: Chrome,
     description:

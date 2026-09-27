@@ -147,6 +147,11 @@ export default function FirstScreenTab() {
                     : "No organizations yet"
             }
             onValueChange={(value) => setDefaultOrganizationId(value || null)}
+            // The default is "none chosen" — reset clears it, so a person who
+            // picked one can always go back.
+            modified={Boolean(defaultOrganizationId)}
+            onReset={() => setDefaultOrganizationId(null)}
+            resetLabel="Clear the default organization"
             last={settings.organizationsStatus !== "error"}
           />
           {settings.organizationsStatus === "error" && (

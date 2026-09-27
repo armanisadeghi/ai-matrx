@@ -21,6 +21,7 @@ import { useSettingsSectionTitle } from "./SettingsSectionContext";
 import { SettingAnchor } from "@/features/settings/doors/SettingAnchor";
 import { settingsControlSearchId } from "./searchIdentity";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ResetTapButton } from "@ai-matrx/tap-target/buttons";
 
 type SettingsRowProps = SettingsCommonProps & {
   /** Layout variant. Defaults to "inline". */
@@ -97,6 +98,8 @@ export function SettingsRow({
   controlLayout = "compact",
   anchorId,
   labelFor,
+  onReset,
+  resetLabel,
 }: SettingsRowProps) {
   const { variant: designVariant } = useSettingsDesign();
   const sectionTitle = useSettingsSectionTitle();
@@ -107,6 +110,16 @@ export function SettingsRow({
   const labelId = `${inputId}-label`;
   const controlId = settingsControlSearchId(sectionTitle ?? "Settings", label);
   const rowAnchorId = anchorId ?? controlId;
+
+  // One reset door, only when there is something to reset.
+  const resetButton =
+    onReset && modified && !disabled ? (
+      <ResetTapButton
+        variant="transparent"
+        ariaLabel={resetLabel ?? `Reset ${label} to its default`}
+        onClick={onReset}
+      />
+    ) : null;
 
   const labelBlock = (
     <div className="min-w-0 flex-1">
@@ -241,7 +254,10 @@ export function SettingsRow({
           )}
         >
           <div className="mb-2.5">{labelBlock}</div>
-          <div className={cn(disabled && "opacity-50")}>{children}</div>
+          <div className={cn("flex items-center gap-2", disabled && "opacity-50")}>
+            <div className="min-w-0 flex-1">{children}</div>
+            {resetButton}
+          </div>
         </div>
       </SettingAnchor>
     );
@@ -273,6 +289,7 @@ export function SettingsRow({
         >
           {children}
         </div>
+        {resetButton}
       </div>
     </SettingAnchor>
   );
