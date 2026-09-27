@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useEffectEvent, useRef, useState } from "react";
 import { SheetBodyRow, choiceMapSignature, shareUnchangedRows, useLatest, useLatestBox, useRowEpoch, useSlot } from "@/features/data-tables/components/sheet-body-row";
 import { createPortal } from "react-dom";
 import * as RecordsUi from "@ai-matrx/records-ui";
@@ -961,9 +961,11 @@ const UserTableViewer = ({
   };
 
   // Surface the loaded table's identity to an outer route header, if any.
+  // Effect events (not missing deps): each effect below runs when ITS trigger moves, and reads
+  // everything else as it is now — the Sheet compiles only without disabled hook lint (RENDER-2).
+  const tellTableInfo = useEffectEvent((info: TableInfo | null) => onTableInfoChange?.(info));
   useEffect(() => {
-    onTableInfoChange?.(tableInfo);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    tellTableInfo(tableInfo);
   }, [tableInfo]);
 
   // Load table data
@@ -980,6 +982,9 @@ const UserTableViewer = ({
     // the filter effect re-fetches fresh full data when filters are active.
     setFullDatasetCache(null);
     try {
+      // The steps run as their own function: the React Compiler cannot lower a `?.`, `? :`,
+      // `&&` or `||` written inside a `try` (lane RENDER-2).
+      await (async () => {
       // Load table metadata and fields (always reload if forceReload is true)
       let currentTableInfo = tableInfo;
       let currentFields = fields;
@@ -1080,6 +1085,7 @@ const UserTableViewer = ({
       setTotalCount(pagePayload.pagination.total_count);
       setTotalPages(pagePayload.pagination.page_count);
       setCurrentPage(pagePayload.pagination.current_page);
+    })();
     } catch (err) {
       console.error("Error loading table data:", err);
       setError(err instanceof Error ? err.message : "Failed to load table");
@@ -1089,12 +1095,12 @@ const UserTableViewer = ({
   };
 
   // Initial data load
+  const loadOnOpen = useEffectEvent(() => {
+    loadTableData();
+    void loadTables();
+  });
   useEffect(() => {
-    if (tableId) {
-      loadTableData();
-      void loadTables();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (tableId) loadOnOpen();
   }, [tableId]);
 
   useEffect(() => {
@@ -1113,14 +1119,10 @@ const UserTableViewer = ({
   // A hook per column is impossible anyway — the column count is data.
   // Members of the table's organization — the options of every `person` column.
   const personChoices = usePersonChoicesFor(tableInfo?.organization_id ?? null);
-  const formatFields = useMemo(
-    () =>
-      fields.map((field) => ({
+  const formatFields = fields.map((field) => ({
         field_name: field.field_name,
         format: resolveFieldFormat(field.data_type, field.metadata),
-      })),
-    [fields],
-  );
+      }));
   // THE WORDS EVERY `relation` CELL ON THIS PAGE READS — one call per relation
   // column, through the older store's own door. `fullDatasetCache` is the
   // superset once a column filter has loaded it, so resolving over it keeps the
@@ -1136,10 +1138,7 @@ const UserTableViewer = ({
   const choiceMap = useFieldChoiceMap(formatFields, personChoices, relationChoices);
 
   /** Machine field name → its resolved format, for the readers below. */
-  const formatByField = useMemo(
-    () => new Map(formatFields.map((f) => [f.field_name, f.format] as const)),
-    [formatFields],
-  );
+  const formatByField = new Map(formatFields.map((f) => [f.field_name, f.format] as const));
 
   /**
    * THE ONE READER-FACING VALUE OF A CELL.
@@ -1151,11 +1150,8 @@ const UserTableViewer = ({
    * Every other column is handed straight back, unchanged.
    */
   /** The same answer, addressed by field name — what the formula engine asks. */
-  const displayValueOf = useCallback(
-    (fieldName: string, raw: unknown): unknown =>
-      cellTextForReader(raw, formatByField.get(fieldName), relationWords, fieldName),
-    [formatByField, relationWords],
-  );
+  const displayValueOf = (fieldName: string, raw: unknown): unknown =>
+      cellTextForReader(raw, formatByField.get(fieldName), relationWords, fieldName);
 
   /**
    * EVERY ROW A COPY, AN EXPORT OR AN AGENT PAYLOAD SEES, with its `relation`
@@ -1167,8 +1163,7 @@ const UserTableViewer = ({
    * relation column, and a table with no relation column does no work at all
    * and returns the same array it was given.
    */
-  const rowsForReaders = useCallback(
-    async <R extends { data: Record<string, unknown> }>(rows: R[]): Promise<R[]> => {
+  const rowsForReaders = async <R extends { data: Record<string, unknown> }>(rows: R[]): Promise<R[]> => {
       const relationFields = formatFields.filter((f) => f.format?.id === "relation");
       if (relationFields.length === 0 || rows.length === 0) return rows;
       const byField = new Map<string, ReadonlyMap<string, string>>();
@@ -1191,20 +1186,15 @@ const UserTableViewer = ({
         }
         return { ...row, data };
       });
-    },
-    [formatFields, tableInfo?.organization_id, tableId],
-  );
+    };
 
-  const cellValueForReader = useCallback(
-    (row: { data?: Record<string, unknown> | null } | null | undefined, fieldName: string): unknown =>
+  const cellValueForReader = (row: { data?: Record<string, unknown> | null } | null | undefined, fieldName: string): unknown =>
       cellTextForReader(
         row?.data?.[fieldName] ?? null,
         formatByField.get(fieldName),
         relationWords,
         fieldName,
-      ),
-    [formatByField, relationWords],
-  );
+      );
 
   // ─── Colors (table-style.ts) ─────────────────────────────────────────────
   const onTheRecordStoreForColors = isRecordStoreTable(tableId);
@@ -1267,6 +1257,9 @@ const UserTableViewer = ({
   // compose. Triggered lazily the first time a column filter becomes active.
   const loadFullDataset = async () => {
     try {
+      // The steps run as their own function: the React Compiler cannot lower a `?.`, `? :`,
+      // `&&` or `||` written inside a `try` (lane RENDER-2).
+      await (async () => {
       setLoadingFullDataset(true);
       setFullDatasetError(null);
       const all = await getTablePage({
@@ -1288,6 +1281,7 @@ const UserTableViewer = ({
       setFilterTruncatedAt(
         totalCount > FILTER_FETCH_CAP ? FILTER_FETCH_CAP : null,
       );
+    })();
     } catch (err) {
       // A failed load used to reach console.error and leave an empty grid,
       // which the user reads as "nothing matched". Say what actually happened.
@@ -1302,12 +1296,12 @@ const UserTableViewer = ({
     setLoadingFullDataset(false);
   };
 
+  const loadFullDatasetNow = useEffectEvent(() => void loadFullDataset());
   useEffect(() => {
     if (!hasColumnFilters) return;
     if (fullDatasetCache || loadingFullDataset) return;
     if (totalCount === 0) return;
-    void loadFullDataset();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadFullDatasetNow();
   }, [hasColumnFilters, fullDatasetCache, loadingFullDataset, totalCount]);
 
   // Update a single column's filter. Resets to page 1; when the last filter is
@@ -1363,8 +1357,7 @@ const UserTableViewer = ({
   /** The rows on screen NOW, read when a notice lands (never during render). */
   const rowsNow = useLatest(data);
 
-  const handleRealtime = useCallback(
-    (event: TableRealtimeEvent) => {
+  const handleRealtime = (event: TableRealtimeEvent) => {
       // A row appeared or vanished: the page contents, the total and the
       // pagination all genuinely moved, and only a refetch can say what the
       // page is now. Debounced so a bulk import does not fire one per row.
@@ -1444,10 +1437,7 @@ const UserTableViewer = ({
             )
           : prev,
       );
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [currentPage, limit, sortField, sortDirection, searchTerm],
-  );
+    };
 
   // ONE HANDLER, TWO WIRES: postgres_changes for an older table, the record
   // store's broadcast port for a record-store table — each off for the other.
@@ -1695,6 +1685,9 @@ const UserTableViewer = ({
       // Load all data for client-side sorting
       setLoading(true);
       try {
+        // The steps run as their own function: the React Compiler cannot lower a `?.`, `? :`,
+        // `&&` or `||` written inside a `try` (lane RENDER-2).
+        await (async () => {
         const everyRow = await getRowsForClientSort({ tableId, limit: totalCount });
         if (isServiceFailure(everyRow))
           failWith(everyRow.error || "Failed to load data");
@@ -1715,6 +1708,7 @@ const UserTableViewer = ({
         const startIndex = (currentPage - 1) * limit;
         const pageData = sortedData.slice(startIndex, startIndex + limit);
         setData((prev) => shareUnchangedRows(prev, pageData));
+      })();
       } catch (err) {
         console.error("Error during client-side sorting:", err);
         // Fallback to server-side sorting
@@ -1920,6 +1914,9 @@ const UserTableViewer = ({
   // Disable row ordering
   const disableRowOrdering = async () => {
     try {
+      // The steps run as their own function: the React Compiler cannot lower a `?.`, `? :`,
+      // `&&` or `||` written inside a `try` (lane RENDER-2).
+      await (async () => {
       const saved = await setRowOrdering({ tableId, enabled: false, order: [] });
       if (isServiceFailure(saved))
         failWith(saved.error || "Failed to disable row ordering");
@@ -1936,6 +1933,7 @@ const UserTableViewer = ({
         searchTerm,
         true,
       );
+    })();
     } catch (err) {
       console.error("Error disabling row ordering:", err);
       setError(
@@ -1949,6 +1947,9 @@ const UserTableViewer = ({
     if (!sortField) return;
 
     try {
+      // The steps run as their own function: the React Compiler cannot lower a `?.`, `? :`,
+      // `&&` or `||` written inside a `try` (lane RENDER-2).
+      await (async () => {
       setSavingSortPreference(true);
 
       const replacesHandOrder = rowOrderingEnabled;
@@ -1984,6 +1985,7 @@ const UserTableViewer = ({
           },
         });
       }
+    })();
     } catch (err) {
       console.error("Error saving sort preference:", err);
       setError(
@@ -1997,6 +1999,9 @@ const UserTableViewer = ({
   // Clear saved default sort
   const clearDefaultSort = async () => {
     try {
+      // The steps run as their own function: the React Compiler cannot lower a `?.`, `? :`,
+      // `&&` or `||` written inside a `try` (lane RENDER-2).
+      await (async () => {
       setSavingSortPreference(true);
 
       const saved = await setDefaultSort({ tableId });
@@ -2016,6 +2021,7 @@ const UserTableViewer = ({
           row_ordering_config: newConfig,
         });
       }
+    })();
     } catch (err) {
       console.error("Error clearing sort preference:", err);
       setError(
@@ -2354,8 +2360,7 @@ const UserTableViewer = ({
     },
   });
 
-  const getSurfaceScope = React.useCallback(
-    () =>
+  const getSurfaceScope = () =>
       buildDataTablesScope(
         surfaceScopeRef.current ?? {
           // Pre-first-paint of the grid: identity only. Every other value is
@@ -2371,9 +2376,7 @@ const UserTableViewer = ({
           openCell: null,
           openRow: null,
         },
-      ),
-    [tableId],
-  );
+      );
 
   // ─── Derivation + grid hooks — MUST STAY ABOVE THE EARLY RETURNS ─────────
   //
@@ -2479,8 +2482,7 @@ const UserTableViewer = ({
    * backs whole-table sorting. Patching one and dropping the others is how a
    * filtered view starts showing a stale value.
    */
-  const patchLocalCell = useCallback(
-    (
+  const patchLocalCell = (
       rowId: string,
       fieldName: string,
       value: unknown,
@@ -2512,16 +2514,14 @@ const UserTableViewer = ({
       setData((prev) => patch(prev) ?? prev);
       setFullDatasetCache((prev) => patch(prev));
       setAllSortedData((prev) => patch(prev));
-    },
-    [],
-  );
+    };
 
   /**
    * A write changed which ROWS exist (insert, delete) — only then is a refetch
    * the honest answer, because the page's contents genuinely changed and the
    * total and pagination move with it.
    */
-  const refreshAfterWrite = useCallback(() => {
+  const refreshAfterWrite = () => {
     setAllSortedData(null);
     setFullDatasetCache(null);
     void loadTableData(
@@ -2531,8 +2531,7 @@ const UserTableViewer = ({
       sortDirection,
       searchTerm,
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, limit, sortField, sortDirection, searchTerm]);
+  };
 
   const cellUndo = useCellUndo({
     // Undo restores ONE cell; patch it rather than reloading the table. A
@@ -2544,27 +2543,23 @@ const UserTableViewer = ({
   });
 
   // ─── Row actions (row-actions.ts): the table's own one-click buttons ─────
-  const rowActions = React.useMemo(
-    () => readRowActions(tableInfo?.metadata),
-    [tableInfo?.metadata],
-  );
-  const rowActionMenuItems = React.useMemo(
-    () =>
-      rowActions.map((a) => ({
+  // Read into its own name first: the compiler keys a memo on the whole `tableInfo` for an
+  // optional-chain argument, and every write re-reads `tableInfo` (redrawing every row).
+  const tableMetadata = tableInfo?.metadata;
+  const rowActions = readRowActions(tableMetadata);
+  const rowActionMenuItems = rowActions.map((a) => ({
         id: a.id,
         name: a.name,
         description: describeRowAction(a, fields),
-      })),
-    [rowActions, fields],
-  );
+      }));
   const { launchMandate } = useAgentLauncher();
   const hasColumnSummaries = Object.values(columnSummaries).some(Boolean);
 
   // An undo stack must never outlive its table: restoring a value into a table
   // the user has navigated away from would be a write they never asked for.
+  const resetUndo = useEffectEvent(() => cellUndo.reset());
   useEffect(() => {
-    cellUndo.reset();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    resetUndo();
   }, [tableId]);
 
   const rowIdsOnPage = displayRows.map((row) => row.id);
@@ -2591,29 +2586,23 @@ const UserTableViewer = ({
 
   const fieldNamesInOrder = viewFields.map((f) => f.field_name);
 
-  const readCell = useCallback(
-    (address: CellAddress): unknown =>
+  const readCell = (address: CellAddress): unknown =>
       displayRows.find((r) => r.id === address.rowId)?.data?.[
         address.fieldName
-      ],
-    [displayRows],
-  );
+      ];
 
   /** What a cell puts on the clipboard — the same text a spreadsheet would. */
-  const getCellText = useCallback(
-    (address: CellAddress): string =>
+  const getCellText = (address: CellAddress): string =>
       cellClipboardText(
         cellTextForReader(readCell(address), formatByField.get(address.fieldName), relationWords, address.fieldName),
-      ),
-    [readCell, formatByField, relationWords],
-  );
+      );
 
-  const handleCopied = useCallback((cells: CellAddress[], text: string) => {
+  const handleCopied = (cells: CellAddress[], text: string) => {
     toast({
       title: cells.length > 1 ? `Copied ${cells.length} cells` : "Copied",
       description: text.slice(0, 80) || "Empty cell",
     });
-  }, []);
+  };
 
   /**
    * Coerce pasted text EXACTLY the way a hand edit does: the column's declared
@@ -2621,15 +2610,12 @@ const UserTableViewer = ({
    * number, empty text becomes null). A second normalizer here is how a paste
    * and a typed edit end up storing different things for the same characters.
    */
-  const coerceForField = useCallback(
-    (field: TableField, raw: string): unknown =>
+  const coerceForField = (field: TableField, raw: string): unknown =>
       parseFieldInput(
         raw,
         resolveFieldFormat(field.data_type, field.metadata),
         field.data_type,
-      ),
-    [],
-  );
+      );
 
   /**
    * Delete / Backspace on the selection (one cell or a range), and the second
@@ -2637,8 +2623,7 @@ const UserTableViewer = ({
    * undo stack so Cmd-Z walks the clearing back cell by cell. Cells that are
    * already empty are skipped — nothing to write, nothing to undo.
    */
-  const handleClearCells = useCallback(
-    async (addresses: CellAddress[]) => {
+  const handleClearCells = async (addresses: CellAddress[]) => {
       if (isReadOnly) return;
       const fieldByName = new Map(fields.map((f) => [f.field_name, f]));
       const targets = addresses
@@ -2692,17 +2677,11 @@ const UserTableViewer = ({
       } else if (targets.length > 1) {
         toast({ title: `Cleared ${targets.length} cells` });
       }
-    },
-    [cellUndo, fields, isReadOnly, patchLocalCell, readCell, tableId],
-  );
-  const handleClearCell = useCallback(
-    (address: CellAddress) => handleClearCells([address]),
-    [handleClearCells],
-  );
+    };
+  const handleClearCell = (address: CellAddress) => handleClearCells([address]);
 
   /** Run one bulk transaction and report it honestly. */
-  const runBulkOps = useCallback(
-    async (
+  const runBulkOps = async (
       ops: BulkOp[],
       describe: string,
       /**
@@ -2742,17 +2721,14 @@ const UserTableViewer = ({
       }
       if (refetch) refreshAfterWrite();
       return true;
-    },
-    [isReadOnly, refreshAfterWrite, tableId],
-  );
+    };
 
   /**
    * Set one column across the selection. Each cell is recorded individually on
    * the undo stack so Cmd-Z walks the change back cell by cell rather than
    * offering an all-or-nothing revert the user cannot aim.
    */
-  const applyBulkColumn = useCallback(
-    async (
+  const applyBulkColumn = async (
       fieldName: string,
       ops: BulkOp[],
       rows: readonly SelectableRow[],
@@ -2775,9 +2751,7 @@ const UserTableViewer = ({
           nextValue: op.value,
         });
       }
-    },
-    [cellUndo, fields, patchLocalCell, runBulkOps, tableId],
-  );
+    };
 
   /**
    * THE AFTER-ACTION UNDO (Arman, 2026-09-21: "just after an action runs … an
@@ -2787,8 +2761,7 @@ const UserTableViewer = ({
    * carries an Undo that restores all of them in one transaction — the same
    * step Cmd-Z and the toolbar Undo take, never a second undo system.
    */
-  const announceRowActionRun = useCallback(
-    (actionName: string, rowCount: number, changed: CellEdit[], readBackError: string | null) => {
+  const announceRowActionRun = (actionName: string, rowCount: number, changed: CellEdit[], readBackError: string | null) => {
       const rowsWord = `${rowCount} row${rowCount === 1 ? "" : "s"}`;
       if (readBackError) {
         // The store ran it but the rows could not be read back, so there is
@@ -2814,9 +2787,7 @@ const UserTableViewer = ({
           onClick: () => void cellUndo.undoThis(handle),
         },
       });
-    },
-    [cellUndo],
-  );
+    };
 
   /**
    * Run ONE row action over the given rows. An `update` action compiles to one
@@ -2827,8 +2798,7 @@ const UserTableViewer = ({
    * is written and says which row. An `agent` action opens the platform's
    * agent panel with the row and the table surface's tools.
    */
-  const runRowAction = useCallback(
-    async (actionId: string, rowIds: readonly string[]) => {
+  const runRowAction = async (actionId: string, rowIds: readonly string[]) => {
       const action = rowActions.find((a) => a.id === actionId);
       if (!action) return;
       const rows = orderSelectedRows(displayRows, rowIds).map((r) => ({
@@ -2971,23 +2941,7 @@ const UserTableViewer = ({
         }
       }
       announceRowActionRun(action.name, rows.length, changed, null);
-    },
-    [
-      announceRowActionRun,
-      currentUserId,
-      displayRows,
-      fields,
-      isReadOnly,
-      launchMandate,
-      patchLocalCell,
-      rowActions,
-      runBulkOps,
-      showReadOnlyToast,
-      tableId,
-      tableInfo?.metadata,
-      tableInfo?.table_name,
-    ],
-  );
+    };
 
   /**
    * Clipboard text landed on a selected cell (Cmd-V, the Edit menu, or the
@@ -3010,23 +2964,19 @@ const UserTableViewer = ({
     remaining: number;
   } | null>(null);
   const pasteRefusalAnswer = useRef<((go: boolean) => void) | null>(null);
-  const answerPasteRefusals = useCallback((go: boolean) => {
+  const answerPasteRefusals = (go: boolean) => {
     const resolve = pasteRefusalAnswer.current;
     pasteRefusalAnswer.current = null;
     setPasteRefusals(null);
     resolve?.(go);
-  }, []);
-  const askAboutRefusedPaste = useCallback(
-    (refusals: ColumnRuleRefusal[], remaining: number) =>
+  };
+  const askAboutRefusedPaste = (refusals: ColumnRuleRefusal[], remaining: number) =>
       new Promise<boolean>((resolve) => {
         pasteRefusalAnswer.current = resolve;
         setPasteRefusals({ refusals, remaining });
-      }),
-    [],
-  );
+      });
 
-  const handlePasteText = useCallback(
-    async (anchor: CellAddress, text: string, targetCells?: CellAddress[]) => {
+  const handlePasteText = async (anchor: CellAddress, text: string, targetCells?: CellAddress[]) => {
       if (isReadOnly) return;
       let block = parseClipboardGrid(text);
       // ONE value pasted over a RANGE fills every cell of the range — Excel's
@@ -3190,28 +3140,13 @@ const UserTableViewer = ({
             "A formula column computes its own values, so nothing can be pasted into it.",
         });
       }
-    },
-    [
-      askAboutRefusedPaste,
-      cellUndo,
-      coerceForField,
-      fieldNamesInOrder,
-      fields,
-      isReadOnly,
-      patchLocalCell,
-      readCell,
-      rowIdsOnPage,
-      runBulkOps,
-      tableId,
-    ],
-  );
+    };
 
   /**
    * Cmd-D / "Fill down": copy the range's FIRST row into every row below it,
    * column by column, in one transaction, each cell undoable.
    */
-  const handleFillDownRange = useCallback(
-    async (rows: CellAddress[][]) => {
+  const handleFillDownRange = async (rows: CellAddress[][]) => {
       if (isReadOnly || rows.length < 2) return;
       const fieldByName = new Map(fields.map((f) => [f.field_name, f]));
       const ops: BulkOp[] = [];
@@ -3256,23 +3191,17 @@ const UserTableViewer = ({
           nextValue: op.value,
         });
       }
-    },
-    [cellUndo, fields, isReadOnly, patchLocalCell, readCell, runBulkOps, tableId],
-  );
+    };
 
   /** Duplicate ONE row from the right-click menu — the bulk-bar action, for one row. */
-  const handleDuplicateRow = useCallback(
-    async (rowId: string) => {
+  const handleDuplicateRow = async (rowId: string) => {
       const row = displayRows.find((r) => r.id === rowId);
       if (!row) return;
       await runBulkOps(buildDuplicateOps([row]), "Duplicated 1 row");
-    },
-    [displayRows, runBulkOps],
-  );
+    };
 
   /** Copy ONE row as a spreadsheet-ready TSV line, in the view's column order. */
-  const copyRowToClipboard = useCallback(
-    (rowId: string) => {
+  const copyRowToClipboard = (rowId: string) => {
       const row = displayRows.find((r) => r.id === rowId);
       if (!row) return;
       const text = gridToTsv([
@@ -3287,12 +3216,9 @@ const UserTableViewer = ({
             variant: "destructive",
           }),
       );
-    },
-    [displayRows, viewFields],
-  );
+    };
 
-  const handleBulkSetColumn = useCallback(
-    async (fieldName: string, rawValue: string) => {
+  const handleBulkSetColumn = async (fieldName: string, rawValue: string) => {
       const rows = orderSelectedRows(displayRows, selectedRowIds);
       const field = fields.find((f) => f.field_name === fieldName);
       // Coerce exactly the way a hand edit does — a second normalizer is how an
@@ -3312,12 +3238,9 @@ const UserTableViewer = ({
         rows,
         `Set ${field?.display_name ?? fieldName} on ${rows.length} row${rows.length === 1 ? "" : "s"}`,
       );
-    },
-    [applyBulkColumn, displayRows, fields, selectedRowIds],
-  );
+    };
 
-  const handleFillDown = useCallback(
-    async (fieldName: string) => {
+  const handleFillDown = async (fieldName: string) => {
       const rows = orderSelectedRows(displayRows, selectedRowIds);
       const field = fields.find((f) => f.field_name === fieldName);
       await applyBulkColumn(
@@ -3326,9 +3249,7 @@ const UserTableViewer = ({
         rows,
         `Filled ${field?.display_name ?? fieldName} down ${Math.max(rows.length - 1, 0)} row${rows.length === 2 ? "" : "s"}`,
       );
-    },
-    [applyBulkColumn, displayRows, fields, selectedRowIds],
-  );
+    };
 
   const grid = useGridSelection({
     rowIds: rowIdsOnPage,

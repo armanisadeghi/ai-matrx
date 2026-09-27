@@ -76,6 +76,7 @@ export function useRowEpoch(values: readonly unknown[]): number {
     return previous.epoch;
   }
   const next = { values, epoch: (previous?.epoch ?? 0) + 1 };
+  if (previous && typeof window !== "undefined") ((window as unknown as { __RENDER2_EPOCH?: unknown[] }).__RENDER2_EPOCH ??= []).push(previous.values.length !== values.length ? "len" : [values.length, ...values.map((v, i) => (Object.is(v, previous.values[i]) ? null : [i, typeof v, String(v).slice(0, 40), String(previous.values[i]).slice(0, 40)])).filter((i) => i !== null)]); // RENDER2-PROBE
   held.current = next;
   return next.epoch;
 }
