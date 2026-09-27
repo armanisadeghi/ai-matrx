@@ -196,6 +196,25 @@ export const MergeFieldInput = forwardRef<MergeFieldInputHandle, MergeFieldInput
           caretRef.current = currentCaret();
         }}
         onKeyDown={(e) => {
+          // Home/End in a one-line field go to the true start/end, even when a
+          // chip sits there (Chrome will not place a caret before a leading
+          // non-editable chip on Home).
+          if (!multiline && (e.key === "Home" || e.key === "End") && !e.shiftKey) {
+            const root = rootRef.current;
+            const sel = window.getSelection();
+            if (root && sel) {
+              e.preventDefault();
+              const text = shownRef.current ?? value;
+              const point = pointAtStoredOffset(root, e.key === "Home" ? 0 : text.length);
+              const range = document.createRange();
+              range.setStart(point.node, point.offset);
+              range.collapse(true);
+              sel.removeAllRanges();
+              sel.addRange(range);
+              caretRef.current = e.key === "Home" ? 0 : text.length;
+              return;
+            }
+          }
           keepCaretOutOfChips();
           if (e.key === "Enter") {
             e.preventDefault();
