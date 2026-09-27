@@ -36,8 +36,9 @@ import type {
  *      `added_skills` / `sandbox_binding`), sourced via
  *      `buildChatRunConfiguration`.
  *
- * Callers pass only what they can honestly source. The pre-first-message
- * landing composer (`NewChatLandingInput`) sources just the draft + agent;
+ * Callers pass only what they can honestly source. The composer's right-click
+ * menu (`chatComposerTextMenu`) sources the draft, selection, agent and run
+ * configuration;
  * the room display can additionally source the message family. Every value is
  * optional — the registry floors the baselines at launch, so a binding never
  * resolves to nothing.

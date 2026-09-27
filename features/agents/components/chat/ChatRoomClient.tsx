@@ -1246,7 +1246,7 @@ export function ChatRoomClient({
           selectUserInputText(conversationId)(store.getState()) ?? "";
         const next = planInputDraftWrite(value, current);
         // The SAME action the person's own keystrokes dispatch (AgentTextarea
-        // and NewChatLandingInput both call this) — never a parallel write
+        // calls this) — never a parallel write
         // path, so undo, draft protection and the send flow all behave
         // identically. Nothing is sent.
         dispatch(setUserInputText({ conversationId, text: next }));

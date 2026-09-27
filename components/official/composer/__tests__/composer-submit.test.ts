@@ -84,7 +84,6 @@ const REPO = path.resolve(__dirname, "../../../..");
 
 const COMPOSERS = [
   "features/agents/components/inputs/smart-input/AgentTextarea.tsx",
-  "features/agents/components/chat/NewChatLandingInput.tsx",
   "features/agents/components/agent-widgets/chat-assistant/CompactAssistantInput.tsx",
   "features/cx-chat/components/user-input/ConversationInput.tsx",
   "features/cx-conversation/ConversationInput.tsx",

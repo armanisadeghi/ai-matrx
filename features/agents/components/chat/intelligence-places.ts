@@ -10,12 +10,13 @@ import type { FeaturePlaces } from "@/features/mandates/feature-intelligence/typ
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 
 const K = MANDATE_KEYS;
+// The splash's quick actions are the `agents.chat_composer.quick_actions` knob;
+// these are the jobs its system default lists (the seed migration below).
 const QUICK = [
   K.chat__quick_showcase,
   K.chat__quick_fair_news,
   K.chat__quick_writing_partner,
   K.chat__quick_flashcards,
-  K.chat__quick_org_chart,
   K.chat__quick_image,
   K.chat__quick_research,
   K.chat__quick_audio_plan,
@@ -44,13 +45,10 @@ export const CHAT_PLACES: FeaturePlaces = {
     {
       id: "quick-actions",
       label: "New chat",
-      trigger: "Quick-start chips",
+      trigger: "Quick actions under the composer",
       urlPattern: "/chat/new",
       mandateKeys: QUICK,
-      sources: [
-        "features/agents/components/chat/chat-quick-actions.config.ts",
-        "features/agents/components/chat/NewChatGreeting.tsx",
-      ],
+      sources: ["migrations/chat_composer_knobs_2026_09_27.sql"],
     },
     {
       id: "conversation",

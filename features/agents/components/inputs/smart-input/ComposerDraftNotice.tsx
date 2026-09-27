@@ -29,14 +29,14 @@ export function ComposerDraftNotice({
     return (
       <div className="flex items-center gap-1.5 px-1 pt-1 text-[11px] text-muted-foreground">
         <RotateCcw className="w-3 h-3 shrink-0" />
-        <span>
+        <span className="min-w-0">
           We put your unsent draft back ({restoredChars.toLocaleString()}{" "}
           characters).
         </span>
         <button
           type="button"
           onClick={acknowledge}
-          className="underline underline-offset-2 hover:text-foreground"
+          className="shrink-0 whitespace-nowrap underline underline-offset-2 hover:text-foreground"
         >
           Dismiss
         </button>

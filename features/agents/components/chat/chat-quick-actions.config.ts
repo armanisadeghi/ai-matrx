@@ -1,28 +1,14 @@
-import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
- * Chat new-page configuration — the agents wired to the landing surface.
+ * Chat new-page configuration — the agent that owns `/chat/new`.
  *
- * Edit this file to change what shows up on `/chat/new` without touching any
- * component code. Each entry is a `{ mandateKey, label }` pair: the chip is a
- * MANDATE (`agent.mandate.mandate_key`, resolved at render time via
- * `useMandateSet` — system default → the user's binding) and the `label` is
- * what the user sees. No agent id lives here: swapping what a chip opens is a
- * rebind on `/mandates`, never a code change. A chip whose mandate
- * cannot resolve (not yet seeded, disabled) renders DISABLED with the reason —
- * never a silent fallback to a UUID.
- *
- * Ordering reflects render order — first entry is leftmost (or topmost on
- * narrow widths). Remove or add entries freely; the chip grid will reflow.
+ * The quick-action row under the splash composer is DATA, not code: the
+ * `agents.chat_composer.quick_actions` knob (`{ label, mandateKey }[]`, system
+ * default seeded by `migrations/chat_composer_knobs_2026_09_27.sql`,
+ * overridable per organization and per person), rendered by
+ * `ComposerQuickActions`. Changing the row is a knob edit, never a code change.
  */
-
-export interface ChatQuickAction {
-  /** Canonical `agent.mandate.mandate_key` (`chat.quick_*`), typed — a chip
-   * naming a key that no longer exists fails `pnpm type-check` (V-L6a). */
-  mandateKey: MandateKey;
-  /** Chip label as the user sees it. */
-  label: string;
-}
 
 /**
  * The default new-chat agent is a MANDATE — `chat.default_new_chat` — resolved at
@@ -43,51 +29,3 @@ export const DEFAULT_NEW_CHAT_MANDATE_KEY = MANDATE_KEYS.chat__default_new_chat;
  * seed-mirror ruling).
  */
 export const DEFAULT_NEW_CHAT_AGENT_ID = "6b6b4e45-4699-4860-8dea-d8a60e07d69a";
-
-/**
- * Primary chips — large, prominent, the headline "what you can do here" row.
- */
-export const PRIMARY_QUICK_ACTIONS: readonly ChatQuickAction[] = [
-  {
-    mandateKey: MANDATE_KEYS.chat__quick_showcase,
-    label: "Show off what you can do",
-  },
-  {
-    mandateKey: MANDATE_KEYS.chat__quick_fair_news,
-    label: "I want fair news",
-  },
-  {
-    mandateKey: MANDATE_KEYS.chat__quick_writing_partner,
-    label: "Help me write something",
-  },
-  {
-    mandateKey: MANDATE_KEYS.chat__quick_flashcards,
-    label: "Make me flashcards",
-  },
-  {
-    mandateKey: MANDATE_KEYS.chat__quick_org_chart,
-    label: "Make an Org Chart",
-  },
-];
-
-/**
- * Secondary chips — smaller, supplemental utilities row below the primaries.
- */
-export const SECONDARY_QUICK_ACTIONS: readonly ChatQuickAction[] = [
-  {
-    mandateKey: MANDATE_KEYS.chat__quick_image,
-    label: "Create an Image",
-  },
-  {
-    mandateKey: MANDATE_KEYS.chat__quick_research,
-    label: "Conduct Research",
-  },
-  {
-    mandateKey: MANDATE_KEYS.chat__quick_audio_plan,
-    label: "Audio to Structured Plan",
-  },
-  {
-    mandateKey: MANDATE_KEYS.chat__cx_default,
-    label: "Customize Chat",
-  },
-];
