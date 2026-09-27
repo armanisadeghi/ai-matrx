@@ -24,6 +24,7 @@ import { buildConversationMarkdown } from "../conversation-markdown";
 import {
   conversationDocumentSource,
   conversationFromState,
+  conversationJsonFormat,
   conversationPayloadFor,
   conversationSections,
 } from "../conversation-transfer";
@@ -151,6 +152,29 @@ describe("the conversation is ONE source; each format reads the right representa
     expect(md).toContain("Move Oakwood HOA before lunch");
     expect(md).not.toContain("Chen residence");
     expect(md).not.toMatch(/^\s*[{[]/);
+  });
+
+  it("Copy for AI's JSON is the chosen messages with their roles — never the transcript as one string", async () => {
+    const sections = conversationSections(conv);
+    const { capture, createDraft, applySectionSelection, directSource, editDraft } = await import("@ai-matrx/alchemy/operate");
+    const signal = new AbortController().signal;
+    const { snapshot } = await capture(
+      { id: "c1", label: "Pool route plan", capture: async () => directSource({ kind: "markdown", text: conv.markdown }, { sections }) },
+      signal,
+    );
+    const format = conversationJsonFormat(async () => conv);
+    // Untick the assistant's route table: the JSON holds the other three, in order, with roles.
+    const draft = applySectionSelection(createDraft(snapshot), snapshot, ["message-1", "message-3", "message-4"]);
+    const json = JSON.parse((await format.build(draft as never, signal)).plainText);
+    expect(json.title).toBe("Pool route plan");
+    expect(json.messages.map((m: { role: string }) => m.role)).toEqual(["user", "user", "assistant"]);
+    expect(json.messages[1].text).toContain("Move Oakwood HOA before lunch");
+    expect(JSON.stringify(json)).not.toContain("Chen residence");
+    // Edited by hand, it no longer maps onto messages — its JSON says so by its key.
+    const edited = editDraft(draft, { kind: "markdown", text: "Only Oakwood matters." });
+    const editedJson = JSON.parse((await format.build(edited as never, signal)).plainText);
+    expect(editedJson.messages).toBeUndefined();
+    expect(editedJson.edited_text).toBe("Only Oakwood matters.");
   });
 
   it("gives the transcript page chrome without touching the markdown", () => {

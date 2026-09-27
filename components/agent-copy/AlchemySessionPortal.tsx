@@ -61,6 +61,11 @@ function AlchemySession({ request }: { request: AlchemySessionRequest }) {
   // may ASK for one and must then read the capabilities the pick produced.
   const capabilitiesRef = React.useRef(capabilities);
   capabilitiesRef.current = capabilities;
+  // This source's own engines for built-in format names (stable per request).
+  const localCapabilities = React.useMemo(
+    () => (request.formats ? { formats: [...request.formats] } : undefined),
+    [request.formats],
+  );
 
   React.useEffect(() => {
     if (ran.current) return;
@@ -154,6 +159,7 @@ function AlchemySession({ request }: { request: AlchemySessionRequest }) {
       label={request.label}
       {...(request.formatSources ? { formatSources: request.formatSources } : {})}
       {...(request.variants ? { variants: request.variants } : {})}
+      {...(localCapabilities ? { capabilities: localCapabilities } : {})}
     />
   );
 }

@@ -9,7 +9,7 @@
 // app's real capabilities. Never a second transfer menu, preparation workspace
 // or destination list.
 
-import type { Payload, Source } from "@ai-matrx/kit/content-transfer";
+import type { FormatAdapter, Payload, Source } from "@ai-matrx/kit/content-transfer";
 import type { TransferMenuVariant } from "@ai-matrx/design-system/content-transfer";
 
 export type AlchemySessionIntent =
@@ -24,6 +24,8 @@ export interface AlchemySessionRequest {
   label: string;
   source: Source | Payload;
   formatSources?: Record<string, Source | Payload>;
+  /** Source-specific engines for built-in format names (e.g. a conversation's JSON = its chosen messages). */
+  formats?: readonly FormatAdapter[];
   variants?: readonly TransferMenuVariant[];
   intent: AlchemySessionIntent;
 }

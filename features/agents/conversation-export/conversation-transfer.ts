@@ -18,6 +18,7 @@
 
 import type { ConversationTransferRow } from "./conversation-transfer-rows";
 import type { Coverage, Payload, Section, Source } from "@ai-matrx/alchemy/operate";
+import type { FormatAdapter } from "@ai-matrx/kit/content-transfer";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { toast } from "@/lib/toast";
 import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
@@ -171,6 +172,55 @@ export function conversationPayloadFor(conv: CapturedConversation, format: strin
 
 type Capture = () => Promise<CapturedConversation>;
 
+/**
+ * "JSON" in Copy for AI: the chosen messages with their roles — the same shape
+ * as "Download conversation as JSON", never the transcript as one quoted
+ * string. The prepared draft is the transcript with each unticked message cut
+ * out as its range; this keeps the captured messages whose range was not cut.
+ * A draft edited by hand or by AI no longer maps onto messages, so its JSON
+ * carries the edited text under `edited_text` (it never pretends to be the
+ * original messages). Registered under the built-in "json" id, it supersedes
+ * the workspace's serializer for this conversation only.
+ */
+export function conversationJsonFormat(read: Capture): FormatAdapter {
+  return {
+    id: "json",
+    label: "JSON",
+    supports: (payload) => payload.kind === "markdown" || payload.kind === "text",
+    build: async (draft, signal) => {
+      const c = await read();
+      signal.throwIfAborted();
+      const onlyCut =
+        !draft.manuallyEdited &&
+        draft.provenance.every((p) => p.kind === "original" || p.kind === "deterministic") &&
+        draft.omissions.every((o) => o.reason === "excluded");
+      const text = draft.payload.kind === "markdown" || draft.payload.kind === "text" ? draft.payload.text : "";
+      let value: Record<string, unknown>;
+      if (onlyCut) {
+        const cut = new Set(draft.omissions.map((o) => o.path));
+        const sections = conversationSections(c);
+        value = {
+          title: c.title,
+          complete: c.complete,
+          messages: c.messages.filter((_, i) => !cut.has(sections[i]?.path ?? "")).map((m) => ({ ...m })),
+        };
+      } else {
+        value = { title: c.title, complete: c.complete, edited_text: text };
+      }
+      const json = JSON.stringify(value, null, 2);
+      const { sealTransferArtifact } = await import("@ai-matrx/alchemy/operate");
+      return sealTransferArtifact({
+        snapshotId: draft.snapshotId,
+        draftRevision: draft.revision,
+        format: "json",
+        plainText: json,
+        file: { filename: `${c.fileBase}.json`, mime: "application/json;charset=utf-8", bytes: new TextEncoder().encode(json) },
+        omissions: draft.omissions.map((o) => ({ ...o })),
+      });
+    },
+  };
+}
+
 /** An Alchemy `Source` over the captured conversation (one capture per session). */
 function sourceOf(
   id: string,
@@ -213,7 +263,9 @@ export function conversationTransferSources(conversationId: string, title: strin
       coverage: { status: c.complete ? "complete" : "partial", included: n, total: c.complete ? n : null, unit: "message" },
     };
   });
-  return { primary, formatSources, chooseMessages };
+  // Copy for AI's JSON is the chosen messages, from the same capture.
+  const formats = [conversationJsonFormat(conv)];
+  return { primary, formatSources, chooseMessages, formats };
 }
 
 // ─── Running a row ───────────────────────────────────────────────────────────
@@ -315,6 +367,7 @@ export async function runConversationTransfer(
     // A destination sends the readable transcript.
     source: row.group === "prepare" ? sources.chooseMessages : sources.primary,
     formatSources: sources.formatSources,
+    ...(row.group === "prepare" ? { formats: sources.formats } : {}),
     intent: row.group === "prepare" ? { kind: "prepare" } : { kind: "action", actionId: row.destination, label: row.label },
   });
   if (!opened) {
