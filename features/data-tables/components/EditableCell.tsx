@@ -862,6 +862,16 @@ function CellRefusalPopover({
           // A notice about text that is still in an open editor must never take the
           // focus away from that editor — the person is mid-sentence.
           {...(ruleRefusal || choiceAsk ? { onOpenAutoFocus: (e: Event) => e.preventDefault() } : {})}
+          // FOCUS GOING BACK INTO THE CELL'S OWN EDITOR IS NOT "FOCUS LEFT" (DATA-V2-BASICS-2 F37).
+          // The choice picker hands focus to its trigger as its list closes, and the column-rule
+          // notice puts the caret back in the input — both inside the editor this notice is about,
+          // outside the notice. Read as a dismissal, the question answered Cancel for the person
+          // (every "Add …" after the first of a page load did nothing). A click elsewhere and
+          // Escape still close it.
+          onFocusOutside={(e: Event) => {
+            const to = e.target instanceof Element ? e.target : null;
+            if (to?.closest("[data-matrx-cell-editor]")) e.preventDefault();
+          }}
           // The person is answering the refusal by editing the cell again, so a
           // press inside the notice must never reach the grid underneath it.
           onClick={(e) => e.stopPropagation()}

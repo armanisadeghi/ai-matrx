@@ -213,4 +213,22 @@ describe("the Sheet's grid cell — a typed word that is none of the choices", (
     expect(decideTypedChoice(ACCOUNT_TYPE(false), "codex", "ask")).toEqual({ kind: "none" });
     expect(decideTypedChoice(ACCOUNT_TYPE(false), ["Cursor", "Gemini"], "ask")).toEqual({ kind: "ask", words: ["Gemini"], canKeep: false });
   });
+  it("8 · the question stays while focus goes back to the cell's own editor (the picker hands focus to its trigger as it closes)", async () => {
+    // DATA-V2-BASICS-2 F37: on /data-v2 the question opened, then the choice picker's list closed and
+    // gave focus back to its trigger — inside the cell editor, outside the question — and the
+    // question's popover read that as "focus left" and answered Cancel for the person. After the
+    // first ask of a page load the knob is cached, so the question always opened before the picker
+    // let go: every later "Add …" did nothing.
+    renderCell(true);
+    await chooseGemini();
+    expect(ask()).not.toBeNull();
+    const trigger = container.querySelector("[data-test-choose]") as HTMLButtonElement;
+    await act(async () => {
+      trigger.focus();
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(ask()).not.toBeNull();
+    await press("Add");
+    expect(upsertCellAddingChoice).toHaveBeenCalledTimes(1);
+  });
 });
