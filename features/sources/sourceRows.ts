@@ -237,25 +237,31 @@ export const SOURCE_KIND_LABEL: Record<SourceKindGroup, string> = {
   other: "Other",
 };
 
+/**
+ * Which stored `source_kind` tokens make up each kind a person sees. The ONE
+ * table: the Sources page's Kind column and filter, and the Knowledge search
+ * page's kind filter (`features/rag/search-controls.ts`), both read it, so a
+ * kind the Sources page shows can never be missing from search.
+ */
+export const SOURCE_KIND_GROUP_KINDS: Record<
+  Exclude<SourceKindGroup, "other">,
+  readonly string[]
+> = {
+  file: ["cld_file", "legacy", "code_file"],
+  web_page: ["scrape_parsed_page", "web_page", "external_url"],
+  transcript: ["transcript"],
+  note: ["note"],
+  pasted_text: ["inline"],
+};
+
+const GROUP_BY_KIND: Record<string, SourceKindGroup> = Object.fromEntries(
+  Object.entries(SOURCE_KIND_GROUP_KINDS).flatMap(([group, kinds]) =>
+    kinds.map((kind) => [kind, group as SourceKindGroup]),
+  ),
+);
+
 export function sourceKindGroup(sourceKind: string): SourceKindGroup {
-  switch (sourceKind) {
-    case "cld_file":
-    case "legacy":
-    case "code_file":
-      return "file";
-    case "scrape_parsed_page":
-    case "web_page":
-    case "external_url":
-      return "web_page";
-    case "transcript":
-      return "transcript";
-    case "note":
-      return "note";
-    case "inline":
-      return "pasted_text";
-    default:
-      return "other";
-  }
+  return GROUP_BY_KIND[sourceKind] ?? "other";
 }
 
 // ── How it was captured ──────────────────────────────────────────────────────

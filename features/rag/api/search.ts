@@ -9,6 +9,7 @@
  * page and embedded surfaces (file context menu, omnibox, embed-in-chat).
  */
 import { postNdjson } from "@/lib/python-client";
+import { sourceStudioPath } from "@/features/source-studio/sourceStudioModel";
 
 export interface RagSearchHit {
   chunk_id: string;
@@ -63,7 +64,8 @@ export interface RagSearchFilters {
   organization_id?: string | null;
   /** Restrict hits to sources tagged with these scope ids. */
   scope_ids?: string[] | null;
-  source_kinds?: ("cld_file" | "note" | "code_file")[];
+  /** Stored source kinds (see `features/rag/search-controls.ts`). */
+  source_kinds?: string[];
 }
 
 export interface RagSearchRequest {
@@ -132,6 +134,9 @@ export async function ragSearch(
   let result: RagSearchResponse | null = null;
   for await (const evt of postNdjson<RagSearchRequest>(`/rag/search`, body, {
     signal: opts.signal,
+    // A search is a read: with no organization selected it searches every
+    // organization the person belongs to instead of refusing.
+    bodyCarriedRead: true,
   })) {
     if (evt.event === "error") {
       throw new Error(
@@ -169,6 +174,12 @@ export async function ragSearch(
 // ---------------------------------------------------------------------------
 
 export function citationHrefFor(hit: RagSearchHit): string {
+  // Every hit that belongs to a Source opens THE Source screen at the matched
+  // chunk (SOURCE-CONVERGENCE §8.2) — the per-kind routes below are only for
+  // chunks with no Source row (notes, tasks, projects, legacy library docs).
+  if (hit.processed_document_id) {
+    return sourceStudioPath(hit.processed_document_id, { chunk: hit.chunk_id });
+  }
   const pageRaw = hit.metadata?.["page_number"];
   const page =
     typeof pageRaw === "number"

@@ -118,12 +118,19 @@ import {
   FILTERABLE_SOURCE_KIND_ENUM_TEXT,
   MULTI_QUERY_MAX,
   MULTI_QUERY_MIN,
-  SEARCH_FILTER_BY_SOURCE_KIND,
   SEARCH_SOURCE_KIND_FILTERS,
   isFilterableSourceKind,
   isValidMultiQuery,
+  searchFilterForKinds,
+  sourceKindsForFilter,
   type SourceKindFilter,
 } from "@/features/rag/search-controls";
+import { KnowledgeSearchResult } from "@/features/rag/components/search/KnowledgeSearchResult";
+import { useSearchHitSources } from "@/features/rag/hooks/useSearchHitSources";
+import {
+  originFacets,
+  searchHitSourceView,
+} from "@/features/rag/search-hit-source";
 import { ProInput } from "@/components/official/ProInput";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrappers are the
@@ -203,10 +210,10 @@ function useScopeControls(initialStoreId: string | null = null) {
   const [useHyde, setUseHyde] = useState(false);
   const [expandClusters, setExpandClusters] = useState(false);
 
-  const sourceKinds = useMemo<string[] | undefined>(() => {
-    if (kindFilter === "all") return undefined;
-    return [kindFilter];
-  }, [kindFilter]);
+  const sourceKinds = useMemo<string[] | undefined>(
+    () => sourceKindsForFilter(kindFilter),
+    [kindFilter],
+  );
 
   return {
     stores,
@@ -301,12 +308,16 @@ function RichHitCard({
     name: sourceName,
     libraryProvenance,
   });
-  const href = citationHrefFor(
-    hit.source_kind,
-    hit.source_id,
-    view.pageNumber,
-    hit.chunk_id,
-  );
+  const processedDocumentId =
+    "processed_document_id" in hit ? hit.processed_document_id : null;
+  const href = processedDocumentId
+    ? `/knowledge/sources/${encodeURIComponent(processedDocumentId)}?chunk=${encodeURIComponent(hit.chunk_id)}`
+    : citationHrefFor(
+        hit.source_kind,
+        hit.source_id,
+        view.pageNumber,
+        hit.chunk_id,
+      );
   const openCitation = useOpenCitation();
   const openHit = () =>
     openCitation({
@@ -631,14 +642,14 @@ function KindToggle({
   // Rendered from the shared vocabulary, so the positions the user can click
   // are exactly the ones the `retrieval_source_kinds` write target accepts.
   return (
-    <div className="flex items-center rounded-md border p-0.5 text-[11px]">
+    <div className="flex flex-wrap items-center gap-0.5 rounded-md border p-0.5 text-[11px]">
       {SEARCH_SOURCE_KIND_FILTERS.map((o) => (
         <button
           key={o.value}
           type="button"
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-1.5 py-0.5 rounded transition-colors flex-1",
+            "px-1.5 py-0.5 rounded transition-colors",
             value === o.value
               ? "bg-primary text-primary-foreground"
               : "hover:bg-muted/40 text-muted-foreground",
@@ -674,14 +685,13 @@ function SearchScopeSummary({
   organizationId: string | null | undefined;
 }) {
   const scopeCount = scopeIds?.length ?? 0;
+  const kindSpec = SEARCH_SOURCE_KIND_FILTERS.find(
+    (f) => f.value === scope.kindFilter,
+  );
   const kindLabel =
-    scope.kindFilter === "all"
+    !kindSpec || kindSpec.value === "all"
       ? "all kinds"
-      : scope.kindFilter === "cld_file"
-        ? "files"
-        : scope.kindFilter === "note"
-          ? "notes"
-          : "code";
+      : kindSpec.label.toLowerCase();
 
   return (
     <div className="mt-2 flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground">
@@ -696,16 +706,20 @@ function SearchScopeSummary({
             : "all accessible content"}
       </Badge>
       <span aria-hidden>·</span>
+      {/* Reach is the person's own memberships, never the selected
+          organization (aidream matrx_rag.search.build_visibility_predicate):
+          selected or not, a search covers every organization she belongs to,
+          plus what was shared with her and the shared libraries. */}
       <Badge
-        variant={organizationId ? "secondary" : "outline"}
+        variant="outline"
         className="text-[10px] px-1.5 py-0 font-normal"
         title={
           organizationId
-            ? "Restricted to one organization."
-            : "No org filter — searching across EVERY organization you belong to plus your personal content and the global library."
+            ? "Every organization you belong to, plus content shared with you and the shared libraries. The organization you have selected does not narrow a search."
+            : "No organization selected — searching every organization you belong to, plus content shared with you and the shared libraries."
         }
       >
-        {organizationId ? "1 org" : "all your orgs"}
+        every organization you belong to
       </Badge>
       {scopeCount > 0 && (
         <>
@@ -819,9 +833,7 @@ function SearchTab({
     () =>
       scope.sourceKinds
         ? {
-            source_kinds: scope.sourceKinds as (
-              "cld_file" | "note" | "code_file"
-            )[],
+            source_kinds: scope.sourceKinds,
           }
         : undefined,
     [scope.sourceKinds],
@@ -840,6 +852,31 @@ function SearchTab({
   const { labelByFile: provenanceByFile } =
     useFilesLibraryProvenance(provenanceFileIds);
 
+  // The Sources behind the results — ONE batch read — so each result shows the
+  // Source's title, kind and where it came from, never an id.
+  const hitSources = useSearchHitSources(
+    (response?.hits ?? []).flatMap((h) =>
+      h.processed_document_id ? [h.processed_document_id] : [],
+    ),
+  );
+  // Narrow the RETURNED results by where they came from (Extension, Research,
+  // YouTube…). Counts are of these results only, and the row says so.
+  const [originFilter, setOriginFilter] = useState<string | null>(null);
+  const resultOrigins = originFacets(
+    (response?.hits ?? []).map((h) =>
+      h.processed_document_id
+        ? (hitSources.rows.get(h.processed_document_id) ?? null)
+        : null,
+    ),
+  );
+  const shownHits = (response?.hits ?? []).filter(
+    (h) =>
+      !originFilter ||
+      (h.processed_document_id &&
+        hitSources.rows.get(h.processed_document_id)?.origin_client ===
+          originFilter),
+  );
+
   const runSearch = useCallback(async () => {
     const trimmed = query.trim();
     if (!trimmed) return;
@@ -847,6 +884,7 @@ function SearchTab({
     setRunning(true);
     setError(null);
     setResponse(null);
+    setOriginFilter(null);
     setReviewHit(null);
     onReviewModeChange?.(false);
     try {
@@ -1023,25 +1061,22 @@ function SearchTab({
         throw new Error(
           `retrieval_source_kinds expects an array of source kinds (${FILTERABLE_SOURCE_KIND_ENUM_TEXT}), or [] to clear the filter to "All".`,
         );
-      // The toggle is single-select, so a longer list has no position that
-      // could render it. Refuse rather than silently keeping the first entry.
-      if (value.length > 1)
-        throw new Error(
-          `retrieval_source_kinds got ${value.length} kinds, but this surface's source-kind toggle is single-select and can show at most one. Send one kind, or [] to clear the filter to "All".`,
-        );
       if (value.length === 0) {
         scope.setKindFilter("all");
         return;
       }
-      const [kind] = value;
-      if (!isFilterableSourceKind(kind))
+      const unknown = value.find((kind) => !isFilterableSourceKind(kind));
+      if (unknown !== undefined)
         throw new Error(
-          `retrieval_source_kinds got "${String(kind)}", which this surface's toggle cannot select. Allowed: ${FILTERABLE_SOURCE_KIND_ENUM_TEXT}. Content of other kinds is reached through the data store scope instead.`,
+          `retrieval_source_kinds got "${String(unknown)}", which this surface's toggle cannot select. Allowed: ${FILTERABLE_SOURCE_KIND_ENUM_TEXT}.`,
         );
-      const filter = SEARCH_FILTER_BY_SOURCE_KIND[kind];
+      // The toggle is single-select: every kind sent must belong to ONE
+      // position (e.g. "scrape_parsed_page" + "web_page" = Web page). Refuse a
+      // mix rather than silently keeping part of it.
+      const filter = searchFilterForKinds(value as string[]);
       if (!filter)
         throw new Error(
-          `retrieval_source_kinds has no toggle position for "${kind}".`,
+          `retrieval_source_kinds mixes kinds from different toggle positions (${value.join(", ")}); this surface's kind toggle is single-select. Send the kinds of one position, or [] to clear the filter to "All".`,
         );
       scope.setKindFilter(filter.value);
     },
@@ -1262,13 +1297,13 @@ function SearchTab({
               Search your indexed content
             </p>
             <p className="mb-2">
-              Hybrid retrieval over your PDFs, notes, and code. Results are
-              ranked by vector similarity (OpenAI embeddings) + lexical match,
-              fused with RRF, optionally reranked, and de-duplicated with MMR.
+              Searches every Source you can open — files, web pages,
+              transcripts, notes and pasted text — across every organization
+              you belong to.
             </p>
             <p>
-              Each card shows the full hit snippet with the source, page, and a
-              deep link into the original document.
+              Each result shows the Source it came from and the matching
+              passage; open it to land on that passage in the Source.
             </p>
           </div>
         )}
@@ -1343,7 +1378,48 @@ function SearchTab({
                   indexed and is visible to you.
                 </div>
               ) : (
-                response.hits.map((h, i) => (
+                <>
+                  {hitSources.error ? (
+                    <p className="text-xs text-amber-600 dark:text-amber-500">
+                      Couldn&apos;t read the Sources behind these results (
+                      {hitSources.error}); titles show what each result carries.
+                    </p>
+                  ) : null}
+                  {resultOrigins.length > 1 ? (
+                    <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                      <span className="text-muted-foreground">
+                        Narrow these results by where they came from:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setOriginFilter(null)}
+                        className={cn(
+                          "rounded-full border px-2 py-0.5",
+                          originFilter === null
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "text-muted-foreground hover:bg-muted",
+                        )}
+                      >
+                        All {response.hits.length}
+                      </button>
+                      {resultOrigins.map((facet) => (
+                        <button
+                          key={facet.origin}
+                          type="button"
+                          onClick={() => setOriginFilter(facet.origin)}
+                          className={cn(
+                            "rounded-full border px-2 py-0.5",
+                            originFilter === facet.origin
+                              ? "border-primary bg-primary/10 text-foreground"
+                              : "text-muted-foreground hover:bg-muted",
+                          )}
+                        >
+                          {facet.label} {facet.count}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                  {shownHits.map((h, i) => (
                   <motion.div
                     key={h.chunk_id}
                     initial={{ opacity: 0, y: 8 }}
@@ -1354,6 +1430,19 @@ function SearchTab({
                       delay: Math.min(i * 0.03, 0.3),
                     }}
                   >
+                    <KnowledgeSearchResult
+                      hit={h}
+                      query={response.query}
+                      pageNumber={hitViewFromSearchHit(h).pageNumber}
+                      source={searchHitSourceView(
+                        h,
+                        h.processed_document_id
+                          ? (hitSources.rows.get(h.processed_document_id) ??
+                              null)
+                          : null,
+                        canonicalSourceNameForHit(h, response.hits),
+                      )}
+                      details={
                     <RichHitCard
                       rank={i + 1}
                       hit={h}
@@ -1367,8 +1456,8 @@ function SearchTab({
                       }
                       topScore={response.hits[0]?.score}
                       highlightQuery={response.query}
-                      defaultExpanded={i === 0}
-                      expanded={expandedHits[h.chunk_id] ?? i === 0}
+                      defaultExpanded
+                      expanded={expandedHits[h.chunk_id] ?? true}
                       onExpandedChange={(expanded) =>
                         setExpandedHits((current) => ({
                           ...current,
@@ -1389,8 +1478,11 @@ function SearchTab({
                           : undefined
                       }
                     />
+                      }
+                    />
                   </motion.div>
-                ))
+                  ))}
+                </>
               )}
             </motion.div>
           </NonEditableContextMenu>
