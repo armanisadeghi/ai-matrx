@@ -16,7 +16,11 @@
  *    result? }` — for draft mode the output says the user still has to save;
  *    `message` carries the handler's `SurfaceWriteOutcome.summary` and
  *    `result` its `data` (what landed: ids, names), so the model never has to
- *    re-read a list that may not show the new rows yet.
+ *    re-read a list that may not show the new rows yet. Every success also
+ *    carries THE WRITE RECEIPT: `status: "applied_now"`, `applied_at`, and
+ *    `change: { page_value, before, written, same_as_before? }`, and the
+ *    message ends with `surfaceWriteReceiptSentence` — so the model never
+ *    reads its own effect in the refreshed page values as "already there".
  *  - user declined  → is_error FALSE with `{ ok: false, declined: true }`.
  *    A decline is an answer, not a failure — an error result would invite the
  *    model to retry the exact write the user just refused.
@@ -42,7 +46,10 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import { extractErrorMessage } from "@/utils/errors";
 import { submitToolResult } from "@/features/agents/api/submit-tool-results";
-import { applySurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import {
+  applySurfaceWrite,
+  type SurfaceWriteChange,
+} from "@/features/surfaces/runtime/surface-writeback";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { resolveAgentName } from "@/features/surfaces/hooks/useAgentNames";
 import { requestInlineApproval } from "@/features/agents/ui-first-tools/redux/request-approval";
@@ -81,6 +88,33 @@ export function surfaceWriteFailureSentence(
   return (
     `apply_surface_write("${target}") did not complete: ${reason} ` +
     `${nothingChanged}Tell the user, or correct the value and call apply_surface_write again.`
+  );
+}
+
+/**
+ * The sentence every successful write ends with, so the model can never read
+ * its own effect as a value that was already there (2026-09-27: three HR
+ * employer writes landed once each, and the agent told the person the rows
+ * "already existed" — because the page values it was handed next were re-read
+ * AFTER the write and nothing said so).
+ */
+export function surfaceWriteReceiptSentence(
+  change: SurfaceWriteChange | undefined,
+): string {
+  if (change?.sameAsBefore) {
+    return (
+      `The page already held exactly this value before this call, so the save re-applied it ` +
+      `and nothing visible changed — tell the user it was already set.`
+    );
+  }
+  const before =
+    change?.before !== undefined && change.pageValue
+      ? ` Before this call "${change.pageValue}" was: ${change.before}.`
+      : "";
+  return (
+    `This call made this change just now${change ? ` (${change.appliedAt})` : ""}; it did not exist before this call.${before} ` +
+    `Page values you receive after this result were re-read after the write, so they already include it — ` +
+    `that is this write's effect, not an earlier value. Tell the user you made the change; do not write it again.`
   );
 }
 
@@ -218,12 +252,28 @@ export const dispatchSurfaceWrite = createAsyncThunk<
               ? `"${label}" applied and saved.`
               : `"${label}" applied.`;
         const summary = result.outcome?.summary;
+        const change = result.change;
         finish({
           ok: true,
+          // THE WRITE RECEIPT, unmistakable: this call made the change now.
+          status: "applied_now",
+          ...(change ? { applied_at: change.appliedAt } : {}),
           surface_name: result.surfaceName,
           target: result.target.name,
           mode: result.target.mode,
-          message: summary ? `${base} ${summary}` : base,
+          message: [base, summary, surfaceWriteReceiptSentence(change)]
+            .filter(Boolean)
+            .join(" "),
+          ...(change
+            ? {
+                change: {
+                  ...(change.pageValue ? { page_value: change.pageValue } : {}),
+                  ...(change.before !== undefined ? { before: change.before } : {}),
+                  written: change.written,
+                  ...(change.sameAsBefore ? { same_as_before: true } : {}),
+                },
+              }
+            : {}),
           // WHAT LANDED (ids, names) as the page reported it — the page's list
           // may not show the new rows yet if you re-read it immediately, so
           // trust this over an immediate re-read and do not retry the write.

@@ -61,6 +61,7 @@ import {
 } from "./resume-claims";
 import { selectContextPayload } from "../instance-context/instance-context.selectors";
 import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
+import { composeResumeContext } from "../utils/surface-writes-note";
 import { buildAmbientContext } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
 import {
   patchConversation,
@@ -238,10 +239,15 @@ export const resumeInstance = createAsyncThunk<
       const freshState = getState() as RootState;
       const chipContext = selectContextPayload(conversationId)(freshState);
       const ambient = buildAmbientContext(freshState, conversationId);
-      const context: Record<string, unknown> | undefined =
-        chipContext || ambient
-          ? { ...(ambient ?? {}), ...(chipContext ?? {}) }
-          : undefined;
+      // THE LABEL ON THE RE-READ: the page values above were read AFTER the
+      // writes this conversation made; say so, or the model reads its own
+      // write as a value that was already there (2026-09-27).
+      const context = composeResumeContext(
+        freshState,
+        conversationId,
+        ambient,
+        chipContext,
+      );
 
       // USER-layer apply policy — keep the resumed loop's directive handling
       // aligned with the user's preference (highest-priority cascade leg).

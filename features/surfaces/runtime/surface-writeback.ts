@@ -189,6 +189,82 @@ export function excerptOf(value: unknown): string {
   return text.length > EXCERPT_MAX ? `${text.slice(0, EXCERPT_MAX - 1)}…` : text;
 }
 
+// ─── THE WRITE RECEIPT (see `SurfaceWriteChange`) ───────────────────────────
+
+const RECEIPT_EXCERPT_MAX = 400;
+/** A page read slower than this is reported as not read, never waited on. */
+const BEFORE_READ_TIMEOUT_MS = 1500;
+
+/** Sentinel: the page value was not (or could not be) read. */
+const NOT_READ: unique symbol = Symbol("surface-write-before-not-read");
+type BeforeRead = { value: unknown } | typeof NOT_READ;
+
+function receiptExcerpt(value: unknown): string {
+  let text: string;
+  try {
+    text = typeof value === "string" ? value : (JSON.stringify(value) ?? String(value));
+  } catch {
+    text = String(value);
+  }
+  text = text.replace(/\s+/g, " ").trim();
+  return text.length > RECEIPT_EXCERPT_MAX ? `${text.slice(0, RECEIPT_EXCERPT_MAX - 1)}…` : text;
+}
+
+function sameValue(a: unknown, b: unknown): boolean {
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The page value `target.updatesValue` names, read from the live page right
+ * before the handler runs. A target without `updatesValue`, a failed read or a
+ * slow one is NOT_READ — the receipt then omits "before" rather than guess.
+ */
+async function readPageValueBeforeWrite(
+  target: SurfaceWriteTarget,
+  runtime: SurfaceRuntimeValue,
+): Promise<BeforeRead> {
+  const key = target.updatesValue;
+  if (!key) return NOT_READ;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const scope = await Promise.race([
+      Promise.resolve(runtime.getScope()),
+      new Promise<typeof NOT_READ>((resolve) => {
+        timer = setTimeout(() => resolve(NOT_READ), BEFORE_READ_TIMEOUT_MS);
+      }),
+    ]);
+    if (scope === NOT_READ || !scope || typeof scope !== "object") return NOT_READ;
+    return { value: (scope as Record<string, unknown>)[key] };
+  } catch (error) {
+    console.warn(
+      `[surface-writeback] could not read "${key}" before writing "${target.name}" — the receipt will omit "before"`,
+      error,
+    );
+    return NOT_READ;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+function writeReceipt(
+  target: SurfaceWriteTarget,
+  written: unknown,
+  before: BeforeRead,
+): SurfaceWriteChange {
+  const read = before !== NOT_READ;
+  return {
+    ...(target.updatesValue ? { pageValue: target.updatesValue } : {}),
+    ...(read ? { before: receiptExcerpt(before.value ?? null) } : {}),
+    written: receiptExcerpt(written ?? null),
+    ...(read && sameValue(before.value, written) ? { sameAsBefore: true as const } : {}),
+    appliedAt: new Date().toISOString(),
+  };
+}
+
 /** Strip one surrounding ``` / ```json fence, if the whole string is fenced. */
 function stripJsonFence(text: string): string {
   const match = /^```[a-zA-Z0-9_-]*[ \t]*\r?\n?([\s\S]*?)\r?\n?```$/.exec(
@@ -269,6 +345,40 @@ function refuseBeforeApproval(
   return { ok: false, refused: true, phase: "before_approval", error: message };
 }
 
+/**
+ * THE WRITE RECEIPT — what one successful write changed, as the agent is told
+ * it. Every success carries one.
+ *
+ * Why it exists (2026-09-27, /hr/settings/employer): each write landed exactly
+ * once (version 1→2, fresh timestamps), yet the agent told the person the rows
+ * "already existed" / the values "were already there". The resume after a
+ * write re-reads the live page (ARE-010), so the page values the model gets
+ * next ALREADY show its own write — with nothing saying they were read after
+ * it. With only "applied and saved" to go on, the model concluded the values
+ * had been there before. The receipt states the value the page held right
+ * before the write, what was written, and when, so the model can tell its own
+ * effect from a pre-existing value.
+ */
+export interface SurfaceWriteChange {
+  /** The page value this target updates (the manifest's `updatesValue`), when declared. */
+  pageValue?: string;
+  /**
+   * That page value as it stood immediately before the write (excerpt).
+   * Absent when the target declares no `updatesValue` or the page could not
+   * be read — never guessed.
+   */
+  before?: string;
+  /** The value the write sent (excerpt). */
+  written: string;
+  /**
+   * True only when the page ALREADY held exactly the written value — the one
+   * case where "it was already there" is the truth, and the agent is told so.
+   */
+  sameAsBefore?: true;
+  /** When the write was applied (ISO). */
+  appliedAt: string;
+}
+
 /** The envelope every write returns. A skip/failure is never a silent pass. */
 export type SurfaceWriteResult =
   | {
@@ -280,6 +390,8 @@ export type SurfaceWriteResult =
        * only when the handler returned one. Forwarded to the agent.
        */
       outcome?: SurfaceWriteOutcome;
+      /** THE WRITE RECEIPT (see `SurfaceWriteChange`). Set on every success. */
+      change?: SurfaceWriteChange;
     }
   | {
       ok: false;
@@ -917,6 +1029,11 @@ export async function applySurfaceWrite(
       if (verdict !== true) return verdict;
     }
 
+    // THE WRITE RECEIPT's "before": the page value this target updates, read
+    // AFTER approval and immediately before the handler runs, so it is the
+    // state the write actually replaced.
+    const before = await readPageValueBeforeWrite(target, runtime);
+
     try {
       const outcome = toWriteOutcome(await handler.apply(value));
       // ui-mode writes are self-evident on screen (selection moved, view
@@ -937,6 +1054,7 @@ export async function applySurfaceWrite(
         surfaceName: runtime.surfaceName,
         target,
         ...(outcome ? { outcome } : {}),
+        change: writeReceipt(target, value, before),
       };
     } catch (error) {
       const message =
@@ -998,7 +1116,7 @@ async function applyWindowFormWrite(
   try {
     await applyWindowFormChanges(rawValue);
     if (!opts?.quiet) toast.success(`${target.label} — filled in. Review and save.`);
-    return { ok: true, surfaceName, target };
+    return { ok: true, surfaceName, target, change: writeReceipt(target, rawValue, NOT_READ) };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : `Applying "${target.label}" failed.`;
@@ -1094,7 +1212,7 @@ async function applySurfaceFeedbackWrite(
     if (!opts?.quiet) {
       toast.success("Feedback saved for the team.", { description: surfaceName });
     }
-    return { ok: true, surfaceName, target, outcome };
+    return { ok: true, surfaceName, target, outcome, change: writeReceipt(target, value, NOT_READ) };
   } catch (error) {
     const failure = fail(
       error instanceof Error && error.message ? error.message : `Saving "${target.label}" failed.`,

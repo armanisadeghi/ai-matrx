@@ -122,9 +122,12 @@ describe("apply_surface_write tool result", () => {
       expect.objectContaining({
         ok: true,
         target: "create_classes",
-        message: '"Create classes" applied and saved. Created 1 class: Algebra I.',
+        status: "applied_now",
         result: { created: [{ id: "k1", name: "Algebra I" }] },
       }),
+    );
+    expect(submitted.output.message).toMatch(
+      /^"Create classes" applied and saved\. Created 1 class: Algebra I\. This call made this change just now/,
     );
   });
 
