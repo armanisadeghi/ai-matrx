@@ -85,6 +85,7 @@ export function PicklistInline({ entry, onOpenOverlay , expanded, onToggleExpand
       icon={ListChecks}
       accent="violet"
       title={name}
+      // read-gate-exempt: the tool result's own count or the loaded list's; unknown (null) reads 'Picklist', never 0
       subtitle={
         count != null
           ? `${count} ${count === 1 ? "item" : "items"}${summary.alreadyExisted ? " · already existed" : ""}`

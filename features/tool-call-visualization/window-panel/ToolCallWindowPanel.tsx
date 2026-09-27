@@ -613,6 +613,7 @@ const ToolCallWindowPanelBody: React.FC<{
   const copyAllActions =
     entries.length > 0 ? (
       <CopyButtons
+        // read-gate-exempt: tool lifecycles streamed into this session, shown only when entries exist, not a list read
         label={
           scope === "conversation"
             ? `All ${entries.length} tools in conversation`

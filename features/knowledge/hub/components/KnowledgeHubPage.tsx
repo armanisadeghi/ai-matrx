@@ -479,7 +479,11 @@ export function KnowledgeHubPage({
     write({ query: mergePresetQuery(presetDef.query, state.query) }, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [presetKey, presetDef, sidebar.savedViews.status]);
-  const total = results.sections.every((s) => typeof s.section?.count === "number")
+  // Known only when every section ANSWERED with a count: no sections yet (loading) or a section
+  // that failed leaves the total unknown (undefined), never a confident 0.
+  const total =
+    results.sections.length > 0 &&
+    results.sections.every((s) => s.status !== "error" && typeof s.section?.count === "number")
     ? results.sections
         .filter((s) => s.key !== "top_hit" && s.key !== "segments")
         .reduce((n, s) => n + (s.section?.count ?? 0), 0)
@@ -1227,6 +1231,7 @@ export function KnowledgeHubPage({
       role="toolbar"
       aria-label="Selected items"
     >
+      {/* read-gate-exempt: count of rows the person selected on screen, local selection state */}
       <span className="px-1 font-medium tabular-nums">{selectedHits.length} selected</span>
       <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => setFileUnderFor(selectedHits)}>
         <FolderInput className="h-3.5 w-3.5" /> File under…
@@ -1346,6 +1351,7 @@ export function KnowledgeHubPage({
             query={state.query}
             onQueryChange={(q) => write({ query: normalizeQuery(q) })}
             hits={hits}
+            // read-gate-exempt: total is undefined (unknown) unless every section answered with a count
             total={total}
             stage={
               sample || trashView

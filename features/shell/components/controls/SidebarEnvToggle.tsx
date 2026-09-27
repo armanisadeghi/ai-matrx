@@ -132,6 +132,7 @@ export default function SidebarEnvToggle() {
         </span>
         <span className="shell-nav-label">
           {label}
+          {/* read-gate-exempt: count of local server-target overrides chosen in this browser, not a read */}
           {overrideCount > 0 ? ` · ${overrideCount}` : ""}
         </span>
       </button>

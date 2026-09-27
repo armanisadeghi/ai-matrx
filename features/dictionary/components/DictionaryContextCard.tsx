@@ -6,6 +6,7 @@
 // cleanup agent run includes this dictionary as context; the page's own
 // recording biases STT with it.
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useMemo, useState } from "react";
 import { BookA, ChevronDown, Search, Settings2 } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
@@ -103,7 +104,7 @@ export function DictionaryContextCard({ surfaceKey }: { surfaceKey: string }) {
           <BookA className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">Dictionary</span>
           <Badge variant="secondary" className="ml-0.5">
-            {activeCount}
+            <UntrustedCount value={activeCount} trustworthy={resolveStatus !== "error"} label="Active dictionary entries" />
           </Badge>
           <span className="ml-auto text-[11px] text-muted-foreground truncate max-w-[140px]">
             {selectionSummary}
@@ -264,6 +265,7 @@ export function DictionaryContextCard({ surfaceKey }: { surfaceKey: string }) {
 
           {sourceCount > 1 && (
             <p className="border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
+              {/* read-gate-exempt: shown only when more than one source merged, so a failed resolve hides it rather than saying 0 */}
               Merged from {sourceCount} sources · most-specific level wins on
               conflicts.
             </p>

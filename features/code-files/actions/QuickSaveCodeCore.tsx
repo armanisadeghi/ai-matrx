@@ -221,6 +221,7 @@ export function QuickSaveCodeCore({
             />
           </span>
           <span className="text-muted-foreground">
+            {/* read-gate-exempt: character count of the code being saved, held locally, not a read */}
             · {charCount.toLocaleString()} chars
           </span>
         </div>
@@ -241,6 +242,7 @@ export function QuickSaveCodeCore({
 
       <div className="shrink-0 flex items-center justify-between gap-2 text-xs">
         <Badge variant="secondary" className="text-[10px] font-mono rounded-md">
+          {/* read-gate-exempt: character count of the code being saved, held locally, not a read */}
           {charCount.toLocaleString()} chars
         </Badge>
         <span className="text-muted-foreground">

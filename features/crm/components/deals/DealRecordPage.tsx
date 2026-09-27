@@ -397,6 +397,7 @@ export function DealRecordPage({ dealId }: Props) {
                 <SectionCard
                   title="Stage history"
                   Icon={History}
+                  // read-gate-exempt: section of the deal detail that renders only after its read succeeded (detail && deal guard above)
                   count={detail.stageEvents.length}
                 >
                   {detail.stageEvents.length === 0 ? (

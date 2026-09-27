@@ -1,4 +1,6 @@
 "use client";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 import React, { useEffect, useState } from "react";
@@ -339,7 +341,10 @@ export function SavedCanvasItems() {
 
         {/* Stats */}
         <div className="mt-3 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-          <span>{activeItems.length} item{activeItems.length !== 1 ? 's' : ''}</span>
+          <span>
+            <UntrustedCount value={activeItems.length} read={readOf({ isLoading, error: loadError })} label="Items" /> item
+            {activeItems.length !== 1 ? 's' : ''}
+          </span>
           {typeFilter !== "all" && (
             <Badge variant="secondary">{getTypeLabel(typeFilter)}</Badge>
           )}

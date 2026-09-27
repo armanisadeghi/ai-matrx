@@ -1,5 +1,7 @@
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import React, { useState } from "react";
 import { EngagementPicker } from "@/features/scopes/components/active-context/engagement/EngagementPicker";
 import {
@@ -57,7 +59,13 @@ export function ProjectsWorkspace() {
 
       <div className="px-2 py-2 border-b shrink-0 bg-muted/5">
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Projects ({activeProjects.length})
+          Projects (
+          <UntrustedCount
+            value={activeProjects.length}
+            read={readOf({ isLoading: projectsLoading, isError: projectsFailed, error: projectsError })}
+            label="Projects"
+          />
+          )
         </span>
       </div>
 

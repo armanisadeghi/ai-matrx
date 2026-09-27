@@ -2,6 +2,7 @@
 
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import {
   PlusTapButton,
@@ -51,9 +52,11 @@ export default function SchedulesPage() {
             </h1>
             {tasks.length > 0 ? (
               <span className="hidden shrink-0 whitespace-nowrap text-xs text-muted-foreground sm:inline">
-                {tasks.length} schedule{tasks.length === 1 ? "" : "s"}
+                <UntrustedCount value={tasks.length} trustworthy={!error} label="Schedules" /> schedule
+                {tasks.length === 1 ? "" : "s"}
                 {" · "}
-                {tasks.filter((t) => t.enabled).length} enabled
+                <UntrustedCount value={tasks.filter((t) => t.enabled).length} trustworthy={!error} label="Enabled schedules" />{" "}
+                enabled
               </span>
             ) : null}
           </div>

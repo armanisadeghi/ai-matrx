@@ -17,6 +17,7 @@
  *    record by hand is how a non-technical expert gets a silent typo.
  */
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -375,7 +376,9 @@ export function GuidedChecklist<Ctx>({
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">
-            {resolved.doneCount} of {resolved.requiredCount} done
+            <UntrustedCount value={resolved.doneCount} trustworthy={!error} label="Steps done" /> of{" "}
+            {/* read-gate-exempt: number of required steps in the checklist definition, fixed by code, not a read */}
+            {resolved.requiredCount} done
           </span>
           <Button
             size="sm"

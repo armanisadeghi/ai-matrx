@@ -12,6 +12,7 @@
 
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -270,9 +271,12 @@ export default function RecoveryWindowImpl() {
             <div className="px-4 py-3 border-b border-border flex items-center gap-2">
               <Inbox className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm font-medium">Saved Submissions</span>
-              <span className="ml-auto text-xs text-muted-foreground">
-                {items.length}
-              </span>
+              <UntrustedCount
+                className="ml-auto text-xs text-muted-foreground"
+                value={items.length}
+                trustworthy={!readError}
+                label="Saved submissions"
+              />
             </div>
             <div className="flex-1 overflow-y-auto">
               {items.length === 0 ? (
