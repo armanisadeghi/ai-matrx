@@ -72,6 +72,18 @@ describe("update_practice_tests / delete_practice_tests", () => {
     );
   });
 
+  it("a bad field is refused for itself, not also as 'changes nothing'", () => {
+    let message = "";
+    try {
+      parseUpdateAssessmentsValue("quizzes", [{ id: "a1", depth: "brutal" }], MINE);
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    expect(message).toContain("depth must be one of");
+    expect(message).not.toContain("changes nothing");
+    expect(() => parseUpdateAssessmentsValue("quizzes", [{ id: "a1" }], MINE)).toThrow(/changes nothing/);
+  });
+
   it("archives live ones only", () => {
     expect(parseDeleteAssessmentsValue("practice_tests", ["a1"], MINE)).toEqual([MINE[0]]);
     expect(() => parseDeleteAssessmentsValue("practice_tests", ["a3"], MINE)).toThrow(/already archived/);

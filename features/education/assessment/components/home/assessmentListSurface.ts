@@ -25,7 +25,7 @@ import { archiveRecord, restoreFromTrash } from "@/features/trash/service";
 import { assessmentService } from "../../data/assessmentService";
 import { fetchOwnAssessmentsFor } from "../../data/assessmentListService";
 import type { AssessmentPatch } from "../../data/types";
-import type { KindConfig } from "../kindConfig";
+import { KIND_CONFIG, type KindConfig } from "../kindConfig";
 import {
   parseCreateAssessmentsValue,
   parseDeleteAssessmentsValue,
@@ -38,9 +38,6 @@ import { distinctTopic, type AssessmentListItem } from "./assessmentList";
 type Controller = EntityListSurfaceController<AssessmentListItem>;
 
 const LIST_MAX_ROWS = 25;
-
-/** Write-target plural for a kind ("quizzes" | "practice_tests"). */
-export const targetPlural = (config: KindConfig) => config.base.replace(/-/g, "_");
 
 /** The condensed page on screen — one XML bundle, first 25 rows. */
 export function buildAssessmentListBundle(list: Controller): string {
@@ -153,87 +150,136 @@ function toPatch(fields: AssessmentWriteFields): AssessmentPatch {
   return patch as AssessmentPatch;
 }
 
-/** create_ / update_ / delete_<plural> over the person's own assessments of one kind. */
-export function buildAssessmentWriteHandlers(input: {
-  list: Controller;
-  userId: string;
-  config: KindConfig;
-}): SurfaceWriteHandlers {
+type HandlerInput = { list: Controller; userId: string; config: KindConfig };
+type CollectionOps = Omit<Parameters<typeof collectionWriteHandlers>[0], "plural" | "singular">;
+
+/**
+ * create_quizzes / update_quizzes / delete_quizzes on /education/quizzes.
+ * The plural is a literal at each call site so `check:surface-write-handlers`
+ * can read the target names statically.
+ */
+export function buildQuizWriteHandlers(input: Omit<HandlerInput, "config">): SurfaceWriteHandlers {
+  const input2 = { ...input, config: KIND_CONFIG.quiz };
+  const bound = bindOps(input2, "quizzes");
+  // Every check and apply reads the assessments the value names first.
+  const quizHandlers = collectionWriteHandlers(
+    {
+      plural: "quizzes",
+      singular: "quiz",
+      create: bound.ops.create,
+      update: bound.ops.update,
+      delete: bound.ops.delete,
+    },
+    refuseSurfaceWrite,
+  );
+  const quizOut: SurfaceWriteHandlers = {};
+  for (const [name, handler] of Object.entries(quizHandlers)) {
+    const entry = handler as SurfaceWriteHandlerEntry;
+    quizOut[name] = {
+      validate: async (value) => {
+        await bound.load(value);
+        await entry.validate?.(value);
+      },
+      apply: async (value) => {
+        await bound.load(value);
+        return entry.apply(value);
+      },
+    };
+  }
+  return quizOut;
+}
+
+/** create_practice_tests / update_practice_tests / delete_practice_tests on /education/practice-tests. */
+export function buildPracticeTestWriteHandlers(
+  input: Omit<HandlerInput, "config">,
+): SurfaceWriteHandlers {
+  const input2 = { ...input, config: KIND_CONFIG.practice_test };
+  const bound = bindOps(input2, "practice_tests");
+  const practiceTestHandlers = collectionWriteHandlers(
+    {
+      plural: "practice_tests",
+      singular: "practice_test",
+      create: bound.ops.create,
+      update: bound.ops.update,
+      delete: bound.ops.delete,
+    },
+    refuseSurfaceWrite,
+  );
+  const practiceOut: SurfaceWriteHandlers = {};
+  for (const [name, handler] of Object.entries(practiceTestHandlers)) {
+    const entry = handler as SurfaceWriteHandlerEntry;
+    practiceOut[name] = {
+      validate: async (value) => {
+        await bound.load(value);
+        await entry.validate?.(value);
+      },
+      apply: async (value) => {
+        await bound.load(value);
+        return entry.apply(value);
+      },
+    };
+  }
+  return practiceOut;
+}
+
+/** The create / update / delete operations over the person's own assessments of one kind. */
+function bindOps(
+  input: HandlerInput,
+  plural: string,
+): { load: (value: unknown) => Promise<void>; ops: CollectionOps } {
   const { list, userId, config } = input;
-  const plural = targetPlural(config);
   let current: CurrentAssessment[] = [];
   const load = async (value: unknown) => {
     current = await fetchOwnAssessmentsFor({ userId, kind: config.kind, ...mentioned(value) });
   };
   const afterWrite = () => list.refresh();
-
-  const inner = collectionWriteHandlers(
-    {
-      plural,
-      singular: config.kind,
-      create: {
-        parse: (value) => parseCreateAssessmentsValue(plural, value, current),
-        run: async (fields) => {
-          const res = await assessmentService.createAssessment({
-            assessmentKind: config.kind,
-            title: fields.title,
-            description: fields.description ?? null,
-            topic: fields.topic ?? null,
-            examType: fields.exam_type ?? null,
-            depth: fields.depth ?? null,
-            status: "draft",
-            sourceKind: fields.topic ? "topic" : null,
-            metadata: { question_count: 0 },
-          });
-          if (res.error || !res.data) throw new Error(res.error ?? "not saved");
-          afterWrite();
-          return { id: res.data.id, name: res.data.title };
-        },
-        nameOf: (fields) => fields.title,
+  const ops: CollectionOps = {
+    create: {
+      parse: (value) => parseCreateAssessmentsValue(plural, value, current),
+      run: async (fields) => {
+        const res = await assessmentService.createAssessment({
+          assessmentKind: config.kind,
+          title: fields.title,
+          description: fields.description ?? null,
+          topic: fields.topic ?? null,
+          examType: fields.exam_type ?? null,
+          depth: fields.depth ?? null,
+          status: "draft",
+          sourceKind: fields.topic ? "topic" : null,
+          metadata: { question_count: 0 },
+        });
+        if (res.error || !res.data) throw new Error(res.error ?? "not saved");
+        afterWrite();
+        return { id: res.data.id, name: res.data.title };
       },
-      update: {
-        parse: (value) => parseUpdateAssessmentsValue(plural, value, current),
-        run: async (plan) => {
-          if (plan.archived === false) await restoreFromTrash("assessment", plan.id);
-          let name = plan.patch.title ?? plan.previousTitle;
-          if (Object.keys(plan.patch).length > 0) {
-            const res = await assessmentService.updateAssessment(plan.id, toPatch(plan.patch));
-            if (res.error || !res.data) throw new Error(res.error ?? "not saved");
-            name = res.data.title;
-          }
-          if (plan.archived === true) await archiveRecord("assessment", plan.id, config.noun);
-          afterWrite();
-          return { id: plan.id, name };
-        },
-        nameOf: (plan) => plan.previousTitle,
-        changedOf: (plan) => plan.changed,
-      },
-      delete: {
-        parse: (value) => parseDeleteAssessmentsValue(plural, value, current),
-        run: async (found) => {
-          await archiveRecord("assessment", found.id, config.noun);
-          afterWrite();
-          return { id: found.id, name: found.title };
-        },
-        nameOf: (found) => found.title,
-      },
+      nameOf: (fields) => fields.title,
     },
-    refuseSurfaceWrite,
-  );
-
-  const out: SurfaceWriteHandlers = {};
-  for (const [name, handler] of Object.entries(inner)) {
-    const entry = handler as SurfaceWriteHandlerEntry;
-    out[name] = {
-      validate: async (value) => {
-        await load(value);
-        await entry.validate?.(value);
+    update: {
+      parse: (value) => parseUpdateAssessmentsValue(plural, value, current),
+      run: async (plan) => {
+        if (plan.archived === false) await restoreFromTrash("assessment", plan.id);
+        let name = plan.patch.title ?? plan.previousTitle;
+        if (Object.keys(plan.patch).length > 0) {
+          const res = await assessmentService.updateAssessment(plan.id, toPatch(plan.patch));
+          if (res.error || !res.data) throw new Error(res.error ?? "not saved");
+          name = res.data.title;
+        }
+        if (plan.archived === true) await archiveRecord("assessment", plan.id, config.noun);
+        afterWrite();
+        return { id: plan.id, name };
       },
-      apply: async (value) => {
-        await load(value);
-        return entry.apply(value);
+      nameOf: (plan) => plan.previousTitle,
+      changedOf: (plan) => plan.changed,
+    },
+    delete: {
+      parse: (value) => parseDeleteAssessmentsValue(plural, value, current),
+      run: async (found) => {
+        await archiveRecord("assessment", found.id, config.noun);
+        afterWrite();
+        return { id: found.id, name: found.title };
       },
-    };
-  }
-  return out;
+      nameOf: (found) => found.title,
+    },
+  };
+  return { load, ops };
 }

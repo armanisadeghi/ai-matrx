@@ -31,7 +31,8 @@ import { buildAssessmentListConfig, type AssessmentListItem } from "./home/asses
 import { makeAssessmentRowActions } from "./home/useAssessmentRowActions";
 import {
   buildAssessmentListScope,
-  buildAssessmentWriteHandlers,
+  buildPracticeTestWriteHandlers,
+  buildQuizWriteHandlers,
 } from "./home/assessmentListSurface";
 
 // One row-actions hook per kind, made once — a hook's identity must not
@@ -40,11 +41,6 @@ const ROW_ACTIONS = {
   quiz: makeAssessmentRowActions(KIND_CONFIG.quiz),
   practice_test: makeAssessmentRowActions(KIND_CONFIG.practice_test),
 } satisfies Record<AssessmentKind, unknown>;
-
-const SURFACE_BY_KIND: Record<AssessmentKind, string> = {
-  quiz: "matrx-user/education-quizzes",
-  practice_test: "matrx-user/education-practice-tests",
-};
 
 export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
   const config: KindConfig = KIND_CONFIG[kind];
@@ -71,15 +67,25 @@ export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
     </Button>
   );
 
-  const surface = userId
-    ? {
-        surfaceName: SURFACE_BY_KIND[kind],
-        getScope: (list: EntityListSurfaceController<AssessmentListItem>) =>
-          buildAssessmentListScope({ list, userId }),
-        getWriteHandlers: (list: EntityListSurfaceController<AssessmentListItem>) =>
-          buildAssessmentWriteHandlers({ list, userId, config }),
-      }
-    : undefined;
+  // Literal surface names and builders per kind, so the surface checks can
+  // read which targets each page registers.
+  const getScope = (list: EntityListSurfaceController<AssessmentListItem>) =>
+    buildAssessmentListScope({ list, userId: userId ?? "" });
+  const surface = !userId
+    ? undefined
+    : kind === "quiz"
+      ? {
+          surfaceName: "matrx-user/education-quizzes",
+          getScope,
+          getWriteHandlers: (list: EntityListSurfaceController<AssessmentListItem>) =>
+            buildQuizWriteHandlers({ list, userId }),
+        }
+      : {
+          surfaceName: "matrx-user/education-practice-tests",
+          getScope,
+          getWriteHandlers: (list: EntityListSurfaceController<AssessmentListItem>) =>
+            buildPracticeTestWriteHandlers({ list, userId }),
+        };
 
   return (
     <>
