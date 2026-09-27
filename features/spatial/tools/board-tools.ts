@@ -3,8 +3,10 @@
  * do to it. Declared once here and carried by the `matrx-user/spatial-board`
  * surface manifest, so every board host (the demo, War Room, meetings,
  * workflow runs) offers the same vocabulary. Executed in the browser by
- * `useBoardAgentTools`, through the board's ONE change path (`useBoard`), so an
- * agent's change is animated, undoable (⌘Z) and saved exactly like a person's.
+ * `useBoardAgentTools`, through the board's ONE change path (`useBoard`, or a
+ * host's adapter over its own layout model), so an agent's change is animated,
+ * undoable where the board has undo, and saved exactly like a person's. A tool
+ * a board cannot honour answers `{ok:false, error}` naming what to do instead.
  *
  * World coordinates: x grows right, y grows down, in board pixels (a tile is
  * typically 360–720 wide). `board_read` returns every rect, so an agent never
@@ -183,7 +185,7 @@ export const BOARD_CLIENT_TOOLS: SurfaceClientTool[] = [
     name: "board_park",
     label: "Park tile",
     description:
-      "Moves a tile onto the board's side shelf (`parked: true`) to clear space without removing it, or brings it back to where it was (`parked: false`).",
+      "Moves a tile onto the board's side shelf (`parked: true`) to clear space without removing it, or brings it back to where it was (`parked: false` — this also restores a tile board_read lists as `removed`).",
     inputSchema: {
       type: "object",
       properties: { id: { type: "string" }, parked: { type: "boolean" } },

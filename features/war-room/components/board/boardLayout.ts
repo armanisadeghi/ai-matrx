@@ -403,3 +403,79 @@ function centreOf(rects: readonly Rect[]): { x: number; y: number } {
   }
   return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
 }
+
+// ── changes (the one path a person's drag, a throw and an agent all use) ──
+export type PartState = "board" | "parked" | "removed";
+
+/** Put a part on the board, the shelf, or off the board (its rect is kept). */
+export function withPartState(layout: BoardLayout, key: string, state: PartState): BoardLayout {
+  return {
+    ...layout,
+    parked: state === "parked" ? [...layout.parked.filter((k) => k !== key), key] : layout.parked.filter((k) => k !== key),
+    removed:
+      state === "removed" ? [...layout.removed.filter((k) => k !== key), key] : layout.removed.filter((k) => k !== key),
+  };
+}
+
+/** Every thread's frame, keyed by thread id. */
+export function threadFrames(
+  threads: readonly ThreadParts[],
+  parts: Readonly<Record<string, Rect>>,
+): Map<string, Rect> {
+  const out = new Map<string, Rect>();
+  for (const t of threads) {
+    const f = threadFrame(t.threadId, t.tabs, parts);
+    if (f) out.set(t.threadId, f);
+  }
+  return out;
+}
+
+/**
+ * Move parts (`<threadId>:<tab>` → new top-left) and whole threads (the
+ * thread id → the frame's new top-left, every part of it moving together).
+ * Refused — nothing moves — when it would make two frames overlap that did not
+ * overlap before, because frames are the room's map (`nameOf` names threads).
+ */
+export function applyPartMoves(
+  layout: BoardLayout,
+  threads: readonly ThreadParts[],
+  moves: readonly { id: string; x: number; y: number }[],
+  nameOf: (threadId: string) => string = (id) => id,
+): { ok: true; layout: BoardLayout } | { ok: false; error: string } {
+  const before = threadFrames(threads, layout.parts);
+  const parts = { ...layout.parts };
+  for (const m of moves) {
+    const thread = threads.find((t) => t.threadId === m.id);
+    if (thread) {
+      const frame = threadFrame(thread.threadId, thread.tabs, parts);
+      if (!frame) continue;
+      const dx = m.x - frame.x;
+      const dy = m.y - frame.y;
+      for (const tab of thread.tabs) {
+        const key = partKey(thread.threadId, tab);
+        const r = parts[key];
+        if (r) parts[key] = { ...r, x: r.x + dx, y: r.y + dy };
+      }
+      continue;
+    }
+    const r = parts[m.id];
+    if (!r) return { ok: false, error: `No part or thread with id "${m.id}" is on this board. Call board_read for the current ids.` };
+    parts[m.id] = { ...r, x: m.x, y: m.y };
+  }
+  const after = [...threadFrames(threads, parts)];
+  for (let i = 0; i < after.length; i++) {
+    for (let j = i + 1; j < after.length; j++) {
+      const [a, fa] = after[i];
+      const [b, fb] = after[j];
+      if (!rectsIntersect(fa, fb)) continue;
+      const wa = before.get(a);
+      const wb = before.get(b);
+      if (wa && wb && rectsIntersect(wa, wb)) continue;
+      return {
+        ok: false,
+        error: `That would make the frames of "${nameOf(a)}" and "${nameOf(b)}" overlap, so nothing moved. Each thread's frame wraps its parts; keep parts near their own thread, move a whole thread by its frame id (the thread id), or read the frames' rects with board_read and pick clear space.`,
+      };
+    }
+  }
+  return { ok: true, layout: { ...layout, parts } };
+}

@@ -10,11 +10,16 @@
  * Every handler returns a small JSON result (never throws — errors come back
  * as `{ ok: false, error }` with a remedy), and every change goes through the
  * board's one path, so it is on the ⌘Z stack like a person's change.
+ *
+ * The handlers depend on a NARROW `BoardToolTarget`, not the whole `useBoard`
+ * model: `Board<T>` satisfies it structurally, and a host that keeps its own
+ * layout model (the War Room board) supplies an adapter. An operation the
+ * target does not offer is refused with the target's own remedy.
  */
 
 import { toast } from "@/lib/toast";
 import { useSurfaceClientTools } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import type { Board, BoardTileBase } from "../board/useBoard";
+import type { BoardConnection, BoardFrame, BoardTileBase, BoardView } from "../board/useBoard";
 import { screenToWorld, visibleWorldRect, rectsIntersect, type Rect } from "../engine/camera";
 import { align, arrange, distribute, enclosingFrame, type AlignEdge, type ArrangeLayout, type DistributeAxis } from "../engine/arrange";
 import type { SpatialStore } from "../engine/spatial-store";
@@ -37,15 +42,60 @@ export interface EditTileInput {
   html?: string;
 }
 
-type Failure = { ok: false; error: string };
+export type Failure = { ok: false; error: string };
+
+/** What `board_read` sees: a board's view, plus tiles taken off it but restorable. */
+export interface BoardToolView<T extends BoardTileBase> extends BoardView<T> {
+  /** Off the board but restorable (`board_park` with `parked:false` brings one back). */
+  removed?: T[];
+}
+
+/** The tools that a board may not support; each refusal names the remedy. */
+export interface BoardToolRefusals {
+  /** Renaming or resizing a tile. */
+  update?: string;
+  group?: string;
+  connect?: string;
+  undo?: string;
+}
+
+/**
+ * The board the tools act on — ONLY what the handlers call. `Board<T>` from
+ * `useBoard` satisfies it as-is; the optional operations are the ones a board
+ * with its own layout model may not have (absent = refused, with
+ * `refusals[...]` as the answer).
+ */
+export interface BoardToolTarget<T extends BoardTileBase> {
+  /** The board as of the LAST change (sequences of tool calls in one tick). */
+  read: () => BoardToolView<T>;
+  /** Drawn marks, counted by board_read. */
+  shapes?: readonly unknown[];
+  /** Move tiles (and frames) as one step. A failure refuses the whole move. */
+  moveMany: (moves: { id: string; x: number; y: number }[]) => void | Failure;
+  /** Take a tile off the board; returns a function that puts it back. */
+  removeTile: (id: string) => () => void;
+  parkTile: (id: string) => unknown;
+  /** Bring back a parked (or removed) tile. */
+  unparkTile: (id: string) => void;
+  addTile?: (tile: T, near?: { x: number; y: number }, opts?: { within?: string }) => Rect;
+  updateTile?: (id: string, patch: Partial<T>) => void;
+  addFrame?: (frame: BoardFrame) => void;
+  connect?: (connection: BoardConnection) => void;
+  undo?: () => void;
+  canUndo?: boolean;
+  /** Refuse an arrangement of these tiles (they would break the host's layout rules). */
+  checkArrange?: (ids: string[]) => Failure | null;
+  refusals?: BoardToolRefusals;
+}
 
 export interface BoardToolHost<T extends BoardTileBase & { title: string }> {
-  board: Board<T>;
+  board: BoardToolTarget<T>;
   store: SpatialStore | null;
   boardTitle: string;
   /** Build a tile of `input.kind` with this id and size (position is decided here). */
   createTile: (id: string, input: AddTileInput, size: { w: number; h: number }) => T | Failure;
-  /** A patch for a tile's content, or a failure saying why it cannot change. */
+  /** A patch for a tile's content, or a failure saying why it cannot change. An
+   * empty patch means the host applied the content itself (e.g. into a record). */
   editTile?: (tile: T, input: EditTileInput) => Partial<T> | Failure;
   /** "note", "markdown", a kind label… and a status word, for board_read. */
   describe: (tile: T) => { kind: string; status?: string | null };
@@ -82,8 +132,9 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
   const { board, store } = host;
   const allTiles = () => {
     const v = board.read();
-    return [...v.tiles, ...v.parked];
+    return [...v.tiles, ...v.parked, ...(v.removed ?? [])];
   };
+  const refused = (key: keyof BoardToolRefusals, fallback: string) => fail(board.refusals?.[key] ?? fallback);
   const find = (id: unknown) => allTiles().find((t) => t.id === id);
   const missing = (id: unknown) =>
     fail(`No tile with id "${String(id)}" is on this board. Call board_read for the current ids.`);
@@ -99,6 +150,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     const view = store ? visibleWorldRect(store.getCamera(), store.getSize()) : null;
     const now = board.read();
     const parkedIds = new Set(now.parked.map((t) => t.id));
+    const removedIds = new Set((now.removed ?? []).map((t) => t.id));
     const selected = store?.getSelected() ?? null;
     const focused = store?.getFocused() ?? null;
     const raw: RawBoardTile[] = allTiles().map((t) => {
@@ -109,7 +161,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
         kind: d.kind,
         status: d.status ?? null,
         text: withText ? tileText(t.id) : "",
-        inView: !!view && !parkedIds.has(t.id) && rectsIntersect(view, t.rect),
+        inView: !!view && !parkedIds.has(t.id) && !removedIds.has(t.id) && rectsIntersect(view, t.rect),
         selected: selected === t.id,
         focused: focused === t.id,
       };
@@ -125,10 +177,11 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
           ...t,
           rect: round(rectOf.get(t.id) ?? { x: 0, y: 0, w: 0, h: 0 }),
           parked: parkedIds.has(t.id),
+          ...(removedIds.has(t.id) ? { removed: true } : {}),
         })),
         frames: now.frames.map((f) => ({ id: f.id, title: f.title, rect: round(f.rect) })),
         connections: now.connections.map((c) => ({ id: c.id, from_id: c.from, to_id: c.to })),
-        drawn_mark_count: board.shapes.length,
+        drawn_mark_count: board.shapes?.length ?? 0,
         view: view ? round(view) : null,
       },
     };
@@ -146,13 +199,15 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
       size,
     );
     if (isFailure(made)) return made;
+    if (!board.addTile) return fail("Tiles cannot be added to this board.");
+    const addTile = board.addTile;
     const x = num(a.x);
     const y = num(a.y);
     const beside = str(a.near_tile_id) ? find(a.near_tile_id) : undefined;
     if (str(a.near_tile_id) && !beside) return missing(a.near_tile_id);
     let rect: Rect;
     if (x !== undefined && y !== undefined) {
-      rect = board.addTile({ ...made, rect: { x, y, w: size.w, h: size.h } });
+      rect = addTile({ ...made, rect: { x, y, w: size.w, h: size.h } });
     } else {
       const near = beside
         ? { x: beside.rect.x + beside.rect.w + 48 + size.w / 2, y: beside.rect.y + size.h / 2 }
@@ -167,7 +222,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
               beside.rect.y + beside.rect.h <= f.rect.y + f.rect.h,
           )?.id
         : undefined;
-      rect = board.addTile({ ...made, rect: { x: 0, y: 0, w: size.w, h: size.h } }, near, { within });
+      rect = addTile({ ...made, rect: { x: 0, y: 0, w: size.w, h: size.h } }, near, { within });
     }
     // Show it without moving the person's view (never yank the camera).
     requestAnimationFrame(() => store?.select(id));
@@ -178,22 +233,30 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     const a = record(input);
     const tile = find(a.id);
     if (!tile) return missing(a.id);
-    let patch: Partial<T> = {};
     const title = str(a.title);
+    const w = num(a.width);
+    const h = num(a.height);
+    const content = typeof a.text === "string" || !!str(a.html);
+    const reshape = !!title || w !== undefined || h !== undefined;
+    if (!reshape && !content) return fail("Nothing to change: pass title, text, html, width or height.");
+    const updateTile = board.updateTile;
+    if (reshape && !updateTile) return refused("update", "This board's tiles cannot be renamed or resized.");
+    let patch: Partial<T> = {};
     if (title) patch = { ...patch, title };
-    if (typeof a.text === "string" || str(a.html)) {
+    if (w !== undefined || h !== undefined) {
+      patch = { ...patch, rect: { ...tile.rect, w: w ?? tile.rect.w, h: h ?? tile.rect.h } };
+    }
+    if (content) {
       if (!host.editTile) return fail("This board's tiles cannot have their content edited; only their title and size.");
       const edit = host.editTile(tile, { text: typeof a.text === "string" ? a.text : undefined, html: str(a.html) });
       if (isFailure(edit)) return edit;
       patch = { ...patch, ...edit };
     }
-    const w = num(a.width);
-    const h = num(a.height);
-    if (w !== undefined || h !== undefined) {
-      patch = { ...patch, rect: { ...tile.rect, w: w ?? tile.rect.w, h: h ?? tile.rect.h } };
+    // An empty patch after a content edit: the host wrote it into its record.
+    if (Object.keys(patch).length > 0) {
+      if (!updateTile) return refused("update", "This board's tiles cannot be changed from here.");
+      updateTile(tile.id, patch);
     }
-    if (Object.keys(patch).length === 0) return fail("Nothing to change: pass title, text, html, width or height.");
-    board.updateTile(tile.id, patch);
     return { ok: true, id: tile.id, rect: patch.rect ?? tile.rect };
   };
 
@@ -219,7 +282,8 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
       valid.push({ id, x, y });
     }
     if (valid.length === 0) return fail("Pass at least one move.");
-    board.moveMany(valid);
+    const refusedMove = board.moveMany(valid);
+    if (isFailure(refusedMove)) return refusedMove;
     return { ok: true, moved: valid };
   };
 
@@ -232,6 +296,8 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
       return missing(ids.find((id) => !known.has(id)));
     }
     if (pool.length === 0) return fail("There are no tiles to arrange.");
+    const outOfBounds = board.checkArrange?.(pool.map((t) => t.id));
+    if (outOfBounds) return outOfBounds;
     const items = pool.map((t) => ({ id: t.id, rect: t.rect }));
     const layout = str(a.layout);
     let placed;
@@ -252,7 +318,8 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
         at: x !== undefined && y !== undefined ? { x, y } : undefined,
       });
     } else return fail("layout must be grid, tidy, row, column, align or distribute.");
-    board.moveMany(placed.map((p) => ({ id: p.id, x: p.rect.x, y: p.rect.y })));
+    const refusedMove = board.moveMany(placed.map((p) => ({ id: p.id, x: p.rect.x, y: p.rect.y })));
+    if (isFailure(refusedMove)) return refusedMove;
     return { ok: true, tiles: placed };
   };
 
@@ -260,6 +327,8 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     const a = record(input);
     const title = str(a.title);
     const ids = Array.isArray(a.ids) ? (a.ids as unknown[]).filter((v): v is string => typeof v === "string") : [];
+    if (!board.addFrame) return refused("group", "This board cannot draw frames around tiles.");
+    const addFrame = board.addFrame;
     if (!title || ids.length === 0) return fail("Pass the tile ids to group and a title.");
     const tiles = ids.flatMap((id) => find(id) ?? []);
     const lost = ids.find((id) => !tiles.some((t) => t.id === id));
@@ -267,16 +336,18 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     let items = tiles.map((t) => ({ id: t.id, rect: t.rect }));
     if (a.tidy === true) {
       items = arrange(items, "tidy");
-      board.moveMany(items.map((p) => ({ id: p.id, x: p.rect.x, y: p.rect.y })));
+      const refusedMove = board.moveMany(items.map((p) => ({ id: p.id, x: p.rect.x, y: p.rect.y })));
+      if (isFailure(refusedMove)) return refusedMove;
     }
     const frameId = `frame:${crypto.randomUUID().slice(0, 8)}`;
     const rect = enclosingFrame(items);
-    board.addFrame({ id: frameId, rect, title });
+    addFrame({ id: frameId, rect, title });
     return { ok: true, frame_id: frameId, rect };
   };
 
   const connectTool = (input: unknown) => {
     const a = record(input);
+    if (!board.connect) return refused("connect", "This board cannot draw connections between tiles.");
     if (!find(a.from_id)) return missing(a.from_id);
     if (!find(a.to_id)) return missing(a.to_id);
     const id = `link:${crypto.randomUUID().slice(0, 8)}`;
@@ -289,9 +360,17 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     const tile = find(a.id);
     if (!tile) return missing(a.id);
     if (!store) return fail("The board is not ready yet.");
-    if (board.read().parked.some((t) => t.id === tile.id)) board.unparkTile(tile.id);
-    if (a.mode === "focus") store.focus(tile.id);
-    else store.fitItem(tile.id);
+    const show = () => {
+      if (a.mode === "focus") store.focus(tile.id);
+      else store.fitItem(tile.id);
+    };
+    const now = board.read();
+    const hidden = [...now.parked, ...(now.removed ?? [])].some((t) => t.id === tile.id);
+    if (hidden) {
+      // Back on the board first; the camera can only reach it once it has rendered.
+      board.unparkTile(tile.id);
+      requestAnimationFrame(() => requestAnimationFrame(show));
+    } else show();
     return { ok: true, id: tile.id };
   };
 
@@ -305,6 +384,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
   };
 
   const undo = () => {
+    if (!board.undo) return refused("undo", "This board keeps no undo history.");
     if (!board.canUndo) return fail("There is nothing to undo on this board.");
     board.undo();
     return { ok: true };

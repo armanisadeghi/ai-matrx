@@ -24,11 +24,12 @@ export function SpatialBoardSurface<T extends BoardTileBase & { title: string }>
   children: ReactNode;
 }) {
   useBoardAgentTools(SPATIAL_BOARD_SURFACE_NAME, host);
-  const brief = (t: T, parked: Set<string>) => ({
+  const brief = (t: T, parked: Set<string>, removed: Set<string>) => ({
     id: t.id,
     title: t.title,
     kind: host.describe(t).kind,
     parked: parked.has(t.id),
+    ...(removed.has(t.id) ? { removed: true } : {}),
   });
   return (
     <SurfaceRuntimeProvider
@@ -36,13 +37,15 @@ export function SpatialBoardSurface<T extends BoardTileBase & { title: string }>
       getScope={() => {
         const now = host.board.read();
         const parked = new Set(now.parked.map((t) => t.id));
-        const all = [...now.tiles, ...now.parked];
+        const removedTiles = now.removed ?? [];
+        const removed = new Set(removedTiles.map((t) => t.id));
+        const all = [...now.tiles, ...now.parked, ...removedTiles];
         const selectedId = host.store?.getSelected() ?? null;
         const selected = all.find((t) => t.id === selectedId);
         return {
           board_title: host.boardTitle,
-          board_tiles: all.map((t) => brief(t, parked)),
-          selected_tile: selected ? brief(selected, parked) : null,
+          board_tiles: all.map((t) => brief(t, parked, removed)),
+          selected_tile: selected ? brief(selected, parked, removed) : null,
         };
       }}
     >

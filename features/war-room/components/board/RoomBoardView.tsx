@@ -22,6 +22,10 @@
 //       window) · the thread's own ⋯ menu
 // The arrangement (part rects, parked/removed parts) and the camera live on
 // the room row (`metadata.spatial_layout`, debounced) — see `boardLayout.ts`.
+//
+// The board is an agent SURFACE (`SpatialBoardSurface`, stacked inside the War
+// Room's own surface, which stays mounted in `WarRoomShell`): the board tools
+// act on the parts through `roomBoardAgent.ts`, over this same layout path.
 
 import { useEffect, useRef, useState } from "react";
 import {
@@ -39,6 +43,10 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { recordToast } from "@/lib/toast";
+import { selectSubtasksByParent, selectTaskById } from "@/features/agent-context/redux/tasksSlice";
+import { selectNoteContent, selectNoteContentLoadStatus } from "@/features/notes/redux/selectors";
+import { updateNoteContent } from "@/features/notes/redux/slice";
+import { fetchNoteContent } from "@/features/notes/redux/thunks";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,14 +68,19 @@ import { SpatialFrame } from "@/features/spatial/components/SpatialFrame";
 import { SpatialBoardMenu } from "@/features/spatial/components/SpatialBoardMenu";
 import { ParkedShelf, type ParkedChip } from "@/features/spatial/components/ParkedShelf";
 import { Minimap, ZoomHud } from "@/features/spatial/components/SpatialChrome";
+import { SpatialBoardSurface } from "@/features/spatial/components/SpatialBoardSurface";
+import type { BoardToolHost, Failure } from "@/features/spatial/tools/useBoardAgentTools";
 import {
+  selectActiveNoteId,
   selectAssignmentTokenSummary,
+  selectAudioSessionIdsForThread,
   selectHiddenThreads,
   selectOrderedGalleryThreadIds,
   selectSessionById,
   selectThreadAnchorType,
   selectThreadById,
   selectThreadIdsForRoom,
+  selectThreadTaskId,
 } from "@/features/war-room/redux/selectors";
 import {
   deleteThread,
@@ -96,7 +109,9 @@ import {
   placeMissingParts,
   serializeBoardLayout,
   threadFrame,
+  withPartState,
 } from "./boardLayout";
+import { type RoomPartTile, useRoomBoardToolHost } from "./roomBoardAgent";
 
 const SAVE_DEBOUNCE_MS = 800;
 /** Flying to a frame leaves room for its title, which sits above it. */
@@ -304,24 +319,28 @@ export function RoomBoardView({ sessionId }: { sessionId: string }) {
       return { ...l, parts };
     });
 
-  const setPartState = (key: string, state: HiddenState) =>
-    setLayout((l) => ({
-      ...l,
-      parked: state === "parked" ? [...l.parked.filter((k) => k !== key), key] : l.parked.filter((k) => k !== key),
-      removed:
-        state === "removed" ? [...l.removed.filter((k) => k !== key), key] : l.removed.filter((k) => k !== key),
-    }));
+  const setPartState = (key: string, state: HiddenState) => setLayout((l) => withPartState(l, key, state));
+
+  /** An agent's change: applied to the live ref at once, so the next tool call
+   * in the same tick reads it, then rendered and saved like a person's. */
+  const commitLayout = (next: BoardLayout) => {
+    latest.current = { ...latest.current, layout: next };
+    setLayout(next);
+  };
 
   const restorePart = (key: string) => {
     setPendingFly(key);
     setPartState(key, "board");
   };
 
-  const parkPart = (key: string) => {
-    setPartState(key, "parked");
+  const toastParked = (key: string) =>
     recordToast.message(partRecord(key), `Parked "${partLabel(key)}"`, {
       action: { label: "Undo", onClick: () => restorePart(key) },
     });
+
+  const parkPart = (key: string) => {
+    setPartState(key, "parked");
+    toastParked(key);
   };
 
   const removePart = (key: string) => {
@@ -400,63 +419,123 @@ export function RoomBoardView({ sessionId }: { sessionId: string }) {
     ...hiddenThreads.map((t) => ({ id: t.id, title: threadTitle(t.title), icon: PanelsTopLeft })),
   ];
 
+  // ── the board's agent tools (board_read, board_move_tiles, board_park…) ──
+  const writeNote = (threadId: string, text: string): Failure | null => {
+    const state = appStore.getState();
+    const noteId = selectActiveNoteId(threadId)(state);
+    if (!noteId) {
+      return {
+        ok: false,
+        error: `"${titleOf(threadId)}" has no note yet. Creating one is the person's choice — ask them to press "New Note" in the thread's Notes part, then write it.`,
+      };
+    }
+    if (
+      selectNoteContent(noteId)(state) === undefined &&
+      selectNoteContentLoadStatus(noteId)(state) !== "loaded"
+    ) {
+      void dispatch(fetchNoteContent(noteId));
+      return { ok: false, error: `The note of "${titleOf(threadId)}" is still loading — try again in a moment.` };
+    }
+    dispatch(updateNoteContent({ id: noteId, content: text }));
+    return null;
+  };
+
+  const roomTools = useRoomBoardToolHost({
+    getLayout: () => latest.current.layout,
+    commit: commitLayout,
+    threads,
+    threadTitle: titleOf,
+    partLabel: (threadId, tab) =>
+      dynamicTabKind(tab, selectThreadAnchorType(threadId)(appStore.getState())).label,
+    onParked: toastParked,
+    restore: restorePart,
+    writeNote,
+    statusOf: (threadId, tab) => partStatus(appStore.getState(), threadId, tab),
+  });
+  const agentHost: BoardToolHost<RoomPartTile> = {
+    ...roomTools,
+    store,
+    boardTitle: session?.title?.trim() || "War Room",
+  };
+
   return (
-    <SpatialBoardMenu
-      store={store}
-      actions={{ park: parkPart, remove: removePart, removeLabel: "Remove from board…" }}
-      parked={parkedChips}
-      onUnpark={unpark}
-      wheelMode={wheelMode}
-      onWheelMode={setWheelMode}
-    >
-      <SpatialViewport
-        insets={{ top: 16, bottom: 64 }}
+    <SpatialBoardSurface host={agentHost}>
+      <SpatialBoardMenu
+        store={store}
+        actions={{ park: parkPart, remove: removePart, removeLabel: "Remove from board…" }}
+        parked={parkedChips}
+        onUnpark={unpark}
         wheelMode={wheelMode}
-        onStore={setStore}
-        initialCamera={saved.camera ?? undefined}
-        fitOnMount={!saved.camera}
-        overlay={
-          <>
-            <ParkedShelf parked={parkedChips} onRestore={unpark} />
-            <ZoomHud />
-            <Minimap />
-            {threads.length === 0 && (
-              <div
-                data-spatial-chrome
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card/95 px-4 py-3 text-sm text-muted-foreground shadow-md"
-              >
-                {hiddenThreads.length > 0
-                  ? "Every thread is parked — restore one from the shelf."
-                  : "No threads yet — add one from Stage or Grid."}
-              </div>
-            )}
-          </>
-        }
+        onWheelMode={setWheelMode}
       >
-        {threads.map((t) => (
-          <BoardThreadFrame
-            key={t.threadId}
-            threadId={t.threadId}
-            sessionId={sessionId}
-            tabs={t.tabs}
-            parts={layout.parts}
-            partState={partState}
-            onMovePart={movePart}
-            onMoveThread={moveThread}
-            onThrow={onThrow}
-            onRestorePart={restorePart}
-            onFlyToPart={(key) => {
-              store?.select(key);
-              store?.fitItem(key);
-            }}
-            onPark={parkThread}
-            onDelete={(id) => void deleteWholeThread(id)}
-            onStage={stageThread}
-          />
-        ))}
-      </SpatialViewport>
-    </SpatialBoardMenu>
+        <SpatialViewport
+          insets={{ top: 16, bottom: 64 }}
+          wheelMode={wheelMode}
+          onStore={setStore}
+          initialCamera={saved.camera ?? undefined}
+          fitOnMount={!saved.camera}
+          overlay={
+            <>
+              <ParkedShelf parked={parkedChips} onRestore={unpark} />
+              <ZoomHud />
+              <Minimap />
+              {threads.length === 0 && (
+                <div
+                  data-spatial-chrome
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card/95 px-4 py-3 text-sm text-muted-foreground shadow-md"
+                >
+                  {hiddenThreads.length > 0
+                    ? "Every thread is parked — restore one from the shelf."
+                    : "No threads yet — add one from Stage or Grid."}
+                </div>
+              )}
+            </>
+          }
+        >
+          {threads.map((t) => (
+            <BoardThreadFrame
+              key={t.threadId}
+              threadId={t.threadId}
+              sessionId={sessionId}
+              tabs={t.tabs}
+              parts={layout.parts}
+              partState={partState}
+              onMovePart={movePart}
+              onMoveThread={moveThread}
+              onThrow={onThrow}
+              onRestorePart={restorePart}
+              onFlyToPart={(key) => {
+                store?.select(key);
+                store?.fitItem(key);
+              }}
+              onPark={parkThread}
+              onDelete={(id) => void deleteWholeThread(id)}
+              onStage={stageThread}
+            />
+          ))}
+        </SpatialViewport>
+      </SpatialBoardMenu>
+    </SpatialBoardSurface>
   );
+}
+
+/** A part's status word for board_read — the same readings its tile shows. */
+function partStatus(state: RootState, threadId: string, tab: ThreadTab): string | null {
+  if (tab === "audio") {
+    const c = state.recordings.context;
+    if (!c || c.kind !== "studio" || !selectAudioSessionIdsForThread(threadId)(state).includes(c.sessionId)) return null;
+    return state.recordings.isRecording ? "recording" : state.recordings.isTranscribing ? "transcribing" : null;
+  }
+  if (tab === "task") {
+    const taskId = selectThreadTaskId(threadId)(state);
+    if (!taskId) return null;
+    const subtasks = selectSubtasksByParent(state, taskId);
+    if (subtasks.length > 0) {
+      return `${subtasks.filter((t) => t.status === "completed").length}/${subtasks.length} done`;
+    }
+    return selectTaskById(state, taskId)?.status === "completed" ? "done" : "active";
+  }
+  return null;
 }
 
 /** World point at the centre of what you are looking at. */
