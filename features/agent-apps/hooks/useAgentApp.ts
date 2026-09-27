@@ -29,10 +29,11 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-/** How long a submit pressed during load waits for the app before it says so. */
-const SUBMIT_READY_WAIT_MS = 30_000;
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useConversationRoutePromotion } from "@/features/agents/hooks/useConversationRoutePromotion";
+import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 
@@ -78,6 +79,7 @@ import {
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
   selectConversationMessages,
+  selectLatestAnswerText,
   EMPTY_CONVERSATION_MESSAGES,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 
@@ -274,6 +276,28 @@ export interface SubmitArgs {
 
 const EMPTY_RECORD: Record<string, never> = Object.freeze({});
 
+/**
+ * THE RUN'S OWN FAILURE, in words a person reads. The server's refusal lands
+ * on the request as `error` (`ErrorPayload`: `user_message` for people,
+ * `message` always present). This used to read `request.errorMessage` — a
+ * field requests do not have (it belongs to tool calls) — so every failed
+ * run of an app rendered a blank result with no reason (page-pass /p/[slug],
+ * 2026-09-27: a guest's refused run showed nothing at all).
+ */
+function requestFailure(
+  request: { status?: string; error?: { user_message?: string; message?: string } | null } | undefined,
+): string | null {
+  if (!request) return null;
+  const failed = request.status === "error" || request.status === "timeout";
+  const text =
+    request.error?.user_message?.trim() || request.error?.message?.trim() || "";
+  if (text) return text;
+  return failed ? "This run could not finish. Try again in a moment." : null;
+}
+
+/** How long a submit pressed during load waits for the app before it says so. */
+const SUBMIT_READY_WAIT_MS = 30_000;
+
 export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   const {
     appId,
@@ -442,8 +466,80 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       : undefined,
     apiEndpointMode: "agent",
     ready: isReady,
+    // The URL is promoted to `?conversationId=` once a run starts; keep the
+    // started conversation alive across that promotion (only abandoned,
+    // empty instances are reaped).
+    retainOnUnmount: true,
   });
   const conversationId = launcher.conversationId;
+
+  // ── A run survives a refresh (the AI-workspace rule) ──────────────────
+  // Ported from AgentRunnerPage: once a run starts, the address carries
+  // `?conversationId=<id>` (canonical `useConversationRoutePromotion`, which
+  // waits until the row is persisted); on load, an id in the address is
+  // re-adopted — instance created under that id, history loaded, focus moved
+  // — so the app's answer (and a still-running turn, through the runtime
+  // reconnect the load stamps) comes back after a refresh. Signed-in only: a
+  // guest cannot read a conversation back.
+  const store = useAppStore();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const urlConversationId =
+    (isAuthenticated ? searchParams.get("conversationId") : null) ?? undefined;
+  const [restoreFailed, setRestoreFailed] = useState<string | null>(null);
+  useConversationRoutePromotion({
+    surfaceKey,
+    agentId,
+    conversationIdProp: urlConversationId,
+    liveConversationId: conversationId,
+    basePath: pathname ?? "/",
+    buildHref: (id) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("conversationId", id);
+      return `${pathname}?${params.toString()}`;
+    },
+    enabled: isAuthenticated && Boolean(agentId) && Boolean(pathname),
+  });
+  const restoredRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!urlConversationId || !agentId || !isReady) return;
+    if (restoredRef.current === urlConversationId) return;
+    restoredRef.current = urlConversationId;
+    void (async () => {
+      const state = store.getState();
+      const loaded =
+        state.messages?.byConversationId?.[urlConversationId]?.orderedIds
+          ?.length ?? 0;
+      if (loaded > 0) return;
+      try {
+        if (!state.conversations?.byConversationId[urlConversationId]) {
+          await dispatch(
+            createManualInstance({
+              agentId,
+              conversationId: urlConversationId,
+              apiEndpointMode: "agent",
+              sourceFeature: "agent-app",
+              surfaceKey,
+            }),
+          ).unwrap();
+        }
+        await dispatch(
+          loadConversation({ conversationId: urlConversationId, surfaceKey }),
+        ).unwrap();
+      } catch (err) {
+        // Loud, and the address stops pointing at a run we cannot show.
+        const reason = err instanceof Error ? err.message : String(err);
+        console.error(`[useAgentApp] could not reopen run ${urlConversationId}:`, reason);
+        setRestoreFailed(
+          "The earlier run in this link could not be reopened. Start a new one.",
+        );
+        const params = new URLSearchParams(window.location.search);
+        params.delete("conversationId");
+        const qs = params.toString();
+        replaceAddressWithoutNavigating(`${window.location.pathname}${qs ? `?${qs}` : ""}`);
+      }
+    })();
+  }, [urlConversationId, agentId, isReady, store, dispatch, surfaceKey]);
 
   // ── Settings → Redux ─────────────────────────────────────────────────
   // Each setting that's defined on the args dispatches a setter once the
@@ -533,9 +629,15 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   );
   const requestId = primaryRequest?.requestId ?? null;
 
-  const response = useAppSelector((state) =>
+  const liveResponse = useAppSelector((state) =>
     requestId ? selectResultText(requestId)(state) : "",
   );
+  // After a refresh there is no live request — the answer is the committed
+  // assistant message the reopened conversation loaded.
+  const committedAnswer = useAppSelector((state) =>
+    conversationId ? selectLatestAnswerText(conversationId)(state) : "",
+  );
+  const response = liveResponse || committedAnswer;
   const request = useAppSelector((state) =>
     requestId ? selectRequest(requestId)(state) : undefined,
   );
@@ -573,9 +675,8 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   const error =
     holder.error ??
     payloadRefusal ??
-    (request && (request as unknown as { errorMessage?: string }).errorMessage
-      ? ((request as unknown as { errorMessage?: string }).errorMessage ?? null)
-      : null);
+    restoreFailed ??
+    requestFailure(request);
 
   // ── Surface runtime ───────────────────────────────────────────────────
   // Registered from the hook rather than a wrapping provider because every
@@ -711,8 +812,12 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
     readinessRef.current = { isReady, conversationId, payloadRefusal, holderError: holder.error };
   }, [isReady, conversationId, payloadRefusal, holder.error]);
 
-  const submit = useCallback(
-    async (submitArgs?: SubmitArgs) => {
+  // While a submit is held the app shows its own pending state (isExecuting
+  // is true), so the control never looks idle and never refuses on press.
+  const [isHolding, setIsHolding] = useState(false);
+
+  const submitWhenReady = async (submitArgs?: SubmitArgs) => {
+    {
       const deadline = Date.now() + SUBMIT_READY_WAIT_MS;
       while (
         !readinessRef.current.payloadRefusal &&
@@ -769,9 +874,17 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
         dispatch(setUserInputText({ conversationId, text: submitArgs.text }));
       }
       await dispatch(smartExecute({ conversationId, surfaceKey }));
-    },
-    [dispatch, surfaceKey, text, variables],
-  );
+    }
+  };
+
+  const submit = async (submitArgs?: SubmitArgs) => {
+    setIsHolding(true);
+    try {
+      await submitWhenReady(submitArgs);
+    } finally {
+      setIsHolding(false);
+    }
+  };
 
   const loadConversationCb = useCallback(
     async (id: string) => {
@@ -781,6 +894,14 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   );
 
   const resetConversation = useCallback(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("conversationId")) {
+        params.delete("conversationId");
+        const qs = params.toString();
+        replaceAddressWithoutNavigating(`${window.location.pathname}${qs ? `?${qs}` : ""}`);
+      }
+    }
     if (!conversationId) return;
     dispatch(resetUserVariableValues(conversationId));
     dispatch(setUserInputText({ conversationId, text: "" }));
@@ -827,7 +948,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       response,
       requestId,
       isStreaming,
-      isExecuting,
+      isExecuting: isExecuting || isHolding,
       streamPhase: streamPhase as UseAgentAppReturn["streamPhase"],
       error,
       messages: messages as UseAgentAppReturn["messages"],
@@ -862,6 +983,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       requestId,
       isStreaming,
       isExecuting,
+      isHolding,
       streamPhase,
       error,
       messages,
