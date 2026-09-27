@@ -18,6 +18,7 @@
 // (registered by the shell for editable surfaces), so any agent/shortcut
 // launched from the menu can stream `widget_text_*` edits into the surface.
 
+import { actionsAlreadyHere } from "../utils/already-here";
 import { useEffect, useMemo } from "react";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import {
@@ -520,7 +521,16 @@ export function useContextMenuActions(
   const richActions =
     actionText.source !== "none"
       ? resolveActions(richDocCtx, {
-          exclude: props.excludedRichActions,
+          // Never an action that targets the place this menu already is
+          // (Save to Notes inside a note, Edit inside the editor).
+          exclude: [
+            ...(props.excludedRichActions ?? []),
+            ...actionsAlreadyHere({
+              sourceType: richDocSource.type,
+              surfaceName,
+              isEditable: Boolean(isEditable),
+            }),
+          ],
           extra: props.extraRichActions,
         })
       : [];
