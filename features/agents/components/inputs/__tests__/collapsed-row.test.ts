@@ -5,10 +5,11 @@
  */
 
 import { collapsedRowKind } from "../collapsed-row";
+import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 
 describe("collapsedRowKind", () => {
   it("every typed variable is a one-line text box, choice types included", () => {
-    for (const customComponent of [
+    const cases: (VariableCustomComponent | undefined)[] = [
       undefined,
       { type: "textarea" },
       { type: "url" },
@@ -23,7 +24,8 @@ describe("collapsedRowKind", () => {
       { type: "slider" },
       { type: "datetime" },
       { type: "color" },
-    ] as const) {
+    ];
+    for (const customComponent of cases) {
       expect(collapsedRowKind(customComponent)).toBe("text-line");
     }
   });
