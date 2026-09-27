@@ -179,11 +179,8 @@ function FleetSection({
   ];
   return (
     <section className="rounded-md border border-border bg-card">
-      <header className="flex items-center justify-between border-b border-border px-3 py-1.5">
+      <header className="flex items-center border-b border-border px-3 py-1.5">
         <h2 className="text-xs font-semibold text-foreground">{title}</h2>
-        <span className="text-[11px] tabular-nums text-muted-foreground">
-          {rows.length}
-        </span>
       </header>
       <MatrxDataTable
         tableId={`admin/sync-fleet/${id}`}
@@ -191,7 +188,6 @@ function FleetSection({
         columns={columns}
         getRowId={(row) => row.id}
         pageSize={0}
-        hidePagination
         emptyState={{ title: empty }}
         toolbar={{
           search: true,

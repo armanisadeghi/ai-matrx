@@ -314,7 +314,6 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
         toolbar={{ search: false }}
         detail={{ enabled: false }}
         window={{ enabled: false }}
-        hidePagination
         pageSize={0}
         coverage={{ noun: "member", answeredBy: "client" }}
         onRowOpen={(member) => go(member.userId)}

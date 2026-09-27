@@ -22,13 +22,41 @@
 \set ON_ERROR_STOP on
 \timing off
 \set suite 'sc4_the_store_token_is_record_red_green.sql'
-\set requires 'function:custom.conversation_scope_bind|function:custom.context_tag_copy'
+\set requires 'function:custom.conversation_scope_bind|function:custom.context_tag_copy_batch'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
 \endif
 
 begin;
+-- THE TEST'S OWN LOOP OVER THE BATCH DOOR (lane FOLLOW-BATCH-2). custom.context_tag_copy(uuid), the
+-- one-transaction whole-organization door, refuses: it held the sign-in table to COMMIT. The follow
+-- commits after every custom.context_tag_copy_batch call; this suite is one rolled-back transaction by
+-- design, so it walks the same batches inside it and sums them the way the follow's report does.
+create function pg_temp.tag_copy_all(p_org uuid) returns jsonb language plpgsql as $tc$
+declare
+  v_cursor jsonb := null; b jsonb; k text;
+  v_out jsonb := jsonb_build_object('organization_id', p_org, 'made', 0, 'revived', 0, 'archived', 0,
+                   'updated', 0, 'current', 0, 'same_edge_already_there', 0, 'waiting_for_the_record', 0,
+                   'refused', 0, 'refused_tags', '[]'::jsonb);
+begin
+  loop
+    b := custom.context_tag_copy_batch(p_org, v_cursor, null);
+    foreach k in array array['made','revived','archived','updated','current','same_edge_already_there','refused'] loop
+      v_out := jsonb_set(v_out, array[k], to_jsonb((v_out->>k)::int + coalesce((b->>k)::int, 0)));
+    end loop;
+    if b ? 'waiting_for_the_record' and b->'waiting_for_the_record' <> 'null'::jsonb then
+      v_out := jsonb_set(v_out, '{waiting_for_the_record}', b->'waiting_for_the_record');
+    end if;
+    v_out := jsonb_set(v_out, '{refused_tags}', (v_out->'refused_tags') || coalesce(b->'refused_tags', '[]'::jsonb));
+    v_cursor := b->'next';
+    exit when v_cursor is null or v_cursor = 'null'::jsonb;
+  end loop;
+  loop
+    exit when platform.reachability_flush(500) = 0;
+  end loop;
+  return v_out;
+end $tc$;
 set local lock_timeout = '10s';
 set local statement_timeout = '180s';
 
@@ -98,7 +126,7 @@ begin
   perform set_config('role', 'authenticated', true);
   perform public.set_entity_scopes('conversation', v_conv, array[v_rec]);
   perform set_config('role', 'none', true);
-  v_rep := custom.context_tag_copy(v_org);
+  v_rep := pg_temp.tag_copy_all(v_org);
   select count(*) into v_n from platform.associations
    where source_type = 'conversation' and source_id = v_conv and target_type in ('record', 'custom_record')
      and target_id = v_rec and deleted_at is null;

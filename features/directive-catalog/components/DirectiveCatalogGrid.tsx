@@ -140,7 +140,6 @@ export function DirectiveCatalogGrid({
         getRowId={(noun) => noun.noun}
         defaultSort={{ id: "noun", direction: "asc" }}
         pageSize={0}
-        hidePagination
         detail={{ enabled: false }}
         grouping={{
           columnId: "family",

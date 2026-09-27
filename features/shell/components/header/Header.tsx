@@ -5,6 +5,7 @@ import { SurfaceAgentsHeaderButton } from "@/features/surfaces/components/chrome
 import { InboxHeaderButton } from "@/features/notifications/components/InboxHeaderButton";
 import { CommandBarHeaderButton } from "@/features/knowledge/command-bar/OpenCommandBarButtons";
 import { HeaderPhoneOverflow } from "./HeaderPhoneOverflow";
+import { HeaderCrowdingGuard } from "./HeaderCrowdingGuard";
 
 interface HeaderProps {
   isAuthenticated: boolean;
@@ -27,6 +28,10 @@ interface HeaderProps {
  *
  * The one conditional element is the "Choose org" nudge, which exists only
  * while no organization is chosen (primary call-to-action tint, never alarm red).
+ * Its words yield to the route: when the center cannot fit the route's own
+ * controls, `HeaderCrowdingGuard` marks the header crowded and every
+ * `data-header-compact-label` in the right set folds to its icon, so the chip
+ * can never sit on top of a route's Save (`header-crowding.ts`).
  *
  * ON A PHONE (below 768px) the four fold into ONE control — `HeaderPhoneOverflow`,
  * a bottom sheet holding the same four with the same states — so the page title
@@ -42,6 +47,7 @@ export default function Header({ isAuthenticated }: HeaderProps) {
   return (
     <header className="shell-header">
       <HamburgerButton />
+      <HeaderCrowdingGuard />
 
       <div className="shell-header-center" id="shell-header-center" />
 

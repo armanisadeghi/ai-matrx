@@ -2554,6 +2554,17 @@ body:has(.shell-root[data-pathname^="/administration"]) {
   min-width: 0;
 }
 
+/* THE ROUTE'S CONTROLS OUTRANK THE SHELL'S WORDS (2026-09-27).
+   While the center cannot fit the route header's own controls,
+   `HeaderCrowdingGuard` (features/shell/components/header/header-crowding.ts)
+   sets `data-header-crowded`, and every optional label in the right set folds
+   to its icon. Measured before: at 1024px the "Choose organization" chip sat on
+   top of the agent builder's Menu and Save. Unlayered on purpose — it must beat
+   Tailwind's layered `sm:inline` on the same span. */
+.shell-header[data-header-crowded] [data-header-compact-label] {
+  display: none;
+}
+
 /* THE RIGHT SET ON A PHONE (page-pass shared defects, 2026-09-27).
    Search / Agents / Canvas / Inbox sit in `.shell-header-secondary`; below
    768px (`useIsMobile`) they fold into ONE control, `.shell-header-overflow`

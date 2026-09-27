@@ -100,7 +100,7 @@ describe("DirectiveCatalogGrid", () => {
       order: "value-asc",
     });
     expect(tableProps.pageSize).toBe(0);
-    expect(tableProps.hidePagination).toBe(true);
+    expect(tableProps.hidePagination).toBeUndefined();
     expect(tableProps.toolbar?.search).toBe(false);
 
     const columns = tableProps.columns as MatrxColumnDef<NounDirectives>[];

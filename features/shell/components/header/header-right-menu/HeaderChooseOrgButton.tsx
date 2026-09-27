@@ -62,7 +62,7 @@ export default function HeaderChooseOrgButton() {
           className="inline-flex h-11 max-w-[14rem] items-center gap-1.5 rounded-md bg-primary/10 px-2 text-xs font-medium text-primary transition-colors hover:bg-primary/15 sm:h-8"
         >
           <Building2 size={14} strokeWidth={2} aria-hidden="true" />
-          <span className="hidden truncate sm:inline">{name}</span>
+          <span data-header-compact-label className="hidden truncate sm:inline">{name}</span>
         </button>
       );
     }
@@ -73,7 +73,7 @@ export default function HeaderChooseOrgButton() {
         className="hidden max-w-[14rem] items-center gap-1.5 truncate px-2 text-xs text-muted-foreground sm:inline-flex"
       >
         <Building2 size={14} strokeWidth={2} aria-hidden="true" />
-        <span className="truncate">Viewing in {name}</span>
+        <span data-header-compact-label className="truncate">Viewing in {name}</span>
       </span>
     );
   }
@@ -120,7 +120,7 @@ export default function HeaderChooseOrgButton() {
       }`}
     >
       <Building2 size={14} strokeWidth={2} aria-hidden="true" />
-      <span className="hidden max-w-[10rem] truncate sm:inline">{label}</span>
+      <span data-header-compact-label className="hidden max-w-[10rem] truncate sm:inline">{label}</span>
     </button>
   );
 

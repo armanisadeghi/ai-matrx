@@ -40,6 +40,34 @@
 \endif
 
 begin;
+-- THE TEST'S OWN LOOP OVER THE BATCH DOOR (lane FOLLOW-BATCH-2). custom.context_tag_copy(uuid), the
+-- one-transaction whole-organization door, refuses: it held the sign-in table to COMMIT. The follow
+-- commits after every custom.context_tag_copy_batch call; this suite is one rolled-back transaction by
+-- design, so it walks the same batches inside it and sums them the way the follow's report does.
+create function pg_temp.tag_copy_all(p_org uuid) returns jsonb language plpgsql as $tc$
+declare
+  v_cursor jsonb := null; b jsonb; k text;
+  v_out jsonb := jsonb_build_object('organization_id', p_org, 'made', 0, 'revived', 0, 'archived', 0,
+                   'updated', 0, 'current', 0, 'same_edge_already_there', 0, 'waiting_for_the_record', 0,
+                   'refused', 0, 'refused_tags', '[]'::jsonb);
+begin
+  loop
+    b := custom.context_tag_copy_batch(p_org, v_cursor, null);
+    foreach k in array array['made','revived','archived','updated','current','same_edge_already_there','refused'] loop
+      v_out := jsonb_set(v_out, array[k], to_jsonb((v_out->>k)::int + coalesce((b->>k)::int, 0)));
+    end loop;
+    if b ? 'waiting_for_the_record' and b->'waiting_for_the_record' <> 'null'::jsonb then
+      v_out := jsonb_set(v_out, '{waiting_for_the_record}', b->'waiting_for_the_record');
+    end if;
+    v_out := jsonb_set(v_out, '{refused_tags}', (v_out->'refused_tags') || coalesce(b->'refused_tags', '[]'::jsonb));
+    v_cursor := b->'next';
+    exit when v_cursor is null or v_cursor = 'null'::jsonb;
+  end loop;
+  loop
+    exit when platform.reachability_flush(500) = 0;
+  end loop;
+  return v_out;
+end $tc$;
 set local lock_timeout = '10s';
 set local statement_timeout = '180s';
 
@@ -108,10 +136,10 @@ begin
   end if;
 
   -- ══ T2: the copy makes the twin ══
-  if to_regprocedure('custom.context_tag_copy(uuid)') is null then
-    raise exception 'T2 RED: custom.context_tag_copy does not exist — nothing copies a tag into the store';
+  if to_regprocedure('custom.context_tag_copy_batch(uuid,jsonb,integer)') is null then
+    raise exception 'T2 RED: custom.context_tag_copy_batch does not exist — nothing copies a tag into the store';
   end if;
-  v_rep := custom.context_tag_copy(v_org);
+  v_rep := pg_temp.tag_copy_all(v_org);
   select * into v_twin from platform.associations
    where source_type = 'note' and source_id = v_note and target_type = 'record' and target_id = v_scope and role = 'context_tag';
   if v_twin.id is null or v_twin.deleted_at is not null then
@@ -124,7 +152,7 @@ begin
   end if;
 
   -- ══ T3: idempotent ══
-  v_rep := custom.context_tag_copy(v_org);
+  v_rep := pg_temp.tag_copy_all(v_org);
   if (v_rep ->> 'made')::int <> 0 or (v_rep ->> 'updated')::int <> 0 or (v_rep ->> 'revived')::int <> 0 or (v_rep ->> 'archived')::int <> 0 then
     raise exception 'T3: a second copy with nothing changed still wrote: %', v_rep;
   end if;
@@ -188,7 +216,7 @@ begin
   if v_n <> 1 then
     raise exception 'T6: untagging the note did not re-arm its follow row (% pending)', v_n;
   end if;
-  v_rep := custom.context_tag_copy(v_org);
+  v_rep := pg_temp.tag_copy_all(v_org);
   select * into v_twin from platform.associations where id = v_twin.id;
   if v_twin.id is null or v_twin.deleted_at is null then
     raise exception 'T6: after untagging, the copy of the tag is % (report %)', coalesce(to_jsonb(v_twin)::text, 'gone — deleted, not archived'), v_rep;
@@ -196,7 +224,7 @@ begin
   perform set_config('role', 'authenticated', true);
   perform public.set_entity_scopes('note', v_note, array[v_scope]);
   perform set_config('role', 'none', true);
-  v_rep := custom.context_tag_copy(v_org);
+  v_rep := pg_temp.tag_copy_all(v_org);
   select count(*) into v_n from platform.associations
    where source_type = 'note' and source_id = v_note and target_type = 'record' and target_id = v_scope and role = 'context_tag';
   select * into v_twin from platform.associations where id = v_twin.id;
@@ -210,7 +238,7 @@ begin
   perform set_config('role', 'authenticated', true);
   perform public.set_entity_scopes('note', v_note3, array[v_scope]);
   perform set_config('role', 'none', true);
-  v_rep := custom.context_tag_copy(v_org);
+  v_rep := pg_temp.tag_copy_all(v_org);
   select count(*) into v_n from platform.associations
    where source_type = 'note' and source_id = v_note3 and target_type in ('record', 'custom_record') and target_id = v_scope and deleted_at is null;
   if v_n <> 1 or coalesce((v_rep ->> 'same_edge_already_there')::int, 0) < 1 then
