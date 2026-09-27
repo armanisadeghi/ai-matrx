@@ -1,5 +1,6 @@
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { noteDisplayLabel } from "@/features/notes/format";
 import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
 import React, { useRef, useState, useMemo } from "react";
@@ -394,7 +395,7 @@ export default function MobileNotesList({
                   <span>Trash</span>
                   {deletedNotes.length > 0 && (
                     <span className="rounded-full bg-muted px-1.5 text-[10px]">
-                      {deletedNotes.length}
+                      <UntrustedCount value={deletedNotes.length} trustworthy={trashStatus !== "error"} label="Notes in trash" />
                     </span>
                   )}
                   <ChevronDown

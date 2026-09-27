@@ -1,5 +1,6 @@
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import React, {
   useCallback,
   useEffect,
@@ -38,7 +39,7 @@ export function NotesTreeView({
   activeNoteId,
   className,
 }: NotesTreeViewProps) {
-  const { notes, isLoading, findOrCreateEmptyNote } = useNotesRedux();
+  const { notes, isLoading, error: notesError, findOrCreateEmptyNote } = useNotesRedux();
   // ORG-GATE-AUDIT: the new-note resolver (waits for boot, then ASKS), never
   // the bare kernel on the active selection — creating a note or folder with
   // no organization selected opens the picker and continues this same create.
@@ -237,7 +238,7 @@ export function NotesTreeView({
               <FolderIcon className={cn("h-3 w-3 shrink-0", folderColor)} />
               <span className="truncate font-medium">{folder}</span>
               <span className="ml-auto text-[9px] text-muted-foreground/50 tabular-nums pr-0.5">
-                {folderNotes.length}
+                <UntrustedCount value={folderNotes.length} trustworthy={!notesError} label="Notes in folder" />
               </span>
             </button>
 

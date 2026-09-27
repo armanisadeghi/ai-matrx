@@ -19,6 +19,7 @@
 // - Rename Folder dialog
 // - Empty state when no notes exist
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { noteDisplayLabel } from "@/features/notes/format";
 import React, {
   useState,
@@ -1011,6 +1012,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
           <span className="flex min-w-0 items-center gap-1.5 text-xs text-amber-600/80 dark:text-amber-400/80">
             <TriangleAlert className="h-2.5 w-2.5 shrink-0" />
             <span className="truncate">
+              {/* read-gate-exempt: warning renders only when homelessCount is above 0, so a failed list read hides it rather than saying 0 */}
               {homelessCount} note{homelessCount === 1 ? "" : "s"} without an
               organization
             </span>
@@ -1328,7 +1330,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
               <Clock className="text-amber-500 dark:text-amber-400" />
               <span className="flex-1 text-left truncate">Recent</span>
               <span className="text-xs font-normal opacity-50 tabular-nums">
-                {recentSorted.length}
+                <UntrustedCount value={recentSorted.length} trustworthy={!listError} label="Recent notes" />
               </span>
             </button>
             {recentOpen && (
@@ -1678,7 +1680,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
             <span className="flex-1 text-left truncate">Trash</span>
             {deletedNotes.length > 0 && (
               <span className="text-xs font-normal opacity-50 tabular-nums">
-                {deletedNotes.length}
+                <UntrustedCount value={deletedNotes.length} trustworthy={trashStatus !== "error"} label="Notes in trash" />
               </span>
             )}
           </button>

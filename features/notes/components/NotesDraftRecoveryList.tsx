@@ -166,6 +166,7 @@ export function NotesDraftRecoveryList({
       <div className="flex items-center gap-2 pb-1">
         <LifeBuoy className="h-4 w-4 shrink-0 text-primary" />
         <span className="text-xs font-medium text-foreground">
+          {/* read-gate-exempt: unsaved drafts found in this browser's local storage, not a server read */}
           {pending.length === 1
             ? "Unsaved text found for 1 note"
             : `Unsaved text found for ${pending.length} notes`}

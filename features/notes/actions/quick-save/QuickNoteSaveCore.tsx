@@ -375,6 +375,7 @@ export function QuickNoteSaveCore({
             />
           </span>
           <span className="text-muted-foreground">
+            {/* read-gate-exempt: character count of the text being saved, held locally, not a read */}
             · {refine.charCount.toLocaleString()} chars
           </span>
         </div>
