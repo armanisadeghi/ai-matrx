@@ -12,9 +12,11 @@
  *   glow, and a recording-protection modal that warns before unmount while a
  *   recording or transcription is in flight.
  * - **"…" actions menu** — a hover-revealed right-side menu hosting Copy and
- *   AI cleanup. It floats over the text (no reserved
- *   right gutter) and only appears while the mouse is over the field — never
- *   from focus alone — so it stays out of the way while typing.
+ *   AI cleanup. It only appears while the pointer is over the field — never
+ *   from focus alone. While it (and the mic) shows, the field reserves its
+ *   measured width as right padding, so the controls NEVER cover text (on a
+ *   phone a tap is a lasting hover; the cluster used to sit on the typed text —
+ *   `proInputReservedPadding.ts`).
  * - **Submit button** — opt-in via `onSubmit`. Renders a transparent Send
  *   tap button at the right edge. `Cmd/Ctrl + Enter` triggers it. `submitOnEnter`
  *   makes plain Enter submit.
@@ -66,6 +68,7 @@
 "use client";
 
 import React, { useCallback, useState, useRef, useEffect, useId } from "react";
+import { reservedRightPaddingPx } from "@/components/official/proInputReservedPadding";
 import { Check, Copy, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import { useMicField } from "@/features/audio/hooks/useMicField";
@@ -244,6 +247,28 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
     const [isHovered, setIsHovered] = useState(false);
     const [isAudioAvailable, setIsAudioAvailable] = useState(true);
     const internalRef = useRef<HTMLInputElement>(null);
+    // The right-hand controls, measured so the text never runs under them.
+    const clusterRef = useRef<HTMLDivElement>(null);
+    const auxRef = useRef<HTMLDivElement>(null);
+    const [clusterWidths, setClusterWidths] = useState({ cluster: 0, aux: 0 });
+    useEffect(() => {
+      const cluster = clusterRef.current;
+      if (!cluster || typeof ResizeObserver === "undefined") return;
+      const measure = () => {
+        const next = {
+          cluster: cluster.getBoundingClientRect().width,
+          aux: auxRef.current?.getBoundingClientRect().width ?? 0,
+        };
+        setClusterWidths((prev) =>
+          prev.cluster === next.cluster && prev.aux === next.aux ? prev : next,
+        );
+      };
+      measure();
+      const observer = new ResizeObserver(measure);
+      observer.observe(cluster);
+      if (auxRef.current) observer.observe(auxRef.current);
+      return () => observer.disconnect();
+    }, []);
     const inputRef = (ref as React.RefObject<HTMLInputElement>) || internalRef;
     const cleanupAction = useProTextareaAgentAction();
     const cleanupSurfaceRoles = useSurfaceAgentRoles(CLEANUP_SURFACE_NAME);
@@ -480,6 +505,12 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
     const cleanupEligible = type === "text" && enableCleanup;
     const showMenu = !disabled && (showCopyButton || cleanupEligible);
     const rightPadding = rightPaddingClass(!!onSubmit, showClear);
+    const auxVisible = (showHoverControls || menuOpen) && (showMic || showMenu);
+    const measuredRightPadding = reservedRightPaddingPx({
+      clusterWidth: clusterWidths.cluster,
+      auxWidth: clusterWidths.aux,
+      auxVisible,
+    });
 
     const isInvalid =
       props["aria-invalid"] === true || props["aria-invalid"] === "true";
@@ -508,7 +539,11 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
             rightPadding,
             className,
           )}
-          style={INPUT_IOS_STYLE}
+          style={
+            measuredRightPadding === null
+              ? INPUT_IOS_STYLE
+              : { ...INPUT_IOS_STYLE, paddingRight: measuredRightPadding }
+          }
           value={value}
           onChange={onChange}
           onFocus={() => setIsFocused(true)}
@@ -543,12 +578,17 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
         )}
 
         {/* Right control cluster — submit/clear always visible when enabled;
-            mic + "…" menu float over the text and fade in only on mouse hover
-            (never focus). The menu stays visible while its popover is open so
+            mic + "…" menu fade in only on pointer hover (never focus), and
+            while they show the input reserves their measured width as right
+            padding, so they never cover text. The menu stays visible while its popover is open so
             it can't vanish mid-interaction. Transparent tap buttons sit flush
             inside the h-9 field without glass borders touching the input edge. */}
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center z-10">
+        <div
+          ref={clusterRef}
+          className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center z-10"
+        >
           <div
+            ref={auxRef}
             className={cn(
               "flex items-center transition-opacity duration-200",
               showHoverControls || menuOpen
