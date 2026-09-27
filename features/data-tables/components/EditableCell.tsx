@@ -602,6 +602,7 @@ export function EditableCell({
           value={draft}
           multiple={editorKind === "multiselect"}
           autoOpen
+          offersNewWords
           onChange={(next) => setDraft(next)}
           onDone={(final) => void commitEdit({ value: final })}
           className="min-w-[10rem]"

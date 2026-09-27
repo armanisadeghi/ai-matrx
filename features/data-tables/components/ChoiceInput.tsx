@@ -70,6 +70,12 @@ export type ChoiceInputProps = {
   /** Auto-open on mount — the inline cell editor wants the list up immediately. */
   autoOpen?: boolean;
   /**
+   * A GRID CELL offers any typed word, even on a column that takes only its own choices: the cell
+   * then asks whether to add it to the choices (the enum nudge, EditableCell). Row forms leave it
+   * off and keep the older behaviour.
+   */
+  offersNewWords?: boolean;
+  /**
    * Called when the user finishes — picked in single mode, or closed the list.
    * Receives the FINAL value explicitly: a single-select picks and closes in one
    * tick, so a caller reading its own state here would read the previous value.
@@ -108,6 +114,7 @@ export function ChoiceInput({
   onChange,
   row,
   autoOpen = false,
+  offersNewWords = false,
   onDone,
   initialQuery = null,
   className,
@@ -166,7 +173,7 @@ export function ChoiceInput({
 
   const trimmedQuery = query.trim();
   const canAddOther =
-    allowOther &&
+    (allowOther || offersNewWords) &&
     trimmedQuery !== "" &&
     !byValue.has(trimmedQuery.toLowerCase()) &&
     !selectedSet.has(trimmedQuery.toLowerCase());
@@ -243,7 +250,7 @@ export function ChoiceInput({
         <PopoverContent sizing="content" className="p-0" align="start">
           <Command shouldFilter>
             <CommandInput
-              placeholder={allowOther ? "Search or type a value…" : "Search options…"}
+              placeholder={allowOther || offersNewWords ? "Search or type a value…" : "Search options…"}
               value={query}
               onValueChange={setQuery}
             />
@@ -324,7 +331,7 @@ export function ChoiceInput({
                 <CommandGroup>
                   <CommandItem value={trimmedQuery} onSelect={() => pick(trimmedQuery)}>
                     <Plus className="mr-2 h-3.5 w-3.5 shrink-0" />
-                    Use &ldquo;{trimmedQuery}&rdquo;
+                    {allowOther ? <>Use &ldquo;{trimmedQuery}&rdquo;</> : <>Add &ldquo;{trimmedQuery}&rdquo;&hellip;</>}
                   </CommandItem>
                 </CommandGroup>
               )}

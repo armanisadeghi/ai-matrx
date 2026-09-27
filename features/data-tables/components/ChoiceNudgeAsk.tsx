@@ -47,7 +47,10 @@ export function ChoiceNudgeAsk({
   const words = quotedWords(ask.words);
   const button = "rounded border px-2 py-0.5 text-xs hover:bg-muted";
   return (
-    <div data-matrx-choice-nudge="" className="max-w-[20rem] space-y-1.5 text-left">
+    <div
+      data-matrx-choice-nudge=""
+      className="max-w-[20rem] space-y-1.5 rounded-sm bg-popover p-1 text-left text-popover-foreground"
+    >
       <p className="text-sm text-foreground">
         {ask.canAdd
           ? `Add ${words} to the choices for ${columnName}?`
