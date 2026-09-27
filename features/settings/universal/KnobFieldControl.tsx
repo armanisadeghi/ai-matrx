@@ -69,6 +69,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectPlatformDefaultTextModelId } from "@/features/ai-models/redux/platformDefaultModel";
 import { useModels } from "@/features/ai-models/hooks/useModels";
+import { fetchModelOptions } from "@/features/ai-models/redux/modelRegistrySlice";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   DECISION_DEFAULT_MODEL_KNOB,
   firstDecisionModelId,
@@ -240,7 +242,11 @@ function JsonField({
           setError(null);
         }}
       />
-      {error && <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>}
+      {error && (
+        <p className="text-xs text-destructive">
+          {error} <ErrorAlchemyMenu error={error} />
+        </p>
+      )}
       <div className="flex gap-2">
         <Button
           size="sm"
@@ -402,11 +408,17 @@ function SliderField({
 function useCatalogDecisionDefaultModel(enabled: boolean): {
   modelId: string | null;
   unavailable: boolean;
+  /** The catalog read failed — "no decision model" would be a false claim. */
+  error: string | null;
 } {
-  const { models, isReady } = useModels();
-  if (!enabled) return { modelId: null, unavailable: false };
+  const { models, isReady, error } = useModels();
+  if (!enabled) return { modelId: null, unavailable: false, error: null };
   const modelId = firstDecisionModelId(models);
-  return { modelId, unavailable: isReady && modelId === null };
+  return {
+    modelId,
+    unavailable: !error && isReady && modelId === null,
+    error: modelId === null && error ? String(error) : null,
+  };
 }
 
 /**
@@ -454,33 +466,46 @@ function ModelField({
           ? decisionDefault.modelId
           : null);
   const isBuilderDefault = !configuredValue && isBuilderKey;
+  const dispatch = useAppDispatch();
   return (
-    <ModelListDropdown
-      id={inputId}
-      aria-label={labelId ? undefined : knob.label}
-      aria-labelledby={labelId}
-      value={value}
-      onValueChange={(next) => {
-        // A rendered runtime default is already the effective choice. Picking
-        // that same catalog row must not materialize a redundant user override.
-        if (next && next !== value) void onCommit(next);
-      }}
-      inputModalities={[]}
-      outputModalities={isDecisionKey ? ["decision"] : ["text"]}
-      selectionPurpose={isDecisionKey ? "decision" : undefined}
-      placeholder={
-        builderDefault.unavailable
-          ? "Agent builder model is unavailable"
-          : decisionDefault.unavailable
-            ? "No decision model in the catalog"
-            : isBuilderDefault
-              ? "Loading agent builder's model…"
-              : "Loading current model…"
-      }
-      disabled={disabled}
-      triggerVariant="settings"
-      className="w-full min-w-0 justify-between"
-    />
+    <>
+      <ModelListDropdown
+        id={inputId}
+        aria-label={labelId ? undefined : knob.label}
+        aria-labelledby={labelId}
+        value={value}
+        onValueChange={(next) => {
+          // A rendered runtime default is already the effective choice. Picking
+          // that same catalog row must not materialize a redundant user override.
+          if (next && next !== value) void onCommit(next);
+        }}
+        inputModalities={[]}
+        outputModalities={isDecisionKey ? ["decision"] : ["text"]}
+        selectionPurpose={isDecisionKey ? "decision" : undefined}
+        placeholder={
+          builderDefault.unavailable
+            ? "Agent builder model is unavailable"
+            : decisionDefault.error
+              ? "The model catalog could not be read"
+              : decisionDefault.unavailable
+                ? "No decision model in the catalog"
+                : isBuilderDefault
+                  ? "Loading agent builder's model…"
+                  : "Loading current model…"
+        }
+        disabled={disabled}
+        triggerVariant="settings"
+        className="w-full min-w-0 justify-between"
+      />
+      {decisionDefault.error ? (
+        <ReadFailure
+          error={decisionDefault.error}
+          what="the model catalog"
+          onRetry={() => void dispatch(fetchModelOptions())}
+          className="mt-2"
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -625,8 +650,12 @@ function VoiceChooser({
                   disabled={disabled}
                   onClick={() => onSelect(voice.id)}
                 >
-                  <span className="min-w-0 flex-1 break-words">{voice.name}</span>
-                  {voice.id === current && <Check className="h-4 w-4 shrink-0" />}
+                  <span className="min-w-0 flex-1 break-words">
+                    {voice.name}
+                  </span>
+                  {voice.id === current && (
+                    <Check className="h-4 w-4 shrink-0" />
+                  )}
                 </Button>
                 <Button
                   type="button"
@@ -634,7 +663,9 @@ function VoiceChooser({
                   variant="ghost"
                   className="h-8 w-8 shrink-0"
                   aria-label={
-                    playing ? "Stop voice sample" : `Play sample for ${voice.name}`
+                    playing
+                      ? "Stop voice sample"
+                      : `Play sample for ${voice.name}`
                   }
                   disabled={disabled}
                   onClick={() => sample.play(set, voice.id, voice.name)}

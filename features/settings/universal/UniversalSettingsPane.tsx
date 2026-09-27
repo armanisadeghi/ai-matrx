@@ -87,6 +87,7 @@ export function UniversalSettingsRows({
   if (settings.changedOnly && knobs.length > 0 && visible.length === 0) {
     return (
       <SettingsCallout tone="info" title="No changed settings in this section">
+        {/* read-gate-exempt: the Changed-only filter over knobs the caller already holds; knobs.length > 0 means the read returned rows, so this is a filter result, not a read's empty answer */}
         No value is set at this level here. Turn off Changed only to view the
         settings that inherit their current values.
       </SettingsCallout>

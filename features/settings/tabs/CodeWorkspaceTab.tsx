@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Code, Filter, History, Layers } from "lucide-react";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsMultiSelect } from "@/components/official/settings/primitives/SettingsMultiSelect";
@@ -15,7 +15,12 @@ import {
   selectAllAgentCategories,
   selectAllAgentTags,
 } from "@ai-matrx/agents/catalog";
-import { useAgentCatalogRows } from "@ai-matrx/agents/catalog/react";
+import {
+  useAgentCatalog,
+  useAgentCatalogRows,
+  useAgentCatalogState,
+} from "@ai-matrx/agents/catalog/react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { selectActiveAgents } from "@/features/agents/redux/agent-definition/selectors";
 import type {
   CodeAgentFilter,
@@ -41,6 +46,21 @@ export default function CodeWorkspaceTab() {
     useSetting<boolean>("userPreferences.coding.monacoEnvironmentsEnabled");
 
   const agentRows = useAgentCatalogRows();
+  // The catalogue read behind the tag/category options (RC-B12): "No tags on
+  // your agents yet" is only true after it succeeded.
+  const catalog = useAgentCatalog();
+  const catalogStatus = useAgentCatalogState((s) => s.status);
+  const catalogError = useAgentCatalogState((s) => s.error);
+  const catalogFailed = catalogStatus === "failed";
+  const catalogLoaded = catalogStatus === "succeeded";
+  // A failed load lands in the catalogue's own status/error (shown below), so
+  // the promise's rejection carries nothing more to say.
+  const retryCatalog = () => {
+    catalog.ensureLoaded({ force: true }).catch(() => undefined);
+  };
+  useEffect(() => {
+    catalog.ensureLoaded().catch(() => undefined);
+  }, [catalog]);
   const allTags = selectAllAgentTags(agentRows);
   const allCategories = selectAllAgentCategories(agentRows);
   const allAgents = useAppSelector(selectActiveAgents);
@@ -91,6 +111,15 @@ export default function CodeWorkspaceTab() {
           ]}
         />
 
+        {catalogFailed &&
+          (filter.mode === "tags" || filter.mode === "categories") && (
+            <ReadFailure
+              error={catalogError ?? true}
+              what="your agents' tags and categories"
+              onRetry={retryCatalog}
+            />
+          )}
+
         {filter.mode === "tags" && (
           <SettingsMultiSelect<string>
             label="Tags"
@@ -99,9 +128,13 @@ export default function CodeWorkspaceTab() {
             onValueChange={(tags) => patchFilter({ tags })}
             options={tagOptions}
             placeholder={
-              tagOptions.length === 0
-                ? "No tags on your agents yet"
-                : "Pick tags"
+              tagOptions.length > 0
+                ? "Pick tags"
+                : catalogFailed
+                  ? "Your agents could not be read"
+                  : !catalogLoaded
+                    ? "Loading your agents…"
+                    : "No tags on your agents yet"
             }
           />
         )}
@@ -114,9 +147,13 @@ export default function CodeWorkspaceTab() {
             onValueChange={(categories) => patchFilter({ categories })}
             options={categoryOptions}
             placeholder={
-              categoryOptions.length === 0
-                ? "No categories on your agents yet"
-                : "Pick categories"
+              categoryOptions.length > 0
+                ? "Pick categories"
+                : catalogFailed
+                  ? "Your agents could not be read"
+                  : !catalogLoaded
+                    ? "Loading your agents…"
+                    : "No categories on your agents yet"
             }
           />
         )}

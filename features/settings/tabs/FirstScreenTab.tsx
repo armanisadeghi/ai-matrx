@@ -36,6 +36,7 @@ import {
   UniversalSettingsRows,
 } from "../universal/UniversalSettingsPane";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 /** The registry keys the first screen shows, in order (USD-12). */
 export const FIRST_SCREEN_MODEL_KEY = "agents.model_prefs.chat_default_model";
@@ -109,10 +110,25 @@ export default function FirstScreenTab() {
           description="Where you land when you sign in. You can switch organizations any time from the header."
           value={defaultOrganizationId ?? ""}
           options={settings.organizations.map((org) => ({ value: org.id, label: org.name }))}
-          placeholder={settings.organizations.length === 0 ? "No organizations yet" : "Choose one"}
+          placeholder={
+            settings.organizations.length > 0
+              ? "Choose one"
+              : settings.organizationsStatus === "error"
+                ? "Your organizations could not be read"
+                : settings.organizationsStatus === "loading"
+                  ? "Loading your organizations…"
+                  : "No organizations yet"
+          }
           onValueChange={(value) => setDefaultOrganizationId(value || null)}
-          last
+          last={settings.organizationsStatus !== "error"}
         />
+        {settings.organizationsStatus === "error" && (
+          <ReadFailure
+            error={settings.organizationsError ?? true}
+            what="your organizations"
+            onRetry={settings.refreshOrganizations}
+          />
+        )}
       </SettingsSection>
       }
 

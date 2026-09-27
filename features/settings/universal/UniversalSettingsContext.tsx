@@ -164,6 +164,13 @@ export type UniversalSettingsValue = {
   /** People in the chosen organization — the org rung's blast radius. */
   memberCount: number | null;
   organizations: { id: string; name: string }[];
+  /**
+   * The read behind `organizations` (RC-B12): an empty list is "no
+   * organizations" only when this is "ready".
+   */
+  organizationsStatus: "loading" | "error" | "ready";
+  organizationsError: string | null;
+  refreshOrganizations: () => void;
   userId: string | null;
   /** This browser's device rung id; null when storage is unavailable. */
   deviceId: string | null;
@@ -203,6 +210,9 @@ const EMPTY: UniversalSettingsValue = {
   canManageOrganization: false,
   memberCount: null,
   organizations: [],
+  organizationsStatus: "ready",
+  organizationsError: null,
+  refreshOrganizations: () => {},
   userId: null,
   deviceId: null,
   knobs: [],
@@ -366,7 +376,12 @@ export function UniversalSettingsProvider({
 }) {
   const userId = useAppSelector(selectUserId);
   const canManageSystem = useAppSelector(selectIsSuperAdmin);
-  const { organizations } = useUserOrganizations();
+  const {
+    organizations,
+    loading: organizationsLoading,
+    error: organizationsError,
+    refresh: refreshOrganizations,
+  } = useUserOrganizations();
   const activeOrganizationId = useAppSelector(selectOrganizationId);
   const editingContext = target;
   const [changedOnly, setChangedOnly] = useState(false);
@@ -672,6 +687,13 @@ export function UniversalSettingsProvider({
       : organization?.role === "owner" || organization?.role === "admin",
     memberCount: fixedMemberCount ?? organization?.memberCount ?? null,
     organizations: organizations.map((org) => ({ id: org.id, name: org.name })),
+    organizationsStatus: organizationsError
+      ? "error"
+      : organizationsLoading
+        ? "loading"
+        : "ready",
+    organizationsError: organizationsError ?? null,
+    refreshOrganizations,
     userId: userId ?? null,
     deviceId,
     knobs: destinationKnobs,
