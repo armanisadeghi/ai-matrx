@@ -28,6 +28,9 @@
 --   T8  the scopes switch for one organization: refused until parity is measured, then switched,
 --       its state read from the writer, and switched back to an explicit off
 --   T9  the switch for every organization at once (the final switch), for a named batch, and its undo
+--   T10 an industry template (Dental Practice) applies through the store's door: its types and fields
+--       land on both sides, and "Reports To" points at another team member (RED before
+--       scopeswt_a_template_applies_and_a_value_brings_its_field.sql: 26 of 34 templates refused)
 
 \set ON_ERROR_STOP on
 \timing off
@@ -49,20 +52,23 @@ declare
   c_admin constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';   -- admin@admin.com
   v_org uuid := gen_random_uuid();
   v_old uuid := gen_random_uuid();
+  v_new uuid := gen_random_uuid();
 begin
   perform set_config('app.actor_system', 'campaign-test/scopeswt', true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by) values
     (v_org, 'Bayfront Family Dentistry ' || substr(v_org::text, 1, 6), 'bayfront-family-dentistry-' || substr(v_org::text, 1, 8), 'BFD', c_admin),
-    (v_old, 'Harbor Point Validation ' || substr(v_old::text, 1, 6), 'harbor-point-val-' || substr(v_old::text, 1, 8), 'HPV', c_admin);
+    (v_old, 'Harbor Point Validation ' || substr(v_old::text, 1, 6), 'harbor-point-val-' || substr(v_old::text, 1, 8), 'HPV', c_admin),
+    (v_new, 'Lakeview Dental Studio ' || substr(v_new::text, 1, 6), 'lakeview-dental-' || substr(v_new::text, 1, 8), 'LDS', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner', 'active'),
-    (v_old, 'organization', v_old, c_admin, 'owner', 'active');
+    (v_old, 'organization', v_old, c_admin, 'owner', 'active'),
+    (v_new, 'organization', v_new, c_admin, 'owner', 'active');
   -- The older organization existed before the switch: it keeps the old tables as its writer.
   if exists (select 1 from platform.feature_knob where feature = 'custom' and key = 'scopes_written_in_the_store') then
     insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note) values
       ('custom', 'scopes_written_in_the_store', 'organization', v_old, v_old, 'false'::jsonb, 'scopeswt suite: an organization that existed before the switch');
   end if;
-  insert into sf values ('org', v_org), ('old', v_old);
+  insert into sf values ('org', v_org), ('old', v_old), ('new', v_new);
 end
 $fixture$;
 
@@ -73,9 +79,10 @@ declare
   v_type uuid; v_dentist uuid; v_recall uuid; v_email uuid; v_patient uuid;
   v_otype uuid; v_oitem uuid; v_oscope uuid;
   v_rec custom.record; v_row jsonb; v_out jsonb; v_img uuid; v_src jsonb; v_n int; v_msg text;
-  v_note uuid; v_press jsonb; v_state text; v_all jsonb;
+  v_note uuid; v_press jsonb; v_state text; v_all jsonb; v_tmpl uuid; v_team uuid; v_new uuid;
 begin
   select v into v_org from sf where k = 'org';  select v into v_old from sf where k = 'old';
+  select v into v_new from sf where k = 'new';
 
   perform set_config('request.jwt.claims', json_build_object('sub', c_admin, 'role', 'authenticated', 'session_id', 'scopeswt')::text, true);
   perform set_config('role', 'authenticated', true);
@@ -268,7 +275,35 @@ begin
     raise exception 'T9: the undo answered % and the writer is %', v_all, custom.context_writer(v_old);
   end if;
 
-  raise notice 'GREEN T1–T9: the store writes Bayfront Family Dentistry''s scopes (old doors carried, the value door store first, archive and restore, refusals refuse, generic writers held off, tags carried), Harbor Point Validation keeps the old tables until its switch, and the switch goes one organization at a time or all at once, and back.';
+  -- ══ T10: an industry template, through the store's door ══
+  select t.id into v_tmpl from context.templates t where t.name = 'Dental Practice' and t.is_active;
+  if v_tmpl is null then
+    raise exception 'T10 FIXTURE: the Dental Practice template is not on this database';
+  end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', c_admin, 'role', 'authenticated', 'session_id', 'scopeswt')::text, true);
+  perform set_config('role', 'authenticated', true);
+  begin
+    v_out := custom.context_template_apply(v_new, v_tmpl);
+  exception when others then
+    get stacked diagnostics v_msg = message_text;
+    perform set_config('role', 'none', true);
+    raise exception 'T10 RED: the Dental Practice template could not be applied: %', v_msg;
+  end;
+  perform set_config('role', 'none', true);
+  select count(*) into v_n from context.scope_types t
+   where t.organization_id = v_new and t.deleted_at is null
+     and not exists (select 1 from custom.record r where r.organization_id = v_new and r.id = t.id and r.deleted_at is null);
+  if v_n <> 0 then
+    raise exception 'T10: % of the template''s scope types are not Tables in the store', v_n;
+  end if;
+  select t.id into v_team from context.scope_types t where t.organization_id = v_new and t.label_plural = 'Team Members';
+  if not exists (select 1 from custom.record f where f.organization_id = v_new and f.data_class = 'field'
+                   and f.data ->> 'entity_definition_id' = v_team::text and f.data ->> 'key' = 'reports_to'
+                   and f.data ->> 'type' = 'relation' and f.data ->> 'relation_target' = v_team::text) then
+    raise exception 'T10: Team Members'' "Reports To" is not a relation to another team member in the store';
+  end if;
+
+  raise notice 'GREEN T1–T10: the store writes Bayfront Family Dentistry''s scopes (old doors carried, the value door store first, archive and restore, refusals refuse, generic writers held off, tags carried), Harbor Point Validation keeps the old tables until its switch, and the switch goes one organization at a time or all at once, and back; an industry template applies with its Reports To.';
 end
 $t$;
 
