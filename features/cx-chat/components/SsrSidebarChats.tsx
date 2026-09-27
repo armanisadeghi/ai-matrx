@@ -480,7 +480,7 @@ export function SsrSidebarChats({
         </div>
       )}
 
-      {listStatus === "error" && items.length === 0 && (
+      {listStatus === "failed" && items.length === 0 && (
         <ReadFailure error={listError ?? true} what="your conversations" onRetry={reload} />
       )}
 

@@ -60,5 +60,8 @@ describe("SsrSidebarChats — no dead Rename/Delete controls (DD-157)", () => {
     expect(source).toMatch(/fetchGlobalConversations/);
     expect(source).toMatch(/selectGlobalListStatus/);
     expect(source).toMatch(/onRetry=\{reload\}/);
+    // The slice says "failed", never "error" — a branch on "error" never renders.
+    expect(source).toMatch(/listStatus === "failed"/);
+    expect(source).not.toMatch(/listStatus === "error"/);
   });
 });

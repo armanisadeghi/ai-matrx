@@ -20,6 +20,8 @@ import {
   type WorkflowChoice,
 } from "../service";
 import type { ArmDraft } from "../types";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { extractErrorMessage } from "@/utils/errors";
 
 export function ArmSetupCard({
   draft,
@@ -137,7 +139,7 @@ function WorkflowSelect({
                 Searching…
               </div>
             )}
-            {!loading && Boolean(searchError) && (
+            {!loading && Boolean(searchError) && choices.length === 0 && (
               <ReadFailure
                 error={searchError}
                 what="your workflows"
@@ -150,7 +152,17 @@ function WorkflowSelect({
                 No workflows match.
               </div>
             )}
-            {!searchError && choices.map((c) => (
+            {Boolean(searchError) && choices.length > 0 && (
+              // Stale-while-error: the earlier results stay, labelled as possibly out of date.
+              <StaleDataNotice
+                hasData
+                what="the workflow search"
+                detail={extractErrorMessage(searchError)}
+                onRetry={() => setSearchAttempt((n) => n + 1)}
+                className="m-1"
+              />
+            )}
+            {choices.map((c) => (
               <button
                 key={c.id}
                 type="button"

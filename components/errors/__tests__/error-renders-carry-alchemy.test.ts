@@ -362,6 +362,14 @@ describe("an empty view is an answer only after a read that succeeded (RC-B12 ro
     expect(ungated("return p.matches.length === 0 ? <p>No matches found</p> : <List />;")).toBe(0);
   });
 
+  it("self-test: stale-while-error (rows kept + StaleDataNotice) is gated; hiding rows is not required", () => {
+    expect(
+      ungated(
+        `const { rows, isLoading, error, retry } = p.q;\n  return isLoading && rows.length === 0 ? <Spinner /> : error && rows.length === 0 ? <ReadFailure error={error} onRetry={retry} /> : rows.length === 0 ? <p>No rows yet</p> : <>{error ? <StaleDataNotice hasData what="rows" onRetry={retry} /> : null}<List rows={rows} /></>;`,
+      ),
+    ).toBe(0);
+  });
+
   it("self-test: an exemption needs a reason on the view itself — a bare marker exempts nothing", () => {
     const view = (comment: string) =>
       ungated(`const { rows, isLoading } = p.q;\n  return isLoading ? <Spinner /> : rows.length === 0 ? (\n    ${comment}\n    <p>No rows yet</p>\n  ) : <List />;`);

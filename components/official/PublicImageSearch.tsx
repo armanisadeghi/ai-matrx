@@ -434,6 +434,7 @@ export function PublicImageSearch({
               resetSelection={resetSelection}
               applySelection={applySelection}
               setIsDialogOpen={setIsDialogOpen}
+              searchError={searchError}
             />
           )}
         </AnimatePresence>
@@ -561,6 +562,7 @@ export function PublicImageSearch({
             resetSelection={resetSelection}
             applySelection={applySelection}
             setIsDialogOpen={setIsDialogOpen}
+            searchError={searchError}
           />
         )}
       </AnimatePresence>
@@ -591,6 +593,8 @@ interface SearchDialogProps {
   resetSelection: () => void;
   applySelection: () => void;
   setIsDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  /** The latest search failed — shown instead of "no images" when nothing is on screen. */
+  searchError: unknown;
 }
 
 function SearchDialog({
@@ -609,6 +613,7 @@ function SearchDialog({
   resetSelection,
   applySelection,
   setIsDialogOpen,
+  searchError,
 }: SearchDialogProps) {
   return (
     <Dialog open={true} onOpenChange={setIsDialogOpen}>
@@ -665,7 +670,7 @@ function SearchDialog({
               <ReadFailure
                 error={searchError}
                 what="images for this search"
-                onRetry={() => void searchPhotos(searchQuery, 1)}
+                onRetry={() => handleSearch(searchQuery)}
               />
             ) : photos.length === 0 && !loading ? (
               <div className="flex flex-col items-center justify-center h-full text-center p-8">

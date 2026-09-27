@@ -36,6 +36,7 @@ import {
 } from "./data";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 const NONE = "__none__";
 
@@ -96,7 +97,7 @@ function TopicPicker({ onPick, exclude }: { onPick: (t: TopicOption) => void; ex
       <ul className="max-h-48 divide-y divide-border overflow-y-auto rounded-md border border-border">
         {loading && rows.length === 0 ? (
           <li className="px-2.5 py-2 text-xs text-muted-foreground">Searching…</li>
-        ) : searchError ? (
+        ) : searchError && rows.length === 0 ? (
           <li>
             <ReadFailure
               error={searchError}
@@ -108,17 +109,31 @@ function TopicPicker({ onPick, exclude }: { onPick: (t: TopicOption) => void; ex
         ) : rows.length === 0 ? (
           <li className="px-2.5 py-2 text-xs text-muted-foreground">No topics match.</li>
         ) : (
-          rows.map((t) => (
-            <li key={t.id}>
-              <button type="button" onClick={() => onPick(t)} className="flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-xs hover:bg-muted/60">
-                <span className="truncate text-foreground">{t.name}</span>
-                <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-                  {t.slug}
-                  {t.node_type ? ` · ${t.node_type}` : ""}
-                </span>
-              </button>
-            </li>
-          ))
+          <>
+            {/* Stale-while-error: the earlier results stay, labelled as possibly out of date. */}
+            {searchError ? (
+              <li>
+                <StaleDataNotice
+                  hasData
+                  what="the topic search"
+                  detail={extractErrorMessage(searchError)}
+                  onRetry={() => setSearchAttempt((n) => n + 1)}
+                  className="m-1.5"
+                />
+              </li>
+            ) : null}
+            {rows.map((t) => (
+              <li key={t.id}>
+                <button type="button" onClick={() => onPick(t)} className="flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-xs hover:bg-muted/60">
+                  <span className="truncate text-foreground">{t.name}</span>
+                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                    {t.slug}
+                    {t.node_type ? ` · ${t.node_type}` : ""}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </>
         )}
       </ul>
     </div>
