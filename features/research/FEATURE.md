@@ -117,6 +117,17 @@ via `<CostValue>`/`useCostDisplay`; never `toFixed(2)` a dollar figure in a rese
 
 ## Change log
 
+- 2026-09-27 — page-pass 2026-09-27: /research/topics, type list page, posture after Linear's
+  issue list. The hand-built card grid (`components/landing/TopicList.tsx`) is replaced by the
+  canonical entity list (`browse/`: service over `research.rs_topic` + project association edges,
+  columns, listConfig, row actions, `TopicsListPage.tsx`): Mine / My orgs scope tabs with a
+  per-organization narrow, search over names and research questions, sort and filter on every
+  column (status, project, autonomy, dates), saved view preferences, one row menu for kebab,
+  right-click and long-press, a door on every topic name, one New topic button (was three). New
+  agent surface `matrx-user/research-topics` (`browse/surface.ts`: the visible page as one XML
+  bundle, full rows, create_topics / update_topics / delete_topics through the page's own save
+  paths); `matrx-user/research` keeps the landing, wizard and topic workspace.
+
 - 2026-09-26 — Removed the old direct "Google managed agents" card
   (`GoogleBackgroundAgentCard.tsx` + `service/google-background.ts`) and its mount in
   `TopicAgentsPage.tsx` (Arman approved; common-docs mandates UI-REGISTER, BYPASS-CENSUS row 34).

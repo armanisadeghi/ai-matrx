@@ -477,6 +477,18 @@ describe("Education tool-family resolution", () => {
     expect(surfaceFromPathname("/education/classes/ap-biology")).toBe(
       "matrx-user/education",
     );
+    // The research topics LIST is its own surface; one topic's workspace,
+    // the wizard and the landing keep the research workspace surface.
+    expect(surfaceFromPathname("/research/topics")).toBe(
+      "matrx-user/research-topics",
+    );
+    expect(surfaceFromPathname("/research/topics/")).toBe(
+      "matrx-user/research-topics",
+    );
+    expect(
+      surfaceFromPathname("/research/topics/63ac076a-3cf9-48f8-9af6-e974a6789883/sources"),
+    ).toBe("matrx-user/research");
+    expect(surfaceFromPathname("/research/topics/new")).toBe("matrx-user/research");
     expect(surfaceFromPathname("/education/overview")).toBe(
       "matrx-user/education-overview",
     );

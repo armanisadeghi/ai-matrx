@@ -1,10 +1,12 @@
 /**
  * Surface manifest — Research workspace (`matrx-user/research`).
  *
- * Drives every route under `/research` — the landing, the topic list, the
- * creation wizard, and (the real workspace) `/research/topics/[topicId]` with
+ * Drives every route under `/research` — the landing, the creation wizard, and
+ * (the real workspace) `/research/topics/[topicId]` with
  * its ~20 sub-routes: overview/orchestra, sources, curate, content, keywords,
  * analysis, synthesis, document(s), tags, context, outputs, costs, settings.
+ * The topics LIST (`/research/topics` exactly) is its own surface,
+ * `matrx-user/research-topics` (research-topics.manifest.ts).
  *
  * A research topic is the entity (`research.rs_topic`); everything else
  * (keywords, sources, content, analyses, syntheses, documents, tags, media) is
