@@ -6,6 +6,7 @@ import { Package, PackagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useOpenSaveKitDialog } from "@/features/overlays/openers/saveKitDialog";
 import { fetchKits } from "../service";
@@ -45,7 +46,15 @@ function useOrgKits() {
     window.addEventListener(KITS_CHANGED_EVENT, onChanged);
     return () => window.removeEventListener(KITS_CHANGED_EVENT, onChanged);
   }, []);
-  return { ...state, organizationId, retry: () => setAttempt((n) => n + 1) };
+  return {
+    ...state,
+    organizationId,
+    // No workspace is not "still looking": the section says so and offers
+    // the picker (OrganizationContextNotice), never an endless wait.
+    organizationState: org.organizationState,
+    retryOrganization: org.retry,
+    retry: () => setAttempt((n) => n + 1),
+  };
 }
 
 export function KitGallery({ kits, error }: { kits: KitEntry[]; error: string | null }) {
@@ -89,7 +98,17 @@ export function KitGallery({ kits, error }: { kits: KitEntry[]; error: string | 
                 Create a {KIT_WORD.oneLower} from my setup
               </Button>
             </div>
-            {orgKits.error ? (
+            {orgKits.organizationState !== "ready" ? (
+              <OrganizationContextNotice
+                state={orgKits.organizationState}
+                what={`your organization's ${KIT_WORD.manyLower}`}
+                title={`Pick a workspace to see the ${KIT_WORD.manyLower} it saved`}
+                description={`${KIT_WORD.many} are saved by a workspace. Choose the one you are working in — the ${KIT_WORD.manyLower} from AI Matrx below work either way.`}
+                onRetry={orgKits.retryOrganization}
+                compact
+                className="mt-3 max-w-xl rounded-md border border-border bg-card"
+              />
+            ) : orgKits.error ? (
               <ErrorNotice className="mt-3 max-w-xl" title={`Your organization's ${KIT_WORD.manyLower} could not be loaded.`} error={orgKits.error} onRetry={orgKits.retry} />
             ) : orgKits.kits.length === 0 ? (
               <p className="mt-3 max-w-xl text-sm text-muted-foreground">
