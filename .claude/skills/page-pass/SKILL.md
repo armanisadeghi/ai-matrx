@@ -18,8 +18,12 @@ procedure — open it only when you are doing that job or the check fails.
    desktop 1280×800 and phone 375×812 screenshots in light and dark, plus
    `look.json` — console errors, failed requests, anything under the header,
    how much of the first screen holds content, headings, text under 12px,
-   emoji, small phone targets. Read every screenshot yourself; the numbers are
-   places to look, not verdicts. Use it the way a person would: click every
+   emoji, small phone targets. Add `--full` to see below the fold,
+   `--signed-out` for what a visitor sees, and `--click 'SELECTOR=>TEXT'`
+   (repeatable) to open each menu, dialog and tab and capture it. Read every
+   screenshot yourself; the numbers are places to look, not verdicts. For a
+   longer interaction, write a throwaway Playwright script in your own TMPDIR
+   modelled on `scripts/page-look.mjs` — never a dev server. Use it the way a person would: click every
    control, open every menu, dialog and tab. **Before you read any rule, write
    down everything that looks wrong or wasteful.** This list is yours; the rules
    must end up covering every line of it.
@@ -36,7 +40,8 @@ procedure — open it only when you are doing that job or the check fails.
 5. **Prove it live.** Every fix seen working on the real page; every main
    action carried through to its real saved result, then re-checked (console
    and Error Inspector clean after, not just on load).
-6. **Record it.** One Change Log line in the feature's `FEATURE.md` in the same
+6. **Record it.** One Change Log line in the owning feature's `FEATURE.md` (no
+   FEATURE.md for this route? the nearest one that owns its code) in the same
    commit (`page-pass <date>: type <x>, posture <x> after <product>, fixed …`),
    then the report below.
 

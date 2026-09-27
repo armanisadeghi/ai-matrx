@@ -23,9 +23,12 @@ Judge by who is looking at it and why.
   a feature's public landing page, a course's public page.
 - **Changes:** core 3's "title stands alone" and "no wasted space" do NOT
   apply — headlines, descriptions, pictures and generous space are the point.
-  Core 1 is usually light: a surface that exposes the page's copy is enough;
-  no write targets.
-- **Adds:** one clear primary action per screen (sign up, try it, contact);
+  Core 1 is `na` when the page renders in the public layout (no Agents
+  menu, no agent runtime there — a manifest would be inert); say so.
+- **Adds:** look signed out AND signed in (`page:look --signed-out`): each
+  state says the right thing — a signed-in person never gets a sign-up pitch
+  for what they already have; one clear primary action per screen (sign up,
+  try it, contact), above the fold;
   every claim is true today (no promise of a feature that doesn't exist — a
   future feature goes through the Coming Soon registry); OG image and
   description set; fast first load; reads well on a phone before a desktop.
