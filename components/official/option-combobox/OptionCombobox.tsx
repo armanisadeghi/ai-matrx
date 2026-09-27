@@ -126,7 +126,8 @@ export function OptionCombobox({
             "disabled:cursor-not-allowed disabled:opacity-50",
             variant === "field"
               ? cn(
-                  "rounded-md border border-input bg-transparent px-3 shadow-xs hover:bg-accent/40",
+                  // The one field surface (design-system FIELD_SURFACE_CLASS) — never grey beside a Select.
+                  "rounded-md border border-border bg-card px-3 shadow-xs hover:bg-accent/40",
                   compact ? "h-8 text-xs" : "h-9 text-sm",
                 )
               : "h-7 rounded px-1 text-xs font-medium text-foreground/80 hover:text-foreground",
