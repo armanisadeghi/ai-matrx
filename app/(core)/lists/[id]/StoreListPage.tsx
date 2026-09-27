@@ -10,12 +10,13 @@
 import Link from "next/link";
 
 import { LivesInTheNewSystem } from "@/app/(core)/data-v2/[tableId]/LivesInTheNewSystem";
-import { LIST_LIVES_IN_NEW_SYSTEM } from "@/features/user-lists/where-lists-live";
+import { LIST_BORN_IN_NEW_SYSTEM, LIST_LIVES_IN_NEW_SYSTEM } from "@/features/user-lists/where-lists-live";
 
-export function StoreListPage({ listId }: { listId: string }) {
+/** `moved`: an older list row carries this id, so the list came over with its organization's switch. */
+export function StoreListPage({ listId, moved }: { listId: string; moved: boolean }) {
   return (
     <LivesInTheNewSystem tableId={listId} testId="list-lives-in-new-system">
-      {LIST_LIVES_IN_NEW_SYSTEM}{" "}
+      {moved ? LIST_LIVES_IN_NEW_SYSTEM : LIST_BORN_IN_NEW_SYSTEM}{" "}
       <Link href="/lists/v3" className="text-primary underline-offset-2 hover:underline">
         All lists
       </Link>

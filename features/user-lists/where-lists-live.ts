@@ -100,3 +100,10 @@ export async function organizationPickListsInTheNewSystem(
 /** The sentence a Lists screen shows beside a list that lives in the new system. */
 export const LIST_LIVES_IN_NEW_SYSTEM =
   "This list now lives in the new system as a table of choices. Same list, same address; its organization switched its Data tables.";
+
+/**
+ * A list BORN in the new system never moved, so the line above would be false on it (lane HANDOVER,
+ * 2026-09-27: a list made a minute earlier read "now lives in the new system … its organization
+ * switched"). It says what the page is instead.
+ */
+export const LIST_BORN_IN_NEW_SYSTEM = "A pick list: each row below is one of its choices.";
