@@ -72,6 +72,9 @@ const RESOURCE_ICONS: Record<string, LucideIcon> = {
   // The record store's token (custom.record): Trash lists its archived Tables and Records under it
   // (lane TRASH-TABLES).
   record: Table,
+  // One archived row of a Data table (workbench.udt_dataset_rows): Trash lists it once the
+  // registry row carries user_artifact_kind 'dataset_row'. Until then nothing renders it.
+  udt_dataset_rows: Table,
   sandbox_instance: Boxes,
   wc_claim: Building2,
   feature_doc: FileText,
