@@ -48,6 +48,12 @@ export function useStructuredLists() {
   const [loadingLists, setLoadingLists] = useState(true);
   const [loadingItems, setLoadingItems] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** The lists read failed (a view shows this, never "No lists yet"). */
+  const [listsError, setListsError] = useState<unknown>(null);
+  /** The active list's items read failed, keyed by list. */
+  const [itemsError, setItemsError] = useState<{ listId: string; error: unknown } | null>(null);
+  const [listsReload, setListsReload] = useState(0);
+  const [itemsReload, setItemsReload] = useState(0);
 
   const itemsCache = useRef<Record<string, UserListItem[]>>({});
   /** lane LISTS-AFTER-SWITCH: ids of the lists that live in the new system (opened at /lists/<id>). */
@@ -58,6 +64,7 @@ export function useStructuredLists() {
     let cancelled = false;
     (async () => {
       setLoadingLists(true);
+      setListsError(null);
       try {
         const { data, error: err } = await supabase
           .schema("workbench")
@@ -90,14 +97,15 @@ export function useStructuredLists() {
                 .map((l) => ({ ...l, item_count: l.item_count ?? 0, lives_in: "record" as const }))
             : [];
         } catch (e) {
-          setError(e instanceof Error ? e.message : "Your lists in the new system could not be loaded");
+          // Shown above the older lists that did load.
+          setListsError(e ?? new Error("Your lists in the new system could not be loaded"));
         }
         if (cancelled) return;
         storeIds.current = new Set(inStore.map((l) => l.id));
         setLists([...mapped, ...inStore]);
         if (mapped.length > 0) setActiveListId((id) => id ?? mapped[0]!.id);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load lists");
+        if (!cancelled) setListsError(e ?? new Error("Failed to load lists"));
       } finally {
         if (!cancelled) setLoadingLists(false);
       }
@@ -105,7 +113,7 @@ export function useStructuredLists() {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, listsReload]);
 
   // ── Items load on active change ─────────────────────────────────────────
   useEffect(() => {
@@ -122,6 +130,7 @@ export function useStructuredLists() {
     let cancelled = false;
     (async () => {
       setLoadingItems(true);
+      setItemsError(null);
       try {
         const { data, error: err } = await supabase
           .schema("workbench")
@@ -137,7 +146,7 @@ export function useStructuredLists() {
         itemsCache.current[activeListId] = rows;
         setItemsByList((m) => ({ ...m, [activeListId]: rows }));
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load items");
+        if (!cancelled) setItemsError({ listId: activeListId, error: e ?? new Error("Failed to load items") });
       } finally {
         if (!cancelled) setLoadingItems(false);
       }
@@ -145,7 +154,7 @@ export function useStructuredLists() {
     return () => {
       cancelled = true;
     };
-  }, [activeListId]);
+  }, [activeListId, itemsReload]);
 
   // ── List mutations ───────────────────────────────────────────────────────
   const createNewList = useCallback(
@@ -385,6 +394,12 @@ export function useStructuredLists() {
     loadingItems,
     error,
     clearError: () => setError(null),
+    /** The lists read failed — gate every "no lists" view on it. */
+    listsError,
+    reloadLists: () => setListsReload((n) => n + 1),
+    /** The active list's items read failed — gate "no items" on it. */
+    itemsError: activeListId && itemsError?.listId === activeListId ? itemsError.error : null,
+    reloadItems: () => setItemsReload((n) => n + 1),
     createNewList,
     /** lane LISTS-AFTER-SWITCH: does this list live in the new system (open it at /lists/<id>)? */
     isInStore: (listId: string) => storeIds.current.has(listId),

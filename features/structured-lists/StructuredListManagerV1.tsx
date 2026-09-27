@@ -149,6 +149,7 @@ import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorC
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -369,6 +370,11 @@ export function StructuredListManagerV1({
   );
   const [search, setSearch] = React.useState("");
   const [loading, setLoading] = React.useState(true);
+  /** The picklists read failed — shown in place of "No picklists yet". */
+  const [listsError, setListsError] = React.useState<unknown>(null);
+  /** The active list's items read failed — shown in place of "No items yet". */
+  const [itemsError, setItemsError] = React.useState<unknown>(null);
+  const [reloadKey, setReloadKey] = React.useState(0);
   const [saveStatus, setSaveStatus] = React.useState<SaveStatus>("idle");
   const [deleteListOpen, setDeleteListOpen] = React.useState(false);
 
@@ -378,6 +384,8 @@ export function StructuredListManagerV1({
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setListsError(null);
+      setItemsError(null);
 
       // Single-list mode: skip the catalog query and just load the one
       // list (+ its items). RLS still applies — if the caller passes a
@@ -411,7 +419,7 @@ export function StructuredListManagerV1({
             setLoading(false);
             return;
           }
-          toast.error("Couldn't load this picklist");
+          setListsError(listRes.error ?? new Error("This picklist couldn't be read — it may have been deleted or not shared with you."));
           setLists([]);
           setItems([]);
           setActiveId(null);
@@ -420,7 +428,8 @@ export function StructuredListManagerV1({
         }
         setLists([listRes.data as Picklist]);
         setActiveId(listRes.data.id);
-        if (!itemsRes.error) setItems((itemsRes.data ?? []) as PicklistItem[]);
+        if (itemsRes.error) setItemsError(itemsRes.error);
+        else setItems((itemsRes.data ?? []) as PicklistItem[]);
         setLoading(false);
         return;
       }
@@ -434,7 +443,7 @@ export function StructuredListManagerV1({
         .order("updated_at", { ascending: false });
 
       if (listsErr) {
-        toast.error("Failed to load picklists");
+        setListsError(listsErr);
         setLoading(false);
         return;
       }
@@ -461,7 +470,8 @@ export function StructuredListManagerV1({
             lives_in: "record" as const,
           }));
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Your lists in the new system could not be loaded");
+        // Shown above the lists that did load (the older ones).
+        setListsError(e ?? new Error("Your lists in the new system could not be loaded"));
       }
       if (cancelled) return;
       const fetched = [...older, ...inStore];
@@ -476,14 +486,17 @@ export function StructuredListManagerV1({
           .select("*")
           .eq("list_id", first)
           .is("deleted_at", null);
-        if (!cancelled && !itemsErr) setItems(itemsData ?? []);
+        if (!cancelled) {
+          if (itemsErr) setItemsError(itemsErr);
+          else setItems(itemsData ?? []);
+        }
       }
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [supabase, userId, forcedListId]);
+  }, [supabase, userId, forcedListId, reloadKey]);
 
   // ------- Load items when active list changes -------
 
@@ -500,12 +513,18 @@ export function StructuredListManagerV1({
         .select("*")
         .eq("list_id", activeId)
         .is("deleted_at", null);
-      if (!cancelled && !error) setItems(data ?? []);
+      if (cancelled) return;
+      if (error) {
+        setItemsError(error);
+        return;
+      }
+      setItemsError(null);
+      setItems(data ?? []);
     })();
     return () => {
       cancelled = true;
     };
-  }, [activeId, supabase]);
+  }, [activeId, supabase, reloadKey]);
 
   // ------- Save status helpers -------
 
@@ -924,7 +943,10 @@ export function StructuredListManagerV1({
         </div>
       </div>
       <div className="flex-1 overflow-y-auto px-1 pb-2">
-        {filteredLists.length === 0 ? (
+        {listsError != null && (
+          <ReadFailure error={listsError} what="your picklists" onRetry={() => setReloadKey((n) => n + 1)} />
+        )}
+        {listsError != null && lists.length === 0 ? null : filteredLists.length === 0 ? (
           <div className="px-3 py-6 text-center text-xs text-muted-foreground">
             {search ? "No matches" : "No picklists yet"}
           </div>
@@ -982,7 +1004,9 @@ export function StructuredListManagerV1({
 
   const mainContent = (
       <section className="flex min-h-0 min-w-0 flex-1 flex-col">
-        {!activeList ? (
+        {listsError != null && !activeList ? (
+          <ReadFailure error={listsError} what="your picklists" onRetry={() => setReloadKey((n) => n + 1)} />
+        ) : !activeList ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
             <p>No picklist selected.</p>
             <Button variant="outline" size="sm" onClick={createList}>
@@ -1082,7 +1106,9 @@ export function StructuredListManagerV1({
 
             {/* Rows */}
             <div ref={itemsRef} className="flex-1 overflow-y-auto py-1 pb-20">
-              {sections.length === 0 ? (
+              {itemsError != null && items.length === 0 ? (
+                <ReadFailure error={itemsError} what="this picklist's items" onRetry={() => setReloadKey((n) => n + 1)} />
+              ) : sections.length === 0 ? (
                 <div className="px-5 py-8 text-center text-sm text-muted-foreground">
                   <p className="mb-3">No items yet.</p>
                   <Button
@@ -1099,6 +1125,7 @@ export function StructuredListManagerV1({
                     <div className="flex items-center gap-2 px-5 pb-1 pt-3">
                       {groupName === "" ? (
                         <span className="text-xs italic text-muted-foreground">
+                          {/* read-gate-exempt: heading of the ungrouped section of rows that did load, not an empty view */}
                           No group
                         </span>
                       ) : (

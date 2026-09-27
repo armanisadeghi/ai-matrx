@@ -160,6 +160,7 @@ import { MobilePanelShell } from "@/features/shell/components/header/templates/M
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useRouter } from "next/navigation";
 import { listAddress, storeListsOf } from "@/features/user-lists/where-lists-live";
 import { createList as createListWhereItIsBorn } from "@/features/user-lists/service";
@@ -358,6 +359,11 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [search, setSearch] = React.useState("");
   const [loading, setLoading] = React.useState(true);
+  /** The picklists read failed — shown in place of "No picklists yet". */
+  const [listsError, setListsError] = React.useState<unknown>(null);
+  /** The active list's items read failed — shown in place of "No items yet". */
+  const [itemsError, setItemsError] = React.useState<unknown>(null);
+  const [reloadKey, setReloadKey] = React.useState(0);
   const [saveStatus, setSaveStatus] = React.useState<SaveStatus>("idle");
   const [deleteListOpen, setDeleteListOpen] = React.useState(false);
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
@@ -371,6 +377,8 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setListsError(null);
+      setItemsError(null);
       const { data: listsData, error: listsErr } = await supabase
         .schema("workbench")
         .from("udt_structured_lists")
@@ -380,7 +388,7 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
         .order("updated_at", { ascending: false });
 
       if (listsErr) {
-        toast.error("Failed to load picklists");
+        setListsError(listsErr);
         setLoading(false);
         return;
       }
@@ -407,7 +415,8 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
             lives_in: "record" as const,
           }));
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Your lists in the new system could not be loaded");
+        // Shown above the lists that did load (the older ones).
+        setListsError(e ?? new Error("Your lists in the new system could not be loaded"));
       }
       if (cancelled) return;
       const fetched = [...older, ...inStore];
@@ -422,14 +431,17 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
           .select("*")
           .eq("list_id", first)
           .is("deleted_at", null);
-        if (!cancelled && !itemsErr) setItems(itemsData ?? []);
+        if (!cancelled) {
+          if (itemsErr) setItemsError(itemsErr);
+          else setItems(itemsData ?? []);
+        }
       }
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [supabase, userId]);
+  }, [supabase, userId, reloadKey]);
 
   // ------- Load items when active list changes -------
 
@@ -446,16 +458,20 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
         .select("*")
         .eq("list_id", activeId)
         .is("deleted_at", null);
-      if (!cancelled && !error) {
-        setItems(data ?? []);
-        setExpanded(new Set());
-        setCollapsedGroups(new Set());
+      if (cancelled) return;
+      if (error) {
+        setItemsError(error);
+        return;
       }
+      setItemsError(null);
+      setItems(data ?? []);
+      setExpanded(new Set());
+      setCollapsedGroups(new Set());
     })();
     return () => {
       cancelled = true;
     };
-  }, [activeId, supabase]);
+  }, [activeId, supabase, reloadKey]);
 
   // ------- Save status -------
 
@@ -907,7 +923,10 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
         </div>
       </div>
       <div className="flex-1 overflow-y-auto px-1 pb-2">
-        {filteredLists.length === 0 ? (
+        {listsError != null && (
+          <ReadFailure error={listsError} what="your picklists" onRetry={() => setReloadKey((n) => n + 1)} />
+        )}
+        {listsError != null && lists.length === 0 ? null : filteredLists.length === 0 ? (
           <div className="px-3 py-6 text-center text-xs text-muted-foreground">
             {search ? "No matches" : "No picklists yet"}
           </div>
@@ -996,7 +1015,9 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
 
   const mainContent = (
       <section className="flex min-h-0 min-w-0 flex-1 flex-col">
-        {!activeList ? (
+        {listsError != null && !activeList ? (
+          <ReadFailure error={listsError} what="your picklists" onRetry={() => setReloadKey((n) => n + 1)} />
+        ) : !activeList ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
             <p>No picklist selected.</p>
             <Button variant="outline" size="sm" onClick={createList}>
@@ -1081,7 +1102,9 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
               </div>
 
               {/* Rows */}
-              {sections.length === 0 ? (
+              {itemsError != null && items.length === 0 ? (
+                <ReadFailure error={itemsError} what="this picklist's items" onRetry={() => setReloadKey((n) => n + 1)} />
+              ) : sections.length === 0 ? (
                 <div className="-ml-1.5 py-6 text-sm text-muted-foreground">
                   <p className="mb-3">No items yet.</p>
                   <Button
@@ -1114,6 +1137,7 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
                         </button>
                         {isUngrouped ? (
                           <span className="px-1.5 py-0.5 text-xs italic text-muted-foreground">
+                            {/* read-gate-exempt: heading of the ungrouped section of rows that did load, not an empty view */}
                             No group
                           </span>
                         ) : (

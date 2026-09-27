@@ -33,6 +33,7 @@ import type { UserListItem } from "@/features/user-lists/types";
 import { useStructuredLists, type PicklistSummary } from "./useStructuredLists";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useRouter } from "next/navigation";
 import { listAddress } from "@/features/user-lists/where-lists-live";
 
@@ -80,6 +81,8 @@ export function StructuredListManagerV2({
         list={activeList}
         lists={q.lists}
         loadingLists={q.loadingLists}
+        listsError={q.listsError}
+        onRetryLists={q.reloadLists}
         forced={!!forcedListId}
         onSelect={(id) =>
           // lane LISTS-AFTER-SWITCH: a list in the new system opens on its own page.
@@ -97,6 +100,8 @@ export function StructuredListManagerV2({
           list={activeList}
           items={q.items}
           loading={q.loadingItems}
+          readError={q.itemsError}
+          onRetry={q.reloadItems}
           onAdd={(seed) => q.addItem(activeList.id, seed)}
           onPatch={(id, patch) => q.patchItem(activeList.id, id, patch)}
           onRemove={(id) => q.removeItem(activeList.id, id)}
@@ -104,6 +109,8 @@ export function StructuredListManagerV2({
       ) : (
         <EmptyState
           loading={q.loadingLists}
+          readError={q.listsError}
+          onRetry={q.reloadLists}
           hasLists={q.lists.length > 0}
           onNew={openNewList}
         />
@@ -166,6 +173,9 @@ interface TopBarProps {
   list: PicklistSummary | null;
   lists: PicklistSummary[];
   loadingLists: boolean;
+  /** The lists read failed — the switcher shows it instead of "No lists yet". */
+  listsError: unknown;
+  onRetryLists: () => void;
   forced: boolean;
   onSelect: (id: string) => void;
   onNewList: () => void;
@@ -177,6 +187,8 @@ function TopBar({
   list,
   lists,
   loadingLists,
+  listsError,
+  onRetryLists,
   forced,
   onSelect,
   onNewList,
@@ -231,6 +243,8 @@ function TopBar({
             lists={lists}
             activeId={list?.id ?? null}
             loading={loadingLists}
+            readError={listsError}
+            onRetry={onRetryLists}
             onSelect={onSelect}
             onNew={onNewList}
           />
@@ -368,12 +382,16 @@ function ListSwitcher({
   lists,
   activeId,
   loading,
+  readError,
+  onRetry,
   onSelect,
   onNew,
 }: {
   lists: PicklistSummary[];
   activeId: string | null;
   loading: boolean;
+  readError: unknown;
+  onRetry: () => void;
   onSelect: (id: string) => void;
   onNew: () => void;
 }) {
@@ -437,10 +455,16 @@ function ListSwitcher({
             </div>
           </div>
           <div className="max-h-72 overflow-y-auto py-1">
+            {/* Part of the read failed but some lists loaded: say so above them. */}
+            {readError != null && lists.length > 0 && (
+              <ReadFailure error={readError} what="some of your lists" onRetry={onRetry} className="m-2" />
+            )}
             {loading && lists.length === 0 ? (
               <div className="px-3 py-2 text-xs text-muted-foreground">
                 Loading…
               </div>
+            ) : readError != null && lists.length === 0 ? (
+              <ReadFailure error={readError} what="your lists" onRetry={onRetry} className="m-2" />
             ) : filtered.length === 0 ? (
               <div className="px-3 py-2 text-xs text-muted-foreground">
                 {lists.length === 0 ? "No lists yet." : "No matches."}
@@ -597,6 +621,9 @@ interface ItemsTableProps {
   list: PicklistSummary;
   items: UserListItem[];
   loading: boolean;
+  /** The items read failed — shown instead of "No items yet". */
+  readError: unknown;
+  onRetry: () => void;
   onAdd: (seed: {
     label: string;
     description?: string | null;
@@ -612,6 +639,8 @@ function ItemsTable({
   list,
   items,
   loading,
+  readError,
+  onRetry,
   onAdd,
   onPatch,
   onRemove,
@@ -685,7 +714,10 @@ function ItemsTable({
 
           {/* Rows */}
           <div className="divide-y divide-border/60">
-            {items.length === 0 && !loading && (
+            {readError != null && items.length === 0 && (
+              <ReadFailure error={readError} what="this list's items" onRetry={onRetry} />
+            )}
+            {items.length === 0 && !loading && readError == null && (
               <div className="px-3 py-3 text-xs text-muted-foreground">
                 No items yet — start typing on the last row to add one.
               </div>
@@ -1232,10 +1264,14 @@ function IconCell({
 // ── Empty state ────────────────────────────────────────────────────────────
 function EmptyState({
   loading,
+  readError,
+  onRetry,
   hasLists,
   onNew,
 }: {
   loading: boolean;
+  readError: unknown;
+  onRetry: () => void;
   hasLists: boolean;
   onNew: () => void;
 }) {
@@ -1245,6 +1281,9 @@ function EmptyState({
         Loading…
       </div>
     );
+  }
+  if (readError != null && !hasLists) {
+    return <ReadFailure error={readError} what="your lists" onRetry={onRetry} />;
   }
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
