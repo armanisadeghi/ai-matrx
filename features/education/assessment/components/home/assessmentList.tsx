@@ -22,6 +22,8 @@
 import type { EntityListConfig } from "@/lib/entity-list/config";
 import type { EntityColumnSpec } from "@/lib/entity-list/columns";
 import { Muted, TextCell, timeCell } from "@/lib/entity-list/columns";
+import type { MatrxDataTableMobileCardControls } from "@ai-matrx/design-system/data-table/types";
+import { formatRelativeTime } from "@/utils/datetime";
 import type {
   EntityFacets,
   EntityListQuery,
@@ -148,6 +150,47 @@ function TakeCell({ row, config }: { row: AssessmentListItem; config: KindConfig
   );
 }
 
+/**
+ * The phone card: name + row menu, then one line of facts beside a one-tap
+ * Take. The generic card labelled every field ("TAKE" beside a Take button)
+ * and folded the rest behind "1 more field", so only two quizzes fit a phone.
+ */
+function AssessmentPhoneCard({
+  row,
+  config,
+  controls,
+}: {
+  row: AssessmentListItem;
+  config: KindConfig;
+  controls: MatrxDataTableMobileCardControls;
+}) {
+  const facts = [
+    `${row.question_count} ${row.question_count === 1 ? "question" : "questions"}`,
+    row.my_attempts
+      ? `completed ${row.my_attempts}×${row.my_best_score == null ? "" : `, best ${Math.round(row.my_best_score * 100)}%`}`
+      : null,
+    formatRelativeTime(row.updated_at, { style: "short", fallback: "" }) || null,
+  ].filter(Boolean);
+  return (
+    <article
+      // The shell's right-click / long-press menu resolves the row from this.
+      data-row-id={row.id}
+      className="matrx-touch-targets rounded-lg border border-border bg-card px-3 py-1.5"
+    >
+      <div className="flex items-start gap-1">
+        <div className="min-w-0 flex-1 text-sm font-medium leading-snug [&_.truncate]:!whitespace-normal [&_.truncate]:line-clamp-2 [&_a]:block [&_a]:py-2">
+          {controls.renderCell("title")}
+        </div>
+        <div className="flex shrink-0 items-center">{controls.actions}</div>
+      </div>
+      <div className="flex items-center justify-between gap-2 pb-1">
+        <p className="min-w-0 truncate text-xs text-muted-foreground">{facts.join(" · ")}</p>
+        <TakeCell row={row} config={config} />
+      </div>
+    </article>
+  );
+}
+
 export function buildAssessmentColumns(
   config: KindConfig,
 ): EntityColumnSpec<AssessmentListItem>[] {
@@ -159,8 +202,9 @@ export function buildAssessmentColumns(
       phone: "title",
       column: {
         id: "title",
-        width: 340,
-        className: "max-w-[21rem] overflow-hidden",
+        // The name is what people scan for — it gets the room, Topic the rest.
+        width: 440,
+        className: "max-w-[28rem] overflow-hidden",
         accessorKey: "title",
         header: "Title",
         filter: "text",
@@ -194,14 +238,11 @@ export function buildAssessmentColumns(
     {
       id: "topic",
       label: "Topic",
-      // Behind "more fields" on a phone: most topics only repeat the title,
-      // and the card never drops an empty field.
       phone: "rest",
       column: {
         id: "topic",
-        // Topics are often a source's opening sentence: give them the room.
-        width: 240,
-        className: "max-w-[15rem] overflow-hidden",
+        width: 200,
+        className: "max-w-[12.5rem] overflow-hidden",
         accessorKey: "topic",
         header: "Topic",
         filter: "text",
@@ -226,19 +267,20 @@ export function buildAssessmentColumns(
     },
     {
       id: "attempts",
-      label: "My attempts",
+      // ONE definition, shared with the quiz page: finished attempts only.
+      label: "Completed",
       phone: "meta",
       sortWords: { asc: "fewest first", desc: "most first" },
       column: {
         id: "attempts",
         accessorKey: "my_attempts",
-        header: "My attempts",
+        header: "Completed",
         filter: false,
         cell: (row) =>
           row.my_attempts ? (
             <span className="tabular-nums">{row.my_attempts}</span>
           ) : (
-            <Muted>None yet</Muted>
+            <Muted>—</Muted>
           ),
       },
     },
@@ -404,6 +446,9 @@ export function buildAssessmentListConfig(input: {
       hrefFor: (row) => assessmentHref(config, row),
     },
     useRowActions: input.useRowActions,
+    mobileCards: (row, _index, controls) => (
+      <AssessmentPhoneCard row={row} config={config} controls={controls} />
+    ),
     searchPlaceholder: `Search ${plural} by title, topic, exam or description…`,
     facetSections: [
       { facet: "depth", filterId: "depth", label: "Depth", noneLabel: "Not set", formatValue: depthLabel },

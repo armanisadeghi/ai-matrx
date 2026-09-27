@@ -477,15 +477,24 @@ export const assessmentService = {
   },
 
   /** The current user's results for one assessment, newest-first. */
+  /**
+   * The signed-in person's OWN attempts on one assessment, newest first.
+   * VIEW LAW: mine-scoped — row security lets an organization's members read
+   * each other's results, and "Your attempts" must never count theirs.
+   */
   async listResults(
     assessmentId: string,
     limit = 50,
   ): Promise<AsResult<AssessmentResultRow[]>> {
     try {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) return { data: [], error: null };
       const { data, error } = await EDU()
         .from("assessment_result")
         .select("*")
         .eq("assessment_id", assessmentId)
+        .eq("created_by", uid)
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(limit);

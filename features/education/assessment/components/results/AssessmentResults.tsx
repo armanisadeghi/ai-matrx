@@ -16,7 +16,6 @@ import {
   CheckCircle2,
   XCircle,
   MinusCircle,
-  ArrowLeft,
   RotateCcw,
   TrendingUp,
   TrendingDown,
@@ -24,6 +23,8 @@ import {
   Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { StudyDeckHeader } from "@/features/flashcards/components/study/StudyDeckHeader";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
@@ -165,27 +166,14 @@ export function AssessmentResults({
 
   return (
     <div className="min-h-full w-full bg-textured">
+      {/* The shell header carries the back door and the title, like Take —
+          never a second arrow + title in the body. */}
+      <PageHeader>
+        <StudyDeckHeader title={`${assessment.title} · Results`} backHref={`${base}/${assessmentId}`} />
+      </PageHeader>
       <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 shrink-0"
-            onClick={() => startTransition(() => router.push(`${base}/${assessmentId}`))}
-            aria-label="Back to assessment"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="min-w-0">
-            <h1 className="truncate text-lg font-semibold tracking-tight text-foreground">
-              {assessment.title}
-            </h1>
-            <p className="text-xs text-muted-foreground">Results</p>
-          </div>
-        </div>
-
         {/* Scorecard */}
-        <div className="mt-5 flex items-center gap-4 rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-center gap-4 rounded-2xl border border-border bg-card p-5">
           <div
             className={cn(
               "flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold tabular-nums",

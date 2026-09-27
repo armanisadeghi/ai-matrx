@@ -81,15 +81,21 @@ export function makeAssessmentRowActions(config: KindConfig) {
             ? restoreFirst
             : `This ${noun} has no questions yet — add some from Edit questions`,
         },
-        {
-          id: "edit",
-          label: "Edit questions",
-          icon: Pencil,
-          kind: "link",
-          href: `${href}/edit`,
-          disabled: row.archived,
-          disabledReason: restoreFirst,
-        },
+        // Only where the person may actually edit (their own, or editor
+        // access) — an org-shared quiz they can only take offers no Edit.
+        ...(row.my_can_edit
+          ? [
+              {
+                id: "edit",
+                label: "Edit questions",
+                icon: Pencil,
+                kind: "link",
+                href: `${href}/edit`,
+                disabled: row.archived,
+                disabledReason: restoreFirst,
+              } satisfies ItemMenuEntry,
+            ]
+          : []),
         // Results only once there is one to show: the results route without a
         // result id falls back to the overview, which was a second "Open".
         ...(row.my_last_result_id
@@ -109,28 +115,32 @@ export function makeAssessmentRowActions(config: KindConfig) {
         sections: [
           { id: "open", items: open },
           { id: "work", label: config.label, items: work },
-          {
-            id: "manage",
-            label: "Manage",
-            items: [
-              row.archived
-                ? {
-                    id: "restore",
-                    label: "Restore",
-                    icon: ArchiveRestore,
-                    onSelect: () => {
-                      void restore(row);
-                    },
-                  }
-                : {
-                    id: "archive",
-                    label: "Archive",
-                    icon: Archive,
-                    tone: "destructive",
-                    onSelect: () => setPendingArchive(row),
-                  },
-            ],
-          },
+          ...(row.my_can_edit
+            ? [
+              {
+                id: "manage",
+                label: "Manage",
+                items: [
+                  row.archived
+                    ? {
+                        id: "restore",
+                        label: "Restore",
+                        icon: ArchiveRestore,
+                        onSelect: () => {
+                          void restore(row);
+                        },
+                      }
+                    : {
+                        id: "archive",
+                        label: "Archive",
+                        icon: Archive,
+                        tone: "destructive" as const,
+                        onSelect: () => setPendingArchive(row),
+                      },
+                ],
+              },
+              ]
+            : []),
         ],
       };
     };

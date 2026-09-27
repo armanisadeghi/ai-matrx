@@ -44,6 +44,11 @@ export interface TakeOptions {
    * Defaults true.
    */
   enabled?: boolean;
+  /**
+   * File the session and result under this organization (the quiz's own, when
+   * the person belongs to it) instead of the selected one.
+   */
+  orgId?: string;
 }
 
 export interface AnswerRecord {
@@ -112,6 +117,7 @@ export function useTakeAssessment(
     setError(null);
     try {
       const sess = await studyService.createSession({
+        orgId: opts.orgId,
         mode: assessment.assessment_kind,
         sourceKind: null,
         sourceQuery: { assessmentId: assessment.id },
@@ -122,6 +128,7 @@ export function useTakeAssessment(
         return null;
       }
       const res = await assessmentService.createResult({
+        orgId: opts.orgId,
         assessmentId: assessment.id,
         sessionId: sess.data.id,
         phase: opts.phase ?? "standalone",

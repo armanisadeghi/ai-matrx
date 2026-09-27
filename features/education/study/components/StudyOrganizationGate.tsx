@@ -22,13 +22,19 @@ export function useStudyOrganizationReady(): boolean {
 export function StudyOrganizationGate({
   what,
   children,
+  bypass = false,
 }: {
   /** What cannot start yet, e.g. "This drill" or "Practicing Krebs Cycle". */
   what: string;
   children: ReactNode;
+  /**
+   * The session is filed under a record's own organization (the person
+   * belongs to it), so no organization needs choosing — render the children.
+   */
+  bypass?: boolean;
 }) {
   const { organizationState } = useOrganizationRequired();
-  if (organizationState === "ready" || organizationState === "resolving") {
+  if (bypass || organizationState === "ready" || organizationState === "resolving") {
     return <>{children}</>;
   }
   return (

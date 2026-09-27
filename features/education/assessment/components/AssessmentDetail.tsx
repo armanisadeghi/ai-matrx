@@ -257,6 +257,7 @@ export function AssessmentDetail({
           style: "coarse",
         })
       : null;
+  const completedCount = results.filter((r) => r.status === "completed").length;
   const bestResult = results
     .filter((r) => r.status === "completed" && r.score_value != null)
     .reduce<AssessmentResultRow | null>(
@@ -403,6 +404,11 @@ export function AssessmentDetail({
             <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
               <History className="h-4 w-4 text-muted-foreground" />
               Your attempts
+              {/* ONE definition, shared with the list's "Completed" column:
+                  an attempt counts once it is finished. */}
+              <span className="text-xs font-normal text-muted-foreground">
+                {completedCount} completed
+              </span>
               {bestResult && (
                 <span className="ml-auto text-xs font-normal text-muted-foreground">
                   Best: {Math.round(Number(bestResult.score_value) * 100)}%
@@ -431,6 +437,9 @@ export function AssessmentDetail({
                   <span className="text-xs text-muted-foreground">
                     {r.correct_count}/{r.total_count} correct
                   </span>
+                  {r.status !== "completed" && (
+                    <span className="text-xs text-muted-foreground">Unfinished</span>
+                  )}
                   {r.phase !== "standalone" && (
                     <span className="rounded-full border border-border bg-muted px-1.5 py-0 text-[10px] uppercase tracking-wider text-muted-foreground">
                       {r.phase}

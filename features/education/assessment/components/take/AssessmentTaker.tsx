@@ -25,6 +25,7 @@ import {
   StudyOrganizationGate,
   useStudyOrganizationReady,
 } from "@/features/education/study/components/StudyOrganizationGate";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { QuestionView } from "./QuestionView";
 import { kindConfigFor } from "../kindConfig";
 import type {
@@ -57,13 +58,22 @@ export function AssessmentTaker({
   const router = useRouter();
   const config = kindConfigFor(assessment.assessment_kind);
   const base = `/education/${config.base}`;
-  // A taking opens a study session, filed under one organization. With none
-  // chosen, the organization notice shows in place and the taking starts once
-  // one is picked — never the blocking "Which workspace?" prompt on arrival.
-  const orgReady = useStudyOrganizationReady();
+  // A taking is filed under the QUIZ'S OWN organization when the person
+  // belongs to it (their own quiz, or one their organization shares) — the
+  // record carries its parent's context, so no organization needs choosing.
+  // Only a quiz from an organization they are not in (a public or shared-link
+  // one) falls back to their selected organization, and the notice shows in
+  // place until one is picked — never the blocking prompt on arrival.
+  const selectedOrgReady = useStudyOrganizationReady();
+  const { organizations, loading: orgsLoading } = useUserOrganizations();
+  const carriedOrgId = organizations.some((o) => o.id === assessment.organization_id)
+    ? assessment.organization_id
+    : null;
+  const orgReady = carriedOrgId !== null || (!orgsLoading && selectedOrgReady);
   const take = useTakeAssessment(assessment, items, {
     ...options,
     enabled: orgReady,
+    orgId: carriedOrgId ?? undefined,
   });
   const [index, setIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, string>>({});
@@ -174,7 +184,7 @@ export function AssessmentTaker({
           backHref={`${base}/${assessment.id}`}
         />
       </PageHeader>
-      <StudyOrganizationGate what={`This ${config.noun}`}>
+      <StudyOrganizationGate what={`This ${config.noun}`} bypass={carriedOrgId !== null}>
       <div className="h-full overflow-y-auto overscroll-contain bg-background">
         <div className="mx-auto max-w-2xl px-2 pb-safe pt-14 sm:px-6">
           {!orgReady || !take.started ? (

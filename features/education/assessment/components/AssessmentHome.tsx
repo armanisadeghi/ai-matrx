@@ -15,7 +15,7 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { Building2, Plus } from "lucide-react";
+import { Building2, Plus, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
@@ -93,32 +93,46 @@ export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
     </Button>
   );
 
-  // An empty lane that is not the whole story says where the rest are: a
-  // member whose own lane is empty but whose organizations share quizzes gets
-  // one tap to them, beside New.
+  // Each lane's empty state offers what fits THAT lane: a new quiz lands in
+  // Mine, so only Mine offers New; every other lane points to the lanes that
+  // do hold quizzes (a member's empty Mine names My Orgs, one tap away).
   const emptyAction = (list: EntityListController<AssessmentListItem>) => {
-    const orgCount = list.counts.byKind.orgs ?? 0;
-    const inMine = list.query.scope.kind === "mine";
+    const lane = list.query.scope.kind;
+    const counts = list.counts.byKind;
+    const plural = config.pluralLabel.toLowerCase();
+    const doors = (
+      [
+        { kind: "mine", label: "Mine", icon: User },
+        { kind: "orgs", label: "My Orgs", icon: Building2 },
+      ] as const
+    ).filter((d) => d.kind !== lane && (counts[d.kind] ?? 0) > 0);
+    const hint =
+      lane === "mine" && (counts.orgs ?? 0) > 0
+        ? `Your organizations share ${counts.orgs} ${counts.orgs === 1 ? config.noun : plural} with you.`
+        : lane === "public"
+          ? `Nobody has published a ${config.noun} yet.`
+          : lane === "shared"
+            ? `Nobody has shared a ${config.noun} with you directly.`
+            : null;
     return (
       <div className="flex flex-col items-center gap-3">
-        {inMine && orgCount > 0 ? (
-          <p className="max-w-sm text-sm text-muted-foreground">
-            Your organizations share {orgCount} {orgCount === 1 ? config.noun : config.pluralLabel.toLowerCase()} with you.
-          </p>
-        ) : null}
+        {hint ? <p className="max-w-sm text-sm text-muted-foreground">{hint}</p> : null}
         <div className="flex flex-wrap items-center justify-center gap-2">
-          {inMine && orgCount > 0 ? (
+          {doors.map((d) => (
             <Button
+              key={d.kind}
               size="sm"
               variant="outline"
               className="h-11 lg:h-8"
-              onClick={() => list.setScope({ kind: "orgs", organizationId: null })}
+              onClick={() =>
+                list.setScope(d.kind === "orgs" ? { kind: "orgs", organizationId: null } : { kind: "mine" })
+              }
             >
-              <Building2 className="h-4 w-4" />
-              See My Orgs ({orgCount})
+              <d.icon className="h-4 w-4" />
+              See {d.label} ({counts[d.kind]})
             </Button>
-          ) : null}
-          {createButton(true)}
+          ))}
+          {lane === "mine" ? createButton(true) : null}
         </div>
       </div>
     );

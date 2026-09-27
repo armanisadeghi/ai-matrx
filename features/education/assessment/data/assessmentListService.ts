@@ -54,6 +54,8 @@ export interface AssessmentListRow {
   my_best_score: number | null;
   /** Their latest completed attempt — the Results door. */
   my_last_result_id: string | null;
+  /** The person may edit/archive it (their own, or editor access through a grant or org). */
+  my_can_edit: boolean;
 }
 
 export interface AssessmentListQuery {
@@ -87,6 +89,7 @@ function cleanRow(row: AssessmentListRow): AssessmentListRow {
     my_attempts: Number(row.my_attempts ?? 0),
     my_best_score: row.my_best_score == null ? null : Number(row.my_best_score),
     my_last_result_id: row.my_last_result_id ?? null,
+    my_can_edit: row.my_can_edit === true,
   };
 }
 
