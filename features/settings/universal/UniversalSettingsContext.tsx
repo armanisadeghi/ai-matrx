@@ -75,6 +75,23 @@ export type SettingsDomain = {
   domainLeafId: string | null;
 };
 
+/**
+ * Only the areas — and inside them the features — that hold at least one
+ * setting the person can change (a key their organization locked is not one).
+ * Used for the person's own settings; the admin view lists the whole taxonomy.
+ */
+export function domainsWithChangeableSettings(domains: SettingsDomain[]): SettingsDomain[] {
+  const changeable = (knobs: ScopedKnob[]) => knobs.filter((knob) => !knob.user_override_locked);
+  return domains.flatMap((domain) => {
+    const features = domain.features
+      .map((feature) => ({ ...feature, knobs: changeable(feature.knobs) }))
+      .filter((feature) => feature.knobs.length > 0);
+    const knobs = changeable(domain.knobs);
+    if (knobs.length === 0 && features.length === 0) return [];
+    return [{ ...domain, knobs, features }];
+  });
+}
+
 /** A destination never renders a control it cannot write at that rung. */
 export function filterKnobsForTarget(
   knobs: ScopedKnob[],
@@ -645,7 +662,11 @@ export function UniversalSettingsProvider({
   // In particular, user settings never expose an organization-only key that
   // could otherwise be retargeted by a stale draft.
   const destinationKnobs = filterKnobsForTarget(knobs, editingContext);
-  const domains = groupDomains(destinationKnobs, taxonomy, editingContext === "system");
+  const allDomains = groupDomains(destinationKnobs, taxonomy, editingContext === "system");
+  // Ruling (coordinator, 2026-09-27): the person's own settings list only the
+  // product areas holding at least one setting they can change; the admin
+  // (system) view keeps every area of the taxonomy.
+  const domains = editingContext === "user" ? domainsWithChangeableSettings(allDomains) : allDomains;
   const byKey = new Map(destinationKnobs.map((knob) => [knob.full_key, knob]));
 
   const viewerRequestKey = `${requestKey}|${generation}|viewer:${deviceId ?? ""}`;
