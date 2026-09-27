@@ -16,6 +16,7 @@
  *      Same state the Quickset ShapeChipsRow toggles — keep them consistent.
  */
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { readOf } from "@/components/read-state/ReadGate";
 import { useEffect, useState } from "react";
@@ -196,6 +197,7 @@ export function RunSkillPicker({
             {agentReadError ? (
               <p className="py-1 text-[11px] text-destructive">
                 Couldn&apos;t read this agent&apos;s skills: {agentReadError}
+                <ErrorAlchemyMenu error={agentReadError} />
               </p>
             ) : agentLoading ? (
               <p className="py-1 text-[11px] text-muted-foreground">

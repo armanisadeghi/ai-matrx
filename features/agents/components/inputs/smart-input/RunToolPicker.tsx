@@ -309,6 +309,7 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
             {agentReadError ? (
               <p className="py-1 text-[11px] text-destructive">
                 Couldn&apos;t read this agent&apos;s tools: {agentReadError}
+                <ErrorAlchemyMenu error={agentReadError} />
               </p>
             ) : agentLoading ? (
               <p className="py-1 text-[11px] text-muted-foreground">

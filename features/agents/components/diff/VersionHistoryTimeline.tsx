@@ -150,6 +150,7 @@ export function VersionHistoryTimeline({
             <span className="text-destructive">
               {" "}
               · {failedVersions.length} could not be read
+              <ErrorAlchemyMenu error={failureReason ?? "Some version snapshots could not be read"} />
             </span>
           )}
         </div>

@@ -155,7 +155,10 @@ export default function SandboxStoragePage() {
                 message="Loading sandbox storage totals…"
               />
             ) : persistence.error ? (
-              "Storage total unavailable — the volumes could not be read."
+              <>
+                Storage total unavailable — the volumes could not be read.
+                <ErrorAlchemyMenu error={persistence.error} />
+              </>
             ) : persistence.info?.partial ? (
               "Storage total unavailable until every tier reports a byte count."
             ) : (
