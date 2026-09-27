@@ -280,7 +280,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "view_mode",
     label: "View mode",
     description:
-      '"stage" (watchlist rail + one driven thread) or "grid" (the bento gallery of every thread). Always emitted — it is ephemeral view state, never persisted.',
+      '"stage" (watchlist rail + one driven thread), "grid" (the bento gallery of every thread) or "board" (every thread a tile on the spatial board). Always emitted — it is ephemeral view state, never persisted.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 6,

@@ -40,6 +40,7 @@ import {
 import { RoomHeader } from "./RoomHeader";
 import { StageView } from "./StageView";
 import { WarRoomGallery } from "./WarRoomGallery";
+import { RoomBoardView } from "../board/RoomBoardView";
 import { useActiveThreadRestore } from "./useActiveThreadRestore";
 import { useRoomUrlSync } from "./useRoomUrlSync";
 import {
@@ -198,6 +199,8 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
         ) : ready ? (
           mode === "stage" ? (
             <StageView sessionId={sessionId} />
+          ) : mode === "board" ? (
+            <RoomBoardView sessionId={sessionId} />
           ) : (
             <WarRoomGallery sessionId={sessionId} />
           )
@@ -255,7 +258,7 @@ function NotFoundState({
 
 /** Mode-shaped loading skeleton — matches the real layout it's about to become. */
 function RoomSkeleton({ mode }: { mode: RoomMode }) {
-  if (mode === "grid") {
+  if (mode !== "stage") {
     return (
       <div className="h-full grid grid-cols-2 @3xl:grid-cols-3 gap-3 p-3">
         {Array.from({ length: 6 }).map((_, i) => (

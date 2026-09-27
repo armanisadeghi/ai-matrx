@@ -114,7 +114,7 @@ function activeScopeIds(state: RootState): string[] {
 // ── Room surface (`matrx-user/war-room`) ───────────────────────────────────
 
 export interface WarRoomRoomViewState {
-  /** Stage vs Grid — the cockpit mode (roomViewContext). */
+  /** Stage vs Grid vs Board — the cockpit mode (roomViewContext). */
   mode: string;
   /** The instrument projector's forced tab, or null. */
   projectedTab: string | null;

@@ -2,6 +2,7 @@
 //
 // Supabase CRUD chokepoint for War Room. React → Supabase directly.
 
+import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
@@ -11,6 +12,7 @@ import { DEFAULT_SESSION_TITLE } from "./constants";
 import { listThreadIdsForRoom } from "./service/readApi";
 import * as assoc from "./service/associations";
 import { roomRef, threadRef } from "./types";
+import type { Json } from "@/types/database.types";
 import type {
   CreateSessionInput,
   CreateThreadInput,
@@ -165,6 +167,48 @@ export async function updateSession(
     throw error;
   }
   return data;
+}
+
+/**
+ * Replace ONE key of `workspace.war_rooms.metadata` (e.g. the Board view's
+ * `spatial_layout`) without clobbering the others — compare-and-swap on
+ * `version` through the shared `mergeJsonColumn`, so two tabs moving tiles in
+ * the same room can never erase each other's other keys. The update matches
+ * the row's own `organization_id` explicitly (every write names its org).
+ */
+export async function mergeSessionMetadataKey(
+  id: string,
+  organizationId: string,
+  key: string,
+  value: Json,
+): Promise<WarRoomSession | null> {
+  const result = await mergeJsonColumn<WarRoomSession>({
+    fetchCurrent: () =>
+      wsDb
+        .from(SESSIONS)
+        .select("*")
+        .eq("id", id)
+        .eq("organization_id", organizationId)
+        .is("deleted_at", null)
+        .maybeSingle(),
+    readColumn: (row) => row.metadata,
+    merge: (current) => ({ ...current, [key]: value }),
+    applyUpdate: ({ value: next, expectedVersion, nextVersion }) =>
+      wsDb
+        .from(SESSIONS)
+        // CONVERGE: C-7 — client-written metadata key (the Board view's layout); metadata is system-only — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-060
+        .update({ metadata: next as Json, version: nextVersion })
+        .eq("id", id)
+        .eq("organization_id", organizationId)
+        .eq("version", expectedVersion)
+        .select("*")
+        .maybeSingle(),
+  });
+  if (result.status === "saved") return result.row;
+  if (result.status === "not_found") return null;
+  throw result.status === "error"
+    ? result.error
+    : new Error("War Room metadata changed under us three times in a row");
 }
 
 export async function touchSessionOpened(id: string): Promise<void> {

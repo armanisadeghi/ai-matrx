@@ -15,7 +15,7 @@
 // Params (all optional, all omitted when at their default so a clean room has a
 // clean URL):
 //   • thread  — the staged tile id (only when the user has explicitly chosen one)
-//   • view    — "grid" (omitted for the default "stage")
+//   • view    — "grid" | "board" (omitted for the default "stage")
 //   • density — "compact" (omitted for the default "comfortable")
 //
 // Mechanics mirror the canonical NoteTabBar URL sync: a one-shot HYDRATE from
@@ -34,7 +34,7 @@ import { selectOrderedGalleryThreadIds } from "@/features/war-room/redux/selecto
 import { useRoomView, type Density, type RoomMode } from "./roomViewContext";
 
 function isMode(v: string | null): v is RoomMode {
-  return v === "stage" || v === "grid";
+  return v === "stage" || v === "grid" || v === "board";
 }
 function isDensity(v: string | null): v is Density {
   return v === "comfortable" || v === "compact";
@@ -100,7 +100,7 @@ export function useRoomUrlSync(sessionId: string) {
     commitUrlParams(
       {
         thread: chosenStageId || null,
-        view: mode === "grid" ? "grid" : null,
+        view: mode === "stage" ? null : mode,
         density: density === "compact" ? "compact" : null,
       },
       "replace",

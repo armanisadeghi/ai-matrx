@@ -7,8 +7,10 @@
 // Three power-user controls live here, each grafted from the bake-off winner +
 // its grafts:
 //
-//   1. mode — "stage" (thread list → one full-surface thread) vs "grid" (the
-//      bento gallery of every thread, all at once).
+//   1. mode — "stage" (thread list → one full-surface thread), "grid" (the
+//      bento gallery of every thread, all at once) or "board" (every thread a
+//      tile on the spatial board; the board's ARRANGEMENT is remembered on the
+//      room row — the mode itself stays ephemeral like the rest).
 //   2. projectedTab — the Bloomberg "set the whole wall to one instrument"
 //      move (dense): force every tile to the same tab (all-Tasks, all-Notes,
 //      all-Audio, all-Combined) without mutating each tile's saved active_tab.
@@ -28,7 +30,7 @@ import {
   GALLERY_TARGET_ASPECT,
 } from "@/features/war-room/constants";
 
-export type RoomMode = "stage" | "grid";
+export type RoomMode = "stage" | "grid" | "board";
 export type Density = "comfortable" | "compact";
 
 export interface RoomViewState {

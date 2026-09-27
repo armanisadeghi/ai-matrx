@@ -376,6 +376,31 @@ export const persistActiveThread =
     }
   };
 
+/**
+ * Persist one key of the room's `metadata` (the Board view's
+ * `spatial_layout`). Background persistence: a failure is reported loudly
+ * once, never thrown into the gesture that caused it.
+ */
+export const persistRoomMetadataKey =
+  (roomId: string, key: string, value: Json) =>
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<void> => {
+    const session = getState().warRoom.sessionsById[roomId];
+    if (!session) return;
+    try {
+      const updated = await service.mergeSessionMetadataKey(
+        roomId,
+        session.organization_id,
+        key,
+        value,
+      );
+      if (updated) dispatch(sessionUpserted(updated));
+    } catch (err) {
+      reportWarRoomError("persistRoomMetadataKey", err, {
+        toast: "Couldn't save where the board's threads sit",
+      });
+    }
+  };
+
 export const deleteSession =
   (id: string) => async (dispatch: AppDispatch, getState: () => RootState) => {
     const prior = getState().warRoom.sessionsById[id];
