@@ -48,6 +48,7 @@ import { createMatrxTransferActions } from "@ai-matrx/agents/content-transfer";
 import { createAlchemyDestinationPorts } from "./alchemy-destinations";
 import { ErrorActionsProvider } from "@ai-matrx/design-system";
 import { renderPackageErrorActions } from "@/components/errors/PackageErrorActions";
+import { SelectionToolbarRoot } from "@/components/selection-toolbar/SelectionToolbarRoot";
 
 const PREPARE_PATH = `/ai/mandates/${encodeURIComponent(
   MANDATE_KEYS.alchemy__prepare_content,
@@ -155,6 +156,9 @@ export function AlchemyHost({ children }: { children: ReactNode }) {
             same Alchemy Menu the frontend's own errors carry (RC-B12). */}
         <ErrorActionsProvider render={renderPackageErrorActions}>
           {children}
+          {/* THE one selection toolbar: every selectable text's passage actions
+              come from this registry (components/selection-toolbar). */}
+          <SelectionToolbarRoot />
         </ErrorActionsProvider>
       </AlchemyHostSession>
       </AlchemyActionsProvider>

@@ -11,6 +11,8 @@ import { Panel, type Layout } from "react-resizable-panels";
 import {
   BookOpen,
   ChevronDown,
+  CircleHelp,
+  GraduationCap,
   ChevronRight,
   LayoutPanelLeft,
   PanelRight,
@@ -23,7 +25,12 @@ import { Button } from "@/components/ui/button";
 import { Input, Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { AskTutorButton } from "@/features/education/tutor/components/AskTutorButton";
+import { AskTutorPanel } from "@/features/education/tutor/components/AskTutorButton";
+import type { TutorGroundingSeed } from "@/features/education/tutor/grounding";
+import type { Action, ClickTarget } from "@ai-matrx/alchemy/actions";
+import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
+import { selectionToolbarHostOf, shownInSelectionMode } from "@/components/selection-toolbar/selection-actions";
+import { annotationHostOf } from "@/features/rich-document/annotations/annotation-actions";
 import { useOpenFeedbackWindow } from "@/features/overlays/openers/feedbackDialog";
 import { useOpenFlashcardItemWindow } from "@/features/overlays/openers/flashcardItemWindow";
 import { useOpenNoteInWindow } from "@/features/notes/actions/useOpenNoteInWindow";
@@ -55,8 +62,6 @@ import {
 import {
   AnnotatedContent,
   AnnotationSidecarProvider,
-  useSidecar,
-  type CapturedSelection,
 } from "@/features/rich-document/annotations/AnnotationSidecar";
 import { AnnotationPanel } from "@/features/rich-document/annotations/AnnotationPanel";
 import type { AnnotationSource } from "@/features/rich-document/annotations/types";
@@ -165,33 +170,66 @@ function Inspector({ guide, tab, onTabChange, terms, loading, error, onRetry }: 
 }
 
 /** Passage actions only a study guide has (the tutor, a content report) — added to the sidecar's toolbar. */
-function StudyPassageActions({ guide, selection, close }: { guide: Note; selection: CapturedSelection; close: () => void }) {
+/**
+ * The study guide's own passage actions — "I don't get this", "Ask a question"
+ * (the AI tutor, grounded in the selected passage) and "Report an issue" — as
+ * registry actions of the ONE selection toolbar. The tutor panel lives here,
+ * not in the toolbar, so it stays open after the toolbar closes.
+ */
+function useStudyPassageActions(guide: Note): { actions: Action[]; tutor: React.ReactNode } {
   const openFeedback = useOpenFeedbackWindow();
-  const tutorSeed = { title: guide.label || "Study guide", material: `Study guide: ${guide.label}\n\nSelected passage:\n${selection.anchor.exact}` };
-  return <>
-    <AskTutorButton seed={tutorSeed} label="I don't get this" variant="ghost" className="w-full justify-start" />
-    <AskTutorButton seed={tutorSeed} label="Ask a question" variant="ghost" className="w-full justify-start" />
-    <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => {
-      close();
-      openFeedback({
-        title: "Report an issue with this study guide",
-        subject: {
-          kind: "text_passage",
-          sourceToken: "note",
-          sourceId: guide.id,
-          sourceTitle: guide.label || "Study guide",
-          quote: selection.anchor.exact,
-          anchor: { ...selection.anchor },
-          href: `/education/study-guides/${guide.id}`,
-        },
-      });
-    }}><Send className="mr-2 h-3.5 w-3.5" aria-hidden />Report an issue</Button>
-  </>;
+  const [tutorSeed, setTutorSeed] = useState<TutorGroundingSeed | null>(null);
+  const passage = (t: ClickTarget) => annotationHostOf(t)?.capture() ?? null;
+  const eligible = (id: string) => (t: ClickTarget) =>
+    shownInSelectionMode(id, t) && annotationHostOf(t)?.capture({ silent: true })
+      ? ({ status: "available" } as const)
+      : ({ status: "absent" } as const);
+  const openTutor = (t: ClickTarget) => {
+    const selection = passage(t);
+    if (!selection) return;
+    selectionToolbarHostOf(t)?.ui.close();
+    setTutorSeed({ title: guide.label || "Study guide", material: `Study guide: ${guide.label}\n\nSelected passage:\n${selection.anchor.exact}` });
+  };
+  const actions: Action[] = [
+    { id: "selection:tutor-explain", label: "I don't get this", icon: registerAlchemyIcon(CircleHelp), category: "ask", order: 0, placement: "primary", preserveSelection: true, eligible: eligible("selection:tutor-explain"), run: openTutor },
+    { id: "selection:tutor-ask", label: "Ask a question", icon: registerAlchemyIcon(GraduationCap), category: "ask", order: 1, placement: "primary", preserveSelection: true, eligible: eligible("selection:tutor-ask"), run: openTutor },
+    {
+      id: "selection:report",
+      label: "Report an issue",
+      icon: registerAlchemyIcon(Send),
+      category: "feedback",
+      order: 0,
+      placement: "primary",
+      preserveSelection: true,
+      eligible: eligible("selection:report"),
+      run: (t) => {
+        const selection = passage(t);
+        if (!selection) return;
+        selectionToolbarHostOf(t)?.ui.close({ clearSelection: true });
+        openFeedback({
+          title: "Report an issue with this study guide",
+          subject: {
+            kind: "text_passage",
+            sourceToken: "note",
+            sourceId: guide.id,
+            sourceTitle: guide.label || "Study guide",
+            quote: selection.anchor.exact,
+            anchor: { ...selection.anchor },
+            href: `/education/study-guides/${guide.id}`,
+          },
+        });
+      },
+    },
+  ];
+  const tutor = tutorSeed ? (
+    <AskTutorPanel seed={tutorSeed} open onOpenChange={(open) => { if (!open) setTutorSeed(null); }} />
+  ) : null;
+  return { actions, tutor };
 }
 
 function ReaderContent({ guide, onRetry, onEdit, getScope, jumpRequest }: { guide: Note; onRetry: () => void; onEdit: () => void; getScope: () => SurfaceScopePayload; jumpRequest: { index: number; nonce: number } | null }) {
   const readerRef = useRef<HTMLDivElement>(null);
-  const { setSelection } = useSidecar();
+  const passage = useStudyPassageActions(guide);
   useEffect(() => {
     if (jumpRequest === null) return;
     const headings = readerRef.current?.querySelectorAll("h1,h2,h3,h4,h5,h6");
@@ -199,16 +237,17 @@ function ReaderContent({ guide, onRetry, onEdit, getScope, jumpRequest }: { guid
   }, [jumpRequest]);
   return <main className="relative flex h-full min-h-0 flex-col bg-background">
     <Button size="icon" variant="outline" className="absolute right-3 top-2 z-20 h-8 w-8 bg-background" aria-label="Edit study guide" title="Edit study guide" onClick={onEdit}><Pencil className="h-4 w-4" aria-hidden /></Button>
-    <div className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto" onScroll={() => setSelection(null)}>
+    <div className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto">
       <div ref={readerRef} className="w-full px-3 py-3">
         {!/^\s*#\s/.test(guide.content ?? "") && <div className="mb-7 border-b border-border pb-5"><p className="text-xs font-medium uppercase tracking-wide text-primary">Study guide</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{guide.label || "Untitled guide"}</h1></div>}
         <NonEditableContextMenu sourceFeature="notes" surfaceName="matrx-user/education-study-guides" getApplicationScope={getScope} contentSource={noteIdentityContentSource(guide.id)} entity={{ type: "note", id: guide.id, title: guide.label || "Untitled guide" }} contextData={{ content: guide.content ?? "", guideId: guide.id }} extraSections={[{ id: "study-guide-selection", label: "Study guide", primary: true, items: [{ kind: "item", id: "retry-study-guide", label: "Refresh study guide", icon: BookOpen, onSelect: onRetry }] }]}>
-          <AnnotatedContent className="study-guide-reader-content" extraActions={(selection, close) => <StudyPassageActions guide={guide} selection={selection} close={close} />}>
+          <AnnotatedContent className="study-guide-reader-content" passageActions={passage.actions}>
             <RichDocument imagePolicy="ai" content={guide.content ?? ""} source={noteIdentityContentSource(guide.id)} actionsVariant="icon-only" actionsPosition="top-right" actionsBehavior="hover-only" />
           </AnnotatedContent>
         </NonEditableContextMenu>
       </div>
     </div>
+    {passage.tutor}
   </main>;
 }
 

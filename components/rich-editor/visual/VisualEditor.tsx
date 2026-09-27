@@ -30,10 +30,8 @@ import { createVisualExtensions, type RichShellActions } from "./visual-extensio
 import { findHighlightKey } from "./decorations";
 import { BlockHandle } from "./BlockHandle";
 import { TableToolbar } from "./TableToolbar";
-import { useAlchemyActions } from "@ai-matrx/alchemy/react/host";
 import { useSelectionZone } from "@/components/selection-toolbar/selection-zones";
-import { ensureProvider } from "@/components/selection-toolbar/selection-actions";
-import { RICH_EDITOR_HOST_KEY, richEditorFormatProvider, type RichEditorSelectionHost } from "./format-actions";
+import { RICH_EDITOR_HOST_KEY, type RichEditorSelectionHost } from "./format-actions";
 import { useRichEditorContext } from "../RichEditorContext";
 
 const HEADLESS_SCHEMA = getSchema(createRichEditorExtensions());
@@ -290,8 +288,6 @@ export function VisualEditor({
   // Formatting lives in the ONE selection toolbar (components/selection-toolbar):
   // this editor is a selection zone carrying its half of the click target, and
   // the formatting verbs are registry actions (./format-actions).
-  const { registry } = useAlchemyActions();
-  ensureProvider(registry, richEditorFormatProvider);
   const [zoneElement, setZoneElement] = useState<HTMLDivElement | null>(null);
   const editorHalf: RichEditorSelectionHost | null = editor
     ? { kind: "rich-editor", editor, onEditLink: shell.editLink, offerVariables: context.variables !== null }

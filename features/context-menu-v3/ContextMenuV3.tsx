@@ -21,16 +21,16 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Slot } from "@radix-ui/react-slot";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useSelectionZone } from "@/components/selection-toolbar/selection-zones";
 import {
-  FloatingSelectionIcon,
-  shouldRenderFloatingIcon,
-} from "./components/FloatingSelectionIcon";
+  CONTEXT_MENU_SELECTION_HOST_KEY,
+  type ContextMenuSelectionHost,
+} from "./selection-provider";
 import {
   captureTextareaSelection,
   getEditableSelectionOffsets,
   captureDomSelection,
   getSelectionRect,
-  mouseFallbackRect,
   restoreTextareaSelection,
   restoreDomSelection,
   extractElementText,
@@ -232,8 +232,6 @@ export function ContextMenuV3({
   const [fallbackContent, setFallbackContent] = useState<string>("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
-  const [showFloatingIcon, setShowFloatingIcon] = useState(false);
   const isMobile = useIsMobile();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -250,8 +248,12 @@ export function ContextMenuV3({
   // back to the display:contents wrapper only when mobile cannot slot onto a
   // single child. Selection tracking is scoped to it — see handleSelection.
   const selectionOwnerRef = useRef<HTMLElement | null>(null);
+  // The same element, as state: it is this menu's zone of the ONE selection
+  // toolbar (components/selection-toolbar), which replaced the floating icon.
+  const [selectionOwner, setSelectionOwnerState] = useState<HTMLElement | null>(null);
   const setSelectionOwner = useCallback((node: HTMLElement | null) => {
     selectionOwnerRef.current = node;
+    setSelectionOwnerState(node);
   }, []);
   // Mobile long-press → bottom sheet (no right-click on touch).
   const longPressTimer = useRef<number | null>(null);
@@ -333,7 +335,7 @@ export function ContextMenuV3({
   // editor + EVERY sidebar row + folder headers) serialized the full
   // selected text via `selection.toString()` (O(document) on a triple-click
   // of a large paste), stored it in its own state, and rendered its own
-  // FloatingSelectionIcon at the same coordinates — dozens of stacked
+  // floating selection icon (since replaced by the ONE selection toolbar) at the same coordinates — dozens of stacked
   // translucent buttons compounding into a black-shadowed blob, and N×
   // O(document) main-thread work per selection event: a browser-freeze
   // amplifier (2026-07 /notes freeze class).
@@ -357,7 +359,6 @@ export function ContextMenuV3({
         // (setState with an unchanged value bails out, so non-owning
         // instances do zero re-renders after the first clear.)
         setSelectedText("");
-        setSelectionRect(null);
         return;
       }
 
@@ -368,16 +369,6 @@ export function ContextMenuV3({
       const text =
         !selection || selection.isCollapsed ? "" : selection.toString().trim();
       setSelectedText(text);
-      if (text && selection && selection.rangeCount > 0) {
-        const rect = getSelectionRect();
-        if (rect) setSelectionRect(rect);
-        else if (lastMousePos.current)
-          setSelectionRect(
-            mouseFallbackRect(lastMousePos.current.x, lastMousePos.current.y),
-          );
-      } else {
-        setSelectionRect(null);
-      }
     };
     document.addEventListener("selectionchange", handleSelection);
     return () =>
@@ -391,28 +382,6 @@ export function ContextMenuV3({
     document.addEventListener("mousemove", handleMouseMove, { passive: true });
     return () => document.removeEventListener("mousemove", handleMouseMove);
   }, []);
-
-  useEffect(() => {
-    const shouldShow =
-      enableFloatingIcon &&
-      !suppressed &&
-      selectedText.length > 0 &&
-      selectionRect !== null &&
-      !menuOpen &&
-      !dropdownOpen;
-    const timer = setTimeout(() => setShowFloatingIcon(shouldShow), 200);
-    return () => clearTimeout(timer);
-  }, [enableFloatingIcon, selectedText, selectionRect, menuOpen, dropdownOpen]);
-
-  useEffect(() => {
-    if (!showFloatingIcon) return undefined;
-    const handleScroll = () => {
-      setShowFloatingIcon(false);
-      setSelectionRect(null);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [showFloatingIcon]);
 
   // ── Capture handlers ─────────────────────────────────────────────────────
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -433,26 +402,10 @@ export function ContextMenuV3({
     ) {
       const captured = captureTextareaSelection(target);
       capturedSelection.current = captured;
-      if (captured.text) {
-        const rect = getSelectionRect();
-        if (rect) setSelectionRect(rect);
-        else if (lastMousePos.current)
-          setSelectionRect(
-            mouseFallbackRect(lastMousePos.current.x, lastMousePos.current.y),
-          );
-      }
       setSelectedText(captured.text);
     } else {
       const captured = captureDomSelection();
       capturedSelection.current = captured;
-      if (captured.text && captured.range) {
-        try {
-          const rect = captured.range.getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0) setSelectionRect(rect);
-        } catch {
-          // best-effort
-        }
-      }
       setSelectedText(captured.text);
     }
   };
@@ -577,22 +530,15 @@ export function ContextMenuV3({
     if (!open) {
       selectionLocked.current = false;
       capturedSelection.current = null;
-      setTimeout(() => {
-        setShowFloatingIcon(false);
-        setSelectionRect(null);
-      }, 100);
     }
   };
 
-  const handleOpenFloating = (
-    e: React.MouseEvent | React.TouchEvent | React.KeyboardEvent,
-  ) => {
+  // Opened from the ONE selection toolbar's "AI and more" (components/selection-
+  // toolbar; it replaced the floating selection icon): the same menu over the
+  // selected text — a panel under the selection on desktop, the sheet on a phone.
+  const openFromSelection = () => {
     if (suppressed) return;
-    e.preventDefault();
-    e.stopPropagation();
     selectionLocked.current = true;
-    // For the floating icon there is always a selection; capture a DOM-text
-    // fallback from its container too, for symmetry with the right-click path.
     const sel = window.getSelection();
     const container =
       sel && sel.rangeCount > 0
@@ -600,11 +546,37 @@ export function ContextMenuV3({
         : null;
     resolvePerTargetContext(container);
     setFallbackContent(extractElementText(container));
-    const anchor = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setMenuPoint({ x: anchor.left, y: anchor.bottom + 4 });
+    if (isMobile) {
+      setSelectedText(sel?.toString().trim() || selectedText);
+      setSelectionRange({
+        type: "non-editable",
+        element: null,
+        start: 0,
+        end: 0,
+        range: sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null,
+        containerElement: container,
+      });
+      setOpenSeq((n) => n + 1);
+      setSheetOpen(true);
+      return;
+    }
+    const rect = getSelectionRect();
+    const at = rect
+      ? { x: rect.left, y: rect.bottom + 4 }
+      : (lastMousePos.current ?? { x: 16, y: 16 });
+    setMenuPoint(at);
     setOpenSeq((n) => n + 1);
     setDropdownOpen(true);
   };
+
+  const selectionHost: ContextMenuSelectionHost = { kind: "context-menu-selection", open: openFromSelection };
+  useSelectionZone(selectionOwner, {
+    editable: Boolean(isEditable),
+    // `enableFloatingIcon={false}` (a chat answer with its own action bar) and a
+    // suppressed menu (streaming) keep the selection toolbar away from this text.
+    suppress: !enableFloatingIcon || suppressed,
+    host: { [CONTEXT_MENU_SELECTION_HOST_KEY]: selectionHost },
+  });
 
   // ── Mobile triggers (no right-click on touch) ─────────────────────────────
   const clearLongPress = () => {
@@ -653,42 +625,12 @@ export function ContextMenuV3({
   };
   const handleTouchEnd = () => clearLongPress();
 
-  // Floating selection icon → bottom sheet (the selection-driven mobile path).
-  const handleOpenFloatingMobile = (
-    e: React.MouseEvent | React.TouchEvent | React.KeyboardEvent,
-  ) => {
-    if (suppressed) return;
-    e.preventDefault();
-    e.stopPropagation();
-    selectionLocked.current = true;
-    const sel = window.getSelection();
-    const container =
-      sel && sel.rangeCount > 0
-        ? (sel.getRangeAt(0).commonAncestorContainer.parentElement ?? null)
-        : null;
-    setSelectedText(sel?.toString().trim() || selectedText);
-    setSelectionRange({
-      type: "non-editable",
-      element: null,
-      start: 0,
-      end: 0,
-      range: sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null,
-      containerElement: container,
-    });
-    resolvePerTargetContext(container);
-    setFallbackContent(extractElementText(container));
-    setOpenSeq((n) => n + 1);
-    setSheetOpen(true);
-  };
-
   const handleSheetOpenChange = (open: boolean) => {
     onMenuOpenChange?.(open);
     setSheetOpen(open);
     if (!open) {
       selectionLocked.current = false;
       capturedSelection.current = null;
-      setShowFloatingIcon(false);
-      setSelectionRect(null);
     }
   };
 
@@ -855,8 +797,6 @@ export function ContextMenuV3({
       : {}),
   };
 
-  const floatingOpen = isMobile ? sheetOpen : dropdownOpen;
-
   return (
     <MenuPresenceProvider value={true}>
       <RegistryMenuSourceProvider value={contentSource ?? null}>
@@ -870,16 +810,6 @@ export function ContextMenuV3({
           </div>
         )}
 
-        {enableFloatingIcon &&
-          shouldRenderFloatingIcon(selectionRect, showFloatingIcon, floatingOpen) && (
-            <FloatingSelectionIcon
-              selectionRect={selectionRect}
-              visible={showFloatingIcon}
-              dropdownOpen={floatingOpen}
-              onOpen={isMobile ? handleOpenFloatingMobile : handleOpenFloating}
-              onDismiss={() => setShowFloatingIcon(false)}
-            />
-          )}
 
         {mode ? (
           <AlchemyMenuContent

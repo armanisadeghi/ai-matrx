@@ -55,35 +55,53 @@ export function AskTutorButton({
         <GraduationCap className="h-3.5 w-3.5 shrink-0" aria-hidden />
         {!iconOnly && label}
       </Button>
-
-      <MatrxDynamicPanelHost
-        open={open}
-        onOpenChange={setOpen}
-        title={
-          <span className="flex items-center gap-2 text-base">
-            <GraduationCap className="h-4 w-4 text-primary" aria-hidden />
-            AI Tutor
-          </span>
-        }
-        headerActions={
-          <a
-            href="/education/tutor"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          >
-            Open full tutor
-            <ExternalLink className="h-3 w-3" aria-hidden />
-          </a>
-        }
-        position="right"
-        defaultSize={34}
-        minSize={24}
-        initialFocus
-        contentClassName="flex min-h-0 flex-1 flex-col px-3 pb-3"
-      >
-        {open && <EducationTutorClient embedded seed={seed} hideLanding />}
-      </MatrxDynamicPanelHost>
+      <AskTutorPanel seed={seed} open={open} onOpenChange={setOpen} />
     </>
+  );
+}
+
+/**
+ * The tutor side panel on its own, for a surface that opens it from an action
+ * rather than a button (the study guide's selection toolbar: the toolbar
+ * closes, the panel stays).
+ */
+export function AskTutorPanel({
+  seed,
+  open,
+  onOpenChange,
+}: {
+  seed: TutorGroundingSeed;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <MatrxDynamicPanelHost
+      open={open}
+      onOpenChange={onOpenChange}
+      title={
+        <span className="flex items-center gap-2 text-base">
+          <GraduationCap className="h-4 w-4 text-primary" aria-hidden />
+          AI Tutor
+        </span>
+      }
+      headerActions={
+        <a
+          href="/education/tutor"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          Open full tutor
+          <ExternalLink className="h-3 w-3" aria-hidden />
+        </a>
+      }
+      position="right"
+      defaultSize={34}
+      minSize={24}
+      initialFocus
+      contentClassName="flex min-h-0 flex-1 flex-col px-3 pb-3"
+    >
+      {open && <EducationTutorClient embedded seed={seed} hideLanding />}
+    </MatrxDynamicPanelHost>
   );
 }

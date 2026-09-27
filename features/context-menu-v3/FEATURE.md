@@ -30,7 +30,7 @@
 
 ## Mobile — the package bottom sheet
 
-On a mobile viewport (`useIsMobile()`) the gesture (long-press 480 ms, cancelled on drag; a right-click; the floating selection icon; a bar's ⋯) opens the Alchemy package's **bottom sheet** — the SAME model as desktop (`sheet(model)`), drill-down by path, so mobile can never drift from desktop (the old mobile renderer built its own list; ALC-15 ruling 6). Its verb strip is icon-only; a greyed verb explains itself on tap (touch has no tooltip).
+On a mobile viewport (`useIsMobile()`) the gesture (long-press 480 ms, cancelled on drag; a right-click; the selection toolbar's "AI and more"; a bar's ⋯) opens the Alchemy package's **bottom sheet** — the SAME model as desktop (`sheet(model)`), drill-down by path, so mobile can never drift from desktop (the old mobile renderer built its own list; ALC-15 ruling 6). Its verb strip is icon-only; a greyed verb explains itself on tap (touch has no tooltip).
 
 **The shell slots one child and wraps many.** Desktop and mobile both merge onto a single non-Fragment child via `Slot`, composing its handlers and ref. A multi-child/Fragment payload first gets one `display:contents` `<div>` so Radix never receives an invalid multi-child slot. **A wrapper element is not always legal:** `display:contents` costs no layout box but is still a `<div>` in the DOM, and when the child is a `<tr>` (the canonical list shell wraps every row) that div sits between `<tbody>` and `<tr>` — which no element may do. The fallback is safe by construction: a Fragment or multi-child payload can never be a lone `<tr>`. Nested mobile triggers stop propagation after the native-text-menu guard, so the innermost row owns the long-press/contextmenu gesture instead of opening its surrounding list menu too.
 
@@ -337,7 +337,7 @@ agent to fire on render. The one-line-per-renderer hardcode was the sole authori
 
 ## v1 features restored
 
-The hard-won pieces are carried over (and improved): the floating selection icon (`components/FloatingSelectionIcon.tsx`, enterprise `TextSelect` icon), the selection preview bar (generalized — shows the resolved **content** when there's no manual selection, so the user always sees what the menu will act on), and the macOS-safe selection capture/restore (`utils/selection-tracking.ts`).
+The hard-won pieces are carried over (and improved): the selection preview bar (generalized — shows the resolved **content** when there's no manual selection, so the user always sees what the menu will act on), and the macOS-safe selection capture/restore (`utils/selection-tracking.ts`).
 
 **Undo/Redo** light up on any editable surface even with no history wiring: when the surface supplies no `onUndo`/`onRedo`, the menu falls back to the field's native browser undo stack (`document.execCommand` — the only programmatic trigger for a textarea's built-in history). A surface that owns a richer history still passes `onUndo`/`onRedo`/`canUndo`/`canRedo` to override.
 
@@ -374,6 +374,8 @@ v3 is the only UNIVERSAL menu. Full-repo census 2026-08-25 (`onContextMenu=` swe
 ---
 
 ## Change Log
+
+- `2026-09-26` — **The floating selection icon is gone: a selection opens the ONE selection toolbar.** `components/FloatingSelectionIcon.tsx` (and its `.context-menu-floating-icon` CSS) are deleted. Every menu shell registers its wrapped element as a zone of `components/selection-toolbar` and contributes one registry action, "AI and more" (`selection-provider.ts`), which opens this same menu over the selection (panel on desktop, sheet on a phone). `enableFloatingIcon={false}` now means "no selection toolbar over this text" (the zone suppresses), and a `suppressed` menu (streaming) suppresses it too. In the rich editor the icon used to sit on top of the formatting bubble; there is now one bar. Doc: `components/selection-toolbar/FEATURE.md`.
 
 - `2026-09-26` — **The region trigger attributes are ONE exported constant.** `region-trigger-attrs.ts` exports `CONTEXT_REGION_TRIGGER_ATTRS` (`data-alchemy-trigger="context"`), which `ContextMenuV3` spreads onto every wrapped region and the real-browser gate `features/shell/layout-gate/shipped-css-region-triggers.spec.ts` renders its fixtures with. Any stylesheet the app ships that styles those attributes (design-system 0.44.1's `[data-alchemy-trigger] { width: 2rem }` collapsed the /chat composer and every sidebar chat name for ~90 min) goes red there. Change the attrs here, never inline.
 

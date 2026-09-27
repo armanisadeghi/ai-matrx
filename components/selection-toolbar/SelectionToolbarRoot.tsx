@@ -22,10 +22,9 @@
 // It floats (portal, fixed): it never adds rows or pushes content.
 
 import * as React from "react";
-import { createPortal } from "react-dom";
+import dynamic from "next/dynamic";
 import { createClickTarget, type ClickTarget } from "@ai-matrx/alchemy/actions";
 import { useAlchemyActions } from "@ai-matrx/alchemy/react/host";
-import { SelectionToolbar } from "@ai-matrx/alchemy/react/selection";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/slices/userSlice";
@@ -41,17 +40,18 @@ import {
 import {
   HIGHLIGHT_WHILE_EDITING_DEFAULT,
   HIGHLIGHT_WHILE_EDITING_KNOB,
+  declaredSelectionProviders,
   ensureProvider,
-  passageActionsProvider,
+  subscribeDeclaredSelectionProviders,
   type SelectionToolbarHost,
 } from "./selection-actions";
 
-interface Rect {
-  left: number;
-  top: number;
-  bottom: number;
-  width: number;
-}
+import type { Rect } from "./SelectionToolbarFrame";
+
+// The frame (the package's selection layout, the portal, positioning) loads
+// the first time a toolbar opens — this shell is on every route; the frame is
+// not (code-splitting skill: one boundary, gated on `open`).
+const SelectionToolbarFrame = dynamic(() => import("./SelectionToolbarFrame"), { ssr: false, loading: () => null });
 
 interface OpenState {
   /** Bumped per selection: a new target, a fresh resolve. */
@@ -62,13 +62,8 @@ interface OpenState {
   /** Live range for positioning (null for a textarea selection). */
   range: Range | null;
   rect: Rect;
-  /** Where focus was when the toolbar opened (restored on Esc). */
-  returnFocus: HTMLElement | null;
   focusToolbar: boolean;
 }
-
-const GAP = 8;
-const EDGE = 8;
 
 function rectOf(r: DOMRect | Rect): Rect {
   return { left: r.left, top: r.top, bottom: r.bottom, width: r.width };
@@ -96,7 +91,12 @@ function insideToolbar(node: Node | null): boolean {
 
 export function SelectionToolbarRoot(): React.ReactElement | null {
   const { registry } = useAlchemyActions();
-  ensureProvider(registry, passageActionsProvider);
+  // Every declared selection provider joins the one registry (and any declared later).
+  React.useEffect(() => {
+    const sync = () => declaredSelectionProviders().forEach((p) => ensureProvider(registry, p));
+    sync();
+    return subscribeDeclaredSelectionProviders(sync);
+  }, [registry]);
   const isMobile = useIsMobile();
   const zonesVersion = useSelectionZonesVersion();
   const userId = useAppSelector(selectUserId);
@@ -107,21 +107,23 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
 
   const [open, setOpen] = React.useState<OpenState | null>(null);
   const [panel, setPanel] = React.useState<string | null>(null);
+  const [panelPayload, setPanelPayload] = React.useState<unknown>(null);
+  // Latest state for the document listeners (written after commit, read in events only).
   const openRef = React.useRef(open);
-  openRef.current = open;
   const panelRef = React.useRef(panel);
-  panelRef.current = panel;
-  const frameRef = React.useRef<HTMLDivElement>(null);
+  React.useLayoutEffect(() => {
+    openRef.current = open;
+    panelRef.current = panel;
+  });
   const pointerDown = React.useRef(false);
+  const returnFocus = React.useRef<HTMLElement | null>(null);
   const lastPointer = React.useRef<{ x: number; y: number } | null>(null);
   const seq = React.useRef(0);
 
-  const close = React.useCallback((options?: { clearSelection?: boolean; restoreFocus?: boolean }) => {
-    const current = openRef.current;
+  const close = React.useCallback((options?: { clearSelection?: boolean }) => {
     setOpen(null);
     setPanel(null);
     if (options?.clearSelection) window.getSelection()?.removeAllRanges();
-    if (options?.restoreFocus && current?.returnFocus?.isConnected) current.returnFocus.focus({ preventScroll: true });
   }, []);
 
   /** Read the current selection into an open state (or close). */
@@ -172,6 +174,8 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
       const sameSelection = previous && previous.text === text && previous.zones.length === zones.length &&
         previous.zones.every((z, i) => z.id === zones[i].id);
       seq.current += sameSelection ? 0 : 1;
+      // Where focus was when the toolbar opened (restored on Esc).
+      if (!previous) returnFocus.current = active instanceof HTMLElement && !insideToolbar(active) ? active : null;
       const initial = zones.map((z) => z.contribution.initialPanel?.() ?? null).find(Boolean) ?? null;
       setOpen({
         seq: seq.current,
@@ -180,10 +184,12 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
         text,
         range,
         rect,
-        returnFocus: previous?.returnFocus ?? (active instanceof HTMLElement && !insideToolbar(active) ? active : null),
         focusToolbar: Boolean(opts.focusToolbar),
       });
-      if (!sameSelection) setPanel(initial);
+      if (!sameSelection) {
+        setPanelPayload(initial?.payload ?? null);
+        setPanel(initial?.panel ?? null);
+      }
     },
     [close],
   );
@@ -236,7 +242,11 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
       if (e.key === "Escape" && openRef.current) {
         e.preventDefault();
         e.stopPropagation();
-        close({ restoreFocus: true });
+        close();
+        // Focus goes back to where it was when the toolbar opened.
+        const back = returnFocus.current;
+        returnFocus.current = null;
+        if (back?.isConnected) back.focus({ preventScroll: true });
       }
     };
     document.addEventListener("selectionchange", onSelectionChange);
@@ -258,14 +268,16 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
     if (current && current.zones.some((z) => !z.element.isConnected)) close();
   }, [zonesVersion, close]);
 
-  const ui: SelectionToolbarUi = React.useMemo(
-    () => ({
-      openPanel: (p: string) => setPanel(p),
-      closePanel: () => setPanel(null),
-      close: (options) => close(options),
-    }),
-    [close],
-  );
+  // What actions and panels drive — state setters and the DOM only, so handing
+  // it to a render-time panel never touches this component's refs.
+  const [ui] = React.useState<SelectionToolbarUi>(() => ({
+    openPanel: (p: string, payload?: unknown) => {
+      setPanelPayload(payload ?? null);
+      setPanel(p);
+    },
+    closePanel: () => setPanel(null),
+    close,
+  }));
 
   // ONE target per selection (a new object only when the selection changes),
   // so the engine resolves once per selection, not per render.
@@ -288,114 +300,25 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
       host: { ...halves, selectionToolbar: toolbar },
     });
     // `open.seq` is the selection identity; a knob or mode flip re-targets too.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open?.seq, open?.mode, highlightWhileEditing, ui, orgId, userId]);
 
-  // Position (desktop): above the selection, flipped below, clamped; follows scroll.
-  const [position, setPosition] = React.useState<{ left: number; top: number; hidden: boolean } | null>(null);
-  const place = React.useCallback(() => {
-    const current = openRef.current;
-    const frame = frameRef.current;
-    if (!current || !frame) return;
-    let rect = current.rect;
-    if (current.range) {
-      const live = current.range.getBoundingClientRect();
-      if (live.width || live.height) rect = rectOf(live);
-    }
-    const w = frame.offsetWidth;
-    const h = frame.offsetHeight;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const hidden = rect.bottom < 0 || rect.top > vh;
-    let top = rect.top - h - GAP;
-    if (top < EDGE) top = rect.bottom + GAP;
-    top = Math.max(EDGE, Math.min(vh - h - EDGE, top));
-    const center = rect.left + rect.width / 2;
-    const left = Math.max(EDGE, Math.min(vw - w - EDGE, center - w / 2));
-    setPosition((p) => (p && p.left === left && p.top === top && p.hidden === hidden ? p : { left, top, hidden }));
-  }, []);
-
-  React.useLayoutEffect(() => {
-    if (!open || isMobile) return;
-    place();
-    const frame = frameRef.current;
-    const ro = frame && typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => place()) : null;
-    if (frame) ro?.observe(frame);
-    window.addEventListener("scroll", place, true);
-    window.addEventListener("resize", place);
-    return () => {
-      ro?.disconnect();
-      window.removeEventListener("scroll", place, true);
-      window.removeEventListener("resize", place);
-    };
-  }, [open, panel, isMobile, place]);
-
-  // Keyboard-opened: focus the first control.
-  React.useEffect(() => {
-    if (!open?.focusToolbar) return;
-    const id = requestAnimationFrame(() => {
-      frameRef.current?.querySelector<HTMLElement>("button:not([disabled]), [tabindex='0']")?.focus();
-    });
-    return () => cancelAnimationFrame(id);
-  }, [open?.seq, open?.focusToolbar]);
-
-  if (!open || !target || typeof document === "undefined") return null;
+  if (!open || !target) return null;
 
   const panelNode = panel
-    ? open.zones.map((z) => z.contribution.renderPanel?.(panel, ui) ?? null).find((n) => n !== null) ?? null
+    ? open.zones.map((z) => z.contribution.renderPanel?.(panel, ui, panelPayload) ?? null).find((n) => n !== null) ?? null
     : null;
 
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (panelNode) return; // a panel (composer) owns its keys
-    const keys = ["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Home", "End"];
-    if (!keys.includes(e.key)) return;
-    const list = [...(frameRef.current?.querySelectorAll<HTMLElement>("button:not([disabled])") ?? [])];
-    if (list.length === 0) return;
-    e.preventDefault();
-    const at = list.indexOf(document.activeElement as HTMLElement);
-    const next =
-      e.key === "Home" ? 0
-      : e.key === "End" ? list.length - 1
-      : e.key === "ArrowRight" || e.key === "ArrowDown" ? (at + 1) % list.length
-      : (at - 1 + list.length) % list.length;
-    list[next].focus();
-  };
-
-  const docked = isMobile;
-  return createPortal(
-    <div
-      ref={frameRef}
-      data-selection-toolbar={docked ? "docked" : "floating"}
-      data-selection-mode={open.mode}
-      onKeyDown={onKeyDown}
-      className={
-        docked
-          ? "fixed inset-x-2 z-[9999] flex justify-center"
-          : "fixed z-[9999]"
-      }
-      style={
-        docked
-          ? { bottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)" }
-          : {
-              left: position?.left ?? -10_000,
-              top: position?.top ?? -10_000,
-              visibility: position && !position.hidden ? "visible" : "hidden",
-            }
-      }
-    >
-      {panelNode ? (
-        <div data-selection-panel="" className="w-[min(340px,calc(100vw-16px))] rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg">
-          {panelNode}
-        </div>
-      ) : (
-        <SelectionToolbar
-          key={open.seq}
-          target={target}
-          content={open.text}
-          className={docked ? "max-w-full overflow-x-auto" : undefined}
-        />
-      )}
-    </div>,
-    document.body,
+  return (
+    <SelectionToolbarFrame
+      seq={open.seq}
+      mode={open.mode}
+      target={target}
+      text={open.text}
+      range={open.range}
+      rect={open.rect}
+      docked={isMobile}
+      focusToolbar={open.focusToolbar}
+      panel={panelNode}
+    />
   );
 }

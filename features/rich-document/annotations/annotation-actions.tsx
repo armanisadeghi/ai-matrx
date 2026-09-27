@@ -13,6 +13,7 @@ import { Link2, MessageSquarePlus, PencilLine } from "lucide-react";
 import type { Action, ActionProvider, ClickTarget } from "@ai-matrx/alchemy/actions";
 import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
 import {
+  declareSelectionProvider,
   hostHalf,
   selectionToolbarHostOf,
   shownInSelectionMode,
@@ -39,8 +40,6 @@ export interface AnnotationSelectionHost {
    * pinned (a formula, a label) is said once through the app's toast.
    */
   capture(options?: { silent?: boolean }): CapturedSelection | null;
-  /** Hand a captured selection to a panel (comment / suggest / link). */
-  stage(selection: CapturedSelection): void;
 }
 
 export function annotationHostOf(target: ClickTarget): AnnotationSelectionHost | null {
@@ -126,8 +125,7 @@ function panelAction(
       const host = annotationHostOf(t);
       const selection = host?.capture();
       if (!host || !selection) return;
-      host.stage(selection);
-      selectionToolbarHostOf(t)?.ui.openPanel(panel);
+      selectionToolbarHostOf(t)?.ui.openPanel(panel, selection);
     },
   };
 }
@@ -139,10 +137,12 @@ const ACTIONS: Action[] = [
   panelAction("selection:link-record", "Link a record…", Link2, 12, ANNOTATION_PANELS.link, (h) => h.api.state.capabilities.links),
 ];
 
-/** The annotation provider (registered once per registry by AnnotatedContent). */
+/** The annotation provider (declared on load; the toolbar root registers it). */
 export const annotationSelectionProvider: ActionProvider = {
   id: "annotation-selection",
   tier: "T0",
   declaredIds: () => ACTIONS.map((a) => a.id),
   actions: (target) => (annotationHostOf(target) ? ACTIONS : []),
 };
+
+declareSelectionProvider(annotationSelectionProvider);

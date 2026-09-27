@@ -118,16 +118,51 @@ export const passageActionsProvider: ActionProvider = {
   },
 };
 
-const REGISTERED = new WeakMap<object, Set<string>>();
+// ── Declaring a selection provider ──────────────────────────────────────────
 
-/** Register a provider into the app's one registry, once per registry. */
+/**
+ * A selection provider DECLARES itself when its module loads (the rich
+ * editor's formatting, the annotation actions, the context menu's entry); the
+ * toolbar root registers every declared provider into the app's one Alchemy
+ * registry. Hosts therefore never need the registry themselves, and a host
+ * rendered without the app shell (a unit test) simply has no toolbar.
+ */
+const declared = new Map<string, ActionProvider>();
+const declaredListeners = new Set<() => void>();
+
+export function declareSelectionProvider(provider: ActionProvider): void {
+  const existing = declared.get(provider.id);
+  if (existing === provider) return;
+  // A second module under the same id is a wiring defect, never a silent overwrite.
+  if (existing && process.env.NODE_ENV !== "development") {
+    throw new Error(`Selection provider "${provider.id}" was declared twice by different modules.`);
+  }
+  declared.set(provider.id, provider);
+  for (const l of [...declaredListeners]) l();
+}
+
+export function declaredSelectionProviders(): readonly ActionProvider[] {
+  return [...declared.values()];
+}
+
+export function subscribeDeclaredSelectionProviders(listener: () => void): () => void {
+  declaredListeners.add(listener);
+  return () => {
+    declaredListeners.delete(listener);
+  };
+}
+
+declareSelectionProvider(passageActionsProvider);
+
+const REGISTERED = new WeakMap<object, Map<string, () => void>>();
+
+/** Register a provider into a registry, once per registry (the root calls this). */
 export function ensureProvider(registry: { register(p: ActionProvider): () => void }, provider: ActionProvider): void {
   let seen = REGISTERED.get(registry);
   if (!seen) {
-    seen = new Set();
+    seen = new Map();
     REGISTERED.set(registry, seen);
   }
   if (seen.has(provider.id)) return;
-  seen.add(provider.id);
-  registry.register(provider);
+  seen.set(provider.id, registry.register(provider));
 }

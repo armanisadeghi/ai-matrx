@@ -15,15 +15,15 @@
 
 "use client";
 
-import { useEffect, useId, useRef, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 
 /** Editing shows formatting; reading shows highlight / suggest / link. */
 export type SelectionMode = "edit" | "read";
 
 /** What a running action (or a panel) may do to the toolbar. */
 export interface SelectionToolbarUi {
-  /** Swap the strip for one of the zone's panels (a comment composer). */
-  openPanel(panel: string): void;
+  /** Swap the strip for one of the zone's panels (a comment composer), handing it `payload`. */
+  openPanel(panel: string, payload?: unknown): void;
   /** Back to the strip. */
   closePanel(): void;
   /** Close the toolbar. `clearSelection` also drops the text selection. */
@@ -45,9 +45,9 @@ export interface SelectionZoneContribution {
    */
   suppress?: boolean;
   /** Panels this zone draws inside the toolbar frame. Null = not this zone's. */
-  renderPanel?(panel: string, ui: SelectionToolbarUi): ReactNode | null;
-  /** A panel to show immediately when the toolbar opens here (a pending reattach). */
-  initialPanel?(): string | null;
+  renderPanel?(panel: string, ui: SelectionToolbarUi, payload: unknown): ReactNode | null;
+  /** A panel (and its payload) to show immediately when the toolbar opens here (a pending reattach). */
+  initialPanel?(): { panel: string; payload?: unknown } | null;
 }
 
 interface ZoneEntry {
@@ -125,7 +125,10 @@ export function useSelectionZone(
 ): void {
   const id = useId();
   const latest = useRef(contribution);
-  latest.current = contribution;
+  // Read at selection time (an event), so the post-commit value is always current.
+  useLayoutEffect(() => {
+    latest.current = contribution;
+  });
   const enabled = contribution !== null;
   useEffect(() => {
     if (!element || !enabled) return;

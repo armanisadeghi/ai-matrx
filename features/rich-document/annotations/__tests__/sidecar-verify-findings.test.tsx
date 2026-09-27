@@ -10,9 +10,10 @@
  *   F5  Add → Comment puts the caret in the composer;
  *   F6  own echoes are recognised by write identity — the same person's other tab is delivered;
  *       an edit from a stale base is an honest conflict, never a silent overwrite;
- *   F7  Ctrl/Cmd+Alt+M after selecting text moves focus into the toolbar; arrows move within it.
+ *   F7  (keyboard path into the selection toolbar) — now owned by the ONE selection toolbar's own
+ *       test: components/selection-toolbar/__tests__/selection-toolbar.test.tsx.
  *
- * The UI runs for real (provider, hook, panel, toolbar, Radix menus); only the network edge
+ * The UI runs for real (provider, hook, panel, Radix menus); only the network edge
  * (service.ts calls, realtime channel, title reads) is replaced.
  */
 
@@ -21,7 +22,6 @@ import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 if (typeof window.matchMedia !== "function") {
-  // Desktop width: the selection toolbar is the positioned popover here (phone = bottom sheet, own test).
   window.matchMedia = ((q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
 }
 if (typeof globalThis.ResizeObserver === "undefined") {
@@ -238,31 +238,6 @@ describe("F5 — the Add menu's composer takes focus", () => {
     await flush(10);
     expect(document.activeElement?.tagName).toBe("TEXTAREA");
     expect(document.activeElement?.getAttribute("aria-label")).toMatch(/Comment/);
-  });
-});
-
-describe("F7 — keyboard path into the selection toolbar", () => {
-  it("Ctrl+Alt+M after a selection focuses the toolbar; arrows move within it", async () => {
-    await mount();
-    const p = [...container.querySelectorAll("p")].find((x) => x.textContent?.includes("Vent the kiln"))!;
-    await act(async () => {
-      const t = p.firstChild as Text;
-      const r = document.createRange();
-      r.setStart(t, 0);
-      r.setEnd(t, "Vent the kiln".length);
-      const s = window.getSelection()!;
-      s.removeAllRanges();
-      s.addRange(r);
-    });
-    await press(document.body, "m", { code: "KeyM", ctrlKey: true, altKey: true });
-    await flush();
-    const toolbar = document.querySelector("[role=toolbar][aria-label='Annotate the selected passage']")!;
-    expect(toolbar).toBeTruthy();
-    expect(toolbar.contains(document.activeElement)).toBe(true);
-    const first = document.activeElement;
-    await press(document.activeElement!, "ArrowDown");
-    expect(document.activeElement).not.toBe(first);
-    expect(toolbar.contains(document.activeElement)).toBe(true);
   });
 });
 
