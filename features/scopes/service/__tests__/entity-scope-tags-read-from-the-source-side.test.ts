@@ -37,6 +37,9 @@ jest.mock("@/utils/supabase/contextDb", () => ({
       const q: Record<string, unknown> = {};
       q.select = () => q;
       q.is = () => q;
+      // The display read pages to its declared total (readAllRows / readAllRowsIn).
+      q.order = () => q;
+      q.range = () => q;
       q.in = (_col: string, v: string[]) => {
         ids = v;
         scopeIdsAsked.push(v);
@@ -47,7 +50,7 @@ jest.mock("@/utils/supabase/contextDb", () => ({
           { id: SCOPE_INTAKE, name: "Patient intake", scope_type: { id: "t", label_singular: "Workflow" } },
         ];
         const data = ids ? live.filter((s) => ids!.includes(s.id)) : live;
-        return Promise.resolve({ data, error: null }).then(res, rej);
+        return Promise.resolve({ data, error: null, count: data.length }).then(res, rej);
       };
       return q;
     },

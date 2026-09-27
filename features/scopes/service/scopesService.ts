@@ -38,6 +38,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
+import { readAllRowsIn } from "@/lib/supabase/readAllRowsIn";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { contextDb } from "@/utils/supabase/contextDb";
 import { whereANewTableIsBorn } from "@/features/data-tables/data-source/where-a-table-is-born";
@@ -164,9 +165,6 @@ async function provisionScopeTableInTheStore(
 }
 
 // ─── service ────────────────────────────────────────────────────────
-
-/** Scopes per context-values request: 100 ids keep the address well under the gateway's limit. */
-const CONTEXT_VALUES_SCOPES_PER_REQUEST = 100;
 
 export const scopesService = {
   /** Organization-scoped immutable schemas available for per-scope table values. */
@@ -744,14 +742,22 @@ export const scopesService = {
     try {
       requireUserId();
       if (scopeTypeIds.length === 0) return ok({ items: [] });
-      const { data, error } = await contextDb(supabase)
-        .from("context_items")
-        .select("*")
-        .in("scope_type_id", scopeTypeIds)
-        .is("deleted_at", null)
-        .eq("is_active", true);
-      if (error) return err(...mapPgErrorPair(error));
-      return ok({ items: data ?? [] });
+      // Every item of every listed type, however many (readAllRowsIn: batched ids, whole reads).
+      const items = await readAllRowsIn(
+        scopeTypeIds,
+        (batch) =>
+          ({ from, to }) =>
+            contextDb(supabase)
+              .from("context_items")
+              .select("*", { count: "exact" })
+              .in("scope_type_id", batch)
+              .is("deleted_at", null)
+              .eq("is_active", true)
+              .order("id", { ascending: true })
+              .range(from, to),
+        { label: "context.context_items (active, by scope type)" },
+      );
+      return ok({ items });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }
@@ -768,42 +774,31 @@ export const scopesService = {
     try {
       requireUserId();
       if (scopeIds.length === 0) return ok({ values: [] });
-      // IN BATCHES, EACH READ WHOLE (lane HANDOVER, 2026-09-27). One `.in()` over every listed scope
-      // put 600+ ids in the address: the gateway refused it before PostgREST saw it, the browser
-      // reported a CORS failure, and /scopes drew its tables with no values (9 console errors on
-      // admin@admin.com's hub). And one response is capped at 1,000 rows, so a large hub silently
-      // lost cells even when the address fit. Now: 100 scopes per request, each read to its
-      // declared total (`readAllRows` throws rather than return a short list).
-      const batches: string[][] = [];
-      for (let i = 0; i < scopeIds.length; i += CONTEXT_VALUES_SCOPES_PER_REQUEST) {
-        batches.push(scopeIds.slice(i, i + CONTEXT_VALUES_SCOPES_PER_REQUEST));
-      }
-      const pages = await Promise.all(
-        batches.map((batch) =>
-          readAllRows(
-            ({ from, to }) =>
-              contextDb(supabase)
-                .from("context_item_values")
-                .select(
-                  `scope_id, context_item_id, id, version, is_current,
-                   value_text, value_number, value_boolean, value_date, value_json,
-                   value_document_url, value_document_size_bytes,
-                   value_timestamp, value_time,
-                   value_reference_id, value_reference_type,
-                   source_type, authored_by, created_at`,
-                  { count: "exact" },
-                )
-                .in("scope_id", batch)
-                .eq("is_current", true)
-                .order("id", { ascending: true })
-                .range(from, to),
-            { label: "context.context_item_values (current, by scope)" },
-          ),
-        ),
+      // IN BATCHES, EACH READ WHOLE (lane HANDOVER, 2026-09-27): one `.in()` over every listed
+      // scope put 600+ ids in the address (refused as CORS; the hub drew no values) and one
+      // response is capped at 1000 rows. `readAllRowsIn` asks 100 at a time, each read whole.
+      const values = await readAllRowsIn(
+        scopeIds,
+        (batch) =>
+          ({ from, to }) =>
+            contextDb(supabase)
+              .from("context_item_values")
+              .select(
+                `scope_id, context_item_id, id, version, is_current,
+                 value_text, value_number, value_boolean, value_date, value_json,
+                 value_document_url, value_document_size_bytes,
+                 value_timestamp, value_time,
+                 value_reference_id, value_reference_type,
+                 source_type, authored_by, created_at`,
+                { count: "exact" },
+              )
+              .in("scope_id", batch)
+              .eq("is_current", true)
+              .order("id", { ascending: true })
+              .range(from, to),
+        { label: "context.context_item_values (current, by scope)" },
       );
-      return ok({
-        values: pages.flat() as (ContextItemValue & { scope_id: string })[],
-      });
+      return ok({ values: values as (ContextItemValue & { scope_id: string })[] });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }
@@ -2019,22 +2014,35 @@ async function fetchScopeDisplays(
   scopeIds: string[] | null,
 ): Promise<ScopesRpcResult<ScopeWithType[]>> {
   if (scopeIds && scopeIds.length === 0) return ok([]);
-  const base = contextDb(supabase)
-    .from("scopes")
-    .select(
-      "id, name, scope_type:scope_types(id, label_singular, label_plural, icon, color)",
-    )
-    // A removed scope is not a tag anybody can still be shown. Same working-set
-    // rule as the boot tree (F6).
-    .is("deleted_at", null);
-  const { data, error } = scopeIds ? await base.in("id", scopeIds) : await base;
-  if (error) return err(...mapPgErrorPair(error));
+  // EVERY ROW, HOWEVER MANY (lane HANDOVER, 2026-09-27): the unfiltered read was capped at 1000
+  // rows (admin@admin.com sees 2,349 scopes) and the id read put every id in one address.
+  const page = (ids: string[] | null) =>
+    ({ from, to }: { from: number; to: number }) => {
+      const q = contextDb(supabase)
+        .from("scopes")
+        .select(
+          "id, name, scope_type:scope_types(id, label_singular, label_plural, icon, color)",
+          { count: "exact" },
+        )
+        // A removed scope is not a tag anybody can still be shown. Same working-set
+        // rule as the boot tree (F6).
+        .is("deleted_at", null);
+      return (ids ? q.in("id", ids) : q).order("id", { ascending: true }).range(from, to);
+    };
+  let data: unknown[];
+  try {
+    data = scopeIds
+      ? await readAllRowsIn(scopeIds, (batch) => page(batch), { label: "context.scopes (display, by id)" })
+      : await readAllRows(page(null), { label: "context.scopes (display, every visible)" });
+  } catch (e) {
+    return { ok: false, error: mapPgError(e) };
+  }
   // MATRX-EXCEPTION: `scope_type:scope_types(...)` is an aliased single-object
   // PostgREST embed; the generated client infers it as an array-shaped embed
   // (no `!inner`/single-row hint), so it cannot structurally match
   // ScopeWithType without a DbRpcRow-style guard (this is a table embed, not
   // an RPC). Runtime shape is verified — one scope_types row per scope (FK).
-  return ok((data ?? []) as unknown as ScopeWithType[]);
+  return ok(data as unknown as ScopeWithType[]);
 }
 
 function notYetImplemented(name: string) {
