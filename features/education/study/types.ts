@@ -48,7 +48,11 @@ export interface ItemRef {
  */
 export interface NewSessionInput {
   mode: string;
-  /** Active-context org; if omitted the DB trigger falls back to the personal org. */
+  /**
+   * The organization the session is filed under — a record's own org when the
+   * session belongs to one (a game room). Omitted → the person's SELECTED org
+   * via `ensureOrgId`, which holds for the picker when none is chosen.
+   */
   orgId?: string;
   sourceKind?: string | null;
   sourceSetId?: string | null;

@@ -82385,6 +82385,7 @@ export type Database = {
           host_user_id: string
           id: string
           join_code: string
+          organization_id: string
           source_kind: string
           source_set_id: string
           source_title: string

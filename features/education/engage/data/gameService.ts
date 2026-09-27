@@ -66,6 +66,8 @@ export interface JoinableRoom {
   config: GameRoomConfig;
   started_at: string | null;
   created_at: string;
+  /** The room's organization — a player's game session is filed under it. */
+  organization_id: string;
 }
 
 /** A finalized scoreboard row (from the game_room_players RPC). */

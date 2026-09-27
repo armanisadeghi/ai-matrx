@@ -55,6 +55,12 @@ export interface UseGamePlayArgs {
    * orphaned 'due' session created against the null-room first render.
    */
   enabled?: boolean;
+  /**
+   * The organization the session is filed under. Multiplayer passes the ROOM's
+   * organization (the record-owner rule) — never the player's selected one.
+   * Omitted (solo) → the player's selected organization.
+   */
+  organizationId?: string | null;
   /** Multiplayer: broadcast the mutable scoreboard after each answer. */
   onScore?: (fields: {
     score: number;
@@ -104,6 +110,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     roomId = null,
     autoStart = mode === "solo",
     enabled = true,
+    organizationId = null,
     onScore,
     onFinish,
   } = args;
@@ -224,6 +231,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
         sourceKind: effectiveSourceSetId ? "set" : "due",
         ...(effectiveSourceSetId ? { sourceSetId: effectiveSourceSetId } : {}),
         metadata: { engage: true, mode, roomId },
+        ...(organizationId ? { orgId: organizationId } : {}),
       });
       if (cancelled) return;
       if (sessRes.error || !sessRes.data) {
@@ -237,7 +245,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     return () => {
       cancelled = true;
     };
-  }, [enabled, sourceKind, sourceSetId, mode, roomId]);
+  }, [enabled, sourceKind, sourceSetId, mode, roomId, organizationId]);
 
   // Solo autostart once the queue is ready.
   useEffect(() => {
