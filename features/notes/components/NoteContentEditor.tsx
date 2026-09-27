@@ -96,6 +96,7 @@ const NoteConflictWindow = dynamic(
   { ssr: false },
 );
 
+import { useNotesCollectionWriteHandlers } from "@/features/notes/agent-context/useNotesCollectionWriteHandlers";
 import { createNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
@@ -606,9 +607,21 @@ export function NoteContentEditor({
   // handlers at all, so the seam never advertises these targets to an agent.
   // Throwing instead would mean asking the user to approve a change whose
   // save RLS is guaranteed to reject.
+  // The collection twins (create / duplicate / update / archive notes, and the
+  // open note's scopes) — see useNotesCollectionWriteHandlers.
+  const getCollectionWriteHandlers = useNotesCollectionWriteHandlers({
+    instanceId,
+    folders: folderReferences,
+    activeNoteId: noteId,
+    activeOrganizationId: noteExists?.organization_id ?? null,
+    readOnly: access.loading || readOnly,
+  });
+
   const getSurfaceWriteHandlers = (): SurfaceWriteHandlers => {
-    if (access.loading || readOnly) return {};
+    if (access.loading) return {};
+    if (readOnly) return getCollectionWriteHandlers();
     return {
+      ...getCollectionWriteHandlers(),
       note_content: (value: unknown) => {
         if (typeof value !== "string")
           throw new Error(

@@ -1244,6 +1244,39 @@ export const scopesService = {
   //  Used by Surface B components to populate their initial selection.
   // ──────────────────────────────────────────────────────────────────
 
+  /**
+   * Live scopes in one organization whose names match `names` exactly
+   * (case-insensitive), with their type label. For agent write targets that
+   * tag a record by scope NAME: an unmatched or ambiguous name is the
+   * caller's refusal to make, never a guess.
+   */
+  async findScopesByName(
+    organizationId: string,
+    names: string[],
+  ): Promise<ScopesRpcResult<Array<{ id: string; name: string; type: string }>>> {
+    try {
+      requireUserId();
+      const wanted = Array.from(new Set(names.map((n) => n.trim()).filter(Boolean)));
+      if (wanted.length === 0) return ok([]);
+      const { data, error } = await contextDb(supabase)
+        .from("scopes")
+        .select("id, name, scope_type:scope_types(label_singular)")
+        .eq("organization_id", organizationId)
+        .is("deleted_at", null)
+        .or(wanted.map((n) => `name.ilike.${JSON.stringify(n.replace(/[%_]/g, "\\$&"))}`).join(","));
+      if (error) return err(...mapPgErrorPair(error));
+      // MATRX-EXCEPTION: aliased single-object embed typed as an array by the generator (see fetchScopeDisplays).
+      const rows = (data ?? []) as unknown as Array<{
+        id: string;
+        name: string;
+        scope_type: { label_singular: string } | null;
+      }>;
+      return ok(rows.map((r) => ({ id: r.id, name: r.name, type: r.scope_type?.label_singular ?? "" })));
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
   async getEntityScopes(
     entityType: EntityTypeToken,
     entityId: string,

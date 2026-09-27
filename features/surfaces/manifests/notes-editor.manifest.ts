@@ -486,6 +486,54 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "note_identity",
     sortOrder: 140,
   },
+  {
+    name: "note_scopes",
+    label: "Note scopes",
+    description:
+      'Sets the FULL scope set on the open note (the "Context" picker) — it REPLACES the note\'s scopes. Value: a JSON ARRAY of existing scope NAMES in the note\'s organization, e.g. ["Patient intake"]; read `note_scope_assignments` (or the <scopes> in note_bundle) first and include every scope to keep; [] clears them. A name that does not exist, or that two scope types share, is refused with nothing changed — scopes are created by the person, never by an agent. Saved immediately through the same path as the picker.',
+    valueType: "array",
+    updatesValue: "note_scope_assignments",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "note_identity",
+    sortOrder: 150,
+  },
+  {
+    name: "create_notes",
+    label: "Create notes",
+    description:
+      'Creates one or more notes, saved immediately, exactly as "New Note" does — or DUPLICATES existing ones, exactly as "Duplicate" does. Value: a JSON ARRAY (not a string) of 1-10 objects, each either { title: string (one line), content?: markdown string, tags?: string[], folder?: an EXISTING folder name from `all_folder_names` } or { copy_of: <note id> } (the copy is named "<title> (Copy)", private, in the same folder). A note with a folder lands in that folder\'s organization; without one, in the person\'s active organization (they are asked to pick one if none is active). An unknown folder, an empty or repeated title, or a copy_of id not on the page refuses the whole list with nothing created. Each new note opens as a tab. Returns the new notes\' ids.',
+    valueType: "array",
+    updatesValue: "open_notes_summary",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "workspace",
+    sortOrder: 160,
+  },
+  {
+    name: "update_notes",
+    label: "Update notes",
+    description:
+      'Changes one or more saved notes by id (from `open_note_ids`, `current_folder_note_ids`, or ids a create_notes result returned), saved immediately. Value: a JSON ARRAY of 1-10 objects { id, title?, content?, tags? } — content REPLACES the whole body, tags REPLACES the whole tag set; only the fields sent change. For the note open in the editor prefer note_content / note_title / note_tags (they stage into the editor with undo). A note with unsaved typing, a view-only shared note, an unknown or repeated id, or an item with nothing to change refuses the whole list with nothing changed.',
+    valueType: "array",
+    updatesValue: "open_notes_summary",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "workspace",
+    sortOrder: 170,
+  },
+  {
+    name: "delete_notes",
+    label: "Archive notes",
+    description:
+      'ARCHIVES one or more notes — moves them to Trash, where the person can restore them; nothing is permanently deleted. Value: a JSON ARRAY of note ids, or of { id } objects, e.g. ["…"]. Use it when the person asks to delete, archive or remove notes. A note someone else owns (unless they gave this person admin access), an unknown or a repeated id refuses the whole list with nothing archived.',
+    valueType: "array",
+    updatesValue: "open_notes_summary",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "workspace",
+    sortOrder: 180,
+  },
 ];
 
 export const notesEditorManifest: SurfaceManifest = {
@@ -494,14 +542,16 @@ export const notesEditorManifest: SurfaceManifest = {
   executionMode: "python-stream",
   description:
     "Note editor and notes management",
-  readiness: "verified",
+  readiness: "partial",
+  readinessNote:
+    "create_notes / update_notes / delete_notes / note_scopes added 2026-09-27 (page-pass); unproven until a live surface:probe --agent run creates, updates and archives notes.",
   label: "Notes",
   urlPattern: "/notes/[id]",
   intro: `<surface_intro>
 You are on the Notes editor: the user's markdown workspace of many small-to-medium notes, organized into folders and opened as tabs. One note is active in the editor at a time; a second may sit in a split pane.
 Start from note_bundle: one XML element holding the open note (metadata, body up to 7,000 characters, scopes), the other open tabs, and the folders — enough for most jobs without a lookup. Read the values in tiers: the Selection & cursor group is the live runtime cut (what is highlighted, where the cursor is); the Active note group identifies the persisted note and its metadata — its full content resolves through the current_note resource reference (with an unsaved-buffer overlay when dirty); the Workspace group describes the surrounding tabs, folders, and scope assignments; Editor state tells you what the UI can currently do (mode, panes, find bar).
 When shared_access is present the note belongs to someone else — respect its permission_level before proposing writes. When is_new_note is true the note has no server row yet; actions needing a stable id should save first or refuse.
-You can also WRITE to this surface: the note's body (replace or append), its title, its tags, and its folder. These edit the user's own writing, so each one is confirmed with the user before it lands — read the matching value first (a replace or a tag set overwrites what is there), change only what was asked for, and leave the rest of the note alone.
+You can also WRITE to this surface. On the open note: note_content (replace the body) or append_to_note, note_title, note_tags, note_folder (an existing folder), note_scopes (its scope set). Across notes: create_notes (new notes, or copies with copy_of), update_notes (title/body/tags by id), delete_notes (archives to Trash — restorable). These edit the user's own writing, so each one is confirmed with the user before it lands — read the matching value first (a replace or a tag set overwrites what is there), change only what was asked for, and leave the rest of the note alone.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
