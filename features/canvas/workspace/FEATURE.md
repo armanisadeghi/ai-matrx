@@ -69,10 +69,15 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
 - **The workspace owns ⌘\\ here** (dock/undock chat); the global canvas side sheet stands down while
   `data-shell-chrome="canvas"` is present.
 - **Below 1024px it is one pane** — the canvas; chat, nav and properties are sheets.
+- **A canvas that publishes its OWN surface passes no `getCanvasContext`.** The spatial board is the
+  `matrx-user/spatial-board` surface (values `board_title` / `board_tiles` / `selected_tile` + the `board_*`
+  agent tools, `features/spatial/components/SpatialBoardSurface.tsx`); a page-level snapshot of it would send
+  the board twice. `getCanvasContext` is for canvases with no surface of their own.
 - **Spatial board contract** (`features/spatial` is owned by another session): the board draws its own
-  ToolBar + ZoomMenu inside its canvas; it hands the workspace its title, a `getCanvasContext` (today
-  `readBoardContextFromDom` → `boardContextEntry`), and — once it exposes its store outside its viewport —
-  its LayersPanel as a Properties tab and an insets callback so fit-to-view avoids the floating chat.
+  ToolBar + ZoomMenu inside its canvas and its own surface; it still owes — once it exposes its store outside
+  its viewport — its LayersPanel as a Properties tab and an insets callback so fit-to-view avoids the
+  floating chat. `/demos/spatial` renders the workspace; the interim `features/spatial/chat/`
+  `BoardWithChat` / `BoardChatPanel` / `SpatialDemoBoardWithChat` are now unused (theirs to delete).
 - **Open:** Share/comments are unexercised (no demo has a record); at 390px the board's own ToolBar and
   ZoomMenu overlap (spatial-owned); the Error Inspector badge sits over the nav's user row bottom-left.
 
@@ -83,3 +88,6 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
 - **2026-09-27** — Built: workspace, canvas nav + user row + org drop-up, shell canvas chrome, floating
   chat, properties panel, demos; the chat panel is the compact composer with agent switching;
   `contextKey` dedupes the canvas pill; `/demos/spatial` unlisted until it hosts the workspace.
+- **2026-09-27** — `/demos/spatial` hosts the workspace (listed in `CANVAS_CHROME_ROUTES` again); the spatial
+  host passes no snapshot — the board's own surface carries it; `matrx-user/spatial-board` registered in
+  `ui.ui_surface` (it was unregistered, so every send beside a board failed 422).

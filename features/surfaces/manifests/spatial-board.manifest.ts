@@ -64,7 +64,11 @@ const values: SurfaceValue[] = [
 
 export const spatialBoardManifest: SurfaceManifest = {
   surfaceName: SPATIAL_BOARD_SURFACE_NAME,
+  client: "matrx-user",
   label: "Spatial board",
+  description:
+    "An infinite, zoomable board of tiles — live AI results, notes, pages and images grouped into frames — that the person pans and zooms like a map.",
+  executionMode: "python-stream",
   agentRosterMode: "universal",
   readiness: "partial",
   readinessNote:
