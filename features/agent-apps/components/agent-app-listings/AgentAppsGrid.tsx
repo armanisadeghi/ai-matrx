@@ -363,6 +363,7 @@ export function AgentAppsGrid({
                   Filters
                   {activeFilterCount > 0 && (
                     <span className="ml-0.5 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                      {/* read-gate-exempt: number of filters the person has switched on, not a fetched count */}
                       {activeFilterCount}
                     </span>
                   )}
@@ -492,7 +493,7 @@ export function AgentAppsGrid({
               <>
                 <CopyButtons
                   size="icon"
-                  label={`Agent apps (${filteredApps.length})`}
+                  label={`Agent apps (${isError ? "—" : filteredApps.length})`}
                   human={() => filteredApps.map(humanAgentApp).join("\n\n")}
                   json={() => filteredApps}
                   agent={() => ({

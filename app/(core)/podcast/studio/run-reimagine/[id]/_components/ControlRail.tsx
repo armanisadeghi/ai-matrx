@@ -130,6 +130,7 @@ export function ControlRail({ state, startedAt, streaming }: ControlRailProps) {
         <Collapsible open={open} onOpenChange={setOpen}>
           <CollapsibleTrigger className="flex w-full items-center justify-between border-t border-border px-4 py-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground">
             <span>
+              {/* read-gate-exempt: progress of the run this page is driving, pushed by its own stream, not a fetched count */}
               {doneCount} of {total} steps done
             </span>
             <ChevronDown

@@ -64,6 +64,7 @@ export function BuildConsole({
           />
         </div>
         <div className="text-[11px] font-medium text-muted-foreground">
+          {/* read-gate-exempt: progress of the run this page is driving, pushed by its own stream, not a fetched count */}
           {doneCount} of {total} steps complete
         </div>
       </div>

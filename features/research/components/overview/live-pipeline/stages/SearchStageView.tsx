@@ -1,5 +1,7 @@
 "use client";
 
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useEffect, useMemo, useState } from "react";
 import { Search, Globe, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -241,12 +243,23 @@ export function SearchStageView({
             summary={
               <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
                 <Globe className="h-2.5 w-2.5" />
-                Live source feed ({latestSources.length})
+                Live source feed (
+                <UntrustedCount
+                  read={readOf({ isLoading: sourcesQuery.isLoading, error: sourcesQuery.error })}
+                  value={latestSources.length}
+                  label="Live sources"
+                />
+                )
               </span>
             }
             trailing={
               <span className="text-[10px] text-muted-foreground tabular-nums">
-                of {sourcesQuery.data?.length ?? 0}
+                of{" "}
+                <UntrustedCount
+                  read={readOf({ isLoading: sourcesQuery.isLoading, error: sourcesQuery.error })}
+                  value={sourcesQuery.data?.length ?? 0}
+                  label="Sources"
+                />
               </span>
             }
             contentClassName="pt-1.5"

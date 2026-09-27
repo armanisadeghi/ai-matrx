@@ -1,5 +1,7 @@
 "use client";
 
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useState, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
@@ -205,7 +207,11 @@ export default function TagManager() {
       <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5">
         <span className="text-xs font-medium text-foreground/80">Tags</span>
         <span className="text-[10px] text-muted-foreground tabular-nums">
-          {filtered.length}/{tagList.length}
+          <UntrustedCount
+            read={readOf({ isLoading: tagsLoading, error: tagsError })}
+            value={`${filtered.length}/${tagList.length}`}
+            label="Tags"
+          />
         </span>
         <div className="flex-1 relative">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />

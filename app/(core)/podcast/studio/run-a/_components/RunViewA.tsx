@@ -244,6 +244,7 @@ export function RunViewA() {
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm font-semibold text-foreground">Pipeline</p>
               <span className="text-xs text-muted-foreground">
+                {/* read-gate-exempt: progress of the run this page is driving, pushed by its own stream, not a fetched count */}
                 {doneCount} of {total} steps
               </span>
             </div>

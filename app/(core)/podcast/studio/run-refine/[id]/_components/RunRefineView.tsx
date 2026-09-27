@@ -209,6 +209,7 @@ function ProductionPulse({ state }: { state: PodcastRunState }) {
             {featuredLabel}
           </p>
           <p className="text-[11px] text-muted-foreground">
+            {/* read-gate-exempt: progress of the run this page is driving, pushed by its own stream, not a fetched count */}
             {doneCount} of {total} steps done — working across audio, art and
             video at once.
           </p>

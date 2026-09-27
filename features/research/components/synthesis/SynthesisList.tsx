@@ -1,5 +1,6 @@
 "use client";
 
+import { readOf } from "@/components/read-state/ReadGate";
 import { useState, useMemo } from "react";
 import {
   Layers,
@@ -664,6 +665,7 @@ export default function SynthesisList() {
         <ResearchFilterBar
           title="Synthesis"
           count={`${filtered.length}/${synthList.length}`}
+          read={readOf({ isLoading: synthLoading, error: synthError })}
           filters={filterDefs}
           search={search}
           onSearchChange={setSearch}

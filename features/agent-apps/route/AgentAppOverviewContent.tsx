@@ -17,6 +17,11 @@
  *     summary). The hero already shows the obvious identity fields.
  */
 
+import { readOf } from "@/components/read-state/ReadGate";
+import {
+  UntrustedCount,
+  type CountRead,
+} from "@/components/official/stale-data/UntrustedCount";
 import { useState } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import {
@@ -76,11 +81,14 @@ function StatChip({
   label,
   value,
   accent,
+  read,
 }: {
   icon: LucideIcon;
   label: string;
   value: string | number;
   accent: string;
+  /** The read behind `value` — "—" when it failed, "…" while in flight. */
+  read?: CountRead;
 }) {
   const isZero =
     value === 0 || value === "0" || value === "—" || value === "0%";
@@ -92,7 +100,11 @@ function StatChip({
       )}
     >
       <Icon className={cn("w-3.5 h-3.5", accent)} />
-      <span className="tabular-nums font-medium">{value}</span>
+      {read ? (
+        <UntrustedCount className="tabular-nums font-medium" read={read} value={value} label={label} />
+      ) : (
+        <span className="tabular-nums font-medium">{value}</span>
+      )}
       <span className="text-muted-foreground">{label}</span>
     </div>
   );
@@ -192,6 +204,12 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
 
   const variableCount = agentVariables?.length ?? 0;
   const contextPolicyCount = agentContextPolicies?.length ?? 0;
+  // Both counts are fields of the running agent's record: until that record
+  // (and those fields) is read they are not "0", and a failed read is "—".
+  const agentRead = readOf({
+    isLoading: !agent || agent._loading || !agent._loadedFields.variableDefinitions,
+    error: agent?._error,
+  });
   // `typeof === "number"` lets NaN through and prints "NaN%"; the honest
   // formatter treats every unmeasurable value the same and still prints a
   // real 0% as 0%.
@@ -437,12 +455,14 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
             icon={Layers}
             label="variables"
             value={variableCount}
+            read={agentRead}
             accent="text-purple-500"
           />
           {app.unique_users_count != null && (
             <StatChip
               icon={Webhook}
               label="users"
+              // read-gate-exempt: a field of the app record this page rendered; drawn only when the record carries it
               value={formatNumber(app.unique_users_count)}
               accent="text-cyan-500"
             />
@@ -501,7 +521,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
               <Variable className="w-4 h-4 text-purple-500" />
               Variables
               <span className="text-xs font-normal text-muted-foreground">
-                ({variableCount})
+                (<UntrustedCount read={agentRead} value={variableCount} label="Variables" />)
               </span>
             </CardTitle>
           </CardHeader>
@@ -600,7 +620,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
                 <Layers className="w-4 h-4 text-cyan-500" />
                 Context policies
                 <span className="text-xs font-normal text-muted-foreground">
-                  ({contextPolicyCount})
+                  (<UntrustedCount read={agentRead} value={contextPolicyCount} label="Context policies" />)
                 </span>
               </CardTitle>
             </CardHeader>
@@ -676,6 +696,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
             />
             <KV
               label="Allowed imports"
+              // read-gate-exempt: a field of the app record this page rendered, not a fetched list
               value={
                 allowedImportsCount > 0
                   ? `${allowedImportsCount} packages`

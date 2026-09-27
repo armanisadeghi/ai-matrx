@@ -147,6 +147,7 @@ export function RunView() {
                       Production pipeline
                     </h2>
                     <span className="font-mono text-xs text-muted-foreground">
+                      {/* read-gate-exempt: progress of the run this page is driving, pushed by its own stream, not a fetched count */}
                       {phases.filter((p) => p.status === "done").length}/
                       {phases.length}
                     </span>

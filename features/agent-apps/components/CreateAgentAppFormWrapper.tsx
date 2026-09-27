@@ -385,6 +385,7 @@ export function CreateAgentAppFormWrapper({
             <Label className="text-base font-semibold">Select Your Agent</Label>
             {availableAgentCount > 0 && (
               <span className="text-xs text-muted-foreground">
+                {/* read-gate-exempt: drawn only when there are agents to pick, so a failed agents read hides this note instead of saying 0 */}
                 {availableAgentCount} agent
                 {availableAgentCount !== 1 ? "s" : ""} available
               </span>

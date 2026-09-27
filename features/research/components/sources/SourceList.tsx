@@ -1,5 +1,7 @@
 "use client";
 
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import {
   useState,
   useCallback,
@@ -1825,7 +1827,12 @@ export default function SourceList() {
             Prev
           </button>
           <span className="text-[10px] text-muted-foreground tabular-nums px-1">
-            {pageOffset + 1}–{pageOffset + pagedSources.length} of {totalCount}
+            {pageOffset + 1}–{pageOffset + pagedSources.length} of{" "}
+            <UntrustedCount
+              read={readOf({ isLoading: sourcesLoading, error: sourcesError })}
+              value={totalCount}
+              label="Sources"
+            />
           </span>
           <button
             disabled={pageOffset + pageSize >= totalCount}

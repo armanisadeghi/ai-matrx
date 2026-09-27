@@ -1,5 +1,7 @@
 "use client";
 
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useCallback, useState, useMemo } from "react";
 import {
   ImageIcon,
@@ -150,7 +152,11 @@ export default function MediaGallery() {
       <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5">
         <span className="text-xs font-medium text-foreground/80">Media</span>
         <span className="text-[10px] text-muted-foreground tabular-nums">
-          {filtered.length}/{mediaList.length}
+          <UntrustedCount
+            read={readOf({ isLoading: mediaLoading, error: mediaError })}
+            value={`${filtered.length}/${mediaList.length}`}
+            label="Media"
+          />
         </span>
         <div className="flex items-center rounded-full matrx-glass-card p-0.5 shrink-0">
           <button

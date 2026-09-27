@@ -64,6 +64,7 @@ export function RunConsole() {
                 "All stages complete"
               ) : (
                 <>
+                  {/* read-gate-exempt: progress of the run this page is driving, pushed by its own stream, not a fetched count */}
                   {doneCount} of {state.totalSteps || "…"} stages ·{" "}
                   <Elapsed startedAt={startedAt} /> elapsed
                 </>
