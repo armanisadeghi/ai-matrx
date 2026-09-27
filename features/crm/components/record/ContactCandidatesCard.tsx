@@ -22,6 +22,7 @@
  *    exists" — and that is what it says.
  */
 
+import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BadgeCheck,
@@ -214,37 +215,34 @@ export function ContactCandidatesCard({
   return (
     <SectionCard
       empty={!loading && error == null && rows?.length === 0}
-      title="Contact details"
+      title="Suggested contacts"
+      compactAction
       Icon={ContactRound}
       count={rows?.length}
       action={
-        <div className="flex w-full items-center gap-1 sm:w-auto">
+        <div className="flex items-center gap-1">
           <Button
             variant="outline"
             size="sm"
-            className="h-11 flex-1 px-3 text-xs sm:h-6 sm:flex-none sm:px-2"
+            aria-label="Find contact info"
+            className="h-11 px-3 text-xs sm:h-6 sm:px-2"
             disabled={finding}
             onClick={() => void find()}
           >
             {finding ? (
-              <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+              <RefreshCw className="h-3 w-3 animate-spin sm:mr-1" />
             ) : (
-              <Search className="mr-1 h-3 w-3" />
+              <Search className="h-3 w-3 sm:mr-1" />
             )}
-            Find contact info
+            {/* One header row on a phone: the words fold away, the icon
+                and its accessible name stay. */}
+            <span className="max-sm:sr-only">Find contact info</span>
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-11 w-11 shrink-0 sm:h-6 sm:w-6"
+          <RefreshCwTapButton
+            ariaLabel="Refresh suggestions"
             disabled={loading}
             onClick={() => void load()}
-            aria-label="Refresh candidates"
-          >
-            <RefreshCw
-              className={loading ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"}
-            />
-          </Button>
+          />
         </div>
       }
     >

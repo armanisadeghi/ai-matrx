@@ -8,6 +8,15 @@
 // medium's, shown wherever the value is shown. The primary star flips ONLY
 // through the crm_set_primary_contact_point RPC.
 
+import {
+  Facebook,
+  Github,
+  Instagram,
+  Linkedin,
+  Tiktok,
+  Twitter,
+  Youtube,
+} from "@/components/icons/brand-icons";
 import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import { PlusTapButton, TrashTapButton, XTapButton } from "@ai-matrx/tap-target/buttons";
 import { useState } from "react";
@@ -67,6 +76,18 @@ import {
   formatContactPointsCopy,
   type CrmRecordCopyParent,
 } from "./record-copy";
+
+/** Brand marks for platform identities — the one shim module, never lucide. */
+const PLATFORM_ICONS: Record<string, LucideIcon> = {
+  youtube: Youtube,
+  linkedin: Linkedin,
+  github: Github,
+  twitter: Twitter,
+  x: Twitter,
+  facebook: Facebook,
+  instagram: Instagram,
+  tiktok: Tiktok,
+};
 
 const CHANNEL_ICONS: Record<string, LucideIcon> = {
   email: AtSign,
@@ -272,7 +293,7 @@ export function ContactPointsCard({
   return (
     <SectionCard
       empty={points.length === 0 && !adding}
-      title="Contact"
+      title="Contact points"
       Icon={AtSign}
       count={points.length}
       compactAction
@@ -357,7 +378,12 @@ export function ContactPointsCard({
       ) : (
         <ul className="space-y-0.5">
           {points.map((point) => {
-            const Icon = CHANNEL_ICONS[point.channel ?? ""] ?? Globe;
+            // A platform identity wears its platform's mark (YouTube,
+            // LinkedIn…), never the generic globe.
+            const Icon =
+              PLATFORM_ICONS[point.medium.platform_slug?.toLowerCase() ?? ""] ??
+              CHANNEL_ICONS[point.channel ?? ""] ??
+              Globe;
             const shown = mediumDisplay(
               point.medium,
               point.is_identity_key ? partyLabel : null,
@@ -373,7 +399,7 @@ export function ContactPointsCard({
                     href={shown.href}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex min-h-11 min-w-0 items-center truncate text-sm text-foreground hover:underline sm:min-h-0"
+                    className="inline-flex min-h-11 min-w-0 items-center truncate text-sm text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary sm:min-h-0"
                     title={
                       shown.raw
                         ? `${shown.raw} — open on ${shown.platform ?? "the web"}`
