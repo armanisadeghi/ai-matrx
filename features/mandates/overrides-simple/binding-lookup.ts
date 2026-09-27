@@ -136,7 +136,9 @@ export type ResolvedHolderForOverrides =
       /** The pinned version id when the winning rung pins one. */
       versionId: string | null;
     }
-  | { status: "unavailable"; message: string };
+  | { status: "unavailable"; message: string }
+  /** The resolution READ failed — never "nobody runs it". */
+  | { status: "error"; error: string };
 
 export type OverridesHolder =
   /** This level's own record names the holder (or a workflow). */
@@ -148,6 +150,8 @@ export type OverridesHolder =
    */
   | { source: "resolved"; holder: HolderDraft }
   | { source: "loading" }
+  /** The resolution read failed: the view shows the failure, never "No agent is set". */
+  | { source: "error"; error: string }
   | { source: "none"; message: string | null };
 
 /**
@@ -174,6 +178,7 @@ export function overridesHolderOf(
     return { source: "none", message: null };
   if (!resolved) return { source: "none", message: null };
   if (resolved.status === "loading") return { source: "loading" };
+  if (resolved.status === "error") return { source: "error", error: resolved.error };
   if (resolved.status === "unavailable") {
     return { source: "none", message: resolved.message };
   }

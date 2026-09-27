@@ -310,7 +310,8 @@ export default function AiModelsContainer() {
       isEditable={false}
     >
       <div className="flex flex-col h-full min-h-0">
-        {loadError && (
+        {/* With no rows the table says the failure itself; this banner is for a failed refresh over rows. */}
+        {loadError && models.length > 0 && (
           <div role="alert" className="flex shrink-0 items-center gap-2 border-b border-destructive/30 bg-destructive/5 px-2 py-1 text-sm">
             <span className="min-w-0 flex-1">{loadError}{models.length > 0 ? " Previously loaded models remain visible." : ""}</span>
             <Button type="button" variant="outline" size="sm" disabled={isLoading} onClick={() => void loadData()}>Retry</Button>
@@ -380,6 +381,7 @@ export default function AiModelsContainer() {
                   models={models}
                   providers={providers}
                   isLoading={isLoading}
+                  loadError={loadError}
                   selectedId={selectedModel?.id ?? null}
                   tabState={activeTab}
                   onUpdateTabState={(patch) =>
@@ -408,6 +410,7 @@ export default function AiModelsContainer() {
                           models={models}
                           providers={providers}
                           isLoading={isLoading}
+                          loadError={loadError}
                           selectedId={selectedModel?.id ?? null}
                           tabState={activeTab}
                           onUpdateTabState={(patch) =>

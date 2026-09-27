@@ -662,7 +662,8 @@ function resolvedHolderOfVerdict(
   error: string | null,
 ): ResolvedHolderForOverrides {
   if (loading) return { status: "loading" };
-  if (!verdict || error) {
+  if (error) return { status: "error", error };
+  if (!verdict) {
     return {
       status: "unavailable",
       message: "No Mandate Holder could be resolved for you right now.",

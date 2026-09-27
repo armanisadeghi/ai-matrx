@@ -249,7 +249,7 @@ function BundlesAdminPageInner() {
               </div>
             )}
             <div className="flex-1 overflow-auto">
-              {filtered.length === 0 && !loading && (
+              {filtered.length === 0 && !loading && !error && (
                 <div className="px-3 py-8 text-center text-xs text-muted-foreground">
                   No bundles match.
                 </div>

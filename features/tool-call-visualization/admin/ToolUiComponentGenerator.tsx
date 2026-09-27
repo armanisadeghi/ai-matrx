@@ -57,6 +57,7 @@ import type { ToolEventPayload } from "@/types/python-generated/stream-events";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
@@ -636,6 +637,8 @@ export function ToolUiComponentGenerator({
   const [testSamples, setTestSamples] = useState<ToolTestSample[]>([]);
   const [dbEntries, setDbEntries] = useState<CxToolCallEntry[]>([]);
   const [isFetchingData, setIsFetchingData] = useState(false);
+  // The saved-data read's failure — shown instead of "No test samples saved".
+  const [dataError, setDataError] = useState<unknown>(null);
 
   // Selection state
   const [selectedSampleIds, setSelectedSampleIds] = useState<Set<string>>(
@@ -671,6 +674,7 @@ export function ToolUiComponentGenerator({
   const fetchDataForTool = useCallback(
     async (toolName: string, toolId: string) => {
       setIsFetchingData(true);
+      setDataError(null);
       setTestSamples([]);
       setDbEntries([]);
       setSelectedSampleIds(new Set());
@@ -696,6 +700,9 @@ export function ToolUiComponentGenerator({
             .limit(5),
         ]);
 
+        // supabase-js resolves (never throws) on a failed read: surface it.
+        if (samplesResult.error) throw samplesResult.error;
+        if (dbResult.error) throw dbResult.error;
         const samples = (samplesResult.data ?? []) as ToolTestSample[];
         const entries = (dbResult.data ?? []) as CxToolCallEntry[];
         setTestSamples(samples);
@@ -718,11 +725,7 @@ export function ToolUiComponentGenerator({
           setSelectedDbEntryIds(new Set([entries[0].id]));
         }
       } catch (err) {
-        toast({
-          title: "Error loading data",
-          description: err instanceof Error ? err.message : "Unknown error",
-          variant: "destructive",
-        });
+        setDataError(err ?? true);
       } finally {
         setIsFetchingData(false);
       }
@@ -957,6 +960,7 @@ export function ToolUiComponentGenerator({
     agent.reset();
     setStep("select-tool");
     setSelectedToolName("");
+    setDataError(null);
     setTestSamples([]);
     setDbEntries([]);
     setSelectedSampleIds(new Set());
@@ -1220,6 +1224,29 @@ export function ToolUiComponentGenerator({
               <Loader2 className="w-4 h-4 animate-spin" />
               Loading saved data for {selectedToolName}…
             </div>
+          ) : dataError ? (
+            <>
+              <ReadFailure
+                error={dataError}
+                what={`the saved data for ${selectedToolName}`}
+                className="m-0"
+                onRetry={
+                  selectedTool
+                    ? () => void fetchDataForTool(selectedTool.name, selectedTool.id)
+                    : undefined
+                }
+              />
+              {!preselectedToolName && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setStep("select-tool")}
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+                  Back
+                </Button>
+              )}
+            </>
           ) : (
             <>
               {/* No samples warning */}

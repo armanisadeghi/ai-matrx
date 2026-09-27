@@ -67,6 +67,7 @@ import {
 } from "@/components/official/mobile-table/mobileTable";
 import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Types ────────────────────────────────────────────────────────────────
@@ -126,6 +127,8 @@ type ComparisonSortDir = "asc" | "desc";
 type Props = {
   localModels: AiModel[];
   providers: AiProvider[];
+  /** The parent's providers/models read failure — shown instead of "No providers found". */
+  providersError?: unknown;
   onModelsChanged?: () => void;
 };
 
@@ -1285,6 +1288,7 @@ function ProviderSection({
 export default function ProviderSyncDashboard({
   localModels,
   providers,
+  providersError,
   onModelsChanged,
 }: Props) {
   const dispatch = useAppDispatch();
@@ -1609,6 +1613,13 @@ export default function ProviderSyncDashboard({
             Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-10 w-full rounded-lg" />
             ))
+          ) : providersError && summaries.length === 0 ? (
+            <ReadFailure
+              error={providersError}
+              what="the model providers"
+              className="m-0"
+              onRetry={onModelsChanged}
+            />
           ) : summaries.length === 0 ? (
             <div className="text-center py-16 text-sm text-muted-foreground">
               No providers found.

@@ -536,7 +536,8 @@ export function ProviderConversationTranscript({
             </p>
           ) : null}
 
-          {timeline.items.length === 0 && activity.state !== "loading" ? (
+          {/* "No messages" only after the activity read succeeded; its failure is said above. */}
+          {timeline.items.length === 0 && activity.state === "ready" ? (
             <section className="rounded-xl border border-dashed border-border px-4 py-10 text-center">
               <MessageSquareText className="mx-auto h-7 w-7 text-muted-foreground/60" />
               <h2 className="mt-2 text-sm font-medium text-foreground">

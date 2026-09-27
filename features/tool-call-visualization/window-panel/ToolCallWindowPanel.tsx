@@ -26,6 +26,7 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   AlertTriangle,
   CheckCircle,
@@ -88,6 +89,9 @@ const EntrySidebar: React.FC<{
   onScopeChange: (scope: SidebarScope) => void;
   conversationScopeAvailable: boolean;
   loadingMore: boolean;
+  /** The conversation-wide read's failure (All scope) — shown instead of "No tool entries". */
+  loadError: unknown;
+  onRetry: () => void;
   hasMore: boolean;
   onLoadMore: () => void;
 }> = ({
@@ -98,6 +102,8 @@ const EntrySidebar: React.FC<{
   onScopeChange,
   conversationScopeAvailable,
   loadingMore,
+  loadError,
+  onRetry,
   hasMore,
   onLoadMore,
 }) => {
@@ -130,7 +136,14 @@ const EntrySidebar: React.FC<{
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto py-1">
-        {entries.length === 0 ? (
+        {loadError && entries.length === 0 ? (
+          <ReadFailure
+            error={loadError}
+            what="this conversation's tool calls"
+            className="m-2"
+            onRetry={onRetry}
+          />
+        ) : entries.length === 0 ? (
           <div className="px-3 py-4 text-xs italic text-muted-foreground">
             {loadingMore ? "Loading tool calls…" : "No tool entries"}
           </div>
@@ -178,6 +191,15 @@ const EntrySidebar: React.FC<{
         )}
       </div>
 
+      {/* A failed "load older" over rows already listed: say it above the button. */}
+      {Boolean(loadError) && entries.length > 0 && (
+        <ReadFailure
+          error={loadError}
+          what="older tool calls"
+          className="m-1.5"
+          onRetry={hasMore ? onLoadMore : onRetry}
+        />
+      )}
       {scope === "conversation" && (hasMore || loadingMore) && (
         <div className="flex-shrink-0 border-t border-border p-1.5">
           <button
@@ -286,6 +308,10 @@ function useConversationToolEntries(
 ): {
   entries: ToolLifecycleEntry[];
   loadingMore: boolean;
+  /** The latest page read's failure; null after a read succeeds. */
+  loadError: unknown;
+  /** Re-read the first page after a failure. */
+  retry: () => void;
   hasMore: boolean;
   loadMore: () => void;
 } {
@@ -315,6 +341,8 @@ function useConversationToolEntries(
   const liveByCallId = useAppSelector(selectLiveByCallId);
 
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [attempt, setAttempt] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [oldestCursor, setOldestCursor] = useState<string | null>(null);
   const fetchedOnceRef = useRef<string | null>(null);
@@ -323,11 +351,13 @@ function useConversationToolEntries(
   // conversation-bundle cache (which is message-page scoped).
   useEffect(() => {
     if (!enabled || !conversationId) return;
-    if (fetchedOnceRef.current === conversationId) return;
-    fetchedOnceRef.current = conversationId;
+    const fetchKey = `${conversationId}:${attempt}`;
+    if (fetchedOnceRef.current === fetchKey) return;
+    fetchedOnceRef.current = fetchKey;
 
     let cancelled = false;
     setLoadingMore(true);
+    setLoadError(null);
     void fetchConversationToolCallsPage(conversationId, {
       limit: CONVERSATION_TOOL_CALL_PAGE_SIZE,
     })
@@ -345,8 +375,10 @@ function useConversationToolEntries(
         setHasMore(page.hasMore);
         setOldestCursor(page.oldestStartedAt);
       })
-      .catch(() => {
-        if (!cancelled) setHasMore(false);
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setHasMore(false);
+        setLoadError(err ?? true);
       })
       .finally(() => {
         if (!cancelled) setLoadingMore(false);
@@ -355,7 +387,7 @@ function useConversationToolEntries(
     return () => {
       cancelled = true;
     };
-  }, [enabled, conversationId, dispatch]);
+  }, [enabled, conversationId, attempt, dispatch]);
 
   const loadMore = () => {
     if (!conversationId || loadingMore || !hasMore) return;
@@ -374,11 +406,12 @@ function useConversationToolEntries(
             dispatch(upsertToolCall(record));
           }
         }
+        setLoadError(null);
         setHasMore(page.hasMore);
         if (page.oldestStartedAt) setOldestCursor(page.oldestStartedAt);
       })
-      .catch((err) => {
-        console.error("[ToolCallWindowPanel] loadMore failed", err);
+      .catch((err: unknown) => {
+        setLoadError(err ?? true);
       })
       .finally(() => setLoadingMore(false));
   };
@@ -403,7 +436,14 @@ function useConversationToolEntries(
     return list;
   }, [enabled, persisted, liveByCallId]);
 
-  return { entries, loadingMore, hasMore, loadMore };
+  return {
+    entries,
+    loadingMore,
+    loadError,
+    retry: () => setAttempt((n) => n + 1),
+    hasMore,
+    loadMore,
+  };
 }
 
 // ─── Public props ─────────────────────────────────────────────────────────────
@@ -443,6 +483,8 @@ const ToolCallWindowPanelBody: React.FC<{
   const {
     entries: conversationEntries,
     loadingMore,
+    loadError: conversationLoadError,
+    retry: retryConversationEntries,
     hasMore,
     loadMore,
   } = useConversationToolEntries(
@@ -605,6 +647,8 @@ const ToolCallWindowPanelBody: React.FC<{
           }}
           conversationScopeAvailable={conversationScopeAvailable}
           loadingMore={loadingMore}
+          loadError={scope === "conversation" ? conversationLoadError : null}
+          onRetry={retryConversationEntries}
           hasMore={hasMore}
           onLoadMore={loadMore}
         />

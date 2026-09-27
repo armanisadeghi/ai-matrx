@@ -448,7 +448,7 @@ export default function ModelControlsEditor({
         {loading && (
           <p className="text-xs text-muted-foreground px-1">Loading settings…</p>
         )}
-        {!loading && rows.length === 0 && (
+        {!loading && !loadError && rows.length === 0 && (
           <p className="text-xs text-muted-foreground px-1">
             No rules on this family or offering yet — add a setting below.
           </p>

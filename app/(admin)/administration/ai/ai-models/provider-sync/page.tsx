@@ -11,6 +11,7 @@ function ProviderSyncContent() {
   const [models, setModels] = useState<AiModel[]>([]);
   const [providers, setProviders] = useState<AiProvider[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
   // The skeleton is for the FIRST load only. A refresh (after a write, a
   // policy change, a Sync Now) must never unmount the dashboard: unmounting it
   // re-runs its mount effect, which asks the parent to reload again — the
@@ -19,6 +20,7 @@ function ProviderSyncContent() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [fetchedModels, fetchedProviders] = await Promise.all([
         aiModelService.fetchAll(),
@@ -27,7 +29,7 @@ function ProviderSyncContent() {
       setModels(fetchedModels);
       setProviders(fetchedProviders);
     } catch (err) {
-      console.error("[provider-sync page] load error", err);
+      setLoadError(err ?? true);
     } finally {
       setLoading(false);
       setLoadedOnce(true);
@@ -52,6 +54,7 @@ function ProviderSyncContent() {
     <ProviderSyncDashboard
       localModels={models}
       providers={providers}
+      providersError={loadError}
       onModelsChanged={loadData}
     />
   );

@@ -53,6 +53,7 @@ import {
   type MatrxColumnDef,
   type MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface DeprecatedModelsAuditProps {
@@ -77,6 +78,37 @@ interface SettingsReviewTarget {
 }
 
 /** The agent.definition ids a model's usage names — the dry-run scope (I5). */
+/** Read one model's usage into its entry: settles `usage`, or `error` when the read fails. */
+function readUsageInto(
+  modelId: string,
+  setEntries: (update: (prev: DeprecatedEntry[]) => DeprecatedEntry[]) => void,
+): void {
+  aiModelService
+    .fetchUsage(modelId)
+    .then((usage) => {
+      setEntries((prev) =>
+        prev.map((entry) =>
+          entry.model.id === modelId
+            ? { ...entry, usage, loading: false, error: null }
+            : entry,
+        ),
+      );
+    })
+    .catch((err) => {
+      setEntries((prev) =>
+        prev.map((entry) =>
+          entry.model.id === modelId
+            ? {
+                ...entry,
+                loading: false,
+                error: err instanceof Error ? err.message : "Failed to load",
+              }
+            : entry,
+        ),
+      );
+    });
+}
+
 function agentIdsOf(entry: DeprecatedEntry): string[] {
   const usage = entry.usage;
   if (!usage) return [];
@@ -188,33 +220,7 @@ export default function DeprecatedModelsAudit({
     const { deprecated, entries: initialEntries } = initEntries();
     const initialize = window.setTimeout(() => {
       setEntries(initialEntries);
-      deprecated.forEach((model) => {
-        aiModelService
-          .fetchUsage(model.id)
-          .then((usage) => {
-            setEntries((prev) =>
-              prev.map((entry) =>
-                entry.model.id === model.id
-                  ? { ...entry, usage, loading: false }
-                  : entry,
-              ),
-            );
-          })
-          .catch((err) => {
-            setEntries((prev) =>
-              prev.map((entry) =>
-                entry.model.id === model.id
-                  ? {
-                      ...entry,
-                      loading: false,
-                      error:
-                        err instanceof Error ? err.message : "Failed to load",
-                    }
-                  : entry,
-              ),
-            );
-          });
-      });
+      deprecated.forEach((model) => readUsageInto(model.id, setEntries));
     }, 0);
     return () => window.clearTimeout(initialize);
   }, [initEntries]);
@@ -539,7 +545,23 @@ export default function DeprecatedModelsAudit({
         sortable: false,
         filter: false,
         cell: (entry) =>
-          totalUsage(entry) === 0 && !entry.loading ? (
+          entry.error && !entry.usage ? (
+            <ReadFailure
+              error={entry.error}
+              what="this model's usage"
+              className="m-0"
+              onRetry={() => {
+                setEntries((prev) =>
+                  prev.map((e) =>
+                    e.model.id === entry.model.id
+                      ? { ...e, loading: true, error: null }
+                      : e,
+                  ),
+                );
+                readUsageInto(entry.model.id, setEntries);
+              }}
+            />
+          ) : totalUsage(entry) === 0 && !entry.loading ? (
             <span className="text-xs italic text-muted-foreground">
               No active usage
             </span>

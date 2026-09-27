@@ -82,6 +82,7 @@ import {
   type ProviderPriceField,
 } from "./ProviderPriceCell";
 import { formatCount } from "@ai-matrx/kit/format";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 // ─── Provider Colors ──────────────────────────────────────────────────────────
 
@@ -941,6 +942,8 @@ export interface AiModelTableProps {
   models: AiModel[];
   providers: AiProvider[];
   isLoading: boolean;
+  /** The model read's failure; with no rows the table shows it instead of "No AI models found". */
+  loadError?: string | null;
   selectedId: string | null;
   tabState: TabState;
   onUpdateTabState: (patch: Partial<Omit<TabState, "id">>) => void;
@@ -965,6 +968,7 @@ function CurrentAiModelTable({
   models,
   providers,
   isLoading,
+  loadError,
   selectedId,
   tabState,
   onUpdateTabState,
@@ -1126,6 +1130,17 @@ function CurrentAiModelTable({
                   </td>
                 </tr>
               ))
+            ) : loadError && models.length === 0 ? (
+              <tr>
+                <td colSpan={COLUMNS.length + 1} className="p-2">
+                  <ReadFailure
+                    error={loadError}
+                    what="the model catalog"
+                    className="m-0"
+                    onRetry={onRefresh}
+                  />
+                </td>
+              </tr>
             ) : paginatedModels.length === 0 ? (
               <tr>
                 <td
@@ -1287,6 +1302,12 @@ function CanonicalAiModelTable(props: AiModelTableProps) {
         column.render(model, providerMap)
       ),
   }));
+  if (props.loadError && models.length === 0) {
+    return (
+      <ReadFailure error={props.loadError} what="the model catalog" onRetry={onRefresh} />
+    );
+  }
+
   return (
     <MatrxDataTable<AiModel>
       tableId="ai/models-canonical"

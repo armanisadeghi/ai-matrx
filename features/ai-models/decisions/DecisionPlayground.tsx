@@ -27,6 +27,7 @@ import {
 import { loadDecision, runDecision } from "./decision-api";
 import type { DecisionResultView } from "./decision-result";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ALL_DECISIONS_REVIEW_HREF } from "@/features/agents/decision-review/service";
 
 export function DecisionPlayground() {
@@ -44,6 +45,9 @@ export function DecisionPlayground() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [recovering, setRecovering] = useState(false);
+  // The saved decision's read failure (the URL's execution_id), separate from a run's failure.
+  const [recoverError, setRecoverError] = useState<string | null>(null);
+  const [recoverAttempt, setRecoverAttempt] = useState(0);
   const executionId = params.get("execution_id");
   // The model that loads when nobody picked one: the settings ladder's
   // `agents.model_prefs.decision_default_model` (org → user, nearest wins),
@@ -78,13 +82,13 @@ export function DecisionPlayground() {
     const recover = async () => {
       setBusy(true);
       setRecovering(true);
-      setError(null);
+      setRecoverError(null);
       try {
         const savedResult = await loadDecision(dispatch, executionId);
         if (active) setResult(savedResult);
       } catch (reason) {
         if (active)
-          setError(
+          setRecoverError(
             reason instanceof Error
               ? reason.message
               : "This saved decision could not be loaded.",
@@ -100,7 +104,7 @@ export function DecisionPlayground() {
     return () => {
       active = false;
     };
-  }, [dispatch, executionId, organizationState]);
+  }, [dispatch, executionId, organizationState, recoverAttempt]);
 
   const parsedState = parseDecisionValue(state, stateMode, "State");
   const validationErrors = [
@@ -284,7 +288,12 @@ export function DecisionPlayground() {
             onRetry={retry}
             compact
           />
-          <DecisionResultCard result={result} loading={recovering} />
+          <DecisionResultCard
+            result={result}
+            loading={recovering}
+            readError={recoverError}
+            onRetry={() => setRecoverAttempt((n) => n + 1)}
+          />
         </aside>
       </div>
     </div>
@@ -321,9 +330,14 @@ function ModeSwitch({
 function DecisionResultCard({
   result,
   loading,
+  readError,
+  onRetry,
 }: {
   result: DecisionResultView | null;
   loading: boolean;
+  /** The saved decision's read failure — shown instead of "No result yet". */
+  readError: string | null;
+  onRetry: () => void;
 }) {
   if (loading)
     return (
@@ -331,6 +345,15 @@ function DecisionResultCard({
         <Loader2 className="mr-2 inline size-4 animate-spin" />
         Reconnecting to the saved decision…
       </section>
+    );
+  if (readError && !result)
+    return (
+      <ReadFailure
+        error={readError}
+        what="this saved decision"
+        className="m-0"
+        onRetry={onRetry}
+      />
     );
   if (!result)
     return (

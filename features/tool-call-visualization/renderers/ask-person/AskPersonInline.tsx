@@ -100,7 +100,8 @@ export const AskPersonInline: React.FC<ToolRendererProps> = (props) => {
       : lookup.phase === "closed"
         ? isTerminal(entry) && !parked
           ? "Answered"
-          : "No longer needed"
+          : // read-gate-exempt: phase "closed" IS the lookup's successful answer; its failed read is phase "unreachable", shown by its own branch
+            "No longer needed"
         : lookup.phase === "unreachable"
           ? "Could not load this ask"
           : null;

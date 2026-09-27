@@ -21,6 +21,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { isJsonObject, type JsonObject } from "@/types/json";
@@ -603,6 +604,15 @@ function OverridesBody({
           <div key={i} className="h-8 animate-pulse rounded bg-muted/60" />
         ))}
       </div>
+    );
+  }
+  if (picked.source === "error") {
+    return (
+      <ReadFailure
+        error={picked.error}
+        what="who runs this job for you"
+        className="m-0"
+      />
     );
   }
   if (!agentId) {
