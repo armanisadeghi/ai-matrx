@@ -63,10 +63,21 @@ export function AgentHeader({
           basePath={basePath}
           currentPath={currentPath}
         />
+        {/* Save and Menu never fold. Below a 40rem header (the surfaces page
+            squeezes this header between its column toggles; a 1024px window
+            with the org chip showing) the version pill and the copy-reference
+            button fold away — both stay one click away, in the Versions mode
+            and in Menu. Without this, Menu slid under the page's own toggles
+            (shell/components/header/header-crowding.ts names the class). */}
         <div className="flex items-center gap-1.5 shrink-0">
-          <AgentSaveStatus agentId={agentId} />
+          <AgentSaveStatus
+            agentId={agentId}
+            versionClassName="hidden @min-[40rem]/agent-header:inline"
+          />
           {basePath === "/agents" && <ReviewAnswersLink agentId={agentId} />}
-          <AgentReferenceCopyButton agentId={agentId} agentName={agentName} />
+          <span className="hidden @min-[40rem]/agent-header:contents">
+            <AgentReferenceCopyButton agentId={agentId} agentName={agentName} />
+          </span>
           <div className="w-px h-4 bg-border/50" />
           <AgentOptionsMenu agentId={agentId} basePath={basePath} />
         </div>

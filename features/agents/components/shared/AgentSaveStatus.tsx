@@ -22,10 +22,13 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function AgentSaveStatus({
   agentId,
   editModeOverride,
+  versionClassName,
 }: {
   agentId: string;
   /** When true, expose save affordances outside `/agents/.../build` (e.g. window panels). */
   editModeOverride?: boolean;
+  /** Extra classes for the version pill — a host header folds it away when narrow. */
+  versionClassName?: string;
 }) {
   const {
     isDirty,
@@ -56,7 +59,12 @@ export function AgentSaveStatus({
     <>
       <div className="flex items-center gap-1.5">
         {version != null && (
-          <span className="text-[10px] font-medium text-muted-foreground tabular-nums px-1.5 py-0.5 rounded bg-muted/60">
+          <span
+            className={cn(
+              "text-[10px] font-medium text-muted-foreground tabular-nums px-1.5 py-0.5 rounded bg-muted/60",
+              versionClassName,
+            )}
+          >
             v{version}
           </span>
         )}
