@@ -1065,6 +1065,11 @@ module in the folder + the two deleted filenames).
 
 ## Change log
 
+- page-pass 2026-09-27 round 4b (/crm/[partyId]): live agent run created a deal
+  and an attached task and refused an organization change; Stage/Rating read
+  "None" and their choice lists (stage, rating, role) are agent values; a
+  typed-in record shows no provenance card and no internal source key; on
+  phones Send email lives in the record's More menu so the name reads in full.
 - page-pass 2026-09-27 round 4 (/crm/[partyId]), after a blind "mediocre":
   every person-action has an agent twin (create_deal, create_task, company-side
   add/end_employment; files stay a human upload); People card adds a person to
