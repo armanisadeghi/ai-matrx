@@ -45,6 +45,7 @@ export const ProblemsTab: React.FC<ProblemsTabProps> = ({ className }) => {
               title={tabs.byId[id].path}
             >
               {tabs.byId[id].name}{" "}
+              {/* read-gate-exempt: Monaco markers written into the diagnostics slice by useMonacoMarkers, in-memory editor state, not a read */}
               <span className="text-muted-foreground">
                 ({diagnostics[id].length})
               </span>

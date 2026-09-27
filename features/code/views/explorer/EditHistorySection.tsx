@@ -26,6 +26,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useStore } from "react-redux";
 import { cn } from "@/lib/utils";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import type { AppStore } from "@/lib/redux/store";
 import {
   selectSnapshotsForConversation,
@@ -188,8 +189,25 @@ export const EditHistorySection: React.FC = () => {
         <History className="h-3 w-3" />
         <span className="font-medium">Edit History</span>
         <span className="ml-auto rounded bg-neutral-200 px-1.5 py-[1px] text-[10px] font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
-          {messageRollups.length} msg · {totalFiles} file
-          {totalFiles === 1 ? "" : "s"} · {totalApplied} edit
+          <UntrustedCount
+            value={messageRollups.length}
+            trustworthy={hydrationStatus !== "error"}
+            label="Messages with edits"
+          />{" "}
+          msg ·{" "}
+          <UntrustedCount
+            value={totalFiles}
+            trustworthy={hydrationStatus !== "error"}
+            label="Files edited"
+          />{" "}
+          file
+          {totalFiles === 1 ? "" : "s"} ·{" "}
+          <UntrustedCount
+            value={totalApplied}
+            trustworthy={hydrationStatus !== "error"}
+            label="Edits applied"
+          />{" "}
+          edit
           {totalApplied === 1 ? "" : "s"}
         </span>
         <button

@@ -76,6 +76,7 @@ export const PendingChangesSection: React.FC = () => {
         <Lightbulb className="h-3 w-3" />
         <span className="font-medium">Pending Changes</span>
         <span className="ml-auto rounded bg-blue-600 px-1.5 py-[1px] text-[10px] font-semibold text-white">
+          {/* read-gate-exempt: patches staged in memory from the agent's SEARCH/REPLACE output (codePatchesSlice), never fetched */}
           {rows.length} {rows.length === 1 ? "file" : "files"} · {totalEdits}{" "}
           {totalEdits === 1 ? "edit" : "edits"}
         </span>
