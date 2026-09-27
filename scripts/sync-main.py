@@ -21,12 +21,18 @@ WHAT IT DOES (Arman's sequence, 2026-09-24)
         version is saved as _conflicts/<stamp>/<path>.held, listed in _conflicts/README.md,
         with FACTS: when each side last changed it, its commit message, which side is newer, and
         exactly which lines each side has that the other lacks. Facts only; never a decision.
-  4. commit the merge, git push. If someone pushed in the meantime, start again at 1.
+  4. every @ai-matrx package to npm latest: in each folder whose package.json defines
+     "sync:matrx-packages" (repo root and one level down, e.g. desktop/), run it and commit the
+     changed package.json / lockfile. Our packages are not external: a release on stale ones
+     breaks (Arman, 2026-09-26). Once per sync; a failed update is announced, never silent.
+  5. commit the merge, git push. If someone pushed in the meantime, start again at 1.
 
 Nothing is ever lost: every local byte is inside the step-1 commit, forever.
 Leftover check: scripts/check-conflict-markers.py.
 """
 import datetime
+import glob
+import json
 import os
 import re
 import subprocess
@@ -750,6 +756,49 @@ def replay(args):
     report(fixed, docs, held, "replayed %s with today's rules (committed locally, not pushed)" % m[:10])
 
 
+PACKAGE_FILES = ("package.json", "pnpm-lock.yaml", "package-lock.json")
+
+
+def update_matrx_packages():
+    """Step 4: run every "sync:matrx-packages" script here, commit what it changed. Returns a line."""
+    dirs = []
+    for manifest in ["package.json"] + sorted(glob.glob("*/package.json")):
+        if "node_modules" in manifest or not os.path.isfile(manifest):
+            continue
+        try:
+            with open(manifest) as f:
+                scripts = json.load(f).get("scripts") or {}
+        except (OSError, ValueError):
+            continue
+        if "sync:matrx-packages" in scripts:
+            dirs.append(os.path.dirname(manifest) or ".")
+    if not dirs:
+        return None
+    failed = []
+    for d in dirs:
+        tool = "npm" if os.path.isfile(os.path.join(d, "package-lock.json")) else "pnpm"
+        say("updating @ai-matrx packages to npm latest in %s/ (%s run sync:matrx-packages)..." % (d, tool))
+        try:
+            r = subprocess.run([tool, "run", "sync:matrx-packages"], cwd=d, capture_output=True,
+                               text=True, timeout=900)
+            ok, out = r.returncode == 0, (r.stdout + r.stderr).strip()
+        except (OSError, subprocess.TimeoutExpired) as e:
+            ok, out = False, str(e)
+        if not ok:
+            failed.append(d)
+            say("PACKAGES NOT FULLY UPDATED in %s/ — the release may run on stale @ai-matrx packages:\n%s"
+                % (d, "\n".join("  " + l for l in out.splitlines()[-15:])))
+    _, st, _ = git("status", "--porcelain", "--untracked-files=no")
+    changed = [l[3:].strip() for l in st.splitlines() if os.path.basename(l[3:].strip()) in PACKAGE_FILES]
+    if changed:
+        git("add", "--", *changed)
+        git("commit", "--no-verify", "-q", "-m", "chore(deps): every @ai-matrx package to npm latest (sync-main)",
+            "--", *changed)
+    return "@ai-matrx packages: %s%s" % (
+        "updated (%s)" % ", ".join(changed) if changed else "already at npm latest",
+        "; FAILED in %s (see above)" % ", ".join(failed) if failed else "")
+
+
 def report(fixed, docs, held, headline):
     say(headline + ": %d auto-fixed, %d docs/comments flagged, %d held" % (len(fixed), len(docs), len(held)))
     for p in fixed:
@@ -792,6 +841,7 @@ def main():
     stamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
     total_local = pulled = 0
     fixed, docs, held = [], [], []
+    packages = None
     for attempt in range(1, MAX_ATTEMPTS + 1):
         prune()
         record_mtimes()
@@ -822,6 +872,8 @@ def main():
             msg = "Merge %s/%s (sync-main): %d auto-fixed, %d docs/comments flagged, %d held" % (
                 REMOTE, BRANCH, len(f), len(d), len(h))
             git("commit", "--no-verify", "-q", "-m", msg)
+        if packages is None:
+            packages = update_matrx_packages() or ""
         if not push:
             break
         rc, _, err = git("push", "-q", REMOTE, "HEAD:%s" % BRANCH, check=False)
@@ -834,6 +886,8 @@ def main():
     report(fixed, docs, held,
            "synced: %d local files committed, %d commits pulled from GitHub%s" % (
                total_local, pulled, "" if push else " (--no-push: nothing pushed)"))
+    if packages:
+        say(packages)
 
 
 if __name__ == "__main__":
