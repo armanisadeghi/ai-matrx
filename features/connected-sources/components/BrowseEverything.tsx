@@ -293,7 +293,9 @@ export function BrowseEverything() {
         >
           {/* The account first — it is what tells two choices apart. On a
               phone the source sits on its own line so neither is cut off. */}
-          <span className="flex min-w-0 flex-col text-left sm:flex-row sm:items-baseline sm:gap-1">
+          {/* A div, not a span: the trigger clamps a direct child SPAN to one
+              line ([&>span]:line-clamp-1), which flattened these two lines. */}
+          <div className="flex min-w-0 flex-col text-left sm:flex-row sm:items-baseline sm:gap-1">
             <span className="truncate">
               {chosenAdapter?.connections.find(
                 (c) => c.connection_id === chosen.connectionId,
@@ -303,7 +305,7 @@ export function BrowseEverything() {
               <span className="hidden sm:inline">· </span>
               {chosenAdapter?.title}
             </span>
-          </span>
+          </div>
         </SelectTrigger>
         <SelectContent>
           {connectedAccounts.map((adapter) => (
@@ -366,7 +368,9 @@ export function BrowseEverything() {
         <div className="matrx-touch-targets h-full space-y-4 overflow-y-auto px-4 pb-4 pt-[calc(var(--shell-header-h)+0.5rem)]">
           {accountBar}
           <OrganizationRequiredNotice
-            what={chosenAdapter?.title ?? "This source"}
+            // "…needed for browsing Outlook mail" — the notice lowers the first
+            // letter of its subject, so the source's own name never leads.
+            what={`Browsing ${chosenAdapter?.title ?? "this source"}`}
             onRetry={() => setStatus(null)}
           />
         </div>
