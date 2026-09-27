@@ -118,7 +118,7 @@ export function SmartAgentInputStacked({
     "flex flex-col min-h-0 overflow-hidden",
     isAmbient
       ? "min-h-[72px] rounded-[20px] border-glass-edge bg-glass shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[border-color,background-color,box-shadow] focus-within:border-primary/70 focus-within:bg-card focus-within:ring-2 focus-within:ring-primary/15 focus-within:shadow-glass-lg"
-      : "rounded-[28px] border-border bg-card shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] transition-colors focus-within:border-foreground/25 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
+      : "rounded-[20px] border-border bg-card shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] transition-colors focus-within:border-foreground/25 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
     // Centered within its cap. `compact` is density, not width: a compact
     // host wider than 500px (a resized agent window) used to get a 500px
     // composer pinned to its left edge while the transcript used the full
@@ -221,7 +221,7 @@ export function SmartAgentInputStacked({
       conversationId={conversationId}
       uploadRoot={uploadRoot}
       uploadPath={uploadPath}
-      className={cn(shellClassName, "px-2.5 pt-2 pb-1.5 gap-1")}
+      className={cn(shellClassName, "px-2 pt-1.5 pb-1 gap-1")}
     >
       {/* Conversation context rail — surfaces the working document, scratchpad,
           agent lists, and active context so they're openable without scrolling

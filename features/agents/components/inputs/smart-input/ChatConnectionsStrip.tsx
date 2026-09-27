@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * ChatConnectionsStrip — the one line under EVERY composer that says what this
+ * ChatConnectionsStrip — the line in the composer's + menu that says what this
  * conversation can actually reach, and opens the place that changes it.
+ * (Under every composer until 2026-09-27; Arman moved it into the + menu.)
  *
  * Arman, 2026-09-14: "I don't see an MCP chip."
  *

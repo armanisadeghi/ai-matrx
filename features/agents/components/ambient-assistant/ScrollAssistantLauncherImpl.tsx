@@ -171,7 +171,6 @@ function AuthenticatedAmbientAssistant({
             presentation="ambient"
             ambientLayout={inputVariant}
             surfaceKey={surfaceKey}
-            showConnectors={false}
             enablePasteImages={false}
           />
         )}

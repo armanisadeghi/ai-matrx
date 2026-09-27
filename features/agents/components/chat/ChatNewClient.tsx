@@ -148,7 +148,7 @@ export function ChatNewLandingSkeleton() {
 
           <div
             data-chat-new-input-shell="true"
-            className="w-full rounded-[28px] border border-border bg-card p-2.5 shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)]"
+            className="w-full rounded-[20px] border border-border bg-card p-2 shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)]"
           >
             <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-1.5">
               <div className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground/70">

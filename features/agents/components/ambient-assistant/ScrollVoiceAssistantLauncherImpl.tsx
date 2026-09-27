@@ -49,7 +49,6 @@ function AmbientTextMode({
           presentation="ambient"
           ambientLayout="single-line"
           surfaceKey={surfaceKey}
-          showConnectors={false}
           enablePasteImages={false}
         />
       </div>

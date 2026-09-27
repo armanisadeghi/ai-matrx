@@ -191,9 +191,9 @@ function WindowPanelBodyShell({
       className={cn(
         // The structural guard ring is part of the body surface, not window
         // chrome. Painting it with the canonical page background keeps the
-        // 6px resize-handle gutter visually continuous with full-bleed bodies
+        // 2px resize-handle gutter visually continuous with full-bleed bodies
         // such as Chat instead of exposing the card-coloured window shell.
-        "relative z-0 min-h-0 flex-1 overflow-hidden bg-background p-1.5 pointer-events-none",
+        "relative z-0 min-h-0 flex-1 overflow-hidden bg-background p-0.5 pointer-events-none",
         fitContent && "overflow-visible",
         captureDimensions && "fixed -left-[100000px] top-0 z-[-1] flex",
       )}
@@ -1729,7 +1729,7 @@ function WindowHeader({
         // a window is 360px on a 1440px screen — that is how D4 stayed invisible).
         // The name is `window-header`; `lib/detail/core/headerGeometry.ts` holds it.
         "@container/window-header",
-        "relative flex items-center justify-between gap-1 px-2 py-1.5 min-h-[26px] z-20 shrink-0",
+        "relative flex items-center justify-between gap-1 px-2 py-1 min-h-[26px] z-20 shrink-0",
         "border-b border-border/50 bg-muted/40 select-none",
         isMaximized || isMinimized
           ? "cursor-default"
