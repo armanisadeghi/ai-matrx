@@ -1,5 +1,19 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { settingsManifest } from "@/features/surfaces/manifests/settings.manifest";
 import { createSettingsWriteHandlers } from "./write-handlers";
+
+/**
+ * Targets whose state lives in one tab, registered by that tab with
+ * `useSurfaceWriteHandlers` (not by the route emitter). Each must be
+ * registered in the file named here, so a declared target can never lose its
+ * handler silently.
+ */
+const DESCENDANT_OWNED_TARGETS: Readonly<Record<string, string>> = {
+  ai_voice_defaults: "features/settings/tabs/FirstScreenTab.tsx",
+  notification_preferences: "features/settings/tabs/NotificationsTab.tsx",
+  hidden_models: "components/user-preferences/AiModelsPreferences.tsx",
+};
 
 describe("matrx-user/settings write-target handlers", () => {
   const accepted = [
@@ -58,8 +72,15 @@ describe("matrx-user/settings write-target handlers", () => {
     expect(Object.keys(handlers).sort()).toEqual(
       (settingsManifest.writeTargets ?? [])
         .map((target) => target.name)
+        .filter((name) => !(name in DESCENDANT_OWNED_TARGETS))
         .sort(),
     );
+    for (const [target, file] of Object.entries(DESCENDANT_OWNED_TARGETS)) {
+      expect(settingsManifest.writeTargets?.some((t) => t.name === target)).toBe(true);
+      const source = readFileSync(path.join(process.cwd(), file), "utf8");
+      expect(source).toContain("useSurfaceWriteHandlers");
+      expect(source).toMatch(new RegExp(`\\b${target}:`));
+    }
     expect(
       settingsManifest.writeTargets?.every(
         (target) => target.applyPolicy === "ask",

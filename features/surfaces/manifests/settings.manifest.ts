@@ -128,6 +128,20 @@ const groups: SurfaceValueGroup[] = [
       "What the Settings landing page (/user-settings) shows: the default organization, whether an organization is selected, and the AI model and voice defaults. Present only while the landing page is open.",
   },
   {
+    key: "notifications",
+    label: "Notifications",
+    sortOrder: 385,
+    description:
+      "Which channels (email, in_app, sms) each notice reaches the person on, for one organization. Present only while the Notifications tab is open.",
+  },
+  {
+    key: "models",
+    label: "Models",
+    sortOrder: 390,
+    description:
+      "Which current catalog models the person hid from their model pickers. Present only while the Models tab is open.",
+  },
+  {
     key: "preferences",
     label: "Agent-writable preferences",
     sortOrder: 400,
@@ -324,6 +338,63 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "first_screen",
   },
 
+  // ── Notifications tab (descendant-owned: NotificationsTab) ────────────
+  {
+    name: "notification_scope",
+    label: "Notification organization",
+    description:
+      "The organization these notification choices apply to, as { id, name } (choices are kept per organization). Absent outside the Notifications tab.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 90,
+    sortOrder: 596,
+    group: "notifications",
+  },
+  {
+    name: "notification_events",
+    label: "Notices and channels",
+    description:
+      "Every notice with its current channels, as [{ event_key, label, area, required, channels: { email?, in_app?, sms? } }] — only the channels a notice can use appear. required = at least one channel must stay on. HR notices appear only when the person changed one (see notification_areas for counts). Absent outside the Notifications tab and while loading.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 6000,
+    sortOrder: 597,
+    group: "notifications",
+  },
+  {
+    name: "notification_areas",
+    label: "Notice areas",
+    description:
+      "Each area of notices with its count, as [{ area, events }]. Absent outside the Notifications tab.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 600,
+    sortOrder: 598,
+    group: "notifications",
+  },
+  // ── Models tab (descendant-owned: AiModelsPreferences) ────────────────
+  {
+    name: "hidden_models",
+    label: "Hidden models",
+    description:
+      "Models the person switched off, as [{ id, name, maker }]; they are left out of every model picker. [] when none are hidden. Absent outside the Models tab.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 300,
+    sortOrder: 599,
+    group: "models",
+  },
+  {
+    name: "model_catalog_count",
+    label: "Current models",
+    description: "How many current (not retired) catalog models the Models tab lists. Absent outside the Models tab.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 4,
+    sortOrder: 593,
+    group: "models",
+  },
+
   // ── Agent-writable preferences (read twins of the write targets) ──────
   // Each of these is the READ half of a `writeTargets` entry below — the
   // evidence loop: the agent sees the current value, changes it, and sees
@@ -401,6 +472,42 @@ const surfaceSpecific: SurfaceValue[] = [
  */
 const writeTargets: SurfaceWriteTarget[] = [
   {
+    name: "ai_voice_defaults",
+    label: "AI and voice defaults",
+    description:
+      "Set the person's OWN default AI models and read-aloud voice for the current organization (only while the Settings landing page is open). Expects an OBJECT keyed by any of: agents.model_prefs.chat_default_model (everyday work), agents.model_prefs.agent_authoring_default_model (building agents), agents.model_prefs.decision_default_model (typed decisions), media.listening.voice (read-aloud voice). Each value is a model id / voice id string from ai_voice_defaults, or null to stop overriding and follow the organization. A key the organization locked is refused.",
+    valueType: "object",
+    updatesValue: "ai_voice_defaults",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "first_screen",
+    sortOrder: 595,
+  },
+  {
+    name: "notification_preferences",
+    label: "Notification choices",
+    description:
+      "Turn channels on or off for notices, for the organization in notification_scope (only while the Notifications tab is open). Expects an ARRAY of { event_key, channel, enabled } where channel is email, in_app or sms and must be one the notice offers (see notification_events), enabled is true or false. A required notice keeps at least one channel on; turning its last one off is refused.",
+    valueType: "array",
+    updatesValue: "notification_events",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "notifications",
+    sortOrder: 597,
+  },
+  {
+    name: "hidden_models",
+    label: "Hidden models",
+    description:
+      "Replace the list of models hidden from the person's model pickers (only while the Models tab is open). Expects the FULL ARRAY of model id strings to hide — [] shows every model again. Every id must be a current catalog model.",
+    valueType: "array",
+    updatesValue: "hidden_models",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "models",
+    sortOrder: 599,
+  },
+  {
     name: "theme_mode",
     label: "Color mode",
     description: `Set the app's color mode. Expects exactly one of: ${THEME_MODE_ENUM_TEXT}. Applies immediately, is saved in this browser (every open tab follows it) and survives reload. It does NOT follow the user to other devices — say so if they expect it to.`,
@@ -470,7 +577,7 @@ export const settingsManifest: SurfaceManifest = {
 You are on Settings: the user's preference center, organized as a tree of sections (appearance, AI, voice, profile, integrations, …) with one tab open at a time.
 The Active section group tells you WHERE the user is: which tab is open, what it configures, and its persistence tier ("synced" settings follow the account across devices; "local-only"/"session" reset). On the /user-settings landing page the active tab is "firstScreen", and the First screen group shows what it holds: theme, default organization, organization state, and the AI model and voice defaults.
 settings_sections is the full map of every section this user can see (each with its URL) — use it to point the user at the right place.
-The Agent-writable preferences group is the subset you can both READ and CHANGE: color mode, text-generation style, per-feature language defaults, the assistant's name, and the voice persona. These are readable and writable from ANY settings tab — you never have to navigate the user to a tab first. Every other setting on this page is read-only to you: identity, security, billing, organization roles, integrations, model governance, and the privacy/background-capture toggles are deliberately not writable, so decline rather than improvise if asked to change one.
+The Agent-writable preferences group is the subset you can both READ and CHANGE: color mode, text-generation style, per-feature language defaults, the assistant's name, and the voice persona. These are readable and writable from ANY settings tab — you never have to navigate the user to a tab first. On the landing page you can also change the person's own default AI models and read-aloud voice (ai_voice_defaults); on the Notifications tab, which channels each notice uses (notification_preferences); on the Models tab, which models are hidden from their pickers (hidden_models). Every other setting on this page is read-only to you: identity, security, billing, organization roles, integrations, model governance, and the privacy/background-capture toggles are deliberately not writable, so decline rather than improvise if asked to change one.
 Changes here are DURABLE — they save to the user's account and follow them to other devices — so every write asks the user first, and declining is a normal answer. Everything auto-saves; is_saving reflects a flush in flight, and writes are refused while one is in progress.
 </surface_intro>`,
   groups,

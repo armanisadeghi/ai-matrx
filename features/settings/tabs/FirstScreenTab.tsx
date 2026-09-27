@@ -141,14 +141,17 @@ export default function FirstScreenTab() {
       apply: async (value: unknown) => {
         validateAiVoice(value);
         const saved: string[] = [];
+        const { userId, organizationId } = settings;
+        if (!userId || !organizationId) throw new Error("No organization is selected.");
         for (const [key, next] of Object.entries(value as Record<string, string | null>)) {
-          const knob = settings.knobByKey(key)!;
+          const knob = settings.knobByKey(key);
+          if (!knob) throw new Error(`Unknown default: ${key}.`);
           const result = await setKnobOverride({
             feature: knob.feature,
             key: knob.key,
             scopeKind: "user",
-            scopeId: settings.userId!,
-            organizationId: settings.organizationId!,
+            scopeId: userId,
+            organizationId,
             value: next,
           });
           if (!result.ok) throw new Error(result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`);
