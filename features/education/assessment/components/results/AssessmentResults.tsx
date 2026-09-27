@@ -40,6 +40,7 @@ import type {
   AttemptResult,
   ResultItemDetail,
 } from "../../data/types";
+import { EducationCollectionNoResults, EducationCollectionSearch, filterEducationCollection } from "@/features/education/components/EducationCollectionSearch";
 
 const RESULT_ICON: Record<AttemptResult, { icon: typeof CheckCircle2; className: string }> = {
   correct: { icon: CheckCircle2, className: "text-green-600 dark:text-green-400" },
@@ -71,6 +72,7 @@ export function AssessmentResults({
   const [assessmentError, setAssessmentError] = useState<unknown>(null);
   const [resultError, setResultError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [questionSearch, setQuestionSearch] = useState("");
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -154,6 +156,12 @@ export function AssessmentResults({
   const detail = asDetail(result.detail);
   const detailById = new Map(detail.map((d) => [d.itemId, d]));
   const scorePct = Math.round(Number(result.score_value ?? 0) * 100);
+  const filteredItems = filterEducationCollection(
+    items.map((item, index) => ({ item, index, answer: detailById.get(item.id) })),
+    questionSearch,
+    ({ item, answer }) => [item.prompt, item.correct_answer, item.explanation,
+      answer?.response, answer?.explanation, answer?.misconception],
+  );
 
   return (
     <div className="min-h-full w-full bg-textured">
@@ -276,8 +284,15 @@ export function AssessmentResults({
 
         {/* Per-item review */}
         <div className="mt-6 flex flex-col gap-3">
-          <h2 className="text-sm font-medium text-foreground">Review</h2>
-          {items.map((item, i) => {
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-medium text-foreground">Review</h2>
+            <EducationCollectionSearch value={questionSearch} onValueChange={setQuestionSearch} label="reviewed questions" />
+          </div>
+          {questionSearch.trim() && <span className="text-xs text-muted-foreground">{filteredItems.length} of {items.length} questions match</span>}
+          {filteredItems.length === 0 && questionSearch.trim() && (
+            <EducationCollectionNoResults query={questionSearch} label="reviewed questions" onClear={() => setQuestionSearch("")} />
+          )}
+          {filteredItems.map(({ item, index: i }) => {
             const d = detailById.get(item.id);
             const res = (d?.result ?? "incorrect") as AttemptResult;
             const { icon: RIcon, className } = RESULT_ICON[res];

@@ -19,7 +19,7 @@ import CardFaceContent from "@/components/mardown-display/blocks/flashcards/Card
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import { Loader2, AlertCircle, BookOpen, Network } from "lucide-react";
+import { Loader2, AlertCircle, BookOpen, Network, Search, X } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { AskTutorButton } from "@/features/education/tutor/components/AskTutorButton";
 import { VerifyAgainstSourceButton } from "@/features/education/trust/components/VerifyAgainstSourceButton";
@@ -165,18 +165,69 @@ function NodePanel({
   );
 }
 
+/** Search the map's actual nodes, including descriptions that may be hidden in the canvas. */
+export function MindMapNodeSearch({ envelope, selectedNode, onSelectNode }: {
+  envelope: unknown;
+  selectedNode: DiagramNode | null;
+  onSelectNode: (node: DiagramNode) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const diagram = toDiagram(envelope);
+  const needle = query.trim().toLocaleLowerCase();
+  const matches = needle
+    ? (diagram?.nodes ?? []).filter((node) =>
+        [node.label, node.description, node.details]
+          .some((value) => typeof value === "string" && value.toLocaleLowerCase().includes(needle)),
+      )
+    : [];
+
+  return (
+    <div className="relative min-w-0 flex-1 lg:w-64 lg:flex-none">
+      <label className="relative block">
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          aria-label="Search map concepts"
+          placeholder="Search map concepts"
+          className="h-9 w-full rounded-md border border-border bg-background pl-9 pr-8 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+        {query && <button type="button" onClick={() => setQuery("")} aria-label="Clear map search" className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"><X className="h-3.5 w-3.5" /></button>}
+      </label>
+      {needle && (
+        <div role="listbox" aria-label="Matching map concepts" className="absolute left-0 right-0 top-full z-40 mt-1 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg">
+          <p className="px-2 py-1 text-xs text-muted-foreground" aria-live="polite">{matches.length ? `${matches.length} matching concepts` : "No matching concepts"}</p>
+          {matches.map((node) => (
+            <button key={node.id} type="button" role="option" aria-selected={selectedNode?.id === node.id} onClick={() => { onSelectNode(node); setQuery(""); }} className="block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent">
+              <span className="block truncate font-medium">{node.label}</span>
+              {node.description && <span className="block truncate text-xs text-muted-foreground">{node.description}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function MindMapView({
   envelope,
   mapTrust,
   presentation = "card",
+  selectedNode,
+  onSelectNode,
 }: {
   envelope: unknown;
   /** Map-level TrustEnvelope, threaded to the node panel's verify affordance. */
   mapTrust?: TrustEnvelope | null;
   /** Dedicated routes use the canonical edge-to-edge graph workspace. */
   presentation?: "card" | "workspace";
+  selectedNode?: DiagramNode | null;
+  onSelectNode?: (node: DiagramNode | null) => void;
 }) {
-  const [selected, setSelected] = useState<DiagramNode | null>(null);
+  const [localSelected, setLocalSelected] = useState<DiagramNode | null>(null);
+  const selected = onSelectNode ? selectedNode : localSelected;
+  const selectNode = onSelectNode ?? setLocalSelected;
   const diagram = toDiagram(envelope);
   if (!diagram) {
     return (
@@ -198,13 +249,13 @@ export function MindMapView({
       <InteractiveDiagramBlock
         diagram={diagram}
         presentation={presentation}
-        onNodeClick={setSelected}
+        onNodeClick={selectNode}
       />
       {selected && (
         <NodePanel
           node={selected}
           mapTrust={mapTrust}
-          onClose={() => setSelected(null)}
+          onClose={() => selectNode(null)}
         />
       )}
     </div>

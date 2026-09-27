@@ -11,6 +11,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   Headphones,
   Plus,
@@ -42,6 +43,11 @@ import { authenticatedStudyMediaLoadKey } from "../../authLoad";
 import { useStudyMediaLibrary } from "../../useStudyMediaLibrary";
 import type { StudyMediaRow } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import {
+  EducationCollectionNoResults,
+  EducationCollectionSearch,
+  filterEducationCollection,
+} from "@/features/education/components/EducationCollectionSearch";
 
 const SURFACE_NAME = "matrx-user/education-audio-study";
 
@@ -66,6 +72,19 @@ export function AudioStudyHome() {
   const library = useStudyMediaLibrary("audio", loadKey);
   const rows = library.rows;
   const loading = !authReady || library.loading;
+  const [search, setSearch] = useState("");
+  const filteredRows = filterEducationCollection(
+    rows,
+    search,
+    (row) => [
+      row.title,
+      row.source_title,
+      row.audio_format,
+      row.status,
+      row.source_kind,
+      row.description,
+    ],
+  );
 
   // Read at trigger time, never from stale closure state.
   const buildScope = () =>
@@ -110,15 +129,31 @@ export function AudioStudyHome() {
     <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
     <EducationToolHeader title="Audio Study" />
     <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4">
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => router.push("/education/audio-study/review")}>
-          <Mic className="h-4 w-4" />
-          Audio review
-        </Button>
-        <Button size="sm" className="gap-1.5" onClick={() => router.push("/education/audio-study/new")}>
-          <Plus className="h-4 w-4" />
-          New audio
-        </Button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <EducationCollectionSearch
+          value={search}
+          onValueChange={setSearch}
+          label="audio studies"
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => router.push("/education/audio-study/review")}
+          >
+            <Mic className="h-4 w-4" />
+            Audio review
+          </Button>
+          <Button
+            size="sm"
+            className="gap-1.5"
+            onClick={() => router.push("/education/audio-study/new")}
+          >
+            <Plus className="h-4 w-4" />
+            New audio
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -130,9 +165,15 @@ export function AudioStudyHome() {
         <LibraryError error={library.error} onRetry={library.retry} />
       ) : rows.length === 0 ? (
         <EmptyState onNew={() => router.push("/education/audio-study/new")} />
+      ) : filteredRows.length === 0 ? (
+        <EducationCollectionNoResults
+          query={search}
+          label="audio studies"
+          onClear={() => setSearch("")}
+        />
       ) : (
         <ul className="space-y-2" data-surface-value="audio_library">
-          {rows.map((row) => (
+          {filteredRows.map((row) => (
             <AudioRow key={row.id} row={row} href={`/education/audio-study/${row.id}`} />
           ))}
         </ul>

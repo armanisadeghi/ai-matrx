@@ -19,7 +19,7 @@ export function findRenderedTextMatches(text: string, query: string, options: Re
     if (!match[0] || match.index === undefined) continue;
     const start = match.index;
     const end = start + match[0].length;
-    if (options.wholeWord && (/\w/.test(text[start - 1] ?? "") || /\w/.test(text[end] ?? ""))) continue;
+    if (options.wholeWord && (/[\p{L}\p{N}\p{M}_]/u.test(text[start - 1] ?? "") || /[\p{L}\p{N}\p{M}_]/u.test(text[end] ?? ""))) continue;
     matches.push([start, end]);
   }
   return matches;
@@ -44,7 +44,7 @@ export function collectRenderedFindRanges(root: HTMLElement, query: string, opti
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     // Inline formatting shares a searchable phrase. Separate paragraphs,
     // headings and list items cannot accidentally form one invented phrase.
-    const block = node.parentElement?.closest("p,li,h1,h2,h3,h4,h5,h6,blockquote,pre,td,th,figcaption") ?? root;
+    const block = node.parentElement?.closest("p,li,h1,h2,h3,h4,h5,h6,blockquote,pre,td,th,figcaption,div,section,article") ?? root;
     if (previousBlock && block !== previousBlock) text += "\n";
     previousBlock = block;
     nodes.push(node as Text);

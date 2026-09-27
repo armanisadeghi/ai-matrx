@@ -10,6 +10,7 @@ import { useRead } from "@/components/read-state/useRead";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useState } from "react";
 import { Network, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -18,6 +19,11 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { createEducationMindMapsScope } from "@/features/surfaces/manifests/education-mind-maps.manifest";
 import { studyMediaService } from "../../service";
 import type { StudyMediaRow } from "../../types";
+import {
+  EducationCollectionNoResults,
+  EducationCollectionSearch,
+  filterEducationCollection,
+} from "@/features/education/components/EducationCollectionSearch";
 
 export function MindMapHome() {
   const router = useRouter();
@@ -32,12 +38,24 @@ export function MindMapHome() {
   );
   const rows = read.data ?? [];
   const loading = read.isLoading;
+  const [search, setSearch] = useState("");
+  const filteredRows = filterEducationCollection(
+    rows,
+    search,
+    (row) => [
+      row.title,
+      row.source_title,
+      row.source_kind,
+      row.status,
+      row.description,
+    ],
+  );
 
   // Live surface scope for the Agents chrome (matrx-user/education-mind-maps,
   // list view). Synchronous over live render state — no fetch; the Surface
   // Context window polls this every 400ms. This mount registers NO write
-  // handlers: the library owns no editable state (there is not even a search
-  // box), so there is nothing here an agent could stage.
+  // handlers: search only filters loaded rows locally, so there is nothing here
+  // an agent could stage.
   const getScope = () =>
     createEducationMindMapsScope({
       view: "list",
@@ -64,7 +82,12 @@ export function MindMapHome() {
     >
     <EducationToolHeader title="Mind Maps" />
     <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4">
-      <div className="flex items-center justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <EducationCollectionSearch
+          value={search}
+          onValueChange={setSearch}
+          label="mind maps"
+        />
         <Button size="sm" className="gap-1.5" onClick={() => router.push("/education/mind-maps/new")}>
           <Plus className="h-4 w-4" />
           New mind map
@@ -89,9 +112,15 @@ export function MindMapHome() {
             New mind map
           </Button>
         </div>
+      ) : filteredRows.length === 0 ? (
+        <EducationCollectionNoResults
+          query={search}
+          label="mind maps"
+          onClear={() => setSearch("")}
+        />
       ) : (
         <ul className="space-y-2">
-          {rows.map((row) => (
+          {filteredRows.map((row) => (
             <li key={row.id}>
               {/* A record with its own page — an anchor, not a <button>.
                   As a button the card navigated on click and offered nothing

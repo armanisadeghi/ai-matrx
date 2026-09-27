@@ -17,6 +17,11 @@ import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresenta
 import { listKits, kitHref, type StudyKit } from "../kitService";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import {
+  EducationCollectionNoResults,
+  EducationCollectionSearch,
+  filterEducationCollection,
+} from "@/features/education/components/EducationCollectionSearch";
 
 function KitRow({ kit }: { kit: StudyKit }) {
   return (
@@ -62,6 +67,15 @@ export function KitsHome() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
+  const [search, setSearch] = useState("");
+  const filteredKits = filterEducationCollection(kits, search, (kit) => [
+    kit.title,
+    ...kit.artifacts.flatMap((artifact) => [
+      artifact.title,
+      artifact.targetKind,
+      artifact.artifactType,
+    ]),
+  ]);
 
   useEffect(() => {
     let active = true;
@@ -95,7 +109,7 @@ export function KitsHome() {
     <>
       <EducationToolHeader title="Study Kits" />
       <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-8">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-muted-foreground">
             Each kit is one piece of your material and everything made from it.
           </p>
@@ -106,6 +120,12 @@ export function KitsHome() {
             </Link>
           </Button>
         </div>
+
+        <EducationCollectionSearch
+          value={search}
+          onValueChange={setSearch}
+          label="study kits"
+        />
 
         {loading ? (
           <div className="space-y-2">
@@ -139,9 +159,15 @@ export function KitsHome() {
               </Link>
             </Button>
           </div>
+        ) : filteredKits.length === 0 ? (
+          <EducationCollectionNoResults
+            query={search}
+            label="study kits"
+            onClear={() => setSearch("")}
+          />
         ) : (
           <div className="space-y-2">
-            {kits.map((kit) => (
+            {filteredKits.map((kit) => (
               <KitRow key={`${kit.sourceType}:${kit.sourceId}`} kit={kit} />
             ))}
           </div>

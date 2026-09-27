@@ -17,6 +17,7 @@
 import { useRead } from "@/components/read-state/useRead";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import Link from "next/link";
+import { useState } from "react";
 import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -24,6 +25,11 @@ import { EducationToolHeader } from "@/features/education/components/EducationTo
 import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import {
+  EducationCollectionNoResults,
+  EducationCollectionSearch,
+  filterEducationCollection,
+} from "@/features/education/components/EducationCollectionSearch";
 
 export function SummaryHome() {
   const read = useRead(
@@ -37,12 +43,29 @@ export function SummaryHome() {
   );
   const rows = read.data ?? [];
   const loading = read.isLoading;
+  const [search, setSearch] = useState("");
+  const filteredRows = filterEducationCollection(
+    rows,
+    search,
+    (row) => [
+      row.title,
+      row.source_title,
+      row.source_kind,
+      row.status,
+      row.description,
+    ],
+  );
 
   return (
     <>
       <EducationToolHeader title="Study Summaries" />
       <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-8">
-        <div className="flex items-center justify-end">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <EducationCollectionSearch
+            value={search}
+            onValueChange={setSearch}
+            label="study summaries"
+          />
           <Button asChild size="sm" className="gap-1.5">
             <Link href="/education/start">
               <AGENT_ICON className="h-4 w-4" />
@@ -72,9 +95,15 @@ export function SummaryHome() {
               </Link>
             </Button>
           </div>
+        ) : filteredRows.length === 0 ? (
+          <EducationCollectionNoResults
+            query={search}
+            label="study summaries"
+            onClear={() => setSearch("")}
+          />
         ) : (
           <ul className="space-y-2">
-            {rows.map((row) => (
+            {filteredRows.map((row) => (
               <li key={row.id}>
                 {/* A record with its own page — an anchor, so cmd-click and
                     middle-click open it in a new tab (Door Law). */}

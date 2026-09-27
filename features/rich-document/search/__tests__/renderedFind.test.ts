@@ -22,5 +22,13 @@ describe("rendered document search", () => {
     root.innerHTML = "<p>alpha <strong>beta</strong></p><p>gamma</p>";
     expect(collectRenderedFindRanges(root, "alpha beta")).toHaveLength(1);
     expect(collectRenderedFindRanges(root, "betagamma")).toHaveLength(0);
+    root.innerHTML = "<div>alpha</div><div>beta</div>";
+    expect(collectRenderedFindRanges(root, "alphabeta")).toHaveLength(0);
+    expect(collectRenderedFindRanges(root, "alpha")).toHaveLength(1);
+  });
+
+  it("recognizes whole-word boundaries in international text", () => {
+    expect(findRenderedTextMatches("éclair clair", "clair", { wholeWord: true })).toEqual([[7, 12]]);
+    expect(findRenderedTextMatches("домик дом", "дом", { wholeWord: true })).toEqual([[6, 9]]);
   });
 });

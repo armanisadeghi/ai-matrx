@@ -6,7 +6,7 @@
 // sources + owner controls (regenerate / delete / share). Read-only for
 // non-owners (the shared viewer). Mirrors MindMapDetail. React Compiler is on.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -26,6 +26,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { createEducationMemoryScope } from "@/features/surfaces/manifests/education-memory.manifest";
 import MemoryAidBlock from "@/components/mardown-display/blocks/memory-aid/MemoryAidBlock";
 import { coerceMemoryAid } from "@/features/content-ir/kinds/memory-aid";
+import { ContentFindControl } from "@/features/rich-document/search/ContentFindControl";
 
 const SURFACE_NAME = "matrx-user/education-memory";
 
@@ -36,6 +37,7 @@ export function MemoryDetail({ mediaId }: { mediaId: string }) {
   // The raw failure, never a sentence — the access gate decides what it means.
   const [loadError, setLoadError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const contentRef = useRef<HTMLDivElement>(null);
   const { isOwner } = useAccess("study_media", mediaId);
 
   // Read at trigger time, never from stale closure state. `/[id]/edit` renders
@@ -82,12 +84,15 @@ export function MemoryDetail({ mediaId }: { mediaId: string }) {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    studyMediaService.getById(mediaId).then((res) => {
+    queueMicrotask(() => {
       if (!active) return;
-      setMedia(res.data);
-      setLoadError(res.data ? null : (res.error ?? null));
-      setLoading(false);
+      setLoading(true);
+      studyMediaService.getById(mediaId).then((res) => {
+        if (!active) return;
+        setMedia(res.data);
+        setLoadError(res.data ? null : (res.error ?? null));
+        setLoading(false);
+      });
     });
     return () => {
       active = false;
@@ -173,6 +178,7 @@ export function MemoryDetail({ mediaId }: { mediaId: string }) {
             {media.title}
           </h1>
         </div>
+        <ContentFindControl rootRef={contentRef} label="Find in memory aids" />
         {isOwner && (
           <div className="flex shrink-0 items-center gap-1">
             <ShareButton
@@ -208,7 +214,7 @@ export function MemoryDetail({ mediaId }: { mediaId: string }) {
         )}
       </div>
 
-      <div data-surface-value="aid_content">
+      <div ref={contentRef} data-surface-value="aid_content">
         {/* THE CANONICAL COMPONENT LAW: the registered `memory_aid` kind renders
             through its ONE kind component — the same pixels as the live run
             window and chat. */}
