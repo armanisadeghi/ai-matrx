@@ -7,7 +7,8 @@ import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => (a: unknown) => a }));
+const mockDispatch = (a: unknown) => a;
+jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => mockDispatch }));
 jest.mock("@/features/notes/redux/thunks", () => ({ fetchNoteContent: (id: string) => ({ type: "fetch", id }) }));
 const instance = jest.fn();
 jest.mock("@/features/notes/hooks/useEmbeddedNoteInstance", () => ({

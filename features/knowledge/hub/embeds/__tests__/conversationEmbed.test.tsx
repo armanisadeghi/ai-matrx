@@ -10,12 +10,15 @@ import { createRoot, type Root } from "react-dom/client";
 
 const state = { messages: { byConversationId: {} as Record<string, { byId: Record<string, unknown> }> } };
 const dispatched: unknown[] = [];
+// Stable across renders, like the real hooks.
+const mockDispatch = (a: unknown) => {
+  dispatched.push(a);
+  return a;
+};
+const mockStore = { getState: () => state };
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppDispatch: () => (a: unknown) => {
-    dispatched.push(a);
-    return a;
-  },
-  useAppStore: () => ({ getState: () => state }),
+  useAppDispatch: () => mockDispatch,
+  useAppStore: () => mockStore,
 }));
 let row: { initial_agent_id: string | null } | null = { initial_agent_id: "agent-1" };
 jest.mock("@/utils/supabase/client", () => ({
