@@ -96,5 +96,12 @@ describe("SelectedCalendarEventRow", () => {
       message: "Google rejected this calendar.",
       offerReconnect: false,
     });
+
+    expect(selectedCalendarProblem(new BackendApiError({
+      code: "selected_calendar_snapshot_incomplete",
+      detail: "incomplete",
+      userMessage: "No snapshot was applied.",
+      status: 409,
+    }), "connected")).toMatchObject({ offerReconnect: false });
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CalendarSearch, ExternalLink, RefreshCw, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +22,9 @@ import type { GoogleConnectionHealth } from "@/features/marketing/google/types";
 import {
   discoverSelectedCalendars,
   readSelectedCalendarEvents,
+  reconcileSelectedCalendar,
   type SelectedCalendar,
+  type SelectedCalendarReconcileResult,
   type SelectedEvent,
   type SelectedEventWindow,
 } from "./selectedCalendarService";
@@ -52,6 +54,15 @@ export function selectedCalendarProblem(
       message: error.userMessage,
       offerReconnect: true,
     };
+  }
+  if (error instanceof BackendApiError && error.code === "selected_calendar_snapshot_incomplete") {
+    return {
+      message: "Google did not return a complete calendar window. Nothing was saved. Read this calendar again and retry.",
+      offerReconnect: false,
+    };
+  }
+  if (error instanceof BackendApiError && error.code === "selected_calendar_snapshot_superseded") {
+    return { message: "A newer save started for this calendar. Read it again before retrying.", offerReconnect: false };
   }
   return { message: extractErrorMessage(error), offerReconnect: false };
 }
@@ -146,10 +157,13 @@ function ReviewResult({ result }: { result: SelectedEventWindow }) {
         </p>
       </div>
       {result.truncated ? (
-        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-foreground">
-          This bounded window reached Google’s event limit. Refine the review
-          before drawing conclusions.
-        </p>
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-foreground">
+          <p>
+            This seven-day window reached Google’s event limit. A complete
+            snapshot is required before saving. Try again later or choose another calendar.
+          </p>
+          <ErrorAlchemyMenu error="The selected calendar read was truncated." />
+        </div>
       ) : null}
       {result.events.length ? (
         <ul className="space-y-2">
@@ -172,64 +186,6 @@ function ReviewResult({ result }: { result: SelectedEventWindow }) {
 /** Internal-only preparation view. Server authorization remains the enforcement boundary. */
 export function SelectedCalendarReview() {
   const { organizationId, organizationState } = useOrganizationRequired();
-  const inventory = useGoogleConnectionInventory();
-  const openGoogleConnect = useOpenGoogleConnectWindow();
-  const [connectionId, setConnectionId] = useState("");
-  const [calendars, setCalendars] = useState<SelectedCalendar[]>([]);
-  const [calendarId, setCalendarId] = useState("");
-  const [result, setResult] = useState<SelectedEventWindow | null>(null);
-  const [busy, setBusy] = useState<"discover" | "read" | null>(null);
-  const [problem, setProblem] = useState<SelectedCalendarProblem | null>(null);
-  const connections = inventory.data?.connections ?? [];
-  const selectedConnection =
-    connections.find((connection) => connection.id === connectionId) ?? null;
-
-  function chooseConnection(id: string) {
-    setConnectionId(id);
-    setCalendars([]);
-    setCalendarId("");
-    setResult(null);
-    setProblem(null);
-  }
-
-  async function discover() {
-    if (!organizationId || !connectionId) return;
-    setBusy("discover");
-    setProblem(null);
-    setCalendars([]);
-    setCalendarId("");
-    setResult(null);
-    try {
-      setCalendars(
-        await discoverSelectedCalendars({ organizationId, connectionId }),
-      );
-    } catch (error: unknown) {
-      setProblem(selectedCalendarProblem(error, selectedConnection?.health));
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function readEvents() {
-    if (!organizationId || !connectionId || !calendarId) return;
-    setBusy("read");
-    setProblem(null);
-    setResult(null);
-    try {
-      setResult(
-        await readSelectedCalendarEvents({
-          organizationId,
-          connectionId,
-          calendarId,
-        }),
-      );
-    } catch (error: unknown) {
-      setProblem(selectedCalendarProblem(error, selectedConnection?.health));
-    } finally {
-      setBusy(null);
-    }
-  }
-
   if (organizationState !== "ready") {
     return (
       <OrganizationContextNotice
@@ -239,6 +195,113 @@ export function SelectedCalendarReview() {
       />
     );
   }
+  return <SelectedCalendarReviewContent key={organizationId} organizationId={organizationId} />;
+}
+
+function SelectedCalendarReviewContent({ organizationId }: { organizationId: string | null }) {
+  const inventory = useGoogleConnectionInventory();
+  const openGoogleConnect = useOpenGoogleConnectWindow();
+  const [connectionId, setConnectionId] = useState("");
+  const [calendars, setCalendars] = useState<SelectedCalendar[]>([]);
+  const [calendarId, setCalendarId] = useState("");
+  const [readResult, setReadResult] = useState<{
+    organizationId: string;
+    connectionId: string;
+    calendarId: string;
+    window: SelectedEventWindow;
+  } | null>(null);
+  const [saveResult, setSaveResult] = useState<{
+    organizationId: string;
+    connectionId: string;
+    calendarId: string;
+    counts: SelectedCalendarReconcileResult;
+  } | null>(null);
+  const [busy, setBusy] = useState<"discover" | "read" | "save" | null>(null);
+  const [problem, setProblem] = useState<SelectedCalendarProblem | null>(null);
+  const requestVersion = useRef(0);
+  const connections = inventory.data?.connections ?? [];
+  const selectedConnection =
+    connections.find((connection) => connection.id === connectionId) ?? null;
+  const currentRead = readResult?.organizationId === organizationId &&
+    readResult.connectionId === connectionId &&
+    readResult.calendarId === calendarId &&
+    !readResult.window.truncated ? readResult.window : null;
+  const currentSave = saveResult?.organizationId === organizationId &&
+    saveResult.connectionId === connectionId &&
+    saveResult.calendarId === calendarId ? saveResult.counts : null;
+
+  function chooseConnection(id: string) {
+    requestVersion.current += 1;
+    setConnectionId(id);
+    setCalendars([]);
+    setCalendarId("");
+    setReadResult(null);
+    setSaveResult(null);
+    setProblem(null);
+  }
+
+  async function discover() {
+    if (!organizationId || !connectionId) return;
+    const version = ++requestVersion.current;
+    setBusy("discover");
+    setProblem(null);
+    setCalendars([]);
+    setCalendarId("");
+    setReadResult(null);
+    setSaveResult(null);
+    try {
+      const discovered = await discoverSelectedCalendars({ organizationId, connectionId });
+      if (version === requestVersion.current) setCalendars(discovered);
+    } catch (error: unknown) {
+      if (version === requestVersion.current)
+        setProblem(selectedCalendarProblem(error, selectedConnection?.health));
+    } finally {
+      if (version === requestVersion.current) setBusy(null);
+    }
+  }
+
+  async function readEvents() {
+    if (!organizationId || !connectionId || !calendarId) return;
+    const version = ++requestVersion.current;
+    setBusy("read");
+    setProblem(null);
+    setReadResult(null);
+    setSaveResult(null);
+    try {
+      const window = await readSelectedCalendarEvents({ organizationId, connectionId, calendarId });
+      if (version === requestVersion.current)
+        setReadResult({ organizationId, connectionId, calendarId, window });
+    } catch (error: unknown) {
+      if (version === requestVersion.current)
+        setProblem(selectedCalendarProblem(error, selectedConnection?.health));
+    } finally {
+      if (version === requestVersion.current) setBusy(null);
+    }
+  }
+
+  async function saveSelected() {
+    if (!organizationId || !connectionId || !calendarId || !currentRead || busy !== null) return;
+    const version = ++requestVersion.current;
+    const selected = { organizationId, connectionId, calendarId };
+    setBusy("save");
+    setProblem(null);
+    setSaveResult(null);
+    try {
+      const counts = await reconcileSelectedCalendar(selected);
+      if (version === requestVersion.current) {
+        setReadResult(null);
+        setSaveResult({ ...selected, counts });
+      }
+    } catch (error: unknown) {
+      if (version === requestVersion.current) {
+        setReadResult(null);
+        setProblem(selectedCalendarProblem(error, selectedConnection?.health));
+      }
+    } finally {
+      if (version === requestVersion.current) setBusy(null);
+    }
+  }
+
   if (inventory.isLoading)
     return (
       <p className="p-4 text-sm text-muted-foreground">
@@ -267,8 +330,9 @@ export function SelectedCalendarReview() {
           </h3>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          Internal source preparation only. Nothing is saved or changed in
-          Google, and this does not prepare a meeting.
+          Internal review only. Reading shows a temporary preview. Saving is a
+          separate choice that updates AI Matrx from this calendar; neither
+          action changes Google or prepares a meeting.
         </p>
       </div>
       {connections.length ? (
@@ -315,8 +379,10 @@ export function SelectedCalendarReview() {
           <Select
             value={calendarId || undefined}
             onValueChange={(id) => {
+              requestVersion.current += 1;
               setCalendarId(id);
-              setResult(null);
+              setReadResult(null);
+              setSaveResult(null);
             }}
             disabled={busy !== null}
           >
@@ -378,7 +444,39 @@ export function SelectedCalendarReview() {
           <ErrorAlchemyMenu error={problem.message} />
         </div>
       ) : null}
-      {result ? <ReviewResult result={result} /> : null}
+      {readResult?.organizationId === organizationId &&
+      readResult.connectionId === connectionId &&
+      readResult.calendarId === calendarId ? (
+        <ReviewResult result={readResult.window} />
+      ) : null}
+      {currentRead ? (
+        <div className="rounded-md border border-border p-3 text-sm" data-selected-calendar-save>
+          <p>
+            Save this selected calendar to AI Matrx? This performs a fresh,
+            complete Google read for the same account and calendar over the next
+            seven days, then updates the AI Matrx calendar mirror. It does not
+            change events in Google.
+          </p>
+          <Button
+            type="button"
+            className="mt-3 min-h-11"
+            onClick={() => void saveSelected()}
+            disabled={busy !== null}
+          >
+            {busy === "save" ? "Refreshing and saving…" : "Refresh and save selected calendar"}
+          </Button>
+        </div>
+      ) : null}
+      {currentSave ? (
+        <div className="rounded-md border border-border bg-muted/20 p-3 text-sm" data-selected-calendar-saved>
+          <p className="font-medium">Selected calendar saved to AI Matrx.</p>
+          <p className="mt-1 text-muted-foreground">
+            Created {currentSave.created}; updated {currentSave.updated};
+            scrubbed {currentSave.scrubbed}; attendees linked {currentSave.attendees_linked};
+            attendees unlinked {currentSave.attendees_unlinked}; detached records preserved {currentSave.detached_preserved}.
+          </p>
+        </div>
+      ) : null}
     </section>
   );
 }
