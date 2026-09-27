@@ -707,6 +707,10 @@ export const settingsRegistry: SettingsTabDef[] = [
     id: "organizations",
     label: "Organizations",
     icon: Building2,
+    // The folder's own page (manage and create organizations) is a
+    // destination; without this the nav showed only "Media Source Catalog".
+    navigable: true,
+    navigationLabel: "Your organizations",
     description: "Manage organizations you belong to and create new ones.",
     searchKeywords: ["org", "orgs", "team", "teams", "workspace", "members"],
     component: OrganizationsTab,

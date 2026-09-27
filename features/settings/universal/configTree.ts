@@ -25,7 +25,9 @@ import {
 } from "./UniversalSettingsContext";
 
 /** Label of the root folder every taxonomy-driven section hangs under. */
-export const CONFIG_TAB_LABEL = "Configuration";
+// "Configuration" read as an engineering word to people (page-pass
+// 2026-09-27); the folder holds every product area's settings.
+export const CONFIG_TAB_LABEL = "Settings by product area";
 
 /**
  * 🚨 THE DOOR TO THE VIEWER'S OWN COPY OF ONE SETTING (feedback 7dc1e5ae).

@@ -1,5 +1,5 @@
 import { Scale } from "lucide-react";
-import { buildConfigTreeNodes } from "@/features/settings/universal/configTree";
+import { CONFIG_TAB_LABEL, buildConfigTreeNodes } from "@/features/settings/universal/configTree";
 import { settingsNavigationSections } from "./SettingsFlatNavigation";
 
 // The desktop nav lists each Configuration domain through its Overview leaf.
@@ -18,7 +18,7 @@ describe("Configuration domains in the flat settings nav", () => {
         domainLeafId: "config.legal.legal",
       },
     ]);
-    const section = settingsNavigationSections(nodes).find((s) => s.label === "Configuration");
+    const section = settingsNavigationSections(nodes).find((s) => s.label === CONFIG_TAB_LABEL);
     const item = section?.items.find((i) => i.label === "Legal");
     expect(item?.node.icon).toBe(Scale);
   });
