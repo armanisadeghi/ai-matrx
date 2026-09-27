@@ -40,6 +40,7 @@ Every admin-suite href is built in `admin-routes.ts` (`adminMandateRecordHref`, 
 - Authoring: `authoring/` (admin `NewMandatePage`), `authoring-level/` (user/org soft mandates → `POST /mandates/soft`).
 - Notes: `notes.ts` (`agent.mandate_note`), `components/MandateNotesPanel.tsx` (two mounts only: Agents menu row, admin Notes).
 - Feature intelligence (the per-feature page + the Intelligence icon): `feature-intelligence/` — see its `FEATURE.md`.
+- Run history: `run-history/` — `service.ts` is the ONE read (`public.mnd_run_history`, migration `mnd_run_history_2026_09_27.sql`; views `mine` / `org` (owner/admin) / `platform` (admin section)), `MandateRunHistory.tsx` the one table (URL keys `runs_page`/`runs_status`/`runs_org`/`runs_person`; `compact` for the card). Mounted on the expanded Intelligence card (last 5 + "All runs"), the member record's Runs tab (`record-tabs.ts` `member: true`), and inside the admin record's Health tab (platform view; the ten admin tabs stay as they are). No new log: it reads `chat.user_request` + `workflow.run`; the level that decided each run is aidream's `mandate_run_stamp` (`metadata.mandate_resolution`), null = recorded before 2026-09-27.
 - Doors/UI: `components/MandateDoorLink.tsx`, `components/MandateAgentPicker.tsx`, `components/EffectiveConfigLayers.tsx`.
 - Instructions reader: `features/voice-agent/agentInstructions.ts` (`useMandateAgentInstructions`, `readInstructionsFromAgent`).
 - Launch path rule: `features/agents/redux/execution-system/utils/resolve-start-path.ts`.

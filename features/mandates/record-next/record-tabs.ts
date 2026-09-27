@@ -24,6 +24,10 @@
 //   overrides-simple → "Overrides (simple)" — `MandateOverridesSimple`
 //   (features/mandates/overrides-simple/), the simple redesign the owner asked
 //   for: the current agent's settings, each with a way to override it.
+// And one on the MEMBER seats only:
+//   runs → "Runs" — the mandate's run history at this seat
+//   (features/mandates/run-history/). The admin route keeps its ten protected
+//   tabs and shows the platform-wide history inside Health instead.
 
 import { ADMIN_MANDATES_HOME, adminMandateRecordHref } from "@/features/mandates/admin-routes";
 import {
@@ -32,6 +36,7 @@ import {
   Code2,
   FileText,
   FlaskConical,
+  History,
   ListChecks,
   Link2,
   MonitorCog,
@@ -42,7 +47,7 @@ import {
 } from "lucide-react";
 import type { MandateWorkspaceTab } from "@/features/mandates/workspace/MandateWorkspace";
 
-export type RecordTabId = MandateWorkspaceTab | "overrides-simple";
+export type RecordTabId = MandateWorkspaceTab | "overrides-simple" | "runs";
 
 export interface RecordTab {
   id: RecordTabId;
@@ -56,6 +61,8 @@ export interface RecordTab {
    * valid `?tab=` so its protected body mounts exactly as before.
    */
   action?: boolean;
+  /** Member seats only (person / organization) — never on the admin route. */
+  member?: boolean;
 }
 
 export const RECORD_TABS: readonly RecordTab[] = [
@@ -70,6 +77,7 @@ export const RECORD_TABS: readonly RecordTab[] = [
   { id: "source", label: "Usage", icon: Code2, admin: true },
   { id: "diagnostics", label: "Health", icon: Activity, admin: true },
   { id: "notes", label: "Notes", icon: NotebookPen },
+  { id: "runs", label: "Runs", icon: History, member: true },
 ];
 
 export const DEFAULT_RECORD_TAB: RecordTabId = "definition";
@@ -81,7 +89,7 @@ export function tabRowOf(tabs: readonly RecordTab[]): readonly RecordTab[] {
 
 /** The tabs a viewer sees. `admin` tabs only when the host shows admin tools. */
 export function visibleRecordTabs(showAdmin: boolean): readonly RecordTab[] {
-  return RECORD_TABS.filter((tab) => !tab.admin || showAdmin);
+  return RECORD_TABS.filter((tab) => !tab.member && (!tab.admin || showAdmin));
 }
 
 /** A `?tab=` value read back into a tab id, or the default for anything else. */
@@ -118,7 +126,7 @@ export type RecordLevel = "system" | "person" | "organization";
 /** Tabs a read-only seat (an organization member who does not manage it)
  * sees. Test is among them: trying a job runs it as the viewer, charged to
  * the viewer, and changes nothing. */
-const READ_ONLY_TAB_IDS: readonly RecordTabId[] = ["definition", "holder", "test", "notes"];
+const READ_ONLY_TAB_IDS: readonly RecordTabId[] = ["definition", "holder", "test", "notes", "runs"];
 
 /**
  * The tabs for a seat. Pure. A member seat gets its OWN Test tab (the
