@@ -26,7 +26,9 @@
  * -------------
  * At the ASYNC action boundaries, never scattered through feature code:
  *
- *   * `callApi` — every REST call in the app.
+ *   * `callApi` — every REST call in the app: a WRITE the person just pressed
+ *     (browser transient activation, `personJustActed`) asks; a background
+ *     write and every read do not (2026-09-26; before that it never asked).
  *   * `cloudUpload` — every file upload, both transports.
  *   * the AI execution thunks — the one path that does not go through callApi.
  *
@@ -301,6 +303,19 @@ const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
  * An explicit `organizationId` the caller already resolved always wins and
  * never asks. `interactive` overrides the method for a background write.
  */
+/**
+ * Did the person just act? The browser's transient user activation — true for a
+ * few seconds after a click, tap or key press, false for work that started on
+ * its own (a timer, a refocus refetch, a retry loop). It is how a shared
+ * transport tells a write somebody pressed from a background one without every
+ * caller having to say which it is. Missing API (old browser, SSR) = false.
+ */
+export function personJustActed(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const activation = (navigator as Navigator & { userActivation?: { isActive?: boolean } }).userActivation;
+  return activation?.isActive === true;
+}
+
 export function ensureOrganizationForRequest(options: {
   method?: string | null;
   organizationId?: string | null;

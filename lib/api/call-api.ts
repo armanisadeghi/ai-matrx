@@ -418,6 +418,19 @@ export interface ApiCallConfig<
    */
   organizationFreeRead?: true;
 
+  /**
+   * Whether a WRITE with no workspace selected may open the workspace picker.
+   * Default: yes when the person just acted (a click or key within the
+   * browser's transient-activation window), no otherwise — so a write the
+   * person pressed ASKS and continues on the pick, while a background write
+   * (retry, autosave on a timer, rejoin) keeps the fail-closed refusal it
+   * always had and never raises a dialog with nothing behind it (4821555e98).
+   * `true` forces the question for a deliberate action that reaches here after
+   * the activation window (after a long upload); `false` opts a background
+   * write out. Reads never ask.
+   */
+  interactiveOrganization?: boolean;
+
   // ── Test / Demo overrides (placeholder) ──────────────────────────────────
 
   /**
@@ -685,14 +698,22 @@ async function readHasNoOrganization(getState: () => RootState): Promise<boolean
 async function ensureOrganizationContextForCall(
   selectedOrganizationId: string | null | undefined,
   overrideOrganizationId: string | undefined,
+  method: string,
+  interactiveOverride: boolean | undefined,
 ): Promise<string> {
-  const { ensureOrganizationContext } = await import(
+  const { ensureOrganizationForRequest, personJustActed } = await import(
     "@/lib/organization/organization-gate"
   );
-  return ensureOrganizationContext({
+  // THE ONE LINE, drawn the same way for every write through callApi: a write
+  // the person just pressed ASKS (the canonical picker; the call waits, then
+  // continues with the pick; dismiss = OrganizationSelectionCancelled, which
+  // the catch below turns into "nothing happened"). A background write keeps
+  // the fail-closed refusal. Nothing is ever picked for anybody.
+  return ensureOrganizationForRequest({
+    method,
     organizationId:
       overrideOrganizationId ?? adminLaneOrganizationId() ?? selectedOrganizationId,
-    interactive: false,
+    interactive: interactiveOverride ?? (personJustActed() ? undefined : false),
   });
 }
 
@@ -1450,6 +1471,8 @@ export function callApi<
           : await ensureOrganizationContextForCall(
               state.appContext?.organization_id,
               config.scopeOverrides?.organization_id,
+              config.method,
+              config.interactiveOrganization,
             );
 
       // ── Step 4: Resolve and validate the complete request context ───────

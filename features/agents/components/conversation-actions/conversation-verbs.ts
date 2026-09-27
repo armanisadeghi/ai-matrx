@@ -19,8 +19,6 @@ import {
   renameConversation,
 } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { conversationRenameOpener } from "./rename/conversationRenameOpener";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 
 export function displayConversationTitle(title: string | null | undefined): string {
   if (!title) return "Untitled conversation";
@@ -84,17 +82,9 @@ export async function duplicateConversationVerb(
   conversationId: string,
   options: { surfaceKey?: string; onSuccess?: () => void } = {},
 ): Promise<void> {
-  // A copy is a WRITE filed under a workspace. The person pressed Duplicate,
-  // so with none selected we ASK (the one workspace picker) instead of
-  // letting the transport refuse with "Select an organization before sending
-  // this request." Cancel = nothing happened. Nothing is chosen for them.
-  try {
-    await ensureOrganizationContext();
-  } catch (err) {
-    if (isOrganizationSelectionCancelled(err)) return;
-    toast.error(err instanceof Error ? err.message : "Duplicate failed");
-    return;
-  }
+  // With no workspace selected, the fork write asks for one at the shared
+  // transport (callApi: a write the person just pressed opens the picker);
+  // dismissing it rejects with empty text, which the toast layer drops.
   const result = await dispatch(
     duplicateConversation({ conversationId, surfaceKey: options.surfaceKey }),
   );
