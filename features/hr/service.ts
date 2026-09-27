@@ -2065,6 +2065,22 @@ export function upsertHrEstablishment(
   );
 }
 
+/**
+ * Archive (or restore) one establishment — `hr_establishment_set_archived(p_id,
+ * p_archived)`, added 2026-09-27. Soft: sets/clears `deleted_at`. Refuses with
+ * `reason: "in_use"` (and a `door`) while a live location points at it.
+ */
+export function setHrEstablishmentArchived(args: {
+  id: string;
+  archived: boolean;
+}): Promise<HrResult<HrWriteAck>> {
+  return callHrWrite(
+    "hr_establishment_set_archived",
+    { p_id: args.id, p_archived: args.archived },
+    { envelope: true, whatFailed: args.archived ? "Archiving the establishment" : "Restoring the establishment" },
+  );
+}
+
 // ── Pay-group assignment and the activation seeds ───────────────────────────
 //
 // Both doors are LIVE (`pg_proc`, 2026-08-26) and both used to have ZERO callers
