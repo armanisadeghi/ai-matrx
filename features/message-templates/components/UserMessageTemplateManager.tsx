@@ -45,7 +45,7 @@ import {
 } from "@/features/message-templates/types/message-templates-db";
 import {
   fetchMessageTemplates,
-  deleteTemplate,
+  archiveTemplate,
   clearTemplateCache,
 } from "@/features/message-templates/services/message-templates-service";
 import { MessageTemplatesPageHeader } from "./MessageTemplatesPageHeader";
@@ -378,13 +378,13 @@ export function UserMessageTemplateManager() {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      await deleteTemplate(deleteTarget.id);
+      await archiveTemplate(deleteTarget.id);
       clearTemplateCache();
       await loadData();
-      toast({ title: "Template deleted" });
+      toast({ title: "Template moved to Trash" });
     } catch (err) {
       console.error("Error deleting template:", err);
-      toast({ title: "Failed to delete template", variant: "destructive" });
+      toast({ title: "Failed to archive template", variant: "destructive" });
     } finally {
       setIsDeleting(false);
       setDeleteTarget(null);
@@ -767,9 +767,9 @@ export function UserMessageTemplateManager() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Template</AlertDialogTitle>
+            <AlertDialogTitle>Archive template?</AlertDialogTitle>
             <AlertDialogDescription>
-              Delete &ldquo;{deleteTarget?.label}&rdquo;? This cannot be undone.
+              &ldquo;{deleteTarget?.label}&rdquo; moves to Trash, where you can restore it. It disappears from your template lists and pickers, and anything that sends it stops until it is restored or replaced.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -779,7 +779,7 @@ export function UserMessageTemplateManager() {
               disabled={isDeleting}
               className="bg-destructive hover:bg-destructive/90"
             >
-              {isDeleting ? "Deleting..." : "Delete"}
+              {isDeleting ? "Archiving..." : "Archive"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

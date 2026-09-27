@@ -66,7 +66,7 @@ import {
   fetchMessageTemplates,
   createTemplate,
   updateTemplate,
-  deleteTemplate,
+  archiveTemplate,
   getAllTags,
   clearTemplateCache,
 } from "@/features/message-templates/services/message-templates-service";
@@ -524,15 +524,16 @@ export function MessageTemplateManager({
 
   const handleDeleteTemplate = async (template: MessageTemplateDB) => {
     const ok = await confirm({
-      title: `Delete "${template.label}"?`,
-      description: "This template will be permanently deleted.",
-      confirmLabel: "Delete",
+      title: `Archive "${template.label}"?`,
+      description:
+        "It moves to Trash, where you can restore it. It disappears from your template lists and pickers, and anything that sends it (a sequence step, a single send, a managed reply) stops until it is restored or replaced.",
+      confirmLabel: "Archive",
       variant: "destructive",
     });
     if (!ok) return;
 
     try {
-      await deleteTemplate(template.id);
+      await archiveTemplate(template.id);
 
       if (selectedTemplateId === template.id) {
         setSelectedTemplateId(null);
@@ -543,14 +544,14 @@ export function MessageTemplateManager({
 
       toast({
         title: "Success",
-        description: "Template deleted successfully",
+        description: "Template moved to Trash",
         variant: "success",
       });
     } catch (error) {
       console.error("Error deleting template:", error);
       toast({
         title: "Error",
-        description: "Failed to delete template",
+        description: "Failed to archive template",
         variant: "destructive",
       });
     }

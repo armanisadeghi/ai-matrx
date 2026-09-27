@@ -24,12 +24,18 @@ const loadTemplate = cache(async (id: string) => {
   // whole request, so a signed-out visitor saw the access gate even for a
   // genuinely public template. Name the columns anon can read; a signed-in
   // caller still gets the full row.
-  const templateResult = await supabase
+  const base = supabase
     .schema("agent")
     .from("message_template")
     .select(userId ? "*" : publicLaneSelect("message_template"))
-    .eq("id", id)
-    .maybeSingle();
+    .eq("id", id);
+  // An archived template is in Trash: its page shows the access gate. Anon
+  // holds no grant on deleted_at, and its RLS lane (pub_read) already hides
+  // archived rows, so the filter is added only for a signed-in reader.
+  const templateResult = await (userId
+    ? base.is("deleted_at", null)
+    : base
+  ).maybeSingle();
 
   return {
     template: (templateResult.data as MessageTemplateDB | null) ?? null,

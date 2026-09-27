@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, Pencil, Save, Trash2 } from "lucide-react";
+import { Archive, Eye, Pencil, Save } from "lucide-react";
 import { isPubliclyVisible } from "@/lib/visibility/labels";
 import {
   type MessageRole,
@@ -34,7 +34,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import {
   updateTemplate,
-  deleteTemplate,
+  archiveTemplate,
   clearTemplateCache,
 } from "@/features/message-templates/services/message-templates-service";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -204,25 +204,25 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
     }
   };
 
-  const handleDelete = async () => {
+  const handleArchive = async () => {
     const ok = await confirm({
-      title: `Delete “${displayLabel}”?`,
+      title: `Archive “${displayLabel}”?`,
       description: managedBy
-        ? `This permanently removes the template. The platform job "${managedBy}" uses it, and that job will stop working until a replacement exists. This cannot be undone.`
-        : "This permanently removes the template for everyone it was shared with. This cannot be undone.",
-      confirmLabel: "Delete template",
+        ? `It moves to Trash, where you can restore it. The ${managedBy} job uses this template and will not send until it is restored or replaced.`
+        : "It moves to Trash, where you can restore it. It disappears from your template lists and pickers, and anything that sends it (a sequence step, a single send, a managed reply) stops until it is restored or replaced.",
+      confirmLabel: "Archive",
       variant: "destructive",
     });
     if (!ok) return;
     try {
-      await deleteTemplate(saved.id);
+      await archiveTemplate(saved.id);
       clearTemplateCache();
-      toast.success("Template deleted");
+      toast.success("Template moved to Trash");
       router.push(LIST_HREF);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setSaveError(message);
-      toast.error(`Could not delete the template: ${message}`);
+      toast.error(`Could not archive the template: ${message}`);
     }
   };
 
@@ -265,9 +265,9 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                     ]
                   : []),
                 {
-                  label: "Delete",
-                  icon: Trash2,
-                  onPress: handleDelete,
+                  label: "Archive",
+                  icon: Archive,
+                  onPress: handleArchive,
                 },
               ]
             : undefined

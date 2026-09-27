@@ -26,6 +26,7 @@ export default async function EditTemplatePage({ params }: PageProps) {
     .from("message_template")
     .select("*")
     .eq("id", id)
+    .is("deleted_at", null)
     .single();
 
   if (error || !data) notFound();

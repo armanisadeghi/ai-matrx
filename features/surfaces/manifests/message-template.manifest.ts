@@ -23,7 +23,7 @@
  * saved until the person presses Save. A composite target on purpose: the
  * fields are edited in one form and saved by one Save.
  *
- * Deliberately NOT targets: saving, deleting (the person's call, behind a
+ * Deliberately NOT targets: saving, archiving (the person's call, behind a
  * confirmation), ownership and organization, `metadata` keys other than the
  * subject (for example `managed_by`, which ties a template to a platform job),
  * and custom fields (the Custom fields section carries its own editor).
@@ -170,7 +170,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "save_error",
     label: "Save error",
     description:
-      "Why the last Save or Delete failed; absent when nothing has failed.",
+      "Why the last Save or Archive failed; absent when nothing has failed.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 160,

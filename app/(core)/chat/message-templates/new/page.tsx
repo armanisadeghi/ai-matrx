@@ -26,6 +26,7 @@ export default async function NewTemplatePage({ searchParams }: PageProps) {
           .from("message_template")
           .select("*")
           .eq("id", from)
+          .is("deleted_at", null)
           .single()
       : { data: null };
 

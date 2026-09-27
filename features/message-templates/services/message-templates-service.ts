@@ -39,7 +39,12 @@ export async function fetchMessageTemplates(
   options: MessageTemplateQueryOptions = {},
 ) {
   const supabase = getClient();
-  let query = supabase.schema("agent").from("message_template").select("*");
+  // ARCHIVE LAW: archived templates live in Trash, never in a list.
+  let query = supabase
+    .schema("agent")
+    .from("message_template")
+    .select("*")
+    .is("deleted_at", null);
 
   // Apply filters
   if (options.role) {
@@ -105,6 +110,7 @@ export async function fetchOrganizationMessageTemplates(
     .from("message_template")
     .select("*")
     .or(`organization_id.eq.${organizationId},visibility.eq.public`)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
   return assertData(data, error);
 }
@@ -139,6 +145,7 @@ export async function getTemplateById(
     .from("message_template")
     .select("*")
     .eq("id", id)
+    .is("deleted_at", null)
     .single();
 
   if (error) {
@@ -208,24 +215,27 @@ export async function updateTemplate(
   return assertData(data, error, "save this template");
 }
 
-// Delete a template
-export async function deleteTemplate(id: string): Promise<void> {
+/**
+ * Archive a template — the ARCHIVE LAW: a person's record is never destroyed
+ * from a page. It moves to Trash (restorable there), every list and picker
+ * stops showing it, and the server's senders refuse it as "no longer exists".
+ */
+export async function archiveTemplate(id: string): Promise<void> {
   const supabase = getClient();
-
   const { error } = await tryWriteOne(
     supabase
       .schema("agent")
       .from("message_template")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", id)
+      .is("deleted_at", null)
       .select("id"),
-    { action: "delete", noun: "template" },
+    { action: "archive", noun: "template" },
   );
-
   if (error) {
     throw error instanceof WriteDidNotLandError
       ? error
-      : operationFailed("delete this template", error);
+      : operationFailed("archive this template", error);
   }
 }
 
@@ -244,7 +254,8 @@ export async function getAllTags(): Promise<string[]> {
   const { data, error } = await supabase
     .schema("agent")
     .from("message_template")
-    .select("tags");
+    .select("tags")
+    .is("deleted_at", null);
 
   const rows = assertData(data, error, "load your template tags");
 
