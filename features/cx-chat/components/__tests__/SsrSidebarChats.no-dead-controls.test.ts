@@ -50,4 +50,15 @@ describe("SsrSidebarChats — no dead Rename/Delete controls (DD-157)", () => {
     expect(source).toMatch(/>\s*Share\s*</);
     expect(source).toMatch(/ShareModal/);
   });
+
+  it("reads the real conversation list — never inert stub selectors or no-op thunks (RC-B12 r12)", () => {
+    // The stubs returned status "idle" forever: no list, no empty copy, and a
+    // retry that did nothing — a dead control.
+    expect(source).not.toMatch(/legacy\/fetchConversationList/);
+    expect(source).not.toMatch(/=>\s*"idle"/);
+    expect(source).not.toMatch(/legacy-(prepend|touch)-noop/);
+    expect(source).toMatch(/fetchGlobalConversations/);
+    expect(source).toMatch(/selectGlobalListStatus/);
+    expect(source).toMatch(/onRetry=\{reload\}/);
+  });
 });

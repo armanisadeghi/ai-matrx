@@ -2,18 +2,14 @@
 
 // SsrSidebarChats — Conversation list for the ssr/chat sidebar.
 //
-// Data source: cxConversations Redux slice (cx_conversation table via thunks).
-// Phase 4a migration: replaced useChatPersistence + local state with Redux.
-//
-// Own section: conversations fetched with fetchConversationList on mount,
-//   paginated with fetchConversationListMore on scroll.
-// Shared section: still fetched locally via API (not in Redux slice).
-// Live updates: prependConversation + touchConversation dispatched from
-//   ChatConversationClient via DOM CustomEvents → Redux (no more local state).
+// Own section: the REAL global conversation list — the conversation-list
+//   slice's `fetchGlobalConversations` (same read the chat-history sidebar
+//   uses), paginated on scroll; a failed read shows ReadFailure with a retry
+//   that re-runs that fetch. Created/updated events re-read the list.
+// Shared section: fetched locally via API.
 // DD-157: rename/delete menu items were removed from the per-conversation
-// dropdown — the mutations behind them were permanent no-ops (see the legacy
-// stub note below), so they were dead controls (Law 4). Real rename/delete
-// live in the conversation-list rebuild (features/agents/redux/conversation-list/).
+// dropdown (their mutations were no-ops); real rename/delete live in the
+// conversation-list rows (features/agents/redux/conversation-list/).
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
@@ -37,55 +33,36 @@ import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-// ── Legacy cx-conversation slice stubs ────────────────────────────────────────
-// cx-chat is deprecated (rebuild in progress on `conversation-list/` slice).
-// During the Redux unification we kept this component rendering but inert:
-// selectors return empty state; mutations resolve to no-ops. When chat is
-// rebuilt, swap these for `selectGlobalConversationList`, the
-// `conversationListActions.*` optimistic mutations, and real thunks.
-import { createAsyncThunk } from "@reduxjs/toolkit";
+// The main list reads the REAL conversation list — the same slice and fetch
+// the chat-history sidebar uses (features/agents/redux/conversation-list).
+// It used to read inert stub selectors whose status was always "idle", so
+// the list never loaded, never said it was empty, and its retry did nothing.
 import type { RootState } from "@/lib/redux/store";
+import {
+  selectConversationIsPending,
+  selectGlobalConversationList,
+  selectGlobalListError,
+  selectGlobalListHasMore,
+  selectGlobalListStatus,
+} from "@/features/agents/redux/conversation-list/conversation-list.selectors";
+import { fetchGlobalConversations } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
+import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 
 interface CxConversationListItem {
   id: string;
   title: string | null;
   updatedAt: string;
   messageCount: number;
-  status: "active" | "completed" | "archived";
+  status: string;
 }
-const EMPTY_ITEMS: CxConversationListItem[] = [];
-const selectCxConversationItems = (
-  _state: RootState,
-): CxConversationListItem[] => EMPTY_ITEMS;
-const selectCxConversationListStatus = (
-  _state: RootState,
-): "idle" | "loading" | "success" | "error" => "idle";
-const selectCxConversationHasMore = (_state: RootState): boolean => false;
-const selectCxConversationIsPending =
-  (_id: string) =>
-  (_state: RootState): boolean =>
-    false;
-const prependConversation = (payload: CxConversationListItem) => ({
-  type: "cxConversations/legacy-prepend-noop" as const,
-  payload,
+const toSidebarItem = (c: ConversationListItem): CxConversationListItem => ({
+  id: c.conversationId,
+  title: c.title,
+  updatedAt: c.updatedAt,
+  messageCount: c.messageCount,
+  status: c.status,
 });
-const touchConversation = (payload: { id: string; updatedAt?: string }) => ({
-  type: "cxConversations/legacy-touch-noop" as const,
-  payload,
-});
-const fetchConversationList = createAsyncThunk<
-  void,
-  { force?: boolean } | void
->("legacy/fetchConversationList", async () => undefined);
-const fetchConversationListMore = createAsyncThunk<
-  void,
-  { offset: number; searchTerm?: string }
->("legacy/fetchConversationListMore", async () => undefined);
-// Rename/delete controls were removed from this deprecated sidebar (DD-157):
-// the mutations they would have dispatched were already no-ops (mutations
-// resolve to no-ops per the legacy stub note above), so the menu items were
-// dead controls. Real rename/delete live in the conversation-list rebuild
-// (features/agents/redux/conversation-list/).
+const selectSidebarConversations = (state: RootState) => selectGlobalConversationList(state);
 import type { SharedCxConversationSummary } from "@/features/cx-chat/types/cx-tables";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -416,44 +393,35 @@ export function SsrSidebarChats({
   const isAuthenticated = !!user?.id;
 
   // ── Redux state ─────────────────────────────────────────────────────────────
-  const items = useAppSelector(selectCxConversationItems);
-  const listStatus = useAppSelector(selectCxConversationListStatus);
-  const hasMore = useAppSelector(selectCxConversationHasMore);
-  const isLoading = listStatus === "loading";
+  const conversations = useAppSelector(selectSidebarConversations);
+  const items = conversations.map(toSidebarItem);
+  const listStatus = useAppSelector(selectGlobalListStatus);
+  const listError = useAppSelector(selectGlobalListError);
+  const hasMore = useAppSelector(selectGlobalListHasMore);
+  const isLoading = listStatus === "loading" || listStatus === "idle";
+  const reload = () => {
+    void dispatch(fetchGlobalConversations({ replace: true }));
+  };
 
   // ── Initial load ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isAuthenticated) return;
-    dispatch(fetchConversationList());
+    void dispatch(fetchGlobalConversations({ replace: true }));
   }, [dispatch, isAuthenticated]);
 
   // ── DOM CustomEvent listeners — new conversations created during streaming ──
   // ChatConversationClient dispatches these when the backend returns a new id.
   useEffect(() => {
-    const handleCreated = (e: Event) => {
-      const { id, title } = (e as CustomEvent<{ id: string; title: string }>)
-        .detail;
-      dispatch(
-        prependConversation({
-          id,
-          title: title || null,
-          updatedAt: new Date().toISOString(),
-          messageCount: 0,
-          status: "active",
-        }),
-      );
+    // A conversation created or updated elsewhere: re-read the list, so the
+    // sidebar shows what the database holds (no local-only rows).
+    const handleChanged = () => {
+      void dispatch(fetchGlobalConversations({ replace: true }));
     };
-
-    const handleUpdated = (e: Event) => {
-      const { id } = (e as CustomEvent<{ id: string }>).detail;
-      dispatch(touchConversation({ id }));
-    };
-
-    window.addEventListener("chat:conversationCreated", handleCreated);
-    window.addEventListener("chat:conversationUpdated", handleUpdated);
+    window.addEventListener("chat:conversationCreated", handleChanged);
+    window.addEventListener("chat:conversationUpdated", handleChanged);
     return () => {
-      window.removeEventListener("chat:conversationCreated", handleCreated);
-      window.removeEventListener("chat:conversationUpdated", handleUpdated);
+      window.removeEventListener("chat:conversationCreated", handleChanged);
+      window.removeEventListener("chat:conversationUpdated", handleChanged);
     };
   }, [dispatch]);
 
@@ -475,11 +443,8 @@ export function SsrSidebarChats({
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          dispatch(
-            fetchConversationListMore({
-              offset: items.length,
-              searchTerm: searchQuery || undefined,
-            }),
+          void dispatch(
+            fetchGlobalConversations({ offset: items.length, replace: false }),
           );
         }
       },
@@ -516,10 +481,10 @@ export function SsrSidebarChats({
       )}
 
       {listStatus === "error" && items.length === 0 && (
-        <ReadFailure error={true} what="your conversations" />
+        <ReadFailure error={listError ?? true} what="your conversations" onRetry={reload} />
       )}
 
-      {listStatus === "success" && filtered.length === 0 && !searchQuery && (
+      {listStatus === "succeeded" && filtered.length === 0 && !searchQuery && (
         <div className="flex flex-col items-center justify-center py-6 px-2 text-center">
           <MessageSquare className="h-5 w-5 text-muted-foreground/30 mb-1.5" />
           <p className="text-[10px] text-muted-foreground">
@@ -528,7 +493,7 @@ export function SsrSidebarChats({
         </div>
       )}
 
-      {listStatus === "success" && filtered.length === 0 && searchQuery && (
+      {listStatus === "succeeded" && filtered.length === 0 && searchQuery && (
         <div className="flex flex-col items-center justify-center py-6 px-2 text-center">
           <Search className="h-4 w-4 text-muted-foreground/30 mb-1.5" />
           <p className="text-[10px] text-muted-foreground">No results</p>
@@ -575,7 +540,7 @@ function ConversationItemWrapper(
   props: Omit<React.ComponentProps<typeof ConversationItem>, "isPending">,
 ) {
   const isPending = useAppSelector(
-    selectCxConversationIsPending(props.item.id),
+    selectConversationIsPending(props.item.id),
   );
   return <ConversationItem {...props} isPending={isPending} />;
 }
