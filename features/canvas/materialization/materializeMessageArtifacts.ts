@@ -17,6 +17,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { hasBrowserSession } from "@/lib/supabase/hasBrowserSession";
 
 import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
 import { materializeBlocks, type PersistRewrite } from "./materializeBlocks";
@@ -82,6 +83,15 @@ export function cxMessageContentRewriter(messageId: string): PersistRewrite {
 export async function materializeMessageArtifacts(
   params: MaterializeParams,
 ): Promise<MaterializeResult> {
+  // A signed-out visitor (a guest running a public app at /p/<slug>) can
+  // neither read `chat.message` nor rewrite it, so there is nothing to
+  // materialize: artifacts keep rendering inline from the raw content. Asking
+  // only produced "permission denied for table message" on every guest run
+  // (page-pass /p/[slug], 2026-09-27).
+  if (!(await hasBrowserSession())) {
+    return { materializedCount: 0, rewrittenContent: null, errors: [] };
+  }
+
   // The stream's reservation list is delivery metadata, not content
   // authority. In an under-announced or late-announced tool loop it can map
   // the final iteration's assembled blocks to an earlier assistant row. The

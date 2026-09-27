@@ -9,6 +9,11 @@ jest.mock("@/utils/supabase/client", () => ({
   supabase: { schema, rpc: jest.fn() },
 }));
 
+const hasBrowserSession = jest.fn(() => Promise.resolve(true));
+jest.mock("@/lib/supabase/hasBrowserSession", () => ({
+  hasBrowserSession: () => hasBrowserSession(),
+}));
+
 jest.mock("../materializeBlocks", () => ({
   materializeBlocks,
 }));
@@ -47,6 +52,20 @@ describe("materializeMessageArtifacts", () => {
     expect(materializeBlocks).toHaveBeenCalledWith(
       expect.objectContaining({ content: canonicalContent }),
     );
+  });
+
+  it("a signed-out visitor reads no chat.message and materializes nothing", async () => {
+    hasBrowserSession.mockResolvedValueOnce(false);
+
+    const result = await materializeMessageArtifacts({
+      messageId: "guest-message",
+      conversationId: "guest-conversation",
+      content: [{ type: "text", text: "<artifact>inline</artifact>" }],
+    });
+
+    expect(schema).not.toHaveBeenCalled();
+    expect(materializeBlocks).not.toHaveBeenCalled();
+    expect(result).toEqual({ materializedCount: 0, rewrittenContent: null, errors: [] });
   });
 
   it("does not create canvas rows when canonical source content cannot be read", async () => {
