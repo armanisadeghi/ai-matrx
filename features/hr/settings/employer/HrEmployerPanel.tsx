@@ -771,8 +771,9 @@ function IdentitySection({
             onChange={(event) => onEinChange(formatEinInput(event.target.value))}
             aria-invalid={Boolean(einCheck && !einCheck.ok)}
             aria-describedby="ein-hint"
-            // Same surface as the ProInputs beside it — a grey box here read as disabled.
-            className="bg-transparent text-base sm:text-sm"
+            // The one field surface (design-system Input = ProInput = Select).
+            // The old `bg-transparent` override read grey — disabled-looking.
+            className="text-base sm:text-sm"
           />
           {/* Under the input, never between label and input — the input stays on
               its row's line with the fields beside it. */}
