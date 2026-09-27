@@ -1,6 +1,6 @@
 ---
 name: page-pass
-description: "The ONE per-page checklist for a single pass that covers a page's agent surface AND its UI/UX cleanup. Use when assigned a batch of pages or routes to pass, on `/page-pass <route>`, or when a campaign brief says 'do the page pass'. NOT for fleet selection or certification ledger writes (use surface-certification-loop)."
+description: "The one per-page checklist covering a page's agent surface and its UI/UX cleanup in a single pass. Use when assigned pages or routes to pass, on `/page-pass <route>`, or when a campaign brief says 'do the page pass'. NOT for certification ledger writes (use surface-certification-loop)."
 ---
 
 # page-pass — one pass per page, 18 items, nothing else up front
