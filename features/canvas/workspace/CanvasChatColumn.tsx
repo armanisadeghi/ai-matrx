@@ -1,10 +1,11 @@
 "use client";
 
 /**
- * The chat inside a ChatCanvasWorkspace — the platform's ONE chat column
- * (`AgentConversationColumn`, the same one /chat mounts), plus the canvas
- * context. Rendered in the docked panel, the floating window or the mobile
- * drawer; all three read the SAME conversation from the workspace.
+ * The chat inside a panel — a ChatCanvasWorkspace (docked, floating or the
+ * mobile drawer) or the shell's chat dock — the platform's ONE chat column
+ * (`AgentConversationColumn`, the same one /chat mounts) with the compact
+ * composer, plus an optional host context entry. Every place a panel shows it
+ * reads the SAME conversation from its host.
  *
  * HOW THE CANVAS REACHES THE AGENT: as ONE named context entry, written with
  * `setContextEntries` — never as user text (THE USER-INPUT LAW,
@@ -138,7 +139,7 @@ export function CanvasChatColumn({
       <div className={cn("flex h-full min-h-0 flex-col items-start gap-3 p-4", className)}>
         <p className="text-sm text-foreground">Choose the organization this chat belongs to.</p>
         <p className="text-xs text-muted-foreground">
-          Every chat is kept in an organization, and none is active yet. The canvas works meanwhile.
+          Every chat is kept in an organization, and none is active yet. The page works meanwhile.
         </p>
         <Button size="sm" variant="outline" onClick={conversation.choose}>
           <Building2 className="mr-1.5 h-3.5 w-3.5" />
@@ -204,7 +205,7 @@ function OpeningState({ purpose, className }: { purpose: "new" | "open"; classNa
       <div className="h-3 w-64 animate-pulse rounded bg-muted" />
       {slowOpen && (
         <p className="text-xs text-muted-foreground">
-          This is taking longer than usual — it is still waiting for the server. The canvas works
+          This is taking longer than usual — it is still waiting for the server. The page works
           meanwhile.
         </p>
       )}

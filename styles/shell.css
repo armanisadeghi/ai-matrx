@@ -1776,6 +1776,11 @@ body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
 .ambient-assistant-dock {
   background: transparent;
   pointer-events: none;
+  /* Centered in the space the page has — left of the chat dock when it is
+     open (--shell-chat-dock-w, features/shell/chat-dock). Unlayered, so it
+     wins over the element's `left-1/2` utility; 0px dock = 50%. */
+  left: calc(50% - var(--shell-chat-dock-w, 0px) / 2);
+  transition: left 200ms cubic-bezier(0.32, 0.72, 0, 1);
   bottom: calc(
     1.25rem + var(--keyboard-inset-height, 0px) +
       env(safe-area-inset-bottom, 0px)

@@ -27,6 +27,7 @@ import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCook
 import { ShellChromeRouteSync } from "@/features/shell/components/ShellChromeMode";
 import { shellChromeAttributes } from "@/features/shell/constants/canvas-chrome-routes";
 import DeferredIslands from "@/features/shell/islands/DeferredIslands";
+import { ShellChatDockSlot } from "@/features/shell/chat-dock/ChatDockSlots";
 import type { UserData } from "@/utils/userDataMapper";
 import type { BaseReduxState } from "@/types/reduxTypes";
 // CJS flag — also read by next.config.js to alias Sidebar/etc. to stubs.
@@ -84,6 +85,8 @@ export default function AppShell({
           <ShellUserBlock userData={userData} isAuthenticated={isAuthenticated} />
 
           <main className="shell-main">{children}</main>
+          {/* The chat dock — the grid's third column, closed (0px) by default. */}
+          {isAuthenticated ? <ShellChatDockSlot /> : null}
 
           <MobileSideSheet
             isAuthenticated={isAuthenticated}
