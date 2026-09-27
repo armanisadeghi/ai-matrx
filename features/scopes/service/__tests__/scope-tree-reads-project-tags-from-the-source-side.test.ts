@@ -96,7 +96,7 @@ jest.mock("@/utils/supabase/workspaceDb", () => ({
 }));
 
 // What the target-side read really answers for the first 1000 scopes: no project edge.
-const listForTargets = jest.fn(async () => ({ ok: true, data: { edges: [] } }));
+const listForTargets = jest.fn(async (..._args: unknown[]) => ({ ok: true, data: { edges: [] } }));
 const listForSources = jest.fn(async (_type: string, _ids: string[], _target?: string) => ({
   ok: true,
   data: { edges: [{ sourceType: "project", sourceId: PROJECT_A, targetType: "scope", targetId: LAST_SCOPE }] },
@@ -104,7 +104,7 @@ const listForSources = jest.fn(async (_type: string, _ids: string[], _target?: s
 jest.mock("@/features/scopes/service/associationsService", () => ({
   associationsService: {
     listForTargets: (...a: unknown[]) => listForTargets(...a),
-    listForSources: (...a: [string, string[], string?]) => listForSources(...a),
+    listForSources: (type: string, ids: string[], target?: string) => listForSources(type, ids, target),
   },
 }));
 
