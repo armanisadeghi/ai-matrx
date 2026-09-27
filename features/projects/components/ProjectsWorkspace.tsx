@@ -9,6 +9,10 @@ import {
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { FolderKanban } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 
 function CompactProjectItem({
   project,
@@ -30,7 +34,12 @@ function CompactProjectItem({
 export function ProjectsWorkspace() {
   const [selection, setSelection] =
     useState<EngagementSelection>(EMPTY_ENGAGEMENT_SELECTION);
-  const { flatProjects } = useNavTree();
+  const dispatch = useAppDispatch();
+  // Two reads feed this window: the organization list (the picker) and the
+  // project hierarchy (the rows). Either failing is said, never read as
+  // "choose an organization" or "no projects".
+  const { flatProjects, isLoading: projectsLoading, isError: projectsFailed, error: projectsError } = useNavTree();
+  const orgTree = useScopeTree();
 
   const activeProjects = selection.organizationId
     ? flatProjects.filter((p) => p.org_id === selection.organizationId)
@@ -53,8 +62,24 @@ export function ProjectsWorkspace() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scrollbar">
-        {selection.organizationId ? (
-          activeProjects.length > 0 ? (
+        {orgTree.status === "error" && !selection.organizationId ? (
+          <ReadFailure
+            error={orgTree.error ?? true}
+            what="your organizations"
+            onRetry={() => void orgTree.refresh()}
+          />
+        ) : selection.organizationId ? (
+          projectsFailed && activeProjects.length === 0 ? (
+            <ReadFailure
+              error={projectsError ?? true}
+              what="this organization's projects"
+              onRetry={() => void dispatch(invalidateAndRefetchFullContext())}
+            />
+          ) : projectsLoading && activeProjects.length === 0 ? (
+            <div className="flex h-32 items-center justify-center text-xs text-muted-foreground" role="status" aria-busy="true">
+              Loading projects…
+            </div>
+          ) : activeProjects.length > 0 ? (
             activeProjects.map((project) => (
               <CompactProjectItem key={project.id} project={project} />
             ))
