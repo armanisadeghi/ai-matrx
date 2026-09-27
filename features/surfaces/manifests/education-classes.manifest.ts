@@ -235,12 +235,12 @@ export const educationClassesManifest: SurfaceManifest = {
     "My Classes: owned, archived and joined classes, New class dialog; create, update, archive and delete classes (/education/classes).",
   readiness: "partial",
   readinessNote:
-    "new_class_draft and create_classes proven with live agent runs on production 2026-09-26 (dialog filled in one approval; three classes created with full settings and owner memberships). update_classes, delete_classes and archived_classes added 2026-09-27 with unit-tested validation; not yet proven in a live agent run. Not yet stamped verified: no structured target names a valueKind (the handlers validate by hand), and no data-surface-value Locate anchors are tagged.",
+    "All four targets proven with live agent runs on production: new_class_draft and create_classes 2026-09-26; create (two classes, one approval), update (teacher + exam dates, term untouched) + archive (one approval), and a pre-approval refusal (duplicate + impossible date, nothing written) on 2026-09-27, each checked in the DB. Not yet stamped verified: no structured target names a valueKind (the handlers validate by hand); validation reports only the first problem in a list; no data-surface-value Locate anchors are tagged.",
   label: "My Classes",
   urlPattern: "/education/classes",
   guide: "features/surfaces/guides/education-classes.md",
   intro: `<surface_intro>
-You are on My Classes at /education/classes. A class gathers one course's study material and exam dates; owned_classes lists the person's own active classes, archived_classes the ones they archived, and joined_classes the ones they joined.
+You are on My Classes at /education/classes. A class gathers one course's study material and exam dates; class_list is what the page shows (condensed, first 25, in full to you), owned_classes lists the person's own active classes, archived_classes the ones they archived, and joined_classes the ones they joined.
 
 Every change to a class goes through these targets; each takes a JSON value (never a string) and returns what it did, with ids and slugs:
 - create_classes — add classes. Value is an array, so "add my five courses" is one write the person approves once. Each class needs only a name; set access_mode only when the person says who may join (default "closed" is a private class).
