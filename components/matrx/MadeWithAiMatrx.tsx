@@ -23,14 +23,13 @@ export function MadeWithAiMatrx({
   return (
     <footer
       data-made-with
-      className="flex w-full shrink-0 flex-wrap items-center justify-center gap-x-1 px-4 pb-safe text-xs text-muted-foreground"
+      className="flex w-full shrink-0 flex-wrap items-center justify-center gap-x-2 px-4 pb-safe text-xs text-muted-foreground"
     >
       {publisher && (
         <>
           <span className="inline-flex min-h-11 items-center px-2">
             Published by {publisher}
           </span>
-          <span aria-hidden="true">·</span>
         </>
       )}
       <Link
@@ -46,14 +45,12 @@ export function MadeWithAiMatrx({
         />
         Made with AI Matrx
       </Link>
-      <span aria-hidden="true">·</span>
       <Link
         href="/privacy-policy"
         className="inline-flex min-h-11 items-center rounded-md px-2 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         Privacy
       </Link>
-      <span aria-hidden="true">·</span>
       <Link
         href="/terms-of-service"
         className="inline-flex min-h-11 items-center rounded-md px-2 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
