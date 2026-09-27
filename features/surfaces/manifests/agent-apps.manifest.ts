@@ -217,7 +217,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "app_bundle",
     label: "Open app",
     description:
-      "The open app condensed as one XML bundle — read this first: <agent_app id name slug public_url status visibility category tags version shell view> with <tagline>, <description>, <variables total> (one <variable name label type required/> each), <usage runs success_rate last_run/> and <component_code language> (clipped at 6,000 chars with clipped=\"true\" total_chars=\"N\"; the full source is component_code). Absent when no app is open or it has not loaded yet.",
+      "The open app condensed as one XML bundle — read this first: <agent_app id name slug public_url status visibility category tags version shell view> with <tagline>, <description>, <variables total> (one <variable name label type required/> each), <usage runs success_rate last_run/> and <component_code language> (clipped at 3,500 chars with clipped=\"true\" total_chars=\"N\"; the full source is component_code) and, once the app has run here, <latest_run status conversation_id> with its <input>, <typed>, <error> and <result> (clipped at 2,500; the full text is run_result). Absent when no app is open or it has not loaded yet.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 5000,
@@ -319,6 +319,63 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 250,
     autoContext: false,
     sortOrder: 510,
+    group: "run_state",
+  },
+
+  {
+    name: "run_status",
+    label: "Latest run status",
+    description:
+      "The app's latest run on this page: idle (nothing run yet), running, done or error. Emitted on every per-app route (idle when the app has not been run here).",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 7,
+    sortOrder: 520,
+    group: "run_state",
+  },
+  {
+    name: "run_conversation_id",
+    label: "Latest run conversation",
+    description:
+      "Conversation id of the app's latest run on this page — the same id the address carries as ?conversationId=. Absent until the app has been run.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 36,
+    sortOrder: 525,
+    group: "run_state",
+  },
+  {
+    name: "run_input",
+    label: "Latest run input",
+    description:
+      "What the person gave the app's latest run: its form variables by name (e.g. { claim }) plus `typed` when they typed free text. Absent until the app has been run.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 300,
+    sortOrder: 530,
+    group: "run_state",
+  },
+  {
+    name: "run_result",
+    label: "Latest run result",
+    description:
+      "The full answer text of the app's latest run (live while it streams, the saved answer after). \"\" while nothing has arrived yet. app_bundle carries it clipped at 2,500 chars. Absent until the app has been run.",
+    valueType: "document",
+    alwaysAvailable: false,
+    typicalCharCount: 4000,
+    autoContext: false,
+    sortOrder: 535,
+    group: "run_state",
+  },
+  {
+    name: "run_error",
+    label: "Latest run error",
+    description:
+      "Why the latest run failed, in the words the person saw. Present only when run_status is error.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    sortOrder: 540,
     group: "run_state",
   },
 
@@ -484,7 +541,7 @@ export const agentAppsManifest: SurfaceManifest = {
   urlPattern: "/agent-apps",
   intro: `<surface_intro>
 You are on Agent Apps: the user's workspace for shareable AI mini-apps — each app wraps one agent in a custom UI (a shell kind plus optional custom component code) and can be published publicly at /p/[slug].
-When app_id is present the user has one app open in its workspace; read app_bundle first — it is the open app (identity, variables, usage and its code) in one place. active_view tells you which UI they are on (overview, run, code, settings, versions); on run, the app's own run is the app doing its job and is not yours to steer. When app_id is absent the user is on the hub grid — only the catalog values apply.
+When app_id is present the user has one app open in its workspace; read app_bundle first — it is the open app (identity, variables, usage and its code) in one place. active_view tells you which UI they are on (overview, run, code, settings, versions); on run, the app's own run is the app doing its job and is not yours to steer — run_status, run_input and run_result tell you what it was asked and what it answered. When app_id is absent the user is on the hub grid — only the catalog values apply.
 Read app_identity for what the app is, app_content for what it is made of (shell, code, variables, config), and run_state for the active view plus usage evidence. Code-editing work targets component_code; configuration work targets shell_config and variable_schema — never invent usage statistics.
 You can also WRITE the open app's storefront copy through apply_surface_write — its name, tagline, description, category and tags. Name, tagline and description stage into the Settings > Identity inputs for the user to Save and are available only on that tab; category and tags save to the database as soon as the user approves and remain available on every per-app sub-route. Those five are the only writable fields: the slug, publish status, public sharing, agent binding and code are not agent-writable, so propose those in words instead. Every write requires an app to be open (app_id present); the hub grid has no writable app.
 </surface_intro>`,
@@ -511,6 +568,11 @@ export interface AgentAppsListedEntry {
  */
 export function createAgentAppsScope(values: {
   app_bundle?: string;
+  run_status?: "idle" | "running" | "done" | "error";
+  run_conversation_id?: string;
+  run_input?: Record<string, unknown>;
+  run_result?: string;
+  run_error?: string;
   app_id?: string;
   app_slug?: string;
   app_name?: string;

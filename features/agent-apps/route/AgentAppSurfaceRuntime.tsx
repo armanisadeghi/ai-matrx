@@ -33,7 +33,18 @@ import {
   createAgentAppsScope,
 } from "@/features/surfaces/manifests/agent-apps.manifest";
 import { buildAgentAppEntityWriteHandlers } from "./agent-app-entity-writes";
-import { buildAgentAppBundle } from "./agent-app-context";
+import {
+  buildAgentAppBundle,
+  type AgentAppRunSnapshot,
+} from "./agent-app-context";
+import {
+  selectPrimaryRequest,
+  selectResultText,
+} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectLatestAnswerText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { requestFailure } from "@/features/agent-apps/tracking/run-outcome";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type { RootState } from "@/lib/redux/store";
@@ -75,6 +86,47 @@ function asObjectArray(
 }
 
 /**
+ * The app's latest run on this page — the conversation the app's own run
+ * focuses (`agent-app:<id>`, or `agent-app:<slug>` on the legacy renderer),
+ * its input, status and answer. Pure: reads state the page rendered.
+ */
+export function readAgentAppRun(
+  state: RootState,
+  app: { id: string; slug: string },
+): AgentAppRunSnapshot {
+  const bySurface = state.conversationFocus?.bySurface ?? {};
+  const focus = bySurface[`agent-app:${app.id}`] ?? bySurface[`agent-app:${app.slug}`];
+  const conversationId = focus?.input ?? focus?.display ?? undefined;
+  if (!conversationId) return { status: "idle" };
+  const request = selectPrimaryRequest(conversationId)(state);
+  const live = request ? selectResultText(request.requestId)(state) : "";
+  const result = live || selectLatestAnswerText(conversationId)(state);
+  const failure = requestFailure(request as Parameters<typeof requestFailure>[0]);
+  const status: AgentAppRunSnapshot["status"] = !request
+    ? result
+      ? "done"
+      : "idle"
+    : request.status === "complete"
+      ? "done"
+      : request.status === "error" || request.status === "timeout"
+        ? "error"
+        : request.status === "cancelled"
+          ? result
+            ? "done"
+            : "idle"
+          : "running";
+  const input = selectResolvedVariables(conversationId)(state) as Record<string, unknown>;
+  return {
+    conversationId,
+    status,
+    input: input && Object.keys(input).length > 0 ? input : undefined,
+    inputText: selectUserInputText(conversationId)(state) || undefined,
+    result: result || undefined,
+    error: status === "error" ? (failure ?? undefined) : undefined,
+  };
+}
+
+/**
  * The workspace scope from live state — one pure builder shared by the
  * provider and the run page's right-click menu, so both say the same thing.
  */
@@ -87,8 +139,18 @@ export function buildAgentAppsWorkspaceScope(
   if (!app) {
     return createAgentAppsScope({ active_view });
   }
+  const run = readAgentAppRun(state, app);
   return createAgentAppsScope({
-    app_bundle: buildAgentAppBundle(app, active_view),
+    app_bundle: buildAgentAppBundle(app, active_view, run),
+    run_status: run.status,
+    ...(run.conversationId ? { run_conversation_id: run.conversationId } : {}),
+    ...(run.status !== "idle"
+      ? {
+          run_input: { ...(run.input ?? {}), ...(run.inputText ? { typed: run.inputText } : {}) },
+          run_result: run.result ?? "",
+        }
+      : {}),
+    ...(run.error ? { run_error: run.error } : {}),
     app_id: app.id,
     app_slug: app.slug,
     app_name: app.name,

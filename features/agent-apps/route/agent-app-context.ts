@@ -4,9 +4,11 @@
  * budget, `features/surfaces/runtime/context-bundle.ts`). Pure: built from the
  * row the page already hydrated into Redux, never a fetch.
  *
- * Budget: a focused record, ~10,000 chars in total. The custom component
- * source is the big part, clipped at 6,000 with `clipped="true"
- * total_chars="N"` so the agent knows `component_code` holds the rest.
+ * Budget: a focused record, ~9,000 chars in total. The custom component
+ * source is clipped at 3,500 and the latest run's result at 2,500, each with
+ * `clipped="true" total_chars="N"` so the agent knows `component_code` /
+ * `run_result` hold the rest. The latest run (input, status, result) rides
+ * along because on /run it is what the person is looking at.
  */
 
 import {
@@ -15,7 +17,8 @@ import {
   xmlText,
 } from "@/features/surfaces/runtime/context-bundle";
 
-export const APP_BUNDLE_CODE_MAX_CHARS = 6000;
+export const APP_BUNDLE_CODE_MAX_CHARS = 3500;
+export const APP_BUNDLE_RESULT_MAX_CHARS = 2500;
 const APP_BUNDLE_DESCRIPTION_MAX_CHARS = 1500;
 
 export interface AgentAppBundleSource {
@@ -38,6 +41,16 @@ export interface AgentAppBundleSource {
   last_execution_at?: string | null;
 }
 
+/** The app's latest run on this page, read from state the page rendered. */
+export interface AgentAppRunSnapshot {
+  conversationId?: string;
+  status: "idle" | "running" | "done" | "error";
+  input?: Record<string, unknown>;
+  inputText?: string;
+  result?: string;
+  error?: string;
+}
+
 interface VariableRow {
   name?: unknown;
   type?: unknown;
@@ -48,6 +61,7 @@ interface VariableRow {
 export function buildAgentAppBundle(
   app: AgentAppBundleSource,
   activeView?: string,
+  run?: AgentAppRunSnapshot,
 ): string {
   const variables = Array.isArray(app.variable_schema)
     ? (app.variable_schema as VariableRow[])
@@ -88,6 +102,28 @@ export function buildAgentAppBundle(
         success_rate: app.success_rate,
         last_run: app.last_execution_at?.slice(0, 10),
       }),
+      run && run.status !== "idle"
+        ? xmlElement(
+            "latest_run",
+            { status: run.status, conversation_id: run.conversationId },
+            [
+              run.input && Object.keys(run.input).length > 0
+                ? xmlList(
+                    "input",
+                    Object.entries(run.input),
+                    ([name, value]) =>
+                      xmlText("value", typeof value === "string" ? value : JSON.stringify(value), {
+                        max: 500,
+                        attrs: { name },
+                      }),
+                  )
+                : "",
+              xmlText("typed", run.inputText, { max: 500 }),
+              xmlText("error", run.error, { max: 300 }),
+              xmlText("result", run.result, { max: APP_BUNDLE_RESULT_MAX_CHARS }),
+            ],
+          )
+        : "",
       xmlText("component_code", app.component_code, {
         max: APP_BUNDLE_CODE_MAX_CHARS,
         attrs: { language: app.component_language },

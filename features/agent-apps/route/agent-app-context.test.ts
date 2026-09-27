@@ -37,3 +37,17 @@ it("omits parts the app does not have instead of rendering blanks", () => {
   expect(xml).not.toContain("<component_code");
   expect(xml).not.toContain("<description");
 });
+
+it("carries the latest run — input, status, clipped result — and nothing for an idle page", () => {
+  const withRun = buildAgentAppBundle(base, "run", {
+    status: "done",
+    conversationId: "c-1",
+    input: { claim: "Goldfish have a three-second memory." },
+    result: "r".repeat(9000),
+  });
+  expect(withRun).toContain('<latest_run status="done" conversation_id="c-1">');
+  expect(withRun).toContain('<value name="claim">Goldfish have a three-second memory.</value>');
+  expect(withRun).toContain('clipped="true" total_chars="9000"');
+  expect(withRun.length).toBeLessThanOrEqual(9000);
+  expect(buildAgentAppBundle(base, "run", { status: "idle" })).not.toContain("latest_run");
+});

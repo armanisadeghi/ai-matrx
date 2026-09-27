@@ -304,6 +304,9 @@ const EMPTY_RECORD: Record<string, never> = Object.freeze({});
 /** How long a submit pressed during load waits for the app before it says so. */
 const SUBMIT_READY_WAIT_MS = 30_000;
 
+/** How long a reopened link keeps looking for its run before saying so. */
+const REOPEN_RETRY_MS = 45_000;
+
 export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   const {
     appId,
@@ -512,6 +515,9 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
     promoteWith: "address",
   });
   const restoredRef = useRef<string | null>(null);
+  // True while a reopened run is being rejoined — the app shows its busy
+  // state instead of an idle, empty form.
+  const [isReopening, setIsReopening] = useState(false);
   useEffect(() => {
     if (!urlConversationId || !agentId || !isReady) return;
     if (restoredRef.current === urlConversationId) return;
@@ -534,34 +540,56 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
             }),
           ).unwrap();
         }
-        await dispatch(
-          loadConversation({
-            conversationId: urlConversationId,
-            surfaceKey,
-            // A reopen from the address: a missing row is a failed read,
-            // reopening never spends a run, and the app's agent is one the
-            // person was never given directly.
-            expectMaterialized: true,
-            displayOverrides: { autoRun: false },
-            agentBehindApp: true,
-          }),
-        ).unwrap();
-        // A refresh MID-RUN: the server kept working (streams detach on
-        // disconnect). Rejoin it — retained text replays, live output
-        // continues, and on the terminal frame the conversation reloads with
-        // the finished answer. Without this the reopened run stayed blank.
-        void dispatch(
-          reconnectServerOperation({
-            conversationId: urlConversationId,
-            source: "cold-load",
-          }),
-        );
+        setIsReopening(true);
+        const load = () =>
+          dispatch(
+            loadConversation({
+              conversationId: urlConversationId,
+              surfaceKey,
+              // A reopen from the address: reopening never spends a run, and
+              // the app's agent is one the person was never given directly.
+              displayOverrides: { autoRun: false },
+              agentBehindApp: true,
+            }),
+          ).unwrap();
+        const hasAnswer = () =>
+          selectLatestAnswerText(urlConversationId)(store.getState()).length > 0;
+        // A refresh at ANY moment after Submit: the address carries the id
+        // from the instant the run starts, but in the first seconds the
+        // server may not have written the row or registered the operation
+        // yet. So: load, then rejoin the server's still-running turn
+        // (retained text replays, live output continues, the terminal frame
+        // reloads the answer); when there is nothing to rejoin YET, retry for
+        // a bounded while before saying the run cannot be found.
+        await load();
+        const deadline = Date.now() + REOPEN_RETRY_MS;
+        let found = hasAnswer();
+        while (!found && Date.now() < deadline) {
+          const result = await dispatch(
+            reconnectServerOperation({
+              conversationId: urlConversationId,
+              source: "cold-load",
+            }),
+          ).unwrap().catch(() => null);
+          if (result?.followed) {
+            found = true;
+            break;
+          }
+          await load().catch(() => undefined);
+          found = hasAnswer();
+          if (!found) await new Promise((r) => setTimeout(r, 2000));
+        }
+        setIsReopening(false);
+        if (!found) {
+          throw new Error("no answer and no running operation for this run");
+        }
       } catch (err) {
+        setIsReopening(false);
         // Loud, and the address stops pointing at a run we cannot show.
         const reason = err instanceof Error ? err.message : String(err);
         console.error(`[useAgentApp] could not reopen run ${urlConversationId}:`, reason);
         setRestoreFailed(
-          "The earlier run in this link could not be reopened. Start a new one.",
+          "The run in this link could not be found. Start a new one.",
         );
         const params = new URLSearchParams(window.location.search);
         params.delete("conversationId");
@@ -905,6 +933,19 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       if (submitArgs?.text != null) {
         dispatch(setUserInputText({ conversationId, text: submitArgs.text }));
       }
+      // The address names the run the INSTANT it starts, so a refresh at any
+      // point after Submit reopens it (a blind judge reloaded at 3s and lost
+      // it when the address waited for the row to persist).
+      if (isAuthenticated && typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("conversationId") !== conversationId) {
+          params.set("conversationId", conversationId);
+          restoredRef.current = conversationId; // ours, live — never "reopen" it
+          replaceAddressWithoutNavigating(
+            `${window.location.pathname}?${params.toString()}`,
+          );
+        }
+      }
       const requestIdsBefore = requestIdsOf(store.getState(), conversationId);
       await dispatch(smartExecute({ conversationId, surfaceKey }));
       return { conversationId, requestIdsBefore };
@@ -989,7 +1030,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       response,
       requestId,
       isStreaming,
-      isExecuting: isExecuting || isHolding,
+      isExecuting: isExecuting || isHolding || isReopening,
       streamPhase: streamPhase as UseAgentAppReturn["streamPhase"],
       error,
       messages: messages as UseAgentAppReturn["messages"],
@@ -1027,6 +1068,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       isStreaming,
       isExecuting,
       isHolding,
+      isReopening,
       streamPhase,
       error,
       messages,
