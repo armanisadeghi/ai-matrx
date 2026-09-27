@@ -273,7 +273,7 @@ export const hrEmployerManifest: SurfaceManifest = {
   urlPattern: "/hr/settings/employer",
   readiness: "partial",
   readinessNote:
-    "Surface built 2026-09-27 (page-pass). Proven live 2026-09-27 on a52ad38f28: employer_identity_draft (agent filled DBA + city/state, one approval) and applicability_declarations (row read back in SQL, then restored). Not proven yet: the three establishment targets (added after that release), and no outside-helper binding test. Establishments have no delete door. Tax registrations have no read door.",
+    "Surface built 2026-09-27 (page-pass). Proven live 2026-09-27 with real agent runs, each checked by SQL read-back: employer_identity_draft (a52ad38f28), applicability_declarations (a52ad38f28, restored), create_establishments (two rows, one approval, complete), update_establishments (two fields on two rows, others untouched) and a pre-approval refusal (duplicate name + unknown jurisdiction, both reasons, nothing written) on 5f5730a1ea. Not proven: establishment_draft by agent, and no outside-helper binding test. Establishments have no delete or archive door. Tax registrations have no read door.",
   intro: `<surface_intro>
 You are on the HR Employer page of one organization: the employer of record, the employment laws that apply to it, and the sites it reports on. employer_overview has all of it in one bundle.
 
