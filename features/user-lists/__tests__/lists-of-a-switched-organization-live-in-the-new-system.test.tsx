@@ -9,8 +9,9 @@
  *   A. getAccessibleLists (every list picker: agent variable bindings, choice columns, the floating
  *      workspace) lists the person's lists that live in the new system beside the older ones,
  *      marked `lives_in: "record"`;
- *   B. the Lists manager (/lists/v3) lists them too, says "In the new system", and opens one at its
- *      own address /lists/<id> (the new table page) instead of the older editor;
+ *   B. the Picklists page (/lists/v3) lists them from THE LIST INDEX (one store door, lane HANDOVER)
+ *      and links each at its own address /lists/<id> (the new table page) — and reads no older table
+ *      from the browser;
  *   C. the older list editor, handed a list that lives in the new system, says so and links to it.
  */
 import React, { act } from "react";
@@ -42,13 +43,40 @@ function builder(rows: unknown[]) {
   return b;
 }
 
+/** THE LIST INDEX's answer (custom.pick_list_index / _everywhere). */
+const index = {
+  lists: summary.map((l) => ({
+    id: l.list_id,
+    list_name: l.list_name,
+    description: l.description,
+    item_count: l.item_count,
+    updated_at: l.updated_at,
+    created_by: ME,
+    organization_id: "11f4e747-c13a-49c7-81a3-66e6391f8a9b",
+    organization_name: "Harbor Dental Group",
+    lives_in: "record",
+  })),
+  archived_ids: [],
+};
+const olderReads: string[] = [];
 const client = {
   rpc: jest.fn(async (fn: string) => {
     if (fn === "get_user_lists_summary") return { data: summary, error: null };
     throw new Error(`unexpected rpc ${fn}`);
   }),
   // Harbor Dental's older lists were archived by the press: the older table answers none.
-  schema: () => ({ from: () => builder([]) }),
+  schema: (name: string) => ({
+    from: (table: string) => {
+      olderReads.push(`${name}.${table}`);
+      return builder([]);
+    },
+    rpc: async (fn: string) => {
+      if (name === "custom" && (fn === "pick_list_index" || fn === "pick_list_index_everywhere")) {
+        return { data: index, error: null };
+      }
+      throw new Error(`unexpected rpc ${name}.${fn}`);
+    },
+  }),
   auth: { getSession: async () => ({ data: { session: { user: { id: ME } } } }) },
 };
 
@@ -77,6 +105,10 @@ jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({
 jest.mock("@/features/context-menu-v3/utils/open-context-menu", () => ({ openContextMenuForElement: jest.fn() }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 jest.mock("@/features/data-tables/data-source/where-a-table-is-born", () => ({ whereANewTableIsBorn: jest.fn() }));
+const RECORDS_CLIENT = { listArchived: jest.fn(), recordRestore: jest.fn() };
+jest.mock("@ai-matrx/records/react", () => ({ useRecordsClient: () => RECORDS_CLIENT }));
+jest.mock("@/features/unified-data/hub/OrganizationScope", () => ({ OrganizationScopeStrip: () => null }));
+jest.mock("@/features/unified-data/hub/doors", () => ({ tableKernelId: async () => ({ ok: true, data: "kernel" }) }));
 
 let container: HTMLDivElement;
 let root: Root;
@@ -111,23 +143,25 @@ test("A. getAccessibleLists lists the person's lists that live in the new system
   expect(found?.list_name).toBe("Hygiene Visit Types");
 });
 
-test("B. the Lists manager lists a list in the new system and opens it at /lists/<id>", async () => {
-  const { StructuredListManagerV3 } = await import("@/features/structured-lists/structured-list-manager-v3");
+test("B. the Picklists page lists a list in the new system at /lists/<id> and reads no older table", async () => {
+  olderReads.length = 0;
+  const { PicklistsIndex } = await import("../components/PicklistsIndex");
   await act(async () => {
-    root.render(<StructuredListManagerV3 supabase={client as never} userId={ME} />);
+    root.render(
+      <PicklistsIndex
+        organizationId="11f4e747-c13a-49c7-81a3-66e6391f8a9b"
+        organizationName="Harbor Dental Group"
+        userId={ME}
+        dataSource={{} as never}
+      />,
+    );
   });
   await settle();
   const text = container.textContent ?? "";
   expect(text).toContain("Hygiene Visit Types");
-  expect(text).toContain("In the new system");
-  const row = Array.from(container.querySelectorAll("button")).find((b) =>
-    (b.textContent ?? "").includes("Hygiene Visit Types"),
-  );
-  expect(row).toBeDefined();
-  await act(async () => {
-    row!.click();
-  });
-  expect(push).toHaveBeenCalledWith(`/lists/${STORE_LIST}`);
+  expect(text).toContain("4 items");
+  expect(container.querySelector(`a[href="/lists/${STORE_LIST}"]`)).not.toBeNull();
+  expect(olderReads.filter((t) => t.startsWith("workbench."))).toEqual([]);
 });
 
 test("C. the older list editor, handed a list that lives in the new system, links to it instead", async () => {

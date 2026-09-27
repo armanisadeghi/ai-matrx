@@ -55,8 +55,7 @@ export default function StructuredListManagerV1Window({
       {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without
           this, a right-click here is answered by whatever page sits
           underneath. Reuses the `structured_list` entity token already
-          registered by the v3 engine's own row menu
-          (`features/structured-lists/structured-list-manager-v3.tsx`); in
+          registered by the list engines' own row menus; in
           browse mode (no `forcedListId`) the pane shows many lists, so no
           single entity applies. */}
       <NonEditableContextMenu

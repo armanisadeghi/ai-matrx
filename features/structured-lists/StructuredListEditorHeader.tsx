@@ -19,10 +19,16 @@ const MODES = [
   { name: "v3", href: "/lists/v3", icon: FileText },
 ];
 
-export function StructuredListEditorHeader() {
+/** `title`: the page's one title beside the back button (the v3 Picklists page names itself). */
+export function StructuredListEditorHeader({ title }: { title?: string } = {}) {
   return (
     <RouteHeader
-      left={<ChevronLeftTapButton href="/lists" ariaLabel="Back to lists" />}
+      left={
+        <>
+          <ChevronLeftTapButton href="/lists" ariaLabel="Back to lists" />
+          {title ? <h1 className="truncate text-sm font-medium">{title}</h1> : null}
+        </>
+      }
       center={<RouteModeNav items={MODES} />}
     />
   );
