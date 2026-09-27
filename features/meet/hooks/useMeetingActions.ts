@@ -243,13 +243,22 @@ export function useMeetingActions() {
      * and SAYS so: the answer is saved, the host is not told.
      */
     async respond(meetingId: MeetingRecord["id"], answer: RsvpAnswer) {
-      const h = require();
+      // ANSWERING NEEDS NO ORGANIZATION (access is personal). With none active the
+      // Meet provider is inert, so there is no org-scoped aidream client; the answer
+      // goes through the database door as the signed-in person. Before, this threw
+      // "Sign in to manage meetings." at a signed-in invitee (2026-09-27).
+      if (host === null || host.identity.userId === null) {
+        if (!reduxUserId) throw new Error("Sign in to answer.");
+        await plainRepository.respond(meetingId, answer, null);
+        return { routeMissing: true, hostNotified: false };
+      }
+      const h = host;
       const result = await respondThroughServer(h.api, meetingId, answer, null);
       if (!result.routeMissing) return result;
       console.warn(
-        "[meet] POST /api/v1/meet/meetings/{id}/rsvp is not on this server yet — the answer " +
-          "was saved through the database door and the host was NOT notified. Remedy: deploy " +
-          "aidream with the in-app RSVP route (services/meet/rsvp.py::respond_in_app).",
+        "[meet] POST /api/v1/meet/meetings/{id}/rsvp did not take the answer (no route yet, or " +
+          "a server failure) — it was saved through the database door and the host was NOT " +
+          "notified. Remedy: deploy aidream with services/meet/rsvp.py::respond_in_app working.",
       );
       await h.repository.respond(meetingId, answer, null);
       return result;

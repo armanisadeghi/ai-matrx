@@ -13,7 +13,12 @@ export const IN_APP_RSVP_ROUTE = (meetingId: string) =>
   `/api/v1/meet/meetings/${encodeURIComponent(meetingId)}/rsvp`;
 
 export interface InAppRsvpResult {
-  /** The server that answered does not have the route yet (a deploy in flight). */
+  /**
+   * The server could not take the answer at all — no route yet (a deploy in
+   * flight, 404) or it failed before writing (5xx). The caller records the
+   * answer through the database door instead and says the host was not told.
+   * A 4xx refusal (not invited, cancelled) is NOT this: it throws its sentence.
+   */
   readonly routeMissing: boolean;
   readonly hostNotified: boolean;
 }
@@ -32,9 +37,12 @@ export async function respondThroughServer(
     operation: "meet.respond",
     body: { answer, note },
   });
-  if (response.status === 404) {
+  if (response.status === 404 || response.status >= 500) {
     // Only a missing ROUTE is a 404 here (the service answers 403/409 for a
-    // person or meeting it refuses), so the caller may fall back to the door.
+    // person or meeting it refuses). A 5xx is the server failing before its
+    // write (2026-09-27: the door's row could not be decoded, so every answer
+    // 500'd) — the person's answer must still be recorded, so the caller falls
+    // back to the door.
     return { routeMissing: true, hostNotified: false };
   }
   let body: Record<string, unknown> = {};

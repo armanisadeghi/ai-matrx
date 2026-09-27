@@ -56,4 +56,12 @@ describe("an in-app Going? answer goes through the server that tells the host", 
       hostNotified: false,
     });
   });
+
+  it("a server that fails before writing (5xx) lets the caller record the answer at the door", async () => {
+    const { api } = apiAnswering(500, { error: "meet_error", message: "Your answer could not be saved." });
+    await expect(respondThroughServer(api, meetingId, "accepted")).resolves.toEqual({
+      routeMissing: true,
+      hostNotified: false,
+    });
+  });
 });
