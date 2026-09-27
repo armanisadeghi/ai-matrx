@@ -207,6 +207,7 @@ import {
   type HubTranscriptKind,
   type TranscriptMenuAction,
 } from "@/features/knowledge/hub/transcripts/transcriptRows";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const GROUP_ID = "knowledge-hub";
 const GROUP_KEY = "knowledge-hub";
@@ -446,8 +447,13 @@ export function KnowledgeHubPage({
       ? (sidebar.savedViews.items.find((v) => v.id === (state.view as { id: string }).id) ?? null)
       : presetSavedView;
   const dirty = openSavedView ? viewIsDirty(openSavedView.definition, { query: state.query, layout: state.layout }) : false;
-  const noLibraries = expanded.status === "empty";
-  const expanding = expanded.status === "pending";
+  // `library:*` waits on the libraries read; when that read FAILED it must say
+  // so — "pending" forever ("Reading your libraries…") or "no libraries" are
+  // both untrue then (RC-B12).
+  const librariesRead = sidebar.containers.media_source_library;
+  const librariesFailed = expanded.status === "pending" && librariesRead.status === "error";
+  const noLibraries = expanded.status === "empty" && librariesRead.status === "ready";
+  const expanding = expanded.status === "pending" && !librariesFailed;
 
   // A view LINK (`/knowledge?view=saved:<id>` with no filters — what a shared
   // view's address is) opens the view: once its definition has loaded, its
@@ -1497,14 +1503,16 @@ export function KnowledgeHubPage({
           </button>
         </div>
       ) : null}
-      {noLibraries ? (
+      {librariesFailed ? (
+        <ReadFailure error={librariesRead.error ?? true} what="your libraries" onRetry={librariesRead.retry} className="m-2" />
+      ) : noLibraries ? (
         <p className="px-2 py-4 text-sm text-muted-foreground" role="status">
           You have no libraries you can open yet, so nothing is in any library. Create a library and add Sources to it.
         </p>
       ) : expanding ? (
         <p className="px-2 py-4 text-sm text-muted-foreground" role="status">Reading your libraries…</p>
       ) : null}
-      <div className={noLibraries || expanding ? "hidden" : "flex min-h-0 flex-1 flex-col overflow-hidden"}>
+      <div className={noLibraries || expanding || librariesFailed ? "hidden" : "flex min-h-0 flex-1 flex-col overflow-hidden"}>
         {trashView ? (
           <LibraryTrashList filterText={state.query.text} onMutated={() => results.refresh()} />
         ) : state.view.kind === "favorites" && sidebar.favorites.status !== "ready" ? (
