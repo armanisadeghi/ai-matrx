@@ -15,7 +15,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectUserEmail, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import type { TranscriptListRow } from "@/features/transcripts/browse/types";
 import {
@@ -53,6 +53,8 @@ export interface TranscriptFactsState {
 
 export function useTranscriptFacts(hits: KnowledgeHit[], enabled: boolean): TranscriptFactsState {
   const userId = useAppSelector(selectUserId);
+  const userEmail = useAppSelector(selectUserEmail);
+  const [orgNames, setOrgNames] = useState<Map<string, string>>(new Map());
   const [transcripts, setTranscripts] = useState<Map<string, TranscriptRecordFields>>(new Map());
   const [sessions, setSessions] = useState<Map<string, StudioSessionFields>>(new Map());
   const [asked, setAsked] = useState<Set<string>>(new Set());
@@ -110,6 +112,29 @@ export function useTranscriptFacts(hits: KnowledgeHit[], enabled: boolean): Tran
           );
         const results = await Promise.all(reads);
         if (cancelled) return;
+        // Organization names for the Organization column (the list's own join).
+        const orgIds = [
+          ...new Set(
+            results
+              .flatMap((r) => [...(r.t ?? []), ...(r.s ?? [])].map((x) => x.organization_id))
+              .concat(missing.map((h) => h.organization_id ?? null))
+              .filter((id): id is string => Boolean(id)),
+          ),
+        ];
+        if (orgIds.length) {
+          const { data: orgs, error: orgError } = await supabase
+            .schema("iam")
+            .from("organizations")
+            .select("id,name")
+            .in("id", orgIds);
+          if (orgError) throw new Error(`organization names: ${orgError.message}`);
+          if (cancelled) return;
+          setOrgNames((prev) => {
+            const next = new Map(prev);
+            for (const o of (orgs ?? []) as { id: string; name: string }[]) next.set(o.id, o.name);
+            return next;
+          });
+        }
         setTranscripts((prev) => {
           const next = new Map(prev);
           for (const r of results) for (const t of r.t ?? []) next.set(t.id, t);
@@ -141,6 +166,8 @@ export function useTranscriptFacts(hits: KnowledgeHit[], enabled: boolean): Tran
     transcripts: [...transcripts.values()],
     sessions: [...sessions.values()],
     userId,
+    userEmail,
+    orgNames,
   });
 
   return {

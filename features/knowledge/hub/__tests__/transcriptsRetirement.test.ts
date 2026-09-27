@@ -163,6 +163,8 @@ const facts = buildTranscriptFacts(hits, {
   transcripts: [T],
   sessions: [S("s1", "studio", "live"), S("c1", "cleanup", "done")],
   userId: "me",
+  userEmail: "me@example.com",
+  orgNames: new Map([["o1", "Acme"]]),
 });
 const factFor = (h: KnowledgeHit) => facts.get(`${h.entity}:${h.id}`);
 const sourceHref = (id: string) => `/rag/viewer/${id}`;
@@ -263,6 +265,8 @@ describe("Export writes the list's CSV for hub rows", () => {
     expect(lines[0]).toContain("Board call");
     expect(lines[0]).toContain("Interviews");
     expect(lines[0]).toContain("https://app.test/transcripts/processor?focus=t1");
+    expect(lines[0]).toContain("Acme");
+    expect(lines[0]).toContain("me@example.com");
     expect(lines[1]).toContain("Cleanup");
     expect(lines[1]).toContain("https://app.test/transcripts/cleanup?session=c1");
     expect(lines[2]).toContain("Source");

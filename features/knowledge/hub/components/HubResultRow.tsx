@@ -42,8 +42,18 @@ export function HitTitle({ hit, handlers, className }: { hit: KnowledgeHit; hand
   if (handlers.renamingKey && handlers.renamingKey === hitKey(hit))
     return (
       <input
-        autoFocus
         defaultValue={hit.title}
+        // Finder / Linear: focused with the whole name selected, so typing replaces it. After the
+        // frame, because the row menu that opened the editor hands focus back to its trigger as it closes.
+        ref={(el) => {
+          if (el && !el.dataset.primed) {
+            el.dataset.primed = "1";
+            window.setTimeout(() => {
+              el.focus();
+              el.select();
+            }, 0);
+          }
+        }}
         aria-label={`Rename ${hit.title}`}
         className="w-full rounded border border-ring bg-background px-1 py-0.5 text-sm font-medium text-foreground outline-none"
         onClick={(e) => e.stopPropagation()}

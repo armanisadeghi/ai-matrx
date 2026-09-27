@@ -194,6 +194,19 @@ export interface TranscriptFactsInput {
   transcripts: TranscriptRecordFields[];
   sessions: StudioSessionFields[];
   userId: string | null;
+  /** The signed-in person's email — the Owner of their own rows. */
+  userEmail?: string | null;
+  /** organization id → name (the Organization column of Export / Copy). */
+  orgNames?: Map<string, string>;
+}
+
+/** Organization and owner, the way the list named them (org name; the owner's email, else their name). */
+function withPeople(row: TranscriptListRow, hit: KnowledgeHit, input: TranscriptFactsInput): TranscriptListRow {
+  return {
+    ...row,
+    organization_name: (row.organization_id && input.orgNames?.get(row.organization_id)) || "",
+    owner_email: row.is_owner ? (input.userEmail ?? "") : (hit.captured_by?.name ?? ""),
+  };
 }
 
 /** hitKey → the row's list-shape facts, for every transcript hit whose own fields were read. */
@@ -204,18 +217,18 @@ export function buildTranscriptFacts(hits: KnowledgeHit[], input: TranscriptFact
   );
   const sessions = new Map(input.sessions.map((s) => [s.id, s]));
   const out = new Map<string, TranscriptListRow>();
+  const put = (h: KnowledgeHit, row: TranscriptListRow) => out.set(`${h.entity}:${h.id}`, withPeople(row, h, input));
   for (const h of hits) {
-    const key = `${h.entity}:${h.id}`;
     if (h.entity === TRANSCRIPT_RECORD_TOKEN) {
       const t = byId.get(h.id);
-      if (t) out.set(key, rowFromTranscript(t, input.userId));
+      if (t) put(h, rowFromTranscript(t, input.userId));
     } else if (h.entity === STUDIO_SESSION_TOKEN) {
       const s = sessions.get(h.id);
-      if (s) out.set(key, rowFromSession(s, input.userId));
+      if (s) put(h, rowFromSession(s, input.userId));
     } else if (h.entity === UNSORTED_TOKEN) {
-      out.set(key, rowFromUnsorted(h));
+      put(h, rowFromUnsorted(h));
     } else if (isTranscriptSourceHit(h)) {
-      out.set(key, rowFromSource(h, bySource.get(h.id) ?? null, input.userId));
+      put(h, rowFromSource(h, bySource.get(h.id) ?? null, input.userId));
     }
   }
   return out;
