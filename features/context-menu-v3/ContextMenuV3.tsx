@@ -83,6 +83,13 @@ const NON_TEXT_INPUT_TYPES = new Set([
   "submit",
 ]);
 
+/**
+ * A right-click on a live text field inside a READ-ONLY menu: the innermost
+ * such shell, recorded in the capture phase so every shell sees the same
+ * answer in the bubble phase (see `onContextMenuCapture`).
+ */
+const NATIVE_TEXT_YIELD = new WeakMap<Event, HTMLElement>();
+
 function yieldsToNativeTextMenu(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.isContentEditable) return true;
@@ -772,9 +779,18 @@ export function ContextMenuV3({
     "data-content-source": contentSource ? contentSourceKey(contentSource) : undefined,
     onContextMenuCapture: (e: React.MouseEvent<HTMLElement>) => {
       // CAPTURE: a read-only menu never steals a live text field's native menu.
-      if (!isEditable && yieldsToNativeTextMenu(e.target)) e.stopPropagation();
+      // It MARKS the gesture instead of stopping it: a stopPropagation here
+      // also killed the field's OWN editable menu nested inside (every window
+      // body is a read-only menu, so every window's text box lost its menu).
+      if (!isEditable && yieldsToNativeTextMenu(e.target))
+        NATIVE_TEXT_YIELD.set(e.nativeEvent, e.currentTarget);
     },
     onContextMenu: (e: React.MouseEvent<HTMLElement>) => {
+      // A read-only shell over a live field yields; so does an editable shell
+      // OUTSIDE the innermost read-only shell that asked to yield. An editable
+      // menu nested inside that shell owns its own field.
+      const yielder = NATIVE_TEXT_YIELD.get(e.nativeEvent);
+      if (yielder && (!isEditable || !yielder.contains(e.currentTarget))) return;
       if (isMobile) {
         if (suppressed) return;
         if (!isEditable && yieldsToNativeTextMenu(e.target)) return;
