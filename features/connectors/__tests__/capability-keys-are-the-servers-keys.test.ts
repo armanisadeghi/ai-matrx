@@ -103,10 +103,27 @@ const clientResourceTypes = new Set(
  * else may. Pending capabilities stay here until their consent and account UI
  * are ready; every other catalog key needs a product row.
  */
-const NOT_SURFACED: Record<string, string> = {
-  calendar_shared:
-    "The server inventories bounded selected-calendar reads, but its scope classifications and provider grant are pending; consent and the account UI must stay closed.",
+const NOT_SURFACED: Record<string, { reason: string; internalFilesRoute?: boolean }> = {
+  calendar_shared: {
+    reason: "Selected-calendar reads have no public consent or account UI yet.",
+  },
+  calendar_write: {
+    reason: "Calendar writes have no reviewed product actions or Google consent yet.",
+  },
+  drive_browse: {
+    reason: "Whole-Drive browsing has an internal Files route, not a public consent row.",
+    internalFilesRoute: true,
+  },
 };
+
+function serverDescriptor(key: string): string {
+  const source = readFileSync(CAPABILITIES, "utf8");
+  const marker = `key="${key}"`;
+  const start = source.indexOf(marker);
+  if (start < 0) throw new Error(`Missing server capability descriptor: ${key}`);
+  const end = source.indexOf("GoogleCapabilityDescriptor(", start + marker.length);
+  return source.slice(start, end < 0 ? undefined : end);
+}
 
 describe("the client's capability coverage", () => {
   it("claims each key exactly once — no two products fight over one", () => {
@@ -140,6 +157,33 @@ const hasServer = existsSync(CAPABILITIES);
         (key) => !clientKeys.includes(key) && !(key in NOT_SURFACED),
       );
       expect(missing).toEqual([]);
+    });
+
+    it("exempts only internal capabilities whose consent is closed", () => {
+      for (const [key, exception] of Object.entries(NOT_SURFACED)) {
+        expect(exception.reason.length).toBeGreaterThan(20);
+        expect(keysFromServer()).toContain(key);
+        expect(clientKeys).not.toContain(key);
+        const descriptor = serverDescriptor(key);
+        expect(descriptor).toMatch(/rollout_phase="internal_test"/);
+        expect(descriptor).toMatch(/consent_requestable=False/);
+      }
+    });
+
+    it("keeps the internal Drive reviewer route behind its catalog gate", () => {
+      expect(NOT_SURFACED.drive_browse?.internalFilesRoute).toBe(true);
+      const root = process.cwd();
+      const page = readFileSync(join(root, "app/(core)/files/google-drive/page.tsx"), "utf8");
+      const library = readFileSync(join(root, "features/files/google-drive/GoogleDriveLibrary.tsx"), "utf8");
+      const desktop = readFileSync(join(root, "features/files/components/surfaces/desktop/NavSidebar.tsx"), "utf8");
+      const mobile = readFileSync(join(root, "features/files/google-drive/DriveBrowseMobileLink.tsx"), "utf8");
+      const gate = readFileSync(join(root, "features/files/google-drive/drive-browser.ts"), "utf8");
+      expect(page).toContain("<GoogleDriveLibrary />");
+      for (const source of [library, desktop, mobile]) {
+        expect(source).toContain("driveBrowseIsAvailable(");
+      }
+      expect(gate).toContain('capability.rollout_phase === "internal_test"');
+      expect(gate).toContain("capability.eligible");
     });
 
     it("carries no key the server has stopped declaring", () => {
