@@ -178,10 +178,10 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "due_by_mode",
     label: "Waiting for you, by mode",
     description:
-      'Due and weak counts per study mode, only modes with something waiting, as [{ mode, label, due, weak }] (mode is the study spine item type, e.g. "fc_card", "assessment_item", "spoken_prompt"). The "Waiting for you" block shows these once due + weak reaches 5. Empty array when nothing waits; absent when the mastery section is loading or failed.',
+      'Due and weak counts per study mode, only modes with something waiting, busiest first, as [{ label, due, weak }] (e.g. { label: "Flashcards", due: 32, weak: 43 }). The "Waiting for you" block shows these once due + weak reaches 5. Empty array when nothing waits; absent when the mastery section is loading or failed.',
     valueType: "array",
     alwaysAvailable: false,
-    typicalCharCount: 200,
+    typicalCharCount: 160,
     sortOrder: 250,
     group: "study_today",
   },
@@ -200,7 +200,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "next_actions_brief",
     label: "Next actions",
     description:
-      "The Study today list, as shown, max 4, as [{ id, title }] — the plan's pending blocks first; with none, due then weak reviews per mode; plus a goal within 30 days. Full detail (reason, minutes, link) is next_actions. Empty array when caught up or resting; absent until the plan, mastery and goals sections all loaded.",
+      "The Study today list, as shown, max 4, as [{ id, title }] — title is the line the page shows, with its \"(~N min)\" estimate when it has one. The plan's pending blocks first; with none, due then weak reviews per mode; plus a goal within 30 days. Full detail (reason, minutes, link) is next_actions. Empty array when caught up or resting; absent until the plan, mastery and goals sections all loaded.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 250,
@@ -241,6 +241,17 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 3,
     sortOrder: 300,
+    group: "material",
+  },
+  {
+    name: "owned_counts",
+    label: "How much they own",
+    description:
+      'The counts in the tool row as one object, tool slug → count, only tools that show a count (e.g. { "flashcards": 185, "summaries": 39, "kits": 21 }). A tool whose section failed is left out. Absent while loading.',
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 170,
+    sortOrder: 305,
     group: "material",
   },
   {
@@ -328,7 +339,7 @@ export const educationOverviewManifest: SurfaceManifest = {
 You are on the learner's Study Hub home at /education/overview, their education dashboard. It is read-only: every button is a link to another page.
 Check dashboard_state first: "loading" means nothing has arrived yet; "partial" means the sections in unavailable_sections failed, so their values are absent (unknown), not zero.
 next_actions_brief is the page's own answer to "what should I study now" (detail with reasons and links in next_actions). Respect is_rest_day: the learner's plan protects today, so do not push them to study.
-recent_items and recent_kits are the newest material; tool_counts and library_total say how much they own; due_by_mode says what is waiting.
+recent_items and recent_kits are the newest material; owned_counts and library_total say how much they own; due_by_mode says what is waiting.
 To create material send the learner to /education/start; to change a library item, use the Education Library page.
 </surface_intro>`,
   groups,
@@ -343,7 +354,6 @@ export interface OverviewPlan {
   daily_minutes: number;
 }
 export interface OverviewModeCount {
-  mode: string;
   label: string;
   due: number;
   weak: number;
@@ -413,6 +423,7 @@ export function createEducationOverviewScope(values: {
   next_actions?: OverviewNextAction[];
   next_actions_total_minutes?: number;
   library_total?: number;
+  owned_counts?: Record<string, number>;
   tool_counts?: OverviewToolCount[];
   recent_items?: OverviewRef[];
   recent_items_detail?: OverviewRecentItem[];
