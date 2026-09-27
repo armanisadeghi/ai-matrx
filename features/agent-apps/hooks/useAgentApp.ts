@@ -281,6 +281,12 @@ export interface UseAgentAppReturn {
    */
   startNewRun: () => void;
   runKey: number;
+  /**
+   * True while a run named in the address is being reopened (a refresh, a
+   * shared link). When it flips back, the conversation's variables are
+   * loaded — a shell remounts the app so it can seed its inputs from them.
+   */
+  isRestoringRun: boolean;
 
   // ── Configuration mirrors (so shells can read state-of-app) ────────────
   allowChat: boolean;
@@ -1037,6 +1043,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       loadConversation: loadConversationCb,
       resetConversation,
       startNewRun,
+      isRestoringRun: isReopening,
       runKey,
       allowChat,
       surfaceHandle,

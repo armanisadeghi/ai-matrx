@@ -20,8 +20,12 @@ export default function FactCheckerApp({
   isStreaming,
   error,
   rateLimitInfo,
+  initialVariables,
 }: AgentAppComponentProps) {
-  const [claim, setClaim] = useState("");
+  // Seeded from the reopened run so a refresh keeps what was typed.
+  const [claim, setClaim] = useState(
+    typeof initialVariables?.claim === "string" ? initialVariables.claim : "",
+  );
   const [submittedClaim, setSubmittedClaim] = useState("");
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [showFullForm, setShowFullForm] = useState(true);

@@ -294,6 +294,8 @@ export function AgentAppFullyCustomShell({
     appName: app.name,
     appTagline: app.tagline,
     appCategory: app.category,
+    // The reopened run's input — so a refresh never loses what was typed.
+    initialVariables: ctx.variables,
   };
 
   return (
@@ -339,7 +341,14 @@ export function AgentAppFullyCustomShell({
               }}
             >
               {/* Remounted on "Start over" so the app returns to its first screen. */}
-              <CustomApp key={ctx.runKey} {...hookProps} {...legacyProps} />
+              {/* Remounted on "Start over" (runKey), and once a reopened run
+                  has loaded (isRestoringRun → false) so the app seeds its
+                  inputs from `initialVariables`. */}
+              <CustomApp
+                key={`${ctx.runKey}:${ctx.isRestoringRun ? "restoring" : "ready"}`}
+                {...hookProps}
+                {...legacyProps}
+              />
             </AgentAppStreamProvider>
           </AgentAppErrorBoundary>
         </div>

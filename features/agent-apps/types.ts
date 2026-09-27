@@ -505,6 +505,14 @@ export interface AgentAppComponentProps {
   conversationId?: string | null;
   onResetConversation?: () => void;
   streamEvents?: unknown[];
+  /**
+   * The input of the run this page reopened (a refresh, a shared
+   * `?conversationId=` link), by variable name — e.g. `{ claim }`. Seed your
+   * own input state from it (`useState(initialVariables?.claim ?? "")`) so
+   * what the person typed survives a refresh. `{}` on a fresh page. The app
+   * is remounted once a reopened run has loaded, so the seed is current.
+   */
+  initialVariables?: Record<string, unknown>;
 }
 
 // ============================================================================
