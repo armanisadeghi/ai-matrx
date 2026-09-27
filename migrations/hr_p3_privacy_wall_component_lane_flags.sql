@@ -1,3 +1,4 @@
+-- retired: superseded by admin_access_platform_admin_read_is_generated_2026_09_24.sql — Arman's 2026-09-24 rule requires platform_admin_read on every RLS table and forbids suppressing it; this historical assertion would reject the required policy and must never run again
 -- HRB-003 follow-up — raise the D19 wall on the two pay-bearing COMPONENT tokens
 -- unblocked by hr_p3_privacy_wall_entity_read_expr.sql.
 --
