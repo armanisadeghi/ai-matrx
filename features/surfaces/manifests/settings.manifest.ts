@@ -499,7 +499,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "hidden_models",
     label: "Hidden models",
     description:
-      "Replace the list of models hidden from the person's model pickers (only while the Models tab is open). Expects the FULL ARRAY of models to hide, each an id or an exact model name as the page shows it (e.g. "ALLaM 2 7B") — [] shows every model again. Include the ones already in hidden_models to keep them hidden. Unknown or ambiguous names are refused.",
+      "Replace the list of models hidden from the person's model pickers (only while the Models tab is open). Expects the FULL ARRAY of models to hide, each an id or an exact model name as the page shows it (e.g. 'ALLaM 2 7B') — [] shows every model again. Include the ones already in hidden_models to keep them hidden. Unknown or ambiguous names are refused.",
     valueType: "array",
     updatesValue: "hidden_models",
     mode: "entity",
