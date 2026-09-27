@@ -87,3 +87,27 @@ describe("ReadFailure", () => {
     expect(renderToStaticMarkup(<ReadFailure error={true} what="your tasks" />)).toContain("your tasks");
   });
 });
+
+describe("ReadFailure always offers a way forward (page-pass 2026-09-27)", () => {
+  // The mocked ErrorNotice above drops `actions`; render them through a
+  // pass-through so the retry control itself is what is asserted.
+  const { ErrorNotice } = jest.requireMock("@/components/errors/ErrorNotice") as {
+    ErrorNotice: jest.Mock | ((p: unknown) => React.ReactElement);
+  };
+  void ErrorNotice;
+
+  it("a server page (no onRetry, it cannot pass one) gets a same-URL reload", () => {
+    const element = ReadFailure({ error: new Error("timed out"), what: "this message template" });
+    const actions = (element.props as { actions?: React.ReactElement }).actions;
+    expect(actions).toBeTruthy();
+    const html = renderToStaticMarkup(actions as React.ReactElement);
+    expect(html).toContain("Reload page");
+  });
+
+  it("a client surface with its own retry gets Try again, not a page reload", () => {
+    const element = ReadFailure({ error: new Error("timed out"), onRetry: () => {} });
+    const html = renderToStaticMarkup((element.props as { actions: React.ReactElement }).actions);
+    expect(html).toContain("Try again");
+    expect(html).not.toContain("Reload page");
+  });
+});

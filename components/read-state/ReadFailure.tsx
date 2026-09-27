@@ -5,10 +5,16 @@
  * round 11): the error, with the Alchemy Menu (through ErrorNotice) and a
  * retry when the caller has one. `error` may be the error itself or just the
  * read's failed flag — the sentence never pretends there is nothing.
+ *
+ * ALWAYS A WAY FORWARD. With `onRetry` it offers "Try again" (the surface's own
+ * read, nothing else touched). Without one — every SERVER page, which cannot
+ * pass a function — it offers `ReloadPageButton`: a same-URL reload that re-runs
+ * the server read. A failure card with no retry at all is gone.
  */
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ReloadPageButton } from "@/components/read-state/ReloadPageButton";
 
 export function ReadFailure({
   error,
@@ -20,6 +26,7 @@ export function ReadFailure({
   error: unknown;
   /** What could not be read, in the reader's words: "your tasks". */
   what?: string;
+  /** Retry just this read. Absent (always, from a server page): a same-URL reload is offered. */
   onRetry?: () => void;
   className?: string;
   size?: "compact" | "default";
@@ -39,7 +46,9 @@ export function ReadFailure({
           <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={onRetry}>
             <RefreshCw className="h-3.5 w-3.5" /> Try again
           </Button>
-        ) : undefined
+        ) : (
+          <ReloadPageButton />
+        )
       }
     />
   );
