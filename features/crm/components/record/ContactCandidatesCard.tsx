@@ -234,9 +234,10 @@ export function ContactCandidatesCard({
             ) : (
               <Search className="h-3 w-3 sm:mr-1" />
             )}
-            {/* One header row on a phone: the words fold away, the icon
-                and its accessible name stay. */}
-            <span className="max-sm:sr-only">Find contact info</span>
+            {/* One header row on a phone: a short visible word ("Find"), so
+                it never reads as a twin of the refresh icon beside it. */}
+            <span className="sm:hidden">Find</span>
+            <span className="max-sm:hidden">Find contact info</span>
           </Button>
           <RefreshCwTapButton
             ariaLabel="Refresh suggestions"
