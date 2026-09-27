@@ -151,10 +151,16 @@ A host supplies a `BoardToolHost`: `createTile(id, input, size)` and optional `e
 kinds it can hold (answer a failure for the rest), and `describe(tile)` for `board_read`.
 Markdown written by an agent renders through the stream pipeline (`tiles/MarkdownTileBody.tsx`,
 an instant `ReplayStream` → `StreamTileBody`), never a second renderer; an agent's note is a real
-Note (`NoteTileBody` `text` prop creates/saves it). Wired: the demo. Next: meeting board, workflow
-run board, War Room board.
+Note (`NoteTileBody` `text` prop creates/saves it). Wired: the demo; the meeting board
+(`features/meet/components/board/MeetingBoard.tsx` — markdown / html page or `srcDoc` / image; a
+"note" is the board's own scratchpad and "text" becomes markdown; the live meeting sections refuse
+content edits); the workflow run board (`features/workflow-runtime/components/spatial/WorkflowRunSpatialView.tsx`
+— real Note / markdown / text / html / image beside the steps; a step refuses content edits, and
+`describe` gives its family + declared kind and live status). Both render `board.frames` and
+`board.connections`. Next: War Room board.
 
 ## Change Log
+
 
 - 2026-09-25 — Created: engine, zoom-paced streaming, demo board (research/study kinds, podcast
   pipeline, generated HTML, 100-stream stress test). Unit tests in `__tests__/engine.test.ts`.
@@ -173,6 +179,9 @@ run board, War Room board.
   `matrx-user/spatial-board` surface; `useBoard` gains connections, `moveMany`, a live `read()`
   (fixes back-to-back commands reading stale state — test fails before, passes after) and
   frame-aware placement. All 11 tools driven in the browser on the demo, 0 page errors.
+- 2026-09-27 — Board agent tools wired into the meeting board and the workflow run board
+  (`SpatialBoardSurface` host each). The meeting board now saves `{tiles, frames}` (older bare-array
+  boards still load) and keeps a scratchpad's text on the tile so an agent can write it.
 
 ## Chat beside the board
 
