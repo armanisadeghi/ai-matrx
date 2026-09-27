@@ -722,9 +722,17 @@ function applyEvent(
       if (error) run.error = error;
       break;
     }
-    case "run_cancelled":
+    case "run_cancelled": {
       stampStatus(run, "cancelled", event.ts);
+      // A run that ended because a person REFUSED a held change carries the
+      // refusal on the event (cause `refused`), so the page says so live instead
+      // of "You stopped this run" (lane HELD-WRITE-RESUME).
+      const error = asRecord(readField(event, "error"));
+      if (error) run.error = error;
+      // An ended run is waiting on nobody: the question (or the held card) goes.
+      run.interrupt = null;
       break;
+    }
     case "run_paused":
       stampStatus(run, "paused", event.ts);
       run.sticky.pausedOnce = true;

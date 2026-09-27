@@ -199,4 +199,21 @@ describe("a run paused on a held change", () => {
     expect(kinds).toContain("held");
     expect(kinds).not.toContain("failed");
   });
+
+  test("Refuse ends the run as refused, and the page reads the refusal live", () => {
+    let state = pausedState(HELD_PAYLOAD);
+    const cancelled = {
+      event: "run_cancelled",
+      run_id: RUN,
+      status: "cancelled",
+      steps_executed: 0,
+      reason: "graceful",
+      error: { cause: "refused", message: "Tobias Lindqvist was left as it was." },
+      ts: "2026-09-26T21:05:00Z",
+    } as unknown as WorkflowRunEvent;
+    state = workflowRunsReducer(state, applyRunEvent({ runId: RUN, event: cancelled, seq: 5, replay: false }));
+    expect(state.byRunId[RUN]?.status).toBe("cancelled");
+    expect((state.byRunId[RUN]?.error as Record<string, unknown> | null)?.["cause"]).toBe("refused");
+    expect(state.byRunId[RUN]?.interrupt).toBeNull();
+  });
 });
