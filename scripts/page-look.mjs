@@ -246,7 +246,16 @@ function measure(isPhone) {
     const intrinsic =
       el.tagName === "IMG" ? el.naturalWidth : Number(el.getAttribute("width")) || (el.tagName === "CANVAS" ? el.width : 0);
     const parent = el.parentElement?.getBoundingClientRect();
-    if (intrinsic > 20 && (r.width < 2 || (parent && parent.width < 2)) && zeroSizeGraphics.length < 10)
+    // Only inside visible content: a graphic in a deliberately collapsed
+    // panel (a closed phone sidebar) has no wide ancestor nearby.
+    let inContent = false;
+    for (let up = el.parentElement, depth = 0; up && depth < 5; up = up.parentElement, depth += 1) {
+      if (up.getBoundingClientRect().width > 50) {
+        inContent = true;
+        break;
+      }
+    }
+    if (inContent && intrinsic > 20 && (r.width < 2 || (parent && parent.width < 2)) && zeroSizeGraphics.length < 10)
       zeroSizeGraphics.push(`${el.tagName.toLowerCase()} intrinsic ${intrinsic}px drawn ${Math.round(r.width)}px (parent ${parent ? Math.round(parent.width) : "?"}px)`);
   }
   return {

@@ -194,6 +194,11 @@ surface). Say which parts you judged as authored content.
   generic upsert may refuse the kind you send); then, live, save a
   `PP test —` value and read the row back with SQL, and restore it. A button
   that "works" and saves nothing is the worst dead control.
+- **An empty read is not a success.** A lookup that returns no row where one
+  must exist (access refused, wrong id) is an error the person and the agent
+  see — never a silent return that leaves the page "still loading" forever.
+- **A control is never enabled while what it needs is loading** only to
+  refuse on press — it shows a pending state, or waits and then acts.
 - **A vague error has a real cause — find it.** "Couldn't load …" is a symptom:
   read the recorded failure (`errors` MCP tool, or `ops.system_error` via the
   Supabase MCP) and fix the cause.
