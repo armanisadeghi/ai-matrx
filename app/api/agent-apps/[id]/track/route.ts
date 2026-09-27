@@ -34,7 +34,13 @@ import { getClaimsUser } from "@/utils/supabase/resolveUser";
  *     `keepalive`/sendBeacon usage stays cheap.
  */
 
-type TrackEvent = "visit" | "run_start" | "run_complete" | "run_error";
+type TrackEvent =
+  | "visit"
+  | "run_start"
+  | "run_complete"
+  | "run_error"
+  /** The person stopped the run: neither a success nor a failure. */
+  | "run_cancelled";
 
 interface TrackPayload {
   event: TrackEvent;
@@ -78,6 +84,7 @@ export async function POST(
       "run_start",
       "run_complete",
       "run_error",
+      "run_cancelled",
     ];
     if (!validEvents.includes(body.event)) {
       return NextResponse.json(
@@ -106,7 +113,11 @@ export async function POST(
     const admin = createAdminClient();
 
     // ── Run lifecycle: completion / error update an existing row ─────────
-    if (body.event === "run_complete" || body.event === "run_error") {
+    if (
+      body.event === "run_complete" ||
+      body.event === "run_error" ||
+      body.event === "run_cancelled"
+    ) {
       if (!isUuidShape(body.taskId)) {
         return NextResponse.json(
           { error: "taskId required for run_complete/run_error" },
@@ -114,9 +125,16 @@ export async function POST(
         );
       }
 
+      // A cancelled run stays success = NULL (it neither succeeded nor
+      // failed) and says why in error_type, so analytics can tell it apart.
       const patch: TablesUpdate<{ schema: "app" }, "execution"> = {
-        success: body.event === "run_complete",
+        success:
+          body.event === "run_cancelled" ? null : body.event === "run_complete",
       };
+      if (body.event === "run_cancelled") {
+        patch.error_type = "cancelled";
+        patch.error_message = body.errorMessage ?? "Stopped by the person.";
+      }
       if (typeof body.executionTimeMs === "number") {
         patch.execution_time_ms = Math.max(0, Math.floor(body.executionTimeMs));
       }

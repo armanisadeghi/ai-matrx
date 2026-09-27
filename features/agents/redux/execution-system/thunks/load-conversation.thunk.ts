@@ -187,7 +187,7 @@ export const loadConversation = createAsyncThunk<
       displayOverrides,
       agentBehindApp = false,
     },
-    { dispatch },
+    { dispatch, getState },
   ) => {
     // Auth diagnostics — RLS-denied reads return as `PGRST116` with
     // empty-looking errors. Most common root cause: browser session
@@ -433,10 +433,18 @@ export const loadConversation = createAsyncThunk<
     // recorded. `restoreVariableValues` takes both halves together; a row with
     // no authorship recorded behaves exactly as before, as a value with no
     // claim attached.
+    // Keep the definitions an instance already carries (the launcher or
+    // `createManualInstance` seeded them from the agent). Wiping them to `[]`
+    // made every resolved read of a REOPENED conversation empty — its values
+    // were restored below but no definition named them, so an app reopened
+    // from its link lost the input it was run with ("Bats are blind.").
+    const existingDefinitions =
+      getState().instanceVariableValues?.byConversationId?.[conversationId]
+        ?.definitions ?? [];
     dispatch(
       initInstanceVariables({
         conversationId,
-        definitions: [],
+        definitions: existingDefinitions,
         scopeValues: {},
       }),
     );

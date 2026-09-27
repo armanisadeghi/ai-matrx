@@ -1,7 +1,8 @@
 /**
  * THE TRACKER HAS NO BARE SUCCESS. Only `settle(outcome)` can write
  * run_complete, and only for a `success` outcome; a failure posts run_error
- * with the refusal reason; cancelled/pending posts nothing (row stays NULL).
+ * with the refusal reason; a stopped run posts run_cancelled (success stays
+ * NULL, error_type "cancelled"); an unresolved run posts nothing.
  */
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -34,6 +35,8 @@ it("posts run_error with the reason for a refused run, run_complete only for suc
   const stopped = startRun!();
   stopped.settle({ kind: "cancelled" });
   const kinds = events().map((e) => e.event);
+  // A stopped run is recorded as cancelled — neither success nor failure.
+  expect(kinds.filter((k) => k === "run_cancelled")).toHaveLength(1);
   expect(kinds.filter((k) => k === "run_complete")).toHaveLength(1);
   const err = events().find((e) => e.event === "run_error");
   expect(err).toMatchObject({ errorType: "guest_limit_reached", errorMessage: "You've used your free runs." });

@@ -22,9 +22,13 @@
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
-import { AlertCircle, RotateCcw } from "lucide-react";
+import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
+import {
+  MoreHorizontalTapButton,
+  StopTapButton,
+} from "@ai-matrx/tap-target/buttons";
+import { cancelExecution } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { APP_RUN_ERROR_TITLE } from "@/features/agent-apps/components/app-run-error";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { useApiAuth } from "@/hooks/useApiAuth";
@@ -44,7 +48,7 @@ import {
   recordRunOutcome,
   waitForRunOutcome,
 } from "@/features/agent-apps/tracking/run-outcome";
-import { useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { useWarmAgent } from "@/features/agents/hooks/useWarmAgent";
 import type {
   AgentAppShellConfigCommon,
@@ -129,6 +133,7 @@ export function AgentAppFullyCustomShell({
 
   const [localError, setLocalError] = useState<string | null>(null);
   const store = useAppStore();
+  const dispatch = useAppDispatch();
 
   // ── Legacy-compat onExecute / onResetConversation ──────────────────────
   // The three sample apps + many in-the-wild rows still use the old prop
@@ -208,7 +213,19 @@ export function AgentAppFullyCustomShell({
     });
   }, [openCanvas, ctx.response, app.name, ctx.conversationId]);
 
-  const showActionBar = !ctx.isStreaming && ctx.response.length > 0;
+  // The finished bar is for a FINISHED result only — never while a run is
+  // live, held, or being rejoined after a reload (it used to show beside the
+  // still-generating answer).
+  const isLive = ctx.isStreaming || ctx.isExecuting || ctx.isRestoringRun;
+  const showActionBar = !isLive && ctx.response.length > 0;
+  // What the run was asked, for the live bar ("Checking: …" in the app's own
+  // words is the app's; the host says what it is working on).
+  const liveInput = Object.values(ctx.variables ?? {}).find(
+    (v): v is string => typeof v === "string" && v.trim().length > 0,
+  );
+  const stopRun = () => {
+    if (ctx.conversationId) void dispatch(cancelExecution(ctx.conversationId));
+  };
 
   // ── Render ────────────────────────────────────────────────────────────
 
@@ -353,8 +370,24 @@ export function AgentAppFullyCustomShell({
           </AgentAppErrorBoundary>
         </div>
 
+        {isLive && ctx.conversationId && (
+          // The host's live bar: what is running, and a Stop that cancels the
+          // request (server included) — the run is then recorded as cancelled.
+          <div
+            data-testid="app-live-bar"
+            className="matrx-touch-targets flex-shrink-0 flex items-center gap-2 px-3 py-1.5 border-t border-border/40"
+          >
+            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" aria-hidden="true" />
+            <p className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+              {ctx.isRestoringRun ? "Reopening your run" : "Generating"}
+              {liveInput ? ` — ${liveInput}` : "…"}
+            </p>
+            <StopTapButton onClick={stopRun} ariaLabel="Stop this run" tooltip="Stop" label="Stop" />
+          </div>
+        )}
+
         {showActionBar && (
-          <div className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 border-t border-border/40">
+          <div className="matrx-touch-targets flex-shrink-0 flex items-center gap-1 px-3 py-1.5 border-t border-border/40">
             {/* The canonical Copy / Copy-for-AI pair over the finished result. */}
             <CopyButtons
               size="icon"

@@ -95,7 +95,14 @@ export function useAgentAppTracker(appId: string) {
               ? performance.now()
               : Date.now()) - startedAt,
           );
-          if (outcome.kind === "success") {
+          if (outcome.kind === "cancelled") {
+            post({
+              event: "run_cancelled",
+              taskId,
+              executionTimeMs: ms,
+              errorMessage: "Stopped by the person.",
+            });
+          } else if (outcome.kind === "success") {
             post({ event: "run_complete", taskId, executionTimeMs: ms });
           } else if (outcome.kind === "failure") {
             post({
