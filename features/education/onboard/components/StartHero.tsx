@@ -57,6 +57,34 @@ import { lookupFileDocument } from "@/features/files/api/document-lookup";
 import { filesDb } from "@/features/files/filesDb";
 import { supabase } from "@/utils/supabase/client";
 import type { StoredFileInput } from "../types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { EDUCATION_START_SURFACE_NAME } from "@/features/surfaces/manifests/education-start.manifest";
+import { parseKitRequestDraftValue } from "../startAgentWrites";
+import { buildEducationStartScope } from "../startSurfaceScope";
+
+/**
+ * Look up a file the learner owns, exactly as the "Choose from my files"
+ * picker does. Throws a sentence the person (or an agent) can act on.
+ */
+async function loadOwnedFile(fileId: string): Promise<StoredFileInput> {
+  const { data, error } = await filesDb(supabase)
+    .from("files")
+    .select("id, file_name, mime_type")
+    .eq("id", fileId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) {
+    throw new Error("That file is no longer available — choose another.");
+  }
+  return {
+    fileId: data.id,
+    fileName: data.file_name,
+    mimeType: data.mime_type ?? "",
+  };
+}
 
 
 // "files" = material the learner ALREADY has. Picking it never uploads the
@@ -148,21 +176,7 @@ export function StartHero({
       });
       const fileId = ids?.[0];
       if (!fileId) return; // closed without choosing
-      const { data, error } = await filesDb(supabase)
-        .from("files")
-        .select("id, file_name, mime_type")
-        .eq("id", fileId)
-        .is("deleted_at", null)
-        .maybeSingle();
-      if (error) throw error;
-      if (!data) {
-        throw new Error("That file is no longer available — choose another.");
-      }
-      setStored({
-        fileId: data.id,
-        fileName: data.file_name,
-        mimeType: data.mime_type ?? "",
-      });
+      setStored(await loadOwnedFile(fileId));
     } catch (e) {
       setPickError(
         e instanceof Error ? e.message : "Couldn't open that file — try again.",
@@ -236,7 +250,93 @@ export function StartHero({
     kit.phase === "generating" ||
     kit.phase === "done";
 
+  // ── Surface (matrx-user/education-start) ────────────────────────────────
+  const outputOptions = ALL_TARGET_KINDS.map((kind) => ({
+    kind,
+    label: getGenerator(kind)?.label ?? kind,
+    available: isTargetAvailable(kind),
+  }));
+  const getScope = () =>
+    buildEducationStartScope({
+      mode,
+      file,
+      stored,
+      pasteText,
+      url,
+      selected,
+      options: outputOptions,
+      depth,
+      count,
+      focus,
+      canBuild: canGenerate,
+      kit,
+    });
+
+  // Write half: fill the form through its own setters. Nothing is built —
+  // building spends the allowance and runs the consent/plan gates, so the
+  // person presses the button. The whole value (and a file id, looked up
+  // exactly as the picker does) is checked before the approval card.
+  const checkKitDraft = async (value: unknown) => {
+    if (kit.busy || showResults) {
+      refuseSurfaceWrite(
+        "A kit is being built or its results are showing, so the form is hidden. Ask the person to press Make another first.",
+      );
+    }
+    const fields = parseKitRequestDraftValue(
+      value,
+      ALL_TARGET_KINDS.filter(isTargetAvailable),
+    );
+    const owned = fields.fileId
+      ? await loadOwnedFile(fields.fileId).catch(() =>
+          refuseSurfaceWrite(
+            `No file ${fields.fileId} is available to this person. Use the id of a file they own, or ask them to choose one on the My files tab.`,
+          ),
+        )
+      : null;
+    return { fields, owned };
+  };
+  const getWriteHandlers = () => ({
+    kit_request_draft: {
+      validate: async (value: unknown) => {
+        await checkKitDraft(value);
+      },
+      apply: async (value: unknown) => {
+        const { fields, owned } = await checkKitDraft(value);
+        if (fields.mode !== undefined) setMode(fields.mode);
+        if (fields.pasteText !== undefined) setPasteText(fields.pasteText);
+        if (fields.url !== undefined) setUrl(fields.url);
+        if (owned) {
+          setStored(owned);
+          setPickError(null);
+        }
+        if (fields.outputs !== undefined) setSelected(new Set(fields.outputs));
+        if (fields.depth !== undefined) setDepth(fields.depth);
+        if (fields.count !== undefined) {
+          setCount(fields.count === null ? "" : String(fields.count));
+        }
+        if (fields.focus !== undefined) setFocus(fields.focus);
+        const filled = Object.keys(value as Record<string, unknown>);
+        return {
+          summary: `Filled the Create a study kit form (${filled.join(", ")}). Nothing is built until the person presses Build my study kit.`,
+          data: owned ? { file: owned.fileName } : undefined,
+        };
+      },
+    },
+  });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={EDUCATION_START_SURFACE_NAME}
+      getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
+    >
+    <NonEditableContextMenu
+      sourceFeature="education-ingest"
+      surfaceName={EDUCATION_START_SURFACE_NAME}
+      menuVersion={1}
+      getApplicationScope={getScope}
+      contentSource={{ type: "raw" }}
+    >
     <div className="mx-auto w-full max-w-3xl space-y-6 p-4 sm:p-6">
       <header className="space-y-2 text-center">
         <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
@@ -345,6 +445,8 @@ export function StartHero({
 
       {showResults && <KitBoard kit={kit} onReset={kit.reset} />}
     </div>
+    </NonEditableContextMenu>
+    </SurfaceRuntimeProvider>
   );
 }
 
