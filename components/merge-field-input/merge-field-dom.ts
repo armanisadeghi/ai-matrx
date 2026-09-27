@@ -90,7 +90,23 @@ function nodeText(node: Node): string {
 }
 
 export function serializeFrom(root: HTMLElement): string {
-  return Array.from(root.childNodes).map(nodeText).join("");
+  const kids = Array.from(root.childNodes);
+  // A <br> as the LAST child is always filler: the browser leaves one in an
+  // emptied editor (select all + delete) and needs one to draw a final empty
+  // line. Our own line breaks are "\n" text, so it is never a typed newline.
+  const last = kids[kids.length - 1];
+  if (last instanceof HTMLElement && last.tagName === "BR") kids.pop();
+  return kids.map(nodeText).join("");
+}
+
+/** True when the drawing needs a trailing <br> to show a final empty line. */
+export function needsTrailingLine(root: HTMLElement): boolean {
+  const last = root.lastChild;
+  return (
+    last !== null &&
+    last.nodeType === Node.TEXT_NODE &&
+    (last.textContent ?? "").endsWith("\n")
+  );
 }
 
 /** Stored-text length of everything in `root` before (container, offset). */

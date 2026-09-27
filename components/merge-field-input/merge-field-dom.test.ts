@@ -4,6 +4,7 @@
 import {
   CHIP_ATTR,
   hasUnrenderedField,
+  needsTrailingLine,
   pointAtStoredOffset,
   renderInto,
   serializeFrom,
@@ -70,5 +71,21 @@ describe("merge-field DOM", () => {
 
   it("tokenizes with the server grammar", () => {
     expect(tokenizeMergeText("a{{ x.y }}b").map((s) => s.kind)).toEqual(["text", "field", "text"]);
+  });
+
+  it("ignores the filler <br> a browser leaves in an emptied editor", () => {
+    const root = document.createElement("div");
+    root.appendChild(document.createElement("br"));
+    expect(serializeFrom(root)).toBe("");
+    const withText = drawn("{{reply.body}}");
+    withText.appendChild(document.createElement("br"));
+    expect(serializeFrom(withText)).toBe("{{reply.body}}");
+  });
+
+  it("asks for a redraw when a typed newline ends the text", () => {
+    const root = drawn("{{reply.body}}");
+    root.appendChild(document.createTextNode("\n"));
+    expect(needsTrailingLine(root)).toBe(true);
+    expect(needsTrailingLine(drawn("a\n"))).toBe(false);
   });
 });

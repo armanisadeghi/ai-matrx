@@ -21,6 +21,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { cn } from "@/lib/utils";
 import {
   hasUnrenderedField,
+  needsTrailingLine,
   pointAtStoredOffset,
   renderInto,
   serializeFrom,
@@ -110,7 +111,11 @@ export const MergeFieldInput = forwardRef<MergeFieldInputHandle, MergeFieldInput
       const caret = currentCaret();
       caretRef.current = caret;
       // A field typed by hand, or pasted, becomes a chip once complete.
-      if (hasUnrenderedField(root) || (!multiline && text !== serializeFrom(root))) {
+      if (
+        hasUnrenderedField(root) ||
+        needsTrailingLine(root) ||
+        (!multiline && text !== serializeFrom(root))
+      ) {
         draw(text, caret);
       } else {
         shownRef.current = text;
