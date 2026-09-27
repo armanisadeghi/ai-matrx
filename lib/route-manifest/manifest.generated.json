@@ -624,6 +624,11 @@
       "source": "app/(admin)/administration/database/enums/page.tsx"
     },
     {
+      "pattern": "/administration/database/final-switch",
+      "status": "live",
+      "source": "app/(admin)/administration/database/final-switch/page.tsx"
+    },
+    {
       "pattern": "/administration/database/relationships",
       "status": "live",
       "source": "app/(admin)/administration/database/relationships/page.tsx"
@@ -3389,11 +3394,6 @@
       "pattern": "/intelligence/[feature]/unassigned",
       "status": "live",
       "source": "app/(core)/intelligence/[feature]/unassigned/page.tsx"
-    },
-    {
-      "pattern": "/intelligence/card-options",
-      "status": "live",
-      "source": "app/(core)/intelligence/card-options/page.tsx"
     },
     {
       "pattern": "/invitations/class/accept/[token]",

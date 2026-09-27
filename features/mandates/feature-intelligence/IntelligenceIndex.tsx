@@ -12,7 +12,7 @@
 // workflow running it. Each card opens that target's intelligence page.
 // `focusDomain` (from `?domain=`, where old page ids land) scrolls to a Domain.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   CircleAlert,
@@ -21,39 +21,22 @@ import {
   MapPin,
   Workflow,
 } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
-import { readAllRows } from "@ai-matrx/data/db";
-import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
-import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { SearchInput } from "@/components/official/SearchInput";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectIsAdmin,
-  selectUserId,
-} from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import {
-  callMandateMemberList,
-  memberRowFromWire,
-  type MandateMemberPageAnswer,
-} from "../member-list/rpc";
 import { featureIntelligenceHref } from "./hrefs";
 import { featureIcon } from "./feature-icons";
-import { lanesFor } from "./service";
+import { IntelligenceSearchBar, useIntelligenceQuery } from "./IntelligenceSearch";
+import { useIntelligenceDirectory } from "./useIntelligenceDirectory";
 import {
   buildDirectory,
-  buildDomains,
   matchFeature,
   matchStrength,
   summarize,
-  type DirectoryDefinition,
   type DirectoryDomain,
   type DirectoryFeature,
-  type DirectoryHolder,
   type MatchReason,
 } from "./index-model";
 
@@ -210,110 +193,13 @@ function DomainSection({
   );
 }
 
-/** Every job's holder from this seat, in one read per lane the jobs live in. */
-async function fetchHolders(
-  defs: readonly (DirectoryDefinition & {
-    organization_id: string | null;
-    created_by: string | null;
-  })[],
-  organizationId: string | null,
-  userId: string | null,
-): Promise<DirectoryHolder[]> {
-  const systemOrgId = await resolveSystemOrgId();
-  const lanes = lanesFor(defs, systemOrgId, userId, "person");
-  const answers = await Promise.all(
-    lanes.map((scope) =>
-      callMandateMemberList<MandateMemberPageAnswer>({
-        p_mode: "page",
-        p_level: "person",
-        p_scope: scope,
-        p_resolve_org_id: organizationId ?? undefined,
-        p_sort: "name",
-        p_dir: "asc",
-        p_limit: 5000,
-        p_offset: 0,
-      }),
-    ),
-  );
-  return answers.flatMap((answer) =>
-    answer.rows.map(memberRowFromWire).map((row) => ({
-      mandateKey: row.mandateKey,
-      holderName: row.holderName,
-      holderType: row.holderType,
-      status: row.status,
-    })),
-  );
-}
-
 export function IntelligenceIndex({
   focusDomain = null,
 }: { focusDomain?: string | null } = {}) {
-  const [defs, setDefs] = useState<
-    | (DirectoryDefinition & {
-        organization_id: string | null;
-        created_by: string | null;
-      })[]
-    | null
-  >(null);
-  const [holders, setHolders] = useState<DirectoryHolder[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
+  const { domains, error } = useIntelligenceDirectory();
+  const [query, setQuery] = useIntelligenceQuery();
   const isAdmin = useAppSelector(selectIsAdmin);
-  const userId = useAppSelector(selectUserId);
-  const activeOrgId = useAppSelector(selectOrganizationId);
-  const { organizationState } = useOrganizationRequired();
 
-  useEffect(() => {
-    let cancelled = false;
-    readAllRows(
-      ({ from, to }) =>
-        mandateDefinitions(createClient())
-          .select(
-            "mandate_key, label, description, goal, organization_id, created_by",
-            {
-              count: "exact",
-            },
-          )
-          .is("deleted_at", null)
-          .order("mandate_key", { ascending: true })
-          .range(from, to),
-      { label: "mandate definitions for the intelligence index" },
-    )
-      .then((rows) => {
-        if (!cancelled) setDefs(rows);
-      })
-      .catch((cause: unknown) => {
-        if (!cancelled)
-          setError(cause instanceof Error ? cause.message : String(cause));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // What runs each job, from this seat — read after the cards are up, and only
-  // once the organization is settled (a read with no org is thrown away). A
-  // failed read leaves the cards without their agent/workflow line; search
-  // still finds jobs, places and names.
-  useEffect(() => {
-    if (!defs || organizationState === "resolving") return;
-    let cancelled = false;
-    fetchHolders(defs, activeOrgId, userId)
-      .then((rows) => {
-        if (!cancelled) setHolders(rows);
-      })
-      .catch((cause: unknown) => {
-        console.warn(
-          "[intelligence] Mandate Holders for the directory could not be read",
-          cause,
-        );
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [defs, activeOrgId, userId, organizationState]);
-
-  const domains = defs ? buildDomains(defs, holders) : null;
   const directory = domains
     ? domains.flatMap((domain) => domain.features)
     : null;
@@ -354,25 +240,17 @@ export function IntelligenceIndex({
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-8 sm:px-6">
-      <div className="sticky top-0 z-10 -mx-4 max-w-none bg-background/95 px-4 pb-3 pt-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:-mx-6 sm:px-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-          <SearchInput
-            value={query}
-            onValueChange={setQuery}
-            placeholder="Search domains, features, jobs, screens, agents, workflows"
-            aria-label="Search intelligence"
-            className="w-full sm:max-w-md"
-            inputClassName="text-base sm:text-sm"
-          />
-          {directory && !error ? (
-            <p className="shrink-0 text-[12.5px] tabular-nums text-muted-foreground">
-              {searching
-                ? `${matchedCount} match`
-                : `${plural(domainCount, "domain")}, ${plural(featureCount, "feature")}, ${plural(totalJobs, "job")}`}
-            </p>
-          ) : null}
-        </div>
-      </div>
+      <IntelligenceSearchBar
+        value={query}
+        onChange={setQuery}
+        placeholder="Search domains, features, jobs, screens, agents, workflows"
+        summary={directory && !error
+          ? searching
+            ? `${matchedCount} match`
+            : `${plural(domainCount, "domain")}, ${plural(featureCount, "feature")}, ${plural(totalJobs, "job")}`
+          : null}
+        className="-mx-4 px-4 sm:-mx-6 sm:px-6"
+      />
       {error ? (
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-[13px] text-destructive">
           The features could not be read: {error}

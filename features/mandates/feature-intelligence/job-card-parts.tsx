@@ -1,6 +1,6 @@
 "use client";
 
-// features/mandates/feature-intelligence/card-options/parts.tsx
+// features/mandates/feature-intelligence/job-card-parts.tsx
 //
 // The shared, REAL pieces every card option on /intelligence/card-options is
 // built from (Arman, 2026-09-26: "10 card options … real data, real working
@@ -18,14 +18,14 @@ import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { NewTabLink } from "@/components/official/entity-ref/NewTabLink";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { agentHref } from "../../admin/mandate-health";
-import { useMandateInputSurface } from "../../input-surface";
-import { kindPhrase } from "../../provision-shapes";
-import { MandatePeekButton } from "../../peek/MandatePeek";
-import { inputDisplayLabel } from "../../peek/input-label";
-import { MandateStatusBadge } from "../../status/MandateStatusBadge";
-import { useMandateLadder, type MandateRung } from "../../workspace/useMandateLadder";
-import type { FeatureIntelligenceRow, ResolvedPlace } from "../types";
+import { agentHref } from "../admin/mandate-health";
+import { useMandateInputSurface } from "../input-surface";
+import { kindPhrase } from "../provision-shapes";
+import { MandatePeekButton } from "../peek/MandatePeek";
+import { inputDisplayLabel } from "../peek/input-label";
+import { MandateStatusBadge } from "../status/MandateStatusBadge";
+import { useMandateLadder, type MandateRung } from "../workspace/useMandateLadder";
+import type { FeatureIntelligenceRow, ResolvedPlace } from "./types";
 
 export interface JobContext {
   places: readonly ResolvedPlace[];
@@ -202,12 +202,12 @@ export function Actions({
       ) : null}
       <Button size="sm" variant="outline" className={h} onClick={ctx.onUseOwn} disabled={ctx.busy}>
         <UserRoundCog className="mr-1.5 h-3.5 w-3.5" />
-        {job.useOwnLabel}
+        <span className="min-w-0 truncate">{job.useOwnLabel}</span>
       </Button>
       {job.canReset ? (
         <Button size="sm" variant="ghost" className={h} onClick={ctx.onReset} disabled={ctx.busy}>
           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-          {compact ? "Reset" : job.resetLabel}
+          <span className="min-w-0 truncate">{compact ? "Reset" : job.resetLabel}</span>
         </Button>
       ) : null}
     </span>

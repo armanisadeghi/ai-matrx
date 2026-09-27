@@ -22,7 +22,7 @@ import { registryDomain } from "./taxonomy";
 
 export type RouteQuery = Record<string, string | string[] | undefined>;
 
-/** `?mandate=` focuses one job; every other value fills place links. */
+/** `?mandate=` focuses one job; `?q=` is the search; every other value fills place links. */
 export function splitQuery(query: RouteQuery): {
   focus: string | null;
   context: Record<string, string>;
@@ -33,6 +33,8 @@ export function splitQuery(query: RouteQuery): {
     const value = Array.isArray(raw) ? raw[0] : raw;
     if (!value) continue;
     if (name === "mandate") focus = value;
+    // The search box's own query (IntelligenceSearch) — never a place value.
+    else if (name === "q") continue;
     else context[name] = value;
   }
   return { focus, context };

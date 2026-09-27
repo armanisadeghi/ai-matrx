@@ -28,6 +28,13 @@ import { useFeatureIntelligence } from "./useFeatureIntelligence";
 import { rungFor, useIntelligenceActions } from "./useIntelligenceActions";
 import { IntelligenceJobCard, type RunOverride } from "./IntelligenceJobCard";
 import { PlacesMap } from "./PlacesMap";
+import {
+  EverywhereElse,
+  IntelligenceSearchBar,
+  queryTokens,
+  rowMatches,
+  useIntelligenceQuery,
+} from "./IntelligenceSearch";
 import { UseOwnDialog } from "./UseOwnDialog";
 import { targetLabel } from "./placement";
 import { effectiveRunOverride } from "./run-override";
@@ -115,6 +122,11 @@ export function FeatureIntelligence({
       ?.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [focusMandateKey, focusReady]);
 
+  const [query, setQuery] = useIntelligenceQuery();
+  const searching = query.trim().length > 0;
+  const tokens = queryTokens(query);
+  const shownRows = state.rows.filter((row) => rowMatches(row, tokens, state.places));
+
   const hoveredPlaceKeys = hoverPlace
     ? new Set(state.places.find((place) => place.id === hoverPlace)?.mandateKeys ?? [])
     : null;
@@ -122,18 +134,23 @@ export function FeatureIntelligence({
 
   return (
     <div className={cn("mx-auto w-full max-w-5xl px-3 py-5 sm:px-6 lg:px-8 lg:py-7", className)}>
-      {showTitle || canManageOrg ? <header className="mb-4 flex min-w-0 items-center justify-between gap-3">
-        {showTitle ? (
-          <h1 className="flex min-w-0 items-center gap-2 text-[18px] font-semibold tracking-[-0.01em] text-foreground">
-            <INTELLIGENCE_ICON className="h-[18px] w-[18px] shrink-0 text-primary" aria-hidden />
-            <span className="truncate">{featureLabel} intelligence</span>
-          </h1>
-        ) : null}
+      {showTitle ? (
+        <h1 className="mb-1 flex min-w-0 items-center gap-2 text-[18px] font-semibold tracking-[-0.01em] text-foreground">
+          <INTELLIGENCE_ICON className="h-[18px] w-[18px] shrink-0 text-primary" aria-hidden />
+          <span className="truncate">{featureLabel} intelligence</span>
+        </h1>
+      ) : null}
+      <IntelligenceSearchBar
+        value={query}
+        onChange={setQuery}
+        summary={searching && !state.loading ? `${shownRows.length} of ${state.rows.length} here` : null}
+        className="-mx-3 mb-2 px-3 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+      >
         {canManageOrg ? (
           <div
             role="radiogroup"
             aria-label="Manage for"
-            className="ml-auto inline-flex min-w-0 shrink rounded-lg border border-border bg-muted/40 p-0.5"
+            className="inline-flex min-w-0 shrink rounded-lg border border-border bg-muted/40 p-0.5"
           >
             {(
               [
@@ -159,7 +176,7 @@ export function FeatureIntelligence({
             ))}
           </div>
         ) : null}
-      </header> : null}
+      </IntelligenceSearchBar>
 
       <section className="mb-5 empty:hidden" aria-label="Where it runs">
         {state.loading ? (
@@ -197,9 +214,13 @@ export function FeatureIntelligence({
         <p className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-[13px] text-muted-foreground">
           No AI jobs are recorded for {featureLabel} yet.
         </p>
+      ) : shownRows.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[13px] text-muted-foreground">
+          No job on this page matches &ldquo;{query.trim()}&rdquo;.
+        </p>
       ) : (
-        <ul className="space-y-3">
-          {state.rows.map((row) => {
+        <ul className="space-y-2">
+          {shownRows.map((row) => {
             const topicChoice = effectiveRunOverride(row, runOverrides[row.mandateKey]);
             return <IntelligenceJobCard
               key={row.id}
@@ -247,6 +268,8 @@ export function FeatureIntelligence({
           })}
         </ul>
       )}
+
+      <EverywhereElse query={query} excludeTarget={feature} context={context} />
 
       {ownFor ? (
         <UseOwnDialog
