@@ -41,13 +41,12 @@
  * This component is mounted by `SmartAgentInput` under EVERY composer on the
  * platform, so that fallback leaked into every embedded chat surface at once,
  * not just this one. The suggestion strip is not wrong — it is just not about
- * this conversation, and it keeps its own homes (the `/chat/new` greeting and
- * the live-integrations window). Never reintroduce an account-wide or
+ * this conversation, and it keeps its own home (the live-integrations window). Never reintroduce an account-wide or
  * user-wide source here.
  */
 
-import { useState } from "react";
-import { AlertTriangle, Check, Paperclip, Server } from "lucide-react";
+import { Fragment, useState } from "react";
+import { AlertTriangle, Check, Paperclip, Plus, Server } from "lucide-react";
 import { BottomSheet } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -68,6 +67,7 @@ import { attachActionLabel } from "@/features/connectors/attachable-resources";
 import { useAttachResourcePicker } from "@/features/connectors/useAttachResourcePicker";
 import { useConversationAttachments } from "@/features/connectors/useConversationAttachments";
 import { RunToolPicker } from "./RunToolPicker";
+import { COMPOSER_CHIP_CLASS } from "./composer/composer-chip";
 
 export interface ChatConnectionsStripProps {
   conversationId: string | null | undefined;
@@ -77,12 +77,26 @@ export interface ChatConnectionsStripProps {
    * connected it renders nothing — the + menu's Connectors row stays the door.
    */
   hideWhenEmpty?: boolean;
+  /**
+   * `rail` (default) is the 16px line in a menu. `chips` is the composer's
+   * chips row (brief §7): one 28px chip per connection, flowing inside the
+   * host's row — the SAME data and doors, the composer's size.
+   */
+  variant?: "rail" | "chips";
+  /**
+   * Chips only (Advanced, A1): every resource chosen from an attachable
+   * connection is its own chip (`name · default branch`), and a connection
+   * with nothing chosen offers its chooser as a chip.
+   */
+  showResources?: boolean;
 }
 
 export function ChatConnectionsStrip({
   conversationId,
   className,
   hideWhenEmpty = false,
+  variant = "rail",
+  showResources = false,
 }: ChatConnectionsStripProps) {
   const { serverStates } = useMcpCatalog();
   const openRunControlsWindow = useOpenRunControlsWindow();
@@ -160,6 +174,151 @@ export function ChatConnectionsStrip({
         <RunToolPicker conversationId={conversationId} />
       </BottomSheet>
     ) : null;
+
+  if (variant === "chips") {
+    if (connections.length === 0 || !conversationId) return null;
+    // What was chosen is only spoken once the read ANSWERED: before that a
+    // "+ Choose…" chip would claim nothing is chosen, and after a failed read
+    // the chip says so and retries — never a count of 0 that is really an error.
+    const attachmentsFailed = attachments.status === "failed";
+    const attachmentsReadSucceeded = attachments.status === "succeeded" && !attachments.error;
+    return (
+      <>
+        {connections.map((connection) => {
+          const presentation = mcpChipPresentation(
+            connection.state,
+            connection.reason,
+            true,
+            connection.runAttachment,
+          );
+          const isBroken = presentation.kind === "broken";
+          const chooserLabel =
+            connection.kind === "attachable"
+              ? attachActionLabel(connection.attachable)
+              : null;
+          const chosen = attachments.items.filter(
+            (item) => item.provider === connection.slug,
+          );
+          const openChooser = () =>
+            openAttachPicker({
+              conversationId,
+              provider: connection.slug,
+              providerName: connection.name,
+              attachable: connection.attachable,
+            });
+          return (
+            <Fragment key={connection.slug}>
+              <span
+                className={cn(
+                  COMPOSER_CHIP_CLASS,
+                  "overflow-hidden p-0",
+                  isBroken &&
+                    "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                )}
+              >
+                <button
+                  type="button"
+                  onClick={openPicker}
+                  aria-label={`${connection.name} — ${presentation.reason ?? (isBroken ? "needs attention" : "connected")}. Open the Tools picker.`}
+                  title={
+                    presentation.reason ??
+                    (presentation.toolCount != null
+                      ? `${connection.name} — ${presentation.toolCount} tools reached this run`
+                      : `${connection.name} — connected`)
+                  }
+                  className={cn(
+                    "inline-flex h-full min-w-0 items-center gap-1.5 px-2.5",
+                    isBroken ? "hover:bg-amber-500/20" : "hover:bg-accent",
+                  )}
+                >
+                  {isBroken ? (
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  ) : (
+                    <Check className="h-3.5 w-3.5 shrink-0 text-success" aria-hidden />
+                  )}
+                  <span className="max-w-[140px] truncate">{connection.name}</span>
+                  {isBroken && presentation.status ? (
+                    <span className="shrink-0 text-xs">{presentation.status}</span>
+                  ) : null}
+                  {!isBroken && presentation.toolCount != null ? (
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                      {presentation.toolCount} tools
+                    </span>
+                  ) : null}
+                </button>
+                {/* Work: the chooser rides the connection chip as a count.
+                    Advanced lists what was chosen as chips of their own. */}
+                {chooserLabel && attachmentsReadSucceeded && !showResources && chosen.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={openChooser}
+                    aria-label={`${chosen.length} attached to this chat from ${connection.name} — ${chooserLabel}`}
+                    title={`${chosen.length} attached to this chat — ${chooserLabel}`}
+                    className="inline-flex h-full shrink-0 items-center gap-1 border-l border-border px-2 text-primary hover:bg-accent"
+                  >
+                    <Paperclip className="h-3 w-3" aria-hidden />
+                    <span className="tabular-nums">{chosen.length}</span>
+                  </button>
+                ) : null}
+              </span>
+              {chooserLabel && attachmentsFailed ? (
+                <button
+                  type="button"
+                  onClick={attachments.reload}
+                  title={attachments.error ?? undefined}
+                  className={cn(
+                    COMPOSER_CHIP_CLASS,
+                    "border-amber-500/50 text-amber-700 dark:text-amber-300",
+                  )}
+                >
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <span className="truncate">What is attached did not load · Retry</span>
+                </button>
+              ) : null}
+              {chooserLabel && attachmentsReadSucceeded && showResources
+                ? chosen.map((item) => {
+                    // The provider's own default branch when it published one
+                    // (a repository); any other resource simply has none.
+                    const declaredBranch = item.metadata?.default_branch;
+                    const branch = typeof declaredBranch === "string" ? declaredBranch : null;
+                    return (
+                      <button
+                        key={`${item.provider}:${item.resource_ref}`}
+                        type="button"
+                        onClick={openChooser}
+                        title={
+                          item.pending
+                            ? `${item.display_name} — saving to this chat`
+                            : `${item.display_name}${branch ? ` · ${branch}` : ""} — ${chooserLabel}`
+                        }
+                        className={cn(COMPOSER_CHIP_CLASS, item.pending && "opacity-60")}
+                      >
+                        <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                        <span className="max-w-[160px] truncate">{item.display_name}</span>
+                        {branch ? (
+                          <span className="shrink-0 text-muted-foreground">· {branch}</span>
+                        ) : null}
+                      </button>
+                    );
+                  })
+                : null}
+              {chooserLabel && attachmentsReadSucceeded && showResources && chosen.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={openChooser}
+                  className={cn(COMPOSER_CHIP_CLASS, "border-dashed text-muted-foreground hover:text-foreground")}
+                >
+                  <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <span className="max-w-[180px] truncate">{chooserLabel}</span>
+                </button>
+              ) : null}
+            </Fragment>
+          );
+        })}
+        {mobilePicker}
+      </>
+    );
+  }
 
   // Nothing is wired to this chat. The honest line says so and stays one click
   // from the picker that changes it — it never borrows another scope's items

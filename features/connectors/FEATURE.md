@@ -36,7 +36,7 @@ Google as the first provider config (`common-docs/projects/google-native/PLAN.md
 - `features/connectors/ConnectedAccountHealth.tsx` — the per-account, per-product health rows with Connect/Reconnect, Disconnect, and — when the account's CREDENTIAL is dead — ONE account-level Reconnect that renews every product it holds. `ConnectorBusyAction` (`accountId` + `productKey`) is the only way to say which press is running; the card checks the id against its own account.
 - `features/connectors/ConsentFailureNotice.tsx` — the ONE failure presentation for both consent surfaces: the sentence, and the server's raw words behind a real disclosure button (never a hover, never inline).
 - `features/connectors/ConnectorsSettingsPanel.tsx` — Settings → Connectors: the health cards plus the same consent body, and the only file in the panel path that names Google.
-- `features/connectors/ChatConnectorStrip.tsx` — draws exactly three providers from the persisted fair-rotation bag, resolves their live state, and opens the full integrations window from `More`. Mounted under the real chat composer by `AgentConversationColumn`.
+- `features/connectors/ChatConnectorStrip.tsx` — draws exactly three providers from the persisted fair-rotation bag, resolves their live state, and opens the full integrations window from `More`. **Not mounted anywhere since 2026-09-27:** its last home was the retired `/chat/new` hero; the composer splash follows Arman's design (greeting · composer · quick actions), whose first-run connector offer is `ConnectorPromptHost` above the composer. Kept, not deleted — removing it is Arman's call (unfinished-work alarm).
 - `features/connectors/LiveIntegrationsList.tsx` — searchable, live-only provider list shared by the floating window. Every named provider has a real Connect, Configure, or Manage door.
 - `features/connectors/useLiveConnectors.ts` — the ONE container for connection state and actions across the strip and full list. Google uses the Google connect window; MCP entries use the canonical route selector and OAuth/no-auth/GitHub/configure path.
 - `features/connectors/live-connectors.ts` — merges seeded Google/Gmail/Notion definitions with the usable MCP catalogue and enforces the live boundary.
@@ -263,7 +263,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 ## Related features
 
 - Depends on: `features/marketing/google` (the inventory query, the capability catalog, the exchange, `diagnoseGoogleConnection`), `features/google-workspace` (`GOOGLE_WORKSPACE_SETTINGS_HREF`), `features/agents` MCP catalog/OAuth primitives, `features/window-panels`, `features/overlays`, `lib/coming-soon`, `components/ui/tooltip`.
-- Depended on by: `ChatConnectorStrip` → `AgentConversationColumn` (the real chat composer); Settings also consumes the seeded first-party directory definitions.
+- Depended on by: `ChatConnectorStrip` (currently unmounted — see above); Settings also consumes the seeded first-party directory definitions.
 - Cross-links: `features/google-workspace/FEATURE.md`, `lib/coming-soon/FEATURE.md`, `features/agent-connections/FEATURE.md` (the agent-facing "what can this agent reach" hub — a different question from "what has this human attached").
 
 ---

@@ -41,7 +41,7 @@ function ChatNewHeaderResolved({
   composerMode?: { initialMode: ComposerMode | null };
 }) {
   const { mandate } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
-  // While resolving (or unresolvable) the picker shows its generic
-  // placeholder — the body shows the loud error state for the same failure.
+  // The header is the mode switch either way; when resolution fails the body's
+  // loud state carries the agent picker (`ChatMandateUnavailable`).
   return <ChatRunHeader activeAgentId={mandate?.agentId} composerMode={composerMode} />;
 }

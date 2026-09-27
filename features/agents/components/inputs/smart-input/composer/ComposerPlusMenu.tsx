@@ -28,6 +28,7 @@ import {
   AppWindow,
   Brain,
   Eye,
+  CornerDownLeft,
   FileText,
   FolderOpen,
   Globe,
@@ -59,12 +60,14 @@ import { selectIsMemoryEnabledForConversation } from "@/features/agents/redux/ex
 import {
   selectBuilderAdvancedSettings,
   selectMemoryToggleRequest,
+  selectSubmitOnEnter,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   clearMemoryToggleRequest,
   requestMemoryToggle,
   setBuilderAdvancedSettings,
+  setSubmitOnEnter,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
@@ -127,6 +130,7 @@ export function ComposerPlusMenu({
   const workingDocEnabled = useAppSelector(selectWorkingDocEnabled(conversationId));
   const scratchEnabled = useAppSelector(selectWorkingDocEnabled(conversationId, "scratch"));
   const memoryEnabled = useAppSelector(selectIsMemoryEnabledForConversation(conversationId));
+  const submitOnEnter = useAppSelector(selectSubmitOnEnter(conversationId));
   const pendingMemory = useAppSelector(selectMemoryToggleRequest(conversationId));
   const memoryRequested = pendingMemory !== undefined;
   const memoryTarget = pendingMemory === true;
@@ -308,6 +312,15 @@ export function ComposerPlusMenu({
             else dispatch(requestMemoryToggle({ conversationId, enabled: next }));
           }}
         />
+        {shows("plus.enterSends") ? (
+          <ComposerMenuSwitchRow
+            icon={CornerDownLeft}
+            label="Enter sends"
+            description={submitOnEnter ? "Shift+Enter adds a new line" : "Enter adds a new line; ⌘/Ctrl+Enter sends"}
+            checked={submitOnEnter}
+            onCheckedChange={(value) => dispatch(setSubmitOnEnter({ conversationId, value }))}
+          />
+        ) : null}
         {shows("plus.documents") ? (
           <>
             <ComposerMenuSwitchRow

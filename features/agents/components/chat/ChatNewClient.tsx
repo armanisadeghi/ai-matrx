@@ -1,8 +1,11 @@
 "use client";
 
 import { CircleAlert } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
+import { useAppStore } from "@/lib/redux/hooks";
 import { ChatRoomClient } from "./ChatRoomClient";
-import { chatRouteSurfaceKey } from "./begin-fresh-chat";
+import { chatRouteSurfaceKey, stageChatAgentSwitch } from "./begin-fresh-chat";
 import { ChatSplashComposerShell, NewChatGreeting } from "./NewChatGreeting";
 import {
   ComposerGreeting,
@@ -73,8 +76,15 @@ function ChatNewClientResolved({
  * The ONE loud face for "the default chat mandate could not be resolved".
  * Shared by `/chat/new` and by `/chat/[id]` rooms that carry no agent of
  * their own (`ChatConversationRoom`) — never a silent fallback agent.
+ *
+ * The header on these routes is the composer's mode switch (the agent lives
+ * in the composer, which this state has none of), so the way out is here:
+ * the same agent picker the header offered, starting a chat with the agent
+ * the person picks.
  */
 export function ChatMandateUnavailable({ error }: { error?: string | null }) {
+  const router = useRouter();
+  const store = useAppStore();
   return (
     <div className="h-full overflow-hidden bg-textured">
       <div className="flex min-h-full flex-col items-center justify-center px-4 py-10">
@@ -89,6 +99,20 @@ export function ChatMandateUnavailable({ error }: { error?: string | null }) {
             again shortly.
             <ErrorAlchemyMenu />
           </p>
+          <div className="mt-4 flex justify-center">
+            <AgentListDropdown
+              label="Chat with another agent"
+              onSelect={(agentId) =>
+                stageChatAgentSwitch({
+                  dispatch: store.dispatch,
+                  router,
+                  getState: store.getState,
+                  targetAgentId: agentId,
+                })
+              }
+              compact
+            />
+          </div>
         </div>
       </div>
     </div>

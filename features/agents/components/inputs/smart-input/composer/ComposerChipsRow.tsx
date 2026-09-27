@@ -4,8 +4,10 @@
  * The chips row ABOVE the composer card (brief §7, Amendment 1 A1) — shown in
  * Work and Advanced: where the agent runs (the Cloud chip, which opens the
  * Environment menu in place — the same menu as + › Environment) and what this
- * chat is connected to (`ChatConnectionsStrip`, the conversation's own truth,
- * worst state first).
+ * chat is connected to (`ChatConnectionsStrip variant="chips"`, the
+ * conversation's own truth). In Advanced every resource chosen from a
+ * connection (a repository · its default branch) is a chip of its own, and a
+ * connection with nothing chosen offers its chooser — Work never shows them (A1).
  *
  * Browser, the working doc, the scratchpad and anything the host attached
  * (a canvas) are the conversation context rail's pills, which render inside
@@ -22,16 +24,18 @@ import { useOpenCloudBrowserCanvas } from "@/features/cloud-browser/hooks/useOpe
 import { ChatConnectionsStrip } from "../ChatConnectionsStrip";
 import { useComputeTargetActions } from "../use-compute-target-actions";
 import { ComposerEnvironmentPanel } from "./ComposerPlusMenu";
-
-export const COMPOSER_CHIP_CLASS =
-  "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-[13px] text-foreground transition-colors hover:bg-accent";
+import { COMPOSER_CHIP_CLASS } from "./composer-chip";
+import { composerShows } from "./composer-mode-visibility";
+import type { ComposerMode } from "./composer-types";
 
 export function ComposerChipsRow({
   conversationId,
+  mode,
   menuSide,
   className,
 }: {
   conversationId: string;
+  mode: ComposerMode;
   menuSide: "top" | "bottom";
   className?: string;
 }) {
@@ -77,7 +81,11 @@ export function ComposerChipsRow({
           />
         </PopoverContent>
       </Popover>
-      <ChatConnectionsStrip conversationId={conversationId} className="min-w-0 flex-1" hideWhenEmpty />
+      <ChatConnectionsStrip
+        conversationId={conversationId}
+        variant="chips"
+        showResources={composerShows(mode, "chips.repos")}
+      />
     </div>
   );
 }

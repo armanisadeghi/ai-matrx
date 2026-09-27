@@ -266,7 +266,9 @@ export function ChatRoomClient({
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const router = useRouter();
-  const { mode: composerMode } = useComposerMode(composerOptions?.initialMode);
+  const { mode: composerMode } = useComposerMode(composerOptions?.initialMode, {
+    enabled: Boolean(composerOptions),
+  });
 
   // ONE helper owns this string (see `chatRouteSurfaceKey`). This client is the
   // surface that REGISTERS the focus entry, so every reader — the header's
@@ -686,6 +688,12 @@ export function ChatRoomClient({
   const messageCount = useAppSelector((state) =>
     liveConversationId ? selectMessageCount(liveConversationId)(state) : 0,
   );
+  // The composer's placeholder: an empty conversation is asked what it can
+  // help with; one with messages is replied to.
+  const hasShownMessages = useAppSelector((state) => {
+    const shownId = conversationIdProp ?? liveConversationId;
+    return shownId ? selectMessageCount(shownId)(state) > 0 : false;
+  });
   // Boolean trigger (not raw count) so later messages in the same turn don't
   // re-fire / churn the effect. Toggles false→true once, then stays true.
   const readyToPromote =
@@ -1266,7 +1274,7 @@ export function ChatRoomClient({
     ? {
         size: "page",
         mode: composerMode,
-        placeholder: "Reply",
+        placeholder: hasShownMessages ? "Reply" : "How can I help you today?",
         agent: {
           onSelectAgent: (targetAgentId, via) => {
             if (targetAgentId === agentId && !via) return;

@@ -16,6 +16,10 @@
  *
  * Seeding happens once per tab: the first host that mounts seeds the slice;
  * later hosts read what is there, so a popped-out panel inherits the mode.
+ *
+ * `enabled: false` is for a host that renders no composer this time (a room
+ * shared with voice, staff or interview surfaces): it reads nothing, seeds
+ * nothing and never touches the cookie.
  */
 
 import { useEffect, useRef } from "react";
@@ -24,7 +28,7 @@ import {
   selectComposerMode,
   setComposerMode,
 } from "@/features/agents/redux/chat/chat-route.slice";
-import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import {
   COMPOSER_KNOBS,
   clearComposerModeCookie,
@@ -48,25 +52,33 @@ export interface UseComposerModeResult {
   setMode: (mode: ComposerMode) => void;
 }
 
-export function useComposerMode(initialMode?: ComposerMode | null): UseComposerModeResult {
+export function useComposerMode(
+  initialMode?: ComposerMode | null,
+  { enabled = true }: { enabled?: boolean } = {},
+): UseComposerModeResult {
   const dispatch = useAppDispatch();
   const stored = useAppSelector(selectComposerMode);
-  const defaultModeKnob = useSessionKnob(COMPOSER_KNOBS.defaultMode);
-  const rememberKnob = useSessionKnob(COMPOSER_KNOBS.rememberLastMode);
+  // The session's knob read (`useSessionKnob`), with the organization withheld
+  // when disabled — no organization means no read.
+  const organizationId = useAppSelector((s) => s.appContext?.organization_id ?? null);
+  const userId = useAppSelector((s) => s.userAuth?.id ?? null);
+  const knobOrganization = enabled ? organizationId : null;
+  const defaultModeKnob = useEffectiveKnob(knobOrganization, userId, COMPOSER_KNOBS.defaultMode);
+  const rememberKnob = useEffectiveKnob(knobOrganization, userId, COMPOSER_KNOBS.rememberLastMode);
 
   // 1. Seed the tab once, synchronously enough that the first client render
   //    matches the server's (the cookie the server read, else Chat).
   const seededRef = useRef(false);
   const firstPaintMode: ComposerMode = stored ?? initialMode ?? "chat";
   useEffect(() => {
-    if (stored || seededRef.current) return;
+    if (!enabled || stored || seededRef.current) return;
     seededRef.current = true;
     dispatch(setComposerMode(initialMode ?? readComposerModeCookieClient() ?? "chat"));
-  }, [stored, initialMode, dispatch]);
+  }, [enabled, stored, initialMode, dispatch]);
 
   // 2. Apply the knobs once they answer — exactly once per tab.
   useEffect(() => {
-    if (knobsAppliedThisTab) return;
+    if (!enabled || knobsAppliedThisTab) return;
     if (defaultModeKnob === undefined || rememberKnob === undefined) return;
     knobsAppliedThisTab = true;
     const decision = modeAfterKnobs({
@@ -77,7 +89,7 @@ export function useComposerMode(initialMode?: ComposerMode | null): UseComposerM
     });
     if (decision.clearCookie) clearComposerModeCookie();
     if (decision.apply) dispatch(setComposerMode(decision.apply));
-  }, [defaultModeKnob, rememberKnob, dispatch]);
+  }, [enabled, defaultModeKnob, rememberKnob, dispatch]);
 
   const setMode = (next: ComposerMode) => {
     choseModeThisTab = true;

@@ -471,7 +471,7 @@ sal` and an invented id comes back as the handler's error. Handlers in
   routes (`/chat/new` via `ChatNewClient`'s `landingContent`, `/chat/a/[id]`,
   `/chat/[id]`), so both handlers key off the conversation actually on the
   page — the other three references to this surface name
-  (`RunSettingsEditor`, `RunControlsTabPanel`, `NewChatLandingInput`) are v3
+  (`RunSettingsEditor`, `RunControlsTabPanel`, `chatComposerTextMenu`) are v3
   context-menu wiring that mounts no runtime and therefore offers an agent
   nothing. **THE record-vs-draft reference.** Chat is a RECORD wrapped around
   one authored field, and that asymmetry decides everything: the composer

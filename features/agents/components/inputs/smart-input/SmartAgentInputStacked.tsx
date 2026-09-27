@@ -289,7 +289,7 @@ export function SmartAgentInputStacked({
         data-composer-mode={composer.mode}
       >
         {composerShows(composer.mode, "chips.row") ? (
-          <ComposerChipsRow conversationId={conversationId} menuSide={menuSide} />
+          <ComposerChipsRow conversationId={conversationId} mode={composer.mode} menuSide={menuSide} />
         ) : null}
         <SmartInputFileDropTarget
           conversationId={conversationId}

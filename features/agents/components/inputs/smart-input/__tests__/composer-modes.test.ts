@@ -70,6 +70,12 @@ describe("THE ONE TABLE — what each mode shows (A1)", () => {
     }
   });
 
+  it("every mode can say what Enter does (the rule in force is never hidden)", () => {
+    for (const mode of ["chat", "work", "advanced"] as const) {
+      expect(composerShows(mode, "plus.enterSends")).toBe(true);
+    }
+  });
+
   it("at compact width Scope and Output leave the meta row for the + menu (A5)", () => {
     expect(metaRowHoldsScopeAndOutput("compact")).toBe(false);
     expect(metaRowHoldsScopeAndOutput("page")).toBe(true);

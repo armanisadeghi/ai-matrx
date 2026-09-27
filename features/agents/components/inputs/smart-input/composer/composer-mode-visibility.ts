@@ -19,6 +19,7 @@ export type ComposerControl =
   | "plus.attach" // files · voice · link · workspace
   | "plus.templates"
   | "plus.memory"
+  | "plus.enterSends" // what Enter does — every composer must be able to say it
   | "plus.skills"
   | "plus.tools"
   | "plus.connectors"
@@ -35,6 +36,7 @@ const CHAT: readonly ComposerControl[] = [
   "plus.attach",
   "plus.templates",
   "plus.memory",
+  "plus.enterSends",
 ];
 
 const WORK: readonly ComposerControl[] = [
@@ -42,6 +44,7 @@ const WORK: readonly ComposerControl[] = [
   "plus.attach",
   "plus.templates",
   "plus.memory",
+  "plus.enterSends",
   "plus.skills",
   "plus.tools",
   "plus.connectors",
