@@ -449,8 +449,10 @@ export function parseMarkdownToText(
       /\b(\d+)\s*[-–—]\s*(\d+)\b/g,
       (_match, a, b) => `${numberToWords(a)} to ${numberToWords(b)}`,
     )
-    // Replace headers
-    .replace(/^#{1,6}\s+(.+)$/gm, "Section: $1")
+    // Headings are read as-is, ending in a period so TTS pauses after them
+    .replace(/^#{1,6}\s+(.+)$/gm, (_m, t: string) =>
+      /[.!?:]$/.test(t.trim()) ? t : `${t.trim()}.`,
+    )
     // Remove comment markers but keep content
     .replace(/\/\/\s*/g, "") // Remove // comment markers
     .replace(/--\s*/g, "") // Remove -- comment markers
@@ -605,6 +607,7 @@ export function parseMarkdownToText(
     .replace(/≠/g, "not equal to")
     .replace(/≤/g, "less than or equal to")
     .replace(/≥/g, "greater than or equal to")
+    .replace(/=/g, " equals ")
     .replace(/→/g, "arrow")
     .replace(/←/g, "left arrow")
     .replace(/↑/g, "up arrow")

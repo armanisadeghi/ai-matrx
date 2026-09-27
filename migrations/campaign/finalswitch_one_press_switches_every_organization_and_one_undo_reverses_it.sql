@@ -1,8 +1,6 @@
 -- draft: FINAL-SWITCH (Claude Opus 5.5) rehearsal on the clone pending
--- chair-step: lane FINAL-SWITCH (chair brief 2026-09-26 night, from Arman's ruling: "I don't want to do this one org at a time. We will switch everything over once we know it works and it's done. Old gone, new in place."). ADDS the final switch: platform._final_switch_readiness / platform.final_switch_readiness (every organization's readiness, measured now, one answer), platform.final_switch_press (one platform-admin press: Data tables for every organization, the leftovers of already-switched organizations, agent context for every organization, the platform values new organizations are born with, the scope screens (their lane's step), the Data page for everyone, the older write doors closed to clients through the door registry, the older row-history trim paused; one press record), platform.final_switch_undo (ONE undo, the same steps backwards, Switch back carrying what the new system wrote), platform.final_switch_state (what every screen reads). REPLACES platform.cutover_seams (platform switches say their real state; the per-organization buttons step aside while the final switch is on), platform.cutover_seam_press (refuses a per-organization press while the final switch is on, except from the final switch itself) and platform.older_tables_switched (true everywhere while the final switch is on: nothing new is born in the older store). One new seam row. Door rows for the four doors. Never presses anything.
--- based-on: platform.cutover_seams(uuid) f4a6922b1a02a2b69b5015f3647c7b029e61c7756f0c719cd9433d3a7f8d057f
+-- chair-step: lane FINAL-SWITCH (chair brief 2026-09-26 night, from Arman's ruling: "I don't want to do this one org at a time. We will switch everything over once we know it works and it's done. Old gone, new in place."). ADDS the final switch: platform._final_switch_readiness / platform.final_switch_readiness (every organization's readiness, measured now, one answer), platform.final_switch_press (one platform-admin press: Data tables for every organization, the leftovers of already-switched organizations, agent context for every organization, the platform values new organizations are born with, the scope screens (their lane's step), the Data page for everyone, the older write doors closed to clients through the door registry, the older row-history trim paused; one press record), platform.final_switch_undo (ONE undo, the same steps backwards, Switch back carrying what the new system wrote), platform.final_switch_state (what every screen reads). REPLACES platform.older_tables_switched (true everywhere while the final switch is on: nothing new is born in the older store). ADDS a trigger on platform.cutover_seam_press that refuses a per-organization press while the final switch is on, except from the final switch itself (so this file replaces neither the press nor the read door, which lane SCOPES-WRITE-THROUGH also changes). The scope screens are pressed through that lane's platform.cutover_seam_press_everyone('scopes_screens', …) once its code has landed. One new seam row. Door rows for the four doors. Never presses anything.
 -- based-on: platform.older_tables_switched(uuid) 2575b56a084dbdb294f723b3dfe5235248cea62d6f9df3a7ae2f7a74619d5fb6
--- based-on: platform.cutover_seam_press(text, uuid, text, text, boolean) cbc177e7a58f79f7f855f2eb73ee1165c85e0944d6589ab8e4b41cbb281a8855
 -- lane: FINAL-SWITCH
 -- INVERSE: migrations/inverse/finalswitch_one_press_switches_every_organization_and_one_undo_reverses_it_down.sql
 --
@@ -26,13 +24,14 @@
 --   3. Where agents get their context, every organization with scopes on the old side.
 --   4. The platform values of both settings turn on, so an organization made later is born on
 --      the new side.
---   5. Scope and context screens: lane SCOPES-WRITE-THROUGH's step,
---      platform._final_switch_scopes_step(p_to text, p_actor uuid, p_run uuid) returns jsonb.
---      Until that function exists the final switch refuses: "the scope and context screens switch
---      has no code yet". (Optional: platform._final_switch_scopes_readiness() returns jsonb
---      {checks: [{key, says, met, detail}]}, read into the platform checks.)
---   6. The Data page for everyone (seam data_screen) and the scope screens (seam scopes_screens)
---      are recorded as done on the platform organization, where every screen reads their state.
+--   5. Scope and context screens, every organization: lane SCOPES-WRITE-THROUGH's
+--      platform.cutover_seam_press_everyone('scopes_screens', 'new', …) — the same per-organization
+--      step, readiness and log as its own press. Its code has landed when the seam row is
+--      per-organization (owner_press) and that function exists; until then the final switch
+--      refuses: "the scope and context screens switch has no code yet". Each organization's
+--      scopes readiness is shown and held to, like its Data tables.
+--   6. The Data page for everyone (seam data_screen) is recorded as done on the platform
+--      organization; platform.final_switch_state() is what every screen reads.
 --   7. The older WRITE doors are closed to clients through the door registry (a row says no client
 --      may open it; EXECUTE taken back from PUBLIC, anon, authenticated; service_role kept). The
 --      older READ doors stay open: the table pickers, the /data home and the reference resolver
@@ -142,6 +141,53 @@ as $$
   ]::regprocedure[];
 $$;
 
+-- THE SCOPE SCREENS SWITCH (lane SCOPES-WRITE-THROUGH) has its code when its seam is switched
+-- organization by organization and its every-organization press exists. On the dev clone only, a
+-- rehearsal may stand in for it (a function named platform._final_switch_scopes_rehearsal_stand_in,
+-- honoured only on a database with no active cron job — never production); the run log says so.
+create or replace function platform._final_switch_scopes_code()
+returns text
+language sql
+stable
+set search_path to 'pg_catalog'
+as $$
+  select case
+    when exists (select 1 from platform.cutover_seam s
+                  where s.seam_key = 'scopes_screens' and s.retired_at is null
+                    and s.per_organization and s.press_kind = 'owner_press')
+     and to_regprocedure('platform.cutover_seam_press_everyone(text, text, text, boolean, uuid[], uuid)') is not null
+      then 'landed'
+    when to_regprocedure('platform._final_switch_scopes_rehearsal_stand_in()') is not null
+     and not exists (select 1 from cron.job j where j.active)
+      then 'rehearsal_stand_in'
+    else 'none' end;
+$$;
+
+-- Press (or undo) the scope screens for every organization, through their lane's own door.
+create or replace function platform._final_switch_scopes(p_to text, p_actor uuid, p_note text, p_orgs uuid[])
+returns jsonb
+language plpgsql
+set search_path to 'pg_catalog'
+as $$
+declare
+  v_code text := platform._final_switch_scopes_code();
+  v jsonb;
+begin
+  if v_code = 'landed' then
+    execute 'select platform.cutover_seam_press_everyone($1, $2, $3, false, $4, $5)'
+       into v using 'scopes_screens', p_to, p_note, p_orgs, p_actor;
+    if not coalesce((v ->> 'ok')::boolean, false) then
+      raise exception '%', 'Scope and context screens: ' || coalesce(v ->> 'says', 'the switch refused.') using errcode = 'P0001';
+    end if;
+    return v;
+  elsif v_code = 'rehearsal_stand_in' then
+    return jsonb_build_object('ok', true, 'rehearsal_stand_in', true, 'to', p_to,
+      'says', 'Rehearsal on the dev clone: lane SCOPES-WRITE-THROUGH''s step stood in for; nothing was pressed.');
+  end if;
+  raise exception 'The scope and context screens switch has no code yet (lane SCOPES-WRITE-THROUGH).' using errcode = 'P0001';
+end;
+$$;
+
 -- What every screen reads: is everything on the new system, since when, by whom.
 create or replace function platform.final_switch_state()
 returns jsonb
@@ -192,6 +238,7 @@ declare
   c jsonb;
   r jsonb;
   rc jsonb;
+  rs jsonb;
   v_clears jsonb;
   v_cannot jsonb;
   v_t_state text; v_c_state text;
@@ -251,23 +298,15 @@ begin
     'fix', 'Give each an organization or archive it.');
 
   -- (c) The scope and context screens switch (lane SCOPES-WRITE-THROUGH) has its code.
-  v_scopes_code := to_regprocedure('platform._final_switch_scopes_step(text, uuid, uuid)') is not null;
+  v_scopes_code := platform._final_switch_scopes_code() <> 'none';
   v_platform := v_platform || jsonb_build_object(
     'key', 'scopes_seam_has_code', 'says', 'The scope and context screens switch has its code',
     'met', v_scopes_code,
-    'detail', case when v_scopes_code
-                   then 'The scope and context screens switch has its step; the final switch runs it for everyone.'
+    'detail', case platform._final_switch_scopes_code()
+                   when 'landed' then 'The scope and context screens switch is pressed for every organization, through its own door; each organization''s scopes readiness is below.'
+                   when 'rehearsal_stand_in' then 'Rehearsal on the dev clone: the scope and context screens switch is stood in for.'
                    else 'The scope and context screens switch has no code yet: every scope screen, picker, tag and template still writes the current tables, and the agents'' write-back still goes to them. Lane SCOPES-WRITE-THROUGH is building it; the final switch waits for it.' end,
-    'fix', 'Lane SCOPES-WRITE-THROUGH lands platform._final_switch_scopes_step.');
-  if v_scopes_code and to_regprocedure('platform._final_switch_scopes_readiness()') is not null then
-    execute 'select platform._final_switch_scopes_readiness()' into v_scopes;
-    for c in select x from jsonb_array_elements(coalesce(v_scopes -> 'checks', '[]'::jsonb)) x loop
-      v_platform := v_platform || jsonb_build_object(
-        'key', 'scopes_' || coalesce(c ->> 'key', 'check'), 'says', c ->> 'says',
-        'met', coalesce((c ->> 'met')::boolean, false), 'detail', c ->> 'detail',
-        'fix', coalesce(c ->> 'fix', 'Lane SCOPES-WRITE-THROUGH.'));
-    end loop;
-  end if;
+    'fix', 'Lane SCOPES-WRITE-THROUGH lands its switch (the seam per organization, platform.cutover_seam_press_everyone).');
 
   v_platform_ok := not exists (select 1 from jsonb_array_elements(v_platform) p where not (p ->> 'met')::boolean);
   for c in select p from jsonb_array_elements(v_platform) p where not (p ->> 'met')::boolean loop
@@ -319,6 +358,16 @@ begin
       for c in select x from jsonb_array_elements(rc -> 'checks') x
                 where not (x ->> 'met')::boolean and x ->> 'key' <> 'follow_current' loop
         v_cannot := v_cannot || jsonb_build_object('switch', 'Where agents get their context', 'key', c ->> 'key',
+                                                   'says', c ->> 'says', 'detail', c ->> 'detail', 'clears', 0, 'leaves', 1);
+      end loop;
+    end if;
+    -- The scope screens, once their switch has landed: each organization's own readiness.
+    if platform._final_switch_scopes_code() = 'landed' and v_st > 0 then
+      execute 'select case custom.context_writer($1) when ''store'' then null else platform._cutover_seam_readiness(''scopes_screens'', $1) end'
+         into rs using o.id;
+      for c in select x from jsonb_array_elements(coalesce(rs -> 'checks', '[]'::jsonb)) x
+                where not (x ->> 'met')::boolean and x ->> 'key' <> 'follow_current' loop
+        v_cannot := v_cannot || jsonb_build_object('switch', 'Scope and context screens', 'key', c ->> 'key',
                                                    'says', c ->> 'says', 'detail', c ->> 'detail', 'clears', 0, 'leaves', 1);
       end loop;
     end if;
@@ -628,20 +677,15 @@ begin
       v_values := v_values || (v_o || jsonb_build_object('before', v_before, 'now', true));
     end loop;
 
-    -- 5. Scope and context screens (lane SCOPES-WRITE-THROUGH's step). Readiness refused without it.
+    -- 5. Scope and context screens, every organization (lane SCOPES-WRITE-THROUGH's own door).
     v_ts := clock_timestamp();
-    if to_regprocedure('platform._final_switch_scopes_step(text, uuid, uuid)') is null then
-      raise exception 'The scope and context screens switch has no code yet (lane SCOPES-WRITE-THROUGH).' using errcode = 'P0001';
-    end if;
-    execute 'select platform._final_switch_scopes_step($1, $2, $3)' into v_scopes using 'new', v_uid, v_run;
+    v_scopes := platform._final_switch_scopes('new', v_uid, v_note, null);
     v_timings := v_timings || jsonb_build_object('scopes_ms', round(extract(epoch from clock_timestamp() - v_ts) * 1000));
 
-    -- 6. The Data page for everyone, and the scope screens, on the platform organization.
+    -- 6. The Data page for everyone, recorded on the platform organization.
     insert into platform.cutover_seam_press (seam_key, organization_id, direction, outcome, says, pressed_by, did, note)
     values ('data_screen', v_platform, 'new', 'done', 'The Data page opens the new tables for everyone.', v_uid,
-            jsonb_build_object('final_switch_run', v_run), v_note),
-           ('scopes_screens', v_platform, 'new', 'done', 'The scope and context screens are on the new system for everyone.', v_uid,
-            jsonb_build_object('final_switch_run', v_run, 'step', v_scopes), v_note);
+            jsonb_build_object('final_switch_run', v_run), v_note);
 
     -- 7. The older WRITE doors leave the browser's reach, through the door registry.
     v_ts := clock_timestamp();
@@ -828,16 +872,16 @@ begin
     end loop;
     v_timings := v_timings || jsonb_build_object('doors_ms', round(extract(epoch from clock_timestamp() - v_ts) * 1000));
 
-    -- 6'. The Data page and the scope screens go back.
+    -- 6'. The Data page goes back.
     insert into platform.cutover_seam_press (seam_key, organization_id, direction, outcome, says, pressed_by, did, note)
     values ('data_screen', v_platform, 'old', 'done', 'The Data page opens the older list again.', v_uid,
-            jsonb_build_object('final_switch_run', v_run, 'undoes', v_last.id), v_note),
-           ('scopes_screens', v_platform, 'old', 'done', 'The scope and context screens are on the current system again.', v_uid,
             jsonb_build_object('final_switch_run', v_run, 'undoes', v_last.id), v_note);
 
-    -- 5'. Scope and context screens back (their lane's step).
-    if to_regprocedure('platform._final_switch_scopes_step(text, uuid, uuid)') is not null then
-      execute 'select platform._final_switch_scopes_step($1, $2, $3)' using 'old', v_uid, v_run;
+    -- 5'. Scope and context screens back, for exactly the organizations the run pressed.
+    if jsonb_typeof(v_last.did -> 'scopes' -> 'pressed') = 'array' then
+      perform platform._final_switch_scopes('old', v_uid, v_note,
+        (select coalesce(array_agg((x ->> 'organization_id')::uuid), '{}'::uuid[])
+           from jsonb_array_elements(v_last.did -> 'scopes' -> 'pressed') x));
     end if;
 
     -- 4'. The platform values as they were.
@@ -933,160 +977,32 @@ $$;
 -- ── 5. THE PER-ORGANIZATION PRESS STEPS ASIDE WHILE THE FINAL SWITCH IS ON ──────────────────────
 -- Everything switched at once goes back at once: an owner's Switch back on one organization would
 -- leave it on the older tables while the platform says everything is new (and nothing may be born
--- older anywhere). Refused, with the sentence, unless the final switch itself is pressing or undoing.
-CREATE OR REPLACE FUNCTION platform.cutover_seam_press(p_seam_key text, p_organization_id uuid, p_to text, p_note text DEFAULT NULL::text, p_accept_not_carried boolean DEFAULT false)
- RETURNS jsonb
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'pg_catalog'
-AS $function$
-declare
-  v_uid uuid := auth.uid();
-  v_claims jsonb := nullif(current_setting('request.jwt.claims', true), '')::jsonb;
-  v_headers jsonb := nullif(current_setting('request.headers', true), '')::jsonb;
-  v_role text;
-  v_is_admin boolean;
-  s platform.cutover_seam;
-  v_last platform.cutover_seam_press;
-  v_state text;
-  v_back jsonb;
-  v_ready jsonb;
-  v_press uuid := gen_random_uuid();
-  v_did jsonb;
-  v_carry jsonb;
-  v_refusal text;
-  v_says text;
-  v_done text;
+-- older anywhere). The decision sits on the press LOG, not in the press: no per-organization switch
+-- is recorded done while the final switch is on, unless the final switch itself is pressing or
+-- undoing (app.final_switch_step, transaction-local). The press's own step rolls back with it. So
+-- this file replaces neither platform.cutover_seam_press nor platform.cutover_seams, which lane
+-- SCOPES-WRITE-THROUGH also changes.
+create or replace function platform._final_switch_holds_every_organization()
+returns trigger
+language plpgsql
+set search_path to 'pg_catalog'
+as $$
 begin
-  -- Refusals that name no organization of the caller's are answered, never recorded.
-  if p_organization_id is null or not exists (select 1 from iam.organizations o where o.id = p_organization_id) then
-    return jsonb_build_object('ok', false, 'reason', 'not_yours', 'says', 'There is no organization with that id that you belong to.');
+  if new.outcome = 'done' and new.seam_key <> 'final_switch'
+     and exists (select 1 from platform.cutover_seam s where s.seam_key = new.seam_key and s.per_organization)
+     and coalesce(current_setting('app.final_switch_step', true), '') <> 'on'
+     and platform._final_switch_is_on() then
+    raise exception 'Every organization switched to the new system together with the final switch, so they switch back together too: Administration → Database → Final switch → Undo. Nothing was changed.'
+      using errcode = '55000',
+            hint = 'The final switch''s undo switches every organization back in one step; after it, each organization''s own switch works again.';
   end if;
-
-  if v_uid is null or v_claims is null then
-    v_refusal := 'not_a_person';
-    v_says := 'A switch is pressed by a person signed in on the organization''s settings page. A server, a script or a database connection cannot press it.';
-  elsif coalesce(v_claims ->> 'role', '') <> 'authenticated' or coalesce(v_claims ->> 'session_id', '') = '' then
-    v_refusal := 'not_a_person';
-    v_says := 'A switch is pressed by a person signed in on the organization''s settings page, not with a service key or a minted token.';
-  elsif v_headers is null or coalesce(v_headers ->> 'origin', '') = '' then
-    v_refusal := 'not_from_the_screen';
-    v_says := 'A switch is pressed from the organization''s settings page in a browser. This request did not come from a page.';
-  end if;
-
-  if v_refusal is null then
-    v_is_admin := public.is_admin();
-    select m.role into v_role from iam.organization_member m
-     where m.organization_id = p_organization_id and m.user_id = v_uid;
-    if v_role is null and not v_is_admin then
-      return jsonb_build_object('ok', false, 'reason', 'not_yours', 'says', 'There is no organization with that id that you belong to.');
-    end if;
-    if v_role is distinct from 'owner' and not v_is_admin then
-      v_refusal := 'not_an_owner';
-      v_says := 'Only an owner of this organization can press this switch.';
-    end if;
-  end if;
-
-  -- FINAL-SWITCH: while everything is switched at once, it goes back at once.
-  if v_refusal is null and platform._final_switch_is_on()
-     and coalesce(current_setting('app.final_switch_step', true), '') <> 'on' then
-    v_refusal := 'final_switch_on';
-    v_says := 'Every organization switched to the new system together with the final switch, so they switch back together too: Administration → Database → Final switch → Undo.';
-  end if;
-
-  if v_refusal is null then
-    select * into s from platform.cutover_seam where seam_key = p_seam_key and retired_at is null;
-    if s.seam_key is null then
-      return jsonb_build_object('ok', false, 'reason', 'unknown_switch', 'says', format('There is no switch called %s.', p_seam_key));
-    elsif p_to is null or p_to not in ('new', 'old') then
-      v_refusal := 'bad_direction';
-      v_says := 'A switch goes to the new system or back to the old one.';
-    elsif s.press_kind <> 'owner_press' then
-      v_refusal := 'not_pressed_here';
-      v_says := case s.press_kind when 'already_switched' then 'This one is already on the new system.'
-                  else 'This one switches for everyone at once, in its own rehearsed step, not from an organization''s settings.' end;
-    end if;
-  end if;
-
-  if v_refusal is null then
-    -- One press per seam per organization at a time.
-    perform pg_advisory_xact_lock(hashtextextended('cutover_seam:' || p_seam_key || ':' || p_organization_id::text, 0));
-    v_last := platform._cutover_seam_last_done(p_seam_key, p_organization_id);
-    v_state := coalesce(v_last.direction, 'old');
-    if v_state = p_to then
-      v_refusal := 'already_there';
-      v_says := case p_to when 'new' then 'This organization is already on the new system here.'
-                          else 'This organization is already on the old system here.' end;
-    elsif p_to = 'new' then
-      v_ready := platform._cutover_seam_readiness(p_seam_key, p_organization_id);
-      if not (v_ready ->> 'ready')::boolean then
-        v_refusal := 'not_ready';
-        v_says := 'Not ready yet: ' || (
-          select string_agg(c ->> 'says' || ' — ' || rtrim(coalesce(c ->> 'detail', ''), '.'), '; ')
-            from jsonb_array_elements(v_ready -> 'checks') c where not (c ->> 'met')::boolean) || '.';
-      end if;
-    else
-      -- SWITCH BACK CARRIES (SWITCH-BACK-CARRIES): what the new tables gained since the switch goes
-      -- into the older tables inside this press. What cannot go is named, and the press waits for the
-      -- person to confirm leaving it in the new system.
-      v_back := platform._cutover_seam_reverse_readiness(p_seam_key, p_organization_id);
-      v_ready := v_back;
-      if not (v_back ->> 'ready')::boolean then
-        v_refusal := 'not_ready';
-        v_says := 'Not ready to switch back: ' || (
-          select string_agg(c ->> 'says' || ' — ' || rtrim(coalesce(c ->> 'detail', ''), '.'), '; ')
-            from jsonb_array_elements(v_back -> 'checks') c where not (c ->> 'met')::boolean) || '.';
-      elsif coalesce((v_back ->> 'needs_confirm')::boolean, false) and not coalesce(p_accept_not_carried, false) then
-        v_refusal := 'confirm_not_carried';
-        v_says := 'Switching back leaves these in the new system: '
-          || (select string_agg(x, ' ') from jsonb_array_elements_text(v_back -> 'not_carried') x)
-          || ' Confirm that they stay behind, then switch back.';
-      end if;
-    end if;
-  end if;
-
-  if v_refusal is not null then
-    if p_seam_key in (select seam_key from platform.cutover_seam) then
-      insert into platform.cutover_seam_press
-        (id, seam_key, organization_id, direction, outcome, refusal, says, pressed_by, readiness, note)
-      values
-        (v_press, p_seam_key, p_organization_id,
-         case when p_to in ('new', 'old') then p_to else 'new' end,
-         'refused', v_refusal, v_says, v_uid, v_ready, p_note);
-    end if;
-    return jsonb_build_object('ok', false, 'reason', v_refusal, 'says', v_says, 'press_id', v_press, 'readiness', v_ready);
-  end if;
-
-  begin
-    v_did := platform._cutover_seam_apply(p_seam_key, p_organization_id, p_to, v_uid, v_press);
-    if p_to = 'old' and p_seam_key = 'older_tables' then
-      -- The older tables are back (unarchived above); now they take what the new ones gained.
-      v_carry := platform._cutover_carry_back(p_organization_id, v_last, true, v_press, v_uid,
-                                              coalesce(p_accept_not_carried, false));
-      v_did := v_did || jsonb_build_object('carried_back', v_carry);
-    end if;
-  exception when others then
-    v_refusal := 'the_step_failed';
-    v_says := 'Nothing was changed: the switch stopped part way and was rolled back whole. ' || sqlerrm;
-    insert into platform.cutover_seam_press
-      (id, seam_key, organization_id, direction, outcome, refusal, says, pressed_by, readiness, note)
-    values
-      (v_press, p_seam_key, p_organization_id, p_to, 'refused', v_refusal, v_says, v_uid, v_ready, p_note);
-    return jsonb_build_object('ok', false, 'reason', v_refusal, 'says', v_says, 'press_id', v_press);
-  end;
-
-  v_done := case p_to when 'new' then 'Switched to the new system.'
-                 else concat_ws(' ', 'Switched back to the old system.',
-                                (select string_agg(x, ' ') from jsonb_array_elements_text(v_carry -> 'says') x)) end;
-
-  insert into platform.cutover_seam_press
-    (id, seam_key, organization_id, direction, outcome, says, pressed_by, readiness, did, note)
-  values
-    (v_press, p_seam_key, p_organization_id, p_to, 'done', v_done, v_uid, v_ready, v_did, p_note);
-
-  return jsonb_build_object('ok', true, 'press_id', v_press, 'state', p_to, 'did', v_did, 'says', v_done);
+  return new;
 end;
-$function$;
+$$;
+drop trigger if exists final_switch_holds_every_organization on platform.cutover_seam_press;
+create trigger final_switch_holds_every_organization
+  before insert on platform.cutover_seam_press
+  for each row execute function platform._final_switch_holds_every_organization();
 
 -- ── 6. NOTHING NEW IS BORN IN THE OLDER STORE WHILE THE FINAL SWITCH IS ON ──────────────────────
 CREATE OR REPLACE FUNCTION platform.older_tables_switched(p_organization_id uuid)
@@ -1100,111 +1016,6 @@ AS $function$
   select p_organization_id is not null
      and (coalesce((platform._cutover_seam_last_done('older_tables', p_organization_id)).direction, 'old') = 'new'
           or platform._final_switch_is_on());
-$function$;
-
--- ── 7. THE SETTINGS CARD SAYS THE PLATFORM SWITCHES' REAL STATE ─────────────────────────────────
-CREATE OR REPLACE FUNCTION platform.cutover_seams(p_organization_id uuid)
- RETURNS jsonb
- LANGUAGE plpgsql
- STABLE SECURITY DEFINER
- SET search_path TO 'pg_catalog'
-AS $function$
-declare
-  v_uid uuid := auth.uid();
-  v_claims jsonb := nullif(current_setting('request.jwt.claims', true), '')::jsonb;
-  v_is_admin boolean := false;
-  v_role text;
-  v_may boolean := false;
-  v_may_detail text;
-  v_out jsonb := '[]'::jsonb;
-  s platform.cutover_seam;
-  v_last platform.cutover_seam_press;
-  v_latest platform.cutover_seam_press;
-  v_ready jsonb;
-  v_state text;
-  v_back jsonb;
-  v_final platform.cutover_seam_press;
-  v_final_on boolean;
-begin
-  if p_organization_id is null
-     or not exists (select 1 from iam.organizations o where o.id = p_organization_id) then
-    return jsonb_build_object('ok', false, 'reason', 'not_yours',
-      'says', 'There is no organization with that id that you belong to.');
-  end if;
-
-  if v_uid is null then
-    -- No person: only the server's own key or a direct database connection may read.
-    if v_claims is not null and coalesce(v_claims ->> 'role', '') <> 'service_role' then
-      return jsonb_build_object('ok', false, 'reason', 'not_signed_in', 'says', 'Sign in to see this organization''s switches.');
-    end if;
-    v_may_detail := 'Only an owner of this organization, signed in on its settings page, can press a switch.';
-  else
-    v_is_admin := public.is_admin();
-    select m.role into v_role from iam.organization_member m
-     where m.organization_id = p_organization_id and m.user_id = v_uid;
-    if v_role is null and not v_is_admin then
-      return jsonb_build_object('ok', false, 'reason', 'not_yours',
-        'says', 'There is no organization with that id that you belong to.');
-    end if;
-    v_may := v_role = 'owner' or v_is_admin;
-    v_may_detail := case when v_role = 'owner' then 'You are an owner of this organization.'
-                         when v_is_admin then 'You are a platform admin.'
-                         else 'Only an owner of this organization can press a switch.' end;
-  end if;
-
-  -- FINAL-SWITCH: while everything is switched at once, nothing here is pressed on its own.
-  v_final := platform._final_switch_last();
-  v_final_on := coalesce(v_final.direction, 'old') = 'new';
-  if v_final_on then
-    v_may_detail := 'Every organization switched to the new system together with the final switch; they switch back together from Administration → Database → Final switch.';
-  end if;
-
-  for s in select * from platform.cutover_seam where retired_at is null and seam_key <> 'final_switch' order by sort_order loop
-    -- A platform switch's state lives on the platform organization, where the final switch records it.
-    v_last := platform._cutover_seam_last_done(s.seam_key,
-                case when s.press_kind = 'platform_switch' then s.organization_id else p_organization_id end);
-    select p.* into v_latest from platform.cutover_seam_press p
-     where p.seam_key = s.seam_key
-       and p.organization_id = case when s.press_kind = 'platform_switch' then s.organization_id else p_organization_id end
-     order by p.pressed_at desc, p.id limit 1;
-    v_state := case when s.press_kind = 'already_switched' then 'new'
-                    when v_last.id is null then 'old'
-                    else v_last.direction end;
-    v_ready := platform._cutover_seam_readiness(s.seam_key, p_organization_id);
-    v_back := case when v_state = 'new' and s.press_kind = 'owner_press'
-                   then platform._cutover_seam_reverse_readiness(s.seam_key, p_organization_id) end;
-
-    v_out := v_out || jsonb_build_object(
-      'key', s.seam_key,
-      'title', s.title,
-      'old_side', s.old_side,
-      'new_side', s.new_side,
-      'per_organization', s.per_organization,
-      'press_kind', s.press_kind,
-      'state', v_state,
-      'flip_does', s.flip_does,
-      'needs_first', s.needs_first,
-      'reverse_does', s.reverse_does,
-      'readiness', v_ready,
-      'reverse_readiness', v_back,
-      'may_flip', v_may and not v_final_on and s.press_kind = 'owner_press' and v_state = 'old' and (v_ready ->> 'ready')::boolean,
-      'may_reverse', v_may and not v_final_on and s.press_kind = 'owner_press' and v_state = 'new'
-                     and coalesce((v_back ->> 'ready')::boolean, false),
-      'switched', case when v_last.id is null then null else jsonb_build_object(
-          'direction', v_last.direction, 'at', v_last.pressed_at,
-          'by', (select coalesce(u.raw_user_meta_data ->> 'full_name', u.email) from auth.users u where u.id = v_last.pressed_by),
-          'did', v_last.did) end,
-      'last_press', case when v_latest.id is null then null else jsonb_build_object(
-          'direction', v_latest.direction, 'outcome', v_latest.outcome, 'at', v_latest.pressed_at,
-          'refusal', v_latest.refusal, 'says', v_latest.says) end);
-  end loop;
-
-  return jsonb_build_object('ok', true, 'organization_id', p_organization_id, 'checked_at', now(),
-                            'may_press', v_may, 'may_press_detail', v_may_detail, 'seams', v_out,
-                            'final_switch', jsonb_build_object(
-                              'state', coalesce(v_final.direction, 'old'), 'at', v_final.pressed_at,
-                              'by', (select coalesce(u.raw_user_meta_data ->> 'full_name', u.email) from auth.users u where u.id = v_final.pressed_by)));
-end;
 $function$;
 
 -- ── 8. THE DOORS ─────────────────────────────────────────────────────────────────────────────────
@@ -1244,3 +1055,6 @@ revoke all on function platform._final_switch_last() from public, anon, authenti
 revoke all on function platform._final_switch_is_on() from public, anon, authenticated;
 revoke all on function platform._final_switch_platform_org() from public, anon, authenticated;
 revoke all on function platform._final_switch_old_write_doors() from public, anon, authenticated;
+revoke all on function platform._final_switch_scopes_code() from public, anon, authenticated;
+revoke all on function platform._final_switch_scopes(text, uuid, text, uuid[]) from public, anon, authenticated;
+revoke all on function platform._final_switch_holds_every_organization() from public, anon, authenticated;

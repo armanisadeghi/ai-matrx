@@ -43,15 +43,18 @@ import {
 } from "../../lib/copy";
 import type { AgendaTask } from "../../types";
 import { TriggerChip } from "./TriggerChip";
+import { WATCHES_AN_ARCHIVED_TABLE } from "../../lib/triggerWatch";
 import { SurfacesChips } from "./SurfacesChips";
 
 interface Props {
   task: AgendaTask;
   /** The list's rendered KPIs — carried into every row payload. */
   kpis: ScheduleKpis;
+  /** Its trigger watches a table archived on the side it listens to (lane PROOF-DEFECTS, D6). */
+  watchesArchived?: boolean;
 }
 
-export function ScheduleRow({ task, kpis }: Props) {
+export function ScheduleRow({ task, kpis, watchesArchived = false }: Props) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -147,6 +150,11 @@ export function ScheduleRow({ task, kpis }: Props) {
           <span className="ml-1">Next: {humanizeRelative(task.nextDueAt)}</span>
           <span>· Last: {humanizeRelative(task.lastRunAt)}</span>
         </div>
+        {watchesArchived && (
+          <p className="text-xs font-medium text-destructive" data-schedule-watches-archived="">
+            {WATCHES_AN_ARCHIVED_TABLE}
+          </p>
+        )}
       </Link>
 
       <div className="flex items-center gap-2">

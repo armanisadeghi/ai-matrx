@@ -18,6 +18,7 @@ import { buildScheduleRosterValues } from "../../lib/schedules-scope";
 import { scheduleKpis } from "../../lib/copy";
 import { scheduleSummary } from "../../lib/copy";
 import { ScheduleRow } from "./ScheduleRow";
+import { useArchivedWatchTriggers } from "../../hooks/useArchivedWatchTriggers";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
@@ -73,6 +74,9 @@ function ScheduleListBody() {
     error: duplicateError,
     refetch: refetchDuplicates,
   } = useDuplicateSchedules(tasks.length);
+  // An automation watching an archived table can never run: said on the list and on its row
+  // (lane PROOF-DEFECTS, D6).
+  const watchingArchived = useArchivedWatchTriggers(tasks);
 
   if (status === "loading" || status === "idle") {
     return (
@@ -165,8 +169,20 @@ function ScheduleListBody() {
           void refetchDuplicates();
         }}
       />
+      {watchingArchived.size > 0 && (
+        <p className="text-sm font-medium text-destructive" data-schedules-watch-archived={watchingArchived.size}>
+          {watchingArchived.size === 1
+            ? "1 automation watches an archived table and can never run; re-key it to the table's copy or disable it."
+            : `${watchingArchived.size} automations watch an archived table and can never run; re-key each to its table's copy or disable it.`}
+        </p>
+      )}
       {tasks.map((task) => (
-        <ScheduleRow key={task.id} task={task} kpis={kpis} />
+        <ScheduleRow
+          key={task.id}
+          task={task}
+          kpis={kpis}
+          watchesArchived={task.triggers.some((t) => watchingArchived.has(t.id))}
+        />
       ))}
     </div>
   );

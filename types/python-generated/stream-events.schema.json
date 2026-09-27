@@ -13199,6 +13199,117 @@
     "title": "CutoverCopyAgainReportData",
     "type": "object"
   },
+  "CutoverFinalSwitchStageData": {
+    "additionalProperties": false,
+    "description": "One stage of the final switch (lane FINAL-SWITCH): copying again, pressing, undoing.",
+    "properties": {
+      "type": {
+        "const": "cutover_final_switch_stage",
+        "default": "cutover_final_switch_stage",
+        "title": "Type",
+        "type": "string"
+      },
+      "stage": {
+        "title": "Stage",
+        "type": "string"
+      },
+      "says": {
+        "title": "Says",
+        "type": "string"
+      }
+    },
+    "required": [
+      "stage",
+      "says"
+    ],
+    "title": "CutoverFinalSwitchStageData",
+    "type": "object"
+  },
+  "CutoverFinalSwitchResultData": {
+    "additionalProperties": false,
+    "description": "What the final switch (or its undo) did, in the database's own sentence, with its counts.",
+    "properties": {
+      "type": {
+        "const": "cutover_final_switch_result",
+        "default": "cutover_final_switch_result",
+        "title": "Type",
+        "type": "string"
+      },
+      "direction": {
+        "enum": [
+          "new",
+          "old"
+        ],
+        "title": "Direction",
+        "type": "string"
+      },
+      "ok": {
+        "title": "Ok",
+        "type": "boolean"
+      },
+      "reason": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Reason"
+      },
+      "says": {
+        "title": "Says",
+        "type": "string"
+      },
+      "press_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Press Id"
+      },
+      "counts": {
+        "additionalProperties": true,
+        "title": "Counts",
+        "type": "object"
+      },
+      "timings_ms": {
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "title": "Timings Ms",
+        "type": "object"
+      },
+      "copied_again": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Copied Again",
+        "type": "array"
+      },
+      "not_carried": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Not Carried",
+        "type": "array"
+      }
+    },
+    "required": [
+      "direction",
+      "ok",
+      "says"
+    ],
+    "title": "CutoverFinalSwitchResultData",
+    "type": "object"
+  },
   "ToolStartedData": {
     "additionalProperties": false,
     "properties": {

@@ -26,6 +26,8 @@ export const GOOGLE_SCOPE = {
   contactsReadonly: "https://www.googleapis.com/auth/contacts.readonly",
   // Future internal-test source preview only; excluded from all consent bundles until reviewed feature/provider approval.
   contactsOtherReadonly: "https://www.googleapis.com/auth/contacts.other.readonly",
+  // Future internal-test Meet source preview only; excluded from every consent bundle.
+  meetingsSpaceReadonly: "https://www.googleapis.com/auth/meetings.space.readonly",
   calendarEventsOwnedReadonly:
     "https://www.googleapis.com/auth/calendar.events.owned.readonly",
   // Pending selected shared-calendar read grants. No consent flow requests these yet.

@@ -28,8 +28,6 @@ import {
   AlertCircle,
   Beaker,
   Brain,
-  ChevronsDownUp,
-  ChevronsUpDown,
   Copy,
   Database,
   FileText,
@@ -1130,22 +1128,6 @@ function SearchTab({
     },
   });
 
-  const setAllResultsExpanded = (expanded: boolean) => {
-    if (!response) return;
-    setExpandedHits(
-      Object.fromEntries(response.hits.map((hit) => [hit.chunk_id, expanded])),
-    );
-  };
-  const resultExpansionStates =
-    response?.hits.map(
-      (hit, index) => expandedHits[hit.chunk_id] ?? index === 0,
-    ) ?? [];
-  const allResultsExpanded =
-    resultExpansionStates.length > 0 && resultExpansionStates.every(Boolean);
-  const allResultsCollapsed =
-    resultExpansionStates.length > 0 &&
-    resultExpansionStates.every((expanded) => !expanded);
-
   if (reviewHit) {
     const reviewView = hitViewFromSearchHit(reviewHit, {
       name: response
@@ -1260,32 +1242,6 @@ function SearchTab({
             }
             organizationId={searchContext.filters?.organization_id}
           />
-          {response?.hits.length ? (
-            <div className="mt-2 flex shrink-0 items-center gap-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1.5 px-2 text-[11px]"
-                disabled={allResultsExpanded}
-                onClick={() => setAllResultsExpanded(true)}
-              >
-                <ChevronsUpDown className="h-3.5 w-3.5" />
-                Expand all
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1.5 px-2 text-[11px]"
-                disabled={allResultsCollapsed}
-                onClick={() => setAllResultsExpanded(false)}
-              >
-                <ChevronsDownUp className="h-3.5 w-3.5" />
-                Collapse all
-              </Button>
-            </div>
-          ) : null}
         </div>
       </header>
 

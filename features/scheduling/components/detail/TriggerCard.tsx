@@ -11,6 +11,8 @@ import { TRIGGER_TYPE_META } from "../../constants/triggerTypes";
 import { humanizeRelative, humanizeTrigger } from "../../utils/triggerHumanize";
 import { humanLines, scheduleDetailLocation } from "../../lib/copy";
 import type { AgendaTask } from "../../types";
+import { WATCHES_AN_ARCHIVED_TABLE } from "../../lib/triggerWatch";
+import { useArchivedWatchTriggers } from "../../hooks/useArchivedWatchTriggers";
 
 interface Props {
   task: AgendaTask;
@@ -24,6 +26,9 @@ interface Props {
 
 export function TriggerCard({ task, editHref = `/schedules/${task.id}/edit` }: Props) {
   const trigger = task.triggers[0];
+  // Lane PROOF-DEFECTS (D6): a trigger on a table archived on the side it listens to never fires.
+  const watchingArchived = useArchivedWatchTriggers([task]);
+  const watchesArchived = trigger ? watchingArchived.has(trigger.id) : false;
 
   if (!trigger) {
     return (
@@ -62,6 +67,11 @@ export function TriggerCard({ task, editHref = `/schedules/${task.id}/edit` }: P
               >
                 {humanizeTrigger(trigger.type, trigger.config)}
               </div>
+              {watchesArchived && (
+                <div className="text-xs font-medium text-destructive" data-schedule-watches-archived="">
+                  {WATCHES_AN_ARCHIVED_TABLE}
+                </div>
+              )}
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1">
