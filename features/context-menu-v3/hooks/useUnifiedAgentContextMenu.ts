@@ -13,7 +13,12 @@ import type { AgentContentBlockRecord } from "@/features/agent-connections/redux
 import type { Scope } from "@/features/agents/redux/shared/scope";
 import { resolveRowScope } from "@/features/agents/redux/shared/scope";
 import { placementGroupKey } from "@/features/agent-shortcuts/constants";
-import { decideOffer, requirementsOf } from "../model/requirement-gate";
+import {
+  decideOffer,
+  readMenuScope,
+  requirementsOf,
+  type MenuScopeLevel,
+} from "../model/requirement-gate";
 
 export type AgentMenuEntry =
   | ({ entryType: "agent_shortcut"; scopeLevel: Scope } & AgentShortcutRecord)
@@ -84,10 +89,45 @@ const SCOPE_PRIORITY: Record<Scope, number> = {
   global: 1,
 };
 
-function dedupeByPrecedence<T extends { scopeLevel: Scope }>(
-  items: T[],
-  keyFn: (item: T) => string | null,
-): T[] {
+/**
+ * Screen specificity of an item's authored scope: a page-pinned version beats
+ * a domain-wide one, which beats a global one. Rows without a `surfaceName`
+ * (categories, content blocks) are all global, so this never separates them.
+ */
+const SPECIFICITY: Record<MenuScopeLevel, number> = {
+  surface: 3,
+  domain: 2,
+  global: 1,
+};
+
+function specificityOf(item: { surfaceName?: string | null }): number {
+  return SPECIFICITY[
+    readMenuScope({ id: "", surfaceName: item.surfaceName ?? null }).level
+  ];
+}
+
+/**
+ * Does `a` beat `b` for the same dedupe key? Deterministic and independent of
+ * row order (the view emits ties in arbitrary order — every sort_order is 0):
+ *   1. owner level (task > project > user > organization > global);
+ *   2. screen specificity (page > domain > global) — the screen's own version
+ *      of an action always beats a generic copy at the same owner level;
+ *   3. id, ascending — a total order, so equal rows never depend on arrival.
+ */
+function beats<T extends { scopeLevel: Scope; id: string; surfaceName?: string | null }>(
+  a: T,
+  b: T,
+): boolean {
+  const byOwner = SCOPE_PRIORITY[a.scopeLevel] - SCOPE_PRIORITY[b.scopeLevel];
+  if (byOwner !== 0) return byOwner > 0;
+  const bySpecificity = specificityOf(a) - specificityOf(b);
+  if (bySpecificity !== 0) return bySpecificity > 0;
+  return a.id < b.id;
+}
+
+function dedupeByPrecedence<
+  T extends { scopeLevel: Scope; id: string; surfaceName?: string | null },
+>(items: T[], keyFn: (item: T) => string | null): T[] {
   const winners = new Map<string, T>();
   const passthrough: T[] = [];
   for (const item of items) {
@@ -97,13 +137,7 @@ function dedupeByPrecedence<T extends { scopeLevel: Scope }>(
       continue;
     }
     const existing = winners.get(key);
-    if (!existing) {
-      winners.set(key, item);
-      continue;
-    }
-    if (SCOPE_PRIORITY[item.scopeLevel] > SCOPE_PRIORITY[existing.scopeLevel]) {
-      winners.set(key, item);
-    }
+    if (!existing || beats(item, existing)) winners.set(key, item);
   }
   return [...winners.values(), ...passthrough];
 }
@@ -150,7 +184,9 @@ export interface BuildCategoryGroupsArgs {
  *  - an EMPTY category still returns (with `items: []`) so the UI can render it
  *    greyed — never silently dropped;
  *  - an entry with no agent is kept (the renderer disables it as "Not configured");
- *  - scope precedence dedupe (task > project > user > organization > global).
+ *  - scope precedence dedupe (task > project > user > organization > global),
+ *    ties broken by screen specificity (page > domain > global), then id —
+ *    never by row order.
  */
 export function buildCategoryGroups(
   args: BuildCategoryGroupsArgs,
