@@ -384,7 +384,10 @@ export default function UnifiedDataTableRoute({
    * once the share door has said this is NOT a share of an outsider's.
    */
   const readsAsMember = shared.state === "none";
-  const knobMergedGrid = useMergedGridKnob(readingOrganizationId);
+  // A SHARED VIEWER READS NO ORGANIZATION'S SETTINGS (lane HANDOVER, 2026-09-27): the knob snapshot is
+  // gated on membership by design, so asking it for the table's organization as an outsider answered
+  // 403 and a console error on every shared table. An outsider gets the platform's own value.
+  const knobMergedGrid = useMergedGridKnob(readsAsMember ? readingOrganizationId : null);
   const mergedGrid = gridForced || knobMergedGrid;
   // ONE SWITCH: does THIS organization keep its data in the record store? Set
   // once, for everybody, on the unified data ramp screen. There is no second,
