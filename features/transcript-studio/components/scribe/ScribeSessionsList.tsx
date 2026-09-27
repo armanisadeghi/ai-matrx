@@ -173,6 +173,7 @@ export function ScribeSessionsList({
                 Unsorted
               </span>
               <span className="block text-xs text-muted-foreground">
+                {/* read-gate-exempt: the Unsorted entry renders only when unsortedCount > 0, so this never states a zero from a failed read */}
                 {unsortedCount} recording{unsortedCount === 1 ? "" : "s"} not in
                 a session
               </span>

@@ -169,6 +169,7 @@ export function PdfStudioChunksPane({
     <div className="flex flex-col min-h-0 flex-1 border-r last:border-r-0 border-border">
       <PaneHeader
         activePage={activePage}
+        // read-gate-exempt: PaneHeader receives status and draws no count at all when status is "error"
         total={total}
         rowCount={rows.length}
         status={status}
@@ -222,7 +223,8 @@ function PaneHeader({
         {activePage != null && (
           <span className="text-[10px] text-muted-foreground">
             · Page {activePage}
-            {total > 0 &&
+            {status !== "error" &&
+              total > 0 &&
               ` · ${rowCount}${total > rowCount ? `/${total}` : ""}`}
           </span>
         )}

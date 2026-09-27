@@ -259,10 +259,12 @@ export function ChatDebugModal({
                     {session?.status ?? "—"}
                   </div>
                   <div>
+                    {/* read-gate-exempt: super-admin debug dump of the in-memory Redux session; session status is printed two rows above */}
                     <span className="text-foreground">messages:</span>{" "}
                     {messages.length}
                   </div>
                   <div>
+                    {/* read-gate-exempt: super-admin debug dump of the in-memory Redux session; session status is printed two rows above */}
                     <span className="text-foreground">resources:</span>{" "}
                     {resources.length}
                   </div>

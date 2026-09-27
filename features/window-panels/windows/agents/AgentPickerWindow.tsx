@@ -6,8 +6,8 @@
  * The body is the package's `AgentListPanel`: the exact picker a person sees
  * when they open `AgentListDropdown` — list on the left, hover peek / sort /
  * category / tag panel on the right — at the same fixed 680 × 528 footprint.
- * The window hugs it (`fitContent`), so the picker looks identical in both
- * shells and never resizes while the person hovers or filters.
+ * The window opens at that size and is an ordinary resizable WindowPanel;
+ * the panel fills it (list column grows, peek stays 340px).
  *
  * Two ways in:
  *   - `AgentPickerWindow` — the registered overlay `agentPickerWindow`, opened
@@ -15,15 +15,11 @@
  *     callback group; the window closes after a pick.
  *   - `AgentPickerFrame` — the same frame for a registered window that needs a
  *     step AFTER the pick (send-to-agent chooses where content goes). Pass
- *     `children` to replace the panel with that step at the same footprint.
+ *     `children` (and the window's own footer slots) to replace the panel.
  */
 
 import { useRef } from "react";
-import {
-  AgentListPanel,
-  PANEL_WIDTH,
-  PANEL_HEIGHT,
-} from "@ai-matrx/agents/catalog/react";
+import { AgentListPanel } from "@ai-matrx/agents/catalog/react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { emitAgentPickerEvent } from "./agent-picker-callbacks";
 
@@ -44,11 +40,22 @@ export interface AgentPickerFrameProps {
   /** Filter/tab state slot. Defaults to the shared picker-window slot. */
   consumerId?: string;
   /**
-   * A step shown INSTEAD of the picker, at the same footprint (for flows that
+   * A step shown INSTEAD of the picker, in the same window (for flows that
    * continue after the pick). Omit to show the picker.
    */
   children?: React.ReactNode;
+  /** The window's own footer slots — for a step's actions. */
+  footerLeft?: React.ReactNode;
+  footerRight?: React.ReactNode;
 }
+
+/**
+ * Opening size: the dropdown's 680 × 528 picker plus the window chrome
+ * (33px header, the body's 6px gutter on each side, the 1px frame). The
+ * window is an ordinary resizable WindowPanel from there.
+ */
+const OPEN_WIDTH = 694;
+const OPEN_HEIGHT = 573;
 
 export function AgentPickerFrame({
   id,
@@ -59,6 +66,8 @@ export function AgentPickerFrame({
   activeAgentId,
   consumerId = AGENT_PICKER_WINDOW_CONSUMER_ID,
   children,
+  footerLeft,
+  footerRight,
 }: AgentPickerFrameProps) {
   return (
     <WindowPanel
@@ -67,20 +76,17 @@ export function AgentPickerFrame({
       title={title}
       onClose={onClose}
       position="center"
-      fitContent
+      width={OPEN_WIDTH}
+      height={OPEN_HEIGHT}
       bodyClassName="p-0"
+      {...(footerLeft ? { footerLeft } : {})}
+      {...(footerRight ? { footerRight } : {})}
     >
-      {children ? (
-        <div
-          className="flex min-h-0 flex-col overflow-hidden max-md:h-full max-md:w-full"
-          style={{ width: PANEL_WIDTH, height: PANEL_HEIGHT, maxWidth: "100%" }}
-        >
-          {children}
-        </div>
-      ) : (
+      {children ?? (
         <AgentListPanel
           consumerId={consumerId}
           onSelect={onSelect}
+          fill
           {...(activeAgentId !== undefined ? { activeAgentId } : {})}
           showPinnedAgent={Boolean(activeAgentId)}
         />

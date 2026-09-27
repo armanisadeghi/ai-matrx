@@ -1681,7 +1681,7 @@ export function MandatesConsole() {
               </div>
             </div>
           )}
-          {codeAgentDriftRows.length > 0 && (
+          {!codeTruthError && codeAgentDriftRows.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs">
               <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
               <span className="font-medium text-rose-600">

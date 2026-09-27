@@ -70,6 +70,7 @@ export function PdfBatchExtractDebugTrigger({
         <Bug className="h-3 w-3" />
         {isOpen ? "Stream debug (open)" : "Stream debug"}
         {activeSession && (
+          // read-gate-exempt: lineCount is the in-memory line buffer of this client's own debug stream session, never fetched
           <span className="text-muted-foreground">
             · {status} · {lineCount} lines
           </span>

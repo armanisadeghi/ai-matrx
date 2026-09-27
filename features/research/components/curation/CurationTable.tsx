@@ -598,6 +598,7 @@ export default function CurationTable() {
         <ResearchFilterBar
           title="Curate"
           count={isLoading ? "—" : `${visibleIds.size}/${rows.length}`}
+          read={{ status: curationError ? "error" : "ready", error: curationError }}
           filters={filterDefs}
           search={search}
           onSearchChange={setSearch}

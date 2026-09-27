@@ -961,7 +961,7 @@ const NON_READ_HOOK =
   /^(?:useState|useReducer|useRef|useMemo|useCallback|useEffect|useLayoutEffect|useInsertionEffect|useEffectEvent|useId|useTransition|useDeferredValue|useSyncExternalStore|useContext|useImperativeHandle|useDebugValue|useOptimistic|useActionState|useFormStatus|use|useRouter|usePathname|useSearchParams|useParams|useSelectedLayoutSegments?|useIsMobile|useMediaQuery|useTheme|useAppDispatch|useDispatch|useStore|useAppStore|useToast|useForm|useFormContext|useController|useFieldArray|useWatch|useDebounce|useDebouncedValue|useDebouncedCallback|useThrottle|useHover|useFocus|useClickOutside|useOnClickOutside|useKeyboardShortcut|useHotkeys|useLocalStorage|useSessionStorage|usePrevious|useInterval|useTimeout|useMounted|useIsMounted|useIsClient|useWindowSize|useElementSize|useResizeObserver|useIntersectionObserver|useInView|useScroll|useClipboard|useCopyToClipboard|useToggle|useBoolean|useDisclosure|useControllableState|useSensors?|useDroppable|useDraggable|useSortable|useDndMonitor|useReactTable|useVirtualizer|useFormField|useCarousel|useSidebar|useChart|useComboboxAnchor|useListViewPrefs|useSurfaceRuntime|useRequestLedger|useOpen\w*|useClose\w*|useCreate\w*|useUpdate\w*|useDelete\w*|useSave\w*|useSet\w*|useToggle\w*|useReset\w*)$/;
 
 /** Identifiers in `fn` that hold (or are derived from) the result of a read hook. */
-function readDerivedNames(fn: ts.FunctionLikeDeclaration): Set<string> {
+function readDerivedNames(fn: ts.FunctionLikeDeclaration, alsoNotARead: RegExp | null = null): Set<string> {
   const names = new Set<string>();
   const body = fn.body;
   if (!body) return names;
@@ -982,7 +982,7 @@ function readDerivedNames(fn: ts.FunctionLikeDeclaration): Set<string> {
     while (ts.isAwaitExpression(e) || ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isNonNullExpression(e)) e = (e as ts.AwaitExpression).expression;
     if (!ts.isCallExpression(e)) return false;
     const callee = e.expression.getText().split(".").pop() ?? "";
-    return /^use[A-Z]/.test(callee) && !NON_READ_HOOK.test(callee);
+    return /^use[A-Z]/.test(callee) && !NON_READ_HOOK.test(callee) && !(alsoNotARead?.test(callee) ?? false);
   };
   for (const d of decls) if (isReadCall(d.initializer!)) bind(d.name);
   // Derived values (const visible = items.filter(…)), to a fixpoint.
@@ -1263,6 +1263,9 @@ function exemptAround(sourceLines: string[], lines: number[]): boolean {
  * element on the read's failure. Rows that are a pure local value (props,
  * `useState`, a constant) are not a read and are not flagged.
  */
+/** URL / view state hooks: the rows they filter are not a read (RC-B12 r13, emptyState props). */
+const URL_STATE_HOOK = /^(?:useUrlState|useTableUrlState|useUrlParam\w*|useQueryState\w*|useHrContext|useHrPersona)$/;
+
 export function findUngatedEmptyStateProps(source: string, fileName = "file.tsx"): number[] {
   const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const sourceLines = source.split("\n");
@@ -1275,7 +1278,7 @@ export function findUngatedEmptyStateProps(source: string, fileName = "file.tsx"
         const fn = enclosingFunction(n);
         if (fn && fn.body) {
           let names = readNameCache.get(fn);
-          if (!names) { names = readDerivedNames(fn); readNameCache.set(fn, names); }
+          if (!names) { names = readDerivedNames(fn, URL_STATE_HOOK); readNameCache.set(fn, names); }
           const props = attributes(n).properties.filter(ts.isJsxAttribute);
           const readBacked =
             props.some((p) => READ_SIGNAL_ATTR.test(p.name.getText())) ||

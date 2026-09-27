@@ -2017,6 +2017,7 @@ export function ModelListDropdown({
               />
             )}
             {t === "all" ? "All" : "Favorites"}
+            {/* read-gate-exempt: starred-model ids from the hydrated preferences cache, shown only when > 0 — never a zero from a failed read */}
             {t === "favorites" && favoriteSet.size > 0 && (
               <span className="text-muted-foreground">{favoriteSet.size}</span>
             )}
@@ -2110,8 +2111,14 @@ export function ModelListDropdown({
           the in-place admin-variant toggle here. */}
       <div className="flex items-center justify-between gap-2 border-t border-border px-2 py-1 text-[10px] text-muted-foreground">
         <span>
-          {filtered.length} of {eligibleModels.length} model
-          {eligibleModels.length === 1 ? "" : "s"}
+          {error ? (
+            "Models couldn't be loaded"
+          ) : (
+            <>
+              {filtered.length} of {eligibleModels.length} model
+              {eligibleModels.length === 1 ? "" : "s"}
+            </>
+          )}
         </span>
         {isSuperAdmin && catalogVariant == null && (
           <button

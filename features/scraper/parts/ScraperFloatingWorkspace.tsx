@@ -548,7 +548,9 @@ export function ScraperFloatingWorkspace({
       </div>
       <div className="flex-1" />
       <div className="flex items-center gap-2 text-[10px] text-muted-foreground/70 tabular-nums">
-        {mode === "web" && keywordForm.flatResults.length > 0 && (
+        {mode === "web" &&
+          !keywordForm.hasError &&
+          keywordForm.flatResults.length > 0 && (
           <span>{keywordForm.flatResults.length} hits</span>
         )}
         {scrapedResults.length > 0 && (

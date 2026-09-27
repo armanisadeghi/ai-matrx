@@ -430,13 +430,12 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
   const footer = (
     <div className="flex w-full min-w-0 flex-wrap items-center gap-2 px-2 py-1.5">
       <span className="text-xs text-muted-foreground">
-        {loadError
-          ? "Couldn't load the checkup"
-          : run.status === "error" && totalFindings === 0
-            ? "The checkup did not finish"
-            : totalFindings === 0
-              ? (stageLine ?? "Nothing to decide yet")
-              : `${decidedCount} of ${totalFindings} decided`}
+        {/* The failed read or run is named in the body above; the footer claims nothing. */}
+        {loadError || (run.status === "error" && totalFindings === 0)
+          ? "—"
+          : totalFindings === 0
+            ? (stageLine ?? "Nothing to decide yet")
+            : `${decidedCount} of ${totalFindings} decided`}
       </span>
       {run.running && totalFindings > 0 ? (
         <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />

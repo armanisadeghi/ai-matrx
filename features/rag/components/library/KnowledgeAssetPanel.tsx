@@ -377,7 +377,7 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
           <p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
             Build premium representations from{" "}
             <span className="font-medium text-foreground">{doc.name}</span>.
-            {builtCount > 0 && (
+            {!loadError && builtCount > 0 && (
               <>
                 {" "}
                 {builtCount} of {DERIVE_KINDS.length} built.
@@ -451,7 +451,9 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {/* Cleaned base — read-only */}
             <BaseRepresentationCard
-              count={countByKind.get(BASE_KIND)?.chunk_count}
+              count={
+                loadError ? undefined : countByKind.get(BASE_KIND)?.chunk_count
+              }
               totalPages={doc.totalPages ?? null}
             />
             {DERIVE_KINDS.map((kind) => (

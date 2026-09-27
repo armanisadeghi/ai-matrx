@@ -364,7 +364,7 @@ export function IntelligenceIndex({
             className="w-full sm:max-w-md"
             inputClassName="text-base sm:text-sm"
           />
-          {directory ? (
+          {directory && !error ? (
             <p className="shrink-0 text-[12.5px] tabular-nums text-muted-foreground">
               {searching
                 ? `${matchedCount} match`

@@ -697,6 +697,7 @@ export default function AnalysisList() {
         <ResearchFilterBar
           title="Analyses"
           count={`${filtered.length}`}
+          read={{ status: analysesError ? "error" : "ready", error: analysesError }}
           filters={filterDefs}
           search={search}
           onSearchChange={setSearch}

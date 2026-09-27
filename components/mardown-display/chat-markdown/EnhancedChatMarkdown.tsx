@@ -21,15 +21,17 @@ import { reuseUnchangedBlocks } from "./stable-blocks";
 import { useProgressiveMount } from "./progressive-mount";
 import { renderBlockToContentBlock } from "./render-block-to-content-block";
 import { DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
-import { MarkdownSourceEditProvider } from "@/components/markdown-core/syntax/elements/MarkdownSourceEdit";
+import { OptionalMarkdownSourceEditProvider } from "@/components/markdown-core/syntax/elements/MarkdownSourceEdit";
 
 /** Task checkboxes toggle only when the message has a save path; otherwise they stay read-only marks. */
 function MaybeSourceEdit({ source, save, children }: { source: string; save?: (next: string) => void; children: React.ReactNode }) {
-  if (!save) return <>{children}</>;
+  // One element whether or not the answer can save yet: a streamed answer
+  // gains `save` the moment it settles, and a Fragment→Provider swap here
+  // remounted the whole answer — every tool card blinked out and back.
   return (
-    <MarkdownSourceEditProvider source={source} save={save}>
+    <OptionalMarkdownSourceEditProvider source={source} save={save}>
       {children}
-    </MarkdownSourceEditProvider>
+    </OptionalMarkdownSourceEditProvider>
   );
 }
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";

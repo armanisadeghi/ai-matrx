@@ -58,6 +58,11 @@ jest.mock("next/dynamic", () => ({
   __esModule: true,
   default: () => () => null,
 }));
+// The engine loads through next/dynamic in the app; render it directly here.
+jest.mock("@/components/MarkdownStream", () => ({
+  __esModule: true,
+  default: jest.requireActual("@/components/MarkdownStreamImpl").default,
+}));
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn(), revalidateTag: jest.fn() }));
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
@@ -313,7 +318,7 @@ test("the intake-checklist patch card is one DOM node from its first frame throu
   for (let i = 0; i < 5; i++) await h.stream.advance();
   render(true);
   const first = card();
-  expect(first).not.toBeNull();
+  if (!first) throw new Error(`no card rendered: ${host.innerHTML.slice(0, 1500)}`);
 
   // The answer streams, and the server announces the answer's row late.
   for (let i = 5; i < EVENTS.length - 1; i++) {

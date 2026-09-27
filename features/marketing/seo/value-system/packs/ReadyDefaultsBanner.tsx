@@ -63,6 +63,9 @@ export function ReadyDefaultsBanner() {
     staleTime: 60_000,
   });
 
+  // An optional nudge: over a failed (possibly stale) read it stays quiet
+  // rather than offer a pack already adopted or quote counts it can't vouch for.
+  if (catalog.isError || adoptions.isError) return null;
   if (!catalog.data || !adoptions.data || !brand.data) return null;
   const adoptedIds = new Set(adoptions.data.map((a) => a.pack_id));
   const ready = catalog.data.find(

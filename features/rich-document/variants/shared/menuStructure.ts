@@ -93,6 +93,8 @@ export const MENU_STRUCTURE: MenuSection[] = [
       "add-to-rulebook",
       "save-to-task",
       "pin-message",
+      // The record's Notes & comments dock (present only when it holds something).
+      "notes-and-comments",
       "save-to-notes",
       "summarize-and-listen",
       "summarize-for-listening",

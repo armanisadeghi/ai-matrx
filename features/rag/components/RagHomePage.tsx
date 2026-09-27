@@ -32,6 +32,7 @@ import { LibraryCatalogPane } from "@/features/rag/components/data-stores/Librar
 import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 export function RagHomePage() {
   const { summary, loading, error } = useLibrarySummary();
@@ -104,14 +105,17 @@ export function RagHomePage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
               <StatCard
                 label="Documents"
+                // read-gate-exempt: StatCard renders this through UntrustedCount with trustworthy={!error} from useLibrarySummary
                 value={summary?.documentsTotal}
                 loading={loading}
+                trustworthy={!error}
                 icon={<FileText className="h-3.5 w-3.5" />}
               />
               <StatCard
                 label="Ready"
                 value={summary?.documentsReady}
                 loading={loading}
+                trustworthy={!error}
                 icon={<CheckCircle2 className="h-3.5 w-3.5 text-green-500" />}
                 tone="success"
               />
@@ -119,12 +123,14 @@ export function RagHomePage() {
                 label="Embedding"
                 value={summary?.documentsEmbedding}
                 loading={loading}
+                trustworthy={!error}
                 icon={<Zap className="h-3.5 w-3.5 text-blue-500" />}
               />
               <StatCard
                 label="Extracted"
                 value={summary?.documentsExtracted}
                 loading={loading}
+                trustworthy={!error}
                 icon={<AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />}
                 tone="warning"
               />
@@ -132,6 +138,7 @@ export function RagHomePage() {
                 label="Pending / failed"
                 value={summary?.documentsPending}
                 loading={loading}
+                trustworthy={!error}
                 icon={<AlertTriangle className="h-3.5 w-3.5 text-red-500" />}
                 tone="error"
               />
@@ -139,12 +146,14 @@ export function RagHomePage() {
                 label={`Total ${RAG_VOCAB.segmentsShort.toLowerCase()}`}
                 value={summary?.chunks}
                 loading={loading}
+                trustworthy={!error}
                 icon={<Layers className="h-3.5 w-3.5" />}
               />
               <StatCard
                 label="Data stores"
                 value={summary?.dataStores}
                 loading={loading}
+                trustworthy={!error}
                 icon={<Database className="h-3.5 w-3.5" />}
               />
             </div>
@@ -238,12 +247,15 @@ function StatCard({
   label,
   value,
   loading,
+  trustworthy,
   icon,
   tone,
 }: {
   label: string;
   value: number | undefined;
   loading: boolean;
+  /** False when the summary read failed: the tile shows "—", never 0. */
+  trustworthy: boolean;
   icon: React.ReactNode;
   tone?: "success" | "warning" | "error";
 }) {
@@ -265,7 +277,11 @@ function StatCard({
         {loading ? (
           <Skeleton className="h-6 w-12" />
         ) : (
-          (value ?? 0).toLocaleString()
+          <UntrustedCount
+            value={value ?? 0}
+            trustworthy={trustworthy}
+            label={label}
+          />
         )}
       </span>
     </div>

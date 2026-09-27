@@ -182,7 +182,7 @@ export function DocumentViewer({
           <h1 className="truncate text-sm font-semibold">
             {doc.data?.name ?? "Loading…"}
           </h1>
-          {doc.data && (
+          {doc.data && !doc.error && (
             <span className="hidden whitespace-nowrap text-xs text-muted-foreground sm:inline">
               {doc.data.derivation_kind} · {totalPages || 0} pages ·{" "}
               {doc.data.chunk_count} {RAG_VOCAB.segmentsShort.toLowerCase()}

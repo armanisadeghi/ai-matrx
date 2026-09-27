@@ -35,3 +35,29 @@ export function MarkdownSourceEditProvider({
 export function useMarkdownSourceEdit(): MarkdownSourceEdit | null {
   return useContext(MarkdownSourceEditContext);
 }
+
+/**
+ * The adapter for a level that can save only SOMETIMES (a streamed answer
+ * saves once it has settled). It renders the same element either way, so
+ * gaining or losing `save` never remounts the document below it — a remount
+ * there unmounted every tool card at the instant a stream completed. With no
+ * `save`, the outer adapter (if any) stays in effect, exactly as if this level
+ * rendered nothing.
+ */
+export function OptionalMarkdownSourceEditProvider({
+  source,
+  save,
+  children,
+}: {
+  source: string;
+  save?: MarkdownSourceEdit["save"];
+  children: ReactNode;
+}) {
+  const outer = useContext(MarkdownSourceEditContext);
+  const value = save ? { source, save } : outer;
+  return (
+    <MarkdownSourceEditContext.Provider value={value}>
+      {children}
+    </MarkdownSourceEditContext.Provider>
+  );
+}

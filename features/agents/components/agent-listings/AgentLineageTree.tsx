@@ -35,6 +35,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import {
+  UntrustedCount,
+  type CountRead,
+} from "@/components/official/stale-data/UntrustedCount";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import {
@@ -67,15 +72,25 @@ export function AgentLineageTree() {
 
   const [apps, setApps] = useState<AgentAppAdminView[]>([]);
   const [appsLoading, setAppsLoading] = useState(true);
+  const [appsError, setAppsError] = useState<unknown>(null);
+  const [agentsError, setAgentsError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    dispatch(fetchAgentsListFull());
+    setAgentsError(null);
+    dispatch(fetchAgentsListFull())
+      .unwrap()
+      .catch((e: unknown) => setAgentsError(e));
     setAppsLoading(true);
+    setAppsError(null);
     fetchAgentAppsAdmin({ limit: 500 })
       .then((rows) => setApps(rows))
-      .catch(() => setApps([]))
+      .catch((e: unknown) => {
+        setApps([]);
+        setAppsError(e);
+      })
       .finally(() => setAppsLoading(false));
-  }, [dispatch]);
+  }, [dispatch, reloadKey]);
 
   // Group derived agents by their source id — fast lookup per root.
   const derivedBySource = useMemo(() => {
@@ -185,6 +200,16 @@ export function AgentLineageTree() {
     });
   }, []);
 
+  if (agentsError && builtins.length === 0) {
+    return (
+      <ReadFailure
+        error={agentsError}
+        what="system agents"
+        onRetry={() => setReloadKey((k) => k + 1)}
+      />
+    );
+  }
+
   if (builtins.length === 0) {
     return (
       <Card>
@@ -221,7 +246,12 @@ export function AgentLineageTree() {
           </div>
         </div>
         <span className="text-xs text-muted-foreground shrink-0">
-          {visibleBuiltins.length} agent
+          <UntrustedCount
+            value={visibleBuiltins.length}
+            trustworthy={!agentsError}
+            label="System agents"
+          />{" "}
+          agent
           {visibleBuiltins.length !== 1 ? "s" : ""}
         </span>
         {visibleBuiltins.length > 0 && (

@@ -373,7 +373,7 @@ export default function KeywordManager() {
       {/* Unresearched keywords — the state that was previously invisible.
           Adding a keyword after a completed run left it sitting here forever
           with nothing anywhere in the product saying so, and no way to act. */}
-      {unresearched.length > 0 && (
+      {!keywordsError && unresearched.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/[0.05] p-2.5">
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-foreground">
@@ -484,6 +484,7 @@ export default function KeywordManager() {
       <ResearchFilterBar
         title="Keywords"
         count={`${filtered.length}/${items.length}`}
+        read={{ status: keywordsError ? "error" : "ready", error: keywordsError }}
         filters={filterDefs}
         search={search}
         onSearchChange={setSearch}

@@ -36,6 +36,7 @@ import {
 import { useAttachResourcePicker } from "./useAttachResourcePicker";
 import { useConversationAttachments } from "./useConversationAttachments";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 export interface AttachableConnectionSummary {
   slug: string;
@@ -112,9 +113,12 @@ export function AttachedResourcesSection({
                 <span className="text-[11px] font-medium text-foreground">
                   {connection.name}
                 </span>
-                <span className="text-[11px] tabular-nums text-muted-foreground/80">
-                  {items.length}
-                </span>
+                <UntrustedCount
+                  className="text-[11px] tabular-nums text-muted-foreground/80"
+                  value={items.length}
+                  trustworthy={!attachments.error}
+                  label={`${connection.name} attachments`}
+                />
               </div>
               <div className="flex flex-wrap items-center gap-1">
                 {items.map((item) => (

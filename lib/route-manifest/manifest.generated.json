@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1283,
+  "routeCount": 1285,
   "routes": [
     {
       "pattern": "/",
@@ -732,6 +732,16 @@
       "pattern": "/administration/documentation/feature-docs/view/[[...path]]",
       "status": "live",
       "source": "app/(admin)/administration/documentation/feature-docs/view/[[...path]]/page.tsx"
+    },
+    {
+      "pattern": "/administration/education",
+      "status": "live",
+      "source": "app/(admin)/administration/education/page.tsx"
+    },
+    {
+      "pattern": "/administration/education/fastfire-capture-test",
+      "status": "live",
+      "source": "app/(admin)/administration/education/fastfire-capture-test/page.tsx"
     },
     {
       "pattern": "/administration/hr",

@@ -496,6 +496,7 @@ export function ResourcePickerMenu({
                     className="ml-1.5 shrink-0 rounded bg-muted px-1 text-[10px] leading-4 tabular-nums text-muted-foreground"
                     title={`${count} active for this run`}
                   >
+                    {/* read-gate-exempt: useRunControlCounts withholds the count (undefined) until the agent definition has loaded, so a failed load renders no number */}
                     {count}
                   </span>
                 )}

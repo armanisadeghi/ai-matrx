@@ -42,6 +42,7 @@ import {
 import { useRouter } from "next/navigation";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
@@ -94,7 +95,11 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
     null,
   );
 
-  const { pages, refresh: refreshPages } = useProcessedDocumentPages({
+  const {
+    pages,
+    error: pagesError,
+    refresh: refreshPages,
+  } = useProcessedDocumentPages({
     processedDocumentId: activeDoc?.id ?? "",
     enabled: !!activeDoc,
   });
@@ -435,7 +440,12 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
           </button>
           <div className="flex-1 text-center text-xs">
             <span className="font-mono">
-              {activePage ?? 1} / {total}
+              {activePage ?? 1} /{" "}
+              <UntrustedCount
+                value={total}
+                trustworthy={activeDoc?.totalPages != null || !pagesError}
+                label="Pages"
+              />
             </span>
           </div>
           <button

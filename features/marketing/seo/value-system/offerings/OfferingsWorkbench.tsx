@@ -526,23 +526,27 @@ export function OfferingsWorkbench() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain bg-textured p-3">
-      <OfferingStrip
-        loading={loading}
-        total={offerings.length}
-        offered={offeredCount}
-        valued={valuedCount}
-        placedKeywords={placedKeywords}
-        placedClicks={placedClicks}
-        proposals={placementStatus.data?.proposals_pending ?? null}
-        unplaced={
-          placementStatus.data
-            ? Math.max(placementStatus.data.queue_pending - placementStatus.data.queue_deferred, 0)
-            : null
-        }
-        windowLabel={`${window28.start} → ${window28.end}`}
-        active={activeStrip}
-        onSelect={selectStrip}
-      />
+      {/* The catalog/stats failure renders below in place of the table; a strip of
+          counts over a failed read would report zeros it never measured. */}
+      {error ? null : (
+        <OfferingStrip
+          loading={loading}
+          total={offerings.length}
+          offered={offeredCount}
+          valued={valuedCount}
+          placedKeywords={placedKeywords}
+          placedClicks={placedClicks}
+          proposals={placementStatus.error ? null : (placementStatus.data?.proposals_pending ?? null)}
+          unplaced={
+            placementStatus.data && !placementStatus.error
+              ? Math.max(placementStatus.data.queue_pending - placementStatus.data.queue_deferred, 0)
+              : null
+          }
+          windowLabel={`${window28.start} → ${window28.end}`}
+          active={activeStrip}
+          onSelect={selectStrip}
+        />
+      )}
 
       <div ref={tableSectionRef} className="scroll-mt-3">
         {loading ? (
@@ -647,7 +651,7 @@ export function OfferingsWorkbench() {
         )}
       </div>
 
-      {tree.orphaned.length > 0 ? (
+      {!error && tree.orphaned.length > 0 ? (
         <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs text-warning">
           {tree.orphaned.length} offering{tree.orphaned.length === 1 ? "" : "s"} point at a parent that is no
           longer in this brand; they are drawn at the top level so nothing is hidden. Move them where they

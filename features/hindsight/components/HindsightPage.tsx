@@ -27,6 +27,7 @@ import { HindsightSurfaceEmitter } from "./HindsightSurfaceEmitter";
 import { selectEnrollmentId, type EnrollmentSelection } from "./select-enrollment";
 import { fmtCost, KIND_COLOR, KIND_ICON } from "./tokens";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export function HindsightPage() {
   // Assist chips deep-link here: `?enrollment=<id>` (a finding to decide) and
@@ -84,7 +85,14 @@ export function HindsightPage() {
         (Arman, 2026-08-25). The toolbar carries spend + the one action.
       */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        {costs.data ? (
+        {costs.isError ? (
+          <ReadFailure
+            error={costs.error}
+            what="Hindsight spend"
+            onRetry={() => void costs.refetch()}
+            className="m-0"
+          />
+        ) : costs.data ? (
           <Card className="flex flex-wrap items-center gap-x-8 gap-y-2 p-3 text-sm">
             <span className="text-xs uppercase text-muted-foreground">
               Platform-wide Hindsight spend

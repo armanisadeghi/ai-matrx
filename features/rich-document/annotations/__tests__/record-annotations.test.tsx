@@ -59,7 +59,7 @@ jest.mock("../LinkRecordSheet", () => ({ LinkRecordSheet: () => null }));
 jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
 
 import { RecordAnnotations } from "../RecordAnnotations";
-import { AnnotationSidecarProvider, AnnotatedContent, useSidecar } from "../AnnotationSidecar";
+import { AnnotationSidecarProvider, AnnotatedContent } from "../AnnotationSidecar";
 import { zonesContaining } from "@/components/selection-toolbar/selection-zones";
 import { ANNOTATION_HOST_KEY, annotationSelectionProvider, type AnnotationSelectionHost } from "../annotation-actions";
 import { dockStateFor, resetDocksForTest } from "../record-annotations-store";
@@ -71,16 +71,10 @@ const ANSWER = { token: "message", id: "msg-1", title: "Chat answer", body: BODY
 
 let container: HTMLDivElement;
 let root: Root;
-let api: AnnotationSidecarApi | null = null;
-function Grab() {
-  api = useSidecar().api;
-  return null;
-}
 
 beforeEach(() => {
   jest.clearAllMocks();
   resetDocksForTest();
-  api = null;
   service.listCommentThreads.mockResolvedValue({ items: [], collaborationDoors: true });
   service.listEdgeItems.mockResolvedValue({ highlights: [], links: [] });
   service.annotationPairs.mockImplementation(async () => ({ highlights: true, links: true }));
@@ -102,7 +96,6 @@ async function mountAnswer() {
     root.render(
       <RecordAnnotations record={ANSWER}>
         <p data-testid="answer">{BODY}</p>
-        <Grab />
       </RecordAnnotations>,
     );
   });
@@ -111,6 +104,9 @@ async function mountAnswer() {
 
 const answerText = () => container.querySelector('[data-testid="answer"]')!.firstChild;
 const annotationZones = (node: Node | null) => zonesContaining(node).filter((z) => ANNOTATION_HOST_KEY in (z.contribution.host ?? {}));
+/** The live sidecar api, read the way the toolbar reads it: from the zone's annotation host. */
+const api = (): AnnotationSidecarApi =>
+  (annotationZones(answerText())[0].contribution.host![ANNOTATION_HOST_KEY] as AnnotationSelectionHost).api;
 const dock = () => document.querySelector<HTMLElement>('[data-annotation-dock="message:msg-1"]');
 
 it("1 — a saved record's content is an annotation zone anchored to that record", async () => {
@@ -143,7 +139,7 @@ it("3 — the dock opens on the person's own comment, floats outside the content
   expect(dock()).toBeNull();
   const before = container.innerHTML;
   service.addComment.mockResolvedValue({ id: "c1" });
-  await act(async () => { await api!.postComment({ body: "Which scale — the truck scale or the floor scale?", anchor: null }); });
+  await act(async () => { await api().postComment({ body: "Which scale — the truck scale or the floor scale?", anchor: null }); });
   await settle();
   const opened = dock();
   expect(opened).not.toBeNull();
@@ -173,8 +169,8 @@ it("4 — the ⋯ toggle is present only when the record holds something", async
 it("5 — Highlight and Private note are absent on a kind with no annotates pair", async () => {
   service.annotationPairs.mockImplementation(async () => ({ highlights: false, links: false }));
   await mountAnswer();
-  expect(api!.state.capabilities.highlights).toBe(false);
-  expect(api!.state.capabilities.links).toBe(false);
+  expect(api().state.capabilities.highlights).toBe(false);
+  expect(api().state.capabilities.links).toBe(false);
   // The highlight actions ask the host's capability.
   const zone = annotationZones(answerText())[0];
   const host = zone.contribution.host![ANNOTATION_HOST_KEY] as AnnotationSelectionHost;

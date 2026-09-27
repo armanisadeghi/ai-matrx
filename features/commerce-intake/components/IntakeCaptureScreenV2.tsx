@@ -14,6 +14,7 @@
  * package ships for domain extensions.
  */
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -411,7 +412,12 @@ export function IntakeCaptureScreenV2({
               {itemLabel}
               <span className="font-normal text-white/60">
                 {" · "}
-                {photoCount} photo{photoCount === 1 ? "" : "s"}
+                <UntrustedCount
+                  value={photoCount}
+                  trustworthy={!session.resumeError}
+                  label="Photos"
+                />{" "}
+                photo{photoCount === 1 && !session.resumeError ? "" : "s"}
               </span>
             </p>
           ),

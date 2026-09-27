@@ -266,7 +266,7 @@ export function MatcherReviewBody({
           </Button>
         </div>
 
-        {review.data && !review.isError ? (
+        {review.isSuccess ? (
           <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
             Catches{" "}
             <span className="font-medium text-foreground">

@@ -1098,6 +1098,22 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
+    name: "Education",
+    landingPath: "/administration/education/fastfire-capture-test",
+    iconName: "GraduationCap",
+    iconColor: "text-teal-600",
+    features: [
+      {
+        title: "Fast Fire — Audio Capture Test",
+        description:
+          "Proof surface for Fast Fire audio capture: runs the real drill capture API (manual or timed auto-cut) and plays back the session and every per-card clip.",
+        iconName: "Mic",
+        link: "/administration/education/fastfire-capture-test",
+        isNew: true,
+      },
+    ],
+  },
+  {
     name: "Question Desk",
     landingPath: "/administration/question-desk",
     iconName: "MessagesSquare",
@@ -1355,6 +1371,14 @@ export const adminCategoriesData: AdminCategory[] = [
           "Certification summary and overall canonicalization gate status.",
         iconName: "BarChart3",
         link: "/administration/database/canonicalization/summary",
+        isNew: true,
+      },
+      {
+        title: "Canonicalization — By Schema",
+        description:
+          "Per-schema fail, warn and certification roll-up; a row opens the Summary filtered to that schema.",
+        iconName: "Layers",
+        link: "/administration/database/canonicalization/by-schema",
         isNew: true,
       },
       {

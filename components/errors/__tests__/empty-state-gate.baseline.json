@@ -1,14 +1,6 @@
 {
   "emptyViews": {},
   "emptyStateProps": {
-    "app/(admin)/administration/compute/sandbox/page.tsx": 1,
-    "app/(admin)/administration/database/sql-functions/components/EnumsList.tsx": 1,
-    "app/(admin)/administration/database/sql-functions/components/SqlFunctionsList.tsx": 1,
-    "features/admin/applications/history/components/ApplicationsHistoryClient.tsx": 1,
-    "features/admin/applications/installations/components/InstallationsClient.tsx": 1,
-    "features/admin/check-findings/CheckFindingsConsole.tsx": 1,
-    "features/admin/hr/jurisdiction-rules/components/JurisdictionRulesLibraryClient.tsx": 1,
-    "features/admin/hr/jurisdiction-rules/components/JurisdictionVerificationClient.tsx": 2,
     "features/admin/relationships/components/ChooserBucketsManager.tsx": 1,
     "features/admin/relationships/components/EntityTypesClient.tsx": 1,
     "features/admin/relationships/components/ExposureAuditClient.tsx": 1,

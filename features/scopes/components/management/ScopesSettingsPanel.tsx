@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectTreeFetchedAt } from "@/features/scopes/redux/selectors/tree";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
@@ -82,7 +83,16 @@ export function ScopesSettingsPanel() {
               </Badge>
             }
           />
-          <Stat label="Organizations" value={String(organizations.length)} />
+          <Stat
+            label="Organizations"
+            value={
+              <UntrustedCount
+                value={organizations.length}
+                trustworthy={!error}
+                label="Organizations"
+              />
+            }
+          />
           <Stat
             label="Fetched at"
             value={

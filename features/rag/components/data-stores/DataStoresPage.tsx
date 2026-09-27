@@ -83,6 +83,7 @@ import { buildRagDataStoresContextData } from "@/features/rag/agent-context/buil
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 /** Canonical `ui_surface.name` this page emits. */
 const RAG_DATA_STORES_SURFACE = "matrx-user/knowledge-data-stores";
@@ -248,7 +249,12 @@ export function DataStoresPage() {
       <RagHubHeader
         right={
           <span className="text-xs text-muted-foreground tabular-nums px-2">
-            {list.stores.length} stores
+            <UntrustedCount
+              value={list.stores.length}
+              trustworthy={!list.error}
+              label="Stores"
+            />{" "}
+            stores
           </span>
         }
       />

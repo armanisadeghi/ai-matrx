@@ -23,6 +23,7 @@
  * `fileHandler` through uploads.ts.
  */
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import React, {
   useCallback,
   useEffect,
@@ -448,7 +449,12 @@ export function IntakeCaptureScreenV3({
               {itemLabel}
               <span className="font-normal text-white/60">
                 {" · "}
-                {photoCount} photo{photoCount === 1 ? "" : "s"}
+                <UntrustedCount
+                  value={photoCount}
+                  trustworthy={!session.resumeError}
+                  label="Photos"
+                />{" "}
+                photo{photoCount === 1 && !session.resumeError ? "" : "s"}
               </span>
             </p>
           ),

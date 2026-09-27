@@ -40,6 +40,7 @@ import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/Surface
 import type { GitHubInstallation } from "./types";
 import { useGitHubConnection } from "./useGitHubConnection";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 function coverageLabel(installation: GitHubInstallation): string {
   if (installation.suspended) return "Suspended on GitHub";
@@ -239,7 +240,18 @@ export function GitHubConnectionCard({
                   >
                     @{accountLogin}
                   </a>{" "}
-                  · {repositoryCount} repositories across {installations.length}{" "}
+                  ·{" "}
+                  <UntrustedCount
+                    value={repositoryCount}
+                    trustworthy={!github.readError}
+                    label="Repositories"
+                  />{" "}
+                  repositories across{" "}
+                  <UntrustedCount
+                    value={installations.length}
+                    trustworthy={!github.readError}
+                    label="Accounts"
+                  />{" "}
                   {installations.length === 1 ? "account" : "accounts"} ·{" "}
                   {syncedLabel(github.inventory.lastSyncedAt)}
                 </p>

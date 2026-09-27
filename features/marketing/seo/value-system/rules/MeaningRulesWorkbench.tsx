@@ -1127,7 +1127,7 @@ export function MeaningRulesWorkbench() {
                     aria-hidden
                   />
                   Value rules
-                  {rules.data ? (
+                  {rules.data && !rules.isError ? (
                     <span className="font-normal text-muted-foreground">
                       ({sourceFilter ? `${visibleRules.length} of ` : ""}
                       {rules.data.length})
@@ -1202,7 +1202,7 @@ export function MeaningRulesWorkbench() {
               typed reads as finished on every screen; until 2026-08-24 that was
               all it ever was, because authoring minted no matcher and no worth
               and the resolver reads stamps. Stated plainly, fixed in one click. */}
-            {disconnectedRules.length > 0 ? (
+            {!ruleHealth.isError && disconnectedRules.length > 0 ? (
               <div className="flex flex-wrap items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2">
                 <TriangleAlert
                   className="mt-px h-3.5 w-3.5 shrink-0 text-destructive"
@@ -1288,7 +1288,7 @@ export function MeaningRulesWorkbench() {
                 <h2 className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
                   <MapPinned className="h-3.5 w-3.5 text-primary" aria-hidden />
                   Service areas
-                  {areas.data ? (
+                  {areas.data && !areas.isError ? (
                     <span className="font-normal text-muted-foreground">
                       {onlyIncompleteAreas
                         ? `(${incompleteAreas.length} of ${areas.data.length} — showing only the ones with no places)`
@@ -1352,7 +1352,7 @@ export function MeaningRulesWorkbench() {
               carries no matchers looks finished everywhere else and changes no
               score at all — the silence that hid a dead geo system for months.
               It is stated plainly, and the fix is one button. */}
-            {disconnectedAreas.length > 0 ? (
+            {!areaHealth.isError && disconnectedAreas.length > 0 ? (
               <div className="flex flex-wrap items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2">
                 <TriangleAlert
                   className="mt-px h-3.5 w-3.5 shrink-0 text-destructive"
@@ -1391,7 +1391,7 @@ export function MeaningRulesWorkbench() {
               </div>
             ) : null}
 
-            {incompleteAreas.length > 0 ? (
+            {!areas.isError && incompleteAreas.length > 0 ? (
               <div className="flex flex-wrap items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2">
                 <TriangleAlert
                   className="mt-px h-3.5 w-3.5 shrink-0 text-warning"
@@ -1466,6 +1466,7 @@ export function MeaningRulesWorkbench() {
             ) : null}
 
             {onlyIncompleteAreas &&
+            !areas.isError &&
             incompleteAreas.length === 0 &&
             (areas.data?.length ?? 0) > 0 ? (
               <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-4 text-[11px] text-muted-foreground">

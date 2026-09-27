@@ -150,9 +150,29 @@ export function AnnotatedContent({
   className?: string;
   passageActions?: readonly Action[];
 }) {
+  const [root, setRoot] = useState<HTMLDivElement | null>(null);
+  useAnnotatedRoot(root, passageActions);
+  return (
+    <div className={cn("relative", className)}>
+      <div ref={setRoot} data-annotation-root="">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The same wiring as <AnnotatedContent>, attached to an element a host already rendered — so a
+ * host can add the reading set to content it owns without re-parenting (and remounting) it.
+ */
+export function AnnotatedElement({ root, passageActions }: { root: HTMLElement; passageActions?: readonly Action[] }) {
+  useAnnotatedRoot(root, passageActions);
+  return null;
+}
+
+function useAnnotatedRoot(root: HTMLElement | null, passageActions?: readonly Action[]) {
   const ctx = useSidecar();
   const { source, api, instance, activeKey, setActiveKey, pendingReattach, setPendingReattach } = ctx;
-  const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const projection = useRef<SourceProjection | null>(null);
   useSidecarPaint(root, source.body, api.state.items, instance, activeKey, (p) => {
     projection.current = p;
@@ -257,25 +277,26 @@ export function AnnotatedContent({
   });
 
   // A click on painted text (no selection) focuses its item in the panel.
-  const onClick = (e: React.MouseEvent) => {
-    const sel = window.getSelection();
-    if (sel && !sel.isCollapsed) return;
-    if (!projection.current) return;
-    const at = sourceOffsetAtPoint(projection.current, document, e.clientX, e.clientY);
-    if (at == null) return;
-    const hit = api.state.items.find(
-      (i) => i.resolution?.start16 != null && i.resolution.start16 <= at && at < (i.resolution.end16 ?? 0),
-    );
-    if (hit) setActiveKey(hit.key);
-  };
-
-  return (
-    <div className={cn("relative", className)}>
-      <div ref={setRoot} data-annotation-root="" onClick={onClick}>
-        {children}
-      </div>
-    </div>
-  );
+  const onClick = useRef<(e: MouseEvent) => void>(() => {});
+  useEffect(() => {
+    onClick.current = (e: MouseEvent) => {
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed) return;
+      if (!projection.current) return;
+      const at = sourceOffsetAtPoint(projection.current, document, e.clientX, e.clientY);
+      if (at == null) return;
+      const hit = api.state.items.find(
+        (i) => i.resolution?.start16 != null && i.resolution.start16 <= at && at < (i.resolution.end16 ?? 0),
+      );
+      if (hit) setActiveKey(hit.key);
+    };
+  });
+  useEffect(() => {
+    if (!root) return;
+    const listener = (e: MouseEvent) => onClick.current(e);
+    root.addEventListener("click", listener);
+    return () => root.removeEventListener("click", listener);
+  }, [root]);
 }
 
 /**

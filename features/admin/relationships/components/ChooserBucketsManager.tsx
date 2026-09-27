@@ -16,6 +16,7 @@ import type {
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
+import { readOf, type ReadOutcome } from "@/components/read-state/ReadGate";
 
 interface BucketRow {
   key: string;
@@ -30,6 +31,8 @@ interface BucketPanelProps {
   keyHeader: string;
   rows: BucketRow[];
   loading: boolean;
+  /** The bucket read's outcome (RC-B12 r13). */
+  read: ReadOutcome;
   /** Undefined means keys are fixed (schemas); provided permits new rows. */
   onCreate?: (key: string, label: string) => Promise<void>;
   onSave: (row: BucketRow) => Promise<void>;
@@ -41,6 +44,7 @@ function BucketPanel({
   keyHeader,
   rows,
   loading,
+  read,
   onCreate,
   onSave,
 }: BucketPanelProps) {
@@ -134,6 +138,7 @@ function BucketPanel({
         pageSize={25}
         zebra
         isLoading={loading}
+        read={read}
         defaultSort={{ id: "sort_order", direction: "asc" }}
         emptyState={{
           title: `No ${title.toLowerCase()} yet`,
@@ -224,6 +229,9 @@ export function ChooserBucketsManager() {
   const [categories, setCategories] = useState<BucketRow[]>([]);
   const [schemas, setSchemas] = useState<BucketRow[]>([]);
   const [loading, setLoading] = useState(true);
+  // Each bucket's read fails on its own; a failed read is never an empty bucket (RC-B12 r13).
+  const [categoriesError, setCategoriesError] = useState<unknown>(null);
+  const [schemasError, setSchemasError] = useState<unknown>(null);
 
   async function reload() {
     setLoading(true);
@@ -246,6 +254,8 @@ export function ChooserBucketsManager() {
           { label: "entity_schemas_list()" },
         ),
       ]);
+      setCategoriesError(categoriesResult.status === "rejected" ? (categoriesResult.reason ?? true) : null);
+      setSchemasError(schemasResult.status === "rejected" ? (schemasResult.reason ?? true) : null);
       if (categoriesResult.status === "fulfilled") {
         setCategories(
           categoriesResult.value.map((category) => ({
@@ -255,8 +265,6 @@ export function ChooserBucketsManager() {
             is_active: category.is_active,
           })),
         );
-      } else {
-        toast.error(`Categories failed: ${String(categoriesResult.reason)}`);
       }
       if (schemasResult.status === "fulfilled") {
         setSchemas(
@@ -267,8 +275,6 @@ export function ChooserBucketsManager() {
             is_active: schema.is_active,
           })),
         );
-      } else {
-        toast.error(`Schemas failed: ${String(schemasResult.reason)}`);
       }
     } finally {
       setLoading(false);
@@ -322,6 +328,7 @@ export function ChooserBucketsManager() {
           keyHeader="Slug"
           rows={categories}
           loading={loading}
+          read={readOf({ loading, error: categoriesError }, { what: "reference categories", onRetry: () => void reload() })}
           onCreate={(key, label) =>
             saveCategory({ key, label, sort_order: 100, is_active: true })
           }
@@ -333,6 +340,7 @@ export function ChooserBucketsManager() {
           keyHeader="Schema"
           rows={schemas}
           loading={loading}
+          read={readOf({ loading, error: schemasError }, { what: "schema display names", onRetry: () => void reload() })}
           onSave={saveSchema}
         />
       </div>

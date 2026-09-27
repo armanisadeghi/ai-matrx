@@ -30,7 +30,12 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { makeSelectScopeTypesForOrg } from "@/features/scopes/redux/selectors/tree";
+import {
+  makeSelectScopeTypesForOrg,
+  selectTreeError,
+} from "@/features/scopes/redux/selectors/tree";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { updateScopeType } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import { OrgScopeTypeSection } from "@/features/scopes/components/management/OrgScopeTypeSection";
@@ -65,6 +70,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
   const scopeTypes = useAppSelector((s) =>
     selectScopeTypesForOrg(s, organization.id),
   );
+  const treeError = useAppSelector(selectTreeError);
   const [addScopeOpen, setAddScopeOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [reorderTypesOpen, setReorderTypesOpen] = useState(false);
@@ -180,9 +186,19 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
             <div className="text-xs text-muted-foreground">
               <span className="font-medium text-foreground">Scopes</span>
               {" · "}
-              {scopeTypes.length} type{scopeTypes.length === 1 ? "" : "s"}
+              <UntrustedCount
+                value={scopeTypes.length}
+                trustworthy={!treeError}
+                label="Scope types"
+              />{" "}
+              type{scopeTypes.length === 1 && !treeError ? "" : "s"}
               {" · "}
-              {totalScopes} scope{totalScopes === 1 ? "" : "s"}
+              <UntrustedCount
+                value={totalScopes}
+                trustworthy={!treeError}
+                label="Scopes"
+              />{" "}
+              scope{totalScopes === 1 && !treeError ? "" : "s"}
             </div>
             <div className="flex flex-wrap items-center gap-3 mt-3">
               <Link
@@ -230,7 +246,13 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
         />
       )}
 
-      {scopeTypes.length === 0 ? (
+      {treeError && scopeTypes.length === 0 ? (
+        <ReadFailure
+          error={treeError}
+          what="this organization's scopes"
+          onRetry={() => void dispatch(ensureScopeTree({ refresh: true }))}
+        />
+      ) : scopeTypes.length === 0 ? (
         <Card className="p-6 md:p-8">
           <ScopeOnboarding orgId={organization.id} />
         </Card>

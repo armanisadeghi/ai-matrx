@@ -860,7 +860,9 @@ export default function PageEditor({
                 >
                   <Icon className="h-3.5 w-3.5" />
                   {tab.label}
-                  {tab.id === "versions" && versions.versions.length > 0 && (
+                  {tab.id === "versions" &&
+                    !versions.error &&
+                    versions.versions.length > 0 && (
                     <span className="text-[10px] bg-muted px-1 rounded">
                       {versions.versions.length}
                     </span>

@@ -483,6 +483,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         destinations: [
           destination("/administration/database/canonicalization"),
           destination("/administration/database/canonicalization/summary"),
+          destination("/administration/database/canonicalization/by-schema"),
           destination("/administration/database/canonicalization/findings"),
           destination(
             "/administration/database/canonicalization/broken-functions",
@@ -575,7 +576,9 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         iconName: "CalendarClock",
         destinations: [
           destination("/administration/automation/scheduling"),
-          destination("/administration/automation/scheduling/tasks"),
+          destination("/administration/automation/scheduling/tasks", [
+            "/administration/automation/scheduling/tasks/[id]",
+          ]),
           destination("/administration/automation/scheduling/runs"),
           destination("/administration/automation/scheduling/system-jobs"),
           destination("/administration/automation/scheduling/orphan-leases"),
@@ -699,6 +702,21 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         name: "Verification",
         iconName: "ShieldCheck",
         destinations: [destination("/administration/compute/proof-runs")],
+      },
+    ],
+  },
+  {
+    name: "Education",
+    slug: "education",
+    iconName: "GraduationCap",
+    iconColor: "text-teal-600",
+    sections: [
+      {
+        name: "Fast Fire",
+        iconName: "Mic",
+        destinations: [
+          destination("/administration/education/fastfire-capture-test"),
+        ],
       },
     ],
   },

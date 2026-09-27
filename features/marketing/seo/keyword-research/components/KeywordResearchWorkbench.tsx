@@ -1005,10 +1005,11 @@ export default function KeywordResearchWorkbench() {
               size="xs"
               message="Loading keyword library…"
             />
-          ) : loadError ? (
-            "Keyword library couldn't be read"
           ) : (
-            `${sorted.length} keywords in the library`
+            <>
+              <UntrustedCount value={sorted.length} trustworthy={!loadError} label="Keywords in the library" />{" "}
+              keywords in the library
+            </>
           )}
         </span>
       ),

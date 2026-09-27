@@ -77,6 +77,7 @@ import {
 } from "@/components/official/mobile-table/mobileTable";
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 /** Canonical `ui_surface.name` this page emits — the catalog half. */
 const RAG_LIBRARY_SURFACE = "matrx-user/knowledge-library";
@@ -299,7 +300,12 @@ export function LibraryCatalogPage() {
         right={
           <div className="flex items-center gap-1">
             <span className="px-2 text-xs tabular-nums text-muted-foreground">
-              {total} {total === 1 ? "resource" : "resources"}
+              <UntrustedCount
+                value={total}
+                trustworthy={!catalog.error}
+                label="Resources"
+              />{" "}
+              {total === 1 ? "resource" : "resources"}
             </span>
             {/* The curator's door, shown only to people who hold the role — a nav item
                 everyone sees would lead almost everyone to an empty state. Same cached
@@ -352,7 +358,12 @@ export function LibraryCatalogPage() {
                     )}
                   >
                     {label}
-                    <span className="tabular-nums opacity-70">{count}</span>
+                    <UntrustedCount
+                      className="tabular-nums opacity-70"
+                      value={count}
+                      trustworthy={!catalog.error}
+                      label={label}
+                    />
                   </button>
                 );
               })}
@@ -710,7 +721,13 @@ function StoreDetailPanel({
         ) : (
           <>
             <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Documents ({detail.members.length})
+              Documents (
+              <UntrustedCount
+                value={detail.members.length}
+                trustworthy={!detail.error}
+                label="Documents"
+              />
+              )
             </h2>
             {detail.loading && detail.members.length === 0 ? (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -216,7 +216,7 @@ export function GlobalSuggestionsDrawer({
         <DrawerHeader className="border-b border-border">
           <DrawerTitle className="flex items-center gap-2">
             <Lightbulb className="h-4 w-4 text-primary" />
-            Suggestions {shownCount > 0 ? `(${shownCount})` : ""}
+            Suggestions {status !== "error" && shownCount > 0 ? `(${shownCount})` : ""}
           </DrawerTitle>
           <Link
             href="/suggestions"
@@ -237,7 +237,7 @@ export function GlobalSuggestionsDrawer({
       title={
         <span className="inline-flex items-center gap-2">
           <Lightbulb className="h-4 w-4 text-primary" />
-          Suggestions {shownCount > 0 ? `(${shownCount})` : ""}
+          Suggestions {status !== "error" && shownCount > 0 ? `(${shownCount})` : ""}
         </span>
       }
       expandButtonLabel="Suggestions"

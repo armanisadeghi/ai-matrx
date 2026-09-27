@@ -24,7 +24,7 @@ it.each([
   ["an italic line inside a list item", "- Drain the queue\n  *before midnight*\n  then sign"],
   // indentation kept visible, where that would move a line out of its list item
   ["an indented table-like run under an ordered item", "5. The Ten Core Requirements\nEvery certified facility meets all ten.\n  #  Purpose\n  1  Ensures all processes are covered\n  2  Supports reuse first"],
-  ["an indented paragraph between ordered items", "  2. **Log only.** Add the rule in log mode.\n\n     Have them confirm only the intended traffic matches.\n\n  3. **Block in preview first.** Edit the rule to deny."],
+  ["an indented line, then an indented item (a stored skill block)", "\n     Have them confirm only the intended traffic is matching (no real users, no SEO crawlers, no internal tools) before moving on.\n\n  3. **Block in preview first.** Edit the rule to `deny` (or `challenge`) and add an `environment = preview` condition so production stays in log mode."],
 ])("%s keeps GFM's structure", (_label, md) => {
   expect(shape(preprocessProse(md))).toEqual(shape(md));
 });

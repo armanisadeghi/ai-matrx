@@ -44,6 +44,7 @@ import { useMapLinks } from "../links";
 import type { TopicalMap } from "../types";
 import { TopicStatusMark } from "../ui/TopicStatusMark";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const PICK_SITE = "__pick__";
@@ -132,7 +133,7 @@ export function TopicalMapHomeCard({
           diagnostics.isError ? (
             <span>
               Couldn&rsquo;t read which sites use this map, so it can&rsquo;t be retired safely
-              right now: {topicalMapErrorText(diagnostics.error)}
+              right now: {topicalMapErrorText(diagnostics.error)} <ErrorAlchemyMenu error={diagnostics.error} />
             </span>
           ) : usingIds.size > 0 ? (
             <span>

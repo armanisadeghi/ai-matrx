@@ -135,6 +135,7 @@ export function RulebookParamPicker({
                                         <span className="flex items-center gap-2">
                                             <BookOpen className="size-3.5" aria-hidden />
                                             {rulebook.name}
+                                            {/* read-gate-exempt: rule_count is a field on a row the rulebook read returned — a failed read yields no rows to render */}
                                             <span className="text-xs text-muted-foreground">
                                                 {rulebook.rule_count} rules
                                             </span>

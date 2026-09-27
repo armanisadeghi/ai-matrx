@@ -75,10 +75,10 @@ export function SyncedPdfTextView({
         <span className="text-[10px] text-muted-foreground">
           {loading
             ? "loading pages…"
-            : hasPages
-              ? `${pages.length.toLocaleString()} pages`
-              : error
-                ? null /* the failed read is said in the error box below */
+            : error
+              ? null /* the failed read is said in the error box below */
+              : hasPages
+                ? `${pages.length.toLocaleString()} pages`
                 : "no per-page data"}
         </span>
         {!hasPages && !loading && !error && onReprocess && (
