@@ -176,7 +176,10 @@ export const EDUCATION_PLACES: FeaturePlaces = {
       trigger: "What your numbers mean",
       urlPattern: "/education/progress",
       mandateKeys: [K.education__analytics_narrate],
-      sources: ["features/education/study/analytics/useAnalyticsNarrative.ts"],
+      sources: [
+        "features/education/study/analytics/useAnalyticsNarrative.ts",
+        "features/education/study/analytics/components/StudyAnalyticsDashboard.tsx",
+      ],
     },
     {
       id: "kit-title",

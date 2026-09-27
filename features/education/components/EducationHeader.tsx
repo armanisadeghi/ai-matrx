@@ -58,7 +58,9 @@ export function EducationHeader() {
   return (
     <RouteHeader
       center={<RouteModeNav items={EDUCATION_NAV_ITEMS} />}
-      right={<IntelligenceIndicator feature="education" label="Education" />}
+      // Keyed to the page on screen: the jobs this route runs, or no mark at
+      // all (it used to list every education job on every education page).
+      right={<IntelligenceIndicator feature="education" scope="route" label="This page" />}
       fallback
     />
   );

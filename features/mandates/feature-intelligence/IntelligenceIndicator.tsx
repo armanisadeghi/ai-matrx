@@ -14,6 +14,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import {
@@ -32,7 +33,7 @@ import { useSettingsPresentation } from "@/features/settings/components/Settings
 import { fetchMandateIdentities, type MandateIdentity } from "../service";
 import { mandateDisplayName } from "../mandate-words";
 import { featureIntelligenceHref, resolveIntelligenceSlug } from "./hrefs";
-import { declaredPlacesFor } from "./registry";
+import { DECLARED_FEATURES, declaredPlacesFor } from "./registry";
 import { targetForKey, targetLabel } from "./placement";
 import { registryDomain } from "./taxonomy";
 import { keyInFeature, shortMandateName } from "./service";
@@ -53,7 +54,42 @@ export interface IntelligenceIndicatorProps {
   /** What the jobs are for here, when the host has better words than "this page". */
   label?: string;
   size?: "sm" | "md";
+  /**
+   * `"feature"` (default): the jobs the page registered for `feature`, else the
+   * feature's whole places map — right for a door beside ONE control.
+   * `"route"`: ONLY the jobs behind the page on screen — what it registered,
+   * plus every declared place whose `urlPattern` is this route — and nothing
+   * at all when it has none. For a header shared by a whole section, where the
+   * feature's full list names jobs the page never runs (page-pass shared
+   * defects, 2026-09-27: every education page listed every education job).
+   */
+  scope?: "feature" | "route";
   className?: string;
+}
+
+/** `/education/quizzes/[id]` matches `/education/quizzes/abc`, and only that shape. */
+export function routeMatchesPattern(pathname: string, pattern: string): boolean {
+  const escaped = pattern
+    .replace(/\/+$/, "")
+    .split(/(\[[A-Za-z0-9_]+\])/)
+    .map((part) => (/^\[[A-Za-z0-9_]+\]$/.test(part) ? "[^/]+" : part.replace(/[.*+?^${}()|\\]/g, "\\$&")))
+    .join("");
+  return new RegExp(`^${escaped}/?$`).test(pathname);
+}
+
+/** The jobs declared for exactly this route, across every feature's places map. */
+export function declaredKeysForRoute(pathname: string): string[] {
+  const matched = DECLARED_FEATURES.flatMap((feature) =>
+    feature.places.filter(
+      (place) => place.urlPattern && routeMatchesPattern(pathname, place.urlPattern),
+    ),
+  );
+  // A static route beats a dynamic one, as in the router: on
+  // `/education/flashcards/new` the `[setId]` places are not this page.
+  const isStatic = (pattern: string) => !pattern.includes("[");
+  const anyStatic = matched.some((place) => isStatic(place.urlPattern!));
+  const places = anyStatic ? matched.filter((place) => isStatic(place.urlPattern!)) : matched;
+  return [...new Set(places.flatMap((place) => place.mandateKeys as readonly string[]))];
 }
 
 export function IntelligenceIndicator({
@@ -62,9 +98,12 @@ export function IntelligenceIndicator({
   context,
   label,
   size = "sm",
+  scope = "feature",
   className,
 }: IntelligenceIndicatorProps) {
   const live = useLiveSurfaceMandates();
+  const pathname = usePathname() ?? "";
+  const routeScoped = scope === "route" && !mandateKeys;
   const resolvedFeature = feature ?? (mandateKeys?.[0] ? targetForKey(mandateKeys[0]) : null);
   const belongs = (key: string) =>
     !resolvedFeature ||
@@ -76,8 +115,9 @@ export function IntelligenceIndicator({
   // A door on a page that has not registered its jobs yet (the growth loop
   // before it starts) still lists the feature's jobs from its places map,
   // never an empty list under "the AI jobs behind this".
-  const keys =
-    registered.length > 0 || !resolvedFeature
+  const keys = routeScoped
+    ? [...new Set([...live.map((ref) => ref.mandateKey as string), ...declaredKeysForRoute(pathname)])]
+    : registered.length > 0 || !resolvedFeature
       ? registered
       : [
           ...new Set(
@@ -115,6 +155,8 @@ export function IntelligenceIndicator({
   }, [open, keyList]);
 
   if (!resolvedFeature) return null;
+  // A page with no jobs of its own shows no mark — never the section's list.
+  if (routeScoped && keys.length === 0) return null;
   // The page these jobs live on: the one registry target they all land on, or
   // the feature's own resolution (a Feature, or its Domain's section).
   const targets = [...new Set(keys.map(targetForKey))];
@@ -133,17 +175,30 @@ export function IntelligenceIndicator({
       <Tooltip>
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
+            {/* 🚨 A FINGER-SIZED TARGET (page-pass core 4). The painted mark
+                stays small; on a touch screen the button itself is 44px (the
+                mark centred in it), so it never overlaps a neighbour the way
+                an invisible ring would. */}
             <button
               type="button"
               aria-label={label ? `Intelligence: ${label}` : `Intelligence: ${featureName}`}
               data-intelligence-indicator={resolvedFeature}
+              data-intelligence-scope={scope}
               className={cn(
-                "inline-flex shrink-0 items-center justify-center rounded-full border border-primary/40 bg-primary/5 text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                "group/intel inline-flex shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                "pointer-coarse:h-11 pointer-coarse:w-11",
                 size === "sm" ? "h-5 w-5" : "h-6 w-6",
                 className,
               )}
             >
-              <INTELLIGENCE_ICON className={size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5"} aria-hidden />
+              <span
+                className={cn(
+                  "inline-flex items-center justify-center rounded-full border border-primary/40 bg-primary/5 text-primary transition-colors group-hover/intel:bg-primary/15",
+                  size === "sm" ? "h-5 w-5" : "h-6 w-6",
+                )}
+              >
+                <INTELLIGENCE_ICON className={size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5"} aria-hidden />
+              </span>
             </button>
           </PopoverTrigger>
         </TooltipTrigger>
@@ -168,9 +223,9 @@ export function IntelligenceIndicator({
               return (
                 <li key={key}>
                   <Link
-                    href={featureIntelligenceHref(resolvedFeature, { mandateKey: key, context })}
+                    href={featureIntelligenceHref(routeScoped ? targetForKey(key) : resolvedFeature, { mandateKey: key, context })}
                     onClick={() =>
-                      leave(featureIntelligenceHref(resolvedFeature, { mandateKey: key, context }))
+                      leave(featureIntelligenceHref(routeScoped ? targetForKey(key) : resolvedFeature, { mandateKey: key, context }))
                     }
                     className="group flex items-start gap-2 px-3 py-1.5 hover:bg-accent"
                   >

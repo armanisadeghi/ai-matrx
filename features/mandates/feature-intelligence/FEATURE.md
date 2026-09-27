@@ -41,6 +41,8 @@ Write `<feature>/…/intelligence-places.ts` (a `FeaturePlaces`: places with `so
 - The Intelligence icon is an owner-approved exception to "disclosure adds no visible content" (Arman 2026-09-25); it is a management door, not a disclosure roster.
 
 ## Change Log
+
+- `2026-09-27` — **`IntelligenceIndicator scope="route"`** (page-pass shared defects): a header shared by a whole section lists only the jobs of the page on screen — what it registered plus the declared places whose `urlPattern` is this route (static beats dynamic) — and renders nothing when there are none. `EducationHeader` uses it (it listed every education job on every education page). The button is 44px under a coarse pointer, the painted mark unchanged. Guard: `__tests__/indicator-route-scope.test.tsx` (2 of its render cases red against the old indicator).
 - 2026-09-26 — the chosen card (Arman: options 2 + 3 of the card study) is live on every Intelligence page; one shared search with "Everywhere else"; the card-options demo is removed.
 - 2026-09-26 — `/intelligence` grouped by registry Domain → Feature (`taxonomy.ts`, `placement.ts`); pages use registry ids; old ids redirect; "Not yet assigned" groups; page header is one row, no section prose.
 - 2026-09-26 — `/intelligence` directory: richer cards (feature icon, job names, agents and workflows, places, running status), search across everything inside a feature, phone and dark verified; Intelligence in the user menu; `INTELLIGENCE_ICON` / `AGENT_ICON` constants and the reserved-icon guard.
