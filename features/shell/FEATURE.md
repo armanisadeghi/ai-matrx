@@ -6,6 +6,12 @@ their own docs: sidebar `components/sidebar/FEATURE.md`, route headers
 `components/header/variants/USAGE.md` + the `core-route-headers` skill. This
 file holds the two laws that span them.
 
+**Canvas chrome** — a page that hosts `ChatCanvasWorkspace` flips this shell to
+`data-shell-chrome="canvas"` (header, sidebar, user block and dock step aside; every
+island stays mounted) and draws its own nav + headers: read
+[`../canvas/workspace/FEATURE.md`](../canvas/workspace/FEATURE.md) before touching
+`ShellChromeMode`, `canvas-chrome-routes.ts`, `canvas-chrome/` or `shell.css` §13c.
+
 ## THE HEADER RIGHT SET (owner, 2026-09-19)
 
 > *"we need to create a consistent set of things for that top-right section so
@@ -60,6 +66,8 @@ moved to the Inbox — the menu is identity, org, quick access, settings, admin,
 sign out.
 
 ## Change log
+
+- `2026-09-27` — **Canvas chrome**: `ShellChromeMode` / `ShellChromeRouteSync`, `CANVAS_CHROME_ROUTES`, `shell.css` §13c, and `features/shell/canvas-chrome/` (the canvas nav + user row) for the chat-beside-a-canvas layout (`../canvas/workspace/FEATURE.md`).
 
 - `2026-09-26` — **The layout gate now loads the CSS the app SHIPS.** `layout-gate/shipped-css-region-triggers.spec.ts` derives every `@ai-matrx/*` stylesheet the app imports (from the repo's own `import "…css"` / `@import` lines, resolved through Node, nested `@import`s inlined) plus `styles/shell.css`, and measures a sidebar row, the composer textarea, a message region and a nested `.matrx-tap-icon` with vs without `CONTEXT_REGION_TRIGGER_ATTRS`. RED on design-system 0.44.1 (`MATRX_LAYOUT_GATE_CSS_OVERRIDE=@ai-matrx/design-system=<dist dir>`: row 32px vs 240px, composer 32px vs 665px, icon 18px vs 14px), GREEN on 0.44.3. `pnpm check:shell-layout` (`scripts/check-shell-layout-gate.mjs`) runs the whole gate as a release after-phase SIGNAL row; missing Chromium is `[FAIL] UNMEASURED` with the install remedy.
 

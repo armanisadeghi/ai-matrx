@@ -146,6 +146,7 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-09-27` — **Chat beside a canvas** landed as `workspace/` (`ChatCanvasWorkspace`): the ONE layout where a canvas takes the page and the chat docks at 440px or floats — read [`workspace/FEATURE.md`](./workspace/FEATURE.md). The global side sheet stands down (⌘\\) on canvas-chrome pages.
 - `2026-09-25` — **Canvas controls stay clickable when the sheet opens.**
   The profile menu lives in the bottom-left `ShellUserBlock`; the retired
   top-right elevated menu overlapped the canvas Put Away button. The canvas
