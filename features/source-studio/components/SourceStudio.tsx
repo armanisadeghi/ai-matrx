@@ -25,7 +25,14 @@
  */
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import {
   Bookmark,
   Boxes,
@@ -106,6 +113,7 @@ import {
 } from "@/features/source-studio/hooks/useSourceData";
 import {
   buildEditPortions,
+  deepLinkSeekMs,
   entitiesState,
   originalSeeks,
   portionIndexForChunk,
@@ -148,10 +156,21 @@ const PANE_LABEL: Record<TextPaneKey, string> = {
 export interface SourceStudioProps {
   documentId: string;
   deepLink: SourceDeepLink;
+  /**
+   * Rendered inside another surface's pane (the Knowledge hub's peek —
+   * Notion's side peek: the full page in a pane). The screen is the same; only
+   * its frame changes: its actions sit in an inline bar instead of the shell
+   * header, the layout follows the PANE's width instead of the window's, and
+   * a new version (Edit, Capture again) re-reads in place instead of
+   * navigating the host away.
+   */
+  embedded?: boolean;
 }
 
-export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
+export function SourceStudio({ documentId, deepLink, embedded = false }: SourceStudioProps) {
   const router = useRouter();
+  const frameRef = useRef<HTMLDivElement | null>(null);
+  const paneWidth = useElementWidth(frameRef, embedded);
 
   // ── Which version (server rule: source_list_facts) ─────────────────────
   const version = useCurrentVersion(documentId);
@@ -252,6 +271,20 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
     else toast.info(`${entity.name} is mentioned in a piece not listed here.`);
   };
 
+  // A deep link into a recording (a hit's `t0_ms`, or a chunk inside a timed
+  // portion) starts the player there once the player can seek — once per link.
+  const deepSeekDone = useRef<string | null>(null);
+  const deepSeekMs =
+    deepResolved === deepKey ? deepLinkSeekMs(deepLink, active?.locator ?? null) : null;
+  useEffect(() => {
+    if (!canSeek || deepSeekMs == null || deepSeekDone.current === deepKey) return;
+    deepSeekDone.current = deepKey;
+    seekNonce.current += 1;
+    // Syncing an external player to the link, not deriving render state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSeek({ seconds: deepSeekMs / 1000, nonce: seekNonce.current });
+  }, [canSeek, deepSeekMs, deepKey]);
+
   // ── Panes ──────────────────────────────────────────────────────────────
   const [panes, setPanes] = useState<Set<TextPaneKey>>(
     () => new Set<TextPaneKey>(["original", "clean"]),
@@ -273,10 +306,26 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
   const [sideTab, setSideTab] = useState<SideTab>("chunks");
   // Nothing vanishes at a narrower width (studioLayout): the right column and,
   // on a phone, the Parts list move behind header sheets.
-  const wide = useMediaQuery("(min-width: 1280px)");
-  const tablet = useMediaQuery("(min-width: 768px)");
+  const windowWide = useMediaQuery("(min-width: 1280px)");
+  const windowTablet = useMediaQuery("(min-width: 768px)");
+  // Embedded: the pane's own width decides (a 460px peek is a phone layout).
+  const widthPx = embedded
+    ? (paneWidth ?? 375)
+    : windowWide
+      ? 1280
+      : windowTablet
+        ? 768
+        : 375;
+  const tablet = widthPx >= 768;
   const [phonePane, setPhonePane] = useState<StudioPaneKey>("clean");
-  const layout = studioLayout(wide ? 1280 : tablet ? 768 : 375, panes, phonePane);
+  // In a host's (narrow) pane a PDF or a recording opens on its Original —
+  // the page at the hit, the player at its moment — not the clean text.
+  const [embeddedPaneChosen, setEmbeddedPaneChosen] = useState(false);
+  if (embedded && !embeddedPaneChosen && view) {
+    setEmbeddedPaneChosen(true);
+    if (view.kind === "pdf" || originalSeeks(view)) setPhonePane("original");
+  }
+  const layout = studioLayout(widthPx, panes, phonePane);
   const [sideSheetOpen, setSideSheetOpen] = useState(false);
   const [partsSheetOpen, setPartsSheetOpen] = useState(false);
   const [assetsOpen, setAssetsOpen] = useState(deepLink.assets);
@@ -358,7 +407,11 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
       }
       const note = result.sourceNotices[0]?.message;
       toast.success(note ?? "Captured again. If the page changed, this is now the newest version.");
-      if (result.processedDocumentId && result.processedDocumentId !== documentId) {
+      if (
+        !embedded &&
+        result.processedDocumentId &&
+        result.processedDocumentId !== documentId
+      ) {
         router.push(`/knowledge/sources/${result.processedDocumentId}`);
       } else {
         refreshAll();
@@ -383,8 +436,10 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
         landed.notices?.[0]?.message ??
           "Saved as the edited version. The original capture is one click away.",
       );
-      // The new version is now current; re-open on the same Source.
-      router.replace(`/knowledge/sources/${landed.processed_document_id}`);
+      // The new version is now current; re-open on the same Source (in a
+      // host's pane the current-version read moves to it in place).
+      if (embedded) refreshAll();
+      else router.replace(`/knowledge/sources/${landed.processed_document_id}`);
     } catch (err) {
       if (!isOrganizationSelectionCancelled(err))
         toast.error(sourceRefusalSentence(err));
@@ -578,7 +633,30 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
       getScope={getScope}
       isEditable={false}
     >
-      <div className="relative flex h-full flex-col bg-background">
+      <div ref={frameRef} className="relative flex h-full flex-col bg-background">
+        {embedded ? (
+          <EmbeddedActionBar
+            status={
+              doc ? (
+                <>
+                  {keptRead.keptAt !== undefined ? (
+                    <Badge variant={kept ? "secondary" : "outline"} className="px-1.5 py-0 text-[10px]">
+                      {kept ? "Saved" : "Not saved"}
+                    </Badge>
+                  ) : null}
+                  {stage && viewingCurrent ? (
+                    <Badge variant="outline" className="px-1.5 py-0 text-[10px]" data-testid="source-stage">
+                      {version.jobEndedWithoutText ? "Processing found no text" : SOURCE_STAGE_LABEL[stage]}
+                    </Badge>
+                  ) : null}
+                </>
+              ) : docLoading ? (
+                <span className="text-xs text-muted-foreground">Opening the Source…</span>
+              ) : null
+            }
+            actions={actions}
+          />
+        ) : (
         <EntityModeHeader
           backHref="/knowledge/library"
           entityLabel={docLoading || !doc ? "Loading…" : doc.name}
@@ -610,7 +688,13 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
           }
           actions={actions}
         />
-        <div className="flex min-h-0 flex-1 flex-col pt-[var(--shell-header-h)]">
+        )}
+        <div
+          className={cn(
+            "flex min-h-0 flex-1 flex-col",
+            !embedded && "pt-[var(--shell-header-h)]",
+          )}
+        >
           {version.versions?.edited && (
             <div
               className="flex min-w-0 shrink-0 items-center gap-2 border-b px-4 py-1 text-xs"
@@ -793,7 +877,10 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
           // above every window (and closes on the click that picks).
           <section
             aria-label="Chunks, entities and attachments"
-            className="absolute inset-y-0 right-0 z-30 flex w-full flex-col border-l border-border bg-background pt-[var(--shell-header-h)] shadow-xl sm:w-[420px]"
+            className={cn(
+              "absolute inset-y-0 right-0 z-30 flex w-full flex-col border-l border-border bg-background shadow-xl",
+              !embedded && "pt-[var(--shell-header-h)] sm:w-[420px]",
+            )}
             onKeyDown={(e) => {
               if (e.key === "Escape") setSideSheetOpen(false);
             }}
@@ -924,6 +1011,83 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
+
+/** The element's width, kept current (only when `enabled`). */
+function useElementWidth(
+  ref: RefObject<HTMLDivElement | null>,
+  enabled: boolean,
+): number | null {
+  const [width, setWidth] = useState<number | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!enabled || !el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width;
+      if (typeof w === "number") setWidth(Math.round(w));
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref, enabled]);
+  return width;
+}
+
+type StudioAction = {
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  onPress?: () => void;
+  href?: string;
+  primary?: boolean;
+  disabled?: boolean;
+};
+
+/**
+ * The Source screen's actions when it sits in a host's pane: the SAME list the
+ * shell header draws (Save, Edit, Process now, Capture again, Export, Knowledge
+ * Assets, PDF tools), as one wrapping row of labelled buttons.
+ */
+function EmbeddedActionBar({
+  status,
+  actions,
+}: {
+  status: ReactNode;
+  actions: StudioAction[];
+}) {
+  return (
+    <div
+      className="flex shrink-0 flex-wrap items-center gap-1.5 border-b px-3 py-1.5"
+      data-testid="source-embedded-actions"
+    >
+      {status ? <span className="flex items-center gap-1">{status}</span> : null}
+      <span className="ml-auto flex flex-wrap items-center gap-1">
+        {actions.map((a) => {
+          const Icon = a.icon;
+          const body = (
+            <>
+              <Icon className={cn("h-3.5 w-3.5", a.label.endsWith("…") && "animate-spin")} />
+              {a.label}
+            </>
+          );
+          return a.href ? (
+            <Button key={a.label} asChild size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs">
+              <a href={a.href}>{body}</a>
+            </Button>
+          ) : (
+            <Button
+              key={a.label}
+              size="sm"
+              variant={a.primary ? "default" : "ghost"}
+              className="h-7 gap-1 px-2 text-xs"
+              disabled={a.disabled}
+              onClick={a.onPress}
+            >
+              {body}
+            </Button>
+          );
+        })}
+      </span>
+    </div>
+  );
+}
 
 
 function nameOf(p: StudioPortion): string {

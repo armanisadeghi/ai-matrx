@@ -240,47 +240,85 @@ function VirtualList({ hits, handlers }: { hits: KnowledgeHit[]; handlers: Resul
   );
 }
 
-function TableLayout({
-  hits,
-  handlers,
-  loading,
-  error,
-  onRetry,
-}: {
-  hits: KnowledgeHit[];
-  handlers: ResultHandlers;
-  loading: boolean;
-  error: string | null;
-  onRetry: () => void;
-}) {
-  const columns: MatrxColumnDef<KnowledgeHit>[] = [
+/**
+ * The Stage column's two faces: the words it sorts and filters by, and the
+ * cell (with its Re-index / Retry remedy). Only Sources have a stage.
+ */
+export interface HubStageColumn {
+  label: (hit: KnowledgeHit) => string;
+  cell: (hit: KnowledgeHit) => React.ReactNode;
+}
+
+const STAGE_SORT_ORDER = ["Failed", "Couldn't read status", "Index stale", "Indexing", "Not yet searchable", "Searchable", "Checking…", "—"];
+
+/**
+ * The table layout's columns — Name, Kind, Captured by, Stage, When (+ Origin,
+ * Filed under). Every column sorts by clicking its header (the design
+ * system's local sort) and filters from its header menu.
+ */
+export function hubTableColumns(stage?: HubStageColumn): MatrxColumnDef<KnowledgeHit>[] {
+  const when = (h: KnowledgeHit) => h.updated_at ?? h.created_at ?? "";
+  return [
     {
       id: "title",
-      header: "Title",
+      header: "Name",
       accessorFn: (h) => h.title,
+      sortValue: (h) => h.title.toLowerCase(),
       cell: (h) => <span className="font-medium">{h.title}</span>,
       filter: "text",
     },
     { id: "kind", header: "Kind", accessorFn: (h) => kindLabel(h), filter: "select" },
-    { id: "origin", header: "Origin", accessorFn: (h) => originLabel(h.origin), filter: "select" },
     { id: "captured_by", header: "Captured by", accessorFn: (h) => capturedByLabel(h), filter: "select" },
+    ...(stage
+      ? [
+          {
+            id: "stage",
+            header: "Stage",
+            accessorFn: (h: KnowledgeHit) => stage.label(h),
+            sortValue: (h: KnowledgeHit) => {
+              const i = STAGE_SORT_ORDER.indexOf(stage.label(h));
+              return i < 0 ? STAGE_SORT_ORDER.length : i;
+            },
+            cell: (h: KnowledgeHit) => stage.cell(h),
+            filter: "select" as const,
+          },
+        ]
+      : []),
+    {
+      id: "updated",
+      header: "When",
+      accessorFn: when,
+      sortValue: (h) => (when(h) ? Date.parse(when(h)) : 0),
+      defaultSortDirection: "desc",
+      cell: (h) => (when(h) ? formatRelativeTime(when(h)) : "—"),
+      filter: "date",
+    },
+    { id: "origin", header: "Origin", accessorFn: (h) => originLabel(h.origin), filter: "select" },
     {
       id: "filed",
       header: "Filed under",
       accessorFn: (h) => (h.filed_under ?? []).map((f) => f.name ?? "").filter(Boolean).join(", "),
       filter: "text",
     },
-    {
-      id: "updated",
-      header: "Updated",
-      accessorFn: (h) => h.updated_at ?? h.created_at ?? "",
-      cell: (h) => {
-        const when = h.updated_at ?? h.created_at;
-        return when ? formatRelativeTime(when) : "—";
-      },
-      filter: "date",
-    },
   ];
+}
+
+function TableLayout({
+  hits,
+  handlers,
+  loading,
+  error,
+  onRetry,
+  stage,
+}: {
+  hits: KnowledgeHit[];
+  handlers: ResultHandlers;
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+  stage?: HubStageColumn;
+}) {
+  const columns = hubTableColumns(stage);
   return (
     <div className="min-h-0 flex-1 overflow-hidden">
       <MatrxDataTable<KnowledgeHit>
@@ -366,6 +404,8 @@ export function BrowseResults({
   emptySentence,
   onShowMore,
   onRetry,
+  stage,
+  emptyExtra,
 }: {
   layout: HubLayout;
   sections: SectionState[];
@@ -374,6 +414,9 @@ export function BrowseResults({
   emptySentence: string;
   onShowMore: (key: KnowledgeSectionKey) => void;
   onRetry: (key: KnowledgeSectionKey) => void;
+  stage?: HubStageColumn;
+  /** Shown under the empty sentence (the hub's getting-started tips). */
+  emptyExtra?: React.ReactNode;
 }) {
   const relevant = sections.filter((s) => s.key !== "top_hit" && s.key !== "segments");
   const loading = relevant.some((s) => s.status === "loading");
@@ -419,6 +462,7 @@ export function BrowseResults({
           loading={loading && hits.length === 0}
           error={failed.length && !hits.length ? failed.map((s) => s.section?.error?.message).join(" ") : null}
           onRetry={() => failed.forEach((s) => onRetry(s.key))}
+          stage={stage}
         />
         {footer}
       </div>
@@ -429,7 +473,10 @@ export function BrowseResults({
       {failures}
       {loading && hits.length === 0 ? <RowsSkeleton rows={8} label="Loading your knowledge" /> : null}
       {!loading && hits.length === 0 && !failed.length ? (
-        <p className="px-2 py-6 text-sm text-muted-foreground">{emptySentence}</p>
+        <div className="px-2 py-6">
+          <p className="text-sm text-muted-foreground">{emptySentence}</p>
+          {emptyExtra}
+        </div>
       ) : null}
       {hits.length ? (
         layout === "board" ? (

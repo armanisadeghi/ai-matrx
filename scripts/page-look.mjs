@@ -27,6 +27,8 @@
  *
  * --as member looks as an ordinary signed-in person (AI_MEMBER_USERNAME /
  * AI_MEMBER_PASSWORD, the non-admin test account) instead of the test admin.
+ * --org "<name>" chooses the active organization through the header picker
+ * before looking (it persists in the profile; report.org says what happened).
  * --views limits the four views (faster with --full and several clicks).
  * look.json is written after every view, so an interrupted run keeps its data.
  *
@@ -64,7 +66,7 @@ function fail(message, code = 1) {
 }
 
 // ── options ───────────────────────────────────────────────────────────────
-const opts = { routes: [], base: "https://aimatrx.com", out: null, commit: null, settle: 8000, loginUrl: null, signedOut: false, full: false, clicks: [], as: "admin", views: null };
+const opts = { routes: [], base: "https://aimatrx.com", out: null, commit: null, settle: 8000, loginUrl: null, signedOut: false, full: false, clicks: [], as: "admin", views: null, org: null };
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i += 1) {
   const a = argv[i];
@@ -79,6 +81,7 @@ for (let i = 0; i < argv.length; i += 1) {
   else if (a === "--full") opts.full = true;
   else if (a === "--click") (opts.clicks.push(v), (i += 1));
   else if (a === "--as") ((opts.as = v), (i += 1));
+  else if (a === "--org") ((opts.org = v), (i += 1));
   else if (a === "--views") ((opts.views = v.split(",").map((x) => x.trim())), (i += 1));
   else fail(`unknown argument ${a}`);
 }
@@ -301,6 +304,39 @@ try {
       await page.evaluate(() => document.querySelector("form")?.requestSubmit());
       await page.waitForFunction(() => !document.querySelector('input[type="email"]'), null, { timeout: 45000 }).catch(() => {});
       await page.waitForTimeout(2000);
+    }
+  }
+
+  // --org: choose the active organization through the header's own picker
+  // once, before looking (it persists in this profile). Most signed-in pages
+  // need one; a page that shows "choose an organization" is otherwise all
+  // you can see.
+  if (opts.org && !opts.signedOut) {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(`${opts.base}${opts.routes[0]}`, { timeout: 600000 });
+    await page.waitForTimeout(opts.settle);
+    const trigger = page.locator('button[aria-label="Choose an organization"], button[aria-label^="Organization:"]').first();
+    const current = (await trigger.getAttribute("aria-label").catch(() => null)) ?? "";
+    if (current === `Organization: ${opts.org}`) {
+      report.org = `${opts.org} (already active)`;
+    } else if (await trigger.count()) {
+      await trigger.click();
+      await page.waitForTimeout(2500);
+      const option = page
+        .locator("[data-radix-popper-content-wrapper] button, [data-radix-popper-content-wrapper] [role=option], [role=dialog] button")
+        .filter({ hasText: opts.org })
+        .first();
+      if (await option.count()) {
+        await option.click();
+        await page.waitForTimeout(2500);
+        await page.keyboard.press("Escape");
+        report.org = opts.org;
+      } else {
+        report.org = `NOT FOUND: ${opts.org}`;
+        console.error(`[page-look] organization "${opts.org}" not found in the header picker`);
+      }
+    } else {
+      report.org = "NO PICKER in the header";
     }
   }
 

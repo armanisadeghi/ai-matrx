@@ -15,11 +15,10 @@ import { ClipboardCheck } from "lucide-react";
 import { usePendingApprovalCount } from "@/features/approvals/usePendingApprovalCount";
 import { useOpenApprovalsWindow } from "@/features/overlays/openers/approvalsWindow";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
-import { useMenuCheckboxId } from "./menuCheckboxId";
+import { MenuItemCloseLabel } from "./menuCheckboxId";
 
 export function ApprovalsMenuItem() {
   const openApprovals = useOpenApprovalsWindow();
-  const menuCheckboxId = useMenuCheckboxId();
   const { count, unknown } = usePendingApprovalCount();
 
   const handleClick = useCallback(() => {
@@ -27,7 +26,7 @@ export function ApprovalsMenuItem() {
   }, [openApprovals]);
 
   return (
-    <label htmlFor={menuCheckboxId} className="block">
+    <MenuItemCloseLabel>
       <button className={MENU_ITEM_CLASS} onClick={handleClick}>
         <ClipboardCheck />
         <span className="flex-1 text-left">Waiting on you</span>
@@ -37,7 +36,7 @@ export function ApprovalsMenuItem() {
           </span>
         ) : null}
       </button>
-    </label>
+    </MenuItemCloseLabel>
   );
 }
 

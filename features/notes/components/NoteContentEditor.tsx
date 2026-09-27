@@ -122,12 +122,19 @@ interface NoteContentEditorProps {
    * Height-bounded hosts (Notes window, tiles). Drops full-page scroll padding.
    */
   embedded?: boolean;
+  /**
+   * Show the note read-only even when the person may edit it — a host's read
+   * mode (the Knowledge hub's peek opens a note to read, with an Edit switch).
+   * Never grants editing: a viewer-level sharee stays read-only either way.
+   */
+  forceReadOnly?: boolean;
 }
 
 export function NoteContentEditor({
   noteId,
   actionsSurfaceId,
   embedded = false,
+  forceReadOnly = false,
 }: NoteContentEditorProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -159,7 +166,7 @@ export function NoteContentEditor({
   // ── Access gate — a viewer-level sharee gets a read-only editor ────
   // (their RLS-rejected saves would otherwise silently discard every edit).
   const access = useNoteAccess(noteId);
-  const readOnly = access.readOnly;
+  const readOnly = access.readOnly || forceReadOnly;
 
   const findReplaceState = useAppSelector(selectFindReplaceState(instanceId));
   const previewContainerRef = useRef<HTMLDivElement | null>(null);

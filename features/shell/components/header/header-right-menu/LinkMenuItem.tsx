@@ -2,7 +2,7 @@ import AppLink from "@/components/navigation/AppLink";
 import { cn } from "@/lib/utils";
 import { getMenuIcon, type MenuIconKey } from "./menuIconRegistry";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
-import { useMenuCheckboxId } from "./menuCheckboxId";
+import { MenuItemCloseLabel } from "./menuCheckboxId";
 
 interface LinkMenuItemProps {
   href: string;
@@ -18,13 +18,12 @@ export function LinkMenuItem({
   className,
 }: LinkMenuItemProps) {
   const Icon = getMenuIcon(icon);
-  const menuCheckboxId = useMenuCheckboxId();
   return (
-    <label htmlFor={menuCheckboxId} className="block">
+    <MenuItemCloseLabel>
       <AppLink href={href} className={cn(MENU_ITEM_CLASS, className)}>
         <Icon />
         {label}
       </AppLink>
-    </label>
+    </MenuItemCloseLabel>
   );
 }

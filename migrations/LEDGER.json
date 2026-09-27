@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-27T11:11:14.347Z",
+  "generated_at": "2026-09-27T12:19:43.384Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3643,6 +3643,12 @@
       "filename": "redsuites_the_store_door_is_reachable.sql",
       "checksum": "75643d869e8958c82b23042809002783f3926868c03f3236157558dfb667234e",
       "applied_at": "2026-09-21 14:29:42.685017+00"
+    },
+    "migrations/campaign/registrykernel_a_level_move_bumps_the_kernel_fixture_in_its_own_transaction.sql": {
+      "source": "matrx-frontend",
+      "filename": "registrykernel_a_level_move_bumps_the_kernel_fixture_in_its_own_transaction.sql",
+      "checksum": "1087dd16bd91cb07c258ae93f8dd5e500ffe5f7ef69c076bdab36b61312711dc",
+      "applied_at": "2026-09-27 12:19:31.876503+00"
     },
     "migrations/campaign/reldecl_a_column_that_stops_pointing_takes_its_edges.sql": {
       "source": "matrx-frontend",

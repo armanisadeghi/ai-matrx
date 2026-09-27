@@ -439,11 +439,14 @@ const nextConfig = {
         destination: "/hr/tasks/:path*",
         permanent: true,
       },
-      // 2026-09-27 (KNOWLEDGE-HUB §6, H3): `/knowledge` is the Knowledge hub
-      // and `/rag` — the old Knowledge home — collapses into it. Exact path
-      // only: `/rag/library` and the other `/rag/*` pages keep working until
-      // their parity checklists retire them (H6).
+      // 2026-09-27 (KNOWLEDGE-HUB §6, H3 + H6a): `/knowledge` is the Knowledge
+      // hub and `/rag` — the old Knowledge home — collapses into it. Every
+      // `/rag/*` alias lands on its `/knowledge/*` twin with its query string
+      // kept (Next appends it); the retired twins (`library`, `search`,
+      // `visualization`) then redirect into the hub with their filters
+      // (features/knowledge/hub/legacyRoutes.ts).
       { source: "/rag", destination: "/knowledge", permanent: true },
+      { source: "/rag/:path*", destination: "/knowledge/:path*", permanent: true },
       // Message templates are chat content, not application settings.
       // Preserve exact legacy destinations for existing bookmarks and
       // shared record links while keeping one canonical route family.

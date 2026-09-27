@@ -17,6 +17,7 @@ import type {
   KnowledgeSort,
   TriageState,
 } from "@/features/knowledge/api/knowledgeSearch";
+import { HUB_STAGES, parseStages, type HubStage } from "@/features/knowledge/hub/hubStage";
 
 export type HubLayout = "list" | "table" | "board" | "gallery";
 export const HUB_LAYOUTS: readonly HubLayout[] = ["list", "table", "board", "gallery"];
@@ -27,6 +28,7 @@ export type HubView =
   | { kind: "archived" }
   | { kind: "everything" }
   | { kind: "favorites" }
+  | { kind: "trash" }
   | { kind: "saved"; id: string }
   | { kind: "container"; type: string; id: string }
   | { kind: "kind"; key: string };
@@ -41,6 +43,11 @@ export interface HubState {
   query: KnowledgeQuery;
   layout: HubLayout;
   peek: HubPeek | null;
+  /**
+   * The Stage facet (Sources only). Client-side: the search service does not
+   * know stages, so it narrows the loaded items (hubStage.ts).
+   */
+  stage: HubStage[];
   /** "sample" = the fixture answers (announced on screen). */
   data: "live" | "sample";
 }
@@ -50,6 +57,7 @@ export const DEFAULT_HUB_STATE: HubState = {
   query: { mode: "find" },
   layout: "list",
   peek: null,
+  stage: [],
   data: "live",
 };
 
@@ -138,6 +146,7 @@ export function selectionQuery(
       return { query: { mode: "find", state: [view.kind] } };
     case "everything":
     case "favorites":
+    case "trash":
       return { query: { mode: "find" } };
     case "container":
       return { query: { mode: "find", within: [{ type: view.type, id: view.id }] } };
@@ -167,6 +176,7 @@ function viewToParam(v: HubView): string {
     case "archived":
     case "everything":
     case "favorites":
+    case "trash":
       return v.kind;
     case "saved":
       return `saved:${v.id}`;
@@ -179,7 +189,7 @@ function viewToParam(v: HubView): string {
 
 function viewFromParam(p: string | null): HubView {
   if (!p) return { kind: "everything" };
-  if (p === "inbox" || p === "kept" || p === "archived" || p === "everything" || p === "favorites")
+  if (p === "inbox" || p === "kept" || p === "archived" || p === "everything" || p === "favorites" || p === "trash")
     return { kind: p };
   if (p.startsWith("saved:") && p.length > 6) return { kind: "saved", id: p.slice(6) };
   if (p.startsWith("kind:") && p.length > 5) return { kind: "kind", key: p.slice(5) };
@@ -278,6 +288,8 @@ export function hubStateToParams(s: HubState): URLSearchParams {
   if (q.sort) p.set("sort", q.sort);
   if (s.layout !== "list") p.set("layout", s.layout);
   if (s.peek) p.set("peek", `${s.peek.entity}:${s.peek.id}`);
+  const stages = HUB_STAGES.filter((x) => (s.stage ?? []).includes(x));
+  if (stages.length) p.set("stage", stages.join(","));
   if (s.data === "sample") p.set("data", "sample");
   return p;
 }
@@ -321,6 +333,7 @@ export function hubStateFromParams(p: URLSearchParams | ReadonlyURLSearchParamsL
     query,
     layout,
     peek,
+    stage: HUB_STAGES.filter((x) => parseStages(get("stage")).includes(x)),
     data: get("data") === "sample" ? "sample" : "live",
   };
 }

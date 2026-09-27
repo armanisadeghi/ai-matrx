@@ -3,7 +3,7 @@
 import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
-import { useMenuCheckboxId } from "./menuCheckboxId";
+import { MenuItemCloseLabel } from "./menuCheckboxId";
 import { useToggleErrorInspector } from "@/features/admin/error-inspector/useOpenErrorInspector";
 import { useCapturedErrorStats } from "@/lib/diagnostics/useCapturedErrors";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -16,7 +16,6 @@ import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
  */
 export function ErrorInspectorMenuItem() {
   const toggle = useToggleErrorInspector();
-  const menuCheckboxId = useMenuCheckboxId();
   const { red } = useCapturedErrorStats();
   // ADMIN POWER, the same bar as the sidebar toggle: the inspector is an admin
   // tool and exists only inside the admin section (utils/supabase/adminLane.ts).
@@ -25,7 +24,7 @@ export function ErrorInspectorMenuItem() {
   if (!canUse) return null;
 
   return (
-    <label htmlFor={menuCheckboxId} className="block">
+    <MenuItemCloseLabel>
       <button
         className={cn(MENU_ITEM_CLASS, "[&_svg]:text-amber-500")}
         onClick={toggle}
@@ -38,6 +37,6 @@ export function ErrorInspectorMenuItem() {
           </span>
         )}
       </button>
-    </label>
+    </MenuItemCloseLabel>
   );
 }

@@ -8,6 +8,7 @@
  */
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   ChevronDown,
   ChevronRight,
@@ -22,6 +23,8 @@ import {
   Star,
   RotateCw,
   Users,
+  Trash2,
+  Library,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -398,6 +401,14 @@ export function HubSidebar({
         {data.favorites.status === "error" ? (
           <LoadState loadable={data.favorites} what="favorites" empty="" indent />
         ) : null}
+        {sample ? null : (
+          <Row
+            icon={Trash2}
+            label="Trash"
+            active={view.kind === "trash"}
+            onClick={() => onSelect({ kind: "trash" })}
+          />
+        )}
 
         <div className="flex items-center justify-between pr-1">
           <GroupHeading>Saved views</GroupHeading>
@@ -464,6 +475,12 @@ export function HubSidebar({
             <Row key={k.key} label={k.label} active={sameView(view, kv)} onClick={() => onSelect(kv)} indent />
           );
         })}
+
+        <GroupHeading>Shared libraries</GroupHeading>
+        <Link href="/knowledge/library-catalog" className={ROW} title="Browse, subscribe to and unsubscribe from shared knowledge libraries">
+          <Library className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 flex-1 truncate">Library catalog</span>
+        </Link>
       </div>
     </nav>
   );

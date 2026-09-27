@@ -139,7 +139,19 @@ export interface KnowledgeHit {
   frecency?: number | null;
   top_segments?: { id: string; text: string; locator?: string | null }[];
   suggestions?: { target: FiledRef; reason: string }[];
-  segment?: { source_id: string; source_title: string; locator?: string | null };
+  segment?: {
+    source_id: string;
+    source_title: string;
+    /** The Source's kind (`web_page`, `cld_file`, `transcript`…). */
+    source_kind?: string | null;
+    locator?: string | null;
+    /** The pages the passage sits on (1-based), when the Source is paged. */
+    page_numbers?: number[];
+    /** Where the passage starts in the recording, in ms, when it is timed. */
+    t0_ms?: number | null;
+  };
+  /** Messages section: the matching messages of this conversation, best first. */
+  matches?: { message_id: string; position?: number; role?: string; snippet?: string }[];
 }
 
 export interface KnowledgeSection {

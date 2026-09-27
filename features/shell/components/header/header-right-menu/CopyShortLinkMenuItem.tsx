@@ -7,7 +7,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { supabase } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
-import { useMenuCheckboxId } from "./menuCheckboxId";
+import { MenuItemCloseLabel } from "./menuCheckboxId";
 
 /**
  * "Copy short link" — a short URL for THE CURRENT PAGE, query string and all,
@@ -26,16 +26,15 @@ export function CopyShortLinkMenuItem() {
       toast.error("Couldn't create a short link", { description: error }),
   });
 
-  const menuCheckboxId = useMenuCheckboxId();
 
   if (!organizationId) return null;
 
   return (
-    <label htmlFor={menuCheckboxId} className="block">
+    <MenuItemCloseLabel>
       <button className={MENU_ITEM_CLASS} onClick={copy}>
         <LinkIcon />
         Copy short link
       </button>
-    </label>
+    </MenuItemCloseLabel>
   );
 }

@@ -6,7 +6,7 @@ import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";
 import { cn } from "@/lib/utils";
 import { getMenuIcon, type MenuIconKey } from "./menuIconRegistry";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
-import { useMenuCheckboxId } from "./menuCheckboxId";
+import { MenuItemCloseLabel } from "./menuCheckboxId";
 
 interface GuestOverlayMenuItemProps {
   icon: MenuIconKey;
@@ -29,14 +29,13 @@ export function GuestOverlayMenuItem({
   className,
 }: GuestOverlayMenuItemProps) {
   const openAuthGate = useOpenAuthGateDialog();
-  const menuCheckboxId = useMenuCheckboxId();
 
   const handleClick = useCallback(() => {
     openAuthGate({ featureName: label, featureDescription: description });
   }, [openAuthGate, label, description]);
 
   return (
-    <label htmlFor={menuCheckboxId} className="block">
+    <MenuItemCloseLabel>
       <button
         className={cn(MENU_ITEM_CLASS, "group", className)}
         onClick={handleClick}
@@ -48,6 +47,6 @@ export function GuestOverlayMenuItem({
           aria-hidden="true"
         />
       </button>
-    </label>
+    </MenuItemCloseLabel>
   );
 }

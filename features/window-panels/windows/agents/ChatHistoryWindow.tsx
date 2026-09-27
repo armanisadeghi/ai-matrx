@@ -29,11 +29,9 @@ import type { RootState } from "@/lib/redux/store";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 import type { HistoryGrouping } from "@/features/agents/redux/conversation-history/types";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import { AgentConversationDisplay } from "@/features/agents/components/messages-display/AgentConversationDisplay";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
+import { hydrateConversationForReading } from "@/features/agents/components/messages-display/hydrateConversationForReading";
 import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
 import { makeSelectConversationHistoryScope } from "@/features/agents/redux/conversation-history/selectors";
 import {
@@ -117,34 +115,10 @@ function useChatHistoryBrowser(opts: {
       const agentId = conv.agentId ?? null;
       setSelectedId(conversationId);
       setSelectedAgentId(agentId);
-
-      const state = store.getState() as RootState;
-      const exists = !!state.conversations?.byConversationId?.[conversationId];
-
-      // Mirror the /chat load sequence: warm the agent's execution payload and
-      // create the instance BEFORE hydrating, so the transcript renderer has
-      // everything it needs (this is what /chat does and the window didn't —
-      // the cause of assistant turns rendering blank here). Fire the agent
-      // fetch in parallel; only the instance create must precede the load.
-      if (agentId) {
-        void dispatch(fetchAgentExecutionMinimal(agentId));
-        if (!exists) {
-          await dispatch(
-            createManualInstance({
-              agentId,
-              conversationId,
-              apiEndpointMode: "agent",
-              responseDensity: "compact",
-            }),
-          );
-        }
-      }
-
-      await dispatch(
-        loadConversation({
-          conversationId,
-          surfaceKey: SURFACE_KEY,
-        }),
+      await hydrateConversationForReading(
+        dispatch,
+        () => store.getState() as RootState,
+        { conversationId, agentId, surfaceKey: SURFACE_KEY },
       );
     },
     [dispatch, store],

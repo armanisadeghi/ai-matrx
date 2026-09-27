@@ -138,6 +138,17 @@ const surfaceSpecific: SurfaceValue[] = [
 
   // ── Active note — canonical reference + metadata ──────────────────────
   {
+    name: "note_bundle",
+    label: "Note and workspace",
+    description:
+      "One XML bundle of what an agent needs up front: <note> with the open note's title, folder, tags, visibility, last update, word count and unsaved/shared flags, its <body> (the live editor text, up to 7,000 characters — marked clipped=\"true\" total_chars=\"N\" when cut; resolve `current_note` for the rest), and its <scopes>; then the other <open_tabs> and the person's <folders>. Absent when no note is open.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 7500,
+    sortOrder: 290,
+    group: "note_identity",
+  },
+  {
     name: "current_note",
     label: "Active note resource",
     description:
@@ -488,7 +499,7 @@ export const notesEditorManifest: SurfaceManifest = {
   urlPattern: "/notes/[id]",
   intro: `<surface_intro>
 You are on the Notes editor: the user's markdown workspace of many small-to-medium notes, organized into folders and opened as tabs. One note is active in the editor at a time; a second may sit in a split pane.
-Read the values in tiers: the Selection & cursor group is the live runtime cut (what is highlighted, where the cursor is); the Active note group identifies the persisted note and its metadata — its full content resolves through the current_note resource reference (with an unsaved-buffer overlay when dirty); the Workspace group describes the surrounding tabs, folders, and scope assignments; Editor state tells you what the UI can currently do (mode, panes, find bar).
+Start from note_bundle: one XML element holding the open note (metadata, body up to 7,000 characters, scopes), the other open tabs, and the folders — enough for most jobs without a lookup. Read the values in tiers: the Selection & cursor group is the live runtime cut (what is highlighted, where the cursor is); the Active note group identifies the persisted note and its metadata — its full content resolves through the current_note resource reference (with an unsaved-buffer overlay when dirty); the Workspace group describes the surrounding tabs, folders, and scope assignments; Editor state tells you what the UI can currently do (mode, panes, find bar).
 When shared_access is present the note belongs to someone else — respect its permission_level before proposing writes. When is_new_note is true the note has no server row yet; actions needing a stable id should save first or refuse.
 You can also WRITE to this surface: the note's body (replace or append), its title, its tags, and its folder. These edit the user's own writing, so each one is confirmed with the user before it lands — read the matching value first (a replace or a tag set overwrites what is there), change only what was asked for, and leave the rest of the note alone.
 </surface_intro>`,
@@ -539,6 +550,7 @@ export function createNotesScope(values: {
   is_split_pane_visible: boolean;
   history_pane_open: boolean;
   // alwaysAvailable: false → optional
+  note_bundle?: string;
   selection?: string;
   text_before?: string;
   text_after?: string;

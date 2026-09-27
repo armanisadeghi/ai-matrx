@@ -58,16 +58,24 @@ export interface SourceDeepLink {
   chunkId: string | null;
   /** `?assets=1` — open the Knowledge Assets drawer. */
   assets: boolean;
+  /**
+   * `?t=<ms>` — a moment in the recording (a search hit's `t0_ms`): the player
+   * starts there. Absent → a chunk deep link seeks to its portion's start.
+   */
+  ms?: number | null;
 }
 
 export function parseSourceDeepLink(params: ParamBag): SourceDeepLink {
   const rawPage = readParam(params, "page");
   const page = rawPage ? Number.parseInt(rawPage, 10) : NaN;
   const chunk = readParam(params, "chunk")?.trim() || null;
+  const rawMs = readParam(params, "t");
+  const ms = rawMs ? Number.parseInt(rawMs, 10) : NaN;
   return {
     page: Number.isFinite(page) && page > 0 ? page : null,
     chunkId: chunk,
     assets: readParam(params, "assets") === "1",
+    ms: Number.isFinite(ms) && ms >= 0 ? ms : null,
   };
 }
 
@@ -374,6 +382,20 @@ export function sourceAsMarkdown(
  * The seek a portion click asks for: its start time when the Original pane
  * holds a player (`canSeek`), else none — a page or a section never seeks.
  */
+/**
+ * The seek a deep link asks for once the player can seek: its explicit moment
+ * (`ms`, a hit's `t0_ms`) wins; else a chunk link plays from its portion's
+ * start; a page-only link (or a Source with no recording) does not seek.
+ */
+export function deepLinkSeekMs(
+  deepLink: Pick<SourceDeepLink, "ms" | "chunkId">,
+  activePortion: Pick<PortionLocatorRow, "locator"> | null | undefined,
+): number | null {
+  if (deepLink.ms != null) return deepLink.ms;
+  if (!deepLink.chunkId) return null;
+  return portionStartMs(activePortion);
+}
+
 export function seekForPortion(
   portion: Pick<PortionLocatorRow, "locator"> | null | undefined,
   canSeek: boolean,

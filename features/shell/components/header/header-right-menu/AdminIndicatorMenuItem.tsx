@@ -10,11 +10,10 @@ import {
 } from "@/lib/redux/slices/overlaySlice";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
-import { useMenuCheckboxId } from "./menuCheckboxId";
+import { MenuItemCloseLabel } from "./menuCheckboxId";
 
 export function AdminIndicatorMenuItem() {
   const dispatch = useAppDispatch();
-  const menuCheckboxId = useMenuCheckboxId();
   const isOpen = useAppSelector((state) =>
     selectIsOverlayOpen(state, "adminIndicator"),
   );
@@ -31,7 +30,7 @@ export function AdminIndicatorMenuItem() {
   if (!canUse) return null;
 
   return (
-    <label htmlFor={menuCheckboxId} className="block">
+    <MenuItemCloseLabel>
       <button
         className={cn(MENU_ITEM_CLASS, "[&_svg]:text-amber-500")}
         onClick={handleClick}
@@ -39,6 +38,6 @@ export function AdminIndicatorMenuItem() {
         {isOpen ? <EyeOff /> : <Eye />}
         {isOpen ? "Hide" : "Show"} Admin Indicator
       </button>
-    </label>
+    </MenuItemCloseLabel>
   );
 }

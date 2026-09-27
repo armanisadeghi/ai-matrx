@@ -471,6 +471,10 @@ export function AgentConversationDisplay({
         key={group.key}
         data-message-group=""
         data-primary-message-id={primaryId}
+        // Every message this group shows — a host that opens the transcript AT
+        // a message (the Knowledge hub's peek, from a message-text hit) finds
+        // its group by any member, not just the last.
+        data-message-ids={ids.join(" ")}
         tabIndex={index === visibleGroups.length - 1 ? 0 : -1}
         role="article"
         aria-label={`${who}${pinned ? ", pinned" : ""}`}

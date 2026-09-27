@@ -14,6 +14,10 @@
 #
 # This job reports, read-only on production:
 #   - every auto re-record in the last 24 hours (when, from -> to, the members that changed)
+#   - SEPARATELY, every registry-caused fixture bump in the last 24 hours (lane REGISTRY-KERNEL-CHECK,
+#     2026-09-27: a level move in platform.entity_types / an edge in platform.entity_relationships that
+#     moved kernel answers is recorded in its own transaction, via 'registry change / …'), and every
+#     registry change the fixture could not be built to compare
 #   - every provisioner_fingerprint_stale refusal in the last 24 hours (the kernel really moved)
 #   - whether the recorded fingerprint agrees with the live kernel right now
 # and, on the nightly dev clone (writes allowed, always rolled back), whether the fixed fixture
@@ -64,6 +68,19 @@ REPORT_SQL="select coalesce(string_agg(line, E'\\n' order by at), '') from (
          || '  changed: ' || coalesce(nullif(array_to_string(r.members_changed, ', '), ''), '(none named)')
          || '  system_error ' || coalesce(r.system_error_id::text, '?') as line
     from platform.kernel_fingerprint_record r where r.recorded_at > now() - interval '24 hours'
+     and r.via not like 'registry change%'
+  union all
+  select r.recorded_at, 'REGISTRY BUMP  ' || to_char(r.recorded_at, 'YYYY-MM-DD HH24:MI:SS') || 'Z  ' || r.ruling
+         || '  moved ' || coalesce(r.evidence->>'moved_count', '?') || ' answer(s): '
+         || coalesce((select string_agg(k, ', ') from (select jsonb_object_keys(r.evidence->'moved') k limit 6) m), '?')
+         || '  system_error ' || coalesce(r.system_error_id::text, '?')
+    from platform.kernel_fingerprint_record r where r.recorded_at > now() - interval '24 hours'
+     and r.via like 'registry change%'
+  union all
+  select s.occurred_at, 'REGISTRY NOT COMPARED  ' || to_char(s.occurred_at, 'YYYY-MM-DD HH24:MI:SS') || 'Z  '
+         || left(s.error_text, 300) || '  system_error ' || s.id
+    from ops.system_error s where s.kind = 'kernel_answers_moved_by_registry' and s.error_type = 'registry.not_compared'
+     and s.occurred_at > now() - interval '24 hours'
   union all
   select s.occurred_at, 'STALE REFUSAL  ' || to_char(s.occurred_at, 'YYYY-MM-DD HH24:MI:SS') || 'Z  '
          || left(s.error_text, 300) || '  system_error ' || s.id
@@ -82,6 +99,9 @@ else
   print -r -- "$OUT" | while IFS= read -r l; do say "  $l"; done
   say "  Each AUTO RE-RECORD means a file changed an access-kernel body without re-recording; the kernel"
   say "  answered identically so tables kept being created. Refresh aidream db/entity_read_kernel_members.json."
+  say "  Each REGISTRY BUMP means a registry row (a table's access level, a detail or composition edge) moved"
+  say "  kernel answers; the recording was patched for exactly those answers in the same transaction"
+  say "  (registrykernel_…sql). Review it against the access ladder; nothing is owed if it was by ruling."
 fi
 
 # The fixture on a MATCHED kernel, on the clone (it builds its world in a rolled-back subtransaction).

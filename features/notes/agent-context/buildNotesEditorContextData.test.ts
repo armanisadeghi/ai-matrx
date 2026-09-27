@@ -42,4 +42,45 @@ describe("notes agent context", () => {
     expect(scope.current_note).toBeUndefined();
     expect(scope.content).toBe("new note");
   });
+
+  it("packs the open note and its workspace into one XML bundle", () => {
+    const scope = build({
+      content: "# Clinic intake checklist\n- Confirm insurance card",
+      noteRecord: {
+        label: "Clinic intake checklist",
+        folder_name: "Draft",
+        tags: ["clinic", "intake"],
+        visibility: "organization",
+        updated_at: "2026-09-27T04:10:00Z",
+      },
+      openTabs: [NOTE_ID, "33333333-3333-4333-8333-333333333333"],
+      notesMap: {
+        "33333333-3333-4333-8333-333333333333": {
+          id: "33333333-3333-4333-8333-333333333333",
+          label: "Front desk script",
+          folder_name: "Draft",
+        },
+      },
+      allFolders: ["Draft", "Study Notes"],
+      scopeAssignments: [{ scope_id: "s1", scope_name: "Patient intake", scope_type: "Workflow" }],
+    });
+    const bundle = String(scope.note_bundle);
+    expect(bundle.startsWith("<notes_workspace>")).toBe(true);
+    expect(bundle).toContain(`<note id="${NOTE_ID}" title="Clinic intake checklist" folder="Draft" tags="clinic, intake"`);
+    expect(bundle).toContain("<body># Clinic intake checklist\n- Confirm insurance card</body>");
+    expect(bundle).toContain('<scope type="Workflow">Patient intake</scope>');
+    expect(bundle).toContain('<open_tabs total="1"><tab id="33333333-3333-4333-8333-333333333333" folder="Draft">Front desk script</tab></open_tabs>');
+    expect(bundle).toContain('<folders total="2">');
+    expect(bundle).not.toContain("unsaved=");
+  });
+
+  it("clips a long body and says so", () => {
+    const scope = build({ content: "x".repeat(9000) });
+    expect(String(scope.note_bundle)).toContain('clipped="true" total_chars="9000"');
+    expect(String(scope.note_bundle).length).toBeLessThan(7300);
+  });
+
+  it("sends no bundle when no note is open", () => {
+    expect(build({ noteId: "" }).note_bundle).toBeUndefined();
+  });
 });

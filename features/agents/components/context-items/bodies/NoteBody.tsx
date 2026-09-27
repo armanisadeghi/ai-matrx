@@ -20,12 +20,8 @@ import {
   selectNoteContentLoadStatus,
   selectInstanceHistoryOpen,
 } from "@/features/notes/redux/selectors";
-import {
-  addInstanceTab,
-  registerInstance,
-  setInstanceActiveTab,
-  setInstanceHistoryOpen,
-} from "@/features/notes/redux/slice";
+import { setInstanceHistoryOpen } from "@/features/notes/redux/slice";
+import { useEmbeddedNoteInstance } from "@/features/notes/hooks/useEmbeddedNoteInstance";
 import { fetchNoteContent } from "@/features/notes/redux/thunks";
 import {
   Tooltip,
@@ -42,15 +38,7 @@ function notesDrawerInstanceId(noteId: string): string {
 
 /** Register the drawer-local notes instance so view-mode controls work. */
 function useNotesDrawerInstance(noteId: string | null) {
-  const dispatch = useAppDispatch();
-
-  useEffect(() => {
-    if (!noteId) return;
-    const instanceId = notesDrawerInstanceId(noteId);
-    dispatch(registerInstance(instanceId));
-    dispatch(addInstanceTab({ instanceId, noteId }));
-    dispatch(setInstanceActiveTab({ instanceId, noteId }));
-  }, [dispatch, noteId]);
+  useEmbeddedNoteInstance(noteId ? notesDrawerInstanceId(noteId) : null, noteId);
 }
 
 export function NoteTitleActions({ item }: ContextItemBodyProps) {

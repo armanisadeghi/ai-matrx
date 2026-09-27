@@ -253,7 +253,7 @@ export function MandateRunHistory({
         </div>
       ) : (
         <div className="min-w-0 overflow-x-auto rounded-md border border-border">
-          <Table wrap={false} className="min-w-[36rem] text-xs [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
+          <Table wrap={false} className="min-w-[30rem] text-xs sm:min-w-[36rem] [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[6.5rem]">When</TableHead>
@@ -464,7 +464,7 @@ function RunRow({
       <TableCell className="hidden sm:table-cell" title={rungTitle(run.rung)}>
         <span className={cn(run.rung ? "text-foreground" : "text-muted-foreground")}>{rungWords(run.rung)}</span>
       </TableCell>
-      <TableCell className="max-w-[16rem]">
+      <TableCell className="max-w-[8rem] sm:max-w-[16rem]">
         {run.holderId ? (
           <EntityRef
             token={run.holderType}

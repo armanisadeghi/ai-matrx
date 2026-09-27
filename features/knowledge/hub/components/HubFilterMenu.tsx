@@ -38,6 +38,7 @@ import {
 } from "@/features/knowledge/hub/hubPresentation";
 import { RELATIVE_DATE_LABEL } from "@/features/knowledge/api/knowledgeQueryText";
 import { hitTags } from "@/features/knowledge/hub/tags/tagActions";
+import { HUB_STAGES, HUB_STAGE_LABEL, type HubStage } from "@/features/knowledge/hub/hubStage";
 
 interface HubFilterMenuProps {
   open: boolean;
@@ -48,6 +49,14 @@ interface HubFilterMenuProps {
   hits: KnowledgeHit[];
   /** Total matches across sections, when every lane counted. */
   total: number | undefined;
+  /** The Stage facet (Sources only; narrows the loaded items). */
+  stage?: {
+    selected: readonly HubStage[];
+    counts: Record<HubStage, number>;
+    onToggle: (stage: HubStage) => void;
+    /** Said under the group when the loaded items are not the whole answer. */
+    note?: string | null;
+  };
   children: React.ReactNode;
 }
 
@@ -92,6 +101,7 @@ export function HubFilterMenu({
   onQueryChange,
   hits,
   total,
+  stage,
   children,
 }: HubFilterMenuProps) {
   const complete = localFacetsAreComplete(hits.length, total);
@@ -232,6 +242,21 @@ export function HubFilterMenu({
                 </p>
               ) : null}
             </CommandGroup>
+            {stage ? (
+              <CommandGroup heading="Stage (Sources)">
+                {HUB_STAGES.map((st) => {
+                  const on = stage.selected.includes(st);
+                  return (
+                    <CommandItem key={st} value={`stage ${HUB_STAGE_LABEL[st]}`} onSelect={() => stage.onToggle(st)}>
+                      <Check className={on ? "h-3.5 w-3.5" : "h-3.5 w-3.5 opacity-0"} />
+                      <span className="min-w-0 flex-1 truncate">{HUB_STAGE_LABEL[st]}</span>
+                      <span className="text-xs tabular-nums text-muted-foreground">{stage.counts[st]}</span>
+                    </CommandItem>
+                  );
+                })}
+                {stage.note ? <p className="px-2 py-1.5 text-xs text-muted-foreground">{stage.note}</p> : null}
+              </CommandGroup>
+            ) : null}
             <CommandGroup heading="Updated">
               {DATE_OPTIONS.map((d) => (
                 <FilterItem

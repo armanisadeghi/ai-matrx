@@ -1,13 +1,20 @@
 "use client";
 
 /**
- * The light peek (KNOWLEDGE-HUB §5.2, Notion's peek): for EVERY kind — title,
+ * The peek (KNOWLEDGE-HUB §5.2, Notion's side peek — the full page in a pane).
+ * A kind with a full detail embed (`embeds/embedFor.ts`: web, PDF/file and
+ * transcript Sources, conversations, notes) opens its OWN screen under the
+ * peek's header, with the light peek one tab away as Details; every other kind
+ * gets the light peek.
+ *
+ * The light peek: for EVERY kind — title,
  * kind and origin, where it is filed (its outward associations), its top
  * Segments, and filing suggestions with one-key accept (A). "Open full" (⌘↵)
  * goes to the item's own route. Esc closes. Each part says plainly when it has
  * nothing, rather than disappearing.
  */
 
+import { useState } from "react";
 import { ExternalLink, FolderInput, Lightbulb, Star, X } from "lucide-react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { useAssociations, useEntityTitles } from "@ai-matrx/associations/react";
@@ -17,6 +24,8 @@ import { PeekSourceSegments } from "./PeekSourceSegments";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { FiledRef, KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import { actionTarget } from "@/features/knowledge/hub/hubActions";
+import { embedFor } from "@/features/knowledge/hub/embeds/embedFor";
+import { HubDetailEmbed } from "@/features/knowledge/hub/embeds/HubDetailEmbed";
 import {
   capturedByLabel,
   kindIcon,
@@ -110,6 +119,7 @@ export function HubPeek({
   tagsSection,
 }: HubPeekProps) {
   const searchParams = useSearchParams();
+  const [tab, setTab] = useState<"page" | "details">("page");
   if (!hit) {
     const [entity, id] = [peekKey.slice(0, peekKey.indexOf(":")), peekKey.slice(peekKey.indexOf(":") + 1)];
     const href = tryGetEntityInfo(entity)?.hrefFor?.(id) ?? null;
@@ -141,51 +151,9 @@ export function HubPeek({
       ? [{ id: hit.id, text: hit.snippet, locator: hit.segment?.locator ?? null }]
       : (hit.top_segments ?? []);
   const when = hit.updated_at ?? hit.created_at;
-  return (
-    <aside className="flex h-full min-h-0 flex-col" aria-label={`Peek: ${hit.title}`}>
-      <div className="flex items-start gap-2 border-b border-border px-4 py-3">
-        <Icon className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 flex-1">
-          <h2 className="line-clamp-2 text-base font-semibold leading-snug">{hit.title}</h2>
-          <p className="text-xs text-muted-foreground">
-            {kindLabel(hit)} · {originLabel(hit.origin)}
-            {when ? ` · ${formatRelativeTime(when)}` : ""}
-          </p>
-        </div>
-        <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close peek (Esc)" title="Close (Esc)">
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-      <div className="flex flex-wrap gap-2 border-b border-border px-4 py-2">
-        <Button
-          size="sm"
-          variant="default"
-          className="h-8 gap-1.5"
-          disabled={!href}
-          title={href ? "Open full (⌘↵)" : "This kind has no page of its own yet"}
-          onClick={() => onOpenFull(hit)}
-        >
-          <ExternalLink className="h-3.5 w-3.5" /> Open full
-          <kbd className="ml-1 hidden rounded bg-primary-foreground/20 px-1 text-[10px] sm:inline">⌘↵</kbd>
-        </Button>
-        <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => onFileUnder(hit)}>
-          <FolderInput className="h-3.5 w-3.5" /> File under…
-        </Button>
-        {onToggleFavorite ? (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 gap-1.5"
-            aria-pressed={isFavorite}
-            onClick={() => onToggleFavorite(hit)}
-            title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
-          >
-            <Star className={isFavorite ? "h-3.5 w-3.5 fill-amber-400 text-amber-500" : "h-3.5 w-3.5"} />
-            {isFavorite ? "Favorited" : "Favorite"}
-          </Button>
-        ) : null}
-        {extraActions}
-      </div>
+  // Sample data has no real records behind it: its items keep the light peek.
+  const embed = sample ? null : embedFor(hit);
+  const lightBody = (
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden px-4 py-4">
         {hit.snippet && hit.entity !== "segment" ? (
           <p className="text-sm leading-relaxed text-foreground/90">{hit.snippet}</p>
@@ -277,6 +245,87 @@ export function HubPeek({
           </dl>
         </section>
       </div>
+  );
+  return (
+    <aside className="flex h-full min-h-0 flex-col" aria-label={`Peek: ${hit.title}`}>
+      <div className="flex items-start gap-2 border-b border-border px-4 py-3">
+        <Icon className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
+        <div className="min-w-0 flex-1">
+          <h2 className="line-clamp-2 text-base font-semibold leading-snug">{hit.title}</h2>
+          <p className="text-xs text-muted-foreground">
+            {kindLabel(hit)} · {originLabel(hit.origin)}
+            {when ? ` · ${formatRelativeTime(when)}` : ""}
+          </p>
+        </div>
+        <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close peek (Esc)" title="Close (Esc)">
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+      <div className="flex flex-wrap gap-2 border-b border-border px-4 py-2">
+        <Button
+          size="sm"
+          variant="default"
+          className="h-8 gap-1.5"
+          disabled={!href}
+          title={href ? "Open full (⌘↵)" : "This kind has no page of its own yet"}
+          onClick={() => onOpenFull(hit)}
+        >
+          <ExternalLink className="h-3.5 w-3.5" /> Open full
+          <kbd className="ml-1 hidden rounded bg-primary-foreground/20 px-1 text-[10px] sm:inline">⌘↵</kbd>
+        </Button>
+        <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => onFileUnder(hit)}>
+          <FolderInput className="h-3.5 w-3.5" /> File under…
+        </Button>
+        {onToggleFavorite ? (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1.5"
+            aria-pressed={isFavorite}
+            onClick={() => onToggleFavorite(hit)}
+            title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+          >
+            <Star className={isFavorite ? "h-3.5 w-3.5 fill-amber-400 text-amber-500" : "h-3.5 w-3.5"} />
+            {isFavorite ? "Favorited" : "Favorite"}
+          </Button>
+        ) : null}
+        {extraActions}
+      </div>
+      {embed ? (
+        <>
+          <div className="max-h-24 shrink-0 overflow-y-auto border-b border-border px-4 py-2">
+            <Heading>Filed under</Heading>
+            <LiveFiledUnder entity={target.entity} id={target.id} />
+          </div>
+          <div className="flex shrink-0 gap-1 border-b border-border px-3 py-1" role="tablist" aria-label="Peek view">
+            {(["page", "details"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                role="tab"
+                aria-selected={tab === t}
+                onClick={() => setTab(t)}
+                className={
+                  tab === t
+                    ? "h-7 rounded-md bg-accent px-2.5 text-xs font-medium text-accent-foreground"
+                    : "h-7 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                }
+              >
+                {t === "page" ? "Page" : "Details"}
+              </button>
+            ))}
+          </div>
+          {tab === "page" ? (
+            <div className="min-h-0 flex-1 overflow-hidden" data-testid="hub-peek-embed" data-embed-kind={embed.kind}>
+              <HubDetailEmbed embed={embed} />
+            </div>
+          ) : (
+            lightBody
+          )}
+        </>
+      ) : (
+        lightBody
+      )}
     </aside>
   );
 }

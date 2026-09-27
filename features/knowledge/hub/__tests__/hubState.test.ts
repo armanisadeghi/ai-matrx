@@ -38,6 +38,7 @@ describe("URL ⇄ query round trip", () => {
         sort: "title",
       },
       layout: "board",
+      stage: ["indexing", "stale"],
       peek: { entity: "processed_document", id: "d-9" },
       data: "sample",
     };
@@ -54,6 +55,7 @@ describe("URL ⇄ query round trip", () => {
       },
       layout: "table",
       peek: null,
+      stage: [],
       data: "live",
     };
     expect(roundTrip(state)).toEqual(state);
@@ -65,6 +67,7 @@ describe("URL ⇄ query round trip", () => {
       query: { mode: "find" },
       layout: "list",
       peek: null,
+      stage: [],
       data: "live",
     }).toString();
     expect(qs).toBe("");

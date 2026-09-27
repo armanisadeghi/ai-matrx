@@ -32,3 +32,18 @@ describe("user-menu items close the active checkbox", () => {
   });
 
 });
+
+/**
+ * A `<button>`/`<a>` inside `<label htmlFor>` never activates the label (HTML
+ * label activation skips interactive descendants), so "Submit Feedback" and
+ * every other button item left the menu open over the window it opened
+ * (page-pass 2026-09-27). Items wrap in `MenuItemCloseLabel`, which closes
+ * the menu itself. Mutation: put back a bare `<label htmlFor={menuCheckboxId}`.
+ */
+describe("user-menu items close through MenuItemCloseLabel", () => {
+  // The trigger TOGGLES the checkbox on purpose — it is not an item.
+  it.each(ITEM_FILES.filter((n) => n !== "UserMenuTrigger.tsx"))("%s has no bare label close", (name) => {
+    const text = readFileSync(path.join(DIR, name), "utf8");
+    expect(text).not.toMatch(/<label\s+htmlFor=\{menuCheckboxId\}/);
+  });
+});

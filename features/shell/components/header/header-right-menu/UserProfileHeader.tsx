@@ -5,7 +5,7 @@ import {
 } from "@/features/settings/route-shell/routing";
 import { UserData } from "@/utils/userDataMapper";
 import { ShellUserAvatarImage } from "./ShellUserAvatarImage";
-import { useMenuCheckboxId } from "./menuCheckboxId";
+import { MenuItemCloseLabel } from "./menuCheckboxId";
 
 interface UserProfileHeaderProps {
   userData: UserData;
@@ -14,9 +14,8 @@ interface UserProfileHeaderProps {
 export function UserProfileHeader({ userData }: UserProfileHeaderProps) {
   const displayName = userData.userMetadata.name ?? userData.email ?? "You";
   const initial = displayName.charAt(0).toUpperCase() || "?";
-  const menuCheckboxId = useMenuCheckboxId();
   return (
-    <label htmlFor={menuCheckboxId} className="block">
+    <MenuItemCloseLabel>
       <AppLink
         href={tabIdToHref(SETTINGS_BASE, "account.identity")}
         className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-[var(--matrx-glass-bg-hover)] transition-colors"
@@ -47,6 +46,6 @@ export function UserProfileHeader({ userData }: UserProfileHeaderProps) {
           )}
         </span>
       </AppLink>
-    </label>
+    </MenuItemCloseLabel>
   );
 }

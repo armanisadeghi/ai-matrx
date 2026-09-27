@@ -38,6 +38,10 @@ import {
   Save,
   Trash2,
   X,
+  Paperclip,
+  Sparkles,
+  Activity,
+  SlidersHorizontal,
 } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { useEntityTitles } from "@ai-matrx/associations/react";
@@ -127,6 +131,39 @@ import { useHubTags } from "@/features/knowledge/hub/tags/useHubTags";
 import { TagDialog } from "@/features/knowledge/hub/tags/TagDialog";
 import { PeekTags } from "@/features/knowledge/hub/tags/PeekTags";
 import { TagsSidebarGroup } from "@/features/knowledge/hub/tags/TagsSidebarGroup";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
+import { useProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
+import { ProcessingProgressSheet } from "@/features/rag/components/library/ProcessingProgressSheet";
+import { LibraryTrashList } from "@/features/rag/components/library/LibraryTrashList";
+import { SourceAddMenu, SourceSaveDialog, type SaveTarget } from "@/features/sources/components/SourceCapture";
+import { SourceStageCell } from "@/features/sources/components/SourceStageCell";
+import {
+  processSourceRow,
+  readActionableSources,
+  runSourceBulk,
+  trashSource,
+} from "@/features/sources/sourceActions";
+import { isFileCanonicalExtract } from "@/features/sources/sourceRows";
+import { useSourceStages } from "@/features/knowledge/hub/hooks/useSourceStages";
+import {
+  HUB_STAGE_LABEL,
+  narrowByStage,
+  stageCounts,
+  stageSourceId,
+  type HubStage,
+} from "@/features/knowledge/hub/hubStage";
+import { HUB_LIBRARY_SURFACE, buildHubWriteHandlers, hubSourceSummaries } from "@/features/knowledge/hub/hubAgentSurface";
+import { HubGettingStarted } from "@/features/knowledge/hub/components/HubGettingStarted";
 
 const GROUP_ID = "knowledge-hub";
 const GROUP_KEY = "knowledge-hub";
@@ -159,6 +196,8 @@ function viewTitle(view: HubView, sidebar: HubSidebarData): string {
       return "Everything";
     case "favorites":
       return "Favorites";
+    case "trash":
+      return "Trash";
     case "saved":
       return sidebar.savedViews.items.find((v) => v.id === view.id)?.name ?? "Saved view";
     case "kind":
@@ -175,13 +214,15 @@ function emptySentence(view: HubView, title: string, filtered: boolean): string 
   if (filtered) return "Nothing matches these filters. Remove a filter to see more.";
   switch (view.kind) {
     case "inbox":
-      return "Your Inbox is empty — you are caught up. New captures land here: pages you save with the browser extension, files you upload, URLs and text you add on Sources, and what agents and research capture for you. Keep (s) or archive (e) each one to clear it.";
+      return "Your Inbox is empty — you are caught up. New captures land here: pages you save with the browser extension, files you upload, URLs and text you add with Add, and what agents and research capture for you. Keep (s) or archive (e) each one to clear it.";
     case "kept":
       return "Nothing kept yet. Press s on an Inbox item to keep it here.";
     case "archived":
       return "Nothing archived yet. Press e on an Inbox item to archive it; press i here to bring one back.";
     case "favorites":
       return "No favorites yet. Star anything and it stays here.";
+    case "trash":
+      return "The trash is empty.";
     case "container":
       return `Nothing is filed under ${title} yet.`;
     case "kind":
@@ -189,7 +230,7 @@ function emptySentence(view: HubView, title: string, filtered: boolean): string 
     case "saved":
       return "Nothing matches this saved view right now.";
     case "everything":
-      return "Nothing here yet. Capture a page, upload a file or start a chat and it shows up here.";
+      return "Nothing here yet. Add a Source, capture a page or start a chat and it shows up here.";
   }
 }
 
@@ -293,7 +334,7 @@ export function KnowledgeHubPage({
   /** Bumped after a tag/file write: the peek remounts and re-reads where the item is filed. */
   const [filedVersion, setFiledVersion] = useState(0);
 
-  const hits: KnowledgeHit[] =
+  const baseHits: KnowledgeHit[] =
     triageView
       ? triageHits
       : state.view.kind === "favorites"
@@ -301,7 +342,16 @@ export function KnowledgeHubPage({
       : searching
         ? orderedSearchHits(results.sections)
         : browseHits(results.sections);
-  const byKey = new Map(hits.map((h) => [hitKey(h), h]));
+  const trashView = state.view.kind === "trash";
+  // Stage (Sources only): read from source_list_facts for the loaded Sources.
+  const loadedSourceIds = baseHits.map(stageSourceId).filter((id): id is string => Boolean(id));
+  const stages = useSourceStages(loadedSourceIds, !sample && !trashView);
+  const hits: KnowledgeHit[] = narrowByStage(baseHits, state.stage, stages.stageFor);
+  const moreToLoad = results.sections.some((s) => s.key !== "top_hit" && Boolean(s.section?.next_cursor));
+  const stageNote = moreToLoad
+    ? `Stage narrows the ${loadedSourceIds.length} Sources loaded so far; load more to check the rest.`
+    : null;
+  const byKey = new Map(baseHits.map((h) => [hitKey(h), h]));
   const peekKey = state.peek ? `${state.peek.entity}:${state.peek.id}` : null;
   const peekHit = peekKey ? (byKey.get(peekKey) ?? null) : null;
   const selectedHits = [...selected].map((k) => byKey.get(k)).filter((h): h is KnowledgeHit => !!h);
@@ -658,7 +708,13 @@ export function KnowledgeHubPage({
     if (!ok) return;
     setBusy(true);
     try {
-      const outcome = await trashItems(items, archiveRecord);
+      // A Source goes through its own trash door (a file's extract goes with its file).
+      const outcome = await trashItems(items, async (token, id, noun) => {
+        if (token !== "processed_document") return archiveRecord(token, id, noun);
+        const row = (await readActionableSources([id])).get(id);
+        if (!row) throw new Error(`${noun} is no longer listed, so it was not moved.`);
+        await trashSource(row);
+      });
       if (outcome.failed.length) toast.error(outcome.sentence);
       else toast.success(outcome.sentence);
       setSelected(new Set());
@@ -670,6 +726,137 @@ export function KnowledgeHubPage({
       setBusy(false);
     }
   };
+
+  // ─── Sources: attach, process now, job progress (from the retired Sources page) ─
+
+  const runner = useProcessingRunner();
+  const [jobsOpen, setJobsOpen] = useState(false);
+  const [focusJobId, setFocusJobId] = useState<string | null>(null);
+  const [saveTarget, setSaveTarget] = useState<SaveTarget | null>(null);
+  const runningJobs = runner.jobs.filter((j) => j.status === "running").length;
+
+  const sourceTargets = (items: KnowledgeHit[]) => uniqueTargets(items).filter((t) => t.entity === "processed_document");
+  const skippedSentence = (items: KnowledgeHit[]) => {
+    const skipped = uniqueTargets(items).length - sourceTargets(items).length;
+    return skipped ? ` ${skipped === 1 ? "1 item is" : `${skipped} items are`} not a Source and ${skipped === 1 ? "was" : "were"} skipped.` : "";
+  };
+
+  const doAttach = async (items: KnowledgeHit[]) => {
+    if (sample) {
+      toast.info(SAMPLE_WRITE_REFUSAL);
+      return;
+    }
+    const ids = sourceTargets(items).map((t) => t.id);
+    if (!ids.length) {
+      toast.info("Attach works on Sources; none of the selected items is a Source.");
+      return;
+    }
+    try {
+      const rows = [...(await readActionableSources(ids)).values()];
+      if (!rows.length) throw new Error("None of the selected Sources could be read, so nothing was attached.");
+      setSaveTarget({
+        items: rows.map((r) => ({
+          processedDocumentId: r.id,
+          name: r.name,
+          organizationId: r.organization_id,
+          isFileExtract: isFileCanonicalExtract(r),
+        })),
+        notices: [],
+        defaultSave: false,
+      });
+      const skipped = skippedSentence(items);
+      if (skipped) toast.info(skipped.trim());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "The selected Sources could not be read.");
+    }
+  };
+
+  const doProcess = async (items: KnowledgeHit[], label = "Processing") => {
+    if (sample) {
+      toast.info(SAMPLE_WRITE_REFUSAL);
+      return;
+    }
+    const ids = sourceTargets(items).map((t) => t.id);
+    if (!ids.length) {
+      toast.info("Process now works on Sources; none of the selected items is a Source.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const rows = [...(await readActionableSources(ids)).values()];
+      const outcome = await runSourceBulk(label, rows, (r) =>
+        processSourceRow(r, stages.facts.get(r.id)?.currentDocumentId ?? null),
+      );
+      const sentence = `${outcome.sentence}${skippedSentence(items)}`;
+      if (outcome.ok) toast.success(sentence);
+      else toast.error(sentence);
+      setSelected(new Set());
+      stages.refresh();
+      results.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Nothing was processed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleStage = (st: HubStage) =>
+    write({ stage: state.stage.includes(st) ? state.stage.filter((x) => x !== st) : [...state.stage, st] });
+
+  const stageColumn = sample
+    ? undefined
+    : {
+        label: (h: KnowledgeHit) => {
+          const id = stageSourceId(h);
+          if (!id) return "—";
+          const st = stages.stageFor(id);
+          return st ? HUB_STAGE_LABEL[st] : "Checking…";
+        },
+        cell: (h: KnowledgeHit) => {
+          const id = stageSourceId(h);
+          if (!id) return <span className="text-xs text-muted-foreground">—</span>;
+          return (
+            <SourceStageCell
+              facts={stages.facts.get(id)}
+              read={{ loading: stages.loading, failed: stages.failedIds.has(id), retrying: false }}
+              busy={busy}
+              onReindex={() => void doProcess([h], "Re-indexing")}
+              onRetryRead={() => stages.retry([id])}
+            />
+          );
+        },
+      };
+
+  // ─── agent surface (the Knowledge Library surface the Sources page emitted) ─
+
+  const peekSourceId = state.peek?.entity === "processed_document" ? state.peek.id : null;
+  const getScope = () =>
+    buildRagLibraryContextData({
+      view: "library",
+      summary: null,
+      documents: hubSourceSummaries(hits, stages.facts),
+      totalMatches: loadedSourceIds.length,
+      searchQuery: state.query.text ?? "",
+      statusFilter: "all",
+      listLoading: results.sections.some((s) => s.status === "loading"),
+      listError: null,
+      selectedDocumentId: peekSourceId,
+      jobs: runner.jobs,
+      selectionText: typeof window !== "undefined" ? (window.getSelection()?.toString() ?? "") : "",
+    });
+  const getWriteHandlers = () =>
+    buildHubWriteHandlers({
+      setSearch: (text) => write({ query: normalizeQuery({ ...state.query, text }) }),
+      showAllSources: () =>
+        write({
+          view: { kind: "kind", key: "processed_document" },
+          query: { mode: "find", types: ["processed_document"], ...(state.query.text ? { text: state.query.text } : {}) },
+          stage: [],
+          peek: null,
+        }),
+      listedSourceIds: () => new Set(loadedSourceIds),
+      openSource: (id) => write({ peek: { entity: "processed_document", id } }, { replace: true }),
+    });
 
   // ─── keyboard (Linear) ────────────────────────────────────────────────────
 
@@ -838,6 +1025,16 @@ export function KnowledgeHubPage({
           <Inbox className="h-3.5 w-3.5" /> Back to Inbox
         </Button>
       ) : null}
+      {sourceTargets(selectedHits).length ? (
+        <>
+          <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => void doAttach(selectedHits)} title="Attach the selected Sources to a data store, project or Library">
+            <Paperclip className="h-3.5 w-3.5" /> Attach…
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => void doProcess(selectedHits)} title="Make the selected Sources searchable now">
+            <Sparkles className="h-3.5 w-3.5" /> Process now
+          </Button>
+        </>
+      ) : null}
       <Button
         size="sm"
         variant="ghost"
@@ -884,6 +1081,16 @@ export function KnowledgeHubPage({
             onQueryChange={(q) => write({ query: normalizeQuery(q) })}
             hits={hits}
             total={total}
+            stage={
+              sample || trashView
+                ? undefined
+                : {
+                    selected: state.stage,
+                    counts: stageCounts(baseHits, stages.stageFor),
+                    onToggle: toggleStage,
+                    note: stageNote,
+                  }
+            }
           >
             <div>
               <HubSearchBox
@@ -901,6 +1108,36 @@ export function KnowledgeHubPage({
           </HubFilterMenu>
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" aria-label="Advanced search options" title="Advanced">
+                <SlidersHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel>Search reach</DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={state.query.organizations?.length ? "current" : "all"}
+                onValueChange={(v) =>
+                  write({
+                    query: normalizeQuery({
+                      ...state.query,
+                      organizations: v === "current" && activeOrgId ? [activeOrgId] : undefined,
+                    }),
+                  })
+                }
+              >
+                <DropdownMenuRadioItem value="all">Every organization I belong to</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="current" disabled={!activeOrgId}>
+                  {activeOrgName ? `Only ${activeOrgName}` : "Only the selected organization (choose one first)"}
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+              <DropdownMenuSeparator />
+              <p className="px-2 py-1.5 text-[11px] text-muted-foreground">
+                Developer tools for search (pipeline trace, agent simulation, diagnostics) are in the admin Search Lab.
+              </p>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {dirty && openSavedView?.mine ? (
             <Button
               size="sm"
@@ -928,6 +1165,33 @@ export function KnowledgeHubPage({
       </div>
       {!searching ? <div className="sm:hidden">{layoutSwitch}</div> : null}
       {bulkBar}
+      {state.stage.length && !trashView ? (
+        <div className="flex flex-wrap items-center gap-1.5 text-xs" role="status">
+          <span className="text-muted-foreground">Stage:</span>
+          {state.stage.map((st) => (
+            <button
+              key={st}
+              type="button"
+              onClick={() => toggleStage(st)}
+              className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/60 px-2 py-0.5 hover:bg-accent"
+              aria-label={`Remove the ${HUB_STAGE_LABEL[st]} filter`}
+            >
+              {HUB_STAGE_LABEL[st]} <X className="h-3 w-3" />
+            </button>
+          ))}
+          {stageNote ? <span className="text-muted-foreground">{stageNote}</span> : null}
+        </div>
+      ) : null}
+      {!trashView && stages.failedIds.size ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs" role="status">
+          <span className="min-w-0 flex-1">
+            The status of {stages.failedIds.size === 1 ? "1 Source" : `${stages.failedIds.size} Sources`} could not be read. Other rows are unaffected.
+          </span>
+          <button type="button" className="font-medium underline-offset-2 hover:underline" onClick={() => stages.retry([...stages.failedIds])}>
+            Retry all
+          </button>
+        </div>
+      ) : null}
       {triageFiltered ? (
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground" role="status">
           <span className="min-w-0 flex-1">
@@ -950,7 +1214,9 @@ export function KnowledgeHubPage({
         <p className="px-2 py-4 text-sm text-muted-foreground" role="status">Reading your libraries…</p>
       ) : null}
       <div className={noLibraries || expanding ? "hidden" : "flex min-h-0 flex-1 flex-col overflow-hidden"}>
-        {state.view.kind === "favorites" && sidebar.favorites.status !== "ready" ? (
+        {trashView ? (
+          <LibraryTrashList filterText={state.query.text} onMutated={() => results.refresh()} />
+        ) : state.view.kind === "favorites" && sidebar.favorites.status !== "ready" ? (
           sidebar.favorites.status === "error" ? (
             <p className="px-2 py-4 text-sm text-destructive">{sidebar.favorites.error}</p>
           ) : (
@@ -980,6 +1246,8 @@ export function KnowledgeHubPage({
             )}
             onShowMore={triageView ? triage.showMore : results.showMore}
             onRetry={triageView ? triage.refresh : results.retry}
+            stage={stageColumn}
+            emptyExtra={state.view.kind === "everything" && !sample ? <HubGettingStarted /> : null}
           />
         )}
       </div>
@@ -1098,12 +1366,36 @@ export function KnowledgeHubPage({
         </div>
       }
       right={
-        <TapTargetButton
-          icon={<FlaskConical className="h-4 w-4" />}
-          ariaLabel={sample ? "Show my knowledge" : "Try sample data"}
-          label={sample ? "My knowledge" : "Sample data"}
-          onClick={() => write({ data: sample ? "live" : "sample", peek: null })}
-        />
+        <div className="flex items-center gap-1">
+          {runner.jobs.length ? (
+            <TapTargetButton
+              icon={<Activity className="h-4 w-4" />}
+              ariaLabel="Processing jobs"
+              label={runningJobs ? `Processing ${runningJobs}` : "Jobs"}
+              onClick={() => setJobsOpen(true)}
+            />
+          ) : null}
+          <TapTargetButton
+            icon={<FlaskConical className="h-4 w-4" />}
+            ariaLabel={sample ? "Show my knowledge" : "Try sample data"}
+            label={sample ? "My knowledge" : "Sample data"}
+            onClick={() => write({ data: sample ? "live" : "sample", peek: null })}
+          />
+          {sample ? null : (
+            <SourceAddMenu
+              runner={runner}
+              onLanded={() => {
+                results.refresh();
+                triage.refresh();
+                stages.refresh();
+              }}
+              onJobStarted={(jobId) => {
+                setFocusJobId(jobId);
+                setJobsOpen(true);
+              }}
+            />
+          )}
+        </div>
       }
     />
   );
@@ -1145,6 +1437,33 @@ export function KnowledgeHubPage({
       }}
     />
     <TriageHelpSheet open={helpOpen} onOpenChange={setHelpOpen} />
+    <SourceSaveDialog
+      target={saveTarget}
+      onClose={() => setSaveTarget(null)}
+      onSettled={() => results.refresh()}
+      onSaved={() => {
+        setSelected(new Set());
+        setFiledVersion((n) => n + 1);
+        results.refresh();
+        stages.refresh();
+      }}
+    />
+    <ProcessingProgressSheet
+      open={jobsOpen}
+      onOpenChange={(o) => {
+        setJobsOpen(o);
+        if (!o) {
+          results.refresh();
+          stages.refresh();
+        }
+      }}
+      jobs={runner.jobs}
+      focusJobId={focusJobId}
+      onCancel={runner.cancel}
+      onDismiss={runner.dismiss}
+      onCancelAll={runner.cancelAll}
+      onDismissAll={runner.dismissAll}
+    />
     <FileUnderDialog
       open={fileUnderFor !== null}
       onOpenChange={(o) => {
@@ -1163,18 +1482,18 @@ export function KnowledgeHubPage({
 
   if (isMobile) {
     return (
-      <>
+      <SurfaceRuntimeProvider surfaceName={HUB_LIBRARY_SURFACE} getScope={getScope} getWriteHandlers={getWriteHandlers} isEditable={false}>
         {header}
         <div className="h-full overflow-hidden pt-[var(--shell-header-h)]" data-testid="knowledge-hub-mobile">
           {askNode ? askNode : peekNode ? peekNode : mobilePane === "sidebar" ? sidebarNode : main}
         </div>
         {dialogs}
-      </>
+      </SurfaceRuntimeProvider>
     );
   }
 
   return (
-    <>
+    <SurfaceRuntimeProvider surfaceName={HUB_LIBRARY_SURFACE} getScope={getScope} getWriteHandlers={getWriteHandlers} isEditable={false}>
       {header}
       <div className="h-full w-full overflow-hidden" data-testid="knowledge-hub">
         <ClientGroup
@@ -1220,6 +1539,6 @@ export function KnowledgeHubPage({
         </ClientGroup>
       </div>
       {dialogs}
-    </>
+    </SurfaceRuntimeProvider>
   );
 }
