@@ -23,6 +23,12 @@
 import * as React from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+import { buildConsentPlan } from "@/features/connectors/consent-plan";
+import type {
+  ConnectorAccount,
+  ConnectorCapabilityRollout,
+} from "@/features/connectors/health";
+import { GOOGLE_CONNECTOR_PROVIDER } from "@/features/connectors/provider-config";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -67,7 +73,15 @@ const {
 
 /** Every GIS code client the provider asked for, and how to answer it. */
 type StubbedClient = {
-  config: { callback?: (response: { code?: string }) => void };
+  config: {
+    client_id?: string;
+    scope?: string;
+    ux_mode?: "popup" | "redirect";
+    select_account?: boolean;
+    include_granted_scopes?: boolean;
+    enable_granular_consent?: boolean;
+    callback?: (response: { code?: string }) => void;
+  };
   requested: boolean;
 };
 let clients: StubbedClient[] = [];
@@ -146,10 +160,59 @@ function mountProvider(): {
 }
 
 const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
+const GMAIL_READONLY = "https://www.googleapis.com/auth/gmail.readonly";
+const DRIVE_FILE = "https://www.googleapis.com/auth/drive.file";
 const REDIRECT_OPTIONS = {
   owner: { type: "user" as const },
   organizationContextId: "11111111-2222-3333-4444-555555555555",
 };
+
+function rollout(): ConnectorCapabilityRollout[] {
+  const keys = [
+    ...new Set(
+      GOOGLE_CONNECTOR_PROVIDER.products.flatMap(
+        (product) => product.capabilityKeys,
+      ),
+    ),
+  ];
+  return keys.map((capabilityKey) => ({
+    capabilityKey,
+    phase: "available",
+    eligible: true,
+    requiredScopes: [],
+    ineligibleReason: null,
+  }));
+}
+
+function existingAccount(scopes: readonly string[]): ConnectorAccount {
+  return {
+    id: "conn-1",
+    label: "reviewer@example.test",
+    ownerKind: "person",
+    organizationId: null,
+    providerSubject: "google-subject-1",
+    grantedScopes: scopes,
+    usable: true,
+    statusLabel: "Connected",
+    statusReason: "fine",
+    statusRemedy: null,
+    lastVerifiedAt: "2026-09-17T00:00:00Z",
+    lastRefusalSentence: null,
+  };
+}
+
+function gmailReadPlan(account: ConnectorAccount | null) {
+  const plan = buildConsentPlan({
+    provider: GOOGLE_CONNECTOR_PROVIDER,
+    selectedProductKeys: ["gmail_read"],
+    account,
+    rollout: rollout(),
+  });
+  if (!plan.request) {
+    throw new Error("The Gmail reading selection must produce a consent request.");
+  }
+  return plan.request;
+}
 
 /**
  * 🚨 A PRESS IS DELIBERATELY *NOT* WRAPPED IN `act`.
@@ -250,6 +313,78 @@ describe("the provider primitives take the one-window gate themselves", () => {
         "Google authorization was closed before it finished.",
       );
       expect(googleAuthorizationGateIsHeld()).toBe(false);
+    } finally {
+      mounted.unmount();
+    }
+  });
+});
+
+/**
+ * The pure consent-plan suite proves the planner's scope arithmetic. This
+ * seam proves those actual scopes survive into the REAL GIS call: Google sees
+ * `scope`, `client_id`, and its incremental-grant flag only here.
+ */
+describe("the consent plan reaches Google Identity Services unchanged", () => {
+  beforeEach(() => {
+    resetGoogleAuthorizationGateForTests();
+    installGoogleIdentityStub();
+  });
+
+  it("sends a fresh Gmail-reading request to GIS with exactly its readonly and identity scopes", async () => {
+    const plan = gmailReadPlan(null);
+    const mounted = mountProvider();
+    try {
+      const authorization = mounted.api().requestAuthorizationCode(plan.scopes);
+
+      expect(clients).toHaveLength(1);
+      expect(clients[0].config).toMatchObject({
+        client_id: "test-client-id.apps.googleusercontent.com",
+        scope: ["openid", "email", "profile", GMAIL_READONLY].join(" "),
+        ux_mode: "popup",
+        select_account: true,
+        include_granted_scopes: false,
+      });
+      expect(clients[0].config.scope?.split(" ")).toEqual([
+        "openid",
+        "email",
+        "profile",
+        GMAIL_READONLY,
+      ]);
+
+      await act(async () => {
+        clients[0].config.callback?.({ code: "gmail-read-code" });
+      });
+      await expect(authorization).resolves.toBe("gmail-read-code");
+    } finally {
+      mounted.unmount();
+    }
+  });
+
+  it("carries an existing account's prior scope to GIS without adding an unrelated one", async () => {
+    const plan = gmailReadPlan(existingAccount(["openid", DRIVE_FILE]));
+    const mounted = mountProvider();
+    try {
+      const authorization = mounted.api().requestAuthorizationCode(plan.scopes);
+
+      expect(clients).toHaveLength(1);
+      expect(clients[0].config.scope?.split(" ")).toEqual([
+        "openid",
+        "email",
+        "profile",
+        DRIVE_FILE,
+        GMAIL_READONLY,
+      ]);
+      expect(clients[0].config.scope).not.toContain(
+        "https://www.googleapis.com/auth/gmail.send",
+      );
+      expect(clients[0].config.scope).not.toContain(
+        "https://www.googleapis.com/auth/gmail.modify",
+      );
+
+      await act(async () => {
+        clients[0].config.callback?.({ code: "existing-account-code" });
+      });
+      await expect(authorization).resolves.toBe("existing-account-code");
     } finally {
       mounted.unmount();
     }
