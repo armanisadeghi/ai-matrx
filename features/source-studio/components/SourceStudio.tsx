@@ -787,22 +787,30 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
           )}
         </div>
 
-        {!layout.sideInline && (
-          <Drawer
-            open={sideSheetOpen}
-            onOpenChange={setSideSheetOpen}
-            direction={tablet ? "right" : "bottom"}
+        {!layout.sideInline && sideSheetOpen && (
+          // A NON-modal side panel, not a Drawer: the association grid's
+          // picker opens as a floating window, and a modal sheet's scrim sits
+          // above every window (and closes on the click that picks).
+          <section
+            aria-label="Chunks, entities and attachments"
+            className="absolute inset-y-0 right-0 z-30 flex w-full flex-col border-l border-border bg-background pt-[var(--shell-header-h)] shadow-xl sm:w-[420px]"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setSideSheetOpen(false);
+            }}
           >
-            <DrawerContent className={tablet ? "w-[420px] max-w-[90vw]" : "h-[85dvh]"}>
-              {/* One column child: a side drawer lays its children in a row. */}
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                <DrawerHeader className="px-4">
-                  <DrawerTitle>Chunks, entities and attachments</DrawerTitle>
-                </DrawerHeader>
-                <div className="flex min-h-0 flex-1 flex-col">{sidePanes}</div>
-              </div>
-            </DrawerContent>
-          </Drawer>
+            <div className="flex h-10 shrink-0 items-center gap-2 border-b px-4">
+              <h2 className="text-sm font-semibold">Chunks, entities and attachments</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-auto h-7 px-2 text-xs"
+                onClick={() => setSideSheetOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+            <div className="flex min-h-0 flex-1 flex-col">{sidePanes}</div>
+          </section>
         )}
         {!layout.partsInline && !isWeb && (
           <Drawer open={partsSheetOpen} onOpenChange={setPartsSheetOpen} direction="bottom">
@@ -916,6 +924,7 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
+
 
 function nameOf(p: StudioPortion): string {
   return p.locator ? portionLabel(p.locator) : `Page ${p.pageNumber}`;
