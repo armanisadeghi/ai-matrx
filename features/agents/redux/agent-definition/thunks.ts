@@ -545,7 +545,16 @@ export const fetchAgentExecutionMinimal = createAsyncThunk<
     }
 
     const raw = Array.isArray(data) ? data[0] : data;
-    if (!raw) return;
+    if (!raw) {
+      // NO ROW IS A REFUSAL, never a quiet success. The RPC answers `[]` when
+      // the caller cannot read the agent (another organization's agent behind
+      // a shared app). Returning here left `isReady` false forever with no
+      // error, so every Run on /agent-apps/[id]/run "was still loading"
+      // (page-pass 2026-09-27) and callers never reached their fallback door.
+      const message = `Agent ${agentId} is not readable by you (no execution payload returned).`;
+      dispatch(setAgentError({ id: agentId, error: message }));
+      throw new Error(message);
+    }
     const row = raw as unknown as AgentExecutionMinimal;
 
     dispatch(
