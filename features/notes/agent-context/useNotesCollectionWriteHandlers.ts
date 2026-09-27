@@ -290,32 +290,38 @@ export function useNotesCollectionWriteHandlers(
       return names;
     };
 
+    // Names resolve against the database BEFORE the approval card, so an
+    // unknown or ambiguous scope is refused without asking the person.
+    const resolveScopes = async (value: unknown) => {
+      const names = parseScopes(value);
+      const found = await scopesService.findScopesByName(activeOrganizationId, names);
+      if (isScopesRpcErr(found)) throw new Error(found.error.message);
+      const byName = new Map<string, Array<{ id: string; name: string; type: string }>>();
+      for (const s of found.data) {
+        const k = s.name.toLowerCase();
+        byName.set(k, [...(byName.get(k) ?? []), s]);
+      }
+      const missing = names.filter((n) => !byName.has(n.toLowerCase()));
+      if (missing.length)
+        throw new Error(
+          `No scope named ${missing.map((m) => `"${m}"`).join(", ")} in this note's organization. Scopes are created by the person; use names that already exist. Nothing was changed.`,
+        );
+      const ambiguous = names.filter((n) => (byName.get(n.toLowerCase())?.length ?? 0) > 1);
+      if (ambiguous.length)
+        throw new Error(
+          `More than one scope is named ${ambiguous.map((m) => `"${m}"`).join(", ")} (different scope types); ask the person which one. Nothing was changed.`,
+        );
+      return names.map((n) => byName.get(n.toLowerCase())![0]);
+    };
+
     return {
       ...handlers,
       note_scopes: {
-        validate: (value) => {
-          parseScopes(value);
+        validate: async (value) => {
+          await resolveScopes(value);
         },
         apply: async (value) => {
-          const names = parseScopes(value);
-          const found = await scopesService.findScopesByName(activeOrganizationId, names);
-          if (isScopesRpcErr(found)) throw new Error(found.error.message);
-          const byName = new Map<string, Array<{ id: string; name: string; type: string }>>();
-          for (const s of found.data) {
-            const k = s.name.toLowerCase();
-            byName.set(k, [...(byName.get(k) ?? []), s]);
-          }
-          const missing = names.filter((n) => !byName.has(n.toLowerCase()));
-          if (missing.length)
-            refuseSurfaceWrite(
-              `No scope named ${missing.map((m) => `"${m}"`).join(", ")} in this note's organization. Scopes are created by the person; use names that already exist.`,
-            );
-          const ambiguous = names.filter((n) => (byName.get(n.toLowerCase())?.length ?? 0) > 1);
-          if (ambiguous.length)
-            refuseSurfaceWrite(
-              `More than one scope is named ${ambiguous.map((m) => `"${m}"`).join(", ")} (different scope types); ask the person which one.`,
-            );
-          const picked = names.map((n) => byName.get(n.toLowerCase())![0]);
+          const picked = await resolveScopes(value);
           const res = await dispatch(
             setEntityScopes({
               entityType: "note",

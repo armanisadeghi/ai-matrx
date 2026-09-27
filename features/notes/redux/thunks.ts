@@ -1399,6 +1399,12 @@ export const copyNote = createAsyncThunk<
       label: copyLabel,
       content: record.content,
       folder_name: record.folder_name,
+      // The folder's identity travels with its name when the copy stays in
+      // the original's organization — a name alone made the copy a second,
+      // id-less "Draft" group in the sidebar (page-pass 2026-09-27).
+      ...(record.folder_id && copyOrganizationId === record.organization_id
+        ? { folder_id: record.folder_id }
+        : {}),
       tags: record.tags ?? [],
       metadata: {},
       position: 0,
