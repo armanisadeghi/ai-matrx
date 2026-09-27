@@ -12,8 +12,10 @@
  *   enter ......................... focus selected   esc ...................... leave focus / tool, then deselect
  *   V H T F N P R O L ⇧L .......... tools (engine/tools.ts)   ⇧G ........... layout guides
  *   arrows ........................ nudge the view (in focus: previous / next tile)
- * The one exception to "scroll moves the board": the SELECTED tile, under the
- * pointer, with room to scroll that way, scrolls itself.
+ * The one exception to "scroll moves the board": the INTERACTING tile, under
+ * the pointer, with room to scroll that way, scrolls itself.
+ * Tiles: click selects (drag moves from anywhere), double-click or a press on a
+ * control inside starts interacting (native input), Esc steps back out.
  *
  * The camera is written straight to the DOM (no React render per frame) and
  * mirrored into `#cam=x,y,z` so a view is a shareable link.
@@ -176,7 +178,7 @@ export function SpatialViewport({
       const intent = store.wheel.intent(e);
       // THE ONE EXCEPTION: the selected tile, under the pointer, with room to
       // scroll in that direction, scrolls itself instead of moving the board.
-      if (!(e.ctrlKey || e.metaKey) && selectedTileScrolls(e, store.getSelected())) return;
+      if (!(e.ctrlKey || e.metaKey) && selectedTileScrolls(e, store.getEditing())) return;
       e.preventDefault();
       const bounds = root.getBoundingClientRect();
       const cam = store.getCamera();
@@ -318,6 +320,15 @@ export function SpatialViewport({
         return;
       }
       if (isTyping(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
+      // While a tile is interacting its content owns the keyboard (lists,
+      // players, editors) — the board answers only Esc, which steps back out.
+      if (store.getEditing() && !store.getFocused()) {
+        if (e.key === "Escape") {
+          store.setEditing(null);
+          e.preventDefault();
+        }
+        return;
+      }
       const size = store.getSize();
       const cam = store.getCamera();
       const centre = (z: number) => store.flyTo(zoomAt(cam, size.w / 2, size.h / 2, z), 220);
@@ -409,8 +420,8 @@ function isTyping(target: EventTarget | null): boolean {
   return el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName);
 }
 
-/** True when the wheel should scroll the selected tile's own content: the
- * pointer is inside the SELECTED tile (or its focused card) and the nearest
+/** True when the wheel should scroll the interacting tile's own content: the
+ * pointer is inside the INTERACTING tile (or its focused card) and the nearest
  * scrollable element between the pointer and the tile has room to scroll that
  * way. Any scroll container counts — tile bodies need no special marker. */
 function selectedTileScrolls(e: WheelEvent, selected: string | null): boolean {

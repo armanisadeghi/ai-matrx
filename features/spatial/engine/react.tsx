@@ -68,3 +68,9 @@ export function useLayoutGuides(): boolean {
   const store = useSpatialStore();
   return useSyncExternalStore(store.subscribeUi, store.getGuides, store.getGuides);
 }
+
+/** The tile whose content currently receives input natively, if any. */
+export function useEditingTile(): string | null {
+  const store = useSpatialStore();
+  return useSyncExternalStore(store.subscribeEditing, store.getEditing, store.getEditing);
+}

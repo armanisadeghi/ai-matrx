@@ -57,7 +57,7 @@ import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import { buildWireText } from "@/features/content-ir/studio/stream-simulator";
 import type { Rect } from "../engine/camera";
-import { useSelectedTile } from "../engine/react";
+import { useEditingTile } from "../engine/react";
 import type { SpatialStore } from "../engine/spatial-store";
 import { DEFAULT_THROW_ACTIONS, type ThrowDirection } from "../engine/throw";
 import { useBoard } from "../board/useBoard";
@@ -489,7 +489,13 @@ export function SpatialDemoBoard({
     toast("Deleted", { action: { label: "Undo", onClick: tiles.undo } });
   };
 
-  useBoardKeys({ undo: tiles.undo, redo: tiles.redo, deleteSelected });
+  useBoardKeys({
+    undo: tiles.undo,
+    redo: tiles.redo,
+    deleteSelected,
+    // A tile's content owns the keyboard while interacting (its own undo, Delete).
+    enabled: () => !store?.getEditing(),
+  });
 
   const allTiles = tiles.tiles;
   const byId = new Map(allTiles.map((t) => [t.id, t]));
@@ -637,7 +643,7 @@ function BoardTile({
   onContent: (content: TileContent, title?: string) => void;
 }) {
   const c = spec.content;
-  const selected = useSelectedTile() === spec.id;
+  const interacting = useEditingTile() === spec.id;
   const statusFrom: StatusFrom =
     c.type === "stream"
       ? { kind: "self", source: c.stream }
@@ -661,7 +667,7 @@ function BoardTile({
           case "stream":
             return <StreamTileBody source={c.stream} tier={tier} />;
           case "html":
-            return <HtmlTileBody src={c.src} title={spec.title} tier={tier} active={selected} />;
+            return <HtmlTileBody src={c.src} title={spec.title} tier={tier} active={interacting} />;
           case "image":
             return <GatedImage src={c.src} alt={spec.title} waitFor={c.waitFor ?? null} />;
           case "pending":
@@ -750,19 +756,22 @@ function useBoardKeys({
   undo,
   redo,
   deleteSelected,
+  enabled,
 }: {
   undo: () => void;
   redo: () => void;
   deleteSelected: () => void;
+  enabled: () => boolean;
 }) {
-  const handlers = useRef({ undo, redo, deleteSelected });
+  const handlers = useRef({ undo, redo, deleteSelected, enabled });
   useEffect(() => {
-    handlers.current = { undo, redo, deleteSelected };
+    handlers.current = { undo, redo, deleteSelected, enabled };
   });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
       if (el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))) return;
+      if (!handlers.current.enabled()) return;
       const mod = e.metaKey || e.ctrlKey;
       if (mod && e.key.toLowerCase() === "z") {
         e.preventDefault();
