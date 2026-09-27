@@ -36,7 +36,8 @@ export const GOOGLE_SCOPE = {
     "https://www.googleapis.com/auth/meetings.space.readonly",
   calendarEventsOwnedReadonly:
     "https://www.googleapis.com/auth/calendar.events.owned.readonly",
-  // Pending selected shared-calendar read grants. No consent flow requests these yet.
+  // Selected-calendar review is internal-test only; the server admits its
+  // dedicated consent selection only for registered OAuth reviewers and super admins.
   calendarListReadonly:
     "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
   calendarEventsReadonly:

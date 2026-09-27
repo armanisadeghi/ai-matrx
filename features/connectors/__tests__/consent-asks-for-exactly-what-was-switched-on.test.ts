@@ -24,9 +24,12 @@ import type { ConnectorAccount } from "../health";
 
 const DRIVE_FILE = "https://www.googleapis.com/auth/drive.file";
 const GMAIL_SEND = "https://www.googleapis.com/auth/gmail.send";
-const CALENDAR = "https://www.googleapis.com/auth/calendar.events.owned.readonly";
-const CALENDAR_LIST = "https://www.googleapis.com/auth/calendar.calendarlist.readonly";
-const CALENDAR_EVENTS = "https://www.googleapis.com/auth/calendar.events.readonly";
+const CALENDAR =
+  "https://www.googleapis.com/auth/calendar.events.owned.readonly";
+const CALENDAR_LIST =
+  "https://www.googleapis.com/auth/calendar.calendarlist.readonly";
+const CALENDAR_EVENTS =
+  "https://www.googleapis.com/auth/calendar.events.readonly";
 const GSC = "https://www.googleapis.com/auth/webmasters.readonly";
 const OPENID = "openid";
 
@@ -151,10 +154,14 @@ describe("buildConsentPlan", () => {
       provider,
       selectedProductKeys: ["calendar_shared"],
       account: account([OPENID, DRIVE_FILE]),
-      rollout: rollout({ calendar_shared: { phase: "pending", eligible: true } }),
+      rollout: rollout({
+        calendar_shared: { phase: "pending", eligible: true },
+      }),
     });
     expect(plan.request?.capabilityKeys).toEqual(["calendar_shared"]);
-    expect(plan.request?.scopes).toEqual(expect.arrayContaining([CALENDAR_LIST, CALENDAR_EVENTS]));
+    expect(plan.request?.scopes).toEqual(
+      expect.arrayContaining([CALENDAR_LIST, CALENDAR_EVENTS]),
+    );
     expect(plan.request?.scopes).not.toContain(CALENDAR);
   });
 
@@ -163,10 +170,14 @@ describe("buildConsentPlan", () => {
       provider,
       selectedProductKeys: ["calendar_shared"],
       account: account([OPENID, DRIVE_FILE]),
-      rollout: rollout({ calendar_shared: { phase: "pending", eligible: false } }),
+      rollout: rollout({
+        calendar_shared: { phase: "pending", eligible: false },
+      }),
     });
     expect(plan.request).toBeNull();
-    expect(plan.blocked.map((item) => item.productKey)).toEqual(["calendar_shared"]);
+    expect(plan.blocked.map((item) => item.productKey)).toEqual([
+      "calendar_shared",
+    ]);
   });
 });
 

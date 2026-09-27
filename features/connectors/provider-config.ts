@@ -286,7 +286,8 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
     {
       key: "gmail",
       name: "Gmail",
-      promise: "Send emails you have reviewed. This sending permission cannot read your inbox.",
+      promise:
+        "Send emails you have reviewed. This sending permission cannot read your inbox.",
       group: WORKSPACE_GROUP,
       icon: Mail,
       capabilityKeys: ["gmail_send"],
@@ -376,7 +377,8 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         GOOGLE_SCOPE.calendarEventsReadonly,
       ],
       attachableResourceTypes: [],
-      stopsOnRevoke: "selected Google calendars from being reviewed or saved here",
+      stopsOnRevoke:
+        "selected Google calendars from being reviewed or saved here",
       // The same internal reviewer tab lives in the canonical Calendar window.
       // The server catalog keeps this row pending for everyone except registered
       // OAuth reviewers and super admins, so ordinary accounts cannot enable it.

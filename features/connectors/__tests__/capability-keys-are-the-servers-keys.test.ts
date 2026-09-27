@@ -77,8 +77,7 @@ function keysFromServer(): string[] {
 function resourceTypesFromServer(): Map<string, string[]> {
   const source = readFileSync(CAPABILITIES, "utf8");
   const out = new Map<string, string[]>();
-  const re =
-    /key="([a-z0-9_]+)"[\s\S]*?eligible_resource_types=\(([^)]*)\)/g;
+  const re = /key="([a-z0-9_]+)"[\s\S]*?eligible_resource_types=\(([^)]*)\)/g;
   for (let m = re.exec(source); m; m = re.exec(source)) {
     out.set(
       m[1]!,
@@ -103,25 +102,33 @@ const clientResourceTypes = new Set(
  * else may. Pending capabilities stay here until their consent and account UI
  * are ready; every other catalog key needs a product row.
  */
-const NOT_SURFACED: Record<string, { reason: string; internalFilesRoute?: boolean }> = {
+const NOT_SURFACED: Record<
+  string,
+  { reason: string; internalFilesRoute?: boolean }
+> = {
   calendar_write: {
-    reason: "Calendar writes have no reviewed product actions or Google consent yet.",
+    reason:
+      "Calendar writes have no reviewed product actions or Google consent yet.",
   },
   contacts_write: {
-    reason: "Google Contact edits remain an internal source path with no consent row.",
+    reason:
+      "Google Contact edits remain an internal source path with no consent row.",
   },
   directory: {
-    reason: "Workspace directory preview remains internal and has no consent row.",
+    reason:
+      "Workspace directory preview remains internal and has no consent row.",
   },
   drive_browse: {
-    reason: "Whole-Drive browsing has an internal Files route, not a public consent row.",
+    reason:
+      "Whole-Drive browsing has an internal Files route, not a public consent row.",
     internalFilesRoute: true,
   },
   meet: {
     reason: "Google Meet preview remains internal and has no consent row.",
   },
   other_contacts: {
-    reason: "Google Other Contacts preview remains internal and has no consent row.",
+    reason:
+      "Google Other Contacts preview remains internal and has no consent row.",
   },
   tasks_write: {
     reason: "Google Task changes remain internal and have no consent row.",
@@ -132,8 +139,12 @@ function serverDescriptor(key: string): string {
   const source = readFileSync(CAPABILITIES, "utf8");
   const marker = `key="${key}"`;
   const start = source.indexOf(marker);
-  if (start < 0) throw new Error(`Missing server capability descriptor: ${key}`);
-  const end = source.indexOf("GoogleCapabilityDescriptor(", start + marker.length);
+  if (start < 0)
+    throw new Error(`Missing server capability descriptor: ${key}`);
+  const end = source.indexOf(
+    "GoogleCapabilityDescriptor(",
+    start + marker.length,
+  );
   return source.slice(start, end < 0 ? undefined : end);
 }
 
@@ -185,11 +196,26 @@ const hasServer = existsSync(CAPABILITIES);
     it("keeps the internal Drive reviewer route behind its catalog gate", () => {
       expect(NOT_SURFACED.drive_browse?.internalFilesRoute).toBe(true);
       const root = process.cwd();
-      const page = readFileSync(join(root, "app/(core)/files/google-drive/page.tsx"), "utf8");
-      const library = readFileSync(join(root, "features/files/google-drive/GoogleDriveLibrary.tsx"), "utf8");
-      const desktop = readFileSync(join(root, "features/files/components/surfaces/desktop/NavSidebar.tsx"), "utf8");
-      const mobile = readFileSync(join(root, "features/files/google-drive/DriveBrowseMobileLink.tsx"), "utf8");
-      const gate = readFileSync(join(root, "features/files/google-drive/drive-browser.ts"), "utf8");
+      const page = readFileSync(
+        join(root, "app/(core)/files/google-drive/page.tsx"),
+        "utf8",
+      );
+      const library = readFileSync(
+        join(root, "features/files/google-drive/GoogleDriveLibrary.tsx"),
+        "utf8",
+      );
+      const desktop = readFileSync(
+        join(root, "features/files/components/surfaces/desktop/NavSidebar.tsx"),
+        "utf8",
+      );
+      const mobile = readFileSync(
+        join(root, "features/files/google-drive/DriveBrowseMobileLink.tsx"),
+        "utf8",
+      );
+      const gate = readFileSync(
+        join(root, "features/files/google-drive/drive-browser.ts"),
+        "utf8",
+      );
       expect(page).toContain("<GoogleDriveLibrary />");
       for (const source of [library, desktop, mobile]) {
         expect(source).toContain("driveBrowseIsAvailable(");
@@ -199,7 +225,9 @@ const hasServer = existsSync(CAPABILITIES);
     });
 
     it("carries no key the server has stopped declaring", () => {
-      expect(clientKeys.filter((key) => !keysFromServer().includes(key))).toEqual([]);
+      expect(
+        clientKeys.filter((key) => !keysFromServer().includes(key)),
+      ).toEqual([]);
     });
 
     it("can attach every resource type a surfaced capability is eligible for", () => {
@@ -241,7 +269,6 @@ it("says out loud when the cross-repo leg could not run", () => {
   }
   expect(true).toBe(true);
 });
-
 
 /**
  * THE LIVE COLUMN, VERBATIM. `users.integration_connections.capability_health`
@@ -319,7 +346,9 @@ describe("the live slides success on the row that now carries it", () => {
     expect(row.state).toBe("connected");
     expect(row.lastSuccessAt).toBe("2026-09-17T20:48:03.195512Z");
     // The capability key itself never reaches the person (D6).
-    expect(`${row.reason} ${row.label} ${row.remedy ?? ""}`).not.toContain("slides");
+    expect(`${row.reason} ${row.label} ${row.remedy ?? ""}`).not.toContain(
+      "slides",
+    );
   });
 });
 
@@ -417,12 +446,25 @@ describe("every file type the server declares can be rendered", () => {
       // it there instead of going quiet, which is what a single hard-coded path
       // would have done the hour that landed.
       const unionSources = [
-        join(AIDREAM_ROOT, "aidream", "services", "google_workspace", "resource_types.py"),
-        join(AIDREAM_ROOT, "aidream", "services", "google_workspace", "service.py"),
+        join(
+          AIDREAM_ROOT,
+          "aidream",
+          "services",
+          "google_workspace",
+          "resource_types.py",
+        ),
+        join(
+          AIDREAM_ROOT,
+          "aidream",
+          "services",
+          "google_workspace",
+          "service.py",
+        ),
       ];
       const serviceSource = unionSources.find(
         (path) =>
-          existsSync(path) && /ResourceType = Literal\[/.test(readFileSync(path, "utf8")),
+          existsSync(path) &&
+          /ResourceType = Literal\[/.test(readFileSync(path, "utf8")),
       );
       if (!serviceSource) {
         console.warn(
