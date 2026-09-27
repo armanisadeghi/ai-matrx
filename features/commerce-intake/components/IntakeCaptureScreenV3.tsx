@@ -72,6 +72,7 @@ import {
 } from "../hooks/useInstantIntakeAnalysis";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const INSTANT_MANDATE_REFS = [
   {
@@ -368,6 +369,18 @@ export function IntakeCaptureScreenV3({
 
   return (
     <div className="fixed inset-0 z-50 bg-black">
+      {/* The resume read failed: this item's saved photos are unknown, not absent
+          (same as v1). Without it the camera opened as if the item had none. */}
+      {session.resumeError ? (
+        <div className="absolute inset-x-3 top-16 z-[60] mt-safe">
+          <ReadFailure
+            error={session.resumeError}
+            what="this item's saved photos"
+            onRetry={session.retryResume}
+            className="m-0"
+          />
+        </div>
+      ) : null}
       <CameraCaptureV3
         engine={host.engine}
         onRecordIntent={onRecordIntent}
