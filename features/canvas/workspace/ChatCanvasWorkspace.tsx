@@ -5,8 +5,11 @@
  *
  *   left nav · chat panel · canvas · properties panel
  *
- * One component, three switches: nav (collapsed / hover / open), chat
- * (side / floating), and the composer's own input growth. GENERIC: the host
+ * One component, four switches: nav (collapsed / hover / open), chat (docked /
+ * floating, and open / closed — many pages start with it closed), properties
+ * (open / closed), and the composer's own input growth. Every side panel is a
+ * `DockedSidePanel`: it slides open and closed and the person drags its edge to
+ * any width between its min and max (remembered per person). GENERIC: the host
  * passes its canvas (which draws its own toolbar + zoom), a title, and
  * optionally a record (Share + comments), properties tabs, and a
  * `getCanvasContext()` that reaches the agent as ONE named context entry.
@@ -25,25 +28,23 @@
 import { useEffect, useEffectEvent, useState, type ReactNode } from "react";
 import {
   ChevronDown,
-  ExternalLink,
   Maximize,
   Maximize2,
   Menu,
   MessageSquare,
   Minimize,
+  PanelLeftClose,
   PanelRight,
   PanelRightOpen,
-  PencilLine,
   PictureInPicture2,
-  Plus,
   X,
 } from "lucide-react";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import AppLink from "@/components/navigation/AppLink";
 import { MatrxFloatingFrame } from "@/components/matrx/resizable/MatrxFloatingFrame";
+import { DockedSidePanel } from "@/components/official/side-panel/DockedSidePanel";
 import {
   Drawer,
   DrawerContent,
@@ -54,8 +55,6 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EntityCommentPopover } from "@/components/comments/EntityCommentPopover";
@@ -64,9 +63,6 @@ import type { ResourceType } from "@/utils/permissions/types";
 import { SurfaceAgentsHeaderButton } from "@/features/surfaces/components/chrome/SurfaceAgentsHeaderButton";
 import { InboxHeaderButton } from "@/features/notifications/components/InboxHeaderButton";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
-import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectConversationListItemById } from "@/features/agents/redux/conversation-list/conversation-list.selectors";
-import { conversationRenameOpener } from "@/features/agents/components/conversation-actions/rename/conversationRenameOpener";
 import { ComposerModeSwitch } from "@/features/agents/components/inputs/smart-input/composer/ComposerModeSwitch";
 import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
 import { COMPOSER_KNOBS } from "@/features/agents/components/inputs/smart-input/composer/composer-mode-cookie";
@@ -78,7 +74,6 @@ import {
   CanvasNavToggle,
   useCanvasNavState,
 } from "@/features/shell/canvas-chrome/CanvasNav";
-import type { CanvasNavPersisted } from "@/features/shell/canvas-chrome/canvas-nav-cookie";
 import { aMenuOrPopoverIsOpen } from "@/features/shell/canvas-chrome/open-layer";
 import { CanvasChatColumn, type CanvasContextEntry } from "./CanvasChatColumn";
 import {
@@ -86,12 +81,19 @@ import {
   type CanvasPropertiesTab,
 } from "./CanvasPropertiesPanel";
 import { useCanvasWorkspaceConversation } from "./useCanvasWorkspaceConversation";
+import { ChatPanelTitleMenu, useChatPanelTitle } from "./ChatPanelTitleMenu";
 import {
+  CANVAS_CHAT_SIZES,
+  CANVAS_NAV_SIZES,
+  CANVAS_PANEL_IDS,
+  CANVAS_PROPERTIES_SIZES,
   writeCanvasChatCookie,
+  writeCanvasPropertiesCookie,
   type CanvasChatPlacement,
+  type CanvasChatState,
+  type CanvasWorkspaceLayout,
 } from "./workspace-cookies";
 
-export const CANVAS_CHAT_PANEL_WIDTH_PX = 440;
 const FLOATING_FALLBACK = { width: 340, height: 400 };
 /** Below this the workspace is one pane: the canvas, with chat / nav / properties in sheets. */
 const COMPACT_QUERY = "(max-width: 1023px)";
@@ -124,10 +126,10 @@ export interface ChatCanvasWorkspaceProps {
   getCanvasContext?: () => CanvasContextEntry;
   /** Shown in the composer's context rail. */
   contextChip?: AttachedContextRailItem;
-  /** Server-read cookie. */
-  initialNav?: CanvasNavPersisted;
-  /** Server-read cookie. */
-  initialChat?: CanvasChatPlacement;
+  /** Server-read (`readCanvasWorkspaceLayout`), so the first paint is the layout the person left. */
+  initialLayout?: CanvasWorkspaceLayout;
+  /** Whether the chat starts open for someone who has not chosen yet (default true). */
+  defaultChatOpen?: boolean;
   /** Server-read cookie (`readComposerModeCookie`). */
   initialMode?: ComposerMode | null;
   /** Absent = no close button. */
@@ -179,20 +181,23 @@ export function ChatCanvasWorkspace({
   properties,
   getCanvasContext,
   contextChip,
-  initialNav = "collapsed",
-  initialChat = "side",
+  initialLayout,
+  defaultChatOpen = true,
   initialMode = null,
   onClose,
 }: ChatCanvasWorkspaceProps) {
   const compact = useMediaQuery(COMPACT_QUERY);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const surfaceKey = `canvas-workspace:${id}`;
-  const chat = useCanvasWorkspaceConversation(surfaceKey);
-  const nav = useCanvasNavState(initialNav);
+  const nav = useCanvasNavState(initialLayout?.nav ?? "collapsed");
 
-  const [placement, setPlacementState] =
-    useState<CanvasChatPlacement>(initialChat);
-  const [floatOpen, setFloatOpen] = useState(true);
+  const [chatState, setChatStateRaw] = useState<CanvasChatState>(
+    initialLayout?.chat ?? { placement: "side", open: defaultChatOpen },
+  );
+  // A chat that starts closed launches nothing until it is first opened.
+  const [chatWanted, setChatWanted] = useState(chatState.open);
+  const chat = useCanvasWorkspaceConversation(surfaceKey, { enabled: chatWanted });
+  const [propertiesOpen, setPropertiesOpenRaw] = useState(initialLayout?.propertiesOpen ?? true);
   const [fullScreen, setFullScreen] = useState(false);
   const [canvasEl, setCanvasEl] = useState<HTMLDivElement | null>(null);
   const [mobileSheet, setMobileSheet] = useState<
@@ -202,18 +207,42 @@ export function ChatCanvasWorkspace({
     useSessionKnob(COMPOSER_KNOBS.floatingPanelSize),
   );
 
-  const setPlacement = (next: CanvasChatPlacement) => {
-    setPlacementState(next);
-    setFloatOpen(true);
+  const placement = chatState.placement;
+  const setChatState = (next: CanvasChatState) => {
+    setChatStateRaw(next);
+    if (next.open) setChatWanted(true);
     writeCanvasChatCookie(id, next);
   };
-  const togglePlacement = () =>
-    setPlacement(placement === "side" ? "floating" : "side");
+  /** Dock or float the chat — always open. */
+  const setPlacement = (next: CanvasChatPlacement) => setChatState({ placement: next, open: true });
+  const openChat = () => {
+    setFullScreen(false);
+    setChatState({ placement, open: true });
+  };
+  const closeChat = () => setChatState({ placement, open: false });
+  const openMobileChat = () => {
+    setChatWanted(true);
+    setMobileSheet("chat");
+  };
+  /** Nav "+" / history: the conversation shows wherever the chat is — opening it if hidden. */
+  const newChatInPanel = () => {
+    chat.startNew();
+    if (compact) openMobileChat();
+    else if (!chatState.open || fullScreen) openChat();
+  };
+  const setPropertiesOpen = (open: boolean) => {
+    setPropertiesOpenRaw(open);
+    writeCanvasPropertiesCookie(id, open);
+  };
 
-  // ⌘\ docks / undocks the chat (the global canvas sheet stands down here).
+  // ⌘\ shows / hides the chat (the global canvas sheet stands down here).
   const onShortcut = useEffectEvent(() => {
-    if (compact) setMobileSheet((open) => (open === "chat" ? null : "chat"));
-    else togglePlacement();
+    if (compact) {
+      setChatWanted(true);
+      setMobileSheet((open) => (open === "chat" ? null : "chat"));
+    }
+    else if (chatState.open && !fullScreen) closeChat();
+    else openChat();
   });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -240,18 +269,7 @@ export function ChatCanvasWorkspace({
   }, [fullScreen]);
 
   const conversationId = chat.conversationId;
-  const conversationTitle = useAppSelector((state) =>
-    conversationId ? selectConversationTitle(conversationId)(state) : null,
-  );
-  // The server names a chat after its first turn; that name lands on the
-  // conversation LIST row before the open conversation record hears of it.
-  const listTitle = useAppSelector((state) =>
-    conversationId
-      ? (selectConversationListItemById(conversationId)(state)?.title ?? null)
-      : null,
-  );
-  const chatTitle =
-    conversationTitle?.trim() || listTitle?.trim() || "New chat";
+  const chatTitle = useChatPanelTitle(conversationId);
 
   const chatColumn = (
     <CanvasChatColumn
@@ -265,66 +283,23 @@ export function ChatCanvasWorkspace({
   );
 
   const openFromHistory = (conversation: { conversationId: string }) => {
+    setChatWanted(true);
     chat.openExisting(conversation.conversationId);
     if (compact) setMobileSheet("chat");
-    else if (placement === "floating") setFloatOpen(true);
+    else if (!chatState.open || fullScreen) openChat();
   };
 
+  const hasProperties = properties !== undefined && properties.tabs.length > 0;
   const navCollapsed = nav.state !== "open";
-  const showNav = !compact && !fullScreen && nav.state !== "collapsed";
-  const showDockedChat = !compact && !fullScreen && placement === "side";
-  const showFloatingChat =
-    !compact && !fullScreen && placement === "floating" && floatOpen;
-  const showProperties =
-    !compact &&
-    !fullScreen &&
-    properties !== undefined &&
-    properties.tabs.length > 0;
+  const navShown = !fullScreen && nav.state !== "collapsed";
+  const chatShown = !fullScreen && chatState.open;
+  const showDockedChat = chatShown && placement === "side";
+  const showFloatingChat = !compact && chatShown && placement === "floating";
+  const showProperties = !fullScreen && hasProperties && propertiesOpen;
   const navToggleInCanvasHeader = !compact && navCollapsed && !showDockedChat;
 
   const chatTitleMenu = (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className="flex h-7 min-w-0 items-center gap-1 rounded-md px-1.5 text-sm font-medium text-foreground hover:bg-accent"
-        >
-          <span className="min-w-0 truncate">{chatTitle}</span>
-          <ChevronDown
-            className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-            aria-hidden="true"
-          />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-56">
-        <DropdownMenuItem onSelect={chat.startNew}>
-          <Plus className="mr-2 h-4 w-4" />
-          New chat
-        </DropdownMenuItem>
-        {conversationId ? (
-          <>
-            <DropdownMenuItem
-              onSelect={() =>
-                void conversationRenameOpener.open({
-                  conversationId,
-                  title: conversationTitle ?? listTitle,
-                })
-              }
-            >
-              <PencilLine className="mr-2 h-4 w-4" />
-              Rename
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <AppLink href={`/chat/${conversationId}`}>
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Open in full chat
-              </AppLink>
-            </DropdownMenuItem>
-          </>
-        ) : null}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <ChatPanelTitleMenu conversationId={conversationId} onNewChat={chat.startNew} />
   );
 
   const canvasTitle = titleMenu ? (
@@ -355,24 +330,42 @@ export function ChatCanvasWorkspace({
     <div className="relative flex h-full min-h-0 w-full overflow-hidden bg-background text-foreground">
       <ShellChromeMode mode="canvas" />
 
-      {/* ── Left nav: in the layout when open, a full-height overlay on hover ── */}
-      {showNav ? (
-        <CanvasNav
-          nav={nav}
-          historyScopeId={CANVAS_HISTORY_SCOPE}
-          activeConversationId={conversationId}
-          onOpenConversation={openFromHistory}
-          onNewChat={chat.startNew}
-          className="max-lg:hidden"
-        />
+      {/* ── Left nav: in the layout when open, sliding over the page on hover ── */}
+      {!compact ? (
+        <DockedSidePanel
+          panelId={CANVAS_PANEL_IDS.nav}
+          edge="left"
+          open={navShown}
+          overlay={nav.overlay}
+          sizes={CANVAS_NAV_SIZES}
+          initialWidth={initialLayout?.widths.nav}
+          aria-label="Navigation"
+          outerClassName="max-lg:hidden"
+          className={nav.overlay ? undefined : "border-r border-border"}
+        >
+          <CanvasNav
+            nav={nav}
+            historyScopeId={CANVAS_HISTORY_SCOPE}
+            activeConversationId={conversationId}
+            onOpenConversation={openFromHistory}
+            onNewChat={newChatInPanel}
+          />
+        </DockedSidePanel>
       ) : null}
 
-      {/* ── Chat panel (docked) ── */}
-      {showDockedChat ? (
-        <section
+      {/* ── Chat panel (docked). Stays mounted while closed (the conversation
+          keeps its place); the column itself lives in exactly ONE place —
+          here while docked, the floating window while floating. ── */}
+      {!compact ? (
+        <DockedSidePanel
+          panelId={CANVAS_PANEL_IDS.chat}
+          edge="left"
+          open={showDockedChat}
+          sizes={CANVAS_CHAT_SIZES}
+          initialWidth={initialLayout?.widths.chat}
           aria-label="Chat"
-          style={{ width: CANVAS_CHAT_PANEL_WIDTH_PX }}
-          className="flex h-full min-h-0 shrink-0 flex-col border-r border-border bg-card max-lg:hidden"
+          outerClassName="max-lg:hidden"
+          className="border-r border-border bg-card"
         >
           <div className="flex h-11 shrink-0 items-center gap-1 border-b border-border px-2">
             {navCollapsed ? <CanvasNavToggle nav={nav} /> : null}
@@ -381,15 +374,26 @@ export function ChatCanvasWorkspace({
             <button
               type="button"
               aria-label="Pop out chat"
-              title="Pop out chat (Ctrl/Cmd + \)"
+              title="Pop out chat"
               onClick={() => setPlacement("floating")}
               className={cn(ICON_BUTTON, "ml-1")}
             >
               <PictureInPicture2 className="h-4 w-4" />
             </button>
+            <button
+              type="button"
+              aria-label="Hide chat"
+              title="Hide chat (Ctrl/Cmd + \)"
+              onClick={closeChat}
+              className={ICON_BUTTON}
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
           </div>
-          <div className="flex min-h-0 flex-1 flex-col">{chatColumn}</div>
-        </section>
+          <div className="flex min-h-0 flex-1 flex-col">
+            {placement === "side" ? chatColumn : null}
+          </div>
+        </DockedSidePanel>
       ) : null}
 
       {/* ── Canvas area ── */}
@@ -419,7 +423,7 @@ export function ChatCanvasWorkspace({
             <button
               type="button"
               aria-label="Chat"
-              onClick={() => setMobileSheet("chat")}
+              onClick={openMobileChat}
               className={cn(ICON_BUTTON, "h-11 w-11")}
             >
               <MessageSquare className="h-5 w-5" />
@@ -436,34 +440,30 @@ export function ChatCanvasWorkspace({
             ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-1.5 max-lg:hidden">
-            {placement === "floating" && !fullScreen ? (
+            {/* The way back to a hidden chat — the one door that opens it. */}
+            {!chatShown ? (
               <button
                 type="button"
-                onClick={() => setPlacement("side")}
-                title="Dock the chat (Ctrl/Cmd + \)"
+                onClick={openChat}
+                title="Show chat (Ctrl/Cmd + \)"
                 className="flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-sm font-medium text-foreground hover:bg-accent"
               >
-                <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
+                <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
                 Chat
               </button>
             ) : null}
-            <button
-              type="button"
-              aria-label={
-                placement === "side" ? "Float the chat" : "Dock the chat"
-              }
-              aria-pressed={placement === "side"}
-              title={`${placement === "side" ? "Float" : "Dock"} the chat (Ctrl/Cmd + \\)`}
-              onClick={togglePlacement}
-              className={cn(
-                ICON_BUTTON,
-                placement === "side" &&
-                  !fullScreen &&
-                  "bg-primary/10 text-primary",
-              )}
-            >
-              <PanelRight className="h-4 w-4" />
-            </button>
+            {hasProperties ? (
+              <button
+                type="button"
+                aria-label={propertiesOpen ? "Hide properties" : "Show properties"}
+                aria-pressed={propertiesOpen}
+                title={propertiesOpen ? "Hide properties" : "Show properties"}
+                onClick={() => setPropertiesOpen(!propertiesOpen)}
+                className={cn(ICON_BUTTON, showProperties && "bg-primary/10 text-primary")}
+              >
+                <PanelRight className="h-4 w-4" />
+              </button>
+            ) : null}
           </div>
 
           <SurfaceAgentsHeaderButton isAuthenticated={isAuthenticated} />
@@ -528,7 +528,7 @@ export function ChatCanvasWorkspace({
                 minWidth={300}
                 minHeight={260}
                 initialFocus={false}
-                onClose={() => setFloatOpen(false)}
+                onClose={closeChat}
                 contentClassName="flex flex-col overflow-hidden p-0"
                 className="max-lg:hidden"
                 headerActions={
@@ -548,11 +548,19 @@ export function ChatCanvasWorkspace({
             ) : null}
           </div>
 
-          {showProperties && properties ? (
-            <CanvasPropertiesPanel
-              tabs={properties.tabs}
-              className="max-lg:hidden"
-            />
+          {!compact && hasProperties && properties ? (
+            <DockedSidePanel
+              panelId={CANVAS_PANEL_IDS.properties}
+              edge="right"
+              open={showProperties}
+              sizes={CANVAS_PROPERTIES_SIZES}
+              initialWidth={initialLayout?.widths.properties}
+              aria-label="Properties"
+              outerClassName="max-lg:hidden"
+              className="border-l border-border"
+            >
+              <CanvasPropertiesPanel tabs={properties.tabs} />
+            </DockedSidePanel>
           ) : null}
         </div>
       </div>
@@ -598,10 +606,7 @@ export function ChatCanvasWorkspace({
                   historyScopeId={CANVAS_HISTORY_SCOPE}
                   activeConversationId={conversationId}
                   onOpenConversation={openFromHistory}
-                  onNewChat={() => {
-                    chat.startNew();
-                    setMobileSheet("chat");
-                  }}
+                  onNewChat={newChatInPanel}
                 />
               ) : mobileSheet === "properties" && properties ? (
                 <CanvasPropertiesPanel tabs={properties.tabs} variant="sheet" />

@@ -21,11 +21,7 @@ import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { useMandate } from "@/features/mandates/useMandate";
 import { resumeConversation } from "@/features/agents/redux/execution-system/thunks/resume-conversation.thunk";
-import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { replaceSurfaceVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { replaceSurfaceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { useActivePageSurface } from "@/features/surfaces/runtime/useActivePageSurface";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { useConversationFollowsPage } from "@/features/surfaces/runtime/useConversationFollowsPage";
 import {
   registerSurface,
   unregisterSurface,
@@ -176,10 +172,6 @@ function QuickChatSheetBody({
   useEffect(() => {
     setIncludePageContext(readStoredPageContext());
   }, []);
-  const { surfaceName: pageSurfaceName } = useActivePageSurface();
-  const pageSurfaceLabel = pageSurfaceName
-    ? getSurfaceDisplayLabel(pageSurfaceName)
-    : null;
 
   const loadAbortRef = useRef<AbortController | null>(null);
   const activeSurfaceKeyRef = useRef<string | null>(null);
@@ -232,38 +224,11 @@ function QuickChatSheetBody({
 
   // Keep the conversation's surface stamp equal to what the toggle SAYS, for
   // whichever conversation is in the panel (fresh or reopened) and whichever
-  // page is underneath it right now.
-  const stampedSurfaceName = useAppSelector((state) =>
-    conversationId
-      ? (state.conversations.byConversationId[conversationId]?.surfaceName ??
-        null)
-      : null,
-  );
-  const conversationReady = useAppSelector((state) =>
-    conversationId
-      ? !!state.conversations.byConversationId[conversationId]
-      : false,
-  );
-  const desiredSurfaceName =
-    includePageContext && pageSurfaceName ? pageSurfaceName : null;
-  useEffect(() => {
-    if (!conversationId || !conversationReady) return;
-    if (stampedSurfaceName === desiredSurfaceName) return;
-    dispatch(
-      patchConversation({ conversationId, surfaceName: desiredSurfaceName }),
-    );
-    if (!desiredSurfaceName) {
-      // Off means OFF: drop what the page already handed over.
-      dispatch(replaceSurfaceVariableValues({ conversationId, values: {} }));
-      dispatch(replaceSurfaceContextEntries({ conversationId, entries: [] }));
-    }
-  }, [
-    dispatch,
+  // page is underneath it right now — the ONE shared implementation.
+  const { pageSurfaceName, pageSurfaceLabel } = useConversationFollowsPage(
     conversationId,
-    conversationReady,
-    stampedSurfaceName,
-    desiredSurfaceName,
-  ]);
+    includePageContext,
+  );
 
   const handleTogglePageContext = useCallback(() => {
     setIncludePageContext((prev) => {

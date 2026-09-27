@@ -1,11 +1,14 @@
 "use client";
 
 /**
- * The workspace's properties panel — 250px, tabs across the top, each tab's
+ * The workspace's properties panel — tabs across the top, each tab's
  * content in its own scroll box. Lists scroll with a FADE at the bottom edge
  * (never a hard clip) and the scrollbar stays invisible until the box is
  * hovered. The fade hides itself once the list is scrolled to its end, so the
  * last row is never dimmed.
+ *
+ * On a wide screen the workspace lays it in a `DockedSidePanel` (250px
+ * default, drag to resize, slides closed); on a phone it is a sheet's body.
  */
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -17,15 +20,13 @@ export interface CanvasPropertiesTab {
   content: ReactNode;
 }
 
-export const CANVAS_PROPERTIES_WIDTH_PX = 250;
-
 export function CanvasPropertiesPanel({
   tabs,
   variant = "panel",
   className,
 }: {
   tabs: readonly CanvasPropertiesTab[];
-  /** `sheet` = inside the mobile bottom sheet (full width, no left border). */
+  /** `panel` = inside the workspace's DockedSidePanel; `sheet` = the mobile sheet's body. */
   variant?: "panel" | "sheet";
   className?: string;
 }) {
@@ -33,14 +34,9 @@ export function CanvasPropertiesPanel({
   const active = tabs.find((tab) => tab.id === activeId) ?? tabs[0];
 
   return (
-    <aside
-      aria-label="Properties"
-      style={variant === "panel" ? { width: CANVAS_PROPERTIES_WIDTH_PX } : undefined}
-      className={cn(
-        "flex h-full min-h-0 shrink-0 flex-col bg-background px-2.5 pt-1.5",
-        variant === "panel" && "border-l border-border",
-        className,
-      )}
+    <div
+      aria-label={variant === "sheet" ? "Properties" : undefined}
+      className={cn("flex h-full min-h-0 flex-col bg-background px-2.5 pt-1.5", className)}
     >
       <div role="tablist" aria-label="Properties tabs" className="flex shrink-0 gap-2.5 border-b border-border">
         {tabs.map((tab) => {
@@ -69,7 +65,7 @@ export function CanvasPropertiesPanel({
           {active.content}
         </FadingScroll>
       ) : null}
-    </aside>
+    </div>
   );
 }
 

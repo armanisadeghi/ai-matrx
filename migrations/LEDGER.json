@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-27T17:14:35.624Z",
+  "generated_at": "2026-09-27T17:36:05.281Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2017,6 +2017,12 @@
       "filename": "finalswitch_c_the_page_says_one_set_of_counts.sql",
       "checksum": "f7905cc69f16d2e844bacdca37dfb4e0f5295a0004dc0ebe14e03ae5c97b5fc6",
       "applied_at": "2026-09-27 09:20:32.68824+00"
+    },
+    "migrations/campaign/finalswitch_d_step_one_covers_the_context_copy.sql": {
+      "source": "matrx-frontend",
+      "filename": "finalswitch_d_step_one_covers_the_context_copy.sql",
+      "checksum": "1782a62c6c333feb05f79ef09df943b2bc3c7383f8fb11c74fa8eb02849163e5",
+      "applied_at": "2026-09-27 17:36:03.705522+00"
     },
     "migrations/campaign/finalswitch_one_press_switches_every_organization_and_one_undo_reverses_it.sql": {
       "source": "matrx-frontend",
@@ -5203,6 +5209,12 @@
       "filename": "tableowner_the_table_door_names_an_owner.sql",
       "checksum": "e03cf33b5bfdc680b249f5f9b93dd27b71db9382718c20f3643d60f45c952f1d",
       "applied_at": "2026-09-19 20:03:01.48762+00"
+    },
+    "migrations/campaign/tagcopyperf_the_context_tag_copy_runs_in_short_batches.sql": {
+      "source": "matrx-frontend",
+      "filename": "tagcopyperf_the_context_tag_copy_runs_in_short_batches.sql",
+      "checksum": "2c1a07b68fd6182f8a0281fc7a3eabf17a962745ef3bc64fcf44c7ed00137c65",
+      "applied_at": "2026-09-27 17:24:34.89231+00"
     },
     "migrations/campaign/tails2_a_digest_row_names_the_record.sql": {
       "source": "matrx-frontend",

@@ -5,8 +5,7 @@
 import type { Metadata } from "next";
 import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/server";
-import { readCanvasNavCookie } from "@/features/shell/canvas-chrome/canvas-nav.server";
-import { readCanvasChatCookie } from "@/features/canvas/workspace/workspace-cookies.server";
+import { readCanvasWorkspaceLayout } from "@/features/canvas/workspace/workspace-cookies.server";
 import { readComposerModeCookie } from "@/features/agents/components/inputs/smart-input/composer/composer-mode.server";
 import { KindsCanvasWorkspaceDemo, type DemoKindRow } from "./KindsCanvasWorkspaceDemo";
 
@@ -40,10 +39,9 @@ async function loadKinds(): Promise<{ kinds: DemoKindRow[]; error: string | null
 }
 
 export default async function CanvasWorkspacePropertiesDemoPage() {
-  const [{ kinds, error }, initialNav, initialChat, initialMode] = await Promise.all([
+  const [{ kinds, error }, initialLayout, initialMode] = await Promise.all([
     loadKinds(),
-    readCanvasNavCookie(),
-    readCanvasChatCookie(WORKSPACE_ID),
+    readCanvasWorkspaceLayout(WORKSPACE_ID),
     readComposerModeCookie(),
   ]);
   return (
@@ -52,8 +50,7 @@ export default async function CanvasWorkspacePropertiesDemoPage() {
         workspaceId={WORKSPACE_ID}
         kinds={kinds}
         loadError={error}
-        initialNav={initialNav}
-        initialChat={initialChat}
+        initialLayout={initialLayout}
         initialMode={initialMode}
       />
     </div>

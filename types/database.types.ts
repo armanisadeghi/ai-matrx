@@ -16910,6 +16910,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
+          deleted_at: string | null
           egress_id: string | null
           ended_at: string | null
           failure_reason: string | null
@@ -16921,6 +16922,7 @@ export type Database = {
           started_at: string | null
           started_by: string | null
           state: string
+          title: string | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -16929,6 +16931,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           egress_id?: string | null
           ended_at?: string | null
           failure_reason?: string | null
@@ -16940,6 +16943,7 @@ export type Database = {
           started_at?: string | null
           started_by?: string | null
           state?: string
+          title?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -16948,6 +16952,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           egress_id?: string | null
           ended_at?: string | null
           failure_reason?: string | null
@@ -16959,6 +16964,7 @@ export type Database = {
           started_at?: string | null
           started_by?: string | null
           state?: string
+          title?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -19382,6 +19388,34 @@ export type Database = {
           state: string
         }[]
       }
+      meet_my_meeting_roles: {
+        Args: never
+        Returns: {
+          meeting_id: string
+          my_role: string
+        }[]
+      }
+      meet_my_recordings: {
+        Args: { p_include_archived?: boolean; p_limit?: number }
+        Returns: {
+          created_at: string
+          deleted_at: string
+          duration_ms: number
+          ended_at: string
+          failure_reason: string
+          file_id: string
+          meeting_id: string
+          meeting_slug: string
+          meeting_title: string
+          my_role: string
+          organization_id: string
+          recording_id: string
+          recording_title: string
+          size_bytes: number
+          started_at: string
+          state: string
+        }[]
+      }
       meet_occurrences_between: {
         Args: {
           p_from: string
@@ -19636,6 +19670,21 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      meet_search: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          meeting_at: string
+          meeting_id: string
+          meeting_slug: string
+          meeting_title: string
+          rank: number
+          ref_id: string
+          said_at: string
+          snippet: string
+          source: string
+          speaker: string
+        }[]
       }
       meet_set_invitee_role: {
         Args: { p_by_user_id: string; p_invitee_id: string; p_role: string }
@@ -29016,6 +29065,9 @@ export type Database = {
           description: string
           exam_type: string
           id: string
+          my_attempts: number
+          my_best_score: number
+          my_last_result_id: string
           organization_id: string
           question_count: number
           source_title: string
@@ -58006,6 +58058,10 @@ export type Database = {
         Args: { p_schema: string; p_table: string }
         Returns: boolean
       }
+      take_sign_in_freeze: {
+        Args: { p_for: string; p_rel: unknown }
+        Returns: Json
+      }
       team_ids_of: {
         Args: { p_organization_id: string; p_user_id: string }
         Returns: string[]
@@ -64347,6 +64403,141 @@ export type Database = {
           {
             foreignKeyName: "_base_entity_updated_by_fkey"
             columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _google_calendar_event_create_intent: {
+        Row: {
+          actor_id: string
+          calendar_id: string
+          claimed_at: string | null
+          connection_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          organization_id: string
+          payload_purge_at: string
+          preview_payload: Json
+          provider_etag: string | null
+          provider_event_id: string | null
+          provider_subject_digest: string
+          request_fingerprint: string
+          request_payload: Json
+          settled_at: string | null
+          state: string
+        }
+        Insert: {
+          actor_id: string
+          calendar_id: string
+          claimed_at?: string | null
+          connection_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          organization_id: string
+          payload_purge_at: string
+          preview_payload: Json
+          provider_etag?: string | null
+          provider_event_id?: string | null
+          provider_subject_digest: string
+          request_fingerprint: string
+          request_payload: Json
+          settled_at?: string | null
+          state: string
+        }
+        Update: {
+          actor_id?: string
+          calendar_id?: string
+          claimed_at?: string | null
+          connection_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          organization_id?: string
+          payload_purge_at?: string
+          preview_payload?: Json
+          provider_etag?: string | null
+          provider_event_id?: string | null
+          provider_subject_digest?: string
+          request_fingerprint?: string
+          request_payload?: Json
+          settled_at?: string | null
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "_google_calendar_event_create_intent_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "_google_calendar_event_create_intent_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _google_task_create_intent: {
+        Row: {
+          actor_id: string
+          attempted_at: string
+          caller_key_digest: string
+          connection_id: string
+          id: string
+          organization_id: string
+          provider_subject_digest: string
+          remote_task_id: string | null
+          request_fingerprint: string
+          settled_at: string | null
+          state: string
+          task_list_id: string
+        }
+        Insert: {
+          actor_id: string
+          attempted_at?: string
+          caller_key_digest: string
+          connection_id: string
+          id?: string
+          organization_id: string
+          provider_subject_digest: string
+          remote_task_id?: string | null
+          request_fingerprint: string
+          settled_at?: string | null
+          state: string
+          task_list_id: string
+        }
+        Update: {
+          actor_id?: string
+          attempted_at?: string
+          caller_key_digest?: string
+          connection_id?: string
+          id?: string
+          organization_id?: string
+          provider_subject_digest?: string
+          remote_task_id?: string | null
+          request_fingerprint?: string
+          settled_at?: string | null
+          state?: string
+          task_list_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "_google_task_create_intent_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "_google_task_create_intent_actor_id_fkey"
+            columns: ["actor_id"]
             isOneToOne: false
             referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
@@ -73187,7 +73378,16 @@ export type Database = {
       }
     }
     Functions: {
+      _access_seal_mark: {
+        Args: { p_rel: unknown; p_which: string }
+        Returns: undefined
+      }
+      _access_seal_marked: {
+        Args: { p_rel: unknown; p_which: string }
+        Returns: boolean
+      }
       _action_request_gone: { Args: never; Returns: string }
+      _admin_read_ensure: { Args: { p_rel: unknown }; Returns: boolean }
       _carried_back_value: {
         Args: {
           p_older_type: string
@@ -73225,6 +73425,7 @@ export type Database = {
         Args: { p_actor: string; p_org: string; p_press: string }
         Returns: Json
       }
+      _cutover_scope_own_words_back: { Args: { p_org: string }; Returns: Json }
       _cutover_seam_apply: {
         Args: {
           p_actor: string
@@ -73494,6 +73695,10 @@ export type Database = {
       }
       _store_pick_list_document: {
         Args: { p_list_id: string; p_shape?: string; p_viewer: string }
+        Returns: Json
+      }
+      _take_lock_nowait: {
+        Args: { p_for: string; p_mode: string; p_rels: unknown[] }
         Returns: Json
       }
       access_request_recipient_report: {
@@ -74014,6 +74219,7 @@ export type Database = {
         Args: { p_now: Json; p_row: string; p_since: string; p_table: string }
         Returns: boolean
       }
+      cutover_scope_own_words: { Args: { p_org: string }; Returns: Json }
       cutover_scopes_census_record: { Args: { p_census: Json }; Returns: Json }
       cutover_seam_measure_record: {
         Args: {
@@ -75530,6 +75736,38 @@ export type Database = {
         }[]
       }
       search_item_projected_tokens: { Args: never; Returns: string[] }
+      search_item_sections: {
+        Args: {
+          p_captured_by?: string[]
+          p_date_from?: string
+          p_date_to?: string
+          p_limit_per_type?: number
+          p_limits?: Json
+          p_org_ids?: string[]
+          p_origins?: string[]
+          p_query?: string
+          p_source_kinds?: string[]
+          p_types?: string[]
+          p_within?: string[]
+        }
+        Returns: {
+          data_class: Database["platform"]["Enums"]["data_class"]
+          entity_id: string
+          entity_token: string
+          match_kind: string
+          next_cursor: string
+          organization_id: string
+          origin_client: string
+          owner_id: string
+          score: number
+          section_has_more: boolean
+          source_kind: string
+          subtitle: string
+          tags: string[]
+          title: string
+          updated_at: string
+        }[]
+      }
       search_items: {
         Args: {
           p_captured_by?: string[]
@@ -75571,6 +75809,8 @@ export type Database = {
         }
         Returns: {
           conversation_id: string
+          conversation_subtitle: string
+          conversation_title: string
           created_at: string
           message_id: string
           position: number
@@ -75666,6 +75906,7 @@ export type Database = {
         Args: { p_immediate: boolean; p_rel: unknown }
         Returns: number
       }
+      sign_in_freeze_grab_ms: { Args: never; Returns: number }
       soft_delete_orphan_census: {
         Args: never
         Returns: {
@@ -114173,6 +114414,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      provlock_recall_visits_all8u5: {
+        Row: {
+          booked: boolean | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          due_on: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          patient_ref: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          booked?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          due_on?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          patient_ref: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          booked?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          due_on?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          patient_ref?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
       }
       schema_templates: {
         Row: {

@@ -410,12 +410,16 @@
   inset: 0;
   overflow: clip; /* 'clip' doesn't create a stacking context like 'hidden' does — backdrop-filter works through it in Chromium */
   display: grid;
-  /* Default: collapsed sidebar on desktop */
-  grid-template-columns: var(--shell-sidebar-w) 1fr;
+  /* Default: collapsed sidebar on desktop. The third column is the chat dock
+     (features/shell/chat-dock): `auto`, so it is exactly as wide as the dock's
+     own animated width — 0 while closed. The header spans above it, so opening
+     the dock narrows the page and never moves a header button. A rule that
+     lists only two tracks gets this third one as an implicit `auto` track. */
+  grid-template-columns: var(--shell-sidebar-w) 1fr auto;
   grid-template-rows: var(--shell-header-h) 1fr;
   grid-template-areas:
-    "sidebar header"
-    "sidebar main";
+    "sidebar header header"
+    "sidebar main chatdock";
   /* Animate the column track in lockstep with the fixed sidebar's width so the
      main content reflows over the SAME 600ms in BOTH directions. Without this
      the grid snapped instantly: opening still looked smooth (the opaque sidebar
@@ -427,10 +431,18 @@
 
 /* Build A/B (FORCE_EXCLUDE_SIDEMENU): no sidebar column — header + main full width. */
 .shell-root[data-no-sidebar] {
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr auto;
   grid-template-areas:
-    "header"
-    "main";
+    "header header"
+    "main chatdock";
+}
+
+/* The chat dock's grid cell (below the header row). The panel itself —
+   width, slide, resize handle — is DockedSidePanel. Desktop only: below
+   1024px the grid is one column and the dock is a bottom sheet. */
+.shell-chat-dock {
+  grid-area: chatdock;
+  z-index: 20;
 }
 
 /* ---------------------------------------------------------------------------
@@ -498,7 +510,7 @@
    A child-combinator :has is re-checked only when .shell-root's own children
    change, never on insertions deeper in the app (PAGE-WIDE :has above). */
 .shell-root:has(> #shell-sidebar-toggle:checked) {
-  grid-template-columns: var(--shell-sidebar-w-expanded) 1fr;
+  grid-template-columns: var(--shell-sidebar-w-expanded) 1fr auto;
 }
 
 /* Sidebar brand section */
@@ -1070,7 +1082,7 @@ button.shell-nav-flyout-item {
 @media (min-width: 1024px) {
   .shell-root[data-settings-route],
   .shell-root[data-settings-route]:has(> #shell-sidebar-toggle:checked) {
-    grid-template-columns: 15rem 1fr;
+    grid-template-columns: 15rem 1fr auto;
   }
 
   .shell-root[data-settings-route] .shell-sidebar,
@@ -2003,6 +2015,7 @@ body:has(.shell-root[data-pathname^="/administration"]) {
 .shell-root[data-shell-chrome="canvas"] .shell-user-block,
 .shell-root[data-shell-chrome="canvas"] .shell-mobile-trigger,
 .shell-root[data-shell-chrome="canvas"] .shell-mobile-sheet-wrapper,
+.shell-root[data-shell-chrome="canvas"] .shell-chat-dock,
 .shell-root[data-shell-chrome="canvas"] ~ * .shell-dock {
   display: none !important;
 }

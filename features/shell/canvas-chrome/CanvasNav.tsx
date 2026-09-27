@@ -9,8 +9,12 @@
  *     chat is floating).
  *   - `hover`     — hovering that icon slides the FULL nav over the page as a
  *     full-height overlay. Never a short menu.
- *   - `open`      — clicking it puts the nav into the layout (240px); the
- *     icon moves into the nav's own header and closes it.
+ *   - `open`      — clicking it puts the nav into the layout; the icon moves
+ *     into the nav's own header and closes it.
+ *
+ * The host lays it in a `DockedSidePanel` (components/official/side-panel):
+ * the panel owns the width (240px default, drag to resize), the slide, and the
+ * overlay placement while `overlay` is true.
  *
  * It does NOT reuse the shell's `NavItem` / `.shell-nav-*` DOM (that styling
  * hangs off `.shell-root` + `#shell-sidebar-toggle`); it renders its own rows
@@ -44,8 +48,6 @@ import {
   type CanvasNavState,
 } from "./canvas-nav-cookie";
 
-export const CANVAS_NAV_WIDTH_PX = 240;
-
 /** How long the pointer may be away from icon + overlay before the overlay closes. */
 const HOVER_CLOSE_DELAY_MS = 160;
 
@@ -54,6 +56,12 @@ const HOVER_CLOSE_DELAY_MS = 160;
 
 export interface CanvasNavController {
   state: CanvasNavState;
+  /**
+   * The nav is shown (or is sliding away) OVER the page: true from a hover
+   * preview until it is pinned open, so a preview that closes slides off the
+   * page instead of pushing it while it goes.
+   */
+  overlay: boolean;
   open: () => void;
   collapse: () => void;
   /** Pointer entered the toggle or the overlay. */
@@ -64,6 +72,7 @@ export interface CanvasNavController {
 
 export function useCanvasNavState(initial: CanvasNavPersisted): CanvasNavController {
   const [state, setState] = useState<CanvasNavState>(initial);
+  const [overlay, setOverlay] = useState(false);
   const closeTimer = useRef<number | null>(null);
 
   const cancelClose = () => {
@@ -75,9 +84,11 @@ export function useCanvasNavState(initial: CanvasNavPersisted): CanvasNavControl
 
   return {
     state,
+    overlay,
     open: () => {
       cancelClose();
       setState("open");
+      setOverlay(false);
       writeCanvasNavCookie("open");
     },
     collapse: () => {
@@ -87,6 +98,7 @@ export function useCanvasNavState(initial: CanvasNavPersisted): CanvasNavControl
     },
     hoverEnter: () => {
       cancelClose();
+      if (state === "collapsed") setOverlay(true);
       setState((current) => (current === "collapsed" ? "hover" : current));
     },
     hoverLeave: () => {
@@ -138,7 +150,7 @@ interface CanvasNavProps {
   onOpenConversation: (conversation: ConversationListItem) => void;
   /** The header "+" — start a fresh chat in the host's panel. */
   onNewChat: () => void;
-  /** Mobile: render as a plain full-height column inside a sheet. */
+  /** `layout` = inside the host's DockedSidePanel; `sheet` = inside the mobile sheet. */
   variant?: "layout" | "sheet";
   className?: string;
 }
@@ -232,21 +244,14 @@ export function CanvasNav({
   );
 
   return (
-    <aside
-      aria-label="Navigation"
+    <div
       onPointerEnter={(e) => {
         if (hover && e.pointerType === "mouse") nav.hoverEnter();
       }}
       onPointerLeave={(e) => {
         if (hover && e.pointerType === "mouse") nav.hoverLeave();
       }}
-      style={variant === "layout" ? { width: CANVAS_NAV_WIDTH_PX } : undefined}
-      className={cn(
-        "flex h-full min-h-0 shrink-0 flex-col bg-muted/40 p-2",
-        variant === "layout" && "border-r border-border",
-        hover && "absolute inset-y-0 left-0 z-40 bg-card shadow-2xl",
-        className,
-      )}
+      className={cn("flex h-full min-h-0 flex-col p-2", hover ? "bg-card" : "bg-muted/40", className)}
     >
       <div className="min-h-0 flex-1">
         <ConversationHistorySidebar
@@ -272,7 +277,7 @@ export function CanvasNav({
       <div className="shrink-0 border-t border-border pt-1.5">
         <CanvasUserRow />
       </div>
-    </aside>
+    </div>
   );
 }
 

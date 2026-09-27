@@ -262435,6 +262435,42 @@
             "type": "array",
             "title": "Page Numbers"
           },
+          "t0_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "T0 Ms"
+          },
+          "t1_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "T1 Ms"
+          },
+          "heading_path": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading Path"
+          },
           "locator": {
             "anyOf": [
               {
@@ -262444,7 +262480,8 @@
                 "type": "null"
               }
             ],
-            "title": "Locator"
+            "title": "Locator",
+            "description": "Human locator: '12:34' for media, 'p. 3' for pages, or the heading path."
           }
         },
         "additionalProperties": false,

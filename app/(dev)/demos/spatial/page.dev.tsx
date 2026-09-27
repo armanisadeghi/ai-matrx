@@ -7,8 +7,7 @@
 import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import type { DemoKindExample } from "@/features/spatial/demo/SpatialDemoBoard";
-import { readCanvasNavCookie } from "@/features/shell/canvas-chrome/canvas-nav.server";
-import { readCanvasChatCookie } from "@/features/canvas/workspace/workspace-cookies.server";
+import { readCanvasWorkspaceLayout } from "@/features/canvas/workspace/workspace-cookies.server";
 import { readComposerModeCookie } from "@/features/agents/components/inputs/smart-input/composer/composer-mode.server";
 import { SpatialCanvasWorkspaceDemo } from "../canvas-workspace/SpatialCanvasWorkspaceDemo";
 
@@ -72,10 +71,9 @@ async function loadCanonicalExamples(): Promise<{
 }
 
 export default async function SpatialDemoPage() {
-  const [{ kinds, note }, initialNav, initialChat, initialMode] = await Promise.all([
+  const [{ kinds, note }, initialLayout, initialMode] = await Promise.all([
     loadCanonicalExamples(),
-    readCanvasNavCookie(),
-    readCanvasChatCookie(WORKSPACE_ID),
+    readCanvasWorkspaceLayout(WORKSPACE_ID),
     readComposerModeCookie(),
   ]);
   return (
@@ -84,8 +82,7 @@ export default async function SpatialDemoPage() {
         workspaceId={WORKSPACE_ID}
         kinds={kinds}
         examplesNote={note}
-        initialNav={initialNav}
-        initialChat={initialChat}
+        initialLayout={initialLayout}
         initialMode={initialMode}
       />
     </div>

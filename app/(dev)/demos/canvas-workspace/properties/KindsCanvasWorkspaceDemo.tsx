@@ -15,8 +15,7 @@ import { Shapes } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ChatCanvasWorkspace } from "@/features/canvas/workspace/ChatCanvasWorkspace";
-import type { CanvasNavPersisted } from "@/features/shell/canvas-chrome/canvas-nav-cookie";
-import type { CanvasChatPlacement } from "@/features/canvas/workspace/workspace-cookies";
+import type { CanvasWorkspaceLayout } from "@/features/canvas/workspace/workspace-cookies";
 import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
 
 export interface DemoKindRow {
@@ -33,15 +32,13 @@ export function KindsCanvasWorkspaceDemo({
   workspaceId,
   kinds,
   loadError,
-  initialNav,
-  initialChat,
+  initialLayout,
   initialMode,
 }: {
   workspaceId: string;
   kinds: DemoKindRow[];
   loadError: string | null;
-  initialNav: CanvasNavPersisted;
-  initialChat: CanvasChatPlacement;
+  initialLayout: CanvasWorkspaceLayout;
   initialMode: ComposerMode | null;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -98,8 +95,7 @@ export function KindsCanvasWorkspaceDemo({
       id={workspaceId}
       title={TITLE}
       byline="By you"
-      initialNav={initialNav}
-      initialChat={initialChat}
+      initialLayout={initialLayout}
       initialMode={initialMode}
       getCanvasContext={() => ({
         key: "registered_shapes",

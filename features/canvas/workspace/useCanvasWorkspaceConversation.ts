@@ -10,7 +10,9 @@
  * id, no prompt in code.
  *
  * Three ways in:
- *   - mount / `startNew()` — launch a fresh conversation under the mandate;
+ *   - mount / `startNew()` — launch a fresh conversation under the mandate
+ *     (with `enabled: false`, nothing launches until the host enables it —
+ *     a chat that starts closed costs nothing until it is first opened);
  *   - `openExisting(id)`   — load a history conversation IN PLACE through the
  *     canonical `loadConversation` thunk (the path the agent-app shell and
  *     the tutor use), never a navigation.
@@ -64,7 +66,10 @@ export interface CanvasWorkspaceConversationController {
   startWith: (agentId: string, via?: { mandateKey: AnyMandateKey }) => void;
 }
 
-export function useCanvasWorkspaceConversation(surfaceKey: string): CanvasWorkspaceConversationController {
+export function useCanvasWorkspaceConversation(
+  surfaceKey: string,
+  { enabled = true }: { enabled?: boolean } = {},
+): CanvasWorkspaceConversationController {
   const dispatch = useAppDispatch();
   const { launchMandate, launchAgent } = useAgentLauncher();
   const [request, setRequest] = useState<Request>({ kind: "new", nonce: 0 });
@@ -76,7 +81,7 @@ export function useCanvasWorkspaceConversation(surfaceKey: string): CanvasWorksp
   const waitingForOrganization = request.kind !== "open" && !organizationId;
 
   useEffect(() => {
-    if (waitingForOrganization) return;
+    if (!enabled || waitingForOrganization) return;
     const key = `${surfaceKey}#${request.kind}#${request.nonce}`;
     // Once per request: a re-run of this effect for any other reason never
     // launches twice. A result lands only if its request is still the latest.
@@ -116,7 +121,7 @@ export function useCanvasWorkspaceConversation(surfaceKey: string): CanvasWorksp
           },
         );
     }
-  }, [surfaceKey, request, launchMandate, launchAgent, dispatch, waitingForOrganization]);
+  }, [enabled, surfaceKey, request, launchMandate, launchAgent, dispatch, waitingForOrganization]);
 
   const startNew = () => {
     setConversationId(null);

@@ -12,8 +12,7 @@
 
 import { type DemoKindExample, SpatialDemoBoard } from "@/features/spatial/demo/SpatialDemoBoard";
 import { ChatCanvasWorkspace } from "@/features/canvas/workspace/ChatCanvasWorkspace";
-import type { CanvasNavPersisted } from "@/features/shell/canvas-chrome/canvas-nav-cookie";
-import type { CanvasChatPlacement } from "@/features/canvas/workspace/workspace-cookies";
+import type { CanvasWorkspaceLayout } from "@/features/canvas/workspace/workspace-cookies";
 import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
 
 const BOARD_TITLE = "Spatial view demo board";
@@ -22,15 +21,13 @@ export function SpatialCanvasWorkspaceDemo({
   workspaceId,
   kinds,
   examplesNote,
-  initialNav,
-  initialChat,
+  initialLayout,
   initialMode,
 }: {
   workspaceId: string;
   kinds: DemoKindExample[];
   examplesNote: string | null;
-  initialNav: CanvasNavPersisted;
-  initialChat: CanvasChatPlacement;
+  initialLayout: CanvasWorkspaceLayout;
   initialMode: ComposerMode | null;
 }) {
   return (
@@ -38,8 +35,7 @@ export function SpatialCanvasWorkspaceDemo({
       id={workspaceId}
       title={BOARD_TITLE}
       byline="By you"
-      initialNav={initialNav}
-      initialChat={initialChat}
+      initialLayout={initialLayout}
       initialMode={initialMode}
       // No getCanvasContext here: the board publishes ITSELF as the
       // `matrx-user/spatial-board` surface (its values + board_* tools reach

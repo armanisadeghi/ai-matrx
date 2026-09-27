@@ -115399,7 +115399,16 @@ export interface components {
             processed_document_id?: string | null;
             /** Page Numbers */
             page_numbers?: number[];
-            /** Locator */
+            /** T0 Ms */
+            t0_ms?: number | null;
+            /** T1 Ms */
+            t1_ms?: number | null;
+            /** Heading Path */
+            heading_path?: string[] | null;
+            /**
+             * Locator
+             * @description Human locator: '12:34' for media, 'p. 3' for pages, or the heading path.
+             */
             locator?: string | null;
         };
         /** SeismicServiceStatus */
