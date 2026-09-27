@@ -1065,6 +1065,13 @@ module in the folder + the two deleted filenames).
 
 ## Change log
 
+- page-pass 2026-09-27 round 5 (/crm/[partyId]), "good" → excellent: "Contact
+  points" vs "Suggested contacts"; platform brand icon and a visible link;
+  one-row suggestions header on phones; honest email action (Send email /
+  "Email blocked" / Add email, which opens Contact points on email); the tab
+  shows the record name once it loads; phone stack ordered by action
+  (identity, add-to-contacts, Activity, Notes, then contact data); dense 28px
+  header buttons on a desktop mouse; composer filler line removed.
 - page-pass 2026-09-27 round 4b (/crm/[partyId]): live agent run created a deal
   and an attached task and refused an organization change; Stage/Rating read
   "None" and their choice lists (stage, rating, role) are agent values; a
