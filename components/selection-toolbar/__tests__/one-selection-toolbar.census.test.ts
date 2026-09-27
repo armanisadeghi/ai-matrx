@@ -15,7 +15,25 @@
  *      …SelectionPopover, …SelectionBubble, FloatingSelection…, …BubbleMenu,
  *      AnnotationToolbar, HighlightToolbar) declared outside the canonical files;
  *   4. a new document-level `selectionchange` listener outside the root and
- *      the context menu's selection tracking.
+ *      the context menu's selection tracking;
+ *   5. BY BEHAVIOUR, whatever it is named: a file that reads the selection
+ *      (`getSelection()` / a field's `selectionStart`), listens for the gesture
+ *      that ends one (mouseup / pointerup / keyup / touchend / select /
+ *      selectionchange), measures it (`getBoundingClientRect`) and renders
+ *      something positioned (`createPortal`, `position: fixed|absolute`, a
+ *      `fixed` class) — the mouseup-and-getSelection floating bar, the app's
+ *      commonest second-popup shape (verify round 1, finding 2).
+ *
+ * Selection-driven behaviours that are NOT popups, and so are not toolbars
+ * (they render nothing positioned — rule 5 does not match them — and the
+ * reason is recorded here so the next reader does not "migrate" them):
+ *   • masterwork RedPenDialog — the drag IS the command: marking a passage in
+ *     the expert's red-pen dialog pins it and opens the dialog's own inline
+ *     "what is wrong" field below the work (a highlighter tool mode, like a
+ *     Kindle highlight pen); there is no action set to choose from.
+ *   • agent builder MessageItem / SystemMessage — a drag across a read-only
+ *     message block switches that block to its editor with the same text
+ *     selected (click-to-edit); once editing, the ONE toolbar serves it.
  *
  * A new passage action is a registry action + a row in SELECTION_ACTION_MODES
  * (components/selection-toolbar/selection-actions.ts), never a new popup.
@@ -35,8 +53,6 @@ const CANONICAL = new Set([
 
 /** Each entry says why it is not a text-selection toolbar. Shrink-only. */
 const ALLOW: Record<string, string> = {
-  // Table-cell tools shown while the caret is in a table (add row/column, align) — no text selection.
-  "components/rich-editor/visual/TableToolbar.tsx": "table-cell tools, not a text selection toolbar",
   // A bulk bar for picked ITEMS (images, rows): "3 selected · Delete" — no text selection.
   "components/shared/FloatingSelectionToolbar.tsx": "multi-item bulk bar, not a text selection toolbar",
   "components/shared/FloatingSelectionToolbar.test.tsx": "its test",
@@ -55,6 +71,14 @@ const RULES: { id: string; pattern: RegExp; allowCanonical: boolean }[] = [
   },
   { id: "selectionchange-listener", pattern: /addEventListener\(\s*["']selectionchange["']/, allowCanonical: true },
 ];
+
+/** Rule 5: selection-driven floating UI, by behaviour (all four in one file). */
+const BEHAVIOUR = {
+  readsSelection: /getSelection\(|\.selectionStart\b/,
+  endsGesture: /addEventListener\(\s*["'](mouseup|pointerup|selectionchange|keyup|touchend|select)["']|on(MouseUp|PointerUp|KeyUp|TouchEnd|Select)=/,
+  measures: /getBoundingClientRect/,
+  positions: /createPortal\(|position:\s*["']?(fixed|absolute)|["' `]fixed["' `]/,
+};
 
 export interface Finding {
   file: string;
@@ -76,6 +100,10 @@ export function censusSelectionToolbars(root: string, files: readonly string[]):
       continue;
     }
     const lines = text.split("\n");
+    if (!CANONICAL.has(file) && Object.values(BEHAVIOUR).every((re) => re.test(text))) {
+      const at = lines.findIndex((l) => BEHAVIOUR.readsSelection.test(l));
+      findings.push({ file, rule: "selection-driven-floating-ui", line: at + 1 });
+    }
     for (const rule of RULES) {
       if (rule.allowCanonical && CANONICAL.has(file)) continue;
       const at = lines.findIndex((l) => rule.pattern.test(l));
@@ -119,14 +147,30 @@ describe("one selection toolbar", () => {
     plant("features/chat/AnswerBubble.tsx", 'import { BubbleMenu } from "@tiptap/react/menus";\n');
     plant("features/docs/Listen.tsx", 'document.addEventListener("selectionchange", () => {});\n');
     plant("features/docs/Layout.tsx", 'import { SelectionToolbar } from "@ai-matrx/alchemy/react/selection";\n');
+    // The verifier's plant: a mouseup + getSelection bar portaled to the body, named innocently.
+    plant(
+      "features/chat/AnswerQuoteBar.tsx",
+      [
+        'import { createPortal } from "react-dom";',
+        "export function AnswerQuoteBar() {",
+        '  document.addEventListener("mouseup", () => {',
+        "    const r = window.getSelection()?.getRangeAt(0).getBoundingClientRect();",
+        "    void r;",
+        "  });",
+        '  return createPortal(<div className="fixed z-50">Quote · Highlight</div>, document.body);',
+        "}",
+      ].join("\n"),
+    );
     const findings = censusSelectionToolbars(scratch, [
       "features/notes/NoteSelectionPopover.tsx",
       "features/chat/AnswerBubble.tsx",
       "features/docs/Listen.tsx",
       "features/docs/Layout.tsx",
+      "features/chat/AnswerQuoteBar.tsx",
     ]);
     expect(findings.map((f) => f.rule).sort()).toEqual([
       "package-selection-layout",
+      "selection-driven-floating-ui",
       "selection-popup-component",
       "selectionchange-listener",
       "tiptap-bubble-menu",

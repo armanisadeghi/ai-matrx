@@ -32,6 +32,7 @@ import { paintCss, useSidecarPaint } from "./useSidecarPaint";
 import { useAnnotationSidecar, type AnnotationSidecarApi } from "./useAnnotationSidecar";
 import { MentionComposer } from "./MentionComposer";
 import { LinkRecordSheet } from "./LinkRecordSheet";
+import { PassageQuote } from "./PassageQuote";
 import type { AnnotationSource } from "./types";
 import { useSelectionZone, type SelectionToolbarUi } from "@/components/selection-toolbar/selection-zones";
 import { PASSAGE_ACTIONS_HOST_KEY } from "@/components/selection-toolbar/selection-actions";
@@ -166,6 +167,18 @@ export function AnnotatedContent({
     kind: "annotation",
     api,
     capture,
+    report: (selection) => ({
+        title: `Report an issue with ${source.title || "this document"}`,
+        subject: {
+          kind: "text_passage",
+          sourceToken: source.token,
+          sourceId: source.id,
+          sourceTitle: source.title || "Document",
+          quote: selection.anchor.exact,
+          anchor: { ...selection.anchor },
+          ...(source.href ? { href: source.href } : {}),
+        },
+      }),
   };
 
   useSelectionZone(root, {
@@ -299,7 +312,7 @@ function AnnotationPanelBody({
   return (
     <div className="grid gap-1 p-1">
       <blockquote className="line-clamp-2 border-l-2 border-primary/50 pl-2 text-xs text-muted-foreground">
-        {selection.anchor.exact}
+        <PassageQuote exact={selection.anchor.exact} />
       </blockquote>
       <MentionComposer
         source={source}

@@ -29,9 +29,8 @@ import type { FindOptions } from "../core/find-replace";
 import { createVisualExtensions, type RichShellActions } from "./visual-extensions";
 import { findHighlightKey } from "./decorations";
 import { BlockHandle } from "./BlockHandle";
-import { TableToolbar } from "./TableToolbar";
 import { useSelectionZone } from "@/components/selection-toolbar/selection-zones";
-import { RICH_EDITOR_HOST_KEY, type RichEditorSelectionHost } from "./format-actions";
+import { RICH_EDITOR_HOST_KEY, tableAnchorOf, type RichEditorSelectionHost } from "./format-actions";
 import { useRichEditorContext } from "../RichEditorContext";
 
 const HEADLESS_SCHEMA = getSchema(createRichEditorExtensions());
@@ -290,9 +289,29 @@ export function VisualEditor({
   // the formatting verbs are registry actions (./format-actions).
   const [zoneElement, setZoneElement] = useState<HTMLDivElement | null>(null);
   const editorHalf: RichEditorSelectionHost | null = editor
-    ? { kind: "rich-editor", editor, onEditLink: shell.editLink, offerVariables: context.variables !== null }
+    ? {
+        kind: "rich-editor",
+        editor,
+        onEditLink: shell.editLink,
+        offerVariables: context.variables !== null,
+        inTable: () => !editor.isDestroyed && editor.isActive("table"),
+      }
     : null;
-  useSelectionZone(zoneElement, editorHalf ? { editable: !context.readOnly, host: { [RICH_EDITOR_HOST_KEY]: editorHalf } } : null);
+  useSelectionZone(
+    zoneElement,
+    editorHalf
+      ? {
+          editable: !context.readOnly,
+          host: { [RICH_EDITOR_HOST_KEY]: editorHalf },
+          // The caret in a table keeps the one toolbar up with the table actions.
+          caretAnchor: () => {
+            if (!editor || editor.isDestroyed || context.readOnly || !editor.isFocused) return null;
+            const box = tableAnchorOf(editor);
+            return box ? { left: box.left, top: box.top, bottom: box.top + 1, width: Math.min(box.width, 40) } : null;
+          },
+        }
+      : null,
+  );
 
   return (
     <div
@@ -305,7 +324,6 @@ export function VisualEditor({
     >
       <BlockHandle editor={editor} container={container} />
       <EditorContent editor={editor} className="mx-auto max-w-3xl pb-[40dvh]" />
-      {editor && !context.readOnly && <TableToolbar editor={editor} />}
     </div>
   );
 }

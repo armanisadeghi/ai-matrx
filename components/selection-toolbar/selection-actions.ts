@@ -16,6 +16,7 @@
 
 import type { Action, ActionProvider, ClickTarget } from "@ai-matrx/alchemy/actions";
 import type { SelectionMode, SelectionToolbarUi } from "./selection-zones";
+import type { FeedbackSubject } from "@/features/overlays/openers/feedbackDialog";
 
 /** The toolbar's knobs (platform.feature_knob, feature `selection_toolbar`). */
 export const SELECTION_TOOLBAR_KNOB_FEATURE = "selection_toolbar";
@@ -88,9 +89,41 @@ export const SELECTION_ACTION_MODES: Readonly<Record<string, ModeRule>> = {
   "selection:ai": ["read", "edit"],
   "selection:tutor-explain": ["read"],
   "selection:tutor-ask": ["read"],
-  // Reporting
+  // Reporting (every annotated passage: study guides, documents in Annotate)
   "selection:report": ["read"],
+  // Rich-editor tables (the caret or a selection in a table cell)
+  "selection:table-row-above": ["edit"],
+  "selection:table-row-below": ["edit"],
+  "selection:table-col-left": ["edit"],
+  "selection:table-col-right": ["edit"],
+  "selection:table-align-left": ["edit"],
+  "selection:table-align-center": ["edit"],
+  "selection:table-align-right": ["edit"],
+  "selection:table-del-row": ["edit"],
+  "selection:table-del-col": ["edit"],
+  "selection:table-del-table": ["edit"],
+  // Every selection that has no richer home: copy it, keep it
+  "selection:copy": ["read", "edit"],
+  "selection:save-to-notes": ["read", "edit"],
 };
+
+/**
+ * THE HOST KINDS — what a person gets, by where the text is. Documentation that
+ * the census test checks against the providers (selection-host-kinds.test.ts):
+ * a host kind is the set of host halves present on the target.
+ *
+ *   annotated reading  (annotation + context menu)  highlight ×5, comment, suggest, link, report, AI and more
+ *   rich editor        (richEditor + context menu)   formatting, comment (when annotated), copy, AI and more;
+ *                                                    table actions while the caret/selection is in a table
+ *   plain reading      (context menu only)           copy, save to notes, AI and more — chat answers,
+ *                                                    note preview, studio preview, window panels
+ *   text field         (context menu, editable)      copy, save to notes, AI and more
+ */
+export const SELECTION_HOST_KINDS = {
+  annotatedReading: ["annotation", "contextMenuSelection"],
+  richEditor: ["richEditor", "contextMenuSelection"],
+  plainReading: ["contextMenuSelection"],
+} as const;
 
 /** Does the toolbar show `actionId` for this target's mode? */
 export function shownInSelectionMode(actionId: string, target: ClickTarget): boolean {
@@ -100,6 +133,19 @@ export function shownInSelectionMode(actionId: string, target: ClickTarget): boo
   if (!rule) return false;
   const modes = typeof rule === "function" ? rule(toolbar.knobs) : rule;
   return modes.includes(toolbar.mode);
+}
+
+// ── The common pair: copy, save to notes ───────────────────────────────────
+
+export const SELECTION_COMMON_HOST_KEY = "selectionCommon";
+
+/** Set by the root on every target: the selected text and the app's doors. */
+export interface SelectionCommonHost {
+  kind: "selection-common";
+  text: string;
+  saveToNotes(content: string): void;
+  /** The app's feedback window (a passage report). */
+  openFeedback(report: { title: string; subject: FeedbackSubject }): void;
 }
 
 // ── Fitting the bar: priority, then the registry's overflow ─────────────────
@@ -116,6 +162,9 @@ export const SELECTION_PRIORITY: Readonly<Record<SelectionMode, readonly string[
     "selection:format-link",
     "selection:ai",
     "selection:comment",
+    "selection:table-row-below",
+    "selection:table-col-right",
+    "selection:copy",
     "selection:format-strike",
     "selection:format-code",
     "selection:format-h1",
@@ -128,6 +177,15 @@ export const SELECTION_PRIORITY: Readonly<Record<SelectionMode, readonly string[
     "selection:highlight-blue",
     "selection:highlight-pink",
     "selection:highlight-purple",
+    "selection:table-row-above",
+    "selection:table-col-left",
+    "selection:table-align-left",
+    "selection:table-align-center",
+    "selection:table-align-right",
+    "selection:table-del-row",
+    "selection:table-del-col",
+    "selection:table-del-table",
+    "selection:save-to-notes",
   ],
   read: [
     "selection:highlight-yellow",
@@ -142,19 +200,28 @@ export const SELECTION_PRIORITY: Readonly<Record<SelectionMode, readonly string[
     "selection:tutor-ask",
     "selection:link-record",
     "selection:report",
+    "selection:copy",
+    "selection:save-to-notes",
   ],
 };
 
 /** The host half an action needs (an action whose provider is absent cannot take a slot). */
 function hostKeyOf(id: string): string {
-  if (id.startsWith("selection:format-")) return "richEditor";
+  if (id.startsWith("selection:format-") || id.startsWith("selection:table-")) return "richEditor";
+  if (id === "selection:copy" || id === "selection:save-to-notes") return SELECTION_COMMON_HOST_KEY;
   if (id === "selection:ai") return "contextMenuSelection";
-  if (id.startsWith("selection:tutor-") || id === "selection:report") return PASSAGE_ACTIONS_HOST_KEY;
+  if (id.startsWith("selection:tutor-")) return PASSAGE_ACTIONS_HOST_KEY;
   return "annotation";
 }
 
 function presentAt(id: string, target: ClickTarget): boolean {
   const key = hostKeyOf(id);
+  // The common pair shows only where nothing richer owns the passage.
+  if (key === SELECTION_COMMON_HOST_KEY && hostHalf<unknown>(target, "annotation")) return false;
+  if (id.startsWith("selection:table-")) {
+    const editor = hostHalf<{ inTable?: () => boolean }>(target, "richEditor");
+    if (!editor?.inTable?.()) return false;
+  }
   const half = hostHalf<unknown>(target, key);
   if (!half) return false;
   if (key === PASSAGE_ACTIONS_HOST_KEY) return (half as readonly Action[]).some((a) => a.id === id);
@@ -174,7 +241,8 @@ export function selectionPlacement(id: string, target: ClickTarget): "primary" |
 
 /** A provider's actions, placed for this target (every selection provider returns through this). */
 export function placeSelectionActions(actions: readonly Action[], target: ClickTarget): Action[] {
-  return actions.map((a) => ({ ...a, placement: selectionPlacement(a.id, target) }));
+  // An action that always lives under More (a destructive table action) stays there.
+  return actions.map((a) => (a.placement === "overflow" ? a : { ...a, placement: selectionPlacement(a.id, target) }));
 }
 
 // ── A surface's own passage actions ─────────────────────────────────────────

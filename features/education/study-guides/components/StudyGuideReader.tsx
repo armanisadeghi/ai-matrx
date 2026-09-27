@@ -19,7 +19,6 @@ import {
   Loader2,
   Pencil,
   Search,
-  Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
@@ -31,7 +30,6 @@ import type { Action, ClickTarget } from "@ai-matrx/alchemy/actions";
 import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
 import { selectionToolbarHostOf, shownInSelectionMode } from "@/components/selection-toolbar/selection-actions";
 import { annotationHostOf } from "@/features/rich-document/annotations/annotation-actions";
-import { useOpenFeedbackWindow } from "@/features/overlays/openers/feedbackDialog";
 import { useOpenFlashcardItemWindow } from "@/features/overlays/openers/flashcardItemWindow";
 import { useOpenNoteInWindow } from "@/features/notes/actions/useOpenNoteInWindow";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -171,13 +169,13 @@ function Inspector({ guide, tab, onTabChange, terms, loading, error, onRetry }: 
 
 /** Passage actions only a study guide has (the tutor, a content report) — added to the sidecar's toolbar. */
 /**
- * The study guide's own passage actions — "I don't get this", "Ask a question"
- * (the AI tutor, grounded in the selected passage) and "Report an issue" — as
+ * The study guide's own passage actions — "I don't get this" and "Ask a question"
+ * (the AI tutor, grounded in the selected passage; Report is every annotated
+ * passage's, from the annotation actions) — as
  * registry actions of the ONE selection toolbar. The tutor panel lives here,
  * not in the toolbar, so it stays open after the toolbar closes.
  */
 function useStudyPassageActions(guide: Note): { actions: Action[]; tutor: React.ReactNode } {
-  const openFeedback = useOpenFeedbackWindow();
   const [tutorSeed, setTutorSeed] = useState<TutorGroundingSeed | null>(null);
   const passage = (t: ClickTarget) => annotationHostOf(t)?.capture() ?? null;
   const eligible = (id: string) => (t: ClickTarget) =>
@@ -193,33 +191,6 @@ function useStudyPassageActions(guide: Note): { actions: Action[]; tutor: React.
   const actions: Action[] = [
     { id: "selection:tutor-explain", label: "I don't get this", icon: registerAlchemyIcon(CircleHelp), category: "ask", order: 0, placement: "primary", preserveSelection: true, eligible: eligible("selection:tutor-explain"), run: openTutor },
     { id: "selection:tutor-ask", label: "Ask a question", icon: registerAlchemyIcon(GraduationCap), category: "ask", order: 1, placement: "primary", preserveSelection: true, eligible: eligible("selection:tutor-ask"), run: openTutor },
-    {
-      id: "selection:report",
-      label: "Report an issue",
-      icon: registerAlchemyIcon(Send),
-      category: "feedback",
-      order: 0,
-      placement: "primary",
-      preserveSelection: true,
-      eligible: eligible("selection:report"),
-      run: (t) => {
-        const selection = passage(t);
-        if (!selection) return;
-        selectionToolbarHostOf(t)?.ui.close({ clearSelection: true });
-        openFeedback({
-          title: "Report an issue with this study guide",
-          subject: {
-            kind: "text_passage",
-            sourceToken: "note",
-            sourceId: guide.id,
-            sourceTitle: guide.label || "Study guide",
-            quote: selection.anchor.exact,
-            anchor: { ...selection.anchor },
-            href: `/education/study-guides/${guide.id}`,
-          },
-        });
-      },
-    },
   ];
   const tutor = tutorSeed ? (
     <AskTutorPanel seed={tutorSeed} open onOpenChange={(open) => { if (!open) setTutorSeed(null); }} />

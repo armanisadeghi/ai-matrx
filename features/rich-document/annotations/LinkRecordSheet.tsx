@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import { listableTokens } from "@/features/scopes/registry/entityRegistry";
 import { useSidecar } from "./AnnotationSidecar";
+import { PassageQuote } from "./PassageQuote";
 import { linkableKinds } from "./service";
 import type { TextAnchor } from "./anchor";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
@@ -61,7 +62,7 @@ export function LinkRecordSheet({
           <SheetTitle>{passage ? "Link to this passage" : "Link to this document"}</SheetTitle>
           <SheetDescription>
             {passage ? (
-              <span className="line-clamp-3">“{passage.exact}”</span>
+              <span className="line-clamp-3">“<PassageQuote exact={passage.exact} />”</span>
             ) : (
               "Pick a record to attach it here — only the kinds that can be linked to this are offered."
             )}

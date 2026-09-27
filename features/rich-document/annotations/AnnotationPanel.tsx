@@ -42,6 +42,7 @@ import { RichContent } from "@/components/rich-content/RichContent";
 import { CollapsibleText } from "@/components/official/CollapsibleText";
 import { announceMentions, useSidecar } from "./AnnotationSidecar";
 import { SWATCH } from "./annotation-actions";
+import { PassageQuote } from "./PassageQuote";
 import { HIGHLIGHT_COLORS } from "./constants";
 import { MentionComposer } from "./MentionComposer";
 import { LinkRecordSheet } from "./LinkRecordSheet";
@@ -299,7 +300,7 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
 
       {item.anchor && (
         <blockquote className={cn("mt-1.5 line-clamp-3 border-l-2 pl-2 text-xs", orphaned ? "border-destructive/60 text-muted-foreground" : "border-primary/40 text-muted-foreground")}>
-          {item.anchor.exact}
+          <PassageQuote exact={item.anchor.exact} />
         </blockquote>
       )}
       {!item.anchor && item.kind !== "note" && item.kind !== "link" && (
@@ -369,7 +370,7 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
 
       {item.kind === "suggestion" && item.suggestedText != null && (
         <div className="mt-1.5 rounded-md bg-muted/50 px-2 py-1.5 text-xs">
-          <span className="text-muted-foreground line-through decoration-destructive">{item.anchor?.exact}</span>
+          <span className="text-muted-foreground line-through decoration-destructive">{item.anchor ? <PassageQuote exact={item.anchor.exact} /> : null}</span>
           <span className="mx-1 text-muted-foreground">→</span>
           <span className="font-medium text-foreground">{item.suggestedText || "(delete)"}</span>
         </div>

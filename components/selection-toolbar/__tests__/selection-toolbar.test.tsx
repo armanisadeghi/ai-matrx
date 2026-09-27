@@ -68,7 +68,7 @@ jest.mock("@/components/official/entity-ref/EntityRef", () => ({ EntityRef: () =
 jest.mock("@/components/rich-content/RichContent", () => ({ RichContent: ({ source }: { source: string }) => <span>{source}</span> }));
 jest.mock("@/features/rich-document/annotations/LinkRecordSheet", () => ({ LinkRecordSheet: () => null }));
 // The root's identity + knob reads (the knob answers "not loaded": the code default holds).
-jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null }));
+jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null, useAppDispatch: () => jest.fn() }));
 jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({ useEffectiveKnob: () => undefined }));
 // The frame is split out with next/dynamic in the app; here it loads synchronously.
 jest.mock("next/dynamic", () => () => {
@@ -122,9 +122,12 @@ async function flush(n = 8) {
   for (let i = 0; i < n; i++) await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
 }
 
-let sidecar: ReturnType<typeof useSidecar> | null = null;
+const grabbed: { current: ReturnType<typeof useSidecar> | null } = { current: null };
 function Grab() {
-  sidecar = useSidecar();
+  const sidecar = useSidecar();
+  React.useEffect(() => {
+    grabbed.current = sidecar;
+  });
   return null;
 }
 
@@ -244,14 +247,14 @@ it("reattach: a pending reattach opens the toolbar straight into its question, a
     collaborationDoors: true,
   });
   await mount();
-  await act(async () => sidecar!.setPendingReattach("comment:c1"));
+  await act(async () => grabbed.current!.setPendingReattach("comment:c1"));
   await selectWord("statistical");
   const panel = document.querySelector<HTMLElement>("[data-selection-panel]")!;
   expect(panel.textContent).toContain("Move this comment to the selected text?");
   const reattach = [...panel.querySelectorAll("button")].find((b) => b.textContent === "Reattach here")!;
   await act(async () => { reattach.click(); });
   await flush();
-  expect(sidecar!.pendingReattach).toBeNull();
+  expect(grabbed.current!.pendingReattach).toBeNull();
   expect(toolbar()).toBeNull();
   expect(toast.success).toHaveBeenCalledWith("Reattached to the new passage.");
 });

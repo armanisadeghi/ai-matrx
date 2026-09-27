@@ -6,11 +6,15 @@
 // (SelectionToolbarRoot is the always-mounted shell). It renders the Alchemy
 // package's selection layout (`@ai-matrx/alchemy/react/selection`: the strip,
 // then More) or a zone's panel, in a portal, and owns the one position rule:
-//   • desktop: above the selection, flipped below when there is no room,
-//     clamped to the viewport, following the selection as the page scrolls;
+//   • desktop: above the selection, flipped below when there is no room —
+//     measured against the NEAREST SCROLL CONTAINER, not the window, so it
+//     never covers a pane's own header — and hidden while the selection is
+//     scrolled out of that container's view; it follows as the pane scrolls;
 //   • phone: docked at the bottom edge above the home indicator — never beside
 //     the selection, so the native selection menu keeps its place.
 // It floats (fixed, portal): it never adds rows or pushes content.
+// Keyboard: the ARIA toolbar pattern — one tab stop (roving tabindex), arrows
+// move within it.
 
 import * as React from "react";
 import { createPortal } from "react-dom";
@@ -28,6 +32,41 @@ export interface Rect {
 const GAP = 8;
 const EDGE = 8;
 
+/** The nearest ancestor that scrolls (or the viewport): the box the toolbar lives in. */
+export function scrollBoundsOf(node: Node | null): { top: number; bottom: number; left: number; right: number } {
+  const view = { top: 0, bottom: window.innerHeight, left: 0, right: window.innerWidth };
+  let el: Element | null = node instanceof Element ? node : node?.parentElement ?? null;
+  while (el && el !== document.body && el !== document.documentElement) {
+    const style = getComputedStyle(el);
+    if (/(auto|scroll|hidden)/.test(style.overflowY) && el.scrollHeight > el.clientHeight + 1) {
+      const r = el.getBoundingClientRect();
+      return {
+        top: Math.max(view.top, r.top),
+        bottom: Math.min(view.bottom, r.bottom),
+        left: Math.max(view.left, r.left),
+        right: Math.min(view.right, r.right),
+      };
+    }
+    el = el.parentElement;
+  }
+  return view;
+}
+
+/** Where the frame goes for an anchor inside a box (pure; unit-tested). */
+export function placeFrame(
+  at: Rect,
+  size: { w: number; h: number },
+  box: { top: number; bottom: number; left: number; right: number },
+  viewport: { w: number; h: number },
+): { left: number; top: number; hidden: boolean } {
+  const hidden = at.bottom <= box.top || at.top >= box.bottom;
+  let top = at.top - size.h - GAP;
+  if (top < box.top + EDGE) top = at.bottom + GAP;
+  top = Math.max(box.top + EDGE, Math.min(Math.min(box.bottom, viewport.h) - size.h - EDGE, top));
+  const left = Math.max(EDGE, Math.min(viewport.w - size.w - EDGE, at.left + at.width / 2 - size.w / 2));
+  return { left, top, hidden };
+}
+
 export default function SelectionToolbarFrame({
   seq,
   mode,
@@ -35,6 +74,7 @@ export default function SelectionToolbarFrame({
   text,
   range,
   rect,
+  anchor,
   docked,
   focusToolbar,
   panel,
@@ -45,11 +85,14 @@ export default function SelectionToolbarFrame({
   text: string;
   range: Range | null;
   rect: Rect;
+  /** The node the selection lives in — its scroll container bounds the toolbar. */
+  anchor: Node | null;
   docked: boolean;
   focusToolbar: boolean;
   panel: React.ReactNode | null;
 }): React.ReactElement | null {
   const frameRef = React.useRef<HTMLDivElement>(null);
+  const current = React.useRef(0);
   const [position, setPosition] = React.useState<{ left: number; top: number; hidden: boolean } | null>(null);
   const place = React.useCallback(() => {
     const frame = frameRef.current;
@@ -59,17 +102,14 @@ export default function SelectionToolbarFrame({
       const live = range.getBoundingClientRect();
       if (live.width || live.height) at = { left: live.left, top: live.top, bottom: live.bottom, width: live.width };
     }
-    const w = frame.offsetWidth;
-    const h = frame.offsetHeight;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const hidden = at.bottom < 0 || at.top > vh;
-    let top = at.top - h - GAP;
-    if (top < EDGE) top = at.bottom + GAP;
-    top = Math.max(EDGE, Math.min(vh - h - EDGE, top));
-    const left = Math.max(EDGE, Math.min(vw - w - EDGE, at.left + at.width / 2 - w / 2));
-    setPosition((p) => (p && p.left === left && p.top === top && p.hidden === hidden ? p : { left, top, hidden }));
-  }, [rect, range]);
+    const next = placeFrame(
+      at,
+      { w: frame.offsetWidth, h: frame.offsetHeight },
+      scrollBoundsOf(anchor),
+      { w: window.innerWidth, h: window.innerHeight },
+    );
+    setPosition((p) => (p && p.left === next.left && p.top === next.top && p.hidden === next.hidden ? p : next));
+  }, [rect, range, anchor]);
 
   React.useLayoutEffect(() => {
     if (docked) return;
@@ -86,15 +126,49 @@ export default function SelectionToolbarFrame({
     };
   }, [docked, place, panel]);
 
+  const buttons = () => [...(frameRef.current?.querySelectorAll<HTMLElement>("[role=toolbar] button:not([disabled])") ?? [])];
+
+  // Roving tabindex: the strip is ONE tab stop; arrows move within it.
+  React.useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame || panel) return;
+    const apply = () => {
+      const list = buttons();
+      if (list.length === 0) return;
+      if (current.current >= list.length) current.current = 0;
+      list.forEach((b, i) => {
+        const want = i === current.current ? "0" : "-1";
+        if (b.getAttribute("tabindex") !== want) b.setAttribute("tabindex", want);
+      });
+    };
+    apply();
+    const mo = new MutationObserver(apply);
+    mo.observe(frame, { childList: true, subtree: true });
+    const onFocusIn = (e: FocusEvent) => {
+      const at = buttons().indexOf(e.target as HTMLElement);
+      if (at >= 0 && at !== current.current) {
+        current.current = at;
+        apply();
+      }
+    };
+    frame.addEventListener("focusin", onFocusIn);
+    return () => {
+      mo.disconnect();
+      frame.removeEventListener("focusin", onFocusIn);
+    };
+  }, [seq, panel]);
+
   // Opened from the keyboard (Ctrl/Cmd+Alt+M): focus the first control once it draws.
   React.useEffect(() => {
     if (!focusToolbar) return;
     let tries = 0;
     let id = 0;
     const focusFirst = () => {
-      const first = frameRef.current?.querySelector<HTMLElement>("button:not([disabled])");
-      if (first) first.focus();
-      else if (tries++ < 20) id = requestAnimationFrame(focusFirst);
+      const first = buttons()[0];
+      if (first) {
+        current.current = 0;
+        first.focus();
+      } else if (tries++ < 20) id = requestAnimationFrame(focusFirst);
     };
     id = requestAnimationFrame(focusFirst);
     return () => cancelAnimationFrame(id);
@@ -104,7 +178,7 @@ export default function SelectionToolbarFrame({
     if (panel) return; // a panel (a composer) owns its keys
     const keys = ["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Home", "End"];
     if (!keys.includes(e.key)) return;
-    const list = [...(frameRef.current?.querySelectorAll<HTMLElement>("button:not([disabled])") ?? [])];
+    const list = buttons();
     if (list.length === 0) return;
     e.preventDefault();
     const at = list.indexOf(document.activeElement as HTMLElement);
@@ -113,6 +187,8 @@ export default function SelectionToolbarFrame({
       : e.key === "End" ? list.length - 1
       : e.key === "ArrowRight" || e.key === "ArrowDown" ? (at + 1) % list.length
       : (at - 1 + list.length) % list.length;
+    current.current = next;
+    list.forEach((b, i) => b.setAttribute("tabindex", i === next ? "0" : "-1"));
     list[next].focus();
   };
 
@@ -135,19 +211,16 @@ export default function SelectionToolbarFrame({
       }
     >
       {panel ? (
+        // A panel that draws in its own layer (the record sheet) leaves this
+        // wrapper empty — then it takes no space and shows no chrome.
         <div
           data-selection-panel=""
-          className="w-[min(340px,calc(100vw-16px))] rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg"
+          className="w-[min(340px,calc(100vw-16px))] rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg empty:hidden"
         >
           {panel}
         </div>
       ) : (
-        <SelectionToolbar
-          key={seq}
-          target={target}
-          content={text}
-          className={docked ? "max-w-full" : undefined}
-        />
+        <SelectionToolbar key={seq} target={target} content={text} className={docked ? "max-w-full" : undefined} />
       )}
     </div>,
     document.body,

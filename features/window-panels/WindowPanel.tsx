@@ -77,6 +77,7 @@ import { resolveWindowUrlSyncKey } from "./utils/urlSyncIdentity";
 import { useWindowPersistence } from "./WindowPersistenceManager";
 import { Save } from "lucide-react";
 import { DebugStrip } from "./WindowPanel/DebugStrip";
+import { WindowSelectionSurface } from "./WindowSelectionSurface";
 import motionStyles from "./WindowPanel.module.css";
 import { MobileWindowHeader } from "./WindowPanel/MobileHeader";
 import {
@@ -201,7 +202,7 @@ function WindowPanelBodyShell({
           bodyClassName,
         )}
       >
-        {children}
+        <WindowSelectionSurface>{children}</WindowSelectionSurface>
       </div>
     </div>
   );
@@ -1366,7 +1367,7 @@ export function WindowPanel({
           actionsRight={resolvedActionsRight}
           bodyClassName={bodyClassName}
         >
-          {children}
+          <WindowSelectionSurface>{children}</WindowSelectionSurface>
         </MobileDrawerSurface>
       );
     }
@@ -1381,7 +1382,7 @@ export function WindowPanel({
           actionsRight={resolvedActionsRight}
           bodyClassName={bodyClassName}
         >
-          {children}
+          <WindowSelectionSurface>{children}</WindowSelectionSurface>
         </MobileCardSurface>
       );
     }

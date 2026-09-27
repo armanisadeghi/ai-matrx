@@ -9,7 +9,7 @@
 // API: addHighlight / postComment / link).
 
 import type { ComponentType } from "react";
-import { Link2, MessageSquarePlus, PencilLine } from "lucide-react";
+import { Link2, MessageSquarePlus, PencilLine, Send } from "lucide-react";
 import type { Action, ActionProvider, ClickTarget } from "@ai-matrx/alchemy/actions";
 import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
 import {
@@ -18,12 +18,15 @@ import {
   hostHalf,
   selectionToolbarHostOf,
   shownInSelectionMode,
+  type SelectionCommonHost,
 } from "@/components/selection-toolbar/selection-actions";
 import { HIGHLIGHT_COLORS, type HighlightColor } from "./constants";
 import type { TextAnchor } from "./anchor";
 import type { AnnotationSidecarApi } from "./useAnnotationSidecar";
 
 export const ANNOTATION_HOST_KEY = "annotation";
+
+export type FeedbackReport = Parameters<SelectionCommonHost["openFeedback"]>[0];
 
 /** A selection pinned to the document's own text. */
 export interface CapturedSelection {
@@ -41,6 +44,8 @@ export interface AnnotationSelectionHost {
    * pinned (a formula, a label) is said once through the app's toast.
    */
   capture(options?: { silent?: boolean }): CapturedSelection | null;
+  /** The report about a passage (the feedback window's title + subject, quote and position filled in). */
+  report(selection: CapturedSelection): FeedbackReport;
 }
 
 export function annotationHostOf(target: ClickTarget): AnnotationSelectionHost | null {
@@ -131,8 +136,29 @@ function panelAction(
   };
 }
 
+const REPORT: Action = {
+  id: "selection:report",
+  label: "Report an issue",
+  icon: registerAlchemyIcon(Send),
+  category: "feedback",
+  order: 0,
+  placement: "primary",
+  preserveSelection: true,
+  eligible: (t) => eligibleHere("selection:report", t),
+  run: (t) => {
+    const host = annotationHostOf(t);
+    const selection = host?.capture();
+    if (!host || !selection) return;
+    const common = hostHalf<SelectionCommonHost>(t, SELECTION_COMMON_HOST_KEY);
+    if (!common) return;
+    selectionToolbarHostOf(t)?.ui.close({ clearSelection: true });
+    common.openFeedback(host.report(selection));
+  },
+};
+
 const ACTIONS: Action[] = [
   ...HIGHLIGHTS,
+  REPORT,
   panelAction("selection:comment", "Comment", MessageSquarePlus, 10, ANNOTATION_PANELS.comment),
   panelAction("selection:suggest", "Suggest an edit", PencilLine, 11, ANNOTATION_PANELS.suggest),
   panelAction("selection:link-record", "Link a record…", Link2, 12, ANNOTATION_PANELS.link, (h) => h.api.state.capabilities.links),

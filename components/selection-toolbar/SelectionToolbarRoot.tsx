@@ -26,7 +26,9 @@ import dynamic from "next/dynamic";
 import { createClickTarget, type ClickTarget } from "@ai-matrx/alchemy/actions";
 import { useAlchemyActions } from "@ai-matrx/alchemy/react/host";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { useOpenFeedbackWindow } from "@/features/overlays/openers/feedbackDialog";
 import { selectUserId } from "@/lib/redux/slices/userSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
@@ -43,10 +45,14 @@ import {
   declaredSelectionProviders,
   ensureProvider,
   subscribeDeclaredSelectionProviders,
+  SELECTION_COMMON_HOST_KEY,
+  type SelectionCommonHost,
   type SelectionToolbarHost,
 } from "./selection-actions";
 
 import type { Rect } from "./SelectionToolbarFrame";
+// The common pair (copy, save to notes) declares itself on load.
+import "./common-actions";
 
 // The frame (the package's selection layout, the portal, positioning) loads
 // the first time a toolbar opens — this shell is on every route; the frame is
@@ -62,6 +68,8 @@ interface OpenState {
   /** Live range for positioning (null for a textarea selection). */
   range: Range | null;
   rect: Rect;
+  /** The node the selection lives in (its scroll container bounds the frame). */
+  anchor: Node | null;
   focusToolbar: boolean;
 }
 
@@ -100,6 +108,8 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
   const isMobile = useIsMobile();
   const zonesVersion = useSelectionZonesVersion();
   const userId = useAppSelector(selectUserId);
+  const dispatch = useAppDispatch();
+  const openFeedback = useOpenFeedbackWindow();
   const orgId = useAppSelector(selectOrganizationId);
   const highlightKnob = useEffectiveKnob(orgId, userId, HIGHLIGHT_WHILE_EDITING_KNOB);
   const highlightWhileEditing =
@@ -135,6 +145,7 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
       let range: Range | null = null;
       let rect: Rect | null = null;
       let fieldEditable = false;
+      let caret = false;
       if (isTextField(active) && active.selectionStart !== null && active.selectionEnd !== null && active.selectionEnd > active.selectionStart) {
         node = active;
         text = active.value.slice(active.selectionStart, active.selectionEnd);
@@ -152,9 +163,20 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
           text = sel.toString();
           const measured = range.getBoundingClientRect();
           rect = measured.width || measured.height ? rectOf(measured) : null;
+        } else if (sel && sel.rangeCount > 0 && sel.isCollapsed && !insideToolbar(sel.anchorNode)) {
+          // CARET MODE: a zone may keep the toolbar up with no selected text — the rich
+          // editor while the caret is in a table (its table actions are this toolbar's,
+          // never a second popup). The zone says where to anchor.
+          const caretZones = zonesContaining(sel.anchorNode);
+          const caretRect = caretZones.map((z) => z.contribution.caretAnchor?.() ?? null).find(Boolean) ?? null;
+          if (caretRect) {
+            node = sel.anchorNode;
+            caret = true;
+            rect = caretRect;
+          }
         }
       }
-      if (!node || !text.trim() || insideToolbar(node)) {
+      if (!node || (!text.trim() && !caret) || insideToolbar(node)) {
         // Interaction inside the toolbar (a composer, a menu) keeps it open.
         if (openRef.current && (insideToolbar(document.activeElement) || panelRef.current)) return;
         if (openRef.current) close();
@@ -167,6 +189,7 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
       }
       if (!rect) rect = rectOf(zones[0].element.getBoundingClientRect());
       const editable =
+        caret ||
         fieldEditable ||
         zones.some((z) => z.contribution.editable) ||
         Boolean((node instanceof Element ? node : node.parentElement)?.closest("[contenteditable='true']"));
@@ -182,8 +205,9 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
         zones,
         mode: editable ? "edit" : "read",
         text,
-        range,
+        range: caret ? null : range,
         rect,
+        anchor: node,
         focusToolbar: Boolean(opts.focusToolbar),
       });
       if (!sameSelection) {
@@ -296,6 +320,13 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
   const target = React.useMemo<ClickTarget | null>(() => {
     if (!open) return null;
     const halves = Object.assign({}, ...[...open.zones].reverse().map((z) => z.contribution.host ?? {}));
+    const common: SelectionCommonHost = {
+      kind: "selection-common",
+      text: open.text.trim(),
+      saveToNotes: (content: string) =>
+        dispatch(openOverlay({ overlayId: "saveToNotes", instanceId: `selection-notes:${crypto.randomUUID()}`, data: { initialContent: content } })),
+      openFeedback: (report) => openFeedback(report),
+    };
     const toolbar: SelectionToolbarHost = {
       kind: "selection-toolbar",
       mode: open.mode,
@@ -306,14 +337,16 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
     return createClickTarget({
       readOnly: open.mode === "read",
       writable: [],
-      selection: { text: open.text, type: open.mode === "edit" ? "editable" : "non-editable", start: 0, end: 0, handle: open.range },
+      selection: open.text.trim()
+        ? { text: open.text, type: open.mode === "edit" ? "editable" : "non-editable", start: 0, end: 0, handle: open.range }
+        : null,
       payloadKinds: ["text"],
       organizationId: orgId ?? null,
       auth: { authenticated: Boolean(userId) },
-      host: { ...halves, selectionToolbar: toolbar },
+      host: { ...halves, selectionToolbar: toolbar, [SELECTION_COMMON_HOST_KEY]: common },
     });
     // `open.seq` is the selection identity; a knob or mode flip re-targets too.
-  }, [open?.seq, open?.mode, highlightWhileEditing, ui, orgId, userId, slots]);
+  }, [open?.seq, open?.mode, highlightWhileEditing, ui, orgId, userId, slots, dispatch, openFeedback]);
 
   if (!open || !target) return null;
 
@@ -329,6 +362,7 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
       text={open.text}
       range={open.range}
       rect={open.rect}
+      anchor={open.anchor}
       docked={isMobile}
       focusToolbar={open.focusToolbar}
       panel={panelNode}

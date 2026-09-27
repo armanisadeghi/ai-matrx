@@ -9,11 +9,33 @@
 
 import type { Editor } from "@tiptap/core";
 import { NodeSelection } from "@tiptap/pm/state";
-import { Bold, Braces, Code, Heading1, Heading2, Italic, Link2, List, Quote, Strikethrough, type LucideIcon } from "lucide-react";
+import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  ArrowDownToLine,
+  ArrowLeftToLine,
+  ArrowRightToLine,
+  ArrowUpToLine,
+  Bold,
+  Braces,
+  Code,
+  Columns3,
+  Heading1,
+  Heading2,
+  Italic,
+  Link2,
+  List,
+  Quote,
+  Rows3,
+  Strikethrough,
+  Trash2,
+  type LucideIcon,
+} from "lucide-react";
 import type { Action, ActionProvider, ClickTarget } from "@ai-matrx/alchemy/actions";
 import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
 import { declareSelectionProvider, hostHalf, placeSelectionActions, shownInSelectionMode } from "@/components/selection-toolbar/selection-actions";
-import { insertVariable } from "../core/commands";
+import { insertVariable, setColumnAlign } from "../core/commands";
 import { toVariableName } from "../core/variables";
 
 export const RICH_EDITOR_HOST_KEY = "richEditor";
@@ -23,6 +45,21 @@ export interface RichEditorSelectionHost {
   editor: Editor;
   onEditLink: () => void;
   offerVariables: boolean;
+  /** The caret or selection is inside a table (its table actions show). */
+  inTable: () => boolean;
+}
+
+/** The table the caret is in, as a box (the toolbar's caret-mode anchor), or null. */
+export function tableAnchorOf(editor: Editor): DOMRect | null {
+  if (!editor.isEditable || !editor.isActive("table")) return null;
+  const { $from } = editor.state.selection;
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    if ($from.node(depth).type.name === "table") {
+      const dom = editor.view.nodeDOM($from.before(depth));
+      if (dom instanceof HTMLElement) return dom.getBoundingClientRect();
+    }
+  }
+  return null;
 }
 
 function editorOf(target: ClickTarget): RichEditorSelectionHost | null {
@@ -109,12 +146,62 @@ const ACTIONS: Action[] = FORMATS.map((spec, index) => {
   };
 });
 
+// ── Table actions — shown while the caret or selection is in a table (the old
+// separate table bubble is gone: one popup). Every change rewrites only the
+// table's markdown (markdown-serialize.ts).
+
+interface TableSpec {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  run: (editor: Editor) => void;
+  destructive?: boolean;
+  /** Lives under More (alignment, deleting) so the strip stays short. */
+  more?: boolean;
+}
+
+const TABLE_TOOLS: TableSpec[] = [
+  { id: "row-above", label: "Add row above", icon: ArrowUpToLine, run: (e) => e.chain().focus().addRowBefore().run() },
+  { id: "row-below", label: "Add row below", icon: ArrowDownToLine, run: (e) => e.chain().focus().addRowAfter().run() },
+  { id: "col-left", label: "Add column left", icon: ArrowLeftToLine, run: (e) => e.chain().focus().addColumnBefore().run() },
+  { id: "col-right", label: "Add column right", icon: ArrowRightToLine, run: (e) => e.chain().focus().addColumnAfter().run() },
+  { id: "align-left", more: true, label: "Align column left", icon: AlignLeft, run: (e) => setColumnAlign(e, "left") },
+  { id: "align-center", more: true, label: "Center column", icon: AlignCenter, run: (e) => setColumnAlign(e, "center") },
+  { id: "align-right", more: true, label: "Align column right", icon: AlignRight, run: (e) => setColumnAlign(e, "right") },
+  { id: "del-row", label: "Delete row", icon: Rows3, run: (e) => e.chain().focus().deleteRow().run(), destructive: true, more: true },
+  { id: "del-col", label: "Delete column", icon: Columns3, run: (e) => e.chain().focus().deleteColumn().run(), destructive: true, more: true },
+  { id: "del-table", label: "Delete table (Undo brings it back)", icon: Trash2, run: (e) => e.chain().focus().deleteTable().run(), destructive: true, more: true },
+];
+
+const TABLE_ACTIONS: Action[] = TABLE_TOOLS.map((spec, index) => {
+  const id = `selection:table-${spec.id}`;
+  return {
+    id,
+    label: spec.label,
+    icon: registerAlchemyIcon(spec.icon),
+    category: "edit",
+    order: 100 + index,
+    placement: spec.more ? "overflow" : "primary",
+    preserveSelection: true,
+    ...(spec.destructive ? { destructive: true } : {}),
+    eligible: (t) => {
+      const host = editorOf(t);
+      if (!host || !shownInSelectionMode(id, t) || !host.editor.isEditable || !host.inTable()) return { status: "absent" };
+      return { status: "available" };
+    },
+    run: (t) => {
+      const host = editorOf(t);
+      if (host) spec.run(host.editor);
+    },
+  };
+});
+
 /** The formatting provider (declared on load; the toolbar root registers it). */
 export const richEditorFormatProvider: ActionProvider = {
   id: "rich-editor-format",
   tier: "T0",
-  declaredIds: () => ACTIONS.map((a) => a.id),
-  actions: (target) => (editorOf(target) ? placeSelectionActions(ACTIONS, target) : []),
+  declaredIds: () => [...ACTIONS, ...TABLE_ACTIONS].map((a) => a.id),
+  actions: (target) => (editorOf(target) ? placeSelectionActions([...ACTIONS, ...TABLE_ACTIONS], target) : []),
 };
 
 declareSelectionProvider(richEditorFormatProvider);
