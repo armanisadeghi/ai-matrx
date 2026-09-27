@@ -33,6 +33,7 @@ import {
   useMediaLoadRecovery,
 } from "@ai-matrx/media/core";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
+import { detectTextDirection } from "@/components/rich-content/prose/prose-prepare";
 import { RemoteImageGate, remoteImageHost, withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
 
@@ -311,36 +312,8 @@ function resolveConfig(partial?: MarkdownStyleConfig): {
 }
 
 // ---------------------------------------------------------------------------
-// RTL detection helpers (unchanged from BasicMarkdownContent)
+// RTL detection: the one shared detector (prose-prepare), never a copy
 // ---------------------------------------------------------------------------
-
-const detectTextDirection = (text: string): "rtl" | "ltr" => {
-  const rtlRanges = [
-    /[\u0590-\u05FF]/,
-    /[\u0600-\u06FF]/,
-    /[\u0750-\u077F]/,
-    /[\u08A0-\u08FF]/,
-    /[\uFB50-\uFDFF]/,
-    /[\uFE70-\uFEFF]/,
-    /[\u200F]/,
-    /[\u202E]/,
-  ];
-
-  let rtlCount = 0;
-  let ltrCount = 0;
-
-  for (const char of text) {
-    if (rtlRanges.some((range) => range.test(char))) {
-      rtlCount++;
-    } else if (/[a-zA-Z]/.test(char)) {
-      ltrCount++;
-    }
-  }
-
-  const totalAlphabetic = rtlCount + ltrCount;
-  if (totalAlphabetic === 0) return "ltr";
-  return rtlCount / totalAlphabetic > 0.1 ? "rtl" : "ltr";
-};
 
 const getDirectionClasses = (direction: "rtl" | "ltr") =>
   direction === "rtl" ? "text-right rtl" : "text-left ltr";
