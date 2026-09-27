@@ -240,7 +240,10 @@ export function PartyProvenanceCard({
 
   // Nothing to explain: a hand-entered contact has no provenance edge and no
   // origin stamp, and an empty card would be noise on every ordinary record.
-  if (!discovered && !party.source && (items?.length ?? 0) === 0 && !error)
+  // A record a person typed in ("manual") has nothing to explain either — its
+  // origin stamp would only print the form's internal name.
+  const typedIn = !party.source || party.source === "manual";
+  if (!discovered && typedIn && (items?.length ?? 0) === 0 && !error)
     return null;
 
   const promote = async () => {
@@ -299,7 +302,10 @@ export function PartyProvenanceCard({
             <span className="text-foreground">
               {platformWord(party.source)}
             </span>
-            {party.source_detail ? (
+            {/* A snake_case detail is an internal producer key
+                (crm_create_form, gmail_sync) — never shown to a person. */}
+            {party.source_detail &&
+            !/^[a-z0-9_]+$/.test(party.source_detail) ? (
               <>
                 {" · "}
                 {/* `source_detail` is a URL only for some sources (a folded
