@@ -24,6 +24,8 @@ export const GOOGLE_SCOPE = {
   youtubeAnalyticsReadonly:
     "https://www.googleapis.com/auth/yt-analytics.readonly",
   contactsReadonly: "https://www.googleapis.com/auth/contacts.readonly",
+  // Internal-only reviewed Contact edits; excluded from consent bundles until provider approval.
+  contactsWrite: "https://www.googleapis.com/auth/contacts",
   // Future internal-test source preview only; excluded from all consent bundles until reviewed feature/provider approval.
   contactsOtherReadonly: "https://www.googleapis.com/auth/contacts.other.readonly",
   // Future internal-test Meet source preview only; excluded from every consent bundle.
