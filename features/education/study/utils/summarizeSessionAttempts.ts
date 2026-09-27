@@ -10,6 +10,7 @@
 
 import type { StudyAttemptRow, StudySessionRow } from "../types";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { sessionStudyMs } from "./sessionStudyTime";
 
 export interface SessionSummary {
   total: number;
@@ -23,13 +24,14 @@ export interface SessionSummary {
   avgScorePct: number | null;
   /** Longest run of consecutive `correct` attempts, in ledger order. */
   bestStreak: number;
-  /** ended_at - (started_at ?? created_at), when both ends are known. */
+  /** Time actually studied (see utils/sessionStudyTime.ts), when knowable. */
   durationMs: number | null;
 }
 
 export function summarizeSessionAttempts(
   attempts: StudyAttemptRow[],
-  session?: Pick<StudySessionRow, "started_at" | "ended_at" | "created_at">,
+  session?: Pick<StudySessionRow, "started_at" | "ended_at" | "created_at"> &
+    Partial<Pick<StudySessionRow, "status">>,
 ): SessionSummary {
   let correct = 0;
   let partial = 0;
@@ -59,12 +61,19 @@ export function summarizeSessionAttempts(
 
   const graded = correct + partial + incorrect;
 
+  // Time actually studied — an abandoned session's ended_at is when it was
+  // closed (often by the 6h reaper), not when the learner stopped.
   let durationMs: number | null = null;
   const start = session?.started_at ?? session?.created_at;
-  const end = session?.ended_at;
-  if (start && end) {
-    const ms = new Date(end).getTime() - new Date(start).getTime();
-    if (Number.isFinite(ms) && ms >= 0) durationMs = ms;
+  if (session && start && (session.ended_at || attempts.length > 0)) {
+    let lastAttemptAt: number | null = null;
+    for (const a of attempts) {
+      const t = new Date(a.created_at).getTime();
+      if (Number.isFinite(t) && (lastAttemptAt == null || t > lastAttemptAt)) {
+        lastAttemptAt = t;
+      }
+    }
+    durationMs = sessionStudyMs(session, lastAttemptAt);
   }
 
   return {

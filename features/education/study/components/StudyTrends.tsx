@@ -38,6 +38,10 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { studyService } from "../service/studyService";
 import { displayMasteryPct } from "../utils/masteryFsrs";
+import {
+  lastAttemptAtBySession,
+  sessionStudyMs,
+} from "../utils/sessionStudyTime";
 import type {
   ItemMasteryRow,
   StudyAttemptRow,
@@ -87,6 +91,7 @@ function buildWeekBuckets(
   attempts: StudyAttemptRow[],
   sessions: StudySessionRow[],
   weeks: number,
+  allAttempts: StudyAttemptRow[] = attempts,
 ): WeekBucket[] {
   const now = new Date();
   const firstWeekStart = startOfWeek(
@@ -117,15 +122,17 @@ function buildWeekBuckets(
     if (a.result === "correct") b.correct += 1;
   }
 
+  // Minutes come from EVERY mode's attempts (a session's last attempt bounds
+  // an abandoned session) — never an abandoned session's wall-clock span.
+  const lastAttemptAt = lastAttemptAtBySession(allAttempts);
   for (const s of sessions) {
     const startedAt = s.started_at ?? s.created_at;
-    if (!s.ended_at || !startedAt) continue;
-    const start = new Date(startedAt).getTime();
-    const end = new Date(s.ended_at).getTime();
-    if (!(end > start)) continue;
-    const b = bucketFor(start);
+    if (!startedAt) continue;
+    const ms = sessionStudyMs(s, lastAttemptAt.get(s.id));
+    if (ms <= 0) continue;
+    const b = bucketFor(new Date(startedAt).getTime());
     if (!b) continue;
-    b.minutes += (end - start) / 60_000;
+    b.minutes += ms / 60_000;
   }
 
   return buckets;
@@ -207,7 +214,7 @@ export function StudyTrends({
       setLoadError(null);
       const since = new Date(Date.now() - weeks * MS_PER_WEEK).toISOString();
       const [attemptsRes, sessionsRes] = await Promise.all([
-        studyService.listAttempts(itemType, { since }),
+        studyService.listAllAttempts({ since }),
         studyService.listSessions({ since, limit: 1000 }),
       ]);
       if (cancelled) return;
@@ -217,8 +224,14 @@ export function StudyTrends({
         );
         return;
       }
+      const allAttempts = attemptsRes.data ?? [];
       setBuckets(
-        buildWeekBuckets(attemptsRes.data ?? [], sessionsRes.data ?? [], weeks),
+        buildWeekBuckets(
+          allAttempts.filter((a) => a.item_type === itemType),
+          sessionsRes.data ?? [],
+          weeks,
+          allAttempts,
+        ),
       );
     })();
     return () => {
@@ -281,7 +294,7 @@ export function StudyTrends({
             >
               <LineChart
                 data={accuracyData}
-                margin={{ left: -20, right: 8, top: 8 }}
+                margin={{ left: 0, right: 8, top: 8 }}
               >
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis
@@ -296,7 +309,7 @@ export function StudyTrends({
                   axisLine={false}
                   fontSize={11}
                   domain={[0, 100]}
-                  width={32}
+                  width={36}
                 />
                 <ChartTooltip
                   content={
@@ -342,7 +355,7 @@ export function StudyTrends({
             >
               <BarChart
                 data={timeData}
-                margin={{ left: -20, right: 8, top: 8 }}
+                margin={{ left: 0, right: 8, top: 8 }}
               >
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis
@@ -356,7 +369,7 @@ export function StudyTrends({
                   tickLine={false}
                   axisLine={false}
                   fontSize={11}
-                  width={32}
+                  width={36}
                 />
                 <ChartTooltip
                   content={

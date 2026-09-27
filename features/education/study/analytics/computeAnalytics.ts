@@ -7,6 +7,10 @@
 // a rewrite here.
 
 import { displayMasteryPct } from "../utils/masteryFsrs";
+import {
+  lastAttemptAtBySession,
+  sessionStudyMs,
+} from "../utils/sessionStudyTime";
 import type {
   ItemMasteryRow,
   StudyAttemptRow,
@@ -220,14 +224,12 @@ export function computeAnalytics(
     weakTopics.sort((a, b) => a.masteryPct - b.masteryPct);
   }
 
-  // Total minutes from completed sessions with a real duration.
+  // Time actually studied — never an abandoned session's wall-clock span
+  // (see utils/sessionStudyTime.ts for the measured defect this replaces).
+  const lastAttemptAt = lastAttemptAtBySession(attempts);
   let totalMinutes = 0;
   for (const s of sessions) {
-    const startedAt = s.started_at ?? s.created_at;
-    if (!s.ended_at || !startedAt) continue;
-    const start = new Date(startedAt).getTime();
-    const end = new Date(s.ended_at).getTime();
-    if (end > start) totalMinutes += (end - start) / 60_000;
+    totalMinutes += sessionStudyMs(s, lastAttemptAt.get(s.id)) / 60_000;
   }
 
   return {
