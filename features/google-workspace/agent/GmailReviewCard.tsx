@@ -14,7 +14,7 @@
  */
 
 import { useState } from "react";
-import { Send, ExternalLink } from "lucide-react";
+import { Send, ExternalLink, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -30,7 +30,7 @@ import {
 } from "@/features/agents/ui-first-tools/redux/ask-resolver-registry";
 import { EMPTY_ASK_RESPONSE } from "@/features/agents/ui-first-tools/tools/schemas";
 import { AgentCardShell } from "@/features/agents/ui-first-tools/ui/AgentCardShell";
-import { sendReviewedGmail } from "@/features/google-workspace/service";
+import { saveReviewedGmailDraft, sendReviewedGmail } from "@/features/google-workspace/service";
 import { splitMailboxField } from "@/features/crm/gmail/mailbox";
 import {
   deliveredAddressDisagreement,
@@ -106,12 +106,16 @@ export function GmailReviewCard({ ask, preflight, plan }: GmailReviewCardProps) 
   const [subject, setSubject] = useState(draft?.subject ?? "");
   const [body, setBody] = useState(draft?.body ?? "");
   const [sending, setSending] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** The outbound authority's own 409, when that is what refused this send. */
   const [refusal, setRefusal] = useState<ReviewedGmailRefusal | null>(null);
   const [selectedConnectionId, setSelectedConnectionId] = useState<
     string | null
   >(() => draft?.connectionId ?? preferredGoogleConnectionId("gmail-send"));
+  const [selectedDraftConnectionId, setSelectedDraftConnectionId] = useState<string | null>(
+    () => preferredGoogleConnectionId("gmail-modify"),
+  );
 
   const mailboxes = eligibleGoogleConnections(
     inventory.data?.connections ?? [],
@@ -121,6 +125,15 @@ export function GmailReviewCard({ ask, preflight, plan }: GmailReviewCardProps) 
   const selectedMailbox =
     mailboxes.find((mailbox) => mailbox.id === selectedConnectionId) ??
     mailboxes[0] ??
+    null;
+  const draftMailboxes = eligibleGoogleConnections(
+    inventory.data?.connections ?? [],
+    "gmail-modify",
+    selectedDraftConnectionId,
+  );
+  const selectedDraftMailbox =
+    draftMailboxes.find((mailbox) => mailbox.id === selectedDraftConnectionId) ??
+    draftMailboxes[0] ??
     null;
 
   // Defensive: an email_review ask always carries its draft.
@@ -139,6 +152,38 @@ export function GmailReviewCard({ ask, preflight, plan }: GmailReviewCardProps) 
   function selectMailbox(connectionId: string) {
     setSelectedConnectionId(connectionId);
     rememberGoogleConnection("gmail-send", connectionId);
+  }
+
+  function selectDraftMailbox(connectionId: string) {
+    setSelectedDraftConnectionId(connectionId);
+    rememberGoogleConnection("gmail-modify", connectionId);
+  }
+
+  async function saveDraft() {
+    if (!draft || !selectedDraftMailbox || savingDraft || !canSend) return;
+    setSavingDraft(true);
+    setError(null);
+    setRefusal(null);
+    try {
+      const result = await saveReviewedGmailDraft({
+        connectionId: selectedDraftMailbox.id,
+        to: to.trim(),
+        cc: splitMailboxField(cc),
+        subject,
+        body,
+      });
+      toast.success(`Saved in ${selectedDraftMailbox.account_email ?? "the selected Google account"} as a Gmail draft.`);
+      finish({
+        ...EMPTY_ASK_RESPONSE,
+        confirmed: true,
+        data: { draft_id: result.draftId, message_id: result.messageId, saved_as_draft: true,
+          to: result.to, cc: result.cc, subject, body, from_email: selectedDraftMailbox.account_email },
+      });
+    } catch (cause) {
+      setError(extractErrorMessage(cause));
+    } finally {
+      setSavingDraft(false);
+    }
   }
 
   function finish(response: Parameters<typeof resolveAskByCallId>[1]) {
@@ -295,10 +340,16 @@ export function GmailReviewCard({ ask, preflight, plan }: GmailReviewCardProps) 
         Nothing sends until you press Send.
       </span>
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={decline} disabled={sending}>
+        <Button variant="ghost" size="sm" onClick={decline} disabled={sending || savingDraft}>
           Don&apos;t send
         </Button>
-        <Button size="sm" onClick={send} disabled={sending || !canSend}>
+        {selectedDraftMailbox ? (
+          <Button variant="outline" size="sm" onClick={saveDraft} disabled={sending || savingDraft || !canSend}>
+            <Save className="mr-1.5 h-4 w-4" />
+            {savingDraft ? "Saving draft…" : "Save draft"}
+          </Button>
+        ) : null}
+        <Button size="sm" onClick={send} disabled={sending || savingDraft || !canSend}>
           <Send className="mr-1.5 h-4 w-4" />
           {sending ? "Sending…" : "Send"}
         </Button>
@@ -335,6 +386,19 @@ export function GmailReviewCard({ ask, preflight, plan }: GmailReviewCardProps) 
         ) : (
           <p className="text-sm text-red-600 dark:text-red-400">
             No connected Google account currently has Gmail sending access.
+          </p>
+        )}
+        {selectedDraftMailbox ? (
+          <GoogleAccountSelect
+            connections={draftMailboxes}
+            connectionId={selectedDraftMailbox.id}
+            onConnectionChange={selectDraftMailbox}
+            label="Save draft in"
+            disabled={sending || savingDraft || resolved}
+          />
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Saving a Gmail draft is available to internal reviewers with Gmail changes enabled.
           </p>
         )}
         <div className="grid gap-1.5">

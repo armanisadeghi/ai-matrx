@@ -365,3 +365,50 @@ export async function sendReviewedGmail(
   );
   return narrowReviewedSendOutcome(await responseRecord(response));
 }
+
+export interface ReviewedGmailDraftOutcome {
+  draftId: string;
+  messageId: string;
+  to: string;
+  cc: string[];
+}
+
+/** Save one visibly reviewed message as a Gmail draft. This route never sends. */
+export async function saveReviewedGmailDraft(draft: {
+  connectionId: string;
+  to: string;
+  cc: string[];
+  subject: string;
+  body: string;
+}): Promise<ReviewedGmailDraftOutcome> {
+  const reviewBody = {
+    connection_id: draft.connectionId,
+    to: draft.to,
+    cc: draft.cc,
+    subject: draft.subject,
+    body: draft.body,
+  };
+  const authorityResponse = await postGoogleBackend(
+    "/api/google-workspace/gmail/drafts/review",
+    reviewBody,
+    "Unable to record the Gmail draft review.",
+  );
+  const authority = await responseRecord(authorityResponse);
+  const authorityId = requiredString(authority, "authority_id");
+  const saveResponse = await postGoogleBackend(
+    "/api/google-workspace/gmail/drafts/save-reviewed",
+    { ...reviewBody, authority_id: authorityId },
+    "Unable to save the reviewed Gmail draft.",
+  );
+  const saved = await responseRecord(saveResponse);
+  const cc = saved.cc;
+  if (!Array.isArray(cc) || cc.some((value) => typeof value !== "string")) {
+    throw new Error("Google Workspace returned an invalid draft recipient list.");
+  }
+  return {
+    draftId: requiredString(saved, "draft_id"),
+    messageId: requiredString(saved, "message_id"),
+    to: requiredString(saved, "to"),
+    cc,
+  };
+}

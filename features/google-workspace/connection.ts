@@ -25,6 +25,7 @@ export interface GoogleConnectionRef {
 export type GoogleConnectionCapability =
   | "workspace"
   | "gmail-send"
+  | "gmail-modify"
   /** Restricted whole-Drive metadata browse; internal review only. */
   | "drive-browse";
 
@@ -34,6 +35,7 @@ const GOOGLE_CONNECTION_PREFERENCE_KEYS: Record<
 > = {
   workspace: "google:preferred-connection:workspace",
   "gmail-send": "google:preferred-connection:gmail-send",
+  "gmail-modify": "google:preferred-connection:gmail-modify",
   "drive-browse": "google:preferred-connection:drive-browse",
 };
 
@@ -43,6 +45,7 @@ const GOOGLE_CONNECTION_CAPABILITY_SCOPES: Record<
 > = {
   workspace: GOOGLE_SCOPE.driveFile,
   "gmail-send": GOOGLE_SCOPE.gmailSend,
+  "gmail-modify": GOOGLE_SCOPE.gmailModify,
   "drive-browse": GOOGLE_SCOPE.driveReadonly,
 };
 
