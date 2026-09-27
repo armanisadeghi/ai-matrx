@@ -86116,6 +86116,11 @@ export interface components {
              */
             as_you_type?: boolean;
             /**
+             * Rerank
+             * @description Rerank passage (Segment) results with the relevance model. Omitted = the organization's setting (knowledge.search_rerank). Honoured on the content pass and on submit only; typing never reranks.
+             */
+            rerank?: boolean | null;
+            /**
              * Pass
              * @description Which pass to run: 'instant' = top hit, items and messages (every keystroke); 'content' = Segments only (after a ~600 ms typing pause and on submit). Omitted = both, in one stream.
              */
