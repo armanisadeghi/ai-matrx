@@ -121,10 +121,15 @@ export default function FirstScreenTab() {
       {settings.editingContext === "user" && <SettingsSection title="Appearance" icon={Palette}>
         <SettingsSelect<ThemeMode>
           label="Theme"
-          description="Use your device setting, light, or dark. Applies before first paint and syncs across your tabs."
+          description="Use your device setting, light, or dark. Saved in this browser; every open tab follows it."
           value={mode}
           onValueChange={setMode}
           options={THEME_MODE_OPTIONS}
+          // A new browser follows the device (the boot script honours
+          // prefers-color-scheme), so "Use system setting" IS the default.
+          modified={mode !== "system"}
+          onReset={() => setMode("system")}
+          resetLabel="Reset theme to Use system setting"
           last
         />
       </SettingsSection>

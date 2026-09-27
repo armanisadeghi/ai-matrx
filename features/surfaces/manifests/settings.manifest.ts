@@ -332,7 +332,7 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "theme_mode",
     label: "Color mode",
-    description: `Current app color mode: ${THEME_MODE_ENUM_TEXT}. Applied before first paint and synced across the user's devices.`,
+    description: `Current app color mode: ${THEME_MODE_ENUM_TEXT}. Applied before first paint. Saved in THIS browser (every open tab follows it), not to the account — another device keeps its own. The default on a new device is system.`,
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 5,
@@ -403,7 +403,7 @@ const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "theme_mode",
     label: "Color mode",
-    description: `Set the app's color mode. Expects exactly one of: ${THEME_MODE_ENUM_TEXT}. Applies immediately and is saved to the user's account (it follows them to other devices and survives reload).`,
+    description: `Set the app's color mode. Expects exactly one of: ${THEME_MODE_ENUM_TEXT}. Applies immediately, is saved in this browser (every open tab follows it) and survives reload. It does NOT follow the user to other devices — say so if they expect it to.`,
     valueType: "string",
     updatesValue: "theme_mode",
     mode: "entity",
