@@ -80,6 +80,8 @@ import {
 
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
+import { fetchPublicAppExecutionPayload } from "@/features/agent-apps/lib/publicAppPayload";
+import { selectIsAuthenticated } from "@/lib/redux/slices/userSlice";
 import {
   setInputPlaceholder,
   setShowFreeformInput,
@@ -349,12 +351,32 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
     agentId: string;
     message: string;
   } | null>(null);
+  // THE READER DEPENDS ON WHO IS LOOKING. A signed-out visitor can never
+  // read the agent (signed-in door), so an app row goes straight to the
+  // public app door; a signed-in person reads the agent, and only when that
+  // is refused (a stranger to the agent on a shared app) falls through to
+  // the same public door, which answers solely for a published, public app's
+  // own default agent (`lib/publicAppPayload.ts`).
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const publicAppId = args.app ? appId : null;
   useEffect(() => {
     if (!agentId) return;
     if (isReady) return;
     let cancelled = false;
-    dispatch(fetchAgentExecutionMinimal(agentId))
-      .unwrap()
+    const viaPublicDoor = () =>
+      publicAppId
+        ? dispatch(
+            fetchPublicAppExecutionPayload({ appId: publicAppId, agentId }),
+          ).unwrap()
+        : Promise.reject(new Error("no public app to read through"));
+    const load = isAuthenticated
+      ? dispatch(fetchAgentExecutionMinimal(agentId))
+          .unwrap()
+          .catch((err: unknown) =>
+            publicAppId ? viaPublicDoor() : Promise.reject(err),
+          )
+      : viaPublicDoor();
+    load
       .catch((err: unknown) => {
         if (cancelled) return;
         const reason = err instanceof Error ? err.message : String(err);
@@ -372,7 +394,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
     return () => {
       cancelled = true;
     };
-  }, [agentId, isReady, dispatch]);
+  }, [agentId, isReady, dispatch, isAuthenticated, publicAppId]);
   const payloadRefusal =
     payloadError && payloadError.agentId === agentId && !isReady
       ? payloadError.message

@@ -156,6 +156,12 @@ export const ANONYMOUS_BY_DESIGN_DOORS: readonly AnonymousDoor[] = [
   },
   {
     schema: "public",
+    name: "get_aga_public_execution",
+    purpose:
+      "A guest (signed-out) runs a public agent app at /p/<slug> (declared 2026-09-27).",
+  },
+  {
+    schema: "public",
     name: "get_agent_public",
     purpose: "A signed-out visitor on an app/(public) route.",
   },
