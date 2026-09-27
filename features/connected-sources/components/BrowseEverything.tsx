@@ -29,11 +29,7 @@ import {
   SelectLabel,
   SelectTrigger,
 } from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -299,8 +295,9 @@ export function BrowseEverything() {
         </SelectContent>
       </Select>
       {chosenAdapter?.limitation || chosenAdapter?.browse_outcome ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
+        // A popover, not a tooltip: a tap on a phone must open it too.
+        <Popover>
+          <PopoverTrigger asChild>
             <Button
               size="icon"
               variant="ghost"
@@ -309,14 +306,14 @@ export function BrowseEverything() {
             >
               <Info className="h-4 w-4" />
             </Button>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-sm space-y-1 text-xs">
+          </PopoverTrigger>
+          <PopoverContent align="start" className="max-w-sm space-y-1 text-sm">
             {chosenAdapter.browse_outcome ? <p>{chosenAdapter.browse_outcome}</p> : null}
             {chosenAdapter.limitation ? (
               <p className="text-muted-foreground">Cannot reach: {chosenAdapter.limitation}</p>
             ) : null}
-          </TooltipContent>
-        </Tooltip>
+          </PopoverContent>
+        </Popover>
       ) : null}
       <span
         className="min-w-0 flex-1 truncate text-xs text-muted-foreground"
