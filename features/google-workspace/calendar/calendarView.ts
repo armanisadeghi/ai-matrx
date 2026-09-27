@@ -58,6 +58,13 @@ export interface CalendarHourTick {
   label: string;
 }
 
+export interface CalendarTimelineAxes {
+  /** An ordinary 24-hour day supplies the shared Week gutter when one exists. */
+  sharedDay: string | null;
+  /** DST transition days require labels in their own column. */
+  columnDays: string[];
+}
+
 /**
  * Hour lines are instants after local midnight, rather than clock-hour labels.
  * A fall-back day therefore has two distinct 1 AM ticks, while spring-forward
@@ -76,6 +83,18 @@ export function calendarHourTicks(day: string, timeZone: string): CalendarHourTi
     ticks.push({ minute: (instant - start) / 60_000, label: formatter.format(new Date(instant)) });
   }
   return ticks;
+}
+
+/**
+ * A shared Week gutter can only describe a 24-hour day honestly. Transition
+ * days retain their own axes so a repeated or missing local hour is visible.
+ */
+export function calendarTimelineAxes(days: readonly string[], timeZone: string): CalendarTimelineAxes {
+  const sharedDay = days.find((day) => calendarDayDurationMinutes(day, timeZone) === 1440) ?? null;
+  return {
+    sharedDay,
+    columnDays: days.filter((day) => sharedDay === null || calendarDayDurationMinutes(day, timeZone) !== 1440),
+  };
 }
 
 export function calendarDays(startDay: string, count: number): string[] {
@@ -153,7 +172,23 @@ export function calendarEventAccessibleName(
   day: string,
   timeZone: string,
 ): string {
-  return `${calendarDayLabel(day)}: ${eventTimeText(event, timeZone)}: ${event.title || "Untitled event"}`;
+  if (event.all_day || !event.starts_at) {
+    return `${calendarDayLabel(day)}: ${eventTimeText(event, timeZone)}: ${event.title || "Untitled event"}`;
+  }
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    timeZone,
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+  const start = new Date(event.starts_at);
+  const end = event.ends_at ? new Date(event.ends_at) : null;
+  const timeRange = Number.isNaN(start.getTime())
+    ? eventTimeText(event, timeZone)
+    : end && !Number.isNaN(end.getTime())
+      ? `${formatter.format(start)} – ${formatter.format(end)}`
+      : formatter.format(start);
+  return `${calendarDayLabel(day)}: ${timeRange}: ${event.title || "Untitled event"}`;
 }
 
 /** Positions colliding timed segments side-by-side so neither meeting disappears. */

@@ -4,6 +4,7 @@ import {
   calendarEventAccessibleName,
   calendarHourTicks,
   calendarSegments,
+  calendarTimelineAxes,
   positionTimedSegments,
 } from "./calendarView";
 import { CALENDAR_EVENT_ATTENDEES_KIND, type CalendarEventRow } from "./types";
@@ -136,7 +137,33 @@ describe("calendar Day/Week layout", () => {
   it("names every event with its day, displayed time range, and title", () => {
     const early = event({ id: "accessible", title: "First 1:30", starts_at: "2026-11-01T05:30:00Z", ends_at: "2026-11-01T05:45:00Z" });
 
-    expect(calendarEventAccessibleName(early, "2026-11-01", "America/New_York")).toBe("Sunday, Nov 1: 1:30 AM – 1:45 AM: First 1:30");
+    expect(calendarEventAccessibleName(early, "2026-11-01", "America/New_York")).toBe("Sunday, Nov 1: 1:30 AM EDT – 1:45 AM EDT: First 1:30");
+  });
+
+  it("uses ordinary-day labels for a fall week and renders the fall Sunday axis in its own column", () => {
+    const days = calendarDays("2026-11-01", 7);
+    const axes = calendarTimelineAxes(days, "America/New_York");
+    const sharedDay = axes.sharedDay ?? "2026-11-02";
+
+    expect(axes).toEqual({ sharedDay: "2026-11-02", columnDays: ["2026-11-01"] });
+    expect(calendarHourTicks(sharedDay, "America/New_York").find((tick) => tick.label === "2 AM EST")).toMatchObject({ minute: 120 });
+    expect(calendarHourTicks("2026-11-01", "America/New_York").filter((tick) => /^1 AM/.test(tick.label)).map((tick) => tick.label)).toEqual(["1 AM EDT", "1 AM EST"]);
+  });
+
+  it("renders spring Sunday labels in its own Week column and skips the missing hour", () => {
+    const days = calendarDays("2026-03-08", 7);
+    const axes = calendarTimelineAxes(days, "America/New_York");
+
+    expect(axes).toEqual({ sharedDay: "2026-03-09", columnDays: ["2026-03-08"] });
+    expect(calendarHourTicks("2026-03-08", "America/New_York").find((tick) => tick.label === "3 AM EDT")).toMatchObject({ minute: 120 });
+  });
+
+  it("distinguishes repeated 1:30 events in screen-reader names", () => {
+    const first = event({ id: "first-name", title: "Standup", starts_at: "2026-11-01T05:30:00Z", ends_at: "2026-11-01T05:45:00Z" });
+    const second = event({ id: "second-name", title: "Standup", starts_at: "2026-11-01T06:30:00Z", ends_at: "2026-11-01T06:45:00Z" });
+
+    expect(calendarEventAccessibleName(first, "2026-11-01", "America/New_York")).toContain("EDT");
+    expect(calendarEventAccessibleName(second, "2026-11-01", "America/New_York")).toContain("EST");
   });
 
   it("places a past local day without consulting a provider", () => {

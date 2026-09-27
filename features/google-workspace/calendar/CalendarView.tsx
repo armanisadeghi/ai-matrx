@@ -23,6 +23,7 @@ import {
   calendarDayDurationMinutes,
   calendarEventAccessibleName,
   calendarHourTicks,
+  calendarTimelineAxes,
   calendarDays,
   calendarSegments,
   dateForCalendarDay,
@@ -109,9 +110,7 @@ function dateShift(day: string, by: number): string {
 function CalendarGrid({ days, segments, timeZone, today }: { days: string[]; segments: ReturnType<typeof calendarSegments>; timeZone: string; today: string }) {
   const openDetail = useOpenDetail(CALENDAR_EVENT_TYPE);
   const timelineMinutes = Math.max(1440, ...days.map((day) => calendarDayDurationMinutes(day, timeZone)));
-  const timelineDay = days.reduce((longest, day) => (
-    calendarDayDurationMinutes(day, timeZone) > calendarDayDurationMinutes(longest, timeZone) ? day : longest
-  ), days[0] ?? today);
+  const axes = calendarTimelineAxes(days, timeZone);
   const timelineHeight = timelineMinutes / 60 * HOUR_HEIGHT;
   const allDay = new Map(days.map((day) => [day, segments.filter((segment) => segment.day === day && segment.allDay)]));
   const timed = new Map(days.map((day) => [day, positionTimedSegments(segments.filter((segment) => segment.day === day && !segment.allDay))]));
@@ -123,11 +122,15 @@ function CalendarGrid({ days, segments, timeZone, today }: { days: string[]; seg
         {days.map((day) => <div key={day} className={cn("border-b border-l border-border px-1.5 py-1 text-center text-xs font-medium", day === today && "bg-primary/10 text-primary")}><span className="sm:hidden">{calendarDayLabel(day, true)}</span><span className="hidden sm:inline">{calendarDayLabel(day)}</span></div>)}
         <div className="border-b border-border px-1 text-xs text-muted-foreground">All-day</div>
         {days.map((day) => <div key={day} className="min-h-8 border-b border-l border-border p-0.5">{(allDay.get(day) ?? []).map((segment) => <CalendarEventButton key={`${segment.event.id}:${day}`} event={segment.event} day={day} compact onClick={() => open(segment.event)} timeZone={timeZone} />)}</div>)}
-        <div className="relative border-r border-border" style={{ height: timelineHeight }}>{calendarHourTicks(timelineDay, timeZone).map((tick) => <span key={tick.minute} className="absolute -top-2 right-1 text-[10px] text-muted-foreground" style={{ top: tick.minute / 60 * HOUR_HEIGHT }}>{tick.label}</span>)}</div>
-        {days.map((day) => <div key={day} className="relative border-l border-border bg-[linear-gradient(to_bottom,transparent_47px,hsl(var(--border))_48px)] bg-[length:100%_48px]" style={{ height: timelineHeight }}>{(timed.get(day) ?? []).map((segment) => <CalendarEventButton key={`${segment.event.id}:${day}`} event={segment.event} day={day} onClick={() => open(segment.event)} style={{ top: segment.startMinute / 60 * HOUR_HEIGHT + 1, height: Math.max(24, (segment.endMinute - segment.startMinute) / 60 * HOUR_HEIGHT - 2), left: `calc(${segment.lane / segment.lanes * 100}% + 2px)`, width: `calc(${100 / segment.lanes}% - 4px)` }} timeZone={timeZone} />)}</div>)}
+        <div className="relative border-r border-border" style={{ height: timelineHeight }}>{axes.sharedDay ? <CalendarHourLabels day={axes.sharedDay} timeZone={timeZone} /> : null}</div>
+        {days.map((day) => <div key={day} className="relative border-l border-border bg-[linear-gradient(to_bottom,transparent_47px,hsl(var(--border))_48px)] bg-[length:100%_48px]" style={{ height: timelineHeight }}>{axes.columnDays.includes(day) ? <CalendarHourLabels day={day} timeZone={timeZone} inColumn /> : null}{(timed.get(day) ?? []).map((segment) => <CalendarEventButton key={`${segment.event.id}:${day}`} event={segment.event} day={day} onClick={() => open(segment.event)} style={{ top: segment.startMinute / 60 * HOUR_HEIGHT + 1, height: Math.max(24, (segment.endMinute - segment.startMinute) / 60 * HOUR_HEIGHT - 2), left: `calc(${segment.lane / segment.lanes * 100}% + 2px)`, width: `calc(${100 / segment.lanes}% - 4px)` }} timeZone={timeZone} />)}</div>)}
       </div>
     </section>
   );
+}
+
+function CalendarHourLabels({ day, timeZone, inColumn = false }: { day: string; timeZone: string; inColumn?: boolean }) {
+  return <>{calendarHourTicks(day, timeZone).map((tick) => <span key={tick.minute} className={cn("pointer-events-none absolute -top-2 text-[10px] text-muted-foreground", inColumn ? "left-1" : "right-1")} style={{ top: tick.minute / 60 * HOUR_HEIGHT }}>{tick.label}</span>)}</>;
 }
 
 function CalendarEventButton({ event, day, onClick, compact = false, style, timeZone }: { event: CalendarEventRow; day: string; onClick: () => void; compact?: boolean; style?: CSSProperties; timeZone?: string }) {
