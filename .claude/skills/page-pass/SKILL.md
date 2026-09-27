@@ -158,6 +158,22 @@ session, never you.
 - Every record the page names (a person, agent, document, a count over our
   records) opens — open, new tab, peek or window. Every detected problem
   carries its one-click fix.
+- **The screen shows what was saved.** After a save the view re-reads (or
+  applies the returned row) — never the pre-save copy. **Saving an untouched
+  form changes nothing:** every field round-trips exactly (a toggle labelled
+  "Private" never writes another visibility; a blank type is never saved as a
+  default).
+- **Numbers are plausible.** Sanity-check every computed figure against the
+  rows behind it (a study time of 57 days, a count that disagrees with its
+  list, a 0 shown beside content that exists are defects).
+- **A request that needs an organization is held, never failed.** With no
+  organization selected, the page shows the person's memberships inline and
+  proceeds once one is chosen (`lib/organization/organization-gate.ts`) —
+  never an error box, and never an internal key (`app.some_mandate`,
+  `execution_error`) on screen. A page opening in an error state before the
+  person did anything is a first-look failure.
+- **Edit rights follow the person's access** (`iam.has_access_for`), never
+  "created_by = me" alone.
 - **Nothing that decides what a person may do is writable by that person.**
   When the page reads a plan, grant, quota, usage, role or approval, confirm
   the browser cannot write it: `select has_table_privilege('authenticated',
@@ -249,6 +265,15 @@ session, never you.
   toolbar button AND a create card); one org/scope control (the header's
   switcher — a page never adds a second organization picker).
 - A destructive or expensive click says what it will cost before it happens.
+  A person's records are archived (restorable), never permanently deleted from
+  a page; a destructive option is never pre-checked; a one-click trash with
+  no confirm is a defect.
+- **Color means something.** Success color only for success, alarm color
+  only for a real alarm (a zero is never green; a routine control is never
+  red).
+- **Charts are readable:** axes and units visible and not clipped, a scale a
+  person can read, and they render on a phone.
+- **One fact, once.** The same list or number never appears twice on a page.
 - Tab title leads with the specific word; the route has a favicon entry.
 - Checks: `pnpm check:ui-primitives` · `check:one-table-law` ·
   `check:archived-items-law` · `check:picker-add` · `check:canonical-pickers` ·
