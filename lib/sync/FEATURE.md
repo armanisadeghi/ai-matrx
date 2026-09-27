@@ -31,6 +31,18 @@ hydration errors.
 
 ## Change log
 
+- 2026-09-26 — Every `invokeRemoteFetch` now announces its load outcome as
+  `sync/remoteFetchStatus` (`engine/remoteFetchStatus.ts`): phase `started`,
+  then `empty` (answered, no record) or `failed` (threw / undeserializable, with
+  the error in words); success is still the REHYDRATE. Before this a failed
+  read dispatched NOTHING, so a slice could not tell "load failed" from
+  "nothing saved" and screens rendered defaults as the person's data. The
+  middleware treats the status action like a REHYDRATE — never persisted, never
+  broadcast — because persisting after a failed load would write the defaults
+  over the saved record (guard: `lib/redux/preferences/__tests__/preferences-load-status.test.tsx`,
+  proven red with the skip removed). A policy's `remote.fetch` must THROW on a
+  read error; returning null means "no record". First consumer:
+  `userPreferences._meta.loadStatus`.
 - 2026-09-24 — Boot's IndexedDB pass reads every warm-cache slice in ONE
   bounded `readSlices` (`bulkGet`) call instead of a per-slice loop. Each loop
   read carried its own 1s timeout, so a stalled browser IDB summed to ~16s and

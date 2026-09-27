@@ -159,4 +159,5 @@ export const FIRST_SCREEN_TAB: SettingsTabDef = {
   description: "The basics, then everything else on the left.",
   component: FirstScreenTab,
   persistence: "server",
+  readsUserPreferences: true,
 };

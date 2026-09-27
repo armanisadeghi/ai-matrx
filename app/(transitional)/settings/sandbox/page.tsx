@@ -43,6 +43,10 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import { selectSandboxPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
+import {
+  PreferencesLoadState,
+  usePreferencesLoad,
+} from "@/components/read-state/PreferencesLoadGate";
 
 // Templates the orchestrator actually serves today. Source: `template`
 // distinct values on public.sandbox_instances. Keep this in sync — adding a
@@ -86,6 +90,9 @@ function isValidGitUrl(value: string): boolean {
 export default function SandboxSettingsPage() {
   const dispatch = useAppDispatch();
   const prefs = useAppSelector(selectSandboxPreferences);
+  // Until the person's saved preferences load, `prefs` holds built-in
+  // defaults — never render those as their sandbox defaults.
+  const prefsLoad = usePreferencesLoad();
 
   // Local form state for env-var editing (the slice has the persisted shape;
   // local state lets the user type without firing the debounced auto-save on
@@ -133,6 +140,14 @@ export default function SandboxSettingsPage() {
   };
 
   const gitUrlValid = isValidGitUrl(prefs.default_git_repo ?? "");
+
+  if (prefsLoad.status !== "loaded") {
+    return (
+      <div className="mx-auto max-w-3xl p-4 md:p-6 lg:p-8">
+        <PreferencesLoadState load={prefsLoad} what="your sandbox defaults" />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-3xl p-4 md:p-6 lg:p-8">
@@ -307,7 +322,6 @@ export default function SandboxSettingsPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {Object.entries(prefs.env).length === 0 && (
-            // read-gate-exempt: settings form over the user's preferences hydrated at boot (no read on this page); the env list is the form's own field
             <p className="text-xs text-muted-foreground">No env vars set.</p>
           )}
           {Object.entries(prefs.env).map(([key, value]) => (

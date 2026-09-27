@@ -13,6 +13,12 @@ import ts from "typescript";
 
 const ROOT = path.resolve(__dirname, "../../..");
 const REGISTRY = path.join(ROOT, "features/settings/registry.ts");
+/** Every file that declares SettingsTabDef literals the tab host renders. */
+const TAB_DEF_FILES = [
+  REGISTRY,
+  // The settings route's index tab (FIRST_SCREEN_TAB), rendered through the same host.
+  path.join(ROOT, "features/settings/tabs/FirstScreenTab.tsx"),
+];
 
 function resolveModule(spec: string, fromFile: string): string | null {
   const base = spec.startsWith("@/")
@@ -53,9 +59,9 @@ export function sourceReadsUserPreferences(source: string, fileName = "tab.tsx")
 }
 
 /** { tab id → { component identifier, flag } } straight from the registry source. */
-function registryEntries(): { id: string; component: string; flagged: boolean }[] {
-  const src = fs.readFileSync(REGISTRY, "utf8");
-  const sf = ts.createSourceFile(REGISTRY, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+function registryEntries(file: string): { id: string; component: string; flagged: boolean }[] {
+  const src = fs.readFileSync(file, "utf8");
+  const sf = ts.createSourceFile(file, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const out: { id: string; component: string; flagged: boolean }[] = [];
   const visit = (n: ts.Node) => {
     if (ts.isObjectLiteralExpression(n)) {
@@ -81,18 +87,19 @@ function registryEntries(): { id: string; component: string; flagged: boolean }[
   return out;
 }
 
-/** identifier → file, for the registry's default and named imports. */
-function registryImports(): Map<string, string> {
-  const src = fs.readFileSync(REGISTRY, "utf8");
-  const sf = ts.createSourceFile(REGISTRY, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+/** identifier → file: the file's default and named imports, and components it declares itself. */
+function registryImports(file: string): Map<string, string> {
+  const src = fs.readFileSync(file, "utf8");
+  const sf = ts.createSourceFile(file, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const map = new Map<string, string>();
   for (const st of sf.statements) {
+    if (ts.isFunctionDeclaration(st) && st.name) map.set(st.name.text, file);
     if (!ts.isImportDeclaration(st) || !ts.isStringLiteral(st.moduleSpecifier) || !st.importClause) continue;
-    const file = resolveModule(st.moduleSpecifier.text, REGISTRY);
-    if (!file) continue;
-    if (st.importClause.name) map.set(st.importClause.name.text, file);
+    const target = resolveModule(st.moduleSpecifier.text, file);
+    if (!target) continue;
+    if (st.importClause.name) map.set(st.importClause.name.text, target);
     const nb = st.importClause.namedBindings;
-    if (nb && ts.isNamedImports(nb)) for (const el of nb.elements) map.set(el.name.text, file);
+    if (nb && ts.isNamedImports(nb)) for (const el of nb.elements) map.set(el.name.text, target);
   }
   return map;
 }
@@ -105,13 +112,16 @@ describe("settings registry: readsUserPreferences matches what each tab reads", 
   });
 
   it("every tab that reads the person's preferences is gated, and no other tab is", () => {
-    const imports = registryImports();
-    const entries = registryEntries();
+    const entries = TAB_DEF_FILES.flatMap((defFile) => {
+      const imports = registryImports(defFile);
+      return registryEntries(defFile).map((e) => ({ ...e, file: imports.get(e.component) }));
+    });
     expect(entries.length).toBeGreaterThan(20);
+    expect(entries.some((e) => e.id === "firstScreen")).toBe(true);
     const unresolved: string[] = [];
     const mismatches: string[] = [];
     for (const e of entries) {
-      const file = imports.get(e.component);
+      const file = e.file;
       if (!file) {
         unresolved.push(`${e.id} (${e.component})`);
         continue;

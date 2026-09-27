@@ -3,15 +3,17 @@
  *
  * Contract (see phase-2-plan.md §5.3):
  *   - fetch returns Partial<TState> → engine dispatches REHYDRATE with fromRehydrate=true
- *   - fetch returns null → no dispatch
- *   - fetch throws → swallowed + logged; no dispatch
- *   - identity mid-flight change → response dropped (no dispatch)
+ *   - every fetch → `sync/remoteFetchStatus` phase "started" first
+ *   - fetch returns null → no REHYDRATE; phase "empty"
+ *   - fetch throws → swallowed + logged; no REHYDRATE; phase "failed" + error
+ *   - identity mid-flight change → response dropped (no REHYDRATE, no outcome)
  *   - external signal → aborted + no dispatch
  */
 
 import "fake-indexeddb/auto";
 import { configureStore, createSlice } from "@reduxjs/toolkit";
 import { REHYDRATE_ACTION_TYPE, isRehydrateAction } from "../engine/rehydrate";
+import { isRemoteFetchStatusAction } from "../engine/remoteFetchStatus";
 import type { RehydrateAction } from "../engine/rehydrate";
 import {
     createStaleRefreshScheduler,
@@ -69,6 +71,13 @@ function makeSetup(fetchImpl: (ctx: {
     return { store, policy, dispatched };
 }
 
+/** The load-outcome phases a fetch announced, as "phase:error". */
+function phases(dispatched: unknown[]): string[] {
+    return dispatched
+        .filter(isRemoteFetchStatusAction)
+        .map((a) => `${a.payload.phase}:${a.payload.error}`);
+}
+
 describe("invokeRemoteFetch", () => {
     it("dispatches REHYDRATE when fetch resolves with data", async () => {
         const { store, policy, dispatched } = makeSetup(async () => ({
@@ -101,6 +110,7 @@ describe("invokeRemoteFetch", () => {
             dispatched.find((a) => (a as { type?: string }).type === REHYDRATE_ACTION_TYPE),
         ).toBeUndefined();
         expect(store.getState().warm.value).toBe("initial");
+        expect(phases(dispatched)).toEqual(["started:null", "empty:null"]);
     });
 
     it("swallows fetch errors without rejecting", async () => {
@@ -119,6 +129,8 @@ describe("invokeRemoteFetch", () => {
             dispatched.find((a) => (a as { type?: string }).type === REHYDRATE_ACTION_TYPE),
         ).toBeUndefined();
         expect(store.getState().warm.value).toBe("initial");
+        // The failure is SAID to the slice, not only logged.
+        expect(phases(dispatched)).toEqual(["started:null", "failed:boom"]);
     });
 
     it("drops the response when identity changes mid-flight", async () => {
@@ -144,6 +156,8 @@ describe("invokeRemoteFetch", () => {
             dispatched.find((a) => (a as { type?: string }).type === REHYDRATE_ACTION_TYPE),
         ).toBeUndefined();
         expect(store.getState().warm.value).toBe("initial");
+        // Superseded: the newer identity's fetch owns the outcome.
+        expect(phases(dispatched)).toEqual(["started:null"]);
     });
 
     it("skips dispatch when an external signal aborts", async () => {
