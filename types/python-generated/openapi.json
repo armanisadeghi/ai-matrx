@@ -68112,6 +68112,91 @@
         }
       }
     },
+    "/knowledge/search": {
+      "post": {
+        "tags": [
+          "Knowledge Hub"
+        ],
+        "summary": "Knowledge Search",
+        "description": "The one Knowledge search: top hit, items, Segments and your messages, in typed sections.",
+        "operationId": "knowledge_search_knowledge_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "NDJSON stream. Each line is {'event': 'data', 'data': <event>}: search_started, then one 'section' or 'section_error' per section as its lane completes, then done.",
+            "content": {
+              "application/x-ndjson": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeSearchStreamEvent"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/knowledge/view": {
+      "post": {
+        "tags": [
+          "Knowledge Hub"
+        ],
+        "summary": "Knowledge View",
+        "description": "Record that you opened one record (drives recent/frequent in search).",
+        "operationId": "knowledge_view_knowledge_view_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordViewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordViewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/rag/search": {
       "post": {
         "tags": [
@@ -150912,6 +150997,59 @@
         "title": "DatasetSummary",
         "description": "The metadata-only projection of a dataset row.\n\nExtra keys are tolerated because the user_data SQL projections can add\ncolumns (counts, flags) without bumping this wire shape."
       },
+      "DateFilter": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "enum": [
+              "captured",
+              "created",
+              "updated"
+            ],
+            "title": "Field",
+            "default": "updated"
+          },
+          "from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From"
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To"
+          },
+          "relative": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relative",
+            "description": "The phrase that produced from/to (e.g. 'last week'), for the chip."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DateFilter"
+      },
       "DbFieldRef": {
         "properties": {
           "table": {
@@ -164107,6 +164245,47 @@
           "is_user_named"
         ],
         "title": "EntityOut"
+      },
+      "EntityRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Type",
+            "description": "Entity token of the container (project, scope, tag, library…)."
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "description": "Container id; null until a typed name is resolved."
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label",
+            "description": "Display name, or the name typed in the box."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "EntityRef",
+        "description": "A container a result is filed under (associations): project, scope, tag, library…\n\n``id`` is the container's id. A ``#tag`` or ``@name`` typed in the box arrives with\nonly ``label`` until the service resolves it — ``id`` is then filled or the chip\nsays it matched nothing."
       },
       "EntityRow": {
         "properties": {
@@ -194178,6 +194357,855 @@
         ],
         "title": "KnockServiceStatus"
       },
+      "KnowledgeHit": {
+        "properties": {
+          "entity": {
+            "type": "string",
+            "title": "Entity"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "snippet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snippet"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subtitle"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "source_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kind"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "match": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "exact_title",
+                  "id"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match",
+            "description": "Set on the top hit."
+          },
+          "segment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SegmentRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "matches": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MessageMatch"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matches",
+            "description": "Messages section: the matching messages of this conversation."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "entity",
+          "id",
+          "title"
+        ],
+        "title": "KnowledgeHit",
+        "description": "One result, whatever lane found it. ``entity`` is the registry token (``segment``\nfor a passage); the lane-specific parts ride in ``segment`` / ``matches``."
+      },
+      "KnowledgeQuery": {
+        "properties": {
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "What was typed, minus any parsed operators."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "ask",
+              "find"
+            ],
+            "title": "Mode",
+            "default": "find"
+          },
+          "types": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Types",
+            "description": "Entity tokens: processed_document, conversation, note, task, project, file, scope, agent…"
+          },
+          "source_kinds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kinds",
+            "description": "Sources only: web_page, scrape_parsed_page, cld_file, transcript, inline…"
+          },
+          "within": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/EntityRef"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Within",
+            "description": "Containers via associations."
+          },
+          "entities": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entities",
+            "description": "Extracted people / places / organizations."
+          },
+          "captured_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "anyone",
+                  "me"
+                ]
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Captured By"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin",
+            "description": "Origin client: web, extension, local, agent, research, crawl, upload, youtube…"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateFilter"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "archived",
+                    "inbox",
+                    "kept"
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "organizations": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organizations",
+            "description": "Organization ids to search. Null = every organization you belong to."
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "recent",
+              "relevance",
+              "title"
+            ],
+            "title": "Sort",
+            "default": "relevance"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 20
+          },
+          "cursors": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursors",
+            "description": "Per-section page cursors ('show all' pages one section on its own)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "KnowledgeQuery",
+        "description": "THE query object (Knowledge Hub §2). Every field is optional except ``mode``."
+      },
+      "KnowledgeSearchDone": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "done",
+            "title": "Type",
+            "default": "done"
+          },
+          "took_ms": {
+            "type": "integer",
+            "title": "Took Ms"
+          },
+          "sections_ok": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "agents_workflows",
+                "chats",
+                "files",
+                "messages",
+                "notes",
+                "projects_tasks",
+                "records",
+                "segments",
+                "sources",
+                "top_hit"
+              ]
+            },
+            "type": "array",
+            "title": "Sections Ok"
+          },
+          "sections_failed": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "agents_workflows",
+                "chats",
+                "files",
+                "messages",
+                "notes",
+                "projects_tasks",
+                "records",
+                "segments",
+                "sources",
+                "top_hit"
+              ]
+            },
+            "type": "array",
+            "title": "Sections Failed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "took_ms",
+          "sections_ok",
+          "sections_failed"
+        ],
+        "title": "KnowledgeSearchDone"
+      },
+      "KnowledgeSearchRequest": {
+        "properties": {
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "What was typed, minus any parsed operators."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "ask",
+              "find"
+            ],
+            "title": "Mode",
+            "default": "find"
+          },
+          "types": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Types",
+            "description": "Entity tokens: processed_document, conversation, note, task, project, file, scope, agent…"
+          },
+          "source_kinds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kinds",
+            "description": "Sources only: web_page, scrape_parsed_page, cld_file, transcript, inline…"
+          },
+          "within": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/EntityRef"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Within",
+            "description": "Containers via associations."
+          },
+          "entities": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entities",
+            "description": "Extracted people / places / organizations."
+          },
+          "captured_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "anyone",
+                  "me"
+                ]
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Captured By"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin",
+            "description": "Origin client: web, extension, local, agent, research, crawl, upload, youtube…"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateFilter"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "archived",
+                    "inbox",
+                    "kept"
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "organizations": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organizations",
+            "description": "Organization ids to search. Null = every organization you belong to."
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "recent",
+              "relevance",
+              "title"
+            ],
+            "title": "Sort",
+            "default": "relevance"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 20
+          },
+          "cursors": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursors",
+            "description": "Per-section page cursors ('show all' pages one section on its own)."
+          },
+          "parse_operators": {
+            "type": "boolean",
+            "title": "Parse Operators",
+            "description": "Parse @name, type:, #tag and dates out of text.",
+            "default": true
+          },
+          "as_you_type": {
+            "type": "boolean",
+            "title": "As You Type",
+            "description": "True while the person is still typing: instant lanes only, no Segments.",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "KnowledgeSearchRequest",
+        "description": "``POST /knowledge/search`` body: the query object itself, plus how to run it."
+      },
+      "KnowledgeSearchStarted": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "search_started",
+            "title": "Type",
+            "default": "search_started"
+          },
+          "query": {
+            "$ref": "#/components/schemas/KnowledgeQuery"
+          },
+          "chips": {
+            "items": {
+              "$ref": "#/components/schemas/QueryChip"
+            },
+            "type": "array",
+            "title": "Chips"
+          },
+          "sections": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "agents_workflows",
+                "chats",
+                "files",
+                "messages",
+                "notes",
+                "projects_tasks",
+                "records",
+                "segments",
+                "sources",
+                "top_hit"
+              ]
+            },
+            "type": "array",
+            "title": "Sections"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query",
+          "sections"
+        ],
+        "title": "KnowledgeSearchStarted"
+      },
+      "KnowledgeSearchStreamEvent": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/KnowledgeSearchStarted"
+          },
+          {
+            "$ref": "#/components/schemas/KnowledgeSection"
+          },
+          {
+            "$ref": "#/components/schemas/KnowledgeSectionError"
+          },
+          {
+            "$ref": "#/components/schemas/KnowledgeSearchDone"
+          }
+        ],
+        "title": "KnowledgeSearchStreamEvent",
+        "description": "The ``data`` of one NDJSON line of ``POST /knowledge/search``.",
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "done": "#/components/schemas/KnowledgeSearchDone",
+            "search_started": "#/components/schemas/KnowledgeSearchStarted",
+            "section": "#/components/schemas/KnowledgeSection",
+            "section_error": "#/components/schemas/KnowledgeSectionError"
+          }
+        }
+      },
+      "KnowledgeSection": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "section",
+            "title": "Type",
+            "default": "section"
+          },
+          "section": {
+            "type": "string",
+            "enum": [
+              "agents_workflows",
+              "chats",
+              "files",
+              "messages",
+              "notes",
+              "projects_tasks",
+              "records",
+              "segments",
+              "sources",
+              "top_hit"
+            ],
+            "title": "Section"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 0
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeHit"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "default": false
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor",
+            "description": "Pass as cursors[section] to page this section on its own."
+          },
+          "withheld": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withheld",
+            "description": "Set when the section was withheld (Private class): why, in words."
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note",
+            "description": "What narrowed or changed this section, in words."
+          },
+          "took_ms": {
+            "type": "integer",
+            "title": "Took Ms",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "section"
+        ],
+        "title": "KnowledgeSection",
+        "description": "One typed section — the unit the stream emits and the agent receives."
+      },
+      "KnowledgeSectionError": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "section_error",
+            "title": "Type",
+            "default": "section_error"
+          },
+          "section": {
+            "type": "string",
+            "enum": [
+              "agents_workflows",
+              "chats",
+              "files",
+              "messages",
+              "notes",
+              "projects_tasks",
+              "records",
+              "segments",
+              "sources",
+              "top_hit"
+            ],
+            "title": "Section"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "retryable": {
+            "type": "boolean",
+            "title": "Retryable",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "section",
+          "message"
+        ],
+        "title": "KnowledgeSectionError"
+      },
       "KontentAIServiceStatus": {
         "properties": {
           "__kind": {
@@ -203651,6 +204679,14 @@
             "type": "array",
             "title": "Dropped Rungs",
             "default": []
+          },
+          "output_warnings": {
+            "items": {
+              "$ref": "#/components/schemas/OutputWarningResponse"
+            },
+            "type": "array",
+            "title": "Output Warnings",
+            "default": []
           }
         },
         "additionalProperties": false,
@@ -209036,6 +210072,47 @@
         ],
         "title": "MergifyServiceStatus",
         "description": "Safe aggregate status projection for Mergify's fixed status page."
+      },
+      "MessageMatch": {
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "title": "Message Id"
+          },
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "snippet": {
+            "type": "string",
+            "title": "Snippet"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "message_id",
+          "position",
+          "role",
+          "snippet"
+        ],
+        "title": "MessageMatch"
       },
       "MessageSelector": {
         "properties": {
@@ -220723,6 +221800,60 @@
         "type": "object",
         "title": "OutputSchemaEnvelope",
         "description": "OpenAI ``json_schema`` inner envelope — matches ``agx_agent.output_schema``."
+      },
+      "OutputWarningResponse": {
+        "properties": {
+          "rung": {
+            "type": "string",
+            "enum": [
+              "org",
+              "run",
+              "system",
+              "user"
+            ],
+            "title": "Rung"
+          },
+          "holder_type": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "workflow"
+            ],
+            "title": "Holder Type",
+            "default": "agent"
+          },
+          "holder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Id"
+          },
+          "missing_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Keys",
+            "default": []
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rung",
+          "reason"
+        ],
+        "title": "OutputWarningResponse",
+        "description": "The Holder that runs does not declare an output this job reads — the wire\nmirror of ``service.OutputContractWarning`` (aidream 1363). It RUNS, as chosen;\n`reason` is a finished sentence for a person."
       },
       "OverlayBboxIn": {
         "properties": {
@@ -240160,6 +241291,61 @@
         ],
         "title": "QuarantinedRowSummary"
       },
+      "QueryChip": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "captured_by",
+              "date",
+              "mention",
+              "origin",
+              "sort",
+              "source_kind",
+              "state",
+              "tag",
+              "type"
+            ],
+            "title": "Kind"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token",
+            "description": "Exactly what was typed (e.g. 'type:pdf')."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "What the chip says."
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note",
+            "description": "Why the filter is approximate or unresolved, when it is."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "token",
+          "label",
+          "value"
+        ],
+        "title": "QueryChip",
+        "description": "One filter a typed operator produced, shown as a removable chip."
+      },
       "QuerySelectorsCommand": {
         "properties": {
           "command": {
@@ -243121,6 +244307,54 @@
           "site_id"
         ],
         "title": "ReconcileReport"
+      },
+      "RecordViewRequest": {
+        "properties": {
+          "entity_type": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Entity Type",
+            "description": "Registry token of the record opened."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Id of the record opened."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "entity_type",
+          "id"
+        ],
+        "title": "RecordViewRequest"
+      },
+      "RecordViewResponse": {
+        "properties": {
+          "recorded": {
+            "type": "boolean",
+            "title": "Recorded"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Why the view was not recorded, when it was not."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "recorded"
+        ],
+        "title": "RecordViewResponse"
       },
       "RecordingCompletion": {
         "properties": {
@@ -258397,6 +259631,66 @@
         ],
         "title": "SeededCompetitor",
         "description": "One competitor that made it into the request, and why it qualified."
+      },
+      "SegmentRef": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "source_kind": {
+            "type": "string",
+            "title": "Source Kind"
+          },
+          "source_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Title"
+          },
+          "processed_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed Document Id"
+          },
+          "page_numbers": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Page Numbers"
+          },
+          "locator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locator"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_id",
+          "source_kind"
+        ],
+        "title": "SegmentRef",
+        "description": "Where a Segment lives: its Source and the locator inside it."
       },
       "SeismicServiceStatus": {
         "properties": {

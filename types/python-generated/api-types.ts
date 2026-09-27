@@ -31946,6 +31946,46 @@ export interface paths {
         patch: operations["update_item_picklists__list_id__items__item_id__patch"];
         trace?: never;
     };
+    "/knowledge/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Knowledge Search
+         * @description The one Knowledge search: top hit, items, Segments and your messages, in typed sections.
+         */
+        post: operations["knowledge_search_knowledge_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/knowledge/view": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Knowledge View
+         * @description Record that you opened one record (drives recent/frequent in search).
+         */
+        post: operations["knowledge_view_knowledge_view_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/rag/search": {
         parameters: {
             query?: never;
@@ -65560,6 +65600,24 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** DateFilter */
+        DateFilter: {
+            /**
+             * Field
+             * @default updated
+             * @enum {string}
+             */
+            field?: "captured" | "created" | "updated";
+            /** From */
+            from?: string | null;
+            /** To */
+            to?: string | null;
+            /**
+             * Relative
+             * @description The phrase that produced from/to (e.g. 'last week'), for the chip.
+             */
+            relative?: string | null;
+        };
         /**
          * DbFieldRef
          * @description Fetch a single field value from one row of a system table.
@@ -71242,6 +71300,31 @@ export interface components {
             created_at?: string | null;
             /** Updated At */
             updated_at?: string | null;
+        };
+        /**
+         * EntityRef
+         * @description A container a result is filed under (associations): project, scope, tag, library…
+         *
+         *     ``id`` is the container's id. A ``#tag`` or ``@name`` typed in the box arrives with
+         *     only ``label`` until the service resolves it — ``id`` is then filled or the chip
+         *     says it matched nothing.
+         */
+        EntityRef: {
+            /**
+             * Type
+             * @description Entity token of the container (project, scope, tag, library…).
+             */
+            type: string;
+            /**
+             * Id
+             * @description Container id; null until a typed name is resolved.
+             */
+            id?: string | null;
+            /**
+             * Label
+             * @description Display name, or the name typed in the box.
+             */
+            label?: string | null;
         };
         /** EntityRow */
         EntityRow: {
@@ -85169,6 +85252,302 @@ export interface components {
              */
             status_page?: "https://status.knock.app/";
         };
+        /**
+         * KnowledgeHit
+         * @description One result, whatever lane found it. ``entity`` is the registry token (``segment``
+         *     for a passage); the lane-specific parts ride in ``segment`` / ``matches``.
+         */
+        KnowledgeHit: {
+            /** Entity */
+            entity: string;
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Snippet */
+            snippet?: string | null;
+            /** Subtitle */
+            subtitle?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Owner Id */
+            owner_id?: string | null;
+            /** Tags */
+            tags?: string[];
+            /** Updated At */
+            updated_at?: string | null;
+            /** Source Kind */
+            source_kind?: string | null;
+            /** Origin */
+            origin?: string | null;
+            /** Score */
+            score?: number | null;
+            /**
+             * Match
+             * @description Set on the top hit.
+             */
+            match?: ("exact_title" | "id") | null;
+            segment?: components["schemas"]["SegmentRef"] | null;
+            /**
+             * Matches
+             * @description Messages section: the matching messages of this conversation.
+             */
+            matches?: components["schemas"]["MessageMatch"][] | null;
+        };
+        /**
+         * KnowledgeQuery
+         * @description THE query object (Knowledge Hub §2). Every field is optional except ``mode``.
+         */
+        KnowledgeQuery: {
+            /**
+             * Text
+             * @description What was typed, minus any parsed operators.
+             */
+            text?: string | null;
+            /**
+             * Mode
+             * @default find
+             * @enum {string}
+             */
+            mode?: "ask" | "find";
+            /**
+             * Types
+             * @description Entity tokens: processed_document, conversation, note, task, project, file, scope, agent…
+             */
+            types?: string[] | null;
+            /**
+             * Source Kinds
+             * @description Sources only: web_page, scrape_parsed_page, cld_file, transcript, inline…
+             */
+            source_kinds?: string[] | null;
+            /**
+             * Within
+             * @description Containers via associations.
+             */
+            within?: components["schemas"]["EntityRef"][] | null;
+            /**
+             * Entities
+             * @description Extracted people / places / organizations.
+             */
+            entities?: string[] | null;
+            /** Captured By */
+            captured_by?: ("anyone" | "me") | string[] | null;
+            /**
+             * Origin
+             * @description Origin client: web, extension, local, agent, research, crawl, upload, youtube…
+             */
+            origin?: string[] | null;
+            date?: components["schemas"]["DateFilter"] | null;
+            /** State */
+            state?: ("archived" | "inbox" | "kept")[] | null;
+            /**
+             * Organizations
+             * @description Organization ids to search. Null = every organization you belong to.
+             */
+            organizations?: string[] | null;
+            /**
+             * Sort
+             * @default relevance
+             * @enum {string}
+             */
+            sort?: "recent" | "relevance" | "title";
+            /**
+             * Limit
+             * @default 20
+             */
+            limit?: number;
+            /**
+             * Cursors
+             * @description Per-section page cursors ('show all' pages one section on its own).
+             */
+            cursors?: {
+                [key: string]: string;
+            } | null;
+        };
+        /** KnowledgeSearchDone */
+        KnowledgeSearchDone: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "done";
+            /** Took Ms */
+            took_ms: number;
+            /** Sections Ok */
+            sections_ok: ("agents_workflows" | "chats" | "files" | "messages" | "notes" | "projects_tasks" | "records" | "segments" | "sources" | "top_hit")[];
+            /** Sections Failed */
+            sections_failed: ("agents_workflows" | "chats" | "files" | "messages" | "notes" | "projects_tasks" | "records" | "segments" | "sources" | "top_hit")[];
+        };
+        /**
+         * KnowledgeSearchRequest
+         * @description ``POST /knowledge/search`` body: the query object itself, plus how to run it.
+         */
+        KnowledgeSearchRequest: {
+            /**
+             * Text
+             * @description What was typed, minus any parsed operators.
+             */
+            text?: string | null;
+            /**
+             * Mode
+             * @default find
+             * @enum {string}
+             */
+            mode?: "ask" | "find";
+            /**
+             * Types
+             * @description Entity tokens: processed_document, conversation, note, task, project, file, scope, agent…
+             */
+            types?: string[] | null;
+            /**
+             * Source Kinds
+             * @description Sources only: web_page, scrape_parsed_page, cld_file, transcript, inline…
+             */
+            source_kinds?: string[] | null;
+            /**
+             * Within
+             * @description Containers via associations.
+             */
+            within?: components["schemas"]["EntityRef"][] | null;
+            /**
+             * Entities
+             * @description Extracted people / places / organizations.
+             */
+            entities?: string[] | null;
+            /** Captured By */
+            captured_by?: ("anyone" | "me") | string[] | null;
+            /**
+             * Origin
+             * @description Origin client: web, extension, local, agent, research, crawl, upload, youtube…
+             */
+            origin?: string[] | null;
+            date?: components["schemas"]["DateFilter"] | null;
+            /** State */
+            state?: ("archived" | "inbox" | "kept")[] | null;
+            /**
+             * Organizations
+             * @description Organization ids to search. Null = every organization you belong to.
+             */
+            organizations?: string[] | null;
+            /**
+             * Sort
+             * @default relevance
+             * @enum {string}
+             */
+            sort?: "recent" | "relevance" | "title";
+            /**
+             * Limit
+             * @default 20
+             */
+            limit?: number;
+            /**
+             * Cursors
+             * @description Per-section page cursors ('show all' pages one section on its own).
+             */
+            cursors?: {
+                [key: string]: string;
+            } | null;
+            /**
+             * Parse Operators
+             * @description Parse @name, type:, #tag and dates out of text.
+             * @default true
+             */
+            parse_operators?: boolean;
+            /**
+             * As You Type
+             * @description True while the person is still typing: instant lanes only, no Segments.
+             * @default false
+             */
+            as_you_type?: boolean;
+        };
+        /** KnowledgeSearchStarted */
+        KnowledgeSearchStarted: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "search_started";
+            query: components["schemas"]["KnowledgeQuery"];
+            /** Chips */
+            chips?: components["schemas"]["QueryChip"][];
+            /** Sections */
+            sections: ("agents_workflows" | "chats" | "files" | "messages" | "notes" | "projects_tasks" | "records" | "segments" | "sources" | "top_hit")[];
+            /** Notes */
+            notes?: string[];
+        };
+        /**
+         * KnowledgeSearchStreamEvent
+         * @description The ``data`` of one NDJSON line of ``POST /knowledge/search``.
+         */
+        KnowledgeSearchStreamEvent: components["schemas"]["KnowledgeSearchStarted"] | components["schemas"]["KnowledgeSection"] | components["schemas"]["KnowledgeSectionError"] | components["schemas"]["KnowledgeSearchDone"];
+        /**
+         * KnowledgeSection
+         * @description One typed section — the unit the stream emits and the agent receives.
+         */
+        KnowledgeSection: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "section";
+            /**
+             * Section
+             * @enum {string}
+             */
+            section: "agents_workflows" | "chats" | "files" | "messages" | "notes" | "projects_tasks" | "records" | "segments" | "sources" | "top_hit";
+            /**
+             * Count
+             * @default 0
+             */
+            count?: number;
+            /** Items */
+            items?: components["schemas"]["KnowledgeHit"][];
+            /**
+             * Has More
+             * @default false
+             */
+            has_more?: boolean;
+            /**
+             * Next Cursor
+             * @description Pass as cursors[section] to page this section on its own.
+             */
+            next_cursor?: string | null;
+            /**
+             * Withheld
+             * @description Set when the section was withheld (Private class): why, in words.
+             */
+            withheld?: string | null;
+            /**
+             * Note
+             * @description What narrowed or changed this section, in words.
+             */
+            note?: string | null;
+            /**
+             * Took Ms
+             * @default 0
+             */
+            took_ms?: number;
+        };
+        /** KnowledgeSectionError */
+        KnowledgeSectionError: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "section_error";
+            /**
+             * Section
+             * @enum {string}
+             */
+            section: "agents_workflows" | "chats" | "files" | "messages" | "notes" | "projects_tasks" | "records" | "segments" | "sources" | "top_hit";
+            /** Message */
+            message: string;
+            /**
+             * Retryable
+             * @default true
+             */
+            retryable?: boolean;
+        };
         /** KontentAIServiceStatus */
         KontentAIServiceStatus: {
             /**
@@ -88860,6 +89239,11 @@ export interface components {
              * @default []
              */
             dropped_rungs?: components["schemas"]["DroppedRungResponse"][];
+            /**
+             * Output Warnings
+             * @default []
+             */
+            output_warnings?: components["schemas"]["OutputWarningResponse"][];
         };
         /** MandateResultPromoteRequest */
         MandateResultPromoteRequest: {
@@ -91508,6 +91892,19 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.mergify.com/";
+        };
+        /** MessageMatch */
+        MessageMatch: {
+            /** Message Id */
+            message_id: string;
+            /** Position */
+            position: number;
+            /** Role */
+            role: string;
+            /** Snippet */
+            snippet: string;
+            /** Created At */
+            created_at?: string | null;
         };
         /**
          * MessageSelector
@@ -96905,6 +97302,34 @@ export interface components {
             schema?: components["schemas"]["JsonSchemaObjectDocument"] | null;
             /** Strict */
             strict?: boolean | null;
+        };
+        /**
+         * OutputWarningResponse
+         * @description The Holder that runs does not declare an output this job reads — the wire
+         *     mirror of ``service.OutputContractWarning`` (aidream 1363). It RUNS, as chosen;
+         *     `reason` is a finished sentence for a person.
+         */
+        OutputWarningResponse: {
+            /**
+             * Rung
+             * @enum {string}
+             */
+            rung: "org" | "run" | "system" | "user";
+            /**
+             * Holder Type
+             * @default agent
+             * @enum {string}
+             */
+            holder_type?: "agent" | "workflow";
+            /** Holder Id */
+            holder_id?: string | null;
+            /**
+             * Missing Keys
+             * @default []
+             */
+            missing_keys?: string[];
+            /** Reason */
+            reason: string;
         };
         /** OverlayBboxIn */
         OverlayBboxIn: {
@@ -105832,6 +106257,34 @@ export interface components {
             /** Errors */
             errors: string[];
         };
+        /**
+         * QueryChip
+         * @description One filter a typed operator produced, shown as a removable chip.
+         */
+        QueryChip: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "captured_by" | "date" | "mention" | "origin" | "sort" | "source_kind" | "state" | "tag" | "type";
+            /**
+             * Token
+             * @description Exactly what was typed (e.g. 'type:pdf').
+             */
+            token: string;
+            /**
+             * Label
+             * @description What the chip says.
+             */
+            label: string;
+            /** Value */
+            value: string;
+            /**
+             * Note
+             * @description Why the filter is approximate or unresolved, when it is.
+             */
+            note?: string | null;
+        };
         /** QuerySelectorsCommand */
         QuerySelectorsCommand: {
             /**
@@ -107182,6 +107635,29 @@ export interface components {
              * @default 0
              */
             edges_written?: number;
+        };
+        /** RecordViewRequest */
+        RecordViewRequest: {
+            /**
+             * Entity Type
+             * @description Registry token of the record opened.
+             */
+            entity_type: string;
+            /**
+             * Id
+             * @description Id of the record opened.
+             */
+            id: string;
+        };
+        /** RecordViewResponse */
+        RecordViewResponse: {
+            /** Recorded */
+            recorded: boolean;
+            /**
+             * Reason
+             * @description Why the view was not recorded, when it was not.
+             */
+            reason?: string | null;
         };
         /** RecordingCompletion */
         RecordingCompletion: {
@@ -113716,6 +114192,24 @@ export interface components {
              * @default false
              */
             explicitly_enabled?: boolean;
+        };
+        /**
+         * SegmentRef
+         * @description Where a Segment lives: its Source and the locator inside it.
+         */
+        SegmentRef: {
+            /** Source Id */
+            source_id: string;
+            /** Source Kind */
+            source_kind: string;
+            /** Source Title */
+            source_title?: string | null;
+            /** Processed Document Id */
+            processed_document_id?: string | null;
+            /** Page Numbers */
+            page_numbers?: number[];
+            /** Locator */
+            locator?: string | null;
         };
         /** SeismicServiceStatus */
         SeismicServiceStatus: {
@@ -186646,6 +187140,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PicklistItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    knowledge_search_knowledge_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KnowledgeSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description NDJSON stream. Each line is {'event': 'data', 'data': <event>}: search_started, then one 'section' or 'section_error' per section as its lane completes, then done. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": unknown;
+                    "application/json": components["schemas"]["KnowledgeSearchStreamEvent"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    knowledge_view_knowledge_view_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordViewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordViewResponse"];
                 };
             };
             /** @description Validation Error */
