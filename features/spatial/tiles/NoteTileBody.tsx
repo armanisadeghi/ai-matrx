@@ -12,7 +12,7 @@
  * in its `embedded` mode, built for tile-sized hosts.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { NoteEditorCore } from "@/features/notes/components/NoteEditorCore";
 import { useAutoSave } from "@/features/notes/hooks/useAutoSave";
@@ -31,15 +31,23 @@ const CREATE_AFTER_MS = 700;
 
 export function NoteTileBody({
   noteId,
-  initialText = "",
+  text = "",
   onCreated,
 }: {
   noteId: string | null;
-  initialText?: string;
+  /** Content set from OUTSIDE the editor (an agent writing the note). */
+  text?: string;
   /** The first words created the note — record its id on the tile. */
   onCreated: (noteId: string, label: string) => void;
 }) {
-  const [content, setContent] = useState(initialText);
+  const [content, setContent] = useState(text);
+  // Outside writes (an agent) replace the editor content; adjusted during
+  // render against the last-seen prop (no effect write), saved below.
+  const [seenText, setSeenText] = useState(text);
+  if (seenText !== text) {
+    setSeenText(text);
+    setContent(text);
+  }
   const [creating, setCreating] = useState(false);
   const activeOrgId = useAppSelector(selectOrganizationId);
   // The notes system's own autosave — it also flushes a pending save when the
@@ -61,7 +69,9 @@ export function NoteTileBody({
     setCreating(true);
     const label = text.trim().split("\n")[0].slice(0, 80) || "Board note";
     try {
-      const organizationId = await ensureOrganizationContext({ organizationId: activeOrgId });
+      const organizationId = await ensureOrganizationContext({
+        organizationId: activeOrgId,
+      });
       const note = await NotesAPI.create({
         label,
         content: text,
@@ -73,12 +83,30 @@ export function NoteTileBody({
     } catch (err) {
       creatingRef.current = false;
       if (!isOrganizationSelectionCancelled(err)) {
-        toast.error(`This note could not be saved to Notes yet: ${err instanceof Error ? err.message : String(err)}. Keep typing to retry.`);
+        toast.error(
+          `This note could not be saved to Notes yet: ${err instanceof Error ? err.message : String(err)}. Keep typing to retry.`,
+        );
       }
     } finally {
       setCreating(false);
     }
   };
+
+  // Save what an outside write put in the editor: create the note on the
+  // first words, then autosave (the same paths typing uses).
+  const externalRef = useRef(text);
+  const saveOutsideWrite = useEffectEvent((next: string, changed: boolean) => {
+    if (noteId) {
+      if (changed) updateWithAutoSave({ content: next });
+    } else if (next.trim()) {
+      void createNote(next); // also a note born with content (an agent's note)
+    }
+  });
+  useEffect(() => {
+    const changed = externalRef.current !== text;
+    externalRef.current = text;
+    saveOutsideWrite(text, changed);
+  }, [text, noteId]);
 
   const onChange = (next: string) => {
     setContent(next);
@@ -87,7 +115,10 @@ export function NoteTileBody({
       return;
     }
     if (createTimer.current) clearTimeout(createTimer.current);
-    createTimer.current = setTimeout(() => void createNote(next), CREATE_AFTER_MS);
+    createTimer.current = setTimeout(
+      () => void createNote(next),
+      CREATE_AFTER_MS,
+    );
   };
 
   const status = !noteId
@@ -115,8 +146,12 @@ export function NoteTileBody({
         />
       </div>
       <div className="flex h-8 shrink-0 items-center gap-2 border-t border-border px-3 text-[11px] text-muted-foreground">
-        {(creating || (noteId && (isSaving || isDirty))) && <Loader2 className="size-3 animate-spin" />}
-        {noteId && !isSaving && !isDirty && <Check className="size-3 text-success" />}
+        {(creating || (noteId && (isSaving || isDirty))) && (
+          <Loader2 className="size-3 animate-spin" />
+        )}
+        {noteId && !isSaving && !isDirty && (
+          <Check className="size-3 text-success" />
+        )}
         <span className="flex-1 truncate">{status}</span>
         {noteId && <EntityCommentPopover token="note" id={noteId} />}
       </div>
@@ -125,7 +160,13 @@ export function NoteTileBody({
 }
 
 /** A plain text label placed on the board (the Text tool) — board-only, no record. */
-export function TextTileBody({ text, onChange }: { text: string; onChange: (text: string) => void }) {
+export function TextTileBody({
+  text,
+  onChange,
+}: {
+  text: string;
+  onChange: (text: string) => void;
+}) {
   return (
     <textarea
       value={text}

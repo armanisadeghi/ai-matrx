@@ -320,3 +320,53 @@ describe("tile interaction states", () => {
     expect(store.getEditing()).toBeNull();
   });
 });
+
+describe("arrange", () => {
+  const items = [
+    { id: "c", rect: { x: 900, y: 10, w: 200, h: 100 } },
+    { id: "a", rect: { x: 0, y: 0, w: 300, h: 150 } },
+    { id: "b", rect: { x: 400, y: 5, w: 100, h: 300 } },
+    { id: "d", rect: { x: 0, y: 900, w: 100, h: 100 } },
+  ];
+  const noOverlap = async (placed: { rect: { x: number; y: number; w: number; h: number } }[]) => {
+    const { rectsIntersect } = await import("../engine/camera");
+    for (let i = 0; i < placed.length; i++)
+      for (let j = i + 1; j < placed.length; j++) expect(rectsIntersect(placed[i].rect, placed[j].rect)).toBe(false);
+  };
+
+  it("row, column, grid and tidy keep reading order, sizes, and never overlap", async () => {
+    const { arrange } = await import("../engine/arrange");
+    const row = arrange(items, "row", { gap: 10 });
+    expect(row.map((p) => p.id)).toEqual(["a", "b", "c", "d"]);
+    expect(row.map((p) => p.rect.x)).toEqual([0, 310, 420, 630]);
+    expect(row.every((p) => p.rect.y === 0)).toBe(true);
+    await noOverlap(row);
+    const col = arrange(items, "column", { gap: 10 });
+    expect(col.map((p) => p.rect.y)).toEqual([0, 160, 470, 580]);
+    await noOverlap(col);
+    for (const layout of ["grid", "tidy"] as const) {
+      const g = arrange(items, layout, { gap: 20 });
+      await noOverlap(g);
+      expect(g.find((p) => p.id === "a")?.rect.w).toBe(300); // never resized
+    }
+    const tidy = arrange(items, "tidy", { columns: 2, gap: 20 });
+    expect(tidy.find((p) => p.id === "b")?.rect.x).toBe(320); // widest (300) + gap
+  });
+
+  it("aligns and distributes", async () => {
+    const { align, distribute } = await import("../engine/arrange");
+    expect(align(items, "left").every((p) => p.rect.x === 0)).toBe(true);
+    const bottoms = align(items, "bottom").map((p) => p.rect.y + p.rect.h);
+    expect(new Set(bottoms).size).toBe(1);
+    const spread = distribute(items.slice(0, 3), "horizontal");
+    const gaps = [spread[1].rect.x - (spread[0].rect.x + spread[0].rect.w), spread[2].rect.x - (spread[1].rect.x + spread[1].rect.w)];
+    expect(gaps[0]).toBeCloseTo(gaps[1], 6);
+    expect(spread[0].rect.x).toBe(0);
+    expect(spread[2].rect.x).toBe(900);
+  });
+
+  it("encloses items in a frame with padding", async () => {
+    const { enclosingFrame } = await import("../engine/arrange");
+    expect(enclosingFrame(items.slice(0, 2), 50)).toEqual({ x: -50, y: -50, w: 1200, h: 250 });
+  });
+});
