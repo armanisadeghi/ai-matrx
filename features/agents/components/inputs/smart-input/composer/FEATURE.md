@@ -96,8 +96,8 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 - **Hidden, never faked** (brief Q5). Not shown because no capability exists yet: Manual (no approval
   gate client or server), per-chat Vault, team sandbox, Files/Media/Artifacts/The Matrx output families,
   Meta Ads accounts, a server token count on Preview context.
-- **Memory is a global one-shot signal** (`requestMemoryToggle` rides the NEXT send of any conversation);
-  the row shows the pending state ("Turns on with your next message"). Conversation-keying it is open work.
+- **Memory is a per-conversation one-shot signal** (`requestMemoryToggle({conversationId, enabled})` rides
+  THAT conversation's next send, then clears); the row shows the pending state ("Turns on with your next message").
 - Every composer `PopoverContent` with a width class carries the `/* sizing: fixed — … */` comment
   (`pnpm check:popover-sizing`).
 
@@ -108,3 +108,5 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 - **2026-09-27** — Built: modes + knobs + cookie, three sizes, agent pill (presets/Custom/panel/Recent),
   cascading + menu, meta row, chips row, Output (Shapes), Effort, Auto, splash greeting + quick actions,
   phone tab filtering, `/demos/composer`; `chat-agent` seeded on three quick-start agents.
+- **2026-09-27** — Memory's pending switch is keyed per conversation (`memoryToggleByConversationId`); it was one
+  global flag that rode whichever conversation sent next.

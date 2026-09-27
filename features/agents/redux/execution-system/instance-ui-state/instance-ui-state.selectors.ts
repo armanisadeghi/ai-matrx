@@ -520,11 +520,16 @@ export const selectIsBlockMode = (state: RootState): boolean =>
 export const selectIsSnapshot = (state: RootState): boolean =>
   state.instanceUIState.isSnapshot;
 
-export const selectIsMemoryToggleRequested = (state: RootState): boolean =>
-  state.instanceUIState.isMemoryToggleRequested;
-
-export const selectMemoryToggleTarget = (state: RootState): boolean =>
-  state.instanceUIState.memoryToggleTarget;
+/**
+ * A conversation's pending Observational Memory switch: the value its NEXT
+ * turn will send, or `undefined` when nothing is queued for it.
+ */
+export const selectMemoryToggleRequest =
+  (conversationId: string | null | undefined) =>
+  (state: RootState): boolean | undefined =>
+    conversationId
+      ? state.instanceUIState.memoryToggleByConversationId?.[conversationId]
+      : undefined;
 
 export const selectMemoryScope = (state: RootState): "thread" | "resource" =>
   state.instanceUIState.memoryScope;

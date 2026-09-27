@@ -58,8 +58,7 @@ import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-sys
 import { selectIsMemoryEnabledForConversation } from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
 import {
   selectBuilderAdvancedSettings,
-  selectIsMemoryToggleRequested,
-  selectMemoryToggleTarget,
+  selectMemoryToggleRequest,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
@@ -127,8 +126,9 @@ export function ComposerPlusMenu({
   const workingDocEnabled = useAppSelector(selectWorkingDocEnabled(conversationId));
   const scratchEnabled = useAppSelector(selectWorkingDocEnabled(conversationId, "scratch"));
   const memoryEnabled = useAppSelector(selectIsMemoryEnabledForConversation(conversationId));
-  const memoryRequested = useAppSelector(selectIsMemoryToggleRequested);
-  const memoryTarget = useAppSelector(selectMemoryToggleTarget);
+  const pendingMemory = useAppSelector(selectMemoryToggleRequest(conversationId));
+  const memoryRequested = pendingMemory !== undefined;
+  const memoryTarget = pendingMemory === true;
   const memoryOn = memoryRequested ? memoryTarget : memoryEnabled;
 
   const shows = (control: Parameters<typeof composerShows>[1]) => composerShows(mode, control);
@@ -300,7 +300,7 @@ export function ComposerPlusMenu({
               : undefined
           }
           checked={memoryOn}
-          onClick={() => dispatch(requestMemoryToggle({ enabled: !memoryOn }))}
+          onClick={() => dispatch(requestMemoryToggle({ conversationId, enabled: !memoryOn }))}
         />
         {shows("plus.documents") ? (
           <>

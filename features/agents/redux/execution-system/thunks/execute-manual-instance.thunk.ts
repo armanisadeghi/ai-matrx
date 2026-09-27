@@ -158,10 +158,9 @@ import {
 } from "./abort-registry";
 import {
   selectIsBlockMode,
-  selectIsMemoryToggleRequested,
   selectIsSnapshot,
   selectMemoryScope,
-  selectMemoryToggleTarget,
+  selectMemoryToggleRequest,
 } from "../instance-ui-state/instance-ui-state.selectors";
 import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state.slice";
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
@@ -556,8 +555,9 @@ export async function assembleManualRequest(
       desktopTargetInstanceId;
   }
 
-  if (selectIsMemoryToggleRequested(state)) {
-    const target = selectMemoryToggleTarget(state);
+  const memoryToggle = selectMemoryToggleRequest(conversationId)(state);
+  if (memoryToggle !== undefined) {
+    const target = memoryToggle;
     request.memory = target;
     if (target) {
       const memoryScope = selectMemoryScope(state);
@@ -806,7 +806,7 @@ export const executeManualInstance = createAsyncThunk<
             scope: payload.memory_scope ?? null,
           }),
         );
-        dispatch(clearMemoryToggleRequest());
+        dispatch(clearMemoryToggleRequest({ conversationId }));
       }
 
       await warmLocalEngineForConversation(state, conversationId);
