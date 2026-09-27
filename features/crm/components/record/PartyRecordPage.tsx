@@ -208,8 +208,9 @@ export function PartyRecordPage({ partyId }: Props) {
       ratingOptions: ratings.map((c) => ({ id: c.id, name: c.name })),
       roleOptions: partyRoles.map((c) => ({ id: c.id, name: c.name })),
       // What the Tasks / Files tiles count: resources filed INTO this record.
+      // Tasks: the registered edge is party → task (outgoing from here).
       attachedTaskIds: partyEdges
-        .filter((edge) => edge.direction === "incoming" && edge.otherType === "task")
+        .filter((edge) => edge.direction === "outgoing" && edge.otherType === "task")
         .map((edge) => edge.otherId),
       attachedFileIds: partyEdges
         .filter((edge) => edge.direction === "incoming" && edge.otherType === "file")
@@ -239,13 +240,15 @@ export function PartyRecordPage({ partyId }: Props) {
         source_label: party.display_name,
       });
       if (!task) throw new Error("The task could not be created.");
-      // Filed the way the Tasks tile files one: task → party (the record is
-      // the container), so the tile counts it.
+      // The registered edge is party → task (platform.association_types:
+      // "Party attached to a task", the TASK is the container). The reverse
+      // is refused by the database. The shared Tasks tile counts only
+      // task → party, so it does not show these — reported as a shared defect.
       const linked = await getAssociationsStore().add({
-        sourceType: "task",
-        sourceId: task.id,
-        targetType: "party",
-        targetId: party.id,
+        sourceType: "party",
+        sourceId: party.id,
+        targetType: "task",
+        targetId: task.id,
         orgId: party.organization_id,
       });
       if (!linked.ok) {
