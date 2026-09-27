@@ -62,6 +62,8 @@ export class SpatialStore {
   private tier: DetailTier;
   private visible = new Set<string>();
   private selected: string | null = null;
+  private editing: string | null = null;
+  private editingListeners = new Set<Listener>();
   private coarseScheduled = false;
   private flight: number | null = null;
   private interacting = false;
@@ -180,6 +182,7 @@ export class SpatialStore {
         this.focusReturn = null;
         for (const l of this.focusListeners) l();
       }
+      if (this.editing === id) this.setEditing(null);
       if (this.selected === id) this.select(null);
     };
   }
@@ -212,8 +215,34 @@ export class SpatialStore {
   select(id: string | null): void {
     if (this.selected === id) return;
     this.selected = id;
+    // Selecting something else (or nothing) ends interaction with a tile.
+    if (this.editing !== null && this.editing !== id) this.setEditing(null);
     for (const l of this.selectionListeners) l();
   }
+
+  // ── interacting: the ONE tile whose content receives input natively ─────
+  //
+  // A tile is idle → selected (one click: move it from anywhere, the wheel
+  // moves the board) → interacting (double-click, or a press on any control
+  // inside it: type, scroll, select text, click natively). Esc steps back.
+  // tldraw's "editing" state, Miro's embed "click to interact".
+
+  getEditing = (): string | null => this.editing;
+
+  setEditing(id: string | null): void {
+    if (this.editing === id) return;
+    this.editing = id;
+    if (id !== null && this.selected !== id) {
+      this.selected = id;
+      for (const l of this.selectionListeners) l();
+    }
+    for (const l of this.editingListeners) l();
+  }
+
+  subscribeEditing = (l: Listener): (() => void) => {
+    this.editingListeners.add(l);
+    return () => this.editingListeners.delete(l);
+  };
 
   subscribeSelection = (l: Listener): (() => void) => {
     this.selectionListeners.add(l);

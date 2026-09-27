@@ -27,6 +27,7 @@ import type { Rect } from "../engine/camera";
 import type { PaceTier } from "../engine/lod";
 import {
   FocusHostContext,
+  useEditingTile,
   useFocusedTile,
   usePaceTier,
   useSelectedTile,
@@ -83,6 +84,30 @@ export interface SpatialTileProps {
   children: (tier: PaceTier) => ReactNode;
 }
 
+/** What counts as a control: a press here goes to the control, never the board. */
+const INTERACTIVE_SELECTOR = [
+  "button",
+  "a[href]",
+  "input",
+  "textarea",
+  "select",
+  "label",
+  "video",
+  "audio",
+  "[contenteditable='']",
+  "[contenteditable='true']",
+  "[role='button']",
+  "[role='tab']",
+  "[role='link']",
+  "[role='menuitem']",
+  "[role='checkbox']",
+  "[role='switch']",
+  "[role='slider']",
+  "[role='combobox']",
+  "[role='textbox']",
+  "[data-spatial-interactive]",
+].join(", ");
+
 const FLY_DISTANCE_PX = 900;
 const FLY_MS = 220;
 const FOCUS_IN_MS = 260;
@@ -104,6 +129,8 @@ export function SpatialTile({
   const paceTier = usePaceTier(id);
   const selected = useSelectedTile() === id;
   const focused = useFocusedTile() === id;
+  // Content receives input natively only while interacting (or focused).
+  const interacting = useEditingTile() === id || focused;
   const focusHost = useContext(FocusHostContext);
   // A focused tile is read at full size whatever the board's zoom.
   const tier: PaceTier = focused ? "read" : paceTier;
@@ -133,10 +160,16 @@ export function SpatialTile({
   useEffect(() => store.registerItem(id, rectRef.current), [store, id]);
   useEffect(() => store.updateItem(id, rect), [store, id, rect]);
 
-  // Header drag: move, or THROW (a release with speed — engine/throw.ts).
+  // Press handling — ONE capture listener on the tile decides what a press is:
+  //   · on a control (button, field, link, tab…) → the control gets it, and
+  //     the tile becomes INTERACTING, so the first click always works;
+  //   · anywhere else while not interacting → select, and drag MOVES the tile
+  //     (a release with speed THROWS it — engine/throw.ts);
+  //   · inside an interacting tile's body → native (type, select, scroll).
+  // The header always moves the tile.
   useEffect(() => {
-    const header = headerRef.current;
-    if (!header || !canMove) return;
+    const tile = tileRef.current;
+    if (!tile) return;
     const tracker = new VelocityTracker();
     let start: { px: number; py: number; x: number; y: number } | null = null;
     let shownHint: ThrowAction = "none";
@@ -146,17 +179,23 @@ export function SpatialTile({
         setHint(next);
       }
     };
-    const pending = (e: PointerEvent): ThrowDirection | null =>
-      start
-        ? detectThrow(tracker.velocity(), { dx: e.clientX - start.px, dy: e.clientY - start.py })
-        : null;
 
     const down = (e: PointerEvent) => {
-      if (e.button !== 0 || (e.target as HTMLElement).closest("button")) return;
+      if (e.button !== 0 || store.getFocused() === id) return;
+      const target = e.target as HTMLElement;
+      const inHeader = !!headerRef.current?.contains(target);
+      if (target.closest(INTERACTIVE_SELECTOR)) {
+        if (!inHeader) store.setEditing(id);
+        else store.select(id);
+        return; // the control handles its own press
+      }
+      if (!inHeader && store.getEditing() === id) return; // native inside
+      store.select(id);
+      if (!canMove) return;
       start = { px: e.clientX, py: e.clientY, x: rectRef.current.x, y: rectRef.current.y };
       tracker.reset({ x: e.clientX, y: e.clientY, t: e.timeStamp });
-      store.select(id);
-      header.setPointerCapture(e.pointerId);
+      tile.setPointerCapture(e.pointerId);
+      e.preventDefault(); // a move never starts a text selection
       e.stopPropagation();
     };
     const move = (e: PointerEvent) => {
@@ -164,7 +203,7 @@ export function SpatialTile({
       tracker.push({ x: e.clientX, y: e.clientY, t: e.timeStamp });
       const z = store.getCamera().z;
       onMoveRef.current?.(id, start.x + (e.clientX - start.px) / z, start.y + (e.clientY - start.py) / z);
-      const dir = pending(e);
+      const dir = detectThrow(tracker.velocity(), { dx: e.clientX - start.px, dy: e.clientY - start.py });
       showHint(dir && onThrowRef.current ? throwActionsRef.current[dir] : "none");
     };
     const up = (e: PointerEvent) => {
@@ -179,13 +218,12 @@ export function SpatialTile({
       // Fly off in the throw direction, return to where the drag began, then
       // let the host act (it may remove the tile, or keep it).
       onMoveRef.current?.(id, from.x, from.y);
-      const el = tileRef.current;
       const z = store.getCamera().z;
       const d = FLY_DISTANCE_PX / z;
       const [tx, ty] = { left: [-d, 0], right: [d, 0], up: [0, -d], down: [0, d] }[dir];
       const done = () => onThrowRef.current?.(id, dir);
-      if (el && typeof el.animate === "function") {
-        el.animate(
+      if (typeof tile.animate === "function") {
+        tile.animate(
           [
             { transform: "translate(0, 0)", opacity: 1 },
             { transform: `translate(${tx}px, ${ty}px)`, opacity: 0 },
@@ -198,15 +236,15 @@ export function SpatialTile({
       start = null;
       showHint("none");
     };
-    header.addEventListener("pointerdown", down);
-    header.addEventListener("pointermove", move);
-    header.addEventListener("pointerup", up);
-    header.addEventListener("pointercancel", cancel);
+    tile.addEventListener("pointerdown", down, true);
+    tile.addEventListener("pointermove", move);
+    tile.addEventListener("pointerup", up);
+    tile.addEventListener("pointercancel", cancel);
     return () => {
-      header.removeEventListener("pointerdown", down);
-      header.removeEventListener("pointermove", move);
-      header.removeEventListener("pointerup", up);
-      header.removeEventListener("pointercancel", cancel);
+      tile.removeEventListener("pointerdown", down, true);
+      tile.removeEventListener("pointermove", move);
+      tile.removeEventListener("pointerup", up);
+      tile.removeEventListener("pointercancel", cancel);
     };
   // Focus moves the card through a portal, replacing the header element on
   // both legs of the round trip. Rebind when either portal state changes so
@@ -249,7 +287,7 @@ export function SpatialTile({
       )}
     >
       <div
-        ref={focused ? undefined : headerRef}
+        ref={headerRef}
         className={cn(
           "flex h-10 shrink-0 items-center gap-2 border-b border-border px-3",
           onMove && !focused && "cursor-grab active:cursor-grabbing",
@@ -264,6 +302,16 @@ export function SpatialTile({
           <span className="hidden shrink-0 truncate text-[11px] text-muted-foreground sm:inline">
             {subtitle}
           </span>
+        )}
+        {interacting && !focused && (
+          <button
+            type="button"
+            onClick={() => store.setEditing(null)}
+            title="Stop interacting (Esc)"
+            className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary hover:bg-primary/25"
+          >
+            Interacting · Esc
+          </button>
         )}
         {actions}
         <button
@@ -281,7 +329,7 @@ export function SpatialTile({
             is skipped for style, layout and paint. */}
         <div
           data-spatial-body
-          className="h-full"
+          className={cn("h-full", interacting ? "select-text" : "select-none")}
           style={{ contentVisibility: overview ? "hidden" : "visible" }}
         >
           {children(tier)}
@@ -296,18 +344,25 @@ export function SpatialTile({
       ref={tileRef}
       data-spatial-tile={id}
       data-spatial-title={title}
-      onPointerDown={() => store.select(id)}
       onDoubleClick={(e) => {
-        if ((e.target as HTMLElement).closest("[data-spatial-scroll], button")) return;
-        store.fitItem(id);
+        const target = e.target as HTMLElement;
+        if (focused || target.closest(INTERACTIVE_SELECTOR)) return;
+        // Header: fly to it. Body: start interacting with it.
+        if (headerRef.current?.contains(target)) store.fitItem(id);
+        else if (!interacting) {
+          window.getSelection()?.removeAllRanges();
+          store.setEditing(id);
+        }
       }}
       className={cn(
         "absolute max-w-none rounded-xl transition-shadow",
         focused
           ? "border-2 border-dashed border-primary/50"
-          : selected
-            ? "shadow-lg ring-2 ring-primary/30"
-            : "shadow-sm",
+          : interacting
+            ? "shadow-xl ring-2 ring-primary"
+            : selected
+              ? "shadow-lg ring-2 ring-primary/30"
+              : "shadow-sm",
       )}
       style={{
         left: rect.x,
