@@ -58,6 +58,14 @@ export interface WarRoomState {
   assignmentsLoadedKeys: Record<string, true>;
 
   /**
+   * Why a `containerKey()` bucket's hydration FAILED, when it did (RC-B12
+   * round 12). Without it a failed read left the bucket "not loaded" forever
+   * — a spinner that never ends — or, worse, read as "loaded, but empty".
+   * Cleared the moment the bucket loads.
+   */
+  assignmentsErrorByKey: Record<string, string>;
+
+  /**
    * The thread agent's conversation id per thread
    * (`studio_sessions.assistant_conversation_id` of the ACTIVE audio session),
    * hydrated in `loadWarRoomSession` so the SYNC Tier-1 context builder can
@@ -99,6 +107,7 @@ export const initialWarRoomState: WarRoomState = {
   threadUserStateById: {},
   assignmentsByContainer: {},
   assignmentsLoadedKeys: {},
+  assignmentsErrorByKey: {},
   agentConversationByThread: {},
   autoApproveByThread: {},
   pendingConversationByContainer: {},

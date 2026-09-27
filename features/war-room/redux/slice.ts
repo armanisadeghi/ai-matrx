@@ -142,6 +142,7 @@ const warRoomSlice = createSlice({
       state.orphanThreadIds = removeId(state.orphanThreadIds, id);
       delete state.assignmentsByContainer[containerKey("thread", id)];
       delete state.assignmentsLoadedKeys[containerKey("thread", id)];
+      delete state.assignmentsErrorByKey[containerKey("thread", id)];
       delete state.threadUserStateById[id];
       delete state.autoApproveByThread[id];
     },
@@ -183,6 +184,16 @@ const warRoomSlice = createSlice({
       for (const [key, rows] of Object.entries(action.payload.byContainer)) {
         state.assignmentsByContainer[key] = rows;
         state.assignmentsLoadedKeys[key] = true;
+        delete state.assignmentsErrorByKey[key];
+      }
+    },
+    /** A container bucket's hydration failed — the read's outcome, not "empty". */
+    assignmentsLoadFailed(
+      state,
+      action: PayloadAction<{ keys: string[]; error: string }>,
+    ) {
+      for (const key of action.payload.keys) {
+        state.assignmentsErrorByKey[key] = action.payload.error;
       }
     },
     assignmentsLoadedForContainer(
@@ -192,6 +203,7 @@ const warRoomSlice = createSlice({
       state.assignmentsByContainer[action.payload.key] =
         action.payload.assignments;
       state.assignmentsLoadedKeys[action.payload.key] = true;
+      delete state.assignmentsErrorByKey[action.payload.key];
     },
     assignmentUpserted(
       state,
@@ -346,9 +358,11 @@ const warRoomSlice = createSlice({
       for (const id of ids) {
         delete state.assignmentsByContainer[containerKey("thread", id)];
         delete state.assignmentsLoadedKeys[containerKey("thread", id)];
+        delete state.assignmentsErrorByKey[containerKey("thread", id)];
       }
       delete state.assignmentsByContainer[containerKey("room", roomId)];
       delete state.assignmentsLoadedKeys[containerKey("room", roomId)];
+      delete state.assignmentsErrorByKey[containerKey("room", roomId)];
       delete state.threadIdsByRoom[roomId];
       delete state.threadsStatusByRoom[roomId];
     },
@@ -374,6 +388,7 @@ export const {
   setThreadUserStateBulk,
   setThreadPosition,
   assignmentsLoadedBulk,
+  assignmentsLoadFailed,
   assignmentsLoadedForContainer,
   assignmentUpserted,
   assignmentRemoved,

@@ -91,6 +91,7 @@ import {
   assignmentActiveSet,
   assignmentRemoved,
   assignmentsLoadedBulk,
+  assignmentsLoadFailed,
   assignmentsLoadedForContainer,
   assignmentUpserted,
   clearRoomThreads,
@@ -824,8 +825,10 @@ export const loadThreadSubtasks =
           upsertTaskWithLevel({ record: toTaskRecord(s), level: "full-data" }),
         );
       }
-    } catch {
-      /* non-fatal */
+    } catch (err) {
+      // A background refresh: the rail's own read (useSubtasksRead) says a
+      // failure on screen; here it is logged, never swallowed.
+      reportWarRoomError("loadThreadSubtasks", err, { toast: false });
     }
   };
 
@@ -1756,6 +1759,12 @@ export const loadThreadAttachments =
       await hydrateThreadAssignmentsFromRpc(dispatch, [threadId]);
     } catch (err) {
       reportWarRoomError("loadThreadAttachments", err, { toast: false });
+      dispatch(
+        assignmentsLoadFailed({
+          keys: [containerKey("thread", threadId)],
+          error: err instanceof Error ? err.message : String(err),
+        }),
+      );
     }
   };
 
@@ -1776,6 +1785,12 @@ export const loadContainerAssignments =
       );
     } catch (err) {
       reportWarRoomError("loadContainerAssignments", err, { toast: false });
+      dispatch(
+        assignmentsLoadFailed({
+          keys: [containerKey(ref.type, ref.id)],
+          error: err instanceof Error ? err.message : String(err),
+        }),
+      );
     }
   };
 

@@ -49,6 +49,7 @@ export function ThreadProjectTab({
           <span className="grid size-10 place-items-center rounded-full bg-muted/60">
             <FolderKanban className="size-5 text-muted-foreground" />
           </span>
+          {/* read-gate-exempt: the tile's project link is a field on the thread/room row this tile already renders from (selectEffectiveThreadProjectId) — not an empty list */}
           <p className="text-xs font-medium text-muted-foreground">
             No project linked
           </p>

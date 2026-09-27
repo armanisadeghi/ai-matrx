@@ -89,6 +89,7 @@ export function OrphanThreadRow({ threadId }: { threadId: string }) {
             <KindIcon className="size-3 shrink-0" />
             <span>{kind.label}</span>
             <span className="text-muted-foreground/50">·</span>
+            {/* read-gate-exempt: the "no room" label of an orphan thread row — this row exists because the thread has no room; not an empty list */}
             <span>No room</span>
           </p>
         </div>

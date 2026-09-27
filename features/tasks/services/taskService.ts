@@ -701,27 +701,22 @@ export async function deleteTaskExplained(taskId: string): Promise<Error | null>
 }
 
 /**
- * Get subtasks for a specific task
+ * Get subtasks for a specific task. THROWS when the read fails — it used to
+ * answer `[]`, and every subtask list then said "No subtasks yet" over a
+ * failed read (RC-B12 round 12). Consumers gate on the failure
+ * (`useSubtasksRead`).
  */
 export async function getSubtasks(taskId: string): Promise<DatabaseTask[]> {
-  try {
-    const { data, error } = await workspaceDb(supabase)
-      .from("tasks")
-      .select("*")
-      .is("deleted_at", null)
-      .eq("parent_task_id", taskId)
-      .order("created_at", { ascending: true });
+  const { data, error } = await workspaceDb(supabase)
+    .from("tasks")
+    .select("*")
+    .is("deleted_at", null)
+    .eq("parent_task_id", taskId)
+    .order("created_at", { ascending: true });
 
-    if (error) {
-      console.error("Error fetching subtasks:", error.message);
-      return [];
-    }
+  if (error) throw error;
 
-    return data || [];
-  } catch (error) {
-    console.error("Exception fetching subtasks:", error);
-    return [];
-  }
+  return data || [];
 }
 
 /**

@@ -358,6 +358,14 @@ export const selectContainerAssignmentsLoaded =
   (state: RootState): boolean =>
     id ? !!state.warRoom.assignmentsLoadedKeys[containerKey(type, id)] : false;
 
+/** Why the container's assignment read failed, or null (RC-B12 round 12). */
+export const selectContainerAssignmentsError =
+  (type: WarRoomContainerType, id: string | null) =>
+  (state: RootState): string | null =>
+    id
+      ? (state.warRoom.assignmentsErrorByKey[containerKey(type, id)] ?? null)
+      : null;
+
 function activeEntityId(
   rows: WarRoomAssignment[],
   entityType: string,

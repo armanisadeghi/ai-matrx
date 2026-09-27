@@ -29,6 +29,7 @@ import { WAR_ROOM_THREAD_AGENT_MANDATE } from "@/features/war-room/constants";
 import {
   selectActiveAudioSessionId,
   selectActiveConversationId,
+  selectContainerAssignmentsError,
   selectContainerAssignmentsLoaded,
   selectConversationIdsForThread,
 } from "@/features/war-room/redux/selectors";
@@ -36,6 +37,7 @@ import {
   addAudioSessionToThread,
   attachExistingConversationToThread,
   hydrateThreadAssignments,
+  loadThreadAttachments,
   pruneThreadPhantomConversations,
   setThreadActiveConversation,
   startThreadConversation,
@@ -43,6 +45,7 @@ import {
 import { useThreadConversationSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 // Code-split: ThreadAgentPanel pulls the Scribe Agent+ graph (agents execution +
 // TTS + working-document). Lazy so it never weighs down the room bundle; it
@@ -170,6 +173,9 @@ export function ThreadAgentTab({
   const loaded = useAppSelector(
     selectContainerAssignmentsLoaded("thread", threadId),
   );
+  const assignmentsError = useAppSelector(
+    selectContainerAssignmentsError("thread", threadId),
+  );
   const conversationIds = useAppSelector(
     selectConversationIdsForThread(threadId),
   );
@@ -237,14 +243,25 @@ export function ThreadAgentTab({
     });
   }, [threadId, sessionId]);
 
+  // The thread's assignment read failed: say so (with a retry) — never an
+  // endless spinner, never "this thread has no chat yet".
+  if (!sessionId && assignmentsError) {
+    return (
+      <ReadFailure
+        error={new Error(assignmentsError)}
+        what="this thread's chat"
+        onRetry={() => void dispatch(loadThreadAttachments(threadId))}
+      />
+    );
+  }
+  if (!sessionId && !loaded) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
   if (!sessionId) {
-    if (!loaded) {
-      return (
-        <div className="flex h-full items-center justify-center">
-          <Loader2 className="size-4 animate-spin text-muted-foreground" />
-        </div>
-      );
-    }
     // Legacy thread with no session (pre-provisioning). Explicit setup only.
     return (
       <div className="grid h-full place-items-center">

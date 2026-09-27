@@ -16,7 +16,7 @@
 // The JSX is moved verbatim from the original TaskEditor body (zero visual
 // change for the ~9 existing consumers).
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import {
   Calendar,
@@ -46,7 +46,6 @@ import {
   createSubtaskThunk,
   saveTaskEditsThunk,
 } from "@/features/tasks/redux/thunks";
-import * as taskService from "@/features/tasks/services/taskService";
 import { TASK_LABEL_OPTIONS } from "@/features/tasks/services/taskService";
 import type { TaskLabel } from "@/features/tasks/services/taskService";
 import { CommentThread, useComments } from "@ai-matrx/associations/react";
@@ -72,6 +71,8 @@ import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorW
 import { formatDateOnly } from "@/utils/dateOnly";
 import { cn } from "@/utils/cn";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
+import { useSubtasksRead } from "@/features/tasks/hooks/useSubtasksRead";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
@@ -146,42 +147,10 @@ export function TaskEditorBody({
   const { inputRef: subtaskInputRef, scheduleRefocus: scheduleSubtaskRefocus } =
     useRefocusInputAfterAsync(isAddingSubtask);
 
-  // One-shot freshness fetch — Redux is the source of truth, but the user
-  // may have created subtasks elsewhere or RLS scope changed. Upsert any
-  // missing rows into the slice so the selector reflects the DB.
-  useEffect(() => {
-    let cancelled = false;
-    taskService.getSubtasks(taskId).then((data) => {
-      if (cancelled) return;
-      for (const row of data) {
-        dispatch(
-          upsertTaskWithLevel({
-            record: {
-              id: row.id,
-              title: row.title,
-              status: row.status,
-              priority: row.priority,
-              due_date: row.due_date,
-              assignee_id: row.assignee_id,
-              project_id: row.project_id,
-              parent_task_id: row.parent_task_id,
-              organization_id: row.organization_id ?? orgId ?? "",
-              description: row.description,
-              settings:
-                (row as { settings?: Record<string, unknown> }).settings ??
-                null,
-              created_at: row.created_at ?? null,
-              created_by: row.created_by,
-            },
-            level: "full-data",
-          }),
-        );
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [taskId, dispatch, orgId]);
+  // One-shot freshness read — Redux is the source of truth, but the user
+  // may have created subtasks elsewhere or RLS scope changed. Upserts the rows
+  // into the slice and reports the read's outcome for the empty state below.
+  const subtasksRead = useSubtasksRead(taskId, orgId);
 
   // Defensive: the provider only mounts the body with a loaded task; this keeps
   // TypeScript honest about the nullable controller `task`.
@@ -675,7 +644,24 @@ export function TaskEditorBody({
                   : "rounded-xl border border-border/60",
               )}
             >
-              {subtasks.length === 0 ? (
+              {subtasks.length === 0 && subtasksRead.status === "error" ? (
+                <ReadFailure
+                  error={subtasksRead.error}
+                  what="this task's subtasks"
+                  onRetry={subtasksRead.retry}
+                  className="m-2"
+                />
+              ) : subtasks.length === 0 && subtasksRead.status === "loading" ? (
+                <p
+                  className={cn(
+                    "py-1.5 text-[11px] italic text-muted-foreground",
+                    compact ? "pl-1.5 pr-2" : "px-4",
+                  )}
+                  role="status"
+                >
+                  Reading subtasks…
+                </p>
+              ) : subtasks.length === 0 ? (
                 <p
                   className={cn(
                     "py-1.5 text-[11px] italic text-muted-foreground",

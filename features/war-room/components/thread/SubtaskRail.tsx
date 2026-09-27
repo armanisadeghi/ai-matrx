@@ -18,6 +18,8 @@
  * (`createSubtaskThunk` / `toggleTaskCompleteThunk` / `deleteTaskThunk`).
  */
 
+import { useSubtasksRead } from "@/features/tasks/hooks/useSubtasksRead";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useEffect, useState } from "react";
 import { isOpenStatus } from "@/features/tasks/constants/status";
 import {
@@ -67,6 +69,7 @@ export function SubtaskRail({
 }) {
   const dispatch = useAppDispatch();
   const subtasks = useAppSelector((s) => selectSubtasksByParent(s, taskId));
+  const subtasksRead = useSubtasksRead(taskId);
   const showCompleted = useAppSelector(selectShowCompleted);
   const [draft, setDraft] = useState("");
   const [adding, setAdding] = useState(false);
@@ -165,7 +168,21 @@ export function SubtaskRail({
 
       {/* List */}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {subtasks.length === 0 ? (
+        {subtasks.length === 0 && subtasksRead.status === "error" ? (
+          <ReadFailure
+            error={subtasksRead.error}
+            what="this task's subtasks"
+            onRetry={subtasksRead.retry}
+            className="m-1.5"
+          />
+        ) : subtasks.length === 0 && subtasksRead.status === "loading" ? (
+          <p
+            className="py-1.5 pl-1.5 pr-2 text-[11px] italic text-muted-foreground"
+            role="status"
+          >
+            Reading subtasks…
+          </p>
+        ) : subtasks.length === 0 ? (
           <p className="py-1.5 pl-1.5 pr-2 text-[11px] italic text-muted-foreground">
             No subtasks yet. Type above to add your first.
           </p>

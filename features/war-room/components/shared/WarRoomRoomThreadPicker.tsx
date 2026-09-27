@@ -13,11 +13,14 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@ai-matrx/design-system";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectThreadById,
   selectThreadIdsForRoom,
+  selectThreadsStatusForRoom,
 } from "@/features/war-room/redux/selectors";
+import { loadWarRoomSession } from "@/features/war-room/redux/thunks";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { threadDisplayTitle } from "@/features/war-room/utils/threadDisplayTitle";
 import { cn } from "@/lib/utils";
 import type { RootState } from "@/lib/redux/store";
@@ -43,6 +46,8 @@ export function WarRoomRoomThreadPicker({
     }),
   );
   const selectedThread = useAppSelector(selectThreadById(value));
+  const threadsStatus = useAppSelector(selectThreadsStatusForRoom(roomId));
+  const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -99,11 +104,22 @@ export function WarRoomRoomThreadPicker({
         </div>
         <div className="max-h-64 overflow-y-auto py-1">
           {filtered.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-muted-foreground">
-              {options.length === 0
-                ? "No threads in this room yet."
-                : "No match."}
-            </p>
+            threadsStatus === "error" && options.length === 0 ? (
+              <ReadFailure
+                error
+                what="this room's threads"
+                onRetry={() => void dispatch(loadWarRoomSession(roomId))}
+                className="m-2"
+              />
+            ) : (
+              <p className="px-3 py-2 text-xs text-muted-foreground">
+                {options.length > 0
+                  ? "No match."
+                  : threadsStatus === "loading"
+                    ? "Loading this room's threads…"
+                    : "No threads in this room yet."}
+              </p>
+            )
           ) : (
             filtered.map((o) => {
               const active = o.id === value;
