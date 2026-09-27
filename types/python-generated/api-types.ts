@@ -4923,6 +4923,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cutover/final-switch/copy-again": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy Again Before The Final Switch
+         * @description Copy again for every organization that needs it, one at a time; resumes an unfinished run.
+         */
+        post: operations["copy_again_before_the_final_switch_cutover_final_switch_copy_again_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/cutover/final-switch/press": {
         parameters: {
             query?: never;
@@ -4934,7 +4954,7 @@ export interface paths {
         put?: never;
         /**
          * Press The Final Switch
-         * @description Copy again where it clears something, then switch every organization at once.
+         * @description Switch every organization at once (Copy again is its own step before this).
          */
         post: operations["press_the_final_switch_cutover_final_switch_press_post"];
         delete?: never;
@@ -61193,6 +61213,12 @@ export interface components {
             matched_by?: string | null;
             /** Candidates */
             candidates?: components["schemas"]["PersonCandidate"][];
+            /**
+             * Source
+             * @default google_contacts
+             * @enum {string}
+             */
+            source?: "google_contacts" | "google_other_contacts";
         };
         /**
          * ContactCandidateView
@@ -61334,6 +61360,12 @@ export interface components {
             source_ref?: string | null;
             /** Imported At */
             imported_at?: string | null;
+            /**
+             * Source
+             * @default google_contacts
+             * @enum {string}
+             */
+            source?: "google_contacts" | "google_other_contacts";
         };
         /**
          * ContactFieldSpec
@@ -61414,6 +61446,12 @@ export interface components {
              * @default
              */
             note?: string;
+            /**
+             * Source
+             * @default google_contacts
+             * @enum {string}
+             */
+            source?: "google_contacts" | "google_other_contacts";
         };
         /** ContactImportRequest */
         ContactImportRequest: {
@@ -61436,6 +61474,12 @@ export interface components {
              * @default google_people
              */
             provider_key?: string;
+            /**
+             * Source
+             * @default google_contacts
+             * @enum {string}
+             */
+            source?: "google_contacts" | "google_other_contacts";
             /** Google Account */
             google_account: string | null;
             /** Dry Run */
@@ -77307,7 +77351,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "other_contacts" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
+            key: "analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "contacts_write" | "directory" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "meet" | "other_contacts" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "tasks_write" | "youtube" | "youtube_analytics";
             /** Title */
             title: string;
             /** User Outcome */
@@ -77401,14 +77445,14 @@ export interface components {
             /** Capability Key */
             capability_key?: ("calendar" | "contacts" | "tag_manager" | "tasks" | "youtube_analytics") | null;
             /** Capability Keys */
-            capability_keys?: ("analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "other_contacts" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[] | null;
+            capability_keys?: ("analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "contacts_write" | "directory" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "meet" | "other_contacts" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "tasks_write" | "youtube" | "youtube_analytics")[] | null;
         };
         /** GoogleExchangeResponse */
         GoogleExchangeResponse: {
             /** Connection Id */
             connection_id: string;
             /** Connected Capability Keys */
-            connected_capability_keys?: ("analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "other_contacts" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[];
+            connected_capability_keys?: ("analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "contacts_write" | "directory" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "meet" | "other_contacts" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "tasks_write" | "youtube" | "youtube_analytics")[];
             /** Refused Capability Keys */
             refused_capability_keys?: components["schemas"]["GoogleProductRefusal"][];
         };
@@ -77495,7 +77539,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "other_contacts" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
+            key: "analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "contacts_write" | "directory" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "meet" | "other_contacts" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "tasks_write" | "youtube" | "youtube_analytics";
             /** Error */
             error: string;
             /** Message */
@@ -145415,6 +145459,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    copy_again_before_the_final_switch_cutover_final_switch_copy_again_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };

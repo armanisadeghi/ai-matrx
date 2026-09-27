@@ -66,6 +66,17 @@ export const OLD_MODULES = [
   "@/utils/user-table-utls",
 ] as const;
 
+/**
+ * Older RELATIONS whose direct readers and writers the switch retires (coordinator ruling
+ * 2026-09-27): `content_ir.kind_instance` is superseded by `custom.record`; its writers go through
+ * aidream's per-organization door (`aidream/services/kind_records/routed.py`) or the frontend's
+ * `features/content-ir/studio/kind-record-home.ts`. Matched as a table read in TS (`.from("kind_instance")`)
+ * or the generated model in Python (`get_db_model("KindInstance")`, `KindInstance.`).
+ */
+export const OLD_RELATIONS = [
+  { name: "content_ir.kind_instance", re: /\.from\(\s*['"`]kind_instance['"`]\s*\)|get_db_model\(\s*['"]KindInstance['"]\s*\)|\bKindInstance\.(?:create|create_item|filter|get|get_or_none|update_where|objects)\b/ },
+] as const;
+
 type Root = { repo: string; dir: string };
 const ROOTS: Root[] = [
   { repo: "matrx-frontend", dir: FRONTEND },
@@ -92,7 +103,7 @@ export function writeDoorsFromCampaign(sql: string): string[] {
   return [...new Set(names)].sort();
 }
 
-type Hit = { repo: string; file: string; line: number; door: string; kind: "write" | "read" | "module" };
+type Hit = { repo: string; file: string; line: number; door: string; kind: "write" | "read" | "module" | "relation" };
 
 function walk(dir: string, out: string[]): void {
   if (!existsSync(dir)) return;
@@ -128,11 +139,12 @@ export function scan(roots: Root[], writeDoors: string[], readDoors: readonly st
       const rel = relative(root.repo === "matrx-frontend" ? FRONTEND : join(WORKSPACE, root.repo), f).split(sep).join("/");
       if (root.repo === "matrx-frontend" && SELF.has(rel)) continue;
       const text = readFileSync(f, "utf8");
-      if (!doorRes.some((d) => d.re.test(text)) && !modRes.some((m) => m.re.test(text))) continue;
+      if (!doorRes.some((d) => d.re.test(text)) && !modRes.some((m) => m.re.test(text)) && !OLD_RELATIONS.some((r) => r.re.test(text))) continue;
       const lines = text.split("\n");
       lines.forEach((line, i) => {
         for (const d of doorRes) if (d.re.test(line)) hits.push({ repo: root.repo, file: rel, line: i + 1, door: d.door, kind: d.kind });
         for (const m of modRes) if (m.re.test(line)) hits.push({ repo: root.repo, file: rel, line: i + 1, door: m.door, kind: m.kind });
+        for (const r of OLD_RELATIONS) if (r.re.test(line)) hits.push({ repo: root.repo, file: rel, line: i + 1, door: r.name, kind: "relation" });
       });
     }
   }

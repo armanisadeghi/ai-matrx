@@ -11381,13 +11381,33 @@
         }
       }
     },
+    "/cutover/final-switch/copy-again": {
+      "post": {
+        "tags": [
+          "Cutover"
+        ],
+        "summary": "Copy Again Before The Final Switch",
+        "description": "Copy again for every organization that needs it, one at a time; resumes an unfinished run.",
+        "operationId": "copy_again_before_the_final_switch_cutover_final_switch_copy_again_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/cutover/final-switch/press": {
       "post": {
         "tags": [
           "Cutover"
         ],
         "summary": "Press The Final Switch",
-        "description": "Copy again where it clears something, then switch every organization at once.",
+        "description": "Switch every organization at once (Copy again is its own step before this).",
         "operationId": "press_the_final_switch_cutover_final_switch_press_post",
         "requestBody": {
           "content": {
@@ -140331,6 +140351,15 @@
             },
             "type": "array",
             "title": "Candidates"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "google_contacts",
+              "google_other_contacts"
+            ],
+            "title": "Source",
+            "default": "google_contacts"
           }
         },
         "type": "object",
@@ -140753,6 +140782,15 @@
               }
             ],
             "title": "Imported At"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "google_contacts",
+              "google_other_contacts"
+            ],
+            "title": "Source",
+            "default": "google_contacts"
           }
         },
         "type": "object",
@@ -140956,6 +140994,15 @@
             "type": "string",
             "title": "Note",
             "default": ""
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "google_contacts",
+              "google_other_contacts"
+            ],
+            "title": "Source",
+            "default": "google_contacts"
           }
         },
         "type": "object",
@@ -141011,6 +141058,15 @@
             "type": "string",
             "title": "Provider Key",
             "default": "google_people"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "google_contacts",
+              "google_other_contacts"
+            ],
+            "title": "Source",
+            "default": "google_contacts"
           },
           "google_account": {
             "anyOf": [
@@ -177845,18 +177901,22 @@
               "calendar_shared",
               "calendar_write",
               "contacts",
+              "contacts_write",
+              "directory",
               "docs",
               "drive_browse",
               "drive_files",
               "gmail_modify",
               "gmail_read",
               "gmail_send",
+              "meet",
               "other_contacts",
               "search_console",
               "sheets",
               "slides",
               "tag_manager",
               "tasks",
+              "tasks_write",
               "youtube",
               "youtube_analytics"
             ],
@@ -178134,18 +178194,22 @@
                     "calendar_shared",
                     "calendar_write",
                     "contacts",
+                    "contacts_write",
+                    "directory",
                     "docs",
                     "drive_browse",
                     "drive_files",
                     "gmail_modify",
                     "gmail_read",
                     "gmail_send",
+                    "meet",
                     "other_contacts",
                     "search_console",
                     "sheets",
                     "slides",
                     "tag_manager",
                     "tasks",
+                    "tasks_write",
                     "youtube",
                     "youtube_analytics"
                   ]
@@ -178183,18 +178247,22 @@
                 "calendar_shared",
                 "calendar_write",
                 "contacts",
+                "contacts_write",
+                "directory",
                 "docs",
                 "drive_browse",
                 "drive_files",
                 "gmail_modify",
                 "gmail_read",
                 "gmail_send",
+                "meet",
                 "other_contacts",
                 "search_console",
                 "sheets",
                 "slides",
                 "tag_manager",
                 "tasks",
+                "tasks_write",
                 "youtube",
                 "youtube_analytics"
               ]
@@ -178502,18 +178570,22 @@
               "calendar_shared",
               "calendar_write",
               "contacts",
+              "contacts_write",
+              "directory",
               "docs",
               "drive_browse",
               "drive_files",
               "gmail_modify",
               "gmail_read",
               "gmail_send",
+              "meet",
               "other_contacts",
               "search_console",
               "sheets",
               "slides",
               "tag_manager",
               "tasks",
+              "tasks_write",
               "youtube",
               "youtube_analytics"
             ],

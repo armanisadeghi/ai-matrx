@@ -1,43 +1,51 @@
 {
-  "date": "2026-09-27T06:35:53Z",
+  "date": "2026-09-27T07:24:47Z",
   "clone_ref": "hykobnqyuxspbcijrodb",
-  "summary": "Rehearsed on the clone's copy of production: refused honestly before the owners' fixes, then pressed for every organization, undone with a new-system edit carried back, pressed again, and undone again.",
+  "summary": "Rehearsed on the clone's copy of production after the rulings of 2026-09-27: Copy again as its own step (and, in rehearsal 7, giving the one ownerless pick list with a single-organization maker its organization), then the press for every organization (the 7 other ownerless lists archived with no owner organization), an Undo that carried a new-system edit back and restored those lists, Copy again, the press again, and the Undo again.",
   "steps": [
     {
-      "step": "Press before the owners' fixes",
-      "result": "refused (not_ready), naming what blocks it",
-      "ms": 6725
-    },
-    {
-      "step": "Copy again where it clears",
-      "result": "Nothing left to copy again: an earlier run of the same rehearsal copied every organization (its time is under Measured)",
+      "step": "What blocks the press (read only)",
+      "result": "Every organization is ready. Pressing switches 31 organizations at once.",
       "ms": null
     },
     {
+      "step": "Copy again (its own step, before the press)",
+      "result": "No older pick list with no organization had a maker in exactly one organization. Copy again finished green: 0 organizations copied, nothing left to copy.",
+      "ms": 12123
+    },
+    {
       "step": "Press",
-      "result": "Switched everything to the new system: 31 organizations (Data tables 17, agent context 13), 159 older tables and 23 pick lists archived with their pointers, 1 automations re-keyed, 23 older write doors closed to clients.",
-      "ms": 5618
+      "result": "Switched everything to the new system: 31 organizations (Data tables 17, agent context 13), 159 older tables and 24 pick lists archived with their pointers, 1 automations re-keyed, 23 older write doors closed to clients. Pick lists with no organization given their maker's one organization: Untitled list. Archived with no owner organization (restorable by Undo): Agent Write Sandbox (its maker belongs to 46 organizations); Onboarding Checklist (its maker belongs to 46 organizations); scene options (its maker belongs to 5 organizations); Weekly Client Reporting Ritual (its maker belongs to 46 organizations); Weekly Client Status Report (its maker belongs to 46 organizations); ZZ Reverify D \u2014 renamed by agent (its maker belongs to 46 organizations); ZZ Throwaway \u2014 mapped-route verify (its maker belongs to 46 organizations).",
+      "ms": 5960
     },
     {
       "step": "A person edits a copy, then Undo",
-      "result": "Undid the final switch: 17 organizations back on their older tables (159 tables and 23 pick lists restored), agent context back for 13, 23 older write doors open again, the Data page and the scope screens back. Carried back from the new system: admin's Workspace: Rincon Plumbing \u2014 Service Calls: 1 edited row is carried back into the older table. 16 organizations had nothing written in the new system to carry back. The older row now reads 'WO-7993' (the copy's edit).",
-      "ms": 3457
+      "result": "Undid the final switch: 17 organizations back on their older tables (159 tables and 24 pick lists restored), agent context back for 13, 23 older write doors open again, the Data page and the scope screens back. 7 pick lists with no owner organization restored. Carried back from the new system: admin's Workspace: Rincon Plumbing \u2014 Service Calls: 1 edited row is carried back into the older table. 16 organizations had nothing written in the new system to carry back. The older row now reads 'WO-6926' (the copy's edit).",
+      "ms": 3791
     },
     {
       "step": "Press again",
-      "result": "Switched everything to the new system: 31 organizations (Data tables 17, agent context 13), 159 older tables and 23 pick lists archived with their pointers, 1 automations re-keyed, 23 older write doors closed to clients. No Copy again was needed.",
-      "ms": 5983
+      "result": "Switched everything to the new system: 31 organizations (Data tables 17, agent context 13), 159 older tables and 24 pick lists archived with their pointers, 1 automations re-keyed, 23 older write doors closed to clients. Pick lists with no organization given their maker's one organization: Untitled list. Archived with no owner organization (restorable by Undo): Agent Write Sandbox (its maker belongs to 46 organizations); Onboarding Checklist (its maker belongs to 46 organizations); scene options (its maker belongs to 5 organizations); Weekly Client Reporting Ritual (its maker belongs to 46 organizations); Weekly Client Status Report (its maker belongs to 46 organizations); ZZ Reverify D \u2014 renamed by agent (its maker belongs to 46 organizations); ZZ Throwaway \u2014 mapped-route verify (its maker belongs to 46 organizations). No Copy again was needed.",
+      "ms": 6069
     },
     {
       "step": "Undo again (the clone left as found)",
-      "result": "Undid the final switch: 17 organizations back on their older tables (159 tables and 23 pick lists restored), agent context back for 13, 23 older write doors open again, the Data page and the scope screens back. 17 organizations had nothing written in the new system to carry back.",
-      "ms": 4186
+      "result": "Undid the final switch: 17 organizations back on their older tables (159 tables and 24 pick lists restored), agent context back for 13, 23 older write doors open again, the Data page and the scope screens back. 7 pick lists with no owner organization restored. 17 organizations had nothing written in the new system to carry back.",
+      "ms": 3377
     }
   ],
   "measured": [
     {
       "label": "The first Copy again (every organization it cleared something for)",
       "value": "27.2 min \u2014 Arman's Org 24.4 min, admin's Workspace 2.2 min, AI Matrx 0.4 min, Bayside Orthodontics 339acd 0.3 min"
+    },
+    {
+      "label": "Copy again that gave an ownerless pick list its organization (rehearsal 7)",
+      "value": "3.9 min \u2014 Gave 1 older pick list its maker's organization: Untitled list \u2192 Developer111's Org. Copy again finished green: 1 organizations copied, nothing left to copy."
+    },
+    {
+      "label": "Ownerless pick lists at the press (rehearsal 7)",
+      "value": "7 archived with no owner organization, 1 given its maker's organization; all back after Undo"
     },
     {
       "label": "Organizations switched",
@@ -49,7 +57,7 @@
     },
     {
       "label": "Pick lists archived",
-      "value": "23"
+      "value": "24"
     },
     {
       "label": "Automations re-keyed",
@@ -61,7 +69,7 @@
     },
     {
       "label": "Press, in the database",
-      "value": "4389 ms"
+      "value": "4582 ms"
     },
     {
       "label": "Strongest locks held (press again)",
@@ -76,11 +84,6 @@
       "value": "159 \u2192 0"
     }
   ],
-  "refusals": [
-    {
-      "what": "Every older pick list belongs to an organization: 8 older pick lists belong to no organization, so no organization's switch reaches them: Agent Write Sandbox (made by admin@admin.com); Onboarding Checklist (made by admin@admin.com); scene options (made by arman@armansadeghi.com); Untitled list (made by developer111@pixelium.uk); Weekly Client Reporting Ritual (made by admin@admin.com); Weekly Client Status Report (made by admin@admin.com); ZZ Reverify D \u2014 renamed by agent (made by admin@admin.com); ZZ Throwaway \u2014 mapped-route verify (made by admin@admin.com).",
-      "owner": "the chair (proof book A5): give each list its maker's organization, then Copy again copies it"
-    }
-  ],
-  "run_log": "common-docs/operations/for-arman/2026-09-26/final-switch/rehearsal-6/run.log (first Copy again: rehearsal-1)"
+  "refusals": [],
+  "run_log": "common-docs/operations/for-arman/2026-09-26/final-switch/rehearsal-9/run.log (first Copy again: rehearsal-1; ownerless lists: rehearsal-7)"
 }

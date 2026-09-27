@@ -96,6 +96,20 @@ function board(kind: "blocked" | "after_copy" | "switched"): FinalSwitchBoard {
     mayPress: !blocked,
     mayUndo: kind === "switched",
     undo: kind === "switched" ? { plan: [], needs_confirm: false } : null,
+    orphans:
+      kind === "switched"
+        ? []
+        : [
+            { id: "l1", name: "Untitled list", maker: "developer111@pixelium.uk", resolution: "organization", organization_id: "o1", organization_name: "Developer111's Org", why: "its maker belongs to one organization" },
+            { id: "l2", name: "Onboarding Checklist", maker: "admin@admin.com", resolution: "no_owner", organization_id: null, organization_name: null, why: "its maker belongs to 46 organizations" },
+          ],
+    copyAgain:
+      kind === "after_copy"
+        ? { run_id: "r1", started_at: "2026-09-27T07:00:00Z", by: "admin@admin.com", finished: false, finished_at: null, ok: true, resumes: 0, organizations_done: 1, adopted: null,
+            organizations: [{ id: "id-Harbor Dental Group", name: "Harbor Dental Group", ok: true, says: "Copied 2 tables again.", at: "2026-09-27T07:01:00Z", ms: 60000 }] }
+        : null,
+    copyAgainNeeded: kind === "after_copy",
+    noOwnerArchived: kind === "switched" ? [{ id: "l2", name: "Onboarding Checklist", maker: "admin@admin.com", why: "its maker belongs to 46 organizations" }] : [],
   };
 }
 
@@ -136,12 +150,18 @@ test("not ready: the press is disabled with the database's sentence and every bl
   expect(byTestId("final-switch-undo")).toBeNull();
 });
 
-test("ready once copied again: the press is offered (the server copies again first)", async () => {
+test("copy again is its own step: while a run is unfinished the press is off and Resume is offered", async () => {
   readFinalSwitch.mockResolvedValue(board("after_copy"));
   await mount();
   const press = byTestId("final-switch-press") as HTMLButtonElement;
-  expect(press.disabled).toBe(false);
-  expect(byTestId("final-switch-press-why")).toBeNull();
+  expect(press.disabled).toBe(true);
+  const copy = byTestId("final-switch-copy-again-button") as HTMLButtonElement;
+  expect(copy.disabled).toBe(false);
+  expect(copy.textContent).toContain("Resume Copy again");
+  expect(byTestId("final-switch-copy-again-state")!.textContent).toContain("not finished — 1 organizations done");
+  expect(byTestId("final-switch-copy-again-organizations")!.textContent).toContain("Harbor Dental Group");
+  expect(byTestId("final-switch-orphans")!.textContent).toContain("goes to Developer111's Org at Copy again");
+  expect(byTestId("final-switch-orphans")!.textContent).toContain("archived by the press with no owner organization");
   expect(container.textContent).toContain("No row was edited in an older table after it was copied (4)");
 });
 
@@ -151,6 +171,8 @@ test("switched: no press, the undo is offered, the last run is said", async () =
   expect(byTestId("final-switch-press")).toBeNull();
   expect(byTestId("final-switch-undo")).not.toBeNull();
   expect(container.textContent).toContain("Switched everything to the new system: 24 organizations.");
+  expect(byTestId("final-switch-copy-again")).toBeNull();
+  expect(byTestId("final-switch-no-owner")!.textContent).toContain("Onboarding Checklist");
 });
 
 test("the last rehearsal on the dev clone is on the page with its date", async () => {

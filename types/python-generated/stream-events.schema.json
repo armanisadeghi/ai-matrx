@@ -13310,6 +13310,64 @@
     "title": "CutoverFinalSwitchResultData",
     "type": "object"
   },
+  "CutoverFinalSwitchCopyAgainResultData": {
+    "additionalProperties": false,
+    "description": "What a Copy again run before the final switch did (lane FINAL-SWITCH): resumable, per organization.",
+    "properties": {
+      "type": {
+        "const": "cutover_final_switch_copy_again_result",
+        "default": "cutover_final_switch_copy_again_result",
+        "title": "Type",
+        "type": "string"
+      },
+      "run_id": {
+        "title": "Run Id",
+        "type": "string"
+      },
+      "resumed": {
+        "default": false,
+        "title": "Resumed",
+        "type": "boolean"
+      },
+      "ok": {
+        "title": "Ok",
+        "type": "boolean"
+      },
+      "says": {
+        "title": "Says",
+        "type": "string"
+      },
+      "organizations": {
+        "items": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "title": "Organizations",
+        "type": "array"
+      },
+      "still_needs": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Still Needs",
+        "type": "array"
+      },
+      "timings_ms": {
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "title": "Timings Ms",
+        "type": "object"
+      }
+    },
+    "required": [
+      "run_id",
+      "ok",
+      "says"
+    ],
+    "title": "CutoverFinalSwitchCopyAgainResultData",
+    "type": "object"
+  },
   "ToolStartedData": {
     "additionalProperties": false,
     "properties": {

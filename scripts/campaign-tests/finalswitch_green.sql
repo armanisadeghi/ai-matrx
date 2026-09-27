@@ -51,12 +51,25 @@ declare
   v_n int;
   v_refused_before int;
   v_org uuid;
+  v_run uuid;
+  v_noowner jsonb;
+  v_id uuid;
 begin
   -- 0. The doors exist, and nothing private is reachable.
   if to_regprocedure('platform.final_switch_press(text, jsonb)') is null
      or to_regprocedure('platform.final_switch_undo(text, boolean)') is null
      or to_regprocedure('platform.final_switch_readiness()') is null then
     raise exception '0a: there is no final switch (press, undo or readiness door missing)';
+  end if;
+  -- Second file (coordinator rulings 2026-09-27): the press resolves ownerless pick lists itself and
+  -- Copy again is its own recorded step the press waits for.
+  if to_regprocedure('platform.final_switch_adopt_orphan_lists(uuid)') is null
+     or to_regprocedure('platform.final_switch_copy_again_record(uuid, text, uuid, boolean, jsonb)') is null then
+    raise exception '0d: the press cannot resolve ownerless pick lists, or Copy again has no record the press waits for';
+  end if;
+  if has_function_privilege('authenticated', 'platform.final_switch_adopt_orphan_lists(uuid)', 'execute')
+     or has_function_privilege('authenticated', 'platform.final_switch_copy_again_record(uuid, text, uuid, boolean, jsonb)', 'execute') then
+    raise exception '0e: a browser can reach a server-only step of Copy again';
   end if;
   if has_function_privilege('authenticated', 'platform._final_switch_readiness()', 'execute')
      or has_function_privilege('authenticated', 'platform._final_switch_record(text, text, text, text, jsonb, jsonb, text, uuid)', 'execute')
@@ -106,8 +119,7 @@ begin
   -- 3. Not ready: the press refuses and names what blocks it (organization or platform + what).
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform set_config('role', 'postgres', true);
-  if exists (select 1 from workbench.udt_structured_lists where organization_id is null and deleted_at is null)
-     or platform._final_switch_scopes_code() = 'none' then
+  if not (platform._final_switch_readiness() ->> 'ready')::boolean then
     perform set_config('role', 'authenticated', true);
     v := platform.final_switch_press('suite', null);
     perform set_config('role', 'postgres', true);
@@ -121,9 +133,9 @@ begin
     end if;
   end if;
 
-  -- 4. Stand-ins for the owners' fixes (rolled back with the suite).
+  -- 4. No hand fix for the ownerless pick lists (the press resolves them). The scopes switch is
+  -- stood in for only where its lane has not landed it.
   perform set_config('role', 'postgres', true);
-  update workbench.udt_structured_lists set deleted_at = now() where organization_id is null and deleted_at is null;
   if platform._final_switch_scopes_code() = 'none' then
     execute $f$create or replace function platform._final_switch_scopes_rehearsal_stand_in() returns text
               language sql set search_path to 'pg_catalog' as $b$ select 'suite stand-in'::text $b$$f$;
@@ -131,6 +143,29 @@ begin
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform set_config('request.headers', c_admin_page, true);
+  -- 4b. THE PRESS WAITS FOR THE LAST COPY AGAIN TO FINISH GREEN.
+  perform set_config('role', 'postgres', true);
+  v_run := gen_random_uuid();
+  perform platform.final_switch_copy_again_record(v_run, 'start', null, true, '{"says": "finalswitch_green: a run that has not finished"}'::jsonb);
+  if (platform._final_switch_readiness() ->> 'ready')::boolean then
+    raise exception '4b: the press is offered while the last Copy again has not finished';
+  end if;
+  perform set_config('role', 'authenticated', true);
+  v := platform.final_switch_press('suite', null);
+  if v ->> 'reason' <> 'not_ready' or position('has not finished' in coalesce(v ->> 'says', '')) = 0 then
+    raise exception '4c: an unfinished Copy again did not hold the press, by name: %', left(v::text, 400);
+  end if;
+  perform set_config('role', 'postgres', true);
+  perform platform.final_switch_copy_again_record(v_run, 'finish', null, false, '{"says": "finalswitch_green: finished with a refusal"}'::jsonb);
+  if (platform._final_switch_readiness() ->> 'ready')::boolean then
+    raise exception '4d: the press is offered after a Copy again that finished with a refusal';
+  end if;
+  v_run := gen_random_uuid();
+  perform platform.final_switch_copy_again_record(v_run, 'start', null, true, '{"says": "finalswitch_green: a green run"}'::jsonb);
+  perform platform.final_switch_copy_again_record(v_run, 'finish', null, true, '{"says": "finalswitch_green: finished green"}'::jsonb);
+  select coalesce(jsonb_agg(x -> 'id'), '[]'::jsonb) into v_noowner
+    from jsonb_array_elements(platform._final_switch_orphan_lists()) x where x ->> 'resolution' = 'no_owner';
+  perform set_config('role', 'authenticated', true);
   v_ready := platform.final_switch_readiness();
   if not (v_ready ->> 'ready')::boolean then
     raise notice 'SKIPPED 5–8: after the stand-ins the clone still is not ready (%). Run scripts/final_switch_rehearsal/run.sh (it copies every organization again), then this suite.', left(v_ready ->> 'says', 300);
@@ -141,6 +176,25 @@ begin
   v_press := platform.final_switch_press('finalswitch_green suite', null);
   if not coalesce((v_press ->> 'ok')::boolean, false) then raise exception '5a: the press refused: %', left(v_press::text, 600); end if;
   perform set_config('role', 'postgres', true);
+  -- 5i. The ownerless pick lists the press archived: marked, named in its record, held archived.
+  if jsonb_array_length(v_noowner) > 0 then
+    if exists (select 1 from workbench.udt_structured_lists l
+                where l.id in (select (jsonb_array_elements_text(v_noowner))::uuid)
+                  and (l.deleted_at is null or not l.metadata ? 'final_switch_no_owner')) then
+      raise exception '5i: an ownerless pick list was left live or unmarked by the press';
+    end if;
+    if jsonb_array_length(coalesce((platform._final_switch_last()).did -> 'orphans' -> 'no_owner', '[]'::jsonb)) <> jsonb_array_length(v_noowner)
+       or position('no owner organization' in coalesce(v_press ->> 'says', '')) = 0 then
+      raise exception '5j: the press record or its sentence does not name the ownerless pick lists: %', v_press ->> 'says';
+    end if;
+    v_id := (v_noowner ->> 0)::uuid;
+    begin
+      update workbench.udt_structured_lists set deleted_at = null where id = v_id;
+      raise exception '5k: an ownerless pick list was restored outside the Undo while the final switch is on';
+    exception when sqlstate '55000' then
+      null;  -- held: "Undoing the final switch … restores it"
+    end;
+  end if;
   if platform.final_switch_state() ->> 'state' <> 'new' or platform.final_switch_state() ->> 'data_screen' <> 'new' then
     raise exception '5b: the state does not say everything is on the new system: %', platform.final_switch_state();
   end if;
@@ -205,6 +259,12 @@ begin
   if (select value from platform.feature_knob where feature = 'data_tables' and key = 'older_tables_moved') <> 'false'::jsonb then
     raise exception '7f: the platform value did not go back';
   end if;
+  if jsonb_array_length(v_noowner) > 0 and exists (
+       select 1 from workbench.udt_structured_lists l
+        where l.id in (select (jsonb_array_elements_text(v_noowner))::uuid)
+          and (l.deleted_at is not null or l.metadata ? 'final_switch_no_owner')) then
+    raise exception '7h: the Undo did not bring an ownerless pick list back exactly';
+  end if;
   if platform.older_tables_switched(v_org) then raise exception '7g: an organization with no press still counts as switched after the undo'; end if;
 
   -- 8. Undo again: nothing to undo.
@@ -212,8 +272,8 @@ begin
   v := platform.final_switch_undo('suite', true);
   if v ->> 'reason' <> 'nothing_to_undo' then raise exception '8a: a second undo did something: %', v; end if;
 
-  raise notice 'GREEN finalswitch_green.sql — refused for a minted token, no page, a non-admin, not ready (named); pressed every organization (% in the plan), closed the older write doors, kept the read doors and the server; one organization could not switch alone; undone exactly.',
-    jsonb_array_length(v_ready -> 'organizations');
+  raise notice 'GREEN finalswitch_green.sql — refused for a minted token, no page, a non-admin, not ready (named), an unfinished or refused Copy again; pressed every organization (% in the plan), archived % ownerless pick lists by name and held them, closed the older write doors, kept the read doors and the server; one organization could not switch alone; undone exactly.',
+    jsonb_array_length(v_ready -> 'organizations'), jsonb_array_length(v_noowner);
 end $t$;
 
 rollback;

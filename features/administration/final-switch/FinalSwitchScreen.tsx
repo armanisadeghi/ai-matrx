@@ -32,6 +32,7 @@ import { toast } from "@/lib/toast";
 import {
   organizationOrder,
   pressFinalSwitch,
+  runCopyAgain,
   readFinalSwitch,
   undoFinalSwitch,
   type FinalSwitchBoard,
@@ -292,12 +293,37 @@ export function FinalSwitchScreen() {
     await load();
   };
 
+  // COPY AGAIN, its own step (never inside the press): per-organization progress, resumable.
+  const [copying, setCopying] = React.useState(false);
+  const [copyProgress, setCopyProgress] = React.useState<FinalSwitchProgress[]>(
+    [],
+  );
+  const [copyAnswer, setCopyAnswer] = React.useState<{
+    ok: boolean;
+    says: string;
+  } | null>(null);
+  const copyAgain = async () => {
+    setCopying(true);
+    setCopyProgress([]);
+    setCopyAnswer(null);
+    const out = await runCopyAgain(dispatch, (p) =>
+      setCopyProgress((prev) => [...prev.slice(-199), p]),
+    );
+    setCopyAnswer({ ok: out.ok, says: out.says });
+    if (out.ok) toast.success(out.says);
+    else toast.error(out.says);
+    setCopying(false);
+    await load();
+  };
+  const lastCopy = board?.copyAgain ?? null;
+  const copyUnfinished = Boolean(lastCopy && !lastCopy.finished);
+
   const undoNeedsConfirm = Boolean(board?.undo?.needs_confirm);
   const pressDisabledWhy = !board
     ? null
     : board.state === "new"
       ? null
-      : board.ready || board.readyAfterCopyAgain
+      : board.ready
         ? null
         : board.says;
 
@@ -351,6 +377,132 @@ export function FinalSwitchScreen() {
 
         {board && (
           <>
+            {board.state === "old" && (
+              <section
+                className="flex flex-col gap-2 rounded-md border border-border bg-card p-3"
+                data-testid="final-switch-copy-again"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium">Step 1 · Copy again</p>
+                  <span className="text-xs text-muted-foreground">
+                    Its own step, one organization at a time; the press stays
+                    off until it finishes green.
+                  </span>
+                  <span className="flex-1" />
+                  <Button
+                    size="sm"
+                    variant={board.copyAgainNeeded ? "default" : "outline"}
+                    onClick={() => void copyAgain()}
+                    disabled={copying || running || !board.copyAgainNeeded}
+                    data-testid="final-switch-copy-again-button"
+                  >
+                    {copying ? (
+                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RefreshCw className="mr-1 h-3.5 w-3.5" />
+                    )}
+                    {copyUnfinished ? "Resume Copy again" : "Copy again"}
+                  </Button>
+                </div>
+                <p
+                  className="text-xs text-muted-foreground"
+                  data-testid="final-switch-copy-again-state"
+                >
+                  {!lastCopy
+                    ? board.copyAgainNeeded
+                      ? "Not run yet from this page, and something below needs it."
+                      : "Not needed: every copy is current."
+                    : `Last run started ${when(lastCopy.started_at)}${lastCopy.by ? ` by ${lastCopy.by}` : ""}${lastCopy.resumes > 0 ? ` (resumed ${lastCopy.resumes}×)` : ""} · ${
+                        !lastCopy.finished
+                          ? `not finished — ${lastCopy.organizations_done} organizations done; it resumes where it stopped`
+                          : lastCopy.ok
+                            ? `finished green ${when(lastCopy.finished_at)}`
+                            : "finished with refusals — run it again"
+                      }${board.copyAgainNeeded && lastCopy.finished && lastCopy.ok ? " · something needs copying again since" : ""}`}
+                </p>
+                {board.orphans.length > 0 && (
+                  <div
+                    className="flex flex-col gap-0.5 text-xs"
+                    data-testid="final-switch-orphans"
+                  >
+                    <p className="font-medium">
+                      Older pick lists with no organization
+                    </p>
+                    <ul className="flex flex-col gap-0.5">
+                      {board.orphans.map((o) => (
+                        <li key={o.id}>
+                          {o.name}{" "}
+                          <span className="text-muted-foreground">
+                            (made by {o.maker})
+                          </span>{" "}
+                          —{" "}
+                          {o.resolution === "organization"
+                            ? `goes to ${o.organization_name} at Copy again (${o.why})`
+                            : `archived by the press with no owner organization, restorable by Undo (${o.why})`}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {lastCopy && lastCopy.organizations.length > 0 && (
+                  <ul
+                    className="flex flex-col gap-0.5 text-xs"
+                    data-testid="final-switch-copy-again-organizations"
+                  >
+                    {lastCopy.organizations.map((o) => (
+                      <li key={o.id} className="flex items-start gap-1.5">
+                        {o.ok ? (
+                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                        ) : (
+                          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+                        )}
+                        <span>
+                          <span className="font-medium">{o.name ?? o.id}</span>{" "}
+                          {o.says}
+                          {typeof o.ms === "number" && (
+                            <span className="text-muted-foreground">
+                              {" "}
+                              ({(o.ms / 60000).toFixed(1)} min)
+                            </span>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {(copyProgress.length > 0 || copyAnswer) && (
+                  <div
+                    className="flex flex-col gap-0.5 rounded border border-border bg-muted/40 p-2 text-xs"
+                    data-testid="final-switch-copy-again-progress"
+                  >
+                    {copyProgress.slice(-12).map((p, i) => (
+                      <span
+                        key={i}
+                        className={
+                          p.kind === "stage"
+                            ? "font-medium"
+                            : "text-muted-foreground"
+                        }
+                      >
+                        {p.says}
+                      </span>
+                    ))}
+                    {copyAnswer && (
+                      <span
+                        className={
+                          copyAnswer.ok
+                            ? "font-medium text-emerald-700 dark:text-emerald-400"
+                            : "font-medium text-destructive"
+                        }
+                      >
+                        {copyAnswer.says}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </section>
+            )}
+
             <section className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
               <p className="text-sm font-medium">{board.says}</p>
               <p className="text-xs text-muted-foreground">
@@ -374,7 +526,7 @@ export function FinalSwitchScreen() {
                     ) : (
                       <Power className="mr-1 h-3.5 w-3.5" />
                     )}
-                    Switch everything to the new system
+                    Step 2 · Switch everything to the new system
                   </Button>
                   {pressDisabledWhy && (
                     <span
@@ -441,6 +593,32 @@ export function FinalSwitchScreen() {
                 </div>
               )}
             </section>
+
+            {board.state === "new" && board.noOwnerArchived.length > 0 && (
+              <section
+                className="flex flex-col gap-1 rounded-md border border-border bg-card p-3 text-xs"
+                data-testid="final-switch-no-owner"
+              >
+                <p className="text-sm font-medium">
+                  Archived with no owner organization
+                </p>
+                <p className="text-muted-foreground">
+                  The press archived these older pick lists because no single
+                  organization owns them. Undo restores them; until then they
+                  stay archived.
+                </p>
+                <ul className="flex flex-col gap-0.5">
+                  {board.noOwnerArchived.map((o) => (
+                    <li key={o.id}>
+                      {o.name}{" "}
+                      <span className="text-muted-foreground">
+                        (made by {o.maker}; {o.why})
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             {board.blocking.length > 0 && (
               <section className="flex flex-col gap-1 rounded-md border border-destructive/40 bg-destructive/5 p-3">
