@@ -23,4 +23,10 @@ describe("window open position vs the shell header", () => {
   it("the unplaced default never starts inside the header", () => {
     expect(resolvePosition(undefined, 480, 420).y).toBeGreaterThanOrEqual(44);
   });
+
+  it("reads the header height in rem, as the shell declares it", () => {
+    document.documentElement.style.setProperty("--shell-header-h", "2.75rem");
+    document.documentElement.style.fontSize = "16px";
+    expect(resolvePosition("top-right", 480, 420).y).toBe(44 + 12);
+  });
 });

@@ -128,6 +128,17 @@ const FEEDBACK_TYPE_CHIPS: Record<
   },
 };
 
+/**
+ * The address bar as the page's own URL — minus `panels=`, the window
+ * manager's record of which windows are open (this one included).
+ */
+function addressWithoutWindowState(): string {
+  const params = new URLSearchParams(window.location.search);
+  params.delete("panels");
+  const query = params.toString();
+  return window.location.pathname + (query ? `?${query}` : "");
+}
+
 /** ⌘ on Apple keyboards, Ctrl elsewhere. */
 function modifierKeyLabel(): string {
   if (typeof navigator === "undefined") return "Ctrl";
@@ -223,7 +234,7 @@ export function FeedbackWindow({
         minWidth={380}
         minHeight={320}
         width={480}
-        height={452}
+        height={412}
         position="top-right"
         mobileSizeToContent
         urlSyncKey="feedback"
@@ -306,7 +317,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
       const page = document.title.split(/\s+[—|-]\s+/)[0]?.trim() ?? "";
       setWhere({
         page: page && page !== "AI Matrx" ? page : "",
-        address: window.location.pathname + window.location.search,
+        address: addressWithoutWindowState(),
       });
     };
     read();

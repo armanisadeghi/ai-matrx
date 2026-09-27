@@ -32,4 +32,15 @@ describe("ProTextarea's control cluster sits in a reserved row", () => {
     const source = readFileSync(path.join(__dirname, "..", "ProTextarea.tsx"), "utf8");
     expect(source).toContain("proTextareaClusterPlacement(!!onSubmit).className");
   });
+
+  it("the reserved row is merged AFTER the caller's className, so a caller's padding cannot erase it", () => {
+    // Feedback window (page-pass 2026-09-27): className "py-2" came last and
+    // tailwind-merge dropped pb-10 — the cluster sat on the last line again.
+    const source = readFileSync(path.join(__dirname, "..", "ProTextarea.tsx"), "utf8");
+    const reserve = source.indexOf('"pb-10 pointer-coarse:pb-12"');
+    const callerClass = source.lastIndexOf("      className,\n", reserve);
+    expect(reserve).toBeGreaterThan(0);
+    expect(callerClass).toBeGreaterThan(0);
+    expect(source.slice(callerClass, reserve)).not.toContain(");");
+  });
 });

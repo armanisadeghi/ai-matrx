@@ -1186,11 +1186,14 @@ export const ProTextarea = React.forwardRef<
       // cluster shares the submit button's 44px row (pb-14 below), to
       // its left — the top reserve it used to take is gone.
       "pr-3",
+      className,
+      // AFTER the consumer's className: a caller's own padding (`py-2`) used
+      // to erase the reserved row and the cluster sat on the last line again
+      // (page-pass 2026-09-27, Feedback window). The reserve always wins.
       hasCoarseControls && !onSubmit && "pb-10 pointer-coarse:pb-12",
       // Bottom padding for the submit button — TapTargetButtonSolid is
       // 44px tall (h-11), so reserve enough vertical clearance.
       onSubmit && "pb-14",
-      className,
     );
     const fieldStyle: React.CSSProperties = {
       ...style,

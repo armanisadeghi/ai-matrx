@@ -134,10 +134,14 @@ const NARROW_VIEWPORT = 768;
 function shellHeaderClearance(): number {
   const GAP = 12;
   if (typeof document === "undefined") return 44 + GAP;
-  const raw = getComputedStyle(document.documentElement).getPropertyValue(
-    "--shell-header-h",
-  );
-  const h = parseFloat(raw);
+  const root = getComputedStyle(document.documentElement);
+  const raw = root.getPropertyValue("--shell-header-h").trim();
+  // The shell declares it in rem ("2.75rem") — a bare parseFloat read 2.75px
+  // and opened every window at y=15, under the header.
+  const n = parseFloat(raw);
+  const h = raw.endsWith("rem")
+    ? n * (parseFloat(root.fontSize) || 16)
+    : n;
   return (Number.isFinite(h) && h > 0 ? h : 44) + GAP;
 }
 
