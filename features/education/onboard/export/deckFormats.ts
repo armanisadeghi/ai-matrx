@@ -81,6 +81,12 @@ type ExportCard = Pick<
 export interface DeckExportExtras {
   schedulingByCardId?: Map<string, PortableScheduling>;
   mediaByCardId?: Map<string, PortableMediaRef[]>;
+  /**
+   * Extras whose read FAILED (RC-B12 r13), in the reader's words ("review
+   * schedule", "media"). The export still happens; the caller SAYS what it is
+   * missing instead of shipping a backup that silently drops them.
+   */
+  unread?: string[];
 }
 
 function trustOf(card: ExportCard): unknown {

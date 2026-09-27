@@ -1,5 +1,7 @@
 'use client';
 
+import { ReadFailure } from '@/components/read-state/ReadFailure';
+import { StaleDataNotice } from '@/components/official/stale-data/StaleDataNotice';
 import React, { useState, useEffect, useCallback } from 'react';
 import { PodcastsTable } from './PodcastsTable';
 import { PodcastDetailPanel } from './PodcastDetailPanel';
@@ -13,6 +15,8 @@ export function PodcastsContainer() {
     const [shows, setShows] = useState<PcShow[]>([]);
     const [episodes, setEpisodes] = useState<PcEpisodeWithShow[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    // A failed read is said — never "(0)" tabs and an empty table (RC-B12 r13).
+    const [loadError, setLoadError] = useState<unknown>(null);
 
     const [selectedShow, setSelectedShow] = useState<PcShow | null>(null);
     const [selectedEpisode, setSelectedEpisode] = useState<PcEpisodeWithShow | null>(null);
@@ -28,8 +32,10 @@ export function PodcastsContainer() {
             ]);
             setShows(fetchedShows);
             setEpisodes(fetchedEpisodes);
+            setLoadError(null);
         } catch (err) {
             console.error('Failed to load podcast data', err);
+            setLoadError(err ?? new Error('The podcasts read failed'));
         } finally {
             setIsLoading(false);
         }
@@ -128,7 +134,7 @@ export function PodcastsContainer() {
                     >
                         {tab}
                         <span className="ml-2 text-xs text-muted-foreground">
-                            ({tab === 'shows' ? shows.length : episodes.length})
+                            ({loadError != null && shows.length === 0 && episodes.length === 0 ? '—' : tab === 'shows' ? shows.length : episodes.length})
                         </span>
                     </button>
                 ))}
@@ -138,6 +144,12 @@ export function PodcastsContainer() {
             <div className="flex flex-1 min-h-0 overflow-hidden">
                 {/* Table panel */}
                 <div className={`${panelOpen ? 'w-1/2' : 'w-full'} min-w-0 flex flex-col transition-all duration-200 overflow-hidden`}>
+                    {loadError != null && (shows.length > 0 || episodes.length > 0) && (
+                        <StaleDataNotice hasData what="the podcasts" onRetry={() => void loadData()} retrying={isLoading} className="m-2" />
+                    )}
+                    {loadError != null && shows.length === 0 && episodes.length === 0 ? (
+                        <ReadFailure error={loadError} what="the podcasts" onRetry={() => void loadData()} />
+                    ) : (
                     <PodcastsTable
                         activeTab={activeTab}
                         shows={shows}
@@ -151,6 +163,7 @@ export function PodcastsContainer() {
                         onDeleteShow={handleShowDeleted}
                         onDeleteEpisode={handleEpisodeDeleted}
                     />
+                    )}
                 </div>
 
                 {/* Detail panel */}

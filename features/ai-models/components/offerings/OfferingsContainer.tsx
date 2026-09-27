@@ -1,5 +1,7 @@
 "use client";
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { toast } from "@/lib/toast";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -81,6 +83,9 @@ export default function OfferingsContainer() {
   const [apis, setApis] = useState<AiApi[]>([]);
   const [coverage, setCoverage] = useState<AiModelOfferingView[]>([]);
   const [loading, setLoading] = useState(true);
+  // A failed catalog read is said — never an empty table and a "0 gaps" view
+  // (RC-B12 r13).
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [tab, setTab] = useState("manage");
 
   const [selected, setSelected] = useState<AiOffering | null>(null);
@@ -116,8 +121,10 @@ export default function OfferingsContainer() {
       setEndpoints(fetchedEndpoints);
       setApis(fetchedApis);
       setCoverage(fetchedCoverage);
+      setLoadError(null);
     } catch (err) {
       console.error("Failed to load offerings", extractErrorMessage(err));
+      setLoadError(err ?? new Error("The offerings read failed"));
     } finally {
       setLoading(false);
     }
@@ -306,8 +313,27 @@ export default function OfferingsContainer() {
     },
   ];
 
+  if (loadError != null && offerings.length === 0 && models.length === 0) {
+    return (
+      <ReadFailure
+        error={loadError}
+        what="the model offerings"
+        onRetry={() => void loadData()}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col h-full min-h-0">
+      {loadError != null && (
+        <StaleDataNotice
+          hasData
+          what="the model offerings"
+          onRetry={() => void loadData()}
+          retrying={loading}
+          className="m-2"
+        />
+      )}
       <Tabs
         value={tab}
         onValueChange={setTab}

@@ -8,6 +8,8 @@
  * separately — covered by `pdfExtractorWindow`.
  */
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import React, { useCallback, useState, useMemo } from "react";
 import {
   Upload,
@@ -313,6 +315,7 @@ export function PdfExtractorFloatingWorkspace({
           history={extractor.history}
           archivedHistory={extractor.archivedHistory}
           historyLoading={extractor.historyLoading}
+          historyError={extractor.historyError}
           openTabIds={extractor.openTabIds}
           activeTabId={extractor.activeTabId}
           onSelect={extractor.openDocument}
@@ -1159,6 +1162,7 @@ export function PdfExtractorSidebar({
   history,
   archivedHistory,
   historyLoading,
+  historyError,
   openTabIds,
   activeTabId,
   onSelect,
@@ -1167,6 +1171,8 @@ export function PdfExtractorSidebar({
   history: PdfDocument[];
   archivedHistory: PdfDocument[];
   historyLoading: boolean;
+  /** The last history read FAILED (RC-B12 r13). */
+  historyError?: unknown;
   openTabIds: Set<string>;
   activeTabId: ActiveTabId;
   onSelect: (doc: PdfDocument) => void;
@@ -1251,7 +1257,17 @@ export function PdfExtractorSidebar({
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin p-1 space-y-0.5">
-        {historyLoading && history.length === 0 && archivedHistory.length === 0 ? (
+        {historyError != null && (history.length > 0 || archivedHistory.length > 0) && (
+          <StaleDataNotice
+            hasData
+            what="your extracted files"
+            onRetry={onRefresh}
+            retrying={historyLoading}
+          />
+        )}
+        {historyError != null && history.length === 0 && archivedHistory.length === 0 ? (
+          <ReadFailure error={historyError} what="your extracted files" onRetry={onRefresh} className="m-1" />
+        ) : historyLoading && history.length === 0 && archivedHistory.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-4 h-4 text-muted-foreground/40 animate-spin" />
           </div>
