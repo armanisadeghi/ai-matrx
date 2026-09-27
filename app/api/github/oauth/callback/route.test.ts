@@ -65,8 +65,37 @@ describe("GitHub OAuth callback lifecycle", () => {
   it("shows post-install needs-attention instead of announcing a connection", async () => {
     jest.spyOn(global, "fetch").mockResolvedValue(new Response(JSON.stringify({ status: "needs_attention" })));
     const response = await GET(request({ state: "state", code: "code" }));
-    expect(response.headers.get("location")).toContain("github_error=");
-    expect(response.headers.get("location")).not.toContain("github=connected");
+    const redirect = new URL(response.headers.get("location") ?? "");
+    expect(redirect.searchParams.get("github_error")).toBe(
+      "GitHub authorization finished, but AI Matrx is not installed on an approved account yet. Complete the GitHub installation or ask an owner to approve it, then try again.",
+    );
+    expect(redirect.searchParams.get("github")).not.toBe("connected");
+  });
+
+  it("REGRESSION: a backend failure never puts its detail in the completion redirect or diagnostic", async () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(global, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({ detail: "vault path /internal; token=must-not-leak" }),
+        { status: 500 },
+      ),
+    );
+
+    const response = await GET(request({ state: "state", code: "code" }));
+
+    expect(response.status).toBe(307);
+    const redirect = new URL(response.headers.get("location") ?? "");
+    expect(redirect.pathname).toBe("/api/github/oauth/complete");
+    expect(redirect.searchParams.get("return_url")).toBe("/code");
+    expect(redirect.searchParams.get("github_error")).toBe(
+      "We couldn't complete your GitHub connection.",
+    );
+    expect(redirect.href).not.toContain("vault");
+    expect(redirect.href).not.toContain("token");
+    expect(consoleError).toHaveBeenCalledWith(
+      "[github-oauth:callback]",
+      expect.objectContaining({ stage: "complete_response", status: 500 }),
+    );
   });
 
   it("deletes and refuses a missing or mismatched state without calling the backend", async () => {

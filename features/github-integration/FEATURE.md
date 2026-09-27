@@ -36,16 +36,22 @@ from `users.integration_connections.metadata`, written by aidream's
 `_persist_discovery` / `_installation_metadata`. No extra endpoint exists or is
 needed for them.
 
-The state-bound start route sends every post-auth backend, transport, or
-authorization-URL refusal back through same-origin `/api/github/oauth/complete`.
-The popup therefore receives its existing `github_oauth_error` outcome, with a
-safe return path and one human-safe action message. Server diagnostics contain
-only the start stage and HTTP status; no backend body, OAuth state, code, token,
-or cookie is exposed. The retired generic `/app_callback?provider=github`
+The state-bound start and callback routes send every post-auth backend,
+transport, malformed-payload, or authorization-URL refusal back through
+same-origin `/api/github/oauth/complete`. The popup therefore receives its
+existing `github_oauth_error` outcome, with a safe return path and one
+human-safe action message. Server diagnostics contain only the failure stage
+and HTTP status; no backend body, OAuth state, code, token, or cookie is
+exposed. Deliberate cancellation, post-install remediation, and state/proof/auth
+refusals retain their purpose-written safe messages. The retired generic `/app_callback?provider=github`
 exchange refuses into that same completion surface: GitHub always starts from
 the organization-aware connection door in AI Matrx Settings.
 
 ## Changelog
+
+- 2026-09-27 — Applied the same safe popup-completion error boundary to GitHub
+  callback backend failures, malformed responses, and unsafe continuations;
+  cancellation and transaction-security messages remain specific and safe.
 
 - 2026-09-27 — Routed authenticated GitHub OAuth-start failures through the
   existing same-origin popup completion error contract, with safe diagnostics
