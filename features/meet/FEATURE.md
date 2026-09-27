@@ -16,7 +16,12 @@ chrome, and the routes.
 | `<CallButton>` — the one place a person is shown on messaging surfaces | [`../messaging/components/MessagingChrome.tsx`](../messaging/components/MessagingChrome.tsx) |
 | `<IncomingCallHost>` — mounted ONCE, directly | [`../../providers/MeetHost.tsx`](../../providers/MeetHost.tsx) |
 | The room, both lanes | [`components/MeetingSurface.tsx`](./components/MeetingSurface.tsx) |
-| Create a meeting, list every meeting incl. ended ones | [`components/MeetingsWorkspace.tsx`](./components/MeetingsWorkspace.tsx) → `/meetings`; rows with Copy link + Invite in [`components/MeetingsList.tsx`](./components/MeetingsList.tsx) |
+| `/meetings` — Upcoming / Past / Cancelled / Archived, New meeting, Start now, row actions | [`components/manage/MeetingsHome.tsx`](./components/manage/MeetingsHome.tsx); data [`hooks/useMeetingsDirectory.ts`](./hooks/useMeetingsDirectory.ts) |
+| `/meetings/[id]` — the meeting's home (details, guests, occurrences, settings, record) | [`components/manage/MeetingDetail.tsx`](./components/manage/MeetingDetail.tsx) |
+| The one meeting form (create / edit / reschedule / duplicate) + repeat editor | [`components/manage/MeetingFormDialog.tsx`](./components/manage/MeetingFormDialog.tsx), [`RecurrenceEditor.tsx`](./components/manage/RecurrenceEditor.tsx); model [`lib/meeting-draft.ts`](./lib/meeting-draft.ts), [`lib/recurrence.ts`](./lib/recurrence.ts), [`lib/zoned-time.ts`](./lib/zoned-time.ts) |
+| Every management write + `announce` | [`hooks/useMeetingActions.ts`](./hooks/useMeetingActions.ts); dialogs dispatched by [`components/manage/useMeetingActionHost.tsx`](./components/manage/useMeetingActionHost.tsx) |
+| Guests (invitees + RSVP), used by the page AND the Invite panel | [`components/manage/MeetingGuests.tsx`](./components/manage/MeetingGuests.tsx), [`GuestPicker.tsx`](./components/manage/GuestPicker.tsx) |
+| RSVP: in-app Going? / pre-join / the emailed-link page `/rsvp/[secret]` | [`components/manage/RsvpControl.tsx`](./components/manage/RsvpControl.tsx), [`PreJoinRsvp.tsx`](./components/manage/PreJoinRsvp.tsx), [`components/rsvp/RsvpLanding.tsx`](./components/rsvp/RsvpLanding.tsx) |
 | The Invite panel (link, invitation, calendar, invite people) | [`components/invite/`](./components/invite/) (`MeetingInviteButton`, `MeetingInviteDialog`); text + calendar event in [`lib/invitation.ts`](./lib/invitation.ts); calendar links/.ics in [`../../lib/calendar/eventLinks.ts`](../../lib/calendar/eventLinks.ts) |
 | The meeting RECORD after `ended_at` | the package's `<MeetingRecordView>`, routed to by `<MeetingRoom>` — nothing here |
 | Room ⇄ Board layout choice (connected phase only; per viewer, this browser) | [`components/MeetingLayout.tsx`](./components/MeetingLayout.tsx) |
@@ -29,7 +34,8 @@ chrome, and the routes.
 | Route | Group | Why |
 |---|---|---|
 | `/meet/[slug]` | **`(meet)`** — a NEW chrome-free group | `(core)` renders `AppShell` (wrong for a stage, and a guest has no org to switch); bare `(public)` renders the marketing header/footer AND seeds no `initialReduxState`, so a signed-in person would arrive as a Redux guest with an inert `<MeetHost>`. `(meet)` is the `(kiosk)`/`(portal)` shape plus `getServerAuth()` + `initialReduxState`. Header of [`app/(meet)/layout.tsx`](<../../app/(meet)/layout.tsx>) carries the full evidence. |
-| `/meetings` | `(core)` | Creating a meeting is ordinary signed-in work and wants the shell. |
+| `/meetings`, `/meetings/[id]` | `(core)` | Managing meetings is ordinary signed-in work and wants the shell. |
+| `/rsvp/[secret]` | `(link)` | The emailed Yes / No / Maybe link: a link somebody was SENT, often to a person with no account — no shell, no marketing chrome, `noindex`. |
 
 `/meet/*` is deliberately **ungated**: `utils/auth/protected-routes.ts` is a
 denylist and names no `/meet` family, so `proxy.ts` never bounces it to `/login`
@@ -85,31 +91,78 @@ belonged (C22, THE SAME-SESSION LAW):
 If a future defect tempts a fifth wrapper, the answer is the same: fix it in the
 package, release, adopt — never a crossing in here.
 
+## Management — Meet wave 1 UI (2026-09-27)
+
+Bar: Google Calendar's agenda + event page and Zoom's Meetings page. Backend: aidream
+`services/meet/FEATURE.md` § Management; package `@ai-matrx/meet` ≥ 0.7.3 (repository wave-1
+doors + `announceMeeting`).
+
+- **The client writes, the server tells.** Every write is a `communication.meet_*` door through
+  the package repository (`useMeetingActions`); after a write invitees should hear about,
+  `announceMeeting` sends the invitation / update / cancellation email with its `.ics`.
+  "Email guests…" is ON by default on every form and dialog. A failed telling says the meeting
+  IS saved.
+- **`/meetings` lists the reader's OWN meetings** (host, co-host, invitee) — RLS is the ceiling,
+  not the view: a platform admin can read every meeting, so the list scopes by role
+  (`agenda.inScope`, `useMeetingsDirectory`). Upcoming = `meet_occurrences_between` (the database
+  expands series; moved rows marked, a cancelled occurrence struck through), grouped by day **in
+  the viewer's zone** with the zone named; instant meetings started in the last 12 h are
+  "Happening now" (older unended rooms go to Past). Tabs are `?tab=` in the header's
+  `RouteModeNav`; search + whose-meetings + zone share one toolbar row.
+- **Reading needs no organization** (access is personal): without one the Meet provider is inert,
+  so reads use a plain `createMeetRepository({ client })` + the signed-in id. **Writes HOLD**: New
+  meeting / Start now / row writes open the organization picker (`ensureOrganizationContext`)
+  and continue once one is set.
+- **The form shows the person's own defaults** (`platform.knob_resolve` over the `meet.default_*`
+  knobs, `useMeetDefaults`) and sends only settings they changed, so an org default still moves
+  every meeting nobody overrode. Time zone defaults to the browser's; the wall clock is authored
+  in the meeting's zone (`lib/zoned-time.ts`, no date library).
+- **Recurring = one row, one link.** The repeat menu offers the start's own presets (Weekly on
+  Tuesday, Monthly on the first Tuesday…) and Custom (interval, weekday chips, day-of-month or
+  Nth weekday, ends never / on / after N) → the RRULE subset `meet_rrule_parse` accepts
+  (`lib/recurrence.ts`). Edit/Reschedule from an occurrence ask "This occurrence" (an exception
+  row via `meet_set_occurrence` move) or "All occurrences" (the series shifts by the same amount);
+  Cancel asks the same. Title, agenda, guests and settings are series-wide.
+- **Guests** are the invitees door (`meet_add_invitees` → account resolution + share grant; co-host
+  = admin grant via "Make co-host"); removing archives the grant and revokes the RSVP link. The
+  guest list shows each answer and whether they were emailed; "Email invitation to N guests"
+  covers anyone not yet told. A true per-person RESEND is not available (announce only sends what
+  a person has not been told) — named, not built.
+- **RSVP** three ways: in-app Going? (`meet_respond`) on the meeting page and the pre-join screen
+  (invitees only); the emailed link `/rsvp/<secret>` reads `meet_invitation_by_token` and answers
+  through aidream `POST /api/v1/meet/rsvp` (secret in the body) so the host is notified
+  (`meet.rsvp_received`). The clicked answer rides `?answer=` and is sent once the page is on
+  screen (a scanner fetching the URL runs no script). An in-app answer does not notify the host
+  yet (aidream gap).
+- **Calendar links carry the rule** (`lib/calendar/eventLinks.ts`): Google gets `recur` + `ctz`,
+  the `.ics` writes `DTSTART;TZID=` + `RRULE` (a date-only UNTIL becomes end of day UTC), and the
+  UID is the server's `<id>@meet.aimatrx.com` so importing both is one event. Outlook on the web
+  cannot take a series from a link, so that button is absent for one (the `.ics` covers Outlook).
+  Exceptions (EXDATE) are only in the server's emailed `.ics`.
+
 ## The Invite panel (2026-09-27)
 
 One panel, opened from **Invite** in the room header (`headerControls`, both
 lanes), the top-right corner before joining (`MeetingLayout` `preJoinControls` —
-the package draws no header there), every open row of `/meetings`, and
-automatically right after **Create meeting**. It offers: the link with **Copy
-link** and **Share…** (`useShare`), a ready-to-paste **invitation** (title, time
-with zone and length, "recurring" note, link, "No account needed…") with Copy
-invitation and Email invitation (`mailto:`), **Add to calendar** (Google,
-Outlook, `.ics`) for a meeting with a time, and **Invite people by name**.
+the package draws no header there; an invitee also gets **Going?** there), every
+`/meetings` row menu and the meeting page. It offers: the link with **Copy link**
+and **Share…** (`useShare`), a ready-to-paste **invitation** (title, time in the
+meeting's zone with length, the repeat rule in words, link, agenda, "No account
+needed…") with Copy invitation and Email invitation (`mailto:`), **Add to
+calendar** (Google, Outlook for a one-off, `.ics`) with the repeat rule, and
+**Guests** — the same `MeetingGuests` as the meeting page.
 
-Inviting by name IS the platform share system on the `meet_meeting` record —
-`ShareWithUserTab` + `PermissionsList` over `useSharing`, composed directly
-because `ShareModal`'s Public tab would mint a second `/s/<token>` link and the
-meeting link already is the public link. The invitee gets the share system's
-email + in-app message; an invited person skips the waiting room (server side,
-aidream). Only whoever `useIsOwner` says may grant sees the form; a guest or a
-non-host sees a sentence saying the host can, never a dead control. An email
-with no account gets the Email invitation (the table-only outside-share lane
-does not apply to meetings).
+Guests are the meeting's INVITATION LIST, never raw share grants: no
+Viewer/Can-view picker, no "add everyone in an organization". An invited account
+gets the viewer grant from the door (so it skips the waiting room); co-host is the
+only role, set with "Make co-host". Only the host or a co-host sees the controls;
+anyone else sees the list and a sentence. (Until 2026-09-27 this section was the
+share system's `ShareWithUserTab` + `PermissionsList` — replaced; defect found by
+an independent review.)
 
 The share notification's door: `meet_meeting.hrefFor` → `/meet/<id>`;
 `MeetingSurface` reads a uuid-shaped path as a meeting id and replaces the
-address with `/meet/<slug>`. The share email names `/meet/<slug>`
-(`features/sharing/service/sharedResourceDetails.ts`).
+address with `/meet/<slug>`.
 
 ## The Board layout (2026-09-27)
 
@@ -163,6 +216,15 @@ reader of an older tag will otherwise conclude the package is broken.
    "captions, live notes, Q&A and the wrap-up without a page reload".
 
 ## Change log
+
+- **2026-09-27 — Meet wave 1 UI (management).** `/meetings` rebuilt (agenda by day in the
+  viewer's zone, Past / Cancelled / Archived, search, whose-meetings, row menu, New meeting,
+  Start now); `/meetings/[id]`; `/rsvp/[secret]`; the one meeting form with a real repeat
+  editor and personal defaults; Invite panel on the invitees model; calendar links with the
+  RRULE; pre-join Going?. `MeetingsWorkspace` / `MeetingsList` deleted. Adopted
+  `@ai-matrx/meet` 0.7.3. Guards: `lib/recurrence.test.ts`, `lib/agenda.test.ts`,
+  `lib/meeting-draft.test.ts`, `lib/invitation.test.ts`, `components/rsvp/RsvpLanding.test.tsx`,
+  `components/invite/MeetingInviteDialog.test.tsx`, `lib/calendar/eventLinks.test.ts`.
 
 - **2026-09-27 — Invite panel.** Invite in the room header, the pre-join corner
   and every `/meetings` row, opened automatically after Create meeting; link,

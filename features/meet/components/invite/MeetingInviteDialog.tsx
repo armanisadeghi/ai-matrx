@@ -48,6 +48,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { useShare } from "@/features/sharing/hooks/useShare";
 import { MeetingGuests } from "@/features/meet/components/manage/MeetingGuests";
+import { describeRecurrence } from "@/features/meet/lib/recurrence";
 import {
   downloadIcs,
   googleCalendarUrl,
@@ -145,7 +146,11 @@ export function MeetingInviteDialog({
           <DialogDescription>
             {meeting.title}
             {when !== null ? ` · ${when}` : ""}
-            {meeting.kind === "recurring" ? " · Recurring" : ""}
+            {meeting.recurrenceRule
+              ? ` · ${describeRecurrence(meeting.recurrenceRule)}`
+              : meeting.kind === "recurring"
+                ? " · Recurring"
+                : ""}
           </DialogDescription>
         </DialogHeader>
 

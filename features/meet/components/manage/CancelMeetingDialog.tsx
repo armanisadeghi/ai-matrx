@@ -103,12 +103,12 @@ export function CancelMeetingDialog({
             Cancel “{meeting.title}”?
           </DialogTitle>
           <DialogDescription>
-            Nobody can join a cancelled meeting. The link stays and tells anyone
-            who opens it that it was cancelled
+            {series && occurrence && scope === "occurrence"
+              ? "Only this date is taken off the series; every other occurrence and the link stay as they are"
+              : "Nobody can join a cancelled meeting. The link stays and tells anyone who opens it that it was cancelled"}
             {hasGuests
-              ? ", and guests who were invited get a cancellation that removes it from their calendar"
-              : ""}
-            .
+              ? ". Guests who were invited get a cancellation that updates their calendar."
+              : "."}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
