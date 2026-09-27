@@ -314,8 +314,9 @@ export const MergeFieldInput = forwardRef<MergeFieldInputHandle, MergeFieldInput
           "empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]",
           multiline ? "min-h-40 leading-relaxed" : "min-h-9 whitespace-nowrap overflow-x-auto",
           className,
-          // A hosted field surface arrives with "flex"; text must flow inline.
-          "block",
+          // A hosted field surface arrives with "flex" and a textarea's
+          // "resize-y": text must flow inline and a div has no resize grip.
+          "block resize-none",
         )}
         style={style}
       />
