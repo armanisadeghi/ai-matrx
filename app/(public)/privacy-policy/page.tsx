@@ -297,13 +297,15 @@ const PrivacyPolicyPage = () => {
           you grant <code>gmail.readonly</code>, AI Matrx can search your
           mailbox when you request it, show message headers and snippets in the
           results, and read the body of a message you select. That permission
-          does not let AI Matrx delete, organize, or send messages. When you
-          choose Connected Shadow Inbox and start it, AI Matrx reads up to 50
-          recent threads you replied to in your chosen lookback period. It
-          retains qualifying thread content as Rulebook raw material to derive
-          draft rules, and the configured AI model provider may process that
-          content for that request. Connecting Gmail alone does not start
-          Connected Shadow Inbox.
+          does not let AI Matrx delete, organize, or send messages. Connected
+          Shadow Inbox is temporarily unavailable while we complete deletion
+          controls for retained Rulebook material. If it becomes available and
+          you separately start it, AI Matrx reads up to 50 recent threads you
+          replied to in your chosen lookback period. It retains qualifying
+          thread content as Rulebook raw material to derive draft rules, and
+          the configured AI model provider may process that content for that
+          request. Connecting Gmail alone does not start Connected Shadow
+          Inbox.
         </p>
         <p>
           Gmail changes are a separate, optional feature in internal testing.
@@ -334,12 +336,13 @@ const PrivacyPolicyPage = () => {
           creditworthiness. Gmail search results and opened messages are not
           automatically sent to an AI agent. Saved CRM interaction subjects and
           bodies, including matched outreach replies, are also excluded from
-          automatic agent context. Starting Connected Shadow Inbox is an
-          explicit request to process its qualifying Gmail thread content to
-          derive Rulebook draft rules. If you choose to provide other Google
-          content to an agent in a chat or another explicit request, the
-          configured model provider may process that content to answer your
-          request, as described in Section 3.1. We do not use Gmail content to
+          automatic agent context. Once available, separately starting
+          Connected Shadow Inbox is an explicit request to process its
+          qualifying Gmail thread content to derive Rulebook draft rules. If
+          you choose to provide other Google content to an agent in a chat or
+          another explicit request, the configured model provider may process
+          that content to answer your request, as described in Section 3.1. We
+          do not use Gmail content to
           train our own generalized AI models.
         </p>
         <p>
@@ -524,8 +527,10 @@ const PrivacyPolicyPage = () => {
           individual files you selected. On-demand document and spreadsheet
           operations do not save document contents or spreadsheet cell values as
           records. The on-demand Gmail search/open reader does not save search
-          queries or opened message bodies as records. Connected Shadow Inbox
-          retains qualifying Gmail thread content as Rulebook raw material;
+          queries or opened message bodies as records. Qualifying Gmail thread
+          content from past Connected Shadow Inbox use remains retained as
+          Rulebook raw material; once the feature is available again, new
+          qualifying content may be retained after you separately start it;
           disconnecting Google stops future reading but does not erase that
           retained Rulebook content. The separately configured outreach-reply
           feature saves matched replies as described in Section 2.9; that CRM
@@ -603,11 +608,12 @@ const PrivacyPolicyPage = () => {
             delete your account. On-demand document and spreadsheet operations
             process content without storing those values as records. The Gmail
             search/open reader processes selected message bodies without saving
-            them as records. Qualifying Connected Shadow Inbox threads are retained
-            as Rulebook raw material; disconnecting Google stops future access
-            but does not itself delete that retained content. Matched outreach
-            replies saved as CRM interactions are retained until you request
-            their deletion or delete your account; disconnecting Google stops
+            them as records. Qualifying Connected Shadow Inbox threads from past
+            use remain retained as Rulebook raw material; disconnecting Google
+            stops future access but does not itself delete that retained content.
+            Matched outreach replies saved as CRM interactions are retained
+            until you request their deletion or delete your account;
+            disconnecting Google stops
             future access but does not itself delete those existing CRM
             interactions. Deleting a CRM copy from the active database does not
             immediately remove earlier backup copies. Our daily S3 database

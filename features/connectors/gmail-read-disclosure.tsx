@@ -46,12 +46,14 @@ export async function confirmGmailReadDisclosure(
               characters of the message body in CRM.
             </li>
             <li>
-              When you choose Connected Shadow Inbox and start it, AI Matrx
-              reads up to 50 recent threads you replied to in the lookback
-              period you choose. It keeps qualifying thread content as
-              Rulebook raw material to derive draft rules, and the configured
-              AI model provider may process that content for this request.
-              Connecting Gmail alone does not start this.
+              Connected Shadow Inbox is temporarily unavailable while we
+              complete deletion controls for retained Rulebook material. If it
+              becomes available and you separately start it, AI Matrx reads up
+              to 50 recent threads you replied to in the lookback period you
+              choose. It keeps qualifying thread content as Rulebook raw
+              material to derive draft rules, and the configured AI model
+              provider may process that content for this request. Connecting
+              Gmail alone does not start this.
             </li>
           </ul>
         </div>

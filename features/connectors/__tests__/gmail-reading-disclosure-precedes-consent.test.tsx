@@ -152,7 +152,9 @@ describe("Gmail reading disclosure", () => {
     expect(disclosure).toContain("search or open Gmail");
     expect(disclosure).toContain("separately register this mailbox for outreach");
     expect(disclosure).toContain("up to 20,000 characters");
-    expect(disclosure).toContain("choose Connected Shadow Inbox and start it");
+    expect(disclosure).toContain("Connected Shadow Inbox is temporarily unavailable");
+    expect(disclosure).toContain("deletion controls for retained Rulebook material");
+    expect(disclosure).toContain("If it becomes available and you separately start it");
     expect(disclosure).toContain("up to 50 recent threads you replied to");
     expect(disclosure).toContain("Rulebook raw material");
     expect(disclosure).toContain("Connecting Gmail alone does not start this");
