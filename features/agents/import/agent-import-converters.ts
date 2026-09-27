@@ -128,7 +128,9 @@ export function applyAgentDefaults(
     agentType: partial.agentType ?? "user",
     isActive: partial.isActive ?? true,
     isArchived: partial.isArchived ?? false,
-    isFavorite: partial.isFavorite ?? false,
+    // A star is the importer's own per-person state (platform.user_entity_state),
+    // never carried in from an exported file's retired `is_favorite` column.
+    isFavorite: false,
     modelId: sanitizeModelId(partial.modelId),
     messages: Array.isArray(partial.messages) ? partial.messages : [],
     variableDefinitions: partial.variableDefinitions ?? null,

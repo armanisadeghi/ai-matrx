@@ -43,7 +43,7 @@ function seedToInsertPayload(
     tags: seed.tags,
     is_active: seed.isActive,
     is_archived: seed.isArchived,
-    is_favorite: seed.isFavorite,
+    // No `is_favorite`: stars are per-person (platform.user_entity_state).
     agent_type: seed.agentType,
     model_id: seed.modelId ?? undefined,
     messages: seed.messages,

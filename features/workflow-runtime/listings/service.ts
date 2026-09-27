@@ -18,6 +18,7 @@ import { fetchWorkflowFacts } from "../discovery/service";
 import { fetchWorkflowDefinition } from "../surface/service";
 import type { WorkflowDefinitionLike } from "../trigger-points";
 import { supabase } from "@/utils/supabase/client";
+import { readFavoriteIds } from "@/features/scopes/service/favoriteOverlay";
 import type {
   EntityFilters,
   EntityListQuery,
@@ -211,7 +212,7 @@ export async function fetchWorkflowRecordById(
       .schema("workflow")
       .from("definition")
       .select(
-        "id,name,description,category,tags,is_favorite,is_archived,is_active,visibility,version,created_at,updated_at,output_kind,nodes",
+        "id,name,description,category,tags,is_archived,is_active,visibility,version,created_at,updated_at,output_kind,nodes",
       )
       .eq("id", workflowId)
       .is("deleted_at", null)
@@ -226,6 +227,8 @@ export async function fetchWorkflowRecordById(
   if (definition.error) throw definition.error;
   const row = definition.data;
   if (!row) return null;
+  // Per-person star from platform.user_entity_state (never the retired column).
+  const favorites = await readFavoriteIds("workflow", [row.id]);
 
   return {
     id: row.id,
@@ -233,7 +236,7 @@ export async function fetchWorkflowRecordById(
     description: row.description ?? null,
     category: row.category ?? null,
     tags: row.tags ?? [],
-    isFavorite: Boolean(row.is_favorite),
+    isFavorite: favorites?.has(row.id) ?? false,
     isOwner: null,
     accessLevel: null,
     visibility: row.visibility ?? null,

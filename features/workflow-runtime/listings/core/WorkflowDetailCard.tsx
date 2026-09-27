@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import { setWorkflowFlag } from "../../browse/service";
+import { setWorkflowFavorite } from "../../browse/service";
 import { RunStatusChip } from "../../run-status";
 import { workflowHref, type WorkflowListRecord } from "../types";
 import {
@@ -57,9 +57,10 @@ function formatDate(value: string | null): string | null {
 }
 
 /**
- * The favorite toggle. Only the OWNER's row carries the column, so a record
- * you can merely see says why the control is absent instead of offering a
- * star that silently fails.
+ * The favorite toggle. The star itself is per-person state in
+ * platform.user_entity_state; the owner-only gate below is the surface's
+ * existing rule (shared with the browse list), kept until it is lifted
+ * everywhere at once.
  */
 function FavoriteWorkflowButton({
   workflow,
@@ -92,7 +93,7 @@ function FavoriteWorkflowButton({
         setPending(true);
         setIsFavorite(next);
         try {
-          await setWorkflowFlag(workflow.id, { is_favorite: next });
+          await setWorkflowFavorite(workflow.id, next);
           onChanged?.();
         } catch (err: unknown) {
           setIsFavorite(!next);

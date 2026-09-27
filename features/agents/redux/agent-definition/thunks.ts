@@ -87,6 +87,10 @@ import type {
   PersonalCopyResult,
 } from "../../types/agent-definition.types";
 import { isSyntheticAgentId } from "./synthetic-id";
+import {
+  readFavoriteIds,
+  writeFavorite,
+} from "@/features/scopes/service/favoriteOverlay";
 import { parseAgentVersionSnapshot } from "./parse-output-snapshot";
 import { assignField } from "@/features/agents/redux/shared/field-flags";
 import {
@@ -309,7 +313,8 @@ function mergeAgentSummaries(
         modelId: row.modelId,
         isActive: row.isActive,
         isArchived: row.isArchived,
-        isFavorite: row.isFavorite,
+        // No `isFavorite`: the catalog row's column is retired — stars are
+        // overlaid from platform.user_entity_state by `overlayAgentFavorites`.
         // The registry spells "absent" as `undefined` where the DB row spells
         // it `null`. Five fields differ; this is the vocabulary translation
         // at the seam, not a value change.
@@ -332,6 +337,32 @@ function mergeAgentSummaries(
     dispatch(setAgentFetchStatus({ id: row.id, status: "list" }));
   }
 }
+
+/**
+ * Overlay the caller's stars from platform.user_entity_state onto the agents
+ * just loaded — ONE `ues_get_bulk` for the whole set. Every listed id is set
+ * (true iff starred). A failed read logs and leaves the stars as they were.
+ */
+async function overlayAgentFavorites(
+  dispatch: AppDispatch,
+  ids: readonly string[],
+): Promise<void> {
+  if (ids.length === 0) return;
+  const favorites = await readFavoriteIds("agent", ids);
+  if (!favorites) return;
+  for (const id of ids) {
+    dispatch(mergePartialAgent({ id, isFavorite: favorites.has(id) }));
+  }
+}
+
+/** Thunk form of `overlayAgentFavorites`, for surfaces that seed rows themselves. */
+export const overlayAgentFavoritesThunk = createAsyncThunk<
+  void,
+  readonly string[],
+  ThunkApi
+>("agentDefinition/overlayFavorites", async (ids, { dispatch }) => {
+  await overlayAgentFavorites(dispatch, ids);
+});
 
 // ---------------------------------------------------------------------------
 // Read thunks
@@ -358,7 +389,12 @@ export const fetchAgentsList = createAsyncThunk<void, void, ThunkApi>(
       dispatch(setAgentsStatus("failed"));
       throw e;
     }
-    mergeAgentSummaries(dispatch, catalog.getState().rows);
+    const rows = catalog.getState().rows;
+    mergeAgentSummaries(dispatch, rows);
+    await overlayAgentFavorites(
+      dispatch,
+      rows.map((r) => r.id),
+    );
     dispatch(setAgentsStatus("succeeded"));
   },
 );
@@ -402,9 +438,13 @@ export const searchAgentsServer = createAsyncThunk<
     // The catalog merges its hits into its own registry; project them here so
     // a name the search just discovered resolves on every non-picker surface.
     const state = catalog.getState();
-    mergeAgentSummaries(
+    const hits = ids
+      .map((id) => state.byId[id])
+      .filter((r): r is AgentSummary => !!r);
+    mergeAgentSummaries(dispatch, hits);
+    await overlayAgentFavorites(
       dispatch,
-      ids.map((id) => state.byId[id]).filter((r): r is AgentSummary => !!r),
+      hits.map((r) => r.id),
     );
 
     return { ids, deep, query: q };
@@ -421,7 +461,12 @@ export const fetchAgentsListFull = createAsyncThunk<void, void, ThunkApi>(
   async (_, { dispatch }) => {
     const catalog = getAgentCatalog();
     await catalog.ensureLoaded();
-    mergeAgentSummaries(dispatch, catalog.getState().rows);
+    const rows = catalog.getState().rows;
+    mergeAgentSummaries(dispatch, rows);
+    await overlayAgentFavorites(
+      dispatch,
+      rows.map((r) => r.id),
+    );
   },
 );
 
@@ -444,7 +489,10 @@ export const ensureAgentIdentity = createAsyncThunk<void, string, ThunkApi>(
       await catalog.ensureLoaded();
       row = catalog.getState().byId[agentId];
     }
-    if (row) mergeAgentSummaries(dispatch, [row]);
+    if (row) {
+      mergeAgentSummaries(dispatch, [row]);
+      await overlayAgentFavorites(dispatch, [row.id]);
+    }
   },
 );
 
@@ -584,6 +632,7 @@ export const fetchFullAgent = createAsyncThunk<void, string, ThunkApi>(
     }
 
     dispatch(upsertAgent(dbRowToAgentDefinition(data)));
+    await overlayAgentFavorites(dispatch, [agentId]);
   },
 );
 
@@ -914,6 +963,38 @@ export const applyOwnedAgentToolDelta = createAsyncThunk<
 );
 
 /**
+ * Star or unstar an agent for the CALLER. The one agent favorite writer:
+ * `favoritesService.setFavorite` → platform.user_entity_state. Optimistic
+ * (not dirty), rolled back on a refusal, which is thrown in words.
+ */
+export const setAgentFavorite = createAsyncThunk<
+  void,
+  { agentId: string; isFavorite: boolean },
+  ThunkApi
+>(
+  "agentDefinition/setFavorite",
+  async ({ agentId, isFavorite }, { dispatch, getState }) => {
+    // Only a record this registry already holds is patched — a list surface
+    // that keeps its own rows (the /agents browse page) must not seed a
+    // nameless record here just by starring.
+    const existing = selectAgentById(getState(), agentId);
+    const previous = existing?.isFavorite ?? false;
+    if (existing) dispatch(mergePartialAgent({ id: agentId, isFavorite }));
+    if (isSyntheticAgentId(agentId)) return;
+    try {
+      await writeFavorite("agent", agentId, isFavorite);
+    } catch (err) {
+      if (existing) {
+        dispatch(mergePartialAgent({ id: agentId, isFavorite: previous }));
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      dispatch(setAgentError({ id: agentId, error: message }));
+      throw err instanceof Error ? err : new Error(message);
+    }
+  },
+);
+
+/**
  * Optimistically saves a single field on an agent.
  * Immediately updates state, persists to DB, rolls back on failure.
  *
@@ -936,6 +1017,15 @@ export const saveAgentField = createAsyncThunk<
     // practice this never fires — it makes the no-persist guarantee structural.
     if (isSyntheticAgentId(agentId)) {
       dispatch(setAgentField({ id: agentId, field, value }));
+      return;
+    }
+
+    // A star is per-person state in platform.user_entity_state — never a
+    // column write on agent.definition.
+    if (field === "isFavorite") {
+      await dispatch(
+        setAgentFavorite({ agentId, isFavorite: Boolean(value) }),
+      ).unwrap();
       return;
     }
 
@@ -1140,6 +1230,18 @@ export const saveAgent = createAsyncThunk<void, string, ThunkApi>(
 
     const snapshot = { ...record._fieldHistory };
 
+    // A dirty star is per-person state: it goes to platform.user_entity_state,
+    // never into the agent.definition update below.
+    if (dirtyPartial.isFavorite !== undefined) {
+      const isFavorite = dirtyPartial.isFavorite;
+      delete dirtyPartial.isFavorite;
+      await dispatch(setAgentFavorite({ agentId, isFavorite })).unwrap();
+      if (Object.keys(dirtyPartial).length === 0) {
+        dispatch(markAgentSaved({ id: agentId }));
+        return;
+      }
+    }
+
     dispatch(setAgentLoading({ id: agentId, loading: true }));
 
     const { data, error } = await supabase
@@ -1266,6 +1368,13 @@ export const createAgent = createAsyncThunk<
 
   const newAgent = dbRowToAgentDefinition(data);
   dispatch(upsertAgent(newAgent));
+  // The insert never carries a star; a caller that asked for one gets it in
+  // platform.user_entity_state.
+  if (partial.isFavorite) {
+    await dispatch(
+      setAgentFavorite({ agentId: newAgent.id, isFavorite: true }),
+    ).unwrap();
+  }
   return newAgent.id;
 });
 
@@ -1482,6 +1591,12 @@ export const fetchSharedAgents = createAsyncThunk<
     );
     dispatch(setAgentFetchStatus({ id: row.id, status: "list" }));
   }
+  // Per-person stars: a shared agent can be starred by the person it is
+  // shared with — the column on the owner's row could never say that.
+  await overlayAgentFavorites(
+    dispatch,
+    rows.map((r) => r.id),
+  );
 
   return rows;
 });

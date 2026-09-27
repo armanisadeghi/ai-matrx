@@ -16,6 +16,7 @@
 // lib/list-scope/FEATURE.md — see migrations/wfx_list_scoped.sql.
 
 import { supabase } from "@/utils/supabase/client";
+import { overlayFavorites, writeFavorite } from "@/features/scopes/service/favoriteOverlay";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import type { Database, Json } from "@/types/database.types";
 import type {
@@ -63,10 +64,20 @@ export async function fetchWorkflowBrowsePage(
 
   if (error) throw pgError(error);
 
-  const rows = (data ?? []) as WorkflowBrowseRow[];
+  const listed = (data ?? []) as WorkflowBrowseRow[];
   // total_count is a window function over the filtered set — identical on every
   // row. Zero rows legitimately means zero matches, not "unknown".
-  return { rows, total: rows.length > 0 ? Number(rows[0].total_count) : 0 };
+  const total = listed.length > 0 ? Number(listed[0].total_count) : 0;
+  // Stars are per-person state in platform.user_entity_state: one ues_get_bulk
+  // for this page overlays them. The RPC's own `is_favorite` (the retired
+  // column) is never trusted.
+  const rows = await overlayFavorites(
+    "workflow",
+    listed,
+    (row) => row.id,
+    (row, isFavorite) => ({ ...row, is_favorite: isFavorite }),
+  );
+  return { rows, total };
 }
 
 export async function fetchWorkflowScopeCounts(
@@ -169,10 +180,24 @@ export async function saveWorkflowRowEdits(
   if (error) throw pgError(error);
 }
 
-/** Flip one boolean/scalar the row menu owns (favorite, archived, name). */
+/**
+ * Star or unstar a workflow for the CALLER — platform.user_entity_state via the
+ * favoritesService chokepoint. Throws the refusal in words.
+ */
+export async function setWorkflowFavorite(
+  workflowId: string,
+  isFavorite: boolean,
+): Promise<void> {
+  await writeFavorite("workflow", workflowId, isFavorite);
+}
+
+/**
+ * Flip one boolean/scalar the row menu owns (archived, name, deleted_at). A
+ * star is NOT one of them — it is per-person state; use `setWorkflowFavorite`.
+ */
 export async function setWorkflowFlag(
   workflowId: string,
-  patch: Database["workflow"]["Tables"]["definition"]["Update"],
+  patch: Omit<Database["workflow"]["Tables"]["definition"]["Update"], "is_favorite">,
 ): Promise<void> {
   // `.select` so a write that matched nothing (no such row, or RLS hid it) is a
   // named failure — never a success that changed nothing.

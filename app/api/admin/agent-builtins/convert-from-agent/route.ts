@@ -182,7 +182,6 @@ export async function POST(request: Request) {
           agent_type: "builtin",
           is_active: true,
           is_archived: false,
-          is_favorite: false,
           // Builtin rows home to the Matrx System org so they're globally visible
           // via has_access's platform-global tier. The DB guard
           // (agent._enforce_builtin_system_org) enforces this regardless; we set it

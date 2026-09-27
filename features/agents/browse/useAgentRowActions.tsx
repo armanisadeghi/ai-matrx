@@ -21,6 +21,7 @@ import {
   deleteAgent,
   duplicateAgent,
   saveAgentField,
+  setAgentFavorite,
 } from "@/features/agents/redux/agent-definition/thunks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
@@ -107,7 +108,7 @@ export function useAgentRowActions({
   const saveField = useCallback(
     async (
       agent: AgentBrowseRow,
-      field: "isFavorite" | "isArchived" | "name",
+      field: "isArchived" | "name",
       rowPatch: Partial<AgentBrowseRow>,
       revert: Partial<AgentBrowseRow>,
       failureMessage: string,
@@ -156,17 +157,23 @@ export function useAgentRowActions({
     [renameAgent, renameTo],
   );
 
+  // A star is per-person state in platform.user_entity_state — never an
+  // agent.definition write. Optimistic on this list's own row, rolled back
+  // with the refusal's words.
   const toggleFavorite = useCallback(
     (agent: AgentBrowseRow) => {
-      void saveField(
-        agent,
-        "isFavorite",
-        { is_favorite: !agent.is_favorite },
-        { is_favorite: agent.is_favorite },
-        "Could not update favorite",
-      );
+      const next = !agent.is_favorite;
+      patchRow(agent.id, { is_favorite: next });
+      void dispatch(setAgentFavorite({ agentId: agent.id, isFavorite: next }))
+        .unwrap()
+        .catch((err: unknown) => {
+          patchRow(agent.id, { is_favorite: agent.is_favorite });
+          toast.error("Could not update favorite", {
+            description: err instanceof Error ? err.message : undefined,
+          });
+        });
     },
-    [saveField],
+    [dispatch, patchRow],
   );
 
   // Every destination is resolved from the ROW (./agentPaths), never from the

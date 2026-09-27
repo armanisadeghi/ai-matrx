@@ -395,9 +395,16 @@ export const agentDefinitionSlice = createSlice({
             }
           : data;
 
+      // A star is per-PERSON state overlaid from platform.user_entity_state,
+      // never part of the table row: a full row fetch must not wipe it.
+      const withStar =
+        existing && existing.isFavorite !== data.isFavorite
+          ? { ...dataToWrite, isFavorite: existing.isFavorite }
+          : dataToWrite;
+
       const normalizedData = messagesWereNormalized
-        ? { ...dataToWrite, messages: normalizedMessages }
-        : dataToWrite;
+        ? { ...withStar, messages: normalizedMessages }
+        : withStar;
 
       if (existing) {
         mergeAndTrack(existing, normalizedData);

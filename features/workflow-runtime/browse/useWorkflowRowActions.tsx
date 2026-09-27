@@ -26,6 +26,7 @@ import {
 import {
   deleteWorkflow,
   duplicateWorkflow,
+  setWorkflowFavorite,
   setWorkflowFlag,
 } from "./service";
 import type { WorkflowBrowseRow } from "./types";
@@ -97,17 +98,20 @@ export function useWorkflowRowActions({
     [patchRow],
   );
 
+  // A star is per-person state in platform.user_entity_state — never a
+  // workflow.definition write. Optimistic, rolled back with the refusal.
   const toggleFavorite = useCallback(
     (row: WorkflowBrowseRow) => {
-      void saveFlag(
-        row,
-        { is_favorite: !row.is_favorite },
-        { is_favorite: !row.is_favorite },
-        { is_favorite: row.is_favorite },
-        "Could not update favorite",
-      );
+      const next = !row.is_favorite;
+      patchRow(row.id, { is_favorite: next });
+      void setWorkflowFavorite(row.id, next).catch((err: unknown) => {
+        patchRow(row.id, { is_favorite: row.is_favorite });
+        toast.error("Could not update favorite", {
+          description: err instanceof Error ? err.message : undefined,
+        });
+      });
     },
-    [saveFlag],
+    [patchRow],
   );
 
   const renameTo = useCallback(

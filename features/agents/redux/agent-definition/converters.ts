@@ -343,7 +343,10 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     tags: row.tags ?? [],
     isActive: row.is_active,
     isArchived: row.is_archived,
-    isFavorite: row.is_favorite,
+    // A star is per-PERSON state in platform.user_entity_state — the retired
+    // `is_favorite` column is never read. The thunks overlay the caller's
+    // stars (one ues_get_bulk) and `upsertAgent` keeps an overlaid value.
+    isFavorite: false,
     agentType: recover(
       "agent_type",
       row.agent_type,
@@ -437,7 +440,7 @@ export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
     tags: agent.tags,
     is_active: agent.isActive,
     is_archived: agent.isArchived,
-    is_favorite: agent.isFavorite,
+    // No `is_favorite`: stars live in platform.user_entity_state.
     agent_type: agent.agentType,
 
     model_id: agent.modelId,
@@ -495,7 +498,8 @@ export function agentDefinitionToUpdate(
   if (partial.tags !== undefined) update.tags = partial.tags;
   if (partial.isActive !== undefined) update.is_active = partial.isActive;
   if (partial.isArchived !== undefined) update.is_archived = partial.isArchived;
-  if (partial.isFavorite !== undefined) update.is_favorite = partial.isFavorite;
+  // `isFavorite` is never written here — stars go through favoritesService
+  // (platform.user_entity_state); see `setAgentFavorite` in ./thunks.
   if (partial.agentType !== undefined) update.agent_type = partial.agentType;
 
   if (partial.modelId !== undefined) update.model_id = partial.modelId;

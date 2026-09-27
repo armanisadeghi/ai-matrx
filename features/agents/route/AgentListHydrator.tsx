@@ -7,6 +7,7 @@ import {
   setAgentFetchStatus,
   setAgentsStatus,
 } from "@/features/agents/redux/agent-definition/slice";
+import { overlayAgentFavoritesThunk } from "@/features/agents/redux/agent-definition/thunks";
 import type { AgentListRow } from "@/features/agents/types/agent-definition.types";
 
 export function AgentListHydrator({ seeds }: { seeds: AgentListRow[] }) {
@@ -25,7 +26,8 @@ export function AgentListHydrator({ seeds }: { seeds: AgentListRow[] }) {
           modelId: row.model_id,
           isActive: row.is_active,
           isArchived: row.is_archived,
-          isFavorite: row.is_favorite,
+          // No `isFavorite` from the seed: the retired column. Stars are
+          // overlaid from platform.user_entity_state just below.
           createdBy: row.created_by,
           organizationId: row.organization_id,
           taskId: row.task_id ?? null,
@@ -41,6 +43,7 @@ export function AgentListHydrator({ seeds }: { seeds: AgentListRow[] }) {
       dispatch(setAgentFetchStatus({ id: row.id, status: "list" }));
     }
     dispatch(setAgentsStatus("succeeded"));
+    void dispatch(overlayAgentFavoritesThunk(seeds.map((row) => row.id)));
     // seeds is server-provided and stable — intentionally omitted to run once
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -14,6 +14,7 @@
 // page replaced — and at 773 distinct tags it is not a rounding error.
 
 import { supabase } from "@/utils/supabase/client";
+import { overlayFavorites } from "@/features/scopes/service/favoriteOverlay";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import type { Database, Json } from "@/types/database.types";
@@ -78,10 +79,20 @@ export async function fetchAgentBrowsePage(
 
   if (error) throw pgError(error);
 
-  const rows = (data ?? []) as AgentBrowseRow[];
+  const listed = (data ?? []) as AgentBrowseRow[];
   // total_count is a window function over the filtered set — identical on every
   // row. Zero rows legitimately means zero matches, not "unknown".
-  return { rows, total: rows.length > 0 ? Number(rows[0].total_count) : 0 };
+  const total = listed.length > 0 ? Number(listed[0].total_count) : 0;
+  // Stars are per-person state in platform.user_entity_state: one ues_get_bulk
+  // for this page overlays them. The RPC's own `is_favorite` (the retired
+  // column) is never trusted.
+  const rows = await overlayFavorites(
+    "agent",
+    listed,
+    (row) => row.id,
+    (row, isFavorite) => ({ ...row, is_favorite: isFavorite }),
+  );
+  return { rows, total };
 }
 
 export async function fetchBrowseScopeCounts(
