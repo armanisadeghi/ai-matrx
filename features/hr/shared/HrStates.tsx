@@ -57,7 +57,7 @@ import {
   hrSettingsHref,
   hrSwitchEmployerHref,
 } from "../routes";
-import { isHrDenied, isHrFailed, type HrResult } from "../types";
+import { isHrDenied, isHrFailed, type HrEmployer, type HrResult } from "../types";
 import {
   isHrModuleOff,
   needsHrActivation,
@@ -465,46 +465,54 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
     );
   }
 
+  // Set up first, then half-set-up, then off; a name shared by two organizations
+  // carries its address slug so the two rows can be told apart.
+  const rank = (e: HrEmployer) => (e.module_enabled ? (e.is_activated ? 0 : 1) : 2);
+  const sorted = [...choosable].sort(
+    (a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name),
+  );
+  const nameCount = new Map<string, number>();
+  for (const e of sorted) nameCount.set(e.name, (nameCount.get(e.name) ?? 0) + 1);
+
   return (
-    <div className={cn("w-full min-w-0 p-4 sm:p-6", className)}>
-      <div className="mx-auto w-full max-w-3xl space-y-4">
-        <div className="space-y-1">
-          <h2 className="text-base font-semibold text-foreground">
-            Which employer?
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            HR is per employer — headcount, timesheets and pay never mix across
-            organizations. Pick one and this page opens for it.
-          </p>
-        </div>
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {choosable.map((employer) => {
-            const ref = employer.slug?.trim() || employer.organization_id;
-            return (
-              <li key={employer.organization_id}>
-                <Link
-                  href={hrSwitchEmployerHref(pathname, ref)}
-                  className="flex min-h-[3.25rem] w-full items-center gap-3 rounded-lg border border-border bg-card px-3 py-3 text-left transition-colors hover:bg-accent"
+    <div className={cn("matrx-touch-targets w-full min-w-0 px-4 py-3 sm:px-6", className)}>
+      <p className="text-sm text-muted-foreground">
+        HR opens for one employer at a time. Choose it here or in the header&apos;s
+        organization switcher.
+      </p>
+      <ul className="mt-3 divide-y divide-border rounded-md border border-border bg-card">
+        {sorted.map((employer) => {
+          const ref = employer.slug?.trim() || employer.organization_id;
+          const status = employer.module_enabled
+            ? employer.is_activated
+              ? "HR set up"
+              : "Setup not finished"
+            : "HR off";
+          return (
+            <li key={employer.organization_id}>
+              <Link
+                href={hrSwitchEmployerHref(pathname, ref)}
+                className="flex min-h-10 w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-accent"
+              >
+                <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                  {employer.name}
+                  {(nameCount.get(employer.name) ?? 0) > 1 && employer.slug ? (
+                    <span className="ml-2 text-muted-foreground">{employer.slug}</span>
+                  ) : null}
+                </span>
+                <span
+                  className={cn(
+                    "shrink-0 text-xs",
+                    rank(employer) === 0 ? "text-foreground" : "text-muted-foreground",
+                  )}
                 >
-                  <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-foreground">
-                      {employer.name}
-                    </span>
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {employer.module_enabled
-                        ? employer.is_activated
-                          ? "HR is set up"
-                          : "HR is on — setup not finished"
-                        : "HR is off — you can turn it on"}
-                    </span>
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+                  {status}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
