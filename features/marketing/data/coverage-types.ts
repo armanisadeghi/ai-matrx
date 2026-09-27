@@ -9,7 +9,8 @@ import type { Database } from "@/types/database.types";
  * Since aidream migration 1411 a tracker is the ONE news monitor record with
  * `lenses` (`coverage` and/or `opportunity`). A coverage tracker always has a
  * `site_id` and a `brand_key`; an opportunity-only monitor may have neither
- * (it is read through `parent_brand_id`), which is why both are nullable here.
+ * (it is read through its organization, `parent_organization_id` — aidream
+ * migration 1411c), which is why both are nullable here.
  */
 export type CoverageTrackerRow =
   Database["seo"]["Tables"]["coverage_tracker"]["Row"];

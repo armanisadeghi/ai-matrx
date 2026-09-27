@@ -96201,7 +96201,7 @@ export type Database = {
           metadata: Json
           name: string
           organization_id: string
-          parent_brand_id: string | null
+          parent_organization_id: string | null
           search_terms: string[]
           site_id: string | null
           slack_credential_item_id: string | null
@@ -96252,7 +96252,7 @@ export type Database = {
           metadata?: Json
           name: string
           organization_id: string
-          parent_brand_id?: string | null
+          parent_organization_id?: string | null
           search_terms?: string[]
           site_id?: string | null
           slack_credential_item_id?: string | null
@@ -96303,7 +96303,7 @@ export type Database = {
           metadata?: Json
           name?: string
           organization_id?: string
-          parent_brand_id?: string | null
+          parent_organization_id?: string | null
           search_terms?: string[]
           site_id?: string | null
           slack_credential_item_id?: string | null
