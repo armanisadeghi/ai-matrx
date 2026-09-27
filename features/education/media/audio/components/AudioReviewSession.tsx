@@ -59,6 +59,10 @@ import { verdictResult, type GradeResult } from "@/features/education/trust/type
 import { AnswerGradeBlock } from "@/features/flashcards/fast-fire/components/AnswerGradeBlock";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { studyService } from "@/features/education/study/service/studyService";
+import {
+  StudyOrganizationGate,
+  useStudyOrganizationReady,
+} from "@/features/education/study/components/StudyOrganizationGate";
 import type {
   CardWithDetails,
   FcSetRow,
@@ -83,6 +87,10 @@ export function AudioReviewSession({
 }) {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  // A review writes a study session, filed under one organization. With none
+  // chosen, setup shows the organization notice in place (never the blocking
+  // "Which workspace?" prompt after the mic is already warm).
+  const orgReady = useStudyOrganizationReady();
   const liveRun = useLiveRunHandle();
   const { speak, stop: speakStop } = useCartesiaSpeaker({
     processMarkdown: true,
@@ -129,6 +137,10 @@ export function AudioReviewSession({
   const card = cards[index];
 
   async function handleStart() {
+    if (!orgReady) {
+      toast.error("Choose an organization above to start the review");
+      return;
+    }
     if (!deckId) {
       toast.error("Pick a deck to review");
       return;
@@ -344,6 +356,7 @@ export function AudioReviewSession({
   // ─── Render ─────────────────────────────────────────────────────────────
   if (phase === "setup") {
     return (
+      <StudyOrganizationGate what="Audio review">
       <div className="mx-auto w-full max-w-md space-y-5 p-4">
         <div className="flex items-center gap-3">
           <Button
@@ -393,6 +406,7 @@ export function AudioReviewSession({
           Start review
         </Button>
       </div>
+      </StudyOrganizationGate>
     );
   }
 
