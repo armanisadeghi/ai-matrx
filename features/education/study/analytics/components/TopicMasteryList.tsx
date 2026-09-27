@@ -92,19 +92,22 @@ export function TopicMasteryList({
 
   return (
     <section className="rounded-xl border border-border bg-card p-4">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <Tags className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <h2 className="truncate text-sm font-medium text-foreground">
+      <div className="mb-3 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Tags className="h-4 w-4 shrink-0 text-muted-foreground" />
             Flashcard topics
           </h2>
-          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-            {needWork > 0 ? `${needWork} of ${topics.length} need work` : topics.length}
-          </span>
+          <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+            {needWork > 0
+              ? `${needWork} of ${topics.length} topics need work`
+              : `${topics.length} topics`}
+          </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <CopyButtons
             size="xs"
+            unified
             label="Flashcard topics"
             human={asText}
             agent={() => ({
@@ -117,17 +120,6 @@ export function TopicMasteryList({
               attributes: { ...kpis, topics: topics.length, need_work: needWork },
             })}
           />
-          {weakDrillHref && needWork > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 gap-1.5 px-2 text-xs"
-              onClick={() => router.push(weakDrillHref)}
-            >
-              <Flame className="h-3.5 w-3.5 text-red-500" />
-              Drill weak areas
-            </Button>
-          )}
         </div>
       </div>
 
@@ -158,6 +150,17 @@ export function TopicMasteryList({
             A–Z
           </ToggleGroupItem>
         </ToggleGroup>
+          {weakDrillHref && needWork > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="ml-auto h-7 gap-1.5 px-2 text-xs"
+              onClick={() => router.push(weakDrillHref)}
+            >
+              <Flame className="h-3.5 w-3.5 text-red-500" />
+              Drill weak flashcards
+            </Button>
+          )}
       </div>
 
       {shown.length === 0 ? (
@@ -190,8 +193,8 @@ export function TopicMasteryList({
                       />
                     )}
                   </span>
-                  <span className="w-9 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-                    {t.masteryPct > 0 ? `${t.masteryPct}%` : "None"}
+                  <span className="min-w-9 shrink-0 whitespace-nowrap text-right text-xs tabular-nums text-muted-foreground">
+                    {t.answered === 0 ? "Not studied yet" : `${t.masteryPct}%`}
                   </span>
                   <span className="w-14 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
                     {t.count} card{t.count === 1 ? "" : "s"}

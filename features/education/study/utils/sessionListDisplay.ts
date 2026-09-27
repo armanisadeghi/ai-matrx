@@ -3,6 +3,7 @@
 // Display helpers for the sessions history list — set title, pace/card stats,
 // attempt rollup, and coach score from persisted session rows.
 
+import { topicLabel } from "./topicLabel";
 import type { SessionAttemptSummary, StudySessionRow } from "../types";
 
 // The mode vocabulary lives in ONE register (`../modes`) — this file used to
@@ -78,7 +79,7 @@ export function buildSessionListLines(
   attempts: SessionAttemptSummary | undefined,
   modeLabel: string,
 ): { title: string; detail: string; meta: string } {
-  const title = setName?.trim() || "Unknown set";
+  const title = setName?.trim() || titleForSetlessSession(session);
   const settings = readSessionSettings(session.settings);
   const coachScore = readCoachScore(session.session_review);
 
@@ -110,4 +111,32 @@ export function buildSessionListLines(
     detail: configParts.join(" · "),
     meta: metaParts.join(" · "),
   };
+}
+
+/**
+ * A session with no source set is not an "Unknown set" — it is a queue that
+ * spans every set (due review, a weak-area drill, one topic's practice).
+ * Name what it was.
+ */
+function titleForSetlessSession(session: StudySessionRow): string {
+  const query = session.source_query as { topic?: unknown } | null;
+  const topic =
+    query && typeof query.topic === "string" && query.topic.trim()
+      ? topicLabel(query.topic)
+      : null;
+  switch (session.source_kind) {
+    case "adaptive":
+    case "due":
+      return "Due review · all sets";
+    case "weak_area":
+      return topic ? `Practice: ${topic}` : "Weak-area drill · all sets";
+    case "topic":
+      return topic ? `Topic: ${topic}` : "Topic practice";
+    case "game":
+      return "Game";
+    case "dynamic_batch":
+      return "Mixed cards";
+    default:
+      return "Study session";
+  }
 }

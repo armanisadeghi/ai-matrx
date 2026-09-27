@@ -28,6 +28,8 @@ import { createEducationProgressScope } from "@/features/surfaces/manifests/educ
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildProgressOverviewXml } from "../progressContextBundle";
+import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { STUDY_MANDATES } from "../../planner/mandates";
 import type { StudyWeekSeries } from "../../components/StudyTrends";
 
 const SURFACE_NAME = "matrx-user/education-progress";
@@ -37,9 +39,18 @@ export function StudyAnalyticsDashboard({
 }: {
   backHref?: string;
 }) {
-  const { analytics, mastery, latestSession, loading, error } =
+  const { analytics, mastery, latestSession, readingSession, loading, error } =
     useStudyAnalytics();
   const narrator = useAnalyticsNarrative();
+  // The page's one fixed AI job, in the top Agents menu (disclosure law —
+  // nothing visible is added to the page for it).
+  useDeclaredSurfaceMandates([
+    {
+      mandateKey: STUDY_MANDATES.narrator,
+      does: "Writes the reading of your progress and the next steps",
+      surfaceName: SURFACE_NAME,
+    },
+  ]);
   // The narrator is filed under one organization; with none selected the run
   // is refused before it starts. Wait for one instead of auto-firing a run
   // that can only fail (and toast "Choose a workspace") on every visit.
@@ -53,8 +64,8 @@ export function StudyAnalyticsDashboard({
 
   // D151 — the reading this learner already paid for, stored on their most
   // recent session with the fingerprint of the numbers it describes.
-  const stored = latestSession
-    ? studyService.readSessionJournal(latestSession).progressNarrative
+  const stored = readingSession
+    ? studyService.readSessionJournal(readingSession).progressNarrative
     : undefined;
   const storedReport = stored ? readStoredNarrative(stored.report) : null;
   const storedIsCurrent =

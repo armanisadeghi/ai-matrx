@@ -134,14 +134,18 @@ export function StudyAnalyticsView({
             <TrendingUp className="h-5 w-5 text-primary" />
             <h1 className="text-lg font-semibold text-foreground">{heading}</h1>
           </div>
-          {!readOnly && analytics && analytics.overall.dueNow > 0 && (
+          {!readOnly &&
+            analytics &&
+            (analytics.byMode.find((m) => m.itemType === "fc_card")?.dueNow ?? 0) > 0 && (
             <Button
               size="sm"
               className="gap-1.5"
               onClick={() => router.push("/education/flashcards/review")}
             >
               <CalendarClock className="h-4 w-4" />
-              Review {analytics.overall.dueNow} due
+              {/* No count here: the review opens due FLASHCARDS (capped by the
+                  study plan), while the tile below counts every mode. */}
+              Review due flashcards
             </Button>
           )}
         </div>
@@ -208,14 +212,12 @@ export function StudyAnalyticsView({
                 label="Due now"
                 value={`${analytics.overall.dueNow}`}
                 accent={analytics.overall.dueNow > 0 ? "amber" : undefined}
-                href={readOnly ? undefined : "/education/flashcards/review"}
               />
               <Stat
                 icon={Flame}
                 label="Streak"
                 value={`${analytics.currentStreak} ${analytics.currentStreak === 1 ? "day" : "days"}`}
                 accent={analytics.currentStreak > 0 ? "amber" : undefined}
-                href={readOnly ? undefined : "/education/sessions"}
               />
               <Stat
                 icon={Clock}
@@ -238,6 +240,7 @@ export function StudyAnalyticsView({
                 <h2 className="text-sm font-medium text-foreground">Mastery</h2>
                 <CopyButtons
                   size="xs"
+                  unified
                   label="Mastery"
                   human={() =>
                     `Mastery: ${analytics.overall.mastered} mastered · ${analytics.overall.learning} learning · ${analytics.overall.struggling} needs work (of ${analytics.overall.studied} studied)`
@@ -286,6 +289,7 @@ export function StudyAnalyticsView({
                   </h2>
                   <CopyButtons
                     size="xs"
+                    unified
                     label="By study mode"
                     human={() =>
                       analytics.byMode
@@ -470,16 +474,13 @@ function Stat({
     return (
       <Link
         href={href}
-        className="rounded-xl border border-border bg-card p-3 shadow-sm transition-colors hover:border-primary/40 hover:bg-muted/30"
+        className="rounded-xl border border-border bg-card p-3 transition-colors hover:border-primary/40 hover:bg-muted/30"
       >
         {body}
       </Link>
     );
   }
-  // A number with nowhere to open reads flat, never like the cards that open.
-  return (
-    <div className="rounded-xl border border-transparent bg-muted/40 p-3">{body}</div>
-  );
+  return <div className="rounded-xl border border-border bg-card p-3">{body}</div>;
 }
 
 function Legend({

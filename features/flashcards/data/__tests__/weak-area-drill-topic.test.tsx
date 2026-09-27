@@ -69,9 +69,10 @@ describe("weak-area drill — ?topic=", () => {
     expect(sessions.at(-1)).toMatchObject({ sourceQuery: { topic: "Krebs Cycle" } });
   });
 
-  it("without a topic, drills the globally weakest cards", async () => {
+  it("without a topic, drills every flashcard the dashboard counts as needing work, flagged first", async () => {
     const hook = await renderHook(() => useWeakAreaDrill());
     await settle(hook, (h) => !h.loading && h.cards.length > 0, "weak cards");
-    expect(requested.at(-1)).toEqual(["b"]);
+    // a has no live mastery (reads 0%) so it needs work too; the quiz item never joins.
+    expect(requested.at(-1)).toEqual(["b", "c", "a"]);
   });
 });

@@ -109,7 +109,10 @@ export function coerceNarrative(value: unknown): NarrativeReport {
       const r = raw as Record<string, unknown>;
       const action = str(r, "action");
       if (!action) return null;
-      const kind = str(r, "target_kind") as RecKind;
+      // The wire says `target_kind`; a reading saved after coercion says
+      // `targetKind`. Both are the same field — reading only the wire spelling
+      // nulled every saved step's type on reload.
+      const kind = (str(r, "target_kind") || str(r, "targetKind")) as RecKind;
       return {
         action,
         why: str(r, "why"),
@@ -126,26 +129,21 @@ export function coerceNarrative(value: unknown): NarrativeReport {
 }
 
 /**
- * A stable fingerprint of the numbers a narration was written from
+ * A stable fingerprint of the LEARNING a narration was written from
  * (FOUND_DEFECTS D151). The dashboard stores the reading against this; on the
  * next visit an identical fingerprint means the stored reading is still the
- * right one and the ~120s narrator run is NOT re-paid for. It changes the
- * moment the learner actually studies anything — which is exactly when a new
- * reading is worth buying.
+ * right one and the ~120s narrator run is NOT re-paid for.
+ *
+ * It moves only when an answer is recorded: items studied and the answer
+ * ledger's totals. Never the session count, minutes or streak — opening a
+ * review creates a session with no answers, and that used to buy a fresh
+ * reading (three different readings in one sitting, 2026-09-27). Nor the
+ * mastered/learning/needs-work split, which drifts with FSRS time decay
+ * without the learner doing anything.
  */
 export function narrativeFingerprint(analytics: StudyAnalytics): string {
   const o = analytics.overall;
-  return [
-    o.studied,
-    o.mastered,
-    o.learning,
-    o.struggling,
-    o.totalAttempts,
-    o.correctAttempts,
-    analytics.sessions,
-    analytics.currentStreak,
-    Math.round(analytics.totalMinutes),
-  ].join(":");
+  return ["v2", o.studied, o.totalAttempts, o.correctAttempts].join(":");
 }
 
 /** Read a stored narration back off a session's AI journal (null when absent). */

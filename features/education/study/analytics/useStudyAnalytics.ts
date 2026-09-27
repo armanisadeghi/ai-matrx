@@ -27,6 +27,12 @@ export interface UseStudyAnalyticsResult {
    * exposing it costs nothing and saves the dashboard a second read.
    */
   latestSession: StudySessionRow | null;
+  /**
+   * The newest session that HOLDS a saved reading. Not always the latest: just
+   * opening a review creates a newer, empty session, and reading only the
+   * latest one made the saved reading vanish and the narrator re-run.
+   */
+  readingSession: StudySessionRow | null;
   loading: boolean;
   error: string | null;
   reload: () => void;
@@ -36,6 +42,9 @@ export function useStudyAnalytics(): UseStudyAnalyticsResult {
   const [analytics, setAnalytics] = useState<StudyAnalytics | null>(null);
   const [mastery, setMastery] = useState<ItemMasteryRow[]>([]);
   const [latestSession, setLatestSession] = useState<StudySessionRow | null>(
+    null,
+  );
+  const [readingSession, setReadingSession] = useState<StudySessionRow | null>(
     null,
   );
   const [loading, setLoading] = useState(true);
@@ -68,6 +77,11 @@ export function useStudyAnalytics(): UseStudyAnalyticsResult {
       setMastery(masteryRows);
       // listSessions is newest-first.
       setLatestSession(sessionsRes.data?.[0] ?? null);
+      setReadingSession(
+        (sessionsRes.data ?? []).find(
+          (s) => studyService.readSessionJournal(s).progressNarrative != null,
+        ) ?? null,
+      );
       // Resolve fc_card topics for the weak-topic breakdown (dynamic import so
       // this stays mode-agnostic infrastructure).
       let topicsById: Record<string, string | null> | undefined;
@@ -106,6 +120,7 @@ export function useStudyAnalytics(): UseStudyAnalyticsResult {
     analytics,
     mastery,
     latestSession,
+    readingSession,
     loading,
     error,
     reload: () => setNonce((n) => n + 1),

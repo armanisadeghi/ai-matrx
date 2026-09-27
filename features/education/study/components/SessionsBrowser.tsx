@@ -76,6 +76,7 @@ export function SessionsBrowser({
   title,
   backHref,
   detailBasePath,
+  hideEmpty = false,
 }: {
   /** Restrict to one set (study_session.source_set_id). */
   setId?: string;
@@ -86,6 +87,11 @@ export function SessionsBrowser({
   backHref?: string;
   /** Where a row links — `${detailBasePath}/${sessionId}`. */
   detailBasePath: string;
+  /**
+   * Leave out finished sessions with no answers (opened and left). They are
+   * not study; the cross-mode history hides them.
+   */
+  hideEmpty?: boolean;
 }) {
   const router = useRouter();
   const [sessions, setSessions] = useState<StudySessionRow[]>([]);
@@ -140,6 +146,12 @@ export function SessionsBrowser({
       cancelled = true;
     };
   }, [setId, mode, reloadKey]);
+
+  const shown = hideEmpty
+    ? sessions.filter(
+        (s) => s.status === "active" || (attemptSummaries[s.id]?.total ?? 0) > 0,
+      )
+    : sessions;
 
   const open = (id: string) => {
     if (isPending) return;
@@ -217,7 +229,7 @@ export function SessionsBrowser({
             </p>
             <p className="max-w-md text-xs text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
           </div>
-        ) : sessions.length === 0 ? (
+        ) : shown.length === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-14 text-center">
             <History className="h-6 w-6 text-muted-foreground" />
             <p className="text-sm font-medium text-foreground">
@@ -230,7 +242,7 @@ export function SessionsBrowser({
           </div>
         ) : (
           <ul className="space-y-2.5">
-            {sessions.map((s) => (
+            {shown.map((s) => (
               <SessionRow
                 key={s.id}
                 session={s}

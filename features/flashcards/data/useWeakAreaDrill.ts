@@ -4,8 +4,9 @@
 // learner's worst cards across ALL their sets, worst-first. Mirrors
 // `useDueReview` almost exactly (same shared-spine session/grade plumbing,
 // same <StudyDeck/> result shape) — the only real difference is the queue
-// source: `studyService.listWeakest` (struggle_flag / low retrievability
-// candidates) instead of `listDue` (due_at <= now), and the queue is re-sorted
+// source: every mastery row filtered by the dashboard's `needsWork` rule
+// (struggle_flag or live mastery < 40%) instead of `listDue` (due_at <= now),
+// so the drill opens the cards the progress page counts; the queue is re-sorted
 // client-side by LIVE (time-decayed) retrievability via
 // `currentRetrievability` — the DB snapshot doesn't account for FSRS decay
 // since `last_review`, so a true worst-first order can't be a pure SQL ORDER
@@ -28,6 +29,7 @@ import { studyService } from "@/features/education/study/service/studyService";
 import { recordAttemptOfflineAware } from "@/features/education/study/offline/recordAttemptOffline";
 import { toast } from "@/lib/toast";
 import { currentRetrievability } from "@/features/education/study/utils/masteryFsrs";
+import { needsWork } from "@/features/education/study/analytics/computeAnalytics";
 import type { CardWithDetails } from "./types";
 import type {
   ItemMasteryRow,
@@ -110,9 +112,11 @@ export function useWeakAreaDrill(
 
       // 1. Candidates: the weak rows (struggling OR low write-time
       //    retrievability) — or, for one topic, every studied card in it.
-      const weakRes = topic
-        ? await studyService.listAllMastery()
-        : await studyService.listWeakest(FC_CARD_ITEM_TYPE);
+      // Both read every mastery row: the weak set is the dashboard's own
+      // "needs work" rule over LIVE (decayed) mastery, never the write-time
+      // retrievability snapshot, which found 2 cards while the dashboard
+      // counted dozens.
+      const weakRes = await studyService.listAllMastery();
       if (cancelled) return;
       if (weakRes.error) {
         setError(weakRes.error);
@@ -140,6 +144,11 @@ export function useWeakAreaDrill(
         const topics = topicsRes.data ?? {};
         candidates = fcRows.filter(
           (m) => topics[m.item_id]?.trim() === topic,
+        );
+      } else {
+        const now = new Date();
+        candidates = candidates.filter(
+          (m) => m.item_type === FC_CARD_ITEM_TYPE && needsWork(m, now),
         );
       }
 

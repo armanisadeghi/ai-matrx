@@ -36,8 +36,8 @@ jest.mock("@/features/flashcards/data/fcService", () => ({
 }));
 jest.mock("@/features/education/study/service/studyService", () => ({
   studyService: {
-    listWeakest: async () => ({
-      data: [{ item_id: CARD, struggle_flag: true }],
+    listAllMastery: async () => ({
+      data: [{ item_id: CARD, item_type: "fc_card", struggle_flag: true }],
       error: null,
     }),
     createSession: async () => ({ data: { id: SESSION }, error: null }),

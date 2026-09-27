@@ -101,7 +101,9 @@ function startOfWeek(d: Date): Date {
 }
 
 function weekLabel(d: Date): string {
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  // Short numeric form ("8/16") so all 8 weeks fit on a phone and BOTH
+  // charts show every week at the same x positions.
+  return d.toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
 }
 
 function buildWeekBuckets(
@@ -342,6 +344,7 @@ export function StudyTrends({
             {hasAnyActivity && (
               <CopyButtons
                 size="xs"
+                unified
                 label="Accuracy trend"
                 human={accuracyText}
                 agent={() => ({
@@ -381,7 +384,8 @@ export function StudyTrends({
                   tickLine={false}
                   axisLine={false}
                   fontSize={11}
-                  minTickGap={20}
+                  interval={0}
+                  height={34}
                   tick={(props) => (
                     <WeekTick {...props} empty={emptyWeeks.has(String(props.payload?.value))} />
                   )}
@@ -432,6 +436,7 @@ export function StudyTrends({
             {hasAnyActivity && (
               <CopyButtons
                 size="xs"
+                unified
                 label="Weekly time studied"
                 human={timeText}
                 agent={() => ({
@@ -474,7 +479,8 @@ export function StudyTrends({
                   tickLine={false}
                   axisLine={false}
                   fontSize={11}
-                  minTickGap={20}
+                  interval={0}
+                  height={34}
                 />
                 <YAxis
                   tickLine={false}
@@ -505,6 +511,7 @@ export function StudyTrends({
             {topicRows.length > 0 && (
               <CopyButtons
                 size="xs"
+                unified
                 label="Mastery by topic"
                 human={topicText}
                 agent={() => ({
@@ -608,10 +615,12 @@ function WeekTick({
       >
         {String(payload?.value ?? "")}
       </text>
+      {/* Outside the plot, under the date — never on the 0% line, where it
+          would read as a score. */}
       {empty && (
-        <line x1={-4} x2={4} y1={-6} y2={-6} className="stroke-muted-foreground/50" strokeWidth={1.5}>
+        <circle cx={0} cy={22} r={2} className="fill-none stroke-muted-foreground/60" strokeWidth={1}>
           <title>No graded answers this week</title>
-        </line>
+        </circle>
       )}
     </g>
   );

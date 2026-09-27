@@ -67,6 +67,8 @@ export interface TopicStat {
   count: number;
   masteryPct: number;
   struggling: number;
+  /** Cards in the topic with at least one recorded answer (0 = not studied yet). */
+  answered?: number;
 }
 
 export interface AccuracyTrend {
@@ -103,10 +105,19 @@ function emptyStats(): OverallStats {
   };
 }
 
+/**
+ * THE one "needs work" rule: flagged struggling, or live (decayed) mastery
+ * under 40%. The dashboard's counts, the topic list and the weak-area drill all
+ * read it, so a button never opens a different set than the number beside it.
+ */
+export function needsWork(m: ItemMasteryRow, now: Date): boolean {
+  return Boolean(m.struggle_flag) || (displayMasteryPct(m, now) ?? 0) < 0.4;
+}
+
 function accumulate(stats: OverallStats, m: ItemMasteryRow, now: Date): void {
   const score = displayMasteryPct(m, now) ?? 0;
   stats.studied += 1;
-  if (m.struggle_flag || score < 0.4) stats.struggling += 1;
+  if (needsWork(m, now)) stats.struggling += 1;
   else if (score >= 0.8) stats.mastered += 1;
   else stats.learning += 1;
   if (m.due_at && new Date(m.due_at).getTime() <= now.getTime()) {
@@ -200,17 +211,19 @@ export function computeAnalytics(
   if (topicsById) {
     const byTopic = new Map<
       string,
-      { sum: number; count: number; struggling: number }
+      { sum: number; count: number; struggling: number; answered: number }
     >();
     for (const m of mastery) {
       if (m.item_type !== "fc_card") continue;
       const topic = topicsById[m.item_id]?.trim();
       if (!topic) continue;
       const pct = displayMasteryPct(m, now) ?? 0;
-      const agg = byTopic.get(topic) ?? { sum: 0, count: 0, struggling: 0 };
+      const agg =
+        byTopic.get(topic) ?? { sum: 0, count: 0, struggling: 0, answered: 0 };
       agg.sum += pct;
       agg.count += 1;
-      if (m.struggle_flag || pct < 0.4) agg.struggling += 1;
+      if ((m.attempt_count ?? 0) > 0) agg.answered += 1;
+      if (needsWork(m, now)) agg.struggling += 1;
       byTopic.set(topic, agg);
     }
     for (const [topic, agg] of byTopic) {
@@ -219,6 +232,7 @@ export function computeAnalytics(
         count: agg.count,
         masteryPct: Math.round((agg.sum / agg.count) * 100),
         struggling: agg.struggling,
+        answered: agg.answered,
       });
     }
     weakTopics.sort((a, b) => a.masteryPct - b.masteryPct);
@@ -228,8 +242,13 @@ export function computeAnalytics(
   // (see utils/sessionStudyTime.ts for the measured defect this replaces).
   const lastAttemptAt = lastAttemptAtBySession(attempts);
   let totalMinutes = 0;
+  // A session counts only when something was studied in it — opening a review
+  // and leaving creates a session with no answers, which is not a session.
+  let studiedSessions = 0;
   for (const s of sessions) {
-    totalMinutes += sessionStudyMs(s, lastAttemptAt.get(s.id)) / 60_000;
+    const ms = sessionStudyMs(s, lastAttemptAt.get(s.id));
+    totalMinutes += ms / 60_000;
+    if (ms > 0) studiedSessions += 1;
   }
 
   return {
@@ -237,7 +256,7 @@ export function computeAnalytics(
     byMode,
     weakTopics,
     totalMinutes: Math.round(totalMinutes),
-    sessions: sessions.length,
+    sessions: studiedSessions,
     currentStreak: inputs.currentStreak ?? 0,
     trend: computeTrend(attempts, now),
     hasData: overall.studied > 0,

@@ -19,6 +19,7 @@ export default function EducationSessionsPage() {
     <SessionsBrowser
       title="Study sessions"
       detailBasePath="/education/flashcards/sessions"
+      hideEmpty
     />
   );
 }

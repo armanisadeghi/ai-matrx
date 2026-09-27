@@ -89,7 +89,7 @@ function NarrativeDoors({
   });
   if (doors.length === 0) return null;
   return (
-    <div className="mt-3 flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2">
       {doors.map((door) => (
         <Button
           key={door.href + door.label}
@@ -139,6 +139,46 @@ export function NarrativeCard({
   const checkingOrganization =
     !report && !loading && organizationState === "resolving";
 
+  const refresh =
+    organizationState === "ready" ? (
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-7 shrink-0 gap-1.5 px-2 text-xs text-muted-foreground"
+        disabled={loading}
+        title="Writes a new reading of your current numbers — one agent run, which replaces the one shown"
+        onClick={onRegenerate}
+      >
+        {loading ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <RefreshCw className="h-3.5 w-3.5" />
+        )}
+        {loading ? "Analyzing…" : "Refresh"}
+      </Button>
+    ) : null;
+
+  // A reading on screen IS the section: the kind's own component carries the
+  // one heading and the one frame. No card around it, no second title — the
+  // page's quick actions and Refresh sit in one quiet row beneath it.
+  if (report) {
+    return (
+      <section aria-label="What your data says" className="flex flex-col gap-2">
+        <KindInstanceRender
+          kind={STUDY_ANALYTICS_NARRATIVE_KIND}
+          value={narrativeValue(report)}
+          variant="bare"
+          showRoutingNote={false}
+          unroutableFallback={<PlainNarrative report={report} />}
+        />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <NarrativeDoors report={report} onGo={(href) => router.push(href)} />
+          {refresh}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-transparent p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
@@ -148,23 +188,7 @@ export function NarrativeCard({
             What your data says
           </h2>
         </div>
-        {organizationState === "ready" && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
-            disabled={loading}
-            title="Writes a new reading of your current numbers — one agent run, which replaces the one shown"
-            onClick={onRegenerate}
-          >
-            {loading ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5" />
-            )}
-            {loading ? "Analyzing…" : "Refresh"}
-          </Button>
-        )}
+        {refresh}
       </div>
 
       {needsOrganization ? (
@@ -194,19 +218,6 @@ export function NarrativeCard({
           still live.
           <ErrorAlchemyMenu error={error} />
         </p>
-      ) : report ? (
-        <>
-          {/* The reading is the `study_analytics_narrative` kind, drawn by its
-              component. The deep links are this dashboard's own doors. */}
-          <KindInstanceRender
-            kind={STUDY_ANALYTICS_NARRATIVE_KIND}
-            value={narrativeValue(report)}
-            variant="bare"
-            showRoutingNote={false}
-            unroutableFallback={<PlainNarrative report={report} />}
-          />
-          <NarrativeDoors report={report} onGo={(href) => router.push(href)} />
-        </>
       ) : (
         <p className="py-2 text-sm text-muted-foreground">
           Study a little and your personalized insights will appear here.
