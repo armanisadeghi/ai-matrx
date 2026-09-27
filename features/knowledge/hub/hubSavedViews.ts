@@ -46,7 +46,13 @@ export interface HubPreset {
  */
 export const HUB_PRESETS: readonly HubPreset[] = [
   { key: "everything", name: "Everything", query: { mode: "find" }, layout: "list" },
-  { key: "transcripts", name: "Transcripts", query: { mode: "find", source_kinds: ["transcript"] }, layout: "list" },
+  {
+    // Transcript records AND transcript Sources (aidream 1400; 1396 stamps source_kind on the records).
+    key: "transcripts",
+    name: "Transcripts",
+    query: { mode: "find", types: ["transcript", "processed_document"], source_kinds: ["transcript"] },
+    layout: "list",
+  },
   {
     key: "research_sources",
     name: "Research sources",
@@ -104,6 +110,18 @@ export function expandAnyContainers(
   }
   if (!within.length) return { status: "empty", query };
   return { status: "ready", query: { ...query, within } };
+}
+
+/**
+ * A preset opened by its address (`view=transcripts&q=…&by=me`): the preset's
+ * filters, with every filter the address itself carries laid on top (the
+ * retired page's search, reach and sort survive the redirect, H6d).
+ */
+export function mergePresetQuery(preset: KnowledgeQuery, fromAddress: KnowledgeQuery): KnowledgeQuery {
+  const extra = normalizeQuery(fromAddress);
+  const { mode: _mode, ...rest } = extra;
+  void _mode;
+  return normalizeQuery({ ...preset, ...rest, mode: extra.mode });
 }
 
 /** Which presets are missing from what the caller can read. */
