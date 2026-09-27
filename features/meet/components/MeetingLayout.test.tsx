@@ -1,12 +1,15 @@
 import React, { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot, hydrateRoot, type Root } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import type { MeetingRecord, RoomName } from "@ai-matrx/meet/react";
 import { MeetingLayout } from "./MeetingLayout";
 
 let mockPhase = "connected";
 
 jest.mock("@ai-matrx/meet/react", () => ({
-  MeetingRoom: () => <div data-testid="package-room" />,
+  MeetingRoom: ({ headerControls }: { headerControls?: React.ReactNode }) => (
+    <div data-testid="package-room">{headerControls}</div>
+  ),
   useMeetSnapshot: () => ({ phase: mockPhase, meeting: null }),
 }));
 jest.mock("@/features/meet/components/board/MeetingBoard", () => ({
@@ -77,5 +80,28 @@ describe("MeetingLayout", () => {
       expect(view.container.querySelector('[role="radiogroup"]')).toBeNull();
       view.unmount();
     }
+  });
+
+  it("hydrates the server-safe Room default before restoring a saved Board preference", async () => {
+    window.localStorage.setItem("matrx.meet.layout", "board");
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(
+      <MeetingLayout roomName={"room-1" as RoomName} meetingId="m-1" slug="m-1" meeting={meeting} />,
+    );
+    document.body.append(container);
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => undefined);
+    let root!: Root;
+    await act(async () => {
+      root = hydrateRoot(
+        container,
+        <MeetingLayout roomName={"room-1" as RoomName} meetingId="m-1" slug="m-1" meeting={meeting} />,
+      );
+      await Promise.resolve();
+    });
+    expect(consoleError).not.toHaveBeenCalled();
+    expect(container.querySelector('[data-testid="meeting-board"]')).not.toBeNull();
+    consoleError.mockRestore();
+    act(() => root.unmount());
+    container.remove();
   });
 });
