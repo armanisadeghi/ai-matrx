@@ -22,7 +22,7 @@ const values: SurfaceValue[] = [
   { name: "reader_mode", label: "Reader mode", description: "Whether the center canvas is reading or editing the current guide.", valueType: "string", alwaysAvailable: true, typicalCharCount: 7, group: "guide", sortOrder: 340 },
   { name: "available_guides", label: "Available guides", description: "The loaded guide picker entries as IDs and labels. Empty when the completed index has no guides; absent while loading or on error.", valueType: "array", alwaysAvailable: false, typicalCharCount: 1600, group: "navigation", sortOrder: 400 },
   { name: "outline", label: "Outline", description: "Headings of the current guide in reading order, with their levels and navigation indexes.", valueType: "array", alwaysAvailable: false, typicalCharCount: 2500, group: "navigation", sortOrder: 410 },
-  { name: "active_details_tab", label: "Details tab", description: "Whether the right pane is showing personal notes or key terms.", valueType: "string", alwaysAvailable: true, typicalCharCount: 5, group: "study_details", sortOrder: 500 },
+  { name: "active_details_tab", label: "Details tab", description: "Whether the right pane shows personal notes, key terms, or related resources.", valueType: "string", alwaysAvailable: true, typicalCharCount: 10, group: "study_details", sortOrder: 500 },
   { name: "personal_annotations", label: "Personal annotations", description: "The signed-in learner's loaded linked highlights and notes; absent while loading or on error. Never includes another learner's private marks.", valueType: "array", alwaysAvailable: false, typicalCharCount: 3000, autoContext: false, group: "study_details", sortOrder: 510 },
   { name: "key_terms", label: "Key terms", description: "Linked flashcard terms and definitions shown in the right pane; absent while loading or on error.", valueType: "array", alwaysAvailable: false, typicalCharCount: 3000, group: "study_details", sortOrder: 520 },
   { name: "load_error", label: "Load error", description: "The current guide or guide-index read failure; absent on a normal load.", valueType: "string", alwaysAvailable: false, typicalCharCount: 160, group: "guide", sortOrder: 350 },
@@ -47,7 +47,7 @@ export const educationStudyGuidesManifest: SurfaceManifest = {
 export function createEducationStudyGuidesScope(values: {
   guide_loaded: boolean;
   reader_mode: "read" | "edit";
-  active_details_tab: "notes" | "terms";
+  active_details_tab: "notes" | "terms" | "resources";
   guide_id?: string;
   guide_title?: string;
   guide_content?: string;
