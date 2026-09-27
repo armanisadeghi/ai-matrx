@@ -67,4 +67,33 @@ describe("useBoard history", () => {
     expect(result.current.shapes).toEqual([]);
     expect(result.current.frames).toHaveLength(1);
   });
+
+  it("commands in one tick see each other (an agent's add-add, arrange-then-read)", () => {
+    const { result } = renderHook(() => useBoard<T>(() => [tile("a")]));
+    const board = result.current; // one render's handle, as a tool handler holds it
+    act(() => {
+      const r1 = board.addTile(tile("b"), { x: 50, y: 50 });
+      const r2 = board.addTile(tile("c"), { x: 50, y: 50 });
+      const overlap = r1.x < r2.x + r2.w && r2.x < r1.x + r1.w && r1.y < r2.y + r2.h && r2.y < r1.y + r1.h;
+      expect(overlap).toBe(false);
+      board.moveMany([{ id: "a", x: 900, y: 900 }]);
+      expect(board.read().tiles.find((t) => t.id === "a")?.rect.x).toBe(900);
+    });
+    expect(result.current.tiles.map((t) => t.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("a placed tile stays out of frames unless told it may join one", () => {
+    const frame = { id: "f", rect: { x: 0, y: 0, w: 1000, h: 1000 }, title: "Group" };
+    const { result } = renderHook(() => useBoard<T>(() => ({ tiles: [], frames: [frame] })));
+    const inside = (r: { x: number; y: number; w: number; h: number }) =>
+      r.x < 1000 && r.x + r.w > 0 && r.y < 1000 && r.y + r.h > 0;
+    let outside = { x: 0, y: 0, w: 0, h: 0 };
+    let joined = { x: 0, y: 0, w: 0, h: 0 };
+    act(() => {
+      outside = result.current.addTile(tile("a"), { x: 500, y: 500 });
+      joined = result.current.addTile(tile("b"), { x: 500, y: 500 }, { within: "f" });
+    });
+    expect(inside(outside)).toBe(false);
+    expect(inside(joined)).toBe(true);
+  });
 });

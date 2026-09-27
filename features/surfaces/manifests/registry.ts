@@ -113,6 +113,7 @@ import { marketingIntegrationsManifest } from "./marketing-integrations.manifest
 import { marketingSiteSettingsManifest } from "./marketing-site-settings.manifest";
 import { marketingTopicalMapManifest } from "./marketing-topical-map.manifest";
 import { contentPlanManifest } from "./content-plan.manifest";
+import { spatialBoardManifest } from "./spatial-board.manifest";
 import { contentPlanEntitiesManifest } from "./content-plan-entities.manifest";
 import { contentPlanListManifest } from "./content-plan-list.manifest";
 import { contentPlanNodeManifest } from "./content-plan-node.manifest";
@@ -354,6 +355,8 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   contentPlanEntitiesManifest,
   contentPlanNodeManifest,
   masterworkRulebookManifest,
+  // The spatial board — mounted by every board host; carries the board tools.
+  spatialBoardManifest,
   // 2026-07-24 fleet push — hub/list + workspace surfaces.
   agentsHubManifest,
   organizationsManifest,

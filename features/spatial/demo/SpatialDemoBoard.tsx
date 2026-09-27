@@ -68,6 +68,13 @@ import { ToolBar } from "../components/ToolBar";
 import { ZoomMenu } from "../components/ZoomMenu";
 import { LayersPanel } from "../components/LayersPanel";
 import { NoteTileBody, TextTileBody } from "../tiles/NoteTileBody";
+import { MarkdownTileBody } from "../tiles/MarkdownTileBody";
+import { SpatialBoardSurface } from "../components/SpatialBoardSurface";
+import type {
+  AddTileInput,
+  BoardToolHost,
+  EditTileInput,
+} from "../tools/useBoardAgentTools";
 import { ParkedShelf } from "../components/ParkedShelf";
 import { SpatialViewport } from "../components/SpatialViewport";
 import { SpatialTile } from "../components/SpatialTile";
@@ -96,11 +103,13 @@ export interface DemoKindExample {
 
 type TileContent =
   | { type: "stream"; stream: ReplayStream }
-  | { type: "html"; src: string }
+  | { type: "html"; src?: string; srcDoc?: string }
+  /** Markdown written onto the board (an agent's write-up), rendered by the stream pipeline. */
+  | { type: "markdown"; text: string }
   | { type: "image"; src: string; waitFor?: ReplayStream }
   | { type: "pending"; message: string }
   /** A quick note: a real Note once its first words are typed. */
-  | { type: "note"; noteId: string | null }
+  | { type: "note"; noteId: string | null; text?: string }
   /** A text label placed with the Text tool (board-only). */
   | { type: "text"; text: string };
 
@@ -130,7 +139,10 @@ const KIND_ICON: Record<string, LucideIcon> = {
 const HTML_SAMPLES = [
   { src: "/samples/ai-matrx-animations.html", title: "Animation study" },
   { src: "/samples/ai-matrx-industries-v2.html", title: "Industries page" },
-  { src: "/samples/ai-matrx-vector-variations.html", title: "Vector variations" },
+  {
+    src: "/samples/ai-matrx-vector-variations.html",
+    title: "Vector variations",
+  },
 ];
 
 const GAP = 40;
@@ -149,7 +161,10 @@ function buildBoard(kinds: DemoKindExample[]) {
     title: "Home battery storage in 2026",
     subtitle: "Research report · replay",
     icon: FileText,
-    content: { type: "stream", stream: new ReplayStream("report", RESEARCH_REPORT) },
+    content: {
+      type: "stream",
+      stream: new ReplayStream("report", RESEARCH_REPORT),
+    },
   });
   const kindW = 720;
   const kindH = 600;
@@ -169,7 +184,10 @@ function buildBoard(kinds: DemoKindExample[]) {
       icon: KIND_ICON[k.kind] ?? Layers,
       content: {
         type: "stream",
-        stream: new ReplayStream(k.kind, buildWireText(k.example, k.kind, "bare")),
+        stream: new ReplayStream(
+          k.kind,
+          buildWireText(k.example, k.kind, "bare"),
+        ),
       },
     });
   });
@@ -212,11 +230,20 @@ function buildBoard(kinds: DemoKindExample[]) {
       title: "3 · Cover art",
       subtitle: "Image · stand-in",
       icon: ImageIcon,
-      content: { type: "image", src: "/images/ai-cockpit-background.jpg", waitFor: script },
+      content: {
+        type: "image",
+        src: "/images/ai-cockpit-background.jpg",
+        waitFor: script,
+      },
     },
     {
       id: "pod:audio",
-      rect: { x: PAD + (stageW + 120) * 2, y: py + PAD + 400 + GAP, w: stageW, h: 280 },
+      rect: {
+        x: PAD + (stageW + 120) * 2,
+        y: py + PAD + 400 + GAP,
+        w: stageW,
+        h: 280,
+      },
       title: "4 · Episode audio",
       subtitle: "Audio · not in replay",
       icon: AudioLines,
@@ -228,7 +255,11 @@ function buildBoard(kinds: DemoKindExample[]) {
     },
   ];
   tiles.push(...stages);
-  pipeline.push(["pod:notes", "pod:script"], ["pod:script", "pod:cover"], ["pod:cover", "pod:audio"]);
+  pipeline.push(
+    ["pod:notes", "pod:script"],
+    ["pod:script", "pod:cover"],
+    ["pod:cover", "pod:audio"],
+  );
   frames.push({
     id: "podcast",
     rect: { x: 0, y: py, w: PAD * 2 + stageW * 3 + 120 * 2, h: 720 + PAD * 2 },
@@ -271,21 +302,33 @@ function buildStress(top: number): { tiles: TileSpec[]; frame: FrameSpec } {
       title: `Monitor ${i + 1}`,
       subtitle: "Stress · replay",
       icon: Gauge,
-      content: { type: "stream", stream: new ReplayStream(`stress-${i}`, stressScript(i)) },
+      content: {
+        type: "stream",
+        stream: new ReplayStream(`stress-${i}`, stressScript(i)),
+      },
     });
   }
   return {
     tiles,
     frame: {
       id: "stress",
-      rect: { x: 0, y: top, w: PAD * 2 + 10 * w + 9 * 24, h: PAD * 2 + 10 * h + 9 * 24 },
+      rect: {
+        x: 0,
+        y: top,
+        w: PAD * 2 + 10 * w + 9 * 24,
+        h: PAD * 2 + 10 * h + 9 * 24,
+      },
       title: "Stress test — 100 live streams",
       note: "Zoom out: updates batch; pan away: they stop; come back: they catch up",
     },
   };
 }
 
-function startStreams(tiles: TileSpec[], skip: Set<ReplayStream>, instant: boolean) {
+function startStreams(
+  tiles: TileSpec[],
+  skip: Set<ReplayStream>,
+  instant: boolean,
+) {
   let n = 0;
   for (const t of tiles) {
     if (t.content.type !== "stream" || skip.has(t.content.stream)) continue;
@@ -305,14 +348,23 @@ export function SpatialDemoBoard({
     kinds.length > 0
       ? kinds
       : [
-          { kind: "flashcard_set", label: "Flashcards", example: FLASHCARD_FALLBACK },
+          {
+            kind: "flashcard_set",
+            label: "Flashcards",
+            example: FLASHCARD_FALLBACK,
+          },
           { kind: "quiz_set", label: "Quiz", example: QUIZ_FALLBACK },
         ];
   const [board] = useState(() => buildBoard(effectiveKinds));
-  const tiles = useBoard<TileSpec>(() => ({ tiles: board.tiles, frames: board.frames }));
+  const tiles = useBoard<TileSpec>(() => ({
+    tiles: board.tiles,
+    frames: board.frames,
+  }));
   const [layersOpen, setLayersOpen] = useState(false);
   const activeOrgId = useAppSelector(selectOrganizationId);
-  const [stress, setStress] = useState<ReturnType<typeof buildStress> | null>(null);
+  const [stress, setStress] = useState<ReturnType<typeof buildStress> | null>(
+    null,
+  );
   const [store, setStore] = useState<SpatialStore | null>(null);
   const [wheelMode, setWheelMode] = useWheelModePreference();
 
@@ -329,12 +381,14 @@ export function SpatialDemoBoard({
     let lastPhase = board.notes.get().phase;
     const unsub = board.notes.subscribe(() => {
       const phase = board.notes.get().phase;
-      if (phase === "complete" && lastPhase === "streaming") board.script.start({});
+      if (phase === "complete" && lastPhase === "streaming")
+        board.script.start({});
       lastPhase = phase;
     });
     return () => {
       unsub();
-      for (const t of board.tiles) if (t.content.type === "stream") t.content.stream.stop();
+      for (const t of board.tiles)
+        if (t.content.type === "stream") t.content.stream.stop();
     };
   }, [board]);
 
@@ -342,7 +396,8 @@ export function SpatialDemoBoard({
     if (!stress) return;
     startStreams(stress.tiles, new Set(), false);
     return () => {
-      for (const t of stress.tiles) if (t.content.type === "stream") t.content.stream.stop();
+      for (const t of stress.tiles)
+        if (t.content.type === "stream") t.content.stream.stop();
     };
   }, [stress]);
 
@@ -364,18 +419,23 @@ export function SpatialDemoBoard({
   };
 
   // ── what a throw, a menu item or the shelf does — one path each ──────────
-  const specOf = (id: string) => [...tiles.tiles, ...tiles.parked].find((t) => t.id === id);
+  const specOf = (id: string) =>
+    [...tiles.tiles, ...tiles.parked].find((t) => t.id === id);
 
   const park = (id: string) => {
     const spec = specOf(id);
     const undo = tiles.parkTile(id);
-    toast(`Parked "${spec?.title ?? "tile"}"`, { action: { label: "Undo", onClick: undo } });
+    toast(`Parked "${spec?.title ?? "tile"}"`, {
+      action: { label: "Undo", onClick: undo },
+    });
   };
 
   const unpark = (id: string) => {
     tiles.unparkTile(id);
     // The tile re-registers on its next render; fly once it is back.
-    requestAnimationFrame(() => requestAnimationFrame(() => store?.fitItem(id)));
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => store?.fitItem(id)),
+    );
   };
 
   const saveAndClose = async (id: string) => {
@@ -383,18 +443,25 @@ export function SpatialDemoBoard({
     if (!spec) return;
     if (spec.content.type === "note" && spec.content.noteId) {
       const undo = tiles.removeTile(id);
-      toast.success(`"${spec.title}" is already in Notes (Board notes) — closed it here`, {
-        action: { label: "Put back", onClick: undo },
-      });
+      toast.success(
+        `"${spec.title}" is already in Notes (Board notes) — closed it here`,
+        {
+          action: { label: "Put back", onClick: undo },
+        },
+      );
       return;
     }
     const markdown = tileMarkdown(spec);
     if (!markdown.trim()) {
-      toast.error(`"${spec.title}" has nothing to save yet — it is still waiting for content.`);
+      toast.error(
+        `"${spec.title}" has nothing to save yet — it is still waiting for content.`,
+      );
       return;
     }
     try {
-      const organizationId = await ensureOrganizationContext({ organizationId: activeOrgId });
+      const organizationId = await ensureOrganizationContext({
+        organizationId: activeOrgId,
+      });
       await NotesAPI.create({
         label: spec.title,
         content: markdown,
@@ -404,7 +471,9 @@ export function SpatialDemoBoard({
       });
     } catch (err) {
       if (isOrganizationSelectionCancelled(err)) return;
-      toast.error(`Could not save "${spec.title}" to Notes: ${err instanceof Error ? err.message : String(err)}`);
+      toast.error(
+        `Could not save "${spec.title}" to Notes: ${err instanceof Error ? err.message : String(err)}`,
+      );
       return;
     }
     const undo = tiles.removeTile(id);
@@ -427,7 +496,9 @@ export function SpatialDemoBoard({
     });
     if (!ok) return;
     const undo = tiles.removeTile(id);
-    toast(`Deleted "${spec.title}" from the board`, { action: { label: "Undo", onClick: undo } });
+    toast(`Deleted "${spec.title}" from the board`, {
+      action: { label: "Undo", onClick: undo },
+    });
   };
 
   const onThrow = (id: string, direction: ThrowDirection) => {
@@ -466,7 +537,14 @@ export function SpatialDemoBoard({
         break;
       case "rect":
       case "oval":
-        tiles.addShape({ id, kind: c.tool, points: [{ x: c.rect.x, y: c.rect.y }, { x: c.rect.x + c.rect.w, y: c.rect.y + c.rect.h }] });
+        tiles.addShape({
+          id,
+          kind: c.tool,
+          points: [
+            { x: c.rect.x, y: c.rect.y },
+            { x: c.rect.x + c.rect.w, y: c.rect.y + c.rect.h },
+          ],
+        });
         break;
       case "arrow":
       case "line":
@@ -500,109 +578,262 @@ export function SpatialDemoBoard({
   const allTiles = tiles.tiles;
   const byId = new Map(allTiles.map((t) => [t.id, t]));
 
+  const agentHost: BoardToolHost<TileSpec> = {
+    board: tiles,
+    store,
+    boardTitle: "Spatial view demo",
+    createTile: (id, input, size) => createAgentTile(id, input, size),
+    editTile: (tile, input) => editAgentTile(tile, input),
+    describe: (tile) => describeTile(tile),
+  };
+
   return (
-    <SpatialBoardMenu
-      store={store}
-      actions={{ park, saveAndClose: (id) => void saveAndClose(id), remove: (id) => void remove(id) }}
-      parked={tiles.parked.map((t) => ({ id: t.id, title: t.title }))}
-      onUnpark={unpark}
-      wheelMode={wheelMode}
-      onWheelMode={setWheelMode}
-    >
-      <SpatialViewport
-        insets={{ top: 72, bottom: 56 }}
+    <SpatialBoardSurface host={agentHost}>
+      <SpatialBoardMenu
+        store={store}
+        actions={{
+          park,
+          saveAndClose: (id) => void saveAndClose(id),
+          remove: (id) => void remove(id),
+        }}
+        parked={tiles.parked.map((t) => ({ id: t.id, title: t.title }))}
+        onUnpark={unpark}
         wheelMode={wheelMode}
-        onStore={setStore}
-        overlay={
-          <>
-            <CreationLayer onCreate={onCreate} />
-            <ToolBar
-              leading={
-                <DemoMenu
-                  tileCount={allTiles.length}
-                  stressOn={!!stress}
-                  onRestart={() => restart(false)}
-                  onInstant={() => restart(true)}
-                  onToggleStress={toggleStress}
+        onWheelMode={setWheelMode}
+      >
+        <SpatialViewport
+          insets={{ top: 72, bottom: 56 }}
+          wheelMode={wheelMode}
+          onStore={setStore}
+          overlay={
+            <>
+              <CreationLayer onCreate={onCreate} />
+              <ToolBar
+                leading={
+                  <DemoMenu
+                    tileCount={allTiles.length}
+                    stressOn={!!stress}
+                    onRestart={() => restart(false)}
+                    onInstant={() => restart(true)}
+                    onToggleStress={toggleStress}
+                  />
+                }
+              />
+              {examplesNote && (
+                <p
+                  data-spatial-chrome
+                  className="absolute left-4 top-16 z-30 max-w-md rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-foreground"
+                >
+                  {examplesNote}
+                </p>
+              )}
+              <div
+                data-spatial-chrome
+                className="absolute right-4 top-4 z-30 flex items-center gap-0.5 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur"
+              >
+                <button
+                  type="button"
+                  onClick={() => setLayersOpen((o) => !o)}
+                  aria-pressed={layersOpen}
+                  title="Layers"
+                  aria-label="Layers"
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                    layersOpen && "bg-primary/15 text-primary",
+                  )}
+                >
+                  <PanelRight className="h-4 w-4" />
+                </button>
+                <span className="mx-0.5 h-5 w-px bg-border" />
+                <ZoomMenu history={tiles} />
+              </div>
+              {layersOpen && (
+                <LayersPanel
+                  frames={tiles.frames.map((f) => ({
+                    id: f.id,
+                    title: f.title,
+                    rect: f.rect,
+                  }))}
+                  tiles={allTiles.map((t) => ({
+                    id: t.id,
+                    title: t.title,
+                    rect: t.rect,
+                    icon: t.icon,
+                  }))}
+                  shapeCount={tiles.shapes.length}
+                  onRename={(id, title) => {
+                    if (tiles.frames.some((f) => f.id === id))
+                      tiles.updateFrame(id, { title });
+                    else tiles.updateTile(id, { title });
+                  }}
+                  onClose={() => setLayersOpen(false)}
                 />
+              )}
+              <ParkedShelf
+                className={layersOpen ? "right-72 top-16" : "top-16"}
+                parked={tiles.parked.map((t) => ({
+                  id: t.id,
+                  title: t.title,
+                  icon: t.icon,
+                }))}
+                onRestore={unpark}
+              />
+              <ZoomHud />
+              <Minimap />
+            </>
+          }
+        >
+          {tiles.frames.map((f) => (
+            <SpatialFrame key={f.id} {...f} />
+          ))}
+          <ShapesLayer shapes={tiles.shapes} />
+          {stress && <SpatialFrame key={stress.frame.id} {...stress.frame} />}
+          {board.pipeline.map(([a, b]) => {
+            const from = byId.get(a);
+            const to = byId.get(b);
+            if (!from || !to) return null;
+            return (
+              <SpatialEdge key={`${a}->${b}`} from={from.rect} to={to.rect} />
+            );
+          })}
+          {tiles.connections.map((c) => {
+            const from = byId.get(c.from);
+            const to = byId.get(c.to);
+            if (!from || !to) return null;
+            return <SpatialEdge key={c.id} from={from.rect} to={to.rect} />;
+          })}
+          {allTiles.map((t) => (
+            <BoardTile
+              key={t.id}
+              spec={t}
+              rect={t.rect}
+              onMove={tiles.moveTile}
+              onThrow={onThrow}
+              onContent={(content, title) =>
+                tiles.updateTile(
+                  t.id,
+                  title ? { content, title } : { content },
+                  { history: false },
+                )
               }
             />
-            {examplesNote && (
-              <p
-                data-spatial-chrome
-                className="absolute left-4 top-16 z-30 max-w-md rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-foreground"
-              >
-                {examplesNote}
-              </p>
-            )}
-            <div
-              data-spatial-chrome
-              className="absolute right-4 top-4 z-30 flex items-center gap-0.5 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur"
-            >
-              <button
-                type="button"
-                onClick={() => setLayersOpen((o) => !o)}
-                aria-pressed={layersOpen}
-                title="Layers"
-                aria-label="Layers"
-                className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
-                  layersOpen && "bg-primary/15 text-primary",
-                )}
-              >
-                <PanelRight className="h-4 w-4" />
-              </button>
-              <span className="mx-0.5 h-5 w-px bg-border" />
-              <ZoomMenu history={tiles} />
-            </div>
-            {layersOpen && (
-              <LayersPanel
-                frames={tiles.frames.map((f) => ({ id: f.id, title: f.title, rect: f.rect }))}
-                tiles={allTiles.map((t) => ({ id: t.id, title: t.title, rect: t.rect, icon: t.icon }))}
-                shapeCount={tiles.shapes.length}
-                onRename={(id, title) => {
-                  if (tiles.frames.some((f) => f.id === id)) tiles.updateFrame(id, { title });
-                  else tiles.updateTile(id, { title });
-                }}
-                onClose={() => setLayersOpen(false)}
-              />
-            )}
-            <ParkedShelf
-              className={layersOpen ? "right-72 top-16" : "top-16"}
-              parked={tiles.parked.map((t) => ({ id: t.id, title: t.title, icon: t.icon }))}
-              onRestore={unpark}
-            />
-            <ZoomHud />
-            <Minimap />
-          </>
-        }
-      >
-        {tiles.frames.map((f) => (
-          <SpatialFrame key={f.id} {...f} />
-        ))}
-        <ShapesLayer shapes={tiles.shapes} />
-        {stress && <SpatialFrame key={stress.frame.id} {...stress.frame} />}
-        {board.pipeline.map(([a, b]) => {
-          const from = byId.get(a);
-          const to = byId.get(b);
-          if (!from || !to) return null;
-          return <SpatialEdge key={`${a}->${b}`} from={from.rect} to={to.rect} />;
-        })}
-        {allTiles.map((t) => (
-          <BoardTile
-            key={t.id}
-            spec={t}
-            rect={t.rect}
-            onMove={tiles.moveTile}
-            onThrow={onThrow}
-            onContent={(content, title) =>
-              tiles.updateTile(t.id, title ? { content, title } : { content }, { history: false })
-            }
-          />
-        ))}
-      </SpatialViewport>
-    </SpatialBoardMenu>
+          ))}
+        </SpatialViewport>
+      </SpatialBoardMenu>
+    </SpatialBoardSurface>
   );
+}
+
+// ── what the board's agent tools make and change (useBoardAgentTools) ───────
+
+const AGENT_ICON: Record<AddTileInput["kind"], LucideIcon> = {
+  note: StickyNote,
+  markdown: FileText,
+  text: Type,
+  html: Code2,
+  image: ImageIcon,
+};
+
+function createAgentTile(
+  id: string,
+  input: AddTileInput,
+  size: { w: number; h: number },
+): TileSpec | { ok: false; error: string } {
+  const base = {
+    id,
+    rect: { x: 0, y: 0, ...size },
+    icon: AGENT_ICON[input.kind],
+  };
+  switch (input.kind) {
+    case "note":
+      return {
+        ...base,
+        title: input.title ?? "Note",
+        subtitle: "Note · by an agent",
+        content: { type: "note", noteId: null, text: input.text ?? "" },
+      };
+    case "markdown":
+      if (!input.text)
+        return { ok: false, error: "A markdown tile needs `text`." };
+      return {
+        ...base,
+        title: input.title ?? "Write-up",
+        subtitle: "Markdown · by an agent",
+        content: { type: "markdown", text: input.text },
+      };
+    case "text":
+      return {
+        ...base,
+        title: input.title ?? "Text",
+        subtitle: "Label",
+        content: { type: "text", text: input.text ?? input.title ?? "" },
+      };
+    case "html":
+      if (input.html)
+        return {
+          ...base,
+          title: input.title ?? "Page",
+          subtitle: "Generated page · by an agent",
+          content: { type: "html", srcDoc: input.html },
+        };
+      if (input.url)
+        return {
+          ...base,
+          title: input.title ?? "Page",
+          subtitle: "Web page",
+          content: { type: "html", src: input.url },
+        };
+      return {
+        ok: false,
+        error: "An html tile needs `html` (a complete document) or `url`.",
+      };
+    case "image":
+      if (!input.url) return { ok: false, error: "An image tile needs `url`." };
+      return {
+        ...base,
+        title: input.title ?? "Image",
+        subtitle: "Image",
+        content: { type: "image", src: input.url },
+      };
+  }
+}
+
+function editAgentTile(
+  tile: TileSpec,
+  input: EditTileInput,
+): Partial<TileSpec> | { ok: false; error: string } {
+  const c = tile.content;
+  if (c.type === "note" && input.text !== undefined)
+    return { content: { ...c, text: input.text } };
+  if (c.type === "markdown" && input.text !== undefined)
+    return { content: { type: "markdown", text: input.text } };
+  if (c.type === "text" && input.text !== undefined)
+    return { content: { type: "text", text: input.text } };
+  if (c.type === "html" && input.html !== undefined)
+    return { content: { type: "html", srcDoc: input.html } };
+  return {
+    ok: false,
+    error: `"${tile.title}" is a ${describeTile(tile).kind} tile; its content cannot be replaced (only its title and size). Add a new tile instead.`,
+  };
+}
+
+function describeTile(tile: TileSpec): {
+  kind: string;
+  status?: string | null;
+} {
+  const c = tile.content;
+  switch (c.type) {
+    case "stream": {
+      const phase = c.stream.get().phase;
+      return { kind: tile.subtitle.split(" · ")[0] || "result", status: phase };
+    }
+    case "note":
+      return { kind: "note", status: c.noteId ? "saved" : "draft" };
+    case "pending":
+      return { kind: "pending", status: "queued" };
+    default:
+      return { kind: c.type };
+  }
 }
 
 /** The markdown a tile saves as: its stream's text, or a reference to its media. */
@@ -615,7 +846,11 @@ function tileMarkdown(spec: TileSpec): string {
         .blocks.map((b) => b.content ?? "")
         .join("\n\n");
     case "html":
-      return `# ${spec.title}\n\nGenerated page: ${new URL(c.src, window.location.origin).href}`;
+      return c.src
+        ? `# ${spec.title}\n\nGenerated page: ${new URL(c.src, window.location.origin).href}`
+        : `# ${spec.title}\n\n\`\`\`html\n${c.srcDoc ?? ""}\n\`\`\``;
+    case "markdown":
+      return c.text;
     case "image":
       return `# ${spec.title}\n\n![${spec.title}](${new URL(c.src, window.location.origin).href})`;
     case "pending":
@@ -625,7 +860,6 @@ function tileMarkdown(spec: TileSpec): string {
       return c.text;
   }
 }
-
 
 // ── tiles ────────────────────────────────────────────────────────────────────
 
@@ -649,7 +883,15 @@ function BoardTile({
       ? { kind: "self", source: c.stream }
       : c.type === "image" && c.waitFor
         ? { kind: "upstream", source: c.waitFor }
-        : { kind: "static", value: c.type === "pending" ? QUEUED : c.type === "note" && !c.noteId ? IDLE : DONE };
+        : {
+            kind: "static",
+            value:
+              c.type === "pending"
+                ? QUEUED
+                : c.type === "note" && !c.noteId
+                  ? IDLE
+                  : DONE,
+          };
 
   return (
     <SpatialTile
@@ -667,20 +909,48 @@ function BoardTile({
           case "stream":
             return <StreamTileBody source={c.stream} tier={tier} />;
           case "html":
-            return <HtmlTileBody src={c.src} title={spec.title} tier={tier} active={interacting} />;
+            return (
+              <HtmlTileBody
+                src={c.src}
+                srcDoc={c.srcDoc}
+                title={spec.title}
+                tier={tier}
+                active={interacting}
+              />
+            );
+          case "markdown":
+            return <MarkdownTileBody id={spec.id} text={c.text} tier={tier} />;
           case "image":
-            return <GatedImage src={c.src} alt={spec.title} waitFor={c.waitFor ?? null} />;
+            return (
+              <GatedImage
+                src={c.src}
+                alt={spec.title}
+                waitFor={c.waitFor ?? null}
+              />
+            );
           case "pending":
-            return <p className="p-4 text-sm leading-relaxed text-muted-foreground">{c.message}</p>;
+            return (
+              <p className="p-4 text-sm leading-relaxed text-muted-foreground">
+                {c.message}
+              </p>
+            );
           case "note":
             return (
               <NoteTileBody
                 noteId={c.noteId}
-                onCreated={(noteId, label) => onContent({ type: "note", noteId }, label)}
+                text={c.text}
+                onCreated={(noteId, label) =>
+                  onContent({ type: "note", noteId, text: c.text }, label)
+                }
               />
             );
           case "text":
-            return <TextTileBody text={c.text} onChange={(text) => onContent({ type: "text", text })} />;
+            return (
+              <TextTileBody
+                text={c.text}
+                onChange={(text) => onContent({ type: "text", text })}
+              />
+            );
         }
       }}
     </SpatialTile>
@@ -692,14 +962,26 @@ const IDLE = { status: "idle", progress: null } as const;
 const DONE = { status: "complete", progress: null } as const;
 
 /** An image stage that appears once the stage it waits on has finished. */
-function GatedImage({ src, alt, waitFor }: { src: string; alt: string; waitFor: PacedSource | null }) {
+function GatedImage({
+  src,
+  alt,
+  waitFor,
+}: {
+  src: string;
+  alt: string;
+  waitFor: PacedSource | null;
+}) {
   const { status } = useTileStatus(
-    waitFor ? { kind: "upstream", source: waitFor } : { kind: "static", value: DONE },
+    waitFor
+      ? { kind: "upstream", source: waitFor }
+      : { kind: "static", value: DONE },
   );
   return status === "complete" ? (
     <ImageTileBody src={src} alt={alt} />
   ) : (
-    <p className="p-4 text-sm text-muted-foreground">Waiting for the script to finish.</p>
+    <p className="p-4 text-sm text-muted-foreground">
+      Waiting for the script to finish.
+    </p>
   );
 }
 
@@ -770,7 +1052,12 @@ function useBoardKeys({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
-      if (el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))) return;
+      if (
+        el &&
+        (el.isContentEditable ||
+          ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))
+      )
+        return;
       if (!handlers.current.enabled()) return;
       const mod = e.metaKey || e.ctrlKey;
       if (mod && e.key.toLowerCase() === "z") {

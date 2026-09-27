@@ -13,7 +13,7 @@
  * one item is one step however many frames it took (Figma, FigJam).
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Rect } from "../engine/camera";
 import { findFreeSpot } from "../engine/placement";
 
@@ -38,12 +38,20 @@ export interface BoardShape {
   points: { x: number; y: number }[];
 }
 
+/** A connection drawn between two tiles (a pipeline hand-off, a "see also"). */
+export interface BoardConnection {
+  id: string;
+  from: string;
+  to: string;
+}
+
 interface Snapshot<T> {
   order: string[];
   byId: Record<string, T>;
   parked: string[];
   frames: BoardFrame[];
   shapes: BoardShape[];
+  connections: BoardConnection[];
 }
 
 interface BoardState<T> {
@@ -67,8 +75,15 @@ export interface Board<T extends BoardTileBase> {
   undo: () => void;
   redo: () => void;
   moveTile: (id: string, x: number, y: number) => void;
-  /** Add a tile. With `near`, it lands in the nearest free space to that world point. */
-  addTile: (tile: T, near?: { x: number; y: number }) => Rect;
+  /** Move many tiles (and/or frames) as ONE undoable step — an arrangement. */
+  moveMany: (moves: { id: string; x: number; y: number }[]) => void;
+  connections: BoardConnection[];
+  connect: (connection: BoardConnection) => void;
+  disconnect: (id: string) => void;
+  /** Add a tile. With `near`, it lands in the nearest free space to that world
+   * point, clear of tiles AND frames (a group is not free space) — except the
+   * frame named by `within`, where it may land among that group's tiles. */
+  addTile: (tile: T, near?: { x: number; y: number }, opts?: { within?: string }) => Rect;
   addTiles: (tiles: T[]) => void;
   /** Change a tile's own fields. One undoable step, unless `history: false`
    * (typing, or a note gaining its record id — undoing those would lose work
@@ -85,13 +100,33 @@ export interface Board<T extends BoardTileBase> {
   removeFrame: (id: string) => void;
   addShape: (shape: BoardShape) => void;
   removeShape: (id: string) => void;
+  /** The board as of the LAST change, even before React re-renders — what a
+   * sequence of commands in one tick (an agent's tool calls) must read. */
+  read: () => BoardView<T>;
+}
+
+export interface BoardView<T extends BoardTileBase> {
+  tiles: T[];
+  parked: T[];
+  frames: BoardFrame[];
+  connections: BoardConnection[];
+}
+
+function viewOf<T extends BoardTileBase>(now: Snapshot<T>): BoardView<T> {
+  const parkedSet = new Set(now.parked);
+  return {
+    tiles: now.order.filter((id) => !parkedSet.has(id) && now.byId[id]).map((id) => now.byId[id]),
+    parked: now.parked.filter((id) => now.byId[id]).map((id) => now.byId[id]),
+    frames: now.frames,
+    connections: now.connections,
+  };
 }
 
 export function useBoard<T extends BoardTileBase>(
   /** The starting tiles, or tiles plus frames. */
   initial: () => T[] | { tiles: T[]; frames?: BoardFrame[] },
 ): Board<T> {
-  const [state, setState] = useState<BoardState<T>>(() => {
+  const [state, setRendered] = useState<BoardState<T>>(() => {
     const start = initial();
     const { tiles, frames = [] } = Array.isArray(start) ? { tiles: start } : start;
     return {
@@ -101,12 +136,24 @@ export function useBoard<T extends BoardTileBase>(
         parked: [],
         frames,
         shapes: [],
+        connections: [],
       },
       past: [],
       future: [],
       moving: null,
     };
   });
+
+  // The live state: every operation reads and writes it synchronously, then
+  // hands it to React to render. Commands issued back-to-back in one tick
+  // (an agent's arrange-then-group) each see the previous one's result.
+  const live = useRef(state);
+  const setState = (fn: (st: BoardState<T>) => BoardState<T>) => {
+    const next = fn(live.current);
+    if (next === live.current) return;
+    live.current = next;
+    setRendered(next);
+  };
 
   /** Apply one undoable change. */
   const change = (fn: (s: Snapshot<T>) => Snapshot<T>) =>
@@ -117,9 +164,8 @@ export function useBoard<T extends BoardTileBase>(
     });
 
   const { now } = state;
-  const parkedSet = new Set(now.parked);
-  const tiles = now.order.filter((id) => !parkedSet.has(id) && now.byId[id]).map((id) => now.byId[id]);
-  const parked = now.parked.filter((id) => now.byId[id]).map((id) => now.byId[id]);
+  const { tiles, parked } = viewOf(now);
+  const read = () => viewOf(live.current.now);
 
   const moveTile = (id: string, x: number, y: number) =>
     setState((st) => {
@@ -142,8 +188,37 @@ export function useBoard<T extends BoardTileBase>(
       };
     });
 
-  const addTile = (tile: T, near?: { x: number; y: number }): Rect => {
-    const rect = near ? findFreeSpot(tiles.map((t) => t.rect), { w: tile.rect.w, h: tile.rect.h }, near) : tile.rect;
+  const moveMany = (moves: { id: string; x: number; y: number }[]) =>
+    change((s) => {
+      const at = new Map(moves.map((m) => [m.id, m]));
+      const byId = { ...s.byId };
+      for (const [id, m] of at) {
+        const t = byId[id];
+        if (t) byId[id] = { ...t, rect: { ...t.rect, x: m.x, y: m.y } };
+      }
+      const frames = s.frames.map((f) => {
+        const m = at.get(f.id);
+        return m ? { ...f, rect: { ...f.rect, x: m.x, y: m.y } } : f;
+      });
+      return { ...s, byId, frames };
+    });
+
+  const connect = (c: BoardConnection) =>
+    change((s) =>
+      s.connections.some((x) => x.from === c.from && x.to === c.to)
+        ? s
+        : { ...s, connections: [...s.connections, c] },
+    );
+  const disconnect = (id: string) =>
+    change((s) => ({ ...s, connections: s.connections.filter((c) => c.id !== id) }));
+
+  const addTile = (tile: T, near?: { x: number; y: number }, opts: { within?: string } = {}): Rect => {
+    const cur = read();
+    const obstacles = [
+      ...cur.tiles.map((t) => t.rect),
+      ...cur.frames.filter((f) => f.id !== opts.within).map((f) => f.rect),
+    ];
+    const rect = near ? findFreeSpot(obstacles, { w: tile.rect.w, h: tile.rect.h }, near) : tile.rect;
     const placed = { ...tile, rect };
     change((s) => ({
       ...s,
@@ -183,14 +258,22 @@ export function useBoard<T extends BoardTileBase>(
   };
 
   const removeTile = (id: string) => {
-    const removed = now.byId[id];
-    const index = now.order.indexOf(id);
-    const wasParked = now.parked.includes(id);
+    const cur = live.current.now;
+    const removed = cur.byId[id];
+    const index = cur.order.indexOf(id);
+    const wasParked = cur.parked.includes(id);
+    const itsConnections = cur.connections.filter((c) => c.from === id || c.to === id);
     change((s) => {
       if (!s.byId[id]) return s;
       const byId = { ...s.byId };
       delete byId[id];
-      return { ...s, order: s.order.filter((x) => x !== id), byId, parked: s.parked.filter((x) => x !== id) };
+      return {
+        ...s,
+        order: s.order.filter((x) => x !== id),
+        byId,
+        parked: s.parked.filter((x) => x !== id),
+        connections: s.connections.filter((c) => c.from !== id && c.to !== id),
+      };
     });
     return () =>
       change((s) =>
@@ -201,6 +284,7 @@ export function useBoard<T extends BoardTileBase>(
               order: insertAt(s.order, id, index),
               byId: { ...s.byId, [id]: removed },
               parked: wasParked ? [...s.parked, id] : s.parked,
+              connections: [...s.connections, ...itsConnections],
             },
       );
   };
@@ -243,6 +327,10 @@ export function useBoard<T extends BoardTileBase>(
     undo,
     redo,
     moveTile,
+    moveMany,
+    connections: now.connections,
+    connect,
+    disconnect,
     addTile,
     addTiles,
     updateTile,
@@ -255,6 +343,7 @@ export function useBoard<T extends BoardTileBase>(
     removeFrame,
     addShape,
     removeShape,
+    read,
   };
 }
 
