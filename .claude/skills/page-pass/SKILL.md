@@ -75,7 +75,7 @@ session, never you.
 - **Commit right after each coherent edit** — a sync sweeps the shared
   checkout every ~30 minutes and commits any dirty file under its own message,
   so a file left uncommitted loses your authorship and message.
-- Commit by path per page: `git add <files>` → `git commit --only -m "page-pass(<route>): …" -- <files>` → push.
+- Commit by path per page (push unless your coordinator says it pushes): `git add <files>` → `git commit --only -m "page-pass(<route>): …" -- <files>` → push.
   One shared checkout on `main`: no branches, no worktrees, no tree-wide git,
   never format a file you didn't create, never run `release.sh`. After a
   pull, re-run `pnpm install --frozen-lockfile` if the lockfile changed.
@@ -84,8 +84,9 @@ session, never you.
 ## The core — seven areas, every page
 
 ### 1 · Agents can work on the page
-- **Registered:** a surface manifest in `features/surfaces/manifests/`, label =
-  the page's human name, route mapped in `route-to-surface.ts`, DB mirror synced.
+- **Registered:** a surface manifest in `features/surfaces/manifests/` whose
+  values describe THIS page (a list page never borrows its parent's
+  one-record surface — give it its own), label = the page's human name, route mapped in `route-to-surface.ts`, DB mirror synced.
 - **Sees everything:** every piece of data the page loads and a person could
   point at is a declared value, emitted by one pure scope module from state the
   page already rendered (`getScope` never fetches). Not loaded yet → omit the
@@ -99,7 +100,7 @@ session, never you.
   record ~10,000; a record with its comments/folders ~7,000 + the rest shared;
   a list page's condensed visible list ~4,000; a broad page (SEO, dashboards)
   only a ~2,000-3,000 overview and a guide for discovery. Pack it as ONE XML
-  bundle with the shared bundle helpers — never raw JSON rows. Over budget
+  bundle with `features/surfaces/runtime/context-bundle.ts` — never raw JSON rows. Over budget
   needs Arman's approval. Procedure: `surface-write-targets` Step 4.
 - **Can change what makes sense:** every record type the page lists gets
   `create_/update_/delete_<plural>` over lists (one set per type, built with
@@ -123,8 +124,8 @@ session, never you.
 - **Agents menu:** every AI job the page already runs appears once in the top
   Agents menu; nothing is added to the visible page to announce it, and no AI
   feature is invented to fill it. A mandate opens in place.
-- **Agent feedback read first:** `pnpm surface:feedback --surface <name>`; fix
-  what agents reported or say why not.
+- **Agent feedback read first:** `pnpm surface:feedback --surface <name>` prints
+  SQL — run it through the Supabase MCP; fix what agents reported or say why not.
 - **Proven with a real agent:** the probe reads the page (every visible value
   supplied, nothing undeclared, no `INERT MENU` / `VALUE MAPPING GAP`); with
   write targets, `--agent '<a real request>'` creates two, updates one,
@@ -237,6 +238,9 @@ session, never you.
   engineering notes ("no read path…", ticket codes), no placeholder copy. An
   unbuilt part is absent, or a Coming Soon entry.
 - Semantic color tokens only; right in light AND dark.
+- **One door per action.** One create button per page (not a header "+", a
+  toolbar button AND a create card); one org/scope control (the header's
+  switcher — a page never adds a second organization picker).
 - A destructive or expensive click says what it will cost before it happens.
 - Tab title leads with the specific word; the route has a favicon entry.
 - Checks: `pnpm check:ui-primitives` · `check:one-table-law` ·

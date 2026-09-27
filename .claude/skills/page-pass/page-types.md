@@ -53,6 +53,8 @@ Judge by who is looking at it and why.
   `archived_at` (the entity type's `user_artifact_kind` puts it in Trash).
   When the table only soft-deletes, `delete_<plural>` archives and its
   description says so.
+- **Date columns** filter with `filter: "select"` over the shared date buckets,
+  and the service honors them; an id-valued facet (a project) shows names.
 - **Duplicates are distinguishable:** two rows with the same name show what
   differs (owner, date, source, count).
 
