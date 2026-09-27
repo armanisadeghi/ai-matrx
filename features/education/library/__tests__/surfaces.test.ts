@@ -143,3 +143,61 @@ describe("library_list stays inline", () => {
     });
   });
 });
+
+describe("every problem at once (owner ruling 2026-09-27)", () => {
+  const messageOf = (fn: () => unknown) => {
+    try {
+      fn();
+    } catch (e) {
+      return (e as Error).message;
+    }
+    throw new Error("expected a refusal");
+  };
+  const rows = [row("s1", "open"), row("s3", "accepted")];
+
+  it("library_view reports every bad key", () => {
+    const message = messageOf(() => parseLibraryViewValue({ foo: 1, tab: "orgs", page: 0 }, vocab));
+    expect(message).toMatch(/^library_view was refused: 3 problems\./);
+    expect(message).toMatch(/does not accept foo/);
+    expect(message).toMatch(/tab must be one of/);
+    expect(message).toMatch(/page must be a whole number/);
+  });
+
+  it("copy_decks reports every unknown id and the repeat", () => {
+    const message = messageOf(() => parseCopyDecksValue(["zz", "d1", "yy", "d1"], decks, true));
+    expect(message).toMatch(/3 problems/);
+    expect(message).toMatch(/copy_decks\[0\] "zz" is not a deck/);
+    expect(message).toMatch(/copy_decks\[2\] "yy" is not a deck/);
+    expect(message).toMatch(/"d1" \(at \[1\], \[3\]\)/);
+  });
+
+  it("create_deck_suggestions reports every bad entry", () => {
+    const message = messageOf(() =>
+      parseCreateDeckSuggestionsValue([{ deck_id: "no", body: " " }, { deck_id: "d1", body: "x", extra: 1 }], decks, true),
+    );
+    expect(message).toMatch(/3 problems/);
+    expect(message).toMatch(/\[0\]\.body must be the suggestion/);
+    expect(message).toMatch(/\[0\]\.deck_id "no" is not a deck/);
+    expect(message).toMatch(/\[1\] does not accept extra/);
+  });
+
+  it("update_suggestions reports item problems, then unknown ids and repeats", () => {
+    const message = messageOf(() =>
+      parseUpdateSuggestionsValue(
+        [
+          { id: "s3", status: "declined" },
+          { id: "zz", status: "accepted" },
+          { id: "s1", status: "open" },
+          { id: "s1", status: "accepted" },
+        ],
+        rows,
+      ),
+    );
+    const lines = message.split("\n");
+    expect(lines[0]).toBe("update_suggestions was refused: 4 problems.");
+    expect(lines[1]).toMatch(/^1\. update_suggestions\[0\]: suggestion s3 is already accepted/);
+    expect(lines[2]).toMatch(/^2\. update_suggestions\[2\]\.status must be/);
+    expect(lines[3]).toMatch(/^3\. update_suggestions\[1\]\.id "zz" is not a suggestion/);
+    expect(lines[4]).toMatch(/^4\. .*"s1" \(at \[2\], \[3\]\)/);
+  });
+});

@@ -123,3 +123,63 @@ describe("guide comments", () => {
     expect(() => parseDeleteGuideCommentsValue(["c-1"], comments)).toThrow(/someone else/);
   });
 });
+
+describe("every problem at once (owner ruling 2026-09-27)", () => {
+  const messageOf = (fn: () => unknown) => {
+    try {
+      fn();
+    } catch (e) {
+      return (e as Error).message;
+    }
+    throw new Error("expected a refusal");
+  };
+
+  it("create_personal_notes reports bad entries, then repeats and existing highlights", () => {
+    const message = messageOf(() =>
+      parseCreatePersonalNotesValue(
+        [
+          { quote: "chloroplast", color: "red" },
+          { quote: "Ribosomes make proteins." },
+          { quote: "Ribosomes make proteins." },
+          { quote: "powerhouse of the cell" },
+        ],
+        guide,
+        notes,
+      ),
+    );
+    const lines = message.split("\n");
+    expect(lines[0]).toBe("create_personal_notes was refused: 4 problems.");
+    expect(lines[1]).toMatch(/^1\. create_personal_notes\[0\] "chloroplast": color must be one of/);
+    expect(lines[2]).toMatch(/^2\. create_personal_notes\[0\] "chloroplast": quote "chloroplast" is not in the guide's text/);
+    expect(lines[3]).toMatch(/^3\. .*same quote more than once/);
+    expect(lines[4]).toMatch(/^4\. create_personal_notes\[3\]: the person already highlighted .*hl-1/);
+  });
+
+  it("update and delete report every unknown id beside item problems", () => {
+    const update = messageOf(() =>
+      parseUpdatePersonalNotesValue([{ id: "nt-1", color: "blue" }, { id: "zz", note: "x" }], notes),
+    );
+    expect(update).toMatch(/1\. update_personal_notes\[0\] sets a color/);
+    expect(update).toMatch(/2\. update_personal_notes\[1\]\.id "zz" is not one of/);
+    const del = messageOf(() => parseDeleteGuideCommentsValue(["c-1", "zz", "c-2", "c-2"], comments));
+    expect(del).toMatch(/3 problems/);
+    expect(del).toMatch(/1\. delete_guide_comments\[0\] "c-1" was written by someone else/);
+    expect(del).toMatch(/2\. delete_guide_comments\[1\] "zz" is not a comment/);
+    expect(del).toMatch(/3\. .*"c-2" \(at \[2\], \[3\]\)/);
+  });
+
+  it("create_guide_comments reports every problem in one entry and across the list", () => {
+    const message = messageOf(() =>
+      parseCreateGuideCommentsValue(
+        [{ reply_to: "r-1", quote: "x" }, { body: "Great guide" }],
+        guide,
+        comments,
+      ),
+    );
+    expect(message).toMatch(/create_guide_comments\[0\]\.body is required/);
+    expect(message).toMatch(/reply to its thread c-1/);
+    expect(message).toMatch(/takes only body/);
+    expect(message).toMatch(/already posted "Great guide"/);
+    expect(message.endsWith("Nothing was changed.")).toBe(true);
+  });
+});

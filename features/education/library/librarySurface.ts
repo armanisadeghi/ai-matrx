@@ -14,6 +14,7 @@ import { NONE_VALUE } from "@/lib/entity-list/types";
 import { makeScope } from "@/lib/list-scope/types";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { ProblemList } from "@/features/surfaces/runtime/collection-write-targets";
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   EDUCATION_LIBRARY_SORT_FIELDS,
@@ -235,72 +236,79 @@ export function parseLibraryViewValue(
   const unknownKeys = Object.keys(record).filter(
     (k) => !(VIEW_KEYS as readonly string[]).includes(k),
   );
-  if (unknownKeys.length)
-    throw new Error(
-      `library_view does not accept ${unknownKeys.join(", ")}. Allowed keys: ${VIEW_KEYS.join(", ")}.`,
-    );
   if (Object.keys(record).length === 0)
     throw new Error("library_view needs at least one key to change.");
 
+  // Every problem is reported at once (owner ruling 2026-09-27).
+  const problems = new ProblemList("library_view");
+  if (unknownKeys.length)
+    problems.add(
+      `library_view does not accept ${unknownKeys.join(", ")}. Allowed keys: ${VIEW_KEYS.join(", ")}.`,
+    );
   const change: LibraryViewChange = {};
   if ("search_query" in record) {
     if (typeof record.search_query !== "string")
-      throw new Error(
+      problems.add(
         `library_view.search_query must be text ("" clears it); received ${JSON.stringify(record.search_query)}.`,
       );
-    change.search = record.search_query.trim();
+    else change.search = record.search_query.trim();
   }
   if ("tab" in record) {
     const tab = String(record.tab).trim().toLowerCase();
     if (!(EDUCATION_LIBRARY_TABS as readonly string[]).includes(tab))
-      throw new Error(
+      problems.add(
         `library_view.tab must be one of ${EDUCATION_LIBRARY_TABS.join(", ")}; received ${JSON.stringify(record.tab)}.`,
       );
-    change.tab = tab as LibraryViewChange["tab"];
+    else change.tab = tab as LibraryViewChange["tab"];
   }
   for (const [key, facet] of Object.entries(FILTER_FOR)) {
     if (!(key in record)) continue;
     const raw = record[key];
-    if (!Array.isArray(raw) || raw.some((v) => typeof v !== "string"))
-      throw new Error(
+    if (!Array.isArray(raw) || raw.some((v) => typeof v !== "string")) {
+      problems.add(
         `library_view.${key} must be an array of text ([] clears it); received ${JSON.stringify(raw)}.`,
       );
+      continue;
+    }
     const allowed =
       facet === "kind" ? [...KINDS] : (vocab[facet] ?? []);
     const values = (raw as string[]).map((v) => v.trim());
     const bad = values.filter((v) => !allowed.includes(v));
-    if (bad.length)
-      throw new Error(
+    if (bad.length) {
+      problems.add(
         `library_view.${key} has ${bad.map((b) => JSON.stringify(b)).join(", ")}, which the library does not offer here. Allowed: ${
           allowed.length ? allowed.join(", ") : "(none in this tab)"
         }.`,
       );
+      continue;
+    }
     (change.filters ??= {})[facet] = [...new Set(values)];
   }
   if ("sort_by" in record) {
     const sort = String(record.sort_by).trim();
     if (!(EDUCATION_LIBRARY_SORT_FIELDS as readonly string[]).includes(sort))
-      throw new Error(
+      problems.add(
         `library_view.sort_by must be one of ${EDUCATION_LIBRARY_SORT_FIELDS.join(", ")}; received ${JSON.stringify(record.sort_by)}.`,
       );
-    change.sort = sort;
+    else change.sort = sort;
   }
   if ("sort_direction" in record) {
     const dir = String(record.sort_direction).trim().toLowerCase();
     if (dir !== "asc" && dir !== "desc")
-      throw new Error(
+      problems.add(
         `library_view.sort_direction must be "asc" or "desc"; received ${JSON.stringify(record.sort_direction)}.`,
       );
-    change.direction = dir;
+    else change.direction = dir;
   }
   if ("page" in record) {
     const page = record.page;
     if (typeof page !== "number" || !Number.isInteger(page) || page < 1)
-      throw new Error(
+      problems.add(
         `library_view.page must be a whole number, 1 or more; received ${JSON.stringify(page)}.`,
       );
-    change.page = page;
+    else change.page = page;
   }
+  problems.throwIfAny();
   return change;
 }
 

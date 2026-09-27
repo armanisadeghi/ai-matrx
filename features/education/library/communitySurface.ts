@@ -12,8 +12,11 @@ import {
   type PublicDeckListRow,
 } from "@/features/surfaces/manifests/education-library-community.manifest";
 import {
+  collectProblems,
+  ListLevelProblem,
+  ProblemList,
   readCollectionList,
-  refuseRepeats,
+  repeatsProblem,
 } from "@/features/surfaces/runtime/collection-write-targets";
 import type { PublicDeck } from "./types";
 
@@ -87,8 +90,8 @@ function deckOnPage(
     throw new Error(`${where} must be a deck id (text); received ${JSON.stringify(id)}.`);
   const deck = decks.find((d) => d.id === id.trim());
   if (!deck)
-    throw new Error(
-      `${where} "${id}" is not a deck the page is showing. Use an id from public_deck_list (search first if the deck is not listed). Nothing was changed.`,
+    throw new ListLevelProblem(
+      `${where} "${id}" is not a deck the page is showing. Use an id from public_deck_list (search first if the deck is not listed).`,
     );
   return deck;
 }
@@ -106,18 +109,31 @@ export function parseCopyDecksValue(
     value,
     MAX_DECKS_PER_WRITE,
   );
-  const ids = list.map((item) =>
+  const idOf = (item: unknown) =>
     item !== null && typeof item === "object" && !Array.isArray(item)
       ? (item as Record<string, unknown>).id
-      : item,
-  );
-  const plan = ids.map((id, i) => deckOnPage(`copy_decks[${i}]`, id, decks));
-  refuseRepeats(
+      : item;
+  return collectProblems(
     "copy_decks",
-    plan.map((d) => d.id),
-    "deck",
+    list,
+    (item, i) => deckOnPage(`copy_decks[${i}]`, idOf(item), decks),
+    {
+      nameOf: (item) => {
+        const id = idOf(item);
+        return typeof id === "string" ? decks.find((d) => d.id === id.trim())?.name : undefined;
+      },
+      listChecks: (items) => [
+        repeatsProblem(
+          "copy_decks",
+          items.map((it) => {
+            const id = idOf(it.raw);
+            return typeof id === "string" ? id : undefined;
+          }),
+          "deck",
+        ),
+      ],
+    },
   );
-  return plan;
 }
 
 export interface DeckSuggestionPlan {
@@ -138,30 +154,40 @@ export function parseCreateDeckSuggestionsValue(
     value,
     MAX_DECKS_PER_WRITE,
   );
-  return list.map((item, i) => {
+  return collectProblems("create_deck_suggestions", list, (item, i) => {
     const where = `create_deck_suggestions[${i}]`;
     if (item === null || typeof item !== "object" || Array.isArray(item))
       throw new Error(
         `${where} must be an object { deck_id, body }; received ${JSON.stringify(item)}.`,
       );
     const record = item as Record<string, unknown>;
+    const problems = new ProblemList(where);
     const extra = Object.keys(record).filter(
       (k) => k !== "deck_id" && k !== "body",
     );
     if (extra.length)
-      throw new Error(
+      problems.add(
         `${where} does not accept ${extra.join(", ")}. Allowed keys: deck_id, body.`,
       );
-    const deck = deckOnPage(`${where}.deck_id`, record.deck_id, decks);
-    if (typeof record.body !== "string" || !record.body.trim())
-      throw new Error(
-        `${where}.body must be the suggestion as non-empty text. Nothing was sent.`,
+    const body = typeof record.body === "string" ? record.body.trim() : "";
+    if (!body)
+      problems.add(`${where}.body must be the suggestion as non-empty text.`);
+    else if (body.length > MAX_SUGGESTION_CHARS)
+      problems.add(
+        `${where}.body is ${body.length} characters; the limit is ${MAX_SUGGESTION_CHARS}. Shorten it.`,
       );
-    const body = record.body.trim();
-    if (body.length > MAX_SUGGESTION_CHARS)
-      throw new Error(
-        `${where}.body is ${body.length} characters; the limit is ${MAX_SUGGESTION_CHARS}. Shorten it. Nothing was sent.`,
-      );
-    return { deck, body };
+    // An unknown deck is a list-level problem, unless this entry has others too.
+    let deck: PublicDeck | undefined;
+    let unknownDeck: unknown;
+    try {
+      deck = deckOnPage(`${where}.deck_id`, record.deck_id, decks);
+    } catch (error) {
+      if (!(error instanceof ListLevelProblem)) problems.add((error as Error).message);
+      else unknownDeck = error;
+    }
+    if (!problems.ok && unknownDeck) problems.add((unknownDeck as Error).message);
+    problems.throwIfAny();
+    if (unknownDeck) throw unknownDeck;
+    return { deck: deck!, body };
   });
 }

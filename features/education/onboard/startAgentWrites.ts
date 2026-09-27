@@ -4,10 +4,12 @@
 // /education/start (`matrx-user/education-start`). Pure: the page passes in
 // which outputs are available, and the handler in StartHero applies the
 // result through the form's own state setters. The WHOLE value is checked
-// before anything changes, and every refusal is a sentence the agent can act on.
+// before anything changes, and a refusal lists EVERY problem at once, each a
+// sentence the agent can act on.
 
 import { ALL_TARGET_KINDS, type TargetKind } from "@/features/education/convert/types";
 import { isCoverageDepth, type CoverageDepth } from "@/features/education/convert/coverage";
+import { ProblemList } from "@/features/surfaces/runtime/collection-write-targets";
 
 export type AgentInputMode = "paste" | "link" | "files";
 
@@ -56,18 +58,22 @@ export function parseKitRequestDraftValue(
     fail("kit_request_draft takes a JSON object, e.g. { \"paste_text\": \"…\", \"outputs\": [\"deck\"] }.");
   }
   const obj = value as Record<string, unknown>;
+  if (Object.keys(obj).length === 0) fail("Send at least one field to fill.");
+
+  // Every problem is reported at once (owner ruling 2026-09-27).
+  const problems = new ProblemList("kit_request_draft");
   const unknown = Object.keys(obj).filter((k) => !KNOWN_KEYS.has(k));
   if (unknown.length > 0) {
-    fail(
+    problems.add(
       `Unknown field${unknown.length > 1 ? "s" : ""} ${unknown.join(", ")}. Allowed: ${[...KNOWN_KEYS].join(", ")}.`,
     );
   }
-  if (Object.keys(obj).length === 0) fail("Send at least one field to fill.");
 
   const out: KitRequestDraftFields = {};
 
-  const mode = obj.input_mode;
-  if (mode !== undefined) {
+  problems.check(() => {
+    const mode = obj.input_mode;
+    if (mode === undefined) return;
     if (mode === "upload") {
       fail(
         "Only the person can drop a new file to upload. Use file_id for a file they already have, or ask them to drop the file on the Upload tab.",
@@ -77,13 +83,14 @@ export function parseKitRequestDraftValue(
       fail('input_mode must be "paste", "link" or "files".');
     }
     out.mode = mode;
-  }
+  });
 
-  const pasteText = stringField(obj, "paste_text");
+  const pasteText = problems.check(() => stringField(obj, "paste_text"));
   if (pasteText !== undefined) out.pasteText = pasteText;
 
-  const url = stringField(obj, "url");
-  if (url !== undefined) {
+  problems.check(() => {
+    const url = stringField(obj, "url");
+    if (url === undefined) return;
     const trimmed = url.trim();
     if (trimmed !== "") {
       let parsed: URL;
@@ -97,13 +104,14 @@ export function parseKitRequestDraftValue(
       }
     }
     out.url = trimmed;
-  }
+  });
 
-  const fileId = stringField(obj, "file_id");
-  if (fileId !== undefined) {
+  problems.check(() => {
+    const fileId = stringField(obj, "file_id");
+    if (fileId === undefined) return;
     if (!UUID_RE.test(fileId.trim())) fail(`file_id "${fileId}" is not a file id.`);
     out.fileId = fileId.trim();
-  }
+  });
 
   // Which tab the input switches to when no input_mode is sent.
   const inputs = [
@@ -111,34 +119,44 @@ export function parseKitRequestDraftValue(
     out.url !== undefined && out.url !== "" ? "link" : null,
     out.fileId !== undefined ? "files" : null,
   ].filter((m): m is AgentInputMode => m !== null);
-  if (out.mode === undefined) {
+  if (out.mode === undefined && obj.input_mode === undefined) {
     if (inputs.length > 1) {
-      fail("Send only one of paste_text, url and file_id, or also send input_mode to say which tab to open.");
+      problems.add("Send only one of paste_text, url and file_id, or also send input_mode to say which tab to open.");
     }
     if (inputs.length === 1) out.mode = inputs[0];
   }
 
   if (obj.outputs !== undefined) {
-    if (!Array.isArray(obj.outputs)) fail("outputs must be an array of kinds, e.g. [\"deck\", \"quiz\"].");
-    if (obj.outputs.length === 0) fail("outputs cannot be empty: pick at least one thing to make.");
-    const kinds: TargetKind[] = [];
-    for (const k of obj.outputs) {
-      if (typeof k !== "string" || !(ALL_TARGET_KINDS as string[]).includes(k)) {
-        fail(`Unknown output ${JSON.stringify(k)}. Kinds: ${ALL_TARGET_KINDS.join(", ")}.`);
+    if (!Array.isArray(obj.outputs)) problems.add("outputs must be an array of kinds, e.g. [\"deck\", \"quiz\"].");
+    else if (obj.outputs.length === 0) problems.add("outputs cannot be empty: pick at least one thing to make.");
+    else {
+      const kinds: TargetKind[] = [];
+      let ok = true;
+      for (const k of obj.outputs) {
+        if (typeof k !== "string" || !(ALL_TARGET_KINDS as string[]).includes(k)) {
+          problems.add(`Unknown output ${JSON.stringify(k)}. Kinds: ${ALL_TARGET_KINDS.join(", ")}.`);
+          ok = false;
+          continue;
+        }
+        const kind = k as TargetKind;
+        if (!availableOutputs.includes(kind)) {
+          problems.add(`"${kind}" cannot be made yet (shown as "soon"). Available: ${availableOutputs.join(", ")}.`);
+          ok = false;
+        }
+        if (kinds.includes(kind)) {
+          problems.add(`"${kind}" is listed twice in outputs.`);
+          ok = false;
+          continue;
+        }
+        kinds.push(kind);
       }
-      const kind = k as TargetKind;
-      if (!availableOutputs.includes(kind)) {
-        fail(`"${kind}" cannot be made yet (shown as "soon"). Available: ${availableOutputs.join(", ")}.`);
-      }
-      if (kinds.includes(kind)) fail(`"${kind}" is listed twice in outputs.`);
-      kinds.push(kind);
+      if (ok) out.outputs = kinds;
     }
-    out.outputs = kinds;
   }
 
   if (obj.depth !== undefined) {
-    if (!isCoverageDepth(obj.depth)) fail('depth must be "quick", "standard" or "thorough".');
-    out.depth = obj.depth;
+    if (!isCoverageDepth(obj.depth)) problems.add('depth must be "quick", "standard" or "thorough".');
+    else out.depth = obj.depth;
   }
 
   if (obj.count !== undefined) {
@@ -146,14 +164,14 @@ export function parseKitRequestDraftValue(
     else {
       const n = typeof obj.count === "string" ? Number(obj.count) : obj.count;
       if (typeof n !== "number" || !Number.isInteger(n) || n < 1 || n > MAX_KIT_COUNT) {
-        fail(`count must be a whole number from 1 to ${MAX_KIT_COUNT}, or null to size the kit to the material.`);
-      }
-      out.count = n;
+        problems.add(`count must be a whole number from 1 to ${MAX_KIT_COUNT}, or null to size the kit to the material.`);
+      } else out.count = n;
     }
   }
 
-  const focus = stringField(obj, "focus");
+  const focus = problems.check(() => stringField(obj, "focus"));
   if (focus !== undefined) out.focus = focus;
 
+  problems.throwIfAny();
   return out;
 }
