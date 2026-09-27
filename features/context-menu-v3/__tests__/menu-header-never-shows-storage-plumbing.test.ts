@@ -34,3 +34,12 @@ it("the header uses the ONE strip (stripTurnTrust), never its own regex", () => 
   // No local copy of the trust-comment pattern (a regex literal or RegExp naming it).
   expect(src).not.toMatch(/\/<!--\\s*MATRX|new RegExp\([^)]*MATRX_TRUST/);
 });
+
+// Live on /notes/<id> (page-pass 2026-09-27): "Content: # Clinic intake…". The
+// header is a preview — words, not markdown syntax. Break: the raw text again → red.
+it("a document's header shows its words, not its markdown", () => {
+  const note = "# Clinic intake\n\n- **Name:** _required_\n- [ ] Insurance card\n> Ask about [allergies](https://x.test)\n1. `DOB`";
+  expect(menuHeaderContent({ source: "content", text: note })).toBe(
+    "Clinic intake Name: required Insurance card Ask about allergies DOB",
+  );
+});

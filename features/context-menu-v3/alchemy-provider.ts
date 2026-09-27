@@ -24,6 +24,7 @@
 import type { Action, ActionCategory, ClickTarget, Eligibility } from "@ai-matrx/alchemy/actions";
 import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
 import { stripTurnTrust } from "@/features/education/tutor/turnTrust";
+import { markdownToPlainText } from "@/lib/markdown/plain-text";
 import type { MenuModel, MenuNode, MenuSection } from "./model/menu-model";
 
 export interface ContextMenuTargetHost {
@@ -294,5 +295,22 @@ export function modelRevision(model: MenuModel): string {
  */
 export function menuHeaderContent(actionText: { source: string; text: string }): string | null {
   if (actionText.source === "none") return null;
-  return stripTurnTrust(actionText.text);
+  return headerPreview(stripTurnTrust(actionText.text));
+}
+
+/**
+ * The header is a one-line PREVIEW, so it shows words, never markdown syntax:
+ * "Content: # Clinic intake…" on /notes/<id> (page-pass 2026-09-27). Block
+ * markers (headings, quotes, list bullets, task boxes, fences) are dropped per
+ * line, inline emphasis goes through THE plain-text helper, and lines join
+ * with a space. Only the header changes — the actions still act on the text
+ * as written.
+ */
+export function headerPreview(text: string): string {
+  const blocks = text
+    .replace(/^\s{0,3}(?:```|~~~).*$/gm, "")
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/^\s{0,3}>\s?/gm, "")
+    .replace(/^\s{0,3}(?:[-*+]|\d+[.)])\s+(?:\[[ xX]\]\s+)?/gm, "");
+  return markdownToPlainText(blocks).replace(/\s*\n+\s*/g, " ").trim();
 }
