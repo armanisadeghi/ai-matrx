@@ -32,18 +32,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
-import { StudyTrends } from "../../components/StudyTrends";
+import {
+  StudyTrends,
+  type StudyWeekSeries,
+} from "../../components/StudyTrends";
+import { TopicMasteryList } from "./TopicMasteryList";
 import { learningGainService } from "../../learning-gain/learningGainService";
 import type { LearningGainReport } from "../../learning-gain/types";
 import type { ItemMasteryRow } from "../../types";
 import type { StudyAnalytics } from "../computeAnalytics";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { topicLabel } from "../../utils/topicLabel";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 
 const LOCATION = "Study progress";
 
-/** The drill that opens one topic (the weak-areas route honors `?topic=`). */
+/** Practice of one topic (the weak-areas route honors `?topic=`). */
 function topicDrillHref(topic: string): string {
   return `/education/flashcards/weak-areas?topic=${encodeURIComponent(topic)}`;
 }
@@ -69,6 +72,8 @@ export interface StudyAnalyticsViewProps {
   learningGainHref?: string;
   /** Empty-state helper copy (differs for guardian vs self). */
   emptyHint?: string;
+  /** Receives the charts' weekly series once loaded (agent context). */
+  onWeeklySeries?: (series: StudyWeekSeries[]) => void;
 }
 
 export function StudyAnalyticsView({
@@ -83,6 +88,7 @@ export function StudyAnalyticsView({
   narrative,
   learningGainHref,
   emptyHint,
+  onWeeklySeries,
 }: StudyAnalyticsViewProps) {
   const router = useRouter();
 
@@ -107,9 +113,6 @@ export function StudyAnalyticsView({
         minutes_studied: analytics.totalMinutes,
       }
     : {};
-  const weakList = analytics
-    ? analytics.weakTopics.filter((t) => t.struggling > 0)
-    : [];
 
   return (
     <div className="matrx-touch-targets min-h-full w-full bg-textured">
@@ -212,17 +215,22 @@ export function StudyAnalyticsView({
                 label="Streak"
                 value={`${analytics.currentStreak} ${analytics.currentStreak === 1 ? "day" : "days"}`}
                 accent={analytics.currentStreak > 0 ? "amber" : undefined}
-                href={readOnly ? undefined : "/education/flashcards/sessions"}
+                href={readOnly ? undefined : "/education/sessions"}
               />
               <Stat
                 icon={Clock}
                 label="Time studied"
                 value={formatMinutes(analytics.totalMinutes)}
-                href={readOnly ? undefined : "/education/flashcards/sessions"}
+                href={readOnly ? undefined : "/education/sessions"}
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div
+              className={cn(
+                "grid grid-cols-1 gap-4",
+                analytics.weakTopics.length > 0 && "lg:grid-cols-2",
+              )}
+            >
             <div className="flex min-w-0 flex-col gap-4">
             {/* Mastery distribution */}
             <section className="rounded-xl border border-border bg-card p-4">
@@ -326,95 +334,6 @@ export function StudyAnalyticsView({
               </section>
             )}
 
-            </div>
-            <div className="flex min-w-0 flex-col gap-4">
-            {/* Weak areas — the smallest subset causing the most errors */}
-            {weakList.length > 0 && (
-              <section className="rounded-xl border border-border bg-card p-4">
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <div
-                    className="flex items-center gap-2"
-                    title="The smallest set of material causing the most errors — clear these first."
-                  >
-                    <Flame className="h-4 w-4 text-red-500" />
-                    <h2 className="text-sm font-medium text-foreground">
-                      Highest-leverage fixes
-                    </h2>
-                  </div>
-                  <CopyButtons
-                    size="xs"
-                    label="Highest-leverage fixes"
-                    human={() =>
-                      [
-                        "Highest-leverage fixes (weakest topics with struggling cards)",
-                        ...weakList.map(
-                          (t) =>
-                            `${topicLabel(t.topic)}: ${t.masteryPct}% mastery · ${t.struggling} of ${t.count} need work`,
-                        ),
-                      ].join("\n")
-                    }
-                    agent={() => ({
-                      kind: "study-weak-topics",
-                      location: LOCATION,
-                      description:
-                        "Every topic with struggling cards, weakest first (the card shows the top 5).",
-                      data: weakList.map((t) => ({
-                        topic: topicLabel(t.topic),
-                        raw_topic: t.topic,
-                        mastery_pct: t.masteryPct,
-                        cards: t.count,
-                        needs_work: t.struggling,
-                      })),
-                      attributes: { ...kpis, topics: weakList.length, shown: Math.min(5, weakList.length) },
-                    })}
-                  />
-                </div>
-                <ul className="flex flex-col gap-2">
-                  {weakList
-                    .slice(0, 5)
-                    .map((t) => (
-                      <li key={t.topic}>
-                        <WeakRow href={readOnly ? undefined : topicDrillHref(t.topic)} title={topicLabel(t.topic)}>
-                        <span
-                          className="w-40 shrink-0 truncate text-xs text-foreground"
-                          title={t.topic}
-                        >
-                          {topicLabel(t.topic)}
-                        </span>
-                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                          <div
-                            className={cn(
-                              "h-full rounded-full",
-                              t.masteryPct >= 80
-                                ? "bg-green-500"
-                                : t.masteryPct >= 40
-                                  ? "bg-amber-500"
-                                  : "bg-red-500",
-                            )}
-                            style={{ width: `${Math.max(4, t.masteryPct)}%` }}
-                          />
-                        </div>
-                        <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-                          {t.masteryPct}%
-                        </span>
-                        </WeakRow>
-                      </li>
-                    ))}
-                </ul>
-                {!readOnly && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="mt-3 gap-1.5"
-                    onClick={() => router.push("/education/flashcards/weak-areas")}
-                  >
-                    <Flame className="h-4 w-4" />
-                    Drill weak areas
-                  </Button>
-                )}
-              </section>
-            )}
-
             {/* Learning-gain teaser → full report (interactive only when a href is given) */}
             <LearningGainTeaser
               gain={gain}
@@ -424,43 +343,30 @@ export function StudyAnalyticsView({
                   : undefined
               }
             />
-
             </div>
+
+            {/* ONE per-topic section (weakest first) — it replaced the
+                "Highest-leverage fixes" card, which repeated its top rows. */}
+            {analytics.weakTopics.length > 0 && (
+              <div className="min-w-0">
+                <TopicMasteryList
+                  topics={analytics.weakTopics}
+                  hrefFor={readOnly ? undefined : topicDrillHref}
+                  weakDrillHref={readOnly ? undefined : "/education/flashcards/weak-areas"}
+                  kpis={kpis}
+                />
+              </div>
+            )}
             </div>
 
             {/* Trends (accuracy-over-time, weekly time, by-topic) — reuse. */}
-            <StudyTrends
-              itemType="fc_card"
-              mastery={fcMastery}
-              topicSource="fc_card"
-              topicHref={readOnly ? undefined : topicDrillHref}
-            />
+            {/* Cross-mode, like every number above: accuracy over every
+                mode's graded answers, minutes over every session. */}
+            <StudyTrends mastery={fcMastery} onSeries={onWeeklySeries} />
           </div>
         )}
       </div>
     </div>
-  );
-}
-
-/** A weak-topic row: opens that topic's drill when `href` is given. */
-function WeakRow({
-  href,
-  title,
-  children,
-}: {
-  href?: string;
-  title: string;
-  children: ReactNode;
-}) {
-  if (!href) return <div className="flex items-center gap-3">{children}</div>;
-  return (
-    <Link
-      href={href}
-      title={`Drill ${title}`}
-      className="-mx-1 flex items-center gap-3 rounded-md px-1 py-0.5 hover:bg-muted/60"
-    >
-      {children}
-    </Link>
   );
 }
 
@@ -564,13 +470,16 @@ function Stat({
     return (
       <Link
         href={href}
-        className="rounded-xl border border-border bg-card p-3 transition-colors hover:border-primary/40"
+        className="rounded-xl border border-border bg-card p-3 shadow-sm transition-colors hover:border-primary/40 hover:bg-muted/30"
       >
         {body}
       </Link>
     );
   }
-  return <div className="rounded-xl border border-border bg-card p-3">{body}</div>;
+  // A number with nowhere to open reads flat, never like the cards that open.
+  return (
+    <div className="rounded-xl border border-transparent bg-muted/40 p-3">{body}</div>
+  );
 }
 
 function Legend({

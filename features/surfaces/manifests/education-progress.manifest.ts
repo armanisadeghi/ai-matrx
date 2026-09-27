@@ -87,7 +87,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Learning-gain report",
     sortOrder: 400,
     description:
-      "The learning_gain view's pre/post measured-improvement report — per-subject deltas and the overall normalized gain.",
+      "The pre/post measured-improvement report — per-subject deltas and the overall normalized gain. Full on the learning_gain view; also on the dashboard whenever its learning-gain teaser shows.",
   },
 ];
 
@@ -110,7 +110,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "progress_overview",
     label: "Progress overview",
     description:
-      "READ THIS FIRST on the dashboard view: one compact XML bundle of everything the page shows — <overall> totals (studied, mastered, learning, needs_work, due_now, accuracy_pct, day_streak, minutes_studied, sessions), <accuracy_trend>, <modes>, the <weakest_topics> by display name (key= carries the raw topic when it differs), the narrator's <insights> headline and <recommendations> when a reading exists, and <learning_gain>. A list that was cut carries total= and shown=. Absent while loading and on the learning_gain view.",
+      "READ THIS FIRST on the dashboard view: one compact XML bundle of everything the page shows — <overall> totals (studied, mastered, learning, needs_work, due_now, accuracy_pct, day_streak, minutes_studied, sessions), <accuracy_trend>, <weeks> (the two charts: per week start, graded answers, accuracy %, minutes — every mode), <modes>, every <flashcard_topics> row weakest first (n=name, m=mastery %, c=cards, w=cards needing work, k=raw topic when it differs), the narrator's <insights> headline and <recommendations> when a reading exists, and <learning_gain> with each subject's pre/post %. A list that was cut carries total= and shown=. Absent while loading and on the learning_gain view.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 2500,
@@ -323,7 +323,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "gain_pairs",
     label: "Baseline→post pairs",
     description:
-      "Every subject with a complete baseline+post measurement, each { subject, subjectLabel, baseline: {score, takenAt}, post: {score, takenAt}, delta, normalizedGain }. Empty array when the learner has no complete pairs yet (the report shows an empty state). Absent while loading and on the dashboard view.",
+      "Every subject with a complete baseline+post measurement, each { subject, subjectLabel, baseline: {score, takenAt}, post: {score, takenAt}, delta, normalizedGain }. Empty array when the learner has no complete pairs yet (the report shows an empty state). Absent while loading; on the dashboard view present only when the learning-gain teaser shows.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 900,
@@ -334,7 +334,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "gain_overall_delta",
     label: "Overall delta",
     description:
-      "Mean baseline→post score delta across all paired subjects (0..1, can be negative). Null when there are no complete pairs. Absent while loading and on the dashboard view.",
+      "Mean baseline→post score delta across all paired subjects (0..1, can be negative). Null when there are no complete pairs. Absent while loading; on the dashboard view present only when the learning-gain teaser shows.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 6,
@@ -345,7 +345,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "gain_overall_normalized",
     label: "Overall normalized gain",
     description:
-      "Mean normalized gain (Hake's g) across subjects where it's defined (0..1) — the share of what was left to learn that was actually learned. Null when undefined for every subject. Absent while loading and on the dashboard view.",
+      "Mean normalized gain (Hake's g) across subjects where it's defined (0..1) — the share of what was left to learn that was actually learned. Null when undefined for every subject. Absent while loading; on the dashboard view present only when the learning-gain teaser shows.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 6,
@@ -356,7 +356,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "gain_is_seed",
     label: "Sample data",
     description:
-      "True when the report is showing SEED FIXTURES, not the learner's real measurements — because the underlying P1 assessment-engine table isn't live yet or the learner has no real pairs. When true, describe the numbers as illustrative, never as the learner's actual results. Absent while loading and on the dashboard view.",
+      "True when the report is showing SEED FIXTURES, not the learner's real measurements — because the underlying P1 assessment-engine table isn't live yet or the learner has no real pairs. When true, describe the numbers as illustrative, never as the learner's actual results. Absent while loading; on the dashboard view present only when the learning-gain teaser shows.",
     valueType: "boolean",
     alwaysAvailable: false,
     typicalCharCount: 5,

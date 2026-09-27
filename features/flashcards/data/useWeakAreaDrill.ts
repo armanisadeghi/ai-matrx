@@ -67,10 +67,18 @@ export function useWeakAreaDrill(
      * opens a real drill instead of an empty one.
      */
     topic?: string | null;
+    /**
+     * False while the session has no organization yet: a drill opens a
+     * study_session, which is filed under one, so starting now would raise
+     * the blocking "Which workspace?" prompt. The surface shows the inline
+     * organization notice instead and the drill starts once one is chosen.
+     */
+    enabled?: boolean;
   } = {},
 ): UseWeakAreaDrillResult {
   const { limit = 20 } = options;
   const topic = options.topic?.trim() || null;
+  const enabled = options.enabled ?? true;
 
   const [cards, setCards] = useState<CardWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,6 +98,7 @@ export function useWeakAreaDrill(
   >({});
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
 
     void (async () => {
@@ -181,7 +190,7 @@ export function useWeakAreaDrill(
     return () => {
       cancelled = true;
     };
-  }, [limit, topic]);
+  }, [limit, topic, enabled]);
 
   const closeRef = useRef<{ id: string; closed: boolean } | null>(null);
   useEffect(() => {

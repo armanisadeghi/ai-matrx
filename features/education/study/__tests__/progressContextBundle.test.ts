@@ -39,17 +39,37 @@ describe("buildProgressOverviewXml", () => {
         topic: `topic-number-${i}`,
       })),
     },
-    gain: null,
-  } as Parameters<typeof buildProgressOverviewXml>[0]);
+    gain: {
+      pairs: [
+        { subject: "bio", subjectLabel: "Biology", baseline: { score: 0.2 }, post: { score: 0.89 }, delta: 0.69, normalizedGain: 0.86 },
+      ],
+      overallDelta: 0.69,
+      overallNormalizedGain: 0.86,
+      contractPending: false,
+      isSeed: false,
+    },
+    weekly: Array.from({ length: 8 }, (_, i) => ({
+      week: `W${i}`,
+      week_start: `2026-08-0${i + 1}`,
+      graded_answers: i % 3 ? 0 : 12,
+      accuracy_pct: i % 3 ? null : 70,
+      minutes: i * 2,
+    })),
+  } as unknown as Parameters<typeof buildProgressOverviewXml>[0]);
 
   it("fits the broad-page budget", () => {
     expect(xml.length).toBeLessThanOrEqual(3000);
   });
   it("counts what it cut", () => {
-    expect(xml).toContain('<weakest_topics total="25" shown="12">');
-    expect(xml).toContain('<recommendations total="6" shown="5">');
+    expect(xml).toMatch(/<flashcard_topics [^>]*total="25"/);
+    expect(xml).not.toMatch(/<flashcard_topics [^>]*shown=/);
+    expect(xml).toContain('<recommendations total="6" shown="3">');
   });
   it("shows topic names, keeping the raw key only when it differs", () => {
-    expect(xml).toContain('name="Cell Structure" key="Biology::Cell Structure"');
+    expect(xml).toContain('n="Cell Structure" k="Biology::Cell Structure"');
+  });
+  it("carries the weekly series and each learning-gain subject", () => {
+    expect(xml).toMatch(/<weeks [^>]*total="8">/);
+    expect(xml).toContain('<subject name="Biology" pre_pct="20" post_pct="89" gain_pts="69"/>');
   });
 });

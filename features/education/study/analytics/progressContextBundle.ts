@@ -18,21 +18,26 @@ import {
 import type { StudyAnalytics } from "./computeAnalytics";
 import type { NarrativeReport } from "./narrative";
 import type { LearningGainReport } from "../learning-gain/types";
+import type { StudyWeekSeries } from "../components/StudyTrends";
 import { topicLabel } from "../utils/topicLabel";
 
-const MAX_TOPICS = 12;
-const MAX_RECOMMENDATIONS = 5;
+const MAX_TOPICS = 30;
+const MAX_GAIN_SUBJECTS = 8;
+const MAX_RECOMMENDATIONS = 3;
 
 export interface ProgressBundleInput {
   analytics: StudyAnalytics;
   narrative: NarrativeReport | null;
   gain: LearningGainReport | null;
+  /** The charts' weekly series (accuracy + minutes), once loaded. */
+  weekly?: StudyWeekSeries[] | null;
 }
 
 export function buildProgressOverviewXml({
   analytics,
   narrative,
   gain,
+  weekly,
 }: ProgressBundleInput): string {
   const o = analytics.overall;
   const overall = xmlElement("overall", {
@@ -66,19 +71,36 @@ export function buildProgressOverviewXml({
     }),
   );
 
+  // Every flashcard topic, weakest first, in short attributes so the whole
+  // list fits: n=name, m=mastery %, c=cards, w=cards needing work, k=raw key.
   const topics = xmlList(
-    "weakest_topics",
+    "flashcard_topics",
     analytics.weakTopics,
     (t) =>
-      xmlElement("topic", {
-        name: topicLabel(t.topic),
-        key: topicLabel(t.topic) === t.topic ? null : t.topic,
-        mastery_pct: t.masteryPct,
-        cards: t.count,
-        needs_work: t.struggling,
+      xmlElement("t", {
+        n: topicLabel(t.topic),
+        // The raw key only when the name hides a path segment ("A::B").
+        k: t.topic.includes("::") ? t.topic : null,
+        m: t.masteryPct,
+        c: t.count,
+        w: t.struggling || null,
       }),
-    { maxRows: MAX_TOPICS },
+    { maxRows: MAX_TOPICS, attrs: { key: "n name, m mastery%, c cards, w need work" } },
   );
+
+  // Weekly series as drawn on the two charts (every mode).
+  const weeks =
+    weekly && weekly.length > 0
+      ? xmlList("weeks", weekly, (w) =>
+          xmlElement("w", {
+            d: w.week_start.slice(5),
+            n: w.graded_answers || null,
+            acc: w.accuracy_pct,
+            min: w.minutes || null,
+          }),
+          { attrs: { key: "d week of MM-DD, n graded answers, acc %, min minutes; absent = none" } },
+        )
+      : "";
 
   const reading = narrative
     ? xmlElement("insights", {}, [
@@ -89,7 +111,7 @@ export function buildProgressOverviewXml({
           (r) =>
             xmlElement("recommendation", {
               action: r.action,
-              why: r.why,
+              why: r.why && r.why.length > 120 ? `${r.why.slice(0, 117)}...` : r.why,
               target: r.targetKind,
               topic: r.topic,
             }),
@@ -100,19 +122,33 @@ export function buildProgressOverviewXml({
 
   const gainEl =
     gain && gain.pairs.length > 0
-      ? xmlElement("learning_gain", {
-          subjects: gain.pairs.length,
-          mean_delta_pct:
-            gain.overallDelta == null
-              ? null
-              : Math.round(gain.overallDelta * 100),
-          sample_data: gain.isSeed ? true : null,
-        })
+      ? xmlList(
+          "learning_gain",
+          gain.pairs,
+          (p) =>
+            xmlElement("subject", {
+              name: p.subjectLabel || p.subject,
+              pre_pct: Math.round(p.baseline.score * 100),
+              post_pct: Math.round(p.post.score * 100),
+              gain_pts: Math.round(p.delta * 100),
+            }),
+          {
+            maxRows: MAX_GAIN_SUBJECTS,
+            attrs: {
+              mean_delta_pts:
+                gain.overallDelta == null
+                  ? null
+                  : Math.round(gain.overallDelta * 100),
+              sample_data: gain.isSeed || gain.contractPending ? true : null,
+            },
+          },
+        )
       : "";
 
   return xmlElement("progress_overview", { has_data: analytics.hasData }, [
     overall,
     trend,
+    weeks,
     modes,
     topics,
     reading,

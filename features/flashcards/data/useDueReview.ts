@@ -59,7 +59,14 @@ function progressDone(
   return Object.values(results).filter((r) => r !== undefined).length;
 }
 
-export function useDueReview(options: { limit?: number } = {}): UseDueReviewResult {
+export function useDueReview(
+  options: {
+    limit?: number;
+    /** False until an organization is chosen — see StudyOrganizationGate. */
+    enabled?: boolean;
+  } = {},
+): UseDueReviewResult {
+  const enabled = options.enabled ?? true;
   // Generous per-session cap; a due session studies a batch, more resurface next
   // visit. (Kept close to the progress-page "N due" count to avoid a big
   // mismatch.) When the caller doesn't force a limit AND the learner has an
@@ -87,6 +94,7 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
   >({});
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
 
     void (async () => {
@@ -158,7 +166,7 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
     return () => {
       cancelled = true;
     };
-  }, [explicitLimit]);
+  }, [explicitLimit, enabled]);
 
   // ── Close the adaptive session (don't leak it 'active'; the reaper is only a
   //    6h backstop). A ref holds the close flag so the completion + unmount

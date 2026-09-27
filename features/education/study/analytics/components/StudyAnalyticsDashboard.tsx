@@ -28,6 +28,7 @@ import { createEducationProgressScope } from "@/features/surfaces/manifests/educ
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildProgressOverviewXml } from "../progressContextBundle";
+import type { StudyWeekSeries } from "../../components/StudyTrends";
 
 const SURFACE_NAME = "matrx-user/education-progress";
 
@@ -46,6 +47,7 @@ export function StudyAnalyticsDashboard({
   const orgReady = organizationState === "ready";
   const [report, setReport] = useState<NarrativeReport | null>(null);
   const [gain, setGain] = useState<LearningGainReport | null>(null);
+  const [weekly, setWeekly] = useState<StudyWeekSeries[] | null>(null);
   const narratedRef = useRef(false);
   const sessionId = latestSession?.id ?? null;
 
@@ -74,6 +76,7 @@ export function StudyAnalyticsDashboard({
               analytics,
               narrative: shownReport,
               gain,
+              weekly,
             }),
             analytics_has_data: analytics.hasData,
             overall_stats: analytics.overall,
@@ -84,6 +87,16 @@ export function StudyAnalyticsDashboard({
             current_streak: analytics.currentStreak,
             accuracy_trend: analytics.trend ?? undefined,
             gain_teaser_available: Boolean(gain && gain.pairs.length > 0),
+            // The dashboard shows the learning-gain teaser, so the agent sees
+            // the same report the teaser summarizes.
+            ...(gain && gain.pairs.length > 0
+              ? {
+                  gain_pairs: gain.pairs,
+                  gain_overall_delta: gain.overallDelta ?? undefined,
+                  gain_overall_normalized: gain.overallNormalizedGain ?? undefined,
+                  gain_is_seed: gain.contractPending || gain.isSeed,
+                }
+              : {}),
           }),
       narrative_loading: narrator.isNarrating,
       narrative_error: narrator.error ?? undefined,
@@ -150,6 +163,7 @@ export function StudyAnalyticsDashboard({
         heading="Your progress"
         backHref={backHref}
         learningGainHref="/education/progress/learning-gain"
+        onWeeklySeries={setWeekly}
         narrative={
           analytics && analytics.hasData ? (
             <NarrativeCard

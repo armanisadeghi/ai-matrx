@@ -56,7 +56,10 @@ import { topicLabel } from "../utils/topicLabel";
 type TopicSource = "fc_card";
 
 export interface StudyTrendsProps {
-  itemType: string;
+  /** One mode's attempts (e.g. "fc_card"). Omit → accuracy across EVERY mode. */
+  itemType?: string;
+  /** Receives the weekly series once loaded (the page's agent context uses it). */
+  onSeries?: (series: StudyWeekSeries[]) => void;
   /** Already-loaded mastery rows from the parent — reused for the topic
    *  breakdown so this component never re-fetches what StudyProgress has. */
   mastery: ItemMasteryRow[];
@@ -67,6 +70,15 @@ export interface StudyTrendsProps {
   topicSource?: TopicSource;
   /** Where a topic row opens (e.g. a drill of that topic). Omit → rows are plain. */
   topicHref?: (topic: string) => string;
+}
+
+/** One week of the charts, as drawn. */
+export interface StudyWeekSeries {
+  week: string;
+  week_start: string;
+  graded_answers: number;
+  accuracy_pct: number | null;
+  minutes: number;
 }
 
 interface WeekBucket {
@@ -208,6 +220,7 @@ export function StudyTrends({
   weeks = 8,
   topicSource,
   topicHref,
+  onSeries,
 }: StudyTrendsProps) {
   const [buckets, setBuckets] = useState<WeekBucket[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -231,13 +244,24 @@ export function StudyTrends({
         return;
       }
       const allAttempts = attemptsRes.data ?? [];
-      setBuckets(
-        buildWeekBuckets(
-          allAttempts.filter((a) => a.item_type === itemType),
-          sessionsRes.data ?? [],
-          weeks,
-          allAttempts,
-        ),
+      const built = buildWeekBuckets(
+        itemType
+          ? allAttempts.filter((a) => a.item_type === itemType)
+          : allAttempts,
+        sessionsRes.data ?? [],
+        weeks,
+        allAttempts,
+      );
+      setBuckets(built);
+      onSeries?.(
+        built.map((b) => ({
+          week: b.label,
+          week_start: b.weekStart.toISOString().slice(0, 10),
+          graded_answers: b.attempts,
+          accuracy_pct:
+            b.attempts > 0 ? Math.round((b.correct / b.attempts) * 100) : null,
+          minutes: Math.round(b.minutes),
+        })),
       );
     })();
     return () => {
@@ -264,9 +288,13 @@ export function StudyTrends({
 
   const accuracyData = (buckets ?? []).map((b) => ({
     label: b.label,
+    answers: b.attempts,
     accuracy:
       b.attempts > 0 ? Math.round((b.correct / b.attempts) * 100) : null,
   }));
+  const emptyWeeks = new Set(
+    accuracyData.filter((d) => d.accuracy == null).map((d) => d.label),
+  );
   const timeData = (buckets ?? []).map((b) => ({
     label: b.label,
     minutes: Math.round(b.minutes),
@@ -304,8 +332,8 @@ export function StudyTrends({
     ].join("\n");
 
   return (
-    <div className="mt-3 flex flex-col gap-3">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <section className="rounded-xl border border-border bg-card p-4">
           <div className="mb-2 flex items-center justify-between gap-2">
             <h2 className="text-sm font-medium text-foreground">
@@ -319,7 +347,7 @@ export function StudyTrends({
                 agent={() => ({
                   kind: "study-accuracy-trend",
                   location,
-                  description: `Weekly accuracy (percent of graded answers correct) over the last ${weeks} weeks, as drawn on the chart.`,
+                  description: `Weekly accuracy (percent of graded answers correct, ${itemType ? `${itemType} only` : "every study mode"}) over the last ${weeks} weeks, as drawn on the chart; null = no graded answers that week.`,
                   data: accuracyData,
                   summary: accuracyText(),
                   attributes: { weeks },
@@ -354,30 +382,42 @@ export function StudyTrends({
                   axisLine={false}
                   fontSize={11}
                   minTickGap={20}
+                  tick={(props) => (
+                    <WeekTick {...props} empty={emptyWeeks.has(String(props.payload?.value))} />
+                  )}
                 />
                 <YAxis
                   tickLine={false}
                   axisLine={false}
                   fontSize={11}
                   domain={[0, 100]}
-                  width={36}
+                  ticks={[0, 25, 50, 75, 100]}
+                  tickFormatter={(v: number) => `${v}%`}
+                  width={40}
                 />
                 <ChartTooltip
                   content={
                     <ChartTooltipContent
-                      formatter={(value) =>
-                        value == null ? "No data" : `${value}%`
-                      }
+                      formatter={(value, _name, item) => {
+                        const answers = (item?.payload as { answers?: number } | undefined)?.answers ?? 0;
+                        return value == null
+                          ? "No graded answers this week"
+                          : `${value}% of ${answers} graded answer${answers === 1 ? "" : "s"}`;
+                      }}
                     />
                   }
                 />
+                {/* Real weeks only: no curve invented between them, no line
+                    drawn across a week with no graded answers. */}
                 <Line
                   dataKey="accuracy"
-                  type="monotone"
+                  type="linear"
                   stroke="var(--color-accuracy)"
                   strokeWidth={2}
-                  dot={{ r: 3 }}
-                  connectNulls
+                  dot={{ r: 3.5 }}
+                  activeDot={{ r: 5 }}
+                  connectNulls={false}
+                  isAnimationActive={false}
                 />
               </LineChart>
             </ChartContainer>
@@ -440,12 +480,14 @@ export function StudyTrends({
                   tickLine={false}
                   axisLine={false}
                   fontSize={11}
-                  width={36}
+                  allowDecimals={false}
+                  tickFormatter={(v: number) => `${v}m`}
+                  width={40}
                 />
                 <ChartTooltip
                   content={
                     <ChartTooltipContent
-                      formatter={(value) => `${value} min`}
+                      formatter={(value) => `${value} min studied`}
                     />
                   }
                 />
@@ -509,7 +551,7 @@ export function StudyTrends({
                             ? "bg-amber-500"
                             : "bg-red-500",
                       )}
-                      style={{ width: `${Math.max(4, t.avgMasteryPct)}%` }}
+                      style={{ width: `${t.avgMasteryPct}%` }}
                     />
                   </div>
                   <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
@@ -541,5 +583,36 @@ export function StudyTrends({
         </section>
       )}
     </div>
+  );
+}
+
+/** An x-axis week label; a week with no graded answers reads muted, with a dash. */
+function WeekTick({
+  x,
+  y,
+  payload,
+  empty,
+}: {
+  x?: number | string;
+  y?: number | string;
+  payload?: { value?: unknown };
+  empty: boolean;
+}) {
+  return (
+    <g transform={`translate(${x ?? 0},${y ?? 0})`}>
+      <text
+        dy={12}
+        textAnchor="middle"
+        fontSize={11}
+        className={empty ? "fill-muted-foreground/50" : "fill-muted-foreground"}
+      >
+        {String(payload?.value ?? "")}
+      </text>
+      {empty && (
+        <line x1={-4} x2={4} y1={-6} y2={-6} className="stroke-muted-foreground/50" strokeWidth={1.5}>
+          <title>No graded answers this week</title>
+        </line>
+      )}
+    </g>
   );
 }
