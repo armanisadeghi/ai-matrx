@@ -38,7 +38,10 @@ procedure — open it only when you are doing that job or the check fails.
    hide a feature to make a rule pass. Database changes are part of the job
    (functions, grants, `client_callable_door` rows through the Supabase MCP, per
    CLAUDE.md; new tables only via `platform.create_entity_table`). If the fix belongs in a shared component
-   or package, fix it there. If it belongs on the server (a read wrongly gated,
+   or package, fix it there — and then prove it live on a SECOND page that
+   uses it (a shared change reaches every consumer at once), and run that
+   component's tests (`npx jest <its dir>`; menus: `npx jest features/context-menu-v3`,
+   which runs the heading check). If it belongs on the server (a read wrongly gated,
    a 4xx/5xx the page can't fix), fix it in `../aidream` under that repo's
    CLAUDE.md, same commit rules, and name both commits in your report.
 5. **Prove it live.** Every fix seen working on the real page; every main

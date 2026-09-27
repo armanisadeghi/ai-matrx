@@ -329,7 +329,10 @@ try {
             );
             const clicked = Boolean(box);
             if (box) await page.mouse.click(box.x, box.y, { button: right ? "right" : "left" });
-            await page.waitForTimeout(1500);
+            // Lazily loaded menus/dialogs: wait long enough that a stuck
+            // "Loading…" and a slow load are different pictures; page errors
+            // during the click land in consoleErrors.
+            await page.waitForTimeout(3500);
             const clickFile = file.replace(/\.png$/, `-click-${n + 1}.png`);
             await page.screenshot({ path: clickFile, animations: "disabled", timeout: 20000 }).catch(() => {});
             clickResults.push({ click: spec, found: clicked, screenshot: clickFile, consoleErrors: [...new Set(consoleErrors)].slice(0, 5) });
