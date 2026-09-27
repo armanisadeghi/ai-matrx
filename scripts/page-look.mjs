@@ -23,7 +23,12 @@
  * Usage:
  *   pnpm page:look --route /education/flashcards [--route /x/<id>] \
  *     [--base https://aimatrx.com] [--out <dir>] [--commit <sha>] [--settle 6000]
- *     [--signed-out] [--full]
+ *     [--signed-out] [--full] [--as admin|member] [--views desktop-light,phone-light]
+ *
+ * --as member looks as an ordinary signed-in person (AI_MEMBER_USERNAME /
+ * AI_MEMBER_PASSWORD, the non-admin test account) instead of the test admin.
+ * --views limits the four views (faster with --full and several clicks).
+ * look.json is written after every view, so an interrupted run keeps its data.
  *
  * --signed-out looks as a visitor (fresh profile, no sign-in) — promotional
  * pages and shared links. --full adds a full-page screenshot per view
@@ -33,6 +38,7 @@
  * views, after the screenshot, click the first SELECTOR whose text or
  * aria-label starts with TEXT (TEXT optional), then screenshot the result
  * (`*-click-N.png`) and record new console errors — open a menu, a dialog, a
+ * tab; chain steps on one load with " >> " ('right:tr=>Deck A >> [role=menuitem]=>Delete');
  * tab. Each click starts from a fresh load of the route. Never click
  * something that writes real data.
  *
@@ -58,7 +64,7 @@ function fail(message, code = 1) {
 }
 
 // ── options ───────────────────────────────────────────────────────────────
-const opts = { routes: [], base: "https://aimatrx.com", out: null, commit: null, settle: 6000, loginUrl: null, signedOut: false, full: false, clicks: [] };
+const opts = { routes: [], base: "https://aimatrx.com", out: null, commit: null, settle: 8000, loginUrl: null, signedOut: false, full: false, clicks: [], as: "admin", views: null };
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i += 1) {
   const a = argv[i];
@@ -72,6 +78,8 @@ for (let i = 0; i < argv.length; i += 1) {
   else if (a === "--signed-out") opts.signedOut = true;
   else if (a === "--full") opts.full = true;
   else if (a === "--click") (opts.clicks.push(v), (i += 1));
+  else if (a === "--as") ((opts.as = v), (i += 1));
+  else if (a === "--views") ((opts.views = v.split(",").map((x) => x.trim())), (i += 1));
   else fail(`unknown argument ${a}`);
 }
 if (!opts.routes.length) fail("pass at least one --route");
@@ -80,10 +88,9 @@ mkdirSync(opts.out, { recursive: true });
 
 // ── credentials (never printed) ───────────────────────────────────────────
 for (const file of [".env.local", ".env"]) {
-  if (process.env.AI_ADMIN_USERNAME && process.env.AI_ADMIN_PASSWORD) break;
   if (!existsSync(file)) continue;
   for (const line of readFileSync(file, "utf8").split("\n")) {
-    const m = line.match(/^\s*(AI_ADMIN_USERNAME|AI_ADMIN_PASSWORD)\s*=\s*"?([^"\n]*)"?\s*$/);
+    const m = line.match(/^\s*(AI_ADMIN_USERNAME|AI_ADMIN_PASSWORD|AI_MEMBER_USERNAME|AI_MEMBER_PASSWORD)\s*=\s*"?([^"\n]*)"?\s*$/);
     if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
   }
 }
@@ -123,7 +130,14 @@ try {
 }
 const executablePath = ["/opt/pw-browsers/chromium", process.env.SURFACE_PROBE_CHROMIUM].filter(Boolean).find((p) => existsSync(p));
 const host = new URL(opts.base).host.replace(/[^a-z0-9.-]/gi, "_");
-const profileDir = path.join(os.tmpdir(), "page-look-profiles", opts.signedOut ? `${host}-signed-out-${Date.now()}` : host);
+const profileDir = path.join(
+  os.tmpdir(),
+  "page-look-profiles",
+  opts.signedOut ? `${host}-signed-out-${Date.now()}` : `${host}-${opts.as}`,
+);
+const LOGIN = opts.as === "member"
+  ? { user: process.env.AI_MEMBER_USERNAME, pass: process.env.AI_MEMBER_PASSWORD, names: "AI_MEMBER_USERNAME / AI_MEMBER_PASSWORD" }
+  : { user: process.env.AI_ADMIN_USERNAME, pass: process.env.AI_ADMIN_PASSWORD, names: "AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD" };
 mkdirSync(profileDir, { recursive: true });
 const isLocal = /\.localhost(:\d+)?$|\/\/localhost(:\d+)?$|127\.0\.0\.1/.test(opts.base);
 
@@ -236,7 +250,8 @@ function measure(isPhone) {
   };
 }
 
-const report = { base: opts.base, at: new Date().toISOString(), routes: [] };
+const report = { base: opts.base, as: opts.signedOut ? "signed-out" : opts.as, at: new Date().toISOString(), routes: [] };
+const saveReport = () => writeFileSync(path.join(opts.out, "look.json"), JSON.stringify(report, null, 2));
 const context = await chromium.launchPersistentContext(profileDir, {
   headless: true,
   args: ["--no-sandbox"],
@@ -257,9 +272,9 @@ try {
     await page.goto(`${opts.base}/login`, { timeout: 120000 });
     await page.waitForTimeout(4000);
     if (await page.locator('input[type="email"]').count()) {
-      if (!process.env.AI_ADMIN_USERNAME || !process.env.AI_ADMIN_PASSWORD) fail("AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD are not set");
-      await page.fill('input[type="email"]', process.env.AI_ADMIN_USERNAME);
-      await page.fill('input[type="password"]', process.env.AI_ADMIN_PASSWORD);
+      if (!LOGIN.user || !LOGIN.pass) fail(`${LOGIN.names} are not set (environment or .env.local)`);
+      await page.fill('input[type="email"]', LOGIN.user);
+      await page.fill('input[type="password"]', LOGIN.pass);
       await page.evaluate(() => document.querySelector("form")?.requestSubmit());
       await page.waitForFunction(() => !document.querySelector('input[type="email"]'), null, { timeout: 45000 }).catch(() => {});
       await page.waitForTimeout(2000);
@@ -269,9 +284,11 @@ try {
   for (const route of opts.routes) {
     const slug = route.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "root";
     const entry = { route, views: {} };
+    report.routes.push(entry);
     for (const view of VIEWS) {
       await page.setViewportSize({ width: view.width, height: view.height });
       for (const theme of ["light", "dark"]) {
+        if (opts.views && !opts.views.includes(`${view.name}-${theme}`)) continue;
         consoleErrors.length = 0;
         failedRequests.length = 0;
         await page.emulateMedia({ colorScheme: theme });
@@ -308,10 +325,15 @@ try {
         const clickResults = [];
         if (theme === "light") {
           for (const [n, spec] of opts.clicks.entries()) {
-            const [selector, text = ""] = spec.split("=>");
             await page.goto(`${opts.base}${route}`, { timeout: 600000 });
             await page.waitForTimeout(opts.settle);
             consoleErrors.length = 0;
+            // A spec may chain steps with " >> " (right-click a row, then pick
+            // a menu item): every step runs on the same load, in order.
+            const steps = spec.split(" >> ");
+            let clicked = true;
+            for (const [stepIndex, step] of steps.entries()) {
+            const [selector, text = ""] = step.split("=>");
             const right = selector.startsWith("right:");
             const sel = right ? selector.slice(6) : selector;
             const box = await page.evaluate(
@@ -327,8 +349,10 @@ try {
               },
               [sel, text.trim()],
             );
-            const clicked = Boolean(box);
+            if (!box) clicked = false;
             if (box) await page.mouse.click(box.x, box.y, { button: right ? "right" : "left" });
+            if (stepIndex < steps.length - 1) await page.waitForTimeout(1500);
+            }
             // Lazily loaded menus/dialogs: wait long enough that a stuck
             // "Loading…" and a slow load are different pictures; page errors
             // during the click land in consoleErrors.
@@ -348,9 +372,9 @@ try {
           consoleErrors: [...new Set(consoleErrors)].slice(0, 10),
           failedRequests: [...new Set(failedRequests)].slice(0, 10),
         };
+        saveReport(); // written after every view, so a killed run keeps what it saw
       }
     }
-    report.routes.push(entry);
   }
 } finally {
   await context.close();
@@ -359,10 +383,11 @@ try {
 const file = path.join(opts.out, "look.json");
 writeFileSync(file, JSON.stringify(report, null, 2));
 for (const r of report.routes) {
-  const d = r.views["desktop-light"];
-  const p = r.views["phone-light"];
-  console.log(
-    `${r.route}: desktop used ${d.firstScreen.usedPct}% (largest empty band ${d.firstScreen.largestEmptyBandPx}px), under-header ${d.underHeader.length}, small text ${d.smallText.length}, emoji ${d.emoji.length}, console errors ${d.consoleErrors.length}; phone small targets ${p.smallTargets.length}, sideways scroll ${p.horizontalOverflow}`,
-  );
+  for (const [key, v] of Object.entries(r.views)) {
+    const phone = key.startsWith("phone");
+    console.log(
+      `${r.route} [${key}]: used ${v.firstScreen.usedPct}% (largest empty band ${v.firstScreen.largestEmptyBandPx}px), under-header ${v.underHeader.length}, small text ${v.smallText.length}, emoji ${v.emoji.length}, console errors ${v.consoleErrors.length}, failed requests ${v.failedRequests.length}${phone ? `, small targets ${v.smallTargets.length}, sideways scroll ${v.horizontalOverflow}` : ""}`,
+    );
+  }
 }
 console.log(`[page-look] ${file}`);

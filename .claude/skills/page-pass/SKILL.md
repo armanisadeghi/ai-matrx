@@ -19,8 +19,11 @@ procedure — open it only when you are doing that job or the check fails.
    `look.json` — console errors, failed requests, anything under the header,
    how much of the first screen holds content, headings, text under 12px,
    emoji, small phone targets. Add `--full` to see below the fold,
-   `--signed-out` for what a visitor sees, and `--click 'SELECTOR=>TEXT'`
-   (repeatable) to open each menu, dialog and tab and capture it. Read every
+   `--signed-out` for what a visitor sees, `--as member` for an ordinary
+   (non-admin) person, `--views desktop-light,phone-light` to go faster, and
+   `--click '[right:]SELECTOR=>TEXT'` (repeatable; chain steps on one load with
+   ` >> `) to open each menu, dialog and tab and capture it. A slow page needs
+   `--settle 12000`. Read every
    screenshot yourself; the numbers are places to look, not verdicts. For a
    longer interaction, write a throwaway Playwright script in your own TMPDIR
    modelled on `scripts/page-look.mjs` — never a dev server. Use it the way a person would: click every

@@ -44,6 +44,8 @@ const DEFAULT_CHECKS = [
   "check:unwired",
   "check:copy-everywhere",
   "check:client-server-only",
+  "check:scroll-chain:strict",
+  "light-dark",
 ];
 
 const argv = process.argv.slice(2);
@@ -66,9 +68,15 @@ if (!paths.length) {
 const needles = [...new Set(paths.map((p) => p.replace(/^\.\//, "").replace(/\/$/, "")))];
 
 const pkg = JSON.parse(execFileSync("cat", ["package.json"], { encoding: "utf8" }));
+// Non-script checks that take paths directly.
+const DIRECT = {
+  "light-dark": (paths) => ["node", [".claude/skills/light-dark-integrity/scripts/detect-light-dark.mjs", ...paths, "--strict"]],
+};
+
 function run(check) {
   return new Promise((resolve) => {
-    const child = spawn("pnpm", ["-s", check], { stdio: ["ignore", "pipe", "pipe"] });
+    const [cmd, args] = DIRECT[check] ? DIRECT[check](needles) : ["pnpm", ["-s", check]];
+    const child = spawn(cmd, args, { stdio: ["ignore", "pipe", "pipe"] });
     let text = "";
     child.stdout.on("data", (d) => (text += d));
     child.stderr.on("data", (d) => (text += d));
@@ -86,7 +94,7 @@ function run(check) {
 
 // Six at a time: the checks are independent, and serially they take ~8 minutes.
 const results = new Map();
-const queue = checks.filter((c) => pkg.scripts?.[c]);
+const queue = checks.filter((c) => pkg.scripts?.[c] || DIRECT[c]);
 await Promise.all(
   Array.from({ length: 6 }, async () => {
     while (queue.length) {
@@ -98,7 +106,7 @@ await Promise.all(
 
 let anyFindings = false;
 for (const check of checks) {
-  if (!pkg.scripts?.[check]) {
+  if (!pkg.scripts?.[check] && !DIRECT[check]) {
     console.log(`SKIP      ${check} (no such script)`);
     continue;
   }
