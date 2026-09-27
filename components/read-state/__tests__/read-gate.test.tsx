@@ -89,13 +89,8 @@ describe("ReadFailure", () => {
 });
 
 describe("ReadFailure always offers a way forward (page-pass 2026-09-27)", () => {
-  // The mocked ErrorNotice above drops `actions`; render them through a
-  // pass-through so the retry control itself is what is asserted.
-  const { ErrorNotice } = jest.requireMock("@/components/errors/ErrorNotice") as {
-    ErrorNotice: jest.Mock | ((p: unknown) => React.ReactElement);
-  };
-  void ErrorNotice;
-
+  // The mocked ErrorNotice above drops `actions`, so the element ReadFailure
+  // returns is read directly and its retry control rendered on its own.
   it("a server page (no onRetry, it cannot pass one) gets a same-URL reload", () => {
     const element = ReadFailure({ error: new Error("timed out"), what: "this message template" });
     const actions = (element.props as { actions?: React.ReactElement }).actions;
