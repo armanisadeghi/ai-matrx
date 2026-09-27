@@ -66,6 +66,8 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
   isOrganizationSelectionCancelled,
   organizationSelectionCancelledWithin,
+  WORKSPACE_REFUSAL_PATTERN,
+  workspaceNeededAnnouncedWithin,
 } from "@/lib/organization/selection-cancelled";
 import { createMatrxToast } from "@ai-matrx/kit/toast";
 
@@ -385,6 +387,12 @@ function track(
  * An error toast with no words is never an honest toast anyway.
  */
 function isSilentNotice(message: unknown, options?: RecordToastOptions): boolean {
+  // The backstop already said it, with the remedy: a caller repeating the
+  // transport's "Select an organization…" sentence adds nothing.
+  if (workspaceNeededAnnouncedWithin(5_000)) {
+    const text = `${typeof message === "string" ? message : ""} ${typeof options?.description === "string" ? options.description : ""}`;
+    if (WORKSPACE_REFUSAL_PATTERN.test(text)) return true;
+  }
   if (isOrganizationSelectionCancelled(message)) return true;
   if (isOrganizationSelectionCancelled(options?.description)) return true;
   if (typeof message === "string" && message.trim() === "") return true;

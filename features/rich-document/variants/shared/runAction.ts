@@ -6,6 +6,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import { resolveActionLabel } from "../../actions/utils";
+import { holdDeliberateIntent } from "@/lib/organization/organization-gate";
 import type {
   RichDocumentAction,
   RichDocumentActionContext,
@@ -21,7 +22,9 @@ export function runAction(
   getCtx: () => RichDocumentActionContext,
 ): void {
   const ctx = getCtx();
-  void Promise.resolve(action.run(ctx)).catch((err: unknown) => {
+  // The click's intent rides along with the work it starts (an upload, a
+  // capture), so a write at the end still counts as the person's act.
+  void holdDeliberateIntent(() => action.run(ctx)).catch((err: unknown) => {
     console.error(`[RichDocument] action ${action.id} threw`, err);
   });
 }

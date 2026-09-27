@@ -22,9 +22,21 @@
 import { callApi } from "../call-api";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+const warnings: Array<{ title: string; action?: { label: string } }> = [];
+jest.mock("@/lib/toast", () => ({
+  toast: {
+    warning: (title: string, options?: { action?: { label: string } }) => {
+      warnings.push({ title, action: options?.action });
+      return "id";
+    },
+    error: () => "id",
+  },
+}));
+
 import {
   __resetDeliberateActsForTests,
   ensureOrganizationForWrite,
+  holdDeliberateIntent,
   registerOrganizationPicker,
   settleOrganizationSelection,
 } from "@/lib/organization/organization-gate";
@@ -105,6 +117,8 @@ describe("a write with no workspace selected", () => {
     registerOrganizationPicker(null);
     global.fetch = originalFetch;
     __resetDeliberateActsForTests();
+    warnings.length = 0;
+    jest.restoreAllMocks();
   });
 
   it("the person just pressed it: asks once, waits, and sends with the chosen workspace", async () => {
@@ -233,5 +247,31 @@ describe("a write with no workspace selected", () => {
     expect(ensureOrgId).not.toMatch(/return ensureOrganizationContext\(\)/);
     const portal = readFileSync(join(root, "components/agent-copy/AlchemySessionPortal.tsx"), "utf8");
     expect(portal).toContain("await ensureOrganizationForWrite()");
+  });
+
+  it("a click's intent is carried through the slow work it starts — an upload, then the create, 30 s later, still asks", async () => {
+    click();
+    const t0 = Date.now();
+    let release: () => void = () => undefined;
+    const upload = new Promise<void>((r) => (release = r));
+    const done = holdDeliberateIntent(async () => {
+      await upload;
+      return ensureOrganizationForWrite();
+    });
+    // The clock moves far past the act window while the upload runs.
+    jest.spyOn(Date, "now").mockReturnValue(t0 + 30_000);
+    release();
+    await expect(done).resolves.toBe(CHOSEN);
+    expect(opened).toBe(1);
+  });
+
+  it("without a held intent the same late create does not ask — and never refuses silently", async () => {
+    click();
+    const t0 = Date.now();
+    jest.spyOn(Date, "now").mockReturnValue(t0 + 30_000);
+    await expect(ensureOrganizationForWrite()).rejects.toMatchObject({ code: "organization_context_required" });
+    expect(opened).toBe(0);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(warnings.map((w) => w.action?.label)).toContain("Choose workspace");
   });
 });

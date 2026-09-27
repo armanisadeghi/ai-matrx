@@ -21,6 +21,7 @@
 //     action's `section`, so every layout keeps today's groupings by name; an
 //     `inline` section's rows carry no section (no approved heading exists).
 
+import { holdDeliberateIntent } from "@/lib/organization/organization-gate";
 import {
   DuplicateActionError,
   computeEligibility,
@@ -275,8 +276,10 @@ export function toAlchemyAction(rd: RichDocumentAction): Action {
     run: async (t) => {
       const host = hostOf(t);
       if (!host) return;
-      // Handlers own their toasts, dialogs and receipts (as before).
-      await rd.run(host.getCtx());
+      // Handlers own their toasts, dialogs and receipts (as before). The
+      // click's intent rides along with the work it starts, so a write at the
+      // end of a slow step still counts as the person's act.
+      await holdDeliberateIntent(() => rd.run(host.getCtx()));
     },
   };
   converted.set(rd, action);

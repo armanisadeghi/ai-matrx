@@ -59,6 +59,7 @@ import type { OrganizationRequiredWireMembership } from "@/lib/organizations/org
 // toast layer can recognise and drop it at the boundary) and re-exported here
 // so every existing import keeps working.
 import {
+  markWorkspaceNeededAnnounced,
   organizationSelectionCancelledWithin,
   OrganizationSelectionCancelled,
   isOrganizationSelectionCancelled,
@@ -370,8 +371,31 @@ function listenForDeliberateActs(): void {
 // at boot, so it is listening long before the first write).
 listenForDeliberateActs();
 
+/**
+ * THE CLICK'S INTENT, CARRIED THROUGH ITS OWN WORK. A deliberate create that
+ * reaches a write after a slow step (an upload, a capture, an AI pass) would be
+ * outside the 5-second window by the time it asks. A shared action runner
+ * wraps the work a click STARTS in `holdDeliberateIntent`: while that work is
+ * pending, a write it makes still counts as the person's act — no wall clock.
+ * A dismissal after the hold began ends it (one act, one question).
+ */
+const intentHolds = new Set<{ startedAt: number }>();
+export function holdDeliberateIntent<T>(work: () => T | Promise<T>): Promise<T> {
+  if (!personJustActed()) return Promise.resolve().then(work);
+  const hold = { startedAt: Date.now() };
+  intentHolds.add(hold);
+  return Promise.resolve()
+    .then(work)
+    .finally(() => {
+      intentHolds.delete(hold);
+    });
+}
+
 export function personJustActed(now: number = Date.now()): boolean {
   listenForDeliberateActs();
+  for (const hold of intentHolds) {
+    if (!organizationSelectionCancelledWithin(now - hold.startedAt)) return true;
+  }
   if (lastDeliberateActAt <= 0) return false;
   const since = now - lastDeliberateActAt;
   if (since > DELIBERATE_ACT_WINDOW_MS) return false;
@@ -384,6 +408,7 @@ export function personJustActed(now: number = Date.now()): boolean {
 /** Tests only. */
 export function __resetDeliberateActsForTests(): void {
   lastDeliberateActAt = 0;
+  intentHolds.clear();
 }
 
 /**
@@ -396,14 +421,41 @@ export function __resetDeliberateActsForTests(): void {
  * raise a picker mid-sentence. `interactive` overrides for a caller that
  * knows better. Never auto-picks.
  */
-export function ensureOrganizationForWrite(
+export async function ensureOrganizationForWrite(
   organizationId?: string | null,
   options: { interactive?: boolean } = {},
 ): Promise<string> {
-  return ensureOrganizationContext({
-    organizationId,
-    interactive: options.interactive ?? personJustActed(),
-  });
+  try {
+    return await ensureOrganizationContext({
+      organizationId,
+      interactive: options.interactive ?? personJustActed(),
+    });
+  } catch (error) {
+    // THE BACKSTOP: a write refused for want of a workspace — asked or not —
+    // never refuses silently. One honest toast, with the remedy one click away.
+    // (Not right after a dismissal: "not now" stays nothing-happened, even
+    // when a retry of the same act lands here.)
+    if (isMissingOrganization(error) && !organizationSelectionCancelledWithin(5_000)) {
+      announceWorkspaceNeeded();
+    }
+    throw error;
+  }
+}
+
+function announceWorkspaceNeeded(): void {
+  markWorkspaceNeededAnnounced();
+  void import("@/lib/toast").then(({ toast }) =>
+    toast.warning("Choose a workspace to save this", {
+      id: "workspace-needed",
+      description: "Nothing was saved because no workspace is selected. Pick one, then do it again.",
+      action: {
+        label: "Choose workspace",
+        onClick: () => {
+          void ensureOrganizationContext({ interactive: true }).catch(() => undefined);
+        },
+      },
+    }),
+  );
 }
 
 export function ensureOrganizationForRequest(options: {

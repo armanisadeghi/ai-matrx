@@ -57,3 +57,19 @@ export function isOrganizationSelectionCancelled(
       (error as { name?: unknown }).name === "OrganizationSelectionCancelled")
   );
 }
+
+/**
+ * THE BACKSTOP'S MARK. A write refused for want of a workspace — asked or not —
+ * raises ONE honest toast with a "Choose workspace" action
+ * (`ensureOrganizationForWrite`). Callers still toast what they caught, which
+ * would repeat the transport's sentence; the toast layer drops an error toast
+ * that carries that sentence for a few seconds after the backstop spoke.
+ */
+export const WORKSPACE_REFUSAL_PATTERN = /select an organization|choose an organization|no organization is selected/i;
+let lastWorkspaceNeededAt = 0;
+export function markWorkspaceNeededAnnounced(): void {
+  lastWorkspaceNeededAt = Date.now();
+}
+export function workspaceNeededAnnouncedWithin(withinMs: number): boolean {
+  return lastWorkspaceNeededAt > 0 && Date.now() - lastWorkspaceNeededAt <= withinMs;
+}
