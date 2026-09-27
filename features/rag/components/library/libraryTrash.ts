@@ -35,7 +35,8 @@ export async function restoreTrashRow(row: TrashRow, doors: TrashDoors): Promise
     return `Restored "${row.file_name ?? row.name ?? "file"}" and its documents.`;
   }
   const { error } = await doors.rpc("fn_restore_library_document", { p_id: row.id });
-  if (error) throw new Error("We couldn't restore this document. You may not be allowed to restore it.");
+  // Say the server's own reason — a guard refusal is not a permission problem.
+  if (error) throw new Error(`We couldn't restore "${row.name ?? "this document"}": ${error.message}`);
   return `Restored "${row.name ?? "document"}".`;
 }
 
@@ -61,8 +62,8 @@ export async function purgeTrashGroup(group: TrashGroup, rows: readonly TrashRow
     if (error)
       throw new Error(
         i === 0
-          ? "We couldn't permanently delete this document. You may not be allowed to delete it."
-          : `${i} of ${ids.length} versions were deleted forever; the rest could not be. You may not be allowed to delete them.`,
+          ? `We couldn't permanently delete "${group.head.name ?? "this document"}": ${error.message}`
+          : `${i} of ${ids.length} versions were deleted forever; the rest could not be: ${error.message}`,
       );
   }
   return `Permanently deleted "${group.head.name ?? "document"}".`;

@@ -1107,7 +1107,8 @@ export function KnowledgeHubPage({
             </div>
           </HubFilterMenu>
         </div>
-        <div className="flex shrink-0 items-center gap-1">
+        {/* Trash lists trashed Sources only: views, layouts and search reach do not apply there. */}
+        <div className={trashView ? "hidden" : "flex shrink-0 items-center gap-1"}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="ghost" className="h-8 w-8 p-0" aria-label="Advanced search options" title="Advanced">
@@ -1163,7 +1164,7 @@ export function KnowledgeHubPage({
           {!searching ? <div className="hidden sm:block">{layoutSwitch}</div> : null}
         </div>
       </div>
-      {!searching ? <div className="sm:hidden">{layoutSwitch}</div> : null}
+      {!searching && !trashView ? <div className="sm:hidden">{layoutSwitch}</div> : null}
       {bulkBar}
       {state.stage.length && !trashView ? (
         <div className="flex flex-wrap items-center gap-1.5 text-xs" role="status">
