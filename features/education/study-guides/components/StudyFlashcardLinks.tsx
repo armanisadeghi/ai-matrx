@@ -14,14 +14,11 @@ import { useState } from "react";
 import { UniversalAssociationPicker, useContainerLinks } from "@ai-matrx/associations/react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { Note } from "@/features/notes/types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export function StudyFlashcardLinks({ guide, onChanged }: { guide: Note; onChanged: () => void }) {
   const [open, setOpen] = useState(false);
-  const userId = useAppSelector(selectUserId);
   const links = useContainerLinks({ containerType: "note", containerId: open ? guide.id : null, orgId: guide.organization_id });
   return <>
     <Button variant="outline" size="sm" className="w-full" onClick={() => setOpen(true)}>Manage linked flashcards</Button>
@@ -38,7 +35,7 @@ export function StudyFlashcardLinks({ guide, onChanged }: { guide: Note; onChang
       contentClassName="flex min-h-0 flex-1 flex-col px-3 pb-3"
     >
       {links.error && <ErrorNotice size="inline" className="text-sm" message={links.error} />}
-      <UniversalAssociationPicker tokens={["fc_set"]} ownerId={userId} orgId={guide.organization_id}
+      <UniversalAssociationPicker tokens={["fc_set"]} orgId={guide.organization_id}
         attachedKeys={new Set([...links.attachedIdsFor("fc_set")].map((id) => `fc_set:${id}`))}
         onAttach={async (token, id, title) => {
           const result = await links.attach(token, id, title);

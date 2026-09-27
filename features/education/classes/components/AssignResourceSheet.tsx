@@ -11,8 +11,6 @@
 
 import { CalendarClock } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { UniversalAssociationPicker } from "@ai-matrx/associations/react";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import { ASSIGNABLE_TOKENS } from "../constants";
@@ -37,7 +35,6 @@ export function AssignResourceSheet({
   dueDate,
   onDueDateChange,
 }: AssignResourceSheetProps) {
-  const userId = useAppSelector(selectUserId);
 
   return (
     <MatrxDynamicPanelHost
@@ -76,7 +73,6 @@ export function AssignResourceSheet({
           <UniversalAssociationPicker
             tokens={ASSIGNABLE_TOKENS as EntityTypeToken[]}
             attachedKeys={assignments.assignedKeys}
-            ownerId={userId ?? undefined}
             onAttach={(token, id, title) =>
               assignments.assign(
                 token as AssignableToken,

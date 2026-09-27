@@ -385,7 +385,6 @@ export function SaveSourcePanel({
             <UniversalAssociationPicker
               tokens={[...SAVE_TARGET_TOKENS] as EntityTypeToken[]}
               attachedKeys={attachedKeys}
-              ownerId={null}
               orgId={sourceOrgId}
               onAttach={async (token, resourceId, title) => {
                 setStaged((prev) =>

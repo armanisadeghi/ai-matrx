@@ -6,6 +6,8 @@
 export {
   useUniversalEntitySearch,
   type UniversalCandidate,
+  type UniversalSearchFailure,
+  type UniversalSearchStatus,
   type UseUniversalEntitySearchArgs,
   type UseUniversalEntitySearchReturn,
 } from "@ai-matrx/associations/react";

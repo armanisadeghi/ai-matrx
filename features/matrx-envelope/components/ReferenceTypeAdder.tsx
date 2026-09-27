@@ -10,7 +10,8 @@
  *   - `url`    → a plain URL + optional label form (no Matrx-owned id)
  *   - `scope`  → the org's scope tree, filtered by `allowedScopeTypeIds`
  *                (needs an anchor `scopeId` to resolve the org)
- *   - default  → `useAssociationCandidates` (single-token read that reports failure) for any other listable
+ *   - default  → `useUniversalEntitySearch` scoped to the one token (the ONE
+ *                search path; it reports a failed read) for any other listable
  *                `EntityTypeToken` (task, note, project, agent, app, …)
  *
  * Extracted from `features/scopes/components/reference/ReferenceValuePicker.tsx`
@@ -30,8 +31,7 @@ import {
   makeSelectScope,
   makeSelectScopeTypesForOrg,
 } from "@/features/scopes/redux/selectors/tree";
-import { useAssociationCandidates } from "@/features/scopes/hooks/useAssociationCandidates";
-import { useDebounce } from "@/hooks/usehooks/useDebounce";
+import { useUniversalEntitySearch } from "@/features/scopes/hooks/useUniversalEntitySearch";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
@@ -285,22 +285,48 @@ export function RecordReferencePicker({
   onPickMany: (items: ReferenceItem[]) => void;
 }) {
   const [query, setQuery] = useState("");
+  // Retry = remount the results body (re-runs the search) keeping the query.
+  const [attempt, setAttempt] = useState(0);
+  return (
+    <RecordReferenceSearch
+      key={attempt}
+      token={token}
+      query={query}
+      onQueryChange={setQuery}
+      onPickMany={onPickMany}
+      onRetry={() => setAttempt((n) => n + 1)}
+    />
+  );
+}
+
+function RecordReferenceSearch({
+  token,
+  query,
+  onQueryChange,
+  onPickMany,
+  onRetry,
+}: {
+  token: EntityTypeToken;
+  query: string;
+  onQueryChange: (next: string) => void;
+  onPickMany: (items: ReferenceItem[]) => void;
+  onRetry: () => void;
+}) {
+  const setQuery = onQueryChange;
   const [activeIndex, setActiveIndex] = useState(0);
   const candidateRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const info = getEntityInfo(token);
-  // One token → the single-token candidates read, which REPORTS a failed read
-  // (the cross-token universal search drops a failing token to "no rows").
-  const debouncedQuery = useDebounce(query.trim(), 250);
-  const {
-    candidates: results,
-    loading,
-    error: loadError,
-    reload,
-  } = useAssociationCandidates({
-    token,
-    search: debouncedQuery || undefined,
-    limit: 20,
+  // The ONE search path (debounced, stale-guarded) scoped to this token. It
+  // reports a failed read as `error` — never "no matches".
+  const search = useUniversalEntitySearch({
+    query,
+    tokens: [token],
+    perTokenLimit: 20,
+    emptyQueryMode: "candidates",
   });
+  const { results, loading } = search;
+  const loadError = search.error;
+  const reload = onRetry;
 
   return (
     <div className="space-y-2">
@@ -339,7 +365,7 @@ export function RecordReferencePicker({
             onRetry={reload}
           />
         ) : null}
-        {results.length === 0 && !loading && !loadError && (
+        {results.length === 0 && search.status === "ready" && (
           <p className="px-1 py-2 text-xs text-muted-foreground">
             {query.trim()
               ? "No matches."

@@ -48,7 +48,7 @@ jest.mock("@/features/scopes/host/associationsStore", () => ({
   getAssociationsStore: () => ({ titles: { fetch: async () => new Map() } }),
 }));
 jest.mock("@/features/scopes/registry/entityRegistry", () => ({ tryGetEntityInfo: () => null }));
-jest.mock("@/features/scopes/service/associationCandidates", () => ({ searchCandidatesAcrossTokens: jest.fn(async () => []) }));
+jest.mock("@/features/scopes/service/associationCandidates", () => ({ searchCandidatesAcrossTokens: jest.fn(async () => ({ results: [], failures: [] })) }));
 jest.mock("@/utils/auth/getUserId", () => ({ getUserId: () => "me" }));
 jest.mock("@/lib/organizations/organizationRequiredError", () => ({ isOrganizationRequiredError: () => false }));
 jest.mock("@/lib/organizations/organizationRefusalToast", () => ({ organizationRefusalMessage: () => "" }));

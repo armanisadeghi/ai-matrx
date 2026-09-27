@@ -11,8 +11,6 @@
 
 import { UniversalAssociationPicker } from "@ai-matrx/associations/react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@ai-matrx/design-system";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useEffect, useState } from "react";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import { listableTokens } from "@/features/scopes/registry/entityRegistry";
@@ -35,7 +33,6 @@ export function LinkRecordSheet({
   onLink: (token: string, id: string, title: string) => Promise<boolean>;
   attachedKeys?: Set<string>;
 }) {
-  const userId = useAppSelector(selectUserId);
   const { source } = useSidecar();
   // null = still asking; string = the reason it could not be asked (said, never hidden).
   const [kinds, setKinds] = useState<EntityTypeToken[] | null>(null);
@@ -82,7 +79,6 @@ export function LinkRecordSheet({
         {open && kinds !== null && kinds.length > 0 && (
           <UniversalAssociationPicker
             tokens={kinds}
-            ownerId={userId}
             attachedKeys={attachedKeys ?? new Set()}
             onAttach={async (token, id, title) => {
               const ok = await onLink(token, id, title);

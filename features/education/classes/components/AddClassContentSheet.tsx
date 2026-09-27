@@ -12,8 +12,6 @@
 // window untypeable (every-picker-takes-new-input.md rule 4).
 
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { UniversalAssociationPicker } from "@ai-matrx/associations/react";
 import { CLASS_PICKER_TOKENS } from "../hooks/useClassContent";
 import { useClassContent } from "../hooks/useClassContent";
@@ -31,7 +29,6 @@ export function AddClassContentSheet({
   className,
   content,
 }: AddClassContentSheetProps) {
-  const userId = useAppSelector(selectUserId);
 
   return (
     <MatrxDynamicPanelHost
@@ -49,7 +46,6 @@ export function AddClassContentSheet({
       <UniversalAssociationPicker
         tokens={CLASS_PICKER_TOKENS}
         attachedKeys={content.attachedKeys}
-        ownerId={userId ?? undefined}
         onAttach={(token, id, title) => content.attach(token, id, title)}
         onDetach={(token, id) => content.detach(token, id)}
       />

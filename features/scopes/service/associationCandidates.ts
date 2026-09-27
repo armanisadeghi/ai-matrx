@@ -17,6 +17,8 @@ export type {
   CandidatesResult,
   ListCandidatesArgs,
   SearchAcrossTokensArgs,
+  SearchAcrossTokensResult,
+  TokenSearchFailure,
   UniversalCandidate,
 } from "@ai-matrx/associations/core";
 
@@ -24,6 +26,7 @@ export function listAssociationCandidates(args: ListCandidatesArgs) {
   return getAssociationsStore().candidates.listAssociationCandidates(args);
 }
 
+/** `{ results, failures }` — a failed token is reported, never silently dropped. */
 export function searchCandidatesAcrossTokens(args: SearchAcrossTokensArgs) {
   return getAssociationsStore().candidates.searchCandidatesAcrossTokens(args);
 }

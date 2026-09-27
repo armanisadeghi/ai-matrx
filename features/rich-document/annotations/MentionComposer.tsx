@@ -14,6 +14,8 @@ import { AtSign, CalendarDays, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { searchCandidatesAcrossTokens } from "@/features/scopes/service/associationCandidates";
+import { describeSearchFailures } from "@ai-matrx/associations/react";
+import { getAssociationsStore } from "@/features/scopes/host/associationsStore";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { dateMention, parseDateQuery, personMention, recordMention } from "./mentions";
 import { mentionCandidates } from "./service";
@@ -64,6 +66,9 @@ export function MentionComposer({
   const [options, setOptions] = useState<Option[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchFailed, setSearchFailed] = useState(false);
+  // Record types the last search could not read ("Couldn't search Notes") —
+  // a partial search never passes itself off as the whole answer.
+  const [recordGaps, setRecordGaps] = useState<string | null>(null);
   const [cursor, setCursor] = useState(0);
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +87,7 @@ export function MentionComposer({
     const handle = setTimeout(async () => {
       setSearching(true);
       setSearchFailed(false);
+      setRecordGaps(null);
       const next: Option[] = [];
       const date = parseDateQuery(query);
       if (date) {
@@ -95,11 +101,25 @@ export function MentionComposer({
           return [];
         }) : Promise.resolve([]),
         query.length >= 2
-          ? searchCandidatesAcrossTokens({ search: query, perTokenLimit: 3 }).catch((e: unknown) => {
-              console.error("[annotations] record search failed", e);
-              setSearchFailed(true);
-              return [];
-            })
+          ? searchCandidatesAcrossTokens({ search: query, perTokenLimit: 3 })
+              .then(({ results, failures }) => {
+                if (failures.length > 0 && !stale) {
+                  // Every token failed → the record search failed; some
+                  // failed → name them above what did come back.
+                  if (failures.length >= getAssociationsStore().registry.listableTokens().length) {
+                    setSearchFailed(true);
+                    setRecordGaps("Couldn't search records");
+                  } else {
+                    setRecordGaps(describeSearchFailures(failures, (t) => tryGetEntityInfo(t)?.labelPlural ?? t));
+                  }
+                }
+                return results;
+              })
+              .catch((e: unknown) => {
+                console.error("[annotations] record search failed", e);
+                setSearchFailed(true);
+                return [];
+              })
           : Promise.resolve([]),
       ]);
       for (const p of people) {
@@ -209,6 +229,11 @@ export function MentionComposer({
       />
       {query != null && (
         <div role="listbox" aria-label="Mention" className="absolute left-0 right-0 top-full z-10 mt-1 max-h-60 overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-lg">
+          {recordGaps && !searching && options.length > 0 && (
+            <p role="status" className="px-2 py-1 text-[11px] text-destructive">
+              {recordGaps}
+            </p>
+          )}
           {searching && options.length === 0 ? (
             <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
