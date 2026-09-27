@@ -560,6 +560,28 @@ const values: SurfaceValue[] = [
     sortOrder: 510,
   },
   {
+    name: "contact_candidates",
+    label: "Contact suggestions",
+    description:
+      "Suggested addresses shown in the Contact details card, none of them usable until a person confirms one: id, address, person name, role title, verification status (verified | risky | invalid | unverified), shared-inbox flag, engagement score, source, and the reasons it was suggested. Omitted until the card has read them.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 900,
+    group: "reachability",
+    sortOrder: 240,
+  },
+  {
+    name: "contact_candidates_load_error",
+    label: "Contact suggestions load error",
+    description:
+      "The sentence the Contact details card shows when its suggestions could not be read. Empty when the list is trustworthy.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    group: "reachability",
+    sortOrder: 241,
+  },
+  {
     name: "merge_state",
     label: "Merge state",
     description:
@@ -799,6 +821,18 @@ export interface CrmRecordContactableSummary {
   blocked_reasons: string[];
 }
 
+export interface CrmRecordContactCandidateScope {
+  id: string;
+  address: string;
+  person_name: string | null;
+  role_title: string | null;
+  verification_status: string;
+  is_role_address: boolean;
+  engagement_score: number | null;
+  source: string;
+  why: string[];
+}
+
 export interface CrmRecordCategoryScope {
   id: string;
   name: string;
@@ -850,6 +884,8 @@ export function createCrmRecordScope(values: {
   last_touch_at?: string;
   notes?: unknown[];
   notes_load_error?: string;
+  contact_candidates?: CrmRecordContactCandidateScope[];
+  contact_candidates_load_error?: string;
   merge_state?: Record<string, unknown>;
   is_loading: boolean;
   load_error?: string;

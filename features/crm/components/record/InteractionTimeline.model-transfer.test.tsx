@@ -32,6 +32,14 @@ jest.mock("./SectionCard", () => ({
     <div>{children}</div>
   ),
 }));
+// The row's delete control is a TapButton (Radix tooltip inside); this seam
+// test renders without the app's TooltipProvider, so stand it in plainly.
+jest.mock("@ai-matrx/tap-target/buttons", () => ({
+  TrashTapButton: ({ ariaLabel, onClick }: { ariaLabel?: string; onClick?: () => void }) => (
+    <button type="button" aria-label={ariaLabel} onClick={onClick} />
+  ),
+}));
+
 jest.mock("@/components/official/ProInput", () => ({
   ProInput: () => null,
 }));

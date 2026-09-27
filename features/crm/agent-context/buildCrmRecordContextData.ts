@@ -19,8 +19,10 @@ import {
   type CrmRecordCategoryScope,
   type CrmRecordContactPointScope,
   type CrmRecordContactableSummary,
+  type CrmRecordContactCandidateScope,
 } from "@/features/surfaces/manifests/crm-record.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { ContactCandidateView } from "../enrichment/service";
 import type { PlatformComment as Comment } from "@ai-matrx/associations";
 import {
   CONTACT_BLOCK_REASON_LABELS,
@@ -42,6 +44,9 @@ export interface BuildCrmRecordContextDataArgs {
   roles?: CrmRecordCategoryScope[];
   notes?: Comment[];
   notesLoadError?: string | null;
+  /** Suggested ways to reach this record, as the Contact details card shows them. `null` = not read yet. */
+  contactCandidates?: ContactCandidateView[] | null;
+  contactCandidatesLoadError?: string | null;
 }
 
 /** The exact non-content interaction context permitted across the model boundary. */
@@ -76,6 +81,22 @@ function buildContactPoints(detail: PartyDetail): CrmRecordContactPointScope[] {
   });
 }
 
+function candidateScope(
+  row: ContactCandidateView,
+): CrmRecordContactCandidateScope {
+  return {
+    id: row.id,
+    address: row.address,
+    person_name: row.person_name ?? null,
+    role_title: row.role_title ?? null,
+    verification_status: row.verification_status ?? "unverified",
+    is_role_address: Boolean(row.is_role_address),
+    engagement_score: row.engagement_score ?? null,
+    source: row.source,
+    why: row.why ?? [],
+  };
+}
+
 function summarize(
   points: CrmRecordContactPointScope[],
 ): CrmRecordContactableSummary {
@@ -101,12 +122,15 @@ export function buildCrmRecordContextData(
   const { detail, isLoading } = args;
   const loadError = args.loadError ?? undefined;
   const notesLoadError = args.notesLoadError ?? undefined;
+  const contactCandidatesLoadError =
+    args.contactCandidatesLoadError ?? undefined;
 
   if (!detail) {
     return createCrmRecordScope({
       is_loading: isLoading,
       load_error: loadError,
       notes_load_error: notesLoadError,
+      contact_candidates_load_error: contactCandidatesLoadError,
     });
   }
 
@@ -183,6 +207,9 @@ export function buildCrmRecordContextData(
     last_touch_at: interactionContext.lastTouchAt,
     notes: args.notes ?? [],
     notes_load_error: notesLoadError,
+    // Omitted until read; a failed read reports only its sentence.
+    contact_candidates: args.contactCandidates?.map(candidateScope),
+    contact_candidates_load_error: contactCandidatesLoadError,
     merge_state: party.canonical_id
       ? { merged_into_party_id: party.canonical_id, is_canonical: false }
       : undefined,

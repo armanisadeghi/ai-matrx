@@ -22,7 +22,7 @@
  *    exists" — and that is what it says.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BadgeCheck,
   ContactRound,
@@ -37,6 +37,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@ai-matrx/design-system";
 import {
   confirmCandidate,
   fetchContactCandidates,
@@ -54,6 +55,14 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface Props {
   partyId: string;
   onChanged?: () => void;
+  /**
+   * What this card shows, handed up so the page's agent scope can emit it:
+   * the candidate rows once read, or the failure sentence the card shows.
+   */
+  onStateChange?: (
+    rows: ContactCandidateView[] | null,
+    loadError: string | null,
+  ) => void;
 }
 
 /** The verification word a non-technical person can act on. */
@@ -74,20 +83,39 @@ function verificationLabel(candidate: ContactCandidateView): {
   }
 }
 
-export function ContactCandidatesCard({ partyId, onChanged }: Props) {
+export function ContactCandidatesCard({
+  partyId,
+  onChanged,
+  onStateChange,
+}: Props) {
   const [rows, setRows] = useState<ContactCandidateView[] | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [finding, setFinding] = useState(false);
 
+  // Held in a ref so an inline parent callback never re-creates `load` and
+  // re-fires the read on every render.
+  const reportState = useRef(onStateChange);
+  useEffect(() => {
+    reportState.current = onStateChange;
+  });
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      setRows(await fetchContactCandidates(partyId));
+      const next = await fetchContactCandidates(partyId);
+      setRows(next);
+      reportState.current?.(next, null);
     } catch (cause) {
       setError(cause);
+      reportState.current?.(
+        null,
+        isOrganizationRequiredError(cause)
+          ? "No organization is selected, so contact suggestions were not read."
+          : extractErrorMessage(cause),
+      );
     } finally {
       setLoading(false);
     }
@@ -98,6 +126,17 @@ export function ContactCandidatesCard({ partyId, onChanged }: Props) {
   }, [load]);
 
   const find = async () => {
+    // AN EXPENSIVE CLICK SAYS WHAT IT COSTS FIRST. The free rung (the
+    // record's own pages, the registries) always runs; the paid rung spends
+    // this organization's monthly contact-finding budget. Answers are cached
+    // server-side, so asking again soon costs nothing.
+    const ok = await confirm({
+      title: "Search paid contact providers too?",
+      description:
+        "We check free sources first, then ask paid contact providers. Each paid lookup costs a few cents from this organization's monthly contact-finding budget; results are reused for two weeks, so repeating the search soon is free.",
+      confirmLabel: "Search, including paid",
+    });
+    if (!ok) return;
     setFinding(true);
     try {
       const result = await findContacts(partyId, { usePaidProviders: true });
@@ -174,6 +213,7 @@ export function ContactCandidatesCard({ partyId, onChanged }: Props) {
 
   return (
     <SectionCard
+      empty={!loading && error == null && rows?.length === 0}
       title="Contact details"
       Icon={ContactRound}
       count={rows?.length}
@@ -209,9 +249,10 @@ export function ContactCandidatesCard({ partyId, onChanged }: Props) {
       }
     >
       {loading && !rows && (
-        <p className="py-3 text-center text-xs text-muted-foreground">
-          Loading suggestions…
-        </p>
+        <div className="space-y-2 py-2" aria-label="Loading contact suggestions">
+          <Skeleton className="h-10 w-full rounded" />
+          <Skeleton className="h-10 w-full rounded" />
+        </div>
       )}
 
       {error != null &&

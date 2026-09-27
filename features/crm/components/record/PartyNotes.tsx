@@ -8,9 +8,10 @@
 // (2026-09-22) cmt_add would also read it off the party record itself, and it
 // REFUSES a p_org_id that disagrees with the record's own organization.
 
+import { TrashTapButton } from "@ai-matrx/tap-target/buttons";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
-import { AlertTriangle, NotebookText, Trash2 } from "lucide-react";
+import { AlertTriangle, NotebookText } from "lucide-react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { commentsService } from "@/features/scopes/service/commentsService";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -288,14 +289,11 @@ export function PartyNotes({
                         json={() => copyView}
                       />
                     )}
-                    <button
-                      type="button"
-                      aria-label="Delete note"
+                    <TrashTapButton
+                      ariaLabel="Delete note"
                       onClick={() => void remove(comment)}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive lg:h-5 lg:w-5 lg:pointer-fine:opacity-0 lg:group-hover:opacity-100"
-                    >
-                      <Trash2 className="size-[18px] lg:size-3" />
-                    </button>
+                      className="opacity-100 lg:pointer-fine:opacity-0 lg:group-hover:opacity-100"
+                    />
                   </span>
                 </div>
                 <CollapsibleText

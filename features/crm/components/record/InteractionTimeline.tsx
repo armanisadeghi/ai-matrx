@@ -7,6 +7,7 @@
 // party row: touch history derives from crm.interaction (party is versioned;
 // a stored column would snapshot the whole row on every dial).
 
+import { TrashTapButton } from "@ai-matrx/tap-target/buttons";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useState } from "react";
 import Link from "next/link";
@@ -22,7 +23,6 @@ import {
   NotebookPen,
   Phone,
   Send,
-  Trash2,
 } from "lucide-react";
 import { InboundLabelBadge } from "../outreach-lists/badges";
 import type { LucideIcon } from "lucide-react";
@@ -489,14 +489,11 @@ export function InteractionTimeline({
                       }
                     />
                   )}
-                  <button
-                    type="button"
-                    aria-label="Delete entry"
+                  <TrashTapButton
+                    ariaLabel="Delete entry"
                     onClick={() => void remove(row)}
-                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive lg:h-5 lg:w-5 lg:pointer-fine:opacity-0 lg:group-hover:opacity-100"
-                  >
-                    <Trash2 className="size-[18px] lg:size-3" />
-                  </button>
+                    className="shrink-0 opacity-100 lg:pointer-fine:opacity-0 lg:group-hover:opacity-100"
+                  />
                 </span>
               </li>
             );

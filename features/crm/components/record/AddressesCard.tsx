@@ -2,9 +2,10 @@
 
 // features/crm/components/record/AddressesCard.tsx — postal addresses.
 
+import { PlusTapButton, TrashTapButton, XTapButton } from "@ai-matrx/tap-target/buttons";
 import { useState } from "react";
 import { toast } from "@/lib/toast";
-import { MapPin, Plus, Trash2, X } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import {
@@ -145,18 +146,11 @@ export function AddressesCard({
               json={() => addressCopyViews}
             />
           )}
-          <button
-            type="button"
-            onClick={() => setAdding((v) => !v)}
-            aria-label={adding ? "Cancel add" : "Add address"}
-            className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground sm:h-6 sm:w-6"
-          >
-            {adding ? (
-              <X className="h-3.5 w-3.5" />
-            ) : (
-              <Plus className="h-3.5 w-3.5" />
-            )}
-          </button>
+          {adding ? (
+            <XTapButton ariaLabel="Cancel add" onClick={() => setAdding(false)} />
+          ) : (
+            <PlusTapButton ariaLabel="Add address" onClick={() => setAdding(true)} />
+          )}
         </div>
       }
     >
@@ -239,14 +233,11 @@ export function AddressesCard({
               <span className="min-w-0 truncate text-sm text-foreground">
                 {formatAddress(address) || "—"}
               </span>
-              <button
-                type="button"
-                aria-label="Remove address"
+              <TrashTapButton
+                ariaLabel="Remove address"
                 onClick={() => void remove(address)}
-                className="ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive sm:h-6 sm:w-6 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+                className="ml-auto shrink-0 opacity-100 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100"
+              />
             </li>
           ))}
         </ul>

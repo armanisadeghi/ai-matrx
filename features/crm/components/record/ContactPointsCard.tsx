@@ -8,6 +8,8 @@
 // medium's, shown wherever the value is shown. The primary star flips ONLY
 // through the crm_set_primary_contact_point RPC.
 
+import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
+import { PlusTapButton, TrashTapButton, XTapButton } from "@ai-matrx/tap-target/buttons";
 import { useState } from "react";
 import { toast } from "@/lib/toast";
 import {
@@ -17,10 +19,7 @@ import {
   Link2,
   MessageSquare,
   Phone,
-  Plus,
   Star,
-  Trash2,
-  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -291,18 +290,11 @@ export function ContactPointsCard({
               json={() => contactCopyViews}
             />
           )}
-          <button
-            type="button"
-            onClick={() => setAdding((v) => !v)}
-            aria-label={adding ? "Cancel add" : "Add contact method"}
-            className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground sm:h-6 sm:w-6"
-          >
-            {adding ? (
-              <X className="h-3.5 w-3.5" />
-            ) : (
-              <Plus className="h-3.5 w-3.5" />
-            )}
-          </button>
+          {adding ? (
+            <XTapButton ariaLabel="Cancel add" onClick={() => setAdding(false)} />
+          ) : (
+            <PlusTapButton ariaLabel="Add contact method" onClick={() => setAdding(true)} />
+          )}
         </div>
       }
     >
@@ -402,17 +394,17 @@ export function ContactPointsCard({
                 <span className="ml-auto flex shrink-0 items-center gap-0.5">
                   {/* A problem we can detect ships with its one-click fix. */}
                   {isTenantSuppressed(point.medium) && (
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => void unsuppress(point)}
-                      className="min-h-11 rounded px-2 text-xs font-medium text-primary hover:bg-primary/10 sm:min-h-6 sm:px-1.5 sm:text-xs"
+                      className="h-6 px-1.5 text-xs font-medium text-primary"
                     >
                       Allow contact
-                    </button>
+                    </Button>
                   )}
-                  <button
-                    type="button"
-                    aria-label={
+                  <TapTargetButtonTransparent
+                    ariaLabel={
                       point.is_primary
                         ? "Primary contact method"
                         : "Make primary"
@@ -420,28 +412,25 @@ export function ContactPointsCard({
                     onClick={() => {
                       if (!point.is_primary) void makePrimary(point);
                     }}
-                    className={cn(
-                      "inline-flex h-11 w-11 items-center justify-center rounded sm:h-6 sm:w-6",
+                    className={
                       point.is_primary
                         ? "text-amber-500"
-                        : "text-muted-foreground/60 opacity-100 hover:text-amber-500 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100",
-                    )}
-                  >
-                    <Star
-                      className={cn(
-                        "h-3.5 w-3.5",
-                        point.is_primary && "fill-amber-400",
-                      )}
-                    />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Remove contact method"
+                        : "text-muted-foreground/60 hover:text-amber-500 opacity-100 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100"
+                    }
+                    icon={
+                      <Star
+                        className={cn(
+                          "h-3.5 w-3.5",
+                          point.is_primary && "fill-amber-400",
+                        )}
+                      />
+                    }
+                  />
+                  <TrashTapButton
+                    ariaLabel="Remove contact method"
                     onClick={() => void remove(point)}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive sm:h-6 sm:w-6 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                    className="opacity-100 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100"
+                  />
                 </span>
               </li>
             );

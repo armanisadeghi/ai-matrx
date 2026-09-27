@@ -10,11 +10,13 @@
 // Company view: everyone who works / worked here (read-only rows that link
 // to the person).
 
+import { PlusTapButton, XTapButton } from "@ai-matrx/tap-target/buttons";
+import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { Briefcase, Building2, LogOut, Plus, Users, X } from "lucide-react";
+import { Briefcase, Building2, LogOut, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -319,18 +321,11 @@ export function EmploymentCard(props: Props) {
             />
           )}
           {isPerson && (
-            <button
-              type="button"
-              onClick={() => setAdding((v) => !v)}
-              aria-label={adding ? "Cancel add" : "Add employment"}
-              className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground sm:h-6 sm:w-6"
-            >
-              {adding ? (
-                <X className="h-3.5 w-3.5" />
-              ) : (
-                <Plus className="h-3.5 w-3.5" />
-              )}
-            </button>
+            adding ? (
+              <XTapButton ariaLabel="Cancel add" onClick={() => setAdding(false)} />
+            ) : (
+              <PlusTapButton ariaLabel="Add employment" onClick={() => setAdding(true)} />
+            )
           )}
         </div>
       }
@@ -423,20 +418,17 @@ export function EmploymentCard(props: Props) {
                     {stintDates(a.start_date, a.end_date)}
                   </span>
                   {a.is_current ? (
-                    <button
-                      type="button"
-                      aria-label="End this stint"
-                      title="End this stint"
+                    <TapTargetButtonTransparent
+                      ariaLabel="End this stint"
                       onClick={() =>
                         void end(
                           a.id,
                           a.employer?.display_name ?? "this company",
                         )
                       }
-                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive sm:h-6 sm:w-6 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100"
-                    >
-                      <LogOut className="h-3.5 w-3.5" />
-                    </button>
+                      className="shrink-0 text-muted-foreground/60 hover:text-destructive opacity-100 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100"
+                      icon={<LogOut className="h-3.5 w-3.5" />}
+                    />
                   ) : (
                     <span className="shrink-0 rounded-full border border-border bg-muted px-1.5 py-0.5 text-xs leading-none text-muted-foreground">
                       Past

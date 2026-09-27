@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
+import type { ContactCandidateView } from "../../enrichment/service";
 import { useOpenGmailComposeWindow } from "@/features/overlays/openers/gmailComposeWindow";
 import { selectActiveProjectId } from "@/features/scopes/redux/selectors/active-context";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -85,6 +86,12 @@ export function PartyRecordPage({ partyId }: Props) {
   const { detail, isLoading, error, refresh } = usePartyDetail(partyId);
   const [notes, setNotes] = useState<Comment[]>([]);
   const [notesLoadError, setNotesLoadError] = useState<string | null>(null);
+  const [contactCandidates, setContactCandidates] = useState<
+    ContactCandidateView[] | null
+  >(null);
+  const [contactCandidatesLoadError, setContactCandidatesLoadError] = useState<
+    string | null
+  >(null);
   const { categories: lifecycleStages } = useCategories({
     dimension: CATEGORY_DIMENSIONS.crmLifecycleStage,
   });
@@ -158,6 +165,8 @@ export function PartyRecordPage({ partyId }: Props) {
       roles,
       notes,
       notesLoadError,
+      contactCandidates,
+      contactCandidatesLoadError,
     });
 
   return (
@@ -350,7 +359,14 @@ export function PartyRecordPage({ partyId }: Props) {
                     crawl, the paid waterfall, the registries, the extension —
                     writes ONE ranked list, and none of it is contactable until
                     somebody confirms a row here. */}
-                <ContactCandidatesCard partyId={party.id} onChanged={refresh} />
+                <ContactCandidatesCard
+                  partyId={party.id}
+                  onChanged={refresh}
+                  onStateChange={(rows, loadError) => {
+                    setContactCandidates(rows);
+                    setContactCandidatesLoadError(loadError);
+                  }}
+                />
                 {/* Only for people, and only when we have somewhere to look:
                     "is this journalist still there, and what do they cover?" */}
                 {isPerson && (
