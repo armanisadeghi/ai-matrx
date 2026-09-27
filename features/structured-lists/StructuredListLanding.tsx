@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
  *   /lists       → this landing
  *   /lists/v1    → StructuredListManagerV1 (sidebar + spreadsheet)
  *   /lists/v2    → StructuredListManagerV2 (compact switcher + flat table)
- *   /lists/v3    → StructuredListManagerV3 (Notion-style document) — current primary
+ *   /lists/v3    → PicklistsIndex (every picklist, from the list index; each opens at /lists/<id>) — current primary
  */
 
 const FEATURES = [
@@ -104,15 +104,14 @@ const VARIANTS: Array<{
   {
     href: "/lists/v3",
     badge: "v3",
-    title: "Notion-style document",
+    title: "Your picklists",
     tagline:
-      "List as a clean document: inline title + description, items as lines, hover reveals controls.",
+      "Every picklist of your organization in one list; each one opens as a table of its choices.",
     bullets: [
-      "Document-feel layout, no table chrome",
-      "Items as lines with one-line preview of description/help text",
-      "Click row (or chevron / Cmd+Enter) to expand into a full edit form",
-      "Collapsible, inline-renamable group sections",
-      "Autosave w/ 500ms debounce; undoable destructive actions via toast",
+      "Find a picklist by name or description",
+      "New picklist in one step, filed in the organization you are working in",
+      "Each choice is a row: label, description, help text, group and icon",
+      "Archived picklists wait under the list and come back in one click",
     ],
     icon: FileText,
     primary: true,
@@ -157,7 +156,7 @@ export default function StructuredListLanding() {
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button size="lg" className="gap-2" asChild>
               <Link href="/lists/v3">
-                Open editor
+                Open your picklists
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>

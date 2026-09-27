@@ -4,9 +4,8 @@ import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 
 export const metadata = createRouteMetadata("/lists", {
-  titlePrefix: "v3",
   title: "Picklists",
-  description: "Picklist UI variant 3.",
+  description: "Every picklist of your organization.",
   letter: "L3",
 });
 
