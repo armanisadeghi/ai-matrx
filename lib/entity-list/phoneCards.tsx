@@ -33,6 +33,7 @@ import { ChevronDown } from "lucide-react";
 import type { MatrxDataTableMobileCardControls } from "@ai-matrx/design-system/data-table/types";
 import { cn } from "@/lib/utils";
 import { DATE_FILTER_OPTIONS, type EntityColumnSpec } from "./columns";
+import { cellIsEmpty } from "./columnWidths";
 
 /**
  * Where a column belongs on the phone card.
@@ -182,18 +183,31 @@ const FIELD_GRID = "grid grid-cols-[minmax(5.5rem,auto)_minmax(0,1fr)] items-bas
  * kebab, so the card forks neither.
  */
 export function EntityPhoneCard<TRow>({
-  layout,
+  layout: declaredLayout,
   controls,
   rowId,
   rowName,
+  row,
 }: {
   layout: PhoneCardLayout<TRow>;
   controls: MatrxDataTableMobileCardControls;
   rowId: string;
   rowName: string;
+  /** The row itself: a field with nothing in it is left off this card. */
+  row?: TRow;
 }) {
   const [open, setOpen] = useState(false);
   const restId = useId();
+  // EMPTY IS COMPACT (page-pass 2026-09-27, /education/quizzes): a field this
+  // row has no value for is omitted, never a "—" row.
+  const filled = (specs: EntityColumnSpec<TRow>[]) =>
+    row === undefined ? specs : specs.filter((spec) => !cellIsEmpty(row, spec.column));
+  const layout: PhoneCardLayout<TRow> = {
+    ...declaredLayout,
+    primary: filled(declaredLayout.primary),
+    meta: filled(declaredLayout.meta),
+    rest: filled(declaredLayout.rest),
+  };
 
   return (
     <article
@@ -278,10 +292,10 @@ export function EntityPhoneCard<TRow>({
       ) : null}
 
       {layout.meta.length > 0 ? (
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
           {layout.meta.map((spec) => (
             <span key={spec.id} className="inline-flex items-baseline gap-1">
-              <span className="uppercase tracking-wide">{spec.label}</span>
+              <span className="text-[11px] uppercase tracking-wide">{spec.label}</span>
               {controls.renderCell(spec.id)}
             </span>
           ))}

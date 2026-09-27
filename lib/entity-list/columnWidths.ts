@@ -48,6 +48,11 @@ function valueOf<T>(row: T, column: MatrxColumnDef<T>): unknown {
   return (row as Record<string, unknown>)[key];
 }
 
+/** True when this row has nothing in this column (null, "", "—", []). */
+export function cellIsEmpty<T>(row: T, column: MatrxColumnDef<T>): boolean {
+  return isEmptyCellValue(valueOf(row, column));
+}
+
 /** Share of rows with nothing in this column; null when there are too few rows to judge. */
 export function emptyShare<T>(rows: readonly T[], column: MatrxColumnDef<T>): number | null {
   if (rows.length < MIN_ROWS_TO_JUDGE) return null;

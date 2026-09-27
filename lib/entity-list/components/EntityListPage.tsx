@@ -616,7 +616,10 @@ export function EntityListPage<TRow>({
   const page = (
     <div
       ref={paneRef}
-      className="flex h-full flex-col overflow-hidden"
+      // The platform's ONE touch floor for the whole list (page-pass
+      // 2026-09-27, /education/quizzes: the row kebab, Take, rows-per-page and
+      // the pager measured 32×32 on a phone). Desktop density is untouched.
+      className="matrx-touch-targets flex h-full flex-col overflow-hidden"
       onMouseEnter={() => {
         pointerInPaneRef.current = true;
       }}

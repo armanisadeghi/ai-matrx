@@ -271,6 +271,7 @@ export function EntityListTable<TRow>({
     controls: MatrxDataTableMobileCardControls,
   ) => (
     <EntityPhoneCard
+      row={row}
       layout={phoneLayout}
       controls={controls}
       rowId={config.getRowId(row)}
