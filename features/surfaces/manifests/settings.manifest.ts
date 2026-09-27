@@ -319,7 +319,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "organization_state",
     label: "Organization state",
     description:
-      "Whether an organization is selected for this session: ready, resolving, required (none chosen — the page shows the user's organizations to pick from), unavailable (the organization read failed), or signed_out. The AI and voice defaults appear only when ready. Absent outside the Settings landing page.",
+      "Whether an organization is selected for this session: ready, resolving, required (none chosen — the page shows the user's organizations to pick from), unavailable (the organization read failed), or signed_out. On the landing page the AI and voice defaults appear only when ready; on the Notifications tab notices are shown read-only until ready (choices are saved per organization). Absent on other tabs.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 10,

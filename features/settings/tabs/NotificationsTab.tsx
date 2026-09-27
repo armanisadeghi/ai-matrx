@@ -67,6 +67,25 @@ export default function NotificationsTab() {
   // transport's "Select an organization before sending this request."
   const { organizationId, organizationState } = useOrganizationRequired();
 
+  // With no organization selected the screen still SHOWS every notice with
+  // what reaches the person today (their most recent choice anywhere, else the
+  // notice's default). Changing one needs an organization: every saved choice
+  // is filed under one, and nothing may pick it for them.
+  useEffect(() => {
+    if (organizationId || organizationState !== "required") return;
+    let cancelled = false;
+    loadNotificationSettings("")
+      .then((rows) => {
+        if (!cancelled) setSettings(rows);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setLoadError(error instanceof Error ? error.message : "Could not load notification settings.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [organizationId, organizationState]);
+
   useEffect(() => {
     if (!organizationId) return;
     let cancelled = false;
@@ -205,6 +224,9 @@ export default function NotificationsTab() {
       ? {}
       : {
           notification_scope: activeScope ? { id: activeScope.organizationId, name: activeScope.label } : null,
+          // Why a change may be refused: choices are saved per organization,
+          // so with none selected the notices are shown read-only.
+          organization_state: organizationState,
           notification_events: settings
             .filter((event) => {
               const area = notificationArea(event.eventKey);
@@ -235,7 +257,9 @@ export default function NotificationsTab() {
   const validateNotificationWrites = (value: unknown) => {
     if (!Array.isArray(value) || value.length === 0)
       throw new Error("notification_preferences expects a non-empty array of { event_key, channel, enabled }.");
-    if (!scopeId || !settings) throw new Error("Notification settings are not loaded yet.");
+    if (!settings) throw new Error("Notification settings are not loaded yet.");
+    if (!scopeId)
+      throw new Error("No organization is selected (organization_state). Choices are saved per organization; ask the person to choose one first.");
     for (const item of value as Array<Record<string, unknown>>) {
       const event = settings.find((e) => e.eventKey === item?.event_key);
       if (!event) throw new Error(`Unknown notification event_key: ${String(item?.event_key)}.`);
@@ -285,12 +309,13 @@ export default function NotificationsTab() {
       {organizationState !== "ready" ? (
         <OrganizationContextNotice
           state={organizationState}
-          what="Your notification settings"
-          description="Notification choices are kept per organization. Choose the one you are working in."
+          what="Changing your notifications"
+          description="These are what reach you today. Your choices are saved per organization, so choose the one you are working in to change them."
           compact
-          className="rounded-lg border border-border bg-card"
+          className="mb-3 rounded-lg border border-border bg-card"
         />
-      ) : loadError ? (
+      ) : null}
+      {loadError ? (
         <SettingsCallout tone="error" title="Notification settings unavailable">
           {loadError}
           <ErrorAlchemyMenu error={loadError} />
@@ -405,13 +430,19 @@ export default function NotificationsTab() {
                                   key={key}
                                   htmlFor={id}
                                   className="matrx-tap-area flex justify-center"
-                                  title={lastRequired ? "Required notice: turn another channel on first." : `${label}, default ${event.defaults[key] ? "on" : "off"}`}
+                                  title={
+                                    !scopeId
+                                      ? "Choose an organization above to change this."
+                                      : lastRequired
+                                        ? "Required notice: turn another channel on first."
+                                        : `${label}, default ${event.defaults[key] ? "on" : "off"}`
+                                  }
                                 >
                                   <Switch
                                     id={id}
                                     size="sm"
                                     checked={checked}
-                                    disabled={savingKey === `${event.eventKey}:${key}` || lastRequired}
+                                    disabled={!scopeId || savingKey === `${event.eventKey}:${key}` || lastRequired}
                                     onCheckedChange={(enabled: boolean) => handleToggle(event.eventKey, key, enabled)}
                                     aria-label={`${event.label}: ${label}`}
                                   />
@@ -419,10 +450,14 @@ export default function NotificationsTab() {
                               );
                             })}
                             <div className="flex justify-center">
-                              {showScopePicker && hasOwnRow ? (
+                              {scopeId && hasOwnRow ? (
                                 <ResetTapButton
                                   variant="transparent"
-                                  ariaLabel={`Stop setting ${event.label} separately for ${activeScope?.label ?? "this organization"}`}
+                                  ariaLabel={
+                                    showScopePicker
+                                      ? `Stop setting ${event.label} separately for ${activeScope?.label ?? "this organization"}`
+                                      : `Reset ${event.label} to default`
+                                  }
                                   onClick={() =>
                                     handleReset(
                                       event.eventKey,
