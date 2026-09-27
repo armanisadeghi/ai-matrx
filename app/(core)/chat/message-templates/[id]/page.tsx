@@ -4,6 +4,7 @@ import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { TemplateViewPage } from "@/features/message-templates/components/TemplateViewPage";
+import { publicLaneSelect } from "@/utils/permissions/publicLane";
 import type { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
 
 interface PageProps {
@@ -13,18 +14,26 @@ interface PageProps {
 /** One read per request, shared by the tab title and the page. */
 const loadTemplate = cache(async (id: string) => {
   const supabase = await createClient();
-  const [templateResult, userResult] = await Promise.all([
-    supabase
-      .schema("agent")
-      .from("message_template")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle(),
-    getClaimsUser(supabase),
-  ]);
+  const userResult = await getClaimsUser(supabase);
+  const userId = userResult.data.user?.id ?? null;
+
+  // A signed-out visitor runs this query as `anon`, which holds only a COLUMN
+  // grant on agent.message_template (8 columns — see
+  // lib/security/public-exposure.ts#ANON_COLUMN_SURFACE), never a table grant.
+  // `select("*")` asked for every column and got refused (42501) for the
+  // whole request, so a signed-out visitor saw the access gate even for a
+  // genuinely public template. Name the columns anon can read; a signed-in
+  // caller still gets the full row.
+  const templateResult = await supabase
+    .schema("agent")
+    .from("message_template")
+    .select(userId ? "*" : publicLaneSelect("message_template"))
+    .eq("id", id)
+    .maybeSingle();
+
   return {
     template: (templateResult.data as MessageTemplateDB | null) ?? null,
-    userId: userResult.data.user?.id ?? null,
+    userId,
   };
 });
 
