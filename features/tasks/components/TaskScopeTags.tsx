@@ -24,6 +24,7 @@ import {
 import { DynamicIcon } from "@ai-matrx/icons";
 import { KgSuggestionsChip } from "@/features/kg-suggestions/components/KgSuggestionsChip";
 import { cn } from "@/utils/cn";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface TaskScopeTagsProps {
   taskId: string;
@@ -45,7 +46,7 @@ export default function TaskScopeTags({
   orgId,
   className,
 }: TaskScopeTagsProps) {
-  useScopeTree();
+  const scopeTree = useScopeTree();
   const treeStatus = useAppSelector(selectTreeStatus);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -188,6 +189,13 @@ export default function TaskScopeTags({
               <p className="text-center text-xs text-muted-foreground py-4">
                 Loading scopes...
               </p>
+            ) : treeStatus === "error" && filteredGroups.length === 0 ? (
+              <ReadFailure
+                error={scopeTree.error ?? true}
+                what="your scopes"
+                onRetry={() => void scopeTree.refresh()}
+                className="m-2"
+              />
             ) : filteredGroups.length === 0 ? (
               <p className="text-center text-xs text-muted-foreground py-4">
                 {search ? "No matches" : "No scopes defined"}

@@ -34,7 +34,11 @@ import {
   selectTasksForEntity,
 } from "@/features/tasks/redux/taskAssociationsSlice";
 import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
-import { selectFullContextStatus } from "@/features/agent-context/redux/hierarchySlice";
+import {
+  selectFullContextError,
+  selectFullContextStatus,
+} from "@/features/agent-context/redux/hierarchySlice";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 type Variant = "glass" | "transparent" | "solid" | "group";
@@ -105,6 +109,7 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
   );
   const allTasks = useAppSelector(selectAllTasksFlat);
   const hierarchyStatus = useAppSelector(selectFullContextStatus);
+  const hierarchyError = useAppSelector(selectFullContextError);
   const linkedIds = useMemo(
     () => new Set(linked.map((l) => l.task_id)),
     [linked],
@@ -264,6 +269,13 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
                     <Loader2 className="w-3 h-3 animate-spin" /> Loading
                     tasks...
                   </div>
+                ) : hierarchyStatus === "error" && suggestions.length === 0 ? (
+                  <ReadFailure
+                    error={hierarchyError ?? true}
+                    what="your tasks"
+                    onRetry={() => dispatch(fetchFullContext() as never)}
+                    className="m-2"
+                  />
                 ) : suggestions.length === 0 ? (
                   <p className="text-xs text-muted-foreground px-3 py-3 text-center">
                     {query ? "No matches" : "No tasks yet"}

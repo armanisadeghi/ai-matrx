@@ -279,6 +279,8 @@ async function fetchOrgConnections(
   },
 ): Promise<ConnectionUser[]> {
   const usersMap = new Map<string, ConnectionUser>();
+  /** Organizations whose roster could not be read. */
+  const failures: Array<{ orgName: string; error: unknown }> = [];
 
   // `organizations` is already narrowed to THE ONE ORGANIZATION when the surface named one.
   // It is the caller's own membership list, so narrowing can only ever REMOVE other
@@ -294,6 +296,7 @@ async function fetchOrgConnections(
         members = await readOrganizationMemberRows(org.id, { client: supabase, fresh });
       } catch (membersError) {
         console.error(`Error fetching members for org ${org.id}:`, membersError);
+        failures.push({ orgName: org.name, error: membersError });
         continue;
       }
 
@@ -359,7 +362,18 @@ async function fetchOrgConnections(
       }
     } catch (err) {
       console.error(`Error processing org ${org.id}:`, err);
+      failures.push({ orgName: org.name, error: err });
     }
+  }
+
+  // Nobody read and a roster failed: that is a failed read, never "no
+  // connections yet" — the hook reports it as `error`.
+  if (usersMap.size === 0 && failures.length > 0) {
+    const first = failures[0]!.error;
+    const detail = first instanceof Error ? first.message : String(first);
+    throw new Error(
+      `Couldn't load the people in ${failures.map((f) => f.orgName).join(", ")}: ${detail}`,
+    );
   }
 
   return Array.from(usersMap.values());

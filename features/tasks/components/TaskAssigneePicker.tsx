@@ -20,6 +20,7 @@ import { UserSearchField } from "@/features/user-search/UserSearchField";
 // A caller with no name passes the email, whose single token yields its
 // first character: exactly what these copies did by hand.
 import { getInitials } from "@ai-matrx/kit/format";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const SOURCE_ICON: Record<ConnectionUser["source"], typeof Users> = {
   conversation: MessageSquare,
@@ -48,7 +49,7 @@ export default function TaskAssigneePicker({
   organizationId,
   className,
 }: TaskAssigneePickerProps) {
-  const { connections, isLoading } = useUserConnections(
+  const { connections, isLoading, error: connectionsError, refresh } = useUserConnections(
     organizationId ? { organizationId } : {},
   );
   const [open, setOpen] = useState(false);
@@ -184,6 +185,8 @@ export default function TaskAssigneePicker({
             <p className="text-center text-xs text-muted-foreground py-4">
               Loading people...
             </p>
+          ) : connectionsError && connections.length === 0 ? (
+            <ReadFailure error={connectionsError} what="the people you can assign" onRetry={() => void refresh()} className="m-2" />
           ) : filtered.length === 0 ? (
             <p className="text-center text-xs text-muted-foreground py-4">
               {search ? "No matches" : "No connections yet"}

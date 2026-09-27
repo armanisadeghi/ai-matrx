@@ -64,6 +64,7 @@ import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInpu
 import { ProInput } from "@/components/official/ProInput";
 import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
 import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export function ThreadProjectTaskList({
   threadId,
@@ -137,6 +138,8 @@ function ProjectTaskBody({
   );
   const showCompleted = useAppSelector(selectShowCompleted);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const openTask = (taskId: string) => {
     if (onOpenTask) onOpenTask(taskId);
@@ -146,13 +149,21 @@ function ProjectTaskBody({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    void dispatch(loadProjectTasks({ projectId })).finally(() => {
-      if (!cancelled) setLoading(false);
-    });
+    setLoadError(null);
+    void dispatch(loadProjectTasks({ projectId }))
+      .then((action) => {
+        if (cancelled) return;
+        if (loadProjectTasks.rejected.match(action)) {
+          setLoadError(action.error.message ? new Error(action.error.message) : true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
-  }, [dispatch, projectId]);
+  }, [dispatch, projectId, reloadKey]);
 
   const completed = tasks.filter((t) => t.status === "completed").length;
   const visibleTasks = showCompleted
@@ -220,6 +231,12 @@ function ProjectTaskBody({
               <div className="grid place-items-center py-6">
                 <Loader2 className="size-4 animate-spin text-muted-foreground" />
               </div>
+            ) : loadError && tasks.length === 0 ? (
+              <ReadFailure
+                error={loadError}
+                what="this project's tasks"
+                onRetry={() => setReloadKey((n) => n + 1)}
+              />
             ) : tasks.length === 0 ? (
               <p
                 className={cn(

@@ -24,6 +24,7 @@ import type { HeaderAction } from "@/features/shell/components/header/variants/t
 import {
   selectAllRoomCardStats,
   selectListStatus,
+  selectListError,
   selectOrphanThreadIds,
   selectSessionsList,
 } from "@/features/war-room/redux/selectors";
@@ -70,6 +71,7 @@ const MasterAgentWindow = dynamic(
 import { MasterWatchLayerDoor as MasterWatchLayer } from "@/features/war-room/components/master/MasterWatchLayerDoor";
 import { featureIntelligenceHref } from "@/features/mandates/feature-intelligence/hrefs";
 import { INTELLIGENCE_ICON_NAME } from "@/components/icons/domain-icons";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 type WarRoomAllViewMode = "rooms" | "threads";
 
@@ -79,6 +81,7 @@ export function WarRoomAllView() {
   const sessions = useAppSelector(selectSessionsList);
   const orphanIds = useAppSelector(selectOrphanThreadIds);
   const status = useAppSelector(selectListStatus);
+  const listError = useAppSelector(selectListError);
   const roomStats = useAppSelector(selectAllRoomCardStats);
 
   const [view, setView] = useState<WarRoomAllViewMode>("rooms");
@@ -244,6 +247,12 @@ export function WarRoomAllView() {
                       <Skeleton key={i} className="h-36 rounded-xl" />
                     ))}
                   </div>
+                ) : status === "error" && sessions.length === 0 && orphanIds.length === 0 ? (
+                  <ReadFailure
+                    error={listError ?? true}
+                    what="your War Rooms"
+                    onRetry={() => dispatch(loadSessionsList())}
+                  />
                 ) : isEmpty ? (
                   <EmptyState />
                 ) : searchEmpty ? (
