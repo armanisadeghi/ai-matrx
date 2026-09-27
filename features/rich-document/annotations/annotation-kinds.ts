@@ -21,6 +21,12 @@ export interface AnnotationKindStorage {
   toastUndo: boolean;
   /** Null = registered with /trash; otherwise why it is not (a gap the chair has queued). */
   trashGap: string | null;
+  /**
+   * The /trash kind that lists it. A registry kind comes from platform.entity_types
+   * (user_artifact_kind); a FILTERED kind ("passage_link": only anchored_to associations) is a
+   * section of public._trash_kind_rows, proven by platform.trash_annotation_title_census().
+   */
+  trashKind: { registry: string } | { filtered: string };
 }
 
 export const ANNOTATION_KINDS: readonly AnnotationKindStorage[] = [
@@ -30,6 +36,7 @@ export const ANNOTATION_KINDS: readonly AnnotationKindStorage[] = [
     removalDoor: "cmt_delete",
     toastUndo: true,
     trashGap: null,
+    trashKind: { registry: "comment" },
   },
   {
     kinds: ["highlight", "note"],
@@ -37,16 +44,16 @@ export const ANNOTATION_KINDS: readonly AnnotationKindStorage[] = [
     removalDoor: 'schema("content")',
     toastUndo: true,
     trashGap: null,
+    trashKind: { registry: "content_document" },
   },
   {
     kinds: ["link"],
     entityToken: "agent_surface_binding",
     removalDoor: "associationsService.remove",
     toastUndo: true,
-    // platform.associations is every relationship in the platform (scopes, tags, bindings…);
-    // registering the whole table would flood /trash with rows nobody recognises. A detached
-    // passage link is undone from its toast (re-linked to the same passage); a filtered
-    // "passage link" trash kind needs its own design. Queued with the chair 2026-09-26.
-    trashGap: "platform.associations is every relationship; needs a filtered passage-link kind",
+    // Only anchored_to associations the person made reach /trash (personal Trash); the rest of
+    // platform.associations never does. Migration annotation_trash_titles_and_passage_links.sql.
+    trashGap: null,
+    trashKind: { filtered: "passage_link" },
   },
 ];

@@ -33,9 +33,35 @@ export interface RegistryRow {
   user_artifact_kind: string | null;
 }
 
+/** One row of platform.trash_annotation_title_census(). */
+export interface TitleCensusRow {
+  kind: string;
+  trashed: number;
+  empty_titles: number;
+}
+
+/**
+ * Every annotation /trash kind is present in the title census, and no trashed row's title is
+ * empty (a blank row on /trash is a row nobody can recognise to restore).
+ */
+export function evaluateTitles(kinds: readonly AnnotationKindStorage[], census: readonly TitleCensusRow[] | null): string[] {
+  if (census === null) return ["platform.trash_annotation_title_census() is not in the database — apply migrations/annotation_trash_titles_and_passage_links.sql"];
+  const findings: string[] = [];
+  const titled = new Set(["comment", "passage_link"]);
+  for (const k of kinds) {
+    const kind = "registry" in k.trashKind ? k.trashKind.registry : k.trashKind.filtered;
+    if (!titled.has(kind)) continue;
+    const row = census.find((r) => r.kind === kind);
+    if (!row) findings.push(`${k.kinds.join("/")}: the title census has no "${kind}" row — the trash kind is not live`);
+    else if (Number(row.empty_titles) > 0) findings.push(`${k.kinds.join("/")}: ${row.empty_titles} of ${row.trashed} trashed rows would show an empty title on /trash`);
+  }
+  return findings;
+}
+
 export function evaluate(kinds: readonly AnnotationKindStorage[], rows: readonly RegistryRow[]): string[] {
   const findings: string[] = [];
   for (const k of kinds) {
+    if ("filtered" in k.trashKind) continue; // a filtered kind is proven by the title census
     const row = rows.find((r) => r.token === k.entityToken);
     const name = k.kinds.join("/");
     if (!row) {
@@ -70,10 +96,28 @@ function loadEnv(): { url: string; key: string } | null {
   return url && key ? { url, key } : null;
 }
 
+async function pullCensus(): Promise<TitleCensusRow[] | null | string> {
+  const env = loadEnv();
+  if (!env) return "no Supabase URL/secret key in env or .env files";
+  try {
+    const res = await fetch(`${env.url.replace(/\/$/, "")}/rest/v1/rpc/trash_annotation_title_census`, {
+      method: "POST",
+      headers: { apikey: env.key, Authorization: `Bearer ${env.key}`, "Content-Profile": "platform", "Content-Type": "application/json" },
+      body: "{}",
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) return `HTTP ${res.status}`;
+    return (await res.json()) as TitleCensusRow[];
+  } catch (e) {
+    return e instanceof Error ? e.message : String(e);
+  }
+}
+
 async function pull(): Promise<RegistryRow[] | string> {
   const env = loadEnv();
   if (!env) return "no Supabase URL/secret key in env or .env files";
-  const tokens = [...new Set(ANNOTATION_KINDS.map((k) => k.entityToken))].join(",");
+  const tokens = [...new Set(ANNOTATION_KINDS.filter((k) => "registry" in k.trashKind).map((k) => k.entityToken))].join(",");
   try {
     const res = await fetch(
       `${env.url.replace(/\/$/, "")}/rest/v1/entity_types?select=token,has_soft_delete,user_artifact_kind&token=in.(${tokens})`,
@@ -98,8 +142,25 @@ async function main() {
       { token: "document", has_soft_delete: true, user_artifact_kind: "content_document" },
       { token: "agent_surface_binding", has_soft_delete: true, user_artifact_kind: "link" },
     ]);
-    const ok = red.length === 1 && red[0].startsWith("comment/") && stale.length === 1 && stale[0].startsWith("link:");
-    console.log(ok ? "✓ self-test: an unregistered soft-deleting kind and a stale gap both go red" : `✖ self-test failed: ${JSON.stringify({ red, stale })}`);
+    const gapKinds = ANNOTATION_KINDS.map((k) => (k.entityToken === "agent_surface_binding" ? { ...k, trashGap: "planted gap", trashKind: { registry: "link" } } : k));
+    const staleGap = evaluate(gapKinds, [
+      { token: "comment", has_soft_delete: true, user_artifact_kind: "comment" },
+      { token: "document", has_soft_delete: true, user_artifact_kind: "content_document" },
+      { token: "agent_surface_binding", has_soft_delete: true, user_artifact_kind: "link" },
+    ]);
+    const blank = evaluateTitles(ANNOTATION_KINDS, [
+      { kind: "comment", trashed: 21, empty_titles: 1 },
+      { kind: "passage_link", trashed: 13, empty_titles: 0 },
+    ]);
+    const missingKind = evaluateTitles(ANNOTATION_KINDS, [{ kind: "comment", trashed: 21, empty_titles: 0 }]);
+    const notApplied = evaluateTitles(ANNOTATION_KINDS, null);
+    const ok =
+      red.length === 1 && red[0].startsWith("comment/") &&
+      stale.length === 0 && staleGap.length === 1 && staleGap[0].startsWith("link:") &&
+      blank.length === 1 && blank[0].includes("empty title") &&
+      missingKind.length === 1 && missingKind[0].includes("passage_link") &&
+      notApplied.length === 1;
+    console.log(ok ? "✓ self-test: an unregistered kind, a stale gap, a blank title, a missing filtered kind and an unapplied census all go red" : `✖ self-test failed: ${JSON.stringify({ red, stale, staleGap, blank, missingKind, notApplied })}`);
     process.exit(ok ? 0 : 1);
   }
   const rows = await pull();
@@ -107,9 +168,14 @@ async function main() {
     console.log(`⚠ LIVE PULL FAILED (UNMEASURED — not a pass): ${rows}`);
     process.exit(STRICT ? 1 : 0);
   }
-  const findings = evaluate(ANNOTATION_KINDS, rows);
+  const census = await pullCensus();
+  if (typeof census === "string") {
+    console.log(`⚠ LIVE PULL FAILED (UNMEASURED — not a pass): title census: ${census}`);
+    process.exit(STRICT ? 1 : 0);
+  }
+  const findings = [...evaluate(ANNOTATION_KINDS, rows), ...evaluateTitles(ANNOTATION_KINDS, census)];
   if (findings.length === 0) {
-    console.log(`✓ check:annotation-trash — ${ANNOTATION_KINDS.length} annotation kinds: every soft-deleting one is on /trash or a declared gap.`);
+    console.log(`✓ check:annotation-trash — ${ANNOTATION_KINDS.length} annotation kinds: every soft-deleting one is on /trash with a non-empty title.`);
     process.exit(0);
   }
   for (const f of findings) console.log(`✖ ${f}`);
