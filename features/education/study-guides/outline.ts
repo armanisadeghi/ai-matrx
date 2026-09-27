@@ -1,15 +1,18 @@
 import type { NoteOutlineItem } from "@/features/notes/utils/noteOutline";
 
-/** A document with one H1 uses that heading as its title, not as a section. */
-export function studyGuideOutlineTitle(outline: readonly NoteOutlineItem[]): NoteOutlineItem | null {
+/** A document with one opening H1 uses that heading as its title. */
+export function studyGuideOutlineTitle(outline: readonly NoteOutlineItem[], content = ""): NoteOutlineItem | null {
   const h1Items = outline.filter((item) => item.level === 1);
-  return h1Items.length === 1 ? h1Items[0] : null;
+  const first = h1Items[0];
+  if (h1Items.length !== 1 || outline[0] !== first) return null;
+  if (first.charOffset === 0 || (content && !content.slice(0, first.charOffset).trim())) return first;
+  return null;
 }
 
 /** Notes without a sole H1 still have a document title. Use it as a virtual
  * outline parent; -1 targets the reader's displayed title, not a Markdown H1. */
-export function studyGuideOutlineDisplayTitle(outline: readonly NoteOutlineItem[], label: string): NoteOutlineItem {
-  return studyGuideOutlineTitle(outline) ?? {
+export function studyGuideOutlineDisplayTitle(outline: readonly NoteOutlineItem[], label: string, content = ""): NoteOutlineItem {
+  return studyGuideOutlineTitle(outline, content) ?? {
     level: 0,
     text: label || "Untitled guide",
     charOffset: -1,
@@ -17,29 +20,41 @@ export function studyGuideOutlineDisplayTitle(outline: readonly NoteOutlineItem[
   };
 }
 
-/** A source caption with no body before a peer heading cannot own a section. */
-function isEmptyCaption(item: NoteOutlineItem, next: NoteOutlineItem | undefined, content: string): boolean {
-  if (!next || next.level !== item.level || !content) return false;
-  const lineEnd = content.indexOf("\n", item.charOffset);
-  return lineEnd >= 0 && content.slice(lineEnd + 1, next.charOffset).trim() === "";
-}
-
-/** Some generated notes contain source-page artifacts written as ATX headings.
- * Page-number metadata is unambiguous. Other extraction signatures require an
- * empty caption immediately replaced by a same-level section heading. */
-function isExtractionArtifact(item: NoteOutlineItem, next: NoteOutlineItem | undefined, content: string): boolean {
-  const text = item.text;
-  if (/<page\s+number\s*=/i.test(text)) return true;
-  if (!isEmptyCaption(item, next, content)) return false;
-  return /\.\.\.\s*-\s*[•▪]/.test(text)
-    || /^Example\s+\d+(?:\.\d+)?\s*\([a-z]\)\s*\(\d+\s+of\s+\d+\)\s*-/i.test(text)
-    || /\.\.\.\s*-\s*Example\b.*\(\d+\s+of\s+\d+\)$/i.test(text)
-    || /\s-\s[•▪]/.test(text);
-}
-
+/** Commit to the document's Markdown heading hierarchy. The first section
+ * level sets the top tier; no other text or shallower headings are promoted.
+ * A top-level row must own deeper headings to become an outline branch. */
 export function studyGuideOutlineItems(outline: readonly NoteOutlineItem[], content = ""): NoteOutlineItem[] {
-  const title = studyGuideOutlineTitle(outline);
-  return outline.filter((item, index) => item !== title && !isExtractionArtifact(item, outline[index + 1], content));
+  const title = studyGuideOutlineTitle(outline, content);
+  const sections = outline.filter((item) => item !== title);
+  if (!sections.length) return [];
+  const rootLevel = sections[0].level;
+  const eligible: NoteOutlineItem[] = [];
+  let withinStyle = true;
+  for (const item of sections) {
+    if (item.level < rootLevel) {
+      withinStyle = false;
+    } else if (item.level === rootLevel) {
+      withinStyle = true;
+      eligible.push(item);
+    } else if (withinStyle) {
+      eligible.push(item);
+    }
+  }
+  const roots = studyGuideOutlineTree(eligible);
+  const branchIds = new Set(roots.filter((node) => node.children.length > 0).map((node) => node.item.headingIndex));
+  if (!branchIds.size) return [];
+  const included = new Set<number>();
+  for (const root of roots) {
+    if (!branchIds.has(root.item.headingIndex)) continue;
+    const pending = [root];
+    while (pending.length) {
+      const node = pending.pop();
+      if (!node) continue;
+      included.add(node.item.headingIndex);
+      pending.push(...node.children);
+    }
+  }
+  return eligible.filter((item) => included.has(item.headingIndex));
 }
 
 /** Three visual tiers beneath the document title. No heading is orphaned. */
