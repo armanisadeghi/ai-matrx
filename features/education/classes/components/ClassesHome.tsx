@@ -24,6 +24,7 @@ import { AccessModeBadge } from "./AccessModeBadge";
 import { daysUntil, nextExamDate } from "../settings";
 import type { ClassSettings, StudyClass } from "../types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
 import {
@@ -221,6 +222,18 @@ export function ClassesHome() {
       getScope={getScope}
       getWriteHandlers={getWriteHandlers}
     >
+    {/* The canonical right-click menu; the provider goes AROUND it. No
+        education product slug covers classes, so it reports as the closest
+        honest one — the study planner (classes carry the exam dates it plans
+        around). */}
+    <NonEditableContextMenu
+      sourceFeature="education-planner"
+      surfaceName={EDUCATION_CLASSES_SURFACE_NAME}
+      menuVersion={1}
+      getApplicationScope={getScope}
+      contentSource={{ type: "raw" }}
+    >
+    <div className="contents">
     <EducationToolHeader title="My Classes" />
     <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4">
       <div className="flex items-center justify-end">
@@ -305,6 +318,8 @@ export function ClassesHome() {
         }}
       />
     </div>
+    </div>
+    </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }

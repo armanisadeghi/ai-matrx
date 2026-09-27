@@ -399,7 +399,12 @@ try {
       await page.fill('input[type="email"]', user);
       await page.fill('input[type="password"]', pass);
       await page.evaluate(() => document.querySelector("form")?.requestSubmit());
-      await page.waitForTimeout(8000);
+      // Wait until the sign-in actually lands (a fresh profile takes longer
+      // than a reused one); the email field leaving is the signal.
+      await page
+        .waitForFunction(() => !document.querySelector('input[type="email"]'), null, { timeout: 45000 })
+        .catch(() => {});
+      await page.waitForTimeout(2000);
     }
   }
 
@@ -449,11 +454,27 @@ try {
       // The canonical right-click menu must open on the page body.
       await page.keyboard.press("Escape");
       const menu = await page.evaluate(() => {
-        const target =
+        // Right-click the DEEPEST element in the middle of the page content, as
+        // a person would — the event bubbles through whatever menu wraps the
+        // page. (Dispatching on the shell's <main> itself sits OUTSIDE every
+        // page-level menu and always read "no menu".)
+        const area =
           document.querySelector("main [data-surface-value]") || document.querySelector("main") || document.body;
-        const r = target.getBoundingClientRect();
+        const r = area.getBoundingClientRect();
+        const x = r.left + Math.min(r.width / 2, 400);
+        const y = r.top + Math.min(r.height / 2, 300);
+        // Skip points covered by a floating window (the Surface Context window
+        // this probe opened sits over the page) or a dialog.
+        let target = null;
+        for (const fx of [0.5, 0.25, 0.75, 0.15])
+          for (const fy of [0.5, 0.3, 0.7]) {
+            if (target) break;
+            const el = document.elementFromPoint(r.left + r.width * fx, r.top + r.height * fy);
+            if (el && area.contains(el) && !el.closest("[data-window-panel],[role=dialog]")) target = el;
+          }
+        target = target || area;
         target.dispatchEvent(
-          new MouseEvent("contextmenu", { bubbles: true, cancelable: true, button: 2, clientX: r.left + 30, clientY: r.top + 30 }),
+          new MouseEvent("contextmenu", { bubbles: true, cancelable: true, button: 2, clientX: x, clientY: y }),
         );
         return true;
       });
