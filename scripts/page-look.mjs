@@ -232,6 +232,19 @@ function measure(isPhone) {
     if (size < 12 && !allCaps && smallText.length < 12) smallText.push(`${size}px "${text.slice(0, 40)}"`);
     if (emojiRe.test(text) && emoji.length < 10) emoji.push(text.slice(0, 40));
   }
+  // Emoji anywhere on the page (below the fold too), not just the viewport.
+  const walkAll = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  while (walkAll.nextNode()) {
+    const node = walkAll.currentNode;
+    const text = node.textContent.trim();
+    const parent = node.parentElement;
+    if (!text || !parent || !emojiRe.test(text)) continue;
+    const st = getComputedStyle(parent);
+    if (st.display === "none" || st.visibility === "hidden") continue;
+    if (parent.getBoundingClientRect().width === 0) continue;
+    const sample = text.slice(0, 40);
+    if (!emoji.includes(sample) && emoji.length < 10) emoji.push(sample);
+  }
 
   // Phone: finger-sized targets and sideways scroll.
   const smallTargets = [];
