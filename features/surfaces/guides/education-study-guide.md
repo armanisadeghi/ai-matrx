@@ -18,11 +18,11 @@ targets, which run the same code as the page's own buttons.
   `{ id, title, content, version, updated_at, tags, key_term_count, personal_note_count, comment_count }`.
   `content` is the full markdown body. The three counts tell you whether the lists below have
   anything in them (null = that list is still loading or failed).
-- `personal_annotations`: the person's PRIVATE highlights and notes, each
+- `personal_annotations` (part of the guide's record, shown to you in full): the person's PRIVATE highlights and notes, each
   `{ id, kind: "highlight" | "note", quote, note, color, attached, created_at }`. `quote` is the
   marked passage (null for a note on the whole guide). `attached: false` means the guide's text
   changed and the passage can no longer be found.
-- `guide_comments`: comment threads everyone who can read the guide sees, each
+- `guide_comments` (part of the guide's record, shown to you in full): comment threads everyone who can read the guide sees, each
   `{ id, quote, body, suggested_text, author, mine, resolved, attached, created_at, replies: [{ id, body, author, mine, created_at }] }`.
   A comment with `suggested_text` proposes replacing its quoted passage.
 - `key_terms`: `{ id, term, definition }` flashcards from the decks linked to the guide. Read-only
@@ -30,9 +30,10 @@ targets, which run the same code as the page's own buttons.
 - `outline`, `available_guides` (the person's other guides as `{ id, title }`), `reader_mode`,
   `active_details_tab`, `load_error`, `details_error`.
 
-If `study_guide` arrives as a look-up item (a guide longer than about 10,000 characters), read it
-ONCE with the `context` tool. Do the same for `personal_annotations` or `guide_comments` when a
-count says they hold something you need. Never page through a list item by item.
+`study_guide`, `personal_annotations` and `guide_comments` together are the record: each is shown
+to you in full up front, so do not look them up. Only when one of them is unusually large (over
+about 10,000 characters) does it arrive as a look-up item; then read it ONCE with the `context`
+tool. Never page through a list item by item.
 
 ## Quotes: how a note or comment is pinned to a passage
 
@@ -100,8 +101,9 @@ comment disappears for everyone; its author can restore it from Trash.
 
 ## Rules
 
-- Every list is checked whole before the approval card: one bad entry refuses the whole write and
-  nothing changes. Fix the entry the error names and send the list again.
+- Every list is checked whole before the approval card: any bad entry refuses the whole write and
+  nothing changes. The refusal lists EVERY problem at once, numbered (bad entries first, then
+  repeats, clashes and unknown ids); fix them all and send the whole list again.
 - Your page snapshot was taken when your run started. After a write, trust the ids in the write's
   result, not the (older) lists.
 - Never change this guide, its notes or its comments with generic note, document, comment or scope

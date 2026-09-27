@@ -1005,6 +1005,15 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "W6's eBay OAuth routes (authorize + callback) are in flight on the aidream side (common-docs/projects/ebay-store-management/BUILD.md).",
     surfaces: ["/commerce/stores/connect — Connect eBay store"],
   },
+  "mandates.fix-output-mismatch-with-ai": {
+    id: "mandates.fix-output-mismatch-with-ai",
+    label: "Fix with AI",
+    owner: "mandates",
+    promise:
+      "When the agent you chose returns a different output than the job expects, AI adjusts a copy of that agent so its output fits, and assigns the copy.",
+    stage: "planned",
+    surfaces: ["Intelligence page job card — set-aside warning"],
+  },
 };
 
 export function getComingSoon(id: string): ComingSoonEntry | undefined {

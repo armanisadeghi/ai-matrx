@@ -6,15 +6,18 @@ name: Repo-only checks
 # The app (aidream `platform_checks_ci_pull` system task) pulls the newest successful artifact
 # through the GitHub API and feeds it to the one ingest (ops.check_run / ops.check_item).
 #
-# 🚨 NO `schedule:` HERE. Arman approves every automated schedule by exact name and interval
-# (common-docs/operations/scheduled-tasks.md). The proposed cadence (hourly) sits in that register
-# as PENDING APPROVAL; until he approves it this workflow runs only when dispatched by hand:
+# 🚨 SCHEDULE APPROVED by Arman, 2026-09-26 (in chat): hourly at :05 UTC — exact name and interval
+# in common-docs/operations/scheduled-tasks.md. Change the cron only with his word and update that
+# register row in the same change. The app's pull (`platform_checks_ci_pull`) runs at :40, after
+# both repos' runs of the same hour have finished. A hand run is still available:
 #   gh workflow run repo-only-checks.yml --ref main
 #
 # 🚨 THIS REPOSITORY IS PUBLIC. Nothing here may read a database or need a secret: `--repo-only`
 # runs ONLY rows declared repo-only (clone-db, live-db and undeclared rows are left out and named in
 # the header's `skipped_not_repo_only`). No `secrets.*` is referenced in this file — keep it so.
 on:
+  schedule:
+    - cron: '5 * * * *'
   workflow_dispatch:
 
 # Its own group, never cancelled: a push to main never touches this run (CI's group is separate),

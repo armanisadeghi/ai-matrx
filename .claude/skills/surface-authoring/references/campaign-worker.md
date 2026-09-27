@@ -2,7 +2,8 @@
 
 Paste this whole file as a worker's task and fill in the assignment block. It is self-contained on
 purpose: the rest of the `surface-authoring` skill is reference, never required reading for this job.
-Coordinator side: [campaign-coordinator.md](./campaign-coordinator.md). Open platform gaps:
+**A page pass (agent surface + UI/UX in one pass) starts from the `page-pass` skill, which
+uses §2-§4 here as its surface procedure.** Coordinator side: [campaign-coordinator.md](./campaign-coordinator.md). Open platform gaps:
 `docs/handoffs/surface-campaign.md`.
 
 ```
@@ -86,10 +87,12 @@ returning name;
      a child that publishes content).
 3. **Mount it in the component that owns the page's state:**
    `<SurfaceRuntimeProvider surfaceName getScope>` → `<NonEditableContextMenu sourceFeature
-   surfaceName menuVersion={1} getApplicationScope contentSource={{type:"raw"}}>` → a DOM element
+   surfaceName menuVersion={1} getApplicationScope contentSource={…}>` → a DOM element
    (`<div className="contents">`).
    - The provider goes AROUND the menu, never between the menu and its child.
    - Editors use `EditableContextMenu`.
+   - `contentSource`: a page showing a real record passes that record's own source (and `entity`
+     when it can be attached or shared); `{type:"raw"}` only when the page has no primary text.
    - Worked example: `features/artifacts/components/CmsArtifactList.tsx` / `CmsArtifactDetail.tsx`.
 4. **Rules that bite** (each one cost a real surface a bug):
    - `getScope` never fetches. It is polled every 400 ms; read state the page already rendered.
@@ -107,8 +110,8 @@ returning name;
    - `sourceFeature` must be a real slug from `types/python-generated/source-attribution.ts`. Map
      the surface in `features/agents/utils/source-feature-from-surface.ts`; if no slug fits, use
      the closest honest product and say so.
-   - No write targets unless the page has a genuine user-authored draft. A read-only surface says
-     so, with the reason, in the manifest header.
+   - A page with nothing a person can create, change or author gets no write targets and says so,
+     with the reason, in the manifest header. Every page that lists records gets the full set below.
    - A page with a **"New ___" dialog** is the exception that always gets two targets, both `ask`:
      a `draft` target that opens the dialog and fills EVERY field (buttons, toggles and added rows
      too, not just text boxes), and an `entity` target that takes an ARRAY and creates each item
@@ -126,6 +129,12 @@ returning name;
      exactly (`record` / `list` / `recent` tiers; anything else needs Arman's approval). Write a
      guide (`features/surfaces/guides/<slug>.md` + manifest `guide`) for any page with more than
      one record type or rules the descriptions can't hold.
+   - **Judgment calls follow the approval system** (`surface-write-targets` → "The approval
+     system"): the default, a named exception whose condition holds, or Arman's recorded
+     approval. Never your own choice.
+   - **A page that runs its own agent** (chat, builder, runner, battle) declares it with
+     `ownConversationId` / `isOwnConversation` on its provider: that conversation never sees the
+     page; every other agent does.
    - **Every write handler** calls the page's OWN save/create function (never a parallel path),
      validates the WHOLE value before changing anything, and throws a sentence the agent can act
      on. A list target also refuses names repeated in the list or already present, and on a

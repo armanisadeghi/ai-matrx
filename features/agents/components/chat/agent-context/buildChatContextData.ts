@@ -6,6 +6,10 @@ import {
   type ChatScratchpadRef,
   type ChatWorkingDocumentRef,
 } from "@/features/surfaces/manifests/chat.manifest";
+import type {
+  ChatConversationRecord,
+  ChatTranscriptEntry,
+} from "./chatTranscriptScope";
 
 /**
  * Canonical `contextData` + menu props for the `matrx-user/chat` surface
@@ -98,6 +102,13 @@ export interface BuildChatContextDataArgs {
   attachedResources?: ChatAttachedResourceEntry[];
   variableValues?: Record<string, unknown> | null;
 
+  /**
+   * THE record: the open conversation and its transcript (with tool calls),
+   * built by `chatTranscriptScope`. Absent until a conversation is open.
+   */
+  conversation?: ChatConversationRecord | null;
+  transcript?: ChatTranscriptEntry[] | null;
+
   /** Session state: the model in effect after instance overrides. */
   model?: string | null;
 
@@ -153,6 +164,8 @@ export function buildChatContextData(
     workingDocument,
     scratchpad,
     runConfiguration,
+    conversation,
+    transcript,
   } = args;
 
   // Composer baselines — selection/neighbors taken from the live draft so an
@@ -178,6 +191,10 @@ export function buildChatContextData(
     // `content` is the composer body — what the user is writing. The full
     // transcript rides on `full_conversation_text` / `all_messages` instead.
     content: draft || undefined,
+
+    // THE record — the open conversation and every loaded message.
+    conversation: conversation ?? undefined,
+    transcript: conversation && transcript ? transcript : undefined,
 
     // Active conversation.
     conversation_id: hasConversation ? conversationId! : undefined,

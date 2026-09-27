@@ -7,12 +7,19 @@
 // (`*_guide_comments`). Pure — no React, no store — so every rule is testable
 // and each target reads a value one way.
 //
-// Every problem is thrown as a sentence the agent can act on; a list that is
-// partly wrong is refused whole, never partly applied.
+// Every problem is a sentence the agent can act on; a list that is partly
+// wrong is refused whole, never partly applied, and the refusal lists EVERY
+// problem at once (owner ruling 2026-09-27) via `collectProblems`.
 
 import { AnchorBuildError, buildTextAnchor, type TextAnchor } from "@/features/rich-document/annotations/anchor";
 import { HIGHLIGHT_COLORS, DEFAULT_HIGHLIGHT_COLOR, type HighlightColor } from "@/features/rich-document/annotations/constants";
-import { readCollectionList, refuseRepeats } from "@/features/surfaces/runtime/collection-write-targets";
+import {
+  collectProblems,
+  ListLevelProblem,
+  ProblemList,
+  readCollectionList,
+  repeatsProblem,
+} from "@/features/surfaces/runtime/collection-write-targets";
 
 /** The guide as the parsers need it: its current body and the version anchors name. */
 export interface GuideText {
@@ -119,6 +126,19 @@ export interface CreatePersonalNotePlan {
 
 const PERSONAL_CREATE_KEYS = ["quote", "note", "color"] as const;
 
+/** A raw entry's text field, trimmed, when it is text (labels, repeats). */
+function rawText(entry: unknown, key: string): string | undefined {
+  if (entry === null || typeof entry !== "object" || Array.isArray(entry)) return undefined;
+  const v = (entry as Record<string, unknown>)[key];
+  return typeof v === "string" && v.trim() ? v.trim() : undefined;
+}
+
+/** A raw entry's id (the entry itself or its `id`), trimmed, when it is text. */
+function rawId(entry: unknown): string | undefined {
+  const id = entry !== null && typeof entry === "object" && !Array.isArray(entry) ? (entry as { id?: unknown }).id : entry;
+  return typeof id === "string" && id.trim() ? id.trim() : undefined;
+}
+
 export function parseCreatePersonalNotesValue(
   value: unknown,
   guide: GuideText,
@@ -126,35 +146,49 @@ export function parseCreatePersonalNotesValue(
 ): CreatePersonalNotePlan[] {
   const target = "create_personal_notes";
   const list = readCollectionList(target, "personal_notes", value);
-  const plans = list.map((entry, i): CreatePersonalNotePlan => {
-    const where = `${target}[${i}]`;
-    const record = asObject(where, entry, PERSONAL_CREATE_KEYS);
-    const quote = optionalText(where, "quote", record.quote);
-    const note = (optionalText(where, "note", record.note) ?? "").trim();
-    const color = parseColor(where, record.color) ?? DEFAULT_HIGHLIGHT_COLOR;
-    if (quote === undefined && !note)
-      throw new Error(`${where} needs a quote (to highlight a passage) or a note (a note on the whole guide).`);
-    return {
-      quote: quote ?? null,
-      anchor: quote === undefined ? null : anchorForQuote(where, quote, guide),
-      note,
-      color,
-    };
-  });
-  refuseRepeats(target, plans.filter((p) => p.quote).map((p) => p.quote!), "quote");
-  refuseRepeats(target, plans.filter((p) => !p.quote).map((p) => p.note), "whole-guide note");
-  for (const plan of plans) {
-    const clash = plan.quote
-      ? current.find((c) => c.kind === "highlight" && c.quote === plan.quote)
-      : current.find((c) => c.kind === "note" && c.note.trim() === plan.note);
-    if (clash)
-      throw new Error(
-        plan.quote
-          ? `The person already highlighted "${short(plan.quote)}" (id ${clash.id}). Change it with update_personal_notes instead. Nothing was saved.`
-          : `The person already has that note (id ${clash.id}). Nothing was saved.`,
-      );
-  }
-  return plans;
+  return collectProblems(
+    target,
+    list,
+    (entry, i): CreatePersonalNotePlan => {
+      const where = `${target}[${i}]`;
+      const record = asObject(where, entry, PERSONAL_CREATE_KEYS);
+      const problems = new ProblemList(where);
+      const quote = problems.check(() => optionalText(where, "quote", record.quote));
+      const note = (problems.check(() => optionalText(where, "note", record.note)) ?? "").trim();
+      const color = problems.check(() => parseColor(where, record.color)) ?? DEFAULT_HIGHLIGHT_COLOR;
+      if (record.quote == null && !note)
+        problems.add(`${where} needs a quote (to highlight a passage) or a note (a note on the whole guide).`);
+      const anchor = quote === undefined ? null : problems.check(() => anchorForQuote(where, quote, guide));
+      problems.throwIfAny();
+      return { quote: quote ?? null, anchor: anchor ?? null, note, color };
+    },
+    {
+      nameOf: (entry) => {
+        const label = rawText(entry, "quote") ?? rawText(entry, "note");
+        return label ? short(label) : undefined;
+      },
+      listChecks: (items) => {
+        const out: (string | undefined)[] = [
+          repeatsProblem(target, items.map((it) => (it.ok && it.value!.quote ? it.value!.quote : undefined)), "quote"),
+          repeatsProblem(target, items.map((it) => (it.ok && !it.value!.quote ? it.value!.note : undefined)), "whole-guide note"),
+        ];
+        for (const it of items) {
+          if (!it.ok) continue;
+          const plan = it.value!;
+          const clash = plan.quote
+            ? current.find((c) => c.kind === "highlight" && c.quote === plan.quote)
+            : current.find((c) => c.kind === "note" && c.note.trim() === plan.note);
+          if (clash)
+            out.push(
+              plan.quote
+                ? `${target}[${it.index}]: the person already highlighted "${short(plan.quote)}" (id ${clash.id}). Change it with update_personal_notes instead.`
+                : `${target}[${it.index}]: the person already has that note (id ${clash.id}).`,
+            );
+        }
+        return out;
+      },
+    },
+  );
 }
 
 export interface UpdatePersonalNotePlan {
@@ -171,33 +205,41 @@ export function parseUpdatePersonalNotesValue(
 ): UpdatePersonalNotePlan[] {
   const target = "update_personal_notes";
   const list = readCollectionList(target, "personal_notes", value);
-  const plans = list.map((entry, i): UpdatePersonalNotePlan => {
-    const where = `${target}[${i}]`;
-    const record = asObject(where, entry, ["id", "note", "color"]);
-    const id = idOf(where, record);
-    const item = current.find((c) => c.id === id);
-    if (!item) throw new Error(`${where}.id "${id}" is not one of the person's highlights or notes on this guide (see personal_annotations). Nothing was changed.`);
-    const note = optionalText(where, "note", record.note);
-    const color = parseColor(where, record.color);
-    if (color !== undefined && item.kind !== "highlight")
-      throw new Error(`${where} sets a color, but ${id} is a whole-guide note; only highlights have a color.`);
-    if (note !== undefined && item.kind === "note" && !note.trim())
-      throw new Error(`${where} would empty a whole-guide note; remove it with delete_personal_notes instead.`);
-    const changed = [
-      ...(note !== undefined && note.trim() !== item.note.trim() ? ["note"] : []),
-      ...(color !== undefined && color !== item.color ? ["color"] : []),
-    ];
-    if (changed.length === 0) throw new Error(`${where} changes nothing on ${id}: send a different note or color.`);
-    return {
-      id,
-      name: item.quote ? `highlight "${short(item.quote)}"` : `note "${short(item.note)}"`,
-      ...(changed.includes("note") ? { note: note!.trim() } : {}),
-      ...(changed.includes("color") ? { color } : {}),
-      changed,
-    };
-  });
-  refuseRepeats(target, plans.map((p) => p.id), "id");
-  return plans;
+  return collectProblems(
+    target,
+    list,
+    (entry, i): UpdatePersonalNotePlan => {
+      const where = `${target}[${i}]`;
+      const record = asObject(where, entry, ["id", "note", "color"]);
+      const id = idOf(where, record);
+      const item = current.find((c) => c.id === id);
+      if (!item)
+        throw new ListLevelProblem(
+          `${where}.id "${id}" is not one of the person's highlights or notes on this guide (see personal_annotations).`,
+        );
+      const problems = new ProblemList(where);
+      const note = problems.check(() => optionalText(where, "note", record.note));
+      const color = problems.check(() => parseColor(where, record.color));
+      if (color !== undefined && item.kind !== "highlight")
+        problems.add(`${where} sets a color, but ${id} is a whole-guide note; only highlights have a color.`);
+      if (note !== undefined && item.kind === "note" && !note.trim())
+        problems.add(`${where} would empty a whole-guide note; remove it with delete_personal_notes instead.`);
+      problems.throwIfAny();
+      const changed = [
+        ...(note !== undefined && note.trim() !== item.note.trim() ? ["note"] : []),
+        ...(color !== undefined && color !== item.color ? ["color"] : []),
+      ];
+      if (changed.length === 0) throw new Error(`${where} changes nothing on ${id}: send a different note or color.`);
+      return {
+        id,
+        name: item.quote ? `highlight "${short(item.quote)}"` : `note "${short(item.note)}"`,
+        ...(changed.includes("note") ? { note: note!.trim() } : {}),
+        ...(changed.includes("color") ? { color } : {}),
+        changed,
+      };
+    },
+    { listChecks: (items) => [repeatsProblem(target, items.map((it) => rawId(it.raw)), "id", "Merge the changes into one entry.")] },
+  );
 }
 
 export function parseDeletePersonalNotesValue(
@@ -206,14 +248,18 @@ export function parseDeletePersonalNotesValue(
 ): CurrentPersonalNote[] {
   const target = "delete_personal_notes";
   const list = readCollectionList(target, "personal_notes", value);
-  const items = list.map((entry, i) => {
-    const id = idOf(`${target}[${i}]`, entry);
-    const item = current.find((c) => c.id === id);
-    if (!item) throw new Error(`${target}[${i}] "${id}" is not one of the person's highlights or notes on this guide. Nothing was removed.`);
-    return item;
-  });
-  refuseRepeats(target, items.map((c) => c.id), "id");
-  return items;
+  return collectProblems(
+    target,
+    list,
+    (entry, i) => {
+      const id = idOf(`${target}[${i}]`, entry);
+      const item = current.find((c) => c.id === id);
+      if (!item)
+        throw new ListLevelProblem(`${target}[${i}] "${id}" is not one of the person's highlights or notes on this guide.`);
+      return item;
+    },
+    { listChecks: (items) => [repeatsProblem(target, items.map((it) => rawId(it.raw)), "id")] },
+  );
 }
 
 // ─── comments (shared threads, replies, suggestions) ─────────────────────────
@@ -235,41 +281,66 @@ export function parseCreateGuideCommentsValue(
 ): CreateCommentPlan[] {
   const target = "create_guide_comments";
   const list = readCollectionList(target, "guide_comments", value);
-  const plans = list.map((entry, i): CreateCommentPlan => {
-    const where = `${target}[${i}]`;
-    const record = asObject(where, entry, COMMENT_CREATE_KEYS);
-    const body = (optionalText(where, "body", record.body) ?? "").trim();
-    if (!body) throw new Error(`${where}.body is required: the comment's text.`);
-    const quote = optionalText(where, "quote", record.quote);
-    const suggested = optionalText(where, "suggested_text", record.suggested_text);
-    const replyTo = optionalText(where, "reply_to", record.reply_to)?.trim();
-    if (replyTo !== undefined) {
-      const thread = current.find((c) => c.id === replyTo);
-      if (!thread) throw new Error(`${where}.reply_to "${replyTo}" is not a comment thread on this guide (see guide_comments).`);
-      if (thread.parentId) throw new Error(`${where}.reply_to "${replyTo}" is a reply; reply to its thread ${thread.parentId} instead.`);
-      if (quote !== undefined || suggested !== undefined)
-        throw new Error(`${where} is a reply, so it takes only body (a reply sits under its thread's passage).`);
-      return { body, quote: null, anchor: null, suggestedText: null, parentId: replyTo };
-    }
-    if (suggested !== undefined && quote === undefined)
-      throw new Error(`${where}.suggested_text replaces a passage, so it needs quote (the exact text it replaces).`);
-    return {
-      body,
-      quote: quote ?? null,
-      anchor: quote === undefined ? null : anchorForQuote(where, quote, guide),
-      suggestedText: suggested ?? null,
-      parentId: null,
-    };
-  });
-  refuseRepeats(target, plans.map((p) => `${p.parentId ?? ""}|${p.quote ?? ""}|${p.body}`), "comment");
-  for (const plan of plans) {
-    const dup = current.find(
-      (c) => c.mine && c.body.trim() === plan.body && (c.parentId ?? null) === plan.parentId && (c.quote ?? null) === plan.quote,
-    );
-    if (dup)
-      throw new Error(`The person already posted "${short(plan.body)}" here (id ${dup.id}). Nothing was posted.`);
-  }
-  return plans;
+  return collectProblems(
+    target,
+    list,
+    (entry, i): CreateCommentPlan => {
+      const where = `${target}[${i}]`;
+      const record = asObject(where, entry, COMMENT_CREATE_KEYS);
+      const problems = new ProblemList(where);
+      const body = (problems.check(() => optionalText(where, "body", record.body)) ?? "").trim();
+      if (!body && (record.body == null || typeof record.body === "string"))
+        problems.add(`${where}.body is required: the comment's text.`);
+      const quote = problems.check(() => optionalText(where, "quote", record.quote));
+      const suggested = problems.check(() => optionalText(where, "suggested_text", record.suggested_text));
+      const replyTo = problems.check(() => optionalText(where, "reply_to", record.reply_to))?.trim();
+      if (replyTo !== undefined) {
+        const thread = current.find((c) => c.id === replyTo);
+        if (!thread) problems.add(`${where}.reply_to "${replyTo}" is not a comment thread on this guide (see guide_comments).`);
+        else if (thread.parentId)
+          problems.add(`${where}.reply_to "${replyTo}" is a reply; reply to its thread ${thread.parentId} instead.`);
+        if (quote !== undefined || suggested !== undefined)
+          problems.add(`${where} is a reply, so it takes only body (a reply sits under its thread's passage).`);
+        problems.throwIfAny();
+        return { body, quote: null, anchor: null, suggestedText: null, parentId: replyTo };
+      }
+      if (suggested !== undefined && quote === undefined && record.quote == null)
+        problems.add(`${where}.suggested_text replaces a passage, so it needs quote (the exact text it replaces).`);
+      const anchor = quote === undefined ? null : problems.check(() => anchorForQuote(where, quote, guide));
+      problems.throwIfAny();
+      return {
+        body,
+        quote: quote ?? null,
+        anchor: anchor ?? null,
+        suggestedText: suggested ?? null,
+        parentId: null,
+      };
+    },
+    {
+      nameOf: (entry) => {
+        const body = rawText(entry, "body");
+        return body ? short(body) : undefined;
+      },
+      listChecks: (items) => {
+        const out: (string | undefined)[] = [
+          repeatsProblem(
+            target,
+            items.map((it) => (it.ok ? `${it.value!.parentId ?? ""}|${it.value!.quote ?? ""}|${it.value!.body}` : undefined)),
+            "comment",
+          ),
+        ];
+        for (const it of items) {
+          if (!it.ok) continue;
+          const plan = it.value!;
+          const dup = current.find(
+            (c) => c.mine && c.body.trim() === plan.body && (c.parentId ?? null) === plan.parentId && (c.quote ?? null) === plan.quote,
+          );
+          if (dup) out.push(`${target}[${it.index}]: the person already posted "${short(plan.body)}" here (id ${dup.id}).`);
+        }
+        return out;
+      },
+    },
+  );
 }
 
 export interface UpdateCommentPlan {
@@ -287,37 +358,42 @@ export function parseUpdateGuideCommentsValue(
 ): UpdateCommentPlan[] {
   const target = "update_guide_comments";
   const list = readCollectionList(target, "guide_comments", value);
-  const plans = list.map((entry, i): UpdateCommentPlan => {
-    const where = `${target}[${i}]`;
-    const record = asObject(where, entry, ["id", "body", "resolved"]);
-    const id = idOf(where, record);
-    const item = current.find((c) => c.id === id);
-    if (!item) throw new Error(`${where}.id "${id}" is not a comment on this guide (see guide_comments). Nothing was changed.`);
-    const body = optionalText(where, "body", record.body)?.trim();
-    const resolved = record.resolved;
-    if (resolved !== undefined && resolved !== null && typeof resolved !== "boolean")
-      throw new Error(`${where}.resolved must be true (resolve the thread) or false (reopen it).`);
-    if (body !== undefined && !item.mine)
-      throw new Error(`${where} edits a comment someone else wrote; only the person's own comments (mine: true) can be edited.`);
-    if (body !== undefined && !body) throw new Error(`${where}.body cannot be empty; delete the comment instead.`);
-    if (typeof resolved === "boolean" && item.parentId)
-      throw new Error(`${where} resolves a reply; resolve its thread ${item.parentId} instead.`);
-    const changed = [
-      ...(body !== undefined && body !== item.body.trim() ? ["body"] : []),
-      ...(typeof resolved === "boolean" && resolved !== item.resolved ? ["resolved"] : []),
-    ];
-    if (changed.length === 0) throw new Error(`${where} changes nothing on ${id}: send a different body or resolved state.`);
-    return {
-      id,
-      name: `comment "${short(item.body)}"`,
-      ...(changed.includes("body") ? { body } : {}),
-      ...(changed.includes("resolved") ? { resolved: resolved as boolean } : {}),
-      base: { body: item.body, version: item.version },
-      changed,
-    };
-  });
-  refuseRepeats(target, plans.map((p) => p.id), "id");
-  return plans;
+  return collectProblems(
+    target,
+    list,
+    (entry, i): UpdateCommentPlan => {
+      const where = `${target}[${i}]`;
+      const record = asObject(where, entry, ["id", "body", "resolved"]);
+      const id = idOf(where, record);
+      const item = current.find((c) => c.id === id);
+      if (!item) throw new ListLevelProblem(`${where}.id "${id}" is not a comment on this guide (see guide_comments).`);
+      const problems = new ProblemList(where);
+      const body = problems.check(() => optionalText(where, "body", record.body))?.trim();
+      const resolved = record.resolved;
+      if (resolved !== undefined && resolved !== null && typeof resolved !== "boolean")
+        problems.add(`${where}.resolved must be true (resolve the thread) or false (reopen it).`);
+      if (body !== undefined && !item.mine)
+        problems.add(`${where} edits a comment someone else wrote; only the person's own comments (mine: true) can be edited.`);
+      if (body !== undefined && !body) problems.add(`${where}.body cannot be empty; delete the comment instead.`);
+      if (typeof resolved === "boolean" && item.parentId)
+        problems.add(`${where} resolves a reply; resolve its thread ${item.parentId} instead.`);
+      problems.throwIfAny();
+      const changed = [
+        ...(body !== undefined && body !== item.body.trim() ? ["body"] : []),
+        ...(typeof resolved === "boolean" && resolved !== item.resolved ? ["resolved"] : []),
+      ];
+      if (changed.length === 0) throw new Error(`${where} changes nothing on ${id}: send a different body or resolved state.`);
+      return {
+        id,
+        name: `comment "${short(item.body)}"`,
+        ...(changed.includes("body") ? { body } : {}),
+        ...(changed.includes("resolved") ? { resolved: resolved as boolean } : {}),
+        base: { body: item.body, version: item.version },
+        changed,
+      };
+    },
+    { listChecks: (items) => [repeatsProblem(target, items.map((it) => rawId(it.raw)), "id", "Merge the changes into one entry.")] },
+  );
 }
 
 export function parseDeleteGuideCommentsValue(
@@ -326,14 +402,17 @@ export function parseDeleteGuideCommentsValue(
 ): CurrentComment[] {
   const target = "delete_guide_comments";
   const list = readCollectionList(target, "guide_comments", value);
-  const items = list.map((entry, i) => {
-    const id = idOf(`${target}[${i}]`, entry);
-    const item = current.find((c) => c.id === id);
-    if (!item) throw new Error(`${target}[${i}] "${id}" is not a comment on this guide. Nothing was deleted.`);
-    if (!item.mine)
-      throw new Error(`${target}[${i}] "${id}" was written by someone else; only the person's own comments can be deleted. Nothing was deleted.`);
-    return item;
-  });
-  refuseRepeats(target, items.map((c) => c.id), "id");
-  return items;
+  return collectProblems(
+    target,
+    list,
+    (entry, i) => {
+      const id = idOf(`${target}[${i}]`, entry);
+      const item = current.find((c) => c.id === id);
+      if (!item) throw new ListLevelProblem(`${target}[${i}] "${id}" is not a comment on this guide.`);
+      if (!item.mine)
+        throw new Error(`${target}[${i}] "${id}" was written by someone else; only the person's own comments can be deleted.`);
+      return item;
+    },
+    { listChecks: (items) => [repeatsProblem(target, items.map((it) => rawId(it.raw)), "id")] },
+  );
 }

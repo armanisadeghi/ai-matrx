@@ -357,17 +357,25 @@ export async function pickGoogleForm(
       .setCallback((data) => {
         try {
           if (isRecord(data) && textField(data, "action") === "error") {
-            throw new Error(
-              textField(data, "message") ?? "Google Form selection failed.",
-            );
+            throw new Error("Google Form selection failed.");
           }
           const result = parsePickedFiles(data);
           if (result === null) {
             resolve(null);
             return;
           }
-          const first = result?.[0];
-          if (!first) return;
+          if (
+            result === undefined ||
+            !isRecord(data) ||
+            !Array.isArray(data.docs) ||
+            data.docs.length !== 1 ||
+            result.length !== 1
+          ) {
+            throw new Error(
+              "Google Form selection returned an invalid result.",
+            );
+          }
+          const first = result[0];
           if (first.mimeType !== GOOGLE_FORM_MIME_TYPE) {
             throw new Error("Choose a Google Form.");
           }

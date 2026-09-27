@@ -9,8 +9,11 @@ import {
   type SuggestionFullRow,
 } from "@/features/surfaces/manifests/education-library-suggestions.manifest";
 import {
+  collectProblems,
+  ListLevelProblem,
+  ProblemList,
   readCollectionList,
-  refuseRepeats,
+  repeatsProblem,
 } from "@/features/surfaces/runtime/collection-write-targets";
 import type { DeckSuggestionRow } from "./types";
 
@@ -71,37 +74,56 @@ export function parseUpdateSuggestionsValue(
     throw new Error(
       "update_suggestions: the inbox has not loaded yet (inbox_state is not \"ready\"). Nothing was changed.",
     );
-  const list = readCollectionList("update_suggestions", "suggestions", value);
-  const plan = list.map((item, i) => {
-    const where = `update_suggestions[${i}]`;
-    if (item === null || typeof item !== "object" || Array.isArray(item))
-      throw new Error(
-        `${where} must be an object { id, status }; received ${JSON.stringify(item)}.`,
-      );
-    const record = item as Record<string, unknown>;
-    const extra = Object.keys(record).filter((k) => k !== "id" && k !== "status");
-    if (extra.length)
-      throw new Error(`${where} does not accept ${extra.join(", ")}. Allowed keys: id, status.`);
-    const row = rows.find((r) => r.id === record.id);
-    if (!row)
-      throw new Error(
-        `${where}.id ${JSON.stringify(record.id)} is not a suggestion in this inbox. Use an id from suggestion_list. Nothing was changed.`,
-      );
-    const status = String(record.status ?? "").trim().toLowerCase();
-    if (status !== "accepted" && status !== "declined")
-      throw new Error(
-        `${where}.status must be "accepted" or "declined"; received ${JSON.stringify(record.status)}.`,
-      );
-    if (row.status !== "open")
-      throw new Error(
-        `${where}: suggestion ${row.id} is already ${row.status}; only open suggestions can be answered. Nothing was changed.`,
-      );
-    return { row, status: status as "accepted" | "declined" };
-  });
-  refuseRepeats(
-    "update_suggestions",
-    plan.map((p) => p.row.id),
-    "suggestion",
+  const target = "update_suggestions";
+  const list = readCollectionList(target, "suggestions", value);
+  const idOf = (item: unknown) =>
+    item !== null && typeof item === "object" && !Array.isArray(item)
+      ? (item as Record<string, unknown>).id
+      : undefined;
+  return collectProblems(
+    target,
+    list,
+    (item, i): SuggestionAnswerPlan => {
+      const where = `${target}[${i}]`;
+      if (item === null || typeof item !== "object" || Array.isArray(item))
+        throw new Error(
+          `${where} must be an object { id, status }; received ${JSON.stringify(item)}.`,
+        );
+      const record = item as Record<string, unknown>;
+      const problems = new ProblemList(where);
+      const extra = Object.keys(record).filter((k) => k !== "id" && k !== "status");
+      if (extra.length)
+        problems.add(`${where} does not accept ${extra.join(", ")}. Allowed keys: id, status.`);
+      const status = String(record.status ?? "").trim().toLowerCase();
+      if (status !== "accepted" && status !== "declined")
+        problems.add(
+          `${where}.status must be "accepted" or "declined"; received ${JSON.stringify(record.status)}.`,
+        );
+      const row = rows.find((r) => r.id === record.id);
+      if (row && row.status !== "open")
+        problems.add(
+          `${where}: suggestion ${row.id} is already ${row.status}; only open suggestions can be answered.`,
+        );
+      const unknownId =
+        !row &&
+        `${where}.id ${JSON.stringify(record.id)} is not a suggestion in this inbox. Use an id from suggestion_list.`;
+      // An unknown id is a list-level problem, unless this entry has others too.
+      if (!problems.ok) problems.add(unknownId);
+      problems.throwIfAny();
+      if (!row) throw new ListLevelProblem(unknownId as string);
+      return { row, status: status as "accepted" | "declined" };
+    },
+    {
+      listChecks: (items) => [
+        repeatsProblem(
+          target,
+          items.map((it) => {
+            const id = idOf(it.raw);
+            return typeof id === "string" ? id : undefined;
+          }),
+          "suggestion",
+        ),
+      ],
+    },
   );
-  return plan;
 }

@@ -33,11 +33,17 @@ import {
 
 interface Captured {
   mimeTypes: string | null;
+  origin: string | null;
   title: string | null;
   callback: ((data: unknown) => void) | null;
 }
 
-const captured: Captured = { mimeTypes: null, title: null, callback: null };
+const captured: Captured = {
+  mimeTypes: null,
+  origin: null,
+  title: null,
+  callback: null,
+};
 
 function installPickerStub() {
   const view = {
@@ -54,7 +60,10 @@ function installPickerStub() {
     setAppId: () => builder,
     setDeveloperKey: () => builder,
     setOAuthToken: () => builder,
-    setOrigin: () => builder,
+    setOrigin: (value: string) => {
+      captured.origin = value;
+      return builder;
+    },
     setTitle: (value: string) => {
       captured.title = value;
       return builder;
@@ -91,6 +100,7 @@ function installPickerStub() {
 
 beforeEach(() => {
   captured.mimeTypes = null;
+  captured.origin = null;
   captured.title = null;
   captured.callback = null;
   process.env.NEXT_PUBLIC_GOOGLE_API_KEY = "test-api-key";
@@ -113,12 +123,19 @@ async function openPicker(): Promise<{ pending: Promise<unknown> }> {
 }
 
 async function openFormPicker(): Promise<{ pending: Promise<unknown> }> {
+  captured.callback = null;
   const pending = pickGoogleForm("access-token");
   for (let tick = 0; tick < 50 && !captured.callback; tick += 1) {
     await Promise.resolve();
   }
   expect(captured.callback).not.toBeNull();
   return { pending };
+}
+
+function finishPicker(data: unknown): void {
+  const callback = captured.callback;
+  if (!callback) throw new Error("Google Picker callback was not installed.");
+  callback(data);
 }
 
 it("asks Google for every MIME type the record declares", async () => {
@@ -128,7 +145,7 @@ it("asks Google for every MIME type the record declares", async () => {
     expect(offered).toContain(GOOGLE_WORKSPACE_FILE_TYPES[type].mimeType);
   }
   expect(offered.sort()).toEqual([...GOOGLE_WORKSPACE_MIME_TYPES].sort());
-  captured.callback!({ action: "cancel" });
+  finishPicker({ action: "cancel" });
   await expect(pending).resolves.toBeNull();
 });
 
@@ -137,7 +154,7 @@ it("names every file type in the Picker's own title", async () => {
   for (const type of GOOGLE_WORKSPACE_RESOURCE_TYPES) {
     expect(captured.title).toContain(GOOGLE_WORKSPACE_FILE_TYPES[type].plural);
   }
-  captured.callback!({ action: "cancel" });
+  finishPicker({ action: "cancel" });
   await expect(pending).resolves.toBeNull();
 });
 
@@ -154,7 +171,7 @@ it.each(GOOGLE_WORKSPACE_RESOURCE_TYPES)(
   "accepts a picked %s and says which type it is",
   async (resourceType) => {
     const { pending } = await openPicker();
-    captured.callback!({
+    finishPicker({
       action: "picked",
       docs: [
         {
@@ -174,7 +191,7 @@ it.each(GOOGLE_WORKSPACE_RESOURCE_TYPES)(
 
 it("still refuses a file type the record does not carry, by name", async () => {
   const { pending } = await openPicker();
-  captured.callback!({
+  finishPicker({
     action: "picked",
     docs: [
       {
@@ -191,8 +208,9 @@ it("still refuses a file type the record does not carry, by name", async () => {
 it("offers only Forms in the separate Form mode and returns a selected Form", async () => {
   const { pending } = await openFormPicker();
   expect(captured.mimeTypes).toBe(GOOGLE_FORM_MIME_TYPE);
+  expect(captured.origin).toBe(window.location.origin);
   expect(captured.title).toBe("Choose a Google Form");
-  captured.callback!({
+  finishPicker({
     action: "picked",
     docs: [
       {
@@ -213,15 +231,15 @@ it("offers only Forms in the separate Form mode and returns a selected Form", as
 
 it("cancels or refuses an error/non-Form result in Form mode", async () => {
   const cancelled = await openFormPicker();
-  captured.callback!({ action: "cancel" });
+  finishPicker({ action: "cancel" });
   await expect(cancelled.pending).resolves.toBeNull();
 
   const failed = await openFormPicker();
-  captured.callback!({ action: "error", message: "Picker unavailable" });
-  await expect(failed.pending).rejects.toThrow("Picker unavailable");
+  finishPicker({ action: "error", message: "Picker unavailable" });
+  await expect(failed.pending).rejects.toThrow("Google Form selection failed.");
 
   const nonForm = await openFormPicker();
-  captured.callback!({
+  finishPicker({
     action: "picked",
     docs: [
       {
@@ -232,4 +250,32 @@ it("cancels or refuses an error/non-Form result in Form mode", async () => {
     ],
   });
   await expect(nonForm.pending).rejects.toThrow("Choose a Google Form.");
+});
+
+it("refuses malformed or multiple Form selections instead of leaving the caller pending", async () => {
+  const malformed = await openFormPicker();
+  finishPicker({ action: "picked", docs: [{ id: "form-1" }] });
+  await expect(malformed.pending).rejects.toThrow(
+    "Google Form selection returned an invalid result.",
+  );
+
+  const multiple = await openFormPicker();
+  finishPicker({
+    action: "picked",
+    docs: [
+      {
+        id: "form-1",
+        name: "Harbor Dental intake",
+        mimeType: GOOGLE_FORM_MIME_TYPE,
+      },
+      {
+        id: "form-2",
+        name: "Harbor Dental follow-up",
+        mimeType: GOOGLE_FORM_MIME_TYPE,
+      },
+    ],
+  });
+  await expect(multiple.pending).rejects.toThrow(
+    "Google Form selection returned an invalid result.",
+  );
 });

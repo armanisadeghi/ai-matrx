@@ -44,6 +44,7 @@ import {
   type JobContext,
 } from "./job-card-parts";
 import type { FeatureIntelligenceRow, ResolvedPlace } from "./types";
+import { SetAsideNotice, setAsideRung } from "./SetAsideNotice";
 
 export { inputDisplayLabel };
 
@@ -142,6 +143,7 @@ export function IntelligenceJobCard({
   const decided = decidedWords(row, orgLevel);
   const mine = row.decidedRung === "user" || (orgLevel && row.decidedRung === "org");
   const panelId = `intelligence-${row.mandateKey}-details`;
+  const setAside = setAsideRung(job.ladder.rows);
 
   // The row toggles on a click anywhere that is not itself a control.
   const onRowClick = (event: React.MouseEvent) => {
@@ -224,6 +226,15 @@ export function IntelligenceJobCard({
           )}
         </div>
       </div>
+
+      {setAside ? (
+        <SetAsideNotice
+          rung={setAside}
+          expects={makesWords(row)}
+          runsInstead={row.holderName}
+          onPickAnother={onUseOwn}
+        />
+      ) : null}
 
       {/* ── Expanded: the split card ──────────────────────────────────────── */}
       {expanded ? (
