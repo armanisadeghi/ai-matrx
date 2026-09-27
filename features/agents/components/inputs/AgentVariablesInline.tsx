@@ -288,38 +288,13 @@ export function AgentVariablesInline({
             );
           }
 
-          // THE COLLAPSED ROW DRAWS THE SAME COMPONENT AS THE EXPANDED EDITOR.
-          // A select stays a select — never a free-text box (collapsed-row.ts).
+          // 🚨 THE COLLAPSED ROW IS A ONE-LINE TEXT BOX, BY DESIGN — even for a
+          // select/radio/checkbox. Free typing is the point of this view; the
+          // real component is behind the chevron. Never draw the component
+          // inline here (reverted 2026-09-27 — read collapsed-row.ts first).
           const rowKind = collapsedRowKind(variable.customComponent, {
             picklistBound: isPicklistBound,
           });
-          if (!isExpanded && rowKind === "component") {
-            return (
-              <div
-                key={variable.name}
-                className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 min-h-8 bg-transparent hover:bg-accent/40 transition-colors focus-within:bg-accent/30"
-                data-variable-index={index}
-                data-collapsed-row="component"
-              >
-                <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0">
-                  {variableRunLabel(variable, formatText)}:
-                </Label>
-                <div className="flex-1 min-w-0">
-                  <VariableInputComponent
-                    conversationId={conversationId}
-                    value={rawValue}
-                    onChange={(v) => handleValueChange(variable.name, v)}
-                    variableName={variable.name}
-                    customComponent={variable.customComponent}
-                    helpText={variable.helpText}
-                    compact
-                    hideLabel
-                    autoFocus={false}
-                  />
-                </div>
-              </div>
-            );
-          }
 
           if (isExpanded) {
             return (
