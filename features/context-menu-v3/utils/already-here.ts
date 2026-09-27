@@ -38,6 +38,11 @@ export function actionsAlreadyHere(where: WhereTheMenuIs): string[] {
   for (const rule of OPEN_WHERE_YOU_ARE) {
     if (where.surfaceName === rule.surface) out.push(rule.actionId);
   }
-  if (where.isEditable) out.push(...EDITOR_DOORS);
-  return out;
+  // On a record's OWN page (a note's source on the notes surface) the page is
+  // its editor — its Write / Read toggle is the door — so the preview offers no
+  // second one (live 2026-09-27, /notes/<id> in Read mode). Editor and preview
+  // menus now carry the same set.
+  const ownPage = SAVE_INTO_WHERE_YOU_ARE.some((rule) => where.surfaceName === rule.surface);
+  if (where.isEditable || ownPage) out.push(...EDITOR_DOORS);
+  return [...new Set(out)];
 }

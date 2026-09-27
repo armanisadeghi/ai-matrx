@@ -9,8 +9,15 @@ describe("actionsAlreadyHere", () => {
       ["edit", "open-fullscreen-editor", "save-to-notes"],
     );
   });
-  it("a note's preview (raw source, notes surface): no Save to Notes, editor doors stay", () => {
-    expect(actionsAlreadyHere({ sourceType: "raw", surfaceName: "matrx-user/notes", isEditable: false })).toEqual(["save-to-notes"]);
+  it("a note's preview (raw source, notes surface): the page's Write toggle is the editor door", () => {
+    expect(actionsAlreadyHere({ sourceType: "raw", surfaceName: "matrx-user/notes", isEditable: false }).sort()).toEqual(
+      ["edit", "open-fullscreen-editor", "save-to-notes"],
+    );
+  });
+  it("a note's preview on its own page (note source): the same set as the editor", () => {
+    expect(actionsAlreadyHere({ sourceType: "note", surfaceName: "matrx-user/notes", isEditable: false }).sort()).toEqual(
+      ["edit", "open-fullscreen-editor", "save-to-notes"],
+    );
   });
   it("a chat answer keeps every action", () => {
     expect(actionsAlreadyHere({ sourceType: "chat-message", surfaceName: "matrx-user/chat", isEditable: false })).toEqual([]);
