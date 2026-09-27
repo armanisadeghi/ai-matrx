@@ -124,6 +124,10 @@ session, never you.
 - **Commit right after each coherent edit, before running checks** — a sync sweeps the shared
   checkout every ~30 minutes and commits any dirty file under its own message,
   so a file left uncommitted loses your authorship and message.
+- **Prove a test fails on a scratch copy, never by breaking the real file** —
+  the sync sweep can commit the broken version in the seconds it sits there.
+  Copy the file (or its old version from git) into your TMPDIR and point the
+  test at it.
 - zsh does not split a variable holding several paths: use an array
   (`F=(a.ts b.tsx); git add -- $F`) or list the paths literally.
 - Commit by path per page (push unless your coordinator says it pushes): `git add <files>` → `git commit --only -m "page-pass(<route>): …" -- <files>` → push.
