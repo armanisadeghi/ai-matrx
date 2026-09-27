@@ -121,8 +121,7 @@ try {
       await page.getByText("Dental Practice", { exact: true }).first().click();
       await settle(2000);
       await shot("template-dental-practice-chosen");
-      const apply = page.getByRole("button", { name: /^(Apply|Use|Add|Set up|Apply template|Use this template)/ }).last();
-      await apply.click();
+      await page.getByRole("button", { name: "Use whole template" }).last().click();
       await until("patients", async () => (await text()).includes("Patients"), 120000);
     }
     await go(`/organizations/${ORG_SLUG}/scopes`);

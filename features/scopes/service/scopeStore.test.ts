@@ -31,7 +31,6 @@ jest.mock("@/utils/auth/getUserId", () => ({
   requireUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd",
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports -- the implementation under test is chosen per run
 const writer = (process.env.SCOPE_WRITER_UNDER_TEST === "legacy"
   ? require("@/features/scopes/service/scopesService").scopesService
   : require("@/features/scopes/service/scopeStore").scopeStore) as typeof import("@/features/scopes/service/scopeStore").scopeStore;

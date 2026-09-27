@@ -10,6 +10,16 @@ this directory.
 
 ## 🚨 Rules an agent editing this directory must obey
 
+0. **Every scope WRITE goes through `service/scopeStore.ts`** — types, scopes, context items,
+   values, templates and tags, each one call to the record store's scope doors (`custom.context_*`,
+   lane SCOPES-WRITE-THROUGH, 2026-09-27). The doors decide by the organization's switch
+   (`custom.context_writer`, seam `scopes_screens`): where the record store writes the organization's
+   scopes the store is written in the same statement and its rules decide (a value is written in the
+   store first); elsewhere today's scope doors write and the store's copy follows. `scopesService.ts`
+   keeps the READS and is the legacy adapter until the final switch; its write methods are called by
+   nothing (`service/scopeStore.test.ts` fails on any new call). Decoders + slug rule:
+   `service/scopeRows.ts`. Design and census: `common-docs/projects/data-doctrine-adoption/v5/PROGRESS-SCOPES-WRITE-THROUGH.md`.
+
 1. **`scopesService.ts` is the ONLY file that may query the `context.*` tables**, and ESLint
    enforces it. The boy-scout rule applies — fix violators on sight.
 
@@ -388,6 +398,13 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-09-27 — **The record store writes scopes; one writer in the app.** Lane SCOPES-WRITE-THROUGH.
+  New `service/scopeStore.ts` (every scope write, through `custom.context_*`) and `service/scopeRows.ts`
+  (decoders + slug rule moved out of `scopesService.ts`). Callers moved: `scopeTreeMutations`,
+  `contextItemMutations`, `setContextValue`, `setEntityScopes`, `applyTemplate` thunks, `ScopesManager`
+  restore, `kgSuggestionsService`, `useHeavyHitterAccept`. DB: `scopeswt_*` campaign files (the doors,
+  the write-through, the switch). Tests: `service/scopeStore.test.ts` (6 clauses red on the legacy writer +
+  the legacy-write census).
 - 2026-09-25 — **The retirement queue is empty; the admin lane opens any organization's scopes.** Lane
   SCOPE-ADMIN-2. Deleted `scope-system/redux/{contextItemsSlice,scopeValuesSlice,templatesSlice}.ts`,
   `scope-system/components/TemplateGalleryDrawer.tsx`, the `contextItems` / `scopeValues` / `templates`

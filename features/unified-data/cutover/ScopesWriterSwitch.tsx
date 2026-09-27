@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { pressSeam, readSeamBoard, type Seam, type SeamState } from "./seamSwitches";
 
 const SEAM = "scopes_screens";
@@ -25,22 +26,32 @@ export function ScopesWriterSwitch({ organizationId }: { organizationId: string 
   const [pressing, setPressing] = React.useState(false);
   const [said, setSaid] = React.useState<{ ok: boolean; says: string } | null>(null);
 
-  const load = React.useCallback(async () => {
-    try {
-      const board = await readSeamBoard(organizationId);
-      setSeam(board.seams.find((s) => s.key === SEAM) ?? null);
-      setProblem(null);
-    } catch (e) {
-      setProblem(e instanceof Error ? e.message : "The switch could not be read.");
-    }
-  }, [organizationId]);
+  const [generation, setGeneration] = React.useState(0);
+  const load = React.useCallback(() => setGeneration((g) => g + 1), []);
 
   React.useEffect(() => {
-    void load();
-  }, [load]);
+    let current = true;
+    readSeamBoard(organizationId).then(
+      (board) => {
+        if (!current) return;
+        setSeam(board.seams.find((s) => s.key === SEAM) ?? null);
+        setProblem(null);
+      },
+      (e: unknown) => {
+        if (current) setProblem(e instanceof Error ? e.message : "The switch could not be read.");
+      },
+    );
+    return () => {
+      current = false;
+    };
+  }, [organizationId, generation]);
 
   if (problem) {
-    return <span className="text-xs text-destructive" data-testid="scopes-writer-problem">{problem}</span>;
+    return (
+      <span className="text-xs text-destructive" data-testid="scopes-writer-problem">
+        {problem} <ErrorAlchemyMenu error={problem} />
+      </span>
+    );
   }
   if (!seam) return null;
 
@@ -59,7 +70,7 @@ export function ScopesWriterSwitch({ organizationId }: { organizationId: string 
     setPressing(false);
     setPending(null);
     setSaid({ ok: answer.ok, says: answer.says });
-    await load();
+    load();
   };
 
   return (
@@ -83,9 +94,14 @@ export function ScopesWriterSwitch({ organizationId }: { organizationId: string 
           Not ready: {notReady[0]}
         </span>
       )}
-      {said && (
-        <span className={`min-w-0 max-w-[24rem] truncate ${said.ok ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`} title={said.says}>
+      {said?.ok && (
+        <span className="min-w-0 max-w-[24rem] truncate text-emerald-700 dark:text-emerald-400" title={said.says}>
           {said.says}
+        </span>
+      )}
+      {said && !said.ok && (
+        <span className="min-w-0 max-w-[24rem] truncate text-destructive" title={said.says}>
+          {said.says} <ErrorAlchemyMenu error={said.says} />
         </span>
       )}
       <ConfirmDialog
