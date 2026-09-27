@@ -88,6 +88,19 @@ export interface PickedGoogleFile extends PickedGoogleDriveFile {
   resourceType: GoogleWorkspaceResourceType;
 }
 
+/** MIME type for the separate, selected-Form Picker flow. */
+export const GOOGLE_FORM_MIME_TYPE = "application/vnd.google-apps.form";
+
+/**
+ * A Form selected deliberately for the Forms workflow.
+ *
+ * This is intentionally not a GoogleWorkspaceResourceType: Forms are not
+ * generic Workspace resources and selection must never register one there.
+ */
+export interface PickedGoogleForm extends PickedGoogleDriveFile {
+  mimeType: typeof GOOGLE_FORM_MIME_TYPE;
+}
+
 export interface GooglePickerOptions {
   initialQuery?: string;
 }
@@ -306,6 +319,64 @@ export async function pickGoogleWorkspaceFile(
             error instanceof Error
               ? error
               : new Error("File selection failed."),
+          );
+        }
+      })
+      .build();
+    instance.setVisible(true);
+  });
+}
+
+/**
+ * Open the narrow Google Forms Picker mode. This only chooses a Form; callers
+ * retain the chosen connection and decide any later Form-specific action.
+ */
+export async function pickGoogleForm(
+  accessToken: string,
+): Promise<PickedGoogleForm | null> {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  if (!apiKey || !clientId) {
+    throw new Error("Google Picker is not configured on this deployment.");
+  }
+  const picker = await loadPickerNamespace();
+  const view = new picker.DocsView(picker.ViewId.DOCS)
+    .setIncludeFolders(false)
+    .setSelectFolderEnabled(false)
+    .setMode(picker.DocsViewMode.LIST)
+    .setMimeTypes(GOOGLE_FORM_MIME_TYPE);
+
+  return new Promise<PickedGoogleForm | null>((resolve, reject) => {
+    const instance = new picker.PickerBuilder()
+      .setAppId(projectNumber(clientId))
+      .setDeveloperKey(apiKey)
+      .setOAuthToken(accessToken)
+      .setOrigin(window.location.origin)
+      .setTitle("Choose a Google Form")
+      .addView(view)
+      .setCallback((data) => {
+        try {
+          if (isRecord(data) && textField(data, "action") === "error") {
+            throw new Error(
+              textField(data, "message") ?? "Google Form selection failed.",
+            );
+          }
+          const result = parsePickedFiles(data);
+          if (result === null) {
+            resolve(null);
+            return;
+          }
+          const first = result?.[0];
+          if (!first) return;
+          if (first.mimeType !== GOOGLE_FORM_MIME_TYPE) {
+            throw new Error("Choose a Google Form.");
+          }
+          resolve({ ...first, mimeType: GOOGLE_FORM_MIME_TYPE });
+        } catch (error: unknown) {
+          reject(
+            error instanceof Error
+              ? error
+              : new Error("Google Form selection failed."),
           );
         }
       })

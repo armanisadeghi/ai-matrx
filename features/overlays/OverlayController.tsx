@@ -829,6 +829,14 @@ const AttachResourceDialog = lazyOverlay(
   () => import("@/features/connectors/AttachResourceDialog"),
   { ssr: false },
 );
+const CustomAgentWindow = lazyOverlay(
+  () => import("@/features/agents/components/custom-agent/CustomAgentWindow"),
+  { ssr: false },
+);
+const ApplyToSourceReview = lazyOverlay(
+  () => import("@/features/rich-document/hosts/ApplyToSourceReview"),
+  { ssr: false },
+);
 const AgentPickerWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentPickerWindow"),
   { ssr: false },
@@ -1359,6 +1367,9 @@ export default function OverlayController() {
     sendToAgentWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "sendToAgentWindow"),
     ),
+    applyToSourceReview: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "applyToSourceReview"),
+    ),
     addToRulebookDialog: useAppSelector((s) =>
       selectIsOverlayOpen(s, "addToRulebookDialog"),
     ),
@@ -1799,6 +1810,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     sendToAgentWindow: useAppSelector((s) =>
       selectOverlayData(s, "sendToAgentWindow"),
+    ) as Record<string, unknown> | null,
+    applyToSourceReview: useAppSelector((s) =>
+      selectOverlayData(s, "applyToSourceReview"),
     ) as Record<string, unknown> | null,
     addToRulebookDialog: useAppSelector((s) =>
       selectOverlayData(s, "addToRulebookDialog"),
@@ -2266,6 +2280,9 @@ export default function OverlayController() {
     ),
     agentPickerWindow: useAppSelector((s) =>
       selectOpenInstances(s, "agentPickerWindow"),
+    ),
+    customAgentWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "customAgentWindow"),
     ),
     imageUploaderWindow: useAppSelector((s) =>
       selectOpenInstances(s, "imageUploaderWindow"),
@@ -5196,6 +5213,55 @@ export default function OverlayController() {
           />
         );
       })}
+
+      {/* customAgentWindow — multi-instance. The captured values live in the
+          custom-agent session map; only the session id travels here. */}
+      {instancesById.customAgentWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        return (
+          <CustomAgentWindow
+            key={inst.instanceId}
+            isOpen
+            instanceId={inst.instanceId}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "customAgentWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            sessionId={
+              typeof data?.sessionId === "string" ? data.sessionId : null
+            }
+          />
+        );
+      })}
+
+      {/* applyToSourceReview — an agent window's answer reviewed against the
+          text it was launched from (rich-document/review/applyTargets). */}
+      {(() => {
+        const isOpen = isOpenById.applyToSourceReview;
+        const data = dataById.applyToSourceReview as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <ApplyToSourceReview
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "applyToSourceReview" }))
+            }
+            applyTargetId={
+              typeof data?.applyTargetId === "string"
+                ? data.applyTargetId
+                : null
+            }
+            proposal={
+              typeof data?.proposal === "string" ? data.proposal : null
+            }
+          />
+        );
+      })()}
 
       {/* agentPickerWindow — multi-instance. THE agent picker as a window;
           the pick returns through the opener's callback group. */}

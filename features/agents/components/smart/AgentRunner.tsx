@@ -164,7 +164,7 @@ export function AgentRunner({
 
       {/* Input panel — pinned to bottom, grows upward, never taller than 70% of container */}
       {shouldShowInput && (
-        <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col items-stretch justify-end px-3 pb-3 pt-1 bg-gradient-to-t from-background via-background/95 to-transparent max-h-[70%] overflow-hidden">
+        <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col items-stretch justify-end px-1.5 pb-1.5 pt-1 bg-gradient-to-t from-background via-background/95 to-transparent max-h-[70%] overflow-hidden">
           <PendingAsksZone conversationId={conversationId} />
           <ProposedDirectivesZone conversationId={conversationId} />
           <SmartAgentInput

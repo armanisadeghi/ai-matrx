@@ -57,6 +57,11 @@ export interface DocumentAgentReviewProps {
   actionId: ProTextareaAgentActionId;
   ctx: RichDocumentActionContext;
   onClose: () => void;
+  /**
+   * An answer produced elsewhere (an agent window's "Apply to source"): the
+   * review opens straight on it — no run step.
+   */
+  initialProposal?: string | null;
 }
 
 type Prepared = { source: ContentSource; content: string };
@@ -65,11 +70,12 @@ export function DocumentAgentReview({
   actionId,
   ctx,
   onClose,
+  initialProposal = null,
 }: DocumentAgentReviewProps): React.ReactElement {
   const definition = PRO_TEXTAREA_AGENT_ACTIONS[actionId];
   const [prepared, setPrepared] = React.useState<Prepared | null>(null);
   const [prepareError, setPrepareError] = React.useState<string | null>(null);
-  const [proposal, setProposal] = React.useState<string | null>(null);
+  const [proposal, setProposal] = React.useState<string | null>(initialProposal);
   const [saving, setSaving] = React.useState(false);
   const [agentId, setAgentId] = React.useState<string | null>(null);
   const [agentName, setAgentName] = React.useState<string | null>(null);
@@ -195,9 +201,11 @@ export function DocumentAgentReview({
           </p>
         ) : null}
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={() => setProposal(null)} disabled={saving}>
-            Back
-          </Button>
+          {initialProposal === null ? (
+            <Button variant="ghost" onClick={() => setProposal(null)} disabled={saving}>
+              Back
+            </Button>
+          ) : null}
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Discard
           </Button>
@@ -275,11 +283,11 @@ export function DocumentAgentReview({
         }}
       >
         <DialogHeader>
-          <DialogTitle>{definition.popoverTitle}</DialogTitle>
-          <DialogDescription>
-            {proposal !== null
-              ? "Review the change. Apply saves only the parts that differ; Discard leaves the saved text exactly as it is."
-              : "The agent works on the text as it was when you opened this. Nothing changes until you review and apply — and Apply first checks that the saved answer has not changed since."}
+          <DialogTitle>
+            {initialProposal !== null ? "Apply to source" : definition.popoverTitle}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            {proposal !== null ? "Review the change before applying it." : definition.popoverTitle}
           </DialogDescription>
         </DialogHeader>
         <div className="min-h-0 flex-1 overflow-auto">{body}</div>

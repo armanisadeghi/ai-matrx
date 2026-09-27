@@ -503,6 +503,7 @@ export function useContextMenuActions(
     onClose: () => {},
     instanceKey: (prefix) => `${richPrefix}-${prefix}`,
     sourceAdapter: richDocAdapter,
+    applicationScope: scope,
     ...(props.richDocCtxExtras ?? {}),
   };
   const richActions =

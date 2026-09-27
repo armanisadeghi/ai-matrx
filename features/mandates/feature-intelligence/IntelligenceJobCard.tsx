@@ -180,7 +180,7 @@ export function IntelligenceJobCard({
         </button>
 
         <div className="flex min-w-0 items-center gap-1">
-          <h3 className="min-w-0 truncate text-[14px] font-semibold text-foreground" title={row.shortName}>
+          <h3 className="min-w-[7rem] shrink truncate text-[14px] font-semibold text-foreground" title={row.shortName}>
             {row.shortName}
           </h3>
           <MandatePeekButton mandate={row.id} name={row.shortName} href={detailsHref} />
@@ -197,7 +197,7 @@ export function IntelligenceJobCard({
               size="sm"
             />
           </span>
-          {row.health !== "OK" ? <span className="shrink-0"><MemberHealthBadge health={row.health} /></span> : null}
+          {row.health !== "OK" ? <span className="hidden shrink-0 sm:inline-flex"><MemberHealthBadge health={row.health} /></span> : null}
         </div>
 
         <div className="col-start-2 flex min-w-0 items-center gap-2 text-[13px] md:col-start-3">
@@ -230,6 +230,7 @@ export function IntelligenceJobCard({
         <div id={panelId} className="grid min-w-0 border-t border-border/60 md:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
           <div className="min-w-0 space-y-3 p-4">
             {job.about ? <Line text={job.about} className="text-[13px] text-muted-foreground" /> : null}
+            {row.health !== "OK" ? <span className="inline-flex sm:hidden"><MemberHealthBadge health={row.health} /></span> : null}
             {!row.isSystem ? (
               <Badge variant="outline" className="max-w-full truncate font-normal text-muted-foreground" title={row.homeLabel}>
                 {row.homeLabel}

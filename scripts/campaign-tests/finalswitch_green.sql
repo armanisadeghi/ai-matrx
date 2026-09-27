@@ -84,7 +84,9 @@ begin
   end if;
 
   -- 2. Pressing: only a person at a page in the admin lane. Each person refusal is recorded.
+  perform set_config('role', 'postgres', true);  -- read the internals as the owner
   select count(*) into v_refused_before from platform.cutover_seam_press where seam_key = 'final_switch' and outcome = 'refused';
+  perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims', c_minted_j, true);
   v := platform.final_switch_press('suite', null);
   if v ->> 'reason' <> 'not_a_person' then raise exception '2a: a minted token pressed: %', v; end if;
@@ -96,15 +98,19 @@ begin
   perform set_config('request.headers', c_admin_page, true);
   v := platform.final_switch_press('suite', null);
   if v ->> 'reason' <> 'not_a_platform_admin' then raise exception '2c: a non-admin pressed: %', v; end if;
+  perform set_config('role', 'postgres', true);  -- read the internals as the owner
   if (select count(*) from platform.cutover_seam_press where seam_key = 'final_switch' and outcome = 'refused') < v_refused_before + 3 then
     raise exception '2d: a refused press was not recorded';
   end if;
 
   -- 3. Not ready: the press refuses and names what blocks it (organization or platform + what).
   perform set_config('request.jwt.claims', c_admin_j, true);
+  perform set_config('role', 'postgres', true);
   if exists (select 1 from workbench.udt_structured_lists where organization_id is null and deleted_at is null)
      or platform._final_switch_scopes_code() = 'none' then
+    perform set_config('role', 'authenticated', true);
     v := platform.final_switch_press('suite', null);
+    perform set_config('role', 'postgres', true);
     if v ->> 'reason' <> 'not_ready' then raise exception '3a: a press that is not ready was taken: %', left(v::text, 400); end if;
     if position('scope and context screens switch has no code yet' in coalesce(v ->> 'says', '')) = 0
        and platform._final_switch_scopes_code() = 'none' then
@@ -134,6 +140,7 @@ begin
   -- 5. THE PRESS: every organization, one record.
   v_press := platform.final_switch_press('finalswitch_green suite', null);
   if not coalesce((v_press ->> 'ok')::boolean, false) then raise exception '5a: the press refused: %', left(v_press::text, 600); end if;
+  perform set_config('role', 'postgres', true);
   if platform.final_switch_state() ->> 'state' <> 'new' or platform.final_switch_state() ->> 'data_screen' <> 'new' then
     raise exception '5b: the state does not say everything is on the new system: %', platform.final_switch_state();
   end if;
@@ -161,6 +168,7 @@ begin
   end if;
 
   -- 6. While it is on: no organization switches on its own, nothing new is born older anywhere.
+  perform set_config('role', 'authenticated', true);
   begin
     v := platform.cutover_seam_press('older_tables', c_ws, 'old', 'suite');
     if coalesce((v ->> 'ok')::boolean, false) then raise exception '6a: one organization switched back on its own: %', v; end if;
@@ -168,13 +176,16 @@ begin
   exception when sqlstate '55000' then
     null;  -- held: "Every organization switched to the new system together with the final switch …"
   end;
+  perform set_config('role', 'postgres', true);
   select o.id into v_org from iam.organizations o
    where not exists (select 1 from platform.cutover_seam_press p where p.organization_id = o.id and p.seam_key = 'older_tables')
    limit 1;
   if not platform.older_tables_switched(v_org) then raise exception '6c: an organization with no press is not switched while the final switch is on'; end if;
 
   -- 7. THE UNDO: exactly that run, backwards.
+  perform set_config('role', 'authenticated', true);
   v := platform.final_switch_undo('finalswitch_green suite', true);
+  perform set_config('role', 'postgres', true);
   if not coalesce((v ->> 'ok')::boolean, false) then raise exception '7a: the undo refused: %', left(v::text, 600); end if;
   if platform.final_switch_state() ->> 'state' <> 'old' or platform.final_switch_state() ->> 'data_screen' <> 'old' then
     raise exception '7b: the state did not go back: %', platform.final_switch_state();
@@ -197,6 +208,7 @@ begin
   if platform.older_tables_switched(v_org) then raise exception '7g: an organization with no press still counts as switched after the undo'; end if;
 
   -- 8. Undo again: nothing to undo.
+  perform set_config('role', 'authenticated', true);
   v := platform.final_switch_undo('suite', true);
   if v ->> 'reason' <> 'nothing_to_undo' then raise exception '8a: a second undo did something: %', v; end if;
 

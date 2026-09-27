@@ -1,4 +1,3 @@
--- draft: FINAL-SWITCH (Claude Opus 5.5) rehearsal on the clone pending
 -- chair-step: lane FINAL-SWITCH (chair brief 2026-09-26 night, from Arman's ruling: "I don't want to do this one org at a time. We will switch everything over once we know it works and it's done. Old gone, new in place."). ADDS the final switch: platform._final_switch_readiness / platform.final_switch_readiness (every organization's readiness, measured now, one answer), platform.final_switch_press (one platform-admin press: Data tables for every organization, the leftovers of already-switched organizations, agent context for every organization, the platform values new organizations are born with, the scope screens (their lane's step), the Data page for everyone, the older write doors closed to clients through the door registry, the older row-history trim paused; one press record), platform.final_switch_undo (ONE undo, the same steps backwards, Switch back carrying what the new system wrote), platform.final_switch_state (what every screen reads). REPLACES platform.older_tables_switched (true everywhere while the final switch is on: nothing new is born in the older store). ADDS a trigger on platform.cutover_seam_press that refuses a per-organization press while the final switch is on, except from the final switch itself (so this file replaces neither the press nor the read door, which lane SCOPES-WRITE-THROUGH also changes). The scope screens are pressed through that lane's platform.cutover_seam_press_everyone('scopes_screens', …) once its code has landed. One new seam row. Door rows for the four doors. Never presses anything.
 -- based-on: platform.older_tables_switched(uuid) 2575b56a084dbdb294f723b3dfe5235248cea62d6f9df3a7ae2f7a74619d5fb6
 -- lane: FINAL-SWITCH
@@ -679,7 +678,19 @@ begin
 
     -- 5. Scope and context screens, every organization (lane SCOPES-WRITE-THROUGH's own door).
     v_ts := clock_timestamp();
-    v_scopes := platform._final_switch_scopes('new', v_uid, v_note, null);
+    -- Every organization that holds scopes; the rest write in the store through the platform value (4).
+    v_scopes := platform._final_switch_scopes('new', v_uid, v_note,
+      (select coalesce(array_agg((x ->> 'id')::uuid), '{}'::uuid[]) from jsonb_array_elements(v_ready -> 'organizations') x
+        where (x -> 'scopes' ->> 'types')::int > 0));
+    -- 5b. Lane SCOPES-WRITE-THROUGH's setting's platform value, AFTER its press (the press reads each
+    -- organization's writer from it): an organization with no scopes yet writes its first ones in the store.
+    if platform._final_switch_scopes_code() = 'landed'
+       and exists (select 1 from platform.feature_knob fk where fk.feature = 'custom' and fk.key = 'scopes_written_in_the_store') then
+      select k.value into v_before from platform.feature_knob k where k.feature = 'custom' and k.key = 'scopes_written_in_the_store';
+      perform platform.feature_knob_set('custom', 'scopes_written_in_the_store', 'true'::jsonb);
+      v_values := v_values || jsonb_build_object('feature', 'custom', 'key', 'scopes_written_in_the_store',
+                                                 'before', v_before, 'now', true, 'after_scopes', true);
+    end if;
     v_timings := v_timings || jsonb_build_object('scopes_ms', round(extract(epoch from clock_timestamp() - v_ts) * 1000));
 
     -- 6. The Data page for everyone, recorded on the platform organization.
@@ -747,12 +758,15 @@ begin
       v_cron := jsonb_build_object('job', 'udt_dataset_row_versions_trim_weekly', 'absent', true);
     end if;
   exception when others then
+    perform set_config('app.final_switch_step', '', true);
     v_says := 'Nothing was changed: the final switch stopped part way and every organization was rolled back. ' || sqlerrm;
     perform platform._final_switch_record('new', 'refused', 'the_step_failed', v_says, v_ready,
       jsonb_build_object('copy_again', p_copy_again), p_note, v_run);
     return jsonb_build_object('ok', false, 'reason', 'the_step_failed', 'says', v_says, 'press_id', v_run);
   end;
 
+  -- The press's own mark ends with the press: nothing else in this transaction passes as the final switch.
+  perform set_config('app.final_switch_step', '', true);
   v_counts := jsonb_build_object(
     'organizations', jsonb_array_length(v_orgs),
     'data_tables_pressed', (select count(*) from jsonb_array_elements(v_orgs) e where e ? 'tables_press'),
@@ -858,17 +872,22 @@ begin
          where id = (v_d -> 'row' ->> 'id')::uuid;
       end if;
     end loop;
-    for v_d in select x from jsonb_array_elements(coalesce(v_last.did -> 'doors', '[]'::jsonb)) x loop
-      select string_agg(r, ', ') into v_roles
-        from (values ('public', (v_d ->> 'public')::boolean), ('anon', (v_d ->> 'anon')::boolean),
-                     ('authenticated', (v_d ->> 'authenticated')::boolean)) as t(r, had)
-       where had;
-      if v_roles is not null then
-        execute format('grant execute on function %s to %s', v_d ->> 'door', v_roles);
-      end if;
-      if coalesce((v_d ->> 'service_role_added')::boolean, false) then
-        execute format('revoke execute on function %s from service_role', v_d ->> 'door');
-      end if;
+    -- One GRANT per set of roles (each GRANT is a DDL statement every event trigger reads).
+    for v_roles, v_d in
+      select g.roles, jsonb_agg(g.door)
+        from (select x ->> 'door' as door,
+                     (select string_agg(r, ', ') from (values ('public', (x ->> 'public')::boolean), ('anon', (x ->> 'anon')::boolean),
+                                                              ('authenticated', (x ->> 'authenticated')::boolean)) as t(r, had) where had) as roles
+                from jsonb_array_elements(coalesce(v_last.did -> 'doors', '[]'::jsonb)) x) g
+       where g.roles is not null
+       group by g.roles
+    loop
+      execute format('grant execute on function %s to %s',
+                     (select string_agg(d, ', ') from jsonb_array_elements_text(v_d) d), v_roles);
+    end loop;
+    for v_d in select x from jsonb_array_elements(coalesce(v_last.did -> 'doors', '[]'::jsonb)) x
+                where coalesce((x ->> 'service_role_added')::boolean, false) loop
+      execute format('revoke execute on function %s from service_role', v_d ->> 'door');
     end loop;
     v_timings := v_timings || jsonb_build_object('doors_ms', round(extract(epoch from clock_timestamp() - v_ts) * 1000));
 
@@ -876,6 +895,12 @@ begin
     insert into platform.cutover_seam_press (seam_key, organization_id, direction, outcome, says, pressed_by, did, note)
     values ('data_screen', v_platform, 'old', 'done', 'The Data page opens the older list again.', v_uid,
             jsonb_build_object('final_switch_run', v_run, 'undoes', v_last.id), v_note);
+
+    -- 5b'. The scopes setting's platform value back first (it was set after the scopes press).
+    for v_d in select x from jsonb_array_elements(coalesce(v_last.did -> 'values', '[]'::jsonb)) x
+                where coalesce((x ->> 'after_scopes')::boolean, false) loop
+      perform platform.feature_knob_set(v_d ->> 'feature', v_d ->> 'key', v_d -> 'before');
+    end loop;
 
     -- 5'. Scope and context screens back, for exactly the organizations the run pressed.
     if jsonb_typeof(v_last.did -> 'scopes' -> 'pressed') = 'array' then
@@ -885,7 +910,8 @@ begin
     end if;
 
     -- 4'. The platform values as they were.
-    for v_d in select x from jsonb_array_elements(coalesce(v_last.did -> 'values', '[]'::jsonb)) x loop
+    for v_d in select x from jsonb_array_elements(coalesce(v_last.did -> 'values', '[]'::jsonb)) x
+                where not coalesce((x ->> 'after_scopes')::boolean, false) loop
       perform platform.feature_knob_set(v_d ->> 'feature', v_d ->> 'key', v_d -> 'before');
     end loop;
 
@@ -947,23 +973,37 @@ begin
     end loop;
     v_timings := v_timings || jsonb_build_object('data_tables_ms', round(extract(epoch from clock_timestamp() - v_ts) * 1000));
   exception when others then
+    perform set_config('app.final_switch_step', '', true);
+    perform set_config('app.final_switch_undoing', '', true);
     v_says := 'Nothing was changed: the undo stopped part way and was rolled back whole. ' || sqlerrm;
     perform platform._final_switch_record('old', 'refused', 'the_step_failed', v_says, v_ready, null, p_note, v_run);
     return jsonb_build_object('ok', false, 'reason', 'the_step_failed', 'says', v_says, 'press_id', v_run);
   end;
 
+  perform set_config('app.final_switch_step', '', true);
+  perform set_config('app.final_switch_undoing', '', true);
   v_counts := jsonb_build_object(
     'data_tables_switched_back', (select count(*) from jsonb_array_elements(v_orgs) e where e ? 'tables_unarchived'),
     'tables_unarchived', (select coalesce(sum((e ->> 'tables_unarchived')::int), 0) + coalesce(sum(jsonb_array_length(coalesce(e -> 'unswept_tables', '[]'::jsonb))), 0) from jsonb_array_elements(v_orgs) e),
     'lists_unarchived', (select coalesce(sum((e ->> 'lists_unarchived')::int), 0) + coalesce(sum(jsonb_array_length(coalesce(e -> 'unswept_lists', '[]'::jsonb))), 0) from jsonb_array_elements(v_orgs) e),
     'agent_context_switched_back', (select count(*) from jsonb_array_elements(v_orgs) e where e ? 'context_press'),
     'doors_opened', jsonb_array_length(coalesce(v_last.did -> 'doors', '[]'::jsonb)),
-    'carried_back', (select coalesce(jsonb_agg(s), '[]'::jsonb) from jsonb_array_elements(v_orgs) e, jsonb_array_elements_text(coalesce(e -> 'carried_back', '[]'::jsonb)) s));
+    'carried_back', (select coalesce(jsonb_agg(e ->> 'name' || ': ' || s), '[]'::jsonb)
+                       from jsonb_array_elements(v_orgs) e, jsonb_array_elements_text(coalesce(e -> 'carried_back', '[]'::jsonb)) s
+                      where s not like 'Nothing was written in the new tables since the switch%'),
+    'nothing_to_carry', (select count(*) from jsonb_array_elements(v_orgs) e
+                          where e ? 'tables_unarchived'
+                            and not exists (select 1 from jsonb_array_elements_text(coalesce(e -> 'carried_back', '[]'::jsonb)) s
+                                             where s not like 'Nothing was written in the new tables since the switch%')));
   v_timings := v_timings || jsonb_build_object('total_ms', round(extract(epoch from clock_timestamp() - v_t0) * 1000));
   v_says := format('Undid the final switch: %s organizations back on their older tables (%s tables and %s pick lists restored), agent context back for %s, %s older write doors open again, the Data page and the scope screens back.',
                    v_counts ->> 'data_tables_switched_back', v_counts ->> 'tables_unarchived', v_counts ->> 'lists_unarchived',
                    v_counts ->> 'agent_context_switched_back', v_counts ->> 'doors_opened')
-            || coalesce(' ' || (select string_agg(s, ' ') from jsonb_array_elements_text(v_counts -> 'carried_back') s), '');
+            || coalesce(' Carried back from the new system: ' || (select string_agg(s, ' ') from jsonb_array_elements_text(v_counts -> 'carried_back') s), '')
+            || case when (v_counts ->> 'nothing_to_carry')::int > 0
+                    then format(' %s %s had nothing written in the new system to carry back.', v_counts ->> 'nothing_to_carry',
+                                case when (v_counts ->> 'nothing_to_carry')::int = 1 then 'organization' else 'organizations' end)
+                    else '' end;
 
   perform platform._final_switch_record('old', 'done', null, v_says, v_ready,
     jsonb_build_object('undoes', v_last.id, 'organizations', v_orgs, 'counts', v_counts, 'timings', v_timings,
@@ -999,8 +1039,10 @@ begin
   return new;
 end;
 $$;
-drop trigger if exists final_switch_holds_every_organization on platform.cutover_seam_press;
-create trigger final_switch_holds_every_organization
+-- CREATE OR REPLACE, never DROP: a DROP TRIGGER fires Supabase's supautils hook and takes ACCESS
+-- EXCLUSIVE on 23 auth/storage/realtime relations (scripts/lib/ddl-lock-footprint.json). For the same
+-- reason the inverse leaves this trigger bound and turns its function into a pass-through.
+create or replace trigger final_switch_holds_every_organization
   before insert on platform.cutover_seam_press
   for each row execute function platform._final_switch_holds_every_organization();
 

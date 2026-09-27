@@ -16,6 +16,7 @@
  */
 import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { FloatingLayer, useFloatingLayerZIndex } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
@@ -54,10 +55,15 @@ export default function MobileCardSurface({
     return () => document.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
 
+  // Opened from inside a blocking sheet (every Dialog is one on a phone), the
+  // card is lifted above its scrim (design-system floating-layer).
+  const zIndex = useFloatingLayerZIndex(9999);
+
   if (!isOpen) return null;
   if (typeof document === "undefined") return null;
 
   return createPortal(
+    <FloatingLayer>
     <div
       ref={cardRef}
       role="dialog"
@@ -65,13 +71,13 @@ export default function MobileCardSurface({
       className={cn(
         "fixed right-3 bottom-3 left-3 sm:left-auto sm:right-3",
         "w-auto sm:w-[92vw] sm:max-w-[420px]",
-        "z-[9999] flex flex-col",
+        "flex flex-col",
         "rounded-xl overflow-hidden",
         "bg-card/97 backdrop-blur-xl border border-border/60 shadow-2xl",
         // Themes can override via --window-surface-* tokens in globals.css
         "animate-[card-enter_var(--window-surface-enter-duration,220ms)_var(--window-surface-easing,ease-out)]",
       )}
-      style={{ maxHeight, paddingBottom: "env(safe-area-inset-bottom)" }}
+      style={{ maxHeight, zIndex, paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       {/* Header */}
       <div className="flex items-center gap-1 px-3 py-1.5 border-b border-border/50 shrink-0">
@@ -99,7 +105,8 @@ export default function MobileCardSurface({
       {footer && (
         <div className="border-t border-border/50 shrink-0">{footer}</div>
       )}
-    </div>,
+    </div>
+    </FloatingLayer>,
     document.body,
   );
 }
