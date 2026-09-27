@@ -123,7 +123,9 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
   }
   if (!board) return null;
 
-  const pressable = board.seams.filter((s) => s.pressKind === "owner_press");
+  // A switch made for every organization at once (the scope and context screens) is listed with the
+  // other platform switches; one organization is switched only from the admin scope console.
+  const pressable = board.seams.filter((s) => s.pressKind === "owner_press" && s.pressedForEveryone !== true);
   // Offered only when the tables switch is on the old side and an unmet check has a difference copying
   // again clears (the readiness answer says so per check; the rest are named with what to do instead).
   const tables = board.seams.find((s) => s.key === "older_tables");
@@ -131,7 +133,7 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
     board.mayPress &&
     tables?.state === "old" &&
     tables.checks.some(copyAgainClears);
-  const elsewhere = board.seams.filter((s) => s.pressKind !== "owner_press");
+  const elsewhere = board.seams.filter((s) => s.pressKind !== "owner_press" || s.pressedForEveryone === true);
 
   return (
     <div className="flex flex-col gap-4">

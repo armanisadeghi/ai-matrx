@@ -63,6 +63,12 @@ export type Seam = {
   reverseNotCarried: string[];
   reverseNeedsConfirm: boolean;
   switched: { direction: SeamState; at: string; by: string | null } | null;
+  /**
+   * Switched for every organization at once by the final switch (lane SCOPES-WRITE-THROUGH: the
+   * scope and context screens). One organization is switched only from the admin scope console, to
+   * test it; an organization's own settings page lists it with the switches made for everyone.
+   */
+  pressedForEveryone?: boolean;
   lastPress: {
     direction: SeamState;
     outcome: "done" | "refused";
@@ -107,6 +113,7 @@ type RawSeam = {
   } | null;
   may_flip: boolean;
   may_reverse: boolean;
+  pressed_for_everyone?: boolean;
   switched: { direction: SeamState; at: string; by: string | null } | null;
   last_press: Seam["lastPress"];
 };
@@ -177,6 +184,7 @@ export async function readSeamBoard(organizationId: string): Promise<SeamBoard> 
       reverseNotCarried: Array.isArray(s.reverse_readiness?.not_carried) ? s.reverse_readiness.not_carried : [],
       reverseNeedsConfirm: s.reverse_readiness?.needs_confirm === true,
       switched: s.switched,
+      pressedForEveryone: s.pressed_for_everyone === true,
       lastPress: s.last_press,
     })),
     finalSwitch: final ? { state: final.state, at: final.at, by: final.by } : null,
