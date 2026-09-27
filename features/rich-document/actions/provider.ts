@@ -17,8 +17,9 @@
 //     on a read-only source (the target declares nothing writable).
 //   • Icons become KEYS resolved by the host's icon port
 //     (components/agent-copy/alchemy-icon-keys.ts registers each component).
-//   • MENU_STRUCTURE's named submenus ("Save as", "Copy as", …) become the
-//     action's `section`, so every layout keeps today's groupings by name.
+//   • MENU_STRUCTURE's named submenus ("Save", "Copy as", …) become the
+//     action's `section`, so every layout keeps today's groupings by name; an
+//     `inline` section's rows carry no section (no approved heading exists).
 
 import {
   DuplicateActionError,
@@ -105,7 +106,7 @@ export function richDocumentSectionId(label: string): string {
   return `rd:${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 }
 
-type Placement = { order: number; category?: RichDocumentAction["category"]; section?: { id: string; label: string; icon?: string } };
+type Placement = { order: number; category?: RichDocumentAction["category"]; section?: { id: string; label: string; icon?: string; kind?: "target" } };
 let placementCache: Map<string, Placement> | null = null;
 function placementOf(id: string) {
   placementCache ??= buildPlacement();
@@ -116,7 +117,7 @@ function buildPlacement() {
   MENU_STRUCTURE.forEach((section, sectionIndex) => {
     section.actionIds.forEach((id, index) => {
       const order = sectionIndex * 100 + index;
-      if (section.submenu === null) {
+      if (section.submenu === null || section.inline) {
         map.set(id, { order });
       } else {
         const icon = section.icon ? registerAlchemyIcon(section.icon) : undefined;
@@ -127,6 +128,7 @@ function buildPlacement() {
             id: richDocumentSectionId(section.submenu),
             label: section.submenu,
             ...(icon ? { icon } : {}),
+            ...(section.target ? { kind: "target" as const } : {}),
           },
         });
       }

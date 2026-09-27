@@ -44,14 +44,14 @@ const FORMER_CHAT_ACTIONS: Record<
   "save-shape-instance": { id: "save-shape-instance", role: "assistant" },
   "summarize-for-listening": { id: "summarize-for-listening", role: "assistant" },
   "summarize-and-listen": { id: "summarize-and-listen", role: "assistant" },
-  // Share & export
+  // Export
   "html-preview": { id: "html-preview", role: "assistant" },
   "share-webpage": { id: "share-webpage", role: "assistant" },
   "send-google-doc": { id: "send-google-doc", role: "assistant" },
   "email-to-me": { id: "email-to-me", role: "assistant" },
   print: { id: "print", role: "assistant" },
   "full-print": { id: "full-print", role: "assistant" },
-  // Save as
+  // Save
   "save-as-message-template": { id: "save-as-message-template", role: "assistant" },
   "save-as-note": { id: "save-to-notes", role: "assistant" },
   "add-docs": { id: "add-to-docs", role: "assistant" },

@@ -11,8 +11,11 @@
 //
 //   • The rich-document registry tree inside the model is NOT re-emitted: the
 //     rich-document provider contributes those actions from the same click
-//     target (composite host). Only the agent libraries folded into its
-//     "Improve with AI" submenu come from here, in that same named section.
+//     target (composite host). Only the agent libraries folded into its AI
+//     submenu come from here — inline in the "ai" group, under no heading,
+//     like the rich-document AI rows (the group has no approved name).
+//   • A surface section's label ("Cell", "Row · Widget A") names the clicked
+//     thing: it is declared `kind: "target"`, never a group heading.
 //   • R1: a disabled universal verb (copy, cut, paste, undo, redo, find)
 //     greys WITH its sentence; every other unavailable row is absent.
 //   • Headings are only names the classic menu already shows ("History",
@@ -20,7 +23,6 @@
 
 import type { Action, ActionCategory, ClickTarget, Eligibility } from "@ai-matrx/alchemy/actions";
 import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
-import { richDocumentSectionId } from "@/features/rich-document/actions/provider";
 import type { MenuModel, MenuNode, MenuSection } from "./model/menu-model";
 
 export interface ContextMenuTargetHost {
@@ -215,7 +217,6 @@ export function contextMenuActionsFromModel(model: MenuModel, instanceId: string
             lib,
             {
               category: "ai",
-              section: { id: richDocumentSectionId(node.label), label: node.label },
               order: 5_000 + i * 50 + j,
             },
             instanceId,
@@ -230,7 +231,13 @@ export function contextMenuActionsFromModel(model: MenuModel, instanceId: string
       section.group === "history"
         ? { id: "cm-history", label: "History" }
         : section.label
-          ? { id: `cm-${section.id}`, label: section.label, ...(section.primary ? { primary: true } : {}) }
+          ? {
+              id: `cm-${section.id}`,
+              label: section.label,
+              ...(section.primary ? { primary: true } : {}),
+              // A surface section's label is the clicked thing's own name.
+              ...(section.group === "surface" ? { kind: "target" as const } : {}),
+            }
           : section.primary
             ? { id: `cm-${section.id}`, label: section.label ?? "", primary: true }
             : undefined;

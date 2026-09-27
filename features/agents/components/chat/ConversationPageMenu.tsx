@@ -33,7 +33,7 @@
  */
 
 import { useRef } from "react";
-import { Download, MoreHorizontal, Pin, Search, Send, X } from "lucide-react";
+import { ClipboardCopy, Download, MoreHorizontal, Pin, Search, Send, Share, X } from "lucide-react";
 import { useAssociations } from "@ai-matrx/associations/react";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
@@ -46,9 +46,9 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { usePinnedMessageIds } from "@/features/agents/message-pins/pinned-messages-store";
 import {
-  CONVERSATION_EXPORT_FORMATS,
-  exportConversation,
-} from "@/features/agents/conversation-export/export-conversation";
+  CONVERSATION_TRANSFER_ROWS,
+  type ConversationTransferRow,
+} from "@/features/agents/conversation-export/conversation-transfer-rows";
 import {
   setConversationFindOpen,
   setConversationPinnedOnly,
@@ -90,7 +90,7 @@ export function ConversationPageMenu({
   // Conversation-level answer tools (RC-B9) live HERE, in the menu this
   // conversation already has — never as a row stacked on the transcript.
   // Find (also Cmd/Ctrl+F in the transcript), Pinned only (present once
-  // something is pinned), Export the whole conversation.
+  // something is pinned), and the whole conversation's full Alchemy set.
   const { pinnedOnly } = useConversationViewState(conversationId);
   const messages = useAppSelector(selectConversationMessages(conversationId));
   const pinnedIds = usePinnedMessageIds();
@@ -124,27 +124,51 @@ export function ConversationPageMenu({
         hidden: pinnedCount === 0 && !pinnedOnly,
         onCheckedChange: (next) => setConversationPinnedOnly(conversationId, next),
       },
+    ],
+  };
+
+  // THE whole conversation's Alchemy set — the same catalogue, same rows and
+  // order as the answer menu's Conversation section (conversation-transfer-rows).
+  const runTransfer = (row: ConversationTransferRow) => {
+    // A thunk hands the runner a live getState without subscribing the
+    // header to the whole store. The runner loads on click.
+    dispatch((d: AppDispatch, getState: () => RootState) => {
+      void import("@/features/agents/conversation-export/conversation-transfer").then(
+        ({ runConversationTransfer }) => runConversationTransfer({ dispatch: d, getState }, conversationId, row),
+      );
+    });
+  };
+  const transferItems = (groups: ConversationTransferRow["group"][]) =>
+    CONVERSATION_TRANSFER_ROWS.filter((row) => groups.includes(row.group)).map((row) => ({
+      id: row.id,
+      label: row.label,
+      icon: row.icon,
+      iconClassName: row.iconColor,
+      onSelect: () => runTransfer(row),
+    }));
+  const transferSection: ItemMenuSection = {
+    id: "conversation-transfer",
+    items: [
       {
         kind: "submenu",
-        id: "export-conversation",
-        label: "Export conversation",
+        id: "conversation-copy",
+        label: "Copy conversation",
+        icon: ClipboardCopy,
+        sections: [{ id: "conversation-copy-rows", items: transferItems(["copy", "prepare"]) }],
+      },
+      {
+        kind: "submenu",
+        id: "conversation-download",
+        label: "Download conversation",
         icon: Download,
-        sections: [
-          {
-            id: "export-formats",
-            items: CONVERSATION_EXPORT_FORMATS.map(({ format, label }) => ({
-              id: `export-${format}`,
-              label,
-              onSelect: () => {
-                // A thunk hands the export a live getState without
-                // subscribing the header to the whole store.
-                dispatch((d: AppDispatch, getState: () => RootState) => {
-                  void exportConversation(d, getState, conversationId, format);
-                });
-              },
-            })),
-          },
-        ],
+        sections: [{ id: "conversation-download-rows", items: transferItems(["download"]) }],
+      },
+      {
+        kind: "submenu",
+        id: "conversation-send",
+        label: "Send conversation to",
+        icon: Share,
+        sections: [{ id: "conversation-send-rows", items: transferItems(["send"]) }],
       },
     ],
   };
@@ -197,8 +221,8 @@ export function ConversationPageMenu({
         config={{
           ...menuConfig,
           sections: emailSection
-            ? [viewSection, emailSection, ...menuConfig.sections]
-            : [viewSection, ...menuConfig.sections],
+            ? [viewSection, transferSection, emailSection, ...menuConfig.sections]
+            : [viewSection, transferSection, ...menuConfig.sections],
         }}
         align="end"
         onCloseAutoFocus={(event) => {

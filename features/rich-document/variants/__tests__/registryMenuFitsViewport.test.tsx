@@ -171,7 +171,7 @@ describe("message ⋯ menu fits a 768px-tall viewport (D6)", () => {
     await menu.cleanup();
   });
 
-  it("keeps every Save as format reachable behind a visible submenu trigger", async () => {
+  it("keeps every Save format reachable behind a visible submenu trigger", async () => {
     const menu = await renderMenu(menuItems("assistant"));
 
     const trigger = menu
@@ -179,10 +179,10 @@ describe("message ⋯ menu fits a 768px-tall viewport (D6)", () => {
       .find(
         (row) =>
           row.getAttribute("data-submenu-trigger") === "true" &&
-          /Save as/i.test(row.textContent ?? ""),
+          /^\s*Save\d*\s*$/i.test(row.textContent ?? ""),
       );
     expect(trigger).toBeTruthy();
-    if (!trigger) throw new Error("Save as submenu trigger was not rendered");
+    if (!trigger) throw new Error("Save submenu trigger was not rendered");
 
     await act(async () => {
       trigger.click();
@@ -192,7 +192,7 @@ describe("message ⋯ menu fits a 768px-tall viewport (D6)", () => {
     expect(labels.some((label) => /PDF Document/i.test(label))).toBe(true);
     expect(labels.some((label) => /Markdown/i.test(label))).toBe(true);
     // The way back out is on screen.
-    expect(labels.some((label) => /^Save as$/i.test(label.trim()))).toBe(true);
+    expect(labels.some((label) => /^Save$/i.test(label.trim()))).toBe(true);
 
     await menu.cleanup();
   });
@@ -221,10 +221,10 @@ describe("message ⋯ menu fits a 768px-tall viewport (D6)", () => {
       .find(
         (row) =>
           row.getAttribute("data-submenu-trigger") === "true" &&
-          /Save as/i.test(row.textContent ?? ""),
+          /^\s*Save\d*\s*$/i.test(row.textContent ?? ""),
       );
     expect(trigger).toBeTruthy();
-    if (!trigger) throw new Error("Save as submenu trigger was not rendered");
+    if (!trigger) throw new Error("Save submenu trigger was not rendered");
 
     await act(async () => {
       trigger.click();

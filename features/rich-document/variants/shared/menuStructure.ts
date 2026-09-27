@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import type { RichDocumentAction } from "../../types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { CONVERSATION_TRANSFER_ROWS } from "@/features/agents/conversation-export/conversation-transfer-rows";
 
 export interface MenuSection {
   /** Submenu label, or null for the promoted top-level group. */
@@ -37,6 +38,20 @@ export interface MenuSection {
    * whose rows mix categories, so the section sits in ONE predictable place.
    */
   layoutCategory?: RichDocumentAction["category"];
+  /**
+   * In the one menu engine (⋯, right-click, sheet, palette) this section's rows
+   * show INLINE, under no heading — the group has no approved name (ALC-15 chair
+   * ruling: a heading is a name the classic menus used; otherwise inline). The
+   * tree hosts (ProTextarea's "…", the user bubble) still group them under
+   * `submenu`.
+   */
+  inline?: boolean;
+  /**
+   * The heading names the THING these rows act on ("Conversation": the whole
+   * conversation, not the clicked message) — declared to the engine as a target
+   * label (`section.kind: "target"`), never a group heading.
+   */
+  target?: boolean;
 }
 
 /**
@@ -45,12 +60,14 @@ export interface MenuSection {
  * rendered in a trailing group.
  */
 /**
- * The AI section's label. Hosts that carry the agent-shortcut libraries (AI
- * Actions, Agents, Content Blocks, My Items, Org Items — the context-menu v3
- * placements) and ProTextarea's bound agents fold them INTO this submenu, so
- * there is one AI family in every menu, never a parallel one.
+ * The AI section's label in the tree hosts — the classic context-menu name
+ * "AI Actions" (agent-shortcuts placement label), restored 2026-09-26 over the
+ * coined "Improve with AI" (ALC-15 round 3). Hosts that carry the agent-shortcut
+ * libraries and ProTextarea's bound agents fold them INTO this group, so there
+ * is one AI family in every menu, never a parallel one. In the one menu engine
+ * the group is `inline` (no heading), so it never reads "AI Actions › AI Actions".
  */
-export const AI_SUBMENU_LABEL = "Improve with AI";
+export const AI_SUBMENU_LABEL = "AI Actions";
 
 /** The whole-conversation section's label (answer menus of chat messages). */
 export const CONVERSATION_SUBMENU_LABEL = "Conversation";
@@ -87,8 +104,9 @@ export const MENU_STRUCTURE: MenuSection[] = [
     // Present only when the source carries a conversationId.
     submenu: CONVERSATION_SUBMENU_LABEL,
     icon: MessagesSquare,
+    target: true,
     // Its rows mix find/ask/share/edit/export; "save" seats the section in
-    // the document group, right after the promoted rows and before "Save as".
+    // the document group, right after the promoted rows and before "Save".
     layoutCategory: "save",
     actionIds: [
       "conversation-find",
@@ -97,10 +115,9 @@ export const MENU_STRUCTURE: MenuSection[] = [
       "conversation-copy-link",
       "conversation-rename",
       "conversation-duplicate",
-      "export-conversation-md",
-      "export-conversation-pdf",
-      "export-conversation-docx",
-      "export-conversation-html",
+      // THE full Alchemy transfer set over the whole conversation (Arman,
+      // 2026-09-26) — the catalogue's order, shared with the header menu.
+      ...CONVERSATION_TRANSFER_ROWS.map((row) => row.id),
     ],
   },
   {
@@ -108,10 +125,12 @@ export const MENU_STRUCTURE: MenuSection[] = [
     // RegistryActionList; a document keeps them one row deep).
     submenu: AI_SUBMENU_LABEL,
     icon: AGENT_ICON,
+    inline: true,
     actionIds: ["text-cleanup", "text-help", "text-custom-agent"],
   },
   {
-    submenu: "Save as",
+    // "Save" — the classic name (e5b8d01229, 2026-05-19); "Save as" was coined 2026-09-24.
+    submenu: "Save",
     icon: Save,
     actionIds: [
       "save-as-message-template",
@@ -151,7 +170,8 @@ export const MENU_STRUCTURE: MenuSection[] = [
     ],
   },
   {
-    submenu: "Share & export",
+    // "Export" — the classic name (e5b8d01229, 2026-05-19); "Share & export" was coined 2026-09-24.
+    submenu: "Export",
     icon: Share2,
     actionIds: [
       "html-preview",

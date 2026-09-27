@@ -9,7 +9,11 @@
 //   conversation-copy-link     Copy conversation link
 //   conversation-rename        Rename conversation (the ONE rename dialog)
 //   conversation-duplicate     Duplicate conversation
-//   (+ export-conversation-*   registered in ./answer-tools.ts)
+//   conversation-copy-* · conversation-download-* · conversation-save-to-notes ·
+//   conversation-create-* · conversation-open-in-new-chat · conversation-email-to-me
+//                              THE full Alchemy transfer set over the whole
+//                              conversation — one catalogue shared with the
+//                              header menu (conversation-transfer-rows.ts)
 //
 // ONE implementation per verb: every run calls the same verb the header menu
 // (ConversationPageMenu → buildConversationMenu) calls —
@@ -40,6 +44,7 @@ import {
   subscribePinnedMessages,
 } from "@/features/agents/message-pins/pinned-messages-store";
 import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { CONVERSATION_TRANSFER_ROWS } from "@/features/agents/conversation-export/conversation-transfer-rows";
 
 function conversationOf(ctx: RichDocumentActionContext): string | null {
   return chatIds(ctx).conversationId;
@@ -177,4 +182,34 @@ registerAction({
     const id = conversationOf(ctx);
     if (id) await duplicateConversationVerb(ctx.dispatch, id, { surfaceKey: ctx.surfaceKey ?? undefined });
   },
+});
+
+// ─── The whole conversation's Alchemy transfer set ──────────────────────────
+// Copy (plain / Markdown / formatted), Copy for AI… (the preparation
+// workspace), every format through @ai-matrx/alchemy/operate, and the
+// destinations — the SAME rows, in the same order, as the header menu. The
+// runner loads on click.
+
+CONVERSATION_TRANSFER_ROWS.forEach((row, i) => {
+  registerAction({
+    id: row.id,
+    label: row.label,
+    icon: row.icon,
+    iconColor: row.iconColor,
+    category: row.group === "download" ? "export" : row.group === "send" ? "save" : "copy",
+    supportedSources: ["chat-message"],
+    renderSlot: "overflow",
+    order: 30 + i,
+    ...(row.group === "send" || row.group === "prepare" ? { requiresAuth: true } : {}),
+    visible: hasConversation,
+    run: async (ctx) => {
+      ctx.onClose();
+      const id = conversationOf(ctx);
+      if (!id) return;
+      const { runConversationTransfer } = await import(
+        "@/features/agents/conversation-export/conversation-transfer"
+      );
+      await runConversationTransfer({ dispatch: ctx.dispatch, getState: ctx.getState }, id, row);
+    },
+  });
 });

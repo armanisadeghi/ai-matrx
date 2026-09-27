@@ -5,7 +5,6 @@
 //   chat-message source
 //     pin-message             Pin / unpin (per person, platform.user_entity_state)
 //     regenerate-response     Plain regenerate of the latest answer (no edit)
-//     export-conversation-*   The whole conversation as MD / PDF / DOCX / HTML
 //
 //   code block (source "raw" + metadata.codeBlock — see ../../code-block/)
 //     code-block-open-in-editor   Floating Monaco window, no navigation, no save
@@ -16,12 +15,7 @@
 // Every action is ABSENT where it cannot work (visible → false) — never dead.
 
 import {
-  FileCode2,
-  FileDown,
   FileInput,
-  FileText,
-  FileType,
-  Globe,
   Loader2,
   Pin,
   PinOff,
@@ -42,7 +36,6 @@ import {
   togglePinnedMessage,
 } from "@/features/agents/message-pins/pinned-messages-store";
 import { selectRegenerateAnchor } from "@/features/agents/redux/execution-system/message-crud/regenerate-anchor";
-import type { ConversationExportFormat } from "@/features/agents/conversation-export/export-conversation";
 import { readCodeBlockFacts, type CodeBlockFacts } from "../../code-block/code-block-context";
 import { runCommandFor, runnableSandboxId } from "../../code-block/code-run";
 import { chartableTypes, parseDelimitedTable } from "@/components/mardown-display/blocks/chart/table-chart";
@@ -143,38 +136,6 @@ registerAction({
     if (!conversationId || !messageId) return;
     await confirmAndRegenerate(ctx, conversationId, messageId);
   },
-});
-
-// ─── Export the whole conversation ──────────────────────────────────────────
-
-const EXPORTS: Array<{ format: ConversationExportFormat; label: string; icon: typeof FileText; color: string }> = [
-  { format: "md", label: "Export conversation as Markdown", icon: FileCode2, color: "text-slate-500 dark:text-slate-400" },
-  { format: "pdf", label: "Export conversation as PDF", icon: FileDown, color: "text-red-500 dark:text-red-400" },
-  { format: "docx", label: "Export conversation as Word", icon: FileType, color: "text-blue-600 dark:text-blue-400" },
-  { format: "html", label: "Export conversation as web page", icon: Globe, color: "text-orange-500 dark:text-orange-400" },
-];
-
-EXPORTS.forEach(({ format, label, icon, color }, i) => {
-  registerAction({
-    id: `export-conversation-${format}`,
-    label,
-    icon,
-    iconColor: color,
-    category: "export",
-    supportedSources: ["chat-message"],
-    renderSlot: "overflow",
-    order: 30 + i,
-    visible: (ctx) => Boolean(chatIds(ctx).conversationId),
-    run: async (ctx) => {
-      ctx.onClose();
-      const { conversationId } = chatIds(ctx);
-      if (!conversationId) return;
-      const { exportConversation } = await import(
-        "@/features/agents/conversation-export/export-conversation"
-      );
-      await exportConversation(ctx.dispatch, ctx.getState, conversationId, format);
-    },
-  });
 });
 
 // ─── Code block actions ─────────────────────────────────────────────────────

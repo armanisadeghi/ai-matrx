@@ -2,7 +2,7 @@
  * GUARD — the answer menu's "Conversation" section (2026-09-26).
  *
  * Break it names:
- *   - a whole-conversation export back in the per-message "Share & export"
+ *   - a whole-conversation export back in the per-message "Export"
  *     submenu (where it was buried before this section existed);
  *   - a conversation verb missing from the section, or placed anywhere else;
  *   - the section drawn for content that belongs to no conversation;
@@ -21,6 +21,7 @@ import {
   buildMenuTree,
   registryMenuActions,
 } from "../shared/menuStructure";
+import { CONVERSATION_TRANSFER_ROWS } from "@/features/agents/conversation-export/conversation-transfer-rows";
 
 const CONVERSATION_IDS = [
   "conversation-find",
@@ -28,10 +29,7 @@ const CONVERSATION_IDS = [
   "conversation-copy-link",
   "conversation-rename",
   "conversation-duplicate",
-  "export-conversation-md",
-  "export-conversation-pdf",
-  "export-conversation-docx",
-  "export-conversation-html",
+  ...CONVERSATION_TRANSFER_ROWS.map((row) => row.id),
 ];
 
 function section(label: string) {
@@ -44,11 +42,11 @@ describe("the Conversation section", () => {
     expect(MENU_STRUCTURE[1].submenu).toBe(CONVERSATION_SUBMENU_LABEL);
   });
 
-  it("holds every whole-conversation verb, and Share & export holds only this message", () => {
+  it("holds every whole-conversation verb, and Export holds only this message", () => {
     const ids = section(CONVERSATION_SUBMENU_LABEL)?.actionIds ?? [];
     for (const id of [...CONVERSATION_IDS, "conversation-pinned-only"]) expect(ids).toContain(id);
-    const shareExport = section("Share & export")?.actionIds ?? [];
-    expect(shareExport.filter((id) => id.startsWith("export-conversation-"))).toEqual([]);
+    const shareExport = section("Export")?.actionIds ?? [];
+    expect(shareExport.filter((id) => id.startsWith("conversation-"))).toEqual([]);
   });
 
   it("holds ONLY whole-conversation verbs — a message-scoped verb never sits inside it", () => {
@@ -73,10 +71,23 @@ describe("the Conversation section", () => {
         "Copy conversation link",
         "Rename conversation",
         "Duplicate conversation",
-        "Export conversation as Markdown",
-        "Export conversation as PDF",
-        "Export conversation as Word",
-        "Export conversation as web page",
+        // THE full Alchemy set over the whole conversation (Arman, 2026-09-26).
+        "Copy conversation",
+        "Copy conversation as Markdown",
+        "Copy conversation formatted",
+        "Copy conversation for AI…",
+        "Download conversation as text",
+        "Download conversation as Markdown",
+        "Download conversation as web page",
+        "Download conversation as JSON",
+        "Download conversation as PDF",
+        "Download conversation as Word",
+        "Download conversation as EPUB",
+        "Save conversation to Notes",
+        "Create a document from conversation",
+        "Create a task from conversation",
+        "Open conversation in a new chat",
+        "Email conversation to me",
       ]),
     );
     expect(tree.topLevel.map((a) => a.id)).not.toContain("conversation-share");
@@ -84,7 +95,7 @@ describe("the Conversation section", () => {
 
   it("sits in ONE place in the Alchemy layout: every row carries the section's layout category", () => {
     // The layout groups a section by its rows' category; a mixed section
-    // landed after "Save as" (its first ask row pulled it into the AI group).
+    // landed after "Save" (its first ask row pulled it into the AI group).
     const ids = section(CONVERSATION_SUBMENU_LABEL)?.actionIds ?? [];
     const categories = new Set(
       ids.map((id) => getAction(id)).filter(Boolean).map((a) => toAlchemyAction(a!).category),

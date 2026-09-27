@@ -4,13 +4,13 @@
  * - a disabled universal verb vanishes or greys without a sentence (R1 c) → "verbs" red.
  * - a disabled non-verb row is greyed instead of absent (R1 b) → "absent" red.
  * - the rich-document tree is emitted twice (here AND by its provider) → "not re-emitted" red.
- * - agent libraries land outside the one "Improve with AI" group → "libraries" red.
+ * - agent libraries land in a heading of their own (or a coined one) instead of inline
+ *   in the one AI group → "libraries" red.
  * - a menu instance's rows leak into another open menu → "instance" red.
  */
 jest.mock("@/components/agent-copy/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
 
 import { createActionRegistry, createClickTarget } from "@ai-matrx/alchemy/actions";
-import { richDocumentSectionId } from "@/features/rich-document/actions/provider";
 import { contextMenuActionsFromModel } from "../alchemy-provider";
 import type { MenuModel, MenuNode, MenuSection } from "../model/menu-model";
 
@@ -38,8 +38,8 @@ function model(): MenuModel {
         item("rich:save-to-notes", "Save to Notes"),
         {
           kind: "submenu",
-          id: "rich-sub:improve-with-ai",
-          label: "Improve with AI",
+          id: "rich-sub:ai-actions",
+          label: "AI Actions",
           children: [
             item("rich:text-cleanup", "Clean up"),
             { kind: "separator", id: "rich-ai:sep" },
@@ -85,12 +85,12 @@ describe("context-menu provider", () => {
     expect(ids).toContain("cm:select-all");
   });
 
-  it("the rich-document tree is not re-emitted; libraries join the one Improve-with-AI group", async () => {
+  it("the rich-document tree is not re-emitted; libraries join the one AI group inline, under no heading", async () => {
     const resolved = await resolveFor("m1");
     const ids = resolved.map((r) => r.action.id);
     expect(ids.filter((id) => id.includes("rich"))).toEqual([]);
     const library = resolved.find((r) => r.action.id === "cm:placement:ai-action")?.action;
-    expect(library?.section).toEqual({ id: richDocumentSectionId("Improve with AI"), label: "Improve with AI" });
+    expect(library?.section).toBeUndefined();
     expect(library?.category).toBe("ai");
     const owned = createClickTarget({ host: { contextMenu: { kind: "context-menu", instanceId: "m1" } } });
     expect(await library?.expand?.(owned, new AbortController().signal)).toEqual([

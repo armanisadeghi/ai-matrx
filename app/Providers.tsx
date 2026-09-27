@@ -35,6 +35,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import type { BaseReduxState } from "@/types/reduxTypes";
 import { RefProvider } from "@/lib/refs";
 import { AlchemyHost } from "@/components/agent-copy/AlchemyHost";
+import { AlchemySessionPortal } from "@/components/agent-copy/AlchemySessionPortal";
 import { ToastProvider } from "@/providers/toast-context";
 import { ModuleHeaderProvider } from "@/providers/ModuleHeaderProvider";
 import { PersistentComponentProvider } from "@/providers/persistance/PersistentComponentProvider";
@@ -197,6 +198,9 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                 mounts lazily on first audio engagement.
                                 See providers/AudioSystemHost.tsx. */}
                                         <AudioSystemHost />
+                                        {/* Runs Alchemy sessions filed by non-React code
+                                (a menu handler's "Copy for AI…" or "Save to Notes"). */}
+                                        <AlchemySessionPortal />
                                         <React.Fragment>
                                           <GlobalAuthSync />
                                           {/* One authenticated lifecycle runtime for Core, Code, and Admin. */}
