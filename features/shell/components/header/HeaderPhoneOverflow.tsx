@@ -170,16 +170,47 @@ function PageActionsSection({
   onDone: () => void;
 }) {
   const slotRef = useRef<HTMLDivElement>(null);
+  const [anyDrawn, setAnyDrawn] = useState(true);
   useLayoutEffect(() => {
     const slot = slotRef.current;
     if (!slot) return;
     slot.appendChild(host);
+    // 🚨 NO 0×0 PIECES (page-pass shared defects, 2026-09-27). A control a
+    // page draws only on wider screens (`hidden sm:flex`) is 0×0 here — it has
+    // a phone twin — so its row is hidden instead of leaving an empty band
+    // with a stray label; the section itself goes when nothing in it draws.
+    const prune = () => {
+      let drawn = 0;
+      host.querySelectorAll<HTMLElement>("[data-route-header-overflow-item]").forEach((item) => {
+        const pieces = [...item.children].filter((c) => !c.hasAttribute("data-phone-sheet-label"));
+        const visible = pieces.some((c) => {
+          const r = c.getBoundingClientRect();
+          return r.width > 0 && r.height > 0;
+        });
+        item.style.display = visible ? "" : "none";
+        if (visible) drawn += 1;
+      });
+      host.querySelectorAll<HTMLElement>("[data-page-header-right-phone]").forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) drawn += 1;
+      });
+      setAnyDrawn(drawn > 0);
+    };
+    prune();
+    const observer = new MutationObserver(() => requestAnimationFrame(prune));
+    observer.observe(host, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "hidden", "style"] });
     return () => {
+      observer.disconnect();
       if (holder) holder.appendChild(host);
     };
   }, [host, holder]);
   return (
-    <section aria-label="This page" data-header-page-actions className="border-b border-border pb-1">
+    <section
+      aria-label="This page"
+      data-header-page-actions
+      className="border-b border-border pb-1"
+      style={anyDrawn ? undefined : { display: "none" }}
+    >
       <p className="px-3 pb-1 pt-1 text-xs font-medium text-muted-foreground">This page</p>
       <div
         ref={slotRef}

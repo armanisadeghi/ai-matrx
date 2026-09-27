@@ -220,3 +220,31 @@ describe("HeaderPhoneOverflow — the page's own actions, one overflow per phone
     act(() => store.setPhonePageActionCount("route-1", 0));
   });
 });
+
+describe("HeaderPhoneOverflow — no 0×0 pieces in 'This page'", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const store = require("./phone-page-actions") as typeof import("./phone-page-actions");
+
+  it("hides an action row that draws nothing, and the section when nothing in it draws", () => {
+    let host: HTMLElement | null = null;
+    const Probe = () => {
+      host = store.usePhonePageActions().host;
+      return null;
+    };
+    mount(true);
+    const probeRoot = createRoot(document.createElement("div"));
+    act(() => probeRoot.render(<Probe />));
+    // A desktop-only control (`hidden sm:flex`) portaled in: 0×0 on a phone.
+    const item = document.createElement("div");
+    item.setAttribute("data-route-header-overflow-item", "");
+    item.appendChild(document.createElement("div"));
+    host!.appendChild(item);
+    act(() => store.setPhonePageActionCount("route-x", 1));
+    openSheet();
+    expect(item.style.display).toBe("none");
+    const section = document.querySelector<HTMLElement>("[data-header-page-actions]");
+    expect(section?.style.display).toBe("none");
+    act(() => store.setPhonePageActionCount("route-x", 0));
+    act(() => probeRoot.unmount());
+  });
+});

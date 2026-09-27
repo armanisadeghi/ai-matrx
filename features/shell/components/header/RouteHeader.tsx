@@ -135,7 +135,7 @@ function PhoneSheetAction({ action }: { action: ReturnType<typeof flattenActions
   return (
     <div ref={ref} data-route-header-overflow-item className="flex shrink-0 items-center gap-1.5 px-1">
       {action.node}
-      {label ? <span className="whitespace-nowrap text-xs text-muted-foreground">{label}</span> : null}
+      {label ? <span data-phone-sheet-label className="whitespace-nowrap text-xs text-muted-foreground">{label}</span> : null}
     </div>
   );
 }
