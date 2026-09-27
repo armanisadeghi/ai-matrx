@@ -723,6 +723,20 @@ export function surfaceFromPathname(
     return "matrx-user/education-flashcard-set";
   }
 
+  // The Education Library is three pages, each its own surface: the scoped
+  // list (`/education/library`), the public-deck browser (`/community`) and
+  // the deck owner's suggestion inbox (`/suggestions`). Exact matches — no
+  // other `/education/library/*` route exists.
+  if (/^\/education\/library\/?$/.test(stripped)) {
+    return "matrx-user/education-library";
+  }
+  if (/^\/education\/library\/community\/?$/.test(stripped)) {
+    return "matrx-user/education-library-community";
+  }
+  if (/^\/education\/library\/suggestions\/?$/.test(stripped)) {
+    return "matrx-user/education-library-suggestions";
+  }
+
   // One study guide (`/education/study-guides/<id>`) is its own surface: the
   // record, its notes and comments, and write targets. The library route
   // `/education/study-guides` keeps the list surface via the prefix table.

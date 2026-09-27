@@ -483,6 +483,22 @@ describe("Education tool-family resolution", () => {
     expect(surfaceFromPathname("/education/start")).toBe(
       "matrx-user/education-start",
     );
+    // The library's three pages are three surfaces, matched exactly.
+    expect(surfaceFromPathname("/education/library")).toBe(
+      "matrx-user/education-library",
+    );
+    expect(surfaceFromPathname("/education/library/")).toBe(
+      "matrx-user/education-library",
+    );
+    expect(surfaceFromPathname("/education/library/community")).toBe(
+      "matrx-user/education-library-community",
+    );
+    expect(surfaceFromPathname("/education/library/suggestions")).toBe(
+      "matrx-user/education-library-suggestions",
+    );
+    expect(surfaceFromPathname("/education/library/unknown")).toBe(
+      "matrx-user/education",
+    );
     expect(surfaceFromPathname("/education")).toBe("matrx-user/education");
   });
 

@@ -147,6 +147,9 @@ import { educationAudioStudyManifest } from "./education-audio-study.manifest";
 import { educationGameManifest } from "./education-game.manifest";
 import { educationLearnManifest } from "./education-learn.manifest";
 import { educationProgressManifest } from "./education-progress.manifest";
+import { educationLibraryManifest } from "./education-library.manifest";
+import { educationLibraryCommunityManifest } from "./education-library-community.manifest";
+import { educationLibrarySuggestionsManifest } from "./education-library-suggestions.manifest";
 import { settingsManifest } from "./settings.manifest";
 import { agentAppsManifest } from "./agent-apps.manifest";
 import { publicAgentAppManifest } from "./public-agent-app.manifest";
@@ -391,6 +394,9 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationGameManifest,
   educationLearnManifest,
   educationProgressManifest,
+  educationLibraryManifest,
+  educationLibraryCommunityManifest,
+  educationLibrarySuggestionsManifest,
   settingsManifest,
   agentAppsManifest,
   publicAgentAppManifest,
