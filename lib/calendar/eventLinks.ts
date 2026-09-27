@@ -6,8 +6,11 @@
 // link, and an RFC 5545 `.ics` file (which Apple Calendar, Outlook desktop and
 // every other client open).
 //
-// Times are always written in UTC (`...Z`), so the file means the same instant
-// in every calendar regardless of the viewer's zone.
+// A one-off event is written in UTC (`...Z`), so the file means the same instant
+// in every calendar regardless of the viewer's zone. A REPEATING event is written
+// in its own zone (`DTSTART;TZID=America/Los_Angeles:…`) with its RRULE, because a
+// series authored as "Tuesdays 10:00 in Los Angeles" must stay at 10:00 across a
+// DST change — a UTC anchor would slide it an hour for half the year.
 
 export interface CalendarEvent {
   /** Stable identity, so re-importing the same event updates it instead of duplicating. */
@@ -21,6 +24,45 @@ export interface CalendarEvent {
   /** For an online meeting this is its link. */
   readonly location?: string;
   readonly url?: string;
+  /** RFC 5545 RRULE body (no `RRULE:` prefix) when the event repeats. */
+  readonly rrule?: string | null;
+  /** IANA zone the event is authored in; REQUIRED for a repeating event to hold its wall clock. */
+  readonly timeZone?: string | null;
+}
+
+/** Outlook on the web's compose link has no recurrence parameter; a series must use the `.ics`. */
+export function outlookWebSupports(event: CalendarEvent): boolean {
+  return !event.rrule;
+}
+
+/**
+ * The rule as a calendar client reads it. A date-only UNTIL (how the meeting
+ * form stores "ends on October 30") becomes the end of that day in UTC, because
+ * RFC 5545 requires UNTIL to share DTSTART's value type.
+ */
+export function calendarRrule(rule: string): string {
+  return rule
+    .trim()
+    .replace(/^RRULE:/i, "")
+    .replace(/UNTIL=(\d{8})(?=;|$)/i, "UNTIL=$1T235959Z");
+}
+
+/** `20261006T100000` — the wall-clock form used with a TZID. */
+export function toCalendarLocal(iso: string, timeZone: string): string {
+  const parts: Record<string, string> = {};
+  for (const part of new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(new Date(iso))) {
+    parts[part.type] = part.value;
+  }
+  return `${parts.year}${parts.month}${parts.day}T${parts.hour}${parts.minute}${parts.second}`;
 }
 
 /** Default length when a scheduled event carries no duration. */
@@ -50,6 +92,11 @@ export function googleCalendarUrl(event: CalendarEvent): string {
   });
   if (event.description) params.set("details", event.description);
   if (event.location) params.set("location", event.location);
+  if (event.rrule) {
+    params.set("recur", `RRULE:${calendarRrule(event.rrule)}`);
+    // Google expands the series in `ctz`, so Tuesdays 10:00 stay 10:00 across DST.
+    if (event.timeZone) params.set("ctz", event.timeZone);
+  }
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
@@ -107,8 +154,13 @@ export function icsContent(event: CalendarEvent, now: Date = new Date()): string
     "BEGIN:VEVENT",
     `UID:${escapeText(event.uid)}`,
     `DTSTAMP:${toCalendarUtc(now.toISOString())}`,
-    `DTSTART:${toCalendarUtc(event.start)}`,
-    `DTEND:${toCalendarUtc(event.end)}`,
+    ...(event.rrule && event.timeZone
+      ? [
+          `DTSTART;TZID=${event.timeZone}:${toCalendarLocal(event.start, event.timeZone)}`,
+          `DTEND;TZID=${event.timeZone}:${toCalendarLocal(event.end, event.timeZone)}`,
+        ]
+      : [`DTSTART:${toCalendarUtc(event.start)}`, `DTEND:${toCalendarUtc(event.end)}`]),
+    ...(event.rrule ? [`RRULE:${calendarRrule(event.rrule)}`] : []),
     `SUMMARY:${escapeText(event.title)}`,
     ...(event.description ? [`DESCRIPTION:${escapeText(event.description)}`] : []),
     ...(event.location ? [`LOCATION:${escapeText(event.location)}`] : []),
