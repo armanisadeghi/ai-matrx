@@ -14,7 +14,8 @@ const event: CalendarEvent = {
   title: "Weekly client check-in",
   start: "2026-09-28T17:00:00.000Z",
   end: "2026-09-28T17:30:00.000Z",
-  description: "Join: https://www.aimatrx.com/meet/952-6de0-d34\nNo account needed, just your name; bring notes.",
+  description:
+    "Join: https://www.aimatrx.com/meet/952-6de0-d34\nNo account needed, just your name; bring notes.",
   location: "https://www.aimatrx.com/meet/952-6de0-d34",
   url: "https://www.aimatrx.com/meet/952-6de0-d34",
 };
@@ -32,10 +33,14 @@ describe("calendar event links", () => {
 
   it("builds a Google Calendar template link carrying title, times, details and location", () => {
     const url = new URL(googleCalendarUrl(event));
-    expect(url.origin + url.pathname).toBe("https://calendar.google.com/calendar/render");
+    expect(url.origin + url.pathname).toBe(
+      "https://calendar.google.com/calendar/render",
+    );
     expect(url.searchParams.get("action")).toBe("TEMPLATE");
     expect(url.searchParams.get("text")).toBe("Weekly client check-in");
-    expect(url.searchParams.get("dates")).toBe("20260928T170000Z/20260928T173000Z");
+    expect(url.searchParams.get("dates")).toBe(
+      "20260928T170000Z/20260928T173000Z",
+    );
     expect(url.searchParams.get("details")).toContain("No account needed");
     expect(url.searchParams.get("location")).toBe(event.location);
   });
@@ -69,7 +74,9 @@ describe("calendar event links", () => {
   });
 
   it("names the file after the event", () => {
-    expect(icsFileName("Weekly client check-in")).toBe("weekly-client-check-in.ics");
+    expect(icsFileName("Weekly client check-in")).toBe(
+      "weekly-client-check-in.ics",
+    );
     expect(icsFileName("!!!")).toBe("event.ics");
   });
 });
@@ -85,15 +92,21 @@ describe("a repeating event", () => {
 
   it("hands Google the rule and the zone it expands in", () => {
     const url = new URL(googleCalendarUrl(series));
-    expect(url.searchParams.get("recur")).toBe("RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261222T235959Z");
+    expect(url.searchParams.get("recur")).toBe(
+      "RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261222T235959Z",
+    );
     expect(url.searchParams.get("ctz")).toBe("America/Los_Angeles");
   });
 
   it("writes the .ics in the meeting's zone with the RRULE, so 10:00 survives DST", () => {
     const ics = icsContent(series, new Date("2026-09-27T12:00:00.000Z"));
-    expect(ics).toContain("DTSTART;TZID=America/Los_Angeles:20261006T100000\r\n");
+    expect(ics).toContain(
+      "DTSTART;TZID=America/Los_Angeles:20261006T100000\r\n",
+    );
     expect(ics).toContain("DTEND;TZID=America/Los_Angeles:20261006T103000\r\n");
-    expect(ics).toContain("RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261222T235959Z\r\n");
+    expect(ics).toContain(
+      "RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261222T235959Z\r\n",
+    );
     expect(ics).not.toContain("DTSTART:2026");
   });
 
@@ -106,6 +119,8 @@ describe("a repeating event", () => {
     const ics = icsContent(event, new Date("2026-09-27T12:00:00.000Z"));
     expect(ics).toContain("DTSTART:20260928T170000Z");
     expect(ics).not.toContain("RRULE");
-    expect(new URL(googleCalendarUrl(event)).searchParams.get("recur")).toBeNull();
+    expect(
+      new URL(googleCalendarUrl(event)).searchParams.get("recur"),
+    ).toBeNull();
   });
 });

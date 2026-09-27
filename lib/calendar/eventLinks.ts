@@ -69,9 +69,15 @@ export function toCalendarLocal(iso: string, timeZone: string): string {
 export const DEFAULT_EVENT_MINUTES = 30;
 
 /** `start + minutes` as an ISO instant. */
-export function endFromDuration(start: string, minutes: number | null | undefined): string {
+export function endFromDuration(
+  start: string,
+  minutes: number | null | undefined,
+): string {
   const ms = new Date(start).getTime();
-  const length = minutes !== null && minutes !== undefined && minutes > 0 ? minutes : DEFAULT_EVENT_MINUTES;
+  const length =
+    minutes !== null && minutes !== undefined && minutes > 0
+      ? minutes
+      : DEFAULT_EVENT_MINUTES;
   return new Date(ms + length * 60_000).toISOString();
 }
 
@@ -81,7 +87,10 @@ export function toCalendarUtc(iso: string): string {
   if (Number.isNaN(date.getTime())) {
     throw new Error(`Calendar event time "${iso}" is not a valid date.`);
   }
-  return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  return date
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}/, "");
 }
 
 export function googleCalendarUrl(event: CalendarEvent): string {
@@ -144,7 +153,10 @@ function fold(line: string): string {
   return parts.join("\r\n ");
 }
 
-export function icsContent(event: CalendarEvent, now: Date = new Date()): string {
+export function icsContent(
+  event: CalendarEvent,
+  now: Date = new Date(),
+): string {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -159,10 +171,15 @@ export function icsContent(event: CalendarEvent, now: Date = new Date()): string
           `DTSTART;TZID=${event.timeZone}:${toCalendarLocal(event.start, event.timeZone)}`,
           `DTEND;TZID=${event.timeZone}:${toCalendarLocal(event.end, event.timeZone)}`,
         ]
-      : [`DTSTART:${toCalendarUtc(event.start)}`, `DTEND:${toCalendarUtc(event.end)}`]),
+      : [
+          `DTSTART:${toCalendarUtc(event.start)}`,
+          `DTEND:${toCalendarUtc(event.end)}`,
+        ]),
     ...(event.rrule ? [`RRULE:${calendarRrule(event.rrule)}`] : []),
     `SUMMARY:${escapeText(event.title)}`,
-    ...(event.description ? [`DESCRIPTION:${escapeText(event.description)}`] : []),
+    ...(event.description
+      ? [`DESCRIPTION:${escapeText(event.description)}`]
+      : []),
     ...(event.location ? [`LOCATION:${escapeText(event.location)}`] : []),
     ...(event.url ? [`URL:${event.url}`] : []),
     "END:VEVENT",
@@ -183,7 +200,9 @@ export function icsFileName(title: string): string {
 
 /** Hands the person the `.ics` file. Browser only. */
 export function downloadIcs(event: CalendarEvent): void {
-  const blob = new Blob([icsContent(event)], { type: "text/calendar;charset=utf-8" });
+  const blob = new Blob([icsContent(event)], {
+    type: "text/calendar;charset=utf-8",
+  });
   const href = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = href;
