@@ -434,6 +434,7 @@ export default function QuickScrapePage() {
                       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                         <div>
                           <span className="font-medium">Characters:</span>{" "}
+                          {/* read-gate-exempt: fields of a scrape result rendered only inside the data guard, after the scrape returned */}
                           {data.overview.char_count?.toLocaleString() || 0}
                         </div>
                         <div>
@@ -445,18 +446,21 @@ export default function QuickScrapePage() {
                         {data.images.length > 0 && (
                           <div>
                             <span className="font-medium">Images:</span>{" "}
+                            {/* read-gate-exempt: fields of a scrape result rendered only inside the data guard, after the scrape returned */}
                             {data.images.length}
                           </div>
                         )}
                         {(data.links.internal?.length || 0) > 0 && (
                           <div>
                             <span className="font-medium">Internal Links:</span>{" "}
+                            {/* read-gate-exempt: fields of a scrape result rendered only inside the data guard, after the scrape returned */}
                             {data.links.internal?.length}
                           </div>
                         )}
                         {(data.links.external?.length || 0) > 0 && (
                           <div>
                             <span className="font-medium">External Links:</span>{" "}
+                            {/* read-gate-exempt: fields of a scrape result rendered only inside the data guard, after the scrape returned */}
                             {data.links.external?.length}
                           </div>
                         )}

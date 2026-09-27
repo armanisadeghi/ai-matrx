@@ -11,6 +11,7 @@
 
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { rememberFileOrganization } from "@/features/files/api/fileOrganization";
 import { useDeclarePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
 import { useUserOrganizations } from "@/features/organizations/hooks";
@@ -58,6 +59,7 @@ export function StudioShell({ fileId, organizationId }: StudioShellProps) {
   const { file } = useFile({ kind: "file_id", fileId });
   const {
     annotations,
+    error: annotationsError,
     create: createAnnotation,
     update: updateAnnotation,
     remove: removeAnnotation,
@@ -335,7 +337,7 @@ export function StudioShell({ fileId, organizationId }: StudioShellProps) {
               title={`Your annotations live on pages: ${annotationPages.join(", ")}`}
               className="flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20"
             >
-              <span className="tabular-nums">{annotations.length}</span>
+              <UntrustedCount className="tabular-nums" value={annotations.length} trustworthy={!annotationsError} label="Annotations" />
               <span className="uppercase tracking-wider">
                 annotation{annotations.length === 1 ? "" : "s"}
               </span>

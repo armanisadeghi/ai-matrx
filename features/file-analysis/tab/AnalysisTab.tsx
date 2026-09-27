@@ -247,7 +247,7 @@ export function AnalysisTab({ fileId, className }: AnalysisTabProps) {
               {refreshProgress.complete} / {refreshProgress.total} detectors
             </span>
           ) : null}
-          {!refreshing && (status === "pending" || status === "running") && progressTotal > 0 ? (
+          {!refreshing && !analysis.error && (status === "pending" || status === "running") && progressTotal > 0 ? (
             <span className="text-xs tabular-nums text-muted-foreground">
               {progressComplete} / {progressTotal} detectors
             </span>

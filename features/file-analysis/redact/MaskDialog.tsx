@@ -9,6 +9,7 @@
 
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useMemo, useState } from "react";
 import { Loader2, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,7 @@ type Mode = "reversible" | "destructive" | "annotation";
 type Style = "bracket" | "shape";
 
 export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
-  const { annotations } = useAnnotations(fileId);
+  const { annotations, error: annotationsError } = useAnnotations(fileId);
   const candidates = useMemo(
     () => annotations.filter((a) => a.redact && a.status === "active"),
     [annotations],
@@ -162,7 +163,8 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
               <Shield className="h-4 w-4" /> Generate masked PDF
             </DialogTitle>
             <DialogDescription>
-              {candidates.length} annotation
+              <UntrustedCount value={candidates.length} trustworthy={!annotationsError} label="Annotations marked for redaction" />{" "}
+              annotation
               {candidates.length === 1 ? "" : "s"} marked for redaction will be
               masked.
             </DialogDescription>

@@ -21,6 +21,8 @@
 
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import { useMemo, useState } from "react";
 import {
   Crop,
@@ -220,7 +222,8 @@ export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
             : "Select all"}
         </Button>
         <span className="text-[10px] tabular-nums text-muted-foreground">
-          {selected.size} / {pages.length} selected
+          {selected.size} /{" "}
+          <UntrustedCount value={pages.length} read={readOf({ loading, error: pagesError })} label="Pages" /> selected
         </span>
         {selected.size > 0 ? (
           <PagesInput

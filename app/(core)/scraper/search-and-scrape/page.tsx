@@ -292,6 +292,7 @@ export default function ScraperSearchAndScrapePage() {
                 {landedReport?.candidates.length ? (
                   <details>
                     <summary className="cursor-pointer">
+                      {/* read-gate-exempt: candidates of a landed search report, rendered only when that report exists */}
                       Found {landedReport.candidates.length} search{" "}
                       {landedReport.candidates.length === 1 ? "result" : "results"} to read from —
                       web addresses, not Sources

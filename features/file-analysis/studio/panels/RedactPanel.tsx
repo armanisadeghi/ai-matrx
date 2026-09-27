@@ -5,6 +5,7 @@
 
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useMemo, useState } from "react";
 import { Layers, Loader2, ShieldCheck, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ interface Props {
 }
 
 export function RedactPanel({ fileId }: Props) {
-  const { annotations, update } = useAnnotations(fileId);
+  const { annotations, error: annotationsError, update } = useAnnotations(fileId);
   const { byId } = useLabelCatalog();
   const [maskOpen, setMaskOpen] = useState(false);
   const [restoreOpen, setRestoreOpen] = useState(false);
@@ -43,9 +44,12 @@ export function RedactPanel({ fileId }: Props) {
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
             Marked for redaction
           </span>
-          <span className="rounded bg-muted px-1.5 py-px text-[10px] tabular-nums">
-            {flagged.length}
-          </span>
+          <UntrustedCount
+            className="rounded bg-muted px-1.5 py-px text-[10px] tabular-nums"
+            value={flagged.length}
+            trustworthy={!annotationsError}
+            label="Marked for redaction"
+          />
         </div>
         <div className="flex gap-1.5">
           <Button
