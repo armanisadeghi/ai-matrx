@@ -63,6 +63,7 @@ export async function createSample(
       created_by: userId,
       // The platform's shared catalogue belongs to the Matrx System org — said explicitly,
       // never chosen by a default or a trigger (no-db-assigned-org).
+      // org-fallback-deliberate: shared starter samples are platform content, owned by the Matrx System org by name.
       organization_id: await resolveSystemOrgId(),
       visibility: "public",
     })

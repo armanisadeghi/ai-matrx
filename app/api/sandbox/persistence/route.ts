@@ -43,12 +43,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
+  // The organization the caller SELECTED, stated on `X-Organization-Id`; with
+  // none the request is refused with the caller's memberships attached.
+  const actingOrganizationId =
+    request.headers.get("X-Organization-Id")?.trim() || undefined;
   let organizationId: string;
   try {
-    organizationId = await ensureOrgIdServer(
-      supabase,
-      request.headers.get("X-Organization-Id")?.trim() || undefined,
-    );
+    organizationId = await ensureOrgIdServer(supabase, actingOrganizationId);
   } catch (error) {
     if (isOrganizationRequiredServerError(error)) {
       return organizationRequiredResponse(error);
@@ -99,12 +100,13 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
+  // The organization the caller SELECTED, stated on `X-Organization-Id`; with
+  // none the request is refused with the caller's memberships attached.
+  const actingOrganizationId =
+    request.headers.get("X-Organization-Id")?.trim() || undefined;
   let organizationId: string;
   try {
-    organizationId = await ensureOrgIdServer(
-      supabase,
-      request.headers.get("X-Organization-Id")?.trim() || undefined,
-    );
+    organizationId = await ensureOrgIdServer(supabase, actingOrganizationId);
   } catch (error) {
     if (isOrganizationRequiredServerError(error)) {
       return organizationRequiredResponse(error);
