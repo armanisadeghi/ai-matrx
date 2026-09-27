@@ -38,6 +38,12 @@ import type {
 export interface TakeOptions {
   phase?: ResultPhase;
   gainGroupId?: string | null;
+  /**
+   * False until an organization is chosen — see StudyOrganizationGate. `start`
+   * writes nothing (no `study_session`, no result row) while it is false.
+   * Defaults true.
+   */
+  enabled?: boolean;
 }
 
 export interface AnswerRecord {
@@ -78,7 +84,7 @@ export function useTakeAssessment(
 
   /** Open the session + result row. Idempotent-ish: returns early if started. */
   async function start(): Promise<void> {
-    if (sessionId || starting) return;
+    if (sessionId || starting || opts.enabled === false) return;
     setStarting(true);
     setError(null);
     try {

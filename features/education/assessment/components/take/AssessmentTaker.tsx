@@ -21,6 +21,10 @@ import { StudyDeckHeader } from "@/features/flashcards/components/study/StudyDec
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { cn } from "@/lib/utils";
 import { useTakeAssessment, type TakeOptions } from "./useTakeAssessment";
+import {
+  StudyOrganizationGate,
+  useStudyOrganizationReady,
+} from "@/features/education/study/components/StudyOrganizationGate";
 import { QuestionView } from "./QuestionView";
 import { kindConfigFor } from "../kindConfig";
 import type {
@@ -53,18 +57,25 @@ export function AssessmentTaker({
   const router = useRouter();
   const config = kindConfigFor(assessment.assessment_kind);
   const base = `/education/${config.base}`;
-  const take = useTakeAssessment(assessment, items, options);
+  // A taking opens a study session, filed under one organization. With none
+  // chosen, the organization notice shows in place and the taking starts once
+  // one is picked — never the blocking "Which workspace?" prompt on arrival.
+  const orgReady = useStudyOrganizationReady();
+  const take = useTakeAssessment(assessment, items, {
+    ...options,
+    enabled: orgReady,
+  });
   const [index, setIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [photos, setPhotos] = useState<Record<string, File | null>>({});
   const [finishing, startFinishing] = useState(false);
   const [, startTransition] = useTransition();
 
-  // Open the session + result on mount.
+  // Open the session + result on mount — or once an organization is chosen.
   useEffect(() => {
-    void take.start();
+    if (orgReady) void take.start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [orgReady]);
 
   // Countdown timer (practice tests with a limit).
   const limit = assessment.time_limit_seconds ?? 0;
@@ -162,9 +173,10 @@ export function AssessmentTaker({
           backHref={`${base}/${assessment.id}`}
         />
       </PageHeader>
+      <StudyOrganizationGate what={`This ${config.noun}`}>
       <div className="h-full overflow-y-auto overscroll-contain bg-background">
         <div className="mx-auto max-w-2xl px-2 pb-safe pt-14 sm:px-6">
-          {take.starting && !take.sessionId ? (
+          {(take.starting || !orgReady) && !take.sessionId ? (
             <div className="flex h-64 items-center justify-center">
               <MatrxMiniLoader />
             </div>
@@ -259,6 +271,7 @@ export function AssessmentTaker({
           )}
         </div>
       </div>
+      </StudyOrganizationGate>
     </>
   );
 }
