@@ -9,19 +9,23 @@
 //   2. The invitation: ready-to-paste text (title, when, link, how to join),
 //      copied or opened in the mail app.
 //   3. Add to calendar, for a meeting with a time.
-//   4. Invite people: the PLATFORM SHARE SYSTEM, composed from its own pieces
-//      (`ShareWithUserTab` + `PermissionsList` over `useSharing("meet_meeting")`).
-//      An invite IS a share of the meeting record: the invitee gets the share
-//      system's notification, and a person holding that grant skips the waiting
-//      room. `ShareModal` is not used because its Public tab mints a second
-//      `/s/<token>` link, and a meeting's own link already is the public link.
+//   4. Guests: the meeting's INVITATION LIST (`MeetingGuests`) — add by name or
+//      email, answers shown, co-host, remove. The invitees door also gives an
+//      account its share grant (so an invited person skips the waiting room),
+//      and the invitation email with a calendar file and Yes / No / Maybe links
+//      goes out through `announce`. Never a raw share grant with a permission
+//      picker: a guest is a viewer; co-host is the only role a meeting has.
 //
-// A person who cannot grant (a guest, or a participant who is not the host)
-// sees the link, the invitation and the calendar, and a sentence saying who
-// can add people — never a control that would refuse.
+// A person who is not the host or a co-host sees the link, the invitation, the
+// calendar and the guest list, and a sentence saying who can add people —
+// never a control that would refuse.
 
-import { useState } from "react";
-import type { MeetingRecord } from "@ai-matrx/meet/react";
+import { useEffect, useState } from "react";
+import {
+  useMeetHost,
+  type MeetingInvitee,
+  type MeetingRecord,
+} from "@ai-matrx/meet/react";
 import {
   CalendarPlus,
   Check,
@@ -43,13 +47,12 @@ import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { useShare } from "@/features/sharing/hooks/useShare";
-import { useIsOwner, useSharing } from "@/utils/permissions/hooks";
-import { ShareWithUserTab } from "@/features/sharing/components/tabs/ShareWithUserTab";
-import { PermissionsList } from "@/features/sharing/components/PermissionsList";
+import { MeetingGuests } from "@/features/meet/components/manage/MeetingGuests";
 import {
   downloadIcs,
   googleCalendarUrl,
   outlookCalendarUrl,
+  outlookWebSupports,
 } from "@/lib/calendar/eventLinks";
 import {
   invitationMailto,
@@ -83,14 +86,19 @@ export function MeetingInviteDialog({
   signedIn,
 }: MeetingInviteDialogProps) {
   const { share, copy, fallbackDialog } = useShare();
-  const [copiedWhat, setCopiedWhat] = useState<"link" | "invitation" | null>(null);
+  const [copiedWhat, setCopiedWhat] = useState<"link" | "invitation" | null>(
+    null,
+  );
   const invitation = invitationText(meeting, link);
   const when = invitationWhen(meeting);
   const calendarEvent = meetingCalendarEvent(meeting, link);
 
   const flashCopied = (what: "link" | "invitation") => {
     setCopiedWhat(what);
-    window.setTimeout(() => setCopiedWhat((current) => (current === what ? null : current)), 2_000);
+    window.setTimeout(
+      () => setCopiedWhat((current) => (current === what ? null : current)),
+      2_000,
+    );
   };
 
   const copyLink = async () => {
@@ -105,7 +113,9 @@ export function MeetingInviteDialog({
     });
     if (outcome === "copied") {
       flashCopied("invitation");
-      toast.success("Invitation copied. Paste it into an email, a chat or a calendar invite.");
+      toast.success(
+        "Invitation copied. Paste it into an email, a chat or a calendar invite.",
+      );
     }
   };
 
@@ -119,7 +129,9 @@ export function MeetingInviteDialog({
     });
     if (outcome === "copied") {
       flashCopied("invitation");
-      toast.success("This device has no share sheet, so the invitation was copied instead.");
+      toast.success(
+        "This device has no share sheet, so the invitation was copied instead.",
+      );
     }
   };
 
@@ -149,7 +161,11 @@ export function MeetingInviteDialog({
                 className="min-w-0 flex-1 basis-full font-mono text-sm sm:basis-0"
                 onFocus={(event) => event.currentTarget.select()}
               />
-              <Button type="button" onClick={() => void copyLink()} className="shrink-0 gap-1.5">
+              <Button
+                type="button"
+                onClick={() => void copyLink()}
+                className="shrink-0 gap-1.5"
+              >
                 {copiedWhat === "link" ? (
                   <Check className="h-4 w-4" aria-hidden="true" />
                 ) : (
@@ -183,7 +199,13 @@ export function MeetingInviteDialog({
               {invitation}
             </pre>
             <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => void copyInvitation()} className="gap-1.5">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void copyInvitation()}
+                className="gap-1.5"
+              >
                 {copiedWhat === "invitation" ? (
                   <Check className="h-4 w-4" aria-hidden="true" />
                 ) : (
@@ -206,17 +228,32 @@ export function MeetingInviteDialog({
               <SectionTitle>Add to calendar</SectionTitle>
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" asChild className="gap-1.5">
-                  <a href={googleCalendarUrl(calendarEvent)} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={googleCalendarUrl(calendarEvent)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     <CalendarPlus className="h-4 w-4" aria-hidden="true" />
                     Google Calendar
                   </a>
                 </Button>
-                <Button variant="outline" size="sm" asChild className="gap-1.5">
-                  <a href={outlookCalendarUrl(calendarEvent)} target="_blank" rel="noopener noreferrer">
-                    <CalendarPlus className="h-4 w-4" aria-hidden="true" />
-                    Outlook
-                  </a>
-                </Button>
+                {outlookWebSupports(calendarEvent) ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="gap-1.5"
+                  >
+                    <a
+                      href={outlookCalendarUrl(calendarEvent)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <CalendarPlus className="h-4 w-4" aria-hidden="true" />
+                      Outlook
+                    </a>
+                  </Button>
+                ) : null}
                 <Button
                   type="button"
                   variant="outline"
@@ -229,20 +266,22 @@ export function MeetingInviteDialog({
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                The .ics file opens in Apple Calendar, Outlook and most other calendar apps.
+                {outlookWebSupports(calendarEvent)
+                  ? "The .ics file opens in Apple Calendar, Outlook and most other calendar apps."
+                  : "Every occurrence is included. For Outlook, open the .ics file: Outlook on the web cannot take a repeating event from a link."}
               </p>
             </section>
           ) : null}
 
-          {/* 4. INVITE PEOPLE — the share system. */}
+          {/* 4. GUESTS — the meeting's invitation list. */}
           {signedIn ? (
             <InvitePeopleSection meeting={meeting} open={open} />
           ) : (
-            <section className="space-y-1" aria-label="Invite people">
-              <SectionTitle>Invite people by name</SectionTitle>
+            <section className="space-y-1" aria-label="Guests">
+              <SectionTitle>Guests</SectionTitle>
               <p className="text-xs text-muted-foreground">
-                The host can invite people by name so they skip the waiting room. You can
-                still send anyone the link or the invitation above.
+                The host can add guests, who come straight in without waiting.
+                You can still send anyone the link or the invitation above.
               </p>
             </section>
           )}
@@ -254,8 +293,12 @@ export function MeetingInviteDialog({
 }
 
 /**
- * The share system for the meeting record. Mounted only for a signed-in
- * viewer; the grant form only for somebody the share system says may grant.
+ * ADD GUESTS — Google Meet's "Add guests", on the meeting's invitation list
+ * (`meet_invitees`), never a raw share grant: the invitees door gives an
+ * account its viewer grant (a co-host gets admin, set with "Make co-host"), and
+ * the invitation email with its calendar file goes out through `announce`.
+ * Mounted only for a signed-in viewer; the controls only for the host or a
+ * co-host — anyone else sees the list and a sentence, never a dead control.
  */
 export function InvitePeopleSection({
   meeting,
@@ -264,82 +307,66 @@ export function InvitePeopleSection({
   meeting: MeetingRecord;
   open: boolean;
 }) {
-  const { isOwner, loading: ownerLoading, error: ownerError } = useIsOwner(
-    "meet_meeting",
-    meeting.id,
+  const host = useMeetHost();
+  const repository = host?.repository ?? null;
+  const userId = host?.identity.userId ?? null;
+  const [invitees, setInvitees] = useState<readonly MeetingInvitee[] | null>(
+    null,
   );
-  const {
-    permissions,
-    loading,
-    error,
-    shareWithUser,
-    revokeAccess,
-    updateLevel,
-    refresh,
-  } = useSharing("meet_meeting", meeting.id, open, meeting.title, meeting.organizationId);
-  const invited = permissions.filter((p) => p.grantedToUserId);
+  const [failure, setFailure] = useState<string | null>(null);
+  const [nonce, setNonce] = useState(0);
 
-  if (ownerLoading) {
-    return (
-      <section className="space-y-2" aria-label="Invite people" aria-busy="true">
-        <SectionTitle>Invite people by name</SectionTitle>
-        <Skeleton className="h-9 w-full" />
-        <Skeleton className="h-16 w-full" />
-      </section>
-    );
-  }
+  useEffect(() => {
+    if (!open || repository === null) return undefined;
+    let live = true;
+    repository
+      .invitees(meeting.id)
+      .then((rows) => {
+        if (live) {
+          setInvitees(rows);
+          setFailure(null);
+        }
+      })
+      .catch((thrown: unknown) => {
+        if (live)
+          setFailure(
+            (thrown as Error)?.message ?? "The guest list could not be read.",
+          );
+      });
+    return () => {
+      live = false;
+    };
+  }, [open, repository, meeting.id, nonce]);
 
-  if (!isOwner) {
-    return (
-      <section className="space-y-1" aria-label="Invite people">
-        <SectionTitle>Invite people by name</SectionTitle>
-        <p className="text-xs text-muted-foreground">
-          {ownerError !== null
-            ? `Whether you can invite people by name could not be checked: ${ownerError}. You can still send the link or the invitation above.`
-            : "Only the host can invite people by name so they skip the waiting room. You can still send anyone the link or the invitation above."}
-        </p>
-      </section>
-    );
-  }
+  const mine = invitees?.find((i) => i.userId === userId) ?? null;
+  const canManage = meeting.hostUserId === userId || mine?.role === "cohost";
 
   return (
-    <section className="space-y-3" aria-label="Invite people">
-      <div className="space-y-1">
-        <SectionTitle>
-          <span className="inline-flex items-center gap-1.5">
-            <UserPlus className="h-4 w-4" aria-hidden="true" />
-            Invite people by name
-          </span>
-        </SectionTitle>
-        <p className="text-xs text-muted-foreground">
-          People you invite get a notification and skip the waiting room. Somebody without an
-          account yet? Use Email invitation above; they join with the link as a guest.
+    <section className="space-y-2" aria-label="Guests">
+      <SectionTitle>
+        <span className="inline-flex items-center gap-1.5">
+          <UserPlus className="h-4 w-4" aria-hidden="true" />
+          Guests
+        </span>
+      </SectionTitle>
+      {failure !== null ? (
+        <p className="text-xs text-destructive">
+          The guest list could not be read: {failure}
         </p>
-      </div>
-      <ShareWithUserTab
-        onShare={shareWithUser}
-        onSuccess={refresh}
-        resourceType="meet_meeting"
-        resourceId={meeting.id}
-        organizationId={meeting.organizationId}
-        alreadySharedUserIds={invited
-          .map((p) => p.grantedToUserId)
-          .filter((id): id is string => !!id)}
-      />
-      <div>
-        <SectionTitle>Invited</SectionTitle>
-        <div className="mt-2">
-          <PermissionsList
-            permissions={invited}
-            isOwner={isOwner}
-            onUpdateLevel={updateLevel}
-            onRevoke={revokeAccess}
-            loading={loading}
-            listLabel="Invited"
-          />
+      ) : invitees === null ? (
+        <div aria-busy="true" className="space-y-2">
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-12 w-full" />
         </div>
-      </div>
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      ) : (
+        <MeetingGuests
+          meeting={meeting}
+          invitees={invitees}
+          canManage={canManage}
+          onChanged={() => setNonce((n) => n + 1)}
+          compact
+        />
+      )}
     </section>
   );
 }

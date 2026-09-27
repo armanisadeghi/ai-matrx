@@ -29,7 +29,15 @@ export interface RecurrenceSpec {
 }
 
 /** Sunday-first, the order `Date#getDay` and the chips use. */
-export const WEEKDAYS: readonly Weekday[] = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+export const WEEKDAYS: readonly Weekday[] = [
+  "SU",
+  "MO",
+  "TU",
+  "WE",
+  "TH",
+  "FR",
+  "SA",
+];
 
 export const WEEKDAY_NAMES: Record<Weekday, string> = {
   SU: "Sunday",
@@ -81,17 +89,24 @@ export function weekOfMonth(start: Pick<ZonedParts, "date" | "day">): number {
  * (the weekday of a 5 PM Monday in Los Angeles is Monday, even though it is
  * Tuesday in UTC). `null` = does not repeat.
  */
-export function buildRrule(spec: RecurrenceSpec, start: ZonedParts): string | null {
+export function buildRrule(
+  spec: RecurrenceSpec,
+  start: ZonedParts,
+): string | null {
   if (spec.frequency === "none") return null;
   const interval = Math.max(1, Math.min(999, Math.round(spec.interval || 1)));
   const parts: string[] = [`FREQ=${spec.frequency.toUpperCase()}`];
   if (interval > 1) parts.push(`INTERVAL=${interval}`);
 
   if (spec.frequency === "weekly") {
-    const chosen = spec.weekdays.length > 0 ? spec.weekdays : [WEEKDAYS[start.weekday]!];
+    const chosen =
+      spec.weekdays.length > 0 ? spec.weekdays : [WEEKDAYS[start.weekday]!];
     const ordered = WEEKDAYS.filter((day) => chosen.includes(day));
     // Monday-first in the rule, the way calendars write it.
-    const mondayFirst = [...ordered.filter((d) => d !== "SU"), ...ordered.filter((d) => d === "SU")];
+    const mondayFirst = [
+      ...ordered.filter((d) => d !== "SU"),
+      ...ordered.filter((d) => d === "SU"),
+    ];
     parts.push(`BYDAY=${mondayFirst.join(",")}`);
   } else if (spec.frequency === "monthly") {
     if (spec.monthlyMode === "weekday-of-month") {
@@ -102,7 +117,9 @@ export function buildRrule(spec: RecurrenceSpec, start: ZonedParts): string | nu
   }
 
   if (spec.ends.kind === "after") {
-    parts.push(`COUNT=${Math.max(1, Math.min(1000, Math.round(spec.ends.count)))}`);
+    parts.push(
+      `COUNT=${Math.max(1, Math.min(1000, Math.round(spec.ends.count)))}`,
+    );
   } else if (spec.ends.kind === "on") {
     // A date-only UNTIL: the last day the series may happen on, inclusive.
     parts.push(`UNTIL=${spec.ends.date.replace(/-/g, "")}`);
@@ -112,7 +129,11 @@ export function buildRrule(spec: RecurrenceSpec, start: ZonedParts): string | nu
 
 function ruleParts(rule: string): Map<string, string> {
   const map = new Map<string, string>();
-  for (const part of rule.trim().toUpperCase().replace(/^RRULE:/, "").split(";")) {
+  for (const part of rule
+    .trim()
+    .toUpperCase()
+    .replace(/^RRULE:/, "")
+    .split(";")) {
     const at = part.indexOf("=");
     if (at > 0) map.set(part.slice(0, at), part.slice(at + 1));
   }
@@ -125,20 +146,31 @@ export function parseRrule(rule: string | null | undefined): RecurrenceSpec {
   const parts = ruleParts(rule);
   const freq = parts.get("FREQ");
   const frequency: RepeatFrequency =
-    freq === "DAILY" ? "daily" : freq === "WEEKLY" ? "weekly" : freq === "MONTHLY" ? "monthly" : "none";
+    freq === "DAILY"
+      ? "daily"
+      : freq === "WEEKLY"
+        ? "weekly"
+        : freq === "MONTHLY"
+          ? "monthly"
+          : "none";
   const interval = Number(parts.get("INTERVAL") ?? "1") || 1;
   const byday = (parts.get("BYDAY") ?? "").split(",").filter(Boolean);
   const weekdays = byday
     .map((item) => item.slice(-2) as Weekday)
     .filter((day) => WEEKDAYS.includes(day));
   const monthlyMode: MonthlyMode =
-    frequency === "monthly" && byday.length > 0 ? "weekday-of-month" : "day-of-month";
+    frequency === "monthly" && byday.length > 0
+      ? "weekday-of-month"
+      : "day-of-month";
   const count = parts.get("COUNT");
   const until = parts.get("UNTIL");
   const ends: RepeatEnd = count
     ? { kind: "after", count: Number(count) }
     : until
-      ? { kind: "on", date: `${until.slice(0, 4)}-${until.slice(4, 6)}-${until.slice(6, 8)}` }
+      ? {
+          kind: "on",
+          date: `${until.slice(0, 4)}-${until.slice(4, 6)}-${until.slice(6, 8)}`,
+        }
       : { kind: "never" };
   return {
     frequency,
@@ -156,12 +188,15 @@ function joinWords(words: readonly string[]): string {
 
 function formatUntil(date: string, locale?: string): string {
   const [y, m, d] = date.split("-").map(Number);
-  return new Date(Date.UTC(y!, m! - 1, d!)).toLocaleDateString(locale ?? "en-US", {
-    timeZone: "UTC",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  return new Date(Date.UTC(y!, m! - 1, d!)).toLocaleDateString(
+    locale ?? "en-US",
+    {
+      timeZone: "UTC",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    },
+  );
 }
 
 /**
@@ -169,7 +204,10 @@ function formatUntil(date: string, locale?: string): string {
  * (aidream `invitations.describe_rule`): "Every Tuesday", "Every 2 weeks on
  * Monday and Wednesday", "Monthly on the first Tuesday, 10 times".
  */
-export function describeRecurrence(rule: string | null | undefined, locale?: string): string {
+export function describeRecurrence(
+  rule: string | null | undefined,
+  locale?: string,
+): string {
   if (!rule || rule.trim() === "") return "Does not repeat";
   const parts = ruleParts(rule);
   const spec = parseRrule(rule);
@@ -180,9 +218,12 @@ export function describeRecurrence(rule: string | null | undefined, locale?: str
   } else if (spec.frequency === "weekly") {
     const names = spec.weekdays.map((d) => WEEKDAY_NAMES[d]);
     const weekdaysOnly =
-      spec.weekdays.length === 5 && !spec.weekdays.includes("SA") && !spec.weekdays.includes("SU");
+      spec.weekdays.length === 5 &&
+      !spec.weekdays.includes("SA") &&
+      !spec.weekdays.includes("SU");
     if (weekdaysOnly && !every) head = "Every weekday";
-    else if (every) head = `Every ${spec.interval} weeks${names.length ? ` on ${joinWords(names)}` : ""}`;
+    else if (every)
+      head = `Every ${spec.interval} weeks${names.length ? ` on ${joinWords(names)}` : ""}`;
     else head = names.length ? `Every ${joinWords(names)}` : "Weekly";
   } else if (spec.frequency === "monthly") {
     const base = every ? `Every ${spec.interval} months` : "Monthly";
@@ -191,7 +232,9 @@ export function describeRecurrence(rule: string | null | undefined, locale?: str
       const described = byday.map((item) => {
         const ordinal = Number(item.slice(0, -2));
         const name = WEEKDAY_NAMES[item.slice(-2) as Weekday] ?? item;
-        return item.length > 2 ? `the ${ORDINAL_WORDS[ordinal] ?? ordinal} ${name}` : `every ${name}`;
+        return item.length > 2
+          ? `the ${ORDINAL_WORDS[ordinal] ?? ordinal} ${name}`
+          : `every ${name}`;
       });
       head = `${base} on ${joinWords(described)}`;
     } else if (parts.get("BYMONTHDAY")) {
@@ -203,22 +246,38 @@ export function describeRecurrence(rule: string | null | undefined, locale?: str
     return "Repeats";
   }
   if (spec.ends.kind === "after") return `${head}, ${spec.ends.count} times`;
-  if (spec.ends.kind === "on") return `${head}, until ${formatUntil(spec.ends.date, locale)}`;
+  if (spec.ends.kind === "on")
+    return `${head}, until ${formatUntil(spec.ends.date, locale)}`;
   return head;
 }
 
 /** The quick choices a repeat menu offers for a given start, Google Calendar style. */
-export function repeatPresets(start: ZonedParts): { label: string; spec: RecurrenceSpec }[] {
+export function repeatPresets(
+  start: ZonedParts,
+): { label: string; spec: RecurrenceSpec }[] {
   const weekday = WEEKDAYS[start.weekday]!;
   const name = WEEKDAY_NAMES[weekday];
   const ordinal = ORDINAL_WORDS[weekOfMonth(start)] ?? "";
   const base = { interval: 1, ends: { kind: "never" } as RepeatEnd };
   return [
     { label: "Does not repeat", spec: NO_REPEAT },
-    { label: "Daily", spec: { ...base, frequency: "daily", weekdays: [], monthlyMode: "day-of-month" } },
+    {
+      label: "Daily",
+      spec: {
+        ...base,
+        frequency: "daily",
+        weekdays: [],
+        monthlyMode: "day-of-month",
+      },
+    },
     {
       label: `Weekly on ${name}`,
-      spec: { ...base, frequency: "weekly", weekdays: [weekday], monthlyMode: "day-of-month" },
+      spec: {
+        ...base,
+        frequency: "weekly",
+        weekdays: [weekday],
+        monthlyMode: "day-of-month",
+      },
     },
     {
       label: "Every weekday (Monday to Friday)",
@@ -231,11 +290,21 @@ export function repeatPresets(start: ZonedParts): { label: string; spec: Recurre
     },
     {
       label: `Monthly on the ${ordinal} ${name}`,
-      spec: { ...base, frequency: "monthly", weekdays: [], monthlyMode: "weekday-of-month" },
+      spec: {
+        ...base,
+        frequency: "monthly",
+        weekdays: [],
+        monthlyMode: "weekday-of-month",
+      },
     },
     {
       label: `Monthly on day ${start.day}`,
-      spec: { ...base, frequency: "monthly", weekdays: [], monthlyMode: "day-of-month" },
+      spec: {
+        ...base,
+        frequency: "monthly",
+        weekdays: [],
+        monthlyMode: "day-of-month",
+      },
     },
   ];
 }

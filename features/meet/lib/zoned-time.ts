@@ -68,8 +68,9 @@ export function browserTimeZone(): string {
 export function timeZoneOptions(ensure: string): string[] {
   let zones: string[] = [];
   try {
-    const supported = (Intl as unknown as { supportedValuesOf?: (key: string) => string[] })
-      .supportedValuesOf;
+    const supported = (
+      Intl as unknown as { supportedValuesOf?: (key: string) => string[] }
+    ).supportedValuesOf;
     zones = supported ? supported("timeZone") : [];
   } catch {
     zones = [];
@@ -109,7 +110,11 @@ export function zoneOffsetMinutes(ms: number, zone: string): number {
  * that does not exist (the hour skipped by a DST change) resolves forward, the
  * way every calendar does.
  */
-export function zonedToUtcIso(date: string, time: string, zone: string): string {
+export function zonedToUtcIso(
+  date: string,
+  time: string,
+  zone: string,
+): string {
   const [y, m, d] = date.split("-").map(Number);
   const [hh, mm] = time.split(":").map(Number);
   if ([y, m, d, hh, mm].some((n) => n === undefined || Number.isNaN(n))) {
@@ -136,7 +141,11 @@ export function utcToZoned(iso: string, zone: string): ZonedParts {
 }
 
 /** "PDT" / "GMT+2" — the short name of `zone` at `iso`. */
-export function zoneAbbreviation(iso: string, zone: string, locale?: string): string {
+export function zoneAbbreviation(
+  iso: string,
+  zone: string,
+  locale?: string,
+): string {
   const part = new Intl.DateTimeFormat(locale ?? "en-US", {
     timeZone: zone,
     timeZoneName: "short",
@@ -147,30 +156,52 @@ export function zoneAbbreviation(iso: string, zone: string, locale?: string): st
 }
 
 /** "10:00 AM" in `zone`. */
-export function formatClock(iso: string, zone: string, locale?: string): string {
-  return new Date(iso).toLocaleTimeString(locale ?? "en-US", {
-    timeZone: zone,
-    hour: "numeric",
-    minute: "2-digit",
-  });
+export function formatClock(
+  iso: string,
+  zone: string,
+  locale?: string,
+): string {
+  return plainSpaces(
+    new Date(iso).toLocaleTimeString(locale ?? "en-US", {
+      timeZone: zone,
+      hour: "numeric",
+      minute: "2-digit",
+    }),
+  );
 }
 
-/** "10:00 – 10:30 AM PDT" in `zone` (end omitted when there is no duration). */
+/** Intl's narrow and thin spaces as plain spaces, so text compares and wraps predictably. */
+function plainSpaces(text: string): string {
+  return text.replace(/[\u202f\u2009\u00a0]/g, " ");
+}
+
+/** "10:00 – 10:30 AM PDT" in `zone`, the way calendars write a range (end omitted when there is no duration). */
 export function formatTimeRange(
   startIso: string,
   durationMinutes: number | null,
   zone: string,
   locale?: string,
 ): string {
-  const start = formatClock(startIso, zone, locale);
   const abbreviation = zoneAbbreviation(startIso, zone, locale);
-  if (durationMinutes === null || durationMinutes <= 0) return `${start} ${abbreviation}`;
-  const endIso = new Date(new Date(startIso).getTime() + durationMinutes * 60_000).toISOString();
-  return `${start} – ${formatClock(endIso, zone, locale)} ${abbreviation}`;
+  if (durationMinutes === null || durationMinutes <= 0) {
+    return `${plainSpaces(formatClock(startIso, zone, locale))} ${abbreviation}`;
+  }
+  const start = new Date(startIso);
+  const end = new Date(start.getTime() + durationMinutes * 60_000);
+  const range = new Intl.DateTimeFormat(locale ?? "en-US", {
+    timeZone: zone,
+    hour: "numeric",
+    minute: "2-digit",
+  }).formatRange(start, end);
+  return `${plainSpaces(range)} ${abbreviation}`;
 }
 
 /** "Tuesday, October 6, 2026" in `zone`. */
-export function formatLongDate(iso: string, zone: string, locale?: string): string {
+export function formatLongDate(
+  iso: string,
+  zone: string,
+  locale?: string,
+): string {
   return new Date(iso).toLocaleDateString(locale ?? "en-US", {
     timeZone: zone,
     weekday: "long",
@@ -181,7 +212,10 @@ export function formatLongDate(iso: string, zone: string, locale?: string): stri
 }
 
 /** A readable zone label: "America/Los_Angeles" → "Los Angeles (PDT)". */
-export function zoneLabel(zone: string, at: string = new Date().toISOString()): string {
+export function zoneLabel(
+  zone: string,
+  at: string = new Date().toISOString(),
+): string {
   const city = zone.split("/").pop()?.replace(/_/g, " ") ?? zone;
   return `${city} (${zoneAbbreviation(at, zone)})`;
 }

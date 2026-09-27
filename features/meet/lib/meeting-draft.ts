@@ -76,7 +76,10 @@ export function durationLabel(minutes: number): string {
 }
 
 /** The next half hour from `now`, on the clock in `zone` — where a new meeting starts. */
-export function nextHalfHour(now: Date, zone: string): { date: string; time: string } {
+export function nextHalfHour(
+  now: Date,
+  zone: string,
+): { date: string; time: string } {
   const step = 30 * 60_000;
   const next = new Date(Math.ceil((now.getTime() + 60_000) / step) * step);
   const parts = utcToZoned(next.toISOString(), zone);
@@ -123,7 +126,9 @@ export function meetingToDraft(
 ): MeetingDraft {
   const zone = meeting.timeZone ?? fallbackZone;
   const start =
-    meeting.scheduledFor !== null ? utcToZoned(meeting.scheduledFor, zone) : nextHalfHour(now, zone);
+    meeting.scheduledFor !== null
+      ? utcToZoned(meeting.scheduledFor, zone)
+      : nextHalfHour(now, zone);
   return {
     title: meeting.title,
     date: start.date,
@@ -143,47 +148,77 @@ export function meetingToDraft(
 }
 
 /** A copy for "Duplicate": same shape, next free slot, nobody invited yet. */
-export function duplicateDraft(draft: MeetingDraft, now: Date = new Date()): MeetingDraft {
+export function duplicateDraft(
+  draft: MeetingDraft,
+  now: Date = new Date(),
+): MeetingDraft {
   const start = nextHalfHour(now, draft.timeZone);
-  return { ...draft, title: `${draft.title} (copy)`, date: start.date, time: start.time, invitees: draft.invitees.map((i) => ({ ...i, key: i.email ?? i.userId ?? i.key, inviteeId: null })) };
+  return {
+    ...draft,
+    title: `${draft.title} (copy)`,
+    date: start.date,
+    time: start.time,
+    invitees: draft.invitees.map((i) => ({
+      ...i,
+      key: i.email ?? i.userId ?? i.key,
+      inviteeId: null,
+    })),
+  };
 }
 
 /** Start instant + rule, as the doors take them. */
-export function draftSchedule(draft: MeetingDraft): { scheduledFor: string; recurrenceRule: string | null } {
+export function draftSchedule(draft: MeetingDraft): {
+  scheduledFor: string;
+  recurrenceRule: string | null;
+} {
   const scheduledFor = zonedToUtcIso(draft.date, draft.time, draft.timeZone);
   const start = utcToZoned(scheduledFor, draft.timeZone);
   return { scheduledFor, recurrenceRule: buildRrule(draft.recurrence, start) };
 }
 
 /** Settings the person CHANGED from the defaults they were shown — the rest stay knob-driven. */
-export function changedSettings(draft: DraftSettings, shown: DraftSettings): MeetingSettings {
-  const out: { -readonly [K in keyof MeetingSettings]: MeetingSettings[K] } = {};
-  if (draft.lobbyEnabled !== shown.lobbyEnabled) out.lobbyEnabled = draft.lobbyEnabled;
-  if (draft.joinBeforeHost !== shown.joinBeforeHost) out.joinBeforeHost = draft.joinBeforeHost;
+export function changedSettings(
+  draft: DraftSettings,
+  shown: DraftSettings,
+): MeetingSettings {
+  const out: { -readonly [K in keyof MeetingSettings]: MeetingSettings[K] } =
+    {};
+  if (draft.lobbyEnabled !== shown.lobbyEnabled)
+    out.lobbyEnabled = draft.lobbyEnabled;
+  if (draft.joinBeforeHost !== shown.joinBeforeHost)
+    out.joinBeforeHost = draft.joinBeforeHost;
   if (draft.aiEnabled !== shown.aiEnabled) out.aiEnabled = draft.aiEnabled;
-  if (draft.recordingPolicy !== shown.recordingPolicy) out.recordingPolicy = draft.recordingPolicy;
+  if (draft.recordingPolicy !== shown.recordingPolicy)
+    out.recordingPolicy = draft.recordingPolicy;
   return out;
 }
 
 /** The edit, as a `meet_update_meeting` patch carrying ONLY what changed. */
-export function draftChanges(meeting: MeetingRecord, draft: MeetingDraft): MeetingChanges {
+export function draftChanges(
+  meeting: MeetingRecord,
+  draft: MeetingDraft,
+): MeetingChanges {
   const { scheduledFor, recurrenceRule } = draftSchedule(draft);
-  const changes: { -readonly [K in keyof MeetingChanges]: MeetingChanges[K] } = {};
+  const changes: { -readonly [K in keyof MeetingChanges]: MeetingChanges[K] } =
+    {};
   const title = draft.title.trim();
   if (title !== meeting.title) changes.title = title;
   const agenda = draft.agenda.trim() === "" ? null : draft.agenda.trim();
   if (agenda !== (meeting.agenda ?? null)) changes.agenda = agenda;
-  if (draft.timeZone !== (meeting.timeZone ?? draft.timeZone)) changes.timeZone = draft.timeZone;
+  if (draft.timeZone !== (meeting.timeZone ?? draft.timeZone))
+    changes.timeZone = draft.timeZone;
   if (
     meeting.scheduledFor === null ||
-    new Date(meeting.scheduledFor).getTime() !== new Date(scheduledFor).getTime()
+    new Date(meeting.scheduledFor).getTime() !==
+      new Date(scheduledFor).getTime()
   ) {
     changes.scheduledFor = scheduledFor;
   }
   if (draft.durationMinutes !== meeting.scheduledDurationMinutes) {
     changes.scheduledDurationMinutes = draft.durationMinutes;
   }
-  if ((recurrenceRule ?? null) !== (meeting.recurrenceRule ?? null)) changes.recurrenceRule = recurrenceRule;
+  if ((recurrenceRule ?? null) !== (meeting.recurrenceRule ?? null))
+    changes.recurrenceRule = recurrenceRule;
   const settings = changedSettings(draft.settings, {
     lobbyEnabled: meeting.lobbyEnabled,
     joinBeforeHost: meeting.joinBeforeHost ?? true,
@@ -195,7 +230,10 @@ export function draftChanges(meeting: MeetingRecord, draft: MeetingDraft): Meeti
 
 /** True when the edit moves WHEN the meeting happens (the part a single occurrence can take). */
 export function changesTiming(changes: MeetingChanges): boolean {
-  return changes.scheduledFor !== undefined || changes.scheduledDurationMinutes !== undefined;
+  return (
+    changes.scheduledFor !== undefined ||
+    changes.scheduledDurationMinutes !== undefined
+  );
 }
 
 /** Invitee changes: who to add (and as what), who to remove, whose role flips. */
@@ -207,13 +245,17 @@ export function inviteeDiff(
   remove: MeetingInvitee[];
   roleChanges: { invitee: MeetingInvitee; cohost: boolean }[];
 } {
-  const draftIds = new Set(draft.map((d) => d.inviteeId).filter((id): id is string => id !== null));
+  const draftIds = new Set(
+    draft.map((d) => d.inviteeId).filter((id): id is string => id !== null),
+  );
   const remove = saved.filter((s) => !draftIds.has(s.id));
   const add = draft.filter((d) => d.inviteeId === null);
   const roleChanges = draft.flatMap((d) => {
     const before = saved.find((s) => s.id === d.inviteeId);
     if (!before) return [];
-    return (before.role === "cohost") !== d.cohost ? [{ invitee: before, cohost: d.cohost }] : [];
+    return (before.role === "cohost") !== d.cohost
+      ? [{ invitee: before, cohost: d.cohost }]
+      : [];
   });
   return { add, remove, roleChanges };
 }
@@ -227,16 +269,28 @@ export function isEmail(value: string): boolean {
 /** Why the form cannot be saved yet, or null. */
 export function draftProblem(draft: MeetingDraft): string | null {
   if (draft.title.trim() === "") return "Give the meeting a title.";
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(draft.date) || !/^\d{2}:\d{2}$/.test(draft.time)) {
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(draft.date) ||
+    !/^\d{2}:\d{2}$/.test(draft.time)
+  ) {
     return "Choose a date and a start time.";
   }
-  if (draft.recurrence.frequency === "weekly" && draft.recurrence.interval < 1) {
+  if (
+    draft.recurrence.frequency === "weekly" &&
+    draft.recurrence.interval < 1
+  ) {
     return "Repeat every 1 week or more.";
   }
-  if (draft.recurrence.ends.kind === "on" && draft.recurrence.ends.date < draft.date) {
+  if (
+    draft.recurrence.ends.kind === "on" &&
+    draft.recurrence.ends.date < draft.date
+  ) {
     return "The repeat end date is before the first meeting.";
   }
-  if (draft.recurrence.ends.kind === "after" && draft.recurrence.ends.count < 1) {
+  if (
+    draft.recurrence.ends.kind === "after" &&
+    draft.recurrence.ends.count < 1
+  ) {
     return "End after at least one occurrence.";
   }
   return null;

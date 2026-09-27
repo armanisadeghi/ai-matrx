@@ -44,6 +44,7 @@ import { MEET_PLACES } from "@/features/meet/intelligence-places";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { MeetingInviteButton } from "@/features/meet/components/invite/MeetingInviteButton";
+import { PreJoinRsvp } from "@/features/meet/components/manage/PreJoinRsvp";
 
 // The meeting's AI jobs (live notes, answers, the wrap-up), disclosed IN the
 // room through the package's `headerControls` slot (@ai-matrx/meet 0.7.0).
@@ -199,8 +200,14 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
         meeting={meeting}
         // INVITE (both lanes) + the AI jobs (signed-in lane only: a guest has
         // no account to open the jobs with). Invite also sits in the pre-join
-        // corner, where the package draws no header.
-        preJoinControls={<MeetingInviteButton meeting={meeting} signedIn />}
+        // corner, where the package draws no header — beside "Going?" for an
+        // invited person.
+        preJoinControls={
+          <>
+            <PreJoinRsvp meeting={meeting} />
+            <MeetingInviteButton meeting={meeting} signedIn />
+          </>
+        }
         headerControls={
           <span className="inline-flex items-center gap-2">
             <MeetingInviteButton meeting={meeting} signedIn />

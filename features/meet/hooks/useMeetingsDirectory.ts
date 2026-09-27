@@ -20,11 +20,14 @@
 
 import { useEffect, useState } from "react";
 import {
+  createMeetRepository,
   useMeetHost,
   type MeetingRecord,
   type UpcomingOccurrence,
 } from "@ai-matrx/meet/react";
 import { supabase } from "@/utils/supabase/client";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 const MEETING_COLUMNS =
   "id,organization_id,room_name,slug,title,kind,host_user_id,scheduled_for," +
@@ -50,15 +53,28 @@ export interface MeetingsDirectory {
 
 export function useMeetingsDirectory(): MeetingsDirectory {
   const host = useMeetHost();
-  const repository = host?.repository ?? null;
-  const userId = host?.identity.userId ?? null;
+  // READING needs no organization — access is personal, never the active org.
+  // Without one the Meet provider is inert, so the list reads through a plain
+  // repository on the same client and the signed-in person's id.
+  const [plainRepository] = useState(() =>
+    createMeetRepository({ client: supabase }),
+  );
+  const reduxUserId = useAppSelector(selectUserId);
+  const repository = host?.repository ?? plainRepository;
+  const userId = host?.identity.userId ?? reduxUserId;
   const [state, setState] = useState<{
     loading: boolean;
     failure: string | null;
     occurrences: readonly UpcomingOccurrence[];
     meetings: readonly MeetingRecord[];
     roles: ReadonlyMap<string, "host" | "cohost" | "invitee">;
-  }>({ loading: true, failure: null, occurrences: [], meetings: [], roles: new Map() });
+  }>({
+    loading: true,
+    failure: null,
+    occurrences: [],
+    meetings: [],
+    roles: new Map(),
+  });
   const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
@@ -66,12 +82,19 @@ export function useMeetingsDirectory(): MeetingsDirectory {
     let live = true;
     setState((s) => ({ ...s, loading: true, failure: null }));
     const from = new Date(Date.now() - 24 * 3_600_000).toISOString();
-    const to = new Date(Date.now() + UPCOMING_WINDOW_DAYS * 86_400_000).toISOString();
+    const to = new Date(
+      Date.now() + UPCOMING_WINDOW_DAYS * 86_400_000,
+    ).toISOString();
 
     const load = async () => {
       const db = supabase.schema("communication");
       const [occurrences, hosting, invitedRows] = await Promise.all([
-        repository.occurrencesBetween({ from, to, organizationId: null, limit: 1000 }),
+        repository.occurrencesBetween({
+          from,
+          to,
+          organizationId: null,
+          limit: 1000,
+        }),
         db
           .from("meet_meetings")
           .select(MEETING_COLUMNS)
@@ -95,11 +118,17 @@ export function useMeetingsDirectory(): MeetingsDirectory {
       const invitedIds = [...roles.keys()];
       let invited: Record<string, unknown>[] = [];
       if (invitedIds.length > 0) {
-        const response = await db.from("meet_meetings").select(MEETING_COLUMNS).in("id", invitedIds);
+        const response = await db
+          .from("meet_meetings")
+          .select(MEETING_COLUMNS)
+          .in("id", invitedIds);
         if (response.error) throw new Error(response.error.message);
         invited = (response.data ?? []) as unknown as Record<string, unknown>[];
       }
-      const hostingRows = (hosting.data ?? []) as unknown as Record<string, unknown>[];
+      const hostingRows = (hosting.data ?? []) as unknown as Record<
+        string,
+        unknown
+      >[];
       for (const row of hostingRows) roles.set(String(row.id), "host");
 
       const byId = new Map<string, MeetingRecord>();
@@ -126,7 +155,9 @@ export function useMeetingsDirectory(): MeetingsDirectory {
           ...s,
           loading: false,
           failure:
-            thrown instanceof Error ? thrown.message : "Your meetings could not be read.",
+            thrown instanceof Error
+              ? thrown.message
+              : "Your meetings could not be read.",
         }));
       });
     return () => {
@@ -141,24 +172,42 @@ export function useMeetingsDirectory(): MeetingsDirectory {
   };
 }
 
-/** A meeting that is on and has no scheduled time: an instant meeting in progress. */
-export function isLiveInstant(meeting: MeetingRecord): boolean {
+/** How long an unscheduled meeting counts as "happening now" after it started. */
+export const LIVE_INSTANT_HOURS = 12;
+
+/**
+ * An instant meeting in progress: started, not ended, no scheduled time, and
+ * started within `LIVE_INSTANT_HOURS` — a room nobody ended days ago is not
+ * "happening now" (it goes to Past), whatever its row still says.
+ */
+export function isLiveInstant(
+  meeting: MeetingRecord,
+  now: Date = new Date(),
+): boolean {
   return (
     meeting.startedAt !== null &&
     meeting.endedAt === null &&
     meeting.scheduledFor === null &&
     !meeting.cancelledAt &&
-    !meeting.deletedAt
+    !meeting.deletedAt &&
+    now.getTime() - new Date(meeting.startedAt).getTime() <
+      LIVE_INSTANT_HOURS * 3_600_000
   );
 }
 
 /** Belongs on Past: it ended, or a one-off whose time has gone by. */
-export function isPast(meeting: MeetingRecord, now: Date = new Date()): boolean {
+export function isPast(
+  meeting: MeetingRecord,
+  now: Date = new Date(),
+): boolean {
   if (meeting.cancelledAt || meeting.deletedAt) return false;
   if (meeting.endedAt !== null) return true;
   if (meeting.recurrenceRule) return false;
-  if (meeting.scheduledFor === null) return false;
+  if (meeting.scheduledFor === null) {
+    return meeting.startedAt !== null && !isLiveInstant(meeting, now);
+  }
   const end =
-    new Date(meeting.scheduledFor).getTime() + (meeting.scheduledDurationMinutes ?? 60) * 60_000;
+    new Date(meeting.scheduledFor).getTime() +
+    (meeting.scheduledDurationMinutes ?? 60) * 60_000;
   return end < now.getTime();
 }

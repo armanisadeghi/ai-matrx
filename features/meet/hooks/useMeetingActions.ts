@@ -34,7 +34,9 @@ import {
 export function errorSentence(thrown: unknown): string {
   if (thrown instanceof Error) {
     const remedy = (thrown as { remedy?: unknown }).remedy;
-    return typeof remedy === "string" && remedy.trim() !== "" && !thrown.message.includes(remedy)
+    return typeof remedy === "string" &&
+      remedy.trim() !== "" &&
+      !thrown.message.includes(remedy)
       ? `${thrown.message} ${remedy}`
       : thrown.message;
   }
@@ -61,7 +63,10 @@ export function useMeetingActions() {
   };
 
   /** Tell invitees. Resolves true when it went out (or there was nothing to say). */
-  const announce = async (meetingId: MeetingRecord["id"], quiet = false): Promise<boolean> => {
+  const announce = async (
+    meetingId: MeetingRecord["id"],
+    quiet = false,
+  ): Promise<boolean> => {
     const h = require();
     try {
       const result = await announceMeeting(h.api, meetingId);
@@ -89,7 +94,11 @@ export function useMeetingActions() {
     repository: host?.repository ?? null,
     announce,
 
-    async create(draft: MeetingDraft, settings: MeetingSettings, notify: boolean) {
+    async create(
+      draft: MeetingDraft,
+      settings: MeetingSettings,
+      notify: boolean,
+    ) {
       const h = require();
       const { scheduledFor, recurrenceRule } = draftSchedule(draft);
       const meeting = await h.repository.scheduleMeeting({
@@ -104,7 +113,11 @@ export function useMeetingActions() {
         settings,
       });
       if (draft.invitees.length > 0) {
-        await h.repository.addInvitees(meeting.id, inviteeInputs(draft.invitees), h.identity.userId);
+        await h.repository.addInvitees(
+          meeting.id,
+          inviteeInputs(draft.invitees),
+          h.identity.userId,
+        );
         if (notify) await announce(meeting.id);
       }
       return meeting;
@@ -137,18 +150,34 @@ export function useMeetingActions() {
       },
     ) {
       const h = require();
-      for (const invitee of diff.remove) await h.repository.removeInvitee(invitee.id, h.identity.userId);
+      for (const invitee of diff.remove)
+        await h.repository.removeInvitee(invitee.id, h.identity.userId);
       for (const change of diff.roleChanges) {
-        await h.repository.setInviteeRole(change.invitee.id, change.cohost ? "cohost" : "invitee", h.identity.userId);
+        await h.repository.setInviteeRole(
+          change.invitee.id,
+          change.cohost ? "cohost" : "invitee",
+          h.identity.userId,
+        );
       }
       if (diff.add.length > 0) {
-        await h.repository.addInvitees(meetingId, inviteeInputs(diff.add), h.identity.userId);
+        await h.repository.addInvitees(
+          meetingId,
+          inviteeInputs(diff.add),
+          h.identity.userId,
+        );
       }
     },
 
-    async addInvitees(meetingId: MeetingRecord["id"], people: readonly DraftInvitee[]) {
+    async addInvitees(
+      meetingId: MeetingRecord["id"],
+      people: readonly DraftInvitee[],
+    ) {
       const h = require();
-      return h.repository.addInvitees(meetingId, inviteeInputs(people), h.identity.userId);
+      return h.repository.addInvitees(
+        meetingId,
+        inviteeInputs(people),
+        h.identity.userId,
+      );
     },
 
     async removeInvitee(invitee: MeetingInvitee) {
@@ -158,7 +187,11 @@ export function useMeetingActions() {
 
     async setRole(invitee: MeetingInvitee, cohost: boolean) {
       const h = require();
-      return h.repository.setInviteeRole(invitee.id, cohost ? "cohost" : "invitee", h.identity.userId);
+      return h.repository.setInviteeRole(
+        invitee.id,
+        cohost ? "cohost" : "invitee",
+        h.identity.userId,
+      );
     },
 
     async cancel(meeting: MeetingRecord, reason: string | null) {
@@ -185,7 +218,10 @@ export function useMeetingActions() {
       reason?: string | null;
     }) {
       const h = require();
-      return h.repository.setOccurrence({ ...args, byUserId: h.identity.userId });
+      return h.repository.setOccurrence({
+        ...args,
+        byUserId: h.identity.userId,
+      });
     },
 
     async respond(meetingId: MeetingRecord["id"], answer: RsvpAnswer) {

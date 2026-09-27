@@ -19,11 +19,21 @@ import { useUserConnections } from "@/features/messaging/hooks/useUserConnection
 import { isEmail, type DraftInvitee } from "@/features/meet/lib/meeting-draft";
 
 function initials(value: string): string {
-  const words = value.replace(/@.*/, "").split(/[\s._-]+/).filter(Boolean);
-  return (words.slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "?").slice(0, 2);
+  const words = value
+    .replace(/@.*/, "")
+    .split(/[\s._-]+/)
+    .filter(Boolean);
+  return (
+    words
+      .slice(0, 2)
+      .map((w) => w[0]!.toUpperCase())
+      .join("") || "?"
+  ).slice(0, 2);
 }
 
-export function guestName(guest: Pick<DraftInvitee, "displayName" | "email">): string {
+export function guestName(
+  guest: Pick<DraftInvitee, "displayName" | "email">,
+): string {
   return guest.displayName?.trim() || guest.email || "Guest";
 }
 
@@ -50,10 +60,14 @@ export function GuestPicker({
   autoFocus,
 }: GuestPickerProps) {
   const [query, setQuery] = useState("");
-  const { connections } = useUserConnections(organizationId ? { organizationId } : {});
+  const { connections } = useUserConnections(
+    organizationId ? { organizationId } : {},
+  );
 
   const taken = new Set(
-    guests.flatMap((g) => [g.userId, g.email?.toLowerCase()].filter((v): v is string => !!v)),
+    guests.flatMap((g) =>
+      [g.userId, g.email?.toLowerCase()].filter((v): v is string => !!v),
+    ),
   );
   const q = query.trim().toLowerCase();
   const suggestions =
@@ -79,11 +93,17 @@ export function GuestPicker({
     const email = query.trim();
     if (suggestions.length > 0 && !isEmail(email)) {
       const first = suggestions[0]!;
-      add({ userId: first.user_id, email: first.email ?? null, displayName: first.display_name ?? null });
+      add({
+        userId: first.user_id,
+        email: first.email ?? null,
+        displayName: first.display_name ?? null,
+      });
       return;
     }
     if (!isEmail(email) || taken.has(email.toLowerCase())) return;
-    const known = connections.find((c) => (c.email ?? "").toLowerCase() === email.toLowerCase());
+    const known = connections.find(
+      (c) => (c.email ?? "").toLowerCase() === email.toLowerCase(),
+    );
     add({
       userId: known?.user_id ?? null,
       email,
@@ -91,12 +111,16 @@ export function GuestPicker({
     });
   };
 
-  const typedIsNewEmail = isEmail(query) && !taken.has(query.trim().toLowerCase());
+  const typedIsNewEmail =
+    isEmail(query) && !taken.has(query.trim().toLowerCase());
 
   return (
     <div className="space-y-2">
       <div className="relative">
-        <UserPlus className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+        <UserPlus
+          className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden="true"
+        />
         <Input
           value={query}
           autoFocus={autoFocus}
@@ -126,23 +150,34 @@ export function GuestPicker({
                   aria-selected="false"
                   className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-sm hover:bg-accent"
                   onClick={() =>
-                    add({ userId: c.user_id, email: c.email ?? null, displayName: c.display_name ?? null })
+                    add({
+                      userId: c.user_id,
+                      email: c.email ?? null,
+                      displayName: c.display_name ?? null,
+                    })
                   }
                 >
                   <Avatar className="h-6 w-6">
-                    {c.avatar_url ? <AvatarImage src={c.avatar_url} alt="" /> : null}
+                    {c.avatar_url ? (
+                      <AvatarImage src={c.avatar_url} alt="" />
+                    ) : null}
                     <AvatarFallback className="text-[10px]">
                       {initials(c.display_name ?? c.email ?? "?")}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="min-w-0 flex-1 truncate">{c.display_name ?? c.email}</span>
+                  <span className="min-w-0 flex-1 truncate">
+                    {c.display_name ?? c.email}
+                  </span>
                   {c.display_name && c.email ? (
-                    <span className="truncate text-xs text-muted-foreground">{c.email}</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {c.email}
+                    </span>
                   ) : null}
                 </button>
               </li>
             ))}
-            {typedIsNewEmail && suggestions.every((c) => (c.email ?? "").toLowerCase() !== q) ? (
+            {typedIsNewEmail &&
+            suggestions.every((c) => (c.email ?? "").toLowerCase() !== q) ? (
               <li>
                 <button
                   type="button"
@@ -151,7 +186,10 @@ export function GuestPicker({
                   className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-sm hover:bg-accent"
                   onClick={addTyped}
                 >
-                  <Mail className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <Mail
+                    className="h-4 w-4 text-muted-foreground"
+                    aria-hidden="true"
+                  />
                   <span className="truncate">Invite {query.trim()}</span>
                 </button>
               </li>
@@ -161,11 +199,19 @@ export function GuestPicker({
       </div>
 
       {guests.length > 0 ? (
-        <ul className="divide-y divide-border rounded-md border border-border" aria-label="Guests">
+        <ul
+          className="divide-y divide-border rounded-md border border-border"
+          aria-label="Guests"
+        >
           {guests.map((guest) => (
-            <li key={guest.key} className="flex items-center gap-2 px-2.5 py-1.5">
+            <li
+              key={guest.key}
+              className="flex items-center gap-2 px-2.5 py-1.5"
+            >
               <Avatar className="h-7 w-7">
-                <AvatarFallback className="text-[10px]">{initials(guestName(guest))}</AvatarFallback>
+                <AvatarFallback className="text-[10px]">
+                  {initials(guestName(guest))}
+                </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
@@ -178,9 +224,13 @@ export function GuestPicker({
                   ) : null}
                 </div>
                 {guest.displayName && guest.email ? (
-                  <div className="truncate text-xs text-muted-foreground">{guest.email}</div>
+                  <div className="truncate text-xs text-muted-foreground">
+                    {guest.email}
+                  </div>
                 ) : !guest.userId ? (
-                  <div className="text-xs text-muted-foreground">Joins by link as a guest</div>
+                  <div className="text-xs text-muted-foreground">
+                    Joins by link as a guest
+                  </div>
                 ) : null}
               </div>
               {renderStatus ? renderStatus(guest) : null}
@@ -189,7 +239,10 @@ export function GuestPicker({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className={cn("h-7 px-2 text-xs", guest.cohost && "text-primary")}
+                  className={cn(
+                    "h-7 px-2 text-xs",
+                    guest.cohost && "text-primary",
+                  )}
                   aria-pressed={guest.cohost}
                   title={
                     guest.cohost
@@ -197,7 +250,11 @@ export function GuestPicker({
                       : "Make co-host: they can admit people, record and end the meeting"
                   }
                   onClick={() =>
-                    onChange(guests.map((g) => (g.key === guest.key ? { ...g, cohost: !g.cohost } : g)))
+                    onChange(
+                      guests.map((g) =>
+                        g.key === guest.key ? { ...g, cohost: !g.cohost } : g,
+                      ),
+                    )
                   }
                 >
                   {guest.cohost ? "Co-host" : "Make co-host"}
@@ -209,7 +266,9 @@ export function GuestPicker({
                 size="icon"
                 className="h-7 w-7"
                 aria-label={`Remove ${guestName(guest)}`}
-                onClick={() => onChange(guests.filter((g) => g.key !== guest.key))}
+                onClick={() =>
+                  onChange(guests.filter((g) => g.key !== guest.key))
+                }
               >
                 <X className="h-4 w-4" aria-hidden="true" />
               </Button>

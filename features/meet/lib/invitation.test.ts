@@ -33,7 +33,9 @@ describe("meeting invitation text", () => {
   it("carries the title, the time with its zone and length, the link and how to join", () => {
     const text = invitationText(scheduled, link, options);
     expect(text).toContain('You\'re invited to "Weekly client check-in".');
-    expect(text).toContain("When: Monday, September 28, 2026 at 10:00 AM PDT (45 minutes)");
+    expect(text).toContain(
+      "When: Monday, September 28, 2026 at 10:00 AM PDT (45 minutes)",
+    );
     expect(text).toContain(`Join: ${link}`);
     expect(text).toContain(JOIN_INSTRUCTIONS);
     expect(text).toContain("No account needed");
@@ -41,20 +43,35 @@ describe("meeting invitation text", () => {
   });
 
   it("says a recurring meeting reuses the same link", () => {
-    const text = invitationText({ ...scheduled, kind: "recurring" }, link, options);
-    expect(text).toContain("This is a recurring meeting. The same link works for every session.");
+    const text = invitationText(
+      { ...scheduled, kind: "recurring" },
+      link,
+      options,
+    );
+    expect(text).toContain(
+      "This is a recurring meeting. The same link works for every session.",
+    );
   });
 
   it("names the real repeat rule and the agenda, written in the meeting's own zone", () => {
     const text = invitationText(weekly, link, { locale: "en-US" });
-    expect(text).toContain("When: Tuesday, October 6, 2026 at 10:00 AM PDT (30 minutes)");
-    expect(text).toContain("Repeats: Every Tuesday. The same link works for every session.");
+    expect(text).toContain(
+      "When: Tuesday, October 6, 2026 at 10:00 AM PDT (30 minutes)",
+    );
+    expect(text).toContain(
+      "Repeats: Every Tuesday. The same link works for every session.",
+    );
     expect(text).toContain("Agenda:\nOpen action items");
   });
 
   it("omits the time for an instant meeting instead of inventing one", () => {
     const text = invitationText(
-      { ...scheduled, kind: "instant", scheduledFor: null, scheduledDurationMinutes: null },
+      {
+        ...scheduled,
+        kind: "instant",
+        scheduledFor: null,
+        scheduledDurationMinutes: null,
+      },
       link,
       options,
     );
@@ -91,7 +108,14 @@ describe("meeting calendar event", () => {
   });
 
   it("has no calendar event when there is no time, or the meeting ended", () => {
-    expect(meetingCalendarEvent({ ...scheduled, scheduledFor: null }, link)).toBeNull();
-    expect(meetingCalendarEvent({ ...scheduled, endedAt: "2026-09-28T18:00:00.000Z" }, link)).toBeNull();
+    expect(
+      meetingCalendarEvent({ ...scheduled, scheduledFor: null }, link),
+    ).toBeNull();
+    expect(
+      meetingCalendarEvent(
+        { ...scheduled, endedAt: "2026-09-28T18:00:00.000Z" },
+        link,
+      ),
+    ).toBeNull();
   });
 });

@@ -29,20 +29,28 @@ function addDays(date: string, days: number): string {
 }
 
 /** The label for one day key, relative to `now` in `zone`. */
-export function dayLabel(key: string, zone: string, now: Date, locale?: string): string {
+export function dayLabel(
+  key: string,
+  zone: string,
+  now: Date,
+  locale?: string,
+): string {
   const today = utcToZoned(now.toISOString(), zone).date;
   if (key === today) return "Today";
   if (key === addDays(today, 1)) return "Tomorrow";
   if (key === addDays(today, -1)) return "Yesterday";
   const [y, m, d] = key.split("-").map(Number);
   const sameYear = key.slice(0, 4) === today.slice(0, 4);
-  return new Date(Date.UTC(y!, m! - 1, d!, 12)).toLocaleDateString(locale ?? "en-US", {
-    timeZone: "UTC",
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    ...(sameYear ? {} : { year: "numeric" }),
-  });
+  return new Date(Date.UTC(y!, m! - 1, d!, 12)).toLocaleDateString(
+    locale ?? "en-US",
+    {
+      timeZone: "UTC",
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      ...(sameYear ? {} : { year: "numeric" }),
+    },
+  );
 }
 
 /** Occurrences grouped by their day in `zone`, earliest first within and across days. */
@@ -53,7 +61,9 @@ export function groupByDay<T extends OccurrenceLike>(
   locale?: string,
 ): AgendaDay<T>[] {
   const sorted = [...items].sort(
-    (a, b) => new Date(a.occurrenceStart).getTime() - new Date(b.occurrenceStart).getTime(),
+    (a, b) =>
+      new Date(a.occurrenceStart).getTime() -
+      new Date(b.occurrenceStart).getTime(),
   );
   const days = new Map<string, T[]>();
   for (const item of sorted) {
@@ -70,8 +80,13 @@ export function groupByDay<T extends OccurrenceLike>(
 }
 
 /** When an occurrence is over. A meeting with no length is over an hour after it starts. */
-export function occurrenceEnd(item: Pick<UpcomingOccurrence, "occurrenceStart" | "durationMinutes">): number {
-  const minutes = item.durationMinutes && item.durationMinutes > 0 ? item.durationMinutes : 60;
+export function occurrenceEnd(
+  item: Pick<UpcomingOccurrence, "occurrenceStart" | "durationMinutes">,
+): number {
+  const minutes =
+    item.durationMinutes && item.durationMinutes > 0
+      ? item.durationMinutes
+      : 60;
   return new Date(item.occurrenceStart).getTime() + minutes * 60_000;
 }
 
@@ -95,9 +110,13 @@ export function startsSoon(
 }
 
 /** Does this occurrence belong in the reader's list under `scope`? */
-export function inScope(item: Pick<UpcomingOccurrence, "myRole">, scope: AgendaScope): boolean {
+export function inScope(
+  item: Pick<UpcomingOccurrence, "myRole">,
+  scope: AgendaScope,
+): boolean {
   if (item.myRole === null) return false;
-  if (scope === "hosting") return item.myRole === "host" || item.myRole === "cohost";
+  if (scope === "hosting")
+    return item.myRole === "host" || item.myRole === "cohost";
   if (scope === "invited") return item.myRole === "invitee";
   return true;
 }

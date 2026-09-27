@@ -28,7 +28,8 @@ function ruleOf(meeting: InvitableMeeting): string | null {
   return rule !== null && rule.trim() !== "" ? rule : null;
 }
 
-export const JOIN_INSTRUCTIONS = "No account needed. Open the link and enter your name to join.";
+export const JOIN_INSTRUCTIONS =
+  "No account needed. Open the link and enter your name to join.";
 
 export interface InvitationOptions {
   readonly locale?: string;
@@ -81,9 +82,13 @@ export function invitationText(
   }
   const rule = ruleOf(meeting);
   if (rule !== null) {
-    lines.push(`Repeats: ${describeRecurrence(rule, options.locale)}. The same link works for every session.`);
+    lines.push(
+      `Repeats: ${describeRecurrence(rule, options.locale)}. The same link works for every session.`,
+    );
   } else if (meeting.kind === "recurring") {
-    lines.push("This is a recurring meeting. The same link works for every session.");
+    lines.push(
+      "This is a recurring meeting. The same link works for every session.",
+    );
   }
   lines.push(`Join: ${link}`);
   const agenda = meeting.agenda?.trim();
@@ -133,7 +138,10 @@ export function meetingCalendarEvent(
     uid: `${meeting.id}@meet.aimatrx.com`,
     title: meeting.title,
     start: new Date(meeting.scheduledFor).toISOString(),
-    end: endFromDuration(meeting.scheduledFor, meeting.scheduledDurationMinutes),
+    end: endFromDuration(
+      meeting.scheduledFor,
+      meeting.scheduledDurationMinutes,
+    ),
     description: `Join: ${link}\n${JOIN_INSTRUCTIONS}${recurring}`,
     location: link,
     url: link,

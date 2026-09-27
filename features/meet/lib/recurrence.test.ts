@@ -12,7 +12,10 @@ import { utcToZoned } from "./zoned-time";
 // Tuesday October 6 2026, 10:00 in Los Angeles (17:00 UTC).
 const tuesday = utcToZoned("2026-10-06T17:00:00.000Z", "America/Los_Angeles");
 // Monday 17:00 in Los Angeles is TUESDAY 00:00 UTC — the rule must say Monday.
-const lateMonday = utcToZoned("2026-10-06T00:00:00.000Z", "America/Los_Angeles");
+const lateMonday = utcToZoned(
+  "2026-10-06T00:00:00.000Z",
+  "America/Los_Angeles",
+);
 
 const weekly: RecurrenceSpec = {
   frequency: "weekly",
@@ -34,21 +37,34 @@ describe("the repeat editor writes the rule the database expands", () => {
 
   it("weekday chips are written Monday-first, every N weeks", () => {
     expect(
-      buildRrule({ ...weekly, interval: 2, weekdays: ["SU", "WE", "MO"] }, tuesday),
+      buildRrule(
+        { ...weekly, interval: 2, weekdays: ["SU", "WE", "MO"] },
+        tuesday,
+      ),
     ).toBe("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE,SU");
   });
 
   it("daily, ending after N times", () => {
     expect(
-      buildRrule({ ...weekly, frequency: "daily", ends: { kind: "after", count: 10 } }, tuesday),
+      buildRrule(
+        { ...weekly, frequency: "daily", ends: { kind: "after", count: 10 } },
+        tuesday,
+      ),
     ).toBe("FREQ=DAILY;COUNT=10");
   });
 
   it("monthly on the day, or on the Nth weekday, ending on a date", () => {
-    expect(buildRrule({ ...weekly, frequency: "monthly" }, tuesday)).toBe("FREQ=MONTHLY;BYMONTHDAY=6");
+    expect(buildRrule({ ...weekly, frequency: "monthly" }, tuesday)).toBe(
+      "FREQ=MONTHLY;BYMONTHDAY=6",
+    );
     expect(
       buildRrule(
-        { ...weekly, frequency: "monthly", monthlyMode: "weekday-of-month", ends: { kind: "on", date: "2027-03-31" } },
+        {
+          ...weekly,
+          frequency: "monthly",
+          monthlyMode: "weekday-of-month",
+          ends: { kind: "on", date: "2027-03-31" },
+        },
         tuesday,
       ),
     ).toBe("FREQ=MONTHLY;BYDAY=1TU;UNTIL=20270331");
@@ -83,12 +99,18 @@ describe("the repeat editor writes the rule the database expands", () => {
 describe("the rule in a sentence", () => {
   it.each([
     ["FREQ=WEEKLY;BYDAY=TU", "Every Tuesday"],
-    ["FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE", "Every 2 weeks on Monday and Wednesday"],
+    [
+      "FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE",
+      "Every 2 weeks on Monday and Wednesday",
+    ],
     ["FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR", "Every weekday"],
     ["FREQ=DAILY;COUNT=10", "Daily, 10 times"],
     ["FREQ=MONTHLY;BYDAY=1TU", "Monthly on the first Tuesday"],
     ["FREQ=MONTHLY;BYDAY=-1FR", "Monthly on the last Friday"],
-    ["FREQ=MONTHLY;BYMONTHDAY=6;UNTIL=20270331", "Monthly on day 6, until March 31, 2027"],
+    [
+      "FREQ=MONTHLY;BYMONTHDAY=6;UNTIL=20270331",
+      "Monthly on day 6, until March 31, 2027",
+    ],
   ])("%s → %s", (rule, sentence) => {
     expect(describeRecurrence(rule, "en-US")).toBe(sentence);
   });
