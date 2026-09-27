@@ -7,8 +7,15 @@
 
 import { useState } from "react";
 import { toast } from "@/lib/toast";
-import { IdCard, PhoneOff, UserRound } from "lucide-react";
+import { IdCard, PhoneOff, Plus, UserRound } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CategorySelect } from "@ai-matrx/associations/react";
 import { CategoryTagPicker } from "@ai-matrx/associations/react";
@@ -82,12 +89,18 @@ function InlineField({
   spec,
   value,
   onCommit,
+  startEditing = false,
+  onLeftEmpty,
 }: {
   spec: FieldSpec;
   value: string | null;
   onCommit: (next: string | null) => Promise<void>;
+  /** Opened from "Add details": start in the editor. */
+  startEditing?: boolean;
+  /** Closed with nothing typed — the row folds back into "Add details". */
+  onLeftEmpty?: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(startEditing);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -99,6 +112,7 @@ function InlineField({
   const commit = async () => {
     const next = draft.trim() || null;
     setEditing(false);
+    if (next === null && !value) onLeftEmpty?.();
     if (next === (value ?? null)) return;
     setSaving(true);
     try {
@@ -131,7 +145,10 @@ function InlineField({
             onChange={(e) => setDraft(e.target.value)}
             onBlur={commit}
             onKeyDown={(e) => {
-              if (e.key === "Escape") setEditing(false);
+              if (e.key === "Escape") {
+                setEditing(false);
+                if (!value) onLeftEmpty?.();
+              }
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void commit();
             }}
             className={inputClasses}
@@ -147,7 +164,10 @@ function InlineField({
             onBlur={commit}
             onKeyDown={(e) => {
               if (e.key === "Enter") void commit();
-              if (e.key === "Escape") setEditing(false);
+              if (e.key === "Escape") {
+                setEditing(false);
+                if (!value) onLeftEmpty?.();
+              }
             }}
             placeholder={spec.placeholder}
             className={inputClasses}
@@ -191,6 +211,17 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
   const fields = FIELDS.filter(
     (f) => !(f.personOnly && !isPerson) && !(f.companyOnly && isPerson),
   );
+  // EMPTY IS COMPACT: a thin record shows its name and what it actually has,
+  // never a wall of "—" rows. Empty fields wait behind ONE "Add details" menu;
+  // picking one opens that field's editor in place.
+  const [opened, setOpened] = useState<EditableKey[]>([]);
+  const shownFields = fields.filter(
+    (f) =>
+      f.key === "display_name" ||
+      Boolean(party[f.key]) ||
+      opened.includes(f.key),
+  );
+  const emptyFields = fields.filter((f) => !shownFields.includes(f));
 
   const commitField = async (key: EditableKey, next: string | null) => {
     const patch: PartyUpdate = { [key]: next };
@@ -384,14 +415,45 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
       }
     >
       <div className="space-y-0">
-        {fields.map((spec) => (
+        {shownFields.map((spec) => (
           <InlineField
             key={spec.key}
             spec={spec}
             value={party[spec.key]}
             onCommit={(next) => commitField(spec.key, next)}
+            startEditing={opened.includes(spec.key) && !party[spec.key]}
+            onLeftEmpty={() =>
+              setOpened((keys) => keys.filter((key) => key !== spec.key))
+            }
           />
         ))}
+        {emptyFields.length > 0 && (
+          <div className="flex min-h-11 items-center gap-2 py-0.5 sm:min-h-0">
+            <span className="w-24 shrink-0" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-1.5 text-xs text-muted-foreground"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add details
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {emptyFields.map((spec) => (
+                  <DropdownMenuItem
+                    key={spec.key}
+                    onSelect={() => setOpened((keys) => [...keys, spec.key])}
+                  >
+                    {spec.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
 
         {/* Classification — the CRM stance on this record. */}
         <div className="mt-1.5 space-y-1.5 border-t border-border pt-2">
