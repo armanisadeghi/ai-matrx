@@ -483,9 +483,9 @@ export function parseDeclarations(value: unknown): HrDeclarationRequest[] {
  * Requests → the door's payload: every flag column that changes, plus the WHOLE
  * declared map (earlier declarations carried forward — see the file header).
  *
- * E-Verify: the door writes `everify_required_states` from the array, but an EMPTY
- * array aggregates to null and keeps the old list — so "none required" lives in the
- * declaration (`states: []`), which the page reads first.
+ * E-Verify: the door writes `everify_required_states` from the array; since
+ * 2026-09-27 an EMPTY array clears it ("none required") instead of keeping the old
+ * list. The declaration (`states: []`) is still what the page reads first.
  */
 export function declarationPayload(
   profile: HrEmployerProfileRead,
