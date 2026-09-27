@@ -2,6 +2,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Database, Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
+import { hasBrowserSession } from "@/lib/supabase/hasBrowserSession";
 import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { waitForConversationPersisted } from "../conversations/conversation-persistence";
 import {
@@ -60,6 +61,11 @@ export const persistInputCapabilities = createAsyncThunk<
 >(
   "instanceInputCapabilities/persist",
   async ({ conversationId }, { dispatch, getState }) => {
+    // A signed-out visitor (a guest on a public app at /p/<slug>) cannot read
+    // or write the conversation row, so there is nowhere to persist UI deltas;
+    // they stay in memory for the visit. Waiting for a row the guest can never
+    // see only ended in a console error on every guest run (page-pass 2026-09-27).
+    if (!(await hasBrowserSession())) return;
     const persisted = await waitForConversationPersisted(conversationId);
     if (!persisted) {
       const error = "Conversation is not available for capability persistence";
