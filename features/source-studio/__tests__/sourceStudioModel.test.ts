@@ -54,7 +54,11 @@ describe("deep link → opening portion", () => {
       page: 3,
       chunkId: "abc",
       assets: false,
+      ms: null,
     });
+    // `?t=` is a moment in the recording (a hit's t0_ms), in ms.
+    expect(parseSourceDeepLink({ t: "65000" }).ms).toBe(65000);
+    expect(parseSourceDeepLink({ t: "-4" }).ms).toBeNull();
     expect(parseSourceDeepLink({ page: "0" }).page).toBeNull();
     expect(parseSourceDeepLink({ page: "x" }).page).toBeNull();
     expect(parseSourceDeepLink(new URLSearchParams("assets=1")).assets).toBe(
