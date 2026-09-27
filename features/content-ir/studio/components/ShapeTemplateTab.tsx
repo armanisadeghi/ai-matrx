@@ -9,7 +9,9 @@
  * paste into a prompt or a chat.
  */
 
+import { useState } from "react";
 import KindEmitTemplate from "@/features/content-ir/render-paths/KindEmitTemplate";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useKindExamples } from "@/features/content-ir/studio/kind-examples";
 
 interface ShapeTemplateTabProps {
@@ -21,11 +23,33 @@ export default function ShapeTemplateTab({
   kind,
   kindDefinitionId,
 }: ShapeTemplateTabProps) {
-  const examples = useKindExamples(kindDefinitionId, 0);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const examples = useKindExamples(kindDefinitionId, refreshKey);
   const canonical =
     examples.status === "ready"
       ? (examples.rows.find((r) => r.isCanonical) ?? examples.rows[0])
       : undefined;
+
+  if (examples.status === "error") {
+    return (
+      <ReadFailure
+        error={new Error(examples.message)}
+        what="this kind's saved examples"
+        onRetry={() => setRefreshKey((k) => k + 1)}
+      />
+    );
+  }
+
+  if (examples.status === "loading") {
+    return (
+      <div
+        role="status"
+        className="mx-auto max-w-4xl px-4 py-8 text-center text-xs text-muted-foreground"
+      >
+        Loading saved examples…
+      </div>
+    );
+  }
 
   if (!canonical) {
     return (

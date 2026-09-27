@@ -24,16 +24,39 @@ import {
   SCOPE_ICON_SURFACE,
 } from "@/features/scopes/constants/scope-colors";
 import type { ScopeTypeNode as ScopeTypeRow } from "@/features/scopes/types";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export function OrgScopeTree({ orgId, slug }: { orgId: string; slug: string }) {
   const dispatch = useAppDispatch();
-  const { organizations } = useScopeTree();
+  const { organizations, status, error, refresh } = useScopeTree();
   const scopeTypes =
     organizations.find((org) => org.id === orgId)?.scope_types ?? [];
 
   React.useEffect(() => {
     void dispatch(ensureScopeTree({}));
   }, [dispatch]);
+
+  if (scopeTypes.length === 0 && status === "error") {
+    return (
+      <ReadFailure
+        error={error ?? true}
+        what="this organization's scopes"
+        onRetry={() => void refresh()}
+        className="m-0"
+      />
+    );
+  }
+
+  if (scopeTypes.length === 0 && status !== "ready") {
+    return (
+      <div
+        role="status"
+        className="py-6 text-center text-sm text-muted-foreground"
+      >
+        Loading scopes…
+      </div>
+    );
+  }
 
   if (scopeTypes.length === 0) {
     return (

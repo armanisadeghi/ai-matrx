@@ -337,6 +337,7 @@ export function OrgResourceDetail() {
               </p>
 
               {!mine.contributable ? (
+                {/* read-gate-exempt: whether this resource kind can be shared at all — a static property of the registry entry, not a read's answer */}
                 <Empty
                   icon={<Icon className="h-7 w-7 text-muted-foreground" />}
                 >

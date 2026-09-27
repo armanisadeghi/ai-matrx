@@ -36,6 +36,7 @@ import KindAgentButton from "@/features/content-ir/studio/components/KindAgentBu
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KIND_REGISTRY_SURFACE_NAME } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
 import { buildAdminKindDetailScope } from "@/features/content-ir/admin/kind-registry-scope";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const KindGateTab = dynamic(
   () => import("@/features/content-ir/admin/KindGateTab"),
@@ -339,6 +340,19 @@ export default function KindDetailClient({
                   kind={detail.kind}
                   value={canonicalExampleData}
                 />
+              ) : examples.status === "error" ? (
+                <ReadFailure
+                  error={new Error(examples.message)}
+                  what="this kind's examples"
+                  onRetry={refreshExamples}
+                />
+              ) : examples.status === "loading" ? (
+                <div
+                  role="status"
+                  className="px-4 py-8 text-center text-xs text-muted-foreground"
+                >
+                  Loading examples…
+                </div>
               ) : (
                 <div className="rounded-md border border-border bg-card px-4 py-8 text-center">
                   <p className="text-sm font-medium text-foreground">
