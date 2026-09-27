@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-26T21:27:49.020Z",
+  "generated_at": "2026-09-27T03:58:11.468Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3019,6 +3019,12 @@
       "filename": "moverdeletions_copying_again_carries_what_the_older_side_removed.sql",
       "checksum": "5741395b1d9eb5e9c5f9aed2d05528949e78c3211d7043050a04cb44bf9cf0e6",
       "applied_at": "2026-09-26 19:57:34.314078+00"
+    },
+    "migrations/campaign/moversuitegreen_every_tables_newest_writes_are_judged_first.sql": {
+      "source": "matrx-frontend",
+      "filename": "moversuitegreen_every_tables_newest_writes_are_judged_first.sql",
+      "checksum": "a52341c120cd3ddcf55fec994934ef5fa1ae5a8aeee85a4fca6ec85b507b5c55",
+      "applied_at": "2026-09-27 03:58:09.964237+00"
     },
     "migrations/campaign/navfix_one_switch_per_organization.sql": {
       "source": "matrx-frontend",
