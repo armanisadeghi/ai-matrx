@@ -62,7 +62,10 @@ Judge by who is looking at it and why.
 - **Recognize it:** one thing, viewed or edited — a note, an agent, a class, a
   document, a contact. Usually a route with an id.
 - **Adds:** the header names the record (a switcher/dropdown for `[id]`
-  routes), with Back doing `router.back()`; unsaved changes are never lost
+  routes); Back returns where the person came from — `EntityModeHeader` and
+  `CrumbTrailHeader` do it (their `backHref` is only the fallback), a custom back
+  link uses `useBackHref(fallback)` from `lib/navigation/useBackHref.ts`; a missing
+  or forbidden id never calls `notFound()`; unsaved changes are never lost
   (autosave or a clear save state, and a guard on leaving); the page's
   `contentSource` and `entity` are the record's own, so Copy, Export, Attach
   and Share work on it; a missing or forbidden id shows the access gate, never

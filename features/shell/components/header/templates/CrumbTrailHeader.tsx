@@ -21,6 +21,7 @@
 // migrate it onto this template when touched.
 
 import { Fragment } from "react";
+import { useBackHref } from "@/lib/navigation/useBackHref";
 import AppLink from "@/components/navigation/AppLink";
 import { Check, ChevronDown, ChevronRight } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -143,7 +144,8 @@ export function CrumbTrailHeader({
 }: CrumbTrailHeaderProps) {
   if (trail.length === 0) return null;
   const last = trail[trail.length - 1];
-  const back = backHref ?? trail[0]?.href ?? "/";
+  // Back returns where this tab came from; the crumb is the fallback.
+  const back = useBackHref(backHref ?? trail[0]?.href ?? "/");
 
   return (
     <RouteHeader

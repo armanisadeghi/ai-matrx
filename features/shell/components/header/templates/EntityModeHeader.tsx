@@ -15,6 +15,7 @@
 // Reference consumer: /schedules/[id] (features/scheduling/components/detail/
 // ScheduleDetail.tsx). The hand-rolled original: /agents/[id]/build.
 
+import { useBackHref } from "@/lib/navigation/useBackHref";
 import { useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import {
@@ -82,7 +83,7 @@ export interface EntityHeaderAction {
 }
 
 export interface EntityModeHeaderProps {
-  /** Back tap-target destination (the family's list page). */
+  /** Back fallback (the family's list page): Back returns where this tab came from, and uses this only when nothing is behind it (opened from a link). */
   backHref: string;
   /** Current entity's name — small, in the top row, never an h1. */
   entityLabel: string;
@@ -153,6 +154,9 @@ export function EntityModeHeader({
 }: EntityModeHeaderProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const router = useRouter();
+  // Back returns where this tab came from (filters included); `backHref` is
+  // the fallback for a page opened straight from a link.
+  const resolvedBackHref = useBackHref(backHref);
   const pathname = usePathname();
   const activeMode = activeModeHref
     ? modes?.find((mode) => mode.href === activeModeHref)
@@ -175,7 +179,7 @@ export function EntityModeHeader({
       <RouteHeader
         left={
           <>
-            <ChevronLeftTapButton href={backHref} ariaLabel="Back" />
+            <ChevronLeftTapButton href={resolvedBackHref} ariaLabel="Back" />
             {entityOptions && entityOptions.length > 0 ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

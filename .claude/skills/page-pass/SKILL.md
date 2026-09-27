@@ -113,7 +113,9 @@ session, never you.
   a list page's condensed visible list ~4,000; a broad page (SEO, dashboards)
   only a ~2,000-3,000 overview and a guide for discovery. Pack it as ONE XML
   bundle with `features/surfaces/runtime/context-bundle.ts` — never raw JSON rows.
-  Worked bundles: `features/research/browse/surface.ts` (list),
+  The bundle is what the agent reads up front; the page's individual values
+  stay declared too (bindings and write twins use their names) at the default
+  size. Worked bundles: `features/research/browse/surface.ts` (list),
   `features/flashcards/components/home/deckSurface.ts` (list); older manifests
   that inline raw arrays are not examples to copy. Over budget
   needs Arman's approval. Procedure: `surface-write-targets` Step 4.
@@ -178,7 +180,8 @@ session, never you.
   carries its one-click fix.
 - **The screen shows what was saved.** After a save the view re-reads (or
   applies the returned row) — never the pre-save copy. **Saving an untouched
-  form changes nothing:** every field round-trips exactly (a toggle labelled
+  form changes nothing:** a save writes only the fields the person changed, and
+  every field round-trips exactly (a toggle labelled
   "Private" never writes another visibility; a blank type is never saved as a
   default).
 - **Numbers are plausible.** Sanity-check every computed figure against the
@@ -229,8 +232,10 @@ session, never you.
   unless it is long reading text.
 - `(core)` routes: header via `<PageHeader>`; body `h-full overflow-hidden`;
   never `h-screen`, `100vh`, `h-page`; no fake title bar in the body.
-- Density: `ui-sharp` by default, `ui-dense` for all-day power pages. Name the
-  real product you matched in the Change Log line.
+- Density: **sharp** by default — clean, compact, generous only where it helps
+  reading (Linear, Stripe); **dense** for all-day power pages — tables, tight
+  rows, many columns (Airtable, Datadog). Name the posture and the real product
+  you matched in the Change Log line; open `ui-sharp` / `ui-dense` only if unsure.
 - Checks: `pnpm check:page-headers` · `check:scroll-chain:strict` · live look at
   the top edge on desktop and phone.
 - Procedures: `core-route-headers` · `.claude/ui-skills/shared/application-ui-copy-and-hierarchy.md` · `ui-sharp` / `ui-dense`.
@@ -284,7 +289,8 @@ session, never you.
   switcher — a page never adds a second organization picker).
 - A destructive or expensive click says what it will cost before it happens.
   A person's records are archived (restorable), never permanently deleted from
-  a page; a destructive option is never pre-checked; a one-click trash with
+  a page — Arman's standing rule, never a question; if the feature's reads do
+  not yet hide archived rows, adding that filter to every read is part of the fix; a destructive option is never pre-checked; a one-click trash with
   no confirm is a defect.
 - **Color means something.** Success color only for success, alarm color
   only for a real alarm (a zero is never green; a routine control is never
