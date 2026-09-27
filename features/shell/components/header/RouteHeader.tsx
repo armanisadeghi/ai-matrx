@@ -43,7 +43,13 @@
 
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  setPhonePageActionCount,
+  usePhonePageActions,
+} from "./phone-page-actions";
 import {
   Popover,
   PopoverContent,
@@ -104,6 +110,27 @@ function iconControlsWidth(el: HTMLElement): number {
     if (!c.textContent?.trim()) total += c.offsetWidth;
   });
   return total;
+}
+
+/**
+ * A `fallback` header is hidden (CSS) while a page-specific header is mounted;
+ * its actions must then stay out of the phone sheet too, or the ⋮ would list
+ * the section's actions beside the page's.
+ */
+function useYieldedFallback(fallback: boolean): boolean {
+  const [yielded, setYielded] = useState(false);
+  useEffect(() => {
+    if (!fallback) return;
+    const center = document.getElementById("shell-header-center");
+    if (!center) return;
+    const read = () =>
+      setYielded(center.querySelector(':scope > [data-page-header-portal="page"]') != null);
+    read();
+    const observer = new MutationObserver(read);
+    observer.observe(center, { childList: true });
+    return () => observer.disconnect();
+  }, [fallback]);
+  return fallback && yielded;
 }
 
 export default function RouteHeader({
@@ -220,8 +247,22 @@ export default function RouteHeader({
     // fold point changes.
   }, [root, actionKeys, fold, compact]);
 
-  const overflowActions = actions.slice(0, fold);
-  const rowActions = actions.slice(fold);
+  // 🚨 ON A PHONE THE ACTIONS LIVE IN THE SHELL'S ⋮ (page-pass shared
+  // defects, 2026-09-27): one overflow button per phone header, and the title
+  // gets the row. They are PORTALED into the ⋮ sheet's host node, so each
+  // stays mounted in this page's tree. See `phone-page-actions.ts`.
+  const isPhone = useIsMobile();
+  const { host: phoneHost } = usePhonePageActions();
+  const yielded = useYieldedFallback(fallback);
+  const toSheet = isPhone && !yielded && phoneHost != null && actions.length > 0;
+  const owner = useId();
+  useEffect(() => {
+    setPhonePageActionCount(owner, toSheet ? actions.length : 0);
+    return () => setPhonePageActionCount(owner, 0);
+  }, [owner, toSheet, actions.length]);
+
+  const overflowActions = toSheet ? [] : actions.slice(0, fold);
+  const rowActions = toSheet ? [] : actions.slice(fold);
 
   return (
     <PageHeader fallback={fallback}>
@@ -248,6 +289,16 @@ export default function RouteHeader({
           className="relative z-10 flex shrink-0 items-center justify-end"
         >
           {inert.map((a) => a.node)}
+          {toSheet && phoneHost
+            ? createPortal(
+                <div data-route-header-phone-actions className="flex flex-col gap-0.5">
+                  {actions.map((a) => (
+                    <OverflowMenuItem key={a.key} action={a} />
+                  ))}
+                </div>,
+                phoneHost,
+              )
+            : null}
           {overflowActions.length > 0 ? (
             <Popover open={overflowOpen} onOpenChange={setOverflowOpen}>
               <PopoverTrigger asChild>
