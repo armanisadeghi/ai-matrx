@@ -210,6 +210,7 @@ export function FileGrid({
       >
         {filter === "starred"
           ? "Starred items will appear here."
+          // read-gate-exempt: rows come from the whole-tree read; PageShell renders FilesTreeErrorState/loading and never mounts this view until that read succeeded
           : "No files yet. Use the + New button or drop files to upload."}
       </div>
     );

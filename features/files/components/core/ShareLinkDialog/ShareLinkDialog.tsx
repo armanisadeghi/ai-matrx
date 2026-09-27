@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Check, Copy, ExternalLink, Link, Loader2, Trash2 } from "lucide-react";
 import { extractErrorMessage } from "@/utils/errors";
 import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
@@ -36,6 +36,9 @@ import {
 import { formatAbsoluteDate } from "@/features/files/utils/format";
 import type { ResourceType } from "@/features/files/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { useRead } from "@/components/read-state/useRead";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 export interface ShareLinkDialogProps {
   open: boolean;
@@ -113,9 +116,12 @@ export function ShareLinkDialogBody({
   // user copying the page URL doesn't tick the file URL's checkmark too.
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  useEffect(() => {
-    void dispatch(loadShareLinks({ resourceId, resourceType }));
-  }, [dispatch, resourceId, resourceType]);
+  // The links live in redux; the read's outcome is held here so a failed
+  // read is never shown as "No active links yet" (RC-B12).
+  const linksRead = useRead(
+    () => dispatch(loadShareLinks({ resourceId, resourceType })).unwrap(),
+    [resourceId, resourceType],
+  );
 
   /** Canonical share landing page — `/s/{token}`. */
   const buildPageUrl = useCallback(
@@ -254,7 +260,24 @@ export function ShareLinkDialogBody({
         <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Active links
         </h3>
-        {links.length === 0 ? (
+        {linksRead.isError && links.length > 0 && (
+          <StaleDataNotice
+            hasData
+            what="this item's share links"
+            onRetry={linksRead.retry}
+            className="mb-2"
+          />
+        )}
+        {linksRead.isError && links.length === 0 ? (
+          <ReadFailure
+            error={linksRead.error}
+            what="this item's share links"
+            onRetry={linksRead.retry}
+            className="m-0"
+          />
+        ) : linksRead.isLoading && links.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-2">Loading links…</p>
+        ) : links.length === 0 ? (
           <p className="text-sm text-muted-foreground py-2">
             No active links yet.
           </p>

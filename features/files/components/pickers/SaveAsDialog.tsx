@@ -40,6 +40,8 @@ import { useFolderContents } from "@/features/files/hooks/useFolderContents";
 import { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumbs/FileBreadcrumbs";
 import { FileIcon } from "@ai-matrx/media/react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 // ---------------------------------------------------------------------------
 // Declarative component
@@ -153,7 +155,12 @@ function SaveAsBody({
   }, []);
 
   const foldersById = useAppSelector(selectAllFoldersMap);
-  const { folders } = useFolderContents(currentFolderId);
+  const {
+    folders,
+    status: folderReadStatus,
+    error: folderReadError,
+    retry: retryFolderRead,
+  } = useFolderContents(currentFolderId);
 
   const currentFolder = currentFolderId ? foldersById[currentFolderId] : null;
 
@@ -208,7 +215,29 @@ function SaveAsBody({
 
       {/* Folder list — folders only (files aren't selectable here) */}
       <ul className="max-h-[36dvh] overflow-auto overscroll-contain divide-y">
-        {folders.length === 0 ? (
+        {folders.length > 0 && folderReadStatus === "error" && (
+          <li className="p-2">
+            <StaleDataNotice
+              hasData
+              what="this folder's subfolders"
+              onRetry={retryFolderRead}
+              detail={folderReadError}
+            />
+          </li>
+        )}
+        {folders.length === 0 && folderReadStatus === "error" ? (
+          <li>
+            <ReadFailure
+              error={folderReadError ?? true}
+              what="this folder's subfolders"
+              onRetry={retryFolderRead}
+            />
+          </li>
+        ) : folders.length === 0 && folderReadStatus === "loading" ? (
+          <li className="flex items-center justify-center p-4 text-xs text-muted-foreground">
+            Loading folders…
+          </li>
+        ) : folders.length === 0 ? (
           <li className="flex items-center justify-center p-4 text-xs text-muted-foreground">
             No subfolders here.
           </li>

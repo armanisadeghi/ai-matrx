@@ -287,6 +287,7 @@ export function FileShareTab({ fileId, className }: FileShareTabProps) {
                 </span>
               ) : (
                 <span className="text-muted-foreground">
+                  {/* read-gate-exempt: the active organization from the session context, not a list read */}
                   No active organization
                 </span>
               )

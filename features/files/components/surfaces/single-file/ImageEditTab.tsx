@@ -52,6 +52,8 @@ import {
   selectFolderById,
 } from "@/features/files/redux/selectors";
 import { useMediaResolution } from "@ai-matrx/media/core";
+import { useTreeReadStatus } from "@/features/files/hooks/useFilesReadStatus";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import type { SaveResult } from "@/features/image-studio/modes/shared/types";
 
 const EditModeShell = dynamic(
@@ -69,6 +71,16 @@ export interface ImageEditTabProps {
 
 const FALLBACK_FOLDER = "Images/Edited";
 
+const UNAVAILABLE_COPY: Record<
+  "access_denied" | "not_found" | "deleted" | "unknown",
+  string
+> = {
+  access_denied: "You don't have access to this image.",
+  not_found: "This image could not be found.",
+  deleted: "This image was deleted.",
+  unknown: "This image could not be opened.",
+};
+
 export function ImageEditTab({ fileId, className }: ImageEditTabProps) {
   const router = useRouter();
   const file = useAppSelector((s) => selectFileById(s, fileId));
@@ -76,7 +88,11 @@ export function ImageEditTab({ fileId, className }: ImageEditTabProps) {
     file?.parentFolderId ? selectFolderById(s, file.parentFolderId) : null,
   );
 
-  const url = useMediaResolution(fileId ?? null).resolution?.src ?? null;
+  const media = useMediaResolution(fileId ?? null);
+  const url = media.resolution?.src ?? null;
+  // The file record comes from the user's file tree read; a failed tree read
+  // is said as a failure, never "File not loaded" forever (RC-B12).
+  const tree = useTreeReadStatus();
 
   const [lastSave, setLastSave] = useState<SaveResult | null>(null);
 
@@ -113,6 +129,29 @@ export function ImageEditTab({ fileId, className }: ImageEditTabProps) {
     },
     [router],
   );
+
+  if (!file && tree.status === "error") {
+    return (
+      <ReadFailure
+        error={tree.error ?? true}
+        what="this file"
+        onRetry={tree.retry}
+        className={className}
+      />
+    );
+  }
+
+  // The image URL could not be resolved (access denied, deleted, missing) —
+  // never an endless "Resolving image…".
+  if (media.status === "unavailable") {
+    return (
+      <ReadFailure
+        error={new Error(UNAVAILABLE_COPY[media.reason ?? "unknown"])}
+        what="this image"
+        className={className}
+      />
+    );
+  }
 
   if (!file) {
     return (
