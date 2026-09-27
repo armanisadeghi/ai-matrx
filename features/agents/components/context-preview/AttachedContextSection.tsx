@@ -280,6 +280,7 @@ export function AttachedContextSection({
               <div className="flex items-center gap-2">
                 <Variable className="h-4 w-4 shrink-0 text-primary" />
                 <span className="min-w-0 flex-1 text-sm text-foreground">
+                  {/* read-gate-exempt: variables the person set on this conversation in memory, not rows fetched from a read */}
                   {variableKeys.length} variable
                   {variableKeys.length === 1 ? "" : "s"} this turn
                 </span>
@@ -320,6 +321,7 @@ export function AttachedContextSection({
               <div className="flex items-center gap-2">
                 <Wrench className="h-4 w-4 shrink-0 text-primary" />
                 <span className="min-w-0 flex-1 text-sm text-foreground">
+                  {/* read-gate-exempt: client tools registered on this conversation instance in memory, not a fetched list */}
                   {clientTools.length} client tool
                   {clientTools.length === 1 ? "" : "s"}
                 </span>
@@ -430,6 +432,7 @@ export function AttachedContextSection({
       {items.length > 0 && (
         <div className="shrink-0 border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
           <span className="font-medium text-foreground">
+            {/* read-gate-exempt: items attached to this conversation instance in memory, not rows fetched from a read */}
             {items.length} attached item{items.length === 1 ? "" : "s"}
           </span>{" "}
           · ~{totalChars.toLocaleString()} characters of content

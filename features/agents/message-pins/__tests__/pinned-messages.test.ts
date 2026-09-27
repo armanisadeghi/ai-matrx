@@ -23,6 +23,7 @@ import {
   __resetPinnedMessagesForTests,
   hydratePinnedMessages,
   isMessagePinned,
+  pinnedMessagesReadFailed,
   togglePinnedMessage,
 } from "../pinned-messages-store";
 
@@ -46,6 +47,16 @@ it("hydrates from the per-user store", async () => {
   expect(getBulk).toHaveBeenCalledWith("message", [ID_A, ID_B]);
   expect(isMessagePinned(ID_A)).toBe(true);
   expect(isMessagePinned(ID_B)).toBe(false);
+});
+
+it("says the pin read failed (so a pinned count shows a dash, not 0) until a read succeeds", async () => {
+  getBulk.mockResolvedValue({ ok: false, error: { message: "timeout" } });
+  await hydratePinnedMessages([ID_A]);
+  expect(pinnedMessagesReadFailed()).toBe(true);
+  getBulk.mockResolvedValue({ ok: true, data: { items: [{ entityId: ID_A, isPinned: true }] } });
+  await hydratePinnedMessages([ID_A]);
+  expect(pinnedMessagesReadFailed()).toBe(false);
+  expect(isMessagePinned(ID_A)).toBe(true);
 });
 
 it("toggles through setPinned", async () => {

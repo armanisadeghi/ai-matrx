@@ -24,6 +24,8 @@ const UUID_RE =
 
 let pinned = new Set<string>();
 let pending = new Set<string>();
+/** The last pin-state read failed: counts over `pinned` are not an answer until one succeeds. */
+let readFailed = false;
 const hydrated = new Set<string>();
 const listeners = new Set<() => void>();
 
@@ -51,6 +53,7 @@ export function subscribePinnedMessages(listener: () => void): () => void {
 
 const getSnapshot = () => pinned;
 const getPendingSnapshot = () => pending;
+const getReadFailedSnapshot = () => readFailed;
 
 function setPendingLocal(id: string, value: boolean): void {
   const next = new Set(pending);
@@ -86,8 +89,11 @@ export async function hydratePinnedMessages(messageIds: string[]): Promise<void>
   if (isErr(res)) {
     for (const id of ids) hydrated.delete(id);
     console.error("[message-pins] could not read pinned state", res);
+    readFailed = true;
+    emit();
     return;
   }
+  readFailed = false;
   const next = new Set(pinned);
   for (const item of res.data.items) {
     if (item.isPinned) next.add(item.entityId);
@@ -139,6 +145,19 @@ export function usePinnedMessageIds(): ReadonlySet<string> {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
+/**
+ * True while the last read of pin state failed — a pinned COUNT over
+ * `usePinnedMessageIds()` must say "—", not 0, until a read succeeds.
+ */
+export function pinnedMessagesReadFailed(): boolean {
+  return readFailed;
+}
+
+/** The live form of `pinnedMessagesReadFailed()` (re-renders when it changes). */
+export function usePinnedMessagesReadFailed(): boolean {
+  return useSyncExternalStore(subscribe, getReadFailedSnapshot, getReadFailedSnapshot);
+}
+
 /** The live set of message ids whose pin write is in flight. */
 export function usePendingPinMessageIds(): ReadonlySet<string> {
   return useSyncExternalStore(subscribe, getPendingSnapshot, getPendingSnapshot);
@@ -147,6 +166,7 @@ export function usePendingPinMessageIds(): ReadonlySet<string> {
 export function __resetPinnedMessagesForTests(): void {
   pinned = new Set();
   pending = new Set();
+  readFailed = false;
   hydrated.clear();
   emit();
 }

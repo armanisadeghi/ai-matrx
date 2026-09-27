@@ -4,6 +4,7 @@ import { useState, useTransition, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AgentCard } from "./AgentCard";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { AgentListItem } from "./AgentListItem";
 import { MobileActionBar } from "@/components/official/mobile-action-bar/MobileActionBar";
 import {
@@ -746,14 +747,19 @@ export function AgentsGrid() {
                     )}
                   >
                     {t === "mine" ? "Mine" : t === "shared" ? "Shared" : "All"}
-                    <span className="text-[10px] opacity-70">
-                      {t === "mine"
-                        ? filteredOwnedAgents.length
-                        : t === "shared"
-                          ? filteredSharedAgents.length
-                          : filteredOwnedAgents.length +
-                            filteredSharedAgents.length}
-                    </span>
+                    <UntrustedCount
+                      className="text-[10px] opacity-70"
+                      trustworthy={sliceStatus !== "failed"}
+                      label="Agents"
+                      value={
+                        t === "mine"
+                          ? filteredOwnedAgents.length
+                          : t === "shared"
+                            ? filteredSharedAgents.length
+                            : filteredOwnedAgents.length +
+                              filteredSharedAgents.length
+                      }
+                    />
                   </button>
                 ))}
               </div>
@@ -761,7 +767,12 @@ export function AgentsGrid() {
 
             {searchTerm && (
               <span className="text-xs text-muted-foreground shrink-0">
-                {filteredAgents.length} result
+                <UntrustedCount
+                  trustworthy={sliceStatus !== "failed"}
+                  label="Results"
+                  value={filteredAgents.length}
+                />{" "}
+                result
                 {filteredAgents.length !== 1 ? "s" : ""}
               </span>
             )}
@@ -819,13 +830,18 @@ export function AgentsGrid() {
               )}
             >
               {t === "mine" ? "Mine" : t === "shared" ? "Shared" : "All"}
-              <span className="text-[10px] opacity-70">
-                {t === "mine"
-                  ? filteredOwnedAgents.length
-                  : t === "shared"
-                    ? filteredSharedAgents.length
-                    : filteredOwnedAgents.length + filteredSharedAgents.length}
-              </span>
+              <UntrustedCount
+                className="text-[10px] opacity-70"
+                trustworthy={sliceStatus !== "failed"}
+                label="Agents"
+                value={
+                  t === "mine"
+                    ? filteredOwnedAgents.length
+                    : t === "shared"
+                      ? filteredSharedAgents.length
+                      : filteredOwnedAgents.length + filteredSharedAgents.length
+                }
+              />
             </button>
           ))}
         </div>
@@ -1399,6 +1415,7 @@ export function AgentsGrid() {
                       : "text-muted-foreground",
                   )}
                 >
+                  {/* read-gate-exempt: how many filter chips the person ticked, not a count of fetched rows */}
                   {hasCatsFilter ? `${includedCats.length} selected` : "All"}
                 </span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
@@ -1418,6 +1435,7 @@ export function AgentsGrid() {
                       : "text-muted-foreground",
                   )}
                 >
+                  {/* read-gate-exempt: how many filter chips the person ticked, not a count of fetched rows */}
                   {hasTagsFilter ? `${includedTags.length} selected` : "All"}
                 </span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />

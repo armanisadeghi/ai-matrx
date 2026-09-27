@@ -332,6 +332,7 @@ export function ComputeLensBar({
         >
           {overflowCount > 0 ? (
             <span className="text-[10px] font-medium tabular-nums">
+              {/* read-gate-exempt: drawn only when the overflow is positive, so a failed read hides the chip instead of saying 0 */}
               +{overflowCount}
             </span>
           ) : null}

@@ -123,6 +123,7 @@ export function VersionHistoryTimeline({
       <div className="flex flex-col items-center justify-center py-16 gap-3">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
         <div className="text-sm text-muted-foreground">
+          {/* read-gate-exempt: fetch progress shown only while the fetch is in flight, never a result count */}
           Loading version details... {progress.fetched}/{progress.total}
         </div>
         <div className="w-48 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -142,8 +143,15 @@ export function VersionHistoryTimeline({
     <div className="px-4 py-3">
       <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
         <div className="text-xs text-muted-foreground">
+          {/* read-gate-exempt: this is the tally of versions whose read succeeded, with the failed ones counted beside it */}
           {enrichedVersions.filter((v) => v.snapshotLoaded).length} of{" "}
           {versions.length} versions loaded
+          {failedVersions.length > 0 && (
+            <span className="text-destructive">
+              {" "}
+              · {failedVersions.length} could not be read
+            </span>
+          )}
         </div>
       </div>
 

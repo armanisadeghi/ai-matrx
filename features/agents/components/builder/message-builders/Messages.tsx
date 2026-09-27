@@ -91,6 +91,7 @@ export function Messages({
           />
           <span className="font-medium text-foreground">Examples</span>
           <span>
+            {/* read-gate-exempt: size of an example run that is present in the loaded agent, drawn only when the run exists */}
             {pairs > 0 ? `${pairs} ${pairs === 1 ? "pair" : "pairs"}` : `${count} messages`}
           </span>
           <span className="ml-auto tabular-nums">≈{tokens.toLocaleString()} tokens</span>

@@ -1829,6 +1829,7 @@ function InstanceDebugView({
             </button>
           ))}
           <span className="text-muted-foreground/60 text-[9px] ml-auto">
+            {/* read-gate-exempt: requests this browser tab started and tracks in memory, not rows fetched from a read */}
             {requestIds.length} total
           </span>
         </div>
@@ -2055,6 +2056,7 @@ function InstanceTab({
       )}
       {requestCount > 0 && (
         <span className="text-[9px] text-muted-foreground/60">
+          {/* read-gate-exempt: requests this browser tab started and tracks in memory, not rows fetched from a read */}
           {requestCount}req
         </span>
       )}

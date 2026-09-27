@@ -232,6 +232,7 @@ export function AgentAssignmentsDemo() {
                     <span className="font-medium capitalize">{state.runStatus}</span>
                     {state.total > 0 && (
                       <span className="text-muted-foreground">
+                        {/* read-gate-exempt: live progress of the session this page is running, pushed by its own stream */}
                         {state.completed} / {state.total}
                       </span>
                     )}
@@ -599,6 +600,7 @@ function ResultsPanel() {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base">
+          {/* read-gate-exempt: result exists only after resultReceived; a failed read leaves it null and returns above */}
           Durable results ({state.result.items.length})
         </CardTitle>
       </CardHeader>

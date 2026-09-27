@@ -260,6 +260,7 @@ function HistoryContent({
             key={`${entry.saved_at}-${i}`}
             entry={entry}
             index={i}
+            // read-gate-exempt: position within edit entries already on the message record; drawn only inside the map over entries that exist
             total={ordered.length}
             isRestoring={restoringIndex === i}
             onRestore={() => handleRestore(entry, i)}

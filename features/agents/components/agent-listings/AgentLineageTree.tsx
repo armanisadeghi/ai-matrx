@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   UntrustedCount,
+  countReadState,
   type CountRead,
 } from "@/components/official/stale-data/UntrustedCount";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -56,6 +57,7 @@ import {
   type AgentAppAdminView,
 } from "@/lib/services/agent-apps-admin-service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { readOf } from "@/components/read-state/ReadGate";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 
 const ADMIN_AGENT_BASE = "/administration/agents/system-agents/agents";
@@ -117,6 +119,7 @@ export function AgentLineageTree() {
   }, [apps]);
 
   const isShortcutsLoading = globalQuery.isLoading || userQuery.isLoading;
+  const shortcutsError = globalQuery.error ?? userQuery.error;
 
   // Combined shortcut list across both hydrated scopes — used only to build
   // the toolbar's copy-all lineage payload (each LineageCard still reads its
@@ -339,7 +342,9 @@ export function AgentLineageTree() {
               derived={derivedBySource.get(agent.id) ?? []}
               apps={appsByAgent.get(agent.id) ?? []}
               appsLoading={appsLoading}
+              appsFailed={appsError != null}
               shortcutsLoading={isShortcutsLoading}
+              shortcutsFailed={shortcutsError != null}
               isOpen={expandedIds.has(agent.id)}
               onToggle={() => toggleOne(agent.id)}
             />
@@ -355,7 +360,9 @@ function LineageCard({
   derived,
   apps,
   appsLoading,
+  appsFailed,
   shortcutsLoading,
+  shortcutsFailed,
   isOpen,
   onToggle,
 }: {
@@ -363,7 +370,9 @@ function LineageCard({
   derived: AgentDefinitionRecord[];
   apps: AgentAppAdminView[];
   appsLoading: boolean;
+  appsFailed: boolean;
   shortcutsLoading: boolean;
+  shortcutsFailed: boolean;
   isOpen: boolean;
   onToggle: () => void;
 }) {
@@ -416,13 +425,13 @@ function LineageCard({
               count={shortcuts.length}
               label="Shortcuts"
               icon={Zap}
-              loading={shortcutsLoading}
+              read={readOf({ isLoading: shortcutsLoading, isError: shortcutsFailed })}
             />
             <CountBadge
               count={apps.length}
               label="Apps"
               icon={AppWindow}
-              loading={appsLoading}
+              read={readOf({ isLoading: appsLoading, isError: appsFailed })}
             />
           </div>
         </div>
@@ -580,26 +589,30 @@ function CountBadge({
   count,
   label,
   icon: Icon,
-  loading,
+  read,
 }: {
   count: number;
   label: string;
   icon: typeof GitBranch;
-  loading?: boolean;
+  /** The read behind the count — "—" when it failed, a spinner while it is in flight. */
+  read?: CountRead;
 }) {
+  const state = countReadState({ read });
   return (
     <div
       className={cn(
         "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px]",
-        count > 0
+        state === "ready" && count > 0
           ? "bg-primary/10 text-primary"
           : "text-muted-foreground/60 border border-border",
       )}
       title={label}
     >
       <Icon className="h-3 w-3" />
-      {loading && count === 0 ? (
+      {state === "loading" ? (
         <Loader2 className="h-3 w-3 animate-spin" />
+      ) : read ? (
+        <UntrustedCount read={read} value={count} label={label} className="tabular-nums" />
       ) : (
         <span className="tabular-nums">{count}</span>
       )}

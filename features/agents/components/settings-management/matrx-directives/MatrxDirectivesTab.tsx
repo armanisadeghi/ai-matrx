@@ -160,6 +160,7 @@ export function MatrxDirectivesTab({ agentId }: MatrxDirectivesTabProps) {
       <div className="flex flex-col gap-1.5">
         <span className="text-xs font-semibold text-foreground">
           Actions this agent can perform
+          {/* read-gate-exempt: actions in this agent's own settings being edited here, shown only when there are some */}
           {actions.length ? ` (${actions.length})` : ""}
         </span>
         {actions.length === 0 ? (

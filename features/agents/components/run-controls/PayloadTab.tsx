@@ -336,6 +336,7 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
           {slotMatched.length > 0 && (
             <div className="mt-1">
               <div className="text-[10px] font-semibold text-muted-foreground/80 mb-0.5">
+                {/* read-gate-exempt: parts of the request payload assembled in this browser, not rows fetched from a read */}
                 Slot-matched ({slotMatched.length})
               </div>
               <div>
@@ -360,6 +361,7 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
           {adHoc.length > 0 && (
             <div className="mt-2">
               <div className="text-[10px] font-semibold text-muted-foreground/80 mb-0.5">
+                {/* read-gate-exempt: parts of the request payload assembled in this browser, not rows fetched from a read */}
                 Ad-hoc — no matching slot ({adHoc.length})
               </div>
               <div>
@@ -381,6 +383,7 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
           {declaredUnset.length > 0 && (
             <div className="mt-2">
               <div className="text-[10px] font-semibold text-muted-foreground/80 mb-0.5">
+                {/* read-gate-exempt: parts of the request payload assembled in this browser, not rows fetched from a read */}
                 Declared but unset ({declaredUnset.length}) — NOT sent
               </div>
               <div>
@@ -551,6 +554,7 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
               <div className="mt-2">
                 <div className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 mb-0.5">
                   tools_replace — overrides agent's saved set (
+                  {/* read-gate-exempt: parts of the request payload assembled in this browser, not rows fetched from a read */}
                   {toolsReplace.length})
                 </div>
                 <div className="flex flex-wrap gap-1">

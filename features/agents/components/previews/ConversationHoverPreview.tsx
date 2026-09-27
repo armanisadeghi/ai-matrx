@@ -69,6 +69,11 @@ export function ConversationPreviewContent({
     selectAgentName(state, conv?.agentId ?? ""),
   );
   const messageCount = useAppSelector(selectMessageCount(conversationId));
+  // The count is of messages this browser holds; before they are loaded it is
+  // not an answer (a preview of an unloaded conversation would say "0 msgs").
+  const hasLoadedMessages = useAppSelector(
+    (state) => state.messages.byConversationId[conversationId] != null,
+  );
   const [copied, setCopied] = useState(false);
 
   const handleCopyId = async () => {
@@ -120,9 +125,11 @@ export function ConversationPreviewContent({
         >
           {status}
         </span>
-        <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground tabular-nums">
-          {messageCount} msg{messageCount === 1 ? "" : "s"}
-        </span>
+        {hasLoadedMessages && (
+          <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground tabular-nums">
+            {messageCount} msg{messageCount === 1 ? "" : "s"}
+          </span>
+        )}
         {conv.isEphemeral && (
           <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
             ephemeral

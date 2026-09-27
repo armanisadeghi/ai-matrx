@@ -129,6 +129,7 @@ export function MemoryCostCard({
           />
           <CostStat
             label="Events"
+            // read-gate-exempt: summary is null until a read succeeds and then shows a dash; a later failure keeps the last good number under the error banner above
             value={
               summary?.event_count != null ? String(summary.event_count) : "—"
             }
@@ -202,6 +203,7 @@ export function MemoryCostCard({
                     >
                       <td className={cn("px-2 py-1 font-mono", MOBILE_TABLE_FROZEN_CELL)}>{key}</td>
                       <td className={cn("px-2 py-1 text-right font-mono", MOBILE_TABLE_CELL)}>
+                        {/* read-gate-exempt: a per-row figure the server returned; this row exists only when a read succeeded */}
                         {count ?? "—"}
                       </td>
                       <td className={cn("px-2 py-1 text-right font-mono text-foreground", MOBILE_TABLE_CELL)}>

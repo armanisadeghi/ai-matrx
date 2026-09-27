@@ -143,6 +143,7 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
                   Waiting messages
                 </span>
                 <span aria-label={`${waiting.length} waiting messages`}>
+                  {/* read-gate-exempt: messages queued in this browser for this conversation; the strip renders only when some exist */}
                   {waiting.length}
                 </span>
                 <Tooltip>

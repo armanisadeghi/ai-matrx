@@ -126,6 +126,7 @@ export function RequestStatsPanel({
         />
         <StatRow
           label="Tool types"
+          // read-gate-exempt: stats of a request this tab streamed and holds in memory; absent stats already show a dash
           value={
             toolStats?.by_tool ? Object.keys(toolStats.by_tool).length : "—"
           }

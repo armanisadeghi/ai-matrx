@@ -21,6 +21,8 @@
  * "real" to show. We read the agent definition directly here instead.
  */
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import { useEffect, useState } from "react";
 import {
   Search,
@@ -48,6 +50,7 @@ import {
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
 import {
+  selectAgentError,
   selectAgentTools,
   selectAgentCustomTools,
   selectAgentMcpServers,
@@ -113,6 +116,9 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
   );
   const autoToolsDisabled = useAppSelector((s) =>
     agentId ? selectAgentAutoToolsDisabled(s, agentId) : false,
+  );
+  const agentReadError = useAppSelector((s) =>
+    agentId ? selectAgentError(s, agentId) : null,
   );
   const agentReady = useAppSelector((s) =>
     agentId ? selectAgentReadyForCustomExecution(s, agentId) : false,
@@ -272,7 +278,11 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
             This agent&apos;s tools
           </span>
           <span className="text-[11px] tabular-nums text-muted-foreground/80">
-            {agentLoading ? "…" : agentToolCount}
+            <UntrustedCount
+              read={readOf({ isLoading: agentLoading, error: agentReadError })}
+              value={agentToolCount}
+              label="This agent's tools"
+            />
           </span>
           {agentId && (
             <span
@@ -296,7 +306,11 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
 
         {agentSectionOpen && (
           <div className="max-h-36 overflow-y-auto px-2.5 pb-1.5">
-            {agentLoading ? (
+            {agentReadError ? (
+              <p className="py-1 text-[11px] text-destructive">
+                Couldn&apos;t read this agent&apos;s tools: {agentReadError}
+              </p>
+            ) : agentLoading ? (
               <p className="py-1 text-[11px] text-muted-foreground">
                 Loading the agent&apos;s tools…
               </p>

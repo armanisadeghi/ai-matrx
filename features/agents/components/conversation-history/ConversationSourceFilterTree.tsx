@@ -558,6 +558,7 @@ export const ConversationSourceFilterTree: React.FC<
             Filter
             {appliedFilterCount > 0 && (
               <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold tabular-nums text-primary-foreground">
+                {/* read-gate-exempt: number of filters the person has switched on, not rows from the facets read */}
                 {appliedFilterCount}
               </span>
             )}
@@ -576,6 +577,7 @@ export const ConversationSourceFilterTree: React.FC<
             <ListFilter className="h-3.5 w-3.5" />
             {appliedFilterCount > 0 && (
               <span className="absolute -right-0.5 -top-0.5 inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-semibold tabular-nums text-primary-foreground">
+                {/* read-gate-exempt: number of filters the person has switched on, not rows from the facets read */}
                 {appliedFilterCount}
               </span>
             )}
@@ -712,6 +714,7 @@ export const ConversationSourceFilterTree: React.FC<
             to be able to walk back out of either one. */}
         <div className="flex items-center justify-between border-t border-border px-3 py-2">
           <span className="text-[10px] text-muted-foreground">
+            {/* read-gate-exempt: number of sources the person ticked in this picker, not rows from the facets read */}
             {activeCount === 0
               ? "No filter — showing everything"
               : `${activeCount} source${activeCount === 1 ? "" : "s"} selected`}

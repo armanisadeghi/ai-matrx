@@ -44,7 +44,11 @@ import type { ItemMenuSection } from "@/components/official/item/types";
 import { conversationEmailEntrances } from "./conversation-email-entrance";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { usePinnedMessageIds } from "@/features/agents/message-pins/pinned-messages-store";
+import {
+  usePinnedMessageIds,
+  usePinnedMessagesReadFailed,
+} from "@/features/agents/message-pins/pinned-messages-store";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import {
   CONVERSATION_TRANSFER_ROWS,
   type ConversationTransferRow,
@@ -94,6 +98,7 @@ export function ConversationPageMenu({
   const { pinnedOnly } = useConversationViewState(conversationId);
   const messages = useAppSelector(selectConversationMessages(conversationId));
   const pinnedIds = usePinnedMessageIds();
+  const pinsReadFailed = usePinnedMessagesReadFailed();
   const pinnedCount = messages.filter((m) => pinnedIds.has(m.id)).length;
   // Find takes the focus it asks for on open; the menu must not hand focus
   // back to its trigger over it.
@@ -119,9 +124,9 @@ export function ConversationPageMenu({
         label: "Pinned only",
         icon: Pin,
         iconClassName: "text-amber-500 dark:text-amber-400",
-        badge: String(pinnedCount),
+        badge: pinsReadFailed ? "—" : String(pinnedCount),
         checked: pinnedOnly,
-        hidden: pinnedCount === 0 && !pinnedOnly,
+        hidden: pinnedCount === 0 && !pinnedOnly && !pinsReadFailed,
         onCheckedChange: (next) => setConversationPinnedOnly(conversationId, next),
       },
     ],
@@ -213,7 +218,12 @@ export function ConversationPageMenu({
           className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md bg-amber-500/15 px-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-500/25 dark:text-amber-300"
         >
           <Pin className="h-3.5 w-3.5" aria-hidden="true" />
-          <span className="tabular-nums">{pinnedCount}</span>
+          <UntrustedCount
+            className="tabular-nums"
+            trustworthy={!pinsReadFailed}
+            label="Pinned messages"
+            value={pinnedCount}
+          />
           <X className="hidden h-3 w-3 opacity-70 sm:block" aria-hidden="true" />
         </button>
       )}

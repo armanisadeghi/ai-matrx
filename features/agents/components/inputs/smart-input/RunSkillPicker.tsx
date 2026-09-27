@@ -16,6 +16,8 @@
  *      Same state the Quickset ShapeChipsRow toggles — keep them consistent.
  */
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import { useEffect, useState } from "react";
 import {
   Search,
@@ -34,6 +36,7 @@ import { ProInput } from "@/components/official/ProInput";
 import { cn } from "@/lib/utils";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import {
+  selectAgentError,
   selectAgentSkillConfig,
   selectAgentReadyForCustomExecution,
 } from "@/features/agents/redux/agent-definition/selectors";
@@ -82,6 +85,9 @@ export function RunSkillPicker({
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
   const agentSkillConfig = useAppSelector((s) =>
     agentId ? selectAgentSkillConfig(s, agentId) : undefined,
+  );
+  const agentReadError = useAppSelector((s) =>
+    agentId ? selectAgentError(s, agentId) : null,
   );
   const agentReady = useAppSelector((s) =>
     agentId ? selectAgentReadyForCustomExecution(s, agentId) : false,
@@ -168,7 +174,11 @@ export function RunSkillPicker({
             This agent&apos;s skills
           </span>
           <span className="text-[11px] tabular-nums text-muted-foreground/80">
-            {agentLoading ? "…" : agentSkillCount}
+            <UntrustedCount
+              read={readOf({ isLoading: agentLoading, error: agentReadError })}
+              value={agentSkillCount}
+              label="This agent's skills"
+            />
           </span>
           {skillsDisabled && (
             <span
@@ -183,7 +193,11 @@ export function RunSkillPicker({
 
         {agentSectionOpen && (
           <div className="max-h-36 overflow-y-auto px-2.5 pb-1.5">
-            {agentLoading ? (
+            {agentReadError ? (
+              <p className="py-1 text-[11px] text-destructive">
+                Couldn&apos;t read this agent&apos;s skills: {agentReadError}
+              </p>
+            ) : agentLoading ? (
               <p className="py-1 text-[11px] text-muted-foreground">
                 Loading the agent&apos;s skills…
               </p>

@@ -356,6 +356,7 @@ export function RunConfigOverrides({
           {structured ? "Model parameter overrides" : w.heading}
         </span>
         <span className="text-xs text-foreground">
+          {/* read-gate-exempt: settings the person overrode in this run form, not rows fetched from a read */}
           Overrides: {overriddenCount}
         </span>
       </div>
