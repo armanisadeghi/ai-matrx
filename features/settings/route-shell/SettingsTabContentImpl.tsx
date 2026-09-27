@@ -171,7 +171,11 @@ export function SettingsTabContentImpl({ tabId, basePath }: Props) {
             activeTab={activeTab}
             treeNodes={treeNodes}
             onNavigate={navigate}
-            showBreadcrumb={Boolean(tabId)}
+            // The section is named once, by its own heading: the shell header
+            // already says "Settings" and the sidebar shows where it sits, so a
+            // breadcrumb row repeated the name a third time (page-pass
+            // 2026-09-27). The drawer/window hosts keep their breadcrumb.
+            showBreadcrumb={false}
             navigationPending={isNavigationPending}
             scrollOwner="shell"
           />

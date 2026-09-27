@@ -17,7 +17,11 @@ export function SettingsNavigationSearch({
   inputRef?: Ref<HTMLInputElement>;
 }) {
   return (
-    <div className="sticky top-0 z-10 my-1 bg-background py-0.5" role="search">
+    // A solid band with a rule under it: the sidebar itself is transparent
+    // over the textured shell, so a bare input let scrolled items show
+    // through around it (page-pass 2026-09-27).
+    <div className="sticky top-0 z-10 mb-1 border-b border-border/60 bg-textured pb-1.5 pt-1" role="search">
+      <div className="relative">
       <Search aria-hidden className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
       <input
         ref={inputRef}
@@ -29,6 +33,7 @@ export function SettingsNavigationSearch({
         className="h-8 w-full rounded-md border border-border bg-background px-7 text-[0.8125rem] text-foreground shadow-sm outline-none focus:border-ring focus:outline-2 focus:outline-ring/20 focus:outline-offset-1"
       />
       {value ? <button type="button" className="absolute right-1.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" onClick={() => onValueChange("")} aria-label="Clear search"><X aria-hidden /></button> : null}
+      </div>
     </div>
   );
 }
