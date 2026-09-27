@@ -38,6 +38,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createTask } from "@/features/tasks/services/taskService";
+import { getAssociationsStore } from "@/features/scopes/host/associationsStore";
 import { parseTaskDraft } from "../../agent-context/crmRecordSurfaceWrite";
 import type { DealRow } from "../../deals/types";
 import type { ContactCandidateView } from "../../enrichment/service";
@@ -116,7 +117,7 @@ export function PartyRecordPage({ partyId }: Props) {
   const { categories: partyRoles } = useCategories({
     dimension: CATEGORY_DIMENSIONS.partyRole,
   });
-  const { edges: partyEdges, add: addPartyEdge } = useAssociations({
+  const { edges: partyEdges } = useAssociations({
     type: "party",
     id: partyId,
   });
@@ -206,11 +207,12 @@ export function PartyRecordPage({ partyId }: Props) {
       lifecycleStageOptions: lifecycleStages.map((c) => ({ id: c.id, name: c.name })),
       ratingOptions: ratings.map((c) => ({ id: c.id, name: c.name })),
       roleOptions: partyRoles.map((c) => ({ id: c.id, name: c.name })),
+      // What the Tasks / Files tiles count: resources filed INTO this record.
       attachedTaskIds: partyEdges
-        .filter((edge) => edge.otherType === "task")
+        .filter((edge) => edge.direction === "incoming" && edge.otherType === "task")
         .map((edge) => edge.otherId),
       attachedFileIds: partyEdges
-        .filter((edge) => edge.otherType === "file")
+        .filter((edge) => edge.direction === "incoming" && edge.otherType === "file")
         .map((edge) => edge.otherId),
     });
 
@@ -237,9 +239,13 @@ export function PartyRecordPage({ partyId }: Props) {
         source_label: party.display_name,
       });
       if (!task) throw new Error("The task could not be created.");
-      const linked = await addPartyEdge({
-        targetType: "task",
-        targetId: task.id,
+      // Filed the way the Tasks tile files one: task → party (the record is
+      // the container), so the tile counts it.
+      const linked = await getAssociationsStore().add({
+        sourceType: "task",
+        sourceId: task.id,
+        targetType: "party",
+        targetId: party.id,
         orgId: party.organization_id,
       });
       if (!linked.ok) {
