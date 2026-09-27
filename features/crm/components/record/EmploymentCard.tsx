@@ -219,7 +219,11 @@ function EmployerPicker({
           <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0" align="start">
+      <PopoverContent
+        /* sizing: fixed — a searchable list; a content-sized box would reflow on every keystroke */
+        className="w-72 p-0"
+        align="start"
+      >
         <Command shouldFilter={false}>
           <CommandInput
             value={search}

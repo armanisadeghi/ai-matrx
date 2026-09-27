@@ -80,9 +80,12 @@ export function OrganizationPickerPopover({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      {/* Fixed width: the picker searches as you type, and a content-sized
-          box would reflow on every keystroke. */}
-      <PopoverContent sizing="fixed" align={align} sideOffset={8} className="w-80 p-1">
+      <PopoverContent
+        /* sizing: fixed — the picker searches as you type, and a content-sized box would reflow on every keystroke */
+        align={align}
+        sideOffset={8}
+        className="w-80 p-1"
+      >
         <OrganizationPickerPanel />
       </PopoverContent>
     </Popover>

@@ -8,6 +8,9 @@
 
 ## Purpose
 
+A panel docked to an edge that slides open and closed (a side chat, a nav, a properties panel) is NOT this kit —
+it is `components/official/side-panel` (`DockedSidePanel`); this kit's collapse is a layout change, not a slide.
+
 The shared split-pane kit on top of `react-resizable-panels` v4: cookie-persisted groups plus header toggles (in `<PageHeader>`, a different subtree) that collapse and reopen panels. Every resizable `(core)` shell uses it. Library rules: **invoke the `react-resizable-panels-v4` skill.**
 
 ---
