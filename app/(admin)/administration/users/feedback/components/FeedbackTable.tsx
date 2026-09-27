@@ -56,7 +56,6 @@ import {
 import { getFeedbackScreenshotRefs } from "@/features/feedback/screenshot-refs";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import type {
   AdminDecision,
   FeedbackAssignableAdmin,
@@ -755,15 +754,6 @@ export default function FeedbackTable() {
   );
   return (
     <>
-      {failed ? (
-        <StaleDataNotice
-          hasData={rows.length > 0}
-          what="feedback"
-          onRetry={() => void load()}
-          retrying={loading}
-          className="mb-3"
-        />
-      ) : null}
       {referenceError ? (
         <div className="mb-3 flex items-center justify-between gap-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
           <span>
@@ -949,18 +939,11 @@ export default function FeedbackTable() {
             const row = rows.find((item) => item.id === id);
             if (row) open(row);
           }}
-          emptyState={
-            failed
-              ? {
-                  title: "Couldn't load feedback",
-                  description: "Retry before treating this as an empty queue.",
-                }
-              : {
-                  title: "No feedback matches this view",
-                  description:
-                    "Clear filters or select another pipeline stage.",
-                }
-          }
+          read={{ status: failed ? "error" : loading ? "loading" : "ready", error: failed, onRetry: () => void load(), what: "feedback" }}
+          emptyState={{
+            title: "No feedback matches this view",
+            description: "Clear filters or select another pipeline stage.",
+          }}
           rowActions={(r) => (
             <Button
               aria-label={`Open feedback ${r.id}`}

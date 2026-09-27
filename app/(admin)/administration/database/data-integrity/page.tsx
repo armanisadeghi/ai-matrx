@@ -667,6 +667,8 @@ export default function DataIntegrityPage() {
             isLoading={!checks && !error}
             isFetching={runningAll}
             pageSize={50}
+            // The checks read, not a run's failure (runs share `error`): once the list is in, it stands.
+            read={{ status: checks ? "ready" : error ? "error" : "loading", error, onRetry: () => void loadChecks(), what: "integrity checks" }}
             emptyState={{
               title: "No integrity checks registered",
               description: "Checks live in lib/integrity.",

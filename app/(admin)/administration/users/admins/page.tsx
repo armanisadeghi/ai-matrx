@@ -46,7 +46,6 @@ import {
   accountHrefFor,
 } from "@/features/admin/users/components/AdminUserRef";
 import { DeepLinkMissNotice } from "@/components/official/deep-link/DeepLinkMissNotice";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { useDeepLinkParam } from "@/components/official/deep-link/useDeepLinkParam";
 import type { Database } from "@/types/database.types";
 import { UserSearchField } from "@/features/user-search/UserSearchField";
@@ -255,12 +254,8 @@ function AdminsManagementPageContent() {
   // The failed read owns its own recovery — without this the only way out of a
   // stale roster is reloading the page, which is not a fix we should make a
   // super-admin discover on their own.
-  const [retrying, setRetrying] = useState(false);
   const retryLoad = useCallback(() => {
-    setRetrying(true);
-    Promise.all([fetchAdmins(), fetchAudit()]).finally(() =>
-      setRetrying(false),
-    );
+    void Promise.all([fetchAdmins(), fetchAudit()]);
   }, [fetchAdmins, fetchAudit]);
 
   async function handleLookup() {
@@ -620,16 +615,6 @@ function AdminsManagementPageContent() {
             Current admins{loadFailed ? "" : ` (${admins.length})`}
           </h2>
 
-          {/* A toast fades; the stale roster does not. Without this the last
-              successful read keeps rendering as though it were current. */}
-          {loadFailed && (
-            <StaleDataNotice
-              hasData={admins.length > 0}
-              what="the admin roster"
-              onRetry={retryLoad}
-              retrying={retrying}
-            />
-          )}
           {/* `AdminUserRef` advertises this route as the "Admin level" door, so
               it is reached constantly for people who are NOT admins. Seeding the
               search then leaves an empty table and says nothing — the link looks
@@ -695,16 +680,11 @@ function AdminsManagementPageContent() {
               // Must not contradict the notice above: with a missed deep link
               // the table is empty because that person is not an admin, not
               // because there are no admins at all.
+              // A failed read: the table says so (failure when empty, stale notice
+              // over kept rows) — "No admins." is never the answer (RC-B12 r13).
+              read={{ status: loadFailed ? "error" : loading ? "loading" : "ready", error: loadFailed, onRetry: retryLoad, what: "the admin roster" }}
               emptyState={
-                loadFailed
-                  ? {
-                      // "No admins." after a failed read is a lie about the
-                      // database — and on THIS table an alarming one.
-                      title: "Roster not loaded",
-                      description:
-                        "The read failed, so this list is empty for that reason alone. Use Try again above.",
-                    }
-                  : focusMissed
+                focusMissed
                     ? {
                         title: "That person isn't an admin",
                         description:
@@ -793,14 +773,6 @@ function AdminsManagementPageContent() {
               via direct SQL.
             </p>
           </div>
-          {auditFailed && (
-            <StaleDataNotice
-              hasData={audit.length > 0}
-              what="the audit log"
-              onRetry={retryLoad}
-              retrying={retrying}
-            />
-          )}
           <div className="h-[440px]">
             {/* Read-only navigation only — same protected-resource rule as
                 the admins table above; the audit log is immutable by design
@@ -863,18 +835,10 @@ function AdminsManagementPageContent() {
               getRowId={(e) => e.id}
               isLoading={loading}
               pageSize={25}
-              emptyState={
-                auditFailed
-                  ? {
-                      // "No audit entries yet." on an unread log is the most
-                      // dangerous empty state on this page: it reads as proof
-                      // that nothing happened.
-                      title: "Audit log not loaded",
-                      description:
-                        "The read failed. This is not evidence that no admin changes were made — use Try again above.",
-                    }
-                  : { title: "No audit entries yet." }
-              }
+              // "No audit entries yet." on an unread log reads as proof nothing
+              // happened: the table shows the failure instead (RC-B12 r13).
+              read={{ status: auditFailed ? "error" : loading ? "loading" : "ready", error: auditFailed, onRetry: retryLoad, what: "the audit log" }}
+              emptyState={{ title: "No audit entries yet." }}
               toolbar={{
                 search: true,
                 searchPlaceholder: "Search actor, action, target…",

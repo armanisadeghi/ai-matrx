@@ -41,6 +41,7 @@ import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 /**
  * The href a uuid CELL in this admin console may carry for `(token, id)`.
@@ -354,11 +355,10 @@ export default function AdminEventsPage() {
           isFetching={fetching}
           pageSize={50}
           coverage={{ cap: 200, answeredBy: "client", noun: "event" }}
+          read={readOf({ loading, error }, { what: "events", onRetry: () => void load() })}
           emptyState={{
-            title: error ? "Events unavailable" : "No events yet",
-            description: error
-              ? "The activity source failed. Refresh to retry."
-              : "Trigger one (finish a job, or send a webhook test) and Refresh.",
+            title: "No events yet",
+            description: "Trigger one (finish a job, or send a webhook test) and Refresh.",
           }}
           toolbar={{
             search: true,

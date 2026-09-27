@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef, MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table/types";
 import type { AiTask } from "@/features/ai-runs/types/aiRunTypes";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const PAGE_LOCATION = "AI Matrx Admin — AI Tasks (/administration/ai/ai-tasks)";
 
@@ -109,9 +110,8 @@ export default function AiTasksPage() {
                 detail={{ enabled: false }}
                 window={{ enabled: false }}
                 coverage={{ total, cap: 50, answeredBy: "client", noun: "task" }}
-                emptyState={error
-                  ? { title: "Tasks unavailable", description: "The task source failed. Refresh to retry." }
-                  : { title: "No tasks found", description: "There are no AI tasks to display." }}
+                read={readOf({ isLoading, error }, { what: "AI tasks", onRetry: () => void refresh() })}
+                emptyState={{ title: "No tasks found", description: "There are no AI tasks to display." }}
                 toolbar={{ title: "AI tasks", search: false, refresh: { onRefresh: refresh } }}
               />
           </>

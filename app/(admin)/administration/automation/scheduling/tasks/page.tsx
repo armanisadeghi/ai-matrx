@@ -46,6 +46,7 @@ import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-sc
 import { useScheduledTaskMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { readOf } from "@/components/read-state/ReadGate";
 
 function triggerText(r: AdminTaskRow): string {
   return r.trigger
@@ -277,6 +278,7 @@ export default function AdminTasksPage() {
           isLoading={loading}
           isFetching={fetching}
           pageSize={50}
+          read={readOf({ loading, error: loadError }, { what: "scheduled tasks", onRetry: () => void load() })}
           emptyState={{ title: "No tasks match" }}
           toolbar={{
             search: true,

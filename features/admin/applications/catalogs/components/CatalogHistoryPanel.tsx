@@ -65,6 +65,8 @@ export function CatalogHistoryPanel({
   const [loaded, setLoaded] = useState<{
     key: string;
     entries: CatalogEntryHistoryRow[];
+    /** The read failed: `entries` is empty because of it, not an answer (RC-B12 r13). */
+    error?: unknown;
   } | null>(null);
   const [restoreTarget, setRestoreTarget] =
     useState<CatalogEntryHistoryRow | null>(null);
@@ -91,7 +93,7 @@ export function CatalogHistoryPanel({
           description: error.message,
           variant: "destructive",
         });
-        setLoaded({ key: loadKey, entries: [] });
+        setLoaded({ key: loadKey, entries: [], error });
         return;
       }
       setLoaded({ key: loadKey, entries: data ?? [] });
@@ -102,6 +104,7 @@ export function CatalogHistoryPanel({
   }, [app, kind, entryKey, loadKey, toast]);
 
   const entries = loaded && loaded.key === loadKey ? loaded.entries : null;
+  const historyError = loaded && loaded.key === loadKey ? loaded.error : undefined;
 
   const currentJson = rowSnapshotJson(currentRow);
 
@@ -205,6 +208,8 @@ export function CatalogHistoryPanel({
       <p className="text-xs text-muted-foreground">
         {entries === null
           ? "Loading version history…"
+          : historyError
+            ? "Version history could not be read."
           : `${entries.length} snapshot${entries.length === 1 ? "" : "s"} — open a row to diff it against the CURRENT live entry.`}
       </p>
 
@@ -261,6 +266,7 @@ export function CatalogHistoryPanel({
         columns={columns}
         getRowId={(row) => String(row.id)}
         isLoading={entries === null}
+        read={{ status: entries === null ? "loading" : historyError ? "error" : "ready", error: historyError, what: "version history" }}
         pageSize={25}
         emptyState={{
           icon: <History className="h-5 w-5" />,

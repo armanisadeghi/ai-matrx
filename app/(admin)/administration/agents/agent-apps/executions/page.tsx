@@ -56,6 +56,7 @@ import {
   agentAppExecutionsHref,
 } from "@/features/agent-apps/components/AgentAppRef";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const LIMIT = 500;
 /** Both source calls order newest first and request only the newest 500; no total receipt exists. */
@@ -683,11 +684,8 @@ function ExecutionsTable({
             }}
             detail={{ enabled: false }}
             window={{ enabled: false }}
-            emptyState={{
-              title: error
-                ? "Could not load executions."
-                : "No executions match the current view.",
-            }}
+            read={readOf({ loading, error }, { what: "executions", onRetry: () => void load() })}
+            emptyState={{ title: "No executions match the current view." }}
             onViewChange={setViewRows}
           />
         </div>
@@ -898,11 +896,8 @@ function ErrorsTable({
             }}
             detail={{ enabled: false }}
             window={{ enabled: false }}
-            emptyState={{
-              title: error
-                ? "Could not load errors."
-                : "No errors match the current view.",
-            }}
+            read={readOf({ loading, error }, { what: "errors", onRetry: () => void load() })}
+            emptyState={{ title: "No errors match the current view." }}
             onViewChange={setViewRows}
             onRowOpen={open}
             rowActions={(row) => (

@@ -52,6 +52,7 @@ import {
   createAdminAgentAppsScope,
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 export const ANALYTICS_COVERAGE = { noun: "app", answeredBy: "client" } as const;
 
@@ -533,7 +534,8 @@ export default function AgentAppsAnalyticsPage() {
               detail={{ enabled: false }}
               window={{ enabled: false }}
               copy={false}
-              emptyState={{ title: loadError ? "Could not load app analytics." : "No app analytics match the current view." }}
+              read={readOf({ loading, error: loadError }, { what: "app analytics", onRetry: () => void loadData() })}
+              emptyState={{ title: "No app analytics match the current view." }}
               onViewChange={setViewApps}
               rowActions={(app) => (
                 <CopyButtons
