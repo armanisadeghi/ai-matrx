@@ -60,6 +60,7 @@ export function buildEducationClassesScope(input: {
     ...(ownedLoaded
       ? {
           owned_classes: input.classes.map(toClassScopeEntry),
+          archived_classes: input.archived.map(toClassScopeEntry),
           owned_class_count: input.classes.length,
           archived_class_count: input.archived.length,
         }
