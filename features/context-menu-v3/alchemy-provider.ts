@@ -21,6 +21,7 @@
 //   • Headings are only names the classic menu already shows ("History",
 //     a surface section's own label, the surface's display label).
 
+import { fieldPreview } from "./utils/field-menu-header";
 import type { Action, ActionCategory, ClickTarget, Eligibility } from "@ai-matrx/alchemy/actions";
 import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
 import { stripTurnTrust } from "@/features/education/tutor/turnTrust";
@@ -305,6 +306,34 @@ export function modelRevision(model: MenuModel): string {
 export function menuHeaderContent(actionText: { source: string; text: string }): string | null {
   if (actionText.source === "none") return null;
   return headerPreview(stripTurnTrust(actionText.text));
+}
+
+/**
+ * The header for a menu opened in a FIELD with no selection: the field's name
+ * and, when it helps, a short plain preview (`utils/field-menu-header.ts`).
+ * Anything else keeps `menuHeaderContent`.
+ */
+export function menuHeader(
+  actionText: { source: string; text: string },
+  fieldLabel: string | null,
+  /** The chat message the menu opened on, when it did (its role and when it was written). */
+  message?: { role: string; createdAt?: string | null } | null,
+): { content: string | null; contentLabel: string | null } {
+  // A MESSAGE is named, never dumped: "AI answer", not "Content: <the whole answer>"
+  // (page-pass 2026-09-27, agent-app Run History). A selection still shows itself.
+  if (message && actionText.source !== "selection" && actionText.source !== "none") {
+    const who = message.role === "user" ? "Your message" : message.role === "assistant" ? "AI answer" : "Message";
+    const at = message.createdAt ? new Date(message.createdAt) : null;
+    const when =
+      at && !Number.isNaN(at.getTime())
+        ? ` · ${at.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`
+        : "";
+    return { content: "", contentLabel: `${who}${when}` };
+  }
+  if (fieldLabel && actionText.source !== "selection") {
+    return { content: fieldPreview(headerPreview(stripTurnTrust(actionText.text))), contentLabel: fieldLabel };
+  }
+  return { content: menuHeaderContent(actionText), contentLabel: null };
 }
 
 /**

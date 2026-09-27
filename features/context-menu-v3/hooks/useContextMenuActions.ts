@@ -18,6 +18,7 @@
 // (registered by the shell for editable surfaces), so any agent/shortcut
 // launched from the menu can stream `widget_text_*` edits into the surface.
 
+import { fieldLabelOf } from "../utils/field-menu-header";
 import { actionsAlreadyHere } from "../utils/already-here";
 import { useEffect, useMemo } from "react";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
@@ -235,6 +236,8 @@ export interface ContextMenuActions {
   // Resolved model
   scope: ApplicationScope;
   actionText: ResolvedActionText;
+  /** The name of the field the menu opened in (its label), or null. */
+  fieldLabel: string | null;
   /** JSON verbs for a JSON-shaped selection/content. `null` = not JSON. */
   jsonSection: JsonMenuSection | null;
   resolvedPlacementMode: Record<PlacementKey, PlacementVisibility>;
@@ -1230,6 +1233,7 @@ export function useContextMenuActions(
   return {
     scope,
     actionText,
+    fieldLabel: isEditable && selectionRange?.type === "editable" ? fieldLabelOf(selectionRange.element) : null,
     jsonSection,
     resolvedPlacementMode,
     categoryGroups,

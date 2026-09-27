@@ -14,6 +14,7 @@
 // composite, so the rich-document provider contributes the registry rows from
 // the same target — the bar, its ⋯ and this menu show one set of actions.
 
+import type { RootState } from "@/lib/redux/store";
 import * as React from "react";
 import { createClickTarget } from "@ai-matrx/alchemy/actions";
 import { useAlchemyActions } from "@ai-matrx/alchemy/react/host";
@@ -27,7 +28,7 @@ import {
 } from "@/features/rich-document/actions/provider";
 import { useContextMenuActions } from "../hooks/useContextMenuActions";
 import { buildMenuModel } from "../model/menu-model";
-import { contextMenuActionsFromModel, menuHeaderContent, modelRevision } from "../alchemy-provider";
+import { contextMenuActionsFromModel, menuHeader, modelRevision } from "../alchemy-provider";
 import type { MenuContentProps } from "../types";
 
 export type AlchemyMenuMode = "context" | "sheet" | "palette";
@@ -124,8 +125,17 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
   // Re-resolve when what the menu would draw moves (agents finish loading, a
   // toggle flips) — the target object itself stays one per open.
   const revision = drawn;
-  const content = menuHeaderContent(m.actionText);
-  const engine = { revision, content };
+  // In a field the header names the field ("Body"), never its raw text.
+  // The message the menu opened on: its role and time, from the transcript store.
+  const chatMessage = (() => {
+    const src = m.richDocCtx.source;
+    if (src.type !== "chat-message") return null;
+    const record = (m.richDocCtx.getState() as RootState).messages?.byConversationId?.[src.conversationId]?.byId?.[src.messageId];
+    const role = record?.role ?? (m.richDocCtx.extensions?.type === "chat-message" ? m.richDocCtx.extensions.role : null);
+    return role ? { role: String(role), createdAt: record?.createdAt ?? null } : null;
+  })();
+  const { content, contentLabel } = menuHeader(m.actionText, m.fieldLabel, chatMessage);
+  const engine = { revision, content, contentLabel };
 
   if (mode === "sheet") {
     return <ActionSheet {...engine} target={target} open={open} onOpenChange={onOpenChange} />;
