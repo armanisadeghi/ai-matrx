@@ -159,6 +159,33 @@ export function settleOrganizationSelection(
   pending = null;
   prefetchedOrganizationsForPending = null;
   current?.settle(organizationId);
+  if (current) for (const listener of settledListeners) listener(organizationId);
+}
+
+// Whoever shows the picker hears every settle — including one made by the
+// layer that ASKED (a window closing mid-question cancels its own request), so
+// the picker never outlives the thing it was asked for (page-pass 2026-09-27:
+// Feedback window → Tab Capture → Cancel left "Which workspace?" open over
+// nothing).
+const settledListeners = new Set<(organizationId: string | null) => void>();
+
+/** Subscribe to settles; returns the unsubscribe. */
+export function onOrganizationSelectionSettled(
+  listener: (organizationId: string | null) => void,
+): () => void {
+  settledListeners.add(listener);
+  return () => {
+    settledListeners.delete(listener);
+  };
+}
+
+/**
+ * Withdraw the question the caller asked, if it is still open — for a layer
+ * that closes while its own request waits. Settles as cancelled (the caller's
+ * `OrganizationSelectionCancelled` path: nothing happened, no error).
+ */
+export function withdrawOrganizationRequest(): void {
+  if (pending) settleOrganizationSelection(null);
 }
 
 function requestOrganizationSelection(

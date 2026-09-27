@@ -45,6 +45,7 @@ import {
   hasPendingOrganizationRequest,
   registerOrganizationPicker,
   settleOrganizationSelection,
+  onOrganizationSelectionSettled,
 } from "@/lib/organization/organization-gate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -147,8 +148,14 @@ export function OrganizationGateDialog() {
       if (!resumeSelectedOrganization()) setOpen(true);
     });
     const unsubscribe = store.subscribe(resumeSelectedOrganization);
+    // A settle from anywhere else (the asking window closed) closes the picker.
+    const unsubscribeSettled = onOrganizationSelectionSettled(() => {
+      setOpen(false);
+      setChosenId(null);
+    });
     return () => {
       unsubscribe();
+      unsubscribeSettled();
       registerOrganizationPicker(null);
       settleOrganizationSelection(null);
     };
