@@ -167,7 +167,9 @@ export function EntityModeHeader({
 
   const label = (
     <span className="flex min-w-0 max-w-[55vw] items-center gap-1.5 sm:max-w-[220px]">
-      <span className="truncate text-sm font-medium text-foreground">
+      {/* A floor under the name: on a phone the shell's right-side icons
+          squeezed it to nothing ("Fa…", then blank beside its status). */}
+      <span className="min-w-12 truncate text-sm font-medium text-foreground">
         {entityLabel}
       </span>
       {entityStatus}
