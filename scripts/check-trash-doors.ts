@@ -28,10 +28,12 @@ import { loadCloneDbEnv, loadCloneRef } from "./lib/migration-target";
 import type pg from "pg";
 import {
   isTrashListingDoorName,
+  judgeTrashCandidate,
   judgeTrashCoverage,
-  judgeTrashDoorBody,
   STORE_TRASH_KINDS,
+  trashRole,
   type ArchivedThing,
+  type TrashCandidate,
 } from "./lib/trash-doors";
 
 /**
@@ -160,21 +162,40 @@ async function main(): Promise<number> {
   }
   const db = await connectDirect(env, "check:trash-doors");
   try {
-    const { rows } = await db.query<{ door: string; body: string }>(
-      `select n.nspname || '.' || p.proname as door, pg_get_functiondef(p.oid) as body
+    // Door or helper is the REGISTRY's word (platform.client_callable_door, exact signature) plus
+    // the catalogue's (who may EXECUTE it, and whether it can return a list) — trashRole in
+    // scripts/lib/trash-doors.ts. The name only picks the candidates.
+    const { rows } = await db.query<{
+      door: string; body: string; declared: "client" | "non_client" | null; client_exec: boolean; returns_rows: boolean;
+    }>(
+      `select n.nspname || '.' || p.proname as door, pg_get_functiondef(p.oid) as body,
+              (select case when count(*) = 0 then null when bool_or(d.signed_in_callers or d.anonymous_callers) then 'client' else 'non_client' end
+                 from platform.client_callable_door d
+                where d.schema_name = n.nspname and d.function_name = p.proname
+                  and d.identity_argtypes = platform.door_argtypes(p.proargtypes)) as declared,
+              (has_function_privilege('authenticated', p.oid, 'EXECUTE')
+                 or has_function_privilege('anon', p.oid, 'EXECUTE')) as client_exec,
+              (p.proretset or p.prorettype in ('json'::regtype, 'jsonb'::regtype)
+                 or exists (select 1 from pg_type t where t.oid = p.prorettype and t.typcategory = 'A')) as returns_rows
          from pg_proc p join pg_namespace n on n.oid = p.pronamespace
         where p.proname ~ '(^|_)trash(_|$)' and p.prokind = 'f'
           and n.nspname not in ('pg_catalog', 'information_schema')
         order by 1`,
     );
-    const doors = rows.filter((r) => isTrashListingDoorName(r.door));
-    const findings = doors.flatMap(judgeTrashDoorBody);
-    for (const d of doors) {
-      const mine = findings.filter((f) => f.door === d.door);
-      console.log(`${mine.length ? "FAIL" : " ok "}  ${d.door}`);
+    const candidates: TrashCandidate[] = rows
+      .filter((r) => isTrashListingDoorName(r.door))
+      .map((r) => ({ door: r.door, body: r.body, declared: r.declared, clientExecutable: r.client_exec, returnsRows: r.returns_rows }));
+    const findings = candidates.flatMap(judgeTrashCandidate);
+    const roleWord = { door: "door", internal: "internal (registry: non-client lane)", helper: "helper (a trigger or one value, not a list)" } as const;
+    for (const c of candidates) {
+      const mine = findings.filter((f) => f.door === c.door);
+      const role = trashRole(c);
+      console.log(`${mine.length ? "FAIL" : " ok "}  ${c.door}${role === "door" ? "" : `  — ${roleWord[role]}`}`);
       for (const f of mine) console.log(`        ${f.problem}`);
     }
-    console.log(`\n${doors.length} Trash listing door(s), ${findings.length} finding(s).`);
+    const doorCount = candidates.filter((c) => trashRole(c) === "door").length;
+    console.log(`\n${candidates.length} Trash-named function(s): ${doorCount} listing door(s), ` +
+      `${candidates.length - doorCount} internal or helper; ${findings.length} finding(s).`);
 
     const things = await coverage(db);
     const gaps = judgeTrashCoverage(things);

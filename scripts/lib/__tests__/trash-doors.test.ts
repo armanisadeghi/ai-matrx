@@ -9,11 +9,13 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   isTrashListingDoorName,
+  judgeTrashCandidate,
   judgeTrashCoverage,
   judgeTrashDoorBody,
   judgeTrashTimings,
   STORE_TRASH_KINDS,
   TRASH_COVERAGE_EXEMPT,
+  trashRole,
 } from "../trash-doors";
 
 const ROOT = resolve(__dirname, "..", "..", "..");
@@ -210,5 +212,43 @@ describe("Trash coverage (judgeTrashCoverage)", () => {
     });
     for (const k of Object.keys(STORE_TRASH_KINDS)) expect(TRASH_COVERAGE_EXEMPT[`store:${k}`]).toBeUndefined();
     for (const why of Object.values(TRASH_COVERAGE_EXEMPT)) expect(why.length).toBeGreaterThan(40);
+  });
+});
+
+/**
+ * Lane GUARDS-GREEN (2026-09-27) — door or helper is the REGISTRY's word, not the name's. VERIFIER-27:
+ * five `platform` functions failed as personal Trash doors on their names alone. RED: the census as
+ * it was (undeclared, client-executable, returns rows, never decides the caller). GREEN: the census
+ * the campaign file installs; the scalar helpers; a registry non-client lane.
+ */
+describe("door or helper, by the door registry (lane GUARDS-GREEN)", () => {
+  const CENSUS_UP = readFileSync(resolve(ROOT, "migrations/campaign/guardsgreen_the_annotation_title_census_decides_the_caller.sql"), "utf8");
+  const CENSUS_DOWN = readFileSync(resolve(ROOT, "migrations/inverse/guardsgreen_the_annotation_title_census_decides_the_caller_down.sql"), "utf8");
+  const census = { door: "platform.trash_annotation_title_census", declared: null, clientExecutable: true, returnsRows: true } as const;
+
+  test("RED: the census before the fix is an undeclared door that never decides the caller", () => {
+    const found = judgeTrashCandidate({ ...census, body: body(CENSUS_DOWN, census.door) });
+    expect(found.map((f) => f.problem)).toEqual([expect.stringMatching(/never reads auth\.uid\(\)/)]);
+  });
+  test("GREEN: the census after the fix decides the caller in its own body", () => {
+    expect(judgeTrashCandidate({ ...census, body: body(CENSUS_UP, census.door) })).toEqual([]);
+  });
+  test("a scalar helper is a helper; the same body returning rows to a client is a door again", () => {
+    const title = "CREATE OR REPLACE FUNCTION platform.comment_trash_title(c platform.comments)\n RETURNS text\n LANGUAGE sql\nAS $f$ select c.body $f$";
+    const helper = { door: "platform.comment_trash_title", body: title, declared: null, clientExecutable: true, returnsRows: false } as const;
+    expect(trashRole(helper)).toBe("helper");
+    expect(judgeTrashCandidate(helper)).toEqual([]);
+    expect(trashRole({ ...helper, returnsRows: true })).toBe("door");
+    expect(judgeTrashCandidate({ ...helper, returnsRows: true }).length).toBe(1);
+  });
+  test("a registry client door is a door whatever it returns; a non-client lane is internal", () => {
+    const b = "CREATE OR REPLACE FUNCTION public.trash_hides(k text)\n RETURNS boolean\n LANGUAGE sql\nAS $f$ select true $f$";
+    expect(judgeTrashCandidate({ door: "public.trash_hides", body: b, declared: "client", clientExecutable: true, returnsRows: false }).length).toBe(1);
+    expect(trashRole({ door: "public._trash_kind_rows", declared: "non_client", clientExecutable: false, returnsRows: true })).toBe("internal");
+    expect(judgeTrashCandidate({ door: "public._trash_kind_rows", body: b, declared: "non_client", clientExecutable: false, returnsRows: true })).toEqual([]);
+  });
+  test("a helper still fails the per-row rules — a helper is never where a per-row walk hides", () => {
+    const walk = "CREATE OR REPLACE FUNCTION platform.trash_hides(k text)\n RETURNS boolean\n LANGUAGE sql\nAS $f$ select iam.has_access(k) $f$";
+    expect(judgeTrashCandidate({ door: "platform.trash_hides", body: walk, declared: null, clientExecutable: true, returnsRows: false }).length).toBe(1);
   });
 });

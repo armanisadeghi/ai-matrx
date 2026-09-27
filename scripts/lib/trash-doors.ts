@@ -33,6 +33,73 @@ export function isTrashListingDoorName(name: string): boolean {
   return true;
 }
 
+/**
+ * DOOR OR HELPER — DECIDED BY THE DOOR REGISTRY, NOT BY THE NAME (lane GUARDS-GREEN, 2026-09-27).
+ *
+ * VERIFIER-27 found five `platform` functions judged as personal Trash doors because their names
+ * carry `trash`: `comment_trash_title`, `passage_link_trash_title`, `trash_hides`,
+ * `trash_is_owner_only` and `trash_annotation_title_census`. A name says what a function is ABOUT;
+ * only the registry (`platform.client_callable_door`) and the catalogue say whether a client can
+ * open it to LIST anything. So, of the functions the name selects:
+ *
+ *   - DECLARED A CLIENT DOOR in the registry (signed_in_callers or anonymous_callers): a door. Every
+ *     rule applies, auth.uid() included.
+ *   - DECLARED A NON-CLIENT LANE in the registry (both flags false, `non_client_lane` says who calls
+ *     it — `public._trash_kind_rows` and its siblings): an internal helper its declared doors call
+ *     after deciding the person. The per-row rules still apply; the auth.uid() rule does not.
+ *   - UNDECLARED, a client can EXECUTE it, and it RETURNS ROWS (SETOF / TABLE, or json/jsonb/array
+ *     that can carry a list): an undeclared door. Every rule applies — this is where
+ *     `trash_annotation_title_census` sits, and why it must decide the caller in its own body.
+ *   - UNDECLARED and it returns ONE SCALAR (text, boolean, …), or no client can execute it: a helper.
+ *     A scalar answers one question about the row or values it is handed; it cannot list anybody's
+ *     Trash. The four helpers above are here: the two titles are called by `public._trash_kind_rows`
+ *     (and the census), `trash_hides` / `trash_is_owner_only` by RLS policies and `iam` read paths,
+ *     which is why they keep the caller's EXECUTE and cannot carry a non-client registry row (the
+ *     registry holds `signed_in_callers` against the live grant, check-impl-doors D16a).
+ *
+ * The per-row rules (has_access, my_orgs, organization grants) are judged on every candidate, door
+ * or helper, so a helper can never be the place a per-row walk hides.
+ */
+export type RegistryDeclaration = "client" | "non_client" | null;
+
+export interface TrashCandidate {
+  door: string;
+  body: string;
+  /** What `platform.client_callable_door` declares for this exact signature (null: no row). */
+  declared: RegistryDeclaration;
+  /** `authenticated` or `anon` holds EXECUTE. */
+  clientExecutable: boolean;
+  /** SETOF / TABLE, or a json/jsonb/array result that can carry a list. */
+  returnsRows: boolean;
+}
+
+export type TrashRole = "door" | "internal" | "helper";
+
+export function trashRole(c: Omit<TrashCandidate, "body">): TrashRole {
+  if (c.declared === "client") return "door";
+  if (c.declared === "non_client") return "internal";
+  if (c.clientExecutable && c.returnsRows) return "door";
+  return "helper";
+}
+
+/** The lint over one candidate, with its registry role deciding whether the auth.uid() rule applies. */
+export function judgeTrashCandidate(c: TrashCandidate): TrashDoorFinding[] {
+  const role = trashRole(c);
+  const findings = judgeTrashDoorBody({ door: c.door, body: c.body });
+  if (role === "door") {
+    // A declared or row-returning door is judged whole — its name no longer excuses it (a leading
+    // underscore on a client door is not a reason to skip "whose Trash is it?").
+    const bare = c.door.includes(".") ? c.door.slice(c.door.indexOf(".") + 1) : c.door;
+    const code = stripSqlComments(c.body);
+    const alreadyAsked = findings.some((f) => f.problem.startsWith("is a personal Trash door"));
+    if (!alreadyAsked && bare.startsWith("_") && !/\bRETURNS\s+trigger\b/i.test(code) && !/auth\.uid\(\)/.test(code)) {
+      findings.push({ door: c.door, problem: "is a client-callable Trash door that never reads auth.uid() — whose Trash is it listing?" });
+    }
+    return findings;
+  }
+  return findings.filter((f) => !f.problem.startsWith("is a personal Trash door"));
+}
+
 /** Comments are prose, never evidence of what a body does. */
 function stripSqlComments(body: string): string {
   return body.replace(/--[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -218,6 +285,13 @@ export const TRASH_COVERAGE_EXEMPT: Readonly<Record<string, string>> = {
     "No door archives a leave policy: HR ends one with hr.leave_policy_deactivate, which sets is_active " +
     "= false after deciding every balance on it (freeze / pay out / migrate). The one archived row is " +
     "the HRB-017 verification fixture (2026-08-28).",
+  // ── a rating un-given and given back (lane GUARDS-GREEN, 2026-09-27) ───────────────────────
+  "entity:output_feedback":
+    "A person's rating of one AI output (thumbs, prose, a correction). Clearing it " +
+    "(platform.clear_output_feedback) archives the person's own row; rating the same output again " +
+    "(platform.upsert_output_feedback) revives THAT row in place — same id, deleted_at = null, the " +
+    "original capture kept, on the (subject_type, subject_id, created_by) key — so it comes back from " +
+    "the output itself, never as a Trash item. Measured 2026-09-27: 5 archived rows, all cleared ratings.",
   // ── derived rows that come back only with their source (lane STORE-DOORS-DECIDE-RED, 2026-09-26) ─
   "entity:scrape_parsed_page":
     "The web identity row of a Source, never shown as an item and never archived by a person: it is " +
