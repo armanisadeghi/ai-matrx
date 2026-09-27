@@ -4923,6 +4923,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cutover/final-switch/press": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Press The Final Switch
+         * @description Copy again where it clears something, then switch every organization at once.
+         */
+        post: operations["press_the_final_switch_cutover_final_switch_press_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cutover/final-switch/undo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Undo The Final Switch
+         * @description Reverse exactly the last final switch, in the same order backwards.
+         */
+        post: operations["undo_the_final_switch_cutover_final_switch_undo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/organization-secrets/{organization_id}": {
         parameters: {
             query?: never;
@@ -21154,6 +21194,23 @@ export interface paths {
         put?: never;
         /** Calendar Selected Events */
         post: operations["calendar_selected_events_google_sync_calendar_selected_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-sync/calendar/selected-reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Calendar Selected Reconcile */
+        post: operations["calendar_selected_reconcile_google_sync_calendar_selected_reconcile_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -62024,6 +62081,13 @@ export interface components {
             oldest_pending_at?: string | null;
             /** Last Applied At */
             last_applied_at?: string | null;
+            /**
+             * Alert
+             * @default false
+             */
+            alert?: boolean;
+            /** Alert After Seconds */
+            alert_after_seconds?: number | null;
             /** Says */
             says: string;
         };
@@ -74433,6 +74497,27 @@ export interface components {
              */
             changed?: boolean;
         };
+        /**
+         * FinalSwitchPressRequest
+         * @description What the page sends with the press.
+         */
+        FinalSwitchPressRequest: {
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * FinalSwitchUndoRequest
+         * @description What the page sends with the undo: the person's confirmation of what cannot be carried back.
+         */
+        FinalSwitchUndoRequest: {
+            /** Note */
+            note?: string | null;
+            /**
+             * Accept Not Carried
+             * @default false
+             */
+            accept_not_carried?: boolean;
+        };
         /** FinalizeUploadRequest */
         FinalizeUploadRequest: {
             /** Upload Id */
@@ -77222,7 +77307,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
+            key: "analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "other_contacts" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
             /** Title */
             title: string;
             /** User Outcome */
@@ -77316,14 +77401,14 @@ export interface components {
             /** Capability Key */
             capability_key?: ("calendar" | "contacts" | "tag_manager" | "tasks" | "youtube_analytics") | null;
             /** Capability Keys */
-            capability_keys?: ("analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[] | null;
+            capability_keys?: ("analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "other_contacts" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[] | null;
         };
         /** GoogleExchangeResponse */
         GoogleExchangeResponse: {
             /** Connection Id */
             connection_id: string;
             /** Connected Capability Keys */
-            connected_capability_keys?: ("analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[];
+            connected_capability_keys?: ("analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "other_contacts" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[];
             /** Refused Capability Keys */
             refused_capability_keys?: components["schemas"]["GoogleProductRefusal"][];
         };
@@ -77410,7 +77495,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
+            key: "analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "other_contacts" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
             /** Error */
             error: string;
             /** Message */
@@ -113516,7 +113601,7 @@ export interface components {
             source_kinds?: string[] | null;
             /**
              * Organization Id
-             * @description Override the active org for this query — only honored for admins. Non-admin callers always retrieve in their AppContext.organization_id scope.
+             * @description The organization this search is made in (its audit row's home). It never narrows reach: a search always covers every organization the person belongs to, plus their own and shared content. Omit it when no organization is selected.
              */
             organization_id?: string | null;
             /**
@@ -113668,6 +113753,23 @@ export interface components {
             access_role: string;
             /** Time Zone */
             time_zone: string | null;
+        };
+        /** SelectedCalendarReconcileResponse */
+        SelectedCalendarReconcileResponse: {
+            /** Generation */
+            generation: number;
+            /** Created */
+            created: number;
+            /** Updated */
+            updated: number;
+            /** Scrubbed */
+            scrubbed: number;
+            /** Attendees Linked */
+            attendees_linked: number;
+            /** Attendees Unlinked */
+            attendees_unlinked: number;
+            /** Detached Preserved */
+            detached_preserved: number;
         };
         /** SelectedCalendarRequest */
         SelectedCalendarRequest: {
@@ -145317,6 +145419,72 @@ export interface operations {
             };
         };
     };
+    press_the_final_switch_cutover_final_switch_press_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinalSwitchPressRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undo_the_final_switch_cutover_final_switch_undo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinalSwitchUndoRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_secrets_organization_secrets__organization_id__get: {
         parameters: {
             query?: never;
@@ -168816,6 +168984,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SelectedEventWindow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    calendar_selected_reconcile_google_sync_calendar_selected_reconcile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SelectedCalendarRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelectedCalendarReconcileResponse"];
                 };
             };
             /** @description Validation Error */

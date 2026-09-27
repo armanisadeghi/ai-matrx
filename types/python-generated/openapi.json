@@ -11381,6 +11381,86 @@
         }
       }
     },
+    "/cutover/final-switch/press": {
+      "post": {
+        "tags": [
+          "Cutover"
+        ],
+        "summary": "Press The Final Switch",
+        "description": "Copy again where it clears something, then switch every organization at once.",
+        "operationId": "press_the_final_switch_cutover_final_switch_press_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinalSwitchPressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cutover/final-switch/undo": {
+      "post": {
+        "tags": [
+          "Cutover"
+        ],
+        "summary": "Undo The Final Switch",
+        "description": "Reverse exactly the last final switch, in the same order backwards.",
+        "operationId": "undo_the_final_switch_cutover_final_switch_undo_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinalSwitchUndoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/organization-secrets/{organization_id}": {
       "get": {
         "tags": [
@@ -41732,6 +41812,47 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SelectedEventWindow"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-sync/calendar/selected-reconcile": {
+      "post": {
+        "tags": [
+          "Google Sync"
+        ],
+        "summary": "Calendar Selected Reconcile",
+        "operationId": "calendar_selected_reconcile_google_sync_calendar_selected_reconcile_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectedCalendarRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelectedCalendarReconcileResponse"
                 }
               }
             }
@@ -142420,6 +142541,22 @@
             ],
             "title": "Last Applied At"
           },
+          "alert": {
+            "type": "boolean",
+            "title": "Alert",
+            "default": false
+          },
+          "alert_after_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert After Seconds"
+          },
           "says": {
             "type": "string",
             "title": "Says"
@@ -171657,6 +171794,47 @@
         ],
         "title": "FinalMileResult"
       },
+      "FinalSwitchPressRequest": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "title": "FinalSwitchPressRequest",
+        "description": "What the page sends with the press."
+      },
+      "FinalSwitchUndoRequest": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "accept_not_carried": {
+            "type": "boolean",
+            "title": "Accept Not Carried",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "FinalSwitchUndoRequest",
+        "description": "What the page sends with the undo: the person's confirmation of what cannot be carried back."
+      },
       "FinalizeUploadRequest": {
         "properties": {
           "upload_id": {
@@ -177673,6 +177851,7 @@
               "gmail_modify",
               "gmail_read",
               "gmail_send",
+              "other_contacts",
               "search_console",
               "sheets",
               "slides",
@@ -177961,6 +178140,7 @@
                     "gmail_modify",
                     "gmail_read",
                     "gmail_send",
+                    "other_contacts",
                     "search_console",
                     "sheets",
                     "slides",
@@ -178009,6 +178189,7 @@
                 "gmail_modify",
                 "gmail_read",
                 "gmail_send",
+                "other_contacts",
                 "search_console",
                 "sheets",
                 "slides",
@@ -178327,6 +178508,7 @@
               "gmail_modify",
               "gmail_read",
               "gmail_send",
+              "other_contacts",
               "search_console",
               "sheets",
               "slides",
@@ -257955,7 +258137,7 @@
               }
             ],
             "title": "Organization Id",
-            "description": "Override the active org for this query — only honored for admins. Non-admin callers always retrieve in their AppContext.organization_id scope."
+            "description": "The organization this search is made in (its audit row's home). It never narrows reach: a search always covers every organization the person belongs to, plus their own and shared content. Omit it when no organization is selected."
           },
           "scope_ids": {
             "anyOf": [
@@ -258350,6 +258532,49 @@
           "time_zone"
         ],
         "title": "SelectedCalendar"
+      },
+      "SelectedCalendarReconcileResponse": {
+        "properties": {
+          "generation": {
+            "type": "integer",
+            "title": "Generation"
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created"
+          },
+          "updated": {
+            "type": "integer",
+            "title": "Updated"
+          },
+          "scrubbed": {
+            "type": "integer",
+            "title": "Scrubbed"
+          },
+          "attendees_linked": {
+            "type": "integer",
+            "title": "Attendees Linked"
+          },
+          "attendees_unlinked": {
+            "type": "integer",
+            "title": "Attendees Unlinked"
+          },
+          "detached_preserved": {
+            "type": "integer",
+            "title": "Detached Preserved"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generation",
+          "created",
+          "updated",
+          "scrubbed",
+          "attendees_linked",
+          "attendees_unlinked",
+          "detached_preserved"
+        ],
+        "title": "SelectedCalendarReconcileResponse"
       },
       "SelectedCalendarRequest": {
         "properties": {

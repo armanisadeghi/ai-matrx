@@ -250,6 +250,14 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
         ))}
       </ul>
 
+      {board.finalSwitch?.state === "new" && (
+        <p className="text-xs text-muted-foreground" data-testid="final-switch-on">
+          Every organization switched to the new system together with the final switch
+          {board.finalSwitch.at ? ` on ${new Date(board.finalSwitch.at).toLocaleDateString()}` : ""}
+          {board.finalSwitch.by ? ` by ${board.finalSwitch.by}` : ""}; they switch back together from Administration.
+        </p>
+      )}
+
       {elsewhere.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <p className="text-xs font-medium text-muted-foreground">Switched for everyone at once, not from here</p>
@@ -258,7 +266,7 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
               <li key={seam.key} className="flex flex-wrap items-baseline gap-x-2 text-xs">
                 <span className="font-medium">{seam.title}</span>
                 <span className="text-muted-foreground">
-                  {seam.pressKind === "already_switched"
+                  {seam.pressKind === "already_switched" || seam.state === "new"
                     ? `On the new system. ${seam.flipDoes}`
                     : `On the old system. When it switches: ${seam.flipDoes}`}
                 </span>

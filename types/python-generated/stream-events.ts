@@ -558,6 +558,25 @@ export interface CutoverCopyAgainReportData {
   says: string;
 }
 
+export interface CutoverFinalSwitchResultData {
+  type?: "cutover_final_switch_result";
+  direction: "new" | "old";
+  ok: boolean;
+  reason?: string | null;
+  says: string;
+  press_id?: string | null;
+  counts?: Record<string, unknown>;
+  timings_ms?: Record<string, number>;
+  copied_again?: string[];
+  not_carried?: string[];
+}
+
+export interface CutoverFinalSwitchStageData {
+  type?: "cutover_final_switch_stage";
+  stage: string;
+  says: string;
+}
+
 export interface DecisionAnswerBlock {
   __kind?: "decision_answer";
   type: "noul" | "choice" | "score";
@@ -2227,6 +2246,8 @@ export type TypedDataPayload =
   | ConversationLabeledData
   | CutoverCopyAgainProgressData
   | CutoverCopyAgainReportData
+  | CutoverFinalSwitchResultData
+  | CutoverFinalSwitchStageData
   | DecisionAnswersData
   | DictionaryPublishCompleteData
   | ExtractionIndexCompleteData

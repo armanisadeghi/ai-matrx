@@ -8,7 +8,7 @@ import { consumeSmartImportFile } from "@/features/data-tables/smart-import-pick
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 
-export default function UserGeneratedDataPage() {
+export default function DataHomeClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
