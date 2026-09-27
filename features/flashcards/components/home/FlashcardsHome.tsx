@@ -86,7 +86,10 @@ function StreakChip({ streak }: { streak: StudyStreakRow | null }) {
       aria-label={`Study streak: ${days} day${days === 1 ? "" : "s"}`}
     >
       <Flame className="h-3.5 w-3.5" />
-      {days} day{days === 1 ? "" : "s"}
+      {days}
+      {/* On a phone the number alone: the tab row needs the room for the
+          Shared and Public lanes (page-pass 2026-09-27). */}
+      <span className="max-sm:sr-only">day{days === 1 ? "" : "s"}</span>
     </span>
   );
 }
