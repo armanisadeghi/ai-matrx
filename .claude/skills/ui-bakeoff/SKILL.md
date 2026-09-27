@@ -42,7 +42,7 @@ Each subagent gets **identical** instructions: the brief + the interview answers
 
 Every subagent builds a **real, fully-wired implementation** against the actual data, service, and stream — with real loading / empty / error / stalled-stream handling — **not a mock demo.** (This is ground-rules §1, the rule that matters most. A bake-off of fakes teaches you nothing about the unknowns that actually kill a page.)
 
-To let four real implementations run in parallel without colliding, give each its **own route** (e.g. `…/create-sharp`, `…/create-reimagine`, `…/create-refine`, `…/create-dense`) — or its **own git worktree** (`Agent` with `isolation: "worktree"`) if they'd otherwise touch shared files. Confine each subagent to its own route/files. Each must **verify it runs against real data** — including an error and an empty path — before reporting.
+To let four real implementations run in parallel without colliding, give each its **own route** (e.g. `…/create-sharp`, `…/create-reimagine`, `…/create-refine`, `…/create-dense`) — never a git worktree or branch (this repo is one shared checkout on `main`). If two variants would touch the same shared file, give each its own copy under its route instead. Confine each subagent to its own route/files. Each must **verify it runs against real data** — including an error and an empty path — before reporting.
 
 > Only stub if the user *explicitly* asks for a throwaway visual exploration (skill/design experimentation, not feature work) — and then say so loudly. Default is always real.
 
@@ -52,5 +52,5 @@ Collect the four. For each, summarize: the posture, the reference product it cho
 
 ## Notes
 
-- Default to real implementations on **parallel routes** so the user can view all four on one dev server; use **worktrees** only when shared-file conflicts are likely.
+- Real implementations on **parallel routes** so the user can view all four on one dev server; no worktrees.
 - The four postures are designed to diverge — converging outputs usually means the brief over-specified the design. If that happens, loosen the brief (say only *what the surface is and must do*) and let the postures express themselves.

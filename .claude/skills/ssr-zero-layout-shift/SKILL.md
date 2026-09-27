@@ -135,14 +135,19 @@ Defer loading Client Component code until the user triggers it. The trigger rend
 
 - Use `next/dynamic` with `ssr: false` for components that only matter after user interaction (modals, panels, rich editors).
 - The trigger (button, dropdown trigger) is always server-rendered or in a thin Client Component.
-- Provide a dimension-matched `loading` component.
+- Provide a dimension-matched `loading` component that also says what is loading — a bare pulsing box is a `real-loading-states` finding.
 
 ```tsx
 import dynamic from 'next/dynamic'
+import SuspenseLoader from '@/components/loaders/SuspenseLoader'
 
 const RichEditor = dynamic(() => import('./RichEditor'), {
   ssr: false,
-  loading: () => <div className="h-64 w-full animate-pulse rounded-md bg-muted" />,
+  loading: () => (
+    <div className="h-64 w-full rounded-md border border-border">
+      <SuspenseLoader message="Loading editor…" />
+    </div>
+  ),
 })
 ```
 

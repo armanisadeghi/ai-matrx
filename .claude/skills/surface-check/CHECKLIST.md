@@ -127,8 +127,8 @@ and enqueue retroactive rechecks; old ledger evidence is never relabeled.
 - MUST: every textarea that holds user text is `ProTextarea` (Tier 2 default); bare shadcn `Textarea` only for raw admin/debug cases — and then say why in a comment. Voice (`enableVoice`) stays on unless the field is a code/JSON editor.
 - MUST: `surfaceName` + `getApplicationScope` passed so the "…" agent menu lists the same agents as the context menu.
 - DECIDE `enableTextStats` by THE LENGTH RULE: ON when the text's length will _matter_ — it becomes agent context in volume (long-form authoring, transcripts, pasted content, prompt/instruction bodies, anything a `typicalCharCount` ≥ ~1,000 value is built from). OFF for short fields, chat composers, titles, and any field inside chrome that already renders metrics (never stacked footers — notes incident). Log the decision per field.
-- MUST: inputs ≥16px on mobile (`ios-mobile-first`), `ProInput` for single-line fields that feed agents.
-- DECIDE — **the Pro primitive genuinely does not fit** (e.g. a 24px window-chrome search box vs `ProInput`'s fixed 16px text + mic/menu controls): keep the bare input, write the reason in a comment beside it, and cover what Pro would have given you another way (16px + 44pt on mobile; make the text a declared value and, if an agent should set it, a write target). Record `fixed (documented decision)`. This is a real verdict, not a violation — but a bare input with no comment is.
+- MUST: no inline `fontSize` under 16px on a text field (THE iOS ZOOM FLOOR in `app/globals.css` handles zoom; author mobile-facing fields `text-base`), `ProInput` for single-line fields that feed agents.
+- DECIDE — **the Pro primitive genuinely does not fit** (e.g. a 24px window-chrome search box vs `ProInput`'s fixed 16px text + mic/menu controls): keep the bare input, write the reason in a comment beside it, and cover what Pro would have given you another way (`text-base` + the 44px touch floor on mobile; make the text a declared value and, if an agent should set it, a write target). Record `fixed (documented decision)`. This is a real verdict, not a violation — but a bare input with no comment is.
 - Check: no script yet (gap — see "proposed ratchets" in the skill). `grep -rn "<textarea\|<Textarea" <feature dir>` and justify every hit.
 - Evidence: field list with Pro/raw + stats decision.
 
@@ -147,10 +147,10 @@ and enqueue retroactive rechecks; old ledger evidence is never relabeled.
 
 ## S9 · Mobile — `ios-mobile-first`
 
-- MUST: `dvh` never `vh`/`h-screen`; `pb-safe` on fixed bottoms; 16px inputs; 44pt tap targets (TapButtons — `efficient-tap-button-migration`); Drawer not Dialog; no tabs-as-mobile-nav; no nested scroll; popups have `max-height` + `overflow-y-auto`.
+- MUST: `dvh` never `vh`/`h-screen`; `pb-safe` on fixed bottoms; `text-base` mobile-facing fields; 44px touch targets via `matrx-touch-targets` on the section/dialog root (TapButtons for icon buttons — `efficient-tap-button-migration`); a plain `<Dialog>` (it becomes a bottom sheet on mobile by itself — a hand-rolled Drawer only for a drag handle or a different layout); no tabs-as-mobile-nav; no nested scroll; popups have `max-height` + `overflow-y-auto`.
 - MUST: long-press opens the context-menu bottom sheet on the surface's content; the sheet shows the same items as desktop incl. the surface entry.
 - MUST: **functionality** is gated with `useIsMobile()`, never hidden by CSS alone — a `hidden lg:flex` action with no mobile counterpart is a feature that does not exist on a phone. Pure **presentation** (font size, padding, tap-target sizing, wrapping) is correctly done with CSS breakpoints (`max-sm:`) and needs no JS gate.
-- MUST: actions revealed only on hover (`group-hover`) are UNREACHABLE on touch — they must be visible (or long-press reachable) at mobile widths.
+- MUST: actions revealed only on hover (`group-hover`) are UNREACHABLE on touch — add `pointer-coarse:opacity-100` so they show on a phone (or make them long-press reachable).
 - Check: the skill's Component Audit Checklist; verify at 375×812 (Android emulation — iOS-only behaviors need a device).
 - Evidence: mobile screenshots, long-press proof.
 
@@ -189,7 +189,8 @@ and enqueue retroactive rechecks; old ledger evidence is never relabeled.
 - MUST: read `.claude/ui-skills/shared/application-ui-copy-and-hierarchy.md`; app routes have one title authority, no duplicated body hero, no generic introductory prose, and meaningful work above the fold.
 - MUST: sidebars/list panels follow `compact-nav-menus` sizes; lists use `EntityListPage` + `useListViewPrefs`; tables = `MatrxDataTable` with sort+filter on every column and the canonical Copy / Copy-for-AI.
 - DECIDE: the surface's density posture (`ui-sharp` default; `ui-dense` for all-day power surfaces) — name the real product benchmarked.
-- Check: `pnpm check:ui-primitives` · `pnpm check:copy-everywhere` · the emoji `rg` in `no-emojis-in-ui`.
+- MUST: dialogs open through their typed opener (`useOpenX()` — `overlay-system`), never `dispatch(openOverlay(...))`; content text never below 12px (10px only for uppercase section overlines — `ui-dense` data-dense-rules).
+- Check: `pnpm check:ui-primitives` · `pnpm check:copy-everywhere` · `pnpm check:browser-dialogs` · `pnpm check:theme-color-literals` · `pnpm check:static-loader` · `pnpm check:popover-sizing` · `pnpm check:reserved-icons` · `pnpm check:new-tab-icon` · `pnpm check:picker-add` · `pnpm check:menu-naming` · the emoji `rg` in `no-emojis-in-ui`.
 - Evidence: violations fixed, posture named.
 
 ## S14 · Route metadata & favicon — `route-metadata-favicons`

@@ -43,6 +43,7 @@ binding or placement is never approval to inherit page values.
 2. The route (`route-to-surface.ts`) and the feature dir (`app/... → features/<name>/`); its `FEATURE.md` + Change Log; `docs/handoffs/*` mentioning it.
 3. Claimed contract + last ledger entry: `select last_check from ui.ui_surface where name = …` — prior failures and the contract's required rule version first.
 4. Open the page (`pnpm preview:start`, dev-login), desktop 1280×800, right-click once with the console open.
+   In a cloud container (it cannot run the preview and a type check at once): no dev server — push, then verify on the live site once the release train ships it. The two lanes are spelled out in `page-pass` ("Where you verify").
 
 **Browser availability.** Live proof is a completion gate. If the isolated in-app
 Browser is unavailable, finish safe static repairs, record the exact missing
@@ -194,7 +195,7 @@ It is also an advisory release gate ("Surface value blast radius").
 
 1. ~~Ledger columns~~ — LIVE (`ui.ui_surface.last_checked_at / last_checked_by / last_check`; `check_claimed_*` is display-only, never lock authority).
 2. ~~`/administration/ui/surfaces` Checked column + never/stale filter~~ — LIVE (sortable; never-checked first). Still missing: the per-section result popover reading `last_check.sections`.
-3. `pnpm check:textareas` ratchet — non-Pro textarea count per feature, baseline only goes down (S7 has no guard today; ~528 sites).
+3. A `check:textareas` ratchet (NOT BUILT — no such script yet) — non-Pro textarea count per feature, baseline only goes down (S7 has no guard today; ~528 sites).
 4. Structural guards for S5 — a static candidate report that compares explicit Mandate/agent launch points with invocation-contract records, manifest roles, and live bindings; plus a guard that rejects unapproved automatic inheritance for native subject agents and permanent residents. Historical tool-call reduction still requires runtime telemetry, so the static report is a scout, not proof.
 5. Add a structural campaign-eligibility guard that requires every registered surface, including agent-native routes, to carry the current S5 contract and evidence; until it lands, the explicit S5 gate above is mandatory.
 6. `create<X>Scope` builders are hand-written and drift silently — nothing validates that a builder's param keys match its manifest's value names. A generated `ValueNameOf<M>` type would make a rename a compile error.

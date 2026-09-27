@@ -13,11 +13,13 @@ A fast, clean, **inviting** UI. Sharp, minimal, confident. The user's first reac
 
 ## Read first
 
-- `/Users/armanisadeghi/code/matrx-frontend/.claude/ui-skills/shared/ground-rules.md` — the non-negotiable floor (above all: **build it real, never fake**).
-- `/Users/armanisadeghi/code/matrx-frontend/.claude/ui-skills/shared/design-system-anchors.md` — exact tokens / glass / components to reuse.
+- `.claude/ui-skills/shared/ground-rules.md` — the non-negotiable floor (above all: **build it real, never fake**).
+- `.claude/ui-skills/shared/design-system-anchors.md` — exact tokens / glass / components to reuse.
 - [project-conventions.md](project-conventions.md) (in this skill; absorbed the former `modern-web-design-expert` skill) — the "how to write conformant CSS" layer: migration priorities (fluid `clamp()` type, `@container` queries, `@starting-style` entrance animations, shadcn wrappers), textures/scrollbars, layout components, and key-file map. Applies to every ui-* posture, not just this one.
 
 ## Interview first — 2 questions, in plain conversation, skippable
+
+> **Only when a person asked you, live, to redesign this page.** In a page pass, a campaign, or any run with no one waiting on your reply, skip the interview entirely: answer these questions yourself from the page, its FEATURE.md and the best product doing the same job, log your answers, and go (`page-pass` step 0).
 
 Give the user one moment to aim you, then go. Ask in normal prose (never a multiple-choice UI), keep it to ~2 sharp questions, and **skip entirely** if they already told you or said "just go" — lean means trusting yourself for the rest.
 

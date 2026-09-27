@@ -102,8 +102,9 @@ For each batch:
 4. Spawn a second adversarial agent with: **"assume this broke something; find
    it."** It reruns the gates, audits false-positive classes, and returns
    `CERTIFIED` or `REJECTED`.
-5. Fix or fully revert a rejected batch. Ship only a certified batch through
-   `./scripts/release.sh`.
+5. Fix or fully revert a rejected batch. Commit a certified batch by path and
+   push to `main`; the release train ships it. Never run `./scripts/release.sh`
+   unless Arman asked you to.
 
 Update `.matrx/PATROL_SIGHTINGS.md` and
 `.matrx/patrol-reports/no-emojis-in-ui.md` with the findings, fixes, approval

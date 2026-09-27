@@ -44,7 +44,7 @@ Canonical sizing and spacing rules for navigation sidebars, list panels, and com
 ### Section Headers (Grouped Lists)
 | Property | Value |
 |----------|-------|
-| Font | `text-[10px] font-medium uppercase tracking-wider` |
+| Font | `text-[10px] font-medium uppercase tracking-wider` — the ONE sanctioned 10px use (uppercase overline chrome; see `ui-dense` data-dense-rules "Absolute minimums") |
 | Color | `text-muted-foreground/70` |
 | Padding | `px-3 pt-3 pb-1` |
 | Separator | `border-t border-border/40` above the header, not `<Separator>` components. |
@@ -62,7 +62,7 @@ Canonical sizing and spacing rules for navigation sidebars, list panels, and com
 | Property | Value |
 |----------|-------|
 | Padding | `px-4 py-1.5` or `px-4 py-2` |
-| Font | `text-[10px]` or `text-xs` |
+| Font | `text-xs` (status text is content — never below 12px) |
 | Background | `bg-muted/20` |
 | Border | `border-t border-border/60` |
 | Buttons | `h-7 text-xs gap-1 px-2.5` |

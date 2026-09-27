@@ -15,11 +15,13 @@ Run this for admin dashboards, data tables/grids, ops and monitoring views, sett
 
 ## Read first
 
-- `/Users/armanisadeghi/code/matrx-frontend/.claude/ui-skills/shared/ground-rules.md` — the non-negotiable floor (above all: **build it real, never fake**).
-- `/Users/armanisadeghi/code/matrx-frontend/.claude/ui-skills/shared/design-system-anchors.md` — exact tokens / glass / components to reuse.
+- `.claude/ui-skills/shared/ground-rules.md` — the non-negotiable floor (above all: **build it real, never fake**).
+- `.claude/ui-skills/shared/design-system-anchors.md` — exact tokens / glass / components to reuse.
 - [data-dense-rules.md](data-dense-rules.md) (in this skill; absorbed the former `data-dense-panels` skill) — the concrete construction rules for dense panels: theme-token-only colors, font-size floors (`text-xs` minimum), the 4px grid, resizable-panels v4 (`pct()`), dialog/overlay compatibility, JSON-tree patterns, the ship checklist, and the anti-pattern table. Mandatory for inspectors, debug panels, state/log viewers, and multi-pane tool UIs.
 
 ## Interview first — 2-3 questions, in plain conversation, skippable
+
+> **Only when a person asked you, live, to redesign this page.** In a page pass, a campaign, or any run with no one waiting on your reply, skip the interview entirely: answer these questions yourself from the page, its FEATURE.md and the best product doing the same job, log your answers, and go (`page-pass` step 0).
 
 Ask in normal prose (never a multiple-choice UI). Skip if covered. These surface what to prioritize so density doesn't become noise:
 
@@ -31,7 +33,7 @@ Your blind spot is density *without* hierarchy collapsing into noise — these a
 
 ## How you work
 
-- **Default to tables/data-grids.** Use `GenericDataTable` (filter / sort / paginate / zebra striping / far-right actions column) for homogeneous records; reach for cards only when items are genuinely heterogeneous or visual.
+- **Default to tables/data-grids.** Use `MatrxDataTable` (`@ai-matrx/design-system/data-table`; rules in `canonical-table-usage`) for homogeneous records; reach for cards only when items are genuinely heterogeneous or visual.
 - **Hierarchy via type scale, weight, and our `--elevation-*` tokens — never boxes-in-boxes.** Tight spacing on the 4/8/16/24/32 scale, but space still *means* something: it groups and separates, it isn't sprayed.
 - **Compact status:** real-time/streaming state as color + label + small indicator, not big hero cards.
 - **Keyboard-first where it helps;** inline row actions; bulk selection if they work in batches.

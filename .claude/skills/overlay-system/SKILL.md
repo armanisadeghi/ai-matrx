@@ -1,6 +1,6 @@
 ---
 name: overlay-system
-description: "Overlay controller for dialogs, sheets, modals, windows, and toasts opened by dispatch. Use when opening, adding, registering, or debugging an overlay, or touching features/overlays/**, app/DeferredSingletons.tsx, lib/redux/slices/overlaySlice.ts, dispatch(openOverlay(...)), useOpenX hooks, or XController components. NOT for the WindowPanel component itself (use window-panels)."
+description: "Overlay controller for dialogs, sheets, modals, windows, and toasts opened by dispatch. Use when opening, adding, registering, or debugging an overlay, or touching features/overlays/**, app/DeferredSingletonCore.tsx, lib/redux/slices/overlaySlice.ts, dispatch(openOverlay(...)), useOpenX hooks, or XController components. NOT for the WindowPanel component itself (use window-panels)."
 ---
 
 # Overlay System
@@ -34,7 +34,7 @@ These are independent. A `<WindowPanel>` rendered on a page directly — without
 2. **Don't put functions in `openOverlay` data.** Use the callback registry via `callbackManager`; the opener hides this from callers. Functions can't travel through Redux.
 3. **Don't add a `kind: "window" | "modal" | "sheet"` discriminator** anywhere in the catalogue or controller. Sheets, modals, windows, toasts are all "just components" to the controller. If you find code branching on a kind field, that's the conflation creeping back.
 4. **The catalogue is metadata-only.** Nothing iterates `OVERLAY_CATALOGUE` to render. Render is the controller's job, with explicit JSX. If you're writing a `for (const entry of OVERLAY_CATALOGUE)` that renders components, stop.
-5. **Don't dispatch `openOverlay` / `closeOverlay` / `toggleOverlay` directly from new code.** Use the typed opener at `features/overlays/openers/<overlayId>.tsx`. ~290 legacy dispatch sites still exist; they'll get migrated incrementally. New code uses openers.
+5. **Don't dispatch `openOverlay` / `closeOverlay` / `toggleOverlay` directly from new code.** Use the typed opener at `features/overlays/openers/<overlayId>.tsx`. ~115 legacy dispatch sites still exist (2026-09-26); they'll get migrated incrementally. New code uses openers.
 6. **`WindowPanel.tsx` must not import from registry / slice / controller.** It's a leaf component. ESLint pattern enforces.
 
 ## How to do common things
@@ -141,7 +141,7 @@ Look at the browser console:
 ### How it's mounted
 
 One controller, imported directly (no flag, no `dynamic()` shell):
-- Authenticated: `app/DeferredSingletons.tsx` → `OverlayControllerGate` (returns null until `selectAnyOverlayOpen`).
+- Authenticated: `app/DeferredSingletonWrapper.tsx` (client/idle gate) → `app/DeferredSingletonCore.tsx` → `OverlayController`.
 - Public: `app/(public)/PublicProviders.tsx` → mounted directly.
 
 ## Message actions (chat) — absorbed from `message-actions-overlay-system`
@@ -172,7 +172,7 @@ features/overlays/
 ├── FEATURE.md                  ← deep reference
 ├── OverlayController.tsx       ← THE mount. ~2,300 lines. Hand-maintained, every block gated.
 ├── catalogue.ts                ← render-free metadata
-└── openers/<overlayId>.tsx     ← ~111 files, hook + Controller per overlay
+└── openers/<overlayId>.tsx     ← ~210 files, hook + Controller per overlay
 
 lib/redux/
 └── slices/overlaySlice.ts      ← state + actions (typed OverlayId)
@@ -202,4 +202,4 @@ These came from the overhaul conversation and are encoded in the design:
 - Look at how an existing overlay does it. Most patterns are present in 2+ overlays already.
 - Read [`docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md`](../../../docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md) for the WHY of the architecture.
 - Read [`docs/OVERLAY_WINDOW_ROADMAP.md`](../../../docs/OVERLAY_WINDOW_ROADMAP.md) for known gaps — your problem may already be triaged.
-- If you must change rendering, prefer hand-editing `OverlayController.tsx` over re-running the codegen. The codegen is a one-shot seeder; re-running it loses the hand-tightened type casts.
+- To change rendering, hand-edit `OverlayController.tsx` — there is no codegen.

@@ -17,7 +17,7 @@ The pattern has four pillars. All four must hold for the migration to be conside
 
 - **No surrounding spacing.** Never wrap a TapButton in `p-*`, `m-*`, or `gap-*`. The invisible 44×44 outer ring already reserves space; adding more produces double-spacing.
 - **No `className` for visuals.** Variation goes through documented props: `variant`, `tooltip`, `ariaLabel`, `bgColor`, `iconColor`, `hoverBgColor`, `activeBgColor`. A `className` passthrough on a TapButton consumer is a code smell.
-- **Pre-composed > primitive.** Use `BugTapButton`, `PlusTapButton`, `SearchTapButton`, etc. from `components/icons/tap-buttons.tsx`. Don't reach for the raw `TapTargetButton` + manual icon.
+- **Pre-composed > primitive.** Use `BugTapButton`, `PlusTapButton`, `SearchTapButton`, etc. from `@ai-matrx/tap-target/buttons`. Don't reach for the raw `TapTargetButton` + manual icon.
 - **Tooltip auto-derives from `ariaLabel`.** Set `ariaLabel="Submit Feedback"` and the tooltip mirrors. Pass `tooltip="..."` only to override. Pass `tooltip={false}` to opt out.
 - **Anchor decorations to the visible 32×32 inner pill.** Badges/dots/pings use `top-1.5 right-1.5` (offset 6px from the 44×44 outer), not `top-0 right-0`.
 
@@ -85,7 +85,7 @@ The default for a small button used across many routes: **only the icon and clic
 - **Always include `"use client"` on the lazy file.** Required even though it's only imported via `next/dynamic` from a client file.
 - **Gate the dynamic render with cheap selectors.** Wrap `<Lazy />` in a redux/state boolean check so the chunk isn't fetched for users who'll never see it. The gate uses cheap selectors that already live in main; only the decoration's *side effects* (timers, dispatches) move to the lazy file.
 - **Coordinate parent ↔ lazy child via a one-shot `tick: number` prop.** When the parent click should trigger something in the lazy child (e.g. dismiss the highlight), pass `dismissTick: number` and increment on click; the lazy child watches it via `useEffect`. No callback refs, no event bus, no imperative handles, no context.
-- **Co-locate redux actions with the chunk that dispatches them.** Actions used by the always-rendered icon (e.g. `openOverlay`) stay in main. Actions used only by the decoration (e.g. `setModulePreferences`) live in the lazy file.
+- **Co-locate redux actions with the chunk that dispatches them.** Actions used by the always-rendered icon (e.g. the typed opener) stay in main. Actions used only by the decoration (e.g. `setModulePreferences`) live in the lazy file.
 
 ### File layout
 
@@ -106,9 +106,9 @@ import { useCallback, useState } from "react";
 import {
   BugTapButton,
   type TapButtonProps,
-} from "@/components/icons/tap-buttons";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+} from "@ai-matrx/tap-target/buttons";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { useOpenFeedbackWindow } from "@/features/overlays/openers/feedbackDialog";
 
 const FeedbackHighlight = dynamic(() => import("./FeedbackHighlight"), {
   ssr: false,
@@ -121,7 +121,7 @@ export default function FeedbackButton({
   variant = "glass",
   tooltip,
 }: FeedbackButtonProps) {
-  const dispatch = useAppDispatch();
+  const openFeedback = useOpenFeedbackWindow();
   const userId = useAppSelector((s) => s.userAuth.id);
   const viewCount = useAppSelector(
     (s) => s.userPreferences.system.feedbackFeatureViewCount,
@@ -135,8 +135,8 @@ export default function FeedbackButton({
 
   const handleClick = useCallback(() => {
     if (shouldShowHighlight) setDismissTick((n) => n + 1);
-    dispatch(openOverlay({ overlayId: "feedbackDialog" }));
-  }, [dispatch, shouldShowHighlight]);
+    openFeedback();
+  }, [openFeedback, shouldShowHighlight]);
 
   return (
     <div className="relative">
@@ -183,7 +183,7 @@ interface MyButtonProps {
 
 ```tsx
 // ✅ GOOD — derived from the canonical source
-import type { TapButtonProps } from "@/components/icons/tap-buttons";
+import type { TapButtonProps } from "@ai-matrx/tap-target/buttons";
 
 type MyButtonProps = Pick<TapButtonProps, "variant" | "tooltip">;
 ```
@@ -191,7 +191,7 @@ type MyButtonProps = Pick<TapButtonProps, "variant" | "tooltip">;
 If the owner doesn't yet export the type, add the `export` to the owner file in the same change. Example:
 
 ```tsx
-// components/icons/tap-buttons.tsx — owner
+// @ai-matrx/tap-target/buttons — owner
 export interface TapButtonProps {
   variant?: Variant;
   // ...
@@ -200,43 +200,23 @@ export interface TapButtonProps {
 
 ---
 
-## Pillar 4 — Canonical overlay-action calls
+## Pillar 4 — Opening a dialog from the button
 
-The overlay slice exposes both:
-- A canonical reducer: `openOverlay({ overlayId, instanceId?, data? })`
-- Typed convenience wrappers: `openFeedbackDialog()`, `openShareModal({...})`, etc.
-
-The convenience wrappers that just hardcode an `overlayId` are an extra indirection — callers must remember the typed wrapper exists. The canonical reducer requires only the `overlayId` string, which is already the canonical identifier from the window registry.
-
-### Rules
-
-- **Default to `dispatch(openOverlay({ overlayId: "..." }))` for new code and migrations.** The string IS the canonical identifier; the wrapper just hides it.
-- **Use a typed wrapper only when it accepts non-trivial options** that benefit from a type-checked signature (e.g. `openShareModal({ resourceType, resourceId, resourceName, isOwner })`). For wrappers that just hardcode the overlayId with no other params, prefer the canonical call.
-- **Never invent new typed wrappers** for overlays that take zero or trivial params. They add an import, a layer of indirection, and a maintenance burden.
-
-### Before / after
+**Use the overlay's typed opener** — `useOpenX()` from
+`features/overlays/openers/<overlayId>.tsx` (~210 openers, ~520 call sites).
+Never `dispatch(openOverlay(...))` in new or migrated code; the ~115 raw
+dispatch sites left are legacy and get migrated when you touch them. The one
+owner of this rule is the `overlay-system` skill — read it for callbacks,
+declarative controllers, and adding a new overlay.
 
 ```tsx
-// ❌ Before — extra indirection, callers must remember the wrapper
-import { openFeedbackDialog } from "@/lib/redux/slices/overlaySlice";
-dispatch(openFeedbackDialog());
-
-// ✅ After — canonical, says exactly what it does
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+// ❌ Raw dispatch — untyped data, callers must know the id string
 dispatch(openOverlay({ overlayId: "feedbackDialog" }));
-```
 
-### When to keep the typed wrapper
-
-```tsx
-// ✅ Keep — non-trivial options, type safety adds real value
-import { openShareModal } from "@/lib/redux/slices/overlaySlice";
-dispatch(openShareModal({
-  resourceType: "agent",
-  resourceId: agentId,
-  resourceName: agent.name,
-  isOwner: true,
-}));
+// ✅ Typed opener — options are type-checked, close() handle returned
+import { useOpenFeedbackWindow } from "@/features/overlays/openers/feedbackDialog";
+const openFeedback = useOpenFeedbackWindow();
+openFeedback();
 ```
 
 ---
@@ -246,7 +226,7 @@ dispatch(openShareModal({
 Copy this checklist when applying the pattern to a new button. Tick each item before declaring the migration complete:
 
 ```
-- [ ] 1. Identify the canonical TapButton owner type (TapButtonProps from components/icons/tap-buttons.tsx)
+- [ ] 1. Identify the canonical TapButton owner type (TapButtonProps from @ai-matrx/tap-target/buttons)
 - [ ] 2. Replace the legacy <button> / <IconButton> / className-styled element with a pre-composed TapButton (BugTapButton, PlusTapButton, etc.)
 - [ ] 3. Drop ALL className props on the TapButton itself. Use variant= instead.
 - [ ] 4. Set ariaLabel; let tooltip auto-derive (or pass explicitly).
@@ -259,7 +239,7 @@ Copy this checklist when applying the pattern to a new button. Tick each item be
 - [ ] 11. Coordinate parent → lazy child via a tick: number prop, never callbacks/refs/context.
 - [ ] 12. Move redux actions used only by the decoration into the lazy file.
 - [ ] 13. Replace any local type aliases with Pick<OwnerType, ...> or OwnerType["field"] imports. If the owner doesn't export the type, export it from the owner in the same change.
-- [ ] 14. Replace dispatch(openSomethingDialog()) typed wrappers with dispatch(openOverlay({ overlayId: "..." })) — unless the wrapper carries non-trivial typed options.
+- [ ] 14. Open any dialog through its typed opener (`useOpenX()` — see `overlay-system`); replace any `dispatch(openOverlay(...))` or legacy `openSomethingDialog()` wrapper you touch.
 - [ ] 15. Audit ALL consumers (grep for the component name) and update each call site in the same change. Update Suspense fallbacks in those consumers too.
 ```
 
@@ -269,13 +249,13 @@ Copy this checklist when applying the pattern to a new button. Tick each item be
 
 Read these before applying the pattern to a new component:
 
-- `features/feedback/FeedbackButton.tsx` — main chunk: icon + dispatch + gate + dynamic ref + `Pick<>`-derived type + canonical `openOverlay` call.
+- `features/feedback/FeedbackButton.tsx` — main chunk: icon + typed opener + gate + dynamic ref + `Pick<>`-derived type.
 - `features/feedback/FeedbackHighlight.tsx` — lazy chunk: `PartyPopper` + `X` icons, dismiss button, view-count auto-increment timer, `setModulePreferences` dispatch.
-- `components/icons/tap-buttons.tsx` — owner of `TapButtonProps`. Pre-composed buttons (`BugTapButton`, `PlusTapButton`, etc.) and the `Wrap` variant resolver.
-- `components/icons/TapTargetButton.tsx` — primitive (`TapTargetButton`, `TapTargetButtonTransparent`, `TapTargetButtonSolid`, `TapTargetButtonForGroup`, `TapTargetButtonGroup`). Don't import directly unless a pre-composed version doesn't exist; add a new pre-composed export instead.
+- `@ai-matrx/tap-target/buttons` (package) — owner of `TapButtonProps`. Pre-composed buttons (`BugTapButton`, `PlusTapButton`, etc.) and the `Wrap` variant resolver.
+- `@ai-matrx/tap-target` (package) — primitive (`TapTargetButton`, `TapTargetButtonTransparent`, `TapTargetButtonSolid`, `TapTargetButtonForGroup`, `TapTargetButtonGroup`). Don't import directly unless a pre-composed version doesn't exist; add a new pre-composed export instead.
 - `components/icons/README.md` — definitive doc on the spacing rule and the `Wrap` helper for adding new pre-composed buttons.
-- `app/(dev)/demos/button-demo/page.tsx` — live demo of every variant, group, and AI brand button.
-- `lib/redux/slices/overlaySlice.ts` — `openOverlay` (canonical reducer) and the typed convenience wrappers.
+- `app/(dev)/demos/button-demo/page.dev.tsx` — live demo of every variant, group, and AI brand button.
+- `features/overlays/openers/` — the typed openers (owner: `overlay-system`).
 
 The migration of `FeedbackButton`'s consumers (`components/layout/new-layout/DesktopLayout.tsx`, `features/public-chat/components/ChatMobileHeader.tsx`, `components/matrx/PublicHeaderFeedback.tsx`) is the canonical example of consumer-side rules in action — read those diffs to see how `className=...` becomes `variant=...` and how Suspense fallbacks are resized.
 
@@ -290,7 +270,7 @@ The migration of `FeedbackButton`'s consumers (`components/layout/new-layout/Des
 - ❌ Splitting a 2-line decoration into a lazy chunk just because lazy is "good practice."
 - ❌ Forgetting `"use client"` on the lazy file.
 - ❌ Using a callback ref, custom event, or context for parent ↔ lazy-child coordination.
-- ❌ Calling `dispatch(openFeedbackDialog())` in new code when `openOverlay({ overlayId: "feedbackDialog" })` says the same thing more directly.
+- ❌ Opening a dialog with `dispatch(openOverlay(...))` or a legacy `openXDialog()` wrapper in new code — use the typed opener (`useOpenX()`).
 - ❌ Inventing a new typed wrapper for an overlay that takes zero or trivial params.
 - ❌ Leaving Suspense fallbacks at the old button's dimensions after the underlying button grows to 44×44.
 - ❌ Updating only the focused file's call site and forgetting the other consumers.

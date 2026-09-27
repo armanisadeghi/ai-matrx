@@ -125,7 +125,7 @@ The #1 anti-pattern: **shrinking text to make things fit instead of using space 
 
 - **Body text:** Never below `text-xs` (12px)
 - **Badges:** Never below `text-[11px]`
-- **No content at `text-[10px]`** — if it doesn't fit, restructure the layout
+- **No content at `text-[10px]`** — if it doesn't fit, restructure the layout. The only 10px text allowed is non-content chrome: an uppercase `tracking-wider` section overline (the `compact-nav-menus` section header) and a keyboard-shortcut hint. Values, labels a person reads, badges and status text never go below the minimums above (this is the one ruling; `compact-nav-menus` defers to it)
 - **Numeric columns:** Use `tabular-nums` for alignment in tables and lists
 
 ### Anti-patterns
