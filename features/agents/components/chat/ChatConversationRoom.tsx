@@ -84,7 +84,7 @@ function ChatConversationRoomResolved({
   // No workspace chosen is a question, never "chat is unavailable".
   if (organizationPending) {
     return (
-      <WorkspaceGate sentence="This chat needs a workspace to open.">
+      <WorkspaceGate blocked sentence="This chat needs a workspace to open.">
         <ChatNewLandingSkeleton />
       </WorkspaceGate>
     );

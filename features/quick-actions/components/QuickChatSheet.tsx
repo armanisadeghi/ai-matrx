@@ -119,7 +119,7 @@ export function QuickChatSheet({
   if (organizationPending) {
     return (
       <div className={cn("flex h-full flex-col overflow-hidden", className)}>
-        <WorkspaceGate sentence="Chat needs a workspace to open.">
+        <WorkspaceGate blocked sentence="Chat needs a workspace to open.">
           <ChatRoomSkeleton />
         </WorkspaceGate>
       </div>

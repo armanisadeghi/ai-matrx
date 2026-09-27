@@ -37,7 +37,7 @@ import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate
 
 export default function RoomAgentPanel({ sessionId }: { sessionId: string }) {
   const dispatch = useAppDispatch();
-  const { conversationId, loaded, ready } = useRoomAgent(sessionId);
+  const { conversationId, loaded, ready, blockedOnWorkspace } = useRoomAgent(sessionId);
   const adapter = useRoomConversationSelectAdapter(sessionId);
   // The persona a NEW room chat starts with. Unresolved ⇒ Start chat is
   // disabled and says why — never a hardcoded fallback id.
@@ -114,7 +114,7 @@ export default function RoomAgentPanel({ sessionId }: { sessionId: string }) {
             </div>
           </div>
         ) : (
-          <WorkspaceGate sentence="This room's chat needs a workspace to open.">
+          <WorkspaceGate blocked={blockedOnWorkspace} sentence="This room's chat needs a workspace to open.">
             <div className="flex h-full items-center justify-center">
               <Loader2 className="size-6 animate-spin text-muted-foreground" />
             </div>

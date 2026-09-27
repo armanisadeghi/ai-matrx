@@ -279,6 +279,18 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
     close,
   }));
 
+  // The docked (phone) bar fits a row of buttons and never scrolls: how many
+  // fit decides which actions keep a button (selection-actions.ts priority).
+  const [viewportWidth, setViewportWidth] = React.useState(() => (typeof window === "undefined" ? 1024 : window.innerWidth));
+  React.useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const coarse = typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
+  // Button: 28px (44px touch floor on coarse pointers) + 2px gap; frame: 8px gutters, 2px padding + border.
+  const slots = isMobile ? Math.max(3, Math.floor((viewportWidth - 16 - 6) / ((coarse ? 44 : 28) + 2))) : null;
+
   // ONE target per selection (a new object only when the selection changes),
   // so the engine resolves once per selection, not per render.
   const target = React.useMemo<ClickTarget | null>(() => {
@@ -289,6 +301,7 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
       mode: open.mode,
       knobs: { highlightWhileEditing },
       ui,
+      slots,
     };
     return createClickTarget({
       readOnly: open.mode === "read",
@@ -300,7 +313,7 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
       host: { ...halves, selectionToolbar: toolbar },
     });
     // `open.seq` is the selection identity; a knob or mode flip re-targets too.
-  }, [open?.seq, open?.mode, highlightWhileEditing, ui, orgId, userId]);
+  }, [open?.seq, open?.mode, highlightWhileEditing, ui, orgId, userId, slots]);
 
   if (!open || !target) return null;
 

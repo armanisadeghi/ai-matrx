@@ -17,7 +17,7 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
 
   if (!conversationId) {
     return (
-      <WorkspaceGate sentence="This assistant needs a workspace to open.">
+      <WorkspaceGate blocked={assistant.blockedOnWorkspace} sentence="This assistant needs a workspace to open.">
         <div className="flex h-full items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>

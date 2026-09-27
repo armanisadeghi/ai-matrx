@@ -63,14 +63,14 @@ afterEach(() => {
 describe("WorkspaceGate", () => {
   it.each(["ready", "resolving"] as const)("keeps the host's waiting UI while the wait is real (%s)", (state) => {
     STATE = state;
-    const host = render(<WorkspaceGate sentence={SENTENCE}>{SPINNER}</WorkspaceGate>);
+    const host = render(<WorkspaceGate blocked sentence={SENTENCE}>{SPINNER}</WorkspaceGate>);
     expect(host.querySelector('[data-testid="host-spinner"]')).not.toBeNull();
     expect(host.textContent).not.toContain(SENTENCE);
   });
 
   it("with no workspace chosen, says the host's sentence and draws the picker — never the spinner", () => {
     STATE = "required";
-    const host = render(<WorkspaceGate sentence={SENTENCE}>{SPINNER}</WorkspaceGate>);
+    const host = render(<WorkspaceGate blocked sentence={SENTENCE}>{SPINNER}</WorkspaceGate>);
     expect(host.querySelector('[data-testid="host-spinner"]')).toBeNull();
     expect(host.textContent).toContain(SENTENCE);
     expect(host.querySelector('[data-testid="workspace-picker"]')).not.toBeNull();
@@ -78,9 +78,18 @@ describe("WorkspaceGate", () => {
     expect(host.textContent).not.toContain("Nothing was loaded");
   });
 
+  it("loading is not a missing workspace: an ordinary wait keeps its spinner even while none is chosen", () => {
+    // Verifier round 1, F-B1: a War Room thread flashed "needs a workspace"
+    // during an ordinary load and then opened without one.
+    STATE = "required";
+    const host = render(<WorkspaceGate blocked={false} sentence={SENTENCE}>{SPINNER}</WorkspaceGate>);
+    expect(host.querySelector('[data-testid="host-spinner"]')).not.toBeNull();
+    expect(host.textContent).not.toContain(SENTENCE);
+  });
+
   it("a failed organization read is never answered with the spinner either", () => {
     STATE = "unavailable";
-    const host = render(<WorkspaceGate sentence={SENTENCE}>{SPINNER}</WorkspaceGate>);
+    const host = render(<WorkspaceGate blocked sentence={SENTENCE}>{SPINNER}</WorkspaceGate>);
     expect(host.querySelector('[data-testid="host-spinner"]')).toBeNull();
   });
 });
@@ -102,6 +111,23 @@ describe("the census — mandate-driven chat hosts wait through the gate", () =>
     const src = readFileSync(join(ROOT, rel), "utf8");
     expect(src).toMatch(/<WorkspaceGate\b/);
   });
+  it("every host passes a real block signal — never a bare gate that fires on any wait", () => {
+    for (const rel of [...HOSTS, "features/war-room/components/room/RoomAgentPanel.tsx"]) {
+      const src = readFileSync(join(ROOT, rel), "utf8");
+      expect(src).toMatch(/<WorkspaceGate\s+blocked/);
+    }
+    // The two screens whose wait has many causes read the hook's own verdict.
+    for (const rel of [
+      "features/transcript-studio/components/scribe/ExperimentalAgentScreen.tsx",
+      "features/transcript-studio/components/scribe/AssistantScreen.tsx",
+    ]) {
+      expect(readFileSync(join(ROOT, rel), "utf8")).toContain("blocked={assistant.blockedOnWorkspace}");
+    }
+    expect(readFileSync(join(ROOT, "features/war-room/components/room/RoomAgentPanel.tsx"), "utf8")).toContain(
+      "blocked={blockedOnWorkspace}",
+    );
+  });
+
   it("the War Room thread chat names itself", () => {
     const src = readFileSync(join(ROOT, "features/war-room/components/thread/ThreadAgentPanel.tsx"), "utf8");
     expect(src).toContain('workspaceSentence="This thread needs a workspace to open."');

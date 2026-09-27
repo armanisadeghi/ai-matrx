@@ -146,7 +146,7 @@ export default function SelectionToolbarFrame({
           key={seq}
           target={target}
           content={text}
-          className={docked ? "max-w-full overflow-x-auto" : undefined}
+          className={docked ? "max-w-full" : undefined}
         />
       )}
     </div>,

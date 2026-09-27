@@ -585,7 +585,7 @@ export function ConductorContent({
   // that was never broken.
   if (organizationPending) {
     return (
-      <WorkspaceGate sentence="The build needs a workspace to start.">
+      <WorkspaceGate blocked sentence="The build needs a workspace to start.">
       <div className="flex flex-col items-center justify-center gap-3 px-4 py-10 text-center">
         <LoadingSpinner />
         <p className="text-sm text-muted-foreground">

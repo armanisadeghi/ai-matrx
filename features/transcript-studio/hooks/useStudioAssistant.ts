@@ -18,7 +18,8 @@
  * hook doesn't apply the agent's edits itself.
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
@@ -93,6 +94,12 @@ interface UseStudioAssistantReturn {
   /** Send a turn. Optionally set the user input first (e.g. spoken text). */
   send: (text?: string) => Promise<void>;
   ready: boolean;
+  /**
+   * The conversation could not be resolved BECAUSE no workspace is chosen (the
+   * assistant's agent resolves through a Mandate, which needs one). Only this
+   * — never an ordinary loading wait — may show the "needs a workspace" state.
+   */
+  blockedOnWorkspace: boolean;
 }
 
 export function useStudioAssistant(
@@ -108,6 +115,9 @@ export function useStudioAssistant(
   const conversationId = useAppSelector(
     selectAssistantConversationId(sessionId),
   );
+  // Re-run the resolution when a workspace is picked (the Mandate answers then).
+  const organizationId = useAppSelector(selectOrganizationId);
+  const [blockedOnWorkspace, setBlockedOnWorkspace] = useState(false);
   const workingDocument = useAppSelector(selectWorkingDocument(sessionId));
   const workingDocIdRef = useRef<string | null>(workingDocument?.id ?? null);
   useEffect(() => {
@@ -156,18 +166,21 @@ export function useStudioAssistant(
         // working_document context object is simply omitted until it lands.
       }
       if (cancelled) return;
-      await dispatch(
+      const result = await dispatch(
         ensureAssistantConversationThunk({
           sessionId,
           defaultAgentId,
           autoCreate,
         }),
       );
+      if (cancelled) return;
+      const error = (result as { error?: { name?: string } }).error;
+      setBlockedOnWorkspace(error?.name === "MandateOrganizationUnresolvedError");
     })();
     return () => {
       cancelled = true;
     };
-  }, [sessionId, conversationId, defaultAgentId, autoCreate, dispatch]);
+  }, [sessionId, conversationId, defaultAgentId, autoCreate, organizationId, dispatch]);
 
   // Hydrate the attached project + its tasks once per project, so the resource
   // context builder has them in Redux to assemble the brief. Idempotent —
@@ -298,6 +311,7 @@ export function useStudioAssistant(
     refreshContext,
     send,
     ready: Boolean(conversationId),
+    blockedOnWorkspace: blockedOnWorkspace && !conversationId,
   };
 }
 

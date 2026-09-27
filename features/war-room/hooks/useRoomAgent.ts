@@ -78,6 +78,8 @@ interface UseRoomAgentReturn {
   loaded: boolean;
   /** True once the conversation is bound and ready to chat in. */
   ready: boolean;
+  /** Waiting ONLY because no workspace is chosen (see the hook body). */
+  blockedOnWorkspace: boolean;
   /** Rebuild + push the single-room read-only context for the current state. */
   refreshContext: () => Promise<void>;
 }
@@ -130,9 +132,11 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
   // needed ONLY where a NEW edge is stamped or an edge carries no agent id; an
   // edge that already records its agent binds without ever consulting the mandate
   // (constants.ts § the persisted-id doctrine).
-  const { mandate: roomMandate, error: roomMandateError } = useMandate(
-    WAR_ROOM_ROOM_AGENT_MANDATE,
-  );
+  const {
+    mandate: roomMandate,
+    error: roomMandateError,
+    organizationPending: roomMandateNeedsWorkspace,
+  } = useMandate(WAR_ROOM_ROOM_AGENT_MANDATE);
   const roomAgentId = roomMandate?.agentId ?? null;
   useEffect(() => {
     if (roomMandateError) {
@@ -347,10 +351,25 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
     void refreshContext();
   }, [boundId, threadSignature, refreshContext]);
 
+  // BLOCKED ON THE WORKSPACE only in the one case the bind cannot proceed
+  // without it: the chat's edge records no agent, so the room Mandate must
+  // answer, and it refused for want of a workspace. Any other wait (the
+  // bucket loading, the bind in flight) is ordinary loading.
+  const targetEdgeAgentId = useAppSelector((state) => {
+    if (!targetId) return null;
+    const row = selectAssignmentsForContainer("room", sessionId)(state).find(
+      (a) => a.entity_type === "conversation" && a.entity_id === targetId,
+    );
+    return (row?.metadata as { agentId?: string } | null)?.agentId ?? null;
+  });
+  const blockedOnWorkspace =
+    !boundId && Boolean(targetId) && !targetEdgeAgentId && roomMandateNeedsWorkspace;
+
   return {
     conversationId: boundId,
     loaded,
     ready: Boolean(boundId),
+    blockedOnWorkspace,
     refreshContext,
   };
 }

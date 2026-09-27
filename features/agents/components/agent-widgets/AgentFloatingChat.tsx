@@ -39,7 +39,7 @@ export function AgentFloatingChat({
       overlayId="agentFloatingChat"
       title={displayTitle}
       onClose={onClose}
-      width={420}
+      width={800}
       height="60dvh"
       minWidth={320}
       minHeight={280}
@@ -52,7 +52,7 @@ export function AgentFloatingChat({
       sidebarMinSize={150}
       defaultSidebarOpen={false}
       sidebarExpandsWindow
-      sidebarClassName="bg-muted/10 border-2 border-red-500"
+      // sidebarClassName="bg-muted/10 border-2 border-red-500"
       // footer={<AgentChatFooter conversationId={conversationId} />}
     >
       <AgentRunner conversationId={conversationId} compact className="h-full" />

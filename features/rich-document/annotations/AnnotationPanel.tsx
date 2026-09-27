@@ -245,6 +245,8 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
 
   return (
     <article
+      data-annotation-key={item.key}
+      data-annotation-kind={item.kind}
       aria-current={active || undefined}
       onClick={() => (item.anchor && !orphaned ? reveal(item.key) : setActiveKey(item.key))}
       className={cn(

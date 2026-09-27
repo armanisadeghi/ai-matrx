@@ -36,6 +36,12 @@ export interface SelectionToolbarHost {
   mode: SelectionMode;
   knobs: SelectionToolbarKnobs;
   ui: SelectionToolbarUi;
+  /**
+   * How many buttons fit in one row (the docked phone bar), or null when the
+   * strip is unbounded (desktop). Past it, the lowest-priority actions move
+   * into the registry's overflow (More) so the bar never scrolls.
+   */
+  slots: number | null;
 }
 
 export function selectionToolbarHostOf(target: ClickTarget): SelectionToolbarHost | null {
@@ -96,6 +102,81 @@ export function shownInSelectionMode(actionId: string, target: ClickTarget): boo
   return modes.includes(toolbar.mode);
 }
 
+// ── Fitting the bar: priority, then the registry's overflow ─────────────────
+
+/**
+ * Which actions keep a button when the bar cannot show them all (a phone).
+ * Everything else — including "AI and more" when space is tight — moves into
+ * the registry's overflow (the layout's More), so the bar never scrolls.
+ */
+export const SELECTION_PRIORITY: Readonly<Record<SelectionMode, readonly string[]>> = {
+  edit: [
+    "selection:format-bold",
+    "selection:format-italic",
+    "selection:format-link",
+    "selection:ai",
+    "selection:comment",
+    "selection:format-strike",
+    "selection:format-code",
+    "selection:format-h1",
+    "selection:format-h2",
+    "selection:format-quote",
+    "selection:format-list",
+    "selection:format-variable",
+    "selection:highlight-yellow",
+    "selection:highlight-green",
+    "selection:highlight-blue",
+    "selection:highlight-pink",
+    "selection:highlight-purple",
+  ],
+  read: [
+    "selection:highlight-yellow",
+    "selection:comment",
+    "selection:ai",
+    "selection:suggest",
+    "selection:tutor-explain",
+    "selection:highlight-green",
+    "selection:highlight-blue",
+    "selection:highlight-pink",
+    "selection:highlight-purple",
+    "selection:tutor-ask",
+    "selection:link-record",
+    "selection:report",
+  ],
+};
+
+/** The host half an action needs (an action whose provider is absent cannot take a slot). */
+function hostKeyOf(id: string): string {
+  if (id.startsWith("selection:format-")) return "richEditor";
+  if (id === "selection:ai") return "contextMenuSelection";
+  if (id.startsWith("selection:tutor-") || id === "selection:report") return PASSAGE_ACTIONS_HOST_KEY;
+  return "annotation";
+}
+
+function presentAt(id: string, target: ClickTarget): boolean {
+  const key = hostKeyOf(id);
+  const half = hostHalf<unknown>(target, key);
+  if (!half) return false;
+  if (key === PASSAGE_ACTIONS_HOST_KEY) return (half as readonly Action[]).some((a) => a.id === id);
+  return shownInSelectionMode(id, target);
+}
+
+/** "primary" (a button) or "overflow" (a More row) for this action at this target. */
+export function selectionPlacement(id: string, target: ClickTarget): "primary" | "overflow" {
+  const toolbar = selectionToolbarHostOf(target);
+  if (!toolbar || toolbar.slots === null) return "primary";
+  const shown = SELECTION_PRIORITY[toolbar.mode].filter((x) => presentAt(x, target));
+  if (shown.length <= toolbar.slots) return "primary";
+  // One slot goes to the More button itself.
+  const rank = shown.indexOf(id);
+  return rank >= 0 && rank < Math.max(1, toolbar.slots - 1) ? "primary" : "overflow";
+}
+
+/** A provider's actions, placed for this target (every selection provider returns through this). */
+export function placeSelectionActions(actions: readonly Action[], target: ClickTarget): Action[] {
+  return actions.map((a) => ({ ...a, placement: selectionPlacement(a.id, target) }));
+}
+
 // ── A surface's own passage actions ─────────────────────────────────────────
 
 /**
@@ -111,7 +192,7 @@ export const passageActionsProvider: ActionProvider = {
   tier: "T0",
   actions: (target) => {
     const list = hostHalf<readonly Action[]>(target, PASSAGE_ACTIONS_HOST_KEY) ?? [];
-    return list.map((a) => ({
+    return placeSelectionActions(list, target).map((a) => ({
       ...a,
       eligible: (t: ClickTarget) => (shownInSelectionMode(a.id, t) ? a.eligible(t) : { status: "absent" as const }),
     }));

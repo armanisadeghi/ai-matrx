@@ -14,6 +14,7 @@ import type { Action, ActionProvider, ClickTarget } from "@ai-matrx/alchemy/acti
 import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
 import {
   declareSelectionProvider,
+  placeSelectionActions,
   hostHalf,
   selectionToolbarHostOf,
   shownInSelectionMode,
@@ -142,7 +143,7 @@ export const annotationSelectionProvider: ActionProvider = {
   id: "annotation-selection",
   tier: "T0",
   declaredIds: () => ACTIONS.map((a) => a.id),
-  actions: (target) => (annotationHostOf(target) ? ACTIONS : []),
+  actions: (target) => (annotationHostOf(target) ? placeSelectionActions(ACTIONS, target) : []),
 };
 
 declareSelectionProvider(annotationSelectionProvider);

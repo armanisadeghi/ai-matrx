@@ -203,7 +203,7 @@ export function DriveInterviewPage({
   if (interviewer.organizationPending || communicator.organizationPending) {
     return (
       <DriveShell>
-        <WorkspaceGate sentence="This interview needs a workspace to start.">
+        <WorkspaceGate blocked sentence="This interview needs a workspace to start.">
           <DriveMessage headline="Getting ready" body="Setting up your workspace." />
         </WorkspaceGate>
       </DriveShell>

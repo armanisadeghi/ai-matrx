@@ -149,7 +149,7 @@ export function EducationTutorClient(props: EducationTutorClientProps) {
   if (organizationPending) {
     return (
       <div className="flex h-full flex-col overflow-hidden bg-textured">
-        <WorkspaceGate sentence="The AI Tutor needs a workspace to open.">
+        <WorkspaceGate blocked sentence="The AI Tutor needs a workspace to open.">
           <ChatRoomSkeleton />
         </WorkspaceGate>
       </div>

@@ -12,6 +12,7 @@ import type { Action, ActionProvider, ClickTarget } from "@ai-matrx/alchemy/acti
 import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
 import {
   declareSelectionProvider,
+  placeSelectionActions,
   hostHalf,
   selectionToolbarHostOf,
   shownInSelectionMode,
@@ -53,7 +54,7 @@ export const contextMenuSelectionProvider: ActionProvider = {
   id: "context-menu-selection",
   tier: "T0",
   declaredIds: () => [ASK_AI.id],
-  actions: (target) => (menuOf(target) ? [ASK_AI] : []),
+  actions: (target) => (menuOf(target) ? placeSelectionActions([ASK_AI], target) : []),
 };
 
 declareSelectionProvider(contextMenuSelectionProvider);

@@ -10,8 +10,8 @@
 // picks one for the person — so once boot has SETTLED with nothing chosen, the
 // spinner is waiting on something that will never happen. A screen that lies.
 //
-// This wraps the host's own loading UI: while the organization is ready or
-// still resolving, the children (the spinner or skeleton) render unchanged —
+// This wraps the host's own loading UI: unless the host says it is BLOCKED on
+// the workspace, or while the organization is ready or still resolving, the children (the spinner or skeleton) render unchanged —
 // that wait is real. When boot settled with no workspace (or the read failed,
 // or the person is signed out), the SAME area shows the one honest notice:
 // the host's own sentence plus the canonical inline workspace picker
@@ -20,7 +20,7 @@
 // loads. Nothing is ever chosen for the person.
 //
 // USAGE (in place of the host's spinner — no new rows):
-//   <WorkspaceGate sentence="This thread needs a workspace to open.">
+//   <WorkspaceGate blocked={assistant.blockedOnWorkspace} sentence="This thread needs a workspace to open.">
 //     <Loader2 className="animate-spin" />
 //   </WorkspaceGate>
 
@@ -29,6 +29,15 @@ import { useOrganizationRequired } from "@/features/organizations/useOrganizatio
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 export interface WorkspaceGateProps {
+  /**
+   * The host is waiting BECAUSE no workspace is chosen (its Mandate refused
+   * with the organization-unresolved error, or `useMandate` said
+   * `organizationPending`). Required, never inferred: "boot settled with no
+   * workspace" is not proof — an ordinary load that happens while the header
+   * says "Choose org" must keep its spinner (verifier round 1, F-B1: a War
+   * Room thread flashed "needs a workspace" and then opened without one).
+   */
+  blocked: boolean;
   /** One plain sentence naming what needs the workspace, e.g. "This thread needs a workspace to open." */
   sentence: string;
   /** The host's own waiting UI, shown while the wait is real. */
@@ -38,9 +47,9 @@ export interface WorkspaceGateProps {
   className?: string;
 }
 
-export function WorkspaceGate({ sentence, children, compact = false, className }: WorkspaceGateProps) {
+export function WorkspaceGate({ sentence, blocked, children, compact = false, className }: WorkspaceGateProps) {
   const { organizationState } = useOrganizationRequired();
-  if (organizationState === "ready" || organizationState === "resolving") {
+  if (!blocked || organizationState === "ready" || organizationState === "resolving") {
     return <>{children}</>;
   }
   return (

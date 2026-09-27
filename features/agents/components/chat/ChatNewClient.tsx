@@ -48,7 +48,7 @@ function ChatNewClientResolved() {
   // No workspace chosen is a question, never "chat is unavailable".
   if (organizationPending) {
     return (
-      <WorkspaceGate sentence="Chat needs a workspace to open.">
+      <WorkspaceGate blocked sentence="Chat needs a workspace to open.">
         <ChatNewLandingSkeleton />
       </WorkspaceGate>
     );
