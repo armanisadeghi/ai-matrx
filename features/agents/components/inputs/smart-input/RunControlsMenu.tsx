@@ -86,7 +86,7 @@ export interface RunControlsMenuProps {
    * desktop `+` opens the mode-aware cascading ComposerPlusMenu; absent =
    * PlusAttachMenu exactly as before. Mobile keeps the bottom sheet either way.
    */
-  composer?: { mode: ComposerMode; size: ComposerSize };
+  composer?: { mode: ComposerMode; size: ComposerSize; surfaceKey?: string };
 }
 
 export function RunControlsMenu({
@@ -198,6 +198,7 @@ export function RunControlsMenu({
           mode={composer.mode}
           size={composer.size}
           side={side}
+          surfaceKey={composer.surfaceKey}
           onRequestInputExpand={onRequestInputExpand}
         />
       );

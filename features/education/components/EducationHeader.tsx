@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
-import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 export const EDUCATION_NAV_ITEMS = [
   {
@@ -69,9 +68,6 @@ export function EducationHeader() {
           fallbackLabel={EDUCATION_NAV_FALLBACK_LABEL}
         />
       }
-      // Keyed to the page on screen: the jobs this route runs, or no mark at
-      // all (it used to list every education job on every education page).
-      right={<IntelligenceIndicator feature="education" scope="route" label="This page" />}
       fallback
     />
   );

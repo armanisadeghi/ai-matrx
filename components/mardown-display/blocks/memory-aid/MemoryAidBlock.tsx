@@ -22,7 +22,8 @@
  * envelope (`study_media.ir_envelope`) — `readMemoryAidData` recognizes both.
  */
 
-import { Brain, Landmark, Lightbulb, Loader2, MapPin } from "lucide-react";
+import { Brain, Landmark, Lightbulb, Loader2, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   coerceMemoryAidPartial,
   type MemoryAidData,
@@ -72,11 +73,23 @@ export function readMemoryAidData(serverData: unknown): MemoryAidData {
 export interface MemoryAidBlockProps {
   serverData?: unknown;
   className?: string;
+  controls?: MemoryAidControls;
+}
+
+export type MemoryItemKind = "mnemonic" | "analogy" | "locus";
+
+/** Optional page controls; the registered kind keeps owning every read view. */
+export interface MemoryAidControls {
+  onAdd: (kind: MemoryItemKind) => void;
+  onEdit: (kind: MemoryItemKind, index: number) => void;
+  onDelete: (kind: MemoryItemKind, index: number) => void;
+  editor?: { kind: MemoryItemKind; index: number; content: React.ReactNode };
 }
 
 export default function MemoryAidBlock({
   serverData,
   className,
+  controls,
 }: MemoryAidBlockProps) {
   const { aid, isComplete } = readMemoryAidData(serverData);
   const empty =
@@ -84,7 +97,7 @@ export default function MemoryAidBlock({
     aid.analogies.length === 0 &&
     !aid.memory_palace.applicable;
 
-  if (empty && isComplete) {
+  if (empty && isComplete && !controls) {
     return (
       <div
         className={cn(
@@ -105,9 +118,9 @@ export default function MemoryAidBlock({
         </p>
       )}
 
-      <MnemonicsSection mnemonics={aid.mnemonics} />
-      <AnalogiesSection analogies={aid.analogies} />
-      <MemoryPalaceSection palace={aid.memory_palace} />
+      <MnemonicsSection mnemonics={aid.mnemonics} controls={controls} />
+      <AnalogiesSection analogies={aid.analogies} controls={controls} />
+      <MemoryPalaceSection palace={aid.memory_palace} controls={controls} />
 
       {!isComplete && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -121,23 +134,25 @@ export default function MemoryAidBlock({
 
 // ── Exported section parts — compose these, never re-render a slice by hand ──
 
-export function MnemonicsSection({ mnemonics }: { mnemonics: Mnemonic[] }) {
-  if (mnemonics.length === 0) return null;
+export function MnemonicsSection({ mnemonics, controls }: { mnemonics: Mnemonic[]; controls?: MemoryAidControls }) {
+  if (mnemonics.length === 0 && !controls) return null;
   return (
-    <Section icon={Brain} title="Mnemonics" count={mnemonics.length}>
+    <Section icon={Brain} title="Mnemonics" count={mnemonics.length} action={controls && <AddItem kind="mnemonic" label="Add mnemonic" controls={controls} />}>
       <div className="space-y-2">
         {mnemonics.map((m, i) => (
           <div
             key={`mn-${i}`}
-            className="rounded-xl border border-border bg-card p-3"
+            className="group rounded-xl border border-border bg-card p-3"
           >
+            {controls?.editor?.kind === "mnemonic" && controls.editor.index === i ? controls.editor.content : <>
             <div className="mb-1 flex items-center gap-2">
               <TechniquePill technique={m.technique} />
               {m.target && (
-                <span className="truncate text-xs text-muted-foreground">
+                <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
                   {m.target}
                 </span>
               )}
+              {controls && <ItemActions kind="mnemonic" index={i} controls={controls} />}
             </div>
             <p className="text-base font-semibold text-foreground">
               <RichContentInline source={m.device} />
@@ -147,6 +162,7 @@ export function MnemonicsSection({ mnemonics }: { mnemonics: Mnemonic[] }) {
                 <RichContentInline source={m.explanation} />
               </p>
             )}
+            </>}
           </div>
         ))}
       </div>
@@ -154,20 +170,23 @@ export function MnemonicsSection({ mnemonics }: { mnemonics: Mnemonic[] }) {
   );
 }
 
-export function AnalogiesSection({ analogies }: { analogies: Analogy[] }) {
-  if (analogies.length === 0) return null;
+export function AnalogiesSection({ analogies, controls }: { analogies: Analogy[]; controls?: MemoryAidControls }) {
+  if (analogies.length === 0 && !controls) return null;
   return (
     <Section
       icon={Lightbulb}
       title="Analogies & memory bridges"
       count={analogies.length}
+      action={controls && <AddItem kind="analogy" label="Add analogy" controls={controls} />}
     >
       <div className="space-y-2">
         {analogies.map((a, i) => (
           <div
             key={`an-${i}`}
-            className="rounded-xl border border-border bg-card p-3"
+            className="group rounded-xl border border-border bg-card p-3"
           >
+            {controls?.editor?.kind === "analogy" && controls.editor.index === i ? controls.editor.content : <>
+            {controls && <div className="float-right ml-2"><ItemActions kind="analogy" index={i} controls={controls} /></div>}
             {a.concept && (
               <p className="text-sm font-medium text-foreground">
                 <RichContentInline source={a.concept} />
@@ -182,6 +201,7 @@ export function AnalogiesSection({ analogies }: { analogies: Analogy[] }) {
                 <RichContentInline source={a.mapping} />
               </p>
             )}
+            </>}
           </div>
         ))}
       </div>
@@ -189,10 +209,10 @@ export function AnalogiesSection({ analogies }: { analogies: Analogy[] }) {
   );
 }
 
-export function MemoryPalaceSection({ palace }: { palace: MemoryPalace }) {
-  if (!palace.applicable || palace.loci.length === 0) return null;
+export function MemoryPalaceSection({ palace, controls }: { palace: MemoryPalace; controls?: MemoryAidControls }) {
+  if ((!palace.applicable || palace.loci.length === 0) && !controls) return null;
   return (
-    <Section icon={Landmark} title="Memory palace">
+    <Section icon={Landmark} title="Memory palace" action={controls && <AddItem kind="locus" label="Add stop" controls={controls} />}>
       <div className="rounded-xl border border-border bg-card p-3">
         {palace.theme && (
           <p className="mb-2 text-sm text-muted-foreground">
@@ -202,11 +222,12 @@ export function MemoryPalaceSection({ palace }: { palace: MemoryPalace }) {
         )}
         <ol className="space-y-2">
           {palace.loci.map((l, i) => (
-            <li key={`loc-${i}`} className="flex gap-2.5">
+            <li key={`loc-${i}`} className="group flex gap-2.5 rounded-md py-1">
               <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
                 {i + 1}
               </span>
-              <div className="min-w-0">
+              {controls?.editor?.kind === "locus" && controls.editor.index === i ? controls.editor.content : <>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-foreground">
                   <MapPin className="mr-1 inline h-3.5 w-3.5 text-muted-foreground" />
                   {l.place}
@@ -220,6 +241,8 @@ export function MemoryPalaceSection({ palace }: { palace: MemoryPalace }) {
                   </p>
                 )}
               </div>
+              {controls && <ItemActions kind="locus" index={i} controls={controls} />}
+              </>}
             </li>
           ))}
         </ol>
@@ -244,11 +267,13 @@ function Section({
   icon: Icon,
   title,
   count,
+  action,
   children,
 }: {
   icon: typeof Brain;
   title: string;
   count?: number;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -259,8 +284,27 @@ function Section({
         {typeof count === "number" && (
           <span className="text-xs text-muted-foreground">({count})</span>
         )}
+        {action && <div className="ml-auto">{action}</div>}
       </div>
       {children}
     </section>
   );
+}
+
+function AddItem({ kind, label, controls }: { kind: MemoryItemKind; label: string; controls: MemoryAidControls }) {
+  return <Button type="button" variant="ghost" size="sm" onClick={() => controls.onAdd(kind)}>
+    <Plus className="mr-1 h-3.5 w-3.5" />{label}
+  </Button>;
+}
+
+function ItemActions({ kind, index, controls }: { kind: MemoryItemKind; index: number; controls: MemoryAidControls }) {
+  const noun = kind === "locus" ? "stop" : kind;
+  return <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100">
+    <Button type="button" variant="ghost" size="icon" className="h-7 w-7" aria-label={`Edit ${noun} ${index + 1}`} title={`Edit ${noun}`} onClick={() => controls.onEdit(kind, index)}>
+      <Pencil className="h-3.5 w-3.5" />
+    </Button>
+    <Button type="button" variant="ghost" size="icon" className="h-7 w-7" aria-label={`Delete ${noun} ${index + 1}`} title={`Delete ${noun}`} onClick={() => controls.onDelete(kind, index)}>
+      <Trash2 className="h-3.5 w-3.5" />
+    </Button>
+  </div>;
 }

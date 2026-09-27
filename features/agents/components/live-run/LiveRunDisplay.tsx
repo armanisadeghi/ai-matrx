@@ -137,7 +137,7 @@ export function LiveRunDisplay({
         {requestId ? (
           <div
             ref={bodyRef}
-            className={cn("h-full min-h-0 overflow-y-auto", bodyClassName)}
+            className={cn("h-full min-h-0 px-2 overflow-y-auto", bodyClassName)}
           >
             {conversationId && assistantMessageId ? (
               <AgentAssistantMessage

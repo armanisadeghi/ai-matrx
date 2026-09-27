@@ -82,7 +82,6 @@ import {
 } from "./CanvasPropertiesPanel";
 import { useCanvasWorkspaceConversation } from "./useCanvasWorkspaceConversation";
 import { ChatPanelTitleMenu, useChatPanelTitle } from "./ChatPanelTitleMenu";
-import { PageContextRow } from "./PageContextRow";
 import { useConversationFollowsPage } from "@/features/surfaces/runtime/useConversationFollowsPage";
 import {
   CANVAS_CHAT_SIZES,
@@ -90,7 +89,6 @@ import {
   CANVAS_PANEL_IDS,
   CANVAS_PROPERTIES_SIZES,
   writeCanvasChatCookie,
-  writeCanvasFollowsPageCookie,
   writeCanvasPropertiesCookie,
   type CanvasChatPlacement,
   type CanvasChatState,
@@ -288,16 +286,10 @@ export function ChatCanvasWorkspace({
   }, [fullScreen]);
 
   const conversationId = chat.conversationId;
-  const [followsPage, setFollowsPageState] = useState(initialLayout?.followsPage ?? true);
-  const setFollowsPage = (on: boolean) => {
-    setFollowsPageState(on);
-    writeCanvasFollowsPageCookie(id, on);
-  };
-  // Passing no conversation keeps the hook inert for a host that does not follow the page.
-  const { pageSurfaceLabel } = useConversationFollowsPage(
-    followPageSurface ? conversationId : null,
-    followsPage,
-  );
+  // Passing no conversation keeps the hook inert for a host that does not
+  // follow the page. The person turns it off and on from the composer's page
+  // chip (PageContextChip), which the hook honours.
+  useConversationFollowsPage(followPageSurface ? conversationId : null, true);
   const chatTitle = useChatPanelTitle(conversationId);
 
   const chatColumn = (
@@ -378,7 +370,6 @@ export function ChatCanvasWorkspace({
           onCollapse={() => nav.collapse()}
           aria-label="Navigation"
           outerClassName="max-lg:hidden"
-          className={nav.overlay ? undefined : "border-r border-border"}
         >
           <CanvasNav
             nav={nav}
@@ -403,9 +394,9 @@ export function ChatCanvasWorkspace({
           onCollapse={closeChat}
           aria-label="Chat"
           outerClassName="max-lg:hidden"
-          className="border-r border-border bg-card"
+          className="bg-card"
         >
-          <div className="flex h-11 shrink-0 items-center gap-1 border-b border-border px-2">
+          <div className="flex h-11 shrink-0 items-center gap-1 px-2">
             {navCollapsed ? <CanvasNavToggle nav={nav} /> : null}
             <div className="min-w-0 flex-1">{chatTitleMenu}</div>
             <ComposerModeSwitch size="panel" initialMode={initialMode} />
@@ -428,9 +419,6 @@ export function ChatCanvasWorkspace({
               <PanelLeftClose className="h-4 w-4" />
             </button>
           </div>
-          {followPageSurface ? (
-            <PageContextRow label={pageSurfaceLabel} on={followsPage} onToggle={() => setFollowsPage(!followsPage)} />
-          ) : null}
           <div className="flex min-h-0 flex-1 flex-col">
             {placement === "side" && (chatOnScreen || conversationId) ? chatColumn : null}
           </div>
@@ -439,7 +427,7 @@ export function ChatCanvasWorkspace({
 
       {/* ── Canvas area ── */}
       <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
-        <header className="flex h-11 shrink-0 items-center gap-1.5 border-b border-border px-3">
+        <header className="flex h-11 shrink-0 items-center gap-1.5 px-3">
           {/* Compact (< 1024px) and wide controls are BOTH rendered and chosen by
               CSS, so a phone's first paint is right before JavaScript measures. */}
           <button
@@ -603,7 +591,6 @@ export function ChatCanvasWorkspace({
               onCollapse={() => setPropertiesOpen(false)}
               aria-label="Properties"
               outerClassName="max-lg:hidden"
-              className="border-l border-border"
             >
               <CanvasPropertiesPanel tabs={properties.tabs} />
             </DockedSidePanel>
@@ -643,9 +630,6 @@ export function ChatCanvasWorkspace({
                       initialMode={initialMode}
                     />
                   </div>
-                  {followPageSurface ? (
-                    <PageContextRow label={pageSurfaceLabel} on={followsPage} onToggle={() => setFollowsPage(!followsPage)} />
-                  ) : null}
                   {chatColumn}
                 </>
               ) : mobileSheet === "nav" ? (

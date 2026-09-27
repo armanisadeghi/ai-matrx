@@ -321,7 +321,7 @@ export function CanvasNav({
           className="bg-transparent"
         />
       </div>
-      <div className="shrink-0 border-t border-border pt-1.5">
+      <div className="shrink-0 pt-1.5">
         <CanvasUserRow />
       </div>
     </div>
@@ -341,9 +341,6 @@ function CanvasNavMore({ children }: { children: ReactNode }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent side="right" align="start" className="min-w-56">
-        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-          Everything in AI Matrx
-        </DropdownMenuLabel>
         {items.map((item) => {
           const Icon = shellIconComponents[item.iconName];
           const label = (

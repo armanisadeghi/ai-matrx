@@ -26,6 +26,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { replaceSurfaceVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { replaceSurfaceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { selectPageContextOff } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { refreshSurfaceScope } from "@/features/agents/redux/execution-system/thunks/refresh-surface-scope.thunk";
 import { useActivePageSurface } from "./useActivePageSurface";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 
@@ -48,12 +50,16 @@ export function useConversationFollowsPage(
   const conversationReady = useAppSelector((state) =>
     conversationId ? Boolean(state.conversations.byConversationId[conversationId]) : false,
   );
-  const desiredSurfaceName = includePageContext && pageSurfaceName ? pageSurfaceName : null;
+  // The composer's page-context chip can turn it off for this conversation.
+  const turnedOff = useAppSelector(selectPageContextOff(conversationId));
+  const desiredSurfaceName = includePageContext && !turnedOff && pageSurfaceName ? pageSurfaceName : null;
 
   useEffect(() => {
     if (!conversationId || !conversationReady) return;
     if (stampedSurfaceName === desiredSurfaceName) return;
     dispatch(patchConversation({ conversationId, surfaceName: desiredSurfaceName }));
+    // Read the new page NOW, so the composer shows what the chat will get.
+    if (desiredSurfaceName) void dispatch(refreshSurfaceScope({ conversationId }));
     if (!desiredSurfaceName) {
       // Off means OFF: drop what the page already handed over.
       dispatch(replaceSurfaceVariableValues({ conversationId, values: {} }));

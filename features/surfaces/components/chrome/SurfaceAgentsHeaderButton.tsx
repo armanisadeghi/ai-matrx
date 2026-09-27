@@ -22,7 +22,8 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 
-import { RobotTapButton } from "@ai-matrx/tap-target/buttons";
+import { TapTargetButton } from "@ai-matrx/tap-target";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import {
   Popover,
   PopoverContent,
@@ -60,7 +61,8 @@ export const AGENTS_AUTH_GATE = {
 function GuestAgentsButton() {
   const openAuthGate = useOpenAuthGateDialog();
   return (
-    <RobotTapButton
+    <TapTargetButton
+      icon={<INTELLIGENCE_ICON className="h-5 w-5" />}
       ariaLabel="Agents for this page — sign in to use them"
       tooltip="Agents (sign in)"
       className="text-primary"
@@ -74,7 +76,8 @@ function SignedInAgentsButton() {
   const isMobile = useIsMobile();
 
   const trigger = (
-    <RobotTapButton
+    <TapTargetButton
+      icon={<INTELLIGENCE_ICON className="h-5 w-5" />}
       ariaLabel="Agents for this page"
       tooltip="Agents"
       className="text-primary"

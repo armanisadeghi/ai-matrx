@@ -23,7 +23,7 @@ import { useAgentNames } from "@/features/surfaces/hooks/useAgentNames";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfaceAgentBindWindow";
 import { useOpenAgentSettingsWindow } from "@/features/overlays/openers/agentSettingsWindow";
-import { unbindAgentFromSurface } from "@/features/surfaces/services/bind-agent-to-surface.service";
+import { deleteAgentSurfaceBinding } from "@/features/surfaces/services/bind-agent-to-surface.service";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
@@ -162,6 +162,9 @@ export function SurfaceBoundAgentsList({
               return (
                 <div
                   key={`role:${view.role.name}`}
+                  onClick={() => {
+                    if (!runDisabled) void onRunAgent(agentId);
+                  }}
                   className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-1.5"
                 >
                   <button
@@ -169,7 +172,10 @@ export function SurfaceBoundAgentsList({
                     title={`Run ${agentName ?? view.role.label}`}
                     aria-label={`Run ${agentName ?? view.role.label}`}
                     disabled={runDisabled}
-                    onClick={() => void onRunAgent(agentId)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void onRunAgent(agentId);
+                    }}
                     className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-primary hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   >
                     <Play className="h-3 w-3 fill-current" />
@@ -180,6 +186,10 @@ export function SurfaceBoundAgentsList({
                     name={agentName ?? view.role.label}
                     showIcon={false}
                     fill
+                    disablePeek
+                    onOpen={() => {
+                      if (!runDisabled) void onRunAgent(agentId);
+                    }}
                     className="min-w-0 flex-1 text-xs font-medium leading-none"
                   >
                     <span className="truncate">
@@ -195,12 +205,13 @@ export function SurfaceBoundAgentsList({
                     type="button"
                     title={`Settings for ${agentName ?? view.role.label}`}
                     aria-label={`Settings for ${agentName ?? view.role.label}`}
-                    onClick={() =>
+                    onClick={(event) => {
+                      event.stopPropagation();
                       openSettings({
                         initialAgentId: agentId,
                         surfaceName,
-                      })
-                    }
+                      });
+                    }}
                     className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                   >
                     <Settings className="h-3 w-3" />
@@ -221,6 +232,9 @@ export function SurfaceBoundAgentsList({
             {section.agents.map((a) => (
               <div
                 key={`${section.key}:${a.agentId}`}
+                onClick={() => {
+                  if (!runDisabled) void onRunAgent(a.agentId);
+                }}
                 className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-1.5"
               >
                 <button
@@ -228,7 +242,10 @@ export function SurfaceBoundAgentsList({
                   title={`Run ${a.name}`}
                   aria-label={`Run ${a.name}`}
                   disabled={runDisabled}
-                  onClick={() => void onRunAgent(a.agentId)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void onRunAgent(a.agentId);
+                  }}
                   className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-primary hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <Play className="h-3 w-3 fill-current" />
@@ -239,18 +256,23 @@ export function SurfaceBoundAgentsList({
                   name={a.name}
                   showIcon={false}
                   fill
+                  disablePeek
+                  onOpen={() => {
+                    if (!runDisabled) void onRunAgent(a.agentId);
+                  }}
                   className="min-w-0 flex-1 text-xs font-medium leading-none"
                 />
                 <button
                   type="button"
                   title={`Settings for ${a.name}`}
                   aria-label={`Settings for ${a.name}`}
-                  onClick={() =>
+                  onClick={(event) => {
+                    event.stopPropagation();
                     openSettings({
                       initialAgentId: a.agentId,
                       surfaceName,
-                    })
-                  }
+                    });
+                  }}
                   className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                 >
                   <Settings className="h-3 w-3" />
@@ -260,7 +282,10 @@ export function SurfaceBoundAgentsList({
                     type="button"
                     title={`Remove ${a.name} from ${surfaceLabel}`}
                     aria-label={`Remove ${a.name} from ${surfaceLabel}`}
-                    onClick={() => setDetachTarget(a)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setDetachTarget(a);
+                    }}
                     className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                   >
                     <Unlink className="h-3 w-3" />
@@ -312,10 +337,7 @@ export function SurfaceBoundAgentsList({
           if (!detachTarget) return;
           setDetachBusy(true);
           try {
-            await unbindAgentFromSurface({
-              agentId: detachTarget.agentId,
-              surfaceName,
-            });
+            await deleteAgentSurfaceBinding(detachTarget.bindingId);
             toast.success(`Removed from ${surfaceLabel}`);
             setDetachTarget(null);
             void refresh();

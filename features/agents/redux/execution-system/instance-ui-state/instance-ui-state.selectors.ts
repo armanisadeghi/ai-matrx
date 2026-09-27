@@ -531,6 +531,12 @@ export const selectMemoryToggleRequest =
       ? state.instanceUIState.memoryToggleByConversationId?.[conversationId]
       : undefined;
 
+/** The page context was turned off for this conversation (and what it was), or undefined when on. */
+export const selectPageContextOff =
+  (conversationId: string | null | undefined) =>
+  (state: RootState): { previousSurfaceName: string | null } | undefined =>
+    conversationId ? state.instanceUIState.pageContextOffByConversationId?.[conversationId] : undefined;
+
 export const selectMemoryScope = (state: RootState): "thread" | "resource" =>
   state.instanceUIState.memoryScope;
 

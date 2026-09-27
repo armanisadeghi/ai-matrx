@@ -31,7 +31,6 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
-import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import LucideIcon from "@/features/shell/components/header/variants/shared/LucideIcon";
 import {
   DropdownMenu,
@@ -192,7 +191,6 @@ export function EducationToolHeader({
       }
       right={
         <>
-          <IntelligenceIndicator feature="education" scope="route" label="This page" />
           {right}
           {actionNodes}
         </>

@@ -20,11 +20,12 @@ function clearHighlights(all: string, active: string) {
 }
 
 /** A read-only find bar for any rendered RichDocument. Never mutates content or selection. */
-export function RenderedFindBar({ rootRef, onClose, label = "Find in document", focusRequest = 0 }: {
+export function RenderedFindBar({ rootRef, onClose, label = "Find in document", focusRequest = 0, compact = false }: {
   rootRef: React.RefObject<HTMLElement | null>;
   onClose: () => void;
   label?: string;
   focusRequest?: number;
+  compact?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -79,17 +80,19 @@ export function RenderedFindBar({ rootRef, onClose, label = "Find in document", 
   const toggle = (key: keyof RenderedFindOptions) => setOptions((value) => ({ ...value, [key]: !value[key] }));
   const validRegex = !options.regex || (() => { try { new RegExp(query); return true; } catch { return false; } })();
 
-  return <div role="search" aria-label={label} data-find-ignore="" className="flex min-w-0 flex-wrap items-center gap-1 rounded-lg border border-border bg-card px-2 py-1 shadow-sm">
+  return <div role="search" aria-label={label} data-find-ignore="" className={`flex min-w-0 items-center gap-1 rounded-lg border border-border bg-card px-2 py-1 shadow-sm ${compact ? "flex-nowrap" : "flex-wrap"}`}>
     <style>{`::highlight(${allHighlight}) { background-color: rgb(250 204 21 / .5); color: inherit; } ::highlight(${activeHighlight}) { background-color: rgb(249 115 22 / .85); color: white; }`}</style>
     <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
     <input ref={inputRef} type="search" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => {
       if (event.key === "Enter") { event.preventDefault(); step(event.shiftKey ? -1 : 1); }
       if (event.key === "Escape") { event.preventDefault(); onClose(); }
-    }} placeholder={label} aria-label={label} className="min-w-28 flex-1 bg-transparent text-base outline-none md:text-sm" />
+    }} placeholder={label} aria-label={label} className="min-w-0 flex-1 bg-transparent text-base outline-none md:text-sm" />
     <span className="min-w-12 text-right text-xs tabular-nums text-muted-foreground" aria-live="polite">{!validRegex ? "Invalid pattern" : !query.trim() ? "" : ranges.length ? `${current + 1} of ${ranges.length}` : "No matches"}</span>
-    <OptionButton label="Match case" pressed={!!options.caseSensitive} onClick={() => toggle("caseSensitive")}><CaseSensitive className="h-4 w-4" /></OptionButton>
-    <OptionButton label="Whole word" pressed={!!options.wholeWord} onClick={() => toggle("wholeWord")}><WholeWord className="h-4 w-4" /></OptionButton>
-    <OptionButton label="Regular expression" pressed={!!options.regex} onClick={() => toggle("regex")}><Regex className="h-4 w-4" /></OptionButton>
+    {!compact && <>
+      <OptionButton label="Match case" pressed={!!options.caseSensitive} onClick={() => toggle("caseSensitive")}><CaseSensitive className="h-4 w-4" /></OptionButton>
+      <OptionButton label="Whole word" pressed={!!options.wholeWord} onClick={() => toggle("wholeWord")}><WholeWord className="h-4 w-4" /></OptionButton>
+      <OptionButton label="Regular expression" pressed={!!options.regex} onClick={() => toggle("regex")}><Regex className="h-4 w-4" /></OptionButton>
+    </>}
     <OptionButton label="Previous match" disabled={!ranges.length} onClick={() => step(-1)}><ChevronUp className="h-4 w-4" /></OptionButton>
     <OptionButton label="Next match" disabled={!ranges.length} onClick={() => step(1)}><ChevronDown className="h-4 w-4" /></OptionButton>
     <OptionButton label="Close search" onClick={onClose}><X className="h-4 w-4" /></OptionButton>

@@ -23,6 +23,7 @@ import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/Surf
 import { surfaceAcceptsAgentBindings } from "@/features/surfaces/manifests/registry";
 import { SurfaceMandatesSection } from "@/features/surfaces/components/chrome/SurfaceMandatesSection";
 import { SurfaceConversationsSection } from "@/features/surfaces/components/chrome/SurfaceConversationsSection";
+import { PageIntelligenceSection } from "@/features/surfaces/components/chrome/PageIntelligenceSection";
 import { Badge } from "@/components/ui/badge";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
@@ -176,6 +177,7 @@ export default function SurfaceAgentsPanelImpl({
           isAdmin={isAdmin}
           onOpened={() => onRequestClose?.()}
         />
+        <PageIntelligenceSection onOpened={onRequestClose} />
         <div className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
           <p className="font-medium text-foreground">
             No surface registered for this page
@@ -309,6 +311,7 @@ export default function SurfaceAgentsPanelImpl({
         hasLiveScope={runtime?.surfaceName === primaryName}
         onOpened={() => onRequestClose?.()}
       />
+      <PageIntelligenceSection onOpened={onRequestClose} />
     </div>
   );
 }

@@ -71,7 +71,11 @@ import {
 } from "@/features/canvas/redux/canvasSlice";
 import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
 import { selectCloudBrowserRunLive } from "@/features/cloud-browser/redux/cloudBrowserSlice";
-import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
+import {
+  selectInstanceContextEntries,
+  selectSurfaceContextKeys,
+} from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
+import { PageContextChip, usePageContextChipShown } from "./PageContextChip";
 import { removeContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
@@ -196,6 +200,12 @@ export function ConversationContextRail({
   );
   const entries = useAppSelector(selectEntries);
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
+  // Everything the PAGE'S SURFACE contributed rides ONE chip (PageContextChip);
+  // every other entry keeps its own.
+  const surfaceKeys = useAppSelector(selectSurfaceContextKeys(conversationId));
+  const surfaceKeySet = new Set(surfaceKeys);
+  const surfaceEntries = entries.filter((e) => surfaceKeySet.has(e.key) && entryHasValue(e));
+  const pageChipShown = usePageContextChipShown(conversationId);
 
   // ── Document pills read the EDITOR slice (the SSOT), never instanceContext
   // (which is the agent-facing publication). Working: shown iff enabled.
@@ -470,6 +480,8 @@ export function ConversationContextRail({
     for (const e of valued) {
       // A host pill already presents this entry (see `contextKey`).
       if (presentedByHost.has(e.key)) continue;
+      // The page's surface values live in the one page-context chip.
+      if (surfaceKeySet.has(e.key)) continue;
       // Doc-like keys (working doc, scratchpad, attached-scratchpad extras):
       // when their slice-driven pill rendered above, never re-surface the
       // published context value as a generic pill. But a doc-kind entry can
@@ -551,6 +563,7 @@ export function ConversationContextRail({
   }, [
     machineFramesVisible,
     entries,
+    surfaceKeys,
     hasLists,
     taskCounts.total,
     taskCounts.done,
@@ -596,11 +609,11 @@ export function ConversationContextRail({
   // Zero footprint when there's nothing to surface — but keep any drawer that
   // is mid-open mounted so its close animation completes if the backing item
   // momentarily drops out.
-  if (items.length === 0 && !showSetScopeCta && !detailOpen && !listsOpen) {
+  if (items.length === 0 && !showSetScopeCta && !pageChipShown && !detailOpen && !listsOpen) {
     return null;
   }
 
-  if (items.length === 0 && !showSetScopeCta) {
+  if (items.length === 0 && !showSetScopeCta && !pageChipShown) {
     return (
       <DetailSurfaces
         conversationId={conversationId}
@@ -628,6 +641,13 @@ export function ConversationContextRail({
             <ActiveContextButton size="xs" iconOnly className="shrink-0" />
           </span>
         )}
+        {pageChipShown ? (
+          <PageContextChip
+            conversationId={conversationId}
+            entries={surfaceEntries}
+            onOpenEntry={(entry) => toggleEntry(entry.key, entry.value)}
+          />
+        ) : null}
         {inline.map((item) => (
           <RailPill key={item.id} item={item} />
         ))}

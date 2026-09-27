@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useLiveSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
-import { useSettingsPresentation } from "@/features/settings/components/SettingsPresentationContext";
 import { fetchMandateIdentities, type MandateIdentity } from "../service";
 import { mandateDisplayName } from "../mandate-words";
 import { featureIntelligenceHref, resolveIntelligenceSlug } from "./hrefs";
@@ -38,6 +37,7 @@ import { targetForKey, targetLabel } from "./placement";
 import { registryDomain } from "./taxonomy";
 import { keyInFeature, shortMandateName } from "./service";
 import type { IntelligenceContext } from "./types";
+import { registerPageIntelligenceDoor } from "./page-intelligence-doors";
 
 export interface IntelligenceIndicatorProps {
   /**
@@ -64,6 +64,8 @@ export interface IntelligenceIndicatorProps {
    * defects, 2026-09-27: every education page listed every education job).
    */
   scope?: "feature" | "route";
+  /** Register this page header's jobs in the Agents menu without another icon. */
+  pageOnly?: boolean;
   className?: string;
 }
 
@@ -99,6 +101,7 @@ export function IntelligenceIndicator({
   label,
   size = "sm",
   scope = "feature",
+  pageOnly = false,
   className,
 }: IntelligenceIndicatorProps) {
   const live = useLiveSurfaceMandates();
@@ -129,16 +132,16 @@ export function IntelligenceIndicator({
   const does = new Map(live.map((ref) => [ref.mandateKey as string, ref.does]));
 
   const [open, setOpen] = useState(false);
-  // Inside the Settings window (Dictionary's door), leaving for the feature
-  // page also closes the window once the page has changed — otherwise it sits
-  // on top of the page the person asked to see.
-  const { closeShellAfterNavigation } = useSettingsPresentation();
-  const leave = (href: string) => {
-    setOpen(false);
-    closeShellAfterNavigation?.(href);
-  };
   const [identities, setIdentities] = useState<Record<string, MandateIdentity>>({});
   const keyList = keys.join("|");
+  useEffect(() => {
+    if (!pageOnly || !resolvedFeature) return;
+    return registerPageIntelligenceDoor({
+      feature: resolvedFeature,
+      context,
+      mandateKeys: keys,
+    });
+  }, [pageOnly, resolvedFeature, context, keyList]);
   useEffect(() => {
     if (!open || !keyList) return;
     let cancelled = false;
@@ -154,7 +157,7 @@ export function IntelligenceIndicator({
     };
   }, [open, keyList]);
 
-  if (!resolvedFeature) return null;
+  if (!resolvedFeature || pageOnly) return null;
   // A page with no jobs of its own shows no mark — never the section's list.
   if (routeScoped && keys.length === 0) return null;
   // The page these jobs live on: the one registry target they all land on, or
@@ -226,9 +229,10 @@ export function IntelligenceIndicator({
                 <li key={key}>
                   <Link
                     href={featureIntelligenceHref(routeScoped ? targetForKey(key) : resolvedFeature, { mandateKey: key, context })}
-                    onClick={() =>
-                      leave(featureIntelligenceHref(routeScoped ? targetForKey(key) : resolvedFeature, { mandateKey: key, context }))
-                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    prefetch={false}
+                    onClick={() => setOpen(false)}
                     className="group flex items-start gap-2 px-3 py-1.5 hover:bg-accent"
                   >
                     <span className="min-w-0 flex-1">
@@ -248,7 +252,10 @@ export function IntelligenceIndicator({
         ) : null}
         <Link
           href={pageHref}
-          onClick={() => leave(pageHref)}
+          target="_blank"
+          rel="noopener noreferrer"
+          prefetch={false}
+          onClick={() => setOpen(false)}
           className="flex items-center justify-between border-t border-border px-3 py-2 text-[12.5px] font-medium text-primary hover:bg-accent"
         >
           All {featureName.charAt(0).toLowerCase() + featureName.slice(1)} intelligence

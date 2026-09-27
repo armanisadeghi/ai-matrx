@@ -2,6 +2,12 @@
  * THE ONE TABLE — what each composer mode shows (Amendment 1, A1).
  *
  * Every mode-aware control reads this table; none carries its own mode check.
+ *
+ * 🚨 NO MODE HAS LESS CAPABILITY (Arman, 2026-09-27): "it cannot have any less
+ * capability, it just has them tucked away in the + icon." The + menu (and the
+ * phone sheet) is the same in every mode; the modes differ only in CHROME —
+ * the agent pill, the chips row, the Effort pill, repository chips.
+ *
  * Hiding is chrome only: switching to a quieter mode never turns anything off
  * (a tool added in Work stays on in Chat; RAG still auto-injects for a big PDF
  * in Chat — the user just never sees the switch).
@@ -31,16 +37,8 @@ export type ComposerControl =
   | "chips.repos"
   | "meta.effort";
 
-const CHAT: readonly ComposerControl[] = [
-  "agent.presets",
-  "plus.attach",
-  "plus.templates",
-  "plus.memory",
-  "plus.enterSends",
-];
-
-const WORK: readonly ComposerControl[] = [
-  "agent.panel",
+/** The + menu — identical in every mode. */
+const PLUS: readonly ComposerControl[] = [
   "plus.attach",
   "plus.templates",
   "plus.memory",
@@ -50,16 +48,14 @@ const WORK: readonly ComposerControl[] = [
   "plus.connectors",
   "plus.previewContext",
   "plus.documents",
-  "chips.row",
-  "meta.effort",
+  "plus.environment",
 ];
 
-const ADVANCED: readonly ComposerControl[] = [
-  ...WORK,
-  "agent.overrides",
-  "plus.environment",
-  "chips.repos",
-];
+const CHAT: readonly ComposerControl[] = [...PLUS, "agent.presets"];
+
+const WORK: readonly ComposerControl[] = [...PLUS, "agent.panel", "chips.row", "meta.effort"];
+
+const ADVANCED: readonly ComposerControl[] = [...WORK, "agent.overrides", "chips.repos"];
 
 const VISIBLE: Record<ComposerMode, ReadonlySet<ComposerControl>> = {
   chat: new Set(CHAT),
@@ -80,27 +76,26 @@ export function metaRowHoldsScopeAndOutput(size: ComposerSize): boolean {
 }
 
 /**
- * Phones: the `+` opens the run-controls bottom sheet (tabs), not the cascade.
- * The same table decides which tabs a mode shows there — Chat is attach-level,
- * Work adds the working tools, Advanced shows every tab (overrides, settings,
- * sandbox, creator). Templates is always offered by the sheet itself.
+ * Phones: the `+` opens the run-controls bottom sheet (tabs), not the cascade —
+ * with EVERY tab in every mode (no mode has less capability).
  */
+const ALL_SHEET_TABS = new Set<RunControlsTab>([
+  "quickset",
+  "attach",
+  "context",
+  "document",
+  "model",
+  "tools",
+  "skills",
+  "sandbox",
+  "memory",
+  "settings",
+  "creator",
+]);
 const MOBILE_SHEET_TABS: Record<ComposerMode, ReadonlySet<RunControlsTab>> = {
-  chat: new Set<RunControlsTab>(["attach", "memory"]),
-  work: new Set<RunControlsTab>(["attach", "memory", "context", "document", "tools", "skills"]),
-  advanced: new Set<RunControlsTab>([
-    "quickset",
-    "attach",
-    "context",
-    "document",
-    "model",
-    "tools",
-    "skills",
-    "sandbox",
-    "memory",
-    "settings",
-    "creator",
-  ]),
+  chat: ALL_SHEET_TABS,
+  work: ALL_SHEET_TABS,
+  advanced: ALL_SHEET_TABS,
 };
 
 export function mobileSheetShowsTab(mode: ComposerMode, tab: RunControlsTab): boolean {

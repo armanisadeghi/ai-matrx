@@ -96,6 +96,13 @@ export interface InstanceUIStateSlice {
    */
   memoryToggleByConversationId: Record<string, boolean>;
 
+  /**
+   * The person turned the PAGE'S context off for this conversation (the page
+   * context chip in the composer). Keeps the surface it was receiving so
+   * turning it back on restores it. Absent = on.
+   */
+  pageContextOffByConversationId: Record<string, { previousSurfaceName: string | null }>;
+
   // No `memoryModel`: the Observer/Reflector model is the server's
   // observational-memory mandate's Holder, never a client-sent override
   // (BYPASS-CENSUS, removed 2026-09-25).
@@ -114,6 +121,7 @@ const initialState: InstanceUIStateSlice = {
   isBlockMode: false,
   isSnapshot: false,
   memoryToggleByConversationId: {},
+  pageContextOffByConversationId: {},
   memoryScope: "thread",
 };
 
@@ -962,6 +970,7 @@ const instanceUIStateSlice = createSlice({
       delete state.byConversationId[action.payload];
       delete state.pendingByConversationId[action.payload];
       delete state.memoryToggleByConversationId[action.payload];
+      delete state.pageContextOffByConversationId?.[action.payload];
     },
 
     setUseBlockMode(state, action: PayloadAction<boolean>) {
@@ -992,6 +1001,20 @@ const instanceUIStateSlice = createSlice({
       action: PayloadAction<{ conversationId: string }>,
     ) {
       delete state.memoryToggleByConversationId[action.payload.conversationId];
+    },
+
+    setPageContextOff(
+      state,
+      action: PayloadAction<{ conversationId: string; previousSurfaceName: string | null }>,
+    ) {
+      state.pageContextOffByConversationId ??= {};
+      state.pageContextOffByConversationId[action.payload.conversationId] = {
+        previousSurfaceName: action.payload.previousSurfaceName,
+      };
+    },
+
+    clearPageContextOff(state, action: PayloadAction<{ conversationId: string }>) {
+      delete state.pageContextOffByConversationId?.[action.payload.conversationId];
     },
 
     setMemoryScope(state, action: PayloadAction<"thread" | "resource">) {
@@ -1117,6 +1140,8 @@ export const {
   setUseSnapshot,
   requestMemoryToggle,
   clearMemoryToggleRequest,
+  setPageContextOff,
+  clearPageContextOff,
   setMemoryScope,
 } = instanceUIStateSlice.actions;
 

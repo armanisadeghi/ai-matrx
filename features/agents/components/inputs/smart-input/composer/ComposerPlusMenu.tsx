@@ -12,7 +12,8 @@
  *     as context entries, URL auto-detection — is the SAME code;
  *   - Tools / Skills are the run pickers (`ToolsResourcePicker` /
  *     `SkillsResourcePicker` inside `ResourcePickerMenu`);
- *   - Connectors is `ChatConnectionsStrip` (this chat's truth) + Google;
+ *   - Connectors is `ComposerConnectorsPanel` (every connector: on/off per
+ *     chat, reconnect, choose repositories/files, browse all) + Google files;
  *   - Environment is `ComputeLensBar` + the cloud browser opener;
  *   - Preview context is the context preview panel opener;
  *   - Templates, Memory, Working doc and Scratchpad are the existing picker,
@@ -27,6 +28,7 @@ import { useState, type ReactNode } from "react";
 import {
   AppWindow,
   Brain,
+  Cloud,
   Eye,
   CornerDownLeft,
   FileText,
@@ -36,8 +38,13 @@ import {
   Lightbulb,
   Link2,
   Mic,
+  Monitor,
   NotebookPen,
   Plug,
+  Plus,
+  RefreshCcw,
+  Search,
+  SlidersHorizontal,
   Server,
   Target,
   Wrench,
@@ -60,8 +67,12 @@ import { selectIsMemoryEnabledForConversation } from "@/features/agents/redux/ex
 import {
   selectBuilderAdvancedSettings,
   selectMemoryToggleRequest,
+  selectAutoClearConversation,
   selectSubmitOnEnter,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectShouldShowAutoClearToggle } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { setAutoClearMode } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
+import { ComposerConnectorsPanel } from "./ComposerConnectorsPanel";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   clearMemoryToggleRequest,
@@ -77,8 +88,8 @@ import { useOpenContextPreviewPanel } from "@/features/overlays/openers/contextP
 import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
 import { useOpenCloudBrowserCanvas } from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
 import { ActiveContextTree } from "@/features/scopes/components/active-context/ActiveContextTree";
-import { ChatConnectionsStrip } from "../ChatConnectionsStrip";
-import { ComputeLensBar } from "../ComputeLensBar";
+import { useComputeTargetActions } from "../use-compute-target-actions";
+import type { ComputeTarget } from "@/hooks/sandbox/use-compute-targets";
 import { useSandboxBindingBlocked } from "../use-compute-target-actions";
 import type { Resource } from "@/features/agents/resources/types";
 import {
@@ -101,11 +112,14 @@ interface ComposerPlusMenuProps {
   mode: ComposerMode;
   size: ComposerSize;
   side: "top" | "bottom";
+  /** The host's surface key — auto-clear keeps its display slot in step. */
+  surfaceKey?: string;
   onRequestInputExpand?: () => void;
 }
 
 export function ComposerPlusMenu({
   conversationId,
+  surfaceKey,
   trigger,
   mode,
   size,
@@ -131,6 +145,8 @@ export function ComposerPlusMenu({
   const scratchEnabled = useAppSelector(selectWorkingDocEnabled(conversationId, "scratch"));
   const memoryEnabled = useAppSelector(selectIsMemoryEnabledForConversation(conversationId));
   const submitOnEnter = useAppSelector(selectSubmitOnEnter(conversationId));
+  const autoClear = useAppSelector(selectAutoClearConversation(conversationId));
+  const showAutoClear = useAppSelector(selectShouldShowAutoClearToggle(conversationId));
   const pendingMemory = useAppSelector(selectMemoryToggleRequest(conversationId));
   const memoryRequested = pendingMemory !== undefined;
   const memoryTarget = pendingMemory === true;
@@ -190,6 +206,21 @@ export function ComposerPlusMenu({
             </ComposerSubmenu>
           ))}
         </ComposerSubmenu>
+        {/* The classic attach list in full — knowledge search (⌘K) first, then
+            every source (image / file / YouTube URLs, cloud browser, …): nothing
+            the old + offered is out of reach. */}
+        <ComposerSubmenu row={{ icon: Search, label: "Search your knowledge" }} panelClassName={PICKER_PANEL}>
+          {() => (
+            <ResourcePickerMenu
+              conversationId={conversationId}
+              fillHost
+              onResourceSelected={(resource: Resource) => attachResource(resource)}
+              onResourceDeselected={detachResource}
+              onClose={close}
+              attachmentCapabilities={attachmentCapabilities}
+            />
+          )}
+        </ComposerSubmenu>
 
         {/* At compact width Scope and Output live here (A5). */}
         {!metaRowHoldsScopeAndOutput(size) ? (
@@ -223,7 +254,7 @@ export function ComposerPlusMenu({
                     needs (a RAG tool for a large document). The same
                     per-conversation switch Advanced Settings carries, worded
                     as what it does. */}
-                <div className="shrink-0 border-b border-border p-1">
+                <div className="shrink-0 p-1">
                   <ComposerMenuSwitchRow
                     label="Let the server add tools"
                     description="e.g. a search tool when you attach a large document"
@@ -245,12 +276,8 @@ export function ComposerPlusMenu({
         ) : null}
         {shows("plus.connectors") ? (
           <ComposerSubmenu row={{ icon: Plug, label: "Connectors" }} panelClassName="w-[360px]">
-            <ComposerMenuLabel>In this chat</ComposerMenuLabel>
-            <div className="px-2.5 pb-1.5">
-              <ChatConnectionsStrip conversationId={conversationId} />
-            </div>
-            <ComposerMenuDivider />
-            <ComposerSubmenu row={{ icon: Globe, label: "Google Workspace" }} panelClassName={PICKER_PANEL}>
+            <ComposerConnectorsPanel conversationId={conversationId} onNavigate={close} />
+            <ComposerSubmenu row={{ icon: Globe, label: "Google Workspace files" }} panelClassName={PICKER_PANEL}>
               {(closeCascade) => picker("google", closeCascade)}
             </ComposerSubmenu>
           </ComposerSubmenu>
@@ -268,6 +295,7 @@ export function ComposerPlusMenu({
                 close();
                 openCloudBrowser({ conversationId });
               }}
+              onChosen={close}
             />
           </ComposerSubmenu>
         ) : null}
@@ -339,6 +367,26 @@ export function ComposerPlusMenu({
             />
           </>
         ) : null}
+        {showAutoClear ? (
+          <ComposerMenuSwitchRow
+            icon={RefreshCcw}
+            label="Auto-clear"
+            description={autoClear ? "Each send starts a fresh conversation" : "The conversation continues"}
+            checked={autoClear}
+            onCheckedChange={(value) => dispatch(setAutoClearMode({ conversationId, value, surfaceKey }))}
+          />
+        ) : null}
+        <ComposerMenuDivider />
+        {/* Every setting this chat has, in the full Chat Options window — in every
+            mode, always, until the new menu carries all of it (Arman, 2026-09-27). */}
+        <ComposerMenuRow
+          icon={SlidersHorizontal}
+          label="All options"
+          onClick={() => {
+            close();
+            openRunControlsWindow({ conversationId });
+          }}
+        />
       </PopoverContent>
     </Popover>
   );
@@ -355,38 +403,86 @@ const WORKSPACE_ROWS: { view: Exclude<ResourcePickerViewId, null>; label: string
 ];
 
 /**
- * Environment (brief §6) — where the agent runs. The SAME menu opens from the
- * + row and from the Cloud chip (two doors, one menu). Built from the compute
- * lens (sandbox / your computer) and the cloud-browser opener. Team sandbox and
- * the per-chat Vault switch do not exist yet and are not shown.
+ * Environment (brief §6) — where the agent runs, as ONE flat list: Cloud, then
+ * every computer and sandbox this person can use. One click chooses (Arman,
+ * 2026-09-27: no nested components, no nested clicks). The SAME list opens
+ * from the Cloud chip and from + › Environment. Data and the bind are
+ * `useComputeTargetActions` — the one binding path.
  */
 export function ComposerEnvironmentPanel({
   conversationId,
   sandboxBlocked,
   onOpenSandbox,
   onOpenBrowser,
+  onChosen,
 }: {
   conversationId: string;
   sandboxBlocked: boolean;
   onOpenSandbox: () => void;
   onOpenBrowser: () => void;
+  /** A choice was made — the host closes its menu. */
+  onChosen?: () => void;
 }) {
+  const compute = useComputeTargetActions(conversationId);
+  const bound = compute.boundView;
+  const choose = (target: ComputeTarget | null) => {
+    if ((target?.id ?? null) !== (bound?.rowId ?? null)) compute.applyBinding(target);
+    onChosen?.();
+  };
+  // The bound box first in its group even when it is asleep or gone (named, never dropped).
+  const rows: { id: string; name: string; kind: ComputeTarget["kind"]; target: ComputeTarget | null; note?: string }[] = [
+    ...(bound
+      ? [{
+          id: bound.rowId,
+          name: bound.name,
+          kind: bound.kind,
+          target: bound.target,
+          note: bound.state === "asleep" ? "Asleep" : bound.state === "gone" ? "Gone" : bound.state === "checking" ? "Checking…" : undefined,
+        }]
+      : []),
+    ...compute.availableTargets.map((target) => ({ id: target.id, name: target.name, kind: target.kind, target })),
+  ];
+  const computers = rows.filter((row) => row.kind === "local-pc");
+  const sandboxes = rows.filter((row) => row.kind !== "local-pc");
+  const renderRow = (row: (typeof rows)[number]) => (
+    <ComposerMenuRow
+      key={row.id}
+      icon={row.kind === "local-pc" ? Monitor : Server}
+      label={row.name}
+      detail={row.note}
+      checked={row.id === bound?.rowId}
+      disabled={sandboxBlocked || !row.target}
+      onClick={() => row.target && choose(row.target)}
+    />
+  );
+
   return (
     <>
       <ComposerMenuLabel>Run on</ComposerMenuLabel>
+      <ComposerMenuRow
+        icon={Cloud}
+        label="Cloud"
+        description="AI Matrx runs it for you"
+        checked={!bound}
+        onClick={() => choose(null)}
+      />
       {sandboxBlocked ? (
         <p className="px-2.5 py-1.5 text-xs text-muted-foreground">
-          This chat runs in the cloud. A sandbox or your computer cannot be attached here.
+          This chat runs in the cloud only — a sandbox or your computer cannot be attached here.
         </p>
+      ) : compute.loading && rows.length === 0 ? (
+        <p className="px-2.5 py-1.5 text-xs text-muted-foreground">Looking for your computers and sandboxes…</p>
       ) : (
-        <div className="px-1.5 pb-1">
-          <ComputeLensBar conversationId={conversationId} className="h-8 w-full max-w-full" onOpenPanel={onOpenSandbox} />
-        </div>
+        <>
+          {computers.length > 0 ? <ComposerMenuLabel>Your computers</ComposerMenuLabel> : null}
+          {computers.map(renderRow)}
+          {sandboxes.length > 0 ? <ComposerMenuLabel>Sandboxes</ComposerMenuLabel> : null}
+          {sandboxes.map(renderRow)}
+        </>
       )}
       <ComposerMenuDivider />
       <ComposerMenuRow icon={AppWindow} label="Persistent browser" description="Open the agent's cloud browser" onClick={onOpenBrowser} />
-      <ComposerMenuDivider />
-      <ComposerMenuRow label="Manage sandboxes" detail="rename · files · new" chevron onClick={onOpenSandbox} />
+      <ComposerMenuRow icon={Plus} label="Add a sandbox or computer" onClick={onOpenSandbox} />
     </>
   );
 }

@@ -73,7 +73,7 @@ export function MemoryEditor({ media, isOwner = false }: { media?: StudyMediaRow
 
   async function save() {
     let clean: MemoryAidPayload;
-    try { clean = parseMemoryAid(aid); }
+    try { clean = parseMemoryAid(aid, "memory aid", !!currentMedia); }
     catch (error) { const message = error instanceof Error ? error.message : "Check your memory aid."; setErrorMessage(message); toast.error(message); return; }
     setErrorMessage(null);
     setSaving(true);

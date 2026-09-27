@@ -16,11 +16,13 @@
 // Law: ../../../../../common-docs/policies/no-dead-ends.md
 // Contract: features/mandates/feature-intelligence/FEATURE.md.
 
+"use client";
+
+import { useEffect } from "react";
 import Link from "next/link";
-import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import { cn } from "@/lib/utils";
 import { featureIntelligenceHref } from "../feature-intelligence/hrefs";
-import { IntelligenceIndicator } from "../feature-intelligence/IntelligenceIndicator";
+import { registerPageIntelligenceDoor } from "../feature-intelligence/page-intelligence-doors";
 import type { IntelligenceContext } from "../feature-intelligence/types";
 
 interface MandateDoorLinkProps {
@@ -45,28 +47,27 @@ export function MandateDoorLink({
   context,
   className,
 }: MandateDoorLinkProps) {
+  useEffect(() => {
+    if (variant !== "icon") return;
+    return registerPageIntelligenceDoor({ feature, context });
+  }, [feature, variant, context]);
+
   if (variant === "inline") {
     return (
       <Link
         href={featureIntelligenceHref(feature, { context })}
+        target="_blank"
+        rel="noopener noreferrer"
+        prefetch={false}
         className={cn(
           "inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground",
           className,
         )}
       >
-        <INTELLIGENCE_ICON className="h-3.5 w-3.5" />
         {label}
       </Link>
     );
   }
 
-  return (
-    <IntelligenceIndicator
-      feature={feature}
-      label={label}
-      context={context}
-      size="md"
-      className={className}
-    />
-  );
+  return null;
 }

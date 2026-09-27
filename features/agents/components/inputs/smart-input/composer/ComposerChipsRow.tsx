@@ -78,6 +78,7 @@ export function ComposerChipsRow({
               setEnvOpen(false);
               openCloudBrowser({ conversationId });
             }}
+            onChosen={() => setEnvOpen(false)}
           />
         </PopoverContent>
       </Popover>

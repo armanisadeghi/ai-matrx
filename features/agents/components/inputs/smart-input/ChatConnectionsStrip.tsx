@@ -305,7 +305,7 @@ export function ChatConnectionsStrip({
                 <button
                   type="button"
                   onClick={openChooser}
-                  className={cn(COMPOSER_CHIP_CLASS, "border-dashed text-muted-foreground hover:text-foreground")}
+                  className={cn(COMPOSER_CHIP_CLASS, "text-muted-foreground hover:text-foreground")}
                 >
                   <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   <span className="max-w-[180px] truncate">{chooserLabel}</span>

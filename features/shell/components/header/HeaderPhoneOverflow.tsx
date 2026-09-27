@@ -40,7 +40,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";
 import { useOpenBarOrGate } from "@/features/knowledge/command-bar/OpenCommandBarButtons";
 import {
@@ -301,7 +301,7 @@ export function HeaderPhoneOverflow({
                 }}
               />
               <Row
-                icon={<AGENT_ICON className="h-5 w-5 text-primary" />}
+                icon={<INTELLIGENCE_ICON className="h-5 w-5 text-primary" />}
                 label="Agents for this page"
                 onClick={() => {
                   if (!isAuthenticated) {

@@ -34,14 +34,12 @@
  */
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import {
   Radar,
   ChevronDown,
   ChevronRight,
   Maximize2,
   StickyNote,
-  ArrowRight,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -56,11 +54,6 @@ import {
 import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPanel";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
-import {
-  featureIntelligenceHref,
-  featureOfMandateKey,
-} from "@/features/mandates/feature-intelligence/hrefs";
-import { targetDoorLabel } from "@/features/mandates/feature-intelligence/placement";
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 
 export interface SurfaceMandatesSectionProps {
@@ -259,26 +252,6 @@ export function SurfaceMandatesSection({
           );
         })}
       </ul>
-
-      {/* THE INTELLIGENCE DOOR — one per feature on this page: where these
-          jobs are managed (duplicate & modify, use your own). */}
-      {rows.length > 0 && (
-        <div className="mt-1 flex min-w-0 flex-wrap gap-x-3 gap-y-0.5">
-          {[...new Set(rows.map((row) => featureOfMandateKey(row.mandateKey)))].map(
-            (feature) => (
-              <Link
-                key={feature}
-                href={featureIntelligenceHref(feature)}
-                onClick={() => onOpened?.()}
-                className="inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:underline"
-              >
-                Manage {targetDoorLabel(feature)} intelligence
-                <ArrowRight className="h-2.5 w-2.5" aria-hidden="true" />
-              </Link>
-            ),
-          )}
-        </div>
-      )}
 
       {/* DISCOVERED — what this page CAN run, by the derived gate. Collapsed:
           it answers "what else is possible here", which is a question, not a

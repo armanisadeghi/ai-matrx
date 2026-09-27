@@ -8,9 +8,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowLeft, Ellipsis, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@ai-matrx/design-system";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -25,12 +26,14 @@ import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationMemoryScope } from "@/features/surfaces/manifests/education-memory.manifest";
-import MemoryAidBlock from "@/components/mardown-display/blocks/memory-aid/MemoryAidBlock";
-import { coerceMemoryAid } from "@/features/content-ir/kinds/memory-aid";
+import MemoryAidBlock, { type MemoryItemKind } from "@/components/mardown-display/blocks/memory-aid/MemoryAidBlock";
+import { coerceMemoryAid, coerceMemoryAidPartial, type MemoryAidPayload } from "@/features/content-ir/kinds/memory-aid";
 import { MemoryEditor } from "./MemoryEditor";
+import { MemoryItemEditor } from "./MemoryItemEditor";
 import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
-import { parseCreateMemoryAids, parseMemoryIds, parseUpdateMemoryAids } from "../memoryWrites";
+import { parseCreateMemoryAids, parseMemoryAid, parseMemoryIds, parseUpdateMemoryAids } from "../memoryWrites";
+import { parseMemoryItemChange, removeMemoryItem } from "../memoryItemWrites";
 import { ContentFindControl } from "@/features/rich-document/search/ContentFindControl";
 
 const SURFACE_NAME = "matrx-user/education-memory";
@@ -42,11 +45,16 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
   // The raw failure, never a sentence — the access gate decides what it means.
   const [loadError, setLoadError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [findOpen, setFindOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<{ kind: MemoryItemKind; index: number } | null>(null);
+  const [itemDraft, setItemDraft] = useState<MemoryAidPayload | null>(null);
+  const [itemError, setItemError] = useState<string | null>(null);
+  const [itemSaving, setItemSaving] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const access = useAccess("study_media", mediaId);
   const { isOwner } = access;
   const canEdit = !access.loading && canEditAccess(access.level);
-  const getWriteHandlers = () => collectionWriteHandlers({
+  const getWriteHandlers = () => ({ ...collectionWriteHandlers({
     plural: "memory_aids", singular: "memory aid",
     create: {
       parse: parseCreateMemoryAids,
@@ -78,7 +86,24 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
         return { id: row.id, name: row.title };
       }, nameOf: (row) => row.title,
     },
-  }, refuseSurfaceWrite);
+  }, refuseSurfaceWrite),
+    change_memory_item: {
+      validate: (value: unknown) => {
+        const current = media ? coerceMemoryAid(media.ir_envelope) : null;
+        if (!canEdit || !current) throw new Error("Open a memory aid you can edit before changing one item.");
+        parseMemoryItemChange(value, current);
+      },
+      apply: async (value: unknown) => {
+        const current = media ? coerceMemoryAid(media.ir_envelope) : null;
+        if (!canEdit || !media || !current) throw new Error("The editable memory aid is no longer available.");
+        const change = parseMemoryItemChange(value, current);
+        const result = await studyMediaService.updateVersioned(media.id, media.version, { title: change.aid.title, ir_envelope: change.aid });
+        if (result.error || !result.data) throw new Error(result.error ?? "Could not change memory item.");
+        setMedia(result.data);
+        return { summary: change.summary, data: { id: result.data.id, version: result.data.version } };
+      },
+    },
+  });
 
   // Read at trigger time, never from stale closure state. `/[id]/edit` renders
   // this same component behind a requireAccess gate and reports `detail`.
@@ -141,10 +166,10 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
   async function handleDelete() {
     if (!media) return;
     const ok = await confirm({
-      title: "Delete these memory aids?",
+      title: "Delete this entire memory aid set?",
       description:
         "They will be removed from your library. This can't be undone.",
-      confirmLabel: "Delete",
+      confirmLabel: "Delete entire set",
       variant: "destructive",
     });
     if (!ok) return;
@@ -155,6 +180,53 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
     }
     toast.success("Deleted");
     router.push("/education/memory");
+  }
+
+  function beginItem(kind: MemoryItemKind, index: number, adding = false) {
+    if (!media) return;
+    const base = coerceMemoryAidPartial(media.ir_envelope);
+    const next = !adding ? base : kind === "mnemonic"
+      ? { ...base, mnemonics: [...base.mnemonics, { __kind: "mnemonic" as const, technique: "sentence" as const, target: "", device: "", explanation: "" }] }
+      : kind === "analogy"
+        ? { ...base, analogies: [...base.analogies, { __kind: "analogy" as const, concept: "", analogy: "", mapping: "" }] }
+        : { ...base, memory_palace: { ...base.memory_palace, applicable: true,
+            loci: [...base.memory_palace.loci, { __kind: "locus" as const, place: "", item: "", image: "" }] } };
+    setItemDraft(next);
+    setEditingItem({ kind, index });
+    setItemError(null);
+  }
+
+  async function saveItem() {
+    if (!media || !itemDraft) return;
+    let clean: MemoryAidPayload;
+    try { clean = parseMemoryAid(itemDraft, "memory aid", true); }
+    catch (error) { setItemError(error instanceof Error ? error.message : "Check this item."); return; }
+    setItemSaving(true);
+    const result = await studyMediaService.updateVersioned(media.id, media.version, { title: clean.title, ir_envelope: clean });
+    setItemSaving(false);
+    if (result.error || !result.data) { setItemError(result.error ?? "Could not save this item."); return; }
+    setMedia(result.data);
+    setEditingItem(null);
+    setItemDraft(null);
+    setItemError(null);
+    toast.success("Memory item saved");
+  }
+
+  async function deleteItem(kind: MemoryItemKind, index: number) {
+    if (!media) return;
+    const noun = kind === "locus" ? "palace stop" : kind;
+    const ok = await confirm({ title: `Delete this ${noun}?`,
+      description: "Only this item will be removed. The memory aid set will remain.",
+      confirmLabel: `Delete ${noun}`, variant: "destructive" });
+    if (!ok) return;
+    const next = removeMemoryItem(coerceMemoryAidPartial(media.ir_envelope), kind, index);
+    const clean = parseMemoryAid(next, "memory aid", true);
+    const result = await studyMediaService.updateVersioned(media.id, media.version, { title: clean.title, ir_envelope: clean });
+    if (result.error || !result.data) { toast.error(result.error ?? `Could not delete ${noun}.`); return; }
+    setMedia(result.data);
+    setEditingItem(null);
+    setItemDraft(null);
+    toast.success(`${noun[0].toUpperCase()}${noun.slice(1)} deleted`);
   }
 
   // The runtime is mounted on EVERY branch, including loading and not-found —
@@ -195,23 +267,18 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
 
   return (
     <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope} getWriteHandlers={getWriteHandlers}>
-    <div className="mx-auto w-full max-w-2xl space-y-4 p-4">
-      <div className="flex items-start gap-3">
+    <div className="matrx-touch-targets mx-auto w-full max-w-2xl space-y-4 p-4">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="ghost"
           size="icon"
-          className="mt-0.5 shrink-0"
+          className="shrink-0"
           onClick={() => router.push("/education/memory")}
           aria-label="Back"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="min-w-0 flex-1">
-          {media.source_title && (
-            <span className="truncate text-xs text-muted-foreground">
-              from {media.source_title}
-            </span>
-          )}
           <h1
             className="truncate text-lg font-semibold text-foreground"
             data-surface-value="aid_title"
@@ -219,11 +286,11 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
             {media.title}
           </h1>
         </div>
-        <ContentFindControl rootRef={contentRef} label="Find in memory aids" />
-        {canEdit && (
-          <div className="flex shrink-0 items-center gap-1">
+        <div className={findOpen ? "flex w-full min-w-0 justify-end sm:w-auto" : "flex shrink-0 items-center gap-1"}>
+          <ContentFindControl rootRef={contentRef} label="Find in memory aids" inline onOpenChange={setFindOpen} />
+          {!findOpen && canEdit && <>
             <Button variant="outline" size="sm" onClick={() => router.push(`/education/memory/${media.id}/edit`)}>
-              <Pencil className="mr-1 h-4 w-4" /> Edit
+              <Pencil className="mr-1 h-4 w-4" /> Edit all
             </Button>
             {isOwner && <>
             <ShareButton
@@ -233,38 +300,38 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
               isOwner
               size="sm"
             />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() =>
-                router.push(
-                  media.source_kind === "topic"
-                    ? "/education/memory/new?source=topic"
-                    : `/education/memory/new?source=deck&deck=${media.source_id ?? ""}`,
-                )
-              }
-              aria-label="Regenerate"
-            >
-              <RefreshCw className="h-4 w-4 text-muted-foreground" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleDelete}
-              aria-label="Delete"
-            >
-              <Trash2 className="h-4 w-4 text-muted-foreground" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="More memory aid actions"><Ellipsis className="h-4 w-4" /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => router.push(media.source_kind === "topic" ? "/education/memory/new?source=topic" : `/education/memory/new?source=deck&deck=${media.source_id ?? ""}`)}>
+                  <RefreshCw className="mr-2 h-4 w-4" /> Regenerate set
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => void handleDelete()}>
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete entire set
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             </>}
-          </div>
-        )}
+          </>}
+        </div>
       </div>
 
       <div ref={contentRef} data-surface-value="aid_content">
         {/* THE CANONICAL COMPONENT LAW: the registered `memory_aid` kind renders
             through its ONE kind component — the same pixels as the live run
             window and chat. */}
-        <MemoryAidBlock serverData={media.ir_envelope} />
+        <MemoryAidBlock serverData={editingItem && itemDraft ? itemDraft : media.ir_envelope} controls={canEdit ? {
+          onAdd: (kind) => {
+            const current = coerceMemoryAidPartial(media.ir_envelope);
+            beginItem(kind, kind === "mnemonic" ? current.mnemonics.length : kind === "analogy" ? current.analogies.length : current.memory_palace.loci.length, true);
+          },
+          onEdit: (kind, index) => beginItem(kind, index),
+          onDelete: (kind, index) => void deleteItem(kind, index),
+          ...(editingItem && itemDraft ? { editor: { ...editingItem,
+            content: <MemoryItemEditor aid={itemDraft} kind={editingItem.kind} index={editingItem.index}
+              onChange={setItemDraft} onSave={() => void saveItem()} onCancel={() => { setEditingItem(null); setItemDraft(null); setItemError(null); }}
+              saving={itemSaving} error={itemError} /> } } : {}),
+        } : undefined} />
       </div>
 
       {/* Where this came from + the rest of the kit made from the same upload. */}

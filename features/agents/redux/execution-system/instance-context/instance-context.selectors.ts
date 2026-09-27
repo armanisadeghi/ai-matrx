@@ -144,3 +144,15 @@ export const selectContextPayload =
     }
     return payload;
   };
+
+const EMPTY_SURFACE_KEYS: readonly string[] = [];
+
+/**
+ * The context keys the PAGE'S SURFACE contributed (the last live surface
+ * mapping pass — `replaceSurfaceContextEntries`). The composer groups these
+ * into one page-context chip; every other entry keeps its own chip.
+ */
+export const selectSurfaceContextKeys =
+  (conversationId: string) =>
+  (state: RootState): readonly string[] =>
+    state.instanceContext.surfaceKeysByConversationId[conversationId] ?? EMPTY_SURFACE_KEYS;

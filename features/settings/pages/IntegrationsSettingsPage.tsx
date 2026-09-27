@@ -55,7 +55,6 @@ import {
   Plus,
   Trash2,
   Settings2,
-  TestTube2,
   PlugZap,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -85,6 +84,8 @@ import {
 } from "./manual-mcp-credentials";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ensureOrganizationForRequest, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import { toolCheckFailure } from "./integration-tool-check";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -224,6 +225,7 @@ export default function IntegrationsPage({
   const changeCategory = onCategoryChange ?? setLocalCategory;
   const changeViewFilter = onViewFilterChange ?? setLocalViewFilter;
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [checkingServerId, setCheckingServerId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "idle") {
@@ -440,17 +442,26 @@ export default function IntegrationsPage({
   };
 
   const handleTestConnection = async (entry: McpCatalogEntry) => {
+    if (checkingServerId) return;
+    setCheckingServerId(entry.serverId);
     try {
+      // This explicit click may ask for an organization. Background catalog
+      // reads remain non-interactive through the service's GET default.
+      await ensureOrganizationForRequest({ method: "GET", interactive: true });
       const discovery = await dispatch(
         discoverServerTools(entry.serverId),
       ).unwrap();
-      toast.success(`${entry.name} is ready to use`, {
-        description: `${discovery.tools.length} tools available to your agents.`,
+      toast.success(`Found ${discovery.tools.length} ${discovery.tools.length === 1 ? "tool" : "tools"} for ${entry.name}`, {
+        description: "These are the tools this service currently offers to agents.",
       });
     } catch (error) {
-      toast.error(`Could not test ${entry.name}`, {
-        description: error instanceof Error ? error.message : String(error),
-      });
+      if (!isOrganizationSelectionCancelled(error)) {
+        toast.error(`Could not check ${entry.name}'s tools`, {
+          description: toolCheckFailure(error),
+        });
+      }
+    } finally {
+      setCheckingServerId(null);
     }
   };
 
@@ -474,7 +485,7 @@ export default function IntegrationsPage({
             </h1>
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
               Give your agents useful context and actions. Connect once, then
-              manage access and test it whenever you need.
+              manage access and check available tools whenever you need.
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -680,6 +691,7 @@ export default function IntegrationsPage({
                   )
                 }
                 isConnecting={connectingId === entry.serverId}
+                isChecking={checkingServerId === entry.serverId}
                 onOAuthConnect={(endpointOverride) =>
                   handleOAuthConnect(entry, endpointOverride)
                 }
@@ -709,6 +721,7 @@ interface ServerCardProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   isConnecting: boolean;
+  isChecking: boolean;
   onOAuthConnect: (endpointOverride?: string) => void;
   onBearerConnect: (token: string) => void;
   onNoAuthConnect: () => void;
@@ -726,6 +739,7 @@ function ServerCard({
   isExpanded,
   onToggleExpand,
   isConnecting,
+  isChecking,
   onOAuthConnect,
   onBearerConnect,
   onNoAuthConnect,
@@ -755,6 +769,9 @@ function ServerCard({
     connectionPresentation.state && connectionPresentation.state !== "disconnected"
       ? STATUS_CONFIG[connectionPresentation.state]
       : null;
+  const statusLabel = noAuth && connectionPresentation.state === "connected"
+    ? "Enabled"
+    : connectionStatus?.label;
 
   // Inline token form state
   const [showTokenForm, setShowTokenForm] = useState(false);
@@ -893,7 +910,7 @@ function ServerCard({
                 )}
               >
                 {connectionStatus.icon}
-                {connectionStatus.label}
+                {statusLabel}
               </Badge>
             ) : entry.serverStatus === "beta" ? (
               <Badge
@@ -929,10 +946,10 @@ function ServerCard({
                 size="sm"
                 className="h-10 flex-1 text-sm"
                 onClick={onTest}
-                disabled={isConnecting}
+                disabled={isConnecting || isChecking}
               >
-                <TestTube2 className="mr-1.5 h-3.5 w-3.5" />
-                Test access
+                {isChecking ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-1.5 h-3.5 w-3.5" />}
+                {isChecking ? "Checking tools…" : "Check tools"}
               </Button>
               <Button
                 variant="ghost"

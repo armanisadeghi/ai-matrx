@@ -22,7 +22,7 @@ const rawField = (value: unknown, key: string): string | undefined => {
 };
 
 /** The editor and agent writes save the same registered kind, including every child marker. */
-export function parseMemoryAid(value: unknown, at = "memory aid"): MemoryAidPayload {
+export function parseMemoryAid(value: unknown, at = "memory aid", allowEmpty = false): MemoryAidPayload {
   const raw = object(value, at);
   const title = required(raw.title, `${at}.title`);
   if (!Array.isArray(raw.mnemonics) || !Array.isArray(raw.analogies))
@@ -63,7 +63,7 @@ export function parseMemoryAid(value: unknown, at = "memory aid"): MemoryAidPayl
   }) : [];
   if (palace.applicable && (!optional(palace.theme, `${at}.memory_palace.theme`) || !loci.length))
     throw new Error(`${at}.memory_palace needs a theme and at least one stop when enabled.`);
-  if (!mnemonics.length && !analogies.length && !palace.applicable)
+  if (!allowEmpty && !mnemonics.length && !analogies.length && !palace.applicable)
     throw new Error(`${at} needs at least one mnemonic, analogy, or memory palace.`);
   return {
     __kind: "memory_aid",
@@ -110,7 +110,7 @@ export function parseUpdateMemoryAids(value: unknown, available: readonly StudyM
     const unknown = changed.filter((key) => !allowed.includes(key));
     if (unknown.length) throw new Error(`update_memory_aids[${i}] does not accept ${unknown.join(", ")}.`);
     const previous = object(current.ir_envelope, `memory aid ${id}`);
-    const aid = parseMemoryAid({ ...previous, title: current.title, ...row }, `update_memory_aids[${i}]`);
+    const aid = parseMemoryAid({ ...previous, title: current.title, ...row }, `update_memory_aids[${i}]`, true);
     return { id, version: current.version, aid, changed };
   }, { listChecks: (items) => [repeatsProblem(target, items.map((item) => item.value?.id ?? rawField(item.raw, "id")), "id")] });
 }

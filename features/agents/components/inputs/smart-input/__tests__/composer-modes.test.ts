@@ -12,68 +12,39 @@ import {
 } from "../composer/composer-mode-visibility";
 import { modeAfterKnobs, parseComposerModeCookie } from "../composer/composer-mode-cookie";
 
-describe("THE ONE TABLE — what each mode shows (A1)", () => {
-  it("Chat is attach-only: presets, no panel, no chips, no effort, no tools", () => {
-    expect(composerShows("chat", "agent.presets")).toBe(true);
-    expect(composerShows("chat", "agent.panel")).toBe(false);
-    expect(composerShows("chat", "plus.attach")).toBe(true);
-    expect(composerShows("chat", "plus.memory")).toBe(true);
-    expect(composerShows("chat", "plus.templates")).toBe(true);
-    for (const hidden of [
-      "plus.skills",
-      "plus.tools",
-      "plus.connectors",
-      "plus.previewContext",
-      "plus.documents",
-      "plus.environment",
-      "chips.row",
-      "chips.repos",
-      "meta.effort",
-    ] as const) {
-      expect(composerShows("chat", hidden)).toBe(false);
+describe("THE ONE TABLE — what each mode shows (A1, amended 2026-09-27)", () => {
+  const PLUS = [
+    "plus.attach",
+    "plus.templates",
+    "plus.memory",
+    "plus.enterSends",
+    "plus.skills",
+    "plus.tools",
+    "plus.connectors",
+    "plus.previewContext",
+    "plus.documents",
+    "plus.environment",
+  ] as const;
+
+  it("no mode has less capability: the + menu is the same in Chat, Work and Advanced", () => {
+    for (const mode of ["chat", "work", "advanced"] as const) {
+      for (const control of PLUS) expect(composerShows(mode, control)).toBe(true);
     }
   });
 
-  it("Work adds the agent panel, the working + rows, the chips row and Effort — never repos or Environment", () => {
-    for (const shown of [
-      "agent.panel",
-      "plus.skills",
-      "plus.tools",
-      "plus.connectors",
-      "plus.previewContext",
-      "plus.documents",
-      "chips.row",
-      "meta.effort",
-    ] as const) {
-      expect(composerShows("work", shown)).toBe(true);
-    }
-    expect(composerShows("work", "agent.presets")).toBe(false);
+  it("the modes differ only in chrome", () => {
+    expect(composerShows("chat", "agent.presets")).toBe(true);
+    expect(composerShows("chat", "agent.panel")).toBe(false);
+    expect(composerShows("chat", "chips.row")).toBe(false);
+    expect(composerShows("chat", "meta.effort")).toBe(false);
+    expect(composerShows("work", "agent.panel")).toBe(true);
+    expect(composerShows("work", "chips.row")).toBe(true);
+    expect(composerShows("work", "meta.effort")).toBe(true);
     expect(composerShows("work", "agent.overrides")).toBe(false);
     // A1 ruling: repos are Advanced-only.
     expect(composerShows("work", "chips.repos")).toBe(false);
-    expect(composerShows("work", "plus.environment")).toBe(false);
-  });
-
-  it("Advanced shows everything Work does, plus Overrides, Environment and repos", () => {
-    for (const control of [
-      "agent.panel",
-      "agent.overrides",
-      "plus.skills",
-      "plus.tools",
-      "plus.connectors",
-      "plus.environment",
-      "chips.row",
-      "chips.repos",
-      "meta.effort",
-    ] as const) {
-      expect(composerShows("advanced", control)).toBe(true);
-    }
-  });
-
-  it("every mode can say what Enter does (the rule in force is never hidden)", () => {
-    for (const mode of ["chat", "work", "advanced"] as const) {
-      expect(composerShows(mode, "plus.enterSends")).toBe(true);
-    }
+    expect(composerShows("advanced", "chips.repos")).toBe(true);
+    expect(composerShows("advanced", "agent.overrides")).toBe(true);
   });
 
   it("at compact width Scope and Output leave the meta row for the + menu (A5)", () => {
@@ -82,12 +53,12 @@ describe("THE ONE TABLE — what each mode shows (A1)", () => {
     expect(metaRowHoldsScopeAndOutput("splash")).toBe(true);
   });
 
-  it("phones follow the same modes in the bottom sheet", () => {
-    expect(mobileSheetShowsTab("chat", "attach")).toBe(true);
-    expect(mobileSheetShowsTab("chat", "tools")).toBe(false);
-    expect(mobileSheetShowsTab("work", "tools")).toBe(true);
-    expect(mobileSheetShowsTab("work", "sandbox")).toBe(false);
-    expect(mobileSheetShowsTab("advanced", "sandbox")).toBe(true);
+  it("phones get every sheet tab in every mode", () => {
+    for (const mode of ["chat", "work", "advanced"] as const) {
+      for (const tab of ["attach", "tools", "sandbox", "settings", "quickset", "memory"] as const) {
+        expect(mobileSheetShowsTab(mode, tab)).toBe(true);
+      }
+    }
   });
 });
 

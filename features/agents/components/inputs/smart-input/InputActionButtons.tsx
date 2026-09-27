@@ -286,7 +286,7 @@ export function InputActionButtons({
         includeAttach={showAttachments}
         side={composer.size === "splash" ? "bottom" : "top"}
         onRequestInputExpand={onRequestInputExpand}
-        composer={{ mode: composer.mode, size: composer.size }}
+        composer={{ mode: composer.mode, size: composer.size, surfaceKey }}
       />
     );
     const voice = showMicrophone ? (

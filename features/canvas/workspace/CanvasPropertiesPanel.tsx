@@ -38,7 +38,7 @@ export function CanvasPropertiesPanel({
       aria-label={variant === "sheet" ? "Properties" : undefined}
       className={cn("flex h-full min-h-0 flex-col bg-background px-2.5 pt-1.5", className)}
     >
-      <div role="tablist" aria-label="Properties tabs" className="flex shrink-0 gap-2.5 border-b border-border">
+      <div role="tablist" aria-label="Properties tabs" className="flex shrink-0 gap-2.5">
         {tabs.map((tab) => {
           const on = tab.id === active?.id;
           return (
@@ -49,7 +49,7 @@ export function CanvasPropertiesPanel({
               aria-selected={on}
               onClick={() => setActiveId(tab.id)}
               className={cn(
-                "-mb-px border-b-2 px-1 py-1.5 text-[13px] transition-colors",
+                "border-b-2 px-1 py-1.5 text-[13px] transition-colors",
                 on
                   ? "border-foreground font-medium text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground",

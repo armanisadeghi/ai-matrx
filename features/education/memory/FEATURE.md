@@ -23,11 +23,13 @@ Memory Tools is a **thin tool over the existing study-media substrate** — it i
 - **Trust:** every generated set carries a P0 `TrustEnvelope` — a deck source → `grounded` + a citation; a free-text topic → `inferred`, labelled honestly (built by `buildSourceTrust` / `resolveDeckAudioSource`). Rendered by the shared `ConfidenceBadge` + `SourceCitations`.
 - **Entitlements:** metered `education.memory_generate` (registry entry + `billing.capability` + `billing.capability_limit` rows: 15/month, 5/rolling_5h, free). The New page shows the limit BEFORE the action (`EntitlementMeter`) and guards the spend (`useEntitlementGuard` → `CapabilityPaywallDialog` on a cap hit — never a mid-generation ambush). `enforced:false` until the FYI-with-veto pass.
 - **Converter:** registers the `memory_aid` target on the ONE converter dispatch (`features/education/convert`), so note→memory-aid and the `/education/start` upload-kit fan-out produce memory aids; lineage via the shared `recordSourceLineage`.
-- **Sharing / access:** `useAccess('study_media', id)` for owner controls; `requireAccess(... 'edit')` server gate on `[id]/edit`; `ShareButton resourceType="study_media"`. The shared viewer `/education/media/[id]` dispatches `memory_aid` → `MemoryDetail`.
+- **Sharing / access:** `useAccess('study_media', id)` for edit access and owner-only sharing / whole-set deletion; `requireAccess(... 'edit')` server gate on `[id]/edit`; `ShareButton resourceType="study_media"`. The shared viewer `/education/media/[id]` dispatches `memory_aid` → `MemoryDetail`.
 
 ## Entry points
 
 - **Routes** (`app/(core)/education/memory/`): `/` (library) · `/new` (generate) · `/new/manual` (write an aid) · `/[id]` (shareable viewer) · `/[id]/edit` (structured editor, EDIT-gated).
+- **Detail editing:** `/[id]` keeps Edit all and also offers inline add/edit/delete for one mnemonic, analogy, or memory-palace stop. Each child change uses the same version-guarded `studyMediaService.updateVersioned` save as Edit all; the other children, source identity, and trust remain intact. The whole-set delete lives behind the clearly named “Delete entire set” action. A saved set may be empty after its final child is removed so a child delete never silently deletes its parent.
+- **Agent item writes:** `change_memory_item` is an approval-gated detail-only target for one add/update/delete by 1-based position. It validates before approval and again on apply, then uses the same guarded save. `update_memory_aids` and `delete_memory_aids` remain the whole-set operations.
 - **Shared viewer:** `/education/media/[id]` → `MediaRouter` → `MemoryDetail` (kind dispatch).
 - **Feature dir** (`features/education/memory/`):
   - `mandates.ts` — the two mandate keys (`EDU_MEMORY_MANDATES`).
