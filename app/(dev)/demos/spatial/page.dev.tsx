@@ -1,13 +1,17 @@
 // /demos/spatial — the spatial view proof: many live AI results on one
-// pannable, zoomable plane, with streaming paced by zoom level.
+// pannable, zoomable plane, with streaming paced by zoom level — and the
+// platform chat on the left, fed the board as context (features/spatial/chat/).
 // Engine + doctrine: features/spatial/FEATURE.md.
 
 import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
-import {
-  type DemoKindExample,
-  SpatialDemoBoard,
-} from "@/features/spatial/demo/SpatialDemoBoard";
+import type { DemoKindExample } from "@/features/spatial/demo/SpatialDemoBoard";
+import { SpatialDemoBoardWithChat } from "@/features/spatial/chat/SpatialDemoBoardWithChat";
+import { boardChatCookieName } from "@/features/spatial/chat/board-context";
+import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
+
+/** The chat | board split's group id (and, via `panels:<id>`, its layout cookie). */
+const CHAT_GROUP_ID = "spatial-demo-chat";
 
 export const metadata: Metadata = {
   title: "Spatial View",
@@ -66,10 +70,18 @@ async function loadCanonicalExamples(): Promise<{
 }
 
 export default async function SpatialDemoPage() {
-  const { kinds, note } = await loadCanonicalExamples();
+  const [{ kinds, note }, defaultLayout] = await Promise.all([
+    loadCanonicalExamples(),
+    readLayoutCookie(boardChatCookieName(CHAT_GROUP_ID)),
+  ]);
   return (
     <div className="h-full min-h-0">
-      <SpatialDemoBoard kinds={kinds} examplesNote={note} />
+      <SpatialDemoBoardWithChat
+        groupId={CHAT_GROUP_ID}
+        kinds={kinds}
+        examplesNote={note}
+        defaultLayout={defaultLayout}
+      />
     </div>
   );
 }
