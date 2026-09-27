@@ -155,16 +155,18 @@ describe("walkCapGate — development against production only", () => {
   }
 
   it("answers the 5th host with an honest 503 page and the refusal header, and logs it", async () => {
-    const input = gateInput();
+    const log = jest.fn();
+    const input = gateInput({ log });
     const response = await walkCapGate(input);
-    expect(response?.status).toBe(503);
-    expect(response?.headers.get(WALK_CAP_HEADER)).toBe("refused");
-    const html = await response!.text();
+    if (!response) throw new Error("expected a refusal response");
+    expect(response.status).toBe(503);
+    expect(response.headers.get(WALK_CAP_HEADER)).toBe("refused");
+    const html = await response.text();
     expect(html).toContain("over the live-database walk cap");
     expect(html).toContain("4 agent sessions");
     expect(html).toContain("a.localhost:3001");
     expect(html).toContain("pnpm preview:start --clone");
-    expect(String(input.log.mock.calls[0][0])).toMatch(/REFUSED e\.localhost:3001/);
+    expect(String(log.mock.calls[0][0])).toMatch(/REFUSED e\.localhost:3001/);
   });
 
   it("a missing knob fails OPEN — the walk proceeds", async () => {

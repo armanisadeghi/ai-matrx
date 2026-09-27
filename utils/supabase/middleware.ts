@@ -108,6 +108,21 @@ export async function updateSession(
     return session.response;
   }
 
+  // THE LIVE-DATABASE WALK CAP (utils/supabase/walkCap.ts). Development only:
+  // a production build inlines NODE_ENV, this branch becomes `if (false)`, and
+  // the dynamic import is dropped — Vercel never loads the module. Signed-in
+  // requests only; signed-out ones (login page, assets) always pass.
+  if (process.env.NODE_ENV === "development" && user) {
+    const { walkCapGateForRequest } = await import("./walkCap");
+    const refused = await walkCapGateForRequest(request.headers.get("host"));
+    if (refused) {
+      return new NextResponse(refused.body, {
+        status: refused.status,
+        headers: refused.headers,
+      });
+    }
+  }
+
   // An authenticated user sitting on an auth page or a generic landing page
   // while still carrying a destination gets forwarded straight there. This is
   // the safety net that closes the whole flow: whatever route the user took —
