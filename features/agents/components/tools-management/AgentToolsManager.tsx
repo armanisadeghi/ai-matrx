@@ -131,6 +131,7 @@ import {
   TOOL_AVAILABILITY_LABELS,
 } from "@/features/tool-registry/shared/toolRuntimes.service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 type ToolsTab = "server" | "custom" | "client" | "mcp";
 
@@ -389,6 +390,10 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
 
   const [fetchedMetadata, setFetchedMetadata] = useState<any>(null);
   const [isFetchingMetadata, setIsFetchingMetadata] = useState(!externalTools);
+  // The fallback metadata read's failure — with the registry also unread, the
+  // Server tab must say the read failed, never "No tools available".
+  const [metadataError, setMetadataError] = useState<unknown>(null);
+  const [metadataAttempt, setMetadataAttempt] = useState(0);
   // External services are the action users reach for first, so an agent that
   // carries nothing still opens on their catalogue. But an agent that ALREADY
   // carries platform tools opens on those: landing on 134 third-party servers
@@ -442,17 +447,28 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
     supabase.rpc("get_tools_metadata").then(({ data, error }) => {
       if (active && (!error || data)) {
         setFetchedMetadata(data as any);
+        setMetadataError(null);
         setIsFetchingMetadata(false);
       } else {
         console.error("Failed to fetch tools metadata", error);
-        if (active) setIsFetchingMetadata(false);
+        if (active) {
+          setMetadataError(error ?? true);
+          setIsFetchingMetadata(false);
+        }
       }
     });
 
     return () => {
       active = false;
     };
-  }, [externalTools, reduxToolsStatus]);
+  }, [externalTools, reduxToolsStatus, metadataAttempt]);
+
+  const toolsReadError = metadata ? null : metadataError;
+  const retryToolsRead = () => {
+    setMetadataError(null);
+    dispatch(fetchAvailableTools());
+    setMetadataAttempt((n) => n + 1);
+  };
 
   const tabs: { id: ToolsTab; label: string; icon: React.ReactNode }[] = [
     {
@@ -553,6 +569,8 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
             metadata={metadata}
             externalTools={externalTools}
             modelSupportsTools={modelSupportsTools}
+            readError={toolsReadError}
+            onRetryRead={retryToolsRead}
           />
         )}
         {activeTab === "custom" && (
@@ -588,11 +606,16 @@ function ServerToolsTab({
   metadata,
   externalTools,
   modelSupportsTools = true,
+  readError = null,
+  onRetryRead,
 }: {
   agentId: string;
   metadata: any;
   externalTools?: DatabaseTool[];
   modelSupportsTools?: boolean;
+  /** The tool catalogue read failed (and nothing was read instead). */
+  readError?: unknown;
+  onRetryRead?: () => void;
 }) {
   const dispatch = useAppDispatch();
   const selectedTools = useAppSelector((state) =>
@@ -613,6 +636,8 @@ function ServerToolsTab({
     page_count: number;
   } | null>(null);
   const [isListLoading, setIsListLoading] = useState(false);
+  const [listError, setListError] = useState<unknown>(null);
+  const [listAttempt, setListAttempt] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -819,7 +844,9 @@ function ServerToolsTab({
     supabase
       .rpc("get_tools_list", { p_active_only: true })
       .then(({ data, error }) => {
+        if (active && error) setListError(error);
         if (active && !error && data) {
+          setListError(null);
           // Normalize the RPC's TABLE result to the {items,...} shape and drop
           // bundle listers (surfaced via the Bundles category instead).
           const rows = (
@@ -846,6 +873,7 @@ function ServerToolsTab({
     isEnabledTab,
     isBundlesTab,
     externalTools,
+    listAttempt,
   ]);
 
   const visibleTools = useMemo(() => {
@@ -928,6 +956,16 @@ function ServerToolsTab({
       totalCount: metadata?.total_count || 0,
     };
   }, [metadata]);
+
+  if (readError && totalCount === 0) {
+    return (
+      <ReadFailure
+        error={readError}
+        what="the tool catalogue"
+        onRetry={onRetryRead}
+      />
+    );
+  }
 
   if (totalCount === 0) {
     return (
@@ -1360,6 +1398,15 @@ function ServerToolsTab({
                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
                     <span className="text-xs">Loading items...</span>
                   </div>
+                ) : listError && !isEnabledTab && !isBundlesTab && visibleTools.length === 0 ? (
+                  <ReadFailure
+                    error={listError}
+                    what="the tool list"
+                    onRetry={() => {
+                      setListError(null);
+                      setListAttempt((n) => n + 1);
+                    }}
+                  />
                 ) : visibleTools.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
                     <Search className="w-5 h-5 opacity-40" />
@@ -1779,6 +1826,7 @@ function CustomToolsTab({
         {tools.length === 0 && !isAdding && (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
             <Code2 className="w-8 h-8 opacity-30" />
+            {/* read-gate-exempt: editor over the loaded agent's own custom tool definitions (a form over its record), not a list read's answer */}
             <p className="text-sm">No custom tools defined.</p>
             <p className="text-xs max-w-xs text-center">
               Custom tools let you define inline tool specifications that are
@@ -2228,6 +2276,7 @@ function ClientToolsTab({
         {allEnabledToolNames.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
             <Monitor className="w-8 h-8 opacity-30" />
+            {/* read-gate-exempt: editor over the loaded agent's own enabled tools (a form over its record), not a list read's answer */}
             <p className="text-sm">No tools enabled yet.</p>
             <p className="text-xs max-w-xs text-center">
               Enable server or custom tools first, then mark which ones the

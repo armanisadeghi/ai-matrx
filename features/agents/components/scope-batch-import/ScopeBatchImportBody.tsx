@@ -41,9 +41,11 @@ import {
   listScopeTypeItems,
   listSystemContextItems,
   selectItemsByType,
+  selectItemsErrorForType,
   selectItemsLoadedForType,
   SYSTEM_ITEMS_KEY,
 } from "@/features/scopes/redux/contextItemCatalog";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   selectAgentContextPolicies,
   selectAgentVariableDefinitions,
@@ -128,6 +130,9 @@ export function ScopeBatchImportBody({
     itemsKey ? selectItemsLoadedForType(s, itemsKey) : false,
   );
   const items = useAppSelector((s) => selectItemsByType(s, itemsKey));
+  const itemsError = useAppSelector((s) =>
+    itemsKey ? selectItemsErrorForType(s, itemsKey) : null,
+  );
 
   useEffect(() => {
     if (!isSystem && orgId && !typesLoaded) dispatch(ensureScopeTree());
@@ -459,6 +464,16 @@ export function ScopeBatchImportBody({
         <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground text-center">
           Pick an organization and scope type to see its context items.
         </div>
+      ) : itemsError && items.length === 0 ? (
+        <ReadFailure
+          error={itemsError}
+          what={isSystem ? "the system context items" : "this scope type's context items"}
+          onRetry={() =>
+            void dispatch(
+              isSystem ? listSystemContextItems() : listScopeTypeItems(scopeTypeId),
+            )
+          }
+        />
       ) : !itemsLoaded ? (
         <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
           Loading context items…

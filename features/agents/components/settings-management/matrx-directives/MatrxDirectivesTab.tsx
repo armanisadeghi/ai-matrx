@@ -164,6 +164,7 @@ export function MatrxDirectivesTab({ agentId }: MatrxDirectivesTabProps) {
         </span>
         {actions.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">
+            {/* read-gate-exempt: editor field over the loaded agent's own settings (a form), not a read's answer; the catalog read's failure is shown below */}
             None yet — pick from the catalog below or add a custom one.
           </p>
         ) : (

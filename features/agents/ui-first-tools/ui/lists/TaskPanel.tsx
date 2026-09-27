@@ -28,10 +28,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
+  selectAgentListsError,
+  selectAgentListsStatus,
   selectAgentPlan,
   selectAgentTasks,
   selectUserTodosForConversation,
 } from "../../redux/agent-lists.selectors";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import {
   hydrateAgentLists,
   subscribeAgentLists,
@@ -125,19 +129,46 @@ export function TaskPanel({
   );
 }
 
+// ─── The lists read (RC-B12 r12) ─────────────────────────────────────────────
+// One hydrate read feeds all three sections; a failed read is never "no plan
+// yet" / "no tasks" / "no todos".
+
+function useAgentListsRead(conversationId: string) {
+  const dispatch = useAppDispatch();
+  const status = useAppSelector(selectAgentListsStatus(conversationId));
+  const error = useAppSelector(selectAgentListsError(conversationId));
+  const retry = () => void dispatch(hydrateAgentLists(conversationId));
+  return { status, error, retry };
+}
+
+function ListsLoading() {
+  return (
+    <div className="text-sm text-muted-foreground italic" role="status">
+      Loading…
+    </div>
+  );
+}
+
 // ─── Plan section ───────────────────────────────────────────────────────────
 
 function PlanSection({ conversationId }: { conversationId: string }) {
   const plan = useAppSelector(selectAgentPlan(conversationId));
+  const read = useAgentListsRead(conversationId);
   if (!plan) {
     return (
       <section>
         <h3 className="text-xs uppercase tracking-wide text-muted-foreground mb-1.5">
           Plan
         </h3>
-        <div className="text-sm text-muted-foreground italic">
-          No plan yet for this conversation.
-        </div>
+        {read.error ? (
+          <ReadFailure error={read.error} what="this conversation's plan" onRetry={read.retry} className="m-0" />
+        ) : read.status !== "ready" ? (
+          <ListsLoading />
+        ) : (
+          <div className="text-sm text-muted-foreground italic">
+            No plan yet for this conversation.
+          </div>
+        )}
       </section>
     );
   }
@@ -201,6 +232,7 @@ function PlanSection({ conversationId }: { conversationId: string }) {
 
 function TasksSection({ conversationId }: { conversationId: string }) {
   const tasks = useAppSelector(selectAgentTasks(conversationId));
+  const read = useAgentListsRead(conversationId);
   const userId = useAppSelector(selectUserId);
   const [draft, setDraft] = useState("");
 
@@ -222,11 +254,18 @@ function TasksSection({ conversationId }: { conversationId: string }) {
         Agent tasks ({tasks.length})
       </h3>
       <div className="flex flex-col gap-1.5">
-        {tasks.length === 0 && (
+        {read.error && tasks.length > 0 && (
+          <StaleDataNotice hasData what="this conversation's agent tasks" onRetry={read.retry} detail={read.error} />
+        )}
+        {read.error && tasks.length === 0 ? (
+          <ReadFailure error={read.error} what="this conversation's agent tasks" onRetry={read.retry} className="m-0" />
+        ) : read.status !== "ready" && tasks.length === 0 ? (
+          <ListsLoading />
+        ) : tasks.length === 0 ? (
           <div className="text-sm text-muted-foreground italic">
             No agent tasks for this conversation.
           </div>
-        )}
+        ) : null}
         {tasks.map((t) => (
           <TaskRow key={t.id} task={t} />
         ))}
@@ -335,6 +374,7 @@ function TaskRow({ task }: { task: CxAgentTaskRow }) {
 
 function TodosSection({ conversationId }: { conversationId: string }) {
   const todos = useAppSelector(selectUserTodosForConversation(conversationId));
+  const read = useAgentListsRead(conversationId);
   const userId = useAppSelector(selectUserId);
   const [draft, setDraft] = useState("");
 
@@ -353,11 +393,18 @@ function TodosSection({ conversationId }: { conversationId: string }) {
         Your todos ({todos.filter((t) => !t.done).length} open)
       </h3>
       <div className="flex flex-col gap-1.5">
-        {todos.length === 0 && (
+        {read.error && todos.length > 0 && (
+          <StaleDataNotice hasData what="your todos for this conversation" onRetry={read.retry} detail={read.error} />
+        )}
+        {read.error && todos.length === 0 ? (
+          <ReadFailure error={read.error} what="your todos for this conversation" onRetry={read.retry} className="m-0" />
+        ) : read.status !== "ready" && todos.length === 0 ? (
+          <ListsLoading />
+        ) : todos.length === 0 ? (
           <div className="text-sm text-muted-foreground italic">
             No todos assigned by the agent yet.
           </div>
-        )}
+        ) : null}
         {todos.map((t) => (
           <TodoRow key={t.id} todo={t} />
         ))}

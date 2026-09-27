@@ -234,6 +234,7 @@ export function InstanceUIStateList({
         )}
       >
         <LayoutDashboard className="h-6 w-6 text-muted-foreground opacity-25" />
+        {/* read-gate-exempt: lists in-browser execution instances held in the store this session; there is no read that can fail */}
         <p className="text-xs text-muted-foreground">No active instances</p>
       </div>
     );

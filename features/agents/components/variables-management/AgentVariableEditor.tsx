@@ -414,6 +414,7 @@ export function AgentVariableEditor({
           local configurator is replaced by an inheritance note. */}
       {isDataBound ? (
         <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
+          {/* read-gate-exempt: static explanation of data-bound variables (no input type needed), not an empty view */}
           <span className="font-medium">Filled from your data</span> every time
           the agent runs. The person running it sees the value locked and cannot
           type over it, so no input type is needed here.

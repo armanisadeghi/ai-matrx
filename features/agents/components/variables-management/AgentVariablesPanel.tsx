@@ -188,6 +188,7 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
           <div className="py-1">
             {variables.length === 0 && (
               <p className="px-3 py-4 text-xs text-muted-foreground text-center">
+                {/* read-gate-exempt: editor over the loaded agent's own variable definitions (its record), not a list read's answer */}
                 No variables yet
               </p>
             )}
@@ -294,6 +295,7 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
             <div>
               <p className="text-sm font-medium text-foreground">
                 {variables.length === 0
+                  // read-gate-exempt: editor over the loaded agent's own variable definitions (its record), not a list read's answer
                   ? "No variables defined"
                   : "Select a variable"}
               </p>

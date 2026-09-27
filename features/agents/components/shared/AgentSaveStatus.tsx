@@ -102,6 +102,7 @@ export function AgentSaveStatus({
                   ? "Save new agent"
                   : isDirty
                     ? "Save changes"
+                    // read-gate-exempt: save-button tooltip from local dirty-state tracking, not a read's empty answer
                     : "No unsaved changes"
             }
           >

@@ -310,6 +310,7 @@ function HistoryBody({
   // Not yet materialized — no durable versions to show.
   return (
     <div className="flex h-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
+      {/* read-gate-exempt: the document has no durable row yet (binding not materialized), so there is no read; DbVersionPanel shows its own read failure */}
       No versions yet. Once you or the agent edits this document, every change is
       captured here.
     </div>

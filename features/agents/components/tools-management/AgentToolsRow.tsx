@@ -121,6 +121,7 @@ export function AgentToolsRow({ agentId }: AgentToolsRowProps) {
           className="flex min-w-0 flex-1 flex-nowrap items-center gap-1.5 py-0.5"
         >
           {selected.length === 0 && customCount === 0 && mcpCount === 0 ? (
+            // read-gate-exempt: editor row over the loaded agent's own tool ids (a form field of its record), not a list read's answer
             <span className="shrink-0 text-xs text-muted-foreground/70">
               None yet — Add gives this agent something it can do
             </span>

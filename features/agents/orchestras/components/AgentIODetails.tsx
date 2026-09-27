@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -17,6 +17,7 @@ import {
   selectAgentReadyForBuilder,
 } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { accentClasses } from "./accents";
 import type { OrchestraAccent } from "../constants";
 
@@ -48,9 +49,20 @@ export function AgentIODetails({
   );
 
   // Lazy-load the full definition (variables + output schema are NOT in the list row).
+  // The full-definition read's failure, so neither block spins forever over it.
+  const [agentReadError, setAgentReadError] = useState<unknown>(null);
+  const [readAttempt, setReadAttempt] = useState(0);
   useEffect(() => {
-    if (!ready) dispatch(fetchFullAgent(agentId));
-  }, [ready, agentId, dispatch]);
+    if (ready) return;
+    dispatch(fetchFullAgent(agentId))
+      .unwrap()
+      .then(() => setAgentReadError(null))
+      .catch((err: unknown) => setAgentReadError(err ?? true));
+  }, [ready, agentId, dispatch, readAttempt]);
+  const retryAgentRead = () => {
+    setAgentReadError(null);
+    setReadAttempt((n) => n + 1);
+  };
 
   const outputProps = outputSchema?.schema?.properties
     ? Object.entries(outputSchema.schema.properties)
@@ -61,7 +73,9 @@ export function AgentIODetails({
     <>
       <div className="space-y-1.5">
         <div className="text-xs font-medium text-muted-foreground">Inputs</div>
-        {!ready ? (
+        {!ready && agentReadError ? (
+          <ReadFailure error={agentReadError} what="this agent's inputs" onRetry={retryAgentRead} className="m-0" />
+        ) : !ready ? (
           <div className="text-xs text-muted-foreground">
             <SuspenseLoader
               centered={false}
@@ -109,7 +123,9 @@ export function AgentIODetails({
 
       <div className="space-y-1.5">
         <div className="text-xs font-medium text-muted-foreground">Output</div>
-        {!ready ? (
+        {!ready && agentReadError ? (
+          <ReadFailure error={agentReadError} what="this agent's output shape" onRetry={retryAgentRead} className="m-0" />
+        ) : !ready ? (
           <div className="text-xs text-muted-foreground">
             <SuspenseLoader
               centered={false}

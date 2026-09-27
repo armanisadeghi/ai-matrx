@@ -26,6 +26,20 @@ export const selectAgentListsBucket =
   (state: RootState): AgentListsForConversation =>
     state.agentLists?.byConversationId[conversationId] ?? DEFAULT_BUCKET;
 
+/** The hydrate read's status for one conversation's lists (RC-B12 r12). */
+export const selectAgentListsStatus =
+  (conversationId: string) =>
+  (state: RootState): AgentListsForConversation["status"] =>
+    state.agentLists?.byConversationId[conversationId]?.status ?? "idle";
+
+/** Why the hydrate read failed, or null — a failed read is not "no plan yet". */
+export const selectAgentListsError =
+  (conversationId: string) =>
+  (state: RootState): string | null => {
+    const bucket = state.agentLists?.byConversationId[conversationId];
+    return bucket?.status === "error" ? (bucket.error ?? "The read failed.") : null;
+  };
+
 export const selectAgentPlan =
   (conversationId: string) =>
   (state: RootState): CxAgentPlanRow | null =>

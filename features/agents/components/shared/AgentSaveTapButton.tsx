@@ -61,6 +61,7 @@ export function AgentSaveTapButton({ agentId }: AgentSaveTapButtonProps) {
       ? "Save new agent"
       : isDirty
         ? "Save changes"
+        // read-gate-exempt: save-button label from local dirty-state tracking, not a read's empty answer
         : "No unsaved changes";
 
   const icon = isLoading ? (
@@ -115,10 +116,12 @@ export function AgentSaveTapButton({ agentId }: AgentSaveTapButtonProps) {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-yellow-500" />
+              {/* read-gate-exempt: save-flow dialog title about the agent's local model field, not a read's empty answer */}
               No Model Selected
             </AlertDialogTitle>
             <AlertDialogDescription>
               Your agent was saved, but{" "}
+              {/* read-gate-exempt: save-flow dialog copy about the agent's local model field, not a read's empty answer */}
               <strong>no model has been selected</strong>. A model is required
               for the agent to run. Would you like to select one now?
             </AlertDialogDescription>

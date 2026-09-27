@@ -328,6 +328,7 @@ export function UndoHistoryOverlay({
             <div className="py-8 text-center">
               <History className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
               <p className="text-xs text-muted-foreground">
+                {/* read-gate-exempt: in-browser undo stack of this editing session; there is no read that can fail */}
                 No edit history yet
               </p>
               <p className="text-[10px] text-muted-foreground mt-1">
