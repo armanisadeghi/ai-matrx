@@ -307,7 +307,7 @@ export function BrowseEverything() {
               <Info className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent sizing="fixed" align="start" className="w-80 space-y-1 text-sm">
+          <PopoverContent /* sizing: fixed — two short sentences about one source */ align="start" className="w-80 space-y-1 text-sm">
             {chosenAdapter.browse_outcome ? <p>{chosenAdapter.browse_outcome}</p> : null}
             {chosenAdapter.limitation ? (
               <p className="text-muted-foreground">Cannot reach: {chosenAdapter.limitation}</p>
