@@ -155,13 +155,17 @@ export function AddressesCard({
       }
     >
       {adding && (
-        <div className="mb-2 space-y-1.5 rounded border border-border bg-muted/30 p-1.5">
-          <div className="flex gap-1.5">
+        // An inline form on the card's own surface — no box inside the box.
+        // Labelled fields in a grid: Type + Street, then City / State / ZIP /
+        // Country, then the action on its own row edge.
+        <div className="mb-2 grid grid-cols-6 gap-x-2 gap-y-1.5 border-b border-border pb-2">
+          <label className="col-span-2 grid gap-0.5 text-xs text-muted-foreground">
+            Type
             <Select
               value={purpose}
               onValueChange={(v) => setPurpose(v as AddressPurpose)}
             >
-              <SelectTrigger className="h-11 w-24 text-base sm:h-7 sm:text-xs">
+              <SelectTrigger className="h-11 text-base capitalize sm:h-7 sm:text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -172,47 +176,58 @@ export function AddressesCard({
                 ))}
               </SelectContent>
             </Select>
+          </label>
+          <label className="col-span-4 grid gap-0.5 text-xs text-muted-foreground">
+            Street
             <Input
               value={line1}
               onChange={(e) => setLine1(e.target.value)}
-              placeholder="Street"
-              className="h-11 flex-1 text-base sm:h-7 sm:text-xs"
+              className="h-11 text-base sm:h-7 sm:text-xs"
               autoFocus
             />
-          </div>
-          <div className="flex gap-1.5">
+          </label>
+          <label className="col-span-6 grid gap-0.5 text-xs text-muted-foreground sm:col-span-3">
+            City
             <Input
               value={locality}
               onChange={(e) => setLocality(e.target.value)}
-              placeholder="City"
-              className="h-11 flex-1 text-base sm:h-7 sm:text-xs"
+              className="h-11 text-base sm:h-7 sm:text-xs"
             />
+          </label>
+          <label className="col-span-2 grid gap-0.5 text-xs text-muted-foreground sm:col-span-1">
+            State
             <Input
               value={region}
               onChange={(e) => setRegion(e.target.value)}
-              placeholder="State"
-              className="h-11 w-20 text-base sm:h-7 sm:w-16 sm:text-xs"
+              className="h-11 text-base sm:h-7 sm:text-xs"
             />
+          </label>
+          <label className="col-span-2 grid gap-0.5 text-xs text-muted-foreground sm:col-span-1">
+            ZIP
             <Input
               value={postal}
               onChange={(e) => setPostal(e.target.value)}
-              placeholder="ZIP"
-              className="h-11 w-24 text-base sm:h-7 sm:w-20 sm:text-xs"
+              className="h-11 text-base sm:h-7 sm:text-xs"
             />
+          </label>
+          <label className="col-span-2 grid gap-0.5 text-xs text-muted-foreground sm:col-span-1">
+            Country
             <Input
               value={country}
               onChange={(e) => setCountry(e.target.value)}
               placeholder="US"
               maxLength={2}
-              className="h-11 w-16 text-base uppercase sm:h-7 sm:w-12 sm:text-xs"
+              className="h-11 text-base uppercase sm:h-7 sm:text-xs"
             />
+          </label>
+          <div className="col-span-6 flex justify-end">
             <Button
               size="sm"
-              className="h-11 px-3 text-sm sm:h-7 sm:px-2 sm:text-xs"
+              className="h-11 px-4 text-sm sm:h-7 sm:px-3 sm:text-xs"
               onClick={submit}
               disabled={saving}
             >
-              Add
+              Add address
             </Button>
           </div>
         </div>

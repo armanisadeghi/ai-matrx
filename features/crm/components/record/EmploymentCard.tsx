@@ -450,7 +450,7 @@ export function EmploymentCard(props: Props) {
       }
     >
       {adding && (
-        <div className="mb-2 space-y-1.5 rounded border border-border bg-muted/30 p-1.5">
+        <div className="mb-2 space-y-1.5 border-b border-border pb-2">
           <div className="flex flex-wrap items-center gap-1.5">
             <EmployerPicker
               orgId={props.orgId}
