@@ -2050,6 +2050,21 @@ export function updateHrEmployerProfile(
   );
 }
 
+/**
+ * Route 68's establishment write — `hr_establishment_upsert(p_payload)`. No `id`
+ * inserts; an `id` updates only the keys sent. `jurisdiction_id` is required on insert
+ * (NOT NULL). There is no delete door. Returns `{ok, establishment_id, audit_id}`.
+ */
+export function upsertHrEstablishment(
+  payload: { organization_id: string; id?: string } & Record<string, unknown>,
+): Promise<HrResult<HrWriteAck>> {
+  return callHrWrite(
+    "hr_establishment_upsert",
+    { p_payload: payload },
+    { envelope: true, whatFailed: "Saving the establishment" },
+  );
+}
+
 // ── Pay-group assignment and the activation seeds ───────────────────────────
 //
 // Both doors are LIVE (`pg_proc`, 2026-08-26) and both used to have ZERO callers
