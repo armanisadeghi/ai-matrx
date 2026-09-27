@@ -82,7 +82,15 @@ export function AgentAppHeader({
     actions.push({
       label: "Run history",
       icon: History,
-      onPress: () => openRunHistory({ agentId }),
+      // Open on the run this page is showing, never "Select a conversation".
+      onPress: () =>
+        openRunHistory({
+          agentId,
+          initialSelectedConversationId:
+            typeof window !== "undefined"
+              ? new URLSearchParams(window.location.search).get("conversationId")
+              : null,
+        }),
     });
   }
   actions.push({

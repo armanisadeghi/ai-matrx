@@ -125,7 +125,7 @@ function VersionGroupRow({
           <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
         )}
         <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide flex-1 min-w-0 truncate">
-          Version {group.versionNumber}
+          {group.versionNumber ? `Version ${group.versionNumber}` : "Latest"}
         </span>
         <span className="text-[10px] text-muted-foreground/60 shrink-0 ml-1">
           {group.conversations.length}
@@ -306,7 +306,7 @@ function RunHistorySidebar({
       >
         <AgentListDropdown
           onSelect={onAgentSelect}
-          label={agentName ?? "Select agent…"}
+          label={agentName?.trim() || "Select agent…"}
           className="w-full"
         />
       </div>
@@ -498,7 +498,9 @@ function AgentRunHistoryWindowInner({
     agentId ? (selectAgentById(state, agentId)?.name ?? null) : null,
   );
 
-  const titleSuffix = agentId ? ` — ${agentName ?? "Agent"}` : "";
+  // An empty name (an agent read through a public app's door carries none)
+  // must never leave a dangling "Run History —".
+  const titleSuffix = agentId ? ` — ${agentName?.trim() || "Agent"}` : "";
 
   /**
    * The roster (and the canonical agent id it is fetched under) lives one
@@ -576,7 +578,7 @@ function AgentRunHistoryWindowInner({
             onScope={publishHistory}
           />
         }
-        sidebarDefaultSize={220}
+        sidebarDefaultSize={280}
         sidebarMinSize={160}
         defaultSidebarOpen
       >
