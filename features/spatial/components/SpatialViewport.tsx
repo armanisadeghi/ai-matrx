@@ -307,6 +307,16 @@ export function SpatialViewport({
   // ── keyboard navigation ──────────────────────────────────────────────────
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Esc in a field inside a tile leaves the field (Figma), so the next
+      // Esc and the board's keys work again without reaching for the mouse.
+      if (e.key === "Escape" && isTyping(e.target)) {
+        const el = e.target as HTMLElement;
+        if (el.closest("[data-spatial-tile], [data-spatial-card]")) {
+          el.blur();
+          e.preventDefault();
+        }
+        return;
+      }
       if (isTyping(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
       const size = store.getSize();
       const cam = store.getCamera();
@@ -399,16 +409,25 @@ function isTyping(target: EventTarget | null): boolean {
   return el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName);
 }
 
-/** True when the wheel should scroll the selected tile's own scroll area. */
+/** True when the wheel should scroll the selected tile's own content: the
+ * pointer is inside the SELECTED tile (or its focused card) and the nearest
+ * scrollable element between the pointer and the tile has room to scroll that
+ * way. Any scroll container counts — tile bodies need no special marker. */
 function selectedTileScrolls(e: WheelEvent, selected: string | null): boolean {
   if (!selected) return false;
   const target = e.target as HTMLElement | null;
-  const tile = target?.closest<HTMLElement>("[data-spatial-tile]");
-  if (!tile || tile.dataset.spatialTile !== selected) return false;
-  const scroller = target?.closest<HTMLElement>("[data-spatial-scroll]");
-  if (!scroller) return false;
-  const down = e.deltaY > 0;
-  return down
-    ? scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 1
-    : scroller.scrollTop > 0;
+  const tile = target?.closest<HTMLElement>("[data-spatial-tile], [data-spatial-card]");
+  const id = tile?.dataset.spatialTile ?? tile?.dataset.spatialCard;
+  if (!tile || id !== selected) return false;
+  const vertical = Math.abs(e.deltaY) >= Math.abs(e.deltaX);
+  const delta = vertical ? e.deltaY : e.deltaX;
+  for (let el: HTMLElement | null = target; el && el !== tile.parentElement; el = el.parentElement) {
+    const style = getComputedStyle(el);
+    const overflow = vertical ? style.overflowY : style.overflowX;
+    if (overflow !== "auto" && overflow !== "scroll") continue;
+    if (vertical) {
+      if (delta > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0) return true;
+    } else if (delta > 0 ? el.scrollLeft + el.clientWidth < el.scrollWidth - 1 : el.scrollLeft > 0) return true;
+  }
+  return false;
 }

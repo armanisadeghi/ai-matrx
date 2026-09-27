@@ -140,3 +140,27 @@ hardware with a production build before tuning further.
   gestures with pre-release hints and undo, the parked shelf, the v3 right-click menu, save-to-Notes,
   `useBoard` + auto-placement. Browser-verified (wheel vs trackpad, focus + arrows + Esc, throw
   right/down, shelf restore, delete confirm, menu), 0 console errors.
+
+## Chat beside the board
+
+`features/spatial/chat/` puts the platform's one chat on the left of a board (the Claude Design
+shape). Live on `/demos/spatial`.
+
+| Piece | File |
+|---|---|
+| `BoardWithChat` — v4 horizontal split, chat left (30%, min 300px, max 55%), board right; collapses to a 44px rail (button or Ctrl/Cmd + `\`), layout in the `panels:<id>` cookie; under 768px the chat is a bottom Drawer | `chat/BoardWithChat.tsx` |
+| `BoardChatPanel` + `useBoardChatConversation` — mounts `AgentConversationColumn` under the `chat.default_new_chat` mandate (what `/chat/new` resolves; no agent id, no prompt in code) | `chat/BoardChatPanel.tsx` |
+| `BoardContext` — bounded snapshot (60 tiles, 1,200 chars per excerpt, 24,000 total; focused/selected/in-view first; caps stated in the payload) + the DOM reader | `chat/board-context.ts` |
+
+- **The board is CONTEXT, never user text.** One entry, key `spatial_board` (type `json`), written
+  with `setContextEntries` when the conversation opens and again in the CAPTURE phase of every
+  pointerdown / Enter / focus inside the chat — before the composer's send handler — so every turn
+  carries the board as it is now. The composer's "Board" pill opens exactly what is sent.
+- **First version reads the DOM** (`[data-spatial-tile]`, `[data-spatial-card]`, `[data-spatial-body]`,
+  the status dot's `title`, the selection ring). Follow-up: a store-backed `getBoardContext` once
+  the board exposes its `SpatialStore` (kind payloads, not rendered text; a real `selected` field).
+- **Not yet a registered surface.** The platform's own submit-time path is a surface manifest +
+  `SurfaceRuntimeProvider.beforeExecute` (`refreshSurfaceScope`), which needs the conversation
+  stamped with a `surfaceName` — `launchMandate` does not pass one today. When a
+  `matrx-user/spatial-board` surface is registered, move the refresh there and drop the capture
+  handlers.
