@@ -110,7 +110,7 @@ export type MandateListHealth =
  */
 export const HEALTH_EXPLANATION: Partial<Record<MandateListHealth, string>> = {
   "org rung dropped":
-    "Your organization chose an agent for this job, but its members cannot open that agent — so the choice could not be used and the job runs the rung below. Share the agent with the organization, or bind one it already has.",
+    "Your organization chose an agent for this job, but its members cannot open that agent — so the choice could not be used and the job runs the rung below. Share it with each member who can't open it, or pick an agent that belongs to the organization.",
   "user rung dropped":
     "Your own choice for this job names an agent you cannot open, so it could not be used and the job runs the rung below. Pick an agent you have access to.",
   "output contract unmet":
