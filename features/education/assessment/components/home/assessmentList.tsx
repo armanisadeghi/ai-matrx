@@ -170,6 +170,28 @@ export function buildAssessmentColumns(
       },
     },
     {
+      id: "take",
+      label: "Take",
+      locked: true,
+      phone: "primary",
+      column: {
+        id: "take",
+        header: "Take",
+        // Fits the labelled button; the room comes from Topic's truncation.
+        // Beside the title, so the row's main action is on screen at every
+        // desktop width (at 1024 the columns after My attempts scroll off).
+        width: 96,
+        minWidth: 96,
+        className: "min-w-24 whitespace-nowrap",
+        headerClassName: "min-w-24",
+        // A value, so the phone card (which omits empty fields) keeps it.
+        accessorFn: (row) => (row.archived || row.question_count === 0 ? "" : "take"),
+        filter: false,
+        sortable: false,
+        cell: (row) => <TakeCell row={row} config={config} />,
+      },
+    },
+    {
       id: "topic",
       label: "Topic",
       // Behind "more fields" on a phone: most topics only repeat the title,
@@ -316,26 +338,6 @@ export function buildAssessmentColumns(
             {visibilityLabel(row.visibility)}
           </span>
         ),
-      },
-    },
-    {
-      id: "take",
-      label: "Take",
-      locked: true,
-      phone: "primary",
-      column: {
-        id: "take",
-        header: "Take",
-        // Fits the labelled button; the room comes from Topic's truncation.
-        width: 96,
-        minWidth: 96,
-        className: "min-w-24 whitespace-nowrap",
-        headerClassName: "min-w-24",
-        // A value, so the phone card (which omits empty fields) keeps it.
-        accessorFn: (row) => (row.archived || row.question_count === 0 ? "" : "take"),
-        filter: false,
-        sortable: false,
-        cell: (row) => <TakeCell row={row} config={config} />,
       },
     },
     {
