@@ -151,18 +151,26 @@ export function resolvePhoneCardLayout<TRow>(
   return { title, primary, meta, rest, favorite };
 }
 
+/**
+ * One label/value pair. The pairs sit in ONE two-column grid (`FIELD_GRID`) so
+ * every card of a list puts each field's value at the same x — with a flex row
+ * per field, the value started wherever its label ended, and the same fields
+ * read as a different layout on every card (page-pass 2026-09-27).
+ */
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex min-w-0 items-baseline gap-2">
-      <dt className="shrink-0 text-[11px] uppercase tracking-wide text-muted-foreground">
+    <>
+      <dt className="text-[11px] uppercase leading-5 tracking-wide text-muted-foreground">
         {label}
       </dt>
-      <dd className="min-w-0 flex-1 truncate text-xs text-foreground">
+      <dd className="min-w-0 truncate text-xs leading-5 text-foreground">
         {children}
       </dd>
-    </div>
+    </>
   );
 }
+
+const FIELD_GRID = "grid grid-cols-[minmax(5.5rem,auto)_minmax(0,1fr)] items-baseline gap-x-2 gap-y-1";
 
 /**
  * ONE phone card. Rendered by MatrxDataTable below `sm` in place of the row.
@@ -260,7 +268,7 @@ export function EntityPhoneCard<TRow>({
       </div>
 
       {layout.primary.length > 0 ? (
-        <dl className="mt-1.5 space-y-1">
+        <dl className={cn("mt-1.5", FIELD_GRID)}>
           {layout.primary.map((spec) => (
             <Field key={spec.id} label={spec.label}>
               {controls.renderCell(spec.id)}
@@ -300,7 +308,7 @@ export function EntityPhoneCard<TRow>({
               : `${layout.rest.length} more ${layout.rest.length === 1 ? "field" : "fields"}`}
           </button>
           {open ? (
-            <dl id={restId} className="space-y-1 pb-1">
+            <dl id={restId} className={cn("pb-1", FIELD_GRID)}>
               {layout.rest.map((spec) => (
                 <Field key={spec.id} label={spec.label}>
                   {controls.renderCell(spec.id)}

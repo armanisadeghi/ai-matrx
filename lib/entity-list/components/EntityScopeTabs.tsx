@@ -144,7 +144,10 @@ export function EntityScopeTabs({
 }: Props) {
   return (
     <div
-      className="inline-flex min-w-0 items-center gap-0.5 rounded-lg border border-border bg-card p-0.5 sm:gap-1 sm:p-1"
+      // Labels stay on a phone (page-pass 2026-09-27: icon + count alone left
+      // "which one is Mine?" to guesswork); a row too wide for the screen
+      // scrolls sideways instead of dropping its words.
+      className="inline-flex max-w-full min-w-0 items-center gap-0.5 overflow-x-auto rounded-lg border border-border bg-card p-0.5 [scrollbar-width:none] sm:gap-1 sm:p-1 [&::-webkit-scrollbar]:hidden"
       role="tablist"
       aria-label="List scope"
     >
@@ -185,7 +188,7 @@ export function EntityScopeTabs({
             onClick={() => onChange(makeScope(kind))}
           >
             <Icon className="h-3.5 w-3.5" />
-            <span className="max-sm:sr-only">
+            <span className="whitespace-nowrap">
               {narrowed?.label ?? meta.label}
             </span>
             <CountPill n={count} active={active} />

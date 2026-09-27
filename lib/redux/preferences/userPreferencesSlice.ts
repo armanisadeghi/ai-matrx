@@ -11,6 +11,7 @@ import {
   type Draft,
 } from "@reduxjs/toolkit";
 import type { CatalogVoice } from "@/features/audio/service/engines";
+import type { TableViewSnapshot } from "@ai-matrx/design-system/data-table";
 import { definePolicy } from "@/lib/sync/policies/define";
 import {
   REHYDRATE_ACTION_TYPE,
@@ -439,6 +440,19 @@ export interface ListViewPrefs {
   pageSize: number;
   /** Column ids the user switched OFF. Absent id = visible. */
   hiddenColumns: string[];
+  /**
+   * The views the person made with the table's "+" — named, and kept here so a
+   * reload keeps them (page-pass 2026-09-27: they lived in memory only). The
+   * snapshot is the table's own view shape (`TableViewSnapshot`), stored as
+   * data; the table validates it when it applies one.
+   */
+  savedViews?: SavedListView[];
+}
+
+export interface SavedListView {
+  id: string;
+  label: string;
+  snapshot: TableViewSnapshot;
 }
 
 /**
