@@ -606,3 +606,274 @@ export function buildHrEmployerScope(input: HrEmployerScopeInput): Record<string
   }
   return scope;
 }
+
+// ── Establishments — create / edit through `hr_establishment_upsert` ─────────
+//
+// The door (verified from `pg_proc` 2026-09-27): gated by `hr._l1_settings_gate(org,
+// 'hr_establishment', 'update')`; with no `id` it inserts, with an `id` it updates only
+// the keys sent (`jurisdiction_id`, `is_headquarters` and the counts keep their value
+// when omitted); `jurisdiction_id` is NOT NULL on the table. There is NO delete door, so
+// no delete target and no delete button.
+
+export type HrEstablishmentInput = {
+  name: string;
+  jurisdiction_id: string;
+  is_headquarters: boolean;
+  naics_code: string;
+  eeo1_establishment_id: string;
+  osha_establishment_name: string;
+  annual_average_employees: string;
+  address: HrEmployerAddress;
+};
+
+export const EMPTY_ESTABLISHMENT: HrEstablishmentInput = {
+  name: "",
+  jurisdiction_id: "",
+  is_headquarters: false,
+  naics_code: "",
+  eeo1_establishment_id: "",
+  osha_establishment_name: "",
+  annual_average_employees: "",
+  address: { ...EMPTY_ADDRESS },
+};
+
+type JurisdictionRef = { id: string; name: string; jurisdiction_key: string };
+
+export function establishmentToInput(row: HrEstablishment): HrEstablishmentInput {
+  return {
+    name: row.name,
+    jurisdiction_id: row.jurisdiction_id ?? "",
+    is_headquarters: row.is_headquarters,
+    naics_code: row.naics_code ?? "",
+    eeo1_establishment_id: row.eeo1_establishment_id ?? "",
+    osha_establishment_name: row.osha_establishment_name ?? "",
+    annual_average_employees:
+      row.annual_average_employees === null ? "" : String(row.annual_average_employees),
+    address: readAddress(row.address),
+  };
+}
+
+/** Every reason the establishment form cannot be saved, in the words the page shows. */
+export function establishmentProblems(
+  input: HrEstablishmentInput,
+  others: ReadonlyArray<{ name: string }>,
+  jurisdictions: ReadonlyArray<JurisdictionRef>,
+): string[] {
+  const problems: string[] = [];
+  const name = input.name.trim();
+  if (!name) problems.push("The name cannot be blank.");
+  else if (others.some((o) => o.name.trim().toLowerCase() === name.toLowerCase())) {
+    problems.push(`An establishment named "${name}" already exists.`);
+  }
+  if (!input.jurisdiction_id) problems.push("Choose the jurisdiction it sits in.");
+  else if (!jurisdictions.some((j) => j.id === input.jurisdiction_id)) {
+    problems.push("That jurisdiction is not one this employer can use.");
+  }
+  const naics = input.naics_code.trim();
+  if (naics && !/^\d{2,6}$/.test(naics)) problems.push("A NAICS code is 2 to 6 digits.");
+  const avg = input.annual_average_employees.trim();
+  if (avg && !/^\d+$/.test(avg)) problems.push("Annual average employees is a whole number.");
+  const region = input.address.region.trim();
+  if (region && !/^[A-Za-z]{2}$/.test(region)) problems.push("The address state is two letters.");
+  return problems;
+}
+
+export function establishmentPayload(input: HrEstablishmentInput): Record<string, unknown> {
+  return {
+    name: input.name.trim(),
+    jurisdiction_id: input.jurisdiction_id,
+    is_headquarters: input.is_headquarters,
+    naics_code: input.naics_code.trim() || null,
+    eeo1_establishment_id: input.eeo1_establishment_id.trim() || null,
+    osha_establishment_name: input.osha_establishment_name.trim() || null,
+    annual_average_employees: input.annual_average_employees.trim() || null,
+    address: writeAddress(input.address),
+  };
+}
+
+const ESTABLISHMENT_KEYS = [
+  "name",
+  "jurisdiction",
+  "is_headquarters",
+  "naics_code",
+  "eeo1_establishment_id",
+  "osha_establishment_name",
+  "annual_average_employees",
+  "address",
+] as const;
+
+/** A jurisdiction named by id, key or name (case-insensitive) → its id. */
+function resolveJurisdiction(
+  raw: unknown,
+  jurisdictions: ReadonlyArray<JurisdictionRef>,
+): string | null {
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  const want = raw.trim().toLowerCase();
+  return (
+    jurisdictions.find(
+      (j) =>
+        j.id === raw.trim() ||
+        j.jurisdiction_key.toLowerCase() === want ||
+        j.name.toLowerCase() === want,
+    )?.id ?? null
+  );
+}
+
+/**
+ * One agent item → an input merged onto `base`. Collects problems instead of throwing so
+ * a list reports every problem at once.
+ */
+function mergeEstablishmentItem(
+  base: HrEstablishmentInput,
+  item: unknown,
+  jurisdictions: ReadonlyArray<JurisdictionRef>,
+  at: string,
+  problems: string[],
+): HrEstablishmentInput {
+  if (!item || typeof item !== "object" || Array.isArray(item)) {
+    problems.push(`${at} is not an object.`);
+    return base;
+  }
+  const bag = item as Record<string, unknown>;
+  const next: HrEstablishmentInput = { ...base, address: { ...base.address } };
+  for (const key of Object.keys(bag)) {
+    if (key !== "id" && !(ESTABLISHMENT_KEYS as readonly string[]).includes(key)) {
+      problems.push(`${at}: "${key}" is not an establishment field.`);
+    }
+  }
+  if ("name" in bag) {
+    if (typeof bag.name === "string") next.name = bag.name;
+    else problems.push(`${at}: name must be a string.`);
+  }
+  if ("jurisdiction" in bag) {
+    const id = resolveJurisdiction(bag.jurisdiction, jurisdictions);
+    if (id) next.jurisdiction_id = id;
+    else problems.push(`${at}: jurisdiction "${String(bag.jurisdiction)}" is not in establishment_jurisdictions.`);
+  }
+  if ("is_headquarters" in bag) {
+    if (typeof bag.is_headquarters === "boolean") next.is_headquarters = bag.is_headquarters;
+    else problems.push(`${at}: is_headquarters must be true or false.`);
+  }
+  for (const key of ["naics_code", "eeo1_establishment_id", "osha_establishment_name"] as const) {
+    if (!(key in bag)) continue;
+    const v = bag[key];
+    if (v === null) next[key] = "";
+    else if (typeof v === "string") next[key] = v;
+    else problems.push(`${at}: ${key} must be a string or null.`);
+  }
+  if ("annual_average_employees" in bag) {
+    const v = bag.annual_average_employees;
+    if (v === null) next.annual_average_employees = "";
+    else if (typeof v === "number" && Number.isInteger(v) && v >= 0) {
+      next.annual_average_employees = String(v);
+    } else problems.push(`${at}: annual_average_employees must be a whole number or null.`);
+  }
+  if ("address" in bag) {
+    const v = bag.address;
+    if (v === null) next.address = { ...EMPTY_ADDRESS };
+    else if (v && typeof v === "object" && !Array.isArray(v)) {
+      for (const [key, part] of Object.entries(v as Record<string, unknown>)) {
+        if (!(ADDRESS_KEYS as readonly string[]).includes(key)) {
+          problems.push(`${at}: address.${key} is not an address field.`);
+        } else if (part === null || typeof part === "string") {
+          next.address[key as keyof HrEmployerAddress] = part ?? "";
+        } else problems.push(`${at}: address.${key} must be a string or null.`);
+      }
+    } else problems.push(`${at}: address must be an object or null.`);
+  }
+  return next;
+}
+
+function readList(value: unknown, plural: string): unknown[] {
+  const list =
+    Array.isArray(value)
+      ? value
+      : value && typeof value === "object" && Array.isArray((value as Record<string, unknown>)[plural])
+        ? ((value as Record<string, unknown>)[plural] as unknown[])
+        : null;
+  if (!list || list.length === 0 || list.length > 25) {
+    throw new Error(`Send a JSON array of 1-25 establishments. Nothing was changed.`);
+  }
+  return list;
+}
+
+export type HrEstablishmentUpdatePlan = {
+  id: string;
+  previousName: string;
+  input: HrEstablishmentInput;
+  changed: string[];
+};
+
+/** `create_establishments` → checked inputs. Reports every problem at once. */
+export function parseCreateEstablishments(
+  value: unknown,
+  existing: ReadonlyArray<HrEstablishment>,
+  jurisdictions: ReadonlyArray<JurisdictionRef>,
+): HrEstablishmentInput[] {
+  const list = readList(value, "establishments");
+  const problems: string[] = [];
+  const out: HrEstablishmentInput[] = [];
+  list.forEach((item, index) => {
+    const at = `Item ${index + 1}`;
+    if (item && typeof item === "object" && "id" in (item as object)) {
+      problems.push(`${at}: a new establishment has no id — use update_establishments to change one.`);
+    }
+    const input = mergeEstablishmentItem(EMPTY_ESTABLISHMENT, item, jurisdictions, at, problems);
+    const others = [...existing, ...out];
+    for (const p of establishmentProblems(input, others, jurisdictions)) problems.push(`${at}: ${p}`);
+    out.push(input);
+  });
+  if (problems.length > 0) throw new Error(`${problems.join(" ")} Nothing was changed.`);
+  return out;
+}
+
+/** `update_establishments` → plans; only the fields sent change. */
+export function parseUpdateEstablishments(
+  value: unknown,
+  existing: ReadonlyArray<HrEstablishment>,
+  jurisdictions: ReadonlyArray<JurisdictionRef>,
+): HrEstablishmentUpdatePlan[] {
+  const list = readList(value, "establishments");
+  const problems: string[] = [];
+  const out: HrEstablishmentUpdatePlan[] = [];
+  const seen = new Set<string>();
+  list.forEach((item, index) => {
+    const at = `Item ${index + 1}`;
+    const id =
+      item && typeof item === "object" ? (item as Record<string, unknown>).id : undefined;
+    const row = typeof id === "string" ? existing.find((e) => e.id === id) : undefined;
+    if (!row) {
+      problems.push(`${at}: id must be the id of an establishment in establishments.`);
+      return;
+    }
+    if (seen.has(row.id)) {
+      problems.push(`${at}: ${row.name} appears twice.`);
+      return;
+    }
+    seen.add(row.id);
+    const before = establishmentToInput(row);
+    const input = mergeEstablishmentItem(before, item, jurisdictions, at, problems);
+    const others = existing.filter((e) => e.id !== row.id);
+    for (const p of establishmentProblems(input, others, jurisdictions)) problems.push(`${at}: ${p}`);
+    const changed = Object.keys(item as object).filter((k) => k !== "id");
+    if (changed.length === 0) problems.push(`${at}: nothing to change on ${row.name}.`);
+    out.push({ id: row.id, previousName: row.name, input, changed });
+  });
+  if (problems.length > 0) throw new Error(`${problems.join(" ")} Nothing was changed.`);
+  return out;
+}
+
+/** `establishment_draft` → the dialog's values (merged onto the open dialog, or a new one). */
+export function mergeEstablishmentDraft(
+  base: HrEstablishmentInput,
+  value: unknown,
+  jurisdictions: ReadonlyArray<JurisdictionRef>,
+): HrEstablishmentInput {
+  const problems: string[] = [];
+  const next = mergeEstablishmentItem(base, value, jurisdictions, "The draft", problems);
+  if (value && typeof value === "object" && "id" in (value as object)) {
+    problems.push("The draft fills the New establishment dialog; to change an existing one use update_establishments.");
+  }
+  if (problems.length > 0) throw new Error(`${problems.join(" ")} Nothing was changed.`);
+  return next;
+}
