@@ -395,7 +395,7 @@ export function NotesView({
     lastUrlActiveRef.current = urlActive;
     const state = store.getState();
     if (selectInstanceActiveTab(instanceId)(state) === urlActive) return;
-    if (!selectInstanceTabs(instanceId)(state).includes(urlActive)) {
+    if (!(selectInstanceTabs(instanceId)(state) ?? []).includes(urlActive)) {
       dispatch(addInstanceTab({ instanceId, noteId: urlActive }));
       dispatch(fetchNoteContent(urlActive));
     }
