@@ -47,6 +47,15 @@ const owned = {
   account_email: "reviewer@example.com",
 };
 
+const expiredOwned = {
+  ...owned,
+  id: "expired-connection",
+  health: "needs_reauth",
+  status: "needs_attention",
+  metadata: { credential_failure: { code: "grant_expired_or_revoked" } },
+  last_error: "invalid_grant from Google token refresh",
+};
+
 let container: HTMLDivElement;
 let root: Root;
 
@@ -116,6 +125,164 @@ it("does not offer Gmail reading consent outside the admitted rollout", async ()
   );
   expect(container.textContent).not.toContain("Connect Gmail reading");
   expect(mockOpenConsent).not.toHaveBeenCalled();
+});
+
+it("offers reconnect only for the signed-in user's expired Gmail account and keeps search hidden", async () => {
+  mockInventory.mockReturnValue({
+    data: {
+      connections: [
+        { ...expiredOwned, id: "foreign-expired", owner_user_id: "other-user" },
+        expiredOwned,
+      ],
+      resources: [],
+    },
+    isLoading: false,
+    isError: false,
+  });
+  await act(async () => root.render(<GmailReadReview />));
+
+  expect(container.textContent).toContain(
+    "Google's permission to read Gmail for reviewer@example.com expired or was revoked.",
+  );
+  expect(container.querySelector("form")).toBeNull();
+  expect(container.querySelector("#gmail-read-query")).toBeNull();
+  expect(mockOpenConsent).not.toHaveBeenCalled();
+
+  const reconnect = Array.from(container.querySelectorAll("button")).find(
+    (button) => button.textContent?.trim() === "Reconnect Gmail reading",
+  );
+  if (!reconnect) throw new Error("Reconnect Gmail reading button was not rendered.");
+  await act(async () => reconnect.click());
+  expect(mockOpenConsent).toHaveBeenCalledWith({
+    initialConnectionId: "expired-connection",
+    initialProductKeys: ["gmail_read"],
+  });
+  expect(mockSearch).not.toHaveBeenCalled();
+});
+
+it("reconnects an expired modify-only account through Gmail changes without adding Gmail reading", async () => {
+  mockInventory.mockReturnValue({
+    data: {
+      connections: [{
+        ...expiredOwned,
+        id: "expired-modify-only",
+        scopes: [GOOGLE_SCOPE.gmailModify],
+      }],
+      resources: [],
+    },
+    isLoading: false,
+    isError: false,
+  });
+  await act(async () => root.render(<GmailReadReview />));
+
+  const reconnect = Array.from(container.querySelectorAll("button")).find(
+    (button) => button.textContent?.trim() === "Reconnect Gmail changes",
+  );
+  if (!reconnect) throw new Error("Reconnect Gmail changes button was not rendered.");
+  await act(async () => reconnect.click());
+  expect(mockOpenConsent).toHaveBeenCalledWith({
+    initialConnectionId: "expired-modify-only",
+    initialProductKeys: ["gmail_modify"],
+  });
+  expect(mockOpenConsent).not.toHaveBeenCalledWith(
+    expect.objectContaining({ initialProductKeys: ["gmail_read"] }),
+  );
+});
+
+it("does not offer Gmail changes reconnect when that product is ineligible", async () => {
+  mockInventory.mockReturnValue({
+    data: {
+      connections: [{
+        ...expiredOwned,
+        id: "expired-modify-ineligible",
+        scopes: [GOOGLE_SCOPE.gmailModify],
+      }],
+      resources: [],
+    },
+    isLoading: false,
+    isError: false,
+  });
+  mockCapabilities.mockReturnValue({
+    data: [
+      { key: "gmail_read", eligible: true },
+      { key: "gmail_modify", eligible: false },
+    ],
+    isLoading: false,
+    isError: false,
+  });
+  await act(async () => root.render(<GmailReadReview />));
+
+  expect(container.textContent).toContain(
+    "The required Gmail access is not available to you during this rollout.",
+  );
+  expect(container.textContent).not.toContain("Reconnect Gmail changes");
+  expect(mockOpenConsent).not.toHaveBeenCalled();
+});
+
+it("shows a stale account repair beside the healthy account search without crossing accounts", async () => {
+  mockInventory.mockReturnValue({
+    data: { connections: [owned, expiredOwned], resources: [] },
+    isLoading: false,
+    isError: false,
+  });
+  mockSearch.mockResolvedValue({ messages: [], has_more: false, access_mode: "on_demand_read_only" });
+  await act(async () => root.render(<GmailReadReview />));
+
+  expect(container.querySelectorAll("#gmail-read-account option")).toHaveLength(1);
+  expect(container.querySelector<HTMLSelectElement>("#gmail-read-account")?.value).toBe(owned.id);
+  expect(container.textContent).toContain("Reconnect Gmail reading");
+  const input = container.querySelector<HTMLInputElement>("#gmail-read-query");
+  if (!input) throw new Error("Healthy Gmail search was not rendered.");
+  const valueSetter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value",
+  )?.set;
+  if (!valueSetter) throw new Error("Native input value setter was unavailable.");
+  await act(async () => {
+    valueSetter.call(input, "in:inbox");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  const form = container.querySelector("form");
+  if (!form) throw new Error("Healthy Gmail search form was not rendered.");
+  await act(async () =>
+    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })),
+  );
+  expect(mockSearch).toHaveBeenCalledWith(owned.id, "in:inbox");
+
+  const reconnect = Array.from(container.querySelectorAll("button")).find(
+    (button) => button.textContent?.trim() === "Reconnect Gmail reading",
+  );
+  if (!reconnect) throw new Error("Reconnect Gmail reading button was not rendered.");
+  await act(async () => reconnect.click());
+  expect(mockOpenConsent).toHaveBeenCalledWith({
+    initialConnectionId: expiredOwned.id,
+    initialProductKeys: ["gmail_read"],
+  });
+});
+
+it("shows the normal no-account state when no expired Gmail account exists", async () => {
+  mockInventory.mockReturnValue({
+    data: {
+      connections: [{
+        ...owned,
+        id: "expired-calendar",
+        status: "needs_attention",
+        health: "needs_reauth",
+        metadata: { credential_failure: { code: "grant_expired_or_revoked" } },
+        scopes: [],
+      }],
+      resources: [],
+    },
+    isLoading: false,
+    isError: false,
+  });
+  await act(async () => root.render(<GmailReadReview />));
+
+  expect(container.textContent).toContain(
+    "No personal Google account with Gmail reading is connected here.",
+  );
+  expect(container.textContent).not.toContain("Reconnect Gmail reading");
+  expect(container.querySelector("form")).toBeNull();
 });
 
 it("shows a newly authorized personal mailbox after the shared inventory refreshes", async () => {

@@ -7,6 +7,7 @@ import {
   useGoogleCapabilities,
   useGoogleConnectionInventory,
 } from "@/features/marketing/google/hooks";
+import { googleAccountFault } from "@/features/marketing/google/health";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -47,6 +48,30 @@ export function GmailReadReview() {
       (row.scopes.includes(GOOGLE_SCOPE.gmailReadonly) ||
         row.scopes.includes(GOOGLE_SCOPE.gmailModify)),
   );
+  // A recorded Gmail grant can lose its provider authorization while remaining
+  // the only account this person has connected. Keep it out of the read form,
+  // but retain its exact connection id for the person-initiated repair.
+  const reconnectableAccounts = (inventory.data?.connections ?? [])
+    .filter(
+      (row) =>
+        row.owner_type === "user" &&
+        row.owner_user_id === userId &&
+        row.status === "needs_attention" &&
+        googleAccountFault(row) === "grant_expired_or_revoked" &&
+        (row.scopes.includes(GOOGLE_SCOPE.gmailReadonly) ||
+          row.scopes.includes(GOOGLE_SCOPE.gmailModify)),
+    )
+    .map((account) => {
+      const productKey = account.scopes.includes(GOOGLE_SCOPE.gmailModify)
+        ? "gmail_modify"
+        : "gmail_read";
+      return {
+        account,
+        productKey,
+        capability:
+          productKey === "gmail_modify" ? gmailChanges : gmailReading,
+      };
+    });
   const [selectedConnectionId, setSelectedConnectionId] = useState("");
   const connectionId = accounts.some((row) => row.id === selectedConnectionId)
     ? selectedConnectionId
@@ -258,8 +283,62 @@ export function GmailReadReview() {
       </div>
       {!userId || inventory.isLoading ? (
         <p className="rounded-md border p-3 text-sm">Loading Google accounts…</p>
-      ) : inventory.isError ? null : accounts.length === 0 ? (
-        <p className="rounded-md border p-3 text-sm">
+      ) : inventory.isError ? null : (
+        <>
+          {reconnectableAccounts.length > 0 ? (
+            <div className="rounded-md border p-3 text-sm">
+              {reconnectableAccounts.map(({ account, productKey, capability }) => {
+                const accountName =
+                  account.account_email ??
+                  account.account_name ??
+                  "this Google account";
+                return (
+                  <div
+                    key={account.id}
+                    className="flex flex-wrap items-center gap-2"
+                  >
+                    <span>
+                      Google&apos;s permission to read Gmail for {accountName} expired
+                      or was revoked.
+                    </span>
+                    {capability?.eligible ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() =>
+                          openConsent({
+                            initialConnectionId: account.id,
+                            initialProductKeys: [productKey],
+                          })
+                        }
+                      >
+                        {productKey === "gmail_modify"
+                          ? "Reconnect Gmail changes"
+                          : "Reconnect Gmail reading"}
+                      </Button>
+                    ) : null}
+                  </div>
+                );
+              })}
+              {reconnectableAccounts.some(
+                ({ capability }) => capability && !capability.eligible,
+              ) ? (
+                <p className="mt-2">
+                  The required Gmail access is not available to you during this
+                  rollout.
+                </p>
+              ) : capabilities.isLoading ? (
+                <p className="mt-2">Checking Gmail access availability…</p>
+              ) : reconnectableAccounts.some(({ capability }) => !capability) ? (
+                <p className="mt-2">
+                  Gmail access availability could not be verified. Try again shortly.
+                  <ErrorAlchemyMenu />
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          {accounts.length === 0 && reconnectableAccounts.length === 0 ? (
+            <p className="rounded-md border p-3 text-sm">
           No personal Google account with Gmail reading is connected here.{" "}
           {gmailReading?.eligible ? (
             <button
@@ -289,8 +368,8 @@ export function GmailReadReview() {
             </>
           ) : null}
           <ErrorAlchemyMenu />
-        </p>
-      ) : (
+            </p>
+          ) : accounts.length > 0 ? (
         <form
           className="flex flex-col gap-2 rounded-md border p-3"
           onSubmit={(event) => void onSearch(event)}
@@ -358,6 +437,8 @@ export function GmailReadReview() {
             <ErrorAlchemyMenu />
           </p>
         </form>
+          ) : null}
+        </>
       )}
       {activeError || inventory.isError ? (
         <ErrorNotice size="inline" className="text-sm" message={activeError || "Google accounts could not load. Try again shortly."} />
