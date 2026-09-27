@@ -35,6 +35,7 @@ import { renameConversation } from "@/features/agents/redux/conversation-list/co
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { AGENT_RUN_HISTORY_SURFACE_NAME } from "@/features/surfaces/manifests/agent-run-history.manifest";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { selectConversationTitle } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import {
   buildAgentRunHistoryScope,
   readSelectedRunTranscript,
@@ -210,8 +211,11 @@ function RunHistorySidebar({
   onSelect,
   onAgentSelect,
   onScope,
+  subjectLabel,
 }: {
   agentId: string | null;
+  /** The caller's name for this agent (an app's name) when the agent itself is unreadable. */
+  subjectLabel?: string | null;
   selectedConversationId: string | null;
   onSelect: (id: string) => void;
   onAgentSelect: (id: string) => void;
@@ -306,7 +310,7 @@ function RunHistorySidebar({
       >
         <AgentListDropdown
           onSelect={onAgentSelect}
-          label={agentName?.trim() || "Select agent…"}
+          label={agentName?.trim() || subjectLabel?.trim() || "Select agent…"}
           className="w-full"
         />
       </div>
@@ -378,6 +382,11 @@ function RunHistoryBody({
   agentId: string;
   selectedConversationId: string | null;
 }) {
+  const runTitle = useAppSelector((state: RootState) =>
+    selectedConversationId
+      ? selectConversationTitle(selectedConversationId)(state)
+      : null,
+  );
   if (!selectedConversationId) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center px-6 text-muted-foreground">
@@ -398,7 +407,13 @@ function RunHistoryBody({
     <NonEditableContextMenu
       sourceFeature="agent-builder"
       contentSource={{ type: "raw" }}
-      entity={{ type: "conversation", id: selectedConversationId, title: "Run" }}
+      // The menu's subject is the selected RUN, by its own title — never the
+      // word "Run" over a dump of the transcript text.
+      entity={{
+        type: "conversation",
+        id: selectedConversationId,
+        title: runTitle?.trim() || "Run",
+      }}
     >
       <div
         className="h-full min-h-0"
@@ -590,13 +605,14 @@ function AgentRunHistoryWindowInner({
         sidebar={
           <RunHistorySidebar
             agentId={agentId}
+            subjectLabel={agentId === initialAgentId ? subject : null}
             selectedConversationId={selectedConversationId}
             onSelect={handleSelect}
             onAgentSelect={handleAgentSelect}
             onScope={publishHistory}
           />
         }
-        sidebarDefaultSize={280}
+        sidebarDefaultSize={320}
         sidebarMinSize={160}
         defaultSidebarOpen
       >

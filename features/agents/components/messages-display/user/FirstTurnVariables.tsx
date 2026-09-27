@@ -59,9 +59,11 @@ export function UserMessageVariables({
       {lines.map((l) => (
         <div
           key={l.key}
-          className="text-[11px] leading-snug text-muted-foreground"
+          // 12px with normal contrast: this is what the person SENT, read in
+          // run history — it was 11px at 70% and read as a faded footnote.
+          className="text-xs leading-snug text-foreground/90"
         >
-          <span className="font-medium text-foreground/70">{l.label}:</span>{" "}
+          <span className="font-medium text-foreground">{l.label}:</span>{" "}
           {l.entity ? (
             <EntityRef
               token={l.entity.token}
@@ -142,14 +144,14 @@ export function FirstTurnLaunchInputs({
         }}
         aria-expanded={open}
         title={open ? "Hide the inputs" : "Show the inputs this run started with"}
-        className="flex flex-wrap items-center gap-1 rounded text-left text-[11px] text-muted-foreground hover:text-foreground"
+        className="flex flex-wrap items-center gap-1 rounded text-left text-xs text-muted-foreground hover:text-foreground"
       >
         <Chevron className="h-3 w-3 shrink-0" />
         <span className="font-medium">Started with:</span>
         {lines.map((l) => (
           <span
             key={l.key}
-            className="rounded-full border border-border bg-background px-1.5 py-px text-[11px] text-foreground/80"
+            className="rounded-full border border-border bg-background px-1.5 py-px text-xs text-foreground"
           >
             {l.label}
           </span>
