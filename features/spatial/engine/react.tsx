@@ -11,6 +11,9 @@ import type { DetailTier, PaceTier } from "./lod";
 
 export const SpatialStoreContext = createContext<SpatialStore | null>(null);
 
+/** The element a focused tile portals into (screen space, over the plane). */
+export const FocusHostContext = createContext<HTMLElement | null>(null);
+
 export function useSpatialStore(): SpatialStore {
   const store = useContext(SpatialStoreContext);
   if (!store) {
@@ -49,4 +52,9 @@ export function useSelectedTile(): string | null {
     store.getSelected,
     store.getSelected,
   );
+}
+
+export function useFocusedTile(): string | null {
+  const store = useSpatialStore();
+  return useSyncExternalStore(store.subscribeFocus, store.getFocused, store.getFocused);
 }
