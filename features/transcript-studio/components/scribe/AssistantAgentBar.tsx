@@ -236,6 +236,7 @@ export function AssistantAgentBar({
         )}
         aria-label="Conversation history"
         title={
+          // read-gate-exempt: tooltip on the conversation switcher; the roster rides on the session row, which is already loaded for this bar to render
           conversations.length <= 1
             ? "No other conversations in this session yet"
             : "Switch between this session's agent conversations"

@@ -358,6 +358,7 @@ export function RecordingCard({
             )}
           </div>
           <p className="mt-1 line-clamp-2 text-sm text-foreground">
+            {/* read-gate-exempt: this card renders a recording row that was already read; the preview is that row's own text, and the list's read failure is shown by RecordingCardList */}
             {previewText || (
               <span className="italic text-muted-foreground">
                 No transcript captured

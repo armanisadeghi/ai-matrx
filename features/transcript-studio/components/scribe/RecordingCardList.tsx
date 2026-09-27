@@ -7,8 +7,14 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectArchivedRecordingSegments,
   selectRecordingSegments,
+  selectSessionReadError,
 } from "../../redux/selectors";
-import { deleteRecordingSegmentThunk } from "../../redux/thunks";
+import {
+  deleteRecordingSegmentThunk,
+  fetchRecordingSegmentsThunk,
+} from "../../redux/thunks";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { RecordingCard } from "./RecordingCard";
 import type { TranscriptSection } from "./FullTranscriptDrawer";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
@@ -28,6 +34,8 @@ export function RecordingCardList({
   const dispatch = useAppDispatch();
   const recordings = useAppSelector(selectRecordingSegments(sessionId));
   const archived = useAppSelector(selectArchivedRecordingSegments(sessionId));
+  const readError = useAppSelector(selectSessionReadError(sessionId, "recordings"));
+  const retryRead = () => void dispatch(fetchRecordingSegmentsThunk({ sessionId }));
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showArchived, setShowArchived] = useState(false);
 
@@ -62,6 +70,12 @@ export function RecordingCardList({
     clearSelection();
   };
 
+  if (readError && recordings.length === 0 && archived.length === 0) {
+    return (
+      <ReadFailure error={readError} what="this session's recordings" onRetry={retryRead} />
+    );
+  }
+
   if (recordings.length === 0 && archived.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 text-center">
@@ -75,6 +89,14 @@ export function RecordingCardList({
 
   return (
     <div className="flex flex-col gap-2">
+      {readError ? (
+        <StaleDataNotice
+          hasData
+          what="this session's recordings"
+          onRetry={retryRead}
+          detail={readError}
+        />
+      ) : null}
       {selectionActive && (
         <div className="sticky top-0 z-10 flex items-center justify-between rounded-xl border border-border bg-card/95 px-3 py-2 backdrop-blur">
           <button

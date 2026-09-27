@@ -16,6 +16,7 @@ import type {
   StudioSession,
 } from "../types";
 import { buildTimestampedTranscript } from "../utils/timecode";
+import type { StudioReadPart } from "./slice";
 
 const selectScope = (state: RootState) => state.transcriptStudio;
 
@@ -472,3 +473,21 @@ export function selectActiveAssistantAgentId(sessionId: string | null) {
 const EMPTY_CONVERSATIONS: AssistantConversationRef[] = [];
 
 void selectScope; // reserved — fuller scope-getter once we add per-column buffers
+
+// ── Read failures (RC-B12 r12) ────────────────────────────────────────
+
+/**
+ * The last failed read of one part of a session (raw, cleaned, concepts,
+ * module, recordings), or null. A column's "nothing yet" is an answer only
+ * while this is null.
+ */
+export const selectSessionReadError =
+  (sessionId: string | null, part: StudioReadPart) =>
+  (state: RootState): string | null =>
+    sessionId
+      ? (state.transcriptStudio.readErrorsBySession[sessionId]?.[part] ?? null)
+      : null;
+
+/** The Unsorted pool's last read failure, or null. */
+export const selectUnsortedReadError = (state: RootState): string | null =>
+  state.transcriptStudio.unsortedReadError;

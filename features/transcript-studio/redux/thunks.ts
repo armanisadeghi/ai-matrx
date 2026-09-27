@@ -81,6 +81,8 @@ import {
   rawSegmentUpdated,
   rawSegmentsAppended,
   rawSegmentsLoaded,
+  sessionPartReadSettled,
+  unsortedReadSettled,
   recordingAudioUploadFinished,
   recordingAudioUploadStarted,
   recordingSegmentRemoved,
@@ -251,10 +253,12 @@ export const fetchRawSegmentsThunk = createAsyncThunk<
     try {
       const segments = await listRawSegments(sessionId);
       dispatch(rawSegmentsLoaded({ sessionId, segments }));
+      dispatch(sessionPartReadSettled({ sessionId, part: "raw", error: null }));
       return segments;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to load raw segments";
+      dispatch(sessionPartReadSettled({ sessionId, part: "raw", error: message }));
       return rejectWithValue(message);
     }
   },
@@ -269,10 +273,12 @@ export const fetchCleanedSegmentsThunk = createAsyncThunk<
     try {
       const segments = await listCleanedSegments(sessionId);
       dispatch(cleanedSegmentsLoaded({ sessionId, segments }));
+      dispatch(sessionPartReadSettled({ sessionId, part: "cleaned", error: null }));
       return segments;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to load cleaned segments";
+      dispatch(sessionPartReadSettled({ sessionId, part: "cleaned", error: message }));
       return rejectWithValue(message);
     }
   },
@@ -310,10 +316,12 @@ export const fetchModuleSegmentsThunk = createAsyncThunk<
     try {
       const segments = await listModuleSegments(sessionId);
       dispatch(moduleSegmentsLoaded({ sessionId, segments }));
+      dispatch(sessionPartReadSettled({ sessionId, part: "module", error: null }));
       return segments;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to load module segments";
+      dispatch(sessionPartReadSettled({ sessionId, part: "module", error: message }));
       return rejectWithValue(message);
     }
   },
@@ -385,10 +393,12 @@ export const fetchConceptItemsThunk = createAsyncThunk<
     try {
       const items = await listConceptItems(sessionId);
       dispatch(conceptsLoaded({ sessionId, items }));
+      dispatch(sessionPartReadSettled({ sessionId, part: "concepts", error: null }));
       return items;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to load concept items";
+      dispatch(sessionPartReadSettled({ sessionId, part: "concepts", error: message }));
       return rejectWithValue(message);
     }
   },
@@ -500,12 +510,14 @@ export const fetchRecordingSegmentsThunk = createAsyncThunk<
     try {
       const segments = await listRecordingSegments(sessionId);
       dispatch(recordingSegmentsLoaded({ sessionId, segments }));
+      dispatch(sessionPartReadSettled({ sessionId, part: "recordings", error: null }));
       return segments;
     } catch (err) {
       const message =
         err instanceof Error
           ? err.message
           : "Failed to load recording segments";
+      dispatch(sessionPartReadSettled({ sessionId, part: "recordings", error: message }));
       return rejectWithValue(message);
     }
   },
@@ -1087,10 +1099,12 @@ export const fetchUnsortedRecordingsThunk = createAsyncThunk<
       if (!userId) return [];
       const segments = await listUnsortedRecordingSegments(userId);
       dispatch(unsortedRecordingsLoaded({ segments }));
+      dispatch(unsortedReadSettled(null));
       return segments;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to load Unsorted";
+      dispatch(unsortedReadSettled(message));
       return rejectWithValue(message);
     }
   },

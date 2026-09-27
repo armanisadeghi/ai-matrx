@@ -15,8 +15,14 @@ import {
   selectRecordingSegments,
   selectSessionCleanedTimestamped,
   selectSessionRawTimestamped,
+  selectSessionReadError,
 } from "../../redux/selectors";
-import { cleanRecordingThunk } from "../../redux/thunks";
+import {
+  cleanRecordingThunk,
+  fetchCleanedSegmentsThunk,
+  fetchRawSegmentsThunk,
+} from "../../redux/thunks";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { WatchRunButton } from "../columns/WatchRunButton";
 
 export type SessionTranscriptMode = "raw" | "clean";
@@ -53,6 +59,15 @@ export function SessionTranscriptViewer({
 
   const isClean = mode === "clean";
   const text = isClean ? cleanText : rawText;
+  const readError = useAppSelector(
+    selectSessionReadError(sessionId, isClean ? "cleaned" : "raw"),
+  );
+  const retryRead = () =>
+    void dispatch(
+      isClean
+        ? fetchCleanedSegmentsThunk({ sessionId })
+        : fetchRawSegmentsThunk({ sessionId }),
+    );
   const title = isClean ? "All clean transcripts" : "All raw transcripts";
 
   const refreshAll = async () => {
@@ -139,6 +154,13 @@ export function SessionTranscriptViewer({
               <Radio className="h-4 w-4 animate-pulse text-primary" />
               Cleaning — the live output is in the run window.
             </p>
+          ) : readError && !text ? (
+            <ReadFailure
+              error={readError}
+              what={isClean ? "this session's cleaned transcript" : "this session's raw transcript"}
+              onRetry={retryRead}
+              className="m-0"
+            />
           ) : (
             <p className="whitespace-pre-wrap text-base leading-relaxed text-foreground">
               {text || (

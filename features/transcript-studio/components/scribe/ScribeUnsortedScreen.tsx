@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import { ChevronLeft, Inbox } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectUnsortedRecordings } from "../../redux/selectors";
+import {
+  selectUnsortedReadError,
+  selectUnsortedRecordings,
+} from "../../redux/selectors";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { fetchUnsortedRecordingsThunk } from "../../redux/thunks";
 import { RecordingCard } from "./RecordingCard";
 import { FullTranscriptDrawer } from "./FullTranscriptDrawer";
@@ -15,6 +20,8 @@ interface ScribeUnsortedScreenProps {
 export function ScribeUnsortedScreen({ onBack }: ScribeUnsortedScreenProps) {
   const dispatch = useAppDispatch();
   const recordings = useAppSelector(selectUnsortedRecordings);
+  const readError = useAppSelector(selectUnsortedReadError);
+  const retryRead = () => void dispatch(fetchUnsortedRecordingsThunk());
   const [openTranscript, setOpenTranscript] = useState<{
     sessionId: string;
     id: string;
@@ -44,7 +51,18 @@ export function ScribeUnsortedScreen({ onBack }: ScribeUnsortedScreenProps) {
       </header>
 
       <div className="flex-1 overflow-y-auto px-3 py-3">
-        {recordings.length === 0 ? (
+        {readError && recordings.length > 0 ? (
+          <StaleDataNotice
+            hasData
+            what="your Unsorted recordings"
+            onRetry={retryRead}
+            detail={readError}
+            className="mb-2"
+          />
+        ) : null}
+        {readError && recordings.length === 0 ? (
+          <ReadFailure error={readError} what="your Unsorted recordings" onRetry={retryRead} />
+        ) : recordings.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
             <p className="text-sm text-muted-foreground">
               Nothing here. Recordings you “Unsort” from a session land in this

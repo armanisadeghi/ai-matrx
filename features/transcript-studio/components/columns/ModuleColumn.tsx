@@ -7,17 +7,23 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import MarkdownStream from "@/components/MarkdownStream";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { COLUMN_IDS } from "../../constants";
-import { selectLatestRunForColumn } from "../../redux/selectors";
+import {
+  selectLatestRunForColumn,
+  selectSessionReadError,
+} from "../../redux/selectors";
 import { runModulePassThunk } from "../../redux/runModulePass.thunk";
 import {
   deleteModuleSegmentThunk,
   updateModuleSegmentPayloadThunk,
+  fetchModuleSegmentsThunk,
 } from "../../redux/thunks";
 import type { ModuleSegment } from "../../types";
 import { getModule } from "../../modules/registry";
 import { useStudioSettings } from "../../hooks/useStudioSettings";
 import { useScrollSync } from "../scroll-sync/ScrollSyncProvider";
 import { ColumnEmptyState } from "./ColumnEmptyState";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { ColumnHeader } from "./ColumnHeader";
 import { WatchRunButton } from "./WatchRunButton";
 import { EditableTextSegmentRow } from "./EditableTextSegmentRow";
@@ -86,6 +92,8 @@ export function ModuleColumn({ sessionId, className }: ModuleColumnProps) {
   const onPointerLead = () => sync.markLeader(COLUMN_IDS.module);
 
   const dispatch = useAppDispatch();
+  const readError = useAppSelector(selectSessionReadError(sessionId, "module"));
+  const retryRead = () => void dispatch(fetchModuleSegmentsThunk({ sessionId }));
   const handleManualRun = () => {
     if (isRunning) return;
     void dispatch(runModulePassThunk({ sessionId, triggerCause: "manual" }));
@@ -174,7 +182,18 @@ export function ModuleColumn({ sessionId, className }: ModuleColumnProps) {
         dotState={dotState}
         actions={headerActions}
       />
-      {!moduleDef ? (
+      {readError && segments.length > 0 ? (
+        <StaleDataNotice
+          hasData
+          what="this session's module output"
+          onRetry={retryRead}
+          detail={readError}
+          className="mx-2 my-1"
+        />
+      ) : null}
+      {readError && segments.length === 0 ? (
+        <ReadFailure error={readError} what="this session's module output" onRetry={retryRead} />
+      ) : !moduleDef ? (
         <ColumnEmptyState
           title={`Unknown module "${moduleId}"`}
           description="Switch to a registered module via the settings sidebar."

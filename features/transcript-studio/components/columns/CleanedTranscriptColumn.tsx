@@ -6,11 +6,15 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { COLUMN_IDS } from "../../constants";
-import { selectLatestRunForColumn } from "../../redux/selectors";
+import {
+  selectLatestRunForColumn,
+  selectSessionReadError,
+} from "../../redux/selectors";
 import { runCleaningPassThunk } from "../../redux/runCleaningPass.thunk";
 import {
   deleteCleanedSegmentThunk,
   updateCleanedSegmentTextThunk,
+  fetchCleanedSegmentsThunk,
 } from "../../redux/thunks";
 import type { CleanedSegment } from "../../types";
 import {
@@ -19,6 +23,8 @@ import {
 } from "../../utils/timecode";
 import { useScrollSync } from "../scroll-sync/ScrollSyncProvider";
 import { ColumnEmptyState } from "./ColumnEmptyState";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { ColumnHeader } from "./ColumnHeader";
 import { EditableTextSegmentRow } from "./EditableTextSegmentRow";
 import { SegmentWrapper } from "./SegmentWrapper";
@@ -87,6 +93,8 @@ export function CleanedTranscriptColumn({
   const onPointerLead = () => sync.markLeader(COLUMN_IDS.cleaned);
 
   const dispatch = useAppDispatch();
+  const readError = useAppSelector(selectSessionReadError(sessionId, "cleaned"));
+  const retryRead = () => void dispatch(fetchCleanedSegmentsThunk({ sessionId }));
   const isRunning = latestColumnRun?.status === "running";
   const handleManualRun = () => {
     if (isRunning) return;
@@ -169,7 +177,18 @@ export function CleanedTranscriptColumn({
         dotState={dotState}
         actions={headerActions}
       />
-      {segments.length === 0 ? (
+      {readError && segments.length > 0 ? (
+        <StaleDataNotice
+          hasData
+          what="this session's cleaned transcript"
+          onRetry={retryRead}
+          detail={readError}
+          className="mx-2 my-1"
+        />
+      ) : null}
+      {readError && segments.length === 0 ? (
+        <ReadFailure error={readError} what="this session's cleaned transcript" onRetry={retryRead} />
+      ) : segments.length === 0 ? (
         <ColumnEmptyState
           title={
             latestColumnRun?.status === "running"

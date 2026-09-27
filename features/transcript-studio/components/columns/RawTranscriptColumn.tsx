@@ -16,11 +16,15 @@ import type { RawSegment } from "../../types";
 import {
   deleteRawSegmentThunk,
   updateRawSegmentTextThunk,
+  fetchRawSegmentsThunk,
 } from "../../redux/thunks";
 import { formatTimecode } from "../../utils/timecode";
 import { useScrollSync } from "../scroll-sync/ScrollSyncProvider";
 import { AudioImportDialog } from "./AudioImportDialog";
 import { ColumnEmptyState } from "./ColumnEmptyState";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { selectSessionReadError } from "../../redux/selectors";
 import { ColumnHeader } from "./ColumnHeader";
 import { EditableTextSegmentRow } from "./EditableTextSegmentRow";
 import { PasteRawContentDialog } from "./PasteRawContentDialog";
@@ -45,6 +49,8 @@ export function RawTranscriptColumn({
   className,
 }: RawTranscriptColumnProps) {
   const dispatch = useAppDispatch();
+  const readError = useAppSelector(selectSessionReadError(sessionId, "raw"));
+  const retryRead = () => void dispatch(fetchRawSegmentsThunk({ sessionId }));
   const [pasteOpen, setPasteOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   // Subscribe to the raw segment ids + the byId map separately so React-Redux
@@ -302,7 +308,18 @@ export function RawTranscriptColumn({
         dotState={isRecording ? "live" : "idle"}
         actions={headerActions}
       />
-      {segments.length === 0 ? (
+      {readError && segments.length > 0 ? (
+        <StaleDataNotice
+          hasData
+          what="this session's raw transcript"
+          onRetry={retryRead}
+          detail={readError}
+          className="mx-2 my-1"
+        />
+      ) : null}
+      {readError && segments.length === 0 ? (
+        <ReadFailure error={readError} what="this session's raw transcript" onRetry={retryRead} />
+      ) : segments.length === 0 ? (
         <ColumnEmptyState
           title="No audio yet"
           description={

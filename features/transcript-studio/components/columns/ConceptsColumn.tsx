@@ -15,15 +15,21 @@ import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { COLUMN_IDS } from "../../constants";
-import { selectLatestRunForColumn } from "../../redux/selectors";
+import {
+  selectLatestRunForColumn,
+  selectSessionReadError,
+} from "../../redux/selectors";
 import { runConceptPassThunk } from "../../redux/runConceptPass.thunk";
 import {
   deleteConceptItemThunk,
   updateConceptItemThunk,
+  fetchConceptItemsThunk,
 } from "../../redux/thunks";
 import type { ConceptItem, ConceptKind } from "../../types";
 import { useScrollSync } from "../scroll-sync/ScrollSyncProvider";
 import { ColumnEmptyState } from "./ColumnEmptyState";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { ColumnHeader } from "./ColumnHeader";
 import { EditableConceptRow } from "./EditableConceptRow";
 import { SegmentWrapper } from "./SegmentWrapper";
@@ -107,6 +113,8 @@ export function ConceptsColumn({ sessionId, className }: ConceptsColumnProps) {
   };
 
   const dispatch = useAppDispatch();
+  const readError = useAppSelector(selectSessionReadError(sessionId, "concepts"));
+  const retryRead = () => void dispatch(fetchConceptItemsThunk({ sessionId }));
   const handleManualRun = () => {
     if (isRunning) return;
     void dispatch(runConceptPassThunk({ sessionId, triggerCause: "manual" }));
@@ -201,7 +209,18 @@ export function ConceptsColumn({ sessionId, className }: ConceptsColumnProps) {
         dotState={dotState}
         actions={headerActions}
       />
-      {items.length === 0 ? (
+      {readError && items.length > 0 ? (
+        <StaleDataNotice
+          hasData
+          what="this session's concepts"
+          onRetry={retryRead}
+          detail={readError}
+          className="mx-2 my-1"
+        />
+      ) : null}
+      {readError && items.length === 0 ? (
+        <ReadFailure error={readError} what="this session's concepts" onRetry={retryRead} />
+      ) : items.length === 0 ? (
         <ColumnEmptyState
           title={
             isRunning ? "Extracting concepts…" : "Concept extraction every 200s"

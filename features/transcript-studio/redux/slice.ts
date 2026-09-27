@@ -37,6 +37,9 @@ export interface StudioUiState {
   settingsOpen: boolean;
 }
 
+/** A per-session read whose failure a view must say instead of "nothing yet". */
+export type StudioReadPart = "raw" | "cleaned" | "concepts" | "module" | "recordings";
+
 export interface TranscriptStudioState {
   byId: Record<string, StudioSession>;
   activeSessionId: string | null;
@@ -123,6 +126,14 @@ export interface TranscriptStudioState {
    * follow-up — so a discarded clip never triggers that prompt.
    */
   keptRecordingTick: number;
+  /**
+   * RC-B12 r12: the last failed read per session and part (cleared when that
+   * read next succeeds). An empty column is an answer only when its read did
+   * not fail — a failed read is shown with its menu and a retry.
+   */
+  readErrorsBySession: Record<string, Partial<Record<StudioReadPart, string>>>;
+  /** The Unsorted pool's last read failure, or null. */
+  unsortedReadError: string | null;
 }
 
 const DEFAULT_UI: StudioUiState = {
@@ -159,6 +170,8 @@ const initialState: TranscriptStudioState = {
   documentIdsBySession: {},
   assistantConversationIdBySession: {},
   keptRecordingTick: 0,
+  readErrorsBySession: {},
+  unsortedReadError: null,
 };
 
 // ── Slice ─────────────────────────────────────────────────────────────
@@ -170,6 +183,19 @@ const slice = createSlice({
     sessionsListLoading(state) {
       state.fetchStatus = "loading";
       state.fetchError = null;
+    },
+    /** A per-session read settled: `error` null on success, its message on failure. */
+    sessionPartReadSettled(
+      state,
+      action: PayloadAction<{ sessionId: string; part: StudioReadPart; error: string | null }>,
+    ) {
+      const { sessionId, part, error } = action.payload;
+      const errors = (state.readErrorsBySession[sessionId] ??= {});
+      if (error) errors[part] = error;
+      else delete errors[part];
+    },
+    unsortedReadSettled(state, action: PayloadAction<string | null>) {
+      state.unsortedReadError = action.payload;
     },
     recordingKept(state) {
       state.keptRecordingTick += 1;
@@ -712,6 +738,8 @@ export const {
   sessionsListLoaded,
   sessionsListFailed,
   recordingKept,
+  sessionPartReadSettled,
+  unsortedReadSettled,
   sessionUpserted,
   sessionRemoved,
   activeSessionIdSet,
