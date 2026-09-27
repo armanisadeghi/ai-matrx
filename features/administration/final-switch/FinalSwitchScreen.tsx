@@ -765,7 +765,14 @@ export function FinalSwitchScreen() {
           data-testid="final-switch-rehearsal"
         >
           <p className="text-xs font-medium text-muted-foreground">
-            Last rehearsal on the dev clone · {when(REHEARSAL.date)} · clone{" "}
+            {/* The server renders in UTC and the browser in the person's own time zone, so the
+                two texts differ by design; without this the page threw React #418 on every load
+                (lane HANDOVER, 2026-09-27). */}
+            Last rehearsal on the dev clone ·{" "}
+            <time dateTime={REHEARSAL.date} suppressHydrationWarning>
+              {when(REHEARSAL.date)}
+            </time>{" "}
+            · clone{" "}
             {REHEARSAL.clone_ref}
           </p>
           <p className="text-sm">{REHEARSAL.summary}</p>
