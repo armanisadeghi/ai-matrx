@@ -1,4 +1,4 @@
-import { initialOutlineExpansion, outlineIndentLevel, studyGuideOutlineItems, studyGuideOutlineTitle, toggleOutlineSection, visibleOutlineItems } from "../outline";
+import { initialOutlineExpansion, outlineIndentLevel, studyGuideOutlineDisplayTitle, studyGuideOutlineItems, studyGuideOutlineTitle, studyGuideOutlineTree, toggleOutlineSection, visibleOutlineItems } from "../outline";
 import type { NoteOutlineItem } from "@/features/notes/utils/noteOutline";
 import { parseNoteOutline } from "@/features/notes/utils/noteOutline";
 import { createElement } from "react";
@@ -53,7 +53,7 @@ describe("study guide outline", () => {
     expect(visibleOutlineItems(items, switched).map((item) => item.text)).toEqual([
       "Topic 1.1: Introduction to Maps", "Topic 1.2: Geographic Data", "1. Types of Geographic Data",
     ]);
-    expect(items.map((item) => outlineIndentLevel(item, items))).toEqual([0, 1, 2, 2, 0, 1]);
+    expect(items.map((item) => outlineIndentLevel(item, items))).toEqual([1, 2, 3, 3, 1, 2]);
   });
 
   it("retains multiple H1 section roots", () => {
@@ -77,6 +77,44 @@ describe("study guide outline", () => {
     const headings = parseNoteOutline("# Only title");
     expect(studyGuideOutlineTitle(headings)?.headingIndex).toBe(0);
     expect(studyGuideOutlineItems(headings)).toEqual([]);
+  });
+
+  it("nests H2-first material under its note title and excludes extraction fragments without changing heading indices", () => {
+    const headings = parseNoteOutline([
+      "## Evolution of Atomic Theory",
+      "The theory evolved.",
+      "## J.J. Thomson noticed that mysterious rays bent away from ... - ▪ Proton: a clipped bullet...",
+      "## J.J. Thomson and the Discovery of the Electron",
+      "### Cathode Ray Experiments",
+      "## • Bromine is a red-orange liquid with an average atomic m... - <page number=\"41\">",
+      "## 1. Characteristics of Bromine",
+      "### Naturally Occurring Isotopes",
+    ].join("\n"));
+    const items = studyGuideOutlineItems(headings);
+    expect(studyGuideOutlineDisplayTitle(headings, "Agent Test Note")).toMatchObject({ text: "Agent Test Note", headingIndex: -1 });
+    expect(items.map((item) => [item.text, item.headingIndex, outlineIndentLevel(item, items)])).toEqual([
+      ["Evolution of Atomic Theory", 0, 1],
+      ["J.J. Thomson and the Discovery of the Electron", 2, 1],
+      ["Cathode Ray Experiments", 3, 2],
+      ["1. Characteristics of Bromine", 5, 1],
+      ["Naturally Occurring Isotopes", 6, 2],
+    ]);
+    const tree = studyGuideOutlineTree(items);
+    expect(tree.map((node) => [node.item.text, node.children.map((child) => child.item.text)])).toEqual([
+      ["Evolution of Atomic Theory", []],
+      ["J.J. Thomson and the Discovery of the Electron", ["Cathode Ray Experiments"]],
+      ["1. Characteristics of Bromine", ["Naturally Occurring Isotopes"]],
+    ]);
+  });
+
+  it("preserves ordinary sibling headings while omitting a clipped source caption", () => {
+    const headings = parseNoteOutline("## What happened... - and why\n## First section\n## Second section\n## 2) Fill-in the charges for the ions. On the top line, thi... - Example 2.8 (2 of 3)\n## Ion Charges and Polyatomic Patterns");
+    expect(studyGuideOutlineItems(headings).map((item) => item.text)).toEqual([
+      "What happened... - and why",
+      "First section",
+      "Second section",
+      "Ion Charges and Polyatomic Patterns",
+    ]);
   });
 });
 

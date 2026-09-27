@@ -274,6 +274,52 @@ export function preprocessCellProse(rawContent: string): string {
  * `===` into the thick rule sentinel and extra blank lines into spacers.
  * Math is NOT touched here — the core's math normalizer owns it.
  */
+const LIST_MARKER_LINE = /^\s*(?:[-+*]|\d{1,9}[.)])(?:[ \t]|$)/;
+const SETEXT_UNDERLINE = /^ {0,3}(?:=+|-+)[ \t]*$/;
+const ENDS_IN_EMPHASIS = /(?:\*\*[^*]+\*\*|\*[^*]+\*)$/;
+const ONLY_ITALIC = /^\*[^*]+\*$/;
+
+/**
+ * Line `i` belongs to a list item or a block quote: it, or a line above it in
+ * the same run of non-blank lines, opens one — or it is indented (content of an
+ * item). A blank line inserted there would end that list or quote in GFM.
+ */
+function inListOrQuote(lines: readonly string[], i: number): boolean {
+  for (let k = i; k >= 0; k -= 1) {
+    const line = lines[k] ?? "";
+    if (!line.trim()) return false;
+    if (LIST_MARKER_LINE.test(line) || /^\s*>/.test(line) || /^[ \t]/.test(line)) return true;
+  }
+  return false;
+}
+
+/** May a blank line go between lines `i` and `i + 1` without changing GFM's structure? */
+function mayBreakAfter(lines: readonly string[], i: number): boolean {
+  const next = lines[i + 1] ?? "";
+  if (!next.trim() || !(lines[i] ?? "").trim()) return false;
+  if (/^\s/.test(next) || LIST_MARKER_LINE.test(next) || SETEXT_UNDERLINE.test(next)) return false;
+  return !inListOrQuote(lines, i);
+}
+
+/** The emphasis-line readability spacing, applied only where GFM's reading is unchanged. */
+function spaceEmphasisLines(text: string): string {
+  if (!text.includes("*")) return text;
+  const lines = text.split("\n");
+  const breakAfter = new Set<number>();
+  lines.forEach((line, i) => {
+    if (i + 1 >= lines.length) return;
+    // (as before: never when the next line opens with `*` or `-`)
+    if (ENDS_IN_EMPHASIS.test(line) && !/^[*-]/.test(lines[i + 1] ?? "") && mayBreakAfter(lines, i)) breakAfter.add(i);
+    // A line that is only italic text stands apart from both neighbours.
+    if (i > 0 && ONLY_ITALIC.test(line) && !LIST_MARKER_LINE.test(line) && mayBreakAfter(lines, i - 1) && mayBreakAfter(lines, i)) {
+      breakAfter.add(i - 1);
+      breakAfter.add(i);
+    }
+  });
+  if (breakAfter.size === 0) return text;
+  return lines.map((line, i) => (breakAfter.has(i) ? `${line}\n` : line)).join("\n");
+}
+
 /** A blank line before every `---` line that would make the line above a setext heading — never a table's delimiter row. */
 function separateSetextUnderlines(text: string): string {
   if (!text.includes("\n---")) return text;
@@ -356,25 +402,14 @@ export function preprocessProse(rawContent: string): string {
   // Standalone `===` → thick blue rule. See isolateThickHorizontalRules.
   processed = isolateThickHorizontalRules(processed);
 
-  // Ensure proper line breaks after bold text that should start a new line
-  // This handles cases like "**Meta Title:**\n[content]" to ensure proper paragraph separation
-  // BUT exclude cases where bold text is immediately followed by a list item (including indented ones)
-  processed = processed.replace(/(\*\*[^*]+\*\*)\n([^\n*\-\s])/g, "$1\n\n$2");
-
-  // Ensure proper line breaks before and after italic text that spans multiple lines
-  // This handles cases where italic text should be on its own line
-  processed = processed.replace(
-    /([^\n])\n(\*[^*]+\*)\n([^\n])/g,
-    "$1\n\n$2\n\n$3",
-  );
-
-  // Handle cases where there are single line breaks between different formatting elements
-  // that should be treated as separate paragraphs
-  // BUT exclude cases where formatting is immediately followed by a list item
-  processed = processed.replace(
-    /(\*\*[^*]+\*\*|\*[^*]+\*)\n([^\n*\s\-])/g,
-    "$1\n\n$2",
-  );
+  // Readability spacing: a blank line after a line that ends in bold/italic
+  // text ("**Meta Title:**" then its content), and around a line that is only
+  // italic text — ONLY where GFM's reading of the document does not change
+  // (never inside a list or a quote, never before a list marker or a setext
+  // underline). The one core never changes what GFM says a document IS
+  // (verify-RC-B4 round 9 ruling; the screen census found 112 stored rows whose
+  // lists these rules used to restructure).
+  processed = spaceEmphasisLines(processed);
 
   // A line right under a list item's text is that item's text (CommonMark 5.2
   // lazy continuation) — no blank line is inserted after a list item, so the

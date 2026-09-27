@@ -250,6 +250,7 @@ import {
   HandoffRewindTracker,
   decideAssistantReservation,
   reservationBelongsToConversation,
+  type ReservedAssistantTurn,
 } from "../utils/handoff-stream-state";
 import { runToolStateEffects } from "@/features/tool-call-visualization/effects/toolStateEffects";
 import { noteBrowserActivity } from "@/features/cloud-browser/redux/cloudBrowserSlice";
@@ -449,8 +450,7 @@ export async function processStream({
   // separate cx_message row in the DB). We track ALL of them in order so the
   // end-of-stream commit can route each iteration's content to the correct
   // messageId. Single-reservation streams trivially collapse to one entry.
-  const reservedAssistantTurns: Array<{ messageId: string; position: number }> =
-    [];
+  const reservedAssistantTurns: ReservedAssistantTurn[] = [];
 
   // A user reservation is only an identity/position announcement. Unlike an
   // assistant row, its server-authored content is never assembled from stream
@@ -504,6 +504,17 @@ export async function processStream({
   // remember the association so that when the live-stream tool_event fires
   // later (keyed by call_id) we can patch the right observability row.
   const toolCallIdByProviderCallId = new Map<string, string>();
+
+  // The server iteration in flight: the latest `record_reserved request
+  // {iteration}` for THIS conversation. Stamped on every assistant row the
+  // server announces and on every tool call at its first event, so the
+  // end-of-stream commit routes each iteration's content to ITS OWN row. A
+  // call that fails argument validation streams only `tool_error` — no
+  // `tool_call` reservation, so no observability row carries its iteration —
+  // and without this map it was attributed to whichever iteration came
+  // before it.
+  let currentServerIteration = 0;
+  const iterationByProviderCallId = new Map<string, number>();
 
   // Handoff rewind bookkeeping (pure core: handoff-stream-state.ts).
   // Tracks pending tool calls with their pre-call content snapshots and
@@ -1747,6 +1758,13 @@ export async function processStream({
         // StreamBlockAccumulator.breakTextBlock.
         blockAccumulator.breakTextBlock(dispatch);
 
+        if (!iterationByProviderCallId.has(toolData.call_id)) {
+          iterationByProviderCallId.set(
+            toolData.call_id,
+            Math.max(currentServerIteration, 1),
+          );
+        }
+
         if (toolData.event === "tool_delegated") {
           // ONE canonical path for delegated tool calls — shared verbatim with
           // cold-resume (surface-cold-pending-calls.thunk.ts) so the two
@@ -2126,6 +2144,7 @@ export async function processStream({
                 reservedAssistantTurns.push({
                   messageId: d.record_id,
                   position,
+                  iteration: Math.max(currentServerIteration, 1),
                 });
               }
               // decision.kind === "foreign": a child conversation's row —
@@ -2243,6 +2262,16 @@ export async function processStream({
           }
           const { iteration } = d.metadata;
           const { conversation_id, user_request_id } = d.parent_refs;
+          if (
+            typeof iteration === "number" &&
+            reservationBelongsToConversation(
+              conversation_id,
+              conversationId,
+              forceLocalConversationId,
+            )
+          ) {
+            currentServerIteration = iteration;
+          }
           const nowIso = new Date().toISOString();
           dispatch(
             upsertRequest({
@@ -3193,42 +3222,47 @@ export async function processStream({
       Array<(typeof assistantBlocks)[number]>
     >();
 
+    // Each tool_call's iteration comes from its observability row, or — for a
+    // call the server never reserved (it failed argument validation and only
+    // streamed `tool_error`) — from the iteration in flight at its first
+    // event. A call with neither inherits the previous call's iteration.
+    const blockIter: number[] = new Array(assistantBlocks.length).fill(0);
+    let currentIter = 1;
     let lastToolCallIndex = -1;
     for (let i = 0; i < assistantBlocks.length; i++) {
+      const block = assistantBlocks[i];
+      if ((block as { type?: string }).type !== "tool_call") continue;
+      // assembleMessageParts writes `call_id`; pre-migration blocks used `id`.
+      const tcBlock = block as { id?: string; call_id?: string };
+      const callId = tcBlock.call_id ?? tcBlock.id;
+      const uuid = callId ? toolCallIdByProviderCallId.get(callId) : undefined;
+      const tc = uuid ? finalState.observability.toolCalls[uuid] : undefined;
+      const callIteration =
+        tc?.iteration ??
+        (callId ? iterationByProviderCallId.get(callId) : undefined);
+      if (callIteration) currentIter = callIteration;
+      blockIter[i] = currentIter;
+      lastToolCallIndex = i;
+    }
+
+    // A non-tool block (text, thinking, media) belongs to the iteration of the
+    // NEXT tool_call: a model writes its text and thinking before the calls
+    // of the same response, and a tool result ends an iteration. Blocks after
+    // the last tool_call are the final response — one iteration later.
+    let nextToolIter =
+      lastToolCallIndex >= 0 ? blockIter[lastToolCallIndex] + 1 : 1;
+    for (let i = assistantBlocks.length - 1; i >= 0; i--) {
       if ((assistantBlocks[i] as { type?: string }).type === "tool_call") {
-        lastToolCallIndex = i;
+        nextToolIter = blockIter[i];
+      } else {
+        blockIter[i] = nextToolIter;
       }
     }
 
-    let currentIter = 1;
     for (let i = 0; i < assistantBlocks.length; i++) {
-      const block = assistantBlocks[i];
-      const blockType = (block as { type?: string }).type;
-      let iter = currentIter;
-
-      if (blockType === "tool_call") {
-        // assembleMessageParts writes the lifecycle callId to the `id` field
-        // (legacy CxToolCallContent shape). New persisted blocks may use
-        // `call_id`. Accept both for forward compatibility.
-        const tcBlock = block as { id?: string; call_id?: string };
-        const callId = tcBlock.call_id ?? tcBlock.id;
-        const uuid = callId
-          ? toolCallIdByProviderCallId.get(callId)
-          : undefined;
-            const tc = uuid
-              ? finalState.observability.toolCalls[uuid]
-              : undefined;
-        if (tc?.iteration) {
-          iter = tc.iteration;
-          currentIter = iter;
-        }
-      } else if (i > lastToolCallIndex && lastToolCallIndex >= 0) {
-        // Trailing block after the last tool_call — final-response iteration.
-        iter = currentIter + 1;
-      }
-
+      const iter = blockIter[i];
       const list = blocksByIter.get(iter) ?? [];
-      list.push(block);
+      list.push(assistantBlocks[i]);
       blocksByIter.set(iter, list);
     }
 
@@ -3406,12 +3440,42 @@ export async function processStream({
       number,
       Array<(typeof assistantBlocks)[number]>
     >();
+    // Each reservation knows its server iteration (stamped when it was
+    // announced), so an iteration's blocks go to THAT row — never to "the
+    // i-th row". Ranking broke the moment an iteration produced no streamed
+    // block the client could see (a call that failed validation before it
+    // started): every later iteration shifted up one row, the answer text
+    // landed on a tool-call row, and the last row stayed empty — a false
+    // "finished without writing an answer" under a visible answer, and one
+    // tool card fewer than the reload. An iteration with no row of its own
+    // folds into the latest earlier row; with no iteration data at all the
+    // old rank rule applies.
+    // Only trusted when every row carries a DISTINCT iteration — a stream with
+    // no `request` reservations stamps every row 1.
+    const turnIterationsUsable =
+      sortedTurns.every((t) => t.iteration !== undefined) &&
+      new Set(sortedTurns.map((t) => t.iteration)).size === sortedTurns.length;
+    const turnIndexForIteration = (iter: number, rank: number): number => {
+      if (!turnIterationsUsable) return Math.min(rank, sortedTurns.length - 1);
+      const exact = sortedTurns.findIndex((t) => t.iteration === iter);
+      if (exact >= 0) return exact;
+      let preceding = -1;
+      sortedTurns.forEach((t, idx) => {
+        if (t.iteration !== undefined && t.iteration <= iter) preceding = idx;
+      });
+      if (preceding >= 0) return preceding;
+      return Math.min(rank, sortedTurns.length - 1);
+    };
     for (let i = 0; i < sortedIters.length; i++) {
       const iter = sortedIters[i];
-      const turnIndex = Math.min(i, sortedTurns.length - 1);
-      if (turnIndex !== i) {
+      const turnIndex = turnIndexForIteration(iter, i);
+      if (
+        turnIterationsUsable
+          ? sortedTurns[turnIndex].iteration !== iter
+          : turnIndex !== i
+      ) {
         console.warn(
-          `[stream:${requestId.slice(0, 8)}] iteration ${iter} has no matching reservation; folding ${blocksByIter.get(iter)?.length ?? 0} block(s) into the last reserved message instead of dropping`,
+          `[stream:${requestId.slice(0, 8)}] iteration ${iter} has no matching reservation; folding ${blocksByIter.get(iter)?.length ?? 0} block(s) into reserved message ${turnIndex} instead of dropping`,
         );
       }
       const list = contentByTurnIndex.get(turnIndex) ?? [];
@@ -3511,8 +3575,55 @@ export async function processStream({
   // reservation event.
   if (finalRequest?.toolLifecycle) {
     for (const [callId, lc] of Object.entries(finalRequest.toolLifecycle)) {
-      const dbId = toolCallIdByProviderCallId.get(callId);
-      if (!dbId) continue; // reservation wasn't observed — skip safely
+      let dbId = toolCallIdByProviderCallId.get(callId);
+      if (!dbId) {
+        // No `tool_call` reservation streamed for this call — a call that
+        // failed argument validation streams only `tool_error`, though the
+        // server persists its row. Seed a Redux-only row (joined by callId,
+        // replaced by the real row on reload) so the settled card keeps the
+        // live status, error and events instead of a bare "completed" stub.
+        dbId = `client-tool-call-${callId}`;
+        const nowIso = new Date().toISOString();
+        dispatch(
+          upsertToolCall({
+            id: dbId,
+            conversationId,
+            userRequestId: reservedUserRequestId ?? "",
+            messageId: null,
+            userId: "",
+            callId,
+            toolName: lc.toolName,
+            toolNameAsCalled: null,
+            toolType: "",
+            iteration: iterationByProviderCallId.get(callId) ?? 1,
+            status: "pending",
+            success: false,
+            isError: null,
+            errorType: null,
+            errorMessage: null,
+            arguments: {} as CxToolCallRecord["arguments"],
+            output: null,
+            outputChars: 0,
+            outputPreview: null,
+            outputType: null,
+            inputTokens: null,
+            outputTokens: null,
+            totalTokens: null,
+            costUsd: null,
+            durationMs: 0,
+            startedAt: lc.startedAt ?? nowIso,
+            completedAt: lc.completedAt ?? nowIso,
+            parentCallId: null,
+            retryCount: null,
+            persistKey: null,
+            filePath: null,
+            executionEvents: null,
+            metadata: null,
+            createdAt: nowIso,
+            deletedAt: null,
+          }),
+        );
+      }
       const startedAt = lc.startedAt ?? null;
       const completedAt = lc.completedAt ?? null;
       const durationMs =

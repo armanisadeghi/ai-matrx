@@ -110,6 +110,7 @@ import {
   type KeywordRowsResult,
 } from "./useKeywordRows";
 import { pushAddressWithoutNavigating, replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { readOf } from "@/components/read-state/ReadGate";
 
 export interface KeywordTableSurface {
   /** Stable id — names the copy payloads and the surface in a toast. */
@@ -1040,6 +1041,7 @@ export function KeywordTable({
       getRowId={(row) => row.key}
       isLoading={data.isLoading}
       isFetching={data.isFetching}
+      read={readOf(data, { what: surface.listLabel.toLowerCase() })}
       query={{
         mode: "controlled",
         totalItems: total,

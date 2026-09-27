@@ -273,10 +273,6 @@
   line-height: 1;
 }
 
-/* Phone widths: the shell's far-edge buttons leave the center too narrow for
-   every label, and a clipped label ("Analysi") reads as broken. Inactive
-   thumbs go icon-only (the button keeps its aria-label + title); the active
-   thumb keeps its label so the current view is always named. */
 /* Touch: the 26px thumb keeps its painted size inside the 44px header, but
    its HIT area grows to the full 44px height (vertical only, so the two
    adjacent thumbs never steal each other's taps). */
@@ -297,11 +293,15 @@
   }
 }
 
+/* Phone widths: EVERY thumb goes icon-only — the active one is named by its
+   filled pill, its aria-label and its title. Keeping the active label cost
+   the last thumb its place: at 375 on /markdown-studio the Editor thumb sat
+   past the track's edge (verifier round 2). */
 @media (max-width: 480px) {
-  .hdr-toggle-thumb:not(.hdr-toggle-thumb-active) {
+  .hdr-toggle-thumb {
     padding: 0 0.5rem;
   }
-  .hdr-toggle-thumb:not(.hdr-toggle-thumb-active) .hdr-toggle-label {
+  .hdr-toggle-thumb .hdr-toggle-label {
     display: none;
   }
 }
@@ -801,13 +801,10 @@
     font-size: 0.6875rem;
   }
 
+  /* Toggle thumbs are icon-only below 481px (section 4) — the icon is all
+     they show, so it stays. */
   .hdr-toggle-thumb {
-    padding: 0 0.5rem;
-    font-size: 0.6875rem;
-  }
-
-  .hdr-toggle-thumb .hdr-toggle-icon {
-    display: none;
+    padding: 0 0.4rem;
   }
 }
 

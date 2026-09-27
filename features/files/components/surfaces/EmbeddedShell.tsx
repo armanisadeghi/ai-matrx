@@ -20,6 +20,8 @@ import {
   selectAllFoldersMap,
 } from "@/features/files/redux/selectors";
 import { FileList } from "@/features/files/components/core/FileList/FileList";
+import { useTreeReadStatus } from "@/features/files/hooks/useFilesReadStatus";
+import { FilesTreeErrorState, FilesTreeLoadingState } from "@/features/files/components/surfaces/FilesTreeState";
 import { FileUploadDropzone } from "@ai-matrx/media/react";
 import { DropzoneAcquisitionActions } from "@/features/files/components/core/FileAcquisition/DropzoneAcquisitionActions";
 import { FileIcon } from "@ai-matrx/media/react";
@@ -135,6 +137,8 @@ function FlatEmbeddedList({
 }: FlatEmbeddedListProps) {
   const files = useAppSelector(selectAllFilesArray);
   const folders = useAppSelector(selectAllFoldersMap);
+  // The rows come from the file tree read: "No files." only after it succeeded (RC-B12 r13).
+  const read = useTreeReadStatus();
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
 
   const filtered = files.filter((f) => {
@@ -151,6 +155,12 @@ function FlatEmbeddedList({
     [onSelectFile],
   );
 
+  if (filtered.length === 0 && read.status === "error") {
+    return <FilesTreeErrorState error={read.error} onRetry={read.retry} />;
+  }
+  if (filtered.length === 0 && read.status === "loading") {
+    return <FilesTreeLoadingState />;
+  }
   if (filtered.length === 0) {
     return (
       <div

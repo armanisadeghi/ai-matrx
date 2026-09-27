@@ -19,6 +19,7 @@
 import type { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 export type ReadStatus = "loading" | "error" | "ready";
 
@@ -37,30 +38,83 @@ export function readStatusOf(read: {
   return "ready";
 }
 
+/**
+ * A read's outcome handed to a list/table primitive (RC-B12 round 13). Every
+ * primitive that takes an `emptyState` also takes `read?: ReadOutcome` and
+ * renders the empty state only when `status === "ready"`: "error" with no rows
+ * → <ReadFailure/> with the retry; "error" with rows → the rows under a stale
+ * notice; "loading" with no rows → loading. Structurally identical to the
+ * design-system table's `MatrxDataTableRead`, so one value serves both.
+ */
+export interface ReadOutcome {
+  status: ReadStatus;
+  /** The failure itself, or a truthy flag when the read only says it failed. */
+  error?: unknown;
+  onRetry?: (() => void) | undefined;
+  /** What was read, in the reader's words: "your tasks". */
+  what?: string | undefined;
+}
+
+type ReadLike = Parameters<typeof readStatusOf>[0] & {
+  refetch?: () => unknown;
+  retry?: () => unknown;
+};
+
+/**
+ * Fold a query/hook result into a `ReadOutcome`:
+ *   <MatrxDataTable data={rows} emptyState={…} read={readOf(query, { what: "your tasks" })} />
+ * The retry is the read's own `refetch` / `retry` unless `onRetry` is given.
+ */
+export function readOf(read: ReadLike, options: { what?: string; onRetry?: () => void } = {}): ReadOutcome {
+  const again = options.onRetry ?? read.refetch ?? read.retry;
+  return {
+    status: readStatusOf(read),
+    error: read.error ?? (read.isError ? true : undefined),
+    ...(again ? { onRetry: () => void again() } : {}),
+    ...(options.what ? { what: options.what } : {}),
+  };
+}
+
 export function ReadGate({
-  status,
-  error,
-  what = "this list",
+  read,
+  status: statusProp,
+  error: errorProp,
+  what: whatProp,
   isEmpty,
   empty,
   loading,
-  onRetry,
+  onRetry: onRetryProp,
   children,
 }: {
-  status: ReadStatus;
+  /**
+   * The read's outcome in one value — what a list primitive's `read` prop
+   * carries. Absent (and no `status`), the gate is "ready": a primitive whose
+   * caller passed no read renders exactly as before.
+   */
+  read?: ReadOutcome | undefined;
+  status?: ReadStatus;
   error?: unknown;
   what?: string;
   isEmpty: boolean;
   empty: ReactNode;
   loading?: ReactNode;
-  onRetry?: () => void;
+  onRetry?: (() => void) | undefined;
   children: ReactNode;
 }) {
+  const status = statusProp ?? read?.status ?? "ready";
+  const error = errorProp ?? read?.error;
+  const what = whatProp ?? read?.what ?? "this list";
+  const onRetry = onRetryProp ?? read?.onRetry;
   if (status === "error") {
     if (isEmpty) return <ReadFailure error={error ?? true} what={what} onRetry={onRetry} />;
+    // Rows from an earlier read stay; the notice says they may be out of date.
     return (
       <>
-        <ReadFailure error={error ?? true} what={what} onRetry={onRetry} />
+        {onRetry ? (
+          <StaleDataNotice hasData what={what} onRetry={onRetry} className="mb-2" />
+        ) : (
+          <ReadFailure error={error ?? true} what={what} />
+        )}
         {children}
       </>
     );
@@ -76,4 +130,30 @@ export function ReadGate({
   }
   if (isEmpty) return <>{empty}</>;
   return <>{children}</>;
+}
+
+/**
+ * A list primitive's EMPTY branch (RC-B12 round 13): the failure while its read
+ * failed, the wait while it loads, and the primitive's own empty view only
+ * after a read that succeeded. No `read` → the empty view, as before.
+ *
+ *   if (items.length === 0) return <ReadEmpty read={read}>{emptyState}</ReadEmpty>;
+ */
+export function ReadEmpty({ read, loading, children }: { read?: ReadOutcome | undefined; loading?: ReactNode; children?: ReactNode }) {
+  return (
+    <ReadGate read={read} isEmpty empty={children ?? null} {...(loading === undefined ? {} : { loading })}>
+      {null}
+    </ReadGate>
+  );
+}
+
+/**
+ * Above a primitive's ROWS: when the latest read failed, the rows on screen are
+ * from an earlier read — say so (StaleDataNotice with its retry), never blank them.
+ */
+export function ReadStaleNotice({ read, className }: { read?: ReadOutcome | undefined; className?: string }) {
+  if (read?.status !== "error") return null;
+  const what = read.what ?? "this list";
+  if (!read.onRetry) return <ReadFailure error={read.error ?? true} what={what} {...(className ? { className } : {})} />;
+  return <StaleDataNotice hasData what={what} onRetry={read.onRetry} {...(className ? { className } : {})} />;
 }

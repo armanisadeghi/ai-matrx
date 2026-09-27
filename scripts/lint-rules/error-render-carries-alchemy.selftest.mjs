@@ -76,6 +76,15 @@ tester.run("empty-state-needs-read-gate", emptyStateNeedsReadGate, {
       filename: inFeatures,
       code: `export function A({ tasks, isLoading, isError, error }: any) { return isLoading ? <Spinner /> : isError ? <ReadFailure error={error} /> : tasks.length === 0 ? <p>No tasks found.</p> : <List />; }`,
     },
+    {
+      // RC-B12 r13: the table is told the read's outcome.
+      filename: inFeatures,
+      code: `export function A() { const q = useTasks(); return <MatrxDataTable data={q.rows} isLoading={q.isLoading} read={readOf(q, { what: "your tasks" })} emptyState={{ title: "No tasks yet" }} />; }`,
+    },
+    {
+      filename: inFeatures,
+      code: `export function A() { const { rows, isError } = useRateLimits(); return <p><UntrustedCount value={rows.length} trustworthy={!isError} label="Limits" /> rate limits</p>; }`,
+    },
   ],
   invalid: [
     {
@@ -83,6 +92,18 @@ tester.run("empty-state-needs-read-gate", emptyStateNeedsReadGate, {
       filename: inFeatures,
       code: `export function A({ tasks, isLoading }: any) { return isLoading ? <Spinner /> : tasks.length === 0 ? <p>No tasks found.</p> : <List />; }`,
       errors: [{ messageId: "ungated" }],
+    },
+    {
+      // RC-B12 r13: the loading flag reaches the table, the failure never does.
+      filename: inFeatures,
+      code: `export function A() { const q = useTasks(); return <MatrxDataTable data={q.rows} isLoading={q.isLoading} emptyState={{ title: "No tasks yet" }} />; }`,
+      errors: [{ messageId: "ungatedProp" }],
+    },
+    {
+      // RC-B12 r13: "0 rate limits" over a failed read.
+      filename: inFeatures,
+      code: `export function A() { const { rows, isLoading } = useRateLimits(); return <p>{rows.length} rate limits</p>; }`,
+      errors: [{ messageId: "ungatedCount" }],
     },
   ],
 });

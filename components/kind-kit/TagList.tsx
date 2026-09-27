@@ -18,6 +18,7 @@ import {
   renderKindKitIcon,
   type KindKitIcon,
 } from "@/components/kind-kit/icon-slot";
+import { ReadEmpty, ReadStaleNotice, type ReadOutcome } from "@/components/read-state/ReadGate";
 
 export interface KeywordChipProps {
   /** The phrase. Rendered in full — wraps, never truncates. */
@@ -202,6 +203,11 @@ export interface TagListProps {
   addPlaceholder?: string;
   /** Shown when `items` is empty (and there is no add input). */
   emptyState?: React.ReactNode;
+  /**
+   * The outcome of the read behind the rows (RC-B12 r13). `emptyState` shows
+   * only after a read that succeeded; a failed read shows the failure + retry.
+   */
+  read?: ReadOutcome;
   tone?: KeywordChipProps["tone"];
   size?: KeywordChipProps["size"];
   disabled?: boolean;
@@ -221,6 +227,7 @@ export function TagList({
   onAdd,
   addPlaceholder = "Add…",
   emptyState,
+  read,
   tone,
   size = "sm",
   disabled = false,
@@ -238,6 +245,7 @@ export function TagList({
     setAdding(false);
   };
 
+  if (items.length === 0 && read && read.status !== "ready") return <ReadEmpty read={read} />;
   if (items.length === 0 && !onAdd) {
     return emptyState !== undefined ? (
       <div className={cn("text-xs text-muted-foreground", className)}>
@@ -248,6 +256,7 @@ export function TagList({
 
   return (
     <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
+      <ReadStaleNotice read={read} className="w-full" />
       {items.map((raw, index) => {
         const item = normalize(raw);
         const key = item.key ?? item.label;

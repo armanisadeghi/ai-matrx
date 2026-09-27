@@ -17,6 +17,7 @@
 import * as React from "react";
 import { ChevronDown, ChevronUp, GripVertical, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ReadEmpty, ReadStaleNotice, type ReadOutcome } from "@/components/read-state/ReadGate";
 
 export interface SortableRenderContext {
   index: number;
@@ -47,6 +48,11 @@ export interface SortableListProps<T> {
   hideArrows?: boolean;
   /** Shown when `items` is empty. */
   emptyState?: React.ReactNode;
+  /**
+   * The outcome of the read behind the rows (RC-B12 r13). `emptyState` shows
+   * only after a read that succeeded; a failed read shows the failure + retry.
+   */
+  read?: ReadOutcome;
   /** Wrapper `<ul>` className. */
   className?: string;
   /** Per-row className (applied to every `<li>`). */
@@ -105,6 +111,7 @@ export function SortableList<T>({
   disabled = false,
   hideArrows = false,
   emptyState,
+  read,
   className,
   itemClassName,
   ariaLabel,
@@ -199,6 +206,7 @@ export function SortableList<T>({
   };
 
   if (items.length === 0) {
+    if (read && read.status !== "ready") return <ReadEmpty read={read} />;
     return emptyState !== undefined ? (
       <div className={cn("text-xs text-muted-foreground", className)}>
         {emptyState}
@@ -207,6 +215,8 @@ export function SortableList<T>({
   }
 
   return (
+    <>
+    <ReadStaleNotice read={read} className="mb-1.5" />
     <ul
       role="list"
       aria-label={ariaLabel}
@@ -325,5 +335,6 @@ export function SortableList<T>({
         );
       })}
     </ul>
+    </>
   );
 }

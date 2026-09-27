@@ -58,6 +58,14 @@ export function reservationBelongsToConversation(
 export interface ReservedAssistantTurn {
   messageId: string;
   position: number;
+  /**
+   * The server iteration this row belongs to — the latest `record_reserved
+   * request {iteration}` seen when the row was announced (1 before any). The
+   * server announces a row at the START of its iteration or, for
+   * `iteration_persist` rows, when the iteration is persisted — before the
+   * next iteration's request is reserved — so this is exact in both shapes.
+   */
+  iteration?: number;
 }
 
 export type AssistantReservationDecision =

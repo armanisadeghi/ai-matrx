@@ -543,6 +543,18 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
 
       if (entry.data.event === "tool_error") {
         flushPendingText();
+        // A call that failed argument validation never streamed
+        // `tool_started` — the server still persists its tool_call, so the
+        // committed turn carries it too (else its card vanishes until reload).
+        if (!emittedToolCallIds.has(entry.data.call_id)) {
+          emittedToolCallIds.add(entry.data.call_id);
+          blocks.push({
+            type: "tool_call",
+            call_id: lifecycle.callId,
+            name: lifecycle.toolName,
+            arguments: lifecycle.arguments,
+          } as CxToolCallContent);
+        }
         blocks.push({
           type: "tool_result",
           call_id: lifecycle.callId,

@@ -377,3 +377,157 @@ test("a reload of the same turn shows the same card (the reference the settled s
     toolCardsOnScreen(reloaded, false).map((c) => `${c.toolName}:${c.callId}`),
   ).toEqual(toolCardsOnScreen(settled, false).map((c) => `${c.toolName}:${c.callId}`));
 });
+
+// ---------------------------------------------------------------------------
+// The wire the production server actually sent (captured 2026-09-26 for a
+// read-only "list my memories" turn, General Chat): iteration 1 thinks and
+// makes a memory call that fails argument validation — the server streams ONLY
+// `tool_error` for it (no `tool_call` reservation, though it persists the
+// row); iteration 2 makes a good call; iteration 3 answers. Rows 2 and 3 are
+// announced late (`source: iteration_persist`), after their iteration ran.
+// Reload (the reference) shows: row 1 = thinking + errored card, row 3 = good
+// card, row 5 = the answer.
+// ---------------------------------------------------------------------------
+const BAD = "toolu_memory_recall_bad_limit";
+const GOOD = "toolu_memory_recall_ok";
+const ROW1 = "b0000000-0001-4000-8000-000000000001";
+const ROW3 = "b0000000-0003-4000-8000-000000000003";
+const ROW5 = "b0000000-0005-4000-8000-000000000005";
+const ANSWER =
+  "You have 3 stored memories: your role on the project, the word porcupine, and your preferred clinic hours.";
+
+const requestRow = (id: string, iteration: number) => ({
+  event: "record_reserved",
+  data: {
+    db_project: "main",
+    table: "request",
+    record_id: id,
+    parent_refs: { conversation_id: CONV, user_request_id: "ur_mem_1" },
+    metadata: { iteration },
+  },
+});
+const memoryEvent = (
+  event: string,
+  callId: string,
+  data: Record<string, unknown> = {},
+  message?: string,
+) => ({
+  event: "tool_event",
+  data: { event, call_id: callId, tool_name: "memory", data, message },
+});
+const lateAssistantRow = (id: string, position: number) => ({
+  event: "record_reserved",
+  data: {
+    db_project: "main",
+    table: "message",
+    record_id: id,
+    parent_refs: { conversation_id: CONV },
+    metadata: { role: "assistant", position, source: "iteration_persist" },
+  },
+});
+
+const ERRORED_FIRST_CALL_EVENTS: unknown[] = [
+  assistantRow(ROW1, 1),
+  requestRow("req-row-iter-1", 1),
+  {
+    event: "reasoning_chunk",
+    data: { text: "I'll recall the person's stored memories." },
+  },
+  memoryEvent(
+    "tool_error",
+    BAD,
+    { error_type: "invalid_arguments", detail: null },
+    "Invalid arguments for 'memory': recall.limit: Input should be less than or equal to 20",
+  ),
+  requestRow("req-row-iter-2", 2),
+  {
+    event: "record_reserved",
+    data: {
+      db_project: "main",
+      table: "tool_call",
+      record_id: "c0000000-0002-4000-8000-000000000002",
+      parent_refs: {
+        conversation_id: CONV,
+        user_request_id: "ur_mem_1",
+        call_id: GOOD,
+      },
+      metadata: { tool_name: "memory", call_id: GOOD, iteration: 2 },
+    },
+  },
+  memoryEvent("tool_started", GOOD, {
+    arguments: { action: "recall", scope: "user", limit: 20 },
+  }),
+  memoryEvent("tool_completed", GOOD, { result: { count: 3 } }),
+  lateAssistantRow(ROW3, 3),
+  requestRow("req-row-iter-3", 3),
+  { event: "chunk", data: { text: ANSWER } },
+  lateAssistantRow(ROW5, 5),
+  { event: "end", data: {} },
+];
+
+function partTypes(state: RootState, rowId: string): string[] {
+  const content = state.messages.byConversationId[CONV].byId[rowId].content;
+  return (Array.isArray(content) ? content : []).map((p) =>
+    p && typeof p === "object" && !Array.isArray(p)
+      ? String((p as { type?: unknown }).type)
+      : "?",
+  );
+}
+
+test("an errored first call and a late-announced row: the finished turn shows what a reload shows", async () => {
+  const h = harness(ERRORED_FIRST_CALL_EVENTS);
+  for (let i = 0; i < ERRORED_FIRST_CALL_EVENTS.length - 1; i++)
+    await h.stream.advance();
+  const atStreamEnd = toolCardsOnScreen(h.getState(), true).map(
+    (c) => `${c.toolName}:${c.callId}:${c.entry.status}`,
+  );
+  // Live: both calls have a card — the failed one included.
+  expect(atStreamEnd).toEqual([
+    `memory:${BAD}:error`,
+    `memory:${GOOD}:completed`,
+  ]);
+
+  await h.stream.advance();
+  await h.done;
+  const state = h.getState();
+
+  // Each iteration's content is committed to ITS OWN row, as the server
+  // stored it — never shifted up a row.
+  expect(partTypes(state, ROW1)).toEqual(["thinking", "tool_call"]);
+  expect(partTypes(state, ROW3)).toEqual(["tool_call"]);
+  expect(partTypes(state, ROW5)).toEqual(["text"]);
+
+  // Settled: the same two cards, the failed one still reads as failed.
+  expect(
+    toolCardsOnScreen(state, false).map(
+      (c) => `${c.toolName}:${c.callId}:${c.entry.status}`,
+    ),
+  ).toEqual(atStreamEnd);
+
+  // The member that closes the turn holds the answer, so no
+  // "finished without writing an answer" claim can render under it.
+  const conv = state.messages.byConversationId[CONV];
+  const groups = groupDisplayEntries(
+    buildDisplayEntries({
+      messages: conv.orderedIds.map((id) => conv.byId[id]),
+      isActive: false,
+      latestRequestId: REQ,
+      isErrorPhase: false,
+    }),
+  );
+  const turn = groups.find((g) => g.kind === "assistant");
+  if (!turn || turn.kind !== "assistant") throw new Error("turn missing");
+  const members = membersForRender(
+    turn.members,
+    rendersFromPersistedRows(turn.members, conv.byId),
+  );
+  const answerMember = members[members.length - 1];
+  expect(answerMember.messageId).toBe(ROW5);
+  const answerSegments = selectMessageInterleavedContent(
+    CONV,
+    ROW5,
+  )(state);
+  expect(
+    answerSegments.some((s) => s.type === "text" && s.content === ANSWER),
+  ).toBe(true);
+});

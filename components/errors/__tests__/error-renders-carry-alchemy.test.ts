@@ -25,6 +25,8 @@ import {
   findDoubleMenus,
   findDoubledStops,
   findUngatedEmptyStates,
+  findUngatedEmptyStateProps,
+  findUngatedCounts,
   findSoftFailureToasts,
   findOrphanMenus,
   carriersFromFacts,
@@ -396,28 +398,92 @@ describe("an empty view is an answer only after a read that succeeded (RC-B12 ro
 
   /**
    * THE BURN-DOWN. Every read-backed empty view that is not gated on the
-   * read's outcome, per file, at the start of round 11. Shrink-only: a file
-   * may not gain one, a new file may not introduce one, a fixed file lowers
-   * its entry. The lint rule flags each one in the editor.
+   * read's outcome, per file — the hand-written views (round 11), every
+   * `emptyState=` handed to a list/table primitive without `read=` (round 13),
+   * and every count rendered from a read with no failure check (round 13).
+   * Shrink-only: a file may not gain one, a new file may not introduce one, a
+   * fixed file lowers its entry. The lint rule flags each one in the editor.
    */
-  it("no file gained an ungated empty view, and the burn-down only shrinks", () => {
+  it("no file gained an ungated empty view, emptyState prop, or count — and the burn-down only shrinks", () => {
     const baseline = JSON.parse(
       fs.readFileSync(path.join(__dirname, "empty-state-gate.baseline.json"), "utf8"),
-    ) as Record<string, number>;
+    ) as Record<"emptyViews" | "emptyStateProps" | "counts", Record<string, number>>;
     const files: string[] = [];
     for (const dir of SCANNED_DIRS) walk(path.join(REPO_ROOT, dir), files);
-    const found: Record<string, number> = {};
-    for (const file of files) {
-      const rel = path.relative(REPO_ROOT, file).split(path.sep).join("/");
-      if (!isScannable(rel)) continue;
-      const n = findUngatedEmptyStates(fs.readFileSync(file, "utf8"), rel).length;
-      if (n > 0) found[rel] = n;
+    const finders = {
+      emptyViews: findUngatedEmptyStates,
+      emptyStateProps: findUngatedEmptyStateProps,
+      counts: findUngatedCounts,
+    } as const;
+    const report: Record<string, { grew: Array<[string, number]>; shrank: Array<[string, number]> }> = {};
+    for (const [kind, find] of Object.entries(finders) as Array<[keyof typeof finders, (source: string, fileName: string) => number[]]>) {
+      const expected = baseline[kind] ?? {};
+      const found: Record<string, number> = {};
+      for (const file of files) {
+        const rel = path.relative(REPO_ROOT, file).split(path.sep).join("/");
+        if (!isScannable(rel)) continue;
+        const n = find(fs.readFileSync(file, "utf8"), rel).length;
+        if (n > 0) found[rel] = n;
+      }
+      report[kind] = {
+        grew: Object.entries(found).filter(([rel, n]) => n > (expected[rel] ?? 0)),
+        shrank: Object.entries(expected).filter(([rel, n]) => (found[rel] ?? 0) < n),
+      };
     }
-    const grew = Object.entries(found).filter(([rel, n]) => n > (baseline[rel] ?? 0));
-    const shrank = Object.entries(baseline).filter(([rel, n]) => (found[rel] ?? 0) < n);
-    if (process.env.ERROR_CENSUS_PRINT === "1") console.log("UNGATED_EMPTY " + JSON.stringify({ grew, shrank }));
-    expect(grew).toEqual([]);
-    expect(shrank).toEqual([]);
+    if (process.env.ERROR_CENSUS_PRINT === "1") console.log("UNGATED_EMPTY " + JSON.stringify(report));
+    expect(report).toEqual({
+      emptyViews: { grew: [], shrank: [] },
+      emptyStateProps: { grew: [], shrank: [] },
+      counts: { grew: [], shrank: [] },
+    });
+  });
+});
+
+describe("a list primitive's emptyState waits for its read (RC-B12 round 13)", () => {
+  const props = (body: string) => findUngatedEmptyStateProps(`export function C(p: any) { ${body} }`).length;
+  it("self-test: emptyState over read-backed rows without read= is refused", () => {
+    // The shape: a query's loading flag reaches the table, its failure never does.
+    expect(props('const q = useTasks(); return <MatrxDataTable data={q.rows} isLoading={q.isLoading} emptyState={{ title: "No tasks yet" }} />;')).toBe(1);
+    // Rows from a read hook, no loading input at all.
+    expect(props('const { rows } = useTasks(); return <TopicTree rows={rows} emptyState="Nothing here yet" />;')).toBe(1);
+    // The fix: the read's outcome travels with the empty state.
+    expect(props('const q = useTasks(); return <MatrxDataTable data={q.rows} isLoading={q.isLoading} read={readOf(q, { what: "your tasks" })} emptyState={{ title: "No tasks yet" }} />;')).toBe(0);
+    // Gated above: the failure returns first.
+    expect(props('const q = useTasks(); if (q.error) return <ReadFailure error={q.error} />; return <MatrxDataTable data={q.rows} isLoading={q.isLoading} emptyState={{ title: "No tasks yet" }} />;')).toBe(0);
+    expect(props('const q = useTasks(); return q.isError ? <ReadFailure error={q.error} /> : <MatrxDataTable data={q.rows} isLoading={q.isLoading} emptyState={{ title: "No tasks yet" }} />;')).toBe(0);
+  });
+  it("self-test: rows that are a pure local value are not a read", () => {
+    expect(props('return <MatrxDataTable data={p.rows} emptyState={{ title: "No rows" }} />;')).toBe(0);
+    expect(props('const [draft] = useState<string[]>([]); return <TagList items={draft} emptyState="No tags yet" />;')).toBe(0);
+    expect(props('const rows = useMemo(() => p.rows.filter(Boolean), [p.rows]); return <MatrxDataTable data={rows} emptyState={{ title: "No rows" }} />;')).toBe(0);
+  });
+  it("self-test: an exemption needs its reason on the element", () => {
+    const view = (comment: string) =>
+      props(`const q = useTasks();
+  return (
+    ${comment}
+    <MatrxDataTable data={q.rows} isLoading={q.isLoading} emptyState={{ title: "No tasks yet" }} />
+  );`);
+    expect(view("")).toBe(1);
+    expect(view("// read-gate-exempt:")).toBe(1);
+    expect(view("// read-gate-exempt: the page's failure slot above answers a failed read, once")).toBe(0);
+  });
+});
+
+describe("a count from a failed read is a lie too (RC-B12 round 13)", () => {
+  const counts = (body: string) => findUngatedCounts(`export function C(p: any) { ${body} }`).length;
+  it("self-test: a count rendered from read data with no failure check is refused", () => {
+    expect(counts("const { rows, isLoading } = useRateLimits(); return <p>{rows.length} rate limits</p>;")).toBe(1);
+    expect(counts("const { rows, isLoading } = useRateLimits(); return <StatTile label=\"Limits\" value={rows.length} />;")).toBe(1);
+    expect(counts("const { data, error } = useStats(); return <span>{data.total_count.toLocaleString()} loaded</span>;")).toBe(1);
+    expect(counts("const { count, isLoading } = useUnread(); return <Badge>{count}</Badge>;")).toBe(1);
+  });
+  it("self-test: a gated count, an UntrustedCount, and local counts pass", () => {
+    expect(counts('const { rows, error } = useRateLimits(); return <p>{error ? "—" : rows.length} rate limits</p>;')).toBe(0);
+    expect(counts("const { rows, error } = useRateLimits(); if (error) return <ReadFailure error={error} />; return <p>{rows.length} rate limits</p>;")).toBe(0);
+    expect(counts("const { rows, isError } = useRateLimits(); return <p><UntrustedCount value={rows.length} trustworthy={!isError} label=\"Limits\" /> rate limits</p>;")).toBe(0);
+    expect(counts("const [rows] = useState<string[]>([]); const loading = false; return <p>{rows.length} drafts</p>;")).toBe(0);
+    expect(counts("return <p>{p.rows.length} rows</p>;")).toBe(0);
   });
 });
 
