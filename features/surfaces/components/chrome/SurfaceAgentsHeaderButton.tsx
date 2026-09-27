@@ -37,7 +37,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";
 
-const SurfaceAgentsPanelImpl = dynamic(
+export const SurfaceAgentsPanelImpl = dynamic(
   () => import("./SurfaceAgentsPanelImpl"),
   {
     ssr: false,
@@ -50,6 +50,13 @@ const SurfaceAgentsPanelImpl = dynamic(
   },
 );
 
+/** What a guest is told when they reach for Agents — one copy for every door. */
+export const AGENTS_AUTH_GATE = {
+  featureName: "Agents",
+  featureDescription:
+    "Every page has agents that can read it and act on it. Sign in to run them.",
+};
+
 function GuestAgentsButton() {
   const openAuthGate = useOpenAuthGateDialog();
   return (
@@ -57,13 +64,7 @@ function GuestAgentsButton() {
       ariaLabel="Agents for this page — sign in to use them"
       tooltip="Agents (sign in)"
       className="text-primary"
-      onClick={() =>
-        openAuthGate({
-          featureName: "Agents",
-          featureDescription:
-            "Every page has agents that can read it and act on it. Sign in to run them.",
-        })
-      }
+      onClick={() => openAuthGate(AGENTS_AUTH_GATE)}
     />
   );
 }

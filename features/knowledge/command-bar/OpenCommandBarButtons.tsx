@@ -21,7 +21,8 @@ const GATE = {
     "One search over your sources, chats, notes, projects, files and agents — and every command in the app.",
 };
 
-function useOpenBarOrGate(isAuthenticated: boolean) {
+/** The ⌘K bar, or the auth gate for a guest — shared by every Search door. */
+export function useOpenBarOrGate(isAuthenticated: boolean) {
   const openBar = useOpenKnowledgeCommandBar();
   const openAuthGate = useOpenAuthGateDialog();
   return () => (isAuthenticated ? openBar() : openAuthGate(GATE));

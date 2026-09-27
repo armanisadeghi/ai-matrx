@@ -22,7 +22,8 @@ import {
 } from "@ai-matrx/tap-target/buttons";
 import { cn } from "@/lib/utils";
 
-function useCanvasHeaderToggle() {
+/** The canvas control's state and actions — shared by the header button and the phone overflow. */
+export function useCanvasHeaderToggle() {
   const dispatch = useAppDispatch();
   const isOpen = useAppSelector(selectCanvasIsOpen);
   const isAvailable = useAppSelector(selectCanvasIsAvailable);

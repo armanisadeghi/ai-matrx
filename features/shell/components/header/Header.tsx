@@ -4,6 +4,7 @@ import { CanvasShellHeaderToggle } from "@/features/canvas/core/CanvasHeaderTogg
 import { SurfaceAgentsHeaderButton } from "@/features/surfaces/components/chrome/SurfaceAgentsHeaderButton";
 import { InboxHeaderButton } from "@/features/notifications/components/InboxHeaderButton";
 import { CommandBarHeaderButton } from "@/features/knowledge/command-bar/OpenCommandBarButtons";
+import { HeaderPhoneOverflow } from "./HeaderPhoneOverflow";
 
 interface HeaderProps {
   isAuthenticated: boolean;
@@ -27,6 +28,12 @@ interface HeaderProps {
  * The one conditional element is the "Choose org" nudge, which exists only
  * while no organization is chosen (primary call-to-action tint, never alarm red).
  *
+ * ON A PHONE (below 640px) the four fold into ONE control — `HeaderPhoneOverflow`,
+ * a bottom sheet holding the same four with the same states — so the page title
+ * in the center stays readable (page-pass shared defects, 2026-09-27: titles
+ * collapsed to "C." and "Fla…"). The swap is CSS, so the server-rendered row
+ * never shifts; the phone always shows that one button.
+ *
  * The profile/avatar menu is NOT here any more — it lives bottom-left
  * (`ShellUserBlock`), where the sidebar ends. Guard:
  * `features/shell/__tests__/header-right-set.test.tsx`.
@@ -43,10 +50,13 @@ export default function Header({ isAuthenticated }: HeaderProps) {
         {/* Renders nothing once an org is active. In header flow on purpose —
             it replaced a fixed drop-down card that covered route chrome. */}
         {isAuthenticated && <HeaderChooseOrgButton />}
-        <CommandBarHeaderButton isAuthenticated={isAuthenticated} />
-        <SurfaceAgentsHeaderButton isAuthenticated={isAuthenticated} />
-        <CanvasShellHeaderToggle />
-        <InboxHeaderButton isAuthenticated={isAuthenticated} />
+        <div className="shell-header-secondary">
+          <CommandBarHeaderButton isAuthenticated={isAuthenticated} />
+          <SurfaceAgentsHeaderButton isAuthenticated={isAuthenticated} />
+          <CanvasShellHeaderToggle />
+          <InboxHeaderButton isAuthenticated={isAuthenticated} />
+        </div>
+        <HeaderPhoneOverflow isAuthenticated={isAuthenticated} />
       </div>
     </header>
   );

@@ -50,19 +50,20 @@ function InboxBadge({ count }: { count: number }) {
   );
 }
 
+/** What a guest is told when they reach for the Inbox — one copy for every door. */
+export const INBOX_AUTH_GATE = {
+  featureName: "Inbox",
+  featureDescription:
+    "Every notification, message and approval in one place, delivered the way you choose.",
+};
+
 function GuestInboxButton() {
   const openAuthGate = useOpenAuthGateDialog();
   return (
     <BellTapButton
       ariaLabel="Inbox — sign in to see your notifications"
       tooltip="Inbox (sign in)"
-      onClick={() =>
-        openAuthGate({
-          featureName: "Inbox",
-          featureDescription:
-            "Every notification, message and approval in one place, delivered the way you choose.",
-        })
-      }
+      onClick={() => openAuthGate(INBOX_AUTH_GATE)}
     />
   );
 }

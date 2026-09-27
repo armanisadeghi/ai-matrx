@@ -2553,6 +2553,29 @@ body:has(.shell-root[data-pathname^="/administration"]) {
   min-width: 0;
 }
 
+/* THE RIGHT SET ON A PHONE (page-pass shared defects, 2026-09-27).
+   Search / Agents / Canvas / Inbox sit in `.shell-header-secondary`; below
+   640px they fold into ONE control, `.shell-header-overflow`
+   (HeaderPhoneOverflow — a bottom sheet holding the same four), so the page
+   title in the center stays readable. CSS, not a hook, so the server-rendered
+   row never shifts on hydrate. */
+.shell-header-secondary {
+  display: flex;
+  align-items: center;
+}
+.shell-header-overflow {
+  display: none;
+}
+@media (max-width: 639px) {
+  .shell-header-secondary {
+    display: none;
+  }
+  .shell-header-overflow {
+    display: flex;
+    align-items: center;
+  }
+}
+
 /* Chat incognito — visually mute identity chrome (sidebar + avatar). */
 .shell-root[data-chat-incognito="true"] .shell-sidebar,
 .shell-root[data-chat-incognito="true"] .shell-user-menu-wrapper,

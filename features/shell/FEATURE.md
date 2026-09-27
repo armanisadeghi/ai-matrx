@@ -31,6 +31,16 @@ state, in this order:
 | Canvas | `features/canvas/core/CanvasHeaderToggle.tsx` | Empty → `disabled`, tooltip says why. Open → pressed, puts the canvas away. The 44px slot never unmounts (`canvas-header-slot-reserved.test.tsx`). |
 | Inbox | `features/notifications/components/InboxHeaderButton.tsx` | Guest → auth gate. Badge absent at 0; a partially-unknown count says so. |
 
+**On a phone (below 640px) the four fold into ONE control** —
+`components/header/HeaderPhoneOverflow.tsx`, a bottom sheet holding Search,
+Agents (its panel opens in the sheet), Canvas (same three states; empty is a
+disabled row that says why) and Inbox (its panel in the sheet; the unread count
+rides the button). The four stay mounted in `.shell-header-secondary`; the swap
+is CSS (`styles/shell.css`), so the server-rendered row never shifts, and the
+phone always shows that one button — consistent per device, nothing removed.
+Why: at 375px the set took the page title down to "C." / "Fla…" (page-pass
+shared defects, 2026-09-27). Guard: `components/header/HeaderPhoneOverflow.test.tsx`.
+
 Rules: a control is never unmounted on state — that is what shifted the row
 (owner, 2026-09-16: *"causes a shift in the top header buttons"*). A control
 with nothing to do is `disabled` **with a tooltip naming the reason and the
@@ -70,6 +80,8 @@ moved to the Inbox — the menu is identity, org, quick access, settings, admin,
 sign out.
 
 ## Change log
+
+- `2026-09-27` — **The phone header keeps the title**: below 640px Search / Agents / Canvas / Inbox fold into `HeaderPhoneOverflow` (one button → bottom sheet with the same four). `AGENTS_AUTH_GATE`, `INBOX_AUTH_GATE`, `useOpenBarOrGate`, `useCanvasHeaderToggle`, `SurfaceAgentsPanelImpl` are exported so the sheet reuses each control's own copy and state.
 
 - `2026-09-27` — **"Choose org" is a call to action, not an alarm** (page-pass shared defects): the header nudge, the avatar ring and the account menu's Organization icon move from red to primary. Guards: `HeaderChooseOrgButton.test.tsx`, `UserMenuOrgSection.test.tsx`.
 
