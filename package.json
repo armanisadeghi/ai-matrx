@@ -127,6 +127,7 @@
     "check:surface-impact:strict": "tsx scripts/check-surface-impact.ts --strict",
     "surface:probe": "node scripts/surface-probe.mjs",
     "page:look": "node scripts/page-look.mjs",
+    "page:checks": "node scripts/page-checks.mjs",
     "check:client-server-only": "node scripts/check-client-server-only.mjs",
     "check:client-server-only:self-test": "node scripts/check-client-server-only.mjs --self-test",
     "surface:census": "tsx scripts/surface-census.ts",

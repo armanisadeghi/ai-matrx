@@ -35,12 +35,16 @@ procedure — open it only when you are doing that job or the check fails.
    (code done; name the exact look still owed) · `arman` (question filed) ·
    `blocked` (what blocks).
 4. **Fix what you found** — the cause, not the symptom. Never remove, rename or
-   hide a feature to make a rule pass. If the fix belongs in a shared component
+   hide a feature to make a rule pass. Database changes are part of the job
+   (functions, grants, `client_callable_door` rows through the Supabase MCP, per
+   CLAUDE.md; new tables only via `platform.create_entity_table`). If the fix belongs in a shared component
    or package, fix it there. If it belongs on the server (a read wrongly gated,
    a 4xx/5xx the page can't fix), fix it in `../aidream` under that repo's
    CLAUDE.md, same commit rules, and name both commits in your report.
 5. **Prove it live.** Every fix seen working on the real page; every main
-   action carried through to its real saved result, then re-checked (console
+   action carried through to its real saved result **as the page's real
+   audience** (signed out for a shared link or promotional page — a guest run,
+   not an admin run), then re-checked (console
    and Error Inspector clean after, not just on load).
 6. **Record it.** One Change Log line in the owning feature's `FEATURE.md` (no
    FEATURE.md for this route? the nearest one that owns its code) in the same
@@ -78,8 +82,10 @@ session, never you.
 - A page that needs an organization or record opens with it in the URL
   (`/hr/settings/employer?org=<slug>`, `/crm/<id>`): pass that full route to
   `page:look` and the probe.
-- A check that is red only on files you did not touch is not your finding —
-  pass your paths when the check accepts them, and list the rest.
+- **`pnpm page:checks <your files or dirs>`** runs every check this skill names
+  (six at a time, ~3 min) and prints CLEAN / FINDINGS / ERROR per check for
+  YOUR files only; red on other files is not yours. The per-area check lists
+  below say what each covers.
 - Type check only your files: write `tsconfig.focused.<you>.tmp.json` at the
   repo root — `{"extends":"./tsconfig.json","compilerOptions":{"noEmit":true,"incremental":false},"include":["global.d.ts","cartesia.d.ts","types/typecheck-env.d.ts", <your files>]}`
   — run `node --max-old-space-size=11000 node_modules/typescript/bin/tsc6 -p <it>`,
@@ -175,6 +181,9 @@ surface). Say which parts you judged as authored content.
   generic upsert may refuse the kind you send); then, live, save a
   `PP test —` value and read the row back with SQL, and restore it. A button
   that "works" and saves nothing is the worst dead control.
+- **A vague error has a real cause — find it.** "Couldn't load …" is a symptom:
+  read the recorded failure (`errors` MCP tool, or `ops.system_error` via the
+  Supabase MCP) and fix the cause.
 - Every load ends: data, an honest empty state, or a visible error with a
   retry after a bounded wait. Never an endless skeleton or spinner.
 - Loading says what is loading: `SuspenseLoader` with a `message` for compact
@@ -196,7 +205,8 @@ surface). Say which parts you judged as authored content.
   list, a 0 shown beside content that exists are defects).
 - **A request that needs an organization is held, never failed.** With no
   organization selected, the page shows the person's memberships inline and
-  proceeds once one is chosen (`lib/organization/organization-gate.ts`) —
+  proceeds once one is chosen (`lib/organization/organization-gate.ts`); an
+  automatic AI job waits for its organization rather than failing on load —
   never an error box, and never an internal key (`app.some_mandate`,
   `execution_error`) on screen. A page opening in an error state before the
   person did anything is a first-look failure.
@@ -280,7 +290,8 @@ surface). Say which parts you judged as authored content.
   for Intelligence, `AGENT_ICON` for Agents.
 - Text a person reads is 12px or larger; 10px only for small all-caps section
   labels and keyboard hints. Machine labels (`some_key`) are humanized.
-- **Show what a person recognizes, never an internal key.** A value is shown
+- **Show what a person recognizes, never an internal key** — ours or the
+  data's (import paths like `Biology::Cells`, slugs, codes). A value is shown
   as its display form (proper case, platform named, a link when it is a
   link), never its normalized/dedupe key, slug, raw id or JSON. A person never
   types JSON: structured input gets real fields (an address is address
@@ -291,7 +302,8 @@ surface). Say which parts you judged as authored content.
   engineering notes ("no read path…", ticket codes), no placeholder copy. An
   unbuilt part is absent, or a Coming Soon entry.
 - Semantic color tokens only; right in light AND dark.
-- **One door per action.** One create button per page (not a header "+", a
+- **One door per action.** No button that repeats navigation the header or
+  section nav already gives (a Back beside the section tabs). One create button per page (not a header "+", a
   toolbar button AND a create card); one org/scope control (the header's
   switcher — a page never adds a second organization picker).
 - A destructive or expensive click says what it will cost before it happens.

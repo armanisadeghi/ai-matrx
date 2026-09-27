@@ -132,7 +132,8 @@ Judge by who is looking at it and why.
   document, a booking or reminder page, an unsubscribe page (`(link)`, and
   `/p`, `/s`, `/l`, `/r`, `/c`, `/open`, `/unsubscribe`, `appointment-reminder`).
 - **Changes:** no app chrome at all — no shell header, nav or marketing
-  footer; core 1 is usually `na` (no signed-in agent).
+  footer (the cure is the route living in the `(link)` group; same URL); core 1 is usually `na` (no signed-in agent).
 - **Adds:** a stranger understands it with zero context: who sent it, what it
-  is, the one thing to do; works fully on a phone; an expired or invalid link
+  is, the one thing to do; prove the main action as a signed-out stranger (a real guest run, a real
+  form submit) — a door refused to `anon` makes every shared link dead; works fully on a phone; an expired or invalid link
   says so and what to do next.
