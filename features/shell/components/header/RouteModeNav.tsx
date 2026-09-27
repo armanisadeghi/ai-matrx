@@ -16,6 +16,11 @@
 //                                       every item to have an icon, else this
 //                                       stage is skipped)
 //   menu  → single dropdown trigger   (not even icons fit)
+//   none  → nothing drawn             (not even the trigger fits: the TITLE
+//                                       wins. Page-pass 2026-09-27: the
+//                                       trigger used to draw anyway, clipped —
+//                                       "nu" after a phone title, a "Menu"
+//                                       stub on top of "Flashcard St…")
 //
 // It measures the BOUNDED center slot from RouteHeader (viewport-centered,
 // width = total − 2×max(left, right)) via a ResizeObserver and picks the
@@ -75,7 +80,7 @@ export interface RouteNavItem {
   description?: string;
 }
 
-type Variant = "full" | "icons" | "menu";
+type Variant = "full" | "icons" | "menu" | "none";
 
 interface RouteModeNavProps {
   items: RouteNavItem[];
@@ -93,6 +98,12 @@ interface RouteModeNavProps {
    * nav, so the header never becomes a second row of unlabeled icons.
    */
   maxVariant?: "full" | "menu";
+  /**
+   * What the collapsed trigger says when the current page is none of the
+   * items (a tool page inside the section) — the section's name, never the
+   * generic "Menu". Default "Menu".
+   */
+  fallbackLabel?: string;
 }
 
 const PILL =
@@ -115,6 +126,7 @@ export function RouteModeNav({
   activeHref,
   maxVariant = "full",
   onNavigate,
+  fallbackLabel = "Menu",
 }: RouteModeNavProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -125,6 +137,7 @@ export function RouteModeNav({
   const cellRef = useRef<HTMLDivElement>(null);
   const fullRef = useRef<HTMLDivElement>(null);
   const compactRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLSpanElement>(null);
 
   const canIcons = items.every((i) => i.icon);
   const itemsKey = items.map((i) => i.href).join("|");
@@ -150,10 +163,6 @@ export function RouteModeNav({
     );
 
     const compute = () => {
-      if (maxVariant === "menu") {
-        setVariant("menu");
-        return;
-      }
       // RouteHeader normally writes this bound onto the absolute center. Read
       // the same geometry here as well so portal-mount timing can never make
       // the nav mistake its own compact intrinsic width for all available
@@ -168,7 +177,12 @@ export function RouteModeNav({
       const avail = Math.min(cell.clientWidth, boundedWidth) - FLANK_GUTTER;
       const fullW = fullRef.current?.scrollWidth ?? 0;
       const compactW = compactRef.current?.scrollWidth ?? 0;
-      if (fullW <= avail) setVariant("full");
+      const menuW = menuRef.current?.scrollWidth ?? 0;
+      // The title always wins: a trigger that does not fit is not drawn at
+      // all — a clipped one reads as garbage beside the title.
+      if (menuW > avail + FLANK_GUTTER / 2) setVariant("none");
+      else if (maxVariant === "menu") setVariant("menu");
+      else if (fullW <= avail) setVariant("full");
       else if (canIcons && compactW > 0 && compactW <= avail)
         setVariant("icons");
       else setVariant("menu");
@@ -179,6 +193,7 @@ export function RouteModeNav({
     ro.observe(cell);
     if (fullRef.current) ro.observe(fullRef.current);
     if (compactRef.current) ro.observe(compactRef.current);
+    if (menuRef.current) ro.observe(menuRef.current);
     if (routeHeader) ro.observe(routeHeader);
     if (routeHeaderLeft) ro.observe(routeHeaderLeft);
     if (routeHeaderRight) ro.observe(routeHeaderRight);
@@ -257,10 +272,20 @@ export function RouteModeNav({
             {items.map((i) => renderItem(i, i.href === current?.href))}
           </div>
         )}
+        {/* The collapsed trigger, as the visible menu variant draws it. */}
+        <span ref={menuRef} className={cn(PILL, "w-max px-1")}>
+          <span className={cn(ITEM, NAV_ITEM_SELECTED)}>
+            {ActiveIcon && <ActiveIcon />}
+            {!(isMobile && ActiveIcon) && (
+              <span>{current?.name ?? fallbackLabel}</span>
+            )}
+            <ChevronDown className="opacity-60" />
+          </span>
+        </span>
       </div>
 
       {/* Visible variant */}
-      {variant === "menu" ? (
+      {variant === "none" ? null : variant === "menu" ? (
         isMobile ? (
           <>
             <button
@@ -272,7 +297,7 @@ export function RouteModeNav({
               <span className={cn(ITEM, NAV_ITEM_SELECTED)}>
                 {ActiveIcon && <ActiveIcon />}
                 <span className={cn(ActiveIcon && "hidden sm:inline")}>
-                  {current?.name ?? "Menu"}
+                  {current?.name ?? fallbackLabel}
                 </span>
                 <ChevronDown className="opacity-60" />
               </span>
@@ -339,7 +364,7 @@ export function RouteModeNav({
               >
                 <span className={cn(ITEM, NAV_ITEM_SELECTED)}>
                   {ActiveIcon && <ActiveIcon />}
-                  <span>{current?.name ?? "Menu"}</span>
+                  <span>{current?.name ?? fallbackLabel}</span>
                   <ChevronDown className="opacity-60" />
                 </span>
               </button>

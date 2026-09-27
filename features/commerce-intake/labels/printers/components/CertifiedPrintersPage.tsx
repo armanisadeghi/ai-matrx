@@ -7,11 +7,12 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { BadgeCheck, ChevronLeft } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -55,32 +56,29 @@ export function CertifiedPrintersPage() {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex min-w-0 items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={() => router.back()}
-            aria-label="Back"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="truncate text-sm font-semibold text-foreground">
-            Certified Printers
-          </h1>
-          <span className="hidden truncate text-xs text-muted-foreground sm:inline">
-            Which printers are proven to print your label stock correctly
-          </span>
-          {/* Certification is one step in printing — the hub indexes the rest. */}
+      <RouteHeader
+        left={
+          <>
+            <ChevronLeftTapButton onClick={() => router.back()} ariaLabel="Back" />
+            <h1 className="truncate text-sm font-semibold text-foreground">
+              Certified Printers
+            </h1>
+            <span className="ml-2 hidden truncate text-xs text-muted-foreground sm:inline">
+              Which printers are proven to print your label stock correctly
+            </span>
+          </>
+        }
+        right={
+          // Certification is one step in printing — the hub indexes the rest.
           <Link
             href="/print"
+            aria-label="Print hub"
             className="shrink-0 whitespace-nowrap rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             Print hub
           </Link>
-        </div>
-      </PageHeader>
+        }
+      />
       {organizationUnanswered && (
         <OrganizationContextNotice
           state={organizationState}

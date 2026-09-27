@@ -111,15 +111,21 @@ export function SettingsRow({
   const controlId = settingsControlSearchId(sectionTitle ?? "Settings", label);
   const rowAnchorId = anchorId ?? controlId;
 
-  // One reset door, only when there is something to reset.
-  const resetButton =
-    onReset && modified && !disabled ? (
-      <ResetTapButton
-        variant="transparent"
-        ariaLabel={resetLabel ?? `Reset ${label} to its default`}
-        onClick={onReset}
-      />
-    ) : null;
+  // One reset door, only when there is something to reset. A row that CAN
+  // reset always reserves the slot (the same 36px as a ladder row's History
+  // button), so every control on a screen ends at one edge instead of
+  // shifting when a value changes.
+  const resetButton = onReset ? (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center">
+      {modified && !disabled ? (
+        <ResetTapButton
+          variant="transparent"
+          ariaLabel={resetLabel ?? `Reset ${label.toLowerCase()} to default`}
+          onClick={onReset}
+        />
+      ) : null}
+    </span>
+  ) : null;
 
   const labelBlock = (
     <div className="min-w-0 flex-1">
@@ -287,7 +293,7 @@ export function SettingsRow({
             controlLayout === "wide"
               ? "w-full min-w-0 max-w-full [&_button]:max-w-full [&_input]:max-w-full @[40rem]/settings:w-auto @[40rem]/settings:shrink-0"
               : "w-auto min-w-0 max-w-full shrink-0 [&_button]:max-w-full [&_input]:max-w-full",
-            resetButton && "flex items-center gap-2",
+            resetButton && "flex items-center gap-1",
             disabled && "opacity-50",
           )}
         >

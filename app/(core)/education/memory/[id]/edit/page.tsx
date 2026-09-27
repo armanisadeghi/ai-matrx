@@ -19,5 +19,5 @@ export default async function MemoryEditPage({
   await requireAccess("study_media", id, "edit", {
     redirectTo: `/education/memory/${id}`,
   });
-  return <MemoryDetail mediaId={id} />;
+  return <MemoryDetail mediaId={id} edit />;
 }

@@ -15,13 +15,16 @@ import type {
   SettingsControlSize,
 } from "../types";
 
-type Width = "auto" | "sm" | "md" | "lg" | "full";
+type Width = "auto" | "sm" | "md" | "lg" | "xl" | "full";
 
 const widthClass: Record<Width, string> = {
   auto: "w-full max-w-full @[40rem]/settings:w-auto @[40rem]/settings:min-w-32",
   sm: "w-32 max-w-full min-w-0",
   md: "w-44 max-w-full min-w-0",
   lg: "w-64 max-w-full min-w-0",
+  // The width of the ladder rows' model/voice pickers, so a screen mixing
+  // both lines every control up on one edge.
+  xl: "w-80 max-w-full min-w-0",
   full: "w-full",
 };
 

@@ -31,6 +31,7 @@ import {
   timeCell,
   type EntityColumnSpec,
 } from "@/lib/entity-list/columns";
+import { FillsMandatesCell } from "@/features/mandates/filled-by/FillsMandatesCell";
 import type { AgentBrowseRow } from "./types";
 
 export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
@@ -248,6 +249,22 @@ export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
           {row.access_level}
         </Badge>
       ),
+    },
+  },
+  {
+    id: "fills_mandates",
+    label: "Fills mandates",
+    column: {
+      id: "fills_mandates",
+      accessorKey: "fills_mandates",
+      header: "Fills mandates",
+      // Resolved per viewer by mnd_filled_by for the loaded page — the ladder
+      // (system default, active organization, own) is not a column the list
+      // RPC can sort or filter on. Honest `false`, never a sort that lies.
+      sortable: false,
+      width: 100,
+      align: "right",
+      cell: (row) => <FillsMandatesCell mandates={row.fills_mandates} />,
     },
   },
   {

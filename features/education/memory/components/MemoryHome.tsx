@@ -33,7 +33,15 @@ import {
 import { authenticatedStudyMediaLoadKey } from "@/features/education/media/authLoad";
 import { useStudyMediaLibrary } from "@/features/education/media/useStudyMediaLibrary";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { EducationCollectionNoResults, EducationCollectionSearch, filterEducationCollection } from "@/features/education/components/EducationCollectionSearch";
+import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { parseCreateMemoryAids, parseMemoryIds, parseUpdateMemoryAids } from "../memoryWrites";
+import { studyMediaService } from "@/features/education/media/service";
+import {
+  EducationCollectionNoResults,
+  EducationCollectionSearch,
+  filterEducationCollection,
+} from "@/features/education/components/EducationCollectionSearch";
 
 const SURFACE_NAME = "matrx-user/education-memory";
 
@@ -52,7 +60,51 @@ export function MemoryHome() {
   const rows = library.rows;
   const loading = !authReady || library.loading;
   const [search, setSearch] = useState("");
-  const filteredRows = filterEducationCollection(rows, search, (row) => [row.title, row.source_title]);
+  const filteredRows = filterEducationCollection(
+    rows,
+    search,
+    (row) => [row.title, row.source_title],
+  );
+  const owned = rows.filter((row) => row.created_by === userId);
+  const getWriteHandlers = () => collectionWriteHandlers({
+    plural: "memory_aids", singular: "memory aid",
+    create: {
+      parse: parseCreateMemoryAids,
+      run: async (aid) => {
+        const result = await studyMediaService.create({ mediaKind: "memory_aid", title: aid.title,
+          irEnvelope: aid, status: "ready" });
+        if (result.error || !result.data) throw new Error(result.error ?? "Could not create memory aid.");
+        await library.retry();
+        return { id: result.data.id, name: result.data.title };
+      },
+      nameOf: (aid) => aid.title,
+    },
+    update: {
+      parse: (value) => parseUpdateMemoryAids(value, owned),
+      run: async (plan) => {
+        const result = await studyMediaService.updateVersioned(plan.id, plan.version, { title: plan.aid.title, ir_envelope: plan.aid });
+        if (result.error || !result.data) throw new Error(result.error ?? "Could not update memory aid.");
+        await library.retry();
+        return { id: result.data.id, name: result.data.title };
+      },
+      nameOf: (plan) => plan.aid.title,
+      changedOf: (plan) => plan.changed,
+    },
+    delete: {
+      parse: (value) => parseMemoryIds(value, "delete_memory_aids", owned).map((id) => {
+        const row = owned.find((candidate) => candidate.id === id);
+        if (!row) throw new Error(`delete_memory_aids: ${id} is no longer available.`);
+        return row;
+      }),
+      run: async (row) => {
+        const result = await studyMediaService.softDelete(row.id);
+        if (result.error) throw new Error(result.error);
+        await library.retry();
+        return { id: row.id, name: row.title };
+      },
+      nameOf: (row) => row.title,
+    },
+  }, refuseSurfaceWrite);
 
   // Read at trigger time, never from stale closure state.
   const buildScope = () =>
@@ -92,11 +144,19 @@ export function MemoryHome() {
   }
 
   return (
-    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
+    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope} getWriteHandlers={getWriteHandlers}>
     <EducationToolHeader title="Memory Aids" />
     <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <EducationCollectionSearch value={search} onValueChange={setSearch} label="memory aids" />
+        <EducationCollectionSearch
+          value={search}
+          onValueChange={setSearch}
+          label="memory aids"
+        />
+        <div className="flex items-center gap-2">
+        <Button size="sm" variant="outline" onClick={() => router.push("/education/memory/new/manual")}>
+          <Plus className="mr-1 h-4 w-4" /> Write my own
+        </Button>
         <Button
           size="sm"
           className="gap-1.5"
@@ -105,6 +165,7 @@ export function MemoryHome() {
           <Plus className="h-4 w-4" />
           New memory aid
         </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -131,7 +192,11 @@ export function MemoryHome() {
           </Button>
         </div>
       ) : filteredRows.length === 0 ? (
-        <EducationCollectionNoResults query={search} label="memory aids" onClear={() => setSearch("")} />
+        <EducationCollectionNoResults
+          query={search}
+          label="memory aids"
+          onClear={() => setSearch("")}
+        />
       ) : (
         <ul className="space-y-2" data-surface-value="aid_library">
           {filteredRows.map((row) => (

@@ -44,6 +44,9 @@ import { memoryAidCounts } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { EDU_MEMORY_MANDATES } from "../mandates";
+import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { parseCreateMemoryAids } from "../memoryWrites";
 
 // The generator source vocabulary lives ONCE in media/types.ts — the picker
 // below renders from it, the manifest interpolates it into the write-target
@@ -179,6 +182,18 @@ export function MemoryNew() {
   // Fresh closures per call (getWriteHandlers contract). The list and detail
   // mounts of this surface register NO handlers — see the manifest docblock.
   const getSurfaceWriteHandlers = () => ({
+    ...collectionWriteHandlers({
+      plural: "memory_aids", singular: "memory aid",
+      create: {
+        parse: parseCreateMemoryAids,
+        run: async (aid) => {
+          const result = await studyMediaService.create({ mediaKind: "memory_aid", title: aid.title,
+            irEnvelope: aid, status: "ready" });
+          if (result.error || !result.data) throw new Error(result.error ?? "Could not create memory aid.");
+          return { id: result.data.id, name: result.data.title };
+        }, nameOf: (aid) => aid.title,
+      },
+    }, refuseSurfaceWrite),
     generation_source: (value: unknown) => {
       if (isGenerating)
         throw new Error(

@@ -14,7 +14,7 @@
 import { useState } from "react";
 import { Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { CaptureStudio } from "@/features/media-capture/components/CaptureStudio";
 import { CaptureLibrary } from "@/features/media-capture/components/CaptureLibrary";
 
@@ -25,25 +25,30 @@ export default function CameraPage() {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center gap-2">
-          <Camera className="h-4 w-4 shrink-0 text-primary" />
-          <h1 className="shrink-0 text-sm font-semibold">Camera</h1>
-          <span className="hidden min-w-0 truncate text-xs text-muted-foreground sm:inline">
-            Photo, video, and audio — saved to your captures.
-          </span>
-          {!studioOpen && (
+      <RouteHeader
+        left={
+          <>
+            <Camera className="mr-2 h-4 w-4 shrink-0 text-primary" />
+            <h1 className="shrink-0 text-sm font-semibold">Camera</h1>
+            <span className="ml-2 hidden min-w-0 truncate text-xs text-muted-foreground sm:inline">
+              Photo, video, and audio — saved to your captures.
+            </span>
+          </>
+        }
+        right={
+          !studioOpen ? (
             <Button
               size="sm"
-              className="ml-auto h-8"
+              className="h-8"
               onClick={() => setStudioOpen(true)}
+              aria-label="New capture"
             >
               <Camera className="mr-1.5 h-4 w-4" />
               New capture
             </Button>
-          )}
-        </div>
-      </PageHeader>
+          ) : undefined
+        }
+      />
 
       <div className="h-full overflow-hidden bg-textured">
         {/*

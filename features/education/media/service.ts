@@ -9,6 +9,7 @@
 "use client";
 
 import { withDisplayTitle } from "@/components/markdown-core/plain-title";
+import { guardedUpdate } from "@ai-matrx/data/db";
 import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
@@ -119,6 +120,38 @@ export const studyMediaService = {
     } catch (e) {
       return fail("update", e);
     }
+  },
+
+  /** Save a whole authored artifact against the revision the editor read. */
+  async updateVersioned(
+    id: string,
+    expectedVersion: number,
+    patch: Pick<StudyMediaPatch, "title" | "ir_envelope">,
+  ): Promise<MediaResult<StudyMediaRow>> {
+    try {
+      const result = await guardedUpdate({
+        expectedVersion,
+        applyUpdate: ({ expectedVersion: expected, nextVersion }) => EDU()
+          .from("study_media")
+          .update({ ...patch, version: nextVersion })
+          .eq("id", id)
+          .eq("version", expected)
+          .is("deleted_at", null)
+          .select("*")
+          .maybeSingle(),
+        fetchCurrent: () => EDU()
+          .from("study_media")
+          .select("*")
+          .eq("id", id)
+          .is("deleted_at", null)
+          .maybeSingle(),
+      });
+      if (result.status === "conflict")
+        return { data: null, error: "This memory aid changed elsewhere. Reload it before saving your edits." };
+      if (result.status === "not_found")
+        return { data: null, error: "This memory aid is no longer available. Return to the library." };
+      return { data: withDisplayTitle(result.row, "title"), error: null };
+    } catch (error) { return fail("updateVersioned", error); }
   },
 
   async getById(id: string): Promise<MediaResult<StudyMediaRow>> {

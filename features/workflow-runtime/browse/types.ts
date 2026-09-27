@@ -7,10 +7,16 @@
 
 import type { Database } from "@/types/database.types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
+import type { WithFilledMandates } from "@/features/mandates/filled-by/service";
 
-/** One row, exactly as wfx_list_scoped returns it. Never hand-mirrored. */
-export type WorkflowBrowseRow =
-  Database["public"]["Functions"]["wfx_list_scoped"]["Returns"][number];
+/**
+ * One row, exactly as wfx_list_scoped returns it (never hand-mirrored), plus
+ * the mandates it fills for the viewer — attached per page by
+ * `attachFilledMandates` (one `mnd_filled_by` call), never per row.
+ */
+export type WorkflowBrowseRow = WithFilledMandates<
+  Database["public"]["Functions"]["wfx_list_scoped"]["Returns"][number]
+>;
 
 /**
  * Which of the fixed five scopes this surface supports. Workflows have no

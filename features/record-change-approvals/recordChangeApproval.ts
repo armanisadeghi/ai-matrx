@@ -22,6 +22,8 @@
  * so what they were shown is what gets written.
  */
 
+import type { Field } from "@ai-matrx/records";
+import { fieldTypeLabel } from "@ai-matrx/records-ui";
 import type {
   ApprovalChange,
   ApprovalFieldDiff,
@@ -367,11 +369,16 @@ function humanKey(key: string): string {
   return words.length ? words[0]!.toUpperCase() + words.slice(1) : key;
 }
 
-/** What the column HOLDS, in a person's words rather than a store token. */
+/**
+ * What the column HOLDS, in the SAME word the table's own header and field panel use
+ * (`fieldTypeLabel`, read from the declaration the server built). A number column is "Number",
+ * never the store's behaviour word "Range" (lane HANDOVER, 2026-09-27: the Patient Capacity card).
+ */
 export function fieldTypeSentence(change: PendingFieldChange): string {
   const word = change.parityType ?? change.behaviour;
   if (!word) return "Text";
-  return humanKey(word);
+  const declared = { ...change.declaration, key: change.key, type: change.behaviour ?? change.parityType } as unknown as Field;
+  return fieldTypeLabel(declared);
 }
 
 /**

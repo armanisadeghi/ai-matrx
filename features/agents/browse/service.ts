@@ -15,6 +15,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { overlayFavorites } from "@/features/scopes/service/favoriteOverlay";
+import { attachFilledMandates } from "@/features/mandates/filled-by/service";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import type { Database, Json } from "@/types/database.types";
@@ -86,12 +87,21 @@ export async function fetchAgentBrowsePage(
   // Stars are per-person state in platform.user_entity_state: one ues_get_bulk
   // for this page overlays them. The RPC's own `is_favorite` (the retired
   // column) is never trusted.
-  const rows = await overlayFavorites(
-    "agent",
-    listed,
-    (row) => row.id,
-    (row, isFavorite) => ({ ...row, is_favorite: isFavorite }),
-  );
+  // …and which mandates each agent fills for this viewer: one mnd_filled_by
+  // for the page, in parallel with the stars, never a call per row.
+  const [starred, filled] = await Promise.all([
+    overlayFavorites(
+      "agent",
+      listed,
+      (row) => row.id,
+      (row, isFavorite) => ({ ...row, is_favorite: isFavorite }),
+    ),
+    attachFilledMandates("agent", listed, (row) => row.id),
+  ]);
+  const rows = starred.map((row, i) => ({
+    ...row,
+    fills_mandates: filled[i]?.fills_mandates,
+  }));
   return { rows, total };
 }
 

@@ -1,84 +1,12 @@
 /**
- * Surface manifest — Memory Aids (`matrx-user/education-memory`).
- *
- * The Memory Tools tool (VISION §11) at `/education/memory`: mnemonics,
- * analogies / memory bridges, and memory-palace scaffolds generated from a deck
- * or a topic and persisted as `education.study_media` rows with
- * `media_kind='memory_aid'` (structured content in `ir_envelope`).
- *
- * WHY THIS MANIFEST EXISTS AT ALL. `route-to-surface.ts` has mapped
- * `/education/memory` → `matrx-user/education-memory` since the tool shipped,
- * and `ui.ui_surface` already carried the row — but there was no manifest and no
- * `SurfaceRuntimeProvider` anywhere in `features/education/memory/**`. The
- * consequence was not a loud failure, which is why it survived: the Agents
- * popover resolved the route surface, listed and ran agents against it, and
- * `SurfaceAgentsPanelImpl` took the `hasLiveScope === false` branch — every run
- * launched with an EMPTY application scope behind a "Running without live page
- * context" toast. Agents were bindable here and blind here. This manifest plus
- * the three emitters close that.
- *
- * ONE SURFACE, THREE VIEWS — and why this is not the flashcard-editor split.
- * `education-flashcard-editor` was carved OUT of `education-flashcards` because
- * a full library-list vocabulary already existed and the editor could not
- * honestly promise it. Nothing existed here, so the framing is a free choice,
- * and the honest one is a single surface: this is one small tool whose three
- * routes (`/`, `/new`, `/[id]`) are steps in ONE task — pick a source, generate,
- * read the aids. An agent bound to "Memory Aids" wants to help across all three;
- * splitting would mean two more `ui_surface` rows and two more mid-path route
- * regexes to describe a list of at most a few rows and a two-field form.
- *
- * The seam that keeps that honest is `view`: the ONLY `alwaysAvailable: true`
- * value. Every other value is view-conditional and declared `false`, so the
- * scope builder's type signature makes each emitter promise exactly what its own
- * route can supply and nothing else. `/[id]/edit` renders the same read-only
- * `MemoryDetail` as `/[id]` (it is an access gate, not an editor) and therefore
- * emits `view: "detail"` too.
- *
- * WRITE TARGETS — two, on the CREATE view only, and the scoping is the whole
- * ruling. The only editable fields in this entire subtree are `MemoryNew`'s
- * source picker, topic and focus; `MemoryDetail` and `MemoryAidBlock` hold zero
- * inputs, and the aid's own text is not editable anywhere in the app (the human
- * path for changing an aid is Regenerate, which routes back to `/new`). So the
- * composer is the write half, and it splits into TWO independent decisions
- * rather than one composite: WHERE the aids come from (`generation_source` — a
- * deck or a topic, mutually exclusive) and WHAT ANGLE to take on it
- * (`generation_focus` — optional, applies in both source modes and does not
- * change which source is selected). Changing the focus while keeping the deck
- * is a real, distinct intent, which is what makes these two targets and not
- * one. Same design as the `education-mind-maps` sibling, deliberately — these
- * two generator forms are near-identical and should not drift.
- *
- * Both are `mode: "draft"` / `applyPolicy: "ask"`: they stage into the SAME
- * setters the learner's own typing uses, and nothing is generated or persisted.
- * Generation spends metered `education.memory_generate` quota, so the Generate
- * button stays human-pressed WITHOUT exception — that is where the COPPA gate,
- * the entitlement guard and `studyMediaService.create` run. Staging the request
- * is the agent's job; spending the quota is the learner's.
- *
- * NEVER targets here, and none of these is an oversight: deleting an aid
- * (destructive stays human), pressing Generate (metered spend), sharing or
- * visibility (permissions), and everything on the detail view — the stored
- * mnemonics, analogies and palace are generated content with no editor, and the
- * trust envelope is derived evidence. The list and detail mounts of this surface
- * register NO handlers at all. If an editor for the aid text ever ships (a
- * `studyMediaService.update` next to an input), the aid's title and its
- * mnemonic/analogy text become a strong third and fourth target.
- *
- * Deliberately does NOT `inheritsFrom: "matrx-user/education"` — the hub
- * guarantees `study_snapshot_available` / `discovery_axes` / `study_tools` /
- * `entry_points`, and this tool emits none of them (same reasoning as
- * `education-tutor`).
- *
- * Curated groups (band 0-899):
- *
- *   tool_view           Which of the three views is open (the discriminator)
- *   aid_library         The saved memory-aid sets listed on `/education/memory`
- *   generation_request  The `/new` composer — source, topic, focus
- *   memory_aid          The open aid set's structured content
- *   aid_trust           What the open aid is grounded in (READ-ONLY evidence)
- *
- * Emitters: `MemoryHome.tsx` (list), `MemoryNew.tsx` (new), `MemoryDetail.tsx`
- * (detail) — all in `features/education/memory/components/`.
+ * Memory Aids surface: one identity across library, generator, manual editor,
+ * and detail routes. The `view` value selects the relevant live values.
+ * Library and detail pages expose approved collection create/update/delete
+ * targets. The manual editor exposes create plus update/delete for its open
+ * record. The generator also stages source/focus in its form; Generate remains
+ * a human metered action. Content writes retain source and trust evidence.
+ * The persisted artifact uses education.study_media and the registered
+ * memory_aid kind; no alternate data or rendering path is introduced.
  */
 
 import type {
@@ -140,7 +68,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "view",
     label: "Current view",
     description:
-      "Which Memory Aids view is open: `list` (the saved-aids home), `new` (the generation composer), or `detail` (one aid set open for reading). Always present — the read-only `/[id]/edit` access-gate route renders the same detail view and reports `detail`.",
+      "Which Memory Aids view is open: `list` (the saved-aids home), `new` (the generator or manual editor), or `detail` (a saved aid open for reading or editing). Always present.",
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 6,
@@ -426,6 +354,21 @@ const surfaceSpecific: SurfaceValue[] = [
 
 const writeTargets: SurfaceWriteTarget[] = [
   {
+    name: "create_memory_aids", label: "Create memory aids",
+    description: 'Creates and saves 1-25 manually authored memory aids. Value is an ARRAY of objects, each { title: string, strategy_note?: string, mnemonics: [{ technique: "acronym" | "acrostic" | "rhyme" | "sentence" | "keyword" | "chunking", target: string, device: string, explanation?: string }], analogies: [{ concept: string, analogy: string, mapping?: string }], memory_palace: { applicable: boolean, theme?: string, loci: [{ place: string, item: string, image?: string }] } }. At least one mnemonic, analogy, or applicable palace is required. No AI generation occurs. Each saved aid is marked as manually authored and carries no generated-source citation. The person approves before creation. Use this target instead of generic database tools.',
+    valueType: "array", updatesValue: "aid_library", mode: "entity", applyPolicy: "ask", group: "aid_library", sortOrder: 100,
+  },
+  {
+    name: "update_memory_aids", label: "Update memory aids",
+    description: 'Changes saved memory aids. Value is an ARRAY of 1-25 objects, each { id: string, title?, strategy_note?, mnemonics?, analogies?, memory_palace? }. The id must come from aid_library on the list view or aid_id on the detail view. Only supplied fields change. Supplying a collection replaces that complete collection, including additions and removals; keep all entries you want to retain. Child shapes match create_memory_aids. Existing citations and source identity are retained. The person approves before saving.',
+    valueType: "array", updatesValue: "aid_library", mode: "entity", applyPolicy: "ask", group: "aid_library", sortOrder: 110,
+  },
+  {
+    name: "delete_memory_aids", label: "Delete memory aids",
+    description: 'Soft-deletes saved memory aids so they disappear from the library; their content is no longer available through the page. Value is an ARRAY of 1-25 ids or { id } objects from aid_library or aid_id. This is destructive and the person approves every request. Do this only when explicitly asked to delete.',
+    valueType: "array", updatesValue: "aid_library", mode: "entity", applyPolicy: "ask", group: "aid_library", sortOrder: 120,
+  },
+  {
     name: "generation_source",
     label: "Draft source",
     description: `Stages WHERE the memory aids are built from into the create form. Value is an OBJECT; include only the fields you mean to set: { source_kind?: ${MEDIA_GENERATOR_SOURCE_KINDS.map((k) => `"${k}"`).join(" | ")}, topic?: string (the material to build aids for, ${MEMORY_TOPIC_MIN}-${MEMORY_TOPIC_MAX} characters, e.g. "The twelve cranial nerves and their functions" — the subject itself, not an instruction), deck_id?: string (the id of one of the learner's flashcard decks — it MUST be an \`id\` from available_decks; read that list first) }. The fields are GATED and the combination is validated together: sending topic implies and switches to topic mode, sending deck_id implies and switches to deck mode, and sending both is rejected because only one can be the source. Sending source_kind alone just flips the picker, keeping whatever topic/deck was already there. Nothing is generated or saved — generating spends the learner's metered allowance, so they review the form and press "Generate memory aids" themselves.`,
@@ -454,18 +397,18 @@ export const educationMemoryManifest: SurfaceManifest = {
   client: "matrx-user",
   executionMode: "python-stream",
   description:
-    "Generate and view memory aids (/education/memory).",
+    "Create, edit, generate, and view memory aids (/education/memory).",
   readiness: "partial",
   readinessNote:
-    "Manifest, all three emitters (list, new, detail) and the two create-view write targets are shipped, DB-synced, and verified against live agent runs: the Agents popover names this surface, runs receive real page scope instead of the empty-scope fallback they took before, and both targets stage into the learner's own inputs behind an ask. Not yet stamped verified: no agent roles or config namespaces are declared, and two child controls on the new view load state this manifest does not declare — EntitlementMeter's `education.memory_generate` allowance and useAiComplianceGate's COPPA status.",
+    "Memory library, generator, manual editor, and detail emit live context. Local manual create/edit/delete was exercised against a disposable record; collection agent writes are declared and await a representative agent run. Generation entitlement and COPPA state are not yet surfaced as values.",
   label: "Memory Aids",
   urlPattern: "/education/memory",
   intro: `<surface_intro>
 You are in Memory Aids at /education/memory — the tool that turns hard-to-retain material into mnemonics, analogies, and memory-palace scaffolds. It is three views in one surface, so read \`view\` FIRST: it is \`list\`, \`new\`, or \`detail\`, and it tells you which values are even present. Nothing else on this surface is guaranteed.
-On \`list\` you see the learner's saved aid sets (\`aid_library\`, \`aid_count\`). Wait for \`library_loaded\` before calling the library empty.
-On \`new\` the learner is composing a generation request: \`request_source_kind\` is \`deck\` or \`topic\`, and \`generation_request\` carries the whole composer state — the chosen deck (\`request_deck_id\`, \`request_deck_title\`, picked from \`available_decks\`) or the typed \`request_topic\`, plus an optional \`request_focus\`. This is the ONE view you can write to, and it is worth doing: \`generation_source\` stages the deck or topic and \`generation_focus\` stages the angle, both into the form the learner is looking at. Propose confidently — every write asks them first and declining costs nothing. Nothing is generated or saved by a write, and generating spends a metered allowance, so the Generate button is theirs to press; never imply you pressed it or that aids exist because you staged a request.
+On \`list\` you see the learner's saved aid sets (\`aid_library\`, \`aid_count\`). Wait for \`library_loaded\` before calling the library empty. Use create_memory_aids, update_memory_aids, and delete_memory_aids for approved changes to saved aids.
+On \`new\` the learner may be composing a generation request or manually authoring an aid. On the generator, \`request_source_kind\` is \`deck\` or \`topic\`, and \`generation_request\` carries the chosen source and optional focus. \`generation_source\` and \`generation_focus\` stage those fields, without saving or spending the metered generation allowance. The Generate button remains theirs to press. For a manually authored aid, use create_memory_aids, which saves only after approval and does not invoke generation.
 On \`detail\` one stored set is open. \`mnemonics\` carries each device with the \`technique\` it uses and the \`target\` material it covers; \`analogies\` carries concept/analogy/mapping triples; \`memory_palace\` is the method-of-loci scaffold and is often \`applicable: false\` for small material. Explaining an aid, drilling the learner on one, or judging whether a device actually helps is the work this surface exists for.
-A stored aid is READ-ONLY: the write targets apply to the create form only, and the aid text is not editable in the app at all. On \`detail\`, do not offer to edit, rename, or fix a stored aid — the learner's path to different aids is to regenerate them, and you can help by staging a sharper request on \`new\`. \`aid_confidence\` and \`aid_citations\` are derived grounding evidence — cite them, never claim to change them.
+A stored aid can be edited by someone with edit access; deleting it requires ownership. On \`detail\`, use update_memory_aids or delete_memory_aids with aid_id, after approval and only when access permits. You can also create a new manually authored aid with create_memory_aids. \`aid_confidence\` and \`aid_citations\` are derived grounding evidence — cite them, never claim to change them.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(

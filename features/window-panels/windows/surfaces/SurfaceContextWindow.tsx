@@ -209,7 +209,18 @@ export default function SurfaceContextWindow({
   const liveWriteTargets = listLiveWriteTargets().filter(
     (entry) => !surfaceName || entry.surfaceName === surfaceName,
   );
-  const unwiredTargets = liveWriteTargets.filter((entry) => !entry.hasHandler);
+  // A target whose read twin is a view-only value (declared, not always
+  // available) and is absent right now belongs to ANOTHER view of this page
+  // (a settings tab that is not open): its handler mounts with that view. It
+  // is not a defect here, so it is counted apart and never shown in red.
+  const onOtherView = (entry: (typeof liveWriteTargets)[number]) => {
+    const twin = entry.target.updatesValue;
+    if (!twin) return false;
+    const declaredTwin = declared.find((value) => value.name === twin);
+    return Boolean(declaredTwin && !declaredTwin.alwaysAvailable && live.scope[twin] === undefined);
+  };
+  const otherViewTargets = liveWriteTargets.filter((entry) => !entry.hasHandler && onOtherView(entry));
+  const unwiredTargets = liveWriteTargets.filter((entry) => !entry.hasHandler && !onOtherView(entry));
   // Refusals tallied by the KEY that caused them — the most actionable number
   // this window can show: "declare `file_name` here and 12 more items become
   // available". Only `missing_keys` refusals count; out-of-scope and
@@ -558,6 +569,11 @@ export default function SurfaceContextWindow({
           )}
           {runtimeOnlyKeys.length > 0 && (
             <span>{runtimeOnlyKeys.length} runtime-only</span>
+          )}
+          {otherViewTargets.length > 0 && (
+            <span title={otherViewTargets.map((entry) => entry.target.label).join(", ")}>
+              {otherViewTargets.length} on another view
+            </span>
           )}
           {/* AVAILABILITY = CAPABILITY (#52). What the declared contract makes
               possible here, and what one more declaration would unlock. */}

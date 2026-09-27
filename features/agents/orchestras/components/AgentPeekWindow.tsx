@@ -15,6 +15,7 @@ import {
   AgentSneakPeekContent,
   AgentSneakPeekCopyMenu,
 } from "@/features/agents/components/agent-listings/AgentSneakPeekModal";
+import { AgentPeekDuplicateButton } from "@/features/agents/components/agent-listings/AgentPeekDuplicateButton";
 
 export default function AgentPeekWindow({
   agentId,
@@ -34,7 +35,12 @@ export default function AgentPeekWindow({
       minWidth={360}
       minHeight={340}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
-      actionsRight={<AgentSneakPeekCopyMenu agentId={agentId} />}
+      actionsRight={
+        <div className="flex items-center gap-1.5">
+          <AgentPeekDuplicateButton agentId={agentId} onDuplicated={onClose} />
+          <AgentSneakPeekCopyMenu agentId={agentId} />
+        </div>
+      }
     >
       <div className="min-h-0 flex-1 overflow-y-auto">
         <AgentSneakPeekContent agentId={agentId} active />

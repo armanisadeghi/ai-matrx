@@ -11,35 +11,31 @@
 
 import type { Database } from "@/types/database.types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
-
-/** One row, exactly as agx_list_scoped returns it. Never hand-mirrored. */
-export type AgentBrowseRow =
-  Database["public"]["Functions"]["agx_list_scoped"]["Returns"][number];
+import type { WithFilledMandates } from "@/features/mandates/filled-by/service";
 
 /**
- * Which scopes this surface supports. Agents has no industry corpus yet, so it
- * declares four — the tab bar renders exactly these, in this order. Adding
- * "industry" here is the whole UI change once agents grows an industry grant
- * table.
+ * One row, exactly as agx_list_scoped returns it (never hand-mirrored), plus
+ * the mandates it fills for the viewer — attached per page by
+ * `attachFilledMandates` (one `mnd_filled_by` call), never per row.
+ */
+export type AgentBrowseRow = WithFilledMandates<
+  Database["public"]["Functions"]["agx_list_scoped"]["Returns"][number]
+>;
+
+/**
+ * Which scopes this surface supports, in tab order — the same five for every
+ * viewer. System is the platform's own built-in agents: every signed-in person
+ * reads the PUBLISHED ones (card_visibility = 'public'), a platform admin also
+ * reads the unpublished rest. `agx_list_scoped` decides which, never this list
+ * (2026-09-27: System had been admin-only here AND in the database, and the
+ * admin-seat change made `selectIsAdmin` false outside /administration, so
+ * nobody saw the 500+ built-ins on /agents/all).
  */
 export const AGENT_LIST_SCOPES: ListScopeKind[] = [
   "mine",
   "orgs",
   "shared",
   "public",
-];
-
-/**
- * The same list plus the platform's own corpus. Rendered ONLY for a Matrx
- * admin — the page resolves which list to pass (`EntityListPage`'s `scopes`
- * prop), because a module constant cannot read auth state.
- *
- * The tab being hidden is a convenience, never the security: `agx_list_scoped`
- * re-checks `public.is_platform_admin()` and returns zero system rows to
- * everyone else.
- */
-export const AGENT_LIST_SCOPES_ADMIN: ListScopeKind[] = [
-  ...AGENT_LIST_SCOPES,
   "system",
 ];
 

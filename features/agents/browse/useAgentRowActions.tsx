@@ -206,7 +206,10 @@ export function useAgentRowActions({
         // The RPC re-checks is_super_admin() and rejects if the caller cannot.
         const newAgentId = await dispatch(
           duplicateAgent(
-            isSystemAgentRow(agent)
+            // Only the seat that manages the built-in (is_owner on a System
+            // row = a platform admin) makes another built-in; everyone else
+            // duplicating a published built-in gets their own copy.
+            isSystemAgentRow(agent) && agent.is_owner
               ? { agentId: agent.id, asSystem: true }
               : agent.id,
           ),

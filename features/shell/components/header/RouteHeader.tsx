@@ -176,7 +176,9 @@ export default function RouteHeader({
   const rightRef = useRef<HTMLDivElement>(null);
   const overflowRef = useRef<HTMLSpanElement>(null);
   const widthsRef = useRef(new Map<string, number>());
-  const [boundedCenterWidth, setBoundedCenterWidth] = useState(0);
+  // null = not measured yet (portal still laying out); 0 = measured, and the
+  // flanks leave the center no room at all.
+  const [boundedCenterWidth, setBoundedCenterWidth] = useState<number | null>(null);
   const [folded, setFolded] = useState(0);
   const [compactPrimary, setCompactPrimary] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
@@ -249,11 +251,13 @@ export default function RouteHeader({
         setCompactPrimary(next.compactPrimary);
 
       setBoundedCenterWidth(
-        centerSlotWidth(
-          root.clientWidth,
-          leftEl?.offsetWidth ?? 0,
-          rightEl?.offsetWidth ?? 0,
-        ),
+        root.clientWidth > 0
+          ? centerSlotWidth(
+              root.clientWidth,
+              leftEl?.offsetWidth ?? 0,
+              rightEl?.offsetWidth ?? 0,
+            )
+          : null,
       );
     };
 
@@ -378,8 +382,11 @@ export default function RouteHeader({
             // absolute child shrink-wraps the currently rendered nav variant;
             // once that variant becomes the menu, the measurement can never
             // grow again to discover that the full or compact nav fits.
+            // A MEASURED 0 stays 0: the title wins (page-pass 2026-09-27 —
+            // treating 0 as "unmeasured" drew the whole-width fallback, and
+            // the nav's "Menu" pill sat on top of a phone's title).
             style={{
-              width: boundedCenterWidth > 0 ? boundedCenterWidth : "100%",
+              width: boundedCenterWidth ?? "100%",
             }}
           >
             <div className="pointer-events-auto w-full min-w-0">{center}</div>

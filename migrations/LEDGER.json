@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-27T19:16:46.690Z",
+  "generated_at": "2026-09-27T20:52:28.266Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2180,6 +2180,18 @@
       "checksum": "f31b165145f2c566ca9fac8c75c0c893c2ab9ca50b187f6087b1c11e36ae234b",
       "applied_at": "2026-09-25 07:06:03.212863+00"
     },
+    "migrations/campaign/followbatch2_an_import_call_is_one_short_step.sql": {
+      "source": "matrx-frontend",
+      "filename": "followbatch2_an_import_call_is_one_short_step.sql",
+      "checksum": "a61e79593343aa6ba96e999a5e834e6e6b7a8d0556e2496c63d12385a9094cb1",
+      "applied_at": "2026-09-27 20:46:19.860651+00"
+    },
+    "migrations/campaign/followbatch2_no_copy_holds_the_sign_in_table.sql": {
+      "source": "matrx-frontend",
+      "filename": "followbatch2_no_copy_holds_the_sign_in_table.sql",
+      "checksum": "eb56365f653d512ca73886e8fc1a4ab85128b370061ecfa179e06a5d417b60e8",
+      "applied_at": "2026-09-27 20:46:01.101514+00"
+    },
     "migrations/campaign/forms_a_form_is_a_view_on_a_table.sql": {
       "source": "matrx-frontend",
       "filename": "forms_a_form_is_a_view_on_a_table.sql",
@@ -3127,6 +3139,12 @@
       "filename": "mirror2_the_mirror_asks_the_rows_own_organization.sql",
       "checksum": "007bb8712a3acbe10d4ad22198460a9f86892f4bd5d0c047770686a1d16d88ff",
       "applied_at": "2026-09-20 15:35:20.839284+00"
+    },
+    "migrations/campaign/mirrorliveform_the_generator_writes_the_record_policy_that_is_live.sql": {
+      "source": "matrx-frontend",
+      "filename": "mirrorliveform_the_generator_writes_the_record_policy_that_is_live.sql",
+      "checksum": "663bf4000936d12d0b0f13dc7cdc3fcd0b6643737cdd1a4cb4d091b44106d92d",
+      "applied_at": "2026-09-27 20:52:26.63127+00"
     },
     "migrations/campaign/mirrorperf_a_door_that_names_a_record_decides_it.sql": {
       "source": "matrx-frontend",

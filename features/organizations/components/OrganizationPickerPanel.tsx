@@ -30,28 +30,7 @@ export function OrganizationPickerPanel({
     <OrganizationPicker
       hideHeading={hideHeading}
       itemClassName={itemClassName}
-      organizations={organizations.map((org) => ({
-        id: org.id,
-        name: org.name,
-        abbreviation: org.abbreviation,
-        // 🚨 THE ADDRESS, FOR TWO THAT SHARE A NAME (crew D2, 2026-09-21).
-        //
-        // Two organizations called "Kessler Lab for Applied Microbial Ecology" and two
-        // called "Wraithmoor Regional Museum of Art & Craft" sat in this list, identical
-        // down to the abbreviation tile, and a person had no way of knowing which one
-        // they were about to work in. The slug is what differs, and it is what the URL
-        // already shows — the same thing Slack does with a workspace's address and
-        // Google with an account's email. The picker draws it ONLY on rows whose name
-        // another row also carries, so a list of distinct names is unchanged.
-        distinguisher: org.slug,
-        // 🚨 116 ORGANIZATIONS, 59 OF THEM LANE SCRATCH (VERIFIER-8 MEDIUM-3).
-        // The classification is the stored one (`settings.test_fixture`) — the
-        // picker hides these behind the archived-items disclosure and says how
-        // many it hid. Nothing here reads a NAME to decide what a row is.
-        isTestFixture: org.is_test_fixture,
-        // The person's own organizations come first, under the starred one.
-        isOwn: org.is_own,
-      }))}
+      organizations={toPickerOrganizations(organizations)}
       activeOrganizationId={activeOrgId}
       defaultOrganizationId={defaultOrganizationId}
       loading={loading}
@@ -60,4 +39,40 @@ export function OrganizationPickerPanel({
       onSetDefault={setDefaultOrganization}
     />
   );
+}
+
+type PickerSourceOrganization = ReturnType<
+  typeof useActiveOrganizationPicker
+>["organizations"][number];
+
+/**
+ * A membership as the shared `OrganizationPicker` draws it. ONE mapping, used
+ * by every host of the picker in this app (header, user menu, Settings'
+ * default-organization row), so the same list reads the same everywhere.
+ */
+export function toPickerOrganizations(
+  organizations: readonly PickerSourceOrganization[],
+) {
+  return organizations.map((org) => ({
+    id: org.id,
+    name: org.name,
+    abbreviation: org.abbreviation,
+    // 🚨 THE ADDRESS, FOR TWO THAT SHARE A NAME (crew D2, 2026-09-21).
+    //
+    // Two organizations called "Kessler Lab for Applied Microbial Ecology" and two
+    // called "Wraithmoor Regional Museum of Art & Craft" sat in this list, identical
+    // down to the abbreviation tile, and a person had no way of knowing which one
+    // they were about to work in. The slug is what differs, and it is what the URL
+    // already shows — the same thing Slack does with a workspace's address and
+    // Google with an account's email. The picker draws it ONLY on rows whose name
+    // another row also carries, so a list of distinct names is unchanged.
+    distinguisher: org.slug,
+    // 🚨 116 ORGANIZATIONS, 59 OF THEM LANE SCRATCH (VERIFIER-8 MEDIUM-3).
+    // The classification is the stored one (`settings.test_fixture`) — the
+    // picker hides these behind the archived-items disclosure and says how
+    // many it hid. Nothing here reads a NAME to decide what a row is.
+    isTestFixture: org.is_test_fixture,
+    // The person's own organizations come first, under the starred one.
+    isOwn: org.is_own,
+  }));
 }

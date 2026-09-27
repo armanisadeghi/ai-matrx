@@ -26,6 +26,8 @@ import type { SettingsTabDef } from "../types";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
+import { SettingsRow } from "@/components/official/settings/SettingsRow";
+import { DefaultOrganizationChooser } from "@/features/organizations/components/DefaultOrganizationChooser";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import type { ScopedKnob } from "@/lib/scoped-config/types";
 import { useSetting, useSettingReset } from "../hooks/useSetting";
@@ -142,7 +144,34 @@ export default function FirstScreenTab() {
         throw new Error(`${knob.label} must be one of: ${knob.allowed_values.join(", ")}.`);
     }
   };
+  // Agent twin of the Default organization row. A display preference only —
+  // which organization opens at sign-in; it never changes the one the person
+  // is working in. Accepts an organization id or exact name, or null to clear.
+  const resolveDefaultOrganization = (value: unknown): string | null => {
+    if (value === null) return null;
+    if (typeof value !== "string" || !value.trim())
+      throw new Error("default_organization expects an organization id or exact name, or null for none.");
+    const byId = settings.organizations.find((org) => org.id === value);
+    if (byId) return byId.id;
+    const byName = settings.organizations.filter((org) => org.name.toLowerCase() === value.trim().toLowerCase());
+    if (byName.length === 1) return byName[0].id;
+    if (byName.length > 1)
+      throw new Error(`"${value}" matches ${byName.length} of your organizations; send the id (${byName.map((o) => o.id).join(", ")}).`);
+    throw new Error(`"${value}" is not one of your organizations.`);
+  };
   useSurfaceWriteHandlers("matrx-user/settings", {
+    default_organization: {
+      validate: (value: unknown) => void resolveDefaultOrganization(value),
+      apply: (value: unknown) => {
+        const next = resolveDefaultOrganization(value);
+        setDefaultOrganizationId(next);
+        const name = next ? settings.organizations.find((org) => org.id === next)?.name ?? next : null;
+        return {
+          summary: next ? `Default organization set to ${name}.` : "Default organization cleared.",
+          data: { default_organization: next ? { id: next, name } : null },
+        };
+      },
+    },
     ai_voice_defaults: {
       validate: validateAiVoice,
       apply: async (value: unknown) => {
@@ -198,7 +227,8 @@ export default function FirstScreenTab() {
           options={THEME_MODE_OPTIONS}
           modified={themeReset.modified}
           onReset={themeReset.reset}
-          resetLabel="Reset theme to Use system setting"
+          resetLabel="Reset theme to system default"
+          width="xl"
           last
         />
       </SettingsSection>
@@ -206,38 +236,20 @@ export default function FirstScreenTab() {
 
       {settings.editingContext === "user" && <PreferencesLoadGate what="your account defaults">
         <SettingsSection title="Account defaults" icon={Building2}>
-          <SettingsSelect
+          <SettingsRow
             label="Default organization"
             description="Where you land when you sign in. You can switch organizations any time from the header."
-            value={defaultOrganizationId ?? ""}
-            options={settings.organizations.map((org) => ({ value: org.id, label: org.name }))}
-            placeholder={
-              settings.organizations.length > 0
-                ? "Choose one"
-                : settings.organizationsStatus === "error"
-                  ? "Your organizations could not be read"
-                  : settings.organizationsStatus === "loading"
-                    ? "Loading your organizations…"
-                    : "No organizations yet"
-            }
-            onValueChange={(value) => setDefaultOrganizationId(value || null)}
-            // The default is "none chosen" — reset clears it, so a person who
-            // picked one can always go back.
+            id="settings-default-organization"
             modified={Boolean(defaultOrganizationId)}
             onReset={() => setDefaultOrganizationId(null)}
-            resetLabel="Clear the default organization"
-            last={settings.organizationsStatus !== "error" && organizationState === "ready"}
-          />
-          {/* One card, not two: with no organization selected, the choice of
-              one sits right under the default-organization row. */}
-          {organizationState !== "ready" && (
-            <OrganizationContextNotice
-              state={organizationState}
-              what="Your AI and voice defaults"
-              description="Your AI model and voice defaults are kept per organization. Choose the one you are working in to see them."
-              compact
-            />
-          )}
+            resetLabel="Clear default organization"
+            last={settings.organizationsStatus !== "error"}
+          >
+            {/* The same organization control the header uses (search, rarely
+                used folded, test organizations hidden, address on duplicate
+                names) — choosing here only sets the default. */}
+            <DefaultOrganizationChooser id="settings-default-organization" className="w-80 max-w-full" />
+          </SettingsRow>
           {settings.organizationsStatus === "error" && (
             <ReadFailure
               error={settings.organizationsError ?? true}
@@ -248,6 +260,19 @@ export default function FirstScreenTab() {
         </SettingsSection>
       </PreferencesLoadGate>
       }
+
+      {/* Said once, where it is needed: the AI and voice rows are the only part
+          of this screen that needs an organization. */}
+      {settings.editingContext === "user" && organizationState !== "ready" && (
+        <SettingsSection title="AI and voice">
+          <OrganizationContextNotice
+            state={organizationState}
+            what="Your AI and voice defaults"
+            description="These are kept per organization. Choose the one you are working in to see them."
+            compact
+          />
+        </SettingsSection>
+      )}
 
       {settings.isLoading && (
         <div className="flex items-center justify-center py-8">

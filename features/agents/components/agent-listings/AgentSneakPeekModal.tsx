@@ -61,6 +61,7 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast-service";
 import { setPeekedAgentId } from "./agent-peek-tracker";
+import { AgentPeekDuplicateButton } from "./AgentPeekDuplicateButton";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import {
   PEEK_CONTENT_PROPS,
@@ -970,6 +971,10 @@ export function AgentSneakPeekModal({
             >
               Close
             </Button>
+            <AgentPeekDuplicateButton
+              agentId={currentId}
+              onDuplicated={onClose}
+            />
             <Link href={`/agents/go/${currentId}/build`} onClick={onClose}>
               <Button variant={onSelect ? "ghost" : "outline"} size="sm">
                 <Pencil />

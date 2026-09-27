@@ -24,18 +24,13 @@
 import Link from "next/link";
 import { Plus, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import type { EntityListController } from "@/lib/entity-list/config";
 import { agentListConfig } from "../listConfig";
 import { newAgentHref } from "../agentPaths";
 import { ADMIN_SYSTEM_AGENTS_LIST_SURFACE } from "../adminSurface";
-import {
-  AGENT_BROWSE_SURFACE,
-  AGENT_BROWSE_SURFACE_ADMIN,
-} from "../surface";
-import { AGENT_LIST_SCOPES, AGENT_LIST_SCOPES_ADMIN } from "../types";
+import { AGENT_BROWSE_SURFACE } from "../surface";
+import { AGENT_LIST_SCOPES } from "../types";
 import { ADMIN_SUPPORT_LIST_SCOPES } from "@/lib/list-scope/types"; // admin-support-only: /administration/agents/support
 import type { AgentBrowseRow } from "../types";
 import { ClassicViewNotice } from "./ClassicViewNotice";
@@ -73,17 +68,13 @@ export function AgentBrowsePage({
   // manages the platform's own agents only (Arman, 2026-09-26).
   const supportAdmin = variant === "support-admin";
   const adminRoute = systemAdmin || supportAdmin;
-  // ANY Matrx admin (developer / senior_admin / super_admin) — the same bar the
-  // /administration route tree uses. Hiding the tab is a convenience for
-  // everyone else, never the security: agx_list_scoped re-checks
-  // public.is_platform_admin() and returns zero system rows regardless.
-  const isAdmin = useAppSelector(selectIsAdmin);
 
-  // The New button follows the ACTIVE SCOPE. Standing on the System tab and
-  // getting a personal agent out of "New agent" is the kind of quiet mismatch
-  // that made a separate admin page feel necessary in the first place.
+  // On the System Agents management page the New button makes a system agent.
+  // On /agents/all the System tab is the platform's published built-ins for
+  // every viewer, and New there makes the viewer's own agent — the admin seat
+  // never acts as itself on a user page.
   const newAgentButton = (list: EntityListController<AgentBrowseRow>) => {
-    const system = list.query.scope.kind === "system";
+    const system = systemAdmin && list.query.scope.kind === "system";
     return (
       <Button asChild size="sm" className="h-11 lg:h-7">
         <Link
@@ -112,9 +103,7 @@ export function AgentBrowsePage({
           ? ["system"]
           : supportAdmin
             ? ADMIN_SUPPORT_LIST_SCOPES // admin-support-only: /administration/agents/support
-            : isAdmin
-              ? AGENT_LIST_SCOPES_ADMIN
-              : AGENT_LIST_SCOPES
+            : AGENT_LIST_SCOPES
       }
       scopeTabs={!systemAdmin}
       defaultScope={
@@ -128,9 +117,7 @@ export function AgentBrowsePage({
       surface={
         adminRoute
           ? ADMIN_SYSTEM_AGENTS_LIST_SURFACE
-          : isAdmin
-            ? AGENT_BROWSE_SURFACE_ADMIN
-            : AGENT_BROWSE_SURFACE
+          : AGENT_BROWSE_SURFACE
       }
       notice={<ClassicViewNotice />}
       headerActions={(list) =>

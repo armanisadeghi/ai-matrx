@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
@@ -65,32 +66,29 @@ export function InitiativeDetail({ id }: { id: string }) {
         }).format(row.budget_amount);
   return (
     <>
-      <PageHeader>
-        <div className="flex min-w-0 items-center gap-2">
-          <Button asChild variant="ghost" size="icon" className="h-8 w-8">
-            <Link
-              href="/marketing/initiatives"
-              aria-label="Back to initiatives"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <h1 className="truncate text-sm font-semibold">{row.name}</h1>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <ShareButton
-            resourceType="marketing_initiative"
-            resourceId={row.id}
-            resourceName={row.name}
-            size="sm"
-            showStatus={false}
-          />
-          <Button size="sm" onClick={() => setEditing(true)}>
-            <Pencil className="h-4 w-4" />
-            Edit
-          </Button>
-        </div>
-      </PageHeader>
+      <RouteHeader
+        left={
+          <>
+            <ChevronLeftTapButton href="/marketing/initiatives" ariaLabel="Back to initiatives" />
+            <h1 className="truncate text-sm font-semibold">{row.name}</h1>
+          </>
+        }
+        right={
+          <>
+            <ShareButton
+              resourceType="marketing_initiative"
+              resourceId={row.id}
+              resourceName={row.name}
+              size="sm"
+              showStatus={false}
+            />
+            <Button size="sm" onClick={() => setEditing(true)} aria-label="Edit">
+              <Pencil className="h-4 w-4" />
+              Edit
+            </Button>
+          </>
+        }
+      />
       <main className="h-full overflow-y-auto p-4 sm:p-6">
         <div className="mx-auto max-w-4xl space-y-6">
           <section className="rounded-xl border bg-card p-5">

@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, RotateCw } from "lucide-react";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import IconButton from "@/features/shell/components/IconButton";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
@@ -35,8 +35,9 @@ export function AgentDriftReportHeader({
   const backHref = BACK_HREF[mode];
 
   return (
-    <PageHeader>
-      <div className="flex items-center w-full min-w-0 gap-0 px-0">
+    <RouteHeader
+      left={
+      <>
         {mobileDetail ? (
           <ChevronLeftTapButton
             variant="transparent"
@@ -53,8 +54,10 @@ export function AgentDriftReportHeader({
         <h1 className="ml-2 text-sm font-medium text-foreground truncate">
           {title}
         </h1>
-        {!mobileDetail ? (
-          <div className="ml-auto shrink-0 flex items-center">
+      </>
+      }
+      right={
+        !mobileDetail ? (
             <IconButton
               icon={
                 loading ? (
@@ -67,9 +70,8 @@ export function AgentDriftReportHeader({
               label="Refresh report"
               disabled={loading}
             />
-          </div>
-        ) : null}
-      </div>
-    </PageHeader>
+        ) : undefined
+      }
+    />
   );
 }

@@ -75805,6 +75805,7 @@ export type Database = {
           p_date_to?: string
           p_limit?: number
           p_org_ids?: string[]
+          p_per_conversation?: number
           p_query: string
         }
         Returns: {
@@ -85430,6 +85431,19 @@ export type Database = {
           p_sort?: string
         }
         Returns: Json
+      }
+      mnd_filled_by: {
+        Args: {
+          p_holder_ids: string[]
+          p_holder_type: string
+          p_resolve_org_id?: string
+        }
+        Returns: {
+          holder_id: string
+          label: string
+          mandate_id: string
+          mandate_key: string
+        }[]
       }
       mnd_list_facets: {
         Args: { p_search?: string }
@@ -96021,6 +96035,7 @@ export type Database = {
           matched_terms: string[]
           medium: string
           metadata: Json
+          news_item_id: string | null
           normalized_url: string
           organization_id: string
           outcome_event_id: string | null
@@ -96069,6 +96084,7 @@ export type Database = {
           matched_terms?: string[]
           medium?: string
           metadata?: Json
+          news_item_id?: string | null
           normalized_url: string
           organization_id: string
           outcome_event_id?: string | null
@@ -96117,6 +96133,7 @@ export type Database = {
           matched_terms?: string[]
           medium?: string
           metadata?: Json
+          news_item_id?: string | null
           normalized_url?: string
           organization_id?: string
           outcome_event_id?: string | null
@@ -96149,8 +96166,13 @@ export type Database = {
       coverage_tracker: {
         Row: {
           alert_min_hit_score: number
-          brand_key: string
+          alert_recipient_user_ids: string[]
+          auto_run_paused_at: string | null
+          auto_run_paused_reason: string | null
+          brand_id: string | null
+          brand_key: string | null
           brand_terms: string[]
+          brief_source_id: string | null
           cadence_minutes: number
           capture_pages: boolean
           competitors: Json
@@ -96163,6 +96185,8 @@ export type Database = {
           dedupe_key: string
           deleted_at: string | null
           exclude_terms: string[]
+          feed_ids: string[]
+          feed_urls: string[]
           id: string
           ignore_domains: string[]
           is_active: boolean
@@ -96170,21 +96194,36 @@ export type Database = {
           last_error: string | null
           last_run_at: string | null
           last_run_status: string | null
+          last_run_summary: Json | null
+          lenses: string[]
           max_records: number
           mention_count: number
           metadata: Json
           name: string
           organization_id: string
-          site_id: string
+          parent_brand_id: string | null
+          search_terms: string[]
+          site_id: string | null
+          slack_credential_item_id: string | null
+          sources: string[] | null
+          standing: string[]
           timespan: string
+          topics: string[]
           updated_at: string
           updated_by: string | null
           version: number
+          workflow_trigger_id: string | null
+          x_trends_woeids: number[]
         }
         Insert: {
           alert_min_hit_score?: number
-          brand_key: string
+          alert_recipient_user_ids?: string[]
+          auto_run_paused_at?: string | null
+          auto_run_paused_reason?: string | null
+          brand_id?: string | null
+          brand_key?: string | null
           brand_terms?: string[]
+          brief_source_id?: string | null
           cadence_minutes?: number
           capture_pages?: boolean
           competitors?: Json
@@ -96197,6 +96236,8 @@ export type Database = {
           dedupe_key: string
           deleted_at?: string | null
           exclude_terms?: string[]
+          feed_ids?: string[]
+          feed_urls?: string[]
           id?: string
           ignore_domains?: string[]
           is_active?: boolean
@@ -96204,21 +96245,36 @@ export type Database = {
           last_error?: string | null
           last_run_at?: string | null
           last_run_status?: string | null
+          last_run_summary?: Json | null
+          lenses?: string[]
           max_records?: number
           mention_count?: number
           metadata?: Json
           name: string
           organization_id: string
-          site_id: string
+          parent_brand_id?: string | null
+          search_terms?: string[]
+          site_id?: string | null
+          slack_credential_item_id?: string | null
+          sources?: string[] | null
+          standing?: string[]
           timespan?: string
+          topics?: string[]
           updated_at?: string
           updated_by?: string | null
           version?: number
+          workflow_trigger_id?: string | null
+          x_trends_woeids?: number[]
         }
         Update: {
           alert_min_hit_score?: number
-          brand_key?: string
+          alert_recipient_user_ids?: string[]
+          auto_run_paused_at?: string | null
+          auto_run_paused_reason?: string | null
+          brand_id?: string | null
+          brand_key?: string | null
           brand_terms?: string[]
+          brief_source_id?: string | null
           cadence_minutes?: number
           capture_pages?: boolean
           competitors?: Json
@@ -96231,6 +96287,8 @@ export type Database = {
           dedupe_key?: string
           deleted_at?: string | null
           exclude_terms?: string[]
+          feed_ids?: string[]
+          feed_urls?: string[]
           id?: string
           ignore_domains?: string[]
           is_active?: boolean
@@ -96238,16 +96296,26 @@ export type Database = {
           last_error?: string | null
           last_run_at?: string | null
           last_run_status?: string | null
+          last_run_summary?: Json | null
+          lenses?: string[]
           max_records?: number
           mention_count?: number
           metadata?: Json
           name?: string
           organization_id?: string
-          site_id?: string
+          parent_brand_id?: string | null
+          search_terms?: string[]
+          site_id?: string | null
+          slack_credential_item_id?: string | null
+          sources?: string[] | null
+          standing?: string[]
           timespan?: string
+          topics?: string[]
           updated_at?: string
           updated_by?: string | null
           version?: number
+          workflow_trigger_id?: string | null
+          x_trends_woeids?: number[]
         }
         Relationships: []
       }
@@ -100734,6 +100802,146 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
+      }
+      tracker_story: {
+        Row: {
+          alerted_at: string | null
+          coarse_decision: string | null
+          coarse_performer: string | null
+          consolidated_into_story_key: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          dismissed_at: string | null
+          dismissed_by: string | null
+          dismissed_reason: string | null
+          evidence: Json
+          feedback_note: string | null
+          first_seen_at: string
+          first_surfaced_at: string | null
+          freshness_basis: string | null
+          freshness_status: string | null
+          hold_reason: string | null
+          id: string
+          last_run_id: string | null
+          latest: Json | null
+          member_item_ids: string[]
+          member_url_keys: string[]
+          metadata: Json
+          newsworthiness_band: string | null
+          newsworthiness_score: number | null
+          off_policy: boolean | null
+          organization_id: string
+          outlet_count: number
+          proof_gated: boolean | null
+          status: string
+          story_key: string
+          surfaced_override_at: string | null
+          surfaced_override_by: string | null
+          title: string
+          tracker_id: string
+          triage_tier: string | null
+          triage_watch_reason: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          withheld_reason: string | null
+        }
+        Insert: {
+          alerted_at?: string | null
+          coarse_decision?: string | null
+          coarse_performer?: string | null
+          consolidated_into_story_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          dismissed_reason?: string | null
+          evidence?: Json
+          feedback_note?: string | null
+          first_seen_at?: string
+          first_surfaced_at?: string | null
+          freshness_basis?: string | null
+          freshness_status?: string | null
+          hold_reason?: string | null
+          id?: string
+          last_run_id?: string | null
+          latest?: Json | null
+          member_item_ids?: string[]
+          member_url_keys?: string[]
+          metadata?: Json
+          newsworthiness_band?: string | null
+          newsworthiness_score?: number | null
+          off_policy?: boolean | null
+          organization_id: string
+          outlet_count?: number
+          proof_gated?: boolean | null
+          status?: string
+          story_key: string
+          surfaced_override_at?: string | null
+          surfaced_override_by?: string | null
+          title?: string
+          tracker_id: string
+          triage_tier?: string | null
+          triage_watch_reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          withheld_reason?: string | null
+        }
+        Update: {
+          alerted_at?: string | null
+          coarse_decision?: string | null
+          coarse_performer?: string | null
+          consolidated_into_story_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          dismissed_reason?: string | null
+          evidence?: Json
+          feedback_note?: string | null
+          first_seen_at?: string
+          first_surfaced_at?: string | null
+          freshness_basis?: string | null
+          freshness_status?: string | null
+          hold_reason?: string | null
+          id?: string
+          last_run_id?: string | null
+          latest?: Json | null
+          member_item_ids?: string[]
+          member_url_keys?: string[]
+          metadata?: Json
+          newsworthiness_band?: string | null
+          newsworthiness_score?: number | null
+          off_policy?: boolean | null
+          organization_id?: string
+          outlet_count?: number
+          proof_gated?: boolean | null
+          status?: string
+          story_key?: string
+          surfaced_override_at?: string | null
+          surfaced_override_by?: string | null
+          title?: string
+          tracker_id?: string
+          triage_tier?: string | null
+          triage_watch_reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          withheld_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_story_tracker_id_fkey"
+            columns: ["tracker_id"]
+            isOneToOne: false
+            referencedRelation: "coverage_tracker"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       web_analytics_daily: {
         Row: {
@@ -111640,6 +111848,96 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      news_item: {
+        Row: {
+          author: string | null
+          container: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          engagement: Json
+          excerpt: string | null
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          metadata: Json
+          organization_id: string
+          processed_document_id: string | null
+          publication_type: string
+          published_at: string | null
+          published_precision: string
+          publisher_domain: string | null
+          sighting_count: number
+          source_kind: string
+          source_ref: string | null
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+          url: string
+          url_key: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          author?: string | null
+          container?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          engagement?: Json
+          excerpt?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          metadata?: Json
+          organization_id: string
+          processed_document_id?: string | null
+          publication_type?: string
+          published_at?: string | null
+          published_precision?: string
+          publisher_domain?: string | null
+          sighting_count?: number
+          source_kind: string
+          source_ref?: string | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          url: string
+          url_key: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          author?: string | null
+          container?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          engagement?: Json
+          excerpt?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          metadata?: Json
+          organization_id?: string
+          processed_document_id?: string | null
+          publication_type?: string
+          published_at?: string | null
+          published_precision?: string
+          publisher_domain?: string | null
+          sighting_count?: number
+          source_kind?: string
+          source_ref?: string | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          url?: string
+          url_key?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
       }
       offering_template: {
         Row: {
