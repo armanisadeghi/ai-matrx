@@ -327,31 +327,68 @@ async function runAgent(page, result) {
     // through the agent picker instead.
     const opened = await pointerClick(page, "[data-radix-popper-content-wrapper] button", "Run an agent on this page");
     await page.waitForTimeout(2500);
-    const picked = opened
-      ? await page.evaluate((name) => {
-          const el = Array.from(document.querySelectorAll("[role=option], [cmdk-item], button, li"))
-            .filter((e) => (e.textContent || "").trim().startsWith(name))
-            .pop();
-          if (!el) return false;
-          for (const type of ["pointerdown", "mousedown", "pointerup", "mouseup", "click"]) {
+    // The picker is the full catalog behind a search box and tabs (Mine /
+    // All / Public): search, then look in each tab until the agent shows.
+    const pickFromList = () =>
+      page.evaluate((name) => {
+        const input = document.querySelector('input[placeholder^="Search agents"]');
+        const root = input?.closest("[role=dialog]") ?? document;
+        const hit = Array.from(root.querySelectorAll("*"))
+          .filter((e) => (e.textContent || "").trim().startsWith(name))
+          .filter((e) => !e.querySelector("input"))
+          .sort((a, b) => a.querySelectorAll("*").length - b.querySelectorAll("*").length)[0];
+        const target = hit?.closest("[role=option],[cmdk-item],button,li,[data-value]") ?? hit;
+        if (!target) return false;
+        for (const type of ["pointerdown", "mousedown", "pointerup", "mouseup", "click"]) {
+          const Ctor = type.startsWith("pointer") ? PointerEvent : MouseEvent;
+          target.dispatchEvent(new Ctor(type, { bubbles: true, cancelable: true }));
+        }
+        return true;
+      }, opts.agentName);
+    let picked = false;
+    if (opened) {
+      const box = page.locator('input[placeholder^="Search agents"]').first();
+      if (await box.count()) await box.fill(opts.agentName);
+      await page.waitForTimeout(2500);
+      picked = await pickFromList();
+      for (const tab of ["All", "Public"]) {
+        if (picked) break;
+        await page.evaluate((label) => {
+          const input = document.querySelector('input[placeholder^="Search agents"]');
+          const root = input?.closest("[role=dialog]") ?? document;
+          const el = Array.from(root.querySelectorAll("button,[role=tab]")).find((b) =>
+            (b.textContent || "").trim().startsWith(label),
+          );
+          if (el) for (const type of ["pointerdown", "mousedown", "pointerup", "mouseup", "click"]) {
             const Ctor = type.startsWith("pointer") ? PointerEvent : MouseEvent;
             el.dispatchEvent(new Ctor(type, { bubbles: true, cancelable: true }));
           }
-          return true;
-        }, opts.agentName)
-      : false;
+        }, tab);
+        await page.waitForTimeout(2500);
+        picked = await pickFromList();
+      }
+    }
     if (!picked)
       agent.errors.push(`no "Run ${opts.agentName}" button and no agent picker offering it in the Agents menu (--agent-name)`);
   }
   await page.waitForTimeout(6000);
-  const box = page.locator("[data-agent-input-shell] textarea").first();
-  if (!(await box.count())) {
+  // Only type into the agent's OWN window: if opening the agent failed, the
+  // only composer on screen may be the page's (e.g. the main chat), and
+  // sending there would test the wrong conversation.
+  const box = page
+    .locator("[data-window-panel] [data-agent-input-shell] textarea")
+    .first();
+  if (agent.errors.length > 0) {
+    agent.errors.push("not sending: the agent window did not open");
+  } else if (!(await box.count())) {
     agent.errors.push("the agent window's message box did not appear");
   } else {
     await box.fill(opts.agent);
     await page.waitForTimeout(700);
     // Enter does not send in every composer mode; the button always does.
-    await pointerClick(page, '[aria-label="Send message"]');
+    // The window's OWN send button — a page like Chat has its own composer
+    // with the same button, first in the document.
+    await pointerClick(page, '[data-window-panel] [aria-label="Send message"]');
     await page.waitForTimeout(2500);
     let last = null;
     let stable = 0;
