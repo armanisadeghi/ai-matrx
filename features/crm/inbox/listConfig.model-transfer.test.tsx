@@ -16,6 +16,8 @@ import type { InboxRow } from "./types";
 let capturedTableProps: Record<string, unknown> | null = null;
 
 jest.mock("@ai-matrx/design-system/data-table", () => ({
+  // The list shell reads column markers to size and pin columns (columnWidths.ts).
+  resolveColumnMarker: jest.requireActual("@ai-matrx/design-system/data-table").resolveColumnMarker,
   MatrxDataTable: (props: Record<string, unknown>) => {
     capturedTableProps = props;
     return null;
