@@ -15,8 +15,9 @@ keep working until H6 and link to the hub.
 - `app/(core)/knowledge/page.tsx` — the hub route (guest → `KnowledgeLanding`; layout cookie
   `panels:knowledge-hub:v1`).
 - `features/knowledge/api/knowledgeSearch.ts` — THE client for `POST /knowledge/search` (shared with
-  the ⌘K bar). Falls back, announced, to the platform title search when the route is missing or
-  refuses the `KnowledgeQuery` body (404/405/422 — the old RAG route still answers 422 until H1).
+  the ⌘K bar). Falls back, announced, to the platform title search only when the hub's service did
+  not answer: 404/405, or a stream with no `search_started` event. A 422 is a real validation error
+  and shows the server's sentence in every section (guard: `api/__tests__/searchFallback.test.ts`).
 - `features/knowledge/api/knowledgeSearchFixture.ts` — sample data in the wire shape; the hub's
   "Sample data" toggle (`?data=sample`) uses it, banner on, every write refuses.
 - `features/knowledge/api/knowledgeQueryText.ts` — operators ⇄ chips (`type:`, `@`, `#`, dates,

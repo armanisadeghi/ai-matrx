@@ -217,6 +217,7 @@ function adaptHit(raw: unknown): KnowledgeHit | null {
 export type AdaptedSearchEvent =
   | { type: "section"; section: KnowledgeSection }
   | { type: "stream_error"; message: string }
+  | { type: "started" }
   | { type: "done" };
 
 /**
@@ -279,6 +280,7 @@ export function adaptServerSearchEvent(
       },
     };
   }
+  if (kind === "search_started") return { type: "started" };
   if (kind === "done") return { type: "done" };
   return null;
 }
@@ -293,18 +295,20 @@ export class KnowledgeSearchUnavailableError extends Error {
   }
 }
 
-/**
- * The hub's service is not what answered. 404/405: no route. 422: a route
- * exists at this path but refuses the `KnowledgeQuery` body — the older RAG
- * search still mounted at `/knowledge/search` answers exactly this way until H1
- * replaces it (seen in the hub walk, 2026-09-27: every section showed "one of
- * the values was not filled in"). The stand-in answers instead, announced.
- */
+/** No route here at all — the only HTTP refusal that means "not the hub's service". */
 function isRouteMissing(err: unknown): boolean {
   return (
-    err instanceof BackendApiError &&
-    (err.status === 404 || err.status === 405 || err.status === 422)
+    err instanceof BackendApiError && (err.status === 404 || err.status === 405)
   );
+}
+
+/** A refusal in the server's own words (a 4xx names what was wrong). */
+function refusalSentence(err: unknown): string {
+  if (err instanceof BackendApiError && err.status !== null && err.status >= 400 && err.status < 500) {
+    const own = err.detail?.trim();
+    if (own) return own;
+  }
+  return describeBackendFailure(err).headline;
 }
 
 function erroredSection(
@@ -323,15 +327,18 @@ function erroredSection(
 }
 
 /**
- * The real service. Throws `KnowledgeSearchUnavailableError` when the route is
- * missing; any other failure (HTTP refusal, offline, in-band error) becomes an
- * error on every section that had not answered yet — never a blank screen.
+ * The real service. Throws `KnowledgeSearchUnavailableError` when the hub's
+ * service did not answer: a 404/405, or a stream that ended without ever
+ * saying `search_started` (the older RAG route at this path answers that way).
+ * Every other failure — a 422 validation refusal included — becomes an error
+ * on every section that had not answered yet, in the server's own words.
  */
 export const searchKnowledgeServer: KnowledgeSearchRunner = async (
   query,
   options = {},
 ) => {
   const received = new Map<KnowledgeSectionKey, KnowledgeSection>();
+  let started = false;
   const failRest = (message: string) => {
     for (const key of KNOWLEDGE_SECTION_KEYS) {
       if (received.has(key)) continue;
@@ -349,18 +356,24 @@ export const searchKnowledgeServer: KnowledgeSearchRunner = async (
     for await (const evt of stream) {
       const adapted = adaptServerSearchEvent(evt);
       if (!adapted) continue;
-      if (adapted.type === "section") {
+      if (adapted.type === "started") {
+        started = true;
+      } else if (adapted.type === "section") {
         received.set(adapted.section.key, adapted.section);
         options.onSection?.(adapted.section);
       } else if (adapted.type === "stream_error") {
+        // An in-band error is the envelope speaking: show it, never fall back.
+        started = true;
         failRest(adapted.message);
       }
     }
   } catch (err) {
     if (options.signal?.aborted) throw err;
     if (isRouteMissing(err)) throw new KnowledgeSearchUnavailableError();
-    failRest(describeBackendFailure(err).headline);
+    failRest(refusalSentence(err));
+    started = true;
   }
+  if (!started) throw new KnowledgeSearchUnavailableError();
   return KNOWLEDGE_SECTION_KEYS.flatMap((k) => {
     const s = received.get(k);
     return s ? [s] : [];
