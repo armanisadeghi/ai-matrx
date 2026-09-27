@@ -469,4 +469,13 @@ export interface CrmQueryContext {
   orgIds: string[];
   /** Org names for the My Orgs narrowing dropdown, from getUserOrganizations. */
   orgNames: Record<string, string>;
+  /**
+   * True when the org-membership read FAILED: `orgIds` is empty because we
+   * could not read it, not because the person belongs to none — so every
+   * org-scoped list is missing its organizations' rows. Surfaces say so
+   * (StaleDataNotice `partial`) instead of presenting "mine" as the whole set.
+   */
+  orgMembershipsUnread?: boolean;
+  /** Re-run the org-membership read (present with `orgMembershipsUnread`). */
+  retryOrgMemberships?: () => void;
 }

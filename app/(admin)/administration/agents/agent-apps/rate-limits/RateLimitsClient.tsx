@@ -25,6 +25,8 @@ import {
 } from "@ai-matrx/design-system/data-table";
 import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import { Globe, Shield, ShieldOff, User } from "lucide-react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 const RATE_LIMITS_TABLE_ID = "admin-agent-app-rate-limits";
 
@@ -89,6 +91,9 @@ export function RateLimitsClient() {
   const [rateLimits, setRateLimits] = useState<AgentAppRateLimitRow[]>([]);
   const [visibleRows, setVisibleRows] = useState<AgentAppRateLimitRow[]>([]);
   const [loading, setLoading] = useState(true);
+  // The last read's failure (RC-B12 r13): with no rows it IS the view (no
+  // "No rate limits found", no 0 tiles); with rows it is said above them.
+  const [readError, setReadError] = useState<unknown>(null);
   const [unblockingId, setUnblockingId] = useState<string | null>(null);
   const [blockedFilter, setBlockedFilter] = useState<
     "all" | "blocked" | "not-blocked"
@@ -105,17 +110,14 @@ export function RateLimitsClient() {
       const isBlocked =
         blockedFilter === "all" ? undefined : blockedFilter === "blocked";
       setRateLimits(await fetchAgentAppRateLimits({ is_blocked: isBlocked }));
+      setReadError(null);
     } catch (error) {
       console.error("Error loading rate limits:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load rate limits",
-        variant: "destructive",
-      });
+      setReadError(error ?? new Error("The rate limits read failed"));
     } finally {
       setLoading(false);
     }
-  }, [blockedFilter, toast]);
+  }, [blockedFilter]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadData(), 0);
@@ -289,7 +291,11 @@ export function RateLimitsClient() {
     },
   ];
 
-  if (loading && rateLimits.length === 0) {
+  // Counts derived from a read that failed with nothing on screen are unknown,
+  // never 0.
+  const statsUnknown = readError != null && rateLimits.length === 0;
+
+  if (loading && rateLimits.length === 0 && readError == null) {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <MatrxMiniLoader />
@@ -340,7 +346,7 @@ export function RateLimitsClient() {
             <Card key={label as string}>
               <CardContent className="p-2">
                 <div className={`text-2xl font-bold ${color}`}>
-                  {value as number}
+                  {statsUnknown ? "—" : (value as number)}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {label as string}
@@ -349,6 +355,23 @@ export function RateLimitsClient() {
             </Card>
           ))}
         </div>
+        {readError != null && !statsUnknown && (
+          <StaleDataNotice
+            hasData
+            what="the rate limits"
+            detail={readError instanceof Error ? readError.message : String(readError)}
+            onRetry={() => void loadData()}
+            retrying={loading}
+          />
+        )}
+        {statsUnknown ? (
+          <ReadFailure
+            error={readError}
+            what="the rate limits"
+            onRetry={() => void loadData()}
+            className="m-0"
+          />
+        ) : (
         <MatrxDataTable
           tableId={RATE_LIMITS_TABLE_ID}
           data={rateLimits}
@@ -438,6 +461,7 @@ export function RateLimitsClient() {
           }}
           onViewChange={setVisibleRows}
         />
+        )}
       </div>
     </SurfaceRuntimeProvider>
   );

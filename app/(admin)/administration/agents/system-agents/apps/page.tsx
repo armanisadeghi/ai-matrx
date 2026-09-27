@@ -51,6 +51,8 @@ import {
   agentAppExecutionsHref,
 } from "@/features/agent-apps/components/AgentAppRef";
 import { pushAppHref } from "@/lib/deployment/navigate";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 const STATUS_VARIANT: Record<
   AgentAppAdminView["status"],
@@ -94,6 +96,9 @@ export default function AdminSystemAppsListPage() {
   const [visibleApps, setVisibleApps] = useState<AgentAppAdminView[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // The last read's failure (RC-B12 r13). A failed read is never "No system
+  // apps match": with no rows it IS the view; with rows it is said above them.
+  const [readError, setReadError] = useState<unknown>(null);
   // Per-row inflight flags so a slow update on one row doesn't disable the
   // whole table.
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
@@ -109,8 +114,10 @@ export default function AdminSystemAppsListPage() {
       const data = await fetchAgentAppsAdmin({ scope: "global", limit: 500 });
       setApps(data);
       setVisibleApps(data);
+      setReadError(null);
     } catch (error) {
       console.error("Failed to load system apps:", error);
+      setReadError(error ?? new Error("The system apps read failed"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -341,9 +348,29 @@ export default function AdminSystemAppsListPage() {
                 Loading system apps...
               </CardContent>
             </Card>
+          ) : readError != null && apps.length === 0 ? (
+            <Card>
+              <CardContent className="p-0">
+                <ReadFailure
+                  error={readError}
+                  what="the system apps"
+                  onRetry={() => void load(false)}
+                />
+              </CardContent>
+            </Card>
           ) : (
             <Card>
               <CardContent className="p-0">
+                {readError != null && (
+                  <StaleDataNotice
+                    hasData
+                    what="the system apps"
+                    detail={readError instanceof Error ? readError.message : String(readError)}
+                    onRetry={() => void load(true)}
+                    retrying={refreshing}
+                    className="m-3"
+                  />
+                )}
                 {/* Intentional override — the global-scope endpoint returns only a
                     bounded client snapshot (limit 500) and no count receipt. The
                     shared table labels that window honestly; row actions remain the

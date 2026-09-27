@@ -16,6 +16,7 @@ import type { CrmQueryContext } from "../types";
 export function useCrmContext(): CrmQueryContext | null {
   const userId = useAppSelector(selectUserId);
   const [ctx, setCtx] = useState<CrmQueryContext | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!userId) return;
@@ -30,15 +31,23 @@ export function useCrmContext(): CrmQueryContext | null {
       } catch (e) {
         if (!cancelled) {
           console.error("[crm] failed to load org memberships:", e);
-          // Identity alone still serves "mine" + "public".
-          setCtx({ userId, orgIds: [], orgNames: {} });
+          // Identity alone still serves "mine" + "public" — but the context
+          // SAYS the org read failed, so a list never passes "mine" off as
+          // everything (RC-B12 r13 catch-then-log census).
+          setCtx({
+            userId,
+            orgIds: [],
+            orgNames: {},
+            orgMembershipsUnread: true,
+            retryOrgMemberships: () => setAttempt((n) => n + 1),
+          });
         }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, attempt]);
 
   return ctx;
 }

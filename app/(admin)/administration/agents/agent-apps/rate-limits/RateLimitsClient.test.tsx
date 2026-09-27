@@ -158,4 +158,45 @@ describe("RateLimitsClient canonical table contract", () => {
     });
     expect(unblock).toHaveBeenCalledWith(row.id);
   });
+
+  it("a failed read shows the failure — never the empty copy or zero counts (RC-B12 r13)", async () => {
+    load.mockRejectedValue(new Error("permission denied for table rate_limits"));
+    await act(async () => {
+      root.render(<RateLimitsClient />);
+    });
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    const text = host.textContent ?? "";
+    expect(text).toContain("Couldn't load the rate limits");
+    expect(text).toContain("permission denied for table rate_limits");
+    // The table (whose empty state says "No rate limits found") is not rendered.
+    expect(tableProps).toBeNull();
+    // Stat tiles derived from the failed read never claim 0.
+    const tileValues = Array.from(host.querySelectorAll(".text-2xl")).map(
+      (el) => el.textContent,
+    );
+    expect(tileValues.length).toBeGreaterThan(0);
+    expect(tileValues).not.toContain("0");
+    expect(tileValues.every((v) => v === "—")).toBe(true);
+  });
+
+  it("a failed refresh keeps the loaded rows and says they may be out of date", async () => {
+    await act(async () => {
+      root.render(<RateLimitsClient />);
+    });
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+    load.mockRejectedValue(new Error("network down"));
+    await act(async () => {
+      await tableProps?.toolbar?.refresh?.onRefresh?.();
+    });
+
+    const text = host.textContent ?? "";
+    expect(tableProps?.data).toEqual([row]);
+    expect(text).toContain("Couldn't refresh the rate limits");
+    expect(text).toContain("may be out of date");
+  });
 });

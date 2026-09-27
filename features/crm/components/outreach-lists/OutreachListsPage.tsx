@@ -7,7 +7,7 @@
 // (an org runs dozens, not thousands), so the table runs in local mode —
 // sort/filter over the loaded set.
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   BarChart3,
@@ -47,7 +47,9 @@ import { ListKindBadge, ListStatusBadge } from "./badges";
 import { OutreachListCreateDialog } from "./OutreachListCreateDialog";
 import { OrgOutreachReportPanel } from "../../analytics/OrgOutreachReportPanel";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useRead } from "@/components/read-state/useRead";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 function memberCount(row: OutreachListWithCount): number {
   return row.members?.[0]?.count ?? 0;
@@ -61,26 +63,26 @@ export function OutreachListsPage() {
   const [activeView, setActiveView] = useState<"lists" | "report">(
     searchParams.get("view") === "report" ? "report" : "lists",
   );
-  const [rows, setRows] = useState<OutreachListWithCount[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
-  const load = useCallback(async () => {
-    if (!ctx) return;
-    try {
-      setError(null);
-      setRows(await fetchOutreachLists(ctx));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [ctx]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  // ONE read with a status (RC-B12 r13): a failed read is never "No outreach
+  // lists yet" — the table renders only after a read that succeeded; a failed
+  // refresh keeps the rows with an honest notice.
+  const listsRead = useRead(
+    () => (ctx ? fetchOutreachLists(ctx) : Promise.resolve([])),
+    [ctx],
+    { enabled: ctx != null },
+  );
+  const rows: OutreachListWithCount[] = listsRead.data ?? [];
+  const setRows = listsRead.setData;
+  const load = listsRead.retry;
+  const isLoading = listsRead.isLoading;
+  const error = listsRead.isError
+    ? listsRead.error instanceof Error
+      ? listsRead.error.message
+      : String(listsRead.error)
+    : null;
+  const readFailedWithNoRows = listsRead.isError && listsRead.data === undefined;
 
   const columns: MatrxColumnDef<OutreachListWithCount>[] = [
     {
@@ -222,7 +224,7 @@ export function OutreachListsPage() {
             onSelect: async () => {
               try {
                 await setOutreachListStatus(row, next);
-                await load();
+                load();
                 recordToast.success(
                   { type: "crm-outreach-list", id: row.id, title: row.name },
                   `${row.name} → ${next}`,
@@ -255,7 +257,7 @@ export function OutreachListsPage() {
                     type: "crm-outreach-list",
                     id: row.id,
                   });
-                  setRows((prev) => prev.filter((r) => r.id !== row.id));
+                  setRows((prev) => (prev ?? []).filter((r) => r.id !== row.id));
                   toast.success(`${row.name} deleted`);
                 } catch (e) {
                   toast.error(e instanceof Error ? e.message : "Delete failed");
@@ -343,11 +345,23 @@ export function OutreachListsPage() {
               {newButton}
             </div>
           </div>
-          {error && (
-            <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
-              {error}
-              <ErrorAlchemyMenu error={error} />
-            </div>
+          {listsRead.isError && !readFailedWithNoRows && (
+            <StaleDataNotice
+              hasData
+              what="your outreach lists"
+              detail={error}
+              onRetry={load}
+              className="mt-2"
+            />
+          )}
+          {ctx?.orgMembershipsUnread && (
+            <StaleDataNotice
+              hasData
+              partial
+              what="your organizations' outreach lists"
+              onRetry={() => ctx.retryOrgMemberships?.()}
+              className="mt-2"
+            />
           )}
           {/* Outreach assists (producers write platform.assists rows keyed to
             this surface; the strip renders nothing while none are pending). */}
@@ -381,6 +395,13 @@ export function OutreachListsPage() {
               extraSections={rowMenu.sections}
             >
               <div className="flex h-full min-h-0 flex-col">
+                {readFailedWithNoRows ? (
+                  <ReadFailure
+                    error={listsRead.error}
+                    what="your outreach lists"
+                    onRetry={load}
+                  />
+                ) : (
                 <MatrxDataTable<OutreachListWithCount>
                   data={rows}
                   columns={columns}
@@ -427,6 +448,7 @@ export function OutreachListsPage() {
                     action: newButton,
                   }}
                 />
+                )}
               </div>
             </NonEditableContextMenu>
           </div>
