@@ -28,6 +28,9 @@
 --   T8  the scopes switch for one organization: refused until parity is measured, then switched,
 --       its state read from the writer, and switched back to an explicit off
 --   T9  the switch for every organization at once (the final switch), for a named batch, and its undo
+--   T11 an organization with no scopes is ready (nothing to compare) and the every-organization press
+--       presses it; one whose record store is off is skipped and named, never a failed run
+--       (RED before scopeswt_an_organization_with_nothing_to_compare_is_ready.sql)
 --   T10 an industry template (Dental Practice) applies through the store's door: its types and fields
 --       land on both sides, and "Reports To" points at another team member (RED before
 --       scopeswt_a_template_applies_and_a_value_brings_its_field.sql: 26 of 34 templates refused)
@@ -53,22 +56,32 @@ declare
   v_org uuid := gen_random_uuid();
   v_old uuid := gen_random_uuid();
   v_new uuid := gen_random_uuid();
+  v_empty uuid := gen_random_uuid();
+  v_off uuid := gen_random_uuid();
 begin
   perform set_config('app.actor_system', 'campaign-test/scopeswt', true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by) values
     (v_org, 'Bayfront Family Dentistry ' || substr(v_org::text, 1, 6), 'bayfront-family-dentistry-' || substr(v_org::text, 1, 8), 'BFD', c_admin),
     (v_old, 'Harbor Point Validation ' || substr(v_old::text, 1, 6), 'harbor-point-val-' || substr(v_old::text, 1, 8), 'HPV', c_admin),
-    (v_new, 'Lakeview Dental Studio ' || substr(v_new::text, 1, 6), 'lakeview-dental-' || substr(v_new::text, 1, 8), 'LDS', c_admin);
+    (v_new, 'Lakeview Dental Studio ' || substr(v_new::text, 1, 6), 'lakeview-dental-' || substr(v_new::text, 1, 8), 'LDS', c_admin),
+    (v_empty, 'Seaside Orthodontics ' || substr(v_empty::text, 1, 6), 'seaside-ortho-' || substr(v_empty::text, 1, 8), 'SOR', c_admin),
+    (v_off, 'Cove Street Endodontics ' || substr(v_off::text, 1, 6), 'cove-endo-' || substr(v_off::text, 1, 8), 'CSE', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner', 'active'),
     (v_old, 'organization', v_old, c_admin, 'owner', 'active'),
-    (v_new, 'organization', v_new, c_admin, 'owner', 'active');
+    (v_new, 'organization', v_new, c_admin, 'owner', 'active'),
+    (v_empty, 'organization', v_empty, c_admin, 'owner', 'active'),
+    (v_off, 'organization', v_off, c_admin, 'owner', 'active');
   -- The older organization existed before the switch: it keeps the old tables as its writer.
   if exists (select 1 from platform.feature_knob where feature = 'custom' and key = 'scopes_written_in_the_store') then
     insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note) values
-      ('custom', 'scopes_written_in_the_store', 'organization', v_old, v_old, 'false'::jsonb, 'scopeswt suite: an organization that existed before the switch');
+      ('custom', 'scopes_written_in_the_store', 'organization', v_old, v_old, 'false'::jsonb, 'scopeswt suite: an organization that existed before the switch'),
+      ('custom', 'scopes_written_in_the_store', 'organization', v_empty, v_empty, 'false'::jsonb, 'scopeswt suite: an older organization with no scopes'),
+      ('custom', 'scopes_written_in_the_store', 'organization', v_off, v_off, 'false'::jsonb, 'scopeswt suite: an older organization whose store is off');
+    insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note) values
+      ('custom', 'system_enabled', 'organization', v_off, v_off, 'false'::jsonb, 'scopeswt suite: this organization''s record store is off');
   end if;
-  insert into sf values ('org', v_org), ('old', v_old), ('new', v_new);
+  insert into sf values ('org', v_org), ('old', v_old), ('new', v_new), ('empty', v_empty), ('off', v_off);
 end
 $fixture$;
 
@@ -79,10 +92,11 @@ declare
   v_type uuid; v_dentist uuid; v_recall uuid; v_email uuid; v_patient uuid;
   v_otype uuid; v_oitem uuid; v_oscope uuid;
   v_rec custom.record; v_row jsonb; v_out jsonb; v_img uuid; v_src jsonb; v_n int; v_msg text;
-  v_note uuid; v_press jsonb; v_state text; v_all jsonb; v_tmpl uuid; v_team uuid; v_new uuid;
+  v_note uuid; v_press jsonb; v_state text; v_all jsonb; v_tmpl uuid; v_team uuid; v_new uuid; v_empty uuid; v_off uuid;
 begin
   select v into v_org from sf where k = 'org';  select v into v_old from sf where k = 'old';
-  select v into v_new from sf where k = 'new';
+  select v into v_new from sf where k = 'new';  select v into v_empty from sf where k = 'empty';
+  select v into v_off from sf where k = 'off';
 
   perform set_config('request.jwt.claims', json_build_object('sub', c_admin, 'role', 'authenticated', 'session_id', 'scopeswt')::text, true);
   perform set_config('role', 'authenticated', true);
@@ -275,6 +289,17 @@ begin
     raise exception 'T9: the undo answered % and the writer is %', v_all, custom.context_writer(v_old);
   end if;
 
+  -- ══ T11: nothing to compare is ready; a store that is off is skipped, never a failed run ══
+  perform set_config('request.jwt.claims', '', true);
+  perform set_config('request.headers', '', true);
+  v_all := platform.cutover_seam_press_everyone('scopes_screens', 'new', 'scopeswt suite T11', false, array[v_empty, v_off], c_admin);
+  if not coalesce((v_all ->> 'ok')::boolean, false) then
+    raise exception 'T11 RED: the every-organization press failed the run instead of pressing an organization with nothing to compare and skipping one whose store is off: %', v_all ->> 'says';
+  end if;
+  if custom.context_writer(v_empty) <> 'store' or (v_all ->> 'skipped_count')::int <> 1 or custom.context_writer(v_off) <> 'old' then
+    raise exception 'T11: the press answered %; Seaside writes in %, Cove Street in %', v_all, custom.context_writer(v_empty), custom.context_writer(v_off);
+  end if;
+
   -- ══ T10: an industry template, through the store's door ══
   select t.id into v_tmpl from context.templates t where t.name = 'Dental Practice' and t.is_active;
   if v_tmpl is null then
@@ -303,7 +328,7 @@ begin
     raise exception 'T10: Team Members'' "Reports To" is not a relation to another team member in the store';
   end if;
 
-  raise notice 'GREEN T1–T10: the store writes Bayfront Family Dentistry''s scopes (old doors carried, the value door store first, archive and restore, refusals refuse, generic writers held off, tags carried), Harbor Point Validation keeps the old tables until its switch, and the switch goes one organization at a time or all at once, and back; an industry template applies with its Reports To.';
+  raise notice 'GREEN T1–T11: the store writes Bayfront Family Dentistry''s scopes (old doors carried, the value door store first, archive and restore, refusals refuse, generic writers held off, tags carried), Harbor Point Validation keeps the old tables until its switch, and the switch goes one organization at a time or all at once, and back; an industry template applies with its Reports To.';
 end
 $t$;
 
