@@ -1,0 +1,4 @@
+-- chair-step: lane PROVISION-LOCK (2026-09-27). workspace.war_rooms's std_select carries an UNBOUNDED `iam.has_access('war_room', id, 'viewer')` read lane: it was regenerated while the access-kernel fingerprint was stale (it is on the 2026-09-26 clone too, so an earlier stale window than 2026-09-27 10:27Z-11:11Z), and iam.entity_read_expr answers a stale fingerprint by dropping the bound. The kernel is matched now and iam.entity_read_expr('workspace','war_rooms','war_room') emits the bounded `(id in (...) and iam.has_access(...))` lane, so one regeneration puts the table back on it. Policy-only, one table; the generator takes the sign-in freeze with 1 ms waits (migrations/campaign/provisionlock_a_table_build_never_makes_sign_in_wait.sql). Nothing else changes.
+-- lane: PROVISION-LOCK
+-- policy-ddl: one-table
+select iam.apply_rls('workspace', 'war_rooms', 'war_room', 'entity');

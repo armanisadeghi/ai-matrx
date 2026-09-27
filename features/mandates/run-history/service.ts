@@ -130,6 +130,28 @@ function num(value: Json | undefined): number | null {
   return null;
 }
 
+/**
+ * The server stores a run's error as a JSON string (`{"error_type":…,"message":…}`)
+ * on many paths; the row shows its sentence, never the raw JSON. The SQL cuts
+ * the text at 300 characters, so a cut JSON string is read by its message field.
+ */
+export function readableError(text: string | null): string | null {
+  if (!text) return null;
+  const trimmed = text.trim();
+  if (!trimmed.startsWith("{")) return trimmed;
+  try {
+    const parsed: unknown = JSON.parse(trimmed);
+    if (parsed && typeof parsed === "object" && "message" in parsed) {
+      const message = parsed.message;
+      if (typeof message === "string" && message.trim()) return message.trim();
+    }
+  } catch {
+    const match = /"message"\s*:\s*"((?:[^"\\]|\\.)*)/.exec(trimmed);
+    if (match?.[1]) return `${match[1].replace(/\\"/g, '"')}…`;
+  }
+  return trimmed;
+}
+
 function isStatus(value: string | null): value is RunStatus {
   return value !== null && (RUN_STATUSES as readonly string[]).includes(value);
 }
@@ -155,7 +177,7 @@ function parseRun(value: Json): MandateRun | null {
     completedAt: str(value.completed_at),
     status: isStatus(status) ? status : "running",
     rawStatus: str(value.raw_status),
-    error: str(value.error),
+    error: readableError(str(value.error)),
     ranById: str(value.ran_by_id),
     ranByName: str(value.ran_by_name),
     ranByKind: value.ran_by_kind === "system" ? "system" : "person",

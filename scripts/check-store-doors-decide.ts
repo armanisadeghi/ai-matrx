@@ -40,7 +40,8 @@
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { loadDbEnv } from "./lib/direct-db";
 import { openGateDb, tryGateLock } from "./lib/gate-db";
-import { CONTENTION_BACKOFF, censusWithPatience } from "./lib/census-with-patience";
+import { CONTENTION_BACKOFF, censusWithPatience, type Measured } from "./lib/census-with-patience";
+import { hostname } from "node:os";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 function fail(message: string): never {
@@ -853,6 +854,15 @@ async function refusalOnlyIsInstalled(client: Awaited<ReturnType<typeof openGate
   return Boolean(r.rows[0]?.here);
 }
 
+/**
+ * THE STATEMENT BUDGET OF THE TWO SLOW CENSUSES (lane DOORS-GUARD-CONNECTION, 2026-09-27).
+ * Nine minutes: under production's 10-minute `transaction_timeout`, which terminates the
+ * connection rather than cancelling the statement. A census past this is cancelled (57014) and
+ * reported unmeasured by name while every other census still prints its verdict.
+ */
+const CENSUS_BUDGET_MS = 540_000;
+const CENSUS_BUDGET = `${CENSUS_BUDGET_MS / 1000}s`;
+
 async function main(): Promise<void> {
   const selfTest = process.argv.includes("--self-test");
   const exhaustive = process.argv.includes("--exhaustive");
@@ -868,19 +878,22 @@ async function main(): Promise<void> {
     );
   }
 
-  // THE GATE DATABASE HELPER (2026-09-25). Its ceiling is raised to 900 s BY NAME: census 12
-  // (`custom.shared_only_disagreements`) measured 30 s on the clone and 255-338 s on live under
-  // load, and census 13 (`custom.list_door_disagreements`) ~57 s; each asks the one ladder for
-  // every (member, record) pair, so it is a census by nature. What stops it stacking is the
-  // single-flight lock below, not a shorter clock that would turn a verdict into a crash.
-  const client = await openGateDb(env, {
-    gate: "check:store-doors-decide",
-    statementTimeoutMs: 900_000,
-    statementTimeoutReason:
-      "censuses 12 and 13 ask the one ladder for every (member, record) pair: 30 s on the clone, 255-338 s on live under load",
-  }).catch((error: unknown) => {
-    fail(`LIVE PULL FAILED - could not reach the database: ${String(error)}`);
-  });
+  // THE GATE DATABASE HELPER (2026-09-25). Its ceiling is raised BY NAME: census 12
+  // (`custom.shared_only_disagreements`) measured 30 s on the clone and 53-338 s on live, and
+  // census 13 (`custom.list_door_disagreements`) 37-108 s; each asks the one ladder for every
+  // (member, record) pair, so it is a census by nature. What stops it stacking is the
+  // single-flight lock, not a shorter clock. The ceiling is CENSUS_BUDGET (9 min), deliberately
+  // UNDER the database's 10-minute transaction_timeout — see GATE_DB_LIMITS.transactionTimeoutMs.
+  const connect = () =>
+    openGateDb(env, {
+      gate: "check:store-doors-decide",
+      statementTimeoutMs: CENSUS_BUDGET_MS,
+      statementTimeoutReason:
+        "censuses 12 and 13 ask the one ladder for every (member, record) pair: 30 s on the clone, 53-338 s on live under load",
+    }).catch((error: unknown) => {
+      fail(`LIVE PULL FAILED - could not reach the database: ${String(error)}`);
+    });
+  let client = await connect();
 
   try {
     if (selfTest) {
@@ -1077,7 +1090,7 @@ async function main(): Promise<void> {
         await client.query("begin");
         let redShared: Row[];
         try {
-          await client.query("set local statement_timeout = '900s'");
+          await client.query(`set local statement_timeout = '${CENSUS_BUDGET}'`);
           if (!(await tryGateLock(client, SHARED_ONLY_LOCK))) {
             fail(
               `SELF-TEST NOT MEASURED - another run is computing census 12 right now (advisory lock ` +
@@ -1305,125 +1318,171 @@ async function main(): Promise<void> {
       }
     }
 
+    // ── THE GREEN HALF: every census, one at a time, its verdict printed the moment it lands ──
+    //
+    // 🚨 WHY EACH CENSUS PRINTS AS IT FINISHES AND SURVIVES THE ONE BEFORE IT (lane
+    // DOORS-GUARD-CONNECTION, 2026-09-27). Three lanes in one morning watched this guard die on
+    // production with "Connection terminated unexpectedly" and NOT ONE LINE of verdict: every
+    // census's rows were held until the end and printed together, so a connection lost in
+    // census 12 threw away the eleven answers already computed. The postgres log named the killer
+    // five times that day — FATAL 25P04 "terminating connection due to transaction timeout" on
+    // `custom.shared_only_disagreements`, application_name gate:check:store-doors-decide: the
+    // login role's 10-minute `transaction_timeout` (aidream 1171) ENDS THE CONNECTION, and this
+    // guard had asked for a 900 s statement clock that could therefore never fire. Now:
+    //   - every census has a statement budget UNDER the transaction ceiling (CENSUS_BUDGET), so a
+    //     census that runs long is CANCELLED (57014) with the connection intact and named as
+    //     unmeasured, instead of taking the process with it;
+    //   - a census whose connection dies anyway is named unmeasured, the guard reconnects, and
+    //     every census after it still runs and still prints;
+    //   - each verdict is printed as it completes, with its own wall-clock time.
+    const unmeasured: string[] = [];
+    let ok = true;
+    const CONNECTION_LOST =
+      /Connection terminated|terminating connection|ECONNRESET|EPIPE|connection error|Client was closed|not queryable/i;
+    const measure = async (
+      name: string,
+      title: string,
+      run: () => Promise<Row[] | Measured<Row>>,
+      qualified = false,
+    ): Promise<Row[] | null> => {
+      const mark = Date.now();
+      try {
+        const out = await run();
+        const m: Measured<Row> = Array.isArray(out) ? { rows: out, unmeasured: null } : out;
+        console.log(`[TIME] ${name}: ${since(mark)}`);
+        if (m.unmeasured) {
+          unmeasured.push(m.unmeasured);
+          console.log(`[NOT MEASURED] ${title} - see above; this is not a pass.`);
+          return null;
+        }
+        if (!report(title, m.rows, qualified)) ok = false;
+        return m.rows;
+      } catch (err) {
+        const code = (err as { code?: string }).code ?? "";
+        const msg = err instanceof Error ? err.message : String(err);
+        const lost = code === "25P04" || code === "57P01" || CONNECTION_LOST.test(msg);
+        if (code !== "57014" && !lost) throw err;
+        const why =
+          code === "57014"
+            ? `${name}: ran past its ${CENSUS_BUDGET} statement budget and was cancelled (57014). The ` +
+              "connection is intact and every other census still runs. The budget sits under the " +
+              "database's 10-minute transaction_timeout on purpose — above it, the server kills the " +
+              "connection instead. A census this slow is a performance finding on the functions it calls."
+            : `${name}: the database connection died under it (${code ? `${code}: ` : ""}${msg}) after ` +
+              `${since(mark)}. The guard reconnected; every census after it still runs.`;
+        console.log(`[TIME] ${name}: ${since(mark)}`);
+        console.log(`[NOT MEASURED] ${title} - ${why}`);
+        unmeasured.push(why);
+        if (lost) {
+          await client.end().catch(() => undefined);
+          client = await connect();
+        }
+        return null;
+      }
+    };
+    const rowsOf = (sql: string) => async () => (await client.query<Row>(sql)).rows;
+
     const refusalOnlyHere = await refusalOnlyIsInstalled(client);
-    const callers = (await client.query<Row>(CALLER_CENSUS(DECIDERS, refusalOnlyHere))).rows;
-    const records = (await client.query<Row>(RECORD_CENSUS(DECIDERS))).rows;
-    const grants = (await client.query<Row>(GRANT_CENSUS)).rows;
-    const ladder = (await client.query<Row>(ONE_LADDER_CENSUS)).rows;
-    const declaredLadder = (
-      await client.query<Row>(DECLARED_LADDER_CENSUS(LADDER_RUNGS, refusalOnlyHere))
-    ).rows;
-    const refusalOnly = refusalOnlyHere
-      ? (await client.query<Row>(REFUSAL_ONLY_CENSUS)).rows
-      : [];
-    if (!refusalOnlyHere) {
+    await measure(
+      "census 1 - callers",
+      "client doors taking an organization id that never decide the caller",
+      rowsOf(CALLER_CENSUS(DECIDERS, refusalOnlyHere)),
+    );
+    await measure(
+      "census 2 - record writers",
+      "client doors that write a record without deciding that row",
+      rowsOf(RECORD_CENSUS(DECIDERS)),
+    );
+    await measure(
+      "census 3 - grants",
+      "declared doors whose grant or signature does not match the live catalog",
+      rowsOf(GRANT_CENSUS),
+    );
+    await measure(
+      "census 4 - one ladder",
+      "doors deciding a row with a ladder of their own instead of the one function",
+      rowsOf(ONE_LADDER_CENSUS),
+    );
+    await measure(
+      "census 5 - declared ladder",
+      "declared client doors whose body never goes through the one ladder",
+      rowsOf(DECLARED_LADDER_CENSUS(LADDER_RUNGS, refusalOnlyHere)),
+    );
+    if (refusalOnlyHere) {
+      await measure(
+        "census 18 - refusal_only",
+        "refusal_only doors whose body does something besides refuse (census 18)",
+        rowsOf(REFUSAL_ONLY_CENSUS),
+      );
+    } else {
       console.log(
         "[INFO] census 18 - platform.client_callable_door.refusal_only is not on this database, so " +
           "no door here can claim the word and none is exempted. Nothing to measure; not a pass.",
       );
     }
-    const declaredSwitch = (await client.query<Row>(DECLARED_SWITCH_CENSUS(true))).rows;
-    const tablePrivileges = (await client.query<Row>(TABLE_PRIVILEGE_CENSUS)).rows;
-    const closedSchemas = (await client.query<Row>(CLOSED_SCHEMA_CENSUS(true))).rows;
-    const rendering = (await client.query<Row>(IDENTITY_RENDERING_CENSUS)).rows;
-    const invokerDoors = (await client.query<Row>(INVOKER_DOOR_CENSUS(true))).rows;
-    const refusals = (await client.query<Row>(REFUSAL_CENSUS)).rows;
-    const doorNames = (await client.query<Row>(DOOR_NAME_CENSUS)).rows;
-
-    // CENSUS 12 — the three answers, live, in every organization that has said `shared_only`.
-    // `mirror-admits-less` is a failure only when census 7 is non-empty, so the two are read
-    // together rather than one of them excusing the other in prose.
-    // 🚨 IT SAYS ITS OWN CLOCK, INSIDE A TRANSACTION. This connection reaches the database
-    // through the TRANSACTION pooler, where a bare `SET` is not guaranteed to still be on the
-    // same server connection when the next statement runs — `set local` inside an explicit
-    // transaction is the only form that holds. Without it this census ran under the role's
-    // 30 s default and died as a CRASH rather than returning a verdict, which is what
-    // `[FAIL] canceling statement due to statement timeout` looked like on 2026-09-20.
-    const mark12 = Date.now();
-    const unmeasured: string[] = [];
-    const census12 = await censusWithPatience<Row>(
-      client,
-      "census 12 (the three answers in every shared_only organization)",
-      SHARED_ONLY_CENSUS(null),
-      "900s",
-      CONTENTION_BACKOFF,
-      SHARED_ONLY_LOCK,
+    await measure(
+      "census 6 - the store's switch",
+      "declared client doors that write a record without asking the store's switch",
+      rowsOf(DECLARED_SWITCH_CENSUS(true)),
     );
-    const sharedOnlyAll: Row[] = census12.rows;
-    if (census12.unmeasured) unmeasured.push(census12.unmeasured);
-    console.log(`[TIME] census 12 - the three answers in every shared_only organization: ${since(mark12)}`);
-    const mirrorNarrower = sharedOnlyAll.filter((r) => r.why?.startsWith("mirror-admits-less"));
-    const sharedOnly = sharedOnlyAll.filter(
-      (r) =>
-        SHARED_ONLY_NEVER.some((kind) => r.why?.startsWith(kind)) ||
-        (tablePrivileges.length > 0 && r.why?.startsWith("mirror-admits-less")),
+    const tablePrivileges = await measure(
+      "census 7 - table privileges",
+      "client roles holding a TABLE privilege in schema custom",
+      rowsOf(TABLE_PRIVILEGE_CENSUS),
     );
-    if (mirrorNarrower.length > 0 && tablePrivileges.length === 0) {
-      console.log(
-        `[INFO] ${mirrorNarrower.length} row(s) the store's doors admit through an arm above the ` +
-          "platform kernel the RLS mirror is generated from. Not a failure: census 7 is empty, so " +
-          "no policy built from that text decides a read. It becomes a failure the moment it is not.",
-      );
-    }
-
-    // CENSUS 13 — every list-shaped door against `custom.read_record`, per (member, record),
-    // live, in every organization the store is open in, under BOTH privacy settings. Then the
-    // shape no live organization has: one Table in two Homes, built through the product's own
-    // doors, censused at each setting, rolled back.
-    // It CALLS every door for every (member, record) rather than reading a predicate, so it is
-    // the slowest census here — ~57 s over the whole database today, against a server default
-    // that is shorter. 🚨 IT SAYS SO INSIDE A TRANSACTION: this connection reaches the database
-    // through the TRANSACTION pooler, where a bare `SET` is not guaranteed to still be on the
-    // same server connection when the next statement runs — `set local` inside an explicit
-    // transaction is the only form that holds. A census that dies on the clock reads as a crash
-    // rather than as a verdict.
-    const mark13 = Date.now();
-    await client.query("begin");
-    let listDoors: Row[];
-    try {
-      await client.query("set local statement_timeout = '900s'");
-      if (!(await tryGateLock(client, LIST_DOOR_LOCK))) {
-        const skipped =
-          `census 13 (every list-shaped door): SKIPPED - another run is computing it right now ` +
-          `(advisory lock "matrx-gate:${LIST_DOOR_LOCK}").`;
-        console.log(`[LOUD] ${skipped}`);
-        unmeasured.push(skipped);
-        listDoors = [];
-      } else {
-        listDoors = (await client.query<Row>(LIST_DOOR_CENSUS(null, null, exhaustive))).rows;
-      }
-    } finally {
-      await client.query("rollback").catch(() => undefined);
-    }
-    listDoors = [
-      ...listDoors,
-      ...(await t10Probe(client, "shared_only", null, exhaustive)),
-      ...(await t10Probe(client, "all_records", null, exhaustive)),
-    ];
-    console.log(
-      `[TIME] census 13 - every list-shaped door against custom.read_record` +
-        `${exhaustive ? " (--exhaustive: the doors themselves, every row)" : ""}: ${since(mark13)}`,
+    await measure(
+      "census 8 - closed schemas",
+      "functions a client may execute in a declared-closed schema with no door row at all",
+      rowsOf(CLOSED_SCHEMA_CENSUS(true)),
+      true,
+    );
+    await measure(
+      "census 9 - identity rendering",
+      "door rows whose stored signature is not what the catalog renders",
+      rowsOf(IDENTITY_RENDERING_CENSUS),
+      true,
+    );
+    await measure(
+      "census 11 - SECURITY INVOKER",
+      "client-executable functions in schema custom that are SECURITY INVOKER",
+      rowsOf(INVOKER_DOOR_CENSUS(true)),
+    );
+    await measure(
+      "census 14 - refusals",
+      "doors that refuse by telling the caller they may read a record the door never asked about",
+      rowsOf(REFUSAL_CENSUS),
+    );
+    await measure(
+      "census 17 - door names",
+      "doors whose refusal names a door the person never called",
+      rowsOf(DOOR_NAME_CENSUS),
     );
 
     // CENSUS 10 — the two seats, live, in a transaction that is always rolled back.
-    const probe = await twoSeatProbe(client, "viewer", "shared_only");
-    const twoSeat: Row[] = [
-      ...probe.wroteAnyway.map((name) => ({
-        function_name: name.replace(/^custom\./, ""),
-        identity_args: "shared at viewer",
-        why: "a person shared at VIEWER was allowed to write through this door - the Share dialog, "
-          + "the Access tab and custom.share_access all say viewer, so the door has to as well",
-      })),
-      ...(probe.readAfterRevoke
-        ? [{
-            function_name: "read_record",
-            identity_args: "share revoked",
-            why: "the share was revoked and the record still opened for her, in an organization "
-              + "whose custom/member_default_visibility is shared_only - a revoke that does not "
-              + "take effect on the next call is not a revoke",
-          }]
-        : []),
-    ];
+    await measure(
+      "census 10 - two seats",
+      "doors that took a write from somebody shared at viewer, or showed a revoked person the record",
+      async () => {
+        const probe = await twoSeatProbe(client, "viewer", "shared_only");
+        return [
+          ...probe.wroteAnyway.map((name) => ({
+            function_name: name.replace(/^custom\./, ""),
+            identity_args: "shared at viewer",
+            why: "a person shared at VIEWER was allowed to write through this door - the Share dialog, "
+              + "the Access tab and custom.share_access all say viewer, so the door has to as well",
+          })),
+          ...(probe.readAfterRevoke
+            ? [{
+                function_name: "read_record",
+                identity_args: "share revoked",
+                why: "the share was revoked and the record still opened for her, in an organization "
+                  + "whose custom/member_default_visibility is shared_only - a revoke that does not "
+                  + "take effect on the next call is not a revoke",
+              }]
+            : []),
+        ];
+      },
+    );
 
     // CENSUS 14 AND 15 — THE ONE LADDER PLANS ONCE (lane LADDER-PERF, 2026-09-20).
     //
@@ -1437,87 +1496,115 @@ async function main(): Promise<void> {
     // plpgsql. These two censuses are what keep it closed: the first walks the ladder's own
     // call graph, the second says every PARTITIONED entity table still has its generated,
     // plan-cached row probe.
-    const mark14 = Date.now();
-    const replanners = (
-      await client.query<Row>(
+    await measure(
+      "censuses 14+15 - the ladder plans once (re-planners)",
+      "functions the one ladder reaches that re-plan their body on every call",
+      rowsOf(
         `select f.fn as function_name, f.lang as identity_args, f.why || ' ' || f.remedy as why
            from custom.ladder_replanners() f order by f.fn`,
-      )
-    ).rows;
-    const staleProbes = (
-      await client.query<Row>(
+      ),
+      true,
+    );
+    await measure(
+      "censuses 14+15 - the ladder plans once (row probes)",
+      "partitioned entity or registry tables with no current plan-cached row probe",
+      rowsOf(
         `select s.what as function_name, 'generated probe' as identity_args,
                 s.detail || ' ' || s.remedy as why
            from platform.static_row_probes_stale() s order by s.what`,
-      )
-    ).rows;
-    console.log(`[TIME] censuses 14+15 - the ladder plans once: ${since(mark14)}`);
+      ),
+      true,
+    );
 
     // CENSUS 16 — the live kernel bodies against the recorded fingerprint.
-    const mark16 = Date.now();
-    const kernelDrift = (await client.query<Row>(KERNEL_FINGERPRINT_CENSUS)).rows;
-    console.log(`[TIME] census 16 - the kernel fingerprint against the live bodies: ${since(mark16)}`);
+    await measure(
+      "census 16 - kernel fingerprint",
+      "the recorded access-kernel fingerprint disagreeing with the live kernel bodies",
+      rowsOf(KERNEL_FINGERPRINT_CENSUS),
+      true,
+    );
 
-    const ok = [
-      report("client doors taking an organization id that never decide the caller", callers),
-      report("client doors that write a record without deciding that row", records),
-      report("declared doors whose grant or signature does not match the live catalog", grants),
-      report("doors deciding a row with a ladder of their own instead of the one function", ladder),
-      report("declared client doors whose body never goes through the one ladder", declaredLadder),
-      report("declared client doors that write a record without asking the store's switch", declaredSwitch),
-      report("client roles holding a TABLE privilege in schema custom", tablePrivileges),
-      report(
-        "functions a client may execute in a declared-closed schema with no door row at all",
-        closedSchemas,
-        true,
-      ),
-      report("door rows whose stored signature is not what the catalog renders", rendering, true),
-      report(
-        "client-executable functions in schema custom that are SECURITY INVOKER",
-        invokerDoors,
-      ),
-      report(
-        "doors that took a write from somebody shared at viewer, or showed a revoked person the record",
-        twoSeat,
-      ),
-      report(
-        "shared_only organizations where the one ladder, the read door and the RLS policy text do not agree",
-        sharedOnly,
-      ),
-      report(
-        "(member, record) pairs a list-shaped door answers differently from custom.read_record",
-        listDoors,
-        true,
-      ),
-      report(
-        "doors that refuse by telling the caller they may read a record the door never asked about",
-        refusals,
-      ),
-      report(
-        "doors whose refusal names a door the person never called",
-        doorNames,
-      ),
-      report(
-        "functions the one ladder reaches that re-plan their body on every call",
-        replanners,
-        true,
-      ),
-      report(
-        "partitioned entity or registry tables with no current plan-cached row probe",
-        staleProbes,
-        true,
-      ),
-      report(
-        "the recorded access-kernel fingerprint disagreeing with the live kernel bodies",
-        kernelDrift,
-        true,
-      ),
-      report(
-        "refusal_only doors whose body does something besides refuse (census 18)",
-        refusalOnly,
-      ),
-    ].every(Boolean);
+    // CENSUS 12 — the three answers, live, in every organization that has said `shared_only`.
+    // `mirror-admits-less` is a failure only when census 7 is non-empty, so the two are read
+    // together rather than one of them excusing the other in prose. It and census 13 run LAST:
+    // they are the two that cost minutes, and everything cheap has already printed its verdict
+    // by the time they start.
+    // 🚨 IT SAYS ITS OWN CLOCK, INSIDE A TRANSACTION (censusWithPatience): this connection
+    // reaches the database through the TRANSACTION pooler, where only `set local` inside an
+    // explicit transaction is guaranteed to govern the statement.
+    const who = (n: string) => `store-doors ${n}#${process.pid}@${hostname()}`;
+    await measure(
+      "census 12 - the three answers in every shared_only organization",
+      "shared_only organizations where the one ladder, the read door and the RLS policy text do not agree",
+      async () => {
+        const census12 = await censusWithPatience<Row>(
+          client,
+          "census 12 (the three answers in every shared_only organization)",
+          SHARED_ONLY_CENSUS(null),
+          CENSUS_BUDGET,
+          CONTENTION_BACKOFF,
+          SHARED_ONLY_LOCK,
+          { whoAmI: who("census 12") },
+        );
+        if (census12.unmeasured) return census12;
+        const mirrorNarrower = census12.rows.filter((r) => r.why?.startsWith("mirror-admits-less"));
+        const privileged = tablePrivileges === null || tablePrivileges.length > 0;
+        if (mirrorNarrower.length > 0 && !privileged) {
+          console.log(
+            `[INFO] ${mirrorNarrower.length} row(s) the store's doors admit through an arm above the ` +
+              "platform kernel the RLS mirror is generated from. Not a failure: census 7 is empty, so " +
+              "no policy built from that text decides a read. It becomes a failure the moment it is not.",
+          );
+        }
+        return census12.rows.filter(
+          (r) =>
+            SHARED_ONLY_NEVER.some((kind) => r.why?.startsWith(kind)) ||
+            (privileged && r.why?.startsWith("mirror-admits-less")),
+        );
+      },
+    );
 
+    // CENSUS 13 — every list-shaped door against `custom.read_record`, per (member, record),
+    // live, in every organization the store is open in, under BOTH privacy settings. Then the
+    // shape no live organization has: one Table in two Homes, built through the product's own
+    // doors, censused at each setting, rolled back. Three verdicts, each printed as it lands.
+    const listTitle = "(member, record) pairs a list-shaped door answers differently from custom.read_record";
+    await measure(
+      `census 13 - every list-shaped door against custom.read_record${exhaustive ? " (--exhaustive: the doors themselves, every row)" : ""}`,
+      listTitle,
+      () =>
+        censusWithPatience<Row>(
+          client,
+          "census 13 (every list-shaped door)",
+          LIST_DOOR_CENSUS(null, null, exhaustive),
+          CENSUS_BUDGET,
+          CONTENTION_BACKOFF,
+          LIST_DOOR_LOCK,
+          { whoAmI: who("census 13") },
+        ),
+      true,
+    );
+    await measure(
+      "census 13 - the two-Home fixture under shared_only",
+      `${listTitle} (two-Home fixture, shared_only)`,
+      () => t10Probe(client, "shared_only", null, exhaustive),
+      true,
+    );
+    await measure(
+      "census 13 - the two-Home fixture under all_records",
+      `${listTitle} (two-Home fixture, all_records)`,
+      () => t10Probe(client, "all_records", null, exhaustive),
+      true,
+    );
+
+    if (unmeasured.length > 0) {
+      console.error(
+        `\n[NOT MEASURED] ${unmeasured.length} census(es) could not be read:\n` +
+          unmeasured.map((line) => `  - ${line}`).join("\n") +
+          "\n  Every census printed [ OK ] above is a real verdict. This run proves nothing about the" +
+          "\n  unmeasured one(s) - that is not a pass - and it is not a door that decides nothing either.",
+      );
+    }
     if (!ok) {
       console.error(
         "\n  A door into schema `custom` that a signed-in caller may execute decides, FIRST:\n" +
@@ -1529,20 +1616,11 @@ async function main(): Promise<void> {
           "  anonymous doors decide with custom.anon_token_verify. Adding a door is adding one of\n" +
           "  those lines; there is no door that decides nothing.\n",
       );
-      // exitAfterDrain returns `never` (it always calls process.exit), so the `return`
-      // that used to follow it here was unreachable — TS7027 caught it as dead code.
       exitAfterDrain(1);
     }
     if (unmeasured.length > 0) {
       // NOT a door being wrong, and NOT a clean run. Its own exit code (2), so a caller can
       // tell "something in the store is wrong" from "we could not look".
-      console.error(
-        `\n[NOT MEASURED - contention] ${unmeasured.length} census(es) could not be read:\n` +
-          unmeasured.map((line) => `  - ${line}`).join("\n") +
-          "\n  Every OTHER census above is green. This run proves nothing about the unmeasured" +
-          "\n  one - it is not a pass - and it is not a door that decides nothing either. Run it" +
-          "\n  again when the database is quieter.",
-      );
       exitAfterDrain(2);
     }
     console.log(

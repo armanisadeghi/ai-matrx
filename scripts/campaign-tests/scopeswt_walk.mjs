@@ -12,6 +12,7 @@
 //   item      Anxiety Notes → display name "Comfort notes" → reload
 //   picker    /chat/new → the context lens lists Patients and Marisol Ortega
 //   inspector the context inspector on Marisol Ortega: both systems hand the agent the same bytes
+//   inspector390 the context inspector on Marisol Ortega at 390 (lane SCOPES-TAILS)
 //   mobile    the same pages at 390
 // Every step's database effect is checked by scripts/campaign-tests/scopeswt_walk_checks.sql (read-only).
 // Usage: node scripts/campaign-tests/scopeswt_walk.mjs <outDir>
@@ -188,7 +189,9 @@ try {
 
   if (PHASES.has("picker")) {
     await go("/chat/new");
-    const chip = page.getByRole("button", { name: /^HDG\b/ }).first();
+    // THE CHIP'S ACCESSIBLE NAME IS "Context: HDG · …" (LensChip's aria-label names what the lens holds);
+    // the first walk looked for a name starting "HDG" and never found it (lane SCOPES-TAILS).
+    const chip = page.getByRole("button", { name: /^Context: HDG\b/ }).first();
     const found = await until("lens chip", async () => (await chip.count()) > 0, 120000);
     if (found.v) await chip.click().catch(() => undefined);
     await settle(3000);
@@ -209,6 +212,22 @@ try {
     const body = await text();
     step({ step: "inspector", compared: Boolean(compared.v), byteIdentical: /Byte-identical/.test(body),
       says: (body.match(/Byte-identical[^.]{0,160}|\d+ difference[^.]{0,160}/) ?? [""])[0] });
+  }
+
+  if (PHASES.has("inspector390")) {
+    // THE CONTEXT INSPECTOR AT PHONE WIDTH (lane SCOPES-TAILS): the same compare, read on a 390 screen.
+    await page.setViewportSize({ width: 390, height: 844 });
+    const scopeId = process.env.WALK_SCOPE_ID;
+    const typeId = process.env.WALK_TYPE_ID;
+    await go(`/administration/scopes-context/context-inspector?org=${ORG_ID}${typeId ? `&scopeType=${typeId}` : ""}${scopeId ? `&scope=${scopeId}` : ""}`);
+    const compared = await until("compare 390", async () => /Byte-identical|identical|differences?/i.test(await text()), 180000);
+    await settle(4000);
+    await shot("context-inspector-diff-390");
+    const body = await text();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    step({ step: "inspector390", compared: Boolean(compared.v), byteIdentical: /Byte-identical/.test(body), horizontalOverflowPx: overflow,
+      says: (body.match(/Byte-identical[^.]{0,160}|\d+ difference[^.]{0,160}/) ?? [""])[0] });
+    await page.setViewportSize({ width: 1600, height: 1000 });
   }
 
   if (PHASES.has("mobile")) {

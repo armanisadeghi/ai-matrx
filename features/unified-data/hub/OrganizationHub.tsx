@@ -441,6 +441,23 @@ export function OrganizationHub({
     <div data-hub-root className="space-y-4">
       {scopeStrip}
 
+      {/* MAKING A TABLE, AND ONLY THAT (lane POST-PUBLISH-FE, VERIFIER-18 M3). FIRST, UNDER THE
+          STRIP (lane HANDOVER, 2026-09-27): it was the last thing on the page, below ten listings,
+          the inbox and the archive, so at 1600x900 an owner with no tables read "Make one below"
+          and saw no way to make one. The hub above
+          already lists this organization's tables, dashboards and booking pages, with what the app
+          keeps for itself behind Show everything; the package's home draws its own full lists
+          unless told otherwise, so it is told `makingOnly` and one page never lists the same tables
+          twice. */}
+      <TablesHome
+        makingOnly
+        onOpenTable={(tableId: string, dashboardId?: string | null) =>
+          router.push(
+            dashboardId ? `/data-v2/${tableId}?dashboard=${dashboardId}` : `/data-v2/${tableId}`,
+          )
+        }
+      />
+
       {HUB_CAPABILITIES.filter((capability) => capability.id !== "kept-by-the-app" || showEverything).map((capability) => (
         <HubListing
           key={capability.id}
@@ -481,20 +498,6 @@ export function OrganizationHub({
           <ArchivedPortals />
         </div>
       </section>
-
-      {/* MAKING A TABLE, AND ONLY THAT (lane POST-PUBLISH-FE, VERIFIER-18 M3). The hub above
-          already lists this organization's tables, dashboards and booking pages, with what the app
-          keeps for itself behind Show everything; the package's home draws its own full lists
-          unless told otherwise, so it is told `makingOnly` and one page never lists the same tables
-          twice. */}
-      <TablesHome
-        makingOnly
-        onOpenTable={(tableId: string, dashboardId?: string | null) =>
-          router.push(
-            dashboardId ? `/data-v2/${tableId}?dashboard=${dashboardId}` : `/data-v2/${tableId}`,
-          )
-        }
-      />
     </div>
   );
 }

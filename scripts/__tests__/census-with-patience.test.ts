@@ -11,7 +11,7 @@
 // untouched, and what these cases exercise is the one thing that is pure control flow —
 // how many times we ask, how long we wait, and what we say when contention wins.
 
-import { censusWithPatience, CONTENTION_BACKOFF } from "../lib/census-with-patience";
+import { censusWithPatience, CONTENTION_BACKOFF, describeHolder } from "../lib/census-with-patience";
 
 type Script = Array<{ throwCode?: string; rows?: unknown[] }>;
 
@@ -95,35 +95,84 @@ describe("a census that hits lock contention", () => {
   });
 });
 
-describe("single flight (2026-09-25, the live database freeze)", () => {
-  function lockClient(got: boolean) {
+describe("single flight (2026-09-25, the live database freeze; 2026-09-27, name and wait)", () => {
+  /**
+   * A client whose advisory lock is held for the first `heldFor` tries, by a backend the
+   * server names. `holder: null` is a holder that let go before it could be asked.
+   */
+  function lockClient(heldFor: number, holder: { pid: number; application_name: string; held_s: number } | null = {
+    pid: 4242,
+    application_name: "census 12#93355@lane-mac",
+    held_s: 75,
+  }) {
     const statements: string[] = [];
+    let tries = 0;
     return {
       statements,
+      tries: () => tries,
       query: async (sql: string) => {
         statements.push(sql);
-        if (sql.includes("pg_try_advisory_xact_lock")) return { rows: [{ got }] };
+        if (sql.includes("pg_try_advisory_xact_lock")) return { rows: [{ got: tries++ >= heldFor }] };
+        if (sql.includes("pg_locks")) return { rows: holder ? [holder] : [] };
         return { rows: sql === "select census" ? [{ n: 1 }] : [] };
       },
     };
   }
+  const NO_PAUSE = { pollMs: 0 } as const;
 
-  it("a second caller does not start the census: it skips and is UNMEASURED by name", async () => {
-    const c = lockClient(false);
-    const out = await censusWithPatience(c, "census 12", "select census", "900s", [], "census:x");
+  it("a second caller never starts a second copy: while the lock is held it does not run the census", async () => {
+    const c = lockClient(Number.POSITIVE_INFINITY);
+    const out = await censusWithPatience(c, "census 12", "select census", "540s", [], "census:x", {
+      lockWaitMs: 0,
+      ...NO_PAUSE,
+    });
     expect(out.rows).toEqual([]);
-    expect(out.unmeasured).toMatch(/SKIPPED - another run is computing this census/);
     expect(c.statements).not.toContain("select census");
     expect(c.statements.at(-1)).toBe("rollback");
   });
 
-  it("the caller that gets the lock runs the census inside the same transaction", async () => {
-    const c = lockClient(true);
-    const out = await censusWithPatience(c, "census 12", "select census", "900s", [], "census:x");
+  it("when it gives up, the UNMEASURED line NAMES the holder - pid, application name, how long", async () => {
+    const c = lockClient(Number.POSITIVE_INFINITY);
+    const out = await censusWithPatience(c, "census 12", "select census", "540s", [], "census:x", {
+      lockWaitMs: 0,
+      ...NO_PAUSE,
+    });
+    expect(out.unmeasured).toMatch(/SKIPPED/);
+    expect(out.unmeasured).toContain("backend pid 4242");
+    expect(out.unmeasured).toContain("census 12#93355@lane-mac");
+  });
+
+  it("it WAITS for the holder and then runs its own census - the lock costs it one census, not a verdict", async () => {
+    const c = lockClient(3);
+    const out = await censusWithPatience(c, "census 12", "select census", "540s", [], "census:x", {
+      lockWaitMs: 60_000,
+      ...NO_PAUSE,
+    });
+    expect(out.unmeasured).toBeNull();
+    expect(out.rows).toEqual([{ n: 1 }]);
+    expect(c.tries()).toBe(4);
+    // every wait is its own short transaction: nothing is held open while it waits
+    const begins = c.statements.filter((s) => s === "begin").length;
+    const rollbacks = c.statements.filter((s) => s === "rollback").length;
+    expect(begins).toBe(4);
+    expect(rollbacks).toBe(4);
+  });
+
+  it("a holder that let go before it could be named is said so, never left blank", async () => {
+    expect(describeHolder(null)).toMatch(/already let go/);
+  });
+
+  it("the caller that gets the lock runs the census inside the same transaction, stamped with who it is", async () => {
+    const c = lockClient(0);
+    const out = await censusWithPatience(c, "census 12", "select census", "540s", [], "census:x", {
+      whoAmI: "census 12#1@here",
+    });
     expect(out.unmeasured).toBeNull();
     expect(out.rows).toEqual([{ n: 1 }]);
     const lockAt = c.statements.findIndex((s) => s.includes("pg_try_advisory_xact_lock"));
-    expect(lockAt).toBeGreaterThan(c.statements.indexOf("begin"));
+    const stampAt = c.statements.findIndex((s) => s.includes("set_config('application_name'"));
+    expect(stampAt).toBeGreaterThan(c.statements.indexOf("begin"));
+    expect(stampAt).toBeLessThan(lockAt);
     expect(lockAt).toBeLessThan(c.statements.indexOf("select census"));
   });
 });

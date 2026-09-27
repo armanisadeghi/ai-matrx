@@ -1,0 +1,9 @@
+{
+  "file": "provisionlock_workspace_war_rooms_reads_through_its_bounded_lane.sql",
+  "sha256": "2965a4e0b8e37ed285fa9564dd95a231cdd5ab2c1cf11bcb09fe8fcc1752fae8",
+  "target": "clone",
+  "firstPolicyDdlToEndMs": 596,
+  "tables": [],
+  "measuredAt": "2026-09-27T16:19:05.681Z",
+  "note": "First policy statement to the end of the measure-pass transaction, measured on the dev clone by pnpm db:rehearse. That span is the sign-in freeze. Bound to the file's sha256: edit the file and this record stops answering for it."
+}

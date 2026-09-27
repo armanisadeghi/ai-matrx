@@ -112,6 +112,17 @@ describe("governClient", () => {
       governClient(recorder(), { gate: "g", statementTimeoutMs: 180_000, statementTimeoutReason: "a census" }),
     ).not.toThrow();
   });
+
+  it("refuses a statement ceiling at or above the database's transaction_timeout - that clock kills the CONNECTION", () => {
+    // 2026-09-27: check:store-doors-decide asked for 900 s under a 600 s transaction_timeout and
+    // died five times as "Connection terminated unexpectedly" (FATAL 25P04), never as a verdict.
+    const reason = { statementTimeoutReason: "a census" };
+    expect(() => governClient(recorder(), { gate: "g", statementTimeoutMs: 900_000, ...reason })).toThrow(/transaction_timeout/);
+    expect(() =>
+      governClient(recorder(), { gate: "g", statementTimeoutMs: GATE_DB_LIMITS.transactionTimeoutMs, ...reason }),
+    ).toThrow(/FATAL 25P04/);
+    expect(() => governClient(recorder(), { gate: "g", statementTimeoutMs: 540_000, ...reason })).not.toThrow();
+  });
 });
 
 describe("sessions", () => {

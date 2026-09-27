@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-27T15:59:43.519Z",
+  "generated_at": "2026-09-27T16:15:43.504Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3362,6 +3362,12 @@
       "checksum": "2a3bccf0a6228a6012ae42da21ad1980a69884f13f8fe778702289199c1442bd",
       "applied_at": "2026-09-26 03:15:21.633234+00"
     },
+    "migrations/campaign/provisionlock_a_stale_kernel_refuses_policy_generation.sql": {
+      "source": "matrx-frontend",
+      "filename": "provisionlock_a_stale_kernel_refuses_policy_generation.sql",
+      "checksum": "eb65cbefcf79e995bf1b1ff2fccb5bd89a873e91d4fe6c6637eb0927c729000f",
+      "applied_at": "2026-09-27 16:15:42.22409+00"
+    },
     "migrations/campaign/provisionlock_a_table_build_never_makes_sign_in_wait.sql": {
       "source": "matrx-frontend",
       "filename": "provisionlock_a_table_build_never_makes_sign_in_wait.sql",
@@ -3811,6 +3817,18 @@
       "filename": "scopeadmin2_the_platform_admin_edits_any_organizations_scopes_from_administration.sql",
       "checksum": "516563d6e3f585f1f080c16e755eebf6038438c7204a32308a2282db312e1512",
       "applied_at": "2026-09-25 23:12:07.380961+00"
+    },
+    "migrations/campaign/scopestails_a_template_is_applied_through_the_store_doors.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopestails_a_template_is_applied_through_the_store_doors.sql",
+      "checksum": "7d5d820faef0869333a321397e8a0447b0f0d02c2a63831315deae795546df14",
+      "applied_at": "2026-09-27 16:13:27.662673+00"
+    },
+    "migrations/campaign/scopestails_the_copy_carries_what_a_scope_type_and_a_field_say_about_themselves.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopestails_the_copy_carries_what_a_scope_type_and_a_field_say_about_themselves.sql",
+      "checksum": "8409b758ced944b740e995cab6adcf491b1d2dd04fea2573a63db2c6fb67154e",
+      "applied_at": "2026-09-27 16:13:49.320214+00"
     },
     "migrations/campaign/scopeswt_a_template_applies_and_a_value_brings_its_field.sql": {
       "source": "matrx-frontend",
