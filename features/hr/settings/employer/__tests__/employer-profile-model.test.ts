@@ -3,10 +3,13 @@ import {
   applicabilityFlags,
   buildHrEmployerScope,
   declarationPayload,
+  establishmentPayload,
   identityFromProfile,
   identityPayload,
   mergeIdentityDraft,
+  parseCreateEstablishments,
   parseDeclarations,
+  parseUpdateEstablishments,
   readAddress,
   readDeclarations,
 } from "../employer-profile-model";
@@ -152,5 +155,63 @@ describe("surface scope", () => {
     expect(loaded.has_unsaved_identity_changes).toBe(true);
     expect(String(loaded.employer_overview)).toContain('legal_name="Cedar Ridge Dental, PC"');
     expect(String(loaded.employer_overview)).not.toMatch(/\d{2}-\d{7}/);
+  });
+});
+
+describe("establishments (agent writes)", () => {
+  const J = [
+    { id: "j-ca", name: "California", jurisdiction_key: "us-ca" },
+    { id: "j-tx", name: "Texas", jurisdiction_key: "us-tx" },
+  ];
+  const existing = [
+    {
+      id: "e1",
+      name: "Irvine HQ",
+      address: {},
+      jurisdiction_id: "j-ca",
+      naics_code: null,
+      eeo1_establishment_id: null,
+      is_headquarters: true,
+      osha_establishment_name: null,
+      annual_average_employees: 12,
+      total_hours_worked: null,
+    },
+  ];
+
+  it("creates with a jurisdiction named by key or name and builds the door payload", () => {
+    const [a, b] = parseCreateEstablishments(
+      [
+        { name: "Austin Yard", jurisdiction: "texas", naics_code: "562111" },
+        { name: "Fresno Route", jurisdiction: "us-ca", address: { city: "Fresno", region: "ca" } },
+      ],
+      existing,
+      J,
+    );
+    expect(establishmentPayload(a)).toMatchObject({ name: "Austin Yard", jurisdiction_id: "j-tx", naics_code: "562111", address: {} });
+    expect(establishmentPayload(b).address).toMatchObject({ city: "Fresno", region: "CA" });
+  });
+
+  it("refuses duplicates, unknown jurisdictions, ids and bad codes — all at once", () => {
+    expect(() =>
+      parseCreateEstablishments(
+        [
+          { name: "irvine hq", jurisdiction: "California" },
+          { name: "Moon Base", jurisdiction: "Luna" },
+          { id: "x", name: "Z", jurisdiction: "Texas" },
+          { name: "Bad", jurisdiction: "Texas", naics_code: "abc" },
+        ],
+        existing,
+        J,
+      ),
+    ).toThrow(/Item 1: An establishment named "irvine hq" already exists.*Item 2: jurisdiction "Luna".*Item 3: a new establishment has no id.*Item 4: A NAICS code.*Nothing was changed\./);
+  });
+
+  it("updates only the fields sent and refuses unknown ids and empty changes", () => {
+    const [plan] = parseUpdateEstablishments([{ id: "e1", annual_average_employees: 14 }], existing, J);
+    expect(plan.changed).toEqual(["annual_average_employees"]);
+    expect(establishmentPayload(plan.input)).toMatchObject({ name: "Irvine HQ", jurisdiction_id: "j-ca", is_headquarters: true, annual_average_employees: "14" });
+    expect(() => parseUpdateEstablishments([{ id: "nope" }, { id: "e1" }], existing, J)).toThrow(
+      /Item 1: id must be.*Item 2: nothing to change on Irvine HQ.*Nothing was changed\./,
+    );
   });
 });
