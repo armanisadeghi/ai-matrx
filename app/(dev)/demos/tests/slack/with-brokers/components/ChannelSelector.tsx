@@ -7,10 +7,13 @@ import { SLACK_BROKER_IDS } from './BrokerSlackClient';
 import { SlackChannel } from "@/app/(dev)/demos/tests/slack/slackClientUtils";
 import { Hash, RefreshCw, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 export function ChannelSelector() {
   const dispatch = useAppDispatch();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<unknown>(null);
   
   // Get token and channel data from brokers
   const token = useAppSelector(state => 
@@ -69,6 +72,7 @@ export function ChannelSelector() {
         name: channel.name
       }));
       
+      setRefreshError(null);
       // Store channels in broker
       dispatch(brokerActions.setText({
         brokerId: SLACK_BROKER_IDS.channels.mappedItemId,
@@ -84,6 +88,7 @@ export function ChannelSelector() {
       }
     } catch (error) {
       console.error('Error refreshing channels:', error);
+      setRefreshError(error);
     } finally {
       setIsRefreshing(false);
     }
@@ -129,7 +134,18 @@ export function ChannelSelector() {
         </div>
       </div>
       
-      {channels.length === 0 && (
+      {refreshError && channels.length > 0 && (
+        <StaleDataNotice
+          hasData
+          what="your Slack channels"
+          onRetry={handleRefreshChannels}
+          retrying={isRefreshing}
+          detail={refreshError instanceof Error ? refreshError.message : null}
+        />
+      )}
+      {refreshError && channels.length === 0 ? (
+        <ReadFailure error={refreshError} what="your Slack channels" onRetry={handleRefreshChannels} />
+      ) : channels.length === 0 && (
         <div className="mt-3 text-sm text-slate-600 dark:text-slate-400">
           No channels found. Click refresh to load available channels.
         </div>

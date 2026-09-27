@@ -470,6 +470,7 @@ export default function ToolTestingClient() {
                 </Tooltip>
               ) : (
                 <Badge variant="destructive" className="h-5 text-[10px] px-1.5">
+                  {/* read-gate-exempt: the signed-in identity from the auth session, not a list read; says who is testing */}
                   No user
                 </Badge>
               )}

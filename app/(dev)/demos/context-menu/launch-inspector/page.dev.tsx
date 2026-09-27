@@ -434,6 +434,7 @@ export default function LaunchInspectorDemoPage() {
               </div>
             ) : (
               <p className="text-[11px] text-muted-foreground">
+                {/* read-gate-exempt: the picker's selection, not a read; a failed shortcut read is shown above by this page (sliceStatus failed branch) */}
                 No shortcut selected
               </p>
             )}
@@ -597,6 +598,7 @@ export default function LaunchInspectorDemoPage() {
             {summary === null && (
               <p className="flex items-center gap-1.5 rounded bg-warning/15 px-2 py-1.5 text-xs text-foreground">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                {/* read-gate-exempt: inspects this tab's in-memory agent instance in the redux store (a launch this page just made), not a read */}
                 No instance shell found for this conversation id — it was
                 destroyed (by this page or by closing its overlay).
               </p>
@@ -634,6 +636,7 @@ export default function LaunchInspectorDemoPage() {
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
+                    {/* read-gate-exempt: inspects this tab's in-memory agent instance in the redux store (a launch this page just made), not a read */}
                     No UI state for this instance.
                   </p>
                 )}
@@ -650,6 +653,7 @@ export default function LaunchInspectorDemoPage() {
                   </pre>
                 ) : (
                   <p className="text-sm text-muted-foreground">
+                    {/* read-gate-exempt: inspects this tab's in-memory agent instance in the redux store (a launch this page just made), not a read */}
                     No shell record.
                   </p>
                 )}
@@ -716,6 +720,7 @@ export default function LaunchInspectorDemoPage() {
                 </h2>
                 {contextEntries.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
+                    {/* read-gate-exempt: inspects this tab's in-memory agent instance in the redux store (a launch this page just made), not a read */}
                     No context entries emitted.
                   </p>
                 ) : (
@@ -770,6 +775,7 @@ export default function LaunchInspectorDemoPage() {
               </h2>
               {requests.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
+                  {/* read-gate-exempt: inspects this tab's in-memory agent instance in the redux store (a launch this page just made), not a read */}
                   No requests yet. With autoRun=false the instance waits in its
                   overlay for the user to trigger execution — submit there and
                   this panel updates live.

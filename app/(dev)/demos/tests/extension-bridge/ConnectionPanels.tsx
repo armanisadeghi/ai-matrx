@@ -299,6 +299,7 @@ export function ConnectionPanels({
                   </span>
                 </>
               ) : (
+                // read-gate-exempt: the signed-in identity from the auth session, not a list read; says whether anyone is signed in
                 <span>No active session</span>
               )}
             </div>

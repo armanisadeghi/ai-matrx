@@ -128,6 +128,7 @@ function FilterDemo({ data }: { data: PickerData }) {
         <div className="h-[264px] overflow-y-auto rounded-md border border-border scrollbar-thin">
           {filtered.length === 0 ? (
             <div className="flex h-full items-center justify-center px-4 text-center text-xs text-muted-foreground">
+              {/* read-gate-exempt: a filter over the page's picker data; the parent page renders the read failure and never mounts this demo then */}
               No project is linked to the selected context yet.
             </div>
           ) : (
