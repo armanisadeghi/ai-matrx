@@ -2633,8 +2633,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     idColumn: "id",
     ownerColumn: "created_by",
     isPublicColumn: null,
-    displayLabel: "Meet Meeting",
-    urlPathTemplate: "",
+    displayLabel: "Meeting",
+    urlPathTemplate: "/meet/{id}",
     rlsUsesHasPermission: true,
   },
   merge_field_provenance: {

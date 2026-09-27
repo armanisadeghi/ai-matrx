@@ -1930,8 +1930,8 @@
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": null,
-    "display_label": "Meet Meeting",
-    "url_path_template": "",
+    "display_label": "Meeting",
+    "url_path_template": "/meet/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
