@@ -115,7 +115,11 @@ export function HubFilterMenu({
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverAnchor asChild>{children}</PopoverAnchor>
-      <PopoverContent align="start" className="w-[min(22rem,calc(100vw-2rem))] p-0">
+      <PopoverContent
+        /* sizing: fixed — a searchable filter command list; a steady width keeps the list from jumping as the query narrows it */
+        align="start"
+        className="w-[min(22rem,calc(100vw-2rem))] p-0"
+      >
         <Command>
           <CommandInput placeholder="Filter by…" autoFocus />
           {partialNote ? (

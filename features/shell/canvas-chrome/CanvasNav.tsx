@@ -284,7 +284,7 @@ function CanvasNavMore({ children }: { children: ReactNode }) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent side="right" align="start" sizing="content" className="w-60 p-1.5">
+      <PopoverContent side="right" align="start" sizing="content" className="p-1.5">
         <p className="px-2.5 pb-1 pt-1.5 text-xs text-muted-foreground">Everything in AI Matrx</p>
         <div className="max-h-[70dvh] overflow-y-auto">
           {items.map((item) => {

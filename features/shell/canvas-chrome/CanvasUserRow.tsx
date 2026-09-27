@@ -105,7 +105,7 @@ function CanvasOrgDropUp({ onOpenChange }: { onOpenChange?: (open: boolean) => v
           <ChevronsUpDown className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         </button>
       </PopoverTrigger>
-      <PopoverContent side="top" align="end" sizing="content" className="w-64 p-1.5">
+      <PopoverContent side="top" align="end" sizing="content" className="p-1.5">
         <p className="px-2.5 pb-1 pt-1.5 text-xs text-muted-foreground">Organization</p>
         <div className="max-h-72 overflow-y-auto">
           {loading && listed.length === 0 ? (
@@ -128,6 +128,9 @@ function CanvasOrgDropUp({ onOpenChange }: { onOpenChange?: (open: boolean) => v
               <button
                 key={org.id}
                 type="button"
+                // The active organization is where the eye goes first: it is
+                // scrolled into view when the list opens, never below the fold.
+                ref={active ? (el) => el?.scrollIntoView({ block: "nearest" }) : undefined}
                 onClick={() => {
                   if (!active) selectOrganization(org.id, org.name);
                   setBoth(false);
