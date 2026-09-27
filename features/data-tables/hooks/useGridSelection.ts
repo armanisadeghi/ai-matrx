@@ -73,6 +73,8 @@ import {
 } from "@ai-matrx/design-system/data-table/grid-selection";
 import { gridToTsv } from "@ai-matrx/design-system/data-table/grid-clipboard";
 
+import { GRID_COMPANION_ATTR } from "@/features/data-tables/grid-companion";
+
 export type GridSelectionApi = {
   /** The anchor — the cell with the ring. */
   selected: CellAddress | null;
@@ -373,13 +375,16 @@ export function useGridSelection(args: {
   // it, and the next Delete or Cmd-Z appears to target a cell that is not
   // actually current any more. Losing focus must lose the selection.
   //
-  // Two exceptions, and only two:
+  // Three exceptions, and only three:
   //  - inside the grid itself, which manages its own selection;
   //  - inside a floating layer the grid OPENED (a choice chooser, a confirm
   //    dialog, a toast, a window panel such as the file picker an attachment
   //    cell opens). Those render in portals OUTSIDE the container, so a
   //    naive outside-click test would treat picking an option as clicking away
-  //    and tear down the very editor the user is answering.
+  //    and tear down the very editor the user is answering;
+  //  - on the grid's COMPANIONS: the shell's agent launcher (`GRID_COMPANION_ATTR`) and any host
+  //    window (`data-matrx-floating-layer`, an agent chat window). Opening the side chat to ask
+  //    about a cell is not clicking away from it (merged-grid review 2, fix lane F).
   //
   // `pointerdown` rather than `click`, so the selection clears on press and
   // cannot briefly appear active over a control the user has already moved to.
@@ -393,7 +398,7 @@ export function useGridSelection(args: {
       if (
         target instanceof Element &&
         target.closest(
-          '[data-radix-popper-content-wrapper],[role="dialog"],[role="listbox"],[role="menu"],[data-sonner-toaster],[data-window-panel-body-shell]',
+          `[data-radix-popper-content-wrapper],[role="dialog"],[role="listbox"],[role="menu"],[data-sonner-toaster],[data-window-panel-body-shell],[data-matrx-floating-layer],[${GRID_COMPANION_ATTR}]`,
         )
       ) {
         return;

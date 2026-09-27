@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";
+import { GRID_COMPANION_ATTR } from "@/features/data-tables/grid-companion";
 
 export const SurfaceAgentsPanelImpl = dynamic(
   () => import("./SurfaceAgentsPanelImpl"),
@@ -128,5 +129,12 @@ export function SurfaceAgentsHeaderButton({
 }: {
   isAuthenticated?: boolean;
 }) {
-  return isAuthenticated ? <SignedInAgentsButton /> : <GuestAgentsButton />;
+  // THE GRID'S COMPANION (merged-grid review 2, fix lane F): opening the page's agents to ask about
+  // the selected cell is not clicking away from the grid — both grids keep the selection through
+  // a press on this marker (`GRID_COMPANION_ATTR`). `contents` adds no box to the header row.
+  return (
+    <span {...{ [GRID_COMPANION_ATTR]: "" }} className="contents">
+      {isAuthenticated ? <SignedInAgentsButton /> : <GuestAgentsButton />}
+    </span>
+  );
 }
