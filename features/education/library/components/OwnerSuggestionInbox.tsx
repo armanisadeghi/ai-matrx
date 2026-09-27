@@ -13,6 +13,16 @@ import {
 import type { DeckSuggestionRow } from "../types";
 import { guardedSave } from "@/lib/save/guardedSave";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { EDUCATION_LIBRARY_SUGGESTIONS_SURFACE_NAME } from "@/features/surfaces/manifests/education-library-suggestions.manifest";
+import {
+  buildSuggestionsInboxScope,
+  parseUpdateSuggestionsValue,
+  type SuggestionAnswerPlan,
+} from "../suggestionsSurface";
 
 /** The deck owner's inbox of suggest-edits on their decks. Accept/decline
  *  routes through the owner-gated RPC. */
@@ -52,6 +62,68 @@ export function OwnerSuggestionInbox() {
     });
   };
 
+  // Surface `matrx-user/education-library-suggestions`: the inbox as loaded
+  // (getScope never fetches), plus `update_suggestions`, which answers open
+  // suggestions through the same action the Accept / Decline buttons call.
+  const getScope = () => buildSuggestionsInboxScope({ rows, error });
+  const answerHandlers = collectionWriteHandlers(
+    {
+      plural: "suggestions",
+      singular: "suggestion",
+      update: {
+        parse: (value) => {
+          try {
+            return parseUpdateSuggestionsValue(value, rows);
+          } catch (e) {
+            return refuseSurfaceWrite((e as Error).message);
+          }
+        },
+        run: async (plan: SuggestionAnswerPlan) => {
+          await resolveSuggestionAction(plan.row.id, plan.status);
+          return {
+            id: plan.row.id,
+            name: `suggestion on deck ${plan.row.resource_id}`,
+          };
+        },
+        nameOf: (plan: SuggestionAnswerPlan) => `suggestion ${plan.row.id}`,
+        changedOf: (plan: SuggestionAnswerPlan) => [`status → ${plan.status}`],
+      },
+    },
+    refuseSurfaceWrite,
+  );
+  const getWriteHandlers = () => ({
+    update_suggestions: {
+      validate: answerHandlers.update_suggestions.validate,
+      apply: async (value: unknown) => {
+        try {
+          return await answerHandlers.update_suggestions.apply(value);
+        } finally {
+          // Show what landed, as the buttons do.
+          await load();
+        }
+      },
+    },
+  });
+
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName={EDUCATION_LIBRARY_SUGGESTIONS_SURFACE_NAME}
+      getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
+    >
+      <NonEditableContextMenu
+        sourceFeature="education-flashcards"
+        surfaceName={EDUCATION_LIBRARY_SUGGESTIONS_SURFACE_NAME}
+        menuVersion={1}
+        getApplicationScope={getScope}
+        contentSource={{ type: "raw" }}
+      >
+        <div className="contents">{renderInbox()}</div>
+      </NonEditableContextMenu>
+    </SurfaceRuntimeProvider>
+  );
+
+  function renderInbox() {
   if (error) {
     return <p className="text-sm text-destructive">Failed to load: {error} <ErrorAlchemyMenu error={error} /></p>;
   }
@@ -126,4 +198,5 @@ export function OwnerSuggestionInbox() {
       })}
     </div>
   );
+  }
 }

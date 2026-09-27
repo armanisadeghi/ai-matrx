@@ -9,6 +9,19 @@ import { cn } from "@/lib/utils";
 import { DeckCard } from "./DeckCard";
 import { listPublicDecks } from "../service";
 import type { PublicDeck } from "../types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { EDUCATION_LIBRARY_COMMUNITY_SURFACE_NAME } from "@/features/surfaces/manifests/education-library-community.manifest";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
+import { forkSharedResource } from "@/utils/permissions/shareLinks";
+import { suggestEditAction } from "../actions";
+import {
+  buildCommunityLibraryScope,
+  parseCopyDecksValue,
+  parseCreateDeckSuggestionsValue,
+} from "../communitySurface";
 
 /**
  * Community library browse surface. Search + certified-only facet over public
@@ -49,7 +62,90 @@ export function LibraryBrowser({
     };
   }, [search, certifiedOnly, runQuery]);
 
+  // Surface `matrx-user/education-library-community`: what the page shows,
+  // read from render state (getScope never fetches — it is polled), plus the
+  // two things a person can do to someone else's deck here, through the same
+  // functions the buttons call: "Study a copy" (copy_decks) and "Suggest
+  // edit" (create_deck_suggestions).
+  const getScope = () =>
+    buildCommunityLibraryScope({
+      decks,
+      search,
+      certifiedOnly,
+      searching: isPending,
+      isSignedIn,
+      openSuggestionCount,
+    });
+
+  const guard = <T,>(parse: () => T): T => {
+    try {
+      return parse();
+    } catch (e) {
+      return refuseSurfaceWrite((e as Error).message);
+    }
+  };
+
+  const copyHandlers = collectionWriteHandlers(
+    {
+      plural: "decks",
+      singular: "deck",
+      create: {
+        parse: (value) =>
+          guard(() => parseCopyDecksValue(value, decks, isSignedIn)),
+        run: async (deck: PublicDeck) => {
+          const result = await forkSharedResource("fc_set", deck.id);
+          if (!result.success || !result.path)
+            throw new Error(result.error ?? "the copy could not be saved");
+          const copyId = result.path.split("/").filter(Boolean).pop() ?? "";
+          return { id: copyId, name: `Copy of ${deck.name}` };
+        },
+        nameOf: (deck: PublicDeck) => deck.name,
+        refusalFor: (e) =>
+          isOrganizationSelectionCancelled(e)
+            ? "The person closed the workspace picker, so no decks were copied. Ask which workspace the copies belong in."
+            : undefined,
+      },
+    },
+    refuseSurfaceWrite,
+  );
+
+  const suggestionHandlers = collectionWriteHandlers(
+    {
+      plural: "deck_suggestions",
+      singular: "deck suggestion",
+      create: {
+        parse: (value) =>
+          guard(() =>
+            parseCreateDeckSuggestionsValue(value, decks, isSignedIn),
+          ),
+        run: async (plan: { deck: PublicDeck; body: string }) => {
+          await suggestEditAction(plan.deck.id, plan.body);
+          return { id: plan.deck.id, name: `Suggestion on ${plan.deck.name}` };
+        },
+        nameOf: (plan: { deck: PublicDeck }) => `suggestion on ${plan.deck.name}`,
+      },
+    },
+    refuseSurfaceWrite,
+  );
+
+  const getWriteHandlers = () => ({
+    copy_decks: copyHandlers.create_decks,
+    create_deck_suggestions: suggestionHandlers.create_deck_suggestions,
+  });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={EDUCATION_LIBRARY_COMMUNITY_SURFACE_NAME}
+      getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
+    >
+    <NonEditableContextMenu
+      sourceFeature="education-flashcards"
+      surfaceName={EDUCATION_LIBRARY_COMMUNITY_SURFACE_NAME}
+      menuVersion={1}
+      getApplicationScope={getScope}
+      contentSource={{ type: "raw" }}
+    >
     <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8">
       <div className="flex items-center gap-3 mb-2">
         <LibraryIcon className="h-6 w-6 text-primary" />
@@ -129,5 +225,7 @@ export function LibraryBrowser({
         </div>
       )}
     </div>
+    </NonEditableContextMenu>
+    </SurfaceRuntimeProvider>
   );
 }
