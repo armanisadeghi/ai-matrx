@@ -33,6 +33,15 @@ export function MobileWindowHeader({
   onSetActivePane,
 }: MobileWindowHeaderProps) {
   const titleText = typeof title === "string" ? title : "Content";
+  // A RICH title is a control (the Chat window's agent picker), not a label.
+  // With a sidebar the toggle used to swallow it into a plain "Content" tab,
+  // so at phone width the control simply did not exist while the screen said
+  // "use the dropdown in the title bar" (verifier round 1, F-A1). It now sits
+  // beside the toggle, in this same strip — no new row.
+  const richTitle =
+    hasSidebar && title != null && typeof title !== "string" && typeof title !== "number"
+      ? title
+      : null;
   return (
     <div className="flex min-h-11 shrink-0 items-center gap-1.5 border-b border-border/50 bg-muted/40 px-2 select-none">
       {/* Close + Minimize */}
@@ -67,9 +76,9 @@ export function MobileWindowHeader({
       </div>
 
       {/* Center: sidebar toggle or title */}
-      <div className="flex-1 flex items-center justify-center min-w-0">
+      <div className="flex-1 flex items-center justify-center gap-1.5 min-w-0">
         {hasSidebar ? (
-          <div className="inline-flex rounded-lg bg-muted/60 p-0.5 text-xs">
+          <div className="inline-flex shrink-0 rounded-lg bg-muted/60 p-0.5 text-xs">
             <button
               type="button"
               className={cn(
@@ -100,6 +109,11 @@ export function MobileWindowHeader({
             {title ?? ""}
           </span>
         )}
+        {richTitle ? (
+          <div className="flex min-w-0 items-center overflow-hidden" data-window-mobile-title="">
+            {richTitle}
+          </div>
+        ) : null}
       </div>
 
       {/* Right actions */}
