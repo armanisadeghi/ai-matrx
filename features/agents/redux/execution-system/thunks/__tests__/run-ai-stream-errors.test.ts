@@ -19,6 +19,7 @@ describe("parseApiErrorBody", () => {
     ).toEqual({
       errorCode: "attachment_access_denied",
       serverMessage: "You do not have access to a file attached to this message.",
+      userMessage: null,
     });
   });
 
@@ -31,7 +32,28 @@ describe("parseApiErrorBody", () => {
     ).toEqual({
       errorCode: "attachment_access_denied",
       serverMessage: "You do not have access to a file attached to this message.",
+      userMessage: null,
     });
+  });
+
+  test("keeps the server's sentence for the person (user_message) — a refused run shows it, not the HTTP text", () => {
+    expect(
+      parseApiErrorBody({
+        error: "guest_limit_reached",
+        message: "Guest run limit reached",
+        user_message: "You've used your free runs.",
+      }),
+    ).toEqual({
+      errorCode: "guest_limit_reached",
+      serverMessage: "Guest run limit reached",
+      userMessage: "You've used your free runs.",
+    });
+    expect(
+      parseApiErrorBody({ error: "x", message: "m", details: { user_message: "Friendly." } }).userMessage,
+    ).toBe("Friendly.");
+    expect(
+      parseApiErrorBody({ detail: { code: "x", message: "m", user_message: "Nested." } }).userMessage,
+    ).toBe("Nested.");
   });
 
   test("keeps expected tenant enforcement out of system-error capture", () => {

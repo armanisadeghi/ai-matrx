@@ -131,18 +131,51 @@ export class ExpectedRequestConflictError extends Error {
 export interface ParsedApiErrorBody {
   errorCode: string | null;
   serverMessage: string | null;
+  /** The server's sentence for a PERSON (`user_message`), when it sent one. */
+  userMessage: string | null;
+}
+
+/**
+ * A request the server refused with a sentence for the person
+ * (`user_message`). `message` keeps the HTTP-level text as the detail; the
+ * request's `error.user_message` carries the friendly words, which the screen
+ * and the run record read first.
+ */
+export class ApiRefusalError extends Error {
+  override name = "ApiRefusalError" as const;
+  constructor(
+    message: string,
+    readonly userMessage: string,
+  ) {
+    super(message);
+  }
+}
+
+function userMessageOf(value: unknown): string | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const direct = record.user_message;
+  if (typeof direct === "string" && direct.trim()) return direct.trim();
+  const details = record.details;
+  if (details && typeof details === "object") {
+    const nested = (details as Record<string, unknown>).user_message;
+    if (typeof nested === "string" && nested.trim()) return nested.trim();
+  }
+  return null;
 }
 
 /** Read both production's top-level envelope and raw FastAPI's detail shape. */
 export function parseApiErrorBody(body: unknown): ParsedApiErrorBody {
   if (!body || typeof body !== "object") {
-    return { errorCode: null, serverMessage: null };
+    return { errorCode: null, serverMessage: null, userMessage: null };
   }
   const envelope = body as Record<string, unknown>;
   const detail = envelope.detail;
+  const userMessage = userMessageOf(envelope) ?? userMessageOf(detail);
   if (detail && typeof detail === "object") {
     const nested = detail as Record<string, unknown>;
     return {
+      userMessage,
       errorCode:
         typeof nested.code === "string"
           ? nested.code
@@ -156,9 +189,10 @@ export function parseApiErrorBody(body: unknown): ParsedApiErrorBody {
     };
   }
   if (typeof detail === "string") {
-    return { errorCode: null, serverMessage: detail };
+    return { errorCode: null, serverMessage: detail, userMessage };
   }
   return {
+    userMessage,
     errorCode: typeof envelope.error === "string" ? envelope.error : null,
     serverMessage:
       typeof envelope.message === "string" ? envelope.message : null,
@@ -514,9 +548,11 @@ export async function runAiStream(
       // rides in envelope `error`, in `detail.code`, and as a message prefix
       // — read all three so neither shape regresses silently.
       let errorCode: string | null = null;
+      let userMessage: string | null = null;
       try {
         const parsed = parseApiErrorBody(await response.json());
         errorCode = parsed.errorCode;
+        userMessage = parsed.userMessage;
         if (parsed.serverMessage) serverMessage = parsed.serverMessage;
         // Message-prefix fallback ("resume_conflict: …") — covers an envelope
         // that passes message but maps `error` to a generic status word.
@@ -638,6 +674,9 @@ export async function runAiStream(
           toast.error("Tool injection failed", { description: serverMessage });
         }
         throw new Error(`${classified.prefix}: ${serverMessage}`);
+      }
+      if (userMessage) {
+        throw new ApiRefusalError(`API error: ${serverMessage}`, userMessage);
       }
       throw new Error(`API error: ${serverMessage}`);
     }
@@ -829,6 +868,10 @@ export async function runAiStream(
             // (detach_on_disconnect). Say so, instead of implying the response
             // itself failed.
             ...(isConnectionLoss && { user_message: connectionLossMessage }),
+            // The server's own sentence for the person, when it refused.
+            ...(error instanceof ApiRefusalError && {
+              user_message: error.userMessage,
+            }),
           },
         }),
       );

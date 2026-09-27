@@ -92,3 +92,20 @@ it("a request that completed carrying a refusal payload is a failure, not a succ
     errorMessage: "You've used your free runs.",
   });
 });
+
+it("a refusal records the server's friendly words as the reason and the HTTP text as the detail", () => {
+  const outcome = runOutcome({
+    status: "error",
+    error: {
+      error_type: "client_error",
+      message: "API error: Guest run limit reached",
+      user_message: "You've used your free runs. Sign up to keep going.",
+    },
+  });
+  expect(outcome).toEqual({
+    kind: "failure",
+    errorType: "client_error",
+    message: "You've used your free runs. Sign up to keep going.",
+    detail: "API error: Guest run limit reached",
+  });
+});

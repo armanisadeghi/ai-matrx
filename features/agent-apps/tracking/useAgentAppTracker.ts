@@ -104,6 +104,9 @@ export function useAgentAppTracker(appId: string) {
               executionTimeMs: ms,
               errorType: outcome.errorType,
               errorMessage: outcome.message,
+              // The friendly words are the reason; the HTTP/technical text
+              // rides along as the detail.
+              ...(outcome.detail ? { metadata: { error_detail: outcome.detail } } : {}),
             });
           }
         },

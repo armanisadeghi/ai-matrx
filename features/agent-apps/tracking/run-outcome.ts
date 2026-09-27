@@ -19,7 +19,14 @@ interface RequestLike {
 
 export type RunOutcome =
   | { kind: "success" }
-  | { kind: "failure"; errorType: string; message: string }
+  | {
+      kind: "failure";
+      errorType: string;
+      /** What the person reads — the server's `user_message` first. */
+      message: string;
+      /** The technical text (`error.message`) when it differs — kept as detail. */
+      detail?: string;
+    }
   | { kind: "pending" }
   /** The person stopped it — recorded as unfinished, never as a failure. */
   | { kind: "cancelled" };
@@ -43,6 +50,10 @@ export function runOutcome(request: RequestLike | undefined): RunOutcome {
       kind: "failure",
       errorType: request.error.error_type || "refused",
       message: requestFailure(request) ?? "This run was refused.",
+      ...(request.error?.message?.trim() &&
+      request.error.message.trim() !== (requestFailure(request) ?? "")
+        ? { detail: request.error.message.trim() }
+        : {}),
     };
   }
   if (request.status === "complete") return { kind: "success" };
@@ -54,6 +65,10 @@ export function runOutcome(request: RequestLike | undefined): RunOutcome {
       kind: "failure",
       errorType: request.error?.error_type || request.status,
       message: requestFailure(request) ?? "This run could not finish.",
+      ...(request.error?.message?.trim() &&
+      request.error.message.trim() !== (requestFailure(request) ?? "")
+        ? { detail: request.error.message.trim() }
+        : {}),
     };
   }
   return { kind: "pending" };
