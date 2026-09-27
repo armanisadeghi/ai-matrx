@@ -234,6 +234,10 @@ export function TrashList({
           description: item.title ?? undefined,
         });
       }
+      // Re-read the rows, not just the counts: a restore can bring OTHER rows back with it
+      // (entity_undelete restores an archived parent first — a reply's comment, a file's
+      // folder), and a stale row would offer a Restore that then says "not in the trash".
+      void loadItems();
       void loadCounts();
       onRestoredRef.current?.(item);
     } catch (e) {
