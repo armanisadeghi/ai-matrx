@@ -148,7 +148,7 @@ The root layout. Reads pathname from `x-pathname` header (set by `proxy.ts`), fe
 
 Accepts only `userData: UserData`. Three regions:
 - **Left**: `<HamburgerButton>` — a `<label htmlFor="shell-mobile-menu">` (mobile only, hidden on desktop via CSS)
-- **Center**: `<div id="shell-header-center" />` — an empty DOM slot that `PageHeader`/`PageSpecificHeader` portal content into
+- **Center**: `<div id="shell-header-center" />` — an empty DOM slot that `PageHeader` portals content into
 - **Right**: `<UserMenuTrigger>` + a backdrop `<label>` + `<div class="shell-user-menu-panel">` containing `<UserMenuPanel>`
 
 ```6:30:features/shell/components/header/Header.tsx
@@ -226,11 +226,9 @@ This is the **canonical way** to put content in the header center slot from any 
 
 ---
 
-### `PageSpecificHeader` — The Older / Authenticated-Layout Pattern
+### One header, one overflow on a phone (2026-09-27)
 
-Found in `components/layout/new-layout/PageSpecificHeader.tsx`. This is an older pattern that tries both `shell-header-center` (SSR shell) and `page-specific-header-content` (authenticated layout fallback). It also contains **many pre-wired header portals** for specific features (Chat, Prompts, Notes, Recipes, Transcripts, Messages, etc.) that dynamically import their compact header components via `useEffect` + `import()`.
-
-**The two systems coexist**: `PageHeader` (in `features/shell/`) is the newer, cleaner approach. `PageSpecificHeader` (in `components/layout/`) is older and used by the `(authenticated)` layout routes. Both ultimately portal into `#shell-header-center` when in the `(a)` shell.
+`PageSpecificHeader` is **retired** — `PageHeader` is the only portal into `#shell-header-center`. A page's header row goes through `RouteHeader` (or the `EntityModeHeader` / `CrumbTrailHeader` templates); a row that cannot move wraps its actions in `HeaderActionsSlot`. Below 768px those actions fold into the shell's single ⋮ sheet and the title keeps the row. Guard: `pnpm check:bespoke-headers`.
 
 ---
 

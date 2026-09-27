@@ -55,12 +55,30 @@ export function findingsInSource(raw) {
   }
   if (!SHARED.test(source)) {
     for (const m of source.matchAll(/<PageHeader\b/g)) {
-      const rest = source.slice(m.index, m.index + 6000);
+      const rest = source.slice(m.index);
       const close = rest.indexOf("</PageHeader>");
-      const selfClose = rest.indexOf("/>");
-      const end = close === -1 ? selfClose : close;
+      const nextOpen = rest.indexOf("<PageHeader", 1);
+      let end = close;
+      if (close === -1 || (nextOpen !== -1 && nextOpen < close)) {
+        // Self-closing `<PageHeader desktop={…} />`: its `/>` at brace depth 0.
+        let depth = 0;
+        end = -1;
+        for (let i = 0; i < rest.length - 1; i += 1) {
+          const ch = rest[i];
+          if (ch === "{") depth += 1;
+          else if (ch === "}") depth -= 1;
+          else if (depth === 0 && ch === "/" && rest[i + 1] === ">") {
+            end = i + 2;
+            break;
+          }
+        }
+      }
       // A back chevron is the row's identity (RouteHeader's `left`), not an action.
-      const body = rest.slice(0, end).replace(/<ChevronLeftTapButton\b[\s\S]*?\/>/g, "");
+      // Controls wrapped in HeaderActionsSlot fold into the phone ⋮ — the sheet contract.
+      const body = rest
+        .slice(0, end)
+        .replace(/<(ChevronLeftTapButton|HeaderBack)\b[\s\S]*?\/>/g, "")
+        .replace(/<HeaderActionsSlot\b[\s\S]*?<\/HeaderActionsSlot>/g, "");
       if (end > 0 && CONTROL.test(body)) {
         hits.push({ line: source.slice(0, m.index).split("\n").length, kind: "PageHeader with actions" });
       }
@@ -95,6 +113,8 @@ function selfTest() {
   const shared = `export default () => <RouteHeader left={<span>T</span>} right={<TapTargetButton onClick={x}/>} />;`;
   const titleOnly = `export default () => <PageHeader><h1>Title</h1></PageHeader>;`;
   const legacy = `export default () => <PageSpecificHeader><div/></PageSpecificHeader>;`;
+  const propsForm = `export default () => <PageHeader desktop={<div><TapTargetButton onClick={x}/></div>} />;`;
+  const slotted = `export default () => <PageHeader><h1>T</h1><HeaderActionsSlot><TapTargetButton onClick={x}/></HeaderActionsSlot></PageHeader>;`;
   const commentOnly = `// injected via <PageHeader>, like AgentRunHeader\nexport const X = () => <div onClick={f}/>;`;
   const backOnly = `export default () => <PageHeader><ChevronLeftTapButton href="/x" ariaLabel="Back" /><h1>T</h1></PageHeader>;`;
   const ok =
@@ -103,7 +123,9 @@ function selfTest() {
     findingsInSource(titleOnly).length === 0 &&
     findingsInSource(legacy).length === 1 &&
     findingsInSource(backOnly).length === 0 &&
-    findingsInSource(commentOnly).length === 0;
+    findingsInSource(commentOnly).length === 0 &&
+    findingsInSource(slotted).length === 0 &&
+    findingsInSource(propsForm).length === 1;
   console.log(ok ? "[bespoke-headers] self-test PASS" : "[bespoke-headers] self-test FAIL");
   process.exit(ok ? 0 : 1);
 }

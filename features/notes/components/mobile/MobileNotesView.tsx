@@ -3,7 +3,6 @@
 import { noteDisplayLabel } from "@/features/notes/format";
 import React, { useState, useCallback, useMemo } from "react";
 import {
-  ChevronLeft,
   FileText,
   Eye,
   Save,
@@ -23,7 +22,9 @@ import {
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { fetchNoteContent } from "../../redux/thunks";
 import { useNoteAccess } from "../../hooks/useNoteAccess";
-import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
 import { cn } from "@/lib/utils";
 import MobileNotesList from "./MobileNotesList";
@@ -158,120 +159,25 @@ export default function MobileNotesView({
     <>
       {/* ── List header: "Notes" title + folder quick-filter dropdown ── */}
       {currentView === "list" && (
-        <PageSpecificHeader>
+        <PageHeader>
           <div className="flex items-center gap-2 h-full w-full">
-            {/* Folder quick-filter pill */}
-            <div className="relative">
-              <button
-                onClick={() => setFolderDropdownOpen((v) => !v)}
-                className={cn(
-                  "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors",
-                  filters.folder !== "all"
-                    ? "bg-primary/15 text-primary"
-                    : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted",
-                )}
-              >
-                {filters.folder === "all" ? (
-                  <Layers size={12} />
-                ) : (
-                  <FolderOpen size={12} />
-                )}
-                <span className="max-w-[90px] truncate">
-                  {filters.folder === "all" ? "All" : filters.folder}
-                </span>
-                <ChevronDown
-                  size={11}
-                  className={cn(
-                    "transition-transform",
-                    folderDropdownOpen && "rotate-180",
-                  )}
-                />
-              </button>
-
-              {folderDropdownOpen && (
-                <>
-                  {/* Backdrop to close */}
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setFolderDropdownOpen(false)}
-                  />
-                  {/* Dropdown panel */}
-                  <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[160px] rounded-xl border border-border/50 bg-background/95 backdrop-blur-xl shadow-xl py-1 overflow-hidden">
-                    {/* All Notes */}
-                    <button
-                      onClick={() => {
-                        setFilters((f) => ({ ...f, folder: "all" }));
-                        setFolderDropdownOpen(false);
-                      }}
-                      className={cn(
-                        "flex items-center gap-2.5 w-full px-3 py-2.5 text-sm transition-colors",
-                        filters.folder === "all"
-                          ? "text-primary bg-primary/8"
-                          : "text-foreground hover:bg-muted/60",
-                      )}
-                    >
-                      <Layers
-                        size={14}
-                        className="flex-shrink-0 text-muted-foreground"
-                      />
-                      <span className="flex-1 text-left truncate">
-                        All Notes
-                      </span>
-                      {filters.folder === "all" && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                      )}
-                    </button>
-
-                    {folderNames.length > 0 && (
-                      <div className="h-px bg-border/40 mx-2 my-0.5" />
-                    )}
-
-                    {folderNames.map((folder) => (
-                      <button
-                        key={folder}
-                        onClick={() => {
-                          setFilters((f) => ({ ...f, folder }));
-                          setFolderDropdownOpen(false);
-                        }}
-                        className={cn(
-                          "flex items-center gap-2.5 w-full px-3 py-2.5 text-sm transition-colors",
-                          filters.folder === folder
-                            ? "text-primary bg-primary/8"
-                            : "text-foreground hover:bg-muted/60",
-                        )}
-                      >
-                        <FolderOpen
-                          size={14}
-                          className="flex-shrink-0 text-muted-foreground"
-                        />
-                        <span className="flex-1 text-left truncate">
-                          {folder}
-                        </span>
-                        {filters.folder === folder && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+            <FolderFilterPill
+              folder={filters.folder}
+              folderNames={folderNames}
+              open={folderDropdownOpen}
+              setOpen={setFolderDropdownOpen}
+              onPick={(folder) => setFilters((f) => ({ ...f, folder }))}
+            />
           </div>
-        </PageSpecificHeader>
+        </PageHeader>
       )}
 
       {/* ── Editor header: back + title + view toggle + save ── */}
       {currentView === "editor" && selectedNote && (
-        <PageSpecificHeader>
+        <PageHeader>
           <div className="flex items-center gap-1.5 h-full w-full">
             {/* Back */}
-            <button
-              onClick={handleBack}
-              className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full hover:bg-muted/60 transition-colors text-foreground"
-              aria-label="Back to notes"
-            >
-              <ChevronLeft size={18} />
-            </button>
+            <ChevronLeftTapButton onClick={handleBack} ariaLabel="Back to notes" />
 
             {/* Title — the header names the record; it takes the free space */}
             <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
@@ -324,18 +230,20 @@ export default function MobileNotesView({
               {isDirty && !isSaving && !justSaved && (
                 <>
                   <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-warning animate-pulse" />
-                  <button
-                    onClick={handleSave}
-                    className="flex items-center justify-center w-7 h-7 rounded-full hover:bg-muted/60 transition-colors text-primary"
-                    aria-label="Save"
-                  >
-                    <Save size={14} />
-                  </button>
+                  <HeaderActionsSlot>
+                    <button
+                      onClick={handleSave}
+                      className="flex items-center justify-center w-7 h-7 rounded-full hover:bg-muted/60 transition-colors text-primary"
+                      aria-label="Save"
+                    >
+                      <Save size={14} />
+                    </button>
+                  </HeaderActionsSlot>
                 </>
               )}
             </div>
           </div>
-        </PageSpecificHeader>
+        </PageHeader>
       )}
 
       {/* ── Page container ── */}
@@ -394,5 +302,122 @@ export default function MobileNotesView({
         </div>
       </div>
     </>
+  );
+}
+
+/**
+ * The notes list's header control — the folder it is showing, and the switch
+ * to another. It is the header's identity (a selector, like a record-name
+ * dropdown), not an action, so it keeps the row on a phone.
+ */
+function FolderFilterPill({
+  folder,
+  folderNames,
+  open,
+  setOpen,
+  onPick,
+}: {
+  folder: string;
+  folderNames: string[];
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  onPick: (folder: string) => void;
+}) {
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={cn(
+          "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors",
+          folder !== "all"
+            ? "bg-primary/15 text-primary"
+            : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted",
+        )}
+      >
+        {folder === "all" ? (
+          <Layers size={12} />
+        ) : (
+          <FolderOpen size={12} />
+        )}
+        <span className="max-w-[90px] truncate">
+          {folder === "all" ? "All" : folder}
+        </span>
+        <ChevronDown
+          size={11}
+          className={cn(
+            "transition-transform",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+
+      {open && (
+        <>
+          {/* Backdrop to close */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+          />
+          {/* Dropdown panel */}
+          <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[160px] rounded-xl border border-border/50 bg-background/95 backdrop-blur-xl shadow-xl py-1 overflow-hidden">
+            {/* All Notes */}
+            <button
+              onClick={() => {
+                onPick("all");
+                setOpen(false);
+              }}
+              className={cn(
+                "flex items-center gap-2.5 w-full px-3 py-2.5 text-sm transition-colors",
+                folder === "all"
+                  ? "text-primary bg-primary/8"
+                  : "text-foreground hover:bg-muted/60",
+              )}
+            >
+              <Layers
+                size={14}
+                className="flex-shrink-0 text-muted-foreground"
+              />
+              <span className="flex-1 text-left truncate">
+                All Notes
+              </span>
+              {folder === "all" && (
+                <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+              )}
+            </button>
+
+            {folderNames.length > 0 && (
+              <div className="h-px bg-border/40 mx-2 my-0.5" />
+            )}
+
+            {folderNames.map((folder) => (
+              <button
+                key={folder}
+                onClick={() => {
+                  onPick(folder);
+                  setOpen(false);
+                }}
+                className={cn(
+                  "flex items-center gap-2.5 w-full px-3 py-2.5 text-sm transition-colors",
+                  folder === folder
+                    ? "text-primary bg-primary/8"
+                    : "text-foreground hover:bg-muted/60",
+                )}
+              >
+                <FolderOpen
+                  size={14}
+                  className="flex-shrink-0 text-muted-foreground"
+                />
+                <span className="flex-1 text-left truncate">
+                  {folder}
+                </span>
+                {folder === folder && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }

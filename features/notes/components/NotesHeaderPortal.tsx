@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ComponentType } from "react";
 import { usePathname } from "next/navigation";
-import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
+import PageHeader from "@/features/shell/components/header/PageHeader";
 
 interface NotesHeaderProps {
   onCreateNote: () => void;
@@ -11,7 +11,7 @@ interface NotesHeaderProps {
   onSortChange: (field: string, order: "asc" | "desc") => void;
 }
 
-/** Notes-only header portal — kept out of PageSpecificHeader.tsx so notes routes
+/** Notes-only header — kept in its own module so notes routes
  *  do not pull the prompts builder header graph into unrelated overlays. */
 export function NotesHeader(props: NotesHeaderProps) {
   const pathname = usePathname();
@@ -30,8 +30,8 @@ export function NotesHeader(props: NotesHeaderProps) {
   }
 
   return (
-    <PageSpecificHeader>
+    <PageHeader>
       <NotesHeaderCompact {...props} />
-    </PageSpecificHeader>
+    </PageHeader>
   );
 }

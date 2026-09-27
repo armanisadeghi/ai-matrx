@@ -25,6 +25,7 @@
 import { AudioLines, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { useMockRun } from "./useMockRun";
 import { Pipeline } from "./Pipeline";
@@ -70,7 +71,7 @@ export function RunConsole() {
             </p>
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+          <HeaderActionsSlot className="ml-auto flex shrink-0 items-center gap-2">
             {isDone && (
               <span className="hidden text-xs text-muted-foreground lg:inline">
                 Produced in <Elapsed startedAt={startedAt} stopped />
@@ -85,7 +86,7 @@ export function RunConsole() {
               <RotateCcw className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{isDone ? "Replay" : "Restart demo"}</span>
             </Button>
-          </div>
+          </HeaderActionsSlot>
         </div>
       </PageHeader>
 

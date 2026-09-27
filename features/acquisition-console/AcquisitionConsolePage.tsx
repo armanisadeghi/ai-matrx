@@ -25,6 +25,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { supabase } from "@/utils/supabase/client";
@@ -175,7 +176,7 @@ export function AcquisitionConsolePage() {
             What we have, what you are connected through, what is stuck
           </span>
         </div>
-        <div className="ml-auto flex shrink-0 items-center gap-3 text-xs">
+        <HeaderActionsSlot className="ml-auto flex shrink-0 items-center gap-3 text-xs">
           {data.rulebooks.length > 0 && (
             <select
               aria-label="Narrow to one Rulebook"
@@ -200,7 +201,7 @@ export function AcquisitionConsolePage() {
           >
             Refresh
           </Button>
-        </div>
+        </HeaderActionsSlot>
       </PageHeader>
 
       <div className="flex min-w-0 flex-col gap-6 px-3 pb-10 pt-[var(--shell-header-h)] sm:px-4">

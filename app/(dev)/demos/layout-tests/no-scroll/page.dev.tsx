@@ -2,17 +2,17 @@
 
 import AppLink from "@/components/navigation/AppLink";
 import { ArrowLeft } from 'lucide-react';
-import { PageSpecificHeader } from '@/components/layout/new-layout/PageSpecificHeader';
+import PageHeader from "@/features/shell/components/header/PageHeader";
 
 export default function NoScrollPage() {
   return (
     <>
-      <PageSpecificHeader>
+      <PageHeader>
         <AppLink href="/layout-tests" className="text-gray-700 dark:text-gray-300 flex items-center gap-1 text-xs hover:text-gray-900 dark:hover:text-gray-100">
           <ArrowLeft className="w-4 h-4" />
           Back
         </AppLink>
-      </PageSpecificHeader>
+      </PageHeader>
       
       <div className="h-full flex flex-col overflow-hidden">
         {/* Red section at top */}

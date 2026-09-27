@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { HtmlPageRecord } from "@/features/html-pages/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 import {
   ChevronLeftTapButton,
   ChevronRightTapButton,
@@ -692,7 +693,7 @@ export default function HtmlPageEditor({
           >
             {page.url}
           </span>
-          <div className="ml-auto shrink-0 flex items-center">
+          <HeaderActionsSlot className="ml-auto shrink-0 flex items-center">
             {nav.total > 1 && (
               <>
                 <ChevronLeftTapButton
@@ -746,7 +747,7 @@ export default function HtmlPageEditor({
                 onClick={() => void handleSave()}
               />
             )}
-          </div>
+          </HeaderActionsSlot>
         </div>
       </PageHeader>
 

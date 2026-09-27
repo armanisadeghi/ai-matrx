@@ -28,6 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 import HeaderBack from "@/features/shell/components/header/variants/shared/HeaderBack";
 import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
 
@@ -103,13 +104,14 @@ export default function ScannerSurface() {
             <HeaderBack onClick={() => router.back()} />
             <ScanLine className="h-4 w-4 shrink-0 text-primary" />
             <h1 className="truncate text-sm font-semibold">Scan to PDF</h1>
-            <div className="ml-auto flex shrink-0 items-center gap-1">
-              {session.uploadingCount > 0 && (
-                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  saving {session.uploadingCount}
-                </span>
-              )}
+            {/* Status stays in the row; only the action folds into the phone ⋮. */}
+            {session.uploadingCount > 0 && (
+              <span className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                saving {session.uploadingCount}
+              </span>
+            )}
+            <HeaderActionsSlot className="ml-auto flex shrink-0 items-center gap-1">
               {!empty && (
                 <Button
                   variant="ghost"
@@ -121,7 +123,7 @@ export default function ScannerSurface() {
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
-            </div>
+            </HeaderActionsSlot>
           </div>
         </PageHeader>
 

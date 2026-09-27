@@ -4,7 +4,7 @@ import { useState } from 'react';
 import AppLink from "@/components/navigation/AppLink";
 import { ArrowLeft, CheckCircle2, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PageSpecificHeader } from '@/components/layout/new-layout/PageSpecificHeader';
+import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 export default function FixedInputPage() {
@@ -12,7 +12,7 @@ export default function FixedInputPage() {
 
   return (
     <>
-      <PageSpecificHeader>
+      <PageHeader>
         <div className="flex items-center gap-2">
           <AppLink href="/layout-tests" className="text-gray-700 dark:text-gray-300 flex items-center gap-1 text-xs hover:text-gray-900 dark:hover:text-gray-100">
             <ArrowLeft className="w-4 h-4" />
@@ -21,7 +21,7 @@ export default function FixedInputPage() {
           <span className="text-gray-400 dark:text-gray-600">|</span>
           <span className="text-xs text-gray-700 dark:text-gray-300 font-semibold">Fixed Input Test</span>
         </div>
-      </PageSpecificHeader>
+      </PageHeader>
       
       <div className="h-full flex flex-col overflow-hidden bg-zinc-100 dark:bg-zinc-900">
 

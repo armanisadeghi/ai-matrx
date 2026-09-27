@@ -1,12 +1,1 @@
-[
-  "app/(core)/podcast/studio/run-e/_components/RunConsole.tsx",
-  "features/acquisition-console/AcquisitionConsolePage.tsx",
-  "features/html-pages/components/HtmlPageEditor.tsx",
-  "features/notes/components/NotesHeaderPortal.tsx",
-  "features/notes/components/mobile/MobileNotesView.tsx",
-  "features/page-extraction/data-review/ExtractionDatasetClient.tsx",
-  "features/pdf/scanner/components/ScannerSurface.tsx",
-  "features/pdf/scanner/components/desktop/ScannerDesktop.tsx",
-  "features/surfaces/admin/SurfacesAdminShell.tsx",
-  "features/war-room/components/room/RoomHeader.tsx"
-]
+[]

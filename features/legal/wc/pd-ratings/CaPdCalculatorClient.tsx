@@ -16,6 +16,7 @@ import {
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import {
@@ -190,13 +191,14 @@ export function CaPdCalculatorClient({
               </span>
             </div>
             <div />
-            <div className="flex items-center justify-end min-w-0">
+            {/* Sheet contract: on a phone this folds into the shell's one ⋮. */}
+            <HeaderActionsSlot className="flex items-center justify-end min-w-0">
               <TapTargetButton
                 icon={<MoreHorizontal className="h-4 w-4" />}
-                ariaLabel="More"
+                ariaLabel="PD Rating options"
                 onClick={() => setSheetOpen(true)}
               />
-            </div>
+            </HeaderActionsSlot>
           </div>
         }
       />

@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ModulePage } from "@/components/matrx/navigation/types";
-import { PageSpecificHeader } from "./PageSpecificHeaderPortal";
-
-export { PageSpecificHeader } from "./PageSpecificHeaderPortal";
+import PageHeader from "@/features/shell/components/header/PageHeader";
 
 interface ModuleHeaderProps {
   pages: ModulePage[];
@@ -32,8 +30,8 @@ export function ModuleHeader(props: ModuleHeaderProps) {
   }
 
   return (
-    <PageSpecificHeader>
+    <PageHeader>
       <ResponsiveModuleHeaderContent {...props} />
-    </PageSpecificHeader>
+    </PageHeader>
   );
 }

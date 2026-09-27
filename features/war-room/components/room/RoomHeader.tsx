@@ -49,6 +49,7 @@ import {
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import {
@@ -239,15 +240,21 @@ export function RoomHeader({
                   the room has a project. */}
               <div className="flex min-w-0 items-center gap-1.5">
                 {ready ? <ThreadSearchBox /> : null}
+                {/* Same working-context control as /chat — writes
+                    appContextSlice (Surface A). Global by design. */}
+                <ActiveContextLensChip align="end" className="min-w-0" />
+              </div>
+
+              {/* THE SHEET CONTRACT (page-pass shared defects, 2026-09-27):
+                  on a phone these fold into the shell's one ⋮ ("This page"),
+                  so the room's title keeps the row and there is no second
+                  overflow button beside the shell's. Desktop is unchanged. */}
+              <HeaderActionsSlot className="flex shrink-0 items-center gap-1.5">
                 {/* Whole-room copy + Groomer. The anchored-project export
                     below is unchanged and still renders when the room has a
                     project — this pair works for every room, project or not. */}
                 {ready ? <RoomCopyControls sessionId={sessionId} /> : null}
                 <RoomProjectCopyForAiButton sessionId={sessionId} />
-                {/* Same working-context control as /chat — writes
-                    appContextSlice (Surface A). Global by design. */}
-                <ActiveContextLensChip align="end" className="min-w-0" />
-              </div>
 
               {/* Desktop-only: everything else lives in the "⋯" menu. */}
               <div className="hidden sm:flex items-center gap-1.5 shrink-0">
@@ -376,6 +383,7 @@ export function RoomHeader({
                   onClick={() => setSheetOpen(true)}
                 />
               </div>
+              </HeaderActionsSlot>
 
               {/* Zero-size anchors for the overflow-launched popovers — the
                   content aligns to the end of the header row on any viewport. */}

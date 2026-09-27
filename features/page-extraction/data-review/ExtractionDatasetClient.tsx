@@ -57,6 +57,7 @@ import { cn } from "@/lib/utils";
 import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 import {
   getJob,
   updateJob,
@@ -933,35 +934,14 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
             ariaLabel="Back to all extractions"
           />
           <div className="ml-2 flex min-w-0 flex-1 items-center gap-1.5">
-            {renaming ? (
-              <Input
-                autoFocus
-                value={nameDraft}
-                onChange={(e) => setNameDraft(e.target.value)}
-                onBlur={() => void commitRename()}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void commitRename();
-                  if (e.key === "Escape") {
-                    setRenaming(false);
-                    setNameDraft(job?.name ?? "");
-                  }
-                }}
-                className="h-7 max-w-sm text-sm"
-                style={{ fontSize: "16px" }}
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={() => setRenaming(true)}
-                className="group flex min-w-0 items-center gap-1"
-                title="Rename"
-              >
-                <h1 className="truncate text-sm font-medium text-foreground">
-                  {job?.name ?? "Loading…"}
-                </h1>
-                <Pencil className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100" />
-              </button>
-            )}
+            <RenamableTitle
+              name={job?.name ?? null}
+              renaming={renaming}
+              nameDraft={nameDraft}
+              setNameDraft={setNameDraft}
+              setRenaming={setRenaming}
+              commitRename={() => void commitRename()}
+            />
             {job?.kind === "validation" && (
               <span className="rounded bg-secondary/15 px-1.5 py-0.5 text-[10px] font-medium text-secondary">
                 validation
@@ -969,7 +949,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
             )}
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center">
+          <HeaderActionsSlot className="ml-auto flex shrink-0 items-center">
             {job && (
               <span className="hidden sm:inline-flex">
                 <ContextStatusButton
@@ -1037,7 +1017,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
+          </HeaderActionsSlot>
         </div>
       </PageHeader>
 
@@ -1189,5 +1169,60 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
         />
       </div>
     </SurfaceRuntimeProvider>
+  );
+}
+
+/**
+ * The dataset's title — click to rename in place. It is the header's IDENTITY,
+ * not an action, so it stays in the row on a phone; the actions beside it fold
+ * into the ⋮ (HeaderActionsSlot).
+ */
+function RenamableTitle({
+  name,
+  renaming,
+  nameDraft,
+  setNameDraft,
+  setRenaming,
+  commitRename,
+}: {
+  name: string | null;
+  renaming: boolean;
+  nameDraft: string;
+  setNameDraft: (value: string) => void;
+  setRenaming: (value: boolean) => void;
+  commitRename: () => void;
+}) {
+  return (
+    <>
+      {renaming ? (
+        <Input
+          autoFocus
+          value={nameDraft}
+          onChange={(e) => setNameDraft(e.target.value)}
+          onBlur={commitRename}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commitRename();
+            if (e.key === "Escape") {
+              setRenaming(false);
+              setNameDraft(name ?? "");
+            }
+          }}
+          className="h-7 max-w-sm text-sm"
+          style={{ fontSize: "16px" }}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setRenaming(true)}
+          className="group flex min-w-0 items-center gap-1"
+          title="Rename"
+        >
+          <h1 className="truncate text-sm font-medium text-foreground">
+            {name ?? "Loading…"}
+          </h1>
+          <Pencil className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100" />
+        </button>
+      )}
+    </>
   );
 }

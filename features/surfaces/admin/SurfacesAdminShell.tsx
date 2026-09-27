@@ -5,7 +5,7 @@ import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
 import { Handle } from "@/features/resizable-panels/Handle";
 import { PanelControlProvider } from "@/features/resizable-panels/PanelControlProvider";
 import { RegisteredPanel } from "@/features/resizable-panels/RegisteredPanel";
-import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
+import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { SurfacesAgentHeaderControls } from "./SurfacesAgentHeaderControls";
@@ -47,14 +47,14 @@ export function SurfacesAdminShell({
 
   return (
     <PanelControlProvider initialLayouts={[defaultLayout]}>
-      <PageSpecificHeader>
+      <PageHeader>
         <SurfacesAgentHeaderControls
           agentId={agent.id}
           agentName={agent.name}
           backHref={backHref}
           basePath={basePath}
         />
-      </PageSpecificHeader>
+      </PageHeader>
 
       <div className="h-full overflow-hidden">
         {isMobile ? (
