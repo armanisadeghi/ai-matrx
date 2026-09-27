@@ -25,6 +25,7 @@ import { SurfaceMandatesSection } from "@/features/surfaces/components/chrome/Su
 import { SurfaceConversationsSection } from "@/features/surfaces/components/chrome/SurfaceConversationsSection";
 import { Badge } from "@/components/ui/badge";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -277,6 +278,25 @@ export default function SurfaceAgentsPanelImpl({
             onRunAgent={(agentId) => handleRun(activeName, agentId)}
             addLabel="Bind an agent to this page"
             emptyMessage="No agents bound yet. Bind one to run it here."
+          />
+        </div>
+      )}
+
+      {/* A UNIVERSAL host (Chat) has no page roster — any agent may be its
+          main one — but every OTHER agent run from here must still see and
+          work on the page (Arman, 2026-09-27). So offer any agent, launched
+          exactly like a bound one: with the page's live scope, in a window.
+          The page's own conversation never gets this (isPageOwnConversation). */}
+      {activeName && !surfaceAcceptsAgentBindings(activeName) && (
+        <div className="min-w-0 space-y-1">
+          <p className="text-[11px] text-muted-foreground">
+            Run any agent on this page. It opens in a window, sees everything
+            here and can work on it.
+          </p>
+          <AgentListDropdown
+            onSelect={(agentId: string) => handleRun(activeName, agentId)}
+            label="Run an agent on this page…"
+            compact
           />
         </div>
       )}

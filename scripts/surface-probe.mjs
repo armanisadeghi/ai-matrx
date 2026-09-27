@@ -322,8 +322,27 @@ async function runAgent(page, result) {
     await page.waitForTimeout(2000);
   }
   if (!(await openAgentsMenu(page))) agent.errors.push('Agents menu did not open');
-  if (!(await pointerClick(page, `[aria-label="Run ${opts.agentName}"]`)))
-    agent.errors.push(`no "Run ${opts.agentName}" button in the Agents menu (--agent-name)`);
+  if (!(await pointerClick(page, `[aria-label="Run ${opts.agentName}"]`))) {
+    // A universal host (Chat) lists no bound agents; it offers any agent
+    // through the agent picker instead.
+    const opened = await pointerClick(page, "[data-radix-popper-content-wrapper] button", "Run an agent on this page");
+    await page.waitForTimeout(2500);
+    const picked = opened
+      ? await page.evaluate((name) => {
+          const el = Array.from(document.querySelectorAll("[role=option], [cmdk-item], button, li"))
+            .filter((e) => (e.textContent || "").trim().startsWith(name))
+            .pop();
+          if (!el) return false;
+          for (const type of ["pointerdown", "mousedown", "pointerup", "mouseup", "click"]) {
+            const Ctor = type.startsWith("pointer") ? PointerEvent : MouseEvent;
+            el.dispatchEvent(new Ctor(type, { bubbles: true, cancelable: true }));
+          }
+          return true;
+        }, opts.agentName)
+      : false;
+    if (!picked)
+      agent.errors.push(`no "Run ${opts.agentName}" button and no agent picker offering it in the Agents menu (--agent-name)`);
+  }
   await page.waitForTimeout(6000);
   const box = page.locator("[data-agent-input-shell] textarea").first();
   if (!(await box.count())) {
