@@ -544,7 +544,7 @@ export const notesEditorManifest: SurfaceManifest = {
     "Note editor and notes management",
   readiness: "partial",
   readinessNote:
-    "create_notes / update_notes / delete_notes / note_scopes added 2026-09-27 (page-pass); unproven until a live surface:probe --agent run creates, updates and archives notes.",
+    "Live agent run 2026-09-27 proved create_notes (new + copy_of), update_notes, delete_notes (archive) and note_scopes with SQL read-back; still unproven live: note_scopes refusing an unknown scope before the approval card (fix 83bd5e4e6b).",
   label: "Notes",
   urlPattern: "/notes/[id]",
   intro: `<surface_intro>
