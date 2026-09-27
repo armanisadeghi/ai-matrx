@@ -16,6 +16,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarClock, PenLine, RotateCcw } from "lucide-react";
 
@@ -37,6 +38,20 @@ import { RunStartForm } from "../RunStartForm";
 import { RunStage } from "./RunStage";
 import { MasterworkRulesProvider } from "@/features/masterwork/rules-context/MasterworkRulesContext";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
+import { SegmentedControl } from "@ai-matrx/design-system";
+import { useRunViewPreference } from "../spatial/useRunViewPreference";
+
+/**
+ * The Board view — one `ssr:false` edge, fetched only when a viewer picks it
+ * (the spatial engine is browser-only and most viewers never open it).
+ */
+const WorkflowRunSpatialView = dynamic(
+  () => import("../spatial/WorkflowRunSpatialView"),
+  {
+    ssr: false,
+    loading: () => <div className="h-full animate-pulse bg-muted/30" />,
+  },
+);
 
 interface LoadedWorkflow {
   id: string;
@@ -91,6 +106,10 @@ export function WorkflowRunPage({
     setAttempt((n) => n + 1);
   }, []);
   const [showForm, setShowForm] = useState(false);
+  const showingRun =
+    !failure && workflow !== null && runId !== null && !showForm;
+  const [runView, setRunView] = useRunViewPreference(showingRun);
+  const boardMode = showingRun && runView === "board";
 
   // A run permalink knows its definition — that is how a `?run=` deep link and
   // a mid-run refresh restore the workflow they were started from.
@@ -193,6 +212,20 @@ export function WorkflowRunPage({
       }
       right={
         <div className="flex items-center">
+          {showingRun ? (
+            <SegmentedControl
+              size="sm"
+              className="mr-1"
+              value={runView}
+              onValueChange={(next) =>
+                setRunView(next === "board" ? "board" : "page")
+              }
+              data={[
+                { value: "page", label: "Page" },
+                { value: "board", label: "Board" },
+              ]}
+            />
+          ) : null}
           {runId ? (
             <TapTargetButton
               icon={<RotateCcw />}
@@ -233,6 +266,15 @@ export function WorkflowRunPage({
     );
   } else if (!workflow) {
     body = <LoadingBody />;
+  } else if (runId && !showForm && boardMode) {
+    body = (
+      <WorkflowRunSpatialView
+        runId={runId}
+        definitionId={workflow.id}
+        definition={workflow.definition}
+        workflowName={workflow.name}
+      />
+    );
   } else if (runId && !showForm) {
     body = (
       <RunStage
@@ -289,7 +331,13 @@ export function WorkflowRunPage({
     <MasterworkRulesProvider runId={runId}>
       {header}
       <div className="h-full overflow-hidden">
-        <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
+        <div
+          className={
+            boardMode
+              ? "h-full pt-[var(--shell-header-h)]"
+              : "h-full overflow-y-auto pt-[var(--shell-header-h)]"
+          }
+        >
           {body}
         </div>
       </div>
