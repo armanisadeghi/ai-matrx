@@ -19,15 +19,9 @@ jest.mock("@/lib/googlePicker", () => ({
 
 const chosenConnection: GoogleFormPickerConnection = {
   id: "chosen-connection",
-  provider_subject: "chosen-subject",
-  account_email: "chosen@example.com",
-  account_name: "Chosen account",
 };
 const otherConnection: GoogleFormPickerConnection = {
   id: "other-connection",
-  provider_subject: "other-subject",
-  account_email: "other@example.com",
-  account_name: "Other account",
 };
 
 beforeEach(() => {
@@ -35,7 +29,7 @@ beforeEach(() => {
   jest.mocked(pickGoogleForm).mockReset();
 });
 
-it("uses only the chosen connection's canonical Picker token and returns its identity", async () => {
+it("uses only the chosen connection's canonical Picker token and returns its ID", async () => {
   jest.mocked(getGoogleDrivePickerToken).mockResolvedValue("chosen-token");
   jest.mocked(pickGoogleForm).mockResolvedValue({
     id: "form-1",
@@ -48,7 +42,7 @@ it("uses only the chosen connection's canonical Picker token and returns its ide
     id: "form-1",
     name: "Customer survey",
     mimeType: GOOGLE_FORM_MIME_TYPE,
-    connection: chosenConnection,
+    connection_id: chosenConnection.id,
   });
   expect(getGoogleDrivePickerToken).toHaveBeenCalledWith(chosenConnection);
   expect(getGoogleDrivePickerToken).not.toHaveBeenCalledWith(otherConnection);
@@ -59,6 +53,36 @@ it("does not register anything when selection is cancelled", async () => {
   jest.mocked(getGoogleDrivePickerToken).mockResolvedValue("chosen-token");
   jest.mocked(pickGoogleForm).mockResolvedValue(null);
 
-  await expect(pickGoogleFormForConnection(chosenConnection)).resolves.toBeNull();
+  await expect(
+    pickGoogleFormForConnection(chosenConnection),
+  ).resolves.toBeNull();
   expect(getGoogleDrivePickerToken).toHaveBeenCalledWith(chosenConnection);
+});
+
+it("does not promote caller-supplied account labels into verified Form provenance", async () => {
+  jest.mocked(getGoogleDrivePickerToken).mockResolvedValue("other-token");
+  jest.mocked(pickGoogleForm).mockResolvedValue({
+    id: "form-2",
+    name: "Harbor Dental intake",
+    mimeType: GOOGLE_FORM_MIME_TYPE,
+    url: null,
+  } satisfies PickedGoogleForm);
+
+  const untrustedDisplayFields = {
+    ...otherConnection,
+    provider_subject: "caller-claimed-subject",
+    account_email: "caller-claimed@example.invalid",
+    account_name: "Caller claimed account",
+  };
+  const result = await pickGoogleFormForConnection(untrustedDisplayFields);
+
+  expect(result).toEqual({
+    id: "form-2",
+    name: "Harbor Dental intake",
+    mimeType: GOOGLE_FORM_MIME_TYPE,
+    connection_id: otherConnection.id,
+  });
+  expect(result).not.toHaveProperty("connection");
+  expect(result).not.toHaveProperty("provider_subject");
+  expect(result).not.toHaveProperty("account_email");
 });
