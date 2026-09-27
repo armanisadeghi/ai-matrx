@@ -9,6 +9,8 @@
  * The list is modelled on the best password managers: one identity line and
  * one concise supporting line. Values and full metadata belong in detail.
  */
+import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
@@ -215,6 +217,8 @@ export function VaultWorkspace({
   const isShared = scope.kind === "shared";
 
   const vault = useVault(scope, { orgAdmin });
+  /** The vault read's outcome — every count below says "—" when it failed. */
+  const vaultRead = readOf({ loading: vault.loading, error: vault.error });
   const { definitions } = useVaultDefinitions();
   const desktopWorkspace = useMediaQuery("(min-width: 1024px)");
 
@@ -414,6 +418,7 @@ export function VaultWorkspace({
               {principal.type === "user" ? (
                 <>
                   <VaultNavButton
+                    read={vaultRead}
                     active={scope.kind === "mine"}
                     icon={List}
                     label="My credentials"
@@ -424,6 +429,7 @@ export function VaultWorkspace({
                     }}
                   />
                   <VaultNavButton
+                    read={vaultRead}
                     active={favoritesOnly}
                     icon={Star}
                     label="Favorites"
@@ -437,6 +443,7 @@ export function VaultWorkspace({
                     onClick={() => setFavoritesOnly((value) => !value)}
                   />
                   <VaultNavButton
+                    read={vaultRead}
                     active={scope.kind === "shared"}
                     icon={Share2}
                     label="Shared with me"
@@ -449,6 +456,7 @@ export function VaultWorkspace({
                   {availableOrganizations.length > 0 && (
                     <>
                       <VaultNavButton
+                        read={vaultRead}
                         active={scope.kind === "organization"}
                         icon={Building2}
                         label="Organization"
@@ -490,6 +498,7 @@ export function VaultWorkspace({
                 </>
               ) : (
                 <VaultNavButton
+                  read={vaultRead}
                   active
                   icon={Building2}
                   label="Organization credentials"
@@ -504,6 +513,7 @@ export function VaultWorkspace({
                     Types
                   </p>
                   <VaultNavButton
+                    read={vaultRead}
                     active={family === "all"}
                     icon={KeyRound}
                     label="All types"
@@ -515,6 +525,7 @@ export function VaultWorkspace({
                   />
                   {familiesPresent.map((fam) => (
                     <VaultNavButton
+                      read={vaultRead}
                       key={fam}
                       active={family === fam}
                       icon={KeyRound}
@@ -696,10 +707,15 @@ export function VaultWorkspace({
 
               <div className="flex flex-wrap items-center justify-between gap-2 px-0.5">
                 <p className="text-xs text-muted-foreground">
-                  {filtered.length}
-                  {filtered.length === vault.items.length
-                    ? ""
-                    : ` of ${vault.items.length}`}{" "}
+                  <UntrustedCount
+                    value={
+                      filtered.length === vault.items.length
+                        ? filtered.length
+                        : `${filtered.length} of ${vault.items.length}`
+                    }
+                    read={vaultRead}
+                    label="Credentials"
+                  />{" "}
                   credential{filtered.length === 1 ? "" : "s"}
                 </p>
                 {canCreate && (
@@ -1349,12 +1365,15 @@ function VaultNavButton({
   icon: Icon,
   label,
   count,
+  read,
   onClick,
 }: {
   active: boolean;
   icon: typeof KeyRound;
   label: string;
   count: number | null;
+  /** The vault read behind `count` — a failed read shows "—", never 0. */
+  read: CountRead;
   onClick: () => void;
 }) {
   return (
@@ -1376,9 +1395,12 @@ function VaultNavButton({
         {label}
       </span>
       {count !== null && (
-        <span className="shrink-0 text-[10px] text-muted-foreground">
-          {count}
-        </span>
+        <UntrustedCount
+          className="shrink-0 text-[10px] text-muted-foreground"
+          value={count}
+          read={read}
+          label={label}
+        />
       )}
     </button>
   );

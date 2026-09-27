@@ -254,7 +254,7 @@ export function AuthenticatorWorkspace() {
             ) : (
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-muted-foreground">
-                  {loading
+                  {loading || error
                     ? "Your codes"
                     : `${entries.length} ${entries.length === 1 ? "authenticator" : "authenticators"}`}
                 </p>
