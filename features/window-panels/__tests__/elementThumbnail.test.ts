@@ -31,6 +31,9 @@ describe("captureElementThumbnail", () => {
       canvasWidth: 320,
       canvasHeight: 240,
       skipFonts: true,
+      // A cross-origin image never fails the capture (useScreenCapture).
+      imagePlaceholder: expect.stringMatching(/^data:image\//),
+      onImageErrorHandler: expect.any(Function),
     });
     expect(result).toBe(resultBlob);
   });
@@ -50,6 +53,9 @@ describe("captureElementThumbnail", () => {
       canvasWidth: 240,
       canvasHeight: 128,
       skipFonts: true,
+      // A cross-origin image never fails the capture (useScreenCapture).
+      imagePlaceholder: expect.stringMatching(/^data:image\//),
+      onImageErrorHandler: expect.any(Function),
     });
   });
 });
