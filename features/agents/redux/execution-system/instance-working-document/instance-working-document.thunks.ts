@@ -25,6 +25,7 @@
  *     (the agent's edit content, streamed as each ctx_patch lands — D9 fix).
  */
 
+import { toast } from "@/lib/toast";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ContextDeltaData } from "@/types/python-generated/stream-events";
 import { applyContextDeltaToContent } from "./contextDelta";
@@ -384,11 +385,13 @@ export const hydrateConversationDocumentsThunk = createAsyncThunk<
     try {
       links = await listConversationDocuments(conversationId);
     } catch (err) {
+      // A failed read REJECTS (RC-B12 r13): the bridge says the documents did
+      // not restore, instead of the conversation silently running without them.
       console.error("[working-document] hydrate: list links failed", {
         conversationId,
         err,
       });
-      return;
+      throw err;
     }
     // Restore the per-conversation scratch GATE (pure opt-in flag at the
     // deterministic gate id — never loads a doc; scratch content is user-global
@@ -1239,6 +1242,11 @@ export const syncWorkingDocumentFromAgentThunk = createAsyncThunk<
           "[working-document] failed to resync row after agent writeback",
           { conversationId, kind, docId: binding.id, err },
         );
+        // Said, not just logged (RC-B12 r13): the editor still shows the text
+        // from BEFORE the agent's edit.
+        toast.error(
+          "The agent edited this document, but the new version couldn't be loaded — reopen it to see the change.",
+        );
       }
       return;
     }
@@ -1259,6 +1267,9 @@ export const syncWorkingDocumentFromAgentThunk = createAsyncThunk<
         console.error(
           "[working-document] failed to resync bound note after agent writeback",
           { conversationId, kind, noteId: binding.id, err },
+        );
+        toast.error(
+          "The agent edited this note, but the new version couldn't be loaded — reopen it to see the change.",
         );
       }
       return;
@@ -1363,11 +1374,13 @@ export const openWorkspaceDocumentThunk = createAsyncThunk<
     try {
       doc = await getCxWorkingDocumentById(documentId);
     } catch (err) {
+      // A failed read REJECTS (RC-B12 r13) — `null` means "no such document",
+      // and the caller says the open failed instead of showing an empty tab.
       console.error("[working-document] openWorkspaceDoc: load failed", {
         documentId,
         err,
       });
-      return null;
+      throw err;
     }
     if (!doc) return null;
     // Scratchpads are user-global: their workspace scope is sp:<docId>, never
@@ -1499,11 +1512,12 @@ export const listAttachedDocumentTabsThunk = createAsyncThunk<
     try {
       links = await listConversationDocuments(conversationId);
     } catch (err) {
+      // A failed read REJECTS (RC-B12 r13) — never "no attached documents".
       console.error("[working-document] listAttachedTabs failed", {
         conversationId,
         err,
       });
-      return [];
+      throw err;
     }
     // A linked doc the hydrate path already ADOPTED as this conversation's
     // primary working slot — or the user's ACTIVE scratchpad (already a base

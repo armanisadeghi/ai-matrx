@@ -89,6 +89,7 @@ import { leaveQueueHref } from "./routes";
 import { useLeaveQueue, type LeaveQueueRow } from "./useLeaveQueue";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 /** THE VIEW LAW: every list declares its scope in words. */
 const SCOPES: { key: HrInboxScope; label: string; sentence: string }[] = [
@@ -555,6 +556,7 @@ export function LeaveQueueSurface() {
             getRowId={(row) => row.step_id}
             isLoading={queue.loading}
             pageSize={25}
+            read={readOf(queue, { what: "the time-off queue", onRetry: queue.reload })}
             emptyState={{
               title: "No time off is waiting on you",
               description:
@@ -673,6 +675,7 @@ export function LeaveQueueSurface() {
                 columns={columns}
                 getRowId={(row) => row.step_id}
                 pageSize={10}
+                read={readOf(queue, { what: "the time-off queue", onRetry: queue.reload })}
                 emptyState={{ title: "Nothing else open in this scope" }}
               />
               </NonEditableContextMenu>

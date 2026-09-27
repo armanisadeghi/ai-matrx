@@ -451,6 +451,12 @@ describe("a list primitive's emptyState waits for its read (RC-B12 round 13)", (
     // Gated above: the failure returns first.
     expect(props('const q = useTasks(); if (q.error) return <ReadFailure error={q.error} />; return <MatrxDataTable data={q.rows} isLoading={q.isLoading} emptyState={{ title: "No tasks yet" }} />;')).toBe(0);
     expect(props('const q = useTasks(); return q.isError ? <ReadFailure error={q.error} /> : <MatrxDataTable data={q.rows} isLoading={q.isLoading} emptyState={{ title: "No tasks yet" }} />;')).toBe(0);
+    // The empty state's own copy is gated once the primitive is told the read (no second finding).
+    expect(findUngatedEmptyStates('export function C(p: any) { const { rows, isLoading } = useTasks(); return <MatrxDataTable data={rows} isLoading={isLoading} read={readOf({ isLoading })} emptyState={{ title: p.x ? "No tasks found" : "Pick one" }} />; }').length).toBe(0);
+    // A page-state wrapper handed the error renders the failure instead of its children.
+    expect(props('const q = useTasks(); return <HrPageState loading={q.isLoading} error={q.error}><MatrxDataTable data={q.rows} isLoading={q.isLoading} emptyState={{ title: "No tasks yet" }} /></HrPageState>;')).toBe(0);
+    expect(props('const q = useTasks(); return <HrPageState loading={q.isLoading}><MatrxDataTable data={q.rows} isLoading={q.isLoading} emptyState={{ title: "No tasks yet" }} /></HrPageState>;')).toBe(1);
+    expect(props('const q = useTasks(); return <Section title="Tasks"><MatrxDataTable data={q.rows} isLoading={q.isLoading} emptyState={{ title: "No tasks yet" }} /></Section>;')).toBe(1);
   });
   it("self-test: rows that are a pure local value are not a read", () => {
     expect(props('return <MatrxDataTable data={p.rows} emptyState={{ title: "No rows" }} />;')).toBe(0);

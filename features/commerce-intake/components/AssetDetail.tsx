@@ -11,6 +11,7 @@
  * capture surface makes — the transition IS the contract (§2 policy 3).
  */
 
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Loader2, QrCode, RotateCw } from "lucide-react";
@@ -62,11 +63,16 @@ export function AssetDetail({ assetId }: { assetId: string }) {
     null,
   );
 
+  // A failed re-read after a change is said above the list (RC-B12 r13) —
+  // the identifiers on screen may no longer be current.
+  const [identifiersRefreshError, setIdentifiersRefreshError] = useState<unknown>(null);
   const reloadIdentifiers = useCallback(async () => {
     try {
       setIdentifiers(await listIdentifiers(assetId));
+      setIdentifiersRefreshError(null);
     } catch (err) {
       console.error("[commerce-intake] identifier reload failed", err);
+      setIdentifiersRefreshError(err ?? new Error("The identifiers read failed"));
     }
   }, [assetId]);
 
@@ -282,7 +288,14 @@ export function AssetDetail({ assetId }: { assetId: string }) {
       </PanelSection>
 
       <PanelSection title="Identifiers">
-        {identifiers.length === 0 ? (
+        {identifiersRefreshError != null && (
+          <StaleDataNotice
+            hasData={identifiers.length > 0}
+            what="this asset's identifiers"
+            onRetry={() => void reloadIdentifiers()}
+          />
+        )}
+        {identifiersRefreshError != null && identifiers.length === 0 ? null : identifiers.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No identifiers yet — scan a QR or type a serial in capture.
           </p>

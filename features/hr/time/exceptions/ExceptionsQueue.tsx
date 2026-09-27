@@ -70,6 +70,7 @@ import { HrTimeReadState, RefusalNotice } from "../shared/RefusalNotice";
 import { useHrMockCase, useHrTimeQuery } from "../shared/useHrTimeQuery";
 import { EXCEPTION_KIND_LABELS, RESOLUTION_LABELS } from "../shared/vocabulary";
 import { listAttendanceExceptions } from "./api";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const DEFAULT_PAGE_SIZE = 50;
 
@@ -267,6 +268,7 @@ export function ExceptionsQueue({
                   onResolved={queue.refetch}
                 />
               )}
+              read={readOf(queue, { what: "attendance exceptions" })}
               emptyState={{
                 title: "Nothing open here",
                 description:

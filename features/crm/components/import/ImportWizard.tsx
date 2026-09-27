@@ -10,6 +10,7 @@
 // exactly what will be created, what already exists (with a door to each
 // existing record), and what cannot be imported.
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -99,6 +100,10 @@ export function ImportWizard() {
   const [step, setStep] = useState<Step>("source");
   const [kind, setKind] = useState<PartyKind>("person");
   const [orgs, setOrgs] = useState<{ id: string; name: string }[]>([]);
+  // A failed organization read is said at the picker — never an empty list
+  // that reads as "you belong to none" (RC-B12 r13).
+  const [orgsError, setOrgsError] = useState<unknown>(null);
+  const [orgsAttempt, setOrgsAttempt] = useState(0);
   const [orgId, setOrgId] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [pastedText, setPastedText] = useState("");
@@ -124,14 +129,16 @@ export function ImportWizard() {
         const list = await getUserOrganizations();
         if (cancelled) return;
         setOrgs(list.map((o) => ({ id: o.id, name: o.name })));
+        setOrgsError(null);
       } catch (e) {
         console.error("[crm-import] failed to load organizations:", e);
+        if (!cancelled) setOrgsError(e ?? new Error("The organizations read failed"));
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [orgsAttempt]);
 
   const resolvedOrgId = orgId ?? activeOrgId ?? null;
   const selectedOrg = orgs.find(
@@ -413,6 +420,14 @@ export function ImportWizard() {
                     ))}
                   </SelectContent>
                 </Select>
+                {orgsError != null && (
+                  <ReadFailure
+                    error={orgsError}
+                    what="your organizations"
+                    onRetry={() => setOrgsAttempt((n) => n + 1)}
+                    className="m-0"
+                  />
+                )}
                 {selectedOrg && (
                   <EntityRef
                     token="organization"

@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { getRowsForClientSort } from "@/features/data-tables/service";
 import { isServiceFailure } from "@/features/data-tables/types";
 import React, { useState, useEffect } from "react";
@@ -95,6 +96,9 @@ export default function TableReferenceOverlay({
   const [copiedReference, setCopiedReference] = useState<string | null>(null);
   const [rows, setRows] = useState<TableRow[]>(preloadedRows);
   const [loadingRows, setLoadingRows] = useState(false);
+  // A failed row read is said at the picker — never an empty "Choose a row"
+  // list (RC-B12 r13).
+  const [rowsError, setRowsError] = useState<unknown>(null);
 
   // Load rows for selection if not preloaded
   const loadRows = async () => {
@@ -113,8 +117,10 @@ export default function TableReferenceOverlay({
           data: r.data,
         }));
       setRows(normalized);
+      setRowsError(null);
     } catch (err) {
       console.error("Error loading rows:", err);
+      setRowsError(err ?? new Error("The rows read failed"));
     } finally {
       setLoadingRows(false);
     }
@@ -372,6 +378,13 @@ export default function TableReferenceOverlay({
               </Label>
               {loadingRows ? (
                 <div className="text-sm text-gray-500">Loading rows...</div>
+              ) : rowsError != null ? (
+                <ReadFailure
+                  error={rowsError}
+                  what="this table's rows"
+                  onRetry={() => void loadRows()}
+                  className="m-0"
+                />
               ) : (
                 <Select
                   value={selectedRowId || ""}

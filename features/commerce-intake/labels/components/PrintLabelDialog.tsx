@@ -14,6 +14,7 @@
  *   deleted, freeing its slot in the live unique index.
  */
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -125,6 +126,10 @@ export function PrintLabelDialog({
   );
   const [source, setSource] = useState<string>(MINT_SINGLE);
   const [busy, setBusy] = useState(false);
+  // A failed batch read is said at the picker — the list is not "no
+  // pre-printed batches", it is unread (RC-B12 r13).
+  const [batchesError, setBatchesError] = useState<unknown>(null);
+  const [batchesAttempt, setBatchesAttempt] = useState(0);
 
   useEffect(() => {
     if (!open) return;
@@ -141,14 +146,16 @@ export function PrintLabelDialog({
         setBatches(withCodes);
         setAvailableByBatch(counts);
         setSource(withCodes[0]?.id ?? MINT_SINGLE);
+        setBatchesError(null);
       } catch (err) {
         console.error("[commerce-labels] batch picker load failed", err);
+        if (!cancelled) setBatchesError(err ?? new Error("The label batches read failed"));
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [open, organizationId]);
+  }, [open, organizationId, batchesAttempt]);
 
   const printOne = async (value: string) => {
     // A pool code prints its resolver URL; a legacy raw string prints as-is.
@@ -264,6 +271,14 @@ export function PrintLabelDialog({
                 <SelectItem value={MINT_SINGLE}>Mint a single code</SelectItem>
               </SelectContent>
             </Select>
+            {batchesError != null && (
+              <ReadFailure
+                error={batchesError}
+                what="your pre-printed label batches"
+                onRetry={() => setBatchesAttempt((n) => n + 1)}
+                className="m-0"
+              />
+            )}
           </div>
 
           <PrinterCertificationNotice

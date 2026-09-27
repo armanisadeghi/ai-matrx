@@ -36,6 +36,7 @@ import {
 } from "@ai-matrx/kit/url-state";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@/lib/text/asClause";
+import { readOf } from "@/components/read-state/ReadGate";
 
 export function TableImpactPanel() {
   const searchParams = useSearchParams();
@@ -246,17 +247,12 @@ export function TableImpactPanel() {
             noun: "dependent function",
           }}
           toolbar={{ search: true, searchPlaceholder: "Search dependent functions…" }}
+          read={readOf({ loading, error: readError }, { what: "the preflight", onRetry: () => void runImpact() })}
           emptyState={{
-            title: readError
-              ? "Preflight unavailable"
-              : hasRun
-                ? "No dependent functions found"
-                : "Choose a table and run preflight",
-            description: readError
-              ? "Retry the read before changing this table."
-              : hasRun
-                ? "No functions reference this table in the current preflight result."
-                : "Choose a schema and table above to inspect its dependent functions.",
+            title: hasRun ? "No dependent functions found" : "Choose a table and run preflight",
+            description: hasRun
+              ? "No functions reference this table in the current preflight result."
+              : "Choose a schema and table above to inspect its dependent functions.",
           }}
           detail={{ enabled: false }}
           copy={{

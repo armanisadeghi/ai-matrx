@@ -10,6 +10,7 @@
 // Company view: everyone who works / worked here (read-only rows that link
 // to the person).
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -80,6 +81,10 @@ function EmployerPicker({
 }) {
   const [search, setSearch] = useState("");
   const [options, setOptions] = useState<PartyRef[]>([]);
+  // A failed search is said under the box — never a silent "no matches"
+  // (RC-B12 r13).
+  const [searchError, setSearchError] = useState<unknown>(null);
+  const [searchAttempt, setSearchAttempt] = useState(0);
   const [open, setOpen] = useState(false);
   const generationRef = useRef(0);
 
@@ -94,14 +99,18 @@ function EmployerPicker({
             search,
             excludeId,
           });
-          if (generationRef.current === gen) setOptions(rows);
+          if (generationRef.current === gen) {
+            setOptions(rows);
+            setSearchError(null);
+          }
         } catch (e) {
           console.error("[crm] employer search failed:", e);
+          if (generationRef.current === gen) setSearchError(e ?? new Error("The company search failed"));
         }
       })();
     }, 200);
     return () => clearTimeout(timer);
-  }, [open, search, orgId, excludeId]);
+  }, [open, search, orgId, excludeId, searchAttempt]);
 
   if (selected) {
     return (
@@ -130,6 +139,14 @@ function EmployerPicker({
         placeholder="Search companies…"
         className="h-11 text-base sm:h-7 sm:text-xs"
       />
+      {searchError != null && (
+        <ReadFailure
+          error={searchError}
+          what="matching companies"
+          onRetry={() => setSearchAttempt((n) => n + 1)}
+          className="m-0 mt-1"
+        />
+      )}
       {open && options.length > 0 && (
         <ul className="absolute z-20 mt-1 max-h-44 w-full overflow-y-auto rounded-md border border-border bg-popover py-1 shadow-md">
           {options.map((option) => (

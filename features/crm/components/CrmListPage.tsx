@@ -1322,6 +1322,7 @@ export function CrmListPage({
                   showRow: false,
                   showToolbar: false,
                 }}
+                // read-gate-exempt: list.error swaps this for the failed-read state below and the banner above names the failure once
                 emptyState={
                   // A FAILED READ IS NOT AN EMPTY LIST — the same class the
                   // shared entity-list shell now states (one-resolution R-O1).

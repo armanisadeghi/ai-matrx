@@ -170,7 +170,8 @@ export interface ScrapedResult {
   organized_data?:
     | Array<{ type: string; level?: number; content: string }>
     | Record<string, unknown>;
-  structured_data?: Record<string, unknown>;
+  /** JSON-LD blocks as a LIST (`[]` for a page with none), or an object. */
+  structured_data?: Record<string, unknown> | unknown[];
   document_outline?: Array<{ type: string; level: number; content: string }>;
   tables?: unknown[];
   code_blocks?: unknown[];

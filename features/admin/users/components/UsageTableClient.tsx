@@ -26,6 +26,7 @@ import {
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { formatCount, formatUsd } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 type Timeframe = "all" | "30d" | "7d" | "24h";
 
@@ -431,6 +432,7 @@ export function UsageTableClient() {
           getRowId={(r) => r.user_id}
           isLoading={loading}
           pageSize={50}
+          read={readOf({ loading, error }, { what: "usage", onRetry: () => void load(timeframe) })}
           emptyState={{
             title: "No usage",
             description: "No AI usage in this timeframe.",

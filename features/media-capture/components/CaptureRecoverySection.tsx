@@ -18,6 +18,7 @@
  * partial file is NEVER presented as whole.
  */
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useCallback, useEffect, useState } from "react";
 import { History, Loader2, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -46,6 +47,10 @@ export function CaptureRecoverySection({
   onRecovered,
 }: CaptureRecoverySectionProps) {
   const [recoverables, setRecoverables] = useState<RecoverableJournal[]>([]);
+  // A failed listing is said (RC-B12 r13): an interrupted recording that
+  // silently isn't offered is a recording the person believes is gone.
+  const [listError, setListError] = useState<unknown>(null);
+  const [listAttempt, setListAttempt] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
@@ -53,15 +58,19 @@ export function CaptureRecoverySection({
     void (async () => {
       try {
         const found = await listRecoverable();
-        if (!cancelled) setRecoverables(found);
+        if (!cancelled) {
+          setRecoverables(found);
+          setListError(null);
+        }
       } catch (err) {
         console.error("[CaptureRecoverySection] recovery listing failed:", err);
+        if (!cancelled) setListError(err ?? new Error("The recovery listing failed"));
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [refreshToken]);
+  }, [refreshToken, listAttempt]);
 
   const remove = useCallback((captureId: string) => {
     setRecoverables((prev) =>
@@ -112,6 +121,16 @@ export function CaptureRecoverySection({
     [remove],
   );
 
+  if (listError != null && recoverables.length === 0) {
+    return (
+      <ReadFailure
+        error={listError}
+        what="your interrupted recordings"
+        onRetry={() => setListAttempt((n) => n + 1)}
+        className="m-0"
+      />
+    );
+  }
   if (recoverables.length === 0) return null;
 
   return (

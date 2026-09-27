@@ -686,10 +686,17 @@ export function ContextMenuV3({
   // Radix `asChild` is a strict one-element slot. Consumers may legitimately
   // wrap a surface plus sibling loading/empty states, so normalize that shape
   // to one layout-neutral element before either renderer reaches a Slot.
+  //
+  // THE ATTACH POINT (verify round 1, the ref-forwarding class): the menu's handlers
+  // and its selection zone need a real DOM element. A slot onto a COMPONENT that does
+  // not forward its ref (or spread its props) leaves none — the right-click menu and the
+  // selection toolbar then silently do nothing. So the menu slots only onto an intrinsic
+  // DOM element (`<div>`, `<tr>` — they always take a ref and props) and otherwise owns
+  // its own `display: contents` wrapper. Guard: __tests__/attach-point.test.tsx.
   const canSlotChildren =
     React.Children.count(children) === 1 &&
     React.isValidElement(children) &&
-    children.type !== React.Fragment;
+    typeof children.type === "string";
 
   // The version footer is gone (Arman, 2026-08-22: dev/testing info, not for
   // users). The surface name + revision now live in the surface submenu the

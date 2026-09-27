@@ -107,11 +107,14 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
             storedId = session.assistantConversationId;
           }
         } catch (err) {
-           
+          // A failed read REJECTS (RC-B12 r13): falling through minted a
+          // DUPLICATE conversation for a session that already had one — the
+          // exact thing this read exists to prevent.
           console.error(
             "[studio] ensureAssistantConversation: getSession failed",
             err,
           );
+          throw err;
         }
       }
 

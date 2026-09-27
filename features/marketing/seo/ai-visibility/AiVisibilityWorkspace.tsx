@@ -54,6 +54,7 @@ import {
 import { useAiVisibility } from "./useAiVisibility";
 import type { AiVisibilityEvidenceView } from "./evidence-views";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 interface ClaimRow extends AiVisibilityClaim {
   engine: string;
@@ -598,6 +599,7 @@ export function AiVisibilityWorkspace({
             description: (row) =>
               `${engineLabel(row.engine)} · ${row.verification_status}`,
           }}
+          read={readOf(evidence, { what: "AI visibility evidence" })}
           emptyState={{
             icon: <ShieldAlert className="h-8 w-8 text-muted-foreground" />,
             title: "No analyzed claims yet",
@@ -665,6 +667,7 @@ export function AiVisibilityWorkspace({
               </Button>
             ),
           }}
+          read={readOf(evidence, { what: "AI visibility evidence" })}
           emptyState={{
             icon: <SearchCheck className="h-8 w-8 text-muted-foreground" />,
             title: "No citation sources yet",
@@ -723,6 +726,7 @@ export function AiVisibilityWorkspace({
             description: (row) =>
               `${engineLabel(row.engine)} · ${row.category}`,
           }}
+          read={readOf(evidence, { what: "AI visibility evidence" })}
           emptyState={{
             icon: <ScanSearch className="h-8 w-8 text-muted-foreground" />,
             title: "No decision signals yet",
@@ -781,6 +785,7 @@ export function AiVisibilityWorkspace({
           description: (row) =>
             `${engineLabel(row.engine)} · ${formatDate(row.observed_at)}`,
         }}
+        read={readOf(evidence, { what: "AI visibility evidence" })}
         emptyState={{
           icon: (
             <MessageSquareQuote className="h-8 w-8 text-muted-foreground" />

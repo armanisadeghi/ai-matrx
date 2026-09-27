@@ -911,7 +911,10 @@ const UserTableViewer = ({
       if (isServiceFailure(result)) throw new Error(result.error);
       onTablesChange(result.data as unknown as UserTable[]);
     } catch (err) {
+      // The list lives in the parent; the failure is SAID here (RC-B12 r13)
+      // rather than leaving the sibling-table list silently unchanged.
       console.error("Error fetching tables:", err);
+      notify.error(`Couldn't refresh the list of tables: ${err instanceof Error ? err.message : "the read failed"}`);
     }
   };
 

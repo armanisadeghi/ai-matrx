@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import React, { useState, useEffect, useMemo } from "react";
 import { isPubliclyVisible } from "@/lib/visibility/labels";
 import { MobileOverlayWrapper } from "@/components/official/MobileOverlayWrapper";
@@ -13,7 +14,6 @@ import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   Select,
   SelectContent,
@@ -79,6 +79,8 @@ export function TemplateBrowserModal({
   );
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
+  // A failed tag read is said in the tag list — never "No tags found." (RC-B12 r13).
+  const [tagsError, setTagsError] = useState<unknown>(null);
   const [tagSearchOpen, setTagSearchOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -113,8 +115,10 @@ export function TemplateBrowserModal({
     try {
       const tags = await getAllTags();
       setAvailableTags(tags);
+      setTagsError(null);
     } catch (error) {
       console.error("Error loading tags:", error);
+      setTagsError(error ?? new Error("The tags read failed"));
     }
   };
 
@@ -229,7 +233,16 @@ export function TemplateBrowserModal({
             >
               <Command>
                 <CommandInput placeholder="Search tags..." />
-                <CommandEmpty>No tags found.</CommandEmpty>
+                {tagsError != null ? (
+                  <ReadFailure
+                    error={tagsError}
+                    what="the template tags"
+                    onRetry={() => void loadTags()}
+                    className="m-1"
+                  />
+                ) : (
+                  <CommandEmpty>No tags found.</CommandEmpty>
+                )}
                 <CommandGroup className="max-h-[200px] overflow-y-auto overscroll-contain">
                   {availableTags.map((tag) => (
                     <CommandItem

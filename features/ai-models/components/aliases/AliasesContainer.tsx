@@ -35,6 +35,7 @@ import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelList
 import { aiModelService } from "../../service";
 import type { AiModelAliasRow, AiModelRow } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const ALIAS_KINDS = ["alias", "deprecated", "latest"] as const;
 type AliasKind = (typeof ALIAS_KINDS)[number];
@@ -416,28 +417,8 @@ export default function AliasesContainer() {
               ? "bg-primary/10 hover:bg-primary/15"
               : undefined
           }
-          emptyState={
-            loadError
-              ? {
-                  title: "Could not load aliases",
-                  description: loadError,
-                  icon: <AlertTriangle className="h-8 w-8" />,
-                  action: (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => void load()}
-                    >
-                      <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-                      Retry
-                    </Button>
-                  ),
-                }
-              : {
-                  title: "No aliases yet",
-                  icon: <AlertTriangle className="h-8 w-8" />,
-                }
-          }
+          read={readOf({ loading, error: loadError }, { what: "model aliases", onRetry: () => void load() })}
+          emptyState={{ title: "No aliases yet" }}
           toolbar={{
             title: "Model Aliases",
             searchPlaceholder: "Search aliases…",

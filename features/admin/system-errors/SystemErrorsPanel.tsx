@@ -28,6 +28,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { components } from "@/types/python-generated/api-types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 type SystemErrorRow = components["schemas"]["SystemErrorRecord"];
 type RecentResponse =
@@ -529,13 +530,10 @@ export default function SystemErrorsPanel() {
             noun: "system error",
           }}
           toolbar={toolbar}
+          read={readOf({ isLoading, error }, { what: "system errors", onRetry: () => setSourceRevision((revision) => revision + 1) })}
           emptyState={{
-            title: errorMessage
-              ? "System errors unavailable"
-              : "No errors recorded in this window",
-            description: errorMessage
-              ? "The error ledger source failed. Refresh to retry."
-              : "Widen the source time window or clear the kind filter to double-check.",
+            title: "No errors recorded in this window",
+            description: "Widen the source time window or clear the kind filter to double-check.",
           }}
           copy={{
             label: "System error",

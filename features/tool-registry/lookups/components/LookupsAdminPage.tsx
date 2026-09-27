@@ -60,6 +60,7 @@ import {
 } from "./LookupsSurfaceRuntime";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 type TabKey = "clients" | "surfaces" | "executors";
 
@@ -379,6 +380,7 @@ function UiClientCrud() {
             onClick={() => setEditing(row)}
           />
         )}
+        read={readOf({ loading, error }, { what: "UI clients", onRetry: () => void load() })}
         emptyState={{
           title: "No clients yet",
           description: "Create a UI client to add one.",
@@ -640,6 +642,7 @@ function UiSurfaceCrud() {
               onClick={() => setEditing(row)}
             />
           )}
+          read={readOf({ loading, error }, { what: "UI surfaces", onRetry: () => void load() })}
           emptyState={{ title: "No surfaces match this filter" }}
         />
       </div>
@@ -889,6 +892,7 @@ function ToolExecutorCrud() {
             onClick={() => setEditing(row)}
           />
         )}
+        read={readOf({ loading, error }, { what: "tool executors", onRetry: () => void load() })}
         emptyState={{ title: "No tool executors" }}
       />
       {(editing || creating) && (

@@ -23,6 +23,7 @@ import type { ResearchTemplate } from "../types";
 import { fetchResearchTopics, fetchTemplates } from "./service";
 import { AGENT_CONFIG_KEYS } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 export interface ResearchTopicRow {
   id: string;
@@ -312,11 +313,8 @@ export function ProjectsOverview() {
             detail={{ enabled: false }}
             window={{ enabled: false }}
             coverage={RESEARCH_PROJECTS_COVERAGE}
-            emptyState={{
-              title: loadError
-                ? "Could not load research projects."
-                : "No research projects found.",
-            }}
+            read={readOf({ loading, error: loadError }, { what: "research projects", onRetry: () => void loadData() })}
+            emptyState={{ title: "No research projects found." }}
           />
         </div>
       </div>

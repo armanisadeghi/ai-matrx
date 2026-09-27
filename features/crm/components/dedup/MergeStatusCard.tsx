@@ -13,6 +13,7 @@
 //
 // THE DOOR LAW: every record named here opens.
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, GitMerge, Merge, Undo2 } from "lucide-react";
@@ -40,6 +41,9 @@ export function MergeStatusCard({
 }) {
   const [candidates, setCandidates] = useState<MergeCandidateWithParties[]>([]);
   const [merges, setMerges] = useState<PartyMergeWithParties[]>([]);
+  // A failed read is said, not rendered as "no duplicates, no merges"
+  // (RC-B12 r13) — the card used to vanish.
+  const [loadError, setLoadError] = useState<unknown>(null);
 
   const reload = useCallback(async () => {
     try {
@@ -49,9 +53,11 @@ export function MergeStatusCard({
       ]);
       setCandidates(cands);
       setMerges(hist);
+      setLoadError(null);
     } catch (e) {
-      // Non-fatal on the record page; the review queue is the full surface.
+      // Non-fatal on the record page — but said, never a missing card.
       console.error("[crm] merge status load failed:", e);
+      setLoadError(e ?? new Error("The merge status read failed"));
     }
   }, [party.id]);
 
@@ -96,6 +102,17 @@ export function MergeStatusCard({
       toast.error(e instanceof Error ? e.message : "Unmerge failed");
     }
   };
+
+  if (loadError != null && candidates.length === 0 && merges.length === 0) {
+    return (
+      <ReadFailure
+        error={loadError}
+        what="this record's duplicates and merges"
+        onRetry={() => void reload()}
+        className="m-0"
+      />
+    );
+  }
 
   if (
     !party.canonical_id &&

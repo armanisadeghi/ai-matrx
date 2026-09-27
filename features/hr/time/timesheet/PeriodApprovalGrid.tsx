@@ -68,6 +68,7 @@ import { RuleSnapshotProvider } from "../shared/RuleSnapshot";
 import { useHrMockCase, useHrTimeQuery } from "../shared/useHrTimeQuery";
 import { BulkApproveDialog, splitForBulk } from "./BulkApproveDialog";
 import { RawPunchesWindowBody } from "./RawPunchesWindowBody";
+import { readOf } from "@/components/read-state/ReadGate";
 
 /**
  * ⚠️ `wf.inbox.bulk_max` IS A KNOB AND THIS IS NOT IT (CLAUDE.md § limits are knobs).
@@ -283,6 +284,7 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
                 }}
                 mobileCardsBreakpoint="lg"
                 mobileCards={(row) => <MobileRow row={row} org={orgRef} />}
+                read={readOf(grid, { what: "timecards" })}
                 emptyState={{
                   title: "No timecards match these filters",
                   description:

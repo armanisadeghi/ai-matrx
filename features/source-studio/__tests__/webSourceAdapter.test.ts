@@ -197,6 +197,16 @@ describe("the scraper's page HTML + structured half → the scraper result scree
     expect(r.scraped_at).toBe("2026-09-02T00:00:00Z");
   });
 
+  it("keeps a JSON-LD list from the structured half", () => {
+    const blocks = [{ "@type": "Article" }];
+    const v = webSourceToScrape({
+      name: "n", url: null, capturedAt: null, original: PAGE_HTML,
+      structured: { ...SCRAPER_STRUCTURED, structured_data: blocks }, sections: SECTIONS,
+    });
+    expect(firstResult(v).structured_data).toEqual(blocks);
+    expect(firstResult(v).overview.has_structured_content).toBe(true);
+  });
+
   it("builds the outline from document_outline, dropping the unassociated bucket", () => {
     expect(Object.keys(r.outline)).toEqual(["H1: Growing Tomatoes", "H2: Soil"]);
   });

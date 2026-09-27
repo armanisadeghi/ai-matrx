@@ -18,6 +18,7 @@
  * hook doesn't apply the agent's edits itself.
  */
 
+import { toast } from "@/lib/toast";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -174,8 +175,15 @@ export function useStudioAssistant(
         }),
       );
       if (cancelled) return;
-      const error = (result as { error?: { name?: string } }).error;
-      setBlockedOnWorkspace(error?.name === "MandateOrganizationUnresolvedError");
+      const error = (result as { error?: { name?: string; message?: string } }).error;
+      const blocked = error?.name === "MandateOrganizationUnresolvedError";
+      setBlockedOnWorkspace(blocked);
+      if (error && !blocked) {
+        // Said, never a silently empty assistant column (RC-B12 r13).
+        toast.error(
+          `Couldn't open this session's assistant conversation${error.message ? `: ${error.message}` : ""}. Reopen the session to try again.`,
+        );
+      }
     })();
     return () => {
       cancelled = true;

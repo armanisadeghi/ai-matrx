@@ -28,6 +28,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 interface InvitationRequest {
   id: string;
@@ -260,6 +261,7 @@ export function InvitationsTableClient() {
             setNotes(row?.notes ?? "");
             setReason("");
           }}
+          read={readOf({ loading, error }, { what: "invitation requests", onRetry: () => void load() })}
           emptyState={{ title: "No invitation requests" }}
           toolbar={{
             search: true,

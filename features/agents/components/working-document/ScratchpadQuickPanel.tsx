@@ -12,6 +12,7 @@
  * live in `history.row_versions` via the panel's History view.
  */
 
+import { toast } from "@/lib/toast";
 import { useCallback, useEffect, useState } from "react";
 import { Check, ChevronDown, NotebookPen, Plus, Trash2 } from "lucide-react";
 import {
@@ -58,7 +59,10 @@ export function ScratchpadQuickPanel({ className }: { className?: string }) {
   // but no loaded entry), then ensure one active scratchpad exists.
   useEffect(() => {
     let cancelled = false;
+    // `.unwrap()`: a FAILED read must not fall through to "none yet → create
+    // one" (RC-B12 r13) — that minted a new scratchpad beside existing ones.
     void dispatch(hydrateActiveScratchpadThunk())
+      .unwrap()
       .then(() => {
         if (cancelled) return;
         if (!selectActiveScratchpadId(store.getState())) {
@@ -67,6 +71,7 @@ export function ScratchpadQuickPanel({ className }: { className?: string }) {
       })
       .catch((err: unknown) => {
         console.error("[scratchpad-panel] resolve failed", err);
+        toast.error("Couldn't load your scratchpad — nothing was created in its place. Try reopening it.");
       });
     return () => {
       cancelled = true;
@@ -122,6 +127,12 @@ export function ScratchpadQuickPanel({ className }: { className?: string }) {
                   void dispatch(
                     setActiveScratchpadThunk({ documentId: doc.id }),
                   )
+                    .unwrap()
+                    .catch(() =>
+                      toast.error(
+                        `Couldn't open ${doc.title?.trim() || "that scratchpad"} — the read failed.`,
+                      ),
+                    )
                 }
                 className="gap-2"
               >

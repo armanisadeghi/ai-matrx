@@ -1,5 +1,7 @@
 "use client";
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +40,9 @@ export default function ModelUsageAudit({
 }: ModelUsageAuditProps) {
   const [usage, setUsage] = useState<ModelUsageResult | null>(null);
   const [loading, setLoading] = useState(false);
+  // The failed read itself (RC-B12 r13): never a "0 references" badge, and a
+  // failed refresh over earlier usage says the numbers may be out of date.
+  const [usageError, setUsageError] = useState<unknown>(null);
   const [step, setStep] = useState<ReplaceStep>("idle");
   const [replacementId, setReplacementId] = useState("");
   const [pendingSettings, setPendingSettings] = useState<LLMParams>({});
@@ -49,8 +54,10 @@ export default function ModelUsageAudit({
     try {
       const result = await aiModelService.fetchUsage(model.id);
       setUsage(result);
+      setUsageError(null);
     } catch (err) {
       console.error("Failed to fetch usage", err);
+      setUsageError(err ?? new Error("The usage read failed"));
     } finally {
       setLoading(false);
     }
@@ -147,7 +154,7 @@ export default function ModelUsageAudit({
       <div className="flex items-center justify-between px-3 py-2 border-b shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">Usage Audit</span>
-          {!loading && (
+          {!loading && usage && (
             <Badge
               variant="outline"
               className={
@@ -275,12 +282,22 @@ export default function ModelUsageAudit({
           </div>
         </div>
       ) : !usage ? (
-        <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
-          Failed to load usage data
-          <ErrorAlchemyMenu />
+        <div className="flex-1 flex items-center justify-center">
+          <ReadFailure
+            error={usageError ?? true}
+            what="this model's usage"
+            onRetry={() => void load()}
+          />
         </div>
       ) : (
         <div className="flex-1 overflow-auto p-3 space-y-4">
+          {usageError != null && (
+            <StaleDataNotice
+              hasData
+              what="this model's usage"
+              onRetry={() => void load()}
+            />
+          )}
           {model.is_deprecated && (
             <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md text-sm text-amber-800 dark:text-amber-200">
               <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />

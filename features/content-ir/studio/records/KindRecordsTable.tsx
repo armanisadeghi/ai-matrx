@@ -739,6 +739,7 @@ export default function KindRecordsTable({
           showRow: false,
           showToolbar: false,
         }}
+        // read-gate-exempt: error swaps this for the failed-read state and the banner above names the failure once
         emptyState={
           error
             ? {

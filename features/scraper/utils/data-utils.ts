@@ -51,7 +51,8 @@ interface ScrapedPageItem {
   failure_reason: string | null;
   url: string;
   overview: OverviewData | null;
-  structured_data: object | null;
+  /** JSON-LD blocks (a list, `[]` for none) or an object. */
+  structured_data: object | unknown[] | null;
   organized_data: object | null;
   text_data: string | null;
   /** Full markdown with links/images — render with ScrapedContentPretty */
@@ -569,7 +570,13 @@ class ScraperDataUtils {
     if (!structuredData || typeof structuredData !== "object") {
       return {};
     }
-    return (structuredData as any)["Ordered Lists"] || {};
+    // The scraper streams a LIST (JSON-LD blocks, `[]` for none) as well as
+    // objects; only the legacy `{"Ordered Lists": ...}` object is unwrapped.
+    // Reading that key alone turned every list into `{}` — "no structured
+    // data" on a page that had it.
+    if (Array.isArray(structuredData)) return structuredData;
+    const legacy = (structuredData as Record<string, unknown>)["Ordered Lists"];
+    return legacy && typeof legacy === "object" ? legacy : structuredData;
   }
 
   /**

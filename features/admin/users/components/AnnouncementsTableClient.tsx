@@ -36,6 +36,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { buildAnnouncementMenuSection } from "./announcement-menu-section";
 import SystemAnnouncementBanner from "@/components/layout/SystemAnnouncementBanner";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const TYPE_CLASS: Record<string, string> = {
   info: "text-sky-600 border-sky-500/40 bg-sky-500/10",
@@ -224,6 +225,7 @@ export function AnnouncementsTableClient() {
           getRowId={(r) => r.id}
           isLoading={loading}
           pageSize={50}
+          read={readOf({ loading, error }, { what: "announcements", onRetry: () => void load() })}
           emptyState={{
             title: "No announcements",
             description:

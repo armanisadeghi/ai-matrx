@@ -44,6 +44,7 @@ export async function fetchDeckExportExtras(cardIds: string[]): Promise<DeckExpo
     if (byId.size > 0) extras.schedulingByCardId = byId;
   } catch (e) {
     console.error("[fetchDeckExportExtras] scheduling read failed:", e);
+    extras.unread = [...(extras.unread ?? []), "review schedule"];
   }
 
   try {
@@ -67,9 +68,13 @@ export async function fetchDeckExportExtras(cardIds: string[]): Promise<DeckExpo
         byId.set(edge.sourceId, list);
       }
       if (byId.size > 0) extras.mediaByCardId = byId;
+    } else {
+      console.error("[fetchDeckExportExtras] media edges read failed:", res);
+      extras.unread = [...(extras.unread ?? []), "media"];
     }
   } catch (e) {
     console.error("[fetchDeckExportExtras] media edges read failed:", e);
+    extras.unread = [...(extras.unread ?? []), "media"];
   }
 
   return extras;

@@ -43,6 +43,7 @@ import type { components } from "@/types/python-generated/api-types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildKnowledgeRepositoriesContextData } from "@/features/rag/agent-context/buildKnowledgeRepositoriesContextData";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const KNOWLEDGE_REPOSITORIES_SURFACE = "matrx-user/knowledge-repositories";
 
@@ -422,6 +423,7 @@ export function RepositoriesPage() {
                 searchPlaceholder: "Search name, URL, branch, or sync…",
                 refresh: { onRefresh: () => setRefreshKey((n) => n + 1) },
               }}
+              read={readOf({ loading, error }, { what: "repositories", onRetry: () => setRefreshKey((n) => n + 1) })}
               emptyState={{
                 icon: <Code2 className="h-12 w-12 text-muted-foreground/50" />,
                 title: "No repositories yet",

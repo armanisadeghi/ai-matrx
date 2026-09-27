@@ -6,6 +6,7 @@
 
 "use client";
 
+import { toast } from "@/lib/toast";
 import { useCallback, useEffect, useState } from "react";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
@@ -87,6 +88,11 @@ export function useDataOwnership(): UseDataOwnership {
         content,
         EXPORT_MIME[format],
       );
+      if (extras?.unread?.length) {
+        toast.warning(
+          `Exported ${set.name} without its ${extras.unread.join(" and ")} — that part couldn't be read. Export again to include it.`,
+        );
+      }
     },
     [],
   );
@@ -101,6 +107,9 @@ export function useDataOwnership(): UseDataOwnership {
       const seen = new Map<string, number>();
       let written = 0;
       const failed: string[] = [];
+      // Decks written WITHOUT some extras (their read failed) — said, never
+      // silently shipped as a complete backup (RC-B12 r13).
+      const partial: string[] = [];
       for (const set of decks) {
         const res = await fcService.getSetWithCards(set.id);
         if (res.error || !res.data) {
@@ -108,6 +117,7 @@ export function useDataOwnership(): UseDataOwnership {
           continue;
         }
         const extras = await fetchDeckExportExtras(res.data.cards.map((c) => c.id));
+        if (extras.unread?.length) partial.push(set.name);
         const json = buildDeckExport(res.data.set, res.data.cards, "json", stamp, extras);
         let base = safeFileBase(set.name);
         const n = seen.get(base) ?? 0;
@@ -123,10 +133,16 @@ export function useDataOwnership(): UseDataOwnership {
         exported_at: stamp,
         deck_count: written,
         ...(failed.length ? { failed_decks: failed } : {}),
+        ...(partial.length ? { decks_missing_extras: partial } : {}),
       };
       zip.file("manifest.json", JSON.stringify(manifest, null, 2));
       const blob = await zip.generateAsync({ type: "blob" });
       downloadBlob("matrx-education-data.zip", blob);
+      if (partial.length) {
+        toast.warning(
+          `${partial.length} deck${partial.length === 1 ? "" : "s"} exported without review schedule or media — that part couldn't be read. Export again to include it.`,
+        );
+      }
     } finally {
       setExportingAll(false);
     }

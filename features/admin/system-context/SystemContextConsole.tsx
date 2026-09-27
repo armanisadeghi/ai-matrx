@@ -54,6 +54,7 @@ import {
   valueTypeTone,
 } from "./shared";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 function feedTarget(
   item: SystemContextItem,
@@ -512,6 +513,7 @@ export function SystemContextConsole() {
             isLoading={loading}
             isFetching={fetching}
             pageSize={50}
+            read={readOf({ loading, error: loadError }, { what: "system context", onRetry: () => void fetchData() })}
             emptyState={
               items.length === 0
                 ? {

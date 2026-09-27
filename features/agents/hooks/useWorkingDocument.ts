@@ -28,6 +28,7 @@
  * always receives the current document regardless of which editor is open.
  */
 
+import { toast } from "@/lib/toast";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -531,15 +532,26 @@ export function useConversationDocumentsBridge(conversationId: string): void {
     if (!ownsHydration) {
       return () => releaseDocumentBridge(conversationId);
     }
-    void dispatch(hydrateConversationDocumentsThunk({ conversationId }));
+    // A failed restore is SAID (RC-B12 r13): without it the conversation runs
+    // with its documents silently missing from what the agent receives.
+    void dispatch(hydrateConversationDocumentsThunk({ conversationId }))
+      .unwrap()
+      .catch((err: unknown) => {
+        console.error("[working-document] bridge hydrate failed", err);
+        toast.error(
+          "Couldn't restore this conversation's working document — the agent won't see it until you reopen the conversation.",
+        );
+      });
     // Attached-scratchpad hydration must run AFTER the active pointer resolves
     // (it excludes the active id from the attached list).
     void dispatch(hydrateActiveScratchpadThunk())
+      .unwrap()
       .then(() =>
-        dispatch(hydrateAttachedScratchpadsThunk({ conversationId })),
+        dispatch(hydrateAttachedScratchpadsThunk({ conversationId })).unwrap(),
       )
       .catch((err: unknown) => {
         console.error("[scratchpad] bridge hydrate failed", err);
+        toast.error("Couldn't restore your scratchpad for this conversation.");
       });
     return () => releaseDocumentBridge(conversationId);
   }, [dispatch, conversationId, userId]);

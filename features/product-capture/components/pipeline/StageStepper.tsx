@@ -19,13 +19,14 @@ export function StageStepper({
   onSelect,
 }: {
   active: PipelineStage;
-  counts: Record<string, number>;
+  /** null = the count read FAILED: each chip shows "—", never 0 (RC-B12 r13). */
+  counts: Record<string, number> | null;
   onSelect: (stage: PipelineStage) => void;
 }) {
   return (
     <div className="flex items-center gap-1 overflow-x-auto pb-1">
       {PIPELINE_STAGES.map((stage, i) => {
-        const count = counts[stage] ?? 0;
+        const count = counts ? (counts[stage] ?? 0) : null;
         const isActive = stage === active;
         return (
           <React.Fragment key={stage}>
@@ -52,12 +53,12 @@ export function StageStepper({
                   "rounded-full px-1.5 text-xs tabular-nums",
                   isActive
                     ? "bg-primary-foreground/20"
-                    : count > 0
+                    : count != null && count > 0
                       ? "bg-muted text-foreground"
                       : "bg-muted text-muted-foreground",
                 )}
               >
-                {count}
+                {count ?? "—"}
               </span>
             </button>
           </React.Fragment>

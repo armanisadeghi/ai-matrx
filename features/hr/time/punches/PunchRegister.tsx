@@ -53,6 +53,7 @@ import { punchMenuContent, buildPunchMenuSection } from "../shared/punch-menu";
 import { PunchCorrectionDialog, type PunchCorrectionMode } from "./PunchCorrectionDialog";
 import { PunchRegisterScopePicker } from "./PunchRegisterScopePicker";
 import { downloadPunchRegisterCsv, punchRegisterToCsv } from "./registerCsv";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const DEFAULT_PAGE_SIZE = 50;
 
@@ -233,6 +234,7 @@ export function PunchRegister({
                 }
                 mobileCardsBreakpoint="lg"
                 mobileCards={(row) => <MobilePunchRow punch={row} />}
+                read={readOf(register, { what: "punches" })}
                 emptyState={{
                   title: "No punches match these filters",
                   description:

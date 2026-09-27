@@ -45,6 +45,7 @@ import {
   type OutcomeCounts,
 } from "./service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const PAGE_SIZE = 25;
 
@@ -396,6 +397,7 @@ export function OutcomesPanel({ campaignId }: { campaignId: string }) {
           showRow: false,
           showToolbar: false,
         }}
+        read={readOf({ isLoading, error }, { what: "outcomes", onRetry: () => void refresh() })}
         emptyState={{
           icon: <Award className="h-5 w-5" />,
           title: statusFilter === "all" ? "No outcomes yet" : "Nothing here yet",

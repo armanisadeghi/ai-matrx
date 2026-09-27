@@ -326,6 +326,9 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
   // History (metadata-only list)
   const [history, setHistory] = useState<PdfDocument[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  // A failed history read is said in the sidebar — never "Extracted files
+  // appear here" (RC-B12 r13).
+  const [historyError, setHistoryError] = useState<unknown>(null);
 
   // "New extraction" tab state
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -390,8 +393,10 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       if (error) throw error;
       const rows = (data ?? []) as Record<string, unknown>[];
       setHistory(rows.map(docFromApi));
+      setHistoryError(null);
     } catch (err) {
       console.error("Failed to load PDF document history:", err);
+      setHistoryError(err ?? new Error("The document history read failed"));
     } finally {
       setHistoryLoading(false);
     }
@@ -1434,6 +1439,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
     history: history.filter((doc) => !doc.archivedAt),
     archivedHistory: history.filter((doc) => Boolean(doc.archivedAt)),
     historyLoading,
+    historyError,
     loadHistory,
     openDocument,
 

@@ -177,7 +177,7 @@ export function AppConfigHistoryPanel({
         {entries === null
           ? "Loading version history…"
           : historyError
-            ? "Version history could not be read."
+            ? null /* the table below shows the failed read, with its menu and retry */
           : `${entries.length} snapshot${entries.length === 1 ? "" : "s"} — open a row to diff it against the CURRENT live row.`}
       </p>
 

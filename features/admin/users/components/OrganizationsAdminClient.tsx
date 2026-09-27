@@ -58,6 +58,7 @@ import {
 } from "@/features/context-menu-v3/utils/availability";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 interface MemberDisplayRow extends AdminOrganizationMembershipRow {
   email: string | null;
@@ -600,6 +601,7 @@ export function OrganizationsAdminClient() {
                 humanRow: (organization) =>
                   `${organization.name} (${organization.slug})\nid=${organization.id}\nmembers=${organization.member_count} owners=${organization.owner_count}`,
               }}
+              read={readOf({ loading, error }, { what: "organizations" })}
               emptyState={{
                 title: focusedUserId
                   ? "No organization memberships"
@@ -746,6 +748,7 @@ export function OrganizationsAdminClient() {
                   </Button>
                 </>
               )}
+              read={readOf({ loading, error }, { what: "organization members" })}
               emptyState={{
                 title: selectedOrganization
                   ? "No members"

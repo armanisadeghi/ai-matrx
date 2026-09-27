@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import React, { useState, useEffect, useTransition } from "react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
@@ -28,10 +29,15 @@ export function EpisodeDetailClient({
   const [allShows, setAllShows] = useState<PcShow[]>([]);
   const [episode, setEpisode] = useState<PcEpisodeWithShow | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // A failed read is said — never a blank episode form that a Save would
+  // write over the real one (RC-B12 r13).
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
+      setLoadError(null);
       try {
         const [shows, ep] = await Promise.all([
           podcastService.fetchAllShows(),
@@ -45,12 +51,13 @@ export function EpisodeDetailClient({
         setEpisode(ep);
       } catch (e) {
         console.error("Failed to load episode", e);
+        setLoadError(e ?? new Error("The episode read failed"));
       } finally {
         setIsLoading(false);
       }
     };
     load();
-  }, [showId, episodeId, isNew]);
+  }, [showId, episodeId, isNew, loadAttempt]);
 
   const back = () =>
     startTransition(() =>
@@ -83,7 +90,7 @@ export function EpisodeDetailClient({
         </button>
         <div className="min-w-0 flex-1">
           <h1 className="font-semibold text-sm truncate">
-            {isNew ? "New Episode" : (episode?.title ?? "Loading…")}
+            {isNew ? "New Episode" : (episode?.title ?? (loadError != null ? "Episode" : "Loading…"))}
           </h1>
           {show && (
             <p className="text-xs text-muted-foreground truncate">
@@ -104,6 +111,12 @@ export function EpisodeDetailClient({
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading…
           </div>
+        ) : loadError != null ? (
+          <ReadFailure
+            error={loadError}
+            what={isNew ? "the shows" : "this episode"}
+            onRetry={() => setLoadAttempt((n) => n + 1)}
+          />
         ) : (
           <div className="p-4 max-w-2xl">
             <EpisodeForm

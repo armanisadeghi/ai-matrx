@@ -61,6 +61,7 @@ import {
   type ProducerYieldRow,
 } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const TONE_CLASS: Record<string, string> = {
   critical:
@@ -385,6 +386,7 @@ export function ProducerYieldConsole() {
         isLoading={loading}
         isFetching={refreshing}
         pageSize={50}
+        read={readOf(register, { what: "the producer register" })}
         emptyState={{ title: "No producers on the register" }}
         rowClassName={(row) => focused === row.producer_key ? "bg-amber-50 dark:bg-amber-950/40" : undefined}
         toolbar={{

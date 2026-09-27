@@ -104,6 +104,7 @@ import {
   competitorOpportunityHuman,
 } from "./copy";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 type Artifact = {
   executive_verdict?: string;
@@ -1544,6 +1545,7 @@ export default function CompetitorAutopsyWorkspace({
                   ) : null}
                 </>
               )}
+              read={readOf(workspace, { what: "the autopsy workspace" })}
               emptyState={{
                 icon: <Target className="size-8" />,
                 title: "No opportunities yet",
@@ -1604,6 +1606,7 @@ export default function CompetitorAutopsyWorkspace({
                   </Button>
                 )
               }
+              read={readOf(workspace, { what: "the autopsy workspace" })}
               emptyState={{
                 icon: <Swords className="size-8" />,
                 title: "No competitors identified",
@@ -1696,6 +1699,7 @@ export default function CompetitorAutopsyWorkspace({
                 openOnRowClick: true,
                 onOpen: () => {},
               }}
+              read={readOf(workspace, { what: "the autopsy workspace" })}
               emptyState={{
                 title: "No autopsy history",
                 description:
