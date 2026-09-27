@@ -21,7 +21,8 @@ procedure — open it only when you are doing that job or the check fails.
    how much of the first screen holds content, headings, text under 12px,
    emoji, small phone targets. Add `--full` to see below the fold,
    `--signed-out` for what a visitor sees, `--as member` for an ordinary
-   (non-admin) person, `--views desktop-light,phone-light` to go faster, and
+   (non-admin) person, `--fresh` for a first visit (no remembered organization or
+   view prefs), `--org "<name>"` to pick the workspace first, `--views desktop-light,phone-light` to go faster, and
    `--click '[right:]SELECTOR=>TEXT'` (repeatable; chain steps on one load with
    ` >> `) to open each menu, dialog and tab and capture it. A slow page needs
    `--settle 12000`. Read every

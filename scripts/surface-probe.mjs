@@ -441,11 +441,21 @@ async function shot(page, name) {
 const t0 = Date.now();
 const context = await chromium.launchPersistentContext(profileDir, {
   headless: true,
+  // Never run stale app code: no service worker, and the HTTP cache is
+  // cleared below (the profile keeps only the sign-in).
+  serviceWorkers: "block",
   viewport: { width: 1500, height: 950 },
   args: launchArgs,
   ...(executablePath ? { executablePath } : {}),
 });
 const page = context.pages()[0] ?? (await context.newPage());
+try {
+  const cdp = await context.newCDPSession(page);
+  await cdp.send("Network.clearBrowserCache");
+  await cdp.detach();
+} catch {
+  /* a browser without CDP keeps its cache; the service-worker block still applies */
+}
 const results = [];
 // Credentials (never printed): the environment first, else .env.local / .env —
 // the same fallback page-look.mjs uses, so both proof tools sign in the same way.

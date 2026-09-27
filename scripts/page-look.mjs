@@ -27,6 +27,8 @@
  *
  * --as member looks as an ordinary signed-in person (AI_MEMBER_USERNAME /
  * AI_MEMBER_PASSWORD, the non-admin test account) instead of the test admin.
+ * --fresh signs in with a brand-new profile: no remembered organization,
+ * view preferences or layout — what a first visit looks like.
  * --org "<name>" chooses the active organization through the header picker
  * before looking (it persists in the profile; report.org says what happened).
  * --views limits the four views (faster with --full and several clicks).
@@ -66,7 +68,7 @@ function fail(message, code = 1) {
 }
 
 // ── options ───────────────────────────────────────────────────────────────
-const opts = { routes: [], base: "https://aimatrx.com", out: null, commit: null, settle: 8000, loginUrl: null, signedOut: false, full: false, clicks: [], as: "admin", views: null, org: null };
+const opts = { routes: [], base: "https://aimatrx.com", out: null, commit: null, settle: 8000, loginUrl: null, signedOut: false, full: false, clicks: [], as: "admin", views: null, org: null, fresh: false };
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i += 1) {
   const a = argv[i];
@@ -82,6 +84,7 @@ for (let i = 0; i < argv.length; i += 1) {
   else if (a === "--click") (opts.clicks.push(v), (i += 1));
   else if (a === "--as") ((opts.as = v), (i += 1));
   else if (a === "--org") ((opts.org = v), (i += 1));
+  else if (a === "--fresh") opts.fresh = true;
   else if (a === "--views") ((opts.views = v.split(",").map((x) => x.trim())), (i += 1));
   else fail(`unknown argument ${a}`);
 }
@@ -136,7 +139,7 @@ const host = new URL(opts.base).host.replace(/[^a-z0-9.-]/gi, "_");
 const profileDir = path.join(
   os.tmpdir(),
   "page-look-profiles",
-  opts.signedOut ? `${host}-signed-out-${Date.now()}` : `${host}-${opts.as}`,
+  opts.signedOut || opts.fresh ? `${host}-${opts.signedOut ? "signed-out" : opts.as}-fresh-${Date.now()}` : `${host}-${opts.as}`,
 );
 const LOGIN = opts.as === "member"
   ? { user: process.env.AI_MEMBER_USERNAME, pass: process.env.AI_MEMBER_PASSWORD, names: "AI_MEMBER_USERNAME / AI_MEMBER_PASSWORD" }
@@ -280,10 +283,20 @@ const report = { base: opts.base, as: opts.signedOut ? "signed-out" : opts.as, a
 const saveReport = () => writeFileSync(path.join(opts.out, "look.json"), JSON.stringify(report, null, 2));
 const context = await chromium.launchPersistentContext(profileDir, {
   headless: true,
+  // Never run stale app code: no service worker, and the HTTP cache is
+  // cleared below (the profile keeps only the sign-in).
+  serviceWorkers: "block",
   args: ["--no-sandbox"],
   ...(executablePath ? { executablePath } : {}),
 });
 const page = context.pages()[0] ?? (await context.newPage());
+try {
+  const cdp = await context.newCDPSession(page);
+  await cdp.send("Network.clearBrowserCache");
+  await cdp.detach();
+} catch {
+  /* a browser without CDP keeps its cache; the service-worker block still applies */
+}
 const consoleErrors = [];
 const failedRequests = [];
 page.on("console", (m) => m.type() === "error" && consoleErrors.push(m.text().slice(0, 200)));
