@@ -27,10 +27,25 @@ import { zoomAt } from "../engine/camera";
 import type { SpatialStore } from "../engine/spatial-store";
 import { WHEEL_MODE_LABEL, type WheelMode } from "../engine/wheel-input";
 
+/** What the host can do to a tile. An action the host leaves out is not
+ * shown (a War Room thread is already saved, so it has no "save & close"). */
 export interface TileMenuActions {
-  park: (id: string) => void;
-  saveAndClose: (id: string) => void;
-  remove: (id: string) => void;
+  park?: (id: string) => void;
+  saveAndClose?: (id: string) => void;
+  remove?: (id: string) => void;
+  /** Label for `remove` — say what is actually deleted. Default "Delete from board…". */
+  removeLabel?: string;
+}
+
+function optionalItems(id: string, actions: TileMenuActions): ContextMenuExtraSection["items"] {
+  const items: ContextMenuExtraSection["items"] = [];
+  const { park, saveAndClose, remove, removeLabel = "Delete from board…" } = actions;
+  if (park) items.push({ kind: "item", id: "park", label: "Park", icon: PanelRightOpen, hint: "→", onSelect: () => park(id) });
+  if (saveAndClose)
+    items.push({ kind: "item", id: "save", label: "Save to notes & close", icon: Save, hint: "↑", onSelect: () => saveAndClose(id) });
+  if (remove)
+    items.push({ kind: "item", id: "delete", label: removeLabel, icon: Trash2, hint: "↓", destructive: true, onSelect: () => remove(id) });
+  return items;
 }
 
 export function SpatialBoardMenu({
@@ -62,9 +77,7 @@ export function SpatialBoardMenu({
       items: [
         { kind: "item", id: "focus", label: "Focus", icon: Maximize2, hint: "Enter", onSelect: () => store?.focus(target.id) },
         { kind: "item", id: "fly", label: "Fly to", icon: Crosshair, onSelect: () => store?.fitItem(target.id) },
-        { kind: "item", id: "park", label: "Park", icon: PanelRightOpen, hint: "→", onSelect: () => actions.park(target.id) },
-        { kind: "item", id: "save", label: "Save to notes & close", icon: Save, hint: "↑", onSelect: () => actions.saveAndClose(target.id) },
-        { kind: "item", id: "delete", label: "Delete from board…", icon: Trash2, hint: "↓", destructive: true, onSelect: () => actions.remove(target.id) },
+        ...optionalItems(target.id, actions),
       ],
     });
   }

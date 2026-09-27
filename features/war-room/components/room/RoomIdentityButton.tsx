@@ -15,7 +15,7 @@
 // (this editor's title input is a redundant, explicit entry point and saves
 // on blur/Enter); icon + color save on click (instant, optimistic).
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Check } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { updateRoomIdentity } from "@/features/war-room/redux/thunks";
@@ -45,9 +45,15 @@ export function RoomIdentityEditor({
   const [titleDraft, setTitleDraft] = useState(title);
   const [descDraft, setDescDraft] = useState(description ?? "");
 
-  // Re-sync drafts if the underlying row changes while open (e.g. header rename).
-  useEffect(() => setTitleDraft(title), [title]);
-  useEffect(() => setDescDraft(description ?? ""), [description]);
+  // Re-sync drafts when the underlying row changes while open (e.g. a header
+  // rename) — adjusted during render against the last-seen values, React's
+  // pattern for resetting state on a prop change (no effect, no extra pass).
+  const [seen, setSeen] = useState({ title, description });
+  if (seen.title !== title || seen.description !== description) {
+    setSeen({ title, description });
+    if (seen.title !== title) setTitleDraft(title);
+    if (seen.description !== description) setDescDraft(description ?? "");
+  }
 
   function commitTitle() {
     const next = titleDraft.trim();

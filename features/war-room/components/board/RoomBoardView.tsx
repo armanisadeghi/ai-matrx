@@ -299,15 +299,8 @@ export function RoomBoardView({ sessionId }: { sessionId: string }) {
       store={store}
       actions={{
         park,
-        // The engine menu always offers this; a thread's notes, task and
-        // recordings already live in their own features, so say so honestly.
-        saveAndClose: (id) =>
-          recordToast.info(
-            { type: "thread", id, title: titleOf(id) },
-            `"${titleOf(id)}" is already saved — its notes, task and recordings live in their own features. Park it to close it.`,
-            { action: { label: "Park", onClick: () => park(id) } },
-          ),
         remove: (id) => void remove(id),
+        removeLabel: "Delete thread…",
       }}
       parked={parkedChips}
       onUnpark={unpark}
