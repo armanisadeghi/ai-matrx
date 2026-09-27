@@ -9,7 +9,6 @@ import {
   SheetInPageRow,
   SheetMobileViewControls,
   SheetMoreActions,
-  SheetToolbar,
   SheetViewControls,
   type SheetChromeActs,
   type SheetViewProps,
@@ -287,6 +286,16 @@ import { SheetWithheldCell, withheldCellOf, type WithheldCells } from "@/feature
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+/**
+ * THE SHEET'S TOOLBAR, DRAWN ONLY WHEN A PROP MOVED (lane RENDER-3). The Sheet compiles, but its
+ * render is one giant JSX tree the compiler does not hold (a ref-writing callback sits at its
+ * root), so the toolbar element was new on every render and the toolbar — with every closed dialog
+ * it holds — redrew with it. Every prop the Sheet hands it is a value that does not move on an
+ * edit, so a shallow compare is the boundary. It lives here, beside the toolbar it wraps, so the
+ * chrome in `sheet-chrome.tsx` names no old module (lane GUARDS-GREEN).
+ */
+const SheetToolbar = React.memo(TableToolbar);
+
 interface TableDataRow {
   id: string;
   data: Record<string, unknown>;
@@ -5201,6 +5210,7 @@ const UserTableViewer = ({
                   <SheetHeaderCell
                     key={field.id}
                     field={field}
+                    menu={ColumnHeaderMenu}
                     tableId={tableId}
                     readOnly={isReadOnly}
                     mobile={isMobile}
