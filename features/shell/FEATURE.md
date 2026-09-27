@@ -57,7 +57,10 @@ copies (and every CSS rule that hid one to show another) are gone.
   which closes the drawer and opens the same menu (bottom-anchored panel).
 - **Guest:** the block shows Sign In / Sign Up; the drawer row is "Sign in".
 - **Mechanism:** unchanged — the shell root's `#shell-user-menu` checkbox;
-  every menu item closes via `<label htmlFor="shell-user-menu">`. The
+  every menu item sits in `MenuItemCloseLabel` (`menuCheckboxId.tsx`), a
+  `<label htmlFor>` that also closes on a click on its button/link — label
+  activation skips interactive descendants, so a bare label left the menu open
+  over the window a button item opened (guard: `menuCheckboxId.test.ts`). The
   portable `ShellUserMenu` (transitional `ResponsiveLayout`) still drops down
   from its header (`.shell-user-menu-portable-root` override).
 
@@ -67,6 +70,7 @@ sign out.
 
 ## Change log
 
+- `2026-09-27` — **Menu items close the menu** (page-pass, Feedback window): `MenuItemCloseLabel` replaces the bare `<label htmlFor>` wrapper in every item; button items (Submit Feedback, Announcements, Approvals, Error Inspector, Copy short link…) used to leave the user menu open.
 - `2026-09-27` — **Canvas chrome**: `ShellChromeMode` / `ShellChromeRouteSync`, `CANVAS_CHROME_ROUTES`, `shell.css` §13c, and `features/shell/canvas-chrome/` (the canvas nav + user row) for the chat-beside-a-canvas layout (`../canvas/workspace/FEATURE.md`).
 
 - `2026-09-26` — **The layout gate now loads the CSS the app SHIPS.** `layout-gate/shipped-css-region-triggers.spec.ts` derives every `@ai-matrx/*` stylesheet the app imports (from the repo's own `import "…css"` / `@import` lines, resolved through Node, nested `@import`s inlined) plus `styles/shell.css`, and measures a sidebar row, the composer textarea, a message region and a nested `.matrx-tap-icon` with vs without `CONTEXT_REGION_TRIGGER_ATTRS`. RED on design-system 0.44.1 (`MATRX_LAYOUT_GATE_CSS_OVERRIDE=@ai-matrx/design-system=<dist dir>`: row 32px vs 240px, composer 32px vs 665px, icon 18px vs 14px), GREEN on 0.44.3. `pnpm check:shell-layout` (`scripts/check-shell-layout-gate.mjs`) runs the whole gate as a release after-phase SIGNAL row; missing Chromium is `[FAIL] UNMEASURED` with the install remedy.
