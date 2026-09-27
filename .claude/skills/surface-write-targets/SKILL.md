@@ -173,6 +173,13 @@ test rows you created so the person can remove them.
   publishes it as the platform skill `surface-guide-<slug>` and adds a pointer
   to the intro. Worked example: `features/surfaces/guides/education-classes.md`.
   The intro stays short: the basics and which target does which job.
+- **Very complex pages** (dozens to hundreds of values, e.g. the search-console
+  and SEO pages): the guide is mandatory; every value sits in a named group;
+  the intro names the few values that matter for the common jobs; only the
+  record being worked on and the condensed list the person is looking at use
+  an inline tier — everything else stays a lookup the guide explains; and
+  write targets follow the same per-record-type sets, never one target per
+  field.
 - **Read the page's agent feedback before changing a surface.** Every page
   offers agents the platform target `surface_feedback` (saved to the central
   feedback system, tagged with the surface). Before editing, run
