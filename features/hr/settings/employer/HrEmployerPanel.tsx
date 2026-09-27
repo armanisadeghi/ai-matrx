@@ -27,7 +27,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Factory, Loader2, Pencil, Plus, RotateCcw, Save } from "lucide-react";
+import { Archive, AlertTriangle, Factory, Loader2, Pencil, Plus, RotateCcw, Save, X } from "lucide-react";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
@@ -68,7 +68,12 @@ import {
   createHrEmployerScope,
 } from "@/features/surfaces/manifests/hr-employer.manifest";
 
-import { updateHrEmployerProfile, upsertHrEstablishment } from "../../service";
+import {
+  setHrEstablishmentArchived,
+  updateHrEmployerProfile,
+  upsertHrEstablishment,
+} from "../../service";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { HrDenied, HrFailed } from "../../types";
 import { hrSettingsHref } from "../../routes";
 import { useHrContext } from "../../shared/useHrContext";
@@ -95,6 +100,7 @@ import {
   buildHrEmployerScope,
   declarationPayload,
   flagLabel,
+  flagIsOpen,
   flagValueText,
   formatAddress,
   identityEquals,
@@ -218,6 +224,32 @@ export function HrEmployerPanel() {
     return { id: savedId, name: input.name.trim() };
   };
 
+  /** The ONE archive — the row menu, the dialog and `update_establishments`. */
+  const archiveEstablishment = async (id: string) => {
+    const result = await setHrEstablishmentArchived({ id, archived: true });
+    if (!result.ok) throw new Error(refusalText(result));
+    structure.refresh();
+  };
+
+  /** Asks first, naming what archiving does. Returns true when archived. */
+  const confirmArchive = async (row: { id: string; name: string }) => {
+    const ok = await confirm({
+      title: `Archive ${row.name}?`,
+      description:
+        "It leaves this list and stops counting as a reporting site for EEO-1 and OSHA. Its record and history are kept.",
+      confirmLabel: "Archive",
+    });
+    if (!ok) return false;
+    try {
+      await archiveEstablishment(row.id);
+      toast.success(`${row.name} archived.`);
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+      return false;
+    }
+  };
+
   const getScope = () =>
     createHrEmployerScope(
       buildHrEmployerScope({
@@ -257,8 +289,14 @@ export function HrEmployerPanel() {
         update: {
           parse: (value) =>
             parseUpdateEstablishments(value, establishments ?? [], jurisdictions ?? []),
-          run: (plan: ReturnType<typeof parseUpdateEstablishments>[number]) =>
-            saveEstablishment(plan.input, plan.id),
+          run: async (plan: ReturnType<typeof parseUpdateEstablishments>[number]) => {
+            const edited = plan.changed.some((k) => k !== "archived");
+            const ref = edited
+              ? await saveEstablishment(plan.input, plan.id)
+              : { id: plan.id, name: plan.previousName };
+            if (plan.archive) await archiveEstablishment(plan.id);
+            return ref;
+          },
           nameOf: (plan: ReturnType<typeof parseUpdateEstablishments>[number]) =>
             plan.previousName,
           changedOf: (plan: ReturnType<typeof parseUpdateEstablishments>[number]) =>
@@ -343,10 +381,11 @@ export function HrEmployerPanel() {
           establishments={establishments ?? []}
           orgRef={orgRef}
           getScope={getScope}
+          locationEstablishmentIds={usedEstablishmentIds}
           onEdit={(row) =>
             setEditor({ mode: "edit", id: row.id, input: establishmentToInput(row) })
           }
-          locationEstablishmentIds={usedEstablishmentIds}
+          onArchive={(row) => void confirmArchive(row)}
         >
           <div className="matrx-touch-targets divide-y divide-border px-4 pb-8 sm:px-6">
             {profile === null || form === null || saved === null ? (
@@ -369,6 +408,7 @@ export function HrEmployerPanel() {
             ) : (
               <>
                 <IdentitySection
+                  jurisdictions={jurisdictions ?? []}
                   form={form}
                   saved={saved}
                   profile={profile}
@@ -388,7 +428,11 @@ export function HrEmployerPanel() {
                     setReload((n) => n + 1);
                   }}
                 />
-                <ApplicabilitySection profile={profile} onDeclare={declare} />
+                <ApplicabilitySection
+                  profile={profile}
+                  jurisdictions={jurisdictions ?? []}
+                  onDeclare={declare}
+                />
                 <EstablishmentsSection
                   establishments={establishments ?? []}
                   locationEstablishmentIds={usedEstablishmentIds}
@@ -406,6 +450,11 @@ export function HrEmployerPanel() {
                   others={(establishments ?? []).filter((e) => e.id !== editor?.id)}
                   onChange={(input) => setEditor((current) => (current ? { ...current, input } : current))}
                   onClose={() => setEditor(null)}
+                  onArchive={async (current) => {
+                    if (!current.id) return;
+                    const name = current.input.name.trim() || "this establishment";
+                    if (await confirmArchive({ id: current.id, name })) setEditor(null);
+                  }}
                   onSave={async (current) => {
                     await saveEstablishment(current.input, current.id);
                     toast.success(
@@ -416,15 +465,6 @@ export function HrEmployerPanel() {
                     setEditor(null);
                   }}
                 />
-                <section aria-labelledby="hr-employer-tax" className="py-6">
-                  <h2 id="hr-employer-tax" className="text-sm font-semibold text-foreground">
-                    Tax registrations
-                  </h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Tax registrations can&apos;t be shown here yet. That is not the same as
-                    having none.
-                  </p>
-                </section>
               </>
             )}
           </div>
@@ -443,9 +483,11 @@ function EmployerContextMenu({
   orgRef,
   getScope,
   onEdit,
+  onArchive,
   children,
 }: {
   onEdit: (row: HrEstablishment) => void;
+  onArchive: (row: HrEstablishment) => void;
   profile: HrEmployerProfileRead | null;
   establishments: HrEstablishment[];
   locationEstablishmentIds: Set<string>;
@@ -510,6 +552,15 @@ function EmployerContextMenu({
                   },
                   {
                     kind: "item",
+                    id: "hr-establishment-archive",
+                    label: "Archive",
+                    icon: Archive,
+                    disabled: rowUsed,
+                    description: rowUsed ? "A location still uses it — unlink it first" : undefined,
+                    onSelect: () => onArchive(clickedRow),
+                  },
+                  {
+                    kind: "item",
                     id: "hr-establishment-see-locations",
                     label: "See locations",
                     icon: Factory,
@@ -533,6 +584,7 @@ function EmployerContextMenu({
 // ── Identity ────────────────────────────────────────────────────────────────
 
 function IdentitySection({
+  jurisdictions,
   form,
   saved,
   profile,
@@ -544,6 +596,7 @@ function IdentitySection({
   onDiscard,
   onSaved,
 }: {
+  jurisdictions: ReadonlyArray<JurisdictionOption>;
   form: HrEmployerIdentityForm;
   saved: HrEmployerIdentityForm;
   profile: HrEmployerProfileRead;
@@ -651,12 +704,11 @@ function IdentitySection({
           optional
           help="The state the entity was formed in — two letters, like DE."
         >
-          <ProInput
+          <UsStateSelect
             id="formation-state"
             value={form.formation_state}
-            maxLength={2}
-            autoCapitalize="characters"
-            onChange={(event) => set("formation_state", event.target.value.toUpperCase())}
+            jurisdictions={jurisdictions}
+            onChange={(code) => set("formation_state", code)}
           />
         </Field>
         <Field
@@ -664,8 +716,8 @@ function IdentitySection({
           htmlFor="ein"
           description={
             knownLastFour
-              ? `On file, ending ${knownLastFour}. Type a new one to replace it.`
-              : "On file and never shown. Type a new one to replace it."
+              ? `Ends in ${knownLastFour}. Type a new one to replace it.`
+              : "Nine digits. Once saved it is never shown in a browser; typing one replaces what is stored."
           }
           error={einCheck && !einCheck.ok ? einCheck.why : undefined}
         >
@@ -675,7 +727,6 @@ function IdentitySection({
             value={ein}
             inputMode="numeric"
             autoComplete="off"
-            placeholder="12-3456789"
             onChange={(event) => onEinChange(formatEinInput(event.target.value))}
             aria-invalid={Boolean(einCheck && !einCheck.ok)}
             className="text-base sm:text-sm"
@@ -709,14 +760,13 @@ function IdentitySection({
             onChange={(event) => setAddress("city", event.target.value)}
           />
         </Field>
-        <div className="grid grid-cols-3 gap-4 sm:col-span-2 lg:col-span-3 lg:grid-cols-6">
+        <div className="grid grid-cols-1 gap-4 sm:col-span-2 sm:grid-cols-3 lg:col-span-3">
           <Field label="State" htmlFor="addr-region">
-            <ProInput
+            <UsStateSelect
               id="addr-region"
               value={form.primary_address.region}
-              maxLength={2}
-              autoComplete="address-level1"
-              onChange={(event) => setAddress("region", event.target.value.toUpperCase())}
+              jurisdictions={jurisdictions}
+              onChange={(code) => setAddress("region", code)}
             />
           </Field>
           <Field label="ZIP" htmlFor="addr-postal">
@@ -729,12 +779,11 @@ function IdentitySection({
             />
           </Field>
           <Field label="Country" htmlFor="addr-country">
-            <ProInput
+            <CountrySelect
               id="addr-country"
               value={form.primary_address.country}
-              maxLength={2}
-              autoComplete="country"
-              onChange={(event) => setAddress("country", event.target.value.toUpperCase())}
+              jurisdictions={jurisdictions}
+              onChange={(code) => setAddress("country", code)}
             />
           </Field>
         </div>
@@ -773,20 +822,31 @@ function IdentitySection({
 
 function ApplicabilitySection({
   profile,
+  jurisdictions,
   onDeclare,
 }: {
+  jurisdictions: ReadonlyArray<JurisdictionOption>;
   profile: HrEmployerProfileRead;
   onDeclare: (requests: HrDeclarationRequest[]) => Promise<unknown>;
 }) {
   const flags = applicabilityFlags(profile);
   return (
     <section aria-labelledby="hr-employer-laws" className="py-6">
-      <h2 id="hr-employer-laws" className="text-sm font-semibold text-foreground">
+      <h2
+        id="hr-employer-laws"
+        className="text-sm font-semibold text-foreground"
+        title="Not established means nobody has counted or declared it yet — it is not a no."
+      >
         Which laws apply
       </h2>
       <ul className="mt-2 divide-y divide-border">
         {flags.map((flag) => (
-          <ApplicabilityRow key={flag.key} flag={flag} onDeclare={onDeclare} />
+          <ApplicabilityRow
+            key={flag.key}
+            flag={flag}
+            jurisdictions={jurisdictions}
+            onDeclare={onDeclare}
+          />
         ))}
       </ul>
     </section>
@@ -795,25 +855,35 @@ function ApplicabilitySection({
 
 function ApplicabilityRow({
   flag,
+  jurisdictions,
   onDeclare,
 }: {
   flag: HrApplicabilityFlag;
+  jurisdictions: ReadonlyArray<JurisdictionOption>;
   onDeclare: (requests: HrDeclarationRequest[]) => Promise<unknown>;
 }) {
   const [declaring, setDeclaring] = useState(false);
   const [reason, setReason] = useState("");
+  const [states, setStates] = useState<string[]>(Array.isArray(flag.value) ? flag.value : []);
   const [busy, setBusy] = useState(false);
   const [why, setWhy] = useState<string | null>(null);
-  const isList = Array.isArray(flag.value);
+  const isList = flag.key === "everify_required_states";
+  const open = flagIsOpen(flag);
 
   const declare = async (applies: boolean) => {
     let requests: HrDeclarationRequest[];
     try {
       requests = parseDeclarations([
-        { flag: flag.key as HrDeclarableKey, applies, reason },
+        isList
+          ? { flag: flag.key, states: applies ? states : [], reason }
+          : { flag: flag.key as HrDeclarableKey, applies, reason },
       ]);
-    } catch {
-      setWhy("Say why in a sentence. An undocumented override is an audit finding.");
+    } catch (err) {
+      setWhy(
+        err instanceof Error
+          ? err.message.replace(/Item 1: /g, "").replace(/ Nothing was changed\.$/, "")
+          : String(err),
+      );
       return;
     }
     setBusy(true);
@@ -822,7 +892,11 @@ function ApplicabilityRow({
       await onDeclare(requests);
       setDeclaring(false);
       setReason("");
-      toast.success(`${flag.label}: declared ${applies ? "applies" : "does not apply"}.`);
+      toast.success(
+        isList
+          ? `${flag.label}: declared ${applies && states.length ? states.join(", ") : "none required"}.`
+          : `${flag.label}: declared ${applies ? "applies" : "does not apply"}.`,
+      );
     } catch (err) {
       setWhy(err instanceof Error ? err.message : String(err));
     } finally {
@@ -834,24 +908,28 @@ function ApplicabilityRow({
     ? `Declared${flag.declaredAt ? ` ${new Date(flag.declaredAt).toLocaleDateString()}` : ""}${
         flag.declaredReason ? ` — ${flag.declaredReason}` : ""
       }`
-    : (flag.derivation ?? "Nobody has counted or declared this yet — that is not a no.");
+    : flag.derivation;
+
+  const stateOptions = jurisdictions.filter(
+    (j) => j.level === "state" && /^US-[A-Z]{2}$/.test(j.jurisdiction_key),
+  );
 
   return (
     <li className="py-3">
-      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0 flex-1 space-y-0.5">
           <p className="text-sm font-medium text-foreground">{flag.label}</p>
           <p className="text-sm text-muted-foreground">{flag.test}</p>
-          <p className="text-sm text-muted-foreground">{basis}</p>
+          {basis ? <p className="text-sm text-muted-foreground">{basis}</p> : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Badge
-            variant={flag.value === null ? "outline" : flag.isDeclared ? "default" : "secondary"}
+            variant={open ? "outline" : flag.isDeclared ? "default" : "secondary"}
             className="text-xs"
           >
-            {flagValueText(flag.value)}
+            {flagValueText(flag)}
           </Badge>
-          {isList || declaring ? null : (
+          {declaring ? null : (
             <Button type="button" size="sm" variant="outline" onClick={() => setDeclaring(true)}>
               Declare
             </Button>
@@ -861,29 +939,96 @@ function ApplicabilityRow({
 
       {declaring ? (
         <div className="mt-3 space-y-2">
-          <Field label="Why are you overriding the counted answer?" htmlFor={`declare-${flag.key}`}>
+          {isList ? (
+            <Field label="States that require E-Verify" htmlFor={`declare-states-${flag.key}`}>
+              <div className="flex flex-wrap items-center gap-2">
+                {states.map((code) => (
+                  <Badge key={code} variant="secondary" className="gap-1 text-xs">
+                    {code}
+                    <button
+                      type="button"
+                      aria-label={`Remove ${code}`}
+                      className="rounded-sm hover:text-foreground"
+                      onClick={() => setStates(states.filter((c) => c !== code))}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+                <Select
+                  value=""
+                  onValueChange={(code) => setStates([...new Set([...states, code])].sort())}
+                >
+                  <SelectTrigger
+                    id={`declare-states-${flag.key}`}
+                    className="w-44 text-base sm:text-sm"
+                  >
+                    <SelectValue placeholder="Add a state" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {stateOptions.map((j) => (
+                      <SelectItem key={j.id} value={j.jurisdiction_key.slice(3)}>
+                        {j.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </Field>
+          ) : null}
+          <Field
+            label={
+              flag.derivation
+                ? "Why are you overriding the counted answer?"
+                : "What is this declaration based on?"
+            }
+            htmlFor={`declare-${flag.key}`}
+          >
             <ProTextarea
               id={`declare-${flag.key}`}
               value={reason}
               rows={2}
               onChange={(event) => setReason(event.target.value)}
-              placeholder="Counsel advised us we are covered from 1 January."
             />
           </Field>
           {why ? <ErrorNotice size="inline" className="text-sm" message={why} /> : null}
           <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" disabled={busy} onClick={() => declare(true)}>
-              Declare it applies
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={busy}
-              onClick={() => declare(false)}
-            >
-              Declare it does not
-            </Button>
+            {isList ? (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={busy || states.length === 0}
+                  onClick={() => declare(true)}
+                >
+                  Declare these states
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => declare(false)}
+                >
+                  Declare none required
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button type="button" size="sm" disabled={busy} onClick={() => declare(true)}>
+                  Declare it applies
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => declare(false)}
+                >
+                  Declare it does not
+                </Button>
+              </>
+            )}
             <Button
               type="button"
               size="sm"
@@ -900,6 +1045,74 @@ function ApplicabilityRow({
         </div>
       ) : null}
     </li>
+  );
+}
+
+// ── Standard state / country selects (from HR's own jurisdiction list) ───────
+
+type JurisdictionOption = { id: string; name: string; jurisdiction_key: string; level: string };
+
+function UsStateSelect({
+  id,
+  value,
+  jurisdictions,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  jurisdictions: ReadonlyArray<JurisdictionOption>;
+  onChange: (code: string) => void;
+}) {
+  const states = jurisdictions.filter(
+    (j) => j.level === "state" && /^US-[A-Z]{2}$/.test(j.jurisdiction_key),
+  );
+  const known = states.some((j) => j.jurisdiction_key.slice(3) === value);
+  return (
+    <Select value={value || NOT_SET} onValueChange={(v) => onChange(v === NOT_SET ? "" : v)}>
+      <SelectTrigger id={id} className="text-base sm:text-sm">
+        <SelectValue placeholder="Not set" />
+      </SelectTrigger>
+      <SelectContent className="max-h-72">
+        <SelectItem value={NOT_SET}>Not set</SelectItem>
+        {states.map((j) => (
+          <SelectItem key={j.id} value={j.jurisdiction_key.slice(3)}>
+            {j.name}
+          </SelectItem>
+        ))}
+        {value && !known ? <SelectItem value={value}>{value}</SelectItem> : null}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function CountrySelect({
+  id,
+  value,
+  jurisdictions,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  jurisdictions: ReadonlyArray<JurisdictionOption>;
+  onChange: (code: string) => void;
+}) {
+  // HR is US-only today: the countries offered are the national jurisdictions it knows.
+  const countries = jurisdictions.filter((j) => /^[A-Z]{2}$/.test(j.jurisdiction_key));
+  const known = countries.some((j) => j.jurisdiction_key === value);
+  return (
+    <Select value={value || NOT_SET} onValueChange={(v) => onChange(v === NOT_SET ? "" : v)}>
+      <SelectTrigger id={id} className="text-base sm:text-sm">
+        <SelectValue placeholder="Not set" />
+      </SelectTrigger>
+      <SelectContent>
+        {countries.map((j) => (
+          <SelectItem key={j.id} value={j.jurisdiction_key}>
+            {j.name}
+          </SelectItem>
+        ))}
+        {value && !known ? <SelectItem value={value}>{value}</SelectItem> : null}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -995,6 +1208,7 @@ function EstablishmentsSection({
           pageSize={10}
           urlState={{ id: "hr-establishments" }}
           toolbar={{ search: true, searchPlaceholder: "Search establishments" }}
+          detail={{ enabled: false }}
           onRowOpen={(row) => onEdit(row)}
         />
       </div>
@@ -1011,8 +1225,10 @@ function EstablishmentDialog({
   others,
   onChange,
   onClose,
+  onArchive,
   onSave,
 }: {
+  onArchive: (editor: EstablishmentEditor) => Promise<void>;
   editor: EstablishmentEditor | null;
   jurisdictions: ReadonlyArray<{ id: string; name: string; jurisdiction_key: string; level: string }>;
   others: ReadonlyArray<{ name: string }>;
@@ -1137,11 +1353,11 @@ function EstablishmentDialog({
           </Field>
           <div className="grid grid-cols-2 gap-4">
             <Field label="State" htmlFor="est-region" optional>
-              <ProInput
+              <UsStateSelect
                 id="est-region"
                 value={input.address.region}
-                maxLength={2}
-                onChange={(event) => setAddress("region", event.target.value.toUpperCase())}
+                jurisdictions={jurisdictions}
+                onChange={(code) => setAddress("region", code)}
               />
             </Field>
             <Field label="ZIP" htmlFor="est-postal" optional>
@@ -1168,6 +1384,20 @@ function EstablishmentDialog({
         {why ? <ErrorNotice size="inline" className="text-sm" message={why} /> : null}
 
         <DialogFooter>
+          {editor?.mode === "edit" ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="sm:mr-auto"
+              onClick={() => {
+                if (editor) void onArchive(editor);
+              }}
+              disabled={busy}
+            >
+              <Archive className="mr-2 h-4 w-4" />
+              Archive
+            </Button>
+          ) : null}
           <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
