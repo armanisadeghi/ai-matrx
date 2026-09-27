@@ -12,6 +12,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/lib/toast";
 import { Building2, Send, Trash2, User } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -96,6 +97,7 @@ function RecordSkeleton() {
 
 export function PartyRecordPage({ partyId }: Props) {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const { detail, isLoading, error, refresh } = usePartyDetail(partyId);
   const [notes, setNotes] = useState<Comment[]>([]);
   const [notesLoadError, setNotesLoadError] = useState<string | null>(null);
@@ -129,6 +131,19 @@ export function PartyRecordPage({ partyId }: Props) {
 
   const party = detail?.party ?? null;
   const isPerson = party?.party_kind === "person";
+
+  const openCompose = () => {
+    if (!party) return;
+    openGmailCompose({
+      partyId: party.id,
+      organizationId: party.organization_id,
+      partyLabel: party.display_name,
+      projectId: activeProjectId ?? null,
+      onSent: () => {
+        void refresh();
+      },
+    });
+  };
 
   const onDelete = async () => {
     if (!party) return;
@@ -277,6 +292,14 @@ export function PartyRecordPage({ partyId }: Props) {
                   <MoreHorizontalTapButton ariaLabel="More actions" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {/* On a phone the header keeps only "…", so the record's
+                      name reads in full; Send email lives here instead. */}
+                  {isMobile && (
+                    <DropdownMenuItem onSelect={openCompose}>
+                      <Send className="mr-2 h-3.5 w-3.5" />
+                      Send email
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
                     onSelect={() => void onDelete()}
@@ -292,25 +315,17 @@ export function PartyRecordPage({ partyId }: Props) {
                   further down the page, so arriving on a Person showed no way to
                   write to them (VERIFY-B1-B2 A1). It opens the window over the
                   record; the record stays readable behind it. */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  openGmailCompose({
-                    partyId: party.id,
-                    organizationId: party.organization_id,
-                    partyLabel: party.display_name,
-                    projectId: activeProjectId ?? null,
-                    onSent: () => {
-                      void refresh();
-                    },
-                  })
-                }
-                className="h-7 px-2 text-xs"
-              >
-                <Send className="mr-1 h-3.5 w-3.5" />
-                Send email
-              </Button>
+              {!isMobile && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={openCompose}
+                  className="h-7 px-2 text-xs"
+                >
+                  <Send className="mr-1 h-3.5 w-3.5" />
+                  Send email
+                </Button>
+              )}
             </>
           ) : undefined
         }
