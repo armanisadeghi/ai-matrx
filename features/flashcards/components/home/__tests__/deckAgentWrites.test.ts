@@ -100,6 +100,24 @@ describe("update_decks", () => {
   });
 });
 
+describe("update_decks refusals", () => {
+  it("a bad field is refused for itself and says nothing was saved — never also 'changes nothing'", () => {
+    let message = "";
+    try {
+      parseUpdateDecksValue([{ id: "d1", difficulty: "brutal" }], DECKS);
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    expect(message).toContain("difficulty must be one of");
+    expect(message).not.toContain("changes nothing");
+    expect(message).toMatch(/Nothing was changed\.$/);
+    expect(() => parseUpdateDecksValue([{ id: "d1", archived: "yes" }], DECKS)).toThrow(
+      /archived must be true/,
+    );
+    expect(() => parseUpdateDecksValue([{ id: "d1" }], DECKS)).toThrow(/changes nothing/);
+  });
+});
+
 describe("delete_decks", () => {
   it("accepts ids or { id } objects", () => {
     expect(parseDeleteDecksValue(["d1", { id: "d2" }], DECKS).map((d) => d.id)).toEqual([

@@ -319,8 +319,9 @@ export function buildFlashcardSetListConfig(input: {
 }): EntityListConfig<FlashcardSetListRow> {
   return {
     surfaceKey: "education-flashcard-sets",
-    // Where the list OPENS comes from platform.entity_types (fc_set →
-    // organization), never a literal.
+    // Where the list OPENS is the per-type knob
+    // platform.entity_types.default_list_scope (fc_set → "mine" since
+    // 2026-09-27), never a literal here.
     registryToken: "fc_set",
     entityLabel: { singular: "deck", plural: "decks" },
     sourceFeature: "education-flashcards",

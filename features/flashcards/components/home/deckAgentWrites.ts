@@ -192,7 +192,10 @@ export function parseUpdateDecksValue(
         ...Object.keys(patch),
         ...(typeof archived === "boolean" ? ["archived"] : []),
       ];
-      if (changed.length === 0)
+      // "Changes nothing" only when nothing was sent — a field that failed its
+      // own check has already said why, and repeating it as "nothing" reads
+      // like a harmless no-op instead of a refusal.
+      if (changed.length === 0 && Object.keys(rest).length === 0 && archived === undefined)
         problems.add(
           `${where} changes nothing: send at least one of ${[...DECK_WRITE_KEYS, "archived"].join(", ")} with the id.`,
         );
