@@ -1,0 +1,189 @@
+/**
+ * The saved form of a board (pure) — what `workspace.spatial_boards` stores in
+ * its `camera` / `nodes` / `edges` columns, and its JSON Canvas export.
+ *
+ * A node is a rect plus a TYPED SOURCE: the thing the tile shows, by
+ * reference, never a copy of live state. A stream is saved as the request it
+ * came from; a document, file or record as its id; generated HTML as its
+ * URL or its markup. Opening a board re-mounts each source.
+ *
+ * Export follows JSON Canvas 1.0 (jsoncanvas.org, MIT — Obsidian's open
+ * format): text / file / link / group nodes, so a board opens in any canvas
+ * tool that reads it. Our richer sources map down to the nearest spec type,
+ * carrying the original source in the node under `matrx`, which spec readers
+ * ignore.
+ */
+
+import type { Camera, Rect } from "../engine/camera";
+
+export type NodeSource =
+  /** A live or finished agent run, by request id. */
+  | { kind: "stream"; requestId: string; conversationId?: string }
+  /** Text or markdown kept on the board itself (a note, a saved stream's text). */
+  | { kind: "text"; markdown: string }
+  | { kind: "html"; url?: string; html?: string }
+  | { kind: "image"; fileId?: string; url?: string }
+  | { kind: "file"; fileId: string }
+  | { kind: "record"; tableId: string; recordId: string }
+  | { kind: "document"; documentId: string }
+  | { kind: "thread"; threadId: string };
+
+export interface BoardNode {
+  id: string;
+  rect: Rect;
+  title: string;
+  source: NodeSource;
+  /** On the shelf rather than the board. */
+  parked?: boolean;
+}
+
+export interface BoardGroup {
+  id: string;
+  rect: Rect;
+  title: string;
+  note?: string;
+}
+
+export interface BoardEdge {
+  id: string;
+  from: string;
+  to: string;
+}
+
+export interface BoardDocument {
+  camera: Camera;
+  nodes: BoardNode[];
+  groups: BoardGroup[];
+  edges: BoardEdge[];
+}
+
+/** Validate a stored document at the read boundary. Anything malformed is
+ * REPORTED (with the node that failed), never silently dropped. */
+export function parseBoardDocument(raw: {
+  camera: unknown;
+  nodes: unknown;
+  edges: unknown;
+}): { doc: BoardDocument; problems: string[] } {
+  const problems: string[] = [];
+  const camera = isCamera(raw.camera) ? raw.camera : { x: 0, y: 0, z: 0.6 };
+  if (!isCamera(raw.camera)) problems.push("camera was not {x,y,z}; reset to the default view");
+  const nodes: BoardNode[] = [];
+  const groups: BoardGroup[] = [];
+  for (const [i, n] of (Array.isArray(raw.nodes) ? raw.nodes : []).entries()) {
+    if (!isObject(n) || typeof n.id !== "string" || !isRect(n.rect) || typeof n.title !== "string") {
+      problems.push(`node ${i} is missing id, rect or title`);
+      continue;
+    }
+    if (n.group === true) {
+      groups.push({ id: n.id, rect: n.rect, title: n.title, note: typeof n.note === "string" ? n.note : undefined });
+      continue;
+    }
+    if (!isSource(n.source)) {
+      problems.push(`node "${n.title}" has an unknown source`);
+      continue;
+    }
+    nodes.push({ id: n.id, rect: n.rect, title: n.title, source: n.source, parked: n.parked === true });
+  }
+  if (!Array.isArray(raw.nodes)) problems.push("nodes was not a list");
+  const edges: BoardEdge[] = [];
+  for (const e of Array.isArray(raw.edges) ? raw.edges : []) {
+    if (isObject(e) && typeof e.id === "string" && typeof e.from === "string" && typeof e.to === "string") {
+      edges.push({ id: e.id, from: e.from, to: e.to });
+    } else problems.push("an edge is missing id, from or to");
+  }
+  return { doc: { camera, nodes, groups, edges }, problems };
+}
+
+/** The column values to store. Groups ride in `nodes` flagged `group: true`. */
+export function serializeBoardDocument(doc: BoardDocument) {
+  return {
+    camera: doc.camera,
+    nodes: [
+      ...doc.groups.map((g) => ({ id: g.id, rect: g.rect, title: g.title, note: g.note, group: true })),
+      ...doc.nodes,
+    ],
+    edges: doc.edges,
+  };
+}
+
+// ── JSON Canvas 1.0 export ───────────────────────────────────────────────────
+
+type JsonCanvasNode = {
+  id: string;
+  type: "text" | "file" | "link" | "group";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  text?: string;
+  file?: string;
+  url?: string;
+  label?: string;
+  matrx?: NodeSource;
+};
+
+export function toJsonCanvas(doc: BoardDocument, origin: string) {
+  const box = (r: Rect) => ({ x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.w), height: Math.round(r.h) });
+  const nodes: JsonCanvasNode[] = [
+    ...doc.groups.map((g) => ({ id: g.id, type: "group" as const, ...box(g.rect), label: g.title })),
+    ...doc.nodes.map((n): JsonCanvasNode => {
+      const s = n.source;
+      switch (s.kind) {
+        case "text":
+          return { id: n.id, type: "text", ...box(n.rect), text: s.markdown };
+        case "html":
+          return s.url
+            ? { id: n.id, type: "link", ...box(n.rect), url: new URL(s.url, origin).href, matrx: s }
+            : { id: n.id, type: "text", ...box(n.rect), text: `# ${n.title}\n\n(generated page)`, matrx: s };
+        case "image":
+          return s.url
+            ? { id: n.id, type: "link", ...box(n.rect), url: new URL(s.url, origin).href, matrx: s }
+            : { id: n.id, type: "file", ...box(n.rect), file: `files/${s.fileId}`, matrx: s };
+        case "file":
+          return { id: n.id, type: "file", ...box(n.rect), file: `files/${s.fileId}`, matrx: s };
+        default:
+          return { id: n.id, type: "text", ...box(n.rect), text: `# ${n.title}`, matrx: s };
+      }
+    }),
+  ];
+  const edges = doc.edges.map((e) => ({ id: e.id, fromNode: e.from, toNode: e.to }));
+  return { nodes, edges };
+}
+
+// ── guards ───────────────────────────────────────────────────────────────────
+
+function isObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+function isFiniteNumber(v: unknown): v is number {
+  return typeof v === "number" && Number.isFinite(v);
+}
+function isCamera(v: unknown): v is Camera {
+  return isObject(v) && isFiniteNumber(v.x) && isFiniteNumber(v.y) && isFiniteNumber(v.z) && v.z > 0;
+}
+function isRect(v: unknown): v is Rect {
+  return isObject(v) && isFiniteNumber(v.x) && isFiniteNumber(v.y) && isFiniteNumber(v.w) && isFiniteNumber(v.h);
+}
+function isSource(v: unknown): v is NodeSource {
+  if (!isObject(v)) return false;
+  switch (v.kind) {
+    case "stream":
+      return typeof v.requestId === "string";
+    case "text":
+      return typeof v.markdown === "string";
+    case "html":
+      return typeof v.url === "string" || typeof v.html === "string";
+    case "image":
+      return typeof v.url === "string" || typeof v.fileId === "string";
+    case "file":
+      return typeof v.fileId === "string";
+    case "record":
+      return typeof v.tableId === "string" && typeof v.recordId === "string";
+    case "document":
+      return typeof v.documentId === "string";
+    case "thread":
+      return typeof v.threadId === "string";
+    default:
+      return false;
+  }
+}
