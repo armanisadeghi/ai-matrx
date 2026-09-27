@@ -2436,8 +2436,8 @@ const DiagramFlow: React.FC<{
       )}
 
       <Panel
-        position={workspace ? "top-left" : "top-right"}
-        className={`${workspace ? "m-3" : ""} rounded-xl border border-border/70 bg-card/90 p-1.5 shadow-lg backdrop-blur-xl`}
+        position="top-right"
+        className={`${workspace ? "!top-32 !right-3 sm:!top-3" : ""} rounded-xl border border-border/70 bg-card/90 p-1.5 shadow-lg backdrop-blur-xl`}
       >
         <div className="flex flex-col gap-2">
           <DropdownMenu>
@@ -3121,7 +3121,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
             )}
 
             {isWorkspace && (
-              <div className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2">
+              <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2">
                 <div className="pointer-events-auto flex items-center gap-1 rounded-xl border border-border/70 bg-card/90 p-1 shadow-lg backdrop-blur-xl">
                   <IconButton
                     icon={Printer}

@@ -230,70 +230,74 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
           presentation="workspace"
         />
 
-        <div className="absolute left-3 right-3 top-3 z-20 flex min-w-0 items-center gap-2 rounded-xl border border-border/70 bg-card/90 p-2 shadow-lg backdrop-blur-xl sm:right-auto sm:max-w-[calc(100%-5rem)]">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0"
-            onClick={() => router.push("/education/mind-maps")}
-            aria-label="Back"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="min-w-0 flex-1 sm:min-w-48">
-            {media.source_title && (
-              <span className="truncate text-xs text-muted-foreground">
-                from {media.source_title}
-              </span>
-            )}
-            <h1 className="truncate text-lg font-semibold text-foreground">
-              {media.title}
-            </h1>
-          </div>
-          {isOwner && (
-            <div className="flex shrink-0 items-center gap-1">
-              <ShareButton
-                resourceType="study_media"
-                resourceId={media.id}
-                resourceName={media.title}
-                isOwner
-                size="sm"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() =>
-                  router.push(
-                    media.source_kind === "topic"
-                      ? "/education/mind-maps/new?source=topic"
-                      : `/education/mind-maps/new?source=deck&deck=${media.source_id ?? ""}`,
-                  )
-                }
-                aria-label="Regenerate"
-              >
-                <RefreshCw className="h-4 w-4 text-muted-foreground" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleDelete}
-                aria-label="Delete"
-              >
-                <Trash2 className="h-4 w-4 text-muted-foreground" />
-              </Button>
-            </div>
-          )}
-          {trust && (
+        <div className="absolute left-3 right-3 top-3 z-20 flex min-w-0 flex-col gap-2 rounded-xl border border-border/70 bg-card/90 p-2 shadow-lg backdrop-blur-xl sm:right-auto sm:max-w-[calc(100%-12rem)] lg:flex-row lg:items-center">
+          <div className="flex min-w-0 w-full items-center gap-2 lg:w-auto lg:flex-1">
             <Button
-              variant="outline"
-              size="sm"
-              className="shrink-0 gap-2"
-              onClick={() => setSourcesOpen(true)}
+              variant="ghost"
+              size="icon"
+              className="shrink-0"
+              onClick={() => router.push("/education/mind-maps")}
+              aria-label="Back"
             >
-              <ConfidenceBadge confidence={trust.confidence} />
-              <span className="hidden sm:inline">Sources</span>
+              <ArrowLeft className="h-4 w-4" />
             </Button>
-          )}
+            <div className="min-w-0 flex-1 lg:min-w-48">
+              {media.source_title && (
+                <span className="block truncate text-xs text-muted-foreground">
+                  from {media.source_title}
+                </span>
+              )}
+              <h1 className="truncate text-lg font-semibold text-foreground">
+                {media.title}
+              </h1>
+            </div>
+          </div>
+          <div className="flex w-full flex-wrap items-center gap-1 lg:w-auto lg:flex-nowrap">
+            {isOwner && (
+              <div className="flex items-center gap-1">
+                <ShareButton
+                  resourceType="study_media"
+                  resourceId={media.id}
+                  resourceName={media.title}
+                  isOwner
+                  size="sm"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() =>
+                    router.push(
+                      media.source_kind === "topic"
+                        ? "/education/mind-maps/new?source=topic"
+                        : `/education/mind-maps/new?source=deck&deck=${media.source_id ?? ""}`,
+                    )
+                  }
+                  aria-label="Regenerate"
+                >
+                  <RefreshCw className="h-4 w-4 text-muted-foreground" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleDelete}
+                  aria-label="Delete"
+                >
+                  <Trash2 className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </div>
+            )}
+            {trust && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 gap-2"
+                onClick={() => setSourcesOpen(true)}
+              >
+                <ConfidenceBadge confidence={trust.confidence} />
+                <span className="hidden sm:inline">Sources</span>
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Where this came from + the rest of the kit made from the same upload. */}
