@@ -24,6 +24,11 @@ import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ItemContextMenu } from "@/components/official/item/ItemMenu";
+import {
+  effectiveHiddenColumns,
+  hiddenColumnsPatch,
+  uniformColumnIds,
+} from "../columnWidths";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { commitUrlParams } from "@ai-matrx/kit/url-state";
@@ -259,6 +264,19 @@ export function EntityListPage<TRow>({
       pageSize: prefs.pageSize,
     },
   });
+
+  // UNIFORM COLUMNS hide by default where the surface opts in (they stay in
+  // the picker; a column the person shows stays shown) — ../columnWidths.ts.
+  const autoHidden = config.autoHideUniformColumns
+    ? uniformColumnIds(config.columns, list.rows, [entityListDoorColumnId(config)])
+    : [];
+  const hiddenColumns = effectiveHiddenColumns(
+    prefs.hiddenColumns,
+    autoHidden,
+    prefs.shownColumns,
+  );
+  const setHiddenColumns = (next: string[]) =>
+    setPrefs(hiddenColumnsPatch(next, hiddenColumns, prefs.shownColumns));
 
   // Inline drafts can outlive the current server page: realtime, a refresh,
   // or a query change may move the edited row before Save is pressed.
@@ -707,6 +725,7 @@ export function EntityListPage<TRow>({
             ...prefs,
             ...effectiveSort,
             favoritesFirst: effectiveFavoritesFirst,
+            hiddenColumns,
           }}
           showSharedColumns={showSharedColumns}
           columns={config.columns}
@@ -733,7 +752,10 @@ export function EntityListPage<TRow>({
           onPatchQuery={list.patchQuery}
           // Sort changes route through commitSort so the panel's sort and the
           // table header's sort write the same two places (prefs + URL).
-          onPatchPrefs={patchView}
+          onPatchPrefs={({ hiddenColumns: nextHidden, ...patch }) => {
+            if (nextHidden) setHiddenColumns(nextHidden);
+            if (Object.keys(patch).length > 0) patchView(patch);
+          }}
           onResetFilters={list.resetFilters}
           onResetView={() => {
             reset();
@@ -857,7 +879,7 @@ export function EntityListPage<TRow>({
             isFetching={list.isFetching}
             density={prefs.density}
             showSharedColumns={showSharedColumns}
-            hiddenColumns={prefs.hiddenColumns}
+            hiddenColumns={hiddenColumns}
             onSaveEdits={saveEdits}
             emptyState={resolvedEmptyState}
             {...(config.tableToolbar
@@ -877,8 +899,7 @@ export function EntityListPage<TRow>({
                       config.searchPlaceholder ??
                       `Search ${config.entityLabel.plural}…`,
                     onRefresh: list.refresh,
-                    onHiddenColumnsChange: (hiddenColumns: string[]) =>
-                      setPrefs({ hiddenColumns }),
+                    onHiddenColumnsChange: setHiddenColumns,
                   },
                 }
               : {})}

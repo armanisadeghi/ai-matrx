@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-27T19:00:38.978Z",
+  "generated_at": "2026-09-27T19:11:04.962Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -385,6 +385,12 @@
       "filename": "carryingedgesperf_a_record_walk_reads_only_the_edges_that_reach_a_record.sql",
       "checksum": "24dccfb97f1fb278b3bda6eff5e8ce5eb1f16f3578db98e237c3ca25c99a4663",
       "applied_at": "2026-09-27 18:41:21.047058+00"
+    },
+    "migrations/campaign/carryingedgesperf_census_twelve_asks_the_mirror_once_per_member.sql": {
+      "source": "matrx-frontend",
+      "filename": "carryingedgesperf_census_twelve_asks_the_mirror_once_per_member.sql",
+      "checksum": "6b283330236f93a0b97a094cb356d68527555b588885c37eef5293a138ba5d7c",
+      "applied_at": "2026-09-27 19:07:43.174016+00"
     },
     "migrations/campaign/chairstep_doorsonly2_revoke_client_writes.sql": {
       "source": "matrx-frontend",
@@ -2503,6 +2509,12 @@
       "filename": "guardswitch_who_could_see_replays_the_knob.sql",
       "checksum": "94d3d0c41f11db359e03067a12eaf46036def0a596762cef273c471316dd8d01",
       "applied_at": "2026-09-19 14:47:44.046798+00"
+    },
+    "migrations/campaign/handover_a_new_picklist_is_kept_with_the_choices.sql": {
+      "source": "matrx-frontend",
+      "filename": "handover_a_new_picklist_is_kept_with_the_choices.sql",
+      "checksum": "b6d896b7df646205a0c02be1483588777a32645f42c6c8df1485bdb84a499d07",
+      "applied_at": "2026-09-27 19:10:35.01506+00"
     },
     "migrations/campaign/handover_all_my_organizations_answers_in_one_query.sql": {
       "source": "matrx-frontend",
@@ -6715,6 +6727,12 @@
       "filename": "guardstamps_portal_bind_decides_who_the_outsider_is_down.sql",
       "checksum": "ea88581cb5198acb2faea68b76826255a9ad4aba51f8f729dc278364f0ea0f74",
       "applied_at": "2026-09-21 21:49:49.783166+00"
+    },
+    "migrations/inverse/handover_a_new_picklist_is_kept_with_the_choices_down.sql": {
+      "source": "matrx-frontend",
+      "filename": "handover_a_new_picklist_is_kept_with_the_choices_down.sql",
+      "checksum": "d14d03d2496b6b5b33c15292016cf995e81d1ed729908f3c78b8ad3226e4d199",
+      "applied_at": "2026-09-27 19:11:03.735138+00"
     },
     "migrations/inverse/impldoors_the_link_stamper_is_reached_by_the_person_writing_the_row_down.sql": {
       "source": "matrx-frontend",

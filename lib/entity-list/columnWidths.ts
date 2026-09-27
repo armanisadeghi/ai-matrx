@@ -89,3 +89,66 @@ export function fitColumnWidths<T>(
     return { ...column, width: YIELD_WIDTH };
   });
 }
+
+/**
+ * UNIFORM COLUMNS (page-pass 2026-09-27, /education/quizzes): a column that is
+ * empty in every loaded row, or holds the same value in every one, says nothing
+ * per row. A surface that opts in (`EntityListConfig.autoHideUniformColumns`)
+ * has such columns hidden BY DEFAULT — they stay in the column picker, and a
+ * column the person showed stays shown (`ListViewPrefs.shownColumns`). Only a
+ * column with a real accessor is judged (a Study / Actions column of buttons
+ * has no value to compare), never `keep` ids (the name / door column).
+ */
+export function uniformColumnIds<T>(
+  columns: readonly { id: string; column: MatrxColumnDef<T>; locked?: boolean }[],
+  rows: readonly T[],
+  keep: readonly (string | null | undefined)[] = [],
+): string[] {
+  if (rows.length < MIN_ROWS_TO_JUDGE) return [];
+  const out: string[] = [];
+  for (const spec of columns) {
+    if (spec.locked || keep.includes(spec.id)) continue;
+    const col = spec.column;
+    if (!col.accessorFn && !col.accessorKey) continue;
+    if (resolveColumnMarker(col)) continue;
+    const seen = new Set<string>();
+    for (const row of rows) {
+      const v = valueOf(row, col);
+      seen.add(isEmptyCellValue(v) ? "\u0000empty" : JSON.stringify(v));
+      if (seen.size > 1) break;
+    }
+    if (seen.size <= 1) out.push(spec.id);
+  }
+  return out;
+}
+
+/**
+ * The hidden set a list draws: the person's stored hidden columns plus the
+ * auto-hidden uniform ones they have not explicitly shown.
+ */
+export function effectiveHiddenColumns(
+  stored: readonly string[],
+  autoHidden: readonly string[],
+  shown: readonly string[] = [],
+): string[] {
+  const shownSet = new Set(shown);
+  return [...new Set([...stored, ...autoHidden.filter((id) => !shownSet.has(id))])];
+}
+
+/**
+ * The prefs patch for a picker change made over the EFFECTIVE hidden set: a
+ * column taken out of it is remembered as explicitly shown, so an auto-hide
+ * never takes it back.
+ */
+export function hiddenColumnsPatch(
+  nextHidden: readonly string[],
+  effectiveHidden: readonly string[],
+  shown: readonly string[] = [],
+): { hiddenColumns: string[]; shownColumns: string[] } {
+  const next = new Set(nextHidden);
+  const newlyShown = effectiveHidden.filter((id) => !next.has(id));
+  return {
+    hiddenColumns: [...next],
+    shownColumns: [...new Set([...shown, ...newlyShown])].filter((id) => !next.has(id)),
+  };
+}

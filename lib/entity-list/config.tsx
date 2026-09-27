@@ -270,6 +270,13 @@ export interface EntityListConfig<TRow> {
   /** Surface-specific style defaults beyond version/hiddenColumns. */
   prefsDefaults?: Partial<ListViewPrefs>;
   /**
+   * Hide BY DEFAULT a column that is empty, or identical, on every loaded row
+   * (it stays in the column picker; a column the person shows stays shown).
+   * Pages stop hand-picking hidden columns for data that says nothing per row.
+   * See `../columnWidths.ts` § uniformColumnIds.
+   */
+  autoHideUniformColumns?: boolean;
+  /**
    * THE REGISTRY TOKEN whose `default_list_scope` decides where this list OPENS
    * (DD-137c / VISIBILITY-BY-CLASS §3.3, the second axis).
    *

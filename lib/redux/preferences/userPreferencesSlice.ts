@@ -458,6 +458,11 @@ export interface ListViewPrefs {
    * data; the table validates it when it applies one.
    */
   savedViews?: SavedListView[];
+  /**
+   * Columns the person explicitly SHOWED — an auto-hidden uniform column
+   * (`EntityListConfig.autoHideUniformColumns`) never hides one of these again.
+   */
+  shownColumns?: string[];
 }
 
 export interface SavedListView {
