@@ -245,13 +245,15 @@ export function parseCreateClassesValue(
       nameOf: rawName,
       listChecks: (items) => {
         const names = items.map((item) => item.name);
-        const clashes = [
-          ...new Set(names.filter((n): n is string => !!n && existing.has(nameKey(n)))),
-        ];
+        const clashes = items.filter(
+          (item) => !!item.name && existing.has(nameKey(item.name)),
+        );
         return [
           repeatsProblem("create_classes", names, "class name"),
           clashes.length > 0 &&
-            `The person already has ${clashes.map((c) => `"${c}"`).join(", ")}. Remove ${
+            `The person already has ${clashes
+              .map((c) => `"${c.name}" (create_classes[${c.index}])`)
+              .join(", ")}. Remove ${
               clashes.length === 1 ? "it" : "them"
             } from the list (or rename) and try again.`,
         ];

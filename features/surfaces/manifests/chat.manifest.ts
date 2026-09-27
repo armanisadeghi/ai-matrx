@@ -579,7 +579,7 @@ export const chatManifest: SurfaceManifest = {
   agentRosterMode: "universal",
   readiness: "partial",
   readinessNote:
-    "Contract rewritten 2026-09-27 (conversation + transcript record values; update_messages, delete_messages, regenerate_last_answer, fork_conversation, stop_response, send_draft; input_draft patch). The earlier conversation_title and input_draft replace/append were proven on production 2026-08. Not yet proven by a live outside-agent run for the new values and targets; pending the production probe.",
+    "Proven on production 2026-09-27 (conversation 5058f5aa…): the read probe on /chat/<id> supplies conversation and transcript with no undeclared keys; an outside agent in a Chat window patched an assistant message through update_messages (row edited, prior text in content_history), wrote and then patched input_draft, and ran input_draft + send_draft (one new turn); a list with a missing old_str and an unknown id was refused before the card with both problems; the chat's own turns were offered no surface tool. NOT proven: an outside agent READING this page's values — the header Agents menu lists no agent on /chat (agentRosterMode universal) and a floating Chat window adopts no surface, so no launcher delivers these values to an outside agent yet; delete_messages, regenerate_last_answer, fork_conversation, stop_response and conversation_title (new contract) have no live run.",
   guide: "features/surfaces/guides/chat.md",
   label: "Chat",
   urlPattern: "/chat",
