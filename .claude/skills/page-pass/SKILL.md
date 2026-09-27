@@ -25,7 +25,9 @@ procedure — open it only when you are doing that job or the check fails.
    `--click '[right:]SELECTOR=>TEXT'` (repeatable; chain steps on one load with
    ` >> `) to open each menu, dialog and tab and capture it. A slow page needs
    `--settle 12000`. Read every
-   screenshot yourself; the numbers are places to look, not verdicts. For a
+   screenshot yourself; the numbers are places to look, not verdicts. The dark
+   views force the dark class, so a theme control reading "Light" there is the
+   tool, not the page. For a
    longer interaction, write a throwaway Playwright script in your own TMPDIR
    modelled on `scripts/page-look.mjs` — never a dev server. Use it the way a person would: click every
    control, open every menu, dialog and tab. **Before you read any rule, write
@@ -110,6 +112,8 @@ session, never you.
 - **Commit right after each coherent edit** — a sync sweeps the shared
   checkout every ~30 minutes and commits any dirty file under its own message,
   so a file left uncommitted loses your authorship and message.
+- zsh does not split a variable holding several paths: use an array
+  (`F=(a.ts b.tsx); git add -- $F`) or list the paths literally.
 - Commit by path per page (push unless your coordinator says it pushes): `git add <files>` → `git commit --only -m "page-pass(<route>): …" -- <files>` → push.
   One shared checkout on `main`: no branches, no worktrees, no tree-wide git,
   never format a file you didn't create, never run `release.sh`. After a

@@ -118,7 +118,7 @@ for (const check of checks) {
     console.log(`FINDINGS  ${check}`);
     for (const line of mine.slice(0, 20)) console.log(`          ${line.trim().slice(0, 300)}`);
     if (mine.length > 20) console.log(`          … ${mine.length - 20} more`);
-  } else if (r.error || (r.status !== 0 && /Cannot find module|ENOENT|SyntaxError|ERR_/.test(text))) {
+  } else if (r.error || (r.status !== 0 && /Cannot find module|ENOENT|SyntaxError|ERR_MODULE_NOT_FOUND|ERR_PACKAGE_PATH_NOT_EXPORTED/.test(text))) {
     console.log(`ERROR     ${check} — could not run:`);
     for (const line of text.trim().split("\n").slice(-3)) console.log(`          ${line.slice(0, 300)}`);
   } else {
