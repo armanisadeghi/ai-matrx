@@ -12,6 +12,8 @@
 
 "use client";
 
+import { useSearchParams } from "next/navigation";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -74,6 +76,14 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
   const treeError = useAppSelector(selectTreeError);
   const [addScopeOpen, setAddScopeOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const addressSearch = useSearchParams();
+  const addressedTemplateId = addressSearch.get("template");
+  const dropAddressedTemplate = () => {
+    const next = new URLSearchParams(addressSearch.toString());
+    next.delete("template");
+    const query = next.toString();
+    replaceAddressWithoutNavigating(query ? `${window.location.pathname}?${query}` : window.location.pathname);
+  };
   const [reorderTypesOpen, setReorderTypesOpen] = useState(false);
   // THE ARCHIVED-ITEMS LAW (common-docs/policies/archived-items.md): the
   // default list hides removed scope types, and revealing them is ONE click
@@ -382,10 +392,18 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
         onOpenChange={setAddScopeOpen}
         orgId={organization.id}
       />
+      {/* THE LINK FINISHES ITS SENTENCE (lane HANDOVER, 2026-09-27): the Templates page's
+          "Apply to <organization>" lands here with `?template=<id>`, which nothing read, so the
+          person arrived on the empty scopes page with no template in sight. It opens the drawer on
+          that template; closing it drops the address's template. */}
       <TemplateGalleryDrawer
-        open={galleryOpen}
-        onOpenChange={setGalleryOpen}
+        open={galleryOpen || addressedTemplateId !== null}
+        onOpenChange={(next) => {
+          setGalleryOpen(next);
+          if (!next && addressedTemplateId !== null) dropAddressedTemplate();
+        }}
         orgId={organization.id}
+        initialTemplateId={addressedTemplateId}
       />
       <ReorderDialog
         open={reorderTypesOpen}

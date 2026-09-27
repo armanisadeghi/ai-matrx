@@ -56,6 +56,11 @@ interface TemplateGalleryDrawerProps {
   initialMode?: Mode;
   /** Called after a template (or single scope-type) is successfully applied. */
   onApplied?: () => void;
+  /**
+   * A template the drawer opens ON (its preview and Apply), e.g. the one a link named with
+   * `?template=<id>` (the Templates page's "Apply to <organization>"). Lane HANDOVER, 2026-09-27.
+   */
+  initialTemplateId?: string | null;
 }
 
 const ALL = "__all__";
@@ -124,6 +129,7 @@ export function TemplateGalleryDrawer({
   orgId,
   initialMode = "templates",
   onApplied,
+  initialTemplateId = null,
 }: TemplateGalleryDrawerProps) {
   const dispatch = useAppDispatch();
   const allTemplates = useAppSelector(selectTemplatesList);
@@ -148,10 +154,11 @@ export function TemplateGalleryDrawer({
   useEffect(() => {
     if (open) {
       setMode(initialMode);
+      if (initialTemplateId) setSelectedId(initialTemplateId);
     } else {
       setSelectedId(null);
     }
-  }, [open, initialMode]);
+  }, [open, initialMode, initialTemplateId]);
 
   const visibleTemplates = useMemo(() => {
     let list = allTemplates;
