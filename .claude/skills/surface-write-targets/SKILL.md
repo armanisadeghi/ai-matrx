@@ -159,7 +159,10 @@ test rows you created so the person can remove them.
   with the evidence, and only after he approves set `inlineApproval: "Arman
   <date>: <why>"` beside the number.
 - **Judge it by what agents do first.** A surface is failing when most agent
-  runs on it open with `context` lookups for the same value. The live agent
+  runs on it open with `context` lookups for the same value. Measure it with
+  `pnpm surface:openers --surface <client/name> [--days 14]` (prints read-only
+  SQL for the Supabase MCP; an estimate until conversations record their
+  surface). Record the share before and after your change in your report. The live agent
   test (Step 3) must show the agent answering "what is on this page" with no
   lookups; report any lookup it made.
 - **A guide for any page with more than one record type or any rule the
