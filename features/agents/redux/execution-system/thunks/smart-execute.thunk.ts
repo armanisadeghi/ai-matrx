@@ -28,7 +28,7 @@ import { toast } from "@/lib/toast";
 import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
 import {
   ensureExecutionOrganization,
-  requireExecutionOrganizationId,
+  executionOrganizationForRequest,
 } from "../utils/required-organization";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { getManifest } from "@/features/surfaces/manifests/registry";
@@ -136,7 +136,7 @@ export const smartExecute = createAsyncThunk<
       try {
         await ensureExecutionOrganization(state, conversationId);
         state = getState();
-        requireExecutionOrganizationId(state, conversationId);
+        executionOrganizationForRequest(state, conversationId);
       } catch (error) {
         if (isOrganizationSelectionCancelled(error)) return;
         const message =

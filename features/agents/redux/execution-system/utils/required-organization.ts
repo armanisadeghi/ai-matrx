@@ -3,6 +3,39 @@ import { adminLaneOrganizationId } from "@/lib/api/admin-lane";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 /**
+ * THE ONE GUEST EXCEPTION (aidream `enforce_conversation_start_organization`).
+ *
+ * A fingerprint guest — no session, a browser fingerprint — has no
+ * membership-selected organization and MUST NOT name one: the server's AI
+ * funnel resolves the guest's own organization before the first write. Until
+ * 2026-09-27 this client asked every guest "Which workspace is this for?"
+ * (with "Your session is unavailable") on the first Run of a public app at
+ * `/p/<slug>`, so no signed-out visitor could run anything. Every other caller
+ * still names its organization exactly as before.
+ */
+export function isFingerprintGuestExecution(state: RootState): boolean {
+  // Read defensively: partial stores (tests, demos) may carry neither slice,
+  // and a store with no fingerprint is never the guest lane.
+  const partial = state as Partial<RootState>;
+  return (
+    !partial.userAuth?.accessToken && Boolean(partial.userProfile?.fingerprintId)
+  );
+}
+
+/**
+ * The organization a start request names: the conversation's / selected
+ * organization for every signed-in lane (refusing exactly as
+ * `requireExecutionOrganizationId` does), and nothing for a fingerprint guest.
+ */
+export function executionOrganizationForRequest(
+  state: RootState,
+  conversationId: string,
+): string | undefined {
+  if (isFingerprintGuestExecution(state)) return undefined;
+  return requireExecutionOrganizationId(state, conversationId);
+}
+
+/**
  * Return the organization that owns an AI execution request.
  *
  * An existing conversation's durable organization wins. A brand-new
@@ -44,6 +77,8 @@ export async function ensureExecutionOrganization(
   state: RootState,
   conversationId: string,
 ): Promise<string | null> {
+  // A fingerprint guest is never asked: the server resolves its organization.
+  if (isFingerprintGuestExecution(state)) return null;
   const instance = state.conversations.byConversationId[conversationId];
   // No instance is not a question either — `requireExecutionOrganizationId`
   // owns that error ("Conversation not found"). Asking first would spend a

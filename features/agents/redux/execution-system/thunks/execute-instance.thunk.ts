@@ -79,7 +79,7 @@ import {
 } from "@/lib/redux/slices/appContextSlice";
 import {
   ensureExecutionOrganization,
-  requireExecutionOrganizationId,
+  executionOrganizationForRequest,
 } from "../utils/required-organization";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import {
@@ -300,7 +300,8 @@ export function assembleRequest(
   // This makes the client independently correct: a continuation carries the
   // right org even if appContextSlice has not bootstrapped yet, while a new
   // conversation fails closed until the explicit selection exists.
-  const organization_id = requireExecutionOrganizationId(state, conversationId);
+  // Undefined only for a fingerprint guest, who must not name one.
+  const organization_id = executionOrganizationForRequest(state, conversationId);
   const project_id = selectProjectId(state) ?? undefined;
   const task_id = selectTaskId(state) ?? undefined;
   // Active scope selections (multi-scope, keyed by scope id — any number of
@@ -348,7 +349,7 @@ export function assembleRequest(
   // Assemble snake_case body
   const request: AssembledAgentStartRequest = {
     stream: true,
-    organization_id,
+    ...(organization_id ? { organization_id } : {}),
   };
 
   if (user_input !== undefined) request.user_input = user_input;
@@ -524,7 +525,7 @@ export const executeInstance = createAsyncThunk<
       // "Select an organization before sending this message" AFTER the person
       // had just selected one, which is the only case it exists for.
       state = getState() as RootState;
-      requireExecutionOrganizationId(state, conversationId);
+      executionOrganizationForRequest(state, conversationId);
 
       // ── Concurrent-turn guard (second layer behind smartExecute) ──────────
       // A live abort controller means a stream is OPEN on this conversation.
@@ -632,7 +633,10 @@ export const executeInstance = createAsyncThunk<
       // Freeze the first request's explicit organization onto the local
       // conversation before the server confirmation flips cacheOnly=false.
       // Every continuation then re-sends this value even if the picker moves.
-      if (instance.organizationId !== payload.organization_id) {
+      if (
+        payload.organization_id &&
+        instance.organizationId !== payload.organization_id
+      ) {
         dispatch(
           patchConversation({
             conversationId,
