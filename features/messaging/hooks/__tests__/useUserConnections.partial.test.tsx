@@ -45,7 +45,7 @@ jest.mock("@/utils/supabase/client", () => ({
 }));
 const ME = { id: "u-me" };
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => ME }));
-let conversationsResult = { conversations: [], isInitialLoading: false };
+let conversationsResult: { conversations: Array<{ participants: Array<{ userId: string; email: string; displayName: string; avatarUrl: string }> }>; isInitialLoading: boolean } = { conversations: [], isInitialLoading: false };
 jest.mock("@ai-matrx/messaging/react", () => ({ useConversations: () => conversationsResult }));
 const ORGANIZATIONS_RESULT = {
   organizations: [

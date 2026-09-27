@@ -134,7 +134,7 @@ export function ChannelSelector() {
         </div>
       </div>
       
-      {refreshError && channels.length > 0 && (
+      {Boolean(refreshError) && channels.length > 0 && (
         <StaleDataNotice
           hasData
           what="your Slack channels"

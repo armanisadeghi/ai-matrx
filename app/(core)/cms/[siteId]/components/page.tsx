@@ -346,7 +346,7 @@ export default function ComponentsPage() {
             </div>
           )}
 
-          {componentsError && components.length > 0 && (
+          {Boolean(componentsError) && components.length > 0 && (
             <StaleDataNotice
               hasData
               what="this site's components"

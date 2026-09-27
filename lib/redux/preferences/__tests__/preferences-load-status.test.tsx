@@ -193,7 +193,7 @@ describe("edits before the saved record loads are held, then merged onto it", ()
     nextAnswer = { data: null, error: { message: "network down" } };
     await load(store);
     store.dispatch(setPreference({ module: "sandbox", preference: "tier", value: "ec2" }));
-    store.dispatch(addFavorite({ id: "fav-new", kind: "nav", label: "New", href: "/new" }));
+    store.dispatch(addFavorite({ id: "fav-new", kind: "nav", label: "New", href: "/new", pinnedAt: "2026-09-26T00:00:00Z" }));
     await pastDebounce();
     expect(remoteWrites).toEqual([]);
 
