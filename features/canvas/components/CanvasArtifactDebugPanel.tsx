@@ -68,6 +68,7 @@ export function CanvasArtifactDebugPanel({
           Artifact debug (admin)
         </span>
         <span className="ml-auto text-muted-foreground">
+          {/* read-gate-exempt: whether the canvas item carries a real UUID, an id-shape flag in an admin debug strip; the row read's failure is shown in this panel's own error line */}
           {hasRealId ? "UUID ok" : "NO UUID"}
         </span>
         {expanded ? (

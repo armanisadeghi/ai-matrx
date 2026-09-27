@@ -97,6 +97,7 @@ export function CanvasRenderer({
   if (!content) {
     return (
       <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-600">
+        {/* read-gate-exempt: content arrives as a prop or from the canvas redux state an opener pushed into, not from a read; nothing opened means nothing to show */}
         <p className="text-sm">No content to display</p>
       </div>
     );

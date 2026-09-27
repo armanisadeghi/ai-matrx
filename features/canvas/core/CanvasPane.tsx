@@ -115,6 +115,7 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
   if (!item) {
     return (
       <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
+        {/* read-gate-exempt: canvas items are pushed into the canvas redux state by the surface that opened them, not read; an empty pane means nothing was opened */}
         No content
       </div>
     );
