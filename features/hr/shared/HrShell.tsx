@@ -187,7 +187,7 @@ export function HrShell({
                           {crumb.href ? (
                             <Link
                               href={crumb.href}
-                              className="truncate rounded-sm px-0.5 hover:text-foreground hover:underline"
+                              className="inline-flex min-h-8 max-w-full items-center truncate rounded-sm px-1 hover:text-foreground hover:underline pointer-coarse:min-h-11"
                             >
                               {crumb.label}
                             </Link>
