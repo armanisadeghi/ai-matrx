@@ -270,18 +270,22 @@ export function mergeIdentityDraft(
 // ── Applicability ───────────────────────────────────────────────────────────
 
 export type HrApplicabilityKey = HrApplicabilityFlag["key"];
-export type HrDeclarableKey = Exclude<HrApplicabilityKey, "everify_required_states">;
+/** Every flag can be declared; E-Verify is declared as a list of states. */
+export type HrDeclarableKey = HrApplicabilityKey;
 
 export const HR_DECLARABLE_FLAGS: readonly HrDeclarableKey[] = [
   "is_fmla_covered",
   "is_aca_ale",
   "is_eeo1_filer",
   "is_federal_contractor",
+  "everify_required_states",
 ];
 
 /** One stored declaration, as this page writes it into `applicability_basis.declared`. */
 export type HrApplicabilityDeclaration = {
   applies: boolean;
+  /** E-Verify only: the states that require it (empty = none). */
+  states?: string[];
   reason: string;
   declared_at: string;
 };
@@ -300,6 +304,9 @@ export function readDeclarations(
       if (typeof e.applies === "boolean") {
         out[key] = {
           applies: e.applies,
+          ...(Array.isArray(e.states)
+            ? { states: e.states.filter((x): x is string => typeof x === "string") }
+            : {}),
           reason: typeof e.reason === "string" ? e.reason : "",
           declared_at: typeof e.declared_at === "string" ? e.declared_at : "",
         };
@@ -368,13 +375,15 @@ export function applicabilityFlags(profile: HrEmployerProfileRead): HrApplicabil
     value: boolean | string[] | null,
     derived: string | null,
   ): HrApplicabilityFlag => {
-    const declaration =
-      key === "everify_required_states" ? undefined : declarations[key as HrDeclarableKey];
+    const declaration = declarations[key];
     return {
       key,
       label: FLAG_COPY[key].label,
       test: FLAG_COPY[key].test,
-      value,
+      value:
+        key === "everify_required_states" && declaration?.states
+          ? declaration.states
+          : value,
       derivation: derivedFor(key, derived),
       isDeclared: Boolean(declaration),
       declaredBy: null,
@@ -392,16 +401,25 @@ export function applicabilityFlags(profile: HrEmployerProfileRead): HrApplicabil
   ];
 }
 
-export function flagValueText(value: HrApplicabilityFlag["value"]): string {
-  if (Array.isArray(value)) return value.length ? value.join(", ") : "None";
-  if (value === true) return "Yes";
-  if (value === false) return "No";
+/** True when nobody has counted or declared this flag — "not established", never "no". */
+export function flagIsOpen(flag: HrApplicabilityFlag): boolean {
+  if (flag.isDeclared || flag.derivation) return false;
+  return Array.isArray(flag.value) ? flag.value.length === 0 : flag.value === null;
+}
+
+export function flagValueText(flag: HrApplicabilityFlag): string {
+  if (flagIsOpen(flag)) return "Not established";
+  if (Array.isArray(flag.value)) return flag.value.length ? flag.value.join(", ") : "None required";
+  if (flag.value === true) return "Yes";
+  if (flag.value === false) return "No";
   return "Not established";
 }
 
 export type HrDeclarationRequest = {
   flag: HrDeclarableKey;
   applies: boolean;
+  /** E-Verify only. */
+  states?: string[];
   reason: string;
 };
 
@@ -412,7 +430,7 @@ export type HrDeclarationRequest = {
 export function parseDeclarations(value: unknown): HrDeclarationRequest[] {
   if (!Array.isArray(value) || value.length === 0) {
     throw new Error(
-      'Send a JSON array of 1-4 objects: [{ "flag": "is_fmla_covered", "applies": true, "reason": "…" }]. Nothing was changed.',
+      'Send a JSON array of 1-5 objects: [{ "flag": "is_fmla_covered", "applies": true, "reason": "…" }] or, for E-Verify, [{ "flag": "everify_required_states", "states": ["AZ"], "reason": "…" }]. Nothing was changed.',
     );
   }
   const problems: string[] = [];
@@ -426,26 +444,34 @@ export function parseDeclarations(value: unknown): HrDeclarationRequest[] {
     }
     const bag = item as Record<string, unknown>;
     const flag = bag.flag;
-    if (typeof flag !== "string" || !(HR_DECLARABLE_FLAGS as readonly string[]).includes(flag)) {
-      problems.push(
-        `${at}: flag must be one of ${HR_DECLARABLE_FLAGS.join(", ")} (E-Verify states are not declared here).`,
-      );
-    } else if (seen.has(flag)) {
+    const known =
+      typeof flag === "string" && (HR_DECLARABLE_FLAGS as readonly string[]).includes(flag);
+    if (!known) {
+      problems.push(`${at}: flag must be one of ${HR_DECLARABLE_FLAGS.join(", ")}.`);
+    } else if (seen.has(flag as string)) {
       problems.push(`${at}: ${flag} appears twice.`);
     } else {
-      seen.add(flag);
+      seen.add(flag as string);
     }
-    if (typeof bag.applies !== "boolean") problems.push(`${at}: applies must be true or false.`);
     const reason = typeof bag.reason === "string" ? bag.reason.trim() : "";
     if (reason.length < 4) {
-      problems.push(`${at}: reason must say why in a sentence — an undocumented override is an audit finding.`);
+      problems.push(`${at}: reason must say why in a sentence — an undocumented declaration is an audit finding.`);
     }
-    if (
-      typeof flag === "string" &&
-      (HR_DECLARABLE_FLAGS as readonly string[]).includes(flag) &&
-      typeof bag.applies === "boolean" &&
-      reason.length >= 4
-    ) {
+    if (flag === "everify_required_states") {
+      const raw = bag.states;
+      const states = Array.isArray(raw)
+        ? raw.map((x) => (typeof x === "string" ? x.trim().toUpperCase() : ""))
+        : null;
+      if (!states || states.some((x) => !/^[A-Z]{2}$/.test(x))) {
+        problems.push(`${at}: states must be a list of two-letter state codes ([] for none).`);
+      } else if (reason.length >= 4) {
+        const unique = [...new Set(states)].sort();
+        out.push({ flag: "everify_required_states", applies: unique.length > 0, states: unique, reason });
+      }
+      return;
+    }
+    if (typeof bag.applies !== "boolean") problems.push(`${at}: applies must be true or false.`);
+    if (known && typeof bag.applies === "boolean" && reason.length >= 4) {
       out.push({ flag: flag as HrDeclarableKey, applies: bag.applies, reason });
     }
   });
@@ -456,6 +482,10 @@ export function parseDeclarations(value: unknown): HrDeclarationRequest[] {
 /**
  * Requests → the door's payload: every flag column that changes, plus the WHOLE
  * declared map (earlier declarations carried forward — see the file header).
+ *
+ * E-Verify: the door writes `everify_required_states` from the array, but an EMPTY
+ * array aggregates to null and keeps the old list — so "none required" lives in the
+ * declaration (`states: []`), which the page reads first.
  */
 export function declarationPayload(
   profile: HrEmployerProfileRead,
@@ -469,10 +499,11 @@ export function declarationPayload(
   for (const request of requests) {
     declared[request.flag] = {
       applies: request.applies,
+      ...(request.states ? { states: request.states } : {}),
       reason: request.reason,
       declared_at: now,
     };
-    payload[request.flag] = request.applies;
+    payload[request.flag] = request.states ?? request.applies;
   }
   payload.applicability_override = declared;
   payload.applicability_override_reason = requests
@@ -524,7 +555,7 @@ export function employerBundle(input: HrEmployerScopeInput): string {
           xmlElement("flag", {
             key: flag.key,
             label: flag.label,
-            value: flagValueText(flag.value),
+            value: flagValueText(flag),
             declared: flag.isDeclared || null,
             reason: flag.declaredReason,
             basis: flag.isDeclared ? null : flag.derivation ?? "nobody has counted or declared this",
@@ -824,6 +855,8 @@ export type HrEstablishmentUpdatePlan = {
   previousName: string;
   input: HrEstablishmentInput;
   changed: string[];
+  /** Archive after saving any other changes (`hr_establishment_set_archived`). */
+  archive: boolean;
 };
 
 /** `create_establishments` → checked inputs. Reports every problem at once. */
@@ -873,13 +906,28 @@ export function parseUpdateEstablishments(
       return;
     }
     seen.add(row.id);
+    const { archived, ...fields } = item as Record<string, unknown>;
+    if (archived !== undefined && archived !== true) {
+      problems.push(
+        `${at}: archived can only be true here — archived establishments are not listed on this page, so they cannot be restored from it.`,
+      );
+    }
     const before = establishmentToInput(row);
-    const input = mergeEstablishmentItem(before, item, jurisdictions, at, problems);
+    const input = mergeEstablishmentItem(before, fields, jurisdictions, at, problems);
     const others = existing.filter((e) => e.id !== row.id);
-    for (const p of establishmentProblems(input, others, jurisdictions)) problems.push(`${at}: ${p}`);
-    const changed = Object.keys(item as object).filter((k) => k !== "id");
-    if (changed.length === 0) problems.push(`${at}: nothing to change on ${row.name}.`);
-    out.push({ id: row.id, previousName: row.name, input, changed });
+    const changed = Object.keys(fields).filter((k) => k !== "id");
+    if (changed.length > 0) {
+      for (const p of establishmentProblems(input, others, jurisdictions)) problems.push(`${at}: ${p}`);
+    }
+    const archive = archived === true;
+    if (changed.length === 0 && !archive) problems.push(`${at}: nothing to change on ${row.name}.`);
+    out.push({
+      id: row.id,
+      previousName: row.name,
+      input,
+      changed: archive ? [...changed, "archived"] : changed,
+      archive,
+    });
   });
   if (problems.length > 0) throw new Error(`${problems.join(" ")} Nothing was changed.`);
   return out;
