@@ -46,8 +46,14 @@ import {
 } from "./merge-field-dom";
 
 export interface MergeFieldInputHandle extends ProTextareaEditorHandle {
-  /** Insert `{{path}}` at the caret (or where the caret last was), as a chip. */
+  /**
+   * Insert `{{path}}` at the caret (or where the caret last was), as a chip —
+   * with a space before it when it would touch a word — and put the caret
+   * right after it, in the field.
+   */
   insertField: (path: string) => void;
+  /** True while the page selection is inside this field. */
+  hasSelection: () => boolean;
 }
 
 export interface MergeFieldInputProps {
@@ -221,13 +227,36 @@ export const MergeFieldInput = forwardRef<MergeFieldInputHandle, MergeFieldInput
         commit(text, text.length, "external", true);
         return true;
       },
+      hasSelection: () => {
+        const root = rootRef.current;
+        const sel = window.getSelection();
+        return Boolean(root && sel && sel.rangeCount > 0 && root.contains(sel.getRangeAt(0).startContainer));
+      },
       insertField: (path: string) => {
         const current = shownRef.current ?? value;
         const at = Math.min(caretRef.current ?? current.length, current.length);
-        const token = `{{${path}}}`;
-        const next = current.slice(0, at) + token + current.slice(at);
+        const before = current.slice(0, at);
+        // A chip never glues onto a word: "Hi{{name}}" reads as one blob.
+        const token = `${before && !/\s$/.test(before) ? " " : ""}{{${path}}}`;
+        const next = before + token + current.slice(at);
+        const caret = at + token.length;
         rootRef.current?.focus();
-        commit(next, at + token.length, "hard", true);
+        commit(next, caret, "hard", true);
+        // A menu that just closed hands focus back to its trigger; take it
+        // back so the person keeps typing right after the chip.
+        requestAnimationFrame(() => {
+          const root = rootRef.current;
+          if (!root) return;
+          root.focus();
+          const point = pointAtStoredOffset(root, caret);
+          const sel = window.getSelection();
+          const range = document.createRange();
+          range.setStart(point.node, point.offset);
+          range.collapse(true);
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+          caretRef.current = caret;
+        });
       },
     }));
 

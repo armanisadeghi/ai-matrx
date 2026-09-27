@@ -84,8 +84,14 @@ export function buildMessageTemplateScope(input: {
   draft: MessageTemplateDraftScope;
   isDirty: boolean;
   saveError: string | null;
+  /** The page's live focus, for the baseline values (selection, content…). */
+  live?: {
+    field: string | null;
+    selection: { text: string; before: string; after: string } | null;
+  };
 }): SurfaceScopePayload {
-  const { template, canEdit, mode, draft, isDirty, saveError } = input;
+  const { template, canEdit, mode, draft, isDirty, saveError, live } = input;
+  const body = mode === "edit" ? draft.content : (template.content ?? "");
   return createMessageTemplateScope({
     message_template: buildMessageTemplateBundle(template),
     template_id: template.id,
@@ -99,6 +105,11 @@ export function buildMessageTemplateScope(input: {
     has_unsaved_changes: isDirty,
     ...(canEdit ? { template_draft: draft } : {}),
     ...(saveError ? { save_error: saveError } : {}),
+    content: body,
+    selection: live?.selection?.text ?? "",
+    text_before: live?.selection?.before ?? "",
+    text_after: live?.selection?.after ?? "",
+    context: { page: "message template", mode, focused_field: live?.field ?? null },
   });
 }
 

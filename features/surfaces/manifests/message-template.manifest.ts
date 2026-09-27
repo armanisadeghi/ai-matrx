@@ -273,7 +273,13 @@ export function createMessageTemplateScope(values: {
   has_unsaved_changes: boolean;
   template_draft?: MessageTemplateDraftScope;
   save_error?: string;
+  /** Baseline: the message body as it stands (the edit form's, while editing). */
+  content?: string;
+  /** Baseline: the text selected in a field on this page ("" when none), and around it. */
   selection?: string;
+  text_before?: string;
+  text_after?: string;
+  /** Baseline: where the person is — page mode and the field they are in. */
   context?: Record<string, unknown>;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;

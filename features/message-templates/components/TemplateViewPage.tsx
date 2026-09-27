@@ -14,7 +14,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Archive, Eye, Info, Pencil, Plus, Save, Undo2 } from "lucide-react";
+import { Archive, Eye, Info, Pencil, Plus, Save, X } from "lucide-react";
 import { isPubliclyVisible } from "@/lib/visibility/labels";
 import {
   type MessageRole,
@@ -232,7 +232,12 @@ function InsertFieldMenu({
           Insert field
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent
+        align="end"
+        className="w-64"
+        // Focus goes back to the field (insertField), not to this trigger.
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
         <div className="max-h-[60dvh] overflow-y-auto">
           {used.length > 0 && (
             <>
@@ -285,6 +290,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const bodyRef = useRef<MergeFieldInputHandle>(null);
   const subjectRef = useRef<MergeFieldInputHandle>(null);
+  const nameRef = useRef<MergeFieldInputHandle>(null);
 
   const draft: MessageTemplateDraftScope = {
     label: label.trim(),
@@ -328,9 +334,31 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
   };
 
   const handleDiscard = async () => {
-    if (!(await confirmDiscard())) return;
+    if (!(await confirmDiscard({ discarding: true }))) return;
     resetDraft();
     selectMode(pageHref);
+  };
+
+  // Which field the person is in, and what they have selected there — read
+  // from the fields' own handles when an agent asks (never fetched).
+  const liveFocus = () => {
+    const fields: [string, MergeFieldInputHandle | null][] = [
+      ["name", nameRef.current],
+      ["email subject", subjectRef.current],
+      ["message", bodyRef.current],
+    ];
+    for (const [field, handle] of fields) {
+      if (!handle?.hasSelection()) continue;
+      const text = handle.getValue();
+      const { start, end } = handle.getSelection();
+      const a = Math.min(start, end);
+      const b = Math.max(start, end);
+      return {
+        field,
+        selection: { text: text.slice(a, b), before: text.slice(0, a), after: text.slice(b) },
+      };
+    }
+    return { field: null, selection: null };
   };
 
   const getScope = () =>
@@ -341,6 +369,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
       draft,
       isDirty,
       saveError,
+      live: liveFocus(),
     });
 
   const archiveNow = async () => {
@@ -472,20 +501,34 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
     ) : null;
 
   // Each item keeps its own separator, so a wrap never strands a "·".
+  // How many times it has been saved since it was made (version 1 = new).
+  const edits = Math.max(0, (saved.version ?? 1) - 1);
+  const metaItems = [
+    updated ? `Updated ${updated}` : null,
+    edits > 0 ? `Edited ${edits} ${edits === 1 ? "time" : "times"}` : null,
+  ].filter((item): item is string => item !== null);
+  // Each item is unbreakable; a "·" joins them only where they share a line
+  // (sm+), so a wrap on a phone never strands a separator.
   const metaLine = (
-    <span className="inline-flex flex-wrap gap-x-1 text-xs text-muted-foreground">
-      {updated && <span className="whitespace-nowrap">Updated {updated}</span>}
-      <span className="whitespace-nowrap">
-        {updated ? "· " : ""}Version {saved.version}
-      </span>
+    <span className="inline-flex flex-wrap gap-x-2 text-xs text-muted-foreground">
+      {metaItems.map((item, i) => (
+        <span key={item} className="whitespace-nowrap">
+          {i > 0 && <span className="mr-2 hidden sm:inline">·</span>}
+          {item}
+        </span>
+      ))}
     </span>
   );
 
   // The record as a person reads it — fields by name, never raw {{…}} — for
   // the right-click menu's header and its Copy.
+  // In edit mode it is the DRAFT — Copy, Export and Save to Notes act on what
+  // is on screen, not the last saved text.
+  const menuSubject = mode === "edit" ? subject.trim() : savedSubject;
+  const menuBody = mode === "edit" ? content : (saved.content ?? "");
   const readableText = [
-    savedSubject ? `Subject: ${readable(savedSubject)}` : null,
-    readable(saved.content ?? ""),
+    menuSubject ? `Subject: ${readable(menuSubject)}` : null,
+    readable(menuBody),
   ]
     .filter((part): part is string => part !== null)
     .join("\n\n");
@@ -565,19 +608,23 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
             ? [
                 // Save exists only when there is something to save; the
                 // "Saved" state is the status text beside the name.
+                // Discard is labelled and sits apart from Save (never an
+                // unlabelled undo arrow beside it).
                 ...(mode === "edit" && isDirty
                   ? [
+                      {
+                        label: "Discard",
+                        icon: X,
+                        showLabel: true,
+                        onPress: () => void handleDiscard(),
+                      },
                       {
                         label: isSaving ? "Saving" : "Save",
                         icon: Save,
                         primary: true,
+                        pinnedOnPhone: true,
                         disabled: isSaving || !canSave,
                         onPress: handleSave,
-                      },
-                      {
-                        label: "Discard changes",
-                        icon: Undo2,
-                        onPress: () => void handleDiscard(),
                       },
                     ]
                   : []),
@@ -681,6 +728,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                   <div className="space-y-1">
                     <Label id="template-name-label">Name</Label>
                     <MergeFieldTextarea
+                      ref={nameRef}
                       aria-labelledby="template-name-label"
                       multiline={false}
                       value={label}

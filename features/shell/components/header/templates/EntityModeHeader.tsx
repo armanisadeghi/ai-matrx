@@ -82,6 +82,12 @@ export interface EntityHeaderAction {
    * whose icon-only actions would otherwise read as unlabeled glyphs.
    */
   showLabel?: boolean;
+  /**
+   * Keep this action visible in the PHONE header row too (e.g. Save while
+   * there are unsaved changes), not only in the ⋮ sheet. Use for at most one
+   * action; the name gives up room to it.
+   */
+  pinnedOnPhone?: boolean;
 }
 
 export interface EntityModeHeaderProps {
@@ -336,6 +342,14 @@ export function EntityModeHeader({
             ) : (
               <span className="flex min-w-0 items-center px-1.5">{label}</span>
             )}
+            {isPhone &&
+              actions
+                ?.filter((a) => a.pinnedOnPhone)
+                .map((a) => (
+                  <span key={`pinned-${a.label}`} className="shrink-0">
+                    <DesktopAction action={a} />
+                  </span>
+                ))}
           </>
         }
         center={

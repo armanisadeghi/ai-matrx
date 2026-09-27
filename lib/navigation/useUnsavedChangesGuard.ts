@@ -90,14 +90,26 @@ export function useUnsavedChangesGuard({ when, what = "your changes" }: UnsavedC
   /** Set for the one navigation the person agreed to, so it is not asked twice. */
   const bypassRef = useRef(false);
 
-  const confirmDiscard = async (): Promise<boolean> => {
+  /**
+   * Ask before unsaved work is thrown away. With no argument it is the
+   * LEAVING question (a link or Back); a page's own Discard passes
+   * `{ discarding: true }` for Discard wording.
+   */
+  const confirmDiscard = async (opts?: { discarding?: boolean }): Promise<boolean> => {
     if (!whenRef.current) return true;
-    return confirm({
-      title: "Discard unsaved changes?",
-      description: `You have not saved ${what}. Leaving now throws them away.`,
-      confirmLabel: "Discard changes",
-      variant: "destructive",
-    });
+    return opts?.discarding
+      ? confirm({
+          title: "Discard your changes?",
+          description: `Your unsaved edits (${what}) will be lost. This can't be undone.`,
+          confirmLabel: "Discard",
+          variant: "destructive",
+        })
+      : confirm({
+          title: "Leave without saving?",
+          description: `You have not saved ${what}. Leaving now throws them away.`,
+          confirmLabel: "Leave and discard",
+          variant: "destructive",
+        });
   };
 
   useEffect(() => {
