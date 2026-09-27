@@ -201,7 +201,7 @@ export const researchTopicsManifest: SurfaceManifest = {
     "Research topics list (/research/topics): the visible topics, scope, search and filters; create, update and delete topics.",
   readiness: "partial",
   readinessNote:
-    "Built 2026-09-27 (page-pass). Not yet proven with a live agent run on production: the probe and a create/update/delete agent test are owed.",
+    "Proven live 2026-09-27 on a52ad38f28: surface:probe pass (6/14 supplied, nothing undeclared, menu opens) and a Badass Agent run that created two PP test topics in one approval, renamed one and deleted the other, each row read back with SQL. Not yet verified: the server-side rsx_* list (dedb38550e) awaits its release, and no valueKind is named on the targets.",
   label: "Research topics",
   urlPattern: "/research/topics",
   intro: `<surface_intro>
