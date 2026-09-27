@@ -50,6 +50,7 @@ describe("pinnedHolder — the OFF answer", () => {
       provenance: null,
       loading: false,
       error: null,
+      organizationPending: false,
     });
   });
 

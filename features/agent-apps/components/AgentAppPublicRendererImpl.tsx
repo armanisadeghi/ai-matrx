@@ -35,6 +35,7 @@ import {
 import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { useWarmAgent } from "@/features/agents/hooks/useWarmAgent";
 import { useAppHolder } from "@/features/agent-apps/lib/appHolder";
+import { AppWorkspaceGate } from "./AppWorkspaceGate";
 import { SHELL_REGISTRY } from "./shells";
 import { AgentAppFullyCustomShell } from "./shells/AgentAppFullyCustomShell";
 import { useAgentAppTracker } from "../tracking/useAgentAppTracker";
@@ -83,7 +84,15 @@ interface AgentAppPublicRendererProps {
   }>;
 }
 
-export function AgentAppPublicRenderer({
+export function AgentAppPublicRenderer(props: AgentAppPublicRendererProps) {
+  return (
+    <AppWorkspaceGate app={props.app}>
+      <AgentAppShellDispatch {...props} />
+    </AppWorkspaceGate>
+  );
+}
+
+function AgentAppShellDispatch({
   app,
   slug,
   TestComponent,

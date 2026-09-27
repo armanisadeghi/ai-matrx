@@ -103,6 +103,13 @@ export interface AppHolder {
   provenance: ResolvedMandate["provenance"] | null;
   loading: boolean;
   error: string | null;
+  /**
+   * NO WORKSPACE IS CHOSEN — a wait for the person, never a fault. Which agent
+   * runs the app's job depends on the active organization, and nobody picks
+   * one for the person, so a host shows the canonical `WorkspaceGate` (the
+   * inline workspace picker) instead of printing `error` as a failure.
+   */
+  organizationPending: boolean;
 }
 
 /**
@@ -121,6 +128,7 @@ export function pinnedHolder(app: AppHolderSource): AppHolder {
     provenance: null,
     loading: false,
     error: null,
+    organizationPending: false,
   };
 }
 
@@ -143,6 +151,7 @@ function guestHolder(app: AppHolderSource): AppHolder {
       ? null
       : `app "${app.mandate_key ?? app.mandate_id ?? "?"}" has no resolvable Holder — ` +
         "the mandate is missing, disabled, or held by something that cannot run yet",
+    organizationPending: false,
   };
 }
 
@@ -230,6 +239,7 @@ export function useAppHolder(
         provenance: null,
         loading: true,
         error: null,
+        organizationPending: false,
       };
     }
     if (!APP_MANDATE_CUTOVER) return pinnedHolder(app);
@@ -254,6 +264,7 @@ export function useAppHolder(
         provenance: null,
         loading: true,
         error: null,
+        organizationPending: false,
       };
     }
     if (mandateState.error || !mandateState.mandate) {
@@ -266,7 +277,14 @@ export function useAppHolder(
         mandateKey: storedMandateKey(app.mandate_key),
         provenance: null,
         loading: false,
-        error: mandateState.error ?? `mandate "${app.mandate_key}" did not resolve`,
+        // No workspace chosen is a question for the person, never a fault
+        // with an internal key in it: hosts gate on `organizationPending`
+        // (`AppWorkspaceGate`), and any surface that still prints `error`
+        // prints a sentence the person can act on.
+        error: mandateState.organizationPending
+          ? "Choose a workspace to run this app."
+          : (mandateState.error ?? `mandate "${app.mandate_key}" did not resolve`),
+        organizationPending: mandateState.organizationPending,
       };
     }
     const resolved = mandateState.mandate;
@@ -274,6 +292,7 @@ export function useAppHolder(
       ...holderIdentityFromResolved(resolved),
       loading: false,
       error: null,
+      organizationPending: false,
     };
   }, [app, guest, mandateState]);
 }
