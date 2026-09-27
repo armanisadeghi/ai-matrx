@@ -90,6 +90,7 @@ export function MemoryAidButton({
   const [loading, setLoading] = useState(false);
   const [asked, setAsked] = useState(false);
   const [hint, setHint] = useState<MemoryHintPayload | null>(null);
+  const [unusable, setUnusable] = useState<string | null>(null);
 
   // An in-flight run that resolves AFTER this card's instance unmounted must
   // not claim a conversation (the handle's cleanup already ran — a late claim
@@ -117,6 +118,7 @@ export function MemoryAidButton({
     setLoading(true);
     setAsked(true);
     setHint(null);
+    setUnusable(null);
     // A re-tap replaces the previous run — release it so the inline display
     // starts pending instead of replaying the old stream.
     run.release();
@@ -131,6 +133,9 @@ export function MemoryAidButton({
         cardId,
         onConversationCreated: (conversationId) => {
           if (mountedRef.current) run.claim(conversationId);
+        },
+        onUnusable: (sentence) => {
+          if (mountedRef.current) setUnusable(sentence);
         },
       }),
     );
@@ -218,7 +223,9 @@ export function MemoryAidButton({
         <MemoryHintBlock serverData={shown} className="mt-2" />
       ) : asked ? (
         <div className="mt-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          Couldn&apos;t come up with a memory aid for this card right now.
+          {unusable
+            ? `Couldn't come up with a memory aid — ${unusable}`
+            : "Couldn't come up with a memory aid for this card right now."}
         </div>
       ) : null}
     </div>

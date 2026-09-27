@@ -12,6 +12,7 @@
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
   livePosture,
+  mandateOutputUnusableSentence,
   runHeadlessAgentJson,
 } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { EDU_MEMORY_MANDATES } from "../mandates";
@@ -33,6 +34,11 @@ export interface MemoryHintContext {
   cardId?: string | null;
   /** Live handle — the aid streams where the caller mounts it (never a spinner). */
   onConversationCreated?: (conversationId: string) => void;
+  /**
+   * A chosen agent ran but cannot answer this job (`mandate_output_unusable`)
+   * — the plain sentence, so the caller SAYS it.
+   */
+  onUnusable?: (sentence: string) => void;
 }
 
 /** The `fc_detail.metadata.source` tag identifying an aid this lane produced. */
@@ -117,6 +123,11 @@ export function memoryHint(ctx: MemoryHintContext) {
             }
           : {}),
       });
+      const unusable = mandateOutputUnusableSentence(result);
+      if (unusable) {
+        ctx.onUnusable?.(unusable);
+        return null;
+      }
       return coerceMemoryHint(result.data);
     } catch (err) {
       console.error("[memory.memoryHint] failed:", err);

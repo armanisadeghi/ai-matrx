@@ -360,6 +360,7 @@ export function StudyDeck(props: StudyDeckProps) {
   const [help, setHelp] = useState<HelpLiveResult | null>(null);
   const [helpLoading, setHelpLoading] = useState(false);
   const [helpAsked, setHelpAsked] = useState(false);
+  const [helpUnusable, setHelpUnusable] = useState<string | null>(null);
   const cardShownAtRef = useRef<number>(0);
 
   // D151 — the session's AI journal (`study_session.metadata.ai`). The tutor
@@ -429,6 +430,7 @@ export function StudyDeck(props: StudyDeckProps) {
     setHelpLoading(true);
     setHelp(null);
     setHelpAsked(true);
+    setHelpUnusable(null);
     try {
       const recent = buildRecentSessionContext(
         cards,
@@ -459,6 +461,7 @@ export function StudyDeck(props: StudyDeckProps) {
           dueCount: dueRes.data?.length ?? 0,
           timeOnCardMs: Date.now() - cardShownAtRef.current,
           cardHistory: historyRes.data ?? [],
+          onUnusable: setHelpUnusable,
         }),
       );
       setHelp(result);
@@ -517,6 +520,11 @@ export function StudyDeck(props: StudyDeckProps) {
           .filter((c) => resultsByCard[c.id] === undefined)
           .map((c) => c.front),
         onConversationCreated: live.bind,
+        onUnusable: (sentence) => {
+          toast.warning(`Couldn't write your session review — ${sentence}`, {
+            duration: 10000,
+          });
+        },
       }),
     )
       .then((result) => setReview(result))
@@ -1019,6 +1027,7 @@ export function StudyDeck(props: StudyDeckProps) {
               result={shownHelp}
               tip={shownTip}
               unavailable={helpAsked && !helpLoading && !help}
+              unavailableReason={helpUnusable}
             />
             <AskTutorButton
               seed={{
@@ -1358,6 +1367,7 @@ export function StudyDeck(props: StudyDeckProps) {
                   result={shownHelp}
                   tip={shownTip}
                   unavailable={helpAsked && !helpLoading && !help}
+                  unavailableReason={helpUnusable}
                 />
                 {/* P2 AskTutor — escalate from the one-shot nudge above into the
                   full memory-carrying tutor, pre-loaded with THIS card. */}
@@ -1468,6 +1478,7 @@ function AskAiPanel({
   result,
   tip,
   unavailable,
+  unavailableReason,
 }: {
   open: boolean;
   question: string;
@@ -1479,6 +1490,8 @@ function AskAiPanel({
   /** The coaching tip this session already produced for this card (D151). */
   tip: string | null;
   unavailable: boolean;
+  /** The chosen tutor ran but cannot answer this job — the plain sentence. */
+  unavailableReason?: string | null;
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -1535,7 +1548,9 @@ function AskAiPanel({
       )}
       {unavailable && (
         <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          AI help isn&apos;t available right now.
+          {unavailableReason
+            ? `Couldn't get help — ${unavailableReason}`
+            : "AI help isn't available right now."}
         </div>
       )}
     </div>

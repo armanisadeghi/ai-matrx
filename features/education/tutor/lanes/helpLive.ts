@@ -18,6 +18,7 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import {
   livePosture,
+  mandateOutputUnusableSentence,
   runHeadlessAgentJson,
 } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { studyService } from "@/features/education/study/service/studyService";
@@ -60,6 +61,11 @@ export interface HelpLiveContext {
    * and it used to be erased by the next card with no trace anywhere.
    */
   sessionId?: string | null;
+  /**
+   * A chosen agent ran but cannot answer this job (`mandate_output_unusable`)
+   * — the plain sentence, so the caller SAYS it.
+   */
+  onUnusable?: (sentence: string) => void;
 }
 
 export interface HelpLiveResult {
@@ -193,6 +199,11 @@ export function helpLive(ctx: HelpLiveContext) {
           : {}),
       });
 
+      const unusable = mandateOutputUnusableSentence(result);
+      if (unusable) {
+        ctx.onUnusable?.(unusable);
+        return null;
+      }
       // Partial-tolerant: an errored stream may still carry a usable object.
       return readHelp(result.data);
     } catch (err) {

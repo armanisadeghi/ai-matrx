@@ -36,6 +36,11 @@ interface HelpLiveArgs {
   question?: string;
   /** Milliseconds the learner has spent looking at this card so far. */
   timeOnCardMs?: number;
+  /**
+   * A chosen agent ran but cannot answer this job (`mandate_output_unusable`)
+   * — the plain sentence, so the caller SAYS it.
+   */
+  onUnusable?: (sentence: string) => void;
 }
 
 /** Returns help, or null when the run failed. */
@@ -94,6 +99,7 @@ export function helpLive(args: HelpLiveArgs) {
         dueCount: dueRes.data?.length ?? 0,
         timeOnCardMs: args.timeOnCardMs ?? 0,
         cardHistory: historyRes.data ?? [],
+        onUnusable: args.onUnusable,
       }),
     );
   };

@@ -185,6 +185,13 @@ export function useQuizStudy(
         distractorCount: 3,
         // D151 — the lane writes the complete result to the card on arrival.
         cardId: q.cardId,
+        onUnusable: (sentence) => {
+          // Said ONCE per question — this fires from a mount effect and the
+          // chosen quiz-items agent will not change mid-question.
+          toast.warning(`Couldn't add more options — ${sentence}`, {
+            duration: 10000,
+          });
+        },
       }),
     )
       .then((result) => {

@@ -9,6 +9,7 @@
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
   livePosture,
+  mandateOutputUnusableSentence,
   runHeadlessAgentJson,
 } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
@@ -96,6 +97,11 @@ export function deepenItem(args: {
   sourceContent?: string | null;
   /** Live handle — the deeper question streams where the caller mounts it. */
   onConversationCreated?: (conversationId: string) => void;
+  /**
+   * A chosen agent ran but cannot answer this job (`mandate_output_unusable`)
+   * — the plain sentence, so the caller SAYS it.
+   */
+  onUnusable?: (sentence: string) => void;
 }) {
   return async (
     dispatch: AppDispatch,
@@ -122,6 +128,11 @@ export function deepenItem(args: {
         timeoutMs: 60_000,
         pollIntervalMs: 150,
       });
+      const unusable = mandateOutputUnusableSentence(result);
+      if (unusable) {
+        args.onUnusable?.(unusable);
+        return null;
+      }
       return coerceOne(result.data);
     } catch (err) {
       console.error("[assessment.deepenItem] failed:", err);

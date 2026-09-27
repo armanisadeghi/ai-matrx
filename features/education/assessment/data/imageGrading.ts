@@ -22,6 +22,7 @@ import { fileHandler } from "@/features/files/handler/handler";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import {
   livePosture,
+  mandateOutputUnusableSentence,
   runHeadlessAgentJson,
 } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
@@ -82,6 +83,11 @@ export interface RunVisionGraderArgs {
   surfaceName?: string;
   /** Live handle — the step-by-step read streams where the caller mounts it. */
   onConversationCreated?: (conversationId: string) => void;
+  /**
+   * A chosen grader ran but cannot answer this job (`mandate_output_unusable`)
+   * — the plain sentence, so the caller SAYS it.
+   */
+  onUnusable?: (sentence: string) => void;
 }
 
 /**
@@ -121,6 +127,11 @@ export function runVisionGrader(args: RunVisionGraderArgs) {
         timeoutMs: 120_000,
         pollIntervalMs: 200,
       });
+      const unusable = mandateOutputUnusableSentence(result);
+      if (unusable) {
+        args.onUnusable?.(unusable);
+        return null;
+      }
       return coerceStepGradeVerdict(result.data);
     } catch (err) {
       console.error(`[imageGrading] runVisionGrader (${args.surfaceKey}):`, err);

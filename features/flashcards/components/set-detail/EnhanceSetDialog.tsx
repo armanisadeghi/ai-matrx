@@ -185,12 +185,21 @@ export function EnhanceSetDialog({
       liveConversationsRef.current.add(conversationId);
       patchWork(card.id, { conversationId });
     };
+    let unusableSentence: string | null = null;
+    const onUnusable = (sentence: string): void => {
+      unusableSentence = sentence;
+    };
     if (mode === "enrich") {
       const details = await dispatch(
-        enrichCard({ card, depth, onConversationCreated }),
+        enrichCard({ card, depth, onConversationCreated, onUnusable }),
       );
       if (!details) {
-        toast.error("Couldn't enrich this card. Please try again.");
+        toast.error(
+          unusableSentence
+            ? `Couldn't enrich this card — ${unusableSentence}`
+            : "Couldn't enrich this card. Please try again.",
+          unusableSentence ? { duration: 10000 } : undefined,
+        );
         patchWork(card.id, { running: null });
         return;
       }
@@ -210,10 +219,15 @@ export function EnhanceSetDialog({
       await enrichGuard.commit();
     } else {
       const subCards = await dispatch(
-        expandCard({ card, depth, onConversationCreated }),
+        expandCard({ card, depth, onConversationCreated, onUnusable }),
       );
       if (!subCards) {
-        toast.error("Couldn't deepen this card. Please try again.");
+        toast.error(
+          unusableSentence
+            ? `Couldn't deepen this card — ${unusableSentence}`
+            : "Couldn't deepen this card. Please try again.",
+          unusableSentence ? { duration: 10000 } : undefined,
+        );
         patchWork(card.id, { running: null });
         return;
       }

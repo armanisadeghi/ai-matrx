@@ -21,6 +21,7 @@
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
   livePosture,
+  mandateOutputUnusableSentence,
   runHeadlessAgentJson,
 } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { studyService } from "@/features/education/study/service/studyService";
@@ -40,6 +41,11 @@ export interface ReviewPracticeSessionArgs {
   aggregate: ReviewAggregate;
   /** Live handle — the examiner's review streams onto the waiting screen. */
   onConversationCreated?: (conversationId: string) => void;
+  /**
+   * A chosen agent ran but cannot answer this job (`mandate_output_unusable`)
+   * — the plain sentence, so the caller SAYS it.
+   */
+  onUnusable?: (sentence: string) => void;
 }
 
 /**
@@ -85,6 +91,11 @@ export function reviewPracticeSession(args: ReviewPracticeSessionArgs) {
         pollIntervalMs: 200,
       });
 
+      const unusable = mandateOutputUnusableSentence(result);
+      if (unusable) {
+        args.onUnusable?.(unusable);
+        return null;
+      }
       const raw = result.data;
       const review = parseSessionReview(raw);
       if (!review) return null;

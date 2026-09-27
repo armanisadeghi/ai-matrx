@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { helpLive, type HelpLiveResult } from "../agents/helpLive.thunk";
+import { toast } from "@/lib/toast";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { SessionAiJournal } from "@/features/education/study/types";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
@@ -157,6 +158,11 @@ export function FastFireLiveCard({
             cardShownAtRef.current === null
               ? 0
               : Date.now() - cardShownAtRef.current,
+          onUnusable: (sentence) => {
+            toast.warning(`Couldn't get help — ${sentence}`, {
+              duration: 10000,
+            });
+          },
         }),
       );
       setHelp(result);

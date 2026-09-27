@@ -239,15 +239,24 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
                 const live = deepenWindow.start(
                   `Writing an ${target}-depth version of Q${i + 1}`,
                 );
+                let unusableSentence: string | null = null;
                 const deeper = await dispatch(
                   deepenItem({
                     item,
                     examType: assessment.exam_type,
                     onConversationCreated: live.bind,
+                    onUnusable: (sentence) => {
+                      unusableSentence = sentence;
+                    },
                   }),
                 );
                 if (!deeper) {
-                  toast.error("Couldn't deepen this question");
+                  toast.error(
+                    unusableSentence
+                      ? `Couldn't deepen this question — ${unusableSentence}`
+                      : "Couldn't deepen this question",
+                    unusableSentence ? { duration: 10000 } : undefined,
+                  );
                   return;
                 }
                 const added = await assessmentService.addItems(assessmentId, [

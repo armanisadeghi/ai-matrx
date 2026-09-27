@@ -20,7 +20,10 @@
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { fileHandler } from "@/features/files/handler/handler";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import {
+  mandateOutputUnusableSentence,
+  runHeadlessAgentJson,
+} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import {
   audioExtensionForType,
   normalizeAudioType,
@@ -240,6 +243,11 @@ export interface RunSpokenGraderArgs {
    * while the learner answers the next card).
    */
   onConversationCreated?: (conversationId: string) => void;
+  /**
+   * A chosen grader ran but cannot answer this job (`mandate_output_unusable`)
+   * — the plain sentence, so the caller SAYS it instead of a bare "no grade".
+   */
+  onUnusable?: (sentence: string) => void;
 }
 
 /**
@@ -302,6 +310,12 @@ export function runSpokenGrader(args: RunSpokenGraderArgs) {
               }
             : {}),
         });
+        const unusable = mandateOutputUnusableSentence(result);
+        if (unusable) {
+          args.onUnusable?.(unusable);
+          return null;
+        }
+
         const grade = coerceSpokenGrade(result.data);
         if (grade) return grade;
 

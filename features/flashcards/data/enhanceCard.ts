@@ -18,7 +18,10 @@
 // expand: struggle_signal).
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import {
+  mandateOutputUnusableSentence,
+  runHeadlessAgentJson,
+} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { Depth } from "@/features/education/assessment/data/types";
 import { FC_MANDATES } from "./mandates";
 import type { CardWithDetails } from "./types";
@@ -266,6 +269,12 @@ export function enrichCard(args: {
    * conversation id, and it needs it while the stream is still running.
    */
   onRequestId?: (requestId: string) => void;
+  /**
+   * A chosen agent ran but cannot answer this job (`mandate_output_unusable`)
+   * — the plain sentence, so the caller SAYS it instead of a silent "nothing
+   * new" (the enrich mandate warns and never blocks a bound holder).
+   */
+  onUnusable?: (sentence: string) => void;
 }) {
   return async (
     dispatch: AppDispatch,
@@ -312,6 +321,11 @@ export function enrichCard(args: {
           });
         },
       });
+      const unusable = mandateOutputUnusableSentence(result);
+      if (unusable) {
+        args.onUnusable?.(unusable);
+        return null;
+      }
       const details = coerceDetails(result.data);
       // A FAILED run is not an agent that "had nothing to add". Without this,
       // a launch/timeout/stream error came back as an empty array and every
@@ -338,6 +352,8 @@ export function expandCard(args: {
   depth: Depth;
   /** See `enrichCard` — the live-render handle; the caller owns cleanup. */
   onConversationCreated?: (conversationId: string) => void;
+  /** See `enrichCard` — the chosen agent ran but cannot answer this job. */
+  onUnusable?: (sentence: string) => void;
 }) {
   return async (
     dispatch: AppDispatch,
@@ -377,6 +393,11 @@ export function expandCard(args: {
           });
         },
       });
+      const unusable = mandateOutputUnusableSentence(result);
+      if (unusable) {
+        args.onUnusable?.(unusable);
+        return null;
+      }
       const subCards = coerceSubCards(result.data);
       // Same rule as enrichCard: a failed run is a failure, not an empty answer.
       if (!result.success && subCards.length === 0) return null;

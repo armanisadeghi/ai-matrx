@@ -232,6 +232,14 @@ export function FastFireScoreboard({
                   </p>
                 )}
 
+                {/* Grading failed — said plainly, never a silent blank card.
+                    Recorded above (the answer itself is never lost). */}
+                {!grade?.feedback && grade?.error && (
+                  <p className="mt-2 rounded-md bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground">
+                    Couldn&apos;t grade this card — {grade.error}
+                  </p>
+                )}
+
                 {/* Your recorded answer — native controls, always mounted so iOS
                     can start playback synchronously on the tap (M3). */}
                 {hasAudio && (

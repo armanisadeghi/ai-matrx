@@ -27,7 +27,10 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { selectLatestRequestId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import {
+  mandateOutputUnusableSentence,
+  runHeadlessAgentJson,
+} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 import { coerceDetails } from "@/features/flashcards/data/enhanceCard";
@@ -92,7 +95,10 @@ function findHelper(card: CardWithDetails): {
 }
 
 /** Write the helper explanation for ONE card via the live enrich mandate. */
-function writeHelperText(card: CardWithDetails) {
+function writeHelperText(
+  card: CardWithDetails,
+  onUnusable?: (sentence: string) => void,
+) {
   return async (
     dispatch: AppDispatch,
     getState: () => RootState,
@@ -124,6 +130,11 @@ function writeHelperText(card: CardWithDetails) {
       timeoutMs: 60_000,
       pollIntervalMs: 150,
     });
+    const unusable = mandateOutputUnusableSentence(result);
+    if (unusable) {
+      onUnusable?.(unusable);
+      return null;
+    }
     const helper = coerceDetails(result.data).find((d) => d.kind === "helper");
     if (!helper?.text) {
       // Loud, never silent — a whole batch failing here must not read as done.
@@ -187,12 +198,16 @@ function renderHelperAudio(cardId: string, text: string) {
  * file_id, or null on any failure (never throws — the drill degrades to the
  * live help lane, exactly as before this feature existed).
  */
-export function generateHelperAudio(card: CardWithDetails) {
+export function generateHelperAudio(
+  card: CardWithDetails,
+  onUnusable?: (sentence: string) => void,
+) {
   return async (dispatch: AppDispatch): Promise<string | null> => {
     const { withAudio, textOnly } = findHelper(card);
     if (withAudio) return withAudio;
 
-    const text = textOnly?.text ?? (await dispatch(writeHelperText(card)));
+    const text =
+      textOnly?.text ?? (await dispatch(writeHelperText(card, onUnusable)));
     if (!text) return null;
 
     const fileId = await dispatch(renderHelperAudio(card.id, text));
@@ -223,6 +238,13 @@ export function generateHelperAudio(card: CardWithDetails) {
 export function ensureHelperAudioForSet(
   setId: string,
   onProgress?: (done: number, total: number) => void,
+  /**
+   * A chosen agent ran but cannot answer this job (`mandate_output_unusable`)
+   * — the plain sentence, fired ONCE for the whole batch (the chosen holder
+   * will not change mid-batch), so the caller SAYS why some cards' help
+   * never got prepared instead of a bare failure count.
+   */
+  onUnusable?: (sentence: string) => void,
 ) {
   return async (dispatch: AppDispatch): Promise<Record<string, string>> => {
     const result: Record<string, string> = {};
@@ -249,6 +271,12 @@ export function ensureHelperAudioForSet(
     // (agent-set 2026-08-24, review 2026-10-24).
     const HELPER_PREP_CONCURRENCY = 6;
     const queue = [...todo];
+    let unusableSaid = false;
+    const fireUnusableOnce = (sentence: string): void => {
+      if (unusableSaid) return;
+      unusableSaid = true;
+      onUnusable?.(sentence);
+    };
     await Promise.all(
       Array.from(
         { length: Math.min(HELPER_PREP_CONCURRENCY, queue.length) },
@@ -256,7 +284,9 @@ export function ensureHelperAudioForSet(
           for (;;) {
             const card = queue.shift();
             if (!card) return;
-            const fileId = await dispatch(generateHelperAudio(card));
+            const fileId = await dispatch(
+              generateHelperAudio(card, fireUnusableOnce),
+            );
             if (fileId) result[card.id] = fileId;
             done += 1;
             onProgress?.(done, total);

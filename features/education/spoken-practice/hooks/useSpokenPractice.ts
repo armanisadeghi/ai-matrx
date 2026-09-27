@@ -154,6 +154,7 @@ export function useSpokenPractice(): UseSpokenPractice {
       setPhase("generating");
 
       // 1) Design the grounded prompt set.
+      let unusableSentence: string | null = null;
       const designed = await dispatch(
         generateSession({
           mode: config.mode,
@@ -163,10 +164,17 @@ export function useSpokenPractice(): UseSpokenPractice {
           studyMaterial: config.source?.material ?? "",
           source: config.source,
           onConversationCreated: liveRun.claim,
+          onUnusable: (sentence) => {
+            unusableSentence = sentence;
+          },
         }),
       );
       if (!designed) {
-        setError("Couldn't design your session. Please try again.");
+        setError(
+          unusableSentence
+            ? `Couldn't design your session — ${unusableSentence}`
+            : "Couldn't design your session. Please try again.",
+        );
         setPhase("error");
         return false;
       }
@@ -402,6 +410,11 @@ export function useSpokenPractice(): UseSpokenPractice {
         attempts,
         aggregate,
         onConversationCreated: liveRun.claim,
+        onUnusable: (sentence) => {
+          toast.warning(`Couldn't write your session review — ${sentence}`, {
+            duration: 10000,
+          });
+        },
       }),
     );
     if (!summary) {

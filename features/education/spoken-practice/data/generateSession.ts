@@ -7,6 +7,7 @@
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
   livePosture,
+  mandateOutputUnusableSentence,
   runHeadlessAgentJson,
 } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { TrustConfidence } from "@/features/education/trust/types";
@@ -29,6 +30,11 @@ export interface GenerateSessionArgs {
   source: PracticeSource | null;
   /** Live handle — the session designer streams onto the waiting screen. */
   onConversationCreated?: (conversationId: string) => void;
+  /**
+   * A chosen agent ran but cannot answer this job (`mandate_output_unusable`)
+   * — the plain sentence, so the caller SAYS it.
+   */
+  onUnusable?: (sentence: string) => void;
 }
 
 function asString(v: unknown): string {
@@ -113,6 +119,11 @@ export function generateSession(args: GenerateSessionArgs) {
         timeoutMs: 120_000,
         pollIntervalMs: 200,
       });
+      const unusable = mandateOutputUnusableSentence(result);
+      if (unusable) {
+        args.onUnusable?.(unusable);
+        return null;
+      }
       return coercePracticePlan(result.data, args.source);
     } catch (err) {
       console.error("[spoken-practice.generateSession] failed:", err);

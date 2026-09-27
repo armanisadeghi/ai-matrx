@@ -206,6 +206,7 @@ export function gradeCard(args: GradeCardArgs) {
       // 2. Use THE shared spoken grader. It sends the durable file id as the
       //    guaranteed `answer_audio` offered value; the mandate refuses before
       //    model execution if that contract is ever incomplete.
+      let unusableSentence: string | null = null;
       const grade = await dispatch(
         runSpokenGrader({
           mandateKey: FC_MANDATES.gradeSpoken,
@@ -216,11 +217,16 @@ export function gradeCard(args: GradeCardArgs) {
           back,
           secondsAllowed,
           responseAudioFileId,
+          onUnusable: (sentence) => {
+            unusableSentence = sentence;
+          },
         }),
       );
 
       if (!grade) {
-        throw new Error("grader did not return a structured grade");
+        throw new Error(
+          unusableSentence ?? "grader did not return a structured grade",
+        );
       }
       // 3. Flatten the SpokenGrade adapter onto the slice's per-card wire shape:
       // the verdict's result token + explanation, plus the spoken extras.

@@ -112,6 +112,7 @@ export function gradePracticeAnswer(args: GradePracticeAnswerArgs) {
         };
       }
 
+      let unusableSentence: string | null = null;
       const grade = await dispatch(
         runSpokenGrader({
           mandateKey: gradedByMandate,
@@ -125,6 +126,9 @@ export function gradePracticeAnswer(args: GradePracticeAnswerArgs) {
           ...(args.onConversationCreated
             ? { onConversationCreated: args.onConversationCreated }
             : {}),
+          onUnusable: (sentence) => {
+            unusableSentence = sentence;
+          },
         }),
       );
 
@@ -133,7 +137,9 @@ export function gradePracticeAnswer(args: GradePracticeAnswerArgs) {
         return {
           status: "error",
           responseAudioFileId,
-          error: "The examiner didn't return a grade for that answer.",
+          error:
+            unusableSentence ??
+            "The examiner didn't return a grade for that answer.",
         };
       }
 

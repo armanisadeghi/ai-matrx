@@ -13,7 +13,10 @@
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import {
+  mandateOutputUnusableSentence,
+  runHeadlessAgentJson,
+} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import {
   coerceGradeVerdict,
   gradeResultScore,
@@ -179,6 +182,16 @@ export function gradeAnswerAI(args: {
         timeoutMs: 60_000,
         pollIntervalMs: 150,
       });
+      const unusable = mandateOutputUnusableSentence(result);
+      if (unusable) {
+        return {
+          result: "partial",
+          scoreValue: 0.5,
+          explanation: `Couldn't grade on meaning — ${unusable} Mark it yourself below.`,
+          misconception: null,
+          gradedBy: "unusable",
+        };
+      }
       const verdict = coerceGradeVerdict(result.data);
       if (!verdict) return fallback;
       return verdictToGraded(verdict, mandateKey);
@@ -259,6 +272,7 @@ export function gradeAnswerImage(args: {
       };
     }
 
+    let unusableSentence: string | null = null;
     const verdict = await dispatch(
       runVisionGrader({
         mandateKey,
@@ -271,9 +285,21 @@ export function gradeAnswerImage(args: {
         ...(args.onConversationCreated
           ? { onConversationCreated: args.onConversationCreated }
           : {}),
+        onUnusable: (sentence) => {
+          unusableSentence = sentence;
+        },
       }),
     );
-    if (!verdict) return { ...fallback, responseImageFileId: fileId };
+    if (!verdict) {
+      return unusableSentence
+        ? {
+            ...fallback,
+            explanation: `Couldn't grade this photo on meaning — ${unusableSentence} Mark it yourself below.`,
+            gradedBy: "unusable",
+            responseImageFileId: fileId,
+          }
+        : { ...fallback, responseImageFileId: fileId };
+    }
     return stepVerdictToGraded(verdict, mandateKey, fileId);
   };
 }

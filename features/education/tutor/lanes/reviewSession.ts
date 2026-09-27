@@ -24,6 +24,7 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import {
   livePosture,
+  mandateOutputUnusableSentence,
   runHeadlessAgentJson,
 } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
@@ -67,6 +68,11 @@ export interface ReviewSessionArgs {
    * never invisible work behind a spinner.
    */
   onConversationCreated?: (conversationId: string) => void;
+  /**
+   * A chosen agent ran but cannot answer this job (`mandate_output_unusable`)
+   * — the plain sentence, so the caller SAYS it.
+   */
+  onUnusable?: (sentence: string) => void;
 }
 
 /**
@@ -160,6 +166,12 @@ export function reviewSession(args: ReviewSessionArgs) {
         pollIntervalMs: 200,
       });
 
+      const unusable = mandateOutputUnusableSentence(result);
+      if (unusable) {
+        args.onUnusable?.(unusable);
+        await settleRun(result.conversationId, "failed");
+        return null;
+      }
       // Partial-tolerant: an errored stream may still carry a usable object.
       const raw = result.data;
       const review = parseSessionReview(raw);

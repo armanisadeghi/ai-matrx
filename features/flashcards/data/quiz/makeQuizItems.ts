@@ -11,7 +11,10 @@
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import {
+  mandateOutputUnusableSentence,
+  runHeadlessAgentJson,
+} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { FC_MANDATES } from "../mandates";
 import { QUIZ_ITEMS_KEY } from "./buildQuizQuestions";
 
@@ -30,6 +33,12 @@ export interface MakeQuizItemsArgs {
   cardId?: string | null;
   /** Override the quiz-items mandate (testing only). */
   mandateKey?: AnyMandateKey | null;
+  /**
+   * A chosen agent ran but cannot answer this job (`mandate_output_unusable`)
+   * — the plain sentence, so the caller SAYS it instead of quietly shipping
+   * fewer options.
+   */
+  onUnusable?: (sentence: string) => void;
 }
 
 export interface MakeQuizItemsResult {
@@ -112,6 +121,11 @@ export function makeQuizItems(args: MakeQuizItemsArgs) {
             }
           : {}),
       });
+      const unusable = mandateOutputUnusableSentence(result);
+      if (unusable) {
+        args.onUnusable?.(unusable);
+        return null;
+      }
       return readItems(result.data);
     } catch (err) {
       console.error("[flashcards.makeQuizItems] failed:", err);

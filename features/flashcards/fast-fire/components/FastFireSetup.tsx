@@ -147,11 +147,18 @@ export function FastFireSetup() {
       setHelpPrepProgress(null);
       try {
         let total = 0;
+        let unusableSentence: string | null = null;
         const result = await dispatch(
-          ensureHelperAudioForSet(setId, (done, t) => {
-            total = t;
-            setHelpPrepProgress({ done, total: t });
-          }),
+          ensureHelperAudioForSet(
+            setId,
+            (done, t) => {
+              total = t;
+              setHelpPrepProgress({ done, total: t });
+            },
+            (sentence) => {
+              unusableSentence = sentence;
+            },
+          ),
         );
         // Done means DONE — count what actually persisted, never the attempts.
         const ready = Object.keys(result).length;
@@ -161,7 +168,10 @@ export function FastFireSetup() {
         setHelpPrepDone(total > 0 && ready >= total);
         if (ready < total) {
           toast.error(
-            `Instant help ready for ${ready} of ${total} cards — the rest failed; try again.`,
+            unusableSentence
+              ? `Instant help ready for ${ready} of ${total} cards — ${unusableSentence}`
+              : `Instant help ready for ${ready} of ${total} cards — the rest failed; try again.`,
+            unusableSentence ? { duration: 10000 } : undefined,
           );
         }
       } finally {
