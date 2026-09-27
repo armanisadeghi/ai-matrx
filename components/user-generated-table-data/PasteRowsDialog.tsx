@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
-import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
+import { matchPasteHeaders } from "@/features/data-tables/paste-header-match";
 import { bulkWrite } from "@/features/data-tables/service";
 import {
   isServiceFailure,
@@ -59,6 +59,8 @@ type ParsedRow = Record<string, unknown>;
 interface PasteColumnMapping {
   pasteHeader: string;
   matchedField: PasteRowsField | null;
+  /** Why a header was not matched, when there is a reason the person should read. */
+  why?: string;
 }
 
 export default function PasteRowsDialog({
@@ -120,12 +122,9 @@ export default function PasteRowsDialog({
           return;
         }
 
-        const mappings: PasteColumnMapping[] = headers.map((pasteHeader) => {
-          const sanitized = sanitizeFieldName(pasteHeader);
-          const matched =
-            fields.find((f) => f.field_name === sanitized) ?? null;
-          return { pasteHeader, matchedField: matched };
-        });
+        // A header means the column of that NAME (lane DATA-V2-BASICS; BREAKER-1 F10): matching by
+        // the internal key alone put a pasted "Discount Percent" into a column renamed "Fee Percent".
+        const mappings: PasteColumnMapping[] = matchPasteHeaders(headers, fields);
 
         setParsedRows(rows);
         setColumnMappings(mappings);
@@ -332,7 +331,7 @@ export default function PasteRowsDialog({
                         )
                       ) : (
                         <span className="text-muted-foreground italic">
-                          (skipped — no matching column)
+                          {m.why ? `(skipped — ${m.why})` : "(skipped — no matching column)"}
                         </span>
                       )}
                     </div>
