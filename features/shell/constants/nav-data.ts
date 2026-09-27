@@ -1676,8 +1676,7 @@ export const primaryNavItems: ShellNavItem[] = [
     children: [
       {
         label: "All Transcripts",
-        // The list is the Knowledge hub's Transcripts view (H6d).
-        href: "/knowledge?view=transcripts",
+        href: "/transcripts",
         iconName: "List",
         exact: true,
       },

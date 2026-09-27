@@ -38,11 +38,9 @@ export const TRANSCRIPTS_MODES: TranscriptsMode[] = [
     id: "all",
     label: "All",
     icon: List,
-    // The list lives in the Knowledge hub's Transcripts view now (H6d); the
-    // other tabs are the record pages and stay here.
-    href: "/knowledge?view=transcripts",
+    href: "/transcripts",
     blurb:
-      "Everything you've captured — transcripts, Studio sessions, cleanups and transcript Sources — in the Knowledge hub's Transcripts view.",
+      "Everything you've captured — transcripts, Studio sessions, Scribe recordings, and cleanups in one searchable list.",
   },
   {
     id: "new",

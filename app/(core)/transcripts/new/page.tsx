@@ -6,7 +6,7 @@
 
 import Link from "next/link";
 import { Columns2, FileUp, Import, Mic, Eraser, Library } from "lucide-react";
-import { HUB_LIBRARIES_HREF, HUB_TRANSCRIPTS_HREF } from "@/features/knowledge/hub/legacyRoutes";
+import { HUB_LIBRARIES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
@@ -140,7 +140,7 @@ export default async function NewTranscriptPage() {
 
           <p className="mt-6 text-xs text-muted-foreground">
             Already have a transcript?{" "}
-            <Link href={HUB_TRANSCRIPTS_HREF} className="text-primary hover:underline">
+            <Link href="/transcripts" className="text-primary hover:underline">
               See all transcripts
             </Link>
             .
