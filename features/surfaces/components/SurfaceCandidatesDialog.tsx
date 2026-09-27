@@ -228,10 +228,14 @@ export function SurfaceCandidatesDialog({
                     </div>
                     <div className="text-right">
                       <Badge
-                        variant={c.is_active ? "default" : "secondary"}
-                        className="text-[10px]"
+                        variant="outline"
+                        className={
+                          c.is_active
+                            ? "text-xs border-success/40 text-success"
+                            : "text-xs text-muted-foreground"
+                        }
                       >
-                        {c.is_active ? "active" : "inactive"}
+                        {c.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </div>
                   </li>

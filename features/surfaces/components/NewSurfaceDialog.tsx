@@ -255,7 +255,7 @@ export function NewSurfaceDialog({
             )}
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Tier (sort_order band)</Label>
+            <Label className="text-xs">Tier (where it sorts in the list)</Label>
             <Select value={tier} onValueChange={setTier} disabled={busy}>
               <SelectTrigger className="bg-background text-foreground">
                 <SelectValue />

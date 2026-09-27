@@ -96,7 +96,7 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
             ? `, ${res.urlPatternsUpdated.length} URL pattern${res.urlPatternsUpdated.length === 1 ? "" : "s"} updated`
             : "";
         toast.success(
-          `Sync applied: ${upsertedCount} upserted, ${deletedCount} deleted${urlPatternSuffix}`,
+          `Sync applied: ${upsertedCount} saved, ${deletedCount} removed${urlPatternSuffix}`,
         );
       }
       if (res.skippedRecentRows.length > 0) {
@@ -159,12 +159,10 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
                   {previewStale !== null && ` (${previewStale})`}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Remove DB <code className="font-mono">ui_surface_value</code>{" "}
-                  and <code className="font-mono">ui_surface_agent_role</code>{" "}
-                  rows no longer declared in any registered manifest. Deleting a
-                  role also sweeps its{" "}
-                  <code className="font-mono">ui_surface_agent_pref</code> rows
-                  (FK cascade); the count is reported below.
+                  Remove saved values and agent roles that no code manifest
+                  declares any more. Removing a role also removes every
+                  person&apos;s agent choice for it; the count is shown after
+                  the sync.
                 </p>
               </div>
             </label>
@@ -178,11 +176,8 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
               <div>
                 <div className="font-medium">Create missing surfaces</div>
                 <p className="text-xs text-muted-foreground">
-                  If a manifest references a{" "}
-                  <code className="font-mono">surface_name</code> that
-                  doesn&apos;t exist in{" "}
-                  <code className="font-mono">ui_surface</code>, create it
-                  (client must already exist).
+                  When a manifest names a surface that is not in the registry
+                  yet, add it (its client must already exist).
                 </p>
               </div>
             </label>
@@ -196,47 +191,47 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
               <span className="font-medium">Sync complete</span>
             </div>
             <div className="rounded-md border border-border p-2 grid grid-cols-2 gap-1 text-xs">
-              <span className="text-muted-foreground">Values upserted:</span>
+              <span className="text-muted-foreground">Values saved:</span>
               <span className="tabular-nums font-mono">
                 {result.upserted.length}
               </span>
-              <span className="text-muted-foreground">Values deleted:</span>
+              <span className="text-muted-foreground">Values removed:</span>
               <span className="tabular-nums font-mono">
                 {result.deleted.length}
               </span>
-              <span className="text-muted-foreground">Roles upserted:</span>
+              <span className="text-muted-foreground">Roles saved:</span>
               <span className="tabular-nums font-mono">
                 {result.roleUpserted.length}
               </span>
-              <span className="text-muted-foreground">Roles deleted:</span>
+              <span className="text-muted-foreground">Roles removed:</span>
               <span className="tabular-nums font-mono">
                 {result.roleDeleted.length}
               </span>
               <span className="text-muted-foreground">
-                Write targets upserted:
+                Write targets saved:
               </span>
               <span className="tabular-nums font-mono">
                 {result.writeTargetUpserted.length}
               </span>
               <span className="text-muted-foreground">
-                Write targets deleted:
+                Write targets removed:
               </span>
               <span className="tabular-nums font-mono">
                 {result.writeTargetDeleted.length}
               </span>
               <span className="text-muted-foreground">
-                Client tools upserted:
+                Client tools saved:
               </span>
               <span className="tabular-nums font-mono">
                 {result.clientToolUpserted.length}
               </span>
               <span className="text-muted-foreground">
-                Client tools deleted:
+                Client tools removed:
               </span>
               <span className="tabular-nums font-mono">
                 {result.clientToolDeleted.length}
               </span>
-              <span className="text-muted-foreground">Agent prefs swept:</span>
+              <span className="text-muted-foreground">Agent choices removed:</span>
               <span className="tabular-nums font-mono">
                 {result.sweptPrefCount}
               </span>

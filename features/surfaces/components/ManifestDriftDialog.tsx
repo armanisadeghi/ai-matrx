@@ -163,7 +163,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Manifest values missing from DB"
                 count={report.manifestsMissingInDb.length}
                 tone="amber"
-                description="Declared in code but not yet upserted. Sync to apply."
+                description="Declared in code but not saved to the database yet. Sync to apply."
               >
                 {report.manifestsMissingInDb.map((d) => (
                   <DriftRow
@@ -219,7 +219,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Manifest roles missing from DB"
                 count={report.roleManifestsMissingInDb.length}
                 tone="amber"
-                description="Agent roles declared in code but not yet upserted. Sync to apply."
+                description="Agent roles declared in code but not saved to the database yet. Sync to apply."
               >
                 {report.roleManifestsMissingInDb.map((d) => (
                   <DriftRow
@@ -275,7 +275,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Manifest write targets missing from DB"
                 count={report.writeTargetManifestsMissingInDb.length}
                 tone="amber"
-                description="Write targets declared in code but not yet upserted to ui_surface_write_target. Server-side agents can't see them until they land. Sync to apply."
+                description="Write targets declared in code but not saved to the database yet. Server-side agents can't see them until they are. Sync to apply."
               >
                 {report.writeTargetManifestsMissingInDb.map((d) => (
                   <DriftRow
@@ -331,7 +331,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Manifest client tools missing from DB"
                 count={report.clientToolManifestsMissingInDb.length}
                 tone="amber"
-                description="Client tools declared in code but not present in ui_surface_client_tool."
+                description="Client tools declared in code but not saved to the database yet."
               >
                 {report.clientToolManifestsMissingInDb.map((d) => (
                   <DriftRow
@@ -387,7 +387,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Unknown config namespaces"
                 count={report.unknownNamespaces.length}
                 tone="rose"
-                description="Referenced in a manifest or ui_surface_config but not registered. Register a handler in namespace-registry.ts."
+                description="Named by a manifest or a saved surface setting, but no code handles it yet. Register a handler for it in code."
               >
                 {report.unknownNamespaces.map((ns) => (
                   <NamespaceRow
@@ -698,7 +698,7 @@ function DeleteMirrorRowButton({
       });
       toast.success(
         result.sweptPrefCount > 0
-          ? `Deleted 1 row — ${surfaceName} · ${name}. ${result.sweptPrefCount} agent pref row(s) swept by cascade.`
+          ? `Deleted 1 row — ${surfaceName} · ${name}. ${result.sweptPrefCount} person's agent choice(s) for that role removed with it.`
           : `Deleted 1 row — ${surfaceName} · ${name}.`,
       );
       reset();
@@ -752,9 +752,8 @@ function DeleteMirrorRowButton({
           <p className="text-destructive flex items-start gap-1">
             <AlertTriangle className="h-3 w-3 mt-px shrink-0" />
             <span>
-              Deleting an agent role also CASCADES its{" "}
-              <code className="font-mono">ui_surface_agent_pref</code> rows —
-              the user and org agent picks for this role go with it.
+              Deleting an agent role also removes every person&apos;s and
+              organization&apos;s agent choice for this role.
             </span>
           </p>
         )}
