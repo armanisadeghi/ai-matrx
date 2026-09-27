@@ -12,9 +12,9 @@
 // example value (`lib/merge-fields.ts`); the raw syntax appears only in the
 // edit form, where "Insert field" writes it for the person.
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Archive, Eye, Info, Pencil, Plus, Save } from "lucide-react";
+import { Archive, Eye, Info, Pencil, Plus, Save, Undo2 } from "lucide-react";
 import { isPubliclyVisible } from "@/lib/visibility/labels";
 import {
   type MessageRole,
@@ -23,7 +23,6 @@ import {
 } from "@/features/message-templates/types/message-templates-db";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
-import { ProInput } from "@/components/official/ProInput";
 import {
   MERGE_FIELD_CHIP_CLASS,
   type MergeFieldInputHandle,
@@ -60,6 +59,9 @@ import {
 } from "@/features/message-templates/services/message-templates-service";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { MenuPresenceProvider } from "@/features/context-menu-v3/menu-presence";
+import type { RichDocumentAction } from "@/features/rich-document/types";
+import { useUnsavedChangesGuard } from "@/lib/navigation/useUnsavedChangesGuard";
 import {
   MESSAGE_TEMPLATE_SURFACE_NAME,
   type MessageTemplateDraftScope,
@@ -147,6 +149,13 @@ function FilledText({ text, show }: { text: string; show: "names" | "example" })
 }
 
 type FieldShow = "names" | "example";
+
+/** A template text with each merge field as "[Plain name]" — never raw {{…}}. */
+function readable(text: string): string {
+  return previewParts(text)
+    .map((part) => (part.kind === "text" ? part.text : `[${part.field.label}]`))
+    .join("");
+}
 
 /** Field names vs example values — one small toggle, never its own row. */
 function ShowToggle({
@@ -257,6 +266,11 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
   const editHref = `${pageHref}?mode=edit`;
   const mode: "view" | "edit" =
     canEdit && searchParams.get("mode") === "edit" ? "edit" : "view";
+  // View ↔ Edit is one page: a shallow URL update (Next keeps useSearchParams
+  // in sync with native history), never a server round-trip.
+  const selectMode = (href: string) => {
+    window.history.pushState(null, "", href);
+  };
 
   // `saved` is the row as last saved — the server prop until this page saves.
   const [saved, setSaved] = useState<MessageTemplateDB>(template);
@@ -296,13 +310,28 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
   const viewFields = mergeFieldsIn(templateSubject(saved), saved.content ?? "");
   const updated = saved.updated_at ? DATE_FORMAT.format(new Date(saved.updated_at)) : null;
 
-  // Unsaved edits are never lost to a refresh or a closed tab.
-  useEffect(() => {
-    if (!isDirty) return undefined;
-    const handler = (e: BeforeUnloadEvent) => e.preventDefault();
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [isDirty]);
+  // Unsaved edits are never lost silently: refresh, the header Back, any
+  // in-app link and browser Back all ask first (the platform guard).
+  const { confirmDiscard } = useUnsavedChangesGuard({
+    when: isDirty,
+    what: "your changes to this template",
+  });
+
+  const resetDraft = () => {
+    setLabel(saved.label ?? "");
+    setContent(saved.content ?? "");
+    setSubject(templateSubject(saved));
+    setRole(saved.role ?? null);
+    setIsPublic(isPubliclyVisible(saved.visibility));
+    setTags(saved.tags ?? []);
+    setSaveError(null);
+  };
+
+  const handleDiscard = async () => {
+    if (!(await confirmDiscard())) return;
+    resetDraft();
+    selectMode(pageHref);
+  };
 
   const getScope = () =>
     buildMessageTemplateScope({
@@ -334,7 +363,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
         if (next.role !== undefined) setRole(next.role);
         if (next.tags !== undefined) setTags(next.tags);
         if (next.visibility !== undefined) setIsPublic(next.visibility === "public");
-        if (mode !== "edit") router.replace(editHref, { scroll: false });
+        if (mode !== "edit") selectMode(editHref);
         return {
           summary: `Staged ${Object.keys(next).join(", ")} in the edit form; the person presses Save to keep it.`,
           data: { staged: Object.keys(next) },
@@ -387,7 +416,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
       setIsPublic(isPubliclyVisible(row.visibility));
       setTags(row.tags ?? []);
       toast.success("Template saved");
-      router.replace(pageHref, { scroll: false });
+      selectMode(pageHref);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setSaveError(message);
@@ -442,13 +471,67 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
       </div>
     ) : null;
 
+  // Each item keeps its own separator, so a wrap never strands a "·".
   const metaLine = (
-    <span className="text-xs text-muted-foreground">
-      {[updated ? `Updated ${updated}` : null, `Version ${saved.version}`]
-        .filter(Boolean)
-        .join(" · ")}
+    <span className="inline-flex flex-wrap gap-x-1 text-xs text-muted-foreground">
+      {updated && <span className="whitespace-nowrap">Updated {updated}</span>}
+      <span className="whitespace-nowrap">
+        {updated ? "· " : ""}Version {saved.version}
+      </span>
     </span>
   );
+
+  // The record as a person reads it — fields by name, never raw {{…}} — for
+  // the right-click menu's header and its Copy.
+  const readableText = [
+    savedSubject ? `Subject: ${readable(savedSubject)}` : null,
+    readable(saved.content ?? ""),
+  ]
+    .filter((part): part is string => part !== null)
+    .join("\n\n");
+
+  // The page's own actions, in its right-click menu (view mode).
+  const pageMenuActions: RichDocumentAction[] = [
+    ...(canEdit
+      ? [
+          {
+            id: "message-template-edit",
+            label: "Edit template",
+            icon: Pencil,
+            category: "edit" as const,
+            supportedSources: "*" as const,
+            order: 1,
+            run: () => selectMode(editHref),
+          },
+        ]
+      : []),
+    ...(viewFields.length > 0
+      ? [
+          {
+            id: "message-template-toggle-example",
+            label: show === "example" ? "Show field names" : "Show example",
+            icon: Eye,
+            category: "edit" as const,
+            supportedSources: "*" as const,
+            order: 2,
+            run: () => setShow(show === "example" ? "names" : "example"),
+          },
+        ]
+      : []),
+    ...(canEdit
+      ? [
+          {
+            id: "message-template-archive",
+            label: "Archive template",
+            icon: Archive,
+            category: "edit" as const,
+            supportedSources: "*" as const,
+            order: 3,
+            run: () => void handleArchive(),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <SurfaceRuntimeProvider
@@ -469,6 +552,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
             : undefined
         }
         activeModeHref={mode === "edit" ? editHref : pageHref}
+        onModeSelect={selectMode}
         entityStatus={
           mode === "edit" ? (
             <span className="shrink-0 text-xs text-muted-foreground">
@@ -490,6 +574,11 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                         disabled: isSaving || !canSave,
                         onPress: handleSave,
                       },
+                      {
+                        label: "Discard changes",
+                        icon: Undo2,
+                        onPress: () => void handleDiscard(),
+                      },
                     ]
                   : []),
                 {
@@ -507,7 +596,8 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
         menuVersion={1}
         getApplicationScope={getScope}
         contentSource={{ type: "raw" }}
-        contextData={{ content: saved.content ?? "" }}
+        contextData={{ content: readableText }}
+        extraRichActions={mode === "view" ? pageMenuActions : undefined}
         entity={{
           type: "message_template",
           id: saved.id,
@@ -520,6 +610,20 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
             {mode === "view" ? (
               // ONE record surface: header row, the managing job, subject, body.
               <article className="overflow-hidden rounded-lg border border-border bg-card">
+                {isDirty && (
+                  <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/40 px-3 py-2 text-sm">
+                    <Pencil className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="min-w-0 flex-1">
+                      You have unsaved changes to this template. This view shows the saved version.
+                    </span>
+                    <Button size="sm" variant="outline" className="h-7" onClick={() => selectMode(editHref)}>
+                      Continue editing
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7" onClick={() => void handleDiscard()}>
+                      Discard
+                    </Button>
+                  </div>
+                )}
                 <div className="flex items-start gap-2 border-b border-border px-3 py-2">
                   <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
                     {showRole && saved.role && (
@@ -559,7 +663,11 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                 <MessageBody subject={savedSubject} body={saved.content ?? ""} show={show} />
               </article>
             ) : (
-              <>
+              // In edit mode each field owns its right-click menu (the app's
+              // editable menu with its text actions): the page's read-only
+              // record menu would otherwise yield to the browser's native one
+              // inside a text field.
+              <MenuPresenceProvider value={false}>
                 {managedNotice && (
                   <div className="overflow-hidden rounded-lg border border-border">{managedNotice}</div>
                 )}
@@ -571,13 +679,18 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                   )}
                 >
                   <div className="space-y-1">
-                    <Label htmlFor="template-name">Name</Label>
-                    <ProInput
-                      id="template-name"
+                    <Label id="template-name-label">Name</Label>
+                    <MergeFieldTextarea
+                      aria-labelledby="template-name-label"
+                      multiline={false}
                       value={label}
-                      onChange={(e) => setLabel(e.target.value)}
+                      onChange={setLabel}
+                      fieldLabel={mergeFieldLabel}
                       placeholder="What this template is for"
-                      className="text-base sm:text-sm"
+                      surfaceName={MESSAGE_TEMPLATE_SURFACE_NAME}
+                      sourceFeature="chat"
+                      getApplicationScope={getScope}
+                      auxiliaryControlsLabel="name"
                     />
                   </div>
                   {showRole && (
@@ -606,7 +719,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                 </div>
 
                 <div className="space-y-1">
-                  <div className="flex items-end justify-between gap-2">
+                  <div className="flex items-center justify-between gap-2">
                     <Label id="template-subject-label">Email subject</Label>
                     <InsertFieldMenu
                       target="email subject"
@@ -630,8 +743,10 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                 </div>
 
                 <div className="space-y-1">
-                  <div className="flex items-end justify-between gap-2">
+                  <div className="flex items-center justify-between gap-2">
                     <Label id="template-body-label">Message</Label>
+                    <span className="flex-1" />
+                    {usedFields.length > 0 && <ShowToggle value={show} onChange={setShow} />}
                     <InsertFieldMenu
                       target="message"
                       used={usedFields}
@@ -652,15 +767,17 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                   />
                 </div>
 
-                {usedFields.length > 0 && (
-                  <section className="overflow-hidden rounded-lg border border-border bg-card">
-                    <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
-                      <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground">
-                        Preview
-                      </span>
-                      <ShowToggle value={show} onChange={setShow} />
+                {/* The editor already names every field; the preview earns its
+                    place only as the filled-in example. */}
+                {usedFields.length > 0 && show === "example" && (
+                  <section
+                    aria-label="Example with sample values"
+                    className="overflow-hidden rounded-lg border border-border bg-card"
+                  >
+                    <div className="border-b border-border px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                      Example with sample values
                     </div>
-                    <MessageBody subject={subject.trim()} body={content} show={show} />
+                    <MessageBody subject={subject.trim()} body={content} show="example" />
                   </section>
                 )}
 
@@ -690,7 +807,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                     <span className="text-xs text-destructive">{saveError}</span>
                   )}
                 </div>
-              </>
+              </MenuPresenceProvider>
             )}
 
             <EntityCustomFields
