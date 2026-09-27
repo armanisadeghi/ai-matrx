@@ -592,6 +592,17 @@ export function storeValue(
   // into an integer column, the record store refuses it ("Qty takes a number, and it was given a
   // string"). Only text the older door itself read as a number (its NUMERIC rule) is converted;
   // anything else goes as it is and the store's refusal is shown — never a silent guess.
+  // A BLANK INTO A NUMBER OR DATE COLUMN IS AN EMPTY CELL (lane DATA-V2-BASICS, 2026-09-27). A pasted
+  // sheet row with nothing under "Discount Percent" arrives as "" and the store refused the whole paste
+  // ("takes a number, and it was given a string"); the older store kept it as the empty cell it looks
+  // like, and the mover now carries it that way too (matrx-records typemap.empty_when_blank).
+  if (
+    (column?.data_type === "number" || column?.data_type === "integer" || column?.data_type === "date" || column?.data_type === "datetime") &&
+    typeof value === "string" &&
+    value.trim() === ""
+  ) {
+    return null;
+  }
   if ((column?.data_type === "number" || column?.data_type === "integer") && typeof value === "string") {
     const t = value.trim();
     if (NUMERIC.test(t)) return Number(t);

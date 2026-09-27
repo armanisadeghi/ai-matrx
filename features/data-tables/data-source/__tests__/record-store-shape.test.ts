@@ -161,6 +161,13 @@ describe("a record document reads back as the row the older grid held", () => {
     expect(storeValue({ data_type: "number" }, "about 3")).toBe("about 3"); // the store refuses it, in words
     expect(storeValue({ data_type: "boolean" }, "TRUE")).toBe(true);
     expect(storeValue({ data_type: "string" }, "3")).toBe("3");
+    // A blank pasted into a number or date column is an EMPTY cell (lane DATA-V2-BASICS): a sheet row
+    // with nothing under "Discount Percent" was refused whole — "takes a number, and it was given a string".
+    expect(storeValue({ data_type: "number" }, "")).toBeNull();
+    expect(storeValue({ data_type: "integer" }, "   ")).toBeNull();
+    expect(storeValue({ data_type: "date" }, "")).toBeNull();
+    expect(storeValue({ data_type: "datetime" }, " ")).toBeNull();
+    expect(storeValue({ data_type: "string" }, "")).toBe("");
   });
 });
 
