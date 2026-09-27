@@ -4,6 +4,7 @@ import {
   buildHrEmployerScope,
   declarationPayload,
   establishmentPayload,
+  flagValueText,
   identityFromProfile,
   identityPayload,
   mergeIdentityDraft,
@@ -90,10 +91,10 @@ describe("declarations", () => {
       parseDeclarations([
         { flag: "is_aca_ale", applies: true, reason: "Counted 60 FTEs." },
         { flag: "is_aca_ale", applies: false, reason: "Changed our mind." },
-        { flag: "everify_required_states", applies: true, reason: "Arizona." },
+        { flag: "everify_required_states", states: ["Arizona"], reason: "State law." },
         { flag: "is_eeo1_filer", applies: "yes", reason: "ok" },
       ]),
-    ).toThrow(/Item 2: is_aca_ale appears twice.*Item 3: flag must be one of.*Item 4: applies must be true or false.*Item 4: reason must say why.*Nothing was changed\./);
+    ).toThrow(/Item 2: is_aca_ale appears twice.*Item 3: states must be a list of two-letter.*Item 4: reason must say why.*Item 4: applies must be true or false.*Nothing was changed\./);
     expect(() => parseDeclarations([])).toThrow(/JSON array/);
   });
 
@@ -127,6 +128,42 @@ describe("declarations", () => {
     expect(fmla).toMatchObject({ isDeclared: true, declaredReason: "Counsel advised.", value: true });
     const aca = applicabilityFlags(declared).find((f) => f.key === "is_aca_ale");
     expect(aca).toMatchObject({ isDeclared: false, value: null, derivation: null });
+  });
+});
+
+describe("E-Verify declarations", () => {
+  it("declares a list of states and 'none required', and reads them back", () => {
+    const [req] = parseDeclarations([
+      { flag: "everify_required_states", states: ["ms", "AZ", "AZ"], reason: "State law for our sites." },
+    ]);
+    expect(req).toEqual({ flag: "everify_required_states", applies: true, states: ["AZ", "MS"], reason: "State law for our sites." });
+    const payload = declarationPayload(profile(), [req], "2026-09-27");
+    expect(payload.everify_required_states).toEqual(["AZ", "MS"]);
+
+    const none = profile({
+      applicability_basis: {
+        declared: { everify_required_states: { applies: false, states: [], reason: "No E-Verify states.", declared_at: "2026-09-27" } },
+      },
+    });
+    const flag = applicabilityFlags(none).find((f) => f.key === "everify_required_states")!;
+    expect(flag.isDeclared).toBe(true);
+    expect(flagValueText(flag)).toBe("None required");
+    const open = applicabilityFlags(profile()).find((f) => f.key === "everify_required_states")!;
+    expect(flagValueText(open)).toBe("Not established");
+  });
+});
+
+describe("establishment archive via update", () => {
+  const row = {
+    id: "e1", name: "Irvine HQ", address: {}, jurisdiction_id: "j-ca", naics_code: null,
+    eeo1_establishment_id: null, is_headquarters: false, osha_establishment_name: null,
+    annual_average_employees: null, total_hours_worked: null,
+  };
+  const J = [{ id: "j-ca", name: "California", jurisdiction_key: "US-CA" }];
+  it("archives alone, and refuses a restore it cannot see", () => {
+    const [plan] = parseUpdateEstablishments([{ id: "e1", archived: true }], [row], J);
+    expect(plan).toMatchObject({ archive: true, changed: ["archived"] });
+    expect(() => parseUpdateEstablishments([{ id: "e1", archived: false }], [row], J)).toThrow(/archived can only be true/);
   });
 });
 
