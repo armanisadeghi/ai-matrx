@@ -16,6 +16,7 @@ import {
 import { useNotesRedux } from "../../hooks/useNotesRedux";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
+  selectNoteById,
   selectNoteContentLoadStatus,
   selectSharedWithMeNotes,
 } from "../../redux/selectors";
@@ -95,32 +96,30 @@ export default function MobileNotesView({
 
   // Header actions that mutate the note (Clean up) hide for viewers.
   const selectedAccess = useNoteAccess(selectedNoteId);
-  // A deep-linked note whose read rejected (missing, denied, trashed, fault)
-  // renders the canonical gate instead of an empty editor pane.
   const selectedLoadStatus = useAppSelector(
     selectNoteContentLoadStatus(selectedNoteId ?? ""),
   );
-  const selectedUnavailable =
-    Boolean(selectedNoteId) && !selectedNote && selectedLoadStatus === "error";
 
-  // Shared list rows come from the get_notes_shared_with_me RPC WITHOUT
-  // content — fetch the full note (RLS grants the sharee SELECT) before the
-  // editor mounts, otherwise it would open on an empty body.
+  // List rows (owned AND shared) carry a preview, never the body (audit
+  // N-24) — fetch the full note before the editor mounts. An editor mounted
+  // on "" lets a keystroke in the fetch window replace the whole note on save.
+  // A new unsaved note is created "full" (it is empty), so it opens at once.
+  const selectedRecord = useAppSelector(selectNoteById(selectedNoteId ?? ""));
   const selectedNoteReady = Boolean(
-    selectedNote &&
-    (!selectedNote._sharedWithMe || selectedNote.content != null),
+    selectedNote && selectedRecord?._fetchStatus === "full",
   );
+  // A note whose read rejected (missing, denied, trashed, fault) renders the
+  // canonical gate instead of an empty editor pane or an endless spinner.
+  const selectedUnavailable =
+    Boolean(selectedNoteId) && !selectedNoteReady && selectedLoadStatus === "error";
 
   const handleNoteSelect = (note: Note) => {
     setSelectedNoteId(note.id);
     setCurrentView("editor");
     setIsDirty(false);
     setJustSaved(false);
-    // Owner rows already carry content from the list query; only shared rows
-    // arrive content-less and need the full fetch.
-    if (note.content == null) {
-      dispatch(fetchNoteContent(note.id));
-    }
+    // No-op when the body is already loaded (fetchNoteContent checks).
+    dispatch(fetchNoteContent(note.id));
   };
 
   const handleBack = () => {
@@ -370,6 +369,7 @@ export default function MobileNotesView({
             </div>
           )}
           {selectedNote &&
+            !selectedUnavailable &&
             (selectedNoteReady ? (
               <MobileNoteEditor
                 note={selectedNote}

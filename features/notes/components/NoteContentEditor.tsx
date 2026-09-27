@@ -161,6 +161,19 @@ export function NoteContentEditor({
     preferredDefaultMode,
   );
 
+  // The list read carries a preview, never the body (audit N-24), so a note
+  // opened from the list is a "list" record until fetchNoteContent lands.
+  // Mounting the editor before then shows "" — and a keystroke in that window
+  // arms the local-edit sync, the arriving body is discarded as a clobber, and
+  // the next save REPLACES the whole note with those few characters. A new
+  // unsaved note is created "full" (it is empty), so it opens at once.
+  const bodyLoaded = noteExists?._fetchStatus === "full";
+  useEffect(() => {
+    if (noteExists && !bodyLoaded && contentLoadStatus === "idle") {
+      void dispatch(fetchNoteContent(noteId));
+    }
+  }, [noteExists, bodyLoaded, contentLoadStatus, dispatch, noteId]);
+
   const isDirty = useAppSelector(selectNoteIsDirtyById(noteId));
   const folderReferences = useAppSelector(selectFolderReferences);
   const currentFolder = useAppSelector(selectNoteFolder(noteId)) ?? "Draft";
@@ -727,10 +740,11 @@ export function NoteContentEditor({
     onPermanentDelete: handlePermanentDelete,
   });
 
-  // A deep link adds its tab before the request resolves. Treating that
-  // expected gap as a missing record made a slow/temporarily unavailable DB
-  // look like a deleted note. Only show unavailable after the request rejects.
-  if (!noteExists) {
+  // A deep link adds its tab before the request resolves, and a note opened
+  // from the list waits for its body (see `bodyLoaded`). Treating either gap
+  // as a missing record made a slow/temporarily unavailable DB look like a
+  // deleted note. Only show unavailable after the request rejects.
+  if (!noteExists || !bodyLoaded) {
     if (contentLoadStatus !== "error") {
       return (
         <div className="flex flex-1 items-center justify-center text-muted-foreground">
@@ -765,20 +779,6 @@ export function NoteContentEditor({
             </button>
           }
         />
-      </div>
-    );
-  }
-
-  // ── Guard: shared note's content still in flight ────────────────────
-  // Shared-with-me rows arrive from the RPC WITHOUT content. Mounting the
-  // editor on "" is not just a flash of empty state: an editor-level sharee
-  // typing during the fetch window arms the local-edit sync, the arriving
-  // server content gets discarded as a clobber-guard, and the next save
-  // REPLACES the owner's entire note body with those few keystrokes.
-  if (noteExists._sharedWithMe && noteExists.content == null) {
-    return (
-      <div className="flex-1 flex items-center justify-center text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
       </div>
     );
   }

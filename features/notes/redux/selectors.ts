@@ -306,7 +306,8 @@ export const selectNoteContentLoadStatus = (noteId: string) =>
   cached(`noteContentLoadStatus:${noteId}`, () =>
     createSelector(
       selectNotesState,
-      (slice) => slice.contentLoadStatus[noteId] ?? "idle",
+      (slice): "idle" | "loading" | "loaded" | "error" =>
+        slice.contentLoadStatus[noteId] ?? "idle",
     ),
   );
 
