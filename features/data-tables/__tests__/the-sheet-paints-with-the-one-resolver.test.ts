@@ -61,3 +61,41 @@ describe("Birchwood Rooms · the Sheet paints every room the colour the grid doe
     expect(older("status", "Complete")).toBe("green");
   });
 });
+
+/**
+ * A CHOICE PAINTS THE ROW IN ITS OWN COLOUR (DATA-V2-BASICS-2 C1, walked on Harbor Dental's
+ * "Insurance Plan Accounts", a table moved from /data). Colored by Status, the row of a plan whose
+ * Status chip is GREEN ("Verified") was tinted pink, and "Maxed out" (a red chip) amber: the
+ * Sheet hashed the word into a colour even though every option keeps the colour its owner gave
+ * it. The records-ui grid's rule is the same one: the column's stored colour first, the hash only
+ * for a value whose option keeps none.
+ */
+describe("Harbor Dental insurance plans · coloured by Status, a row wears its Status chip's colour", () => {
+  const STATUS = [
+    { value: "Verified", color: "green" },
+    { value: "Pending verification", color: "amber" },
+    { value: "Maxed out", color: "red" },
+    { value: "Appeal", color: "violet" },
+    { value: "Awaiting card" }, // an option its owner never painted
+  ];
+  const lookup = sheetChoiceColorLookup(true, (field) => (field === "status" ? STATUS : undefined));
+  const style: TableStyle = { version: 1, colorBy: { field: "status", target: "row" } };
+  const plan = (status: string) => ({ id: status, data: { account: "Aetna Dental Access", status } });
+
+  it.each([
+    ["Verified", "green"],
+    ["Pending verification", "amber"],
+    ["Maxed out", "red"],
+    ["Appeal", "violet"],
+  ])("%s paints %s", (status, color) => {
+    expect(resolveRowColor(style, plan(status), lookup)).toBe(color);
+  });
+
+  it("the moved list's key spelling ('pending_verification') is the same choice", () => {
+    expect(lookup("status", "pending_verification")).toBe("amber");
+  });
+
+  it("an option with no colour of its own still paints, the way the grid paints it", () => {
+    expect(lookup("status", "Awaiting card")).toBe(colorFromTheValue("status", "Awaiting card"));
+  });
+});

@@ -17,13 +17,51 @@
  * (lane POST-PUBLISH-FE deleted the Sheet's own copy, `olderStyle`).
  */
 import { colorFromTheValue } from "@ai-matrx/records-ui";
-import { colorForChoice, type ChoiceColorLookup } from "@ai-matrx/design-system/data-table/table-style";
+import {
+  STYLE_COLORS,
+  colorForChoice,
+  type ChoiceColorLookup,
+  type StyleColor,
+} from "@ai-matrx/design-system/data-table/table-style";
+
+/** One spelling of a choice, however it was written ("Pending verification" = `pending_verification`). */
+function choiceWord(value: unknown): string {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+/**
+ * THE COLOUR THE COLUMN KEEPS FOR THIS VALUE (DATA-V2-BASICS-2 C1). Coloured by Status, a moved
+ * table's "Verified" row (a green chip) was tinted pink: the Sheet hashed the word although every
+ * option keeps its owner's colour. The same rule as records-ui's grid (`choiceLooks.ts`
+ * `storedChoiceColorLookup`): the option's own colour first, matched by word or label; the hash
+ * only for a value whose option keeps none.
+ */
+function storedChoiceColor(
+  choices: readonly { value: string; label?: string; color?: string }[] | undefined,
+  value: unknown,
+): StyleColor | undefined {
+  if (!choices || value === null || value === undefined || value === "") return undefined;
+  const word = choiceWord(value);
+  if (word === "") return undefined;
+  for (const choice of choices) {
+    const color = choice.color;
+    if (!color || !(STYLE_COLORS as readonly string[]).includes(color)) continue;
+    if (choiceWord(choice.value) === word || (choice.label && choiceWord(choice.label) === word)) return color as StyleColor;
+  }
+  return undefined;
+}
 
 /** The color-by lookup the Sheet paints with. */
 export function sheetChoiceColorLookup(
   onTheRecordStore: boolean,
-  choicesFor: (fieldName: string) => readonly { value: string; color?: string }[] | undefined,
+  choicesFor: (fieldName: string) => readonly { value: string; label?: string; color?: string }[] | undefined,
 ): ChoiceColorLookup {
-  if (onTheRecordStore) return colorFromTheValue;
+  if (onTheRecordStore) {
+    return (fieldName, value) => storedChoiceColor(choicesFor(fieldName), value) ?? colorFromTheValue(fieldName, value);
+  }
   return (fieldName, value) => colorForChoice(choicesFor(fieldName), value);
 }
