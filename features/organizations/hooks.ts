@@ -450,27 +450,49 @@ export function useMemberOperations(orgId: string) {
 export function useUserRole(orgId: string | undefined) {
   const [role, setRole] = useState<OrgRole | null>(null);
   const [loading, setLoading] = useState(true);
+  // A failed role read is NOT "no role" (RC-B12 r13): `getUserRole` throws,
+  // and the hook reports it instead of answering null forever.
+  const [error, setError] = useState<unknown>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchRole = async () => {
       if (!orgId) {
         setRole(null);
+        setError(null);
         setLoading(false);
         return;
       }
 
       setLoading(true);
-      const userRole = await getUserRole(orgId);
-      setRole(userRole);
-      setLoading(false);
+      setError(null);
+      try {
+        const userRole = await getUserRole(orgId);
+        if (!cancelled) setRole(userRole);
+      } catch (err) {
+        console.error("Error fetching user role:", err);
+        if (!cancelled) {
+          setRole(null);
+          setError(err ?? new Error("The role read failed"));
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
 
-    fetchRole();
-  }, [orgId]);
+    void fetchRole();
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId, attempt]);
 
   return {
     role,
     loading,
+    /** The role read FAILED — `role: null` is then unknown, not "no access". */
+    error,
+    retry: () => setAttempt((n) => n + 1),
     isOwner: role === "owner",
     isAdmin: role === "admin" || role === "owner",
     canManageMembers: role === "admin" || role === "owner",

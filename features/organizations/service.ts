@@ -318,20 +318,20 @@ export async function deleteOrganization(
 export async function getOrganization(
   orgId: string,
 ): Promise<Organization | null> {
-  try {
-    const { data, error } = await supabase
-      .schema("iam")
-      .from("organizations")
-      .select("*")
-      .eq("id", orgId)
-      .single();
+  // null = no row this person can read. A FAILED read throws (RC-B12 r13):
+  // it used to log and answer null, so a network fault read as "not found".
+  const { data, error } = await supabase
+    .schema("iam")
+    .from("organizations")
+    .select("*")
+    .eq("id", orgId)
+    .maybeSingle();
 
-    if (error) throw pgErrorToError(error);
-    return transformOrganizationFromDb(data);
-  } catch (error) {
+  if (error) {
     console.error("Error fetching organization:", error);
-    return null;
+    throw pgErrorToError(error);
   }
+  return data ? transformOrganizationFromDb(data) : null;
 }
 
 /**
@@ -350,11 +350,12 @@ export async function getOrganizationBySlug(
     .maybeSingle();
 
   if (error) {
+    // A failed read is not "no such organization" (RC-B12 r13).
     console.error(
       "Error fetching organization by slug:",
       pgErrorToError(error),
     );
-    return null;
+    throw pgErrorToError(error);
   }
   if (!data) return null;
   return transformOrganizationFromDb(data);
@@ -504,8 +505,10 @@ export async function getOrganizationMembers(
       },
     }));
   } catch (error) {
+    // A failed roster read is not an empty roster (RC-B12 r13): it throws, and
+    // every caller's own failure state says so.
     console.error("Error fetching organization members:", error);
-    return [];
+    throw pgErrorToError(error);
   }
 }
 
@@ -708,20 +711,20 @@ export async function leaveOrganization(
  * @returns Role or null
  */
 export async function getUserRole(orgId: string): Promise<OrgRole | null> {
-  try {
-    requireUserId();
+  // null = not a member. A FAILED membership read throws (RC-B12 r13) — it
+  // used to answer null, which every caller reads as "no access".
+  requireUserId();
 
-    // The current user's org memberships (canonical RPC); find this org.
-    const membersResult = await membershipsService.forUser("organization");
-    if (isScopesRpcErr(membersResult)) return null;
-    const membership = membersResult.data.memberships.find(
-      (m) => m.containerId === orgId,
-    );
-    return membership ? toOrgRole(membership.role) : null;
-  } catch (error) {
-    console.error("Error fetching user role:", error);
-    return null;
+  // The current user's org memberships (canonical RPC); find this org.
+  const membersResult = await membershipsService.forUser("organization");
+  if (isScopesRpcErr(membersResult)) {
+    console.error("Error fetching user role:", membersResult.error.message);
+    throw new Error(membersResult.error.message || "Could not read your role in this organization");
   }
+  const membership = membersResult.data.memberships.find(
+    (m) => m.containerId === orgId,
+  );
+  return membership ? toOrgRole(membership.role) : null;
 }
 
 // ============================================================================
@@ -987,7 +990,7 @@ export async function getUserInvitations(): Promise<
     const result = await invitationsService.forMe();
     if (isScopesRpcErr(result)) {
       console.error("Error fetching user invitations:", result.error.message);
-      return [];
+      throw new Error(result.error.message || "Could not read your invitations");
     }
 
     const invitations = result.data.invitations.filter(
@@ -1001,8 +1004,9 @@ export async function getUserInvitations(): Promise<
       })),
     );
   } catch (error) {
+    // A failed read is not "no invitations" (RC-B12 r13).
     console.error("Error fetching user invitations:", error);
-    return [];
+    throw pgErrorToError(error);
   }
 }
 

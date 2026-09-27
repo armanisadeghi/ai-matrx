@@ -100,6 +100,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   buildProjectsContextData,
   buildProjectsListContextData,
@@ -372,19 +373,32 @@ export function ProjectsHub({
   const [resolvedOrgFilter, setResolvedOrgFilter] = React.useState<{
     param: string;
     id: string | null;
+    /** The ?org= read FAILED: the list below is NOT filtered to it (RC-B12 r13). */
+    error?: unknown;
   } | null>(null);
+  const [orgFilterAttempt, setOrgFilterAttempt] = React.useState(0);
   React.useEffect(() => {
     let cancelled = false;
     if (!orgParam || UUID_RE.test(orgParam)) return undefined;
-    getOrganizationBySlugOrId(orgParam).then((o) => {
-      if (!cancelled) {
-        setResolvedOrgFilter({ param: orgParam, id: o?.id ?? null });
-      }
-    });
+    getOrganizationBySlugOrId(orgParam).then(
+      (o) => {
+        if (!cancelled) {
+          setResolvedOrgFilter({ param: orgParam, id: o?.id ?? null });
+        }
+      },
+      (err: unknown) => {
+        console.error("[ProjectsHub] organization filter read failed:", err);
+        if (!cancelled) {
+          setResolvedOrgFilter({ param: orgParam, id: null, error: err ?? new Error("The organization read failed") });
+        }
+      },
+    );
     return () => {
       cancelled = true;
     };
-  }, [orgParam]);
+  }, [orgParam, orgFilterAttempt]);
+  const orgFilterError =
+    orgParam && resolvedOrgFilter?.param === orgParam ? resolvedOrgFilter.error : undefined;
   const orgFilterId = !orgParam
     ? null
     : UUID_RE.test(orgParam)
@@ -727,6 +741,14 @@ export function ProjectsHub({
                   <Filter className="h-3.5 w-3.5" />
                   Filtered by
                 </span>
+                {orgFilterError != null && (
+                  <ReadFailure
+                    error={orgFilterError}
+                    what="the organization this list is filtered to — it is showing every project"
+                    onRetry={() => setOrgFilterAttempt((n) => n + 1)}
+                    className="m-0 w-full"
+                  />
+                )}
                 {orgFilterId && (
                   <Badge
                     variant="outline"

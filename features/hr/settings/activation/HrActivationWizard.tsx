@@ -103,6 +103,7 @@ import { checkEin, formatEinInput } from "./ein";
 import { useHrActivationState } from "./useHrActivationState";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 // A short, honest list. IANA carries hundreds; a US-first employer needs these, and
 // anything else is typed. The field accepts any IANA name — this is a shortcut, not
@@ -199,6 +200,11 @@ export function HrActivationWizard({
 
   const [jurisdictions, setJurisdictions] = useState<HrJurisdiction[] | null>(null);
   const [members, setMembers] = useState<OrganizationMemberWithUser[] | null>(null);
+  // A failed read is said at the control that needs it (RC-B12 r13) — it used
+  // to become [] and read as "no jurisdictions" / "nobody else is a member".
+  const [jurisdictionsError, setJurisdictionsError] = useState<unknown>(null);
+  const [membersError, setMembersError] = useState<unknown>(null);
+  const [readAttempt, setReadAttempt] = useState(0);
 
   // The jurisdiction list and the org roster are the two things the wizard cannot
   // invent. Both are read once; a failure on either is shown at the control that
@@ -207,29 +213,41 @@ export function HrActivationWizard({
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setJurisdictionsError(null);
       const structure = await fetchHrStructure(organizationId);
       if (cancelled) return;
-      setJurisdictions(
-        structure.ok
-          ? ((structure.data.jurisdictions ?? []) as unknown as HrJurisdiction[])
-          : [],
-      );
+      if (!structure.ok) {
+        setJurisdictions(null);
+        setJurisdictionsError(
+          new Error(structure.kind === "failed" ? structure.message : structure.reason),
+        );
+        return;
+      }
+      setJurisdictions((structure.data.jurisdictions ?? []) as unknown as HrJurisdiction[]);
     })();
     return () => {
       cancelled = true;
     };
-  }, [organizationId]);
+  }, [organizationId, readAttempt]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const roster = await getOrganizationMembers(organizationId);
-      if (!cancelled) setMembers(roster);
+      setMembersError(null);
+      try {
+        const roster = await getOrganizationMembers(organizationId);
+        if (!cancelled) setMembers(roster);
+      } catch (err) {
+        if (!cancelled) {
+          setMembers(null);
+          setMembersError(err ?? new Error("The member list read failed"));
+        }
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [organizationId]);
+  }, [organizationId, readAttempt]);
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((current) => ({ ...current, [key]: value }));
@@ -543,7 +561,14 @@ export function HrActivationWizard({
               <Label htmlFor="jurisdiction" className="text-sm font-medium">
                 Jurisdiction <span className="text-destructive">*</span>
               </Label>
-              {jurisdictions === null ? (
+              {jurisdictionsError != null ? (
+                <ReadFailure
+                  error={jurisdictionsError}
+                  what="the jurisdictions"
+                  onRetry={() => setReadAttempt((n) => n + 1)}
+                  className="m-0"
+                />
+              ) : jurisdictions === null ? (
                 <Skeleton className="h-10 w-full" />
               ) : jurisdictions.length === 0 ? (
                 <p
@@ -643,7 +668,14 @@ export function HrActivationWizard({
                 <Label htmlFor="nominee" className="text-sm font-medium">
                   Nominee <span className="text-destructive">*</span>
                 </Label>
-                {members === null ? (
+                {membersError != null ? (
+                  <ReadFailure
+                    error={membersError}
+                    what="your organization's members"
+                    onRetry={() => setReadAttempt((n) => n + 1)}
+                    className="m-0"
+                  />
+                ) : members === null ? (
                   <Skeleton className="h-10 w-full" />
                 ) : members.length === 0 ? (
                   <p className="text-sm text-muted-foreground">

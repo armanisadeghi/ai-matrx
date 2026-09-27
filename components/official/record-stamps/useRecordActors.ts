@@ -71,6 +71,11 @@ export function useRecordActors(
         }
         setDirectory(next);
       })
+      .catch((err: unknown) => {
+        // Label enrichment only: an actor we cannot name renders the row's
+        // own truth, never an invented name.
+        console.error("[useRecordActors] member names unavailable:", err);
+      })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });

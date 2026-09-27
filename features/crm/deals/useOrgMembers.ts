@@ -57,6 +57,9 @@ export function useOrgMembers(orgIds: string[]): UseOrgMembersResult {
             if (!p) {
               p = loadOrg(orgId);
               cache.set(orgId, p);
+              // A failed roster read is not cached as the answer — the next
+              // mount asks again (RC-B12 r13: the roster read now throws).
+              p.catch(() => cache.delete(orgId));
             }
             return p;
           }),

@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import { KgGraphCanvas } from "@/features/kg-graph/components/KgGraphCanvas";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 
 const UUID_RE =
@@ -33,6 +34,9 @@ export function KnowledgeGraphClient({
   const active = useActiveContext();
   const [resolvedOrgId, setResolvedOrgId] = useState<string | null>(null);
   const [resolving, setResolving] = useState<boolean>(Boolean(orgParam));
+  // A failed slug read is said, never read as "no organization" (RC-B12 r13).
+  const [orgReadError, setOrgReadError] = useState<unknown>(null);
+  const [orgReadAttempt, setOrgReadAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,17 +55,35 @@ export function KnowledgeGraphClient({
       return undefined;
     }
     setResolving(true);
+    setOrgReadError(null);
     (async () => {
-      const org = await getOrganizationBySlugOrId(orgParam);
-      if (!cancelled) {
-        setResolvedOrgId(org?.id ?? null);
-        setResolving(false);
+      try {
+        const org = await getOrganizationBySlugOrId(orgParam);
+        if (!cancelled) {
+          setResolvedOrgId(org?.id ?? null);
+          setResolving(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setOrgReadError(err ?? new Error("The organization read failed"));
+          setResolving(false);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [orgParam]);
+  }, [orgParam, orgReadAttempt]);
+
+  if (orgParam && orgReadError != null) {
+    return (
+      <ReadFailure
+        error={orgReadError}
+        what="this organization"
+        onRetry={() => setOrgReadAttempt((n) => n + 1)}
+      />
+    );
+  }
 
   if (orgParam && resolving) {
     return (

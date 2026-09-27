@@ -156,8 +156,13 @@ export default function AcceptInvitationPage() {
             updatedAt: "",
           }
         : undefined;
+      // Enrichment over the RPC's own answer: the org row is RLS-hidden to an
+      // invitee, and a failed read keeps the name the invitation carried.
       const organization =
-        (await getOrganization(invitationData.targetId)) ?? orgFromRpc;
+        (await getOrganization(invitationData.targetId).catch((err: unknown) => {
+          console.error("[accept-invitation] organization row unavailable:", err);
+          return null;
+        })) ?? orgFromRpc;
 
       const transformedInvitation: OrganizationInvitationWithOrg = {
         id: invitationData.id,

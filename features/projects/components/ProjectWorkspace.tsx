@@ -110,7 +110,11 @@ export function ProjectWorkspace() {
         setOrg(null);
         return;
       }
-      const o = await getOrganizationBySlugOrId(project.organizationId);
+      // Label enrichment only: the organization chip is absent without it.
+      const o = await getOrganizationBySlugOrId(project.organizationId).catch((err: unknown) => {
+        console.error("[ProjectWorkspace] organization label unavailable:", err);
+        return null;
+      });
       if (!cancelled && o)
         setOrg({ name: o.name, slug: o.slug });
     })();
@@ -142,7 +146,10 @@ export function ProjectWorkspace() {
       setProject(resolved);
       setResolving(false);
       if (resolved?.organizationId) {
-        const o = await getOrganizationBySlugOrId(resolved.organizationId);
+        const o = await getOrganizationBySlugOrId(resolved.organizationId).catch((err: unknown) => {
+          console.error("[ProjectWorkspace] organization label unavailable:", err);
+          return null;
+        });
         if (!cancelled && o)
           setOrg({ name: o.name, slug: o.slug });
       }

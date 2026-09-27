@@ -12,6 +12,7 @@ import { useProject } from "@/features/projects/hooks";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { getProjectBySlug, getProject } from "@/features/projects/service";
 import type { Project } from "@/features/projects/types";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ProjectSidebar } from "@/features/projects/components/ProjectSidebar";
 
 const UUID_REGEX =
@@ -33,9 +34,14 @@ export function OrgProjectSettingsLayoutClient({
   const [resolvedProjectId, setResolvedProjectId] = React.useState<
     string | null
   >(null);
+  // The organization/project read failing is said where the sidebar would be
+  // (RC-B12 r13) — it used to only log, leaving the chrome silently absent.
+  const [layoutReadError, setLayoutReadError] = React.useState<unknown>(null);
+  const [layoutReadAttempt, setLayoutReadAttempt] = React.useState(0);
 
   React.useEffect(() => {
     async function load() {
+      setLayoutReadError(null);
       try {
         const org = await getOrganizationBySlugOrId(orgId);
         if (!org) return;
@@ -51,10 +57,11 @@ export function OrgProjectSettingsLayoutClient({
         if (proj) setResolvedProjectId(proj.id);
       } catch (err) {
         console.error("Error loading project settings layout:", err);
+        setLayoutReadError(err ?? new Error("The project read failed"));
       }
     }
     load();
-  }, [orgId, projectId]);
+  }, [orgId, projectId, layoutReadAttempt]);
 
   const { project } = useProject(resolvedProjectId ?? undefined);
 
@@ -116,7 +123,16 @@ export function OrgProjectSettingsLayoutClient({
             </div>
           </aside>
         )}
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto">
+          {layoutReadError != null && (
+            <ReadFailure
+              error={layoutReadError}
+              what="this project's organization"
+              onRetry={() => setLayoutReadAttempt((n) => n + 1)}
+            />
+          )}
+          {children}
+        </main>
       </div>
       </div>
     </>
