@@ -191,7 +191,7 @@ export function MeetingInviteDialog({
                 )}
                 {copiedWhat === "invitation" ? "Copied" : "Copy invitation"}
               </Button>
-              <Button type="button" variant="outline" size="sm" asChild className="gap-1.5">
+              <Button variant="outline" size="sm" asChild className="gap-1.5">
                 <a href={invitationMailto(meeting, link)}>
                   <Mail className="h-4 w-4" aria-hidden="true" />
                   Email invitation
@@ -205,13 +205,13 @@ export function MeetingInviteDialog({
             <section className="space-y-2" aria-label="Add to calendar">
               <SectionTitle>Add to calendar</SectionTitle>
               <div className="flex flex-wrap gap-2">
-                <Button type="button" variant="outline" size="sm" asChild className="gap-1.5">
+                <Button variant="outline" size="sm" asChild className="gap-1.5">
                   <a href={googleCalendarUrl(calendarEvent)} target="_blank" rel="noopener noreferrer">
                     <CalendarPlus className="h-4 w-4" aria-hidden="true" />
                     Google Calendar
                   </a>
                 </Button>
-                <Button type="button" variant="outline" size="sm" asChild className="gap-1.5">
+                <Button variant="outline" size="sm" asChild className="gap-1.5">
                   <a href={outlookCalendarUrl(calendarEvent)} target="_blank" rel="noopener noreferrer">
                     <CalendarPlus className="h-4 w-4" aria-hidden="true" />
                     Outlook
