@@ -6,6 +6,7 @@ import {
   selectAllNotesList,
   selectAllFolders,
   selectNotesListStatus,
+  selectNotesListError,
   selectNotesByFolder,
 } from "@/features/notes/redux/selectors";
 import {
@@ -77,6 +78,7 @@ export function useQuickNoteSave({
     return [defaultFolder, ...foldersFromRedux];
   }, [foldersFromRedux, defaultFolder]);
   const listStatus = useAppSelector(selectNotesListStatus);
+  const listError = useAppSelector(selectNotesListError);
   const selectedOrganizationId = useAppSelector(selectOrganizationId);
 
   useEffect(() => {
@@ -308,6 +310,14 @@ export function useQuickNoteSave({
     // data
     allFolders,
     notesInFolder,
+    // The notes-list read behind `notesInFolder` / `allFolders` (RC-B12): a
+    // picker must not say "No notes in this folder" while it is loading or
+    // after it failed.
+    listStatus,
+    listError,
+    retryList: () => {
+      void dispatch(fetchNotesList());
+    },
 
     // lifecycle
     isSaving,

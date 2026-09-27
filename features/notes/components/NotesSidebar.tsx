@@ -38,7 +38,11 @@ import { confirm } from '@/components/dialogs/confirm/ConfirmDialogHost';
 import type { FolderReference, Note, NoteFilters, NoteSortConfig } from '../types';
 import { noteFolderReference } from '../types';
 import { filterNotes, sortNotes, groupNotesByFolder } from '../utils/noteUtils';
-import { useAppDispatch } from '@/lib/redux/hooks';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { selectNotesListError, selectNotesListStatus } from '../redux/selectors';
+import { fetchNotesList } from '../redux/thunks';
+import { ReadFailure } from '@/components/read-state/ReadFailure';
+import { StaleDataNotice } from '@/components/official/stale-data/StaleDataNotice';
 import { toast } from '@/lib/toast';
 import { ensureNoteBodiesLoaded } from '../redux/thunks';
 import { useNoteContentSearch } from '../hooks/useNoteContentSearch';
@@ -103,6 +107,13 @@ export function NotesSidebar({
     // Filter and sort notes. List rows carry only a preview (audit N-24), so
     // bodies are matched by the database and merged in.
     const bodySearch = useNoteContentSearch(searchQuery);
+    // The notes list read behind `notes` (RC-B12): "No notes found" is said
+    // only after it succeeded.
+    const listStatus = useAppSelector(selectNotesListStatus);
+    const listError = useAppSelector(selectNotesListError);
+    const retryList = () => {
+        void dispatch(fetchNotesList());
+    };
     const processedNotes = useMemo(() => {
         const filters: NoteFilters = searchQuery ? { search: searchQuery } : {};
         const filtered = filterNotes(notes, filters);
@@ -394,7 +405,21 @@ export function NotesSidebar({
             <div ref={scrollAreaRef} className="flex-1 overflow-hidden" onDragOver={handleAutoScroll}>
             <ScrollArea className="h-full">
                 <div className="p-0.5">
-                    {folderGroups.length === 0 ? (
+                    {listStatus === "error" && notes.length > 0 && (
+                        <StaleDataNotice hasData what="your notes" onRetry={retryList} detail={listError} className="m-1" />
+                    )}
+                    {bodySearch.error && folderGroups.length > 0 && (
+                        <StaleDataNotice hasData partial what="notes whose text matches" onRetry={bodySearch.retry} detail={bodySearch.error} className="m-1" />
+                    )}
+                    {folderGroups.length === 0 && listStatus === "error" ? (
+                        <ReadFailure error={listError ?? true} what="your notes" onRetry={retryList} />
+                    ) : folderGroups.length === 0 && bodySearch.error ? (
+                        <ReadFailure error={bodySearch.error} what="the note text search" onRetry={bodySearch.retry} />
+                    ) : folderGroups.length === 0 && (listStatus !== "loaded" || bodySearch.searching) ? (
+                        <div className="text-center text-xs text-muted-foreground py-3">
+                            {bodySearch.searching ? "Searching…" : "Loading notes…"}
+                        </div>
+                    ) : folderGroups.length === 0 ? (
                         <div className="text-center text-xs text-muted-foreground py-3">
                             No notes found
                         </div>

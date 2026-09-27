@@ -167,6 +167,7 @@ export function FindReplaceBar({ noteId, textareaRef }: FindReplaceBarProps) {
     fr.matchCount > 0
       ? `${fr.currentMatchIndex + 1}/${fr.matchCount}`
       : fr.query && !isGlobal
+        // read-gate-exempt: a match count within the open note's own text (already in the editor), not a read; global results gate their read in GlobalSearchResults
         ? "No results"
         : "";
 

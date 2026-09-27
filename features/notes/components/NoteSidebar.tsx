@@ -94,6 +94,8 @@ import {
   selectAllNotesList,
   selectSharedWithMeNotes,
   selectDeletedNotesList,
+  selectNotesTrashStatus,
+  selectNotesTrashError,
   selectInstanceActiveTab,
   selectInstanceTabs,
   selectNotesListStatus,
@@ -147,6 +149,8 @@ import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 // ── Sort field labels ───────────────────────────────────────────────────────
 const SORT_FIELDS: { field: NoteSortField; label: string }[] = [
@@ -271,6 +275,8 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   const [trashOpen, setTrashOpen] = useState(false);
   const trashFetchedRef = useRef(false);
   const deletedNotes = useAppSelector(selectDeletedNotesList);
+  const trashStatus = useAppSelector(selectNotesTrashStatus);
+  const trashError = useAppSelector(selectNotesTrashError);
   const sharedNotes = useAppSelector(selectSharedWithMeNotes);
   const [sharedOpen, setSharedOpen] = useState(true);
   const [groupByDropdown, setGroupByDropdown] = useState(false);
@@ -972,6 +978,17 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
         </div>
       </div>
 
+      {searchQuery && bodySearch.error && (
+        <StaleDataNotice
+          hasData
+          partial
+          what="notes whose text matches"
+          onRetry={bodySearch.retry}
+          detail={bodySearch.error}
+          className="mx-2 my-1"
+        />
+      )}
+
       {activeOrgId && homelessCount > 0 && (
         <div className="shrink-0 flex items-center gap-1.5 border-b border-border/20 px-2.5 py-1">
           <span className="flex min-w-0 items-center gap-1.5 text-[10px] text-amber-600/80 dark:text-amber-400/80">
@@ -1637,7 +1654,18 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
           </button>
           {trashOpen && (
             <div className="ml-2 max-h-48 overflow-y-auto pb-1">
-              {deletedNotes.length === 0 ? (
+              {deletedNotes.length === 0 && trashStatus === "error" ? (
+                <ReadFailure
+                  error={trashError ?? true}
+                  what="your trash"
+                  onRetry={() => void dispatch(fetchDeletedNotes())}
+                  className="m-1"
+                />
+              ) : deletedNotes.length === 0 && trashStatus !== "loaded" ? (
+                <p className="px-3 py-2 text-[0.5625rem] text-muted-foreground/50">
+                  Loading trash…
+                </p>
+              ) : deletedNotes.length === 0 ? (
                 <p className="px-3 py-2 text-[0.5625rem] text-muted-foreground/50">
                   Trash is empty
                 </p>

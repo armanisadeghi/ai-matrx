@@ -8,7 +8,7 @@
 // same query/options state via Redux but compute their match lists in
 // parallel.
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAllNotesList, selectFindReplaceState } from "../redux/selectors";
 import { ensureNoteBodiesLoaded } from "../redux/thunks";
@@ -25,7 +25,16 @@ const EMPTY_RESULTS: GlobalSearchResults = {
   searchedNotes: 0,
 };
 
-export function useGlobalFind(instanceId: string): GlobalSearchResults {
+export interface GlobalFindResult extends GlobalSearchResults {
+  /** Note bodies are still being read — the results are not an answer yet. */
+  bodiesLoading: boolean;
+  /** The body read failed: "No results" would be a claim about unread notes. */
+  bodyLoadError: unknown;
+  /** Re-run the body read. */
+  retryBodies: () => void;
+}
+
+export function useGlobalFind(instanceId: string): GlobalFindResult {
   const findReplace = useAppSelector(selectFindReplaceState(instanceId));
   const allNotes = useAppSelector(selectAllNotesList);
   const dispatch = useAppDispatch();
@@ -37,12 +46,34 @@ export function useGlobalFind(instanceId: string): GlobalSearchResults {
   const missingIds = globalActive
     ? allNotes.filter((n) => n._fetchStatus !== "full").map((n) => n.id).join("\n")
     : "";
+  // The body read's outcome (RC-B12): a failed read is said, never searched
+  // over as if the previews were the whole note.
+  const [bodyAttempt, setBodyAttempt] = useState(0);
+  const [bodyOutcome, setBodyOutcome] = useState<{ key: string; error: unknown } | null>(null);
+  const bodyKey = `${bodyAttempt}\n${missingIds}`;
   useEffect(() => {
-    if (!missingIds) return;
-    void dispatch(ensureNoteBodiesLoaded(missingIds.split("\n")));
-  }, [dispatch, missingIds]);
+    if (!missingIds) return undefined;
+    let superseded = false;
+    dispatch(ensureNoteBodiesLoaded(missingIds.split("\n")))
+      .unwrap()
+      .then(
+        () => {
+          if (!superseded) setBodyOutcome({ key: bodyKey, error: null });
+        },
+        (err: unknown) => {
+          if (!superseded) setBodyOutcome({ key: bodyKey, error: err ?? new Error("The notes could not be read") });
+        },
+      );
+    return () => {
+      superseded = true;
+    };
+  }, [dispatch, missingIds, bodyKey]);
+  const settled = Boolean(missingIds) && bodyOutcome?.key === bodyKey;
+  const bodyLoadError = settled ? bodyOutcome?.error ?? null : null;
+  const bodiesLoading = Boolean(missingIds) && !settled;
+  const retryBodies = () => setBodyAttempt((n) => n + 1);
 
-  return useMemo(() => {
+  const results = useMemo(() => {
     if (!findReplace || !findReplace.query || findReplace.scope !== "global") {
       return EMPTY_RESULTS;
     }
@@ -79,4 +110,6 @@ export function useGlobalFind(instanceId: string): GlobalSearchResults {
     findReplace?.includePaths,
     findReplace?.excludePaths,
   ]);
+
+  return { ...results, bodiesLoading, bodyLoadError, retryBodies };
 }

@@ -34,6 +34,10 @@ export interface NoteContentSearch {
   searching: boolean;
   /** True when the database capped the result — narrow the query. */
   capped: boolean;
+  /** The body search failed: `ids` is then NOT "no body matches" (RC-B12). */
+  error: string | null;
+  /** Run the body search again (after a failure). */
+  retry: () => void;
 }
 
 interface BodySearchResult {
@@ -42,14 +46,20 @@ interface BodySearchResult {
   query: string;
   ids: ReadonlySet<string>;
   capped: boolean;
+  error: string | null;
 }
 
-const NO_RESULT: BodySearchResult = { query: "", ids: EMPTY, capped: false };
+const NO_RESULT: BodySearchResult = { query: "", ids: EMPTY, capped: false, error: null };
 
 export function useNoteContentSearch(query: string): NoteContentSearch {
   const trimmed = query.trim();
   const active = trimmed.length >= CONTENT_SEARCH_MIN_CHARS;
   const [result, setResult] = useState<BodySearchResult>(NO_RESULT);
+  const [attempt, setAttempt] = useState(0);
+  const retry = () => {
+    setResult(NO_RESULT);
+    setAttempt((n) => n + 1);
+  };
 
   useEffect(() => {
     if (!active) return;
@@ -73,7 +83,12 @@ export function useNoteContentSearch(query: string): NoteContentSearch {
             message: `note body search failed: ${error.message}`,
             raw: error,
           });
-          setResult({ query: trimmed, ids: EMPTY, capped: false });
+          setResult({
+            query: trimmed,
+            ids: EMPTY,
+            capped: false,
+            error: error.message || "The note text search failed",
+          });
           return;
         }
         const rows = data ?? [];
@@ -81,6 +96,7 @@ export function useNoteContentSearch(query: string): NoteContentSearch {
           query: trimmed,
           ids: new Set(rows.map((row) => row.id)),
           capped: rows.length >= CONTENT_SEARCH_MAX_ROWS,
+          error: null,
         });
       })();
     }, CONTENT_SEARCH_DEBOUNCE_MS);
@@ -88,13 +104,15 @@ export function useNoteContentSearch(query: string): NoteContentSearch {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [active, trimmed]);
+  }, [active, trimmed, attempt]);
 
-  if (!active) return { ids: EMPTY, searching: false, capped: false };
+  if (!active) return { ids: EMPTY, searching: false, capped: false, error: null, retry };
   const current = result.query === trimmed;
   return {
     ids: current ? result.ids : EMPTY,
     searching: !current,
     capped: current && result.capped,
+    error: current ? result.error : null,
+    retry,
   };
 }

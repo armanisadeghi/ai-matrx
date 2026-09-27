@@ -27,6 +27,8 @@ import {
   requestActiveMatch,
 } from "../redux/slice";
 import { useGlobalFind } from "../hooks/useGlobalFind";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import type {
   GlobalMatchHit,
   GlobalSearchNoteResult,
@@ -42,8 +44,15 @@ export function GlobalSearchResults({
   className,
 }: GlobalSearchResultsProps) {
   const dispatch = useAppDispatch();
-  const { results, totalMatches, matchedNotes, searchedNotes } =
-    useGlobalFind(instanceId);
+  const {
+    results,
+    totalMatches,
+    matchedNotes,
+    searchedNotes,
+    bodiesLoading,
+    bodyLoadError,
+    retryBodies,
+  } = useGlobalFind(instanceId);
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
@@ -143,6 +152,31 @@ export function GlobalSearchResults({
     return groups;
   }, [results]);
 
+  if (results.length === 0 && bodyLoadError) {
+    return (
+      <ReadFailure
+        error={bodyLoadError}
+        what="your notes to search"
+        onRetry={retryBodies}
+        className={cn("m-2", className)}
+      />
+    );
+  }
+
+  if (results.length === 0 && bodiesLoading) {
+    return (
+      <div
+        role="status"
+        className={cn(
+          "px-3 py-2 text-xs text-muted-foreground border-b border-border bg-muted/10",
+          className,
+        )}
+      >
+        Reading your notes…
+      </div>
+    );
+  }
+
   if (results.length === 0) {
     return (
       <div
@@ -173,6 +207,15 @@ export function GlobalSearchResults({
         <span className="tabular-nums">{searchedNotes} searched</span>
       </div>
 
+      {bodyLoadError ? (
+        <StaleDataNotice
+          hasData
+          partial
+          what="the notes whose text could not be read"
+          onRetry={retryBodies}
+          className="m-2"
+        />
+      ) : null}
       <div className="flex-1 overflow-y-auto py-1 max-h-[40dvh]">
         {folderGroups.map((group) => (
           <div key={group.folder || "__unfiled__"} className="mb-1">

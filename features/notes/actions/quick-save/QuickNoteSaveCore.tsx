@@ -39,6 +39,7 @@ import { useQuickNoteSave } from "./useQuickNoteSave";
 import { NOTE_DRAFT_FIELDS } from "./quickNoteSaveVocabulary";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { CreateFolderDialog } from "@/features/notes/components/CreateFolderDialog";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export type PostSaveAction = "newTab" | "navigate" | "openWindow" | "none";
 
@@ -112,6 +113,9 @@ export function QuickNoteSaveCore({
     selectedNote,
     allFolders,
     notesInFolder,
+    listStatus,
+    listError,
+    retryList,
     isSaving,
     isSaveDisabled,
     savedNote,
@@ -506,6 +510,14 @@ export function QuickNoteSaveCore({
                           </span>
                         </SelectItem>
                       ))
+                    ) : listStatus === "error" ? (
+                      <SelectItem value="__unavailable" disabled>
+                        Notes unavailable — see below
+                      </SelectItem>
+                    ) : listStatus !== "loaded" ? (
+                      <SelectItem value="__loading" disabled>
+                        Loading notes…
+                      </SelectItem>
                     ) : (
                       <SelectItem value="__none" disabled>
                         No notes in this folder
@@ -513,6 +525,14 @@ export function QuickNoteSaveCore({
                     )}
                   </SelectContent>
                 </Select>
+                {listStatus === "error" && (
+                  <ReadFailure
+                    error={listError ?? true}
+                    what="your notes"
+                    onRetry={retryList}
+                    className="mt-2"
+                  />
+                )}
               </div>
             )}
           </div>
