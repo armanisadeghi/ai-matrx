@@ -362,7 +362,10 @@ function fromScraper(
         structured_data: [],
         robots_directives: null,
       };
-  const structuredData = obj(structured.structured_data);
+  // JSON-LD blocks arrive as a list (`[]` for none) or an object.
+  const structuredData: Obj | unknown[] = Array.isArray(structured.structured_data)
+    ? structured.structured_data
+    : obj(structured.structured_data);
 
   return {
     success: true,
@@ -459,23 +462,9 @@ export function webSourceToScrape(inputs: WebSourceInputs): WebSourceView {
 
 /**
  * The `pageData` the result screen (`PageContent`) takes, built by the
- * scraper's own `processFullData`. That processor keeps `structured_data` only
- * under a legacy "Ordered Lists" key, so the Source's structured data (JSON-LD,
- * the scraper's structured half) is carried through as the adapter built it —
- * otherwise the Structured tab would say "none" for data the Source holds.
+ * scraper's own `processFullData` — the same processing the live scraper
+ * screen applies, whatever shape the Source was stored in.
  */
 export function webSourcePageData(view: WebSourceView) {
-  const processed = ScraperDataUtils.processFullData(view.envelope);
-  // The scraper's own stored result goes through its processor untouched —
-  // exactly what the live scraper screen does with it.
-  if (view.shape === "scraper_envelope") return processed;
-  const built = view.envelope.results[0];
-  return {
-    ...processed,
-    results: processed.results.map((r, i) =>
-      i === 0 && built?.structured_data && Object.keys(built.structured_data).length
-        ? { ...r, structured_data: built.structured_data }
-        : r,
-    ),
-  };
+  return ScraperDataUtils.processFullData(view.envelope);
 }
