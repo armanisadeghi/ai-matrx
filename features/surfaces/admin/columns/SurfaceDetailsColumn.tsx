@@ -1,5 +1,7 @@
 "use client";
 
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
@@ -118,9 +120,12 @@ export function SurfaceDetailsColumn({ agent }: { agent: AgentDefinition }) {
         </h2>
         <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
           <span>
-            <span className="font-medium text-foreground tabular-nums">
-              {values.length}
-            </span>{" "}
+            <UntrustedCount
+              className="font-medium text-foreground tabular-nums"
+              read={readOf({ status, error: valuesError })}
+              value={values.length}
+              label="Values"
+            />{" "}
             value{values.length === 1 ? "" : "s"}
           </span>
           {surface && (
@@ -130,6 +135,7 @@ export function SurfaceDetailsColumn({ agent }: { agent: AgentDefinition }) {
               </span>
               <span>
                 <span className="font-medium text-foreground tabular-nums">
+                  {/* read-gate-exempt: a field of the surface row the surfaces read returned; no row, no number */}
                   {surface.agentCount}
                 </span>{" "}
                 agent{surface.agentCount === 1 ? "" : "s"}
@@ -139,6 +145,7 @@ export function SurfaceDetailsColumn({ agent }: { agent: AgentDefinition }) {
               </span>
               <span>
                 <span className="font-medium text-foreground tabular-nums">
+                  {/* read-gate-exempt: a field of the surface row the surfaces read returned; no row, no number */}
                   {surface.toolCount}
                 </span>{" "}
                 tool{surface.toolCount === 1 ? "" : "s"}

@@ -21,6 +21,7 @@ import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-defini
 import {
   selectAgentExecutionPayload,
   selectAgentVariableDefinitions,
+  selectAgentError,
 } from "@/features/agents/redux/agent-definition/selectors";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { AgentSelectorIsland } from "@/features/agents/components/shared/AgentSelectorIsland";
@@ -40,6 +41,7 @@ import {
   type TesterSettingsController,
 } from "@/features/agents/components/run-controls/TesterSettingsPanel";
 import { WidgetVariableInputs } from "./WidgetVariableInputs";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   buildWidgetLaunchDraft,
   sealWidgetLaunchOptions,
@@ -101,6 +103,9 @@ export function AgentWidgetsPage({
   );
   const variableDefinitions = useAppSelector((state) =>
     selectAgentVariableDefinitions(state, agentId),
+  );
+  const agentReadError = useAppSelector((state) =>
+    selectAgentError(state, agentId),
   );
 
   useEffect(() => {
@@ -562,7 +567,13 @@ export function AgentWidgetsPage({
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 max-w-3xl space-y-5">
-            {isLoading ? (
+            {agentReadError && isLoading ? (
+              <ReadFailure
+                error={agentReadError}
+                what="this agent's definition"
+                onRetry={() => void dispatch(fetchAgentExecutionMinimal(agentId))}
+              />
+            ) : isLoading ? (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Loading agent definition…

@@ -1,5 +1,10 @@
 "use client";
 
+import { readOf } from "@/components/read-state/ReadGate";
+import {
+  UntrustedCount,
+  countReadState,
+} from "@/components/official/stale-data/UntrustedCount";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -42,7 +47,9 @@ import {
   bulkUpsertAgentSurfaceBindingsThunk,
 } from "@/features/surfaces/redux/thunks";
 import {
+  makeSelectBindingsErrorForAgent,
   makeSelectBindingsForAgent,
+  makeSelectBindingsStatusForAgent,
   selectActiveSurfaces,
   selectSurfacesStatus,
 } from "@/features/surfaces/redux/selectors";
@@ -134,6 +141,11 @@ export function SurfaceBindingsBatchEditor({
     [agent.id],
   );
   const bindings = useAppSelector(selectBindings);
+  // What exists decides create vs update: without a successful bindings read
+  // there is no honest split (a failed read would call every surface "create").
+  const bindingsStatus = useAppSelector(makeSelectBindingsStatusForAgent(agent.id));
+  const bindingsError = useAppSelector(makeSelectBindingsErrorForAgent(agent.id));
+  const bindingsRead = readOf({ status: bindingsStatus, error: bindingsError });
   const surfaces = useAppSelector(selectActiveSurfaces);
   const surfacesStatus = useAppSelector(selectSurfacesStatus);
 
@@ -553,10 +565,14 @@ export function SurfaceBindingsBatchEditor({
           {targetSurfaceNames.size > 0 ? (
             <>
               <span className="font-medium text-foreground tabular-nums">
+                {/* read-gate-exempt: how many surfaces the person selected in this editor, not a fetched count */}
                 {targetSurfaceNames.size}
               </span>{" "}
               surface{targetSurfaceNames.size === 1 ? "" : "s"} ·{" "}
-              {createCount} to create · {updateCount} to update
+              <UntrustedCount read={bindingsRead} value={createCount} label="To create" /> to
+              create ·{" "}
+              <UntrustedCount read={bindingsRead} value={updateCount} label="To update" /> to
+              update
             </>
           ) : (
             "Select surfaces to apply"
@@ -564,7 +580,11 @@ export function SurfaceBindingsBatchEditor({
         </div>
         <Button
           onClick={() => void onApply()}
-          disabled={applying || targetSurfaceNames.size === 0}
+          disabled={
+            applying ||
+            targetSurfaceNames.size === 0 ||
+            countReadState({ read: bindingsRead }) !== "ready"
+          }
           className="ml-auto h-9 gap-1.5 text-sm min-w-[120px]"
         >
           {applying ? (

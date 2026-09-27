@@ -446,6 +446,7 @@ export function AgentVariableEditor({
               Convert options to picklist
             </Label>
             <p className="mt-0.5 text-xs text-muted-foreground">
+              {/* read-gate-exempt: options typed into this variable's editor, not rows fetched from a read */}
               Create a reusable picklist from these {staticOptions.length}{" "}
               options and link this variable to it. Each option is copied as
               both the public label and the injected text so you can refine it

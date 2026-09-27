@@ -10,6 +10,8 @@
  * no `window.confirm`).
  */
 
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useCallback, useEffect, useState } from "react";
 import {
   CheckCircle2,
@@ -251,7 +253,8 @@ function TasksSection({ conversationId }: { conversationId: string }) {
   return (
     <section>
       <h3 className="text-xs uppercase tracking-wide text-muted-foreground mb-1.5">
-        Agent tasks ({tasks.length})
+        Agent tasks (
+        <UntrustedCount read={readOf(read)} value={tasks.length} label="Agent tasks" />)
       </h3>
       <div className="flex flex-col gap-1.5">
         {read.error && tasks.length > 0 && (
@@ -390,7 +393,13 @@ function TodosSection({ conversationId }: { conversationId: string }) {
   return (
     <section>
       <h3 className="text-xs uppercase tracking-wide text-muted-foreground mb-1.5">
-        Your todos ({todos.filter((t) => !t.done).length} open)
+        Your todos (
+        <UntrustedCount
+          read={readOf(read)}
+          value={todos.filter((t) => !t.done).length}
+          label="Open todos"
+        />{" "}
+        open)
       </h3>
       <div className="flex flex-col gap-1.5">
         {read.error && todos.length > 0 && (

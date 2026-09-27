@@ -397,7 +397,7 @@ export function CustomDataBindingPicker({
                 loading={records.loading}
                 ariaLabel="Record"
               />
-              {recordsCapped && (
+              {recordsCapped && !records.error && (
                 <p className="text-[11px] text-muted-foreground">
                   Showing {recordOptions.length} of {recordTotal} records —
                   &ldquo;Load more&rdquo; in the list reaches the rest.

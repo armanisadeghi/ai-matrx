@@ -1,6 +1,8 @@
 "use client";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import {
   selectAgentAccessResolved,
   selectAgentById,
@@ -594,7 +596,14 @@ export function AgentSettingsForm({
                 Messages
               </span>
               <span className="font-mono font-bold text-3xl text-foreground/90">
-                {agent.messages?.length || 0}
+                <UntrustedCount
+                  read={readOf({
+                    isLoading: agent._loading || !agent._loadedFields.messages,
+                    error: agent._error,
+                  })}
+                  value={agent.messages?.length ?? 0}
+                  label="Messages"
+                />
               </span>
             </div>
 
@@ -621,7 +630,14 @@ export function AgentSettingsForm({
                 Variables
               </span>
               <span className="font-mono font-bold text-3xl text-foreground/90">
-                {agent.variableDefinitions?.length || 0}
+                <UntrustedCount
+                  read={readOf({
+                    isLoading: agent._loading || !agent._loadedFields.variableDefinitions,
+                    error: agent._error,
+                  })}
+                  value={agent.variableDefinitions?.length ?? 0}
+                  label="Variables"
+                />
               </span>
             </div>
 

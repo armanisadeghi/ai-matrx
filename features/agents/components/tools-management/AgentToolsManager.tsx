@@ -132,6 +132,8 @@ import {
 } from "@/features/tool-registry/shared/toolRuntimes.service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 type ToolsTab = "server" | "custom" | "client" | "mcp";
 
@@ -555,6 +557,7 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-500" />
           <p className="text-[11px] leading-tight text-amber-700 dark:text-amber-300">
             This model doesn&apos;t support tools.
+            {/* read-gate-exempt: tools saved on the agent being edited in this form, not rows fetched from a read */}
             {savedToolCount > 0
               ? ` The ${savedToolCount} tool${savedToolCount === 1 ? "" : "s"} configured below ${savedToolCount === 1 ? "will" : "will"} be dropped at run time for this model — switch to a tool-capable model to use them.`
               : " Adding tools is disabled while it's selected."}
@@ -2654,6 +2657,20 @@ function McpToolsTab({
     </div>
   );
 
+  // A failed catalog read has no servers to count or list — say so, never "0".
+  if (catalogStatus === "failed" && catalog.length === 0) {
+    return (
+      <div className="flex flex-col h-full overflow-hidden">
+        {feedbackBanner}
+        <ReadFailure
+          error={catalogError ?? true}
+          what="the MCP server catalog"
+          onRetry={() => void dispatch(fetchCatalog())}
+        />
+      </div>
+    );
+  }
+
   if (agentCatalogEntries.length === 0 && catalogStatus !== "loading") {
     return (
       <div className="flex flex-col h-full overflow-hidden">
@@ -2693,7 +2710,12 @@ function McpToolsTab({
             Agent MCP Servers
           </p>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            {agentCatalogEntries.length} server
+            <UntrustedCount
+              read={readOf({ status: catalogStatus, error: catalogError })}
+              value={agentCatalogEntries.length}
+              label="Assigned servers"
+            />{" "}
+            server
             {agentCatalogEntries.length !== 1 ? "s" : ""} assigned
           </p>
         </div>
@@ -2754,11 +2776,15 @@ function McpToolsTab({
             <div className="flex items-center gap-2 text-[11px]">
               <AlertTriangle className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400 shrink-0" />
               <span className="text-yellow-800 dark:text-yellow-300 font-medium">
-                {
-                  agentMcpServers.filter(
-                    (id) => !catalog.find((c) => c.serverId === id),
-                  ).length
-                }{" "}
+                <UntrustedCount
+                  read={readOf({ status: catalogStatus, error: catalogError })}
+                  value={
+                    agentMcpServers.filter(
+                      (id) => !catalog.find((c) => c.serverId === id),
+                    ).length
+                  }
+                  label="Servers not found in the catalog"
+                />{" "}
                 server(s) referenced but not found in catalog
               </span>
               <Button

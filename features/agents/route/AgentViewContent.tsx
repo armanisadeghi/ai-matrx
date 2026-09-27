@@ -19,7 +19,11 @@ import {
   selectAgentOutputSchema,
   selectAgentChangeNote,
 } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentVersionHistory } from "@/features/agents/redux/agent-definition/thunks";
+import {
+  fetchAgentVersionHistory,
+  fetchFullAgent,
+} from "@/features/agents/redux/agent-definition/thunks";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { selectCategoryById } from "@/features/agents/redux/agent-shortcut-categories/selectors";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import {
@@ -375,6 +379,18 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
         Loading agent data...
       </div>
+    );
+  }
+
+  // The counts below are this record's fields; when the read that fills them
+  // failed they are not an answer ("0 messages"), so say the failure instead.
+  if (agent._error && !agent._loadedFields.messages) {
+    return (
+      <ReadFailure
+        error={agent._error}
+        what="this agent"
+        onRetry={() => void dispatch(fetchFullAgent(agentId))}
+      />
     );
   }
 

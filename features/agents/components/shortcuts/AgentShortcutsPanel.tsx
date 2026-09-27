@@ -59,6 +59,12 @@ import {
 } from "@/features/agent-shortcuts/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { readOf } from "@/components/read-state/ReadGate";
+import {
+  UntrustedCount,
+  countReadState,
+  type CountRead,
+} from "@/components/official/stale-data/UntrustedCount";
 
 interface AgentShortcutsPanelProps {
   agentId: string;
@@ -174,19 +180,24 @@ export function AgentShortcutsPanel({
       .filter((line) => line !== null)
       .join("\n");
 
-  const countCardCopy = (label: string, value: number, help?: string) => ({
-    label: `${label} (agent shortcuts)`,
-    human: () =>
-      `${label}: ${value} — shortcuts targeting ${agentName}${help ? ` (${help})` : ""}`,
-    agent: () => ({
-      kind: "agent-shortcuts-count",
-      location,
-      description: `The "${label}" count card on the shortcuts panel for ${agentName}.`,
-      data: { metric: label, value, detail: help ?? null },
-      attributes: { ...kpis, metric: label, agent_id: agentId },
-      context: { agent_name: agentName },
-    }),
-  });
+  // The counts below are the shortcut reads' answer; a failed read has none.
+  const countsRead = readOf({ isLoading, error });
+  const countCardCopy = (label: string, n: number, help?: string) => {
+    const value = error ? "unavailable (could not be read)" : n;
+    return {
+      label: `${label} (agent shortcuts)`,
+      human: () =>
+        `${label}: ${value} — shortcuts targeting ${agentName}${help ? ` (${help})` : ""}`,
+      agent: () => ({
+        kind: "agent-shortcuts-count",
+        location,
+        description: `The "${label}" count card on the shortcuts panel for ${agentName}.`,
+        data: { metric: label, value, detail: help ?? null },
+        attributes: { ...kpis, metric: label, agent_id: agentId },
+        context: { agent_name: agentName },
+      }),
+    };
+  };
 
   return (
     <div className="h-full overflow-y-auto">
@@ -301,7 +312,7 @@ export function AgentShortcutsPanel({
             value={userShortcuts.length}
             icon={UserRound}
             tone="default"
-            isLoading={isLoading}
+            read={countsRead}
             copy={countCardCopy("Your shortcuts", userShortcuts.length)}
           />
           <CountCard
@@ -309,7 +320,7 @@ export function AgentShortcutsPanel({
             value={globalShortcuts.length}
             icon={Globe}
             tone="default"
-            isLoading={isLoading}
+            read={countsRead}
             copy={countCardCopy("Global shortcuts", globalShortcuts.length)}
           />
           <CountCard
@@ -317,7 +328,7 @@ export function AgentShortcutsPanel({
             value={otherShortcuts.length}
             icon={Stars}
             tone="muted"
-            isLoading={isLoading}
+            read={countsRead}
             help="Organization, project, or task scoped shortcuts you can see."
             copy={countCardCopy(
               "Other scopes",
@@ -423,7 +434,7 @@ function CountCard({
   value,
   icon: Icon,
   tone,
-  isLoading,
+  read,
   help,
   copy,
 }: {
@@ -431,7 +442,8 @@ function CountCard({
   value: number;
   icon: typeof UserRound;
   tone: "default" | "muted";
-  isLoading: boolean;
+  /** The read behind the count — a spinner while in flight, "—" when it failed. */
+  read: CountRead;
   help?: string;
   /** Hover-revealed copy pair for this metric — a scalar, so no JSON flavor. */
   copy: ComponentProps<typeof CopyButtons>;
@@ -456,10 +468,10 @@ function CountCard({
           </span>
         </div>
         <div className="text-2xl font-semibold text-foreground leading-none mt-1">
-          {isLoading ? (
+          {countReadState({ read }) === "loading" ? (
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           ) : (
-            value
+            <UntrustedCount read={read} value={value} label={label} />
           )}
         </div>
         {help && (
