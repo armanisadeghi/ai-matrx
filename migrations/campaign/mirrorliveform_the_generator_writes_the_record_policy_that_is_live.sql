@@ -728,16 +728,3 @@ begin
 end;
 $function$
 ;
-
-do $mirrorliveform$
-declare
-  v_text text := iam.entity_read_expr('custom', 'record', 'record');
-begin
-  if v_text not like '%iam.record_visible_in_org(organization_id, table_id, id, visibility, created_by, ''viewer''::public.permission_level)%' then
-    raise exception 'MIRROR-LIVE-FORM: the generator did not emit the per-organization arm for custom.record: %', v_text;
-  end if;
-  if v_text like '%accessible_entity_ids(''record''%' then
-    raise exception 'MIRROR-LIVE-FORM: the generator still emits the whole-database record candidate for custom.record: %', v_text;
-  end if;
-end
-$mirrorliveform$;

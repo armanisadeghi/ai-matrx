@@ -119,8 +119,10 @@ begin;
 create temp table mlf_seat (user_id uuid primary key, why text);
 create temp table mlf_ans (side text, user_id uuid, n int, rows_asked int, digest text, ms numeric, primary key (side, user_id));
 create temp table mlf_verdict (clause text, ok boolean, detail text);
-create function pg_temp.mlf_answers(p_side text, p_text text) returns void language plpgsql as $f$
-declare s record; v uuid[]; v_asked int; t0 timestamptz; v_saved text := coalesce(current_setting('request.jwt.claims', true), '');
+create function pg_temp.mlf_answers(p_old text, p_new text) returns void language plpgsql as $f$
+-- BOTH texts in ONE statement over ONE materialized candidate set, so the two answers are about the
+-- very same rows (the clone is shared; rows written between two passes would read as a difference).
+declare s record; vo uuid[]; vn uuid[]; v_asked int; t0 timestamptz; v_saved text := coalesce(current_setting('request.jwt.claims', true), '');
 begin
   for s in select user_id from mlf_seat order by user_id loop
     perform set_config('request.jwt.claims',
@@ -137,17 +139,25 @@ begin
             or r.id in (select m.container_id from iam.memberships m where m.container_type = 'record' and m.user_id = %1$L)
             or r.id in (select x.item_id from platform.reachability x where x.item_type = 'record')
             or r.id in (select q.id from custom.record q order by md5(q.id::text) limit %2$s))
-      select count(*)::int, coalesce(array_agg(id order by id) filter (where (%3$s)), '{}'::uuid[]) from candidate
-    $q$, s.user_id, current_setting('mlf.rows')::int, p_text) into v_asked, v;
-    insert into mlf_ans values (p_side, s.user_id, cardinality(v), v_asked, md5(array_to_string(v, ',')),
+      select count(*)::int,
+             coalesce(array_agg(id order by id) filter (where (%3$s)), '{}'::uuid[]),
+             coalesce(array_agg(id order by id) filter (where (%4$s)), '{}'::uuid[])
+        from candidate
+    $q$, s.user_id, current_setting('mlf.rows')::int, p_old, p_new) into v_asked, vo, vn;
+    insert into mlf_ans values ('old', s.user_id, cardinality(vo), v_asked, md5(array_to_string(vo, ',')), null),
+                               ('new', s.user_id, cardinality(vn), v_asked, md5(array_to_string(vn, ',')),
                                 round(extract(epoch from clock_timestamp() - t0) * 1000));
+    if vo is distinct from vn then
+      raise notice 'seat % : only-old % | only-new %', s.user_id,
+        (select array_agg(x) from unnest(vo) x where x <> all (vn)), (select array_agg(x) from unnest(vn) x where x <> all (vo));
+    end if;
   end loop;
   perform set_config('request.jwt.claims', v_saved, true);
 end $f$;
 commit;
 
 set transaction_timeout = 0;
-begin;
+begin isolation level repeatable read;
 set local statement_timeout = 0;
 do $tt$ begin if current_setting('transaction_timeout') <> '0' then raise exception 'transaction_timeout is % - this suite needs it lifted (a session pooler, or the direct host)', current_setting('transaction_timeout'); end if; end $tt$;
 select set_config('mlf.plant', :'plant', true), set_config('mlf.rows', :'rows', true);
@@ -186,7 +196,6 @@ select count(*) as seats, string_agg(distinct why, ' | ') as kinds from mlf_seat
 
 
 select set_config('mlf.old', :'old_text', true), set_config('mlf.new', :'new_text', true);
-select pg_temp.mlf_answers('old', current_setting('mlf.old'));
 do $a$
 declare v text := current_setting('mlf.new');
 begin
@@ -200,18 +209,18 @@ begin
   if current_setting('mlf.plant') <> 'none' and v = current_setting('mlf.new') then
     raise exception 'plant % did not change the text', current_setting('mlf.plant');
   end if;
-  perform pg_temp.mlf_answers('new', v);
+  perform pg_temp.mlf_answers(current_setting('mlf.old'), v);
 end $a$;
 
 insert into mlf_verdict
 select '3: every seat reads the same custom.record rows through the old and the new text',
        count(*) filter (where o.digest is distinct from n.digest) = 0 and count(*) = (select count(*) from mlf_seat),
-       format('%s seats, %s differ; %s rows asked, %s admitted (old), %s (new); %s seats admit >0 rows; old %s ms, new %s ms in all',
+       format('%s seats, %s differ; %s rows asked, %s admitted (old), %s (new); %s seats admit >0 rows; both texts together %s ms in all',
               count(*), count(*) filter (where o.digest is distinct from n.digest), sum(o.rows_asked), sum(o.n), sum(n.n),
-              count(*) filter (where o.n > 0), sum(o.ms), sum(n.ms))
+              count(*) filter (where o.n > 0), sum(n.ms))
   from mlf_ans o join mlf_ans n on n.side = 'new' and o.side = 'old' and n.user_id = o.user_id;
 
-select o.user_id, s.why, o.rows_asked, o.n as old_n, n.n as new_n, o.ms as old_ms, n.ms as new_ms,
+select o.user_id, s.why, o.rows_asked, o.n as old_n, n.n as new_n, n.ms as both_ms,
        case when o.digest = n.digest then 'same' else 'DIFFERS' end as verdict
   from mlf_ans o join mlf_ans n on n.side = 'new' and o.side = 'old' and n.user_id = o.user_id
   join mlf_seat s on s.user_id = o.user_id

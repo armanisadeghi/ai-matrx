@@ -118,14 +118,48 @@ try {
     await sleep(400);
     await page.keyboard.type("POS");
     await sleep(1200);
-    const ask = await until("the nudge", async () => (await page.locator("[data-records-choice-ask]").count()) > 0, 15000);
-    step("the nudge", { shown: !!ask.v, says: (await page.locator("[data-records-choice-ask]").first().innerText().catch(() => "")).replace(/\s+/g, " ") });
-    await shot("06-native-grid-nudge-asks-before-adding-POS");
-    const cancel = page.locator("[data-records-choice-ask]").getByRole("button", { name: "Cancel" });
+    await shot("06-native-grid-a-word-that-is-no-choice-typed");
+    // The grid's chooser offers the typed word; choosing it asks before anything is added.
+    const use = page.locator("[cmdk-item]", { hasText: "POS" }).first();
+    if (await use.count()) await use.click();
+    const ASK = "[data-records-choice-ask], [data-matrx-choice-nudge]";
+    const ask = await until("the nudge", async () => (await page.locator(ASK).count()) > 0, 15000);
+    step("the nudge", { shown: !!ask.v, says: (await page.locator(ASK).first().innerText().catch(() => "")).replace(/\s+/g, " ") });
+    await shot("07-native-grid-nudge-asks-before-adding-POS");
+    const cancel = page.locator(ASK).getByRole("button", { name: "Cancel" });
     if (await cancel.count()) await cancel.first().click();
     await page.keyboard.press("Escape");
     await sleep(800);
     step("cell after Cancel", await cellsOf(["Delta Dental PPO"]));
+  }
+  if (PHASE === "form") {
+    // The record form (Edit row…) on a column that takes ONLY its choices: Plan Type.
+    // records-ui's record rail (Peek → RecordForm) for Delta Dental PPO · Group 40117.
+    await openTable("?grid=merged&record=73b88e3b-62a2-4deb-8d06-550f73ab3c6f");
+    const pick = page.getByRole("button", { name: "Pick for Plan Type" }).first();
+    let opened = await until("the record form's Plan Type combobox", async () => (await pick.count()) > 0, 20000);
+    if (!opened.v) {
+      const edit = page.getByRole("button", { name: /^Edit/ }).first();
+      if (await edit.count()) await edit.click();
+      opened = await until("the record form's Plan Type combobox", async () => (await pick.count()) > 0, 20000);
+    }
+    step("record form combobox", { shown: !!opened.v });
+    await shot("08-record-form-closed-column-is-a-combobox");
+    await pick.click();
+    await sleep(500);
+    await page.locator('input[placeholder="Search"]:visible').last().fill("DHMO");
+    await sleep(900);
+    const ASK = "[data-records-choice-ask]";
+    const ask = await until("the ask", async () => (await page.locator(ASK).count()) > 0, 15000);
+    step("the ask in the record form", {
+      shown: !!ask.v,
+      says: (await page.locator(ASK).first().innerText().catch(() => "")).replace(/\s+/g, " "),
+      keep_offered: (await page.locator(ASK).getByRole("button", { name: "Keep as typed" }).count()) > 0,
+    });
+    await shot("09-record-form-asks-Add-or-Cancel-for-DHMO");
+    await page.locator(ASK).getByRole("button", { name: "Cancel" }).first().click();
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
   }
 } catch (err) {
   out.error = String(err?.stack ?? err);
