@@ -28,7 +28,9 @@ export function ComposerPills({
   const effectiveModelId = useEffectiveModelId(conversationId);
   const showEffort = composer.size !== "compact" && composerShows(composer.mode, "meta.effort");
   return (
-    <div className="flex min-w-0 items-center gap-0.5">
+    // The agent pill is the ONE thing that shrinks (its label ellipsizes);
+    // Effort and Auto keep their natural width at every size.
+    <div className="flex min-w-0 shrink items-center justify-end gap-0.5 [&>*:not(:first-child)]:shrink-0">
       <ComposerAgentPill
         conversationId={conversationId}
         mode={composer.mode}
@@ -60,7 +62,7 @@ export function ComposerMetaRow({
 }) {
   return (
     <div className="flex min-w-0 items-center justify-between gap-2 px-1">
-      <div className="flex min-w-0 items-center gap-0.5">
+      <div className="flex shrink-0 items-center gap-0.5">
         <ActiveContextLensChip conversationId={conversationId} />
         <ComposerOutputPill conversationId={conversationId} size={composer.size} menuSide={menuSide} />
       </div>

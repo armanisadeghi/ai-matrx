@@ -10,6 +10,7 @@
 
 import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { cn } from "@/lib/utils";
 import { ComposerMenuRow } from "./ComposerMenu";
 import { composerPillClass } from "./ComposerAgentPill";
 import type { ComposerSize } from "./composer-types";
@@ -19,7 +20,7 @@ export function ComposerAutoPill({ size, menuSide }: { size: ComposerSize; menuS
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
-        <button type="button" className={composerPillClass(size, open)} aria-label="Run mode: Auto">
+        <button type="button" className={cn(composerPillClass(size, open), "shrink-0 whitespace-nowrap")} aria-label="Run mode: Auto">
           <span className="font-medium text-foreground">Auto</span>
         </button>
       </PopoverTrigger>
