@@ -83,6 +83,8 @@ sign out.
 
 ## Change log
 
+- `2026-09-27` — **No nav item sits under the account block**: the `--shell-user-block-h` reservation moved from `.shell-sidebar-footer` (hidden on the settings route, so /user-settings' last item sat under the avatar) to the `.shell-sidebar` column at desktop widths. Landed in sweep commit `591d465ff0`. Guard: `__tests__/sidebar-reserves-the-account-block.test.ts` (2 of 2 red against the old CSS).
+
 - **2026-09-27** — The header right set gains Chat (the chat dock, `chat-dock/`); the shell grid gains the `chatdock` column the header spans.
 - `2026-09-27` — **The phone header keeps the title**: below 640px Search / Agents / Canvas / Inbox fold into `HeaderPhoneOverflow` (one button → bottom sheet with the same four). `AGENTS_AUTH_GATE`, `INBOX_AUTH_GATE`, `useOpenBarOrGate`, `useCanvasHeaderToggle`, `SurfaceAgentsPanelImpl` are exported so the sheet reuses each control's own copy and state.
 
