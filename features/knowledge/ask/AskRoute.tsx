@@ -30,7 +30,7 @@ export function AskRoute() {
   };
 
   return (
-    <div className="flex h-full justify-center overflow-hidden bg-textured">
+    <div className="flex h-full justify-center overflow-hidden bg-textured pt-[var(--shell-header-h)]">
       <AskPanel query={query} onClose={backToHub} className="w-full max-w-2xl border-r" />
     </div>
   );
