@@ -181,7 +181,9 @@ export function RunSettingsQuickControls({
             label="Conversation Memory"
             checked={memoryEnabled}
             quickset={quickset}
-            onChange={(enabled) => dispatch(requestMemoryToggle({ enabled }))}
+            onChange={(enabled) =>
+              dispatch(requestMemoryToggle({ conversationId, enabled }))
+            }
           />
           <SettingsRow
             id={`ai-api-version-${conversationId}`}

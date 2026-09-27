@@ -128,10 +128,9 @@ import { isDuplicateSubmittedInput } from "./submit-claims";
 import { markResourcesSubmitted } from "../instance-resources/instance-resources.slice";
 import {
   selectIsBlockMode,
-  selectIsMemoryToggleRequested,
   selectIsSnapshot,
   selectMemoryScope,
-  selectMemoryToggleTarget,
+  selectMemoryToggleRequest,
 } from "../instance-ui-state/instance-ui-state.selectors";
 import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state.slice";
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
@@ -333,7 +332,7 @@ export function assembleRequest(
   const snapshot = selectIsSnapshot(state);
 
   // Observational Memory — one-shot per-conversation admin signal. When
-  // `isMemoryToggleRequested` is true we attach `memory` and `memory_scope`
+  // THIS conversation has a queued switch we attach `memory` and `memory_scope`
   // to this turn's payload (never `memory_model` — the model is the server's
   // observational-memory mandate's decision). The server persists the
   // resulting block on `cx_conversation.metadata.observational_memory`, so
@@ -341,8 +340,9 @@ export function assembleRequest(
   //
   // The thunk (not assembleRequest) is responsible for clearing the queued
   // toggle after assembling — keeps this selector logic pure.
-  const memoryToggleRequested = selectIsMemoryToggleRequested(state);
-  const memoryTarget = selectMemoryToggleTarget(state);
+  const memoryToggle = selectMemoryToggleRequest(conversationId)(state);
+  const memoryToggleRequested = memoryToggle !== undefined;
+  const memoryTarget = memoryToggle === true;
   const memoryScope = selectMemoryScope(state);
 
   // Assemble snake_case body
@@ -867,7 +867,7 @@ export const executeInstance = createAsyncThunk<
             scope: payload.memory_scope ?? null,
           }),
         );
-        dispatch(clearMemoryToggleRequest());
+        dispatch(clearMemoryToggleRequest({ conversationId }));
       }
 
       // Resolve backend channel: per-conversation override (sandbox-mode

@@ -35,9 +35,8 @@ import {
   setMemoryScope,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import {
-  selectIsMemoryToggleRequested,
   selectMemoryScope,
-  selectMemoryToggleTarget,
+  selectMemoryToggleRequest,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   selectIsMemoryEnabledForConversation,
@@ -63,8 +62,9 @@ export function MemoryControls({
   );
   const persistedMeta = useAppSelector(selectMemoryMetadata(conversationId));
 
-  const toggleRequested = useAppSelector(selectIsMemoryToggleRequested);
-  const toggleTarget = useAppSelector(selectMemoryToggleTarget);
+  const pendingToggle = useAppSelector(selectMemoryToggleRequest(conversationId));
+  const toggleRequested = pendingToggle !== undefined;
+  const toggleTarget = pendingToggle === true;
   const memoryScope = useAppSelector(selectMemoryScope);
 
   // Effective shown state — pending toggle beats persisted state.
@@ -74,7 +74,7 @@ export function MemoryControls({
 
   const handleToggle = useCallback(
     (enabled: boolean) => {
-      dispatch(requestMemoryToggle({ enabled }));
+      dispatch(requestMemoryToggle({ conversationId, enabled }));
     },
     [dispatch],
   );

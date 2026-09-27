@@ -87,23 +87,14 @@ export interface InstanceUIStateSlice {
   isSnapshot: boolean;
 
   /**
-   * Admin-only — when true, the next outbound turn sends `memory: true` to
-   * enable Observational Memory on the conversation. From that point on the
-   * backend persists the flag on `cx_conversation.metadata` and the flag no
-   * longer needs to be resent.
-   *
-   * Unlike `isBlockMode` / `isSnapshot`, which are sent on every turn, this
-   * is a **one-shot signal** — see the execute thunks for the consumption
-   * logic (they clear this flag after emitting it).
+   * A pending Observational Memory switch PER CONVERSATION — the next outbound
+   * turn OF THAT CONVERSATION sends `memory: <value>`, then the entry clears.
+   * The server persists the decision on `cx_conversation.metadata`, so it is a
+   * one-shot signal (unlike `isBlockMode` / `isSnapshot`, sent every turn).
+   * Keyed so a switch flipped in one conversation can never ride another
+   * conversation's send (it was one global flag until 2026-09-27).
    */
-  isMemoryToggleRequested: boolean;
-
-  /**
-   * Admin-only — the target enabled state when `isMemoryToggleRequested`
-   * fires. `true` enables, `false` disables. Ignored when the toggle flag
-   * is false.
-   */
-  memoryToggleTarget: boolean;
+  memoryToggleByConversationId: Record<string, boolean>;
 
   // No `memoryModel`: the Observer/Reflector model is the server's
   // observational-memory mandate's Holder, never a client-sent override
@@ -122,8 +113,7 @@ const initialState: InstanceUIStateSlice = {
   pendingByConversationId: {},
   isBlockMode: false,
   isSnapshot: false,
-  isMemoryToggleRequested: false,
-  memoryToggleTarget: true,
+  memoryToggleByConversationId: {},
   memoryScope: "thread",
 };
 
@@ -971,6 +961,7 @@ const instanceUIStateSlice = createSlice({
     removeInstanceUIState(state, action: PayloadAction<string>) {
       delete state.byConversationId[action.payload];
       delete state.pendingByConversationId[action.payload];
+      delete state.memoryToggleByConversationId[action.payload];
     },
 
     setUseBlockMode(state, action: PayloadAction<boolean>) {
@@ -987,14 +978,20 @@ const instanceUIStateSlice = createSlice({
      * Queue a one-shot `memory: true|false` signal to ride the next outbound
      * turn. The execute thunks read + clear this on each call.
      */
-    requestMemoryToggle(state, action: PayloadAction<{ enabled: boolean }>) {
-      state.isMemoryToggleRequested = true;
-      state.memoryToggleTarget = action.payload.enabled;
+    requestMemoryToggle(
+      state,
+      action: PayloadAction<{ conversationId: string; enabled: boolean }>,
+    ) {
+      state.memoryToggleByConversationId[action.payload.conversationId] =
+        action.payload.enabled;
     },
 
-    /** Clear the queued toggle after it has been sent. */
-    clearMemoryToggleRequest(state) {
-      state.isMemoryToggleRequested = false;
+    /** Clear a conversation's queued switch after its turn has sent it. */
+    clearMemoryToggleRequest(
+      state,
+      action: PayloadAction<{ conversationId: string }>,
+    ) {
+      delete state.memoryToggleByConversationId[action.payload.conversationId];
     },
 
     setMemoryScope(state, action: PayloadAction<"thread" | "resource">) {
