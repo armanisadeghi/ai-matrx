@@ -553,7 +553,6 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
         }}
         contentSource={{ type: "raw" }}
         extraSections={extraSections}
-        enableFloatingIcon={false}
         onMenuOpenChange={handleContextMenuOpenChange}
       >
         <div

@@ -54,7 +54,6 @@ const CandidateProfileDisplay = ({
         if (!(item instanceof HTMLElement)) return null;
         return { content: item.innerText.trim() };
       }}
-      enableFloatingIcon={false}
     >
       <div className="max-w-5xl mx-auto rounded-xl overflow-hidden shadow-lg bg-white dark:bg-slate-800 transition-colors duration-200">
         {/* Header */}

@@ -581,7 +581,6 @@ export function ItemContextMenu({
       extraSections={resolved ? itemMenuConfigToExtraSections(resolved) : []}
       onMenuOpenChange={onOpenChange}
       onCloseAutoFocus={onCloseAutoFocus}
-      enableFloatingIcon={false}
     >
       {children}
     </NonEditableContextMenu>

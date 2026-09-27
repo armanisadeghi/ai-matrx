@@ -83,7 +83,6 @@ export function ListCard({
         title: list.list_name,
         resourceType: "structured_list",
       }}
-      enableFloatingIcon={false}
     >
       <div
         ref={cardRef}

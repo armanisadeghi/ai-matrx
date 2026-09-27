@@ -29,11 +29,6 @@ interface HtmlPagesContextMenuProps {
   page?: HtmlPageSummary;
   onNewPage: () => void;
   onOpenPage: (pageId: string) => void;
-  /**
-   * Off for table rows — the floating-selection icon renders a hidden `<span>`
-   * sibling of the trigger, which is invalid DOM directly inside `<tbody>`.
-   */
-  enableFloatingIcon?: boolean;
   children: React.ReactNode;
 }
 
@@ -42,7 +37,6 @@ export function HtmlPagesContextMenu({
   page,
   onNewPage,
   onOpenPage,
-  enableFloatingIcon = true,
   children,
 }: HtmlPagesContextMenuProps) {
   const router = useRouter();
@@ -72,7 +66,6 @@ export function HtmlPagesContextMenu({
   return (
     <NonEditableContextMenu
       {...HTML_PAGE_CONTEXT_MENU_PROPS}
-      enableFloatingIcon={enableFloatingIcon}
       extraSections={extraSections}
       contextData={buildHtmlPagesListContextData({
         pages,

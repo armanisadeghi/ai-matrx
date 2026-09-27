@@ -953,7 +953,6 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
                   title: l.list_name || "Untitled list",
                   resourceType: "structured_list",
                 }}
-                enableFloatingIcon={false}
               >
                 <div
                   className={cn(

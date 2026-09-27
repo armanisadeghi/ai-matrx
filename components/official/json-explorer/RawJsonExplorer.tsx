@@ -461,7 +461,6 @@ const RawJsonExplorerBody: React.FC<RawJsonExplorerProps> = ({
               ] satisfies ContextMenuExtraSection[])
             : []
         }
-        enableFloatingIcon={false}
       >
         {/* Real DOM element for the Radix asChild trigger. */}
         <div>
@@ -493,7 +492,6 @@ const RawJsonExplorerBody: React.FC<RawJsonExplorerProps> = ({
         sourceFeature="content-extractor"
         contentSource={{ type: "raw" }}
         contextData={{ content: displayJsonStr }}
-        enableFloatingIcon={false}
       >
         <pre className="whitespace-pre-wrap p-2 text-foreground font-mono overflow-auto h-full">
           {displayJsonStr}

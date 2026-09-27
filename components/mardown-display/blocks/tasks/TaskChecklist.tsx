@@ -597,7 +597,6 @@ const TaskChecklist = ({
               return { content: task.title };
             }}
             extraSections={taskExtraSections}
-            enableFloatingIcon={false}
           >
             {/* Real DOM element for the Radix asChild trigger. */}
             <div className="space-y-4">

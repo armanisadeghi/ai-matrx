@@ -730,7 +730,6 @@ export function SystemMessage({
                 textareaRefs.current[systemMessageIndex] || null
               }
               contextData={contextMenuData}
-              enableFloatingIcon={true}
               onTextReplace={handleTextReplace}
               onTextInsertBefore={handleTextInsertBefore}
               onTextInsertAfter={handleTextInsertAfter}

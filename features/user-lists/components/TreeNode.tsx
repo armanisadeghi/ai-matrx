@@ -194,7 +194,6 @@ export function TreeNode({
       contentSource={{ type: "raw" }}
       entity={entity}
       extraSections={extraSections}
-      enableFloatingIcon={false}
     >
       <div
         ref={rowRef}

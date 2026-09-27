@@ -210,7 +210,6 @@ export const SourceEntryNode: React.FC<SourceEntryNodeProps> = ({
             : undefined
         }
         extraSections={extraSections}
-        enableFloatingIcon={false}
       >
         <div
           ref={rowRef}

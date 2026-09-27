@@ -561,7 +561,6 @@ export const UnifiedImageBlockRenderer: React.FC<
       <NonEditableContextMenu
         sourceFeature={sourceFeature}
         suppressed={isMobile}
-        enableFloatingIcon={false}
         contextData={{
           content: durableRef ?? block.fileName ?? "Image",
           context: {

@@ -301,7 +301,6 @@ const TranscriptSegmentItem = React.memo(
         contentSource={{ type: "raw" }}
         contextData={{ content: segment.text }}
         extraSections={extraSections}
-        enableFloatingIcon={false}
         suppressed={readOnly}
       >
           <div

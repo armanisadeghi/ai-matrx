@@ -196,7 +196,6 @@ export function FileRightClickMenu({
             : undefined
         }
         extraSections={extraSections}
-        enableFloatingIcon={false}
       >
         {children}
       </NonEditableContextMenu>

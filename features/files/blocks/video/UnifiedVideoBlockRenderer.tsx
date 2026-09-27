@@ -355,7 +355,6 @@ export const UnifiedVideoBlockRenderer: React.FC<
       <NonEditableContextMenu
         sourceFeature={sourceFeature}
         suppressed={isMobile}
-        enableFloatingIcon={false}
         contextData={{
           content: durableRef ?? block.fileName ?? "Video",
           context: {

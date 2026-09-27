@@ -320,7 +320,6 @@ export function NewChatLandingInput({
             (NOT ProTextarea) by design — see FEATURE.md. */}
         <EditableContextMenu
           {...CHAT_CONTEXT_MENU_PROPS}
-          enableFloatingIcon={false}
           // No `entity`: this is the pre-first-message landing composer — the
           // conversation row doesn't exist until the first send, so there is
           // nothing yet for Attach To / Share to point at.

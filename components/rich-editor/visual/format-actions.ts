@@ -49,6 +49,15 @@ export interface RichEditorSelectionHost {
   inTable: () => boolean;
 }
 
+/** A selected code block / island (a NodeSelection on it): its box and its source. */
+export function islandSelectionOf(editor: Editor): { box: DOMRect; raw: string } | null {
+  const { selection } = editor.state;
+  if (!(selection instanceof NodeSelection) || selection.node.type.name !== "islandBlock") return null;
+  const dom = editor.view.nodeDOM(selection.from);
+  if (!(dom instanceof HTMLElement)) return null;
+  return { box: dom.getBoundingClientRect(), raw: String(selection.node.attrs.raw ?? "") };
+}
+
 /** The table the caret is in, as a box (the toolbar's caret-mode anchor), or null. */
 export function tableAnchorOf(editor: Editor): DOMRect | null {
   if (!editor.isEditable || !editor.isActive("table")) return null;

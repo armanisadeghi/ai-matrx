@@ -273,7 +273,6 @@ export function FileRowContextMenu({
             items: trashItems,
           },
         ]}
-        enableFloatingIcon={false}
       >
         {children}
       </NonEditableContextMenu>
@@ -442,7 +441,6 @@ export function FileRowContextMenu({
         resourceType: "file",
       }}
       extraSections={extraSections}
-      enableFloatingIcon={false}
     >
       {children}
     </NonEditableContextMenu>
@@ -644,7 +642,6 @@ export function FolderRowContextMenu({
             items: trashItems,
           },
         ]}
-        enableFloatingIcon={false}
       >
         {children}
       </NonEditableContextMenu>
@@ -779,7 +776,6 @@ export function FolderRowContextMenu({
         contextData={rowContextData()}
         getApplicationScope={getApplicationScope}
         extraSections={extraSections}
-        enableFloatingIcon={false}
       >
         {children}
       </NonEditableContextMenu>

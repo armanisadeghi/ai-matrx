@@ -70,7 +70,8 @@ interface OpenState {
   rect: Rect;
   /** The node the selection lives in (its scroll container bounds the frame). */
   anchor: Node | null;
-  focusToolbar: boolean;
+  /** Bumped by every Ctrl/Cmd+Alt+M, so a second press refocuses the bar. */
+  focusSignal: number;
 }
 
 function rectOf(r: DOMRect | Rect): Rect {
@@ -163,16 +164,19 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
           text = sel.toString();
           const measured = range.getBoundingClientRect();
           rect = measured.width || measured.height ? rectOf(measured) : null;
-        } else if (sel && sel.rangeCount > 0 && sel.isCollapsed && !insideToolbar(sel.anchorNode)) {
+        }
+        if (sel && sel.rangeCount > 0 && !text.trim() && !insideToolbar(sel.anchorNode)) {
           // CARET MODE: a zone may keep the toolbar up with no selected text — the rich
           // editor while the caret is in a table (its table actions are this toolbar's,
           // never a second popup). The zone says where to anchor.
           const caretZones = zonesContaining(sel.anchorNode);
           const caretRect = caretZones.map((z) => z.contribution.caretAnchor?.() ?? null).find(Boolean) ?? null;
           if (caretRect) {
+            range = null;
             node = sel.anchorNode;
             caret = true;
             rect = caretRect;
+            text = caretZones.map((z) => z.contribution.caretText?.() ?? "").find(Boolean) ?? "";
           }
         }
       }
@@ -208,7 +212,7 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
         range: caret ? null : range,
         rect,
         anchor: node,
-        focusToolbar: Boolean(opts.focusToolbar),
+        focusSignal: opts.focusToolbar ? (previous?.focusSignal ?? 0) + 1 : (previous?.focusSignal ?? 0),
       });
       if (!sameSelection) {
         setPanelPayload(initial?.payload ?? null);
@@ -364,7 +368,7 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
       rect={open.rect}
       anchor={open.anchor}
       docked={isMobile}
-      focusToolbar={open.focusToolbar}
+      focusSignal={open.focusSignal}
       panel={panelNode}
     />
   );

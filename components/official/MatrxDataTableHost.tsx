@@ -27,6 +27,8 @@ import { createDefaultTableRowMenuDescriptor, registerTableRowContextResolver } 
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { useIsInsideContextMenu } from "@/features/context-menu-v3/menu-presence";
 import { TABLE_MENU_ICONS, toContextMenuExtraSections } from "./table-menu-sections";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 export type TableDensity = MatrxDataTableDensity;
 export const TABLE_DENSITY_KNOB_KEY = "tables.density.mode";
@@ -76,7 +78,7 @@ function TableContextMenuBoundary({ label, children, sections }: TableContextMen
   // The heading is what was right-clicked, in the words on screen: a column heading's name
   // ("Content: Route tag"), never the table's id or "Data table". A row or cell is headed by the
   // row registry (its cell's words); anywhere else keeps the table's label.
-  return <NonEditableContextMenu sourceFeature="system" contextData={{ content: label }} resolveContextOnOpen={headingWords} enableFloatingIcon={false} {...(sections ? { resolveExtraSectionsOnOpen: resolveSections } : {})}><div className="contents">{children}</div></NonEditableContextMenu>;
+  return <NonEditableContextMenu sourceFeature="system" contextData={{ content: label }} resolveContextOnOpen={headingWords} {...(sections ? { resolveExtraSectionsOnOpen: resolveSections } : {})}><div className="contents">{children}</div></NonEditableContextMenu>;
 }
 function headingWords(target: HTMLElement | null) {
   const heading = target?.closest<HTMLElement>("th, [role='columnheader']");
@@ -91,7 +93,29 @@ function TableMenuIcon({ name, className }: TableMenuIconProps) {
   const Icon = TABLE_MENU_ICONS[name];
   return Icon ? <Icon className={className} aria-hidden /> : null;
 }
+/**
+ * RC-B12 round 13: a table handed `read` draws a failed read through the SAME
+ * views every other list uses — ReadFailure (the error with the Alchemy Menu
+ * and a retry) when there are no rows, StaleDataNotice over kept rows.
+ * Props mirror the package's TableReadFailureProps / TableStaleNoticeProps.
+ */
+interface TableReadViewProps {
+  error: unknown;
+  what: string;
+  onRetry?: (() => void) | undefined;
+}
+function TableReadFailure({ error, what, onRetry }: TableReadViewProps) {
+  return <ReadFailure error={error} what={what} className="mx-auto w-full max-w-md text-left" {...(onRetry ? { onRetry } : {})} />;
+}
+function TableStaleNotice({ error, what, onRetry }: TableReadViewProps) {
+  // No retry to offer: say the read failed above the kept rows, without a dead button.
+  if (!onRetry) return <ReadFailure error={error} what={what} className="m-0 shrink-0" />;
+  return <StaleDataNotice hasData what={what} onRetry={onRetry} className="shrink-0" />;
+}
+// Spread in, so the ports also compile against a package without them (they are ignored there).
+const readPorts = { ReadFailure: TableReadFailure, StaleNotice: TableStaleNotice };
 const ports: TableHost = {
+  ...readPorts,
   JsonViewer,
   Link,
   CopyControls: CopyButtons,

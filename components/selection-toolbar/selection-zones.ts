@@ -52,6 +52,8 @@ export interface SelectionZoneContribution {
    * while the caret is in a table (the table actions are toolbar actions).
    */
   caretAnchor?(): { left: number; top: number; bottom: number; width: number } | null;
+  /** The text a caret-mode toolbar acts on (a selected code block's source), if any. */
+  caretText?(): string;
   /** A panel (and its payload) to show immediately when the toolbar opens here (a pending reattach). */
   initialPanel?(): { panel: string; payload?: unknown } | null;
 }

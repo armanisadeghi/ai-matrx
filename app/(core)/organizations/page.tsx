@@ -515,7 +515,6 @@ export default function OrganizationsPage() {
         surfaceName={ORGANIZATIONS_SURFACE_NAME}
         getApplicationScope={getSurfaceScope}
         contentSource={{ type: "raw" }}
-        enableFloatingIcon={false}
       >
         <div
           className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]"
