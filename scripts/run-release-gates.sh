@@ -625,6 +625,9 @@ if $STRICT; then
         # this lane is the one `scripts/checks/run.mjs` reads. A SIGNAL: the runner
         # exits 0; missing Chromium is `[FAIL] UNMEASURED` with the install remedy.
         "Shipped CSS never collapses the shell or a context-menu region (real browser)|pnpm check:shell-layout"
+        # REACT COMPILER SILENT SKIPS (lane RENDER-2, 2026-09-27) — same row as the non-strict lane.
+        # A SIGNAL: a component the compiler skips has NO memoisation under the "no manual memo" rule.
+        "No new component the React Compiler silently skips (shrink-only baseline)|pnpm check:compiler-skips"
         # THE `__kind` MARKER LAW genuinely blocks a MERGE — ci.yml runs
         # `pnpm check:kind-marker-law` on every push and PR, so unlike most gates
         # here a red really does stop something. It exits 1 in both modes. `__kind` is part of
@@ -837,6 +840,14 @@ else
         # every sidebar chat name for ~90 min. A SIGNAL: missing Chromium prints
         # `[FAIL] UNMEASURED` with the install remedy, never a silent pass. ~17 s.
         "Shipped CSS never collapses the shell or a context-menu region (real browser)|pnpm check:shell-layout"
+        # REACT COMPILER SILENT SKIPS (lane RENDER-2, 2026-09-27). `reactCompiler: true` compiles a
+        # component only when it can prove the Rules of React and otherwise leaves it exactly as
+        # written; under this repo's "no manual memo" rule a skipped component has NO memoisation
+        # (the Sheet was one: one cell edit redrew 2,726 components). Offline, from the compiler's
+        # own diagnostics, ~50 s cold / seconds cached. Shrink-only baseline of 1,574 skipped
+        # functions (2026-09-27); a file above its entry is a finding. A SIGNAL, never a blocker.
+        # `pnpm check:compiler-skips:self-test` proves it can still fail.
+        "No new component the React Compiler silently skips (shrink-only baseline)|pnpm check:compiler-skips"
         "Hidden failure announcements (an error only a screen reader can perceive is a dead button)|pnpm check:hidden-alerts"
         # 🚨 CRITICAL-1 (VERIFIER-8, 2026-09-21). `iam.api_keys` granted INSERT to
         # `authenticated` over PostgREST with an RLS policy that pinned `created_by`

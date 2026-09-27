@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useEffectEvent, useRef, useState } from "react";
-import { SheetBodyRow, choiceMapSignature, shareUnchangedRows, useLatest, useLatestBox, useRowEpoch, useSlot } from "@/features/data-tables/components/sheet-body-row";
+import { SheetBodyRow, choiceMapSignature, contentSignature, shareUnchangedRows, useLatest, useLatestBox, useRowEpoch, useSlot } from "@/features/data-tables/components/sheet-body-row";
 import { createPortal } from "react-dom";
 import * as RecordsUi from "@ai-matrx/records-ui";
 import {
@@ -2543,10 +2543,7 @@ const UserTableViewer = ({
   });
 
   // ─── Row actions (row-actions.ts): the table's own one-click buttons ─────
-  // Read into its own name first: the compiler keys a memo on the whole `tableInfo` for an
-  // optional-chain argument, and every write re-reads `tableInfo` (redrawing every row).
-  const tableMetadata = tableInfo?.metadata;
-  const rowActions = readRowActions(tableMetadata);
+  const rowActions = readRowActions(tableInfo?.metadata);
   const rowActionMenuItems = rowActions.map((a) => ({
         id: a.id,
         name: a.name,
@@ -3352,7 +3349,8 @@ const UserTableViewer = ({
     wrapText,
     freezeFirstColumn,
     firstViewFieldName,
-    rowActions,
+    // By content: a write re-reads the table and the actions come back as a new (equal) list.
+    contentSignature(rowActions),
     tableId,
     // A unique column checks every OTHER row, so any row's change can change every row's check.
     anyUniqueColumn ? (fullDatasetCache ?? data) : null,

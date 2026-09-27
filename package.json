@@ -656,6 +656,8 @@
     "test:kind-sandbox:browser": "playwright test -c playwright.kind-sandbox.config.ts",
     "test:shell-layout": "playwright test -c playwright.shell-layout.config.ts",
     "check:shell-layout": "node scripts/check-shell-layout-gate.mjs",
+    "check:compiler-skips": "node scripts/check-compiler-skips.mjs",
+    "check:compiler-skips:self-test": "node scripts/check-compiler-skips.mjs --self-test",
     "test:rule-row-squeeze": "playwright test -c playwright.rule-row-squeeze.config.ts",
     "test:library-table-reachable": "playwright test -c playwright.library-table-reachable.config.ts",
     "check:kind-sandbox-gate": "tsx scripts/check-kind-sandbox-gate.ts",

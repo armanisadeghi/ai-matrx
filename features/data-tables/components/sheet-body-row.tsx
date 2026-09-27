@@ -76,7 +76,6 @@ export function useRowEpoch(values: readonly unknown[]): number {
     return previous.epoch;
   }
   const next = { values, epoch: (previous?.epoch ?? 0) + 1 };
-  if (previous && typeof window !== "undefined") ((window as unknown as { __RENDER2_EPOCH?: unknown[] }).__RENDER2_EPOCH ??= []).push(previous.values.length !== values.length ? "len" : [values.length, ...values.map((v, i) => (Object.is(v, previous.values[i]) ? null : [i, typeof v, String(v).slice(0, 40), String(previous.values[i]).slice(0, 40)])).filter((i) => i !== null)]); // RENDER2-PROBE
   held.current = next;
   return next.epoch;
 }
@@ -132,6 +131,19 @@ function sameRow(a: unknown, b: unknown): boolean {
     return JSON.stringify(a) === JSON.stringify(b);
   } catch {
     return false;
+  }
+}
+
+/**
+ * A plain value by what it holds (JSON), for a table-shape input the Sheet rebuilds when a write
+ * re-reads the table (its row actions are a fresh `[]` each time). Falls back to the value itself
+ * (a redraw, never a stale row) when it cannot be written out.
+ */
+export function contentSignature(value: unknown): unknown {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return value;
   }
 }
 
