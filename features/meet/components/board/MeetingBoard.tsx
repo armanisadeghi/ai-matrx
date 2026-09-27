@@ -22,7 +22,7 @@
  * (a convenience: blocked storage just means the default board).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   Code2,
   FileText,
@@ -248,9 +248,11 @@ type Asking = "html" | "image" | null;
 export function MeetingBoard({
   meeting,
   onLayout,
+  headerControls,
 }: {
   meeting: MeetingRecord;
   onLayout: (next: MeetingLayoutChoice) => void;
+  headerControls?: ReactNode;
 }) {
   const meetingId = meeting.id;
   const tiles = useBoard<BoardSpec>(() => loadBoard(meetingId));
@@ -397,7 +399,7 @@ export function MeetingBoard({
     <div className="mx-meet">
       <ConsentNotice />
       <AttendanceNotice />
-      <BoardHeader onLayout={onLayout} />
+      <BoardHeader onLayout={onLayout} headerControls={headerControls} />
       <div className="relative min-h-0 flex-1">
         <SpatialBoardMenu
           store={store}
@@ -480,7 +482,13 @@ function validateUrl(value: string): string | null {
 
 /** Its own component so the per-second clock and roster changes re-render
  * only this line, never the board. */
-function BoardHeader({ onLayout }: { onLayout: (next: MeetingLayoutChoice) => void }) {
+function BoardHeader({
+  onLayout,
+  headerControls,
+}: {
+  onLayout: (next: MeetingLayoutChoice) => void;
+  headerControls?: ReactNode;
+}) {
   const snapshot = useMeetSnapshot();
   const isHost = useIsHost();
   const elapsed = useElapsed(snapshot?.meeting?.startedAt ?? null);
@@ -507,6 +515,7 @@ function BoardHeader({ onLayout }: { onLayout: (next: MeetingLayoutChoice) => vo
             Host controls
           </button>
         )}
+        {headerControls}
         <LayoutSwitch value="board" onChange={onLayout} />
       </header>
       {snapshot?.phase === "reconnecting" && (

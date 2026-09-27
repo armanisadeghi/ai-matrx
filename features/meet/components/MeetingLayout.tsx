@@ -18,7 +18,7 @@
 // The choice is per viewer, kept in this browser (a convenience, not shared
 // state); blocked storage just means the default — the package's room.
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   MeetingRoom,
   useMeetSnapshot,
@@ -57,11 +57,13 @@ export function MeetingLayout({
   meetingId,
   slug,
   meeting,
+  headerControls,
 }: {
   roomName: RoomName;
   meetingId: string;
   slug: string;
   meeting: MeetingRecord;
+  headerControls?: ReactNode;
 }) {
   const snapshot = useMeetSnapshot();
   const [layout, setLayout] = useMeetingLayoutPreference();
@@ -73,13 +75,20 @@ export function MeetingLayout({
       <MeetingBoard
         meeting={snapshot?.meeting ?? meeting}
         onLayout={setLayout}
+        headerControls={headerControls}
       />
     );
   }
 
   return (
     <div className="relative h-full w-full">
-      <MeetingRoom roomName={roomName} meetingId={meetingId} slug={slug} meeting={meeting} />
+      <MeetingRoom
+        roomName={roomName}
+        meetingId={meetingId}
+        slug={slug}
+        meeting={meeting}
+        headerControls={headerControls}
+      />
       {inRoom && (
         <LayoutSwitch
           value="room"
