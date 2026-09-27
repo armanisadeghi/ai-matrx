@@ -40,10 +40,8 @@ import {
   selectEntitlementTier,
   selectIsSubscribed,
 } from "@/features/entitlements/state/selectors";
-import {
-  PRELAUNCH_COMPLIMENTARY_PREMIUM,
-  type EducationPricing as EducationPricingData,
-} from "./loadEducationPricing";
+import { PRELAUNCH_COMPLIMENTARY_PREMIUM } from "./pricingPolicy";
+import type { EducationPricing as EducationPricingData } from "./loadEducationPricing";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
 function formatPrice(amountCents: number, currency: string): string {

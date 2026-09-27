@@ -78,7 +78,7 @@ const HEADLINE_FREE: ReadonlyArray<{
  * from this constant. Un-flip at launch together with the trigger: grep
  * `PRELAUNCH_COMPLIMENTARY` across both repos.
  */
-export const PRELAUNCH_COMPLIMENTARY_PREMIUM = true;
+export { PRELAUNCH_COMPLIMENTARY_PREMIUM } from "./pricingPolicy";
 
 export async function loadEducationPricing(): Promise<EducationPricing> {
   const supabase = await createClient();
