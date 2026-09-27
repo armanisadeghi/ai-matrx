@@ -37,6 +37,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";
+import { readAllRows } from "@ai-matrx/data/db";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { contextDb } from "@/utils/supabase/contextDb";
 import { whereANewTableIsBorn } from "@/features/data-tables/data-source/where-a-table-is-born";
@@ -321,17 +322,28 @@ export const scopesService = {
       // Same working-set rule as scope_types above
       // — a removed scope leaves the tree, and the scopes page's archive
       // disclosure is the one place archived rows are revealed.
-      const scopesP = contextDb(supabase)
-        .from("scopes")
-        .select(
-          `id, scope_type_id, organization_id, name, description,
-           parent_scope_id, settings, slug, sort_order, created_by,
-           created_at, updated_at`,
-        )
-        .in("organization_id", orgIds)
-        .is("deleted_at", null)
-        .order("sort_order", { ascending: true })
-        .order("name", { ascending: true });
+      // COMPLETE, not the first 1000 (2026-09-27): the boot tree is the working
+      // set every picker reads, and PostgREST's 1000-row cap made it silently
+      // drop scopes (admin@admin.com: 1000 of 2296), which also dropped their
+      // project tags. `readAllRows` pages to the declared total or throws.
+      const scopesP = readAllRows(
+        ({ from, to }) =>
+          contextDb(supabase)
+            .from("scopes")
+            .select(
+              `id, scope_type_id, organization_id, name, description,
+               parent_scope_id, settings, slug, sort_order, created_by,
+               created_at, updated_at`,
+              { count: "exact" },
+            )
+            .in("organization_id", orgIds)
+            .is("deleted_at", null)
+            .order("sort_order", { ascending: true })
+            .order("name", { ascending: true })
+            .order("id", { ascending: true })
+            .range(from, to),
+        { label: "context.scopes (boot tree)" },
+      ).then((data) => ({ data, error: null }));
 
       // VIEW LAW: org-scoped — restricted to orgIds (see scopeTypesP above).
       const projectsP = workspaceDb(supabase)
@@ -358,25 +370,24 @@ export const scopesService = {
         scopesByType.set(s.scope_type_id, list);
       }
 
-      // Build per-project scope_id list from the unified association edge:
-      // every edge INCOMING to one of these scopes whose source is a project.
-      // (`assoc_for_targets` is the batch-by-target read; we filter the
-      // project sources client-side.)
-      const projectScopes = new Map<string, string[]>();
-      const scopeIds = (scopesRes.data ?? []).map((s) => s.id);
-      if (scopeIds.length > 0) {
-        const assocRes = await associationsService.listForTargets(
-          "scope",
-          scopeIds,
-        );
-        if (isScopesRpcErr(assocRes)) return assocRes;
-        for (const edge of assocRes.data.edges) {
-          if (edge.sourceType !== "project") continue;
-          const list = projectScopes.get(edge.sourceId) ?? [];
-          list.push(edge.targetId);
-          projectScopes.set(edge.sourceId, list);
-        }
-      }
+      // Per-project scope_id list, read from the SOURCE side: the project →
+      // scope edges of these projects, and nothing else.
+      //
+      // NEVER from the target side (2026-09-27, rpc/assoc_for_targets 500 =
+      // Postgres 57014 statement timeout on every right-click menu mount):
+      // `assoc_for_targets('scope', <every scope>)` returned every edge INTO
+      // every scope from every source type (transcripts, agents, workflows …),
+      // row-checked each one, paged the whole set-returning function twice,
+      // and kept only the project edges — 3–4 s per page against an 8 s limit,
+      // for zero project edges (the project-tagged scopes sat past the 1000-row
+      // cap). The source-side read answers the same question from the ~30
+      // projects in ~60 ms. Guard: scope-tree-reads-project-tags-from-the-source-side.test.ts.
+      const projectIds = (projectsRes.data ?? []).map((p) => p.id);
+      const projectScopesRes = await bulkEntityScopeIds("project", projectIds);
+      if (isScopesRpcErr(projectScopesRes)) return projectScopesRes;
+      const projectScopes = new Map<string, string[]>(
+        Object.entries(projectScopesRes.data),
+      );
 
       // Group scope_types and projects per org.
       const scopeTypesByOrg = new Map<string, ScopeTypeNode[]>();
