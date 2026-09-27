@@ -703,6 +703,13 @@ async function vaultFetch<T>(
         throw new VaultRecentAuthRequiredError();
       }
     }
+    if (resp.status === 401) {
+      throw new Error(
+        path.endsWith("/reveal")
+          ? "Your Matrx session was not accepted. Sign in again, then try showing or copying this value."
+          : "Your Matrx session was not accepted. Sign in again, then retry this Vault action.",
+      );
+    }
     throw new Error(`Vault request failed (${resp.status})`);
   }
   if (resp.status === 204) return undefined as T;

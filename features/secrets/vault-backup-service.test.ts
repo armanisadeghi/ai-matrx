@@ -101,6 +101,25 @@ describe("vault backup transport", () => {
     });
   });
 
+  test.each([
+    "recent authentication is required and the session's auth time could not be established",
+    "authentication within the last 900s is required — re-authenticate and retry",
+  ])("recognizes the existing recent-auth response: %s", async (detail) => {
+    fetchMock.mockResolvedValue(response({ detail }, 401));
+    await expect(previewVaultBackup(["item-1"], actor)).rejects.toMatchObject({
+      code: "recent_auth_required",
+    });
+  });
+
+  test("does not mistake a rejected bearer for recent authentication", async () => {
+    fetchMock.mockResolvedValue(
+      response({ detail: { error: "token_required" } }, 401),
+    );
+    await expect(previewVaultBackup(["item-1"], actor)).rejects.toMatchObject({
+      code: "request_rejected",
+    });
+  });
+
   test("refuses an actor-context change before transport", async () => {
     selectedOrganization = "33333333-3333-4333-8333-333333333333";
     await expect(previewVaultBackup(["item-1"], actor)).rejects.toBeInstanceOf(

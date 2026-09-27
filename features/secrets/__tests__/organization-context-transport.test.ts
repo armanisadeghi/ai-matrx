@@ -265,7 +265,7 @@ describe("Vault and Authenticator organization transport", () => {
       json: async () => ({ detail: "invalid bearer token" }),
     } as Response);
     await expect(revealVaultField("item-1", "password")).rejects.toThrow(
-      "Vault request failed (401)",
+      "Your Matrx session was not accepted. Sign in again, then try showing or copying this value.",
     );
   });
 

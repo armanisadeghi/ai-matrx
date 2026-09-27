@@ -79,8 +79,31 @@ export class VaultBackupTransportError extends Error {
   }
 }
 
-function failureCode(status: number): VaultBackupErrorCode {
-  if (status === 401) return "recent_auth_required";
+async function failureCode(response: Response): Promise<VaultBackupErrorCode> {
+  const { status } = response;
+  if (status === 401) {
+    try {
+      const body: unknown = await response.json();
+      const detail =
+        body && typeof body === "object" && "detail" in body
+          ? body.detail
+          : null;
+      if (
+        (detail &&
+          typeof detail === "object" &&
+          "code" in detail &&
+          detail.code === "recent_auth_required") ||
+        (typeof detail === "string" &&
+          (detail.startsWith("recent authentication is required") ||
+            detail.startsWith("authentication within the last ")))
+      ) {
+        return "recent_auth_required";
+      }
+    } catch {
+      // An unreadable response cannot prove the recent-auth gate fired.
+    }
+    return "request_rejected";
+  }
   if (status === 403) return "context_changed";
   if (status === 404) return "missing";
   if (status === 409) return "preview_changed";
@@ -146,7 +169,7 @@ async function authorizedRequest(
   )
     throw new VaultBackupTransportError("context_changed");
   if (!response.ok)
-    throw new VaultBackupTransportError(failureCode(response.status));
+    throw new VaultBackupTransportError(await failureCode(response));
   return response;
 }
 
