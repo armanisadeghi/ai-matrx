@@ -205,7 +205,15 @@ export type RunActivityKind =
   /** A step's change is waiting for a person (lane HELD-WRITE-RESUME) — never a failure. */
   | "held"
   /** The held change was refused, so the run ended at that step (lane RUN-PAGE-TAILS). */
-  | "refused";
+  | "refused"
+  /**
+   * A held step's change was approved and written (lane HELD-STEP-WORDS,
+   * 2026-09-26). The engine resumes a held step through the same door it
+   * resumes a `control.human_input` question — the node settles as
+   * `node_skipped`, answer in `output` — so a plain "skipped" reading is a
+   * lie for a step that WAS needed and DID write.
+   */
+  | "approved";
 
 export interface RunActivityEntry {
   /** Monotonic per run — a stable React key that survives the ring shifting. */
@@ -318,6 +326,15 @@ export interface WorkflowRunState {
     /** Whole-node completion: every expected invocation terminal. */
     completedNodes: Record<string, true>;
     failedNodes: Record<string, true>;
+    /**
+     * A node that was ever paused on a held change (lane HELD-STEP-WORDS,
+     * 2026-09-26) — read by `node_skipped` to tell an approved held step's
+     * resume apart from a plain conditional skip, and by the step list to
+     * say "Refused" instead of "Waiting for your approval" once it is.
+     */
+    heldNodes: Record<string, true>;
+    /** A held node whose change was REFUSED — the run ended there. */
+    refusedNodes: Record<string, true>;
   };
   /** Phase 3 signal→refetch pump — bounded ring of parsed record_update /
    * resource_changed signals (cap SIGNALS_MAX, oldest dropped). The pump
@@ -429,6 +446,8 @@ function makeRunState(
       startedNodes: {},
       completedNodes: {},
       failedNodes: {},
+      heldNodes: {},
+      refusedNodes: {},
     },
     signals: [],
     signalRevision: 0,
@@ -469,6 +488,30 @@ function pushActivity(
 function humanDuration(ms: number | null | undefined): string | null {
   if (typeof ms !== "number" || !Number.isFinite(ms) || ms <= 0) return null;
   return formatDurationMs(ms, { style: "compact" });
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The written row's id, when the resumed step's output names one — a shallow
+ * scan because the held-write template's key varies by change shape
+ * (`row_id`, `applied_record_ids`, a patch's own id…) and a person approving
+ * a change cares that ONE record id landed, not which key it rode in on.
+ * Null is honest: "Approved; the change was written" needs no id to be true.
+ */
+function firstUuidIn(value: Record<string, unknown> | null): string | null {
+  if (!value) return null;
+  for (const raw of Object.values(value)) {
+    if (typeof raw === "string" && UUID_RE.test(raw.trim())) return raw.trim();
+    if (Array.isArray(raw)) {
+      for (const item of raw) {
+        if (typeof item === "string" && UUID_RE.test(item.trim())) {
+          return item.trim();
+        }
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -734,14 +777,21 @@ function applyEvent(
       // THE HELD STEP SAYS SO TOO (lane RUN-PAGE-TAILS, 2026-09-27). The step
       // list read the step's freshest line — "Waiting for your approval" — long
       // after the refusal ended the run. The refusal lands on that step.
-      if (append && error?.["cause"] === "refused" && run.interrupt?.nodeId) {
-        pushActivity(run, {
-          nodeId: run.interrupt.nodeId,
-          kind: "refused",
-          text: null,
-          detail: null,
-          ts: event.ts,
-        });
+      if (error?.["cause"] === "refused" && run.interrupt?.nodeId) {
+        // Sticky, replay-safe (HELD-STEP-WORDS, 2026-09-26): the run page's
+        // deliverable body reads this to say "Refused; nothing was written
+        // and the run ended here" instead of a generic no-output sentence,
+        // whether this fold is live or a refold on reopen.
+        run.sticky.refusedNodes[run.interrupt.nodeId] = true;
+        if (append) {
+          pushActivity(run, {
+            nodeId: run.interrupt.nodeId,
+            kind: "refused",
+            text: null,
+            detail: null,
+            ts: event.ts,
+          });
+        }
       }
       // An ended run is waiting on nobody: the question (or the held card) goes.
       run.interrupt = null;
@@ -771,14 +821,19 @@ function applyEvent(
       };
       // A pause on a HELD CHANGE is said as held, in the held colour — the
       // same words the approval card uses (lane HELD-WRITE-RESUME).
-      if (append && asRecord(asRecord(event.payload)?.[HELD_WRITE_MARKER])) {
-        pushActivity(run, {
-          nodeId: event.node_id,
-          kind: "held",
-          text: null,
-          detail: null,
-          ts: event.ts,
-        });
+      if (asRecord(asRecord(event.payload)?.[HELD_WRITE_MARKER])) {
+        // Sticky, replay-safe: read by node_skipped (approved resume) and by
+        // the run_cancelled refusal above (lane HELD-STEP-WORDS, 2026-09-26).
+        run.sticky.heldNodes[event.node_id] = true;
+        if (append) {
+          pushActivity(run, {
+            nodeId: event.node_id,
+            kind: "held",
+            text: null,
+            detail: null,
+            ts: event.ts,
+          });
+        }
       }
       break;
     case "node_started": {
@@ -891,6 +946,9 @@ function applyEvent(
             : null,
       };
       invocation.progress = null;
+      if (invocation.error.type === HELD_FOR_APPROVAL) {
+        run.sticky.heldNodes[event.node_id] = true;
+      }
       if (append) {
         pushActivity(run, {
           nodeId: event.node_id,
@@ -909,7 +967,6 @@ function applyEvent(
     }
     case "node_skipped": {
       const invocation = upsertInvocation(run, event, event);
-      invocation.phase = "skipped";
       // A SKIPPED NODE STILL HAS AN OUTPUT, and the fold was throwing it away.
       // `NodeSkippedEvent` declares `output` because the substituted value is
       // what downstream edges receive — and the engine settles a RESUMED
@@ -922,14 +979,37 @@ function applyEvent(
         const inBand = readObjectKind(skippedOutput);
         if (inBand) invocation.outputKind = inBand;
       }
+      // A HELD STEP resumes through the SAME door as a resumed human_input —
+      // it settles here too, "skipped" in the wire's own vocabulary. That is
+      // true of the ENGINE and false of the SCREEN: the step was needed, a
+      // person decided it, and (when approved) something was written. Read it
+      // off the sticky fact this run already recorded when it paused, never
+      // off this event alone, so the icon and the activity line agree with
+      // the approval card the person actually saw (lane HELD-STEP-WORDS,
+      // 2026-09-26).
+      const wasHeld =
+        run.sticky.heldNodes[event.node_id] === true &&
+        run.sticky.refusedNodes[event.node_id] !== true;
+      invocation.phase = wasHeld ? "settled" : "skipped";
       if (append) {
-        pushActivity(run, {
-          nodeId: event.node_id,
-          kind: "skipped",
-          text: null,
-          detail: null,
-          ts: event.ts,
-        });
+        pushActivity(
+          run,
+          wasHeld
+            ? {
+                nodeId: event.node_id,
+                kind: "approved",
+                text: null,
+                detail: firstUuidIn(skippedOutput),
+                ts: event.ts,
+              }
+            : {
+                nodeId: event.node_id,
+                kind: "skipped",
+                text: null,
+                detail: null,
+                ts: event.ts,
+              },
+        );
       }
       // A trailing skip can be what completes the invocation set.
       maybeStickCompleted(run, event.node_id);

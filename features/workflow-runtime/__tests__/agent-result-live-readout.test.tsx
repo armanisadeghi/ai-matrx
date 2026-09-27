@@ -13,7 +13,7 @@ jest.mock("../redux/workflow-runs.selectors", () => ({
   selectRunStatus: () => () => "running",
   selectRunError: () => () => null,
   selectRunResult: () => () => null,
-  selectRunStickyFacts: () => () => ({}),
+  selectRunStickyFacts: () => () => ({ heldNodes: {}, refusedNodes: {} }),
 }));
 jest.mock("@/features/agents/redux/execution-system/active-requests/active-requests.selectors", () => ({
   selectRequest: () => () => ({ currentTextRunRaw: rawText }),

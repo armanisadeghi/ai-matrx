@@ -40,6 +40,7 @@ import { cn } from "@/lib/utils";
 import {
   selectNodeAggregate,
   selectRunInterrupt,
+  selectRunStickyFacts,
 } from "../redux/workflow-runs.selectors";
 import {
   HELD_FOR_APPROVAL,
@@ -162,6 +163,7 @@ function DeliverableSlotCard({
     selectNodeAggregate(runId, deliverable.nodeId),
   );
   const interrupt = useAppSelector(selectRunInterrupt(runId));
+  const sticky = useAppSelector(selectRunStickyFacts(runId));
   const produced = settledOutput(aggregate.invocations);
   const settled = emission !== null || produced !== null;
   // A step whose change is HELD for a person is waiting, not failed — the
@@ -175,6 +177,12 @@ function DeliverableSlotCard({
       aggregate.invocations.some(
         (invocation) => invocation.error?.type === HELD_FOR_APPROVAL,
       ));
+  // A held change that was REFUSED never settles — the run ended there, so
+  // "coming up" (the fall-through for "not held, not settled") would sit on
+  // screen forever, saying more is coming when the run is over (lane
+  // HELD-STEP-WORDS, 2026-09-26). Read off the SAME sticky fact the step
+  // list and activity feed already use, so this slot agrees with them.
+  const refused = !settled && sticky.refusedNodes[deliverable.nodeId] === true;
   const phase = kindSlotPhase({
     started: aggregate.phase !== "idle" && aggregate.phase !== "waiting",
     settled,
@@ -212,11 +220,13 @@ function DeliverableSlotCard({
           <span className="shrink-0 text-[10px] text-muted-foreground/80">
             {held
               ? "waiting for your approval"
-              : phase === "arriving"
-                ? "being made"
-                : phase === "failed"
-                  ? "hit a problem"
-                  : "coming up"}
+              : refused
+                ? "refused"
+                : phase === "arriving"
+                  ? "being made"
+                  : phase === "failed"
+                    ? "hit a problem"
+                    : "coming up"}
           </span>
         ) : null}
       </header>
@@ -229,6 +239,14 @@ function DeliverableSlotCard({
             <Clock className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
             Waiting for your approval — nothing was written yet. Approve it on
             the card and this fills in.
+          </p>
+        ) : refused ? (
+          <p
+            data-deliverable-refused=""
+            className="flex items-center gap-1.5 text-xs text-muted-foreground"
+          >
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+            Refused; nothing was written and the run ended here.
           </p>
         ) : (
           <KindSlot

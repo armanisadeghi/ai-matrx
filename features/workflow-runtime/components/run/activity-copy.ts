@@ -156,6 +156,18 @@ export function activityLine(
       return { text: "Finished", stepLabel, detail, tone: "done" };
     case "skipped":
       return { text: "Not needed this time", stepLabel, detail, tone: "done" };
+    case "approved":
+      // A held step's change was approved and written (lane HELD-STEP-WORDS,
+      // 2026-09-26) — the wire settles the resumed step as "skipped" the same
+      // way it settles a resumed question, and "Not needed this time" is a
+      // lie for a step that WAS needed and DID write. `detail` carries the
+      // written row's id when the output named one.
+      return {
+        text: "Approved; the change was written",
+        stepLabel,
+        detail: detail ? `row ${detail.slice(0, 8)}` : null,
+        tone: "done",
+      };
     case "failed":
       return {
         text: entry.text ?? "Ran into a problem",

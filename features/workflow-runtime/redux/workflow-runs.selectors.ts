@@ -220,6 +220,8 @@ const EMPTY_STICKY: WorkflowRunState["sticky"] = {
   startedNodes: {},
   completedNodes: {},
   failedNodes: {},
+  heldNodes: {},
+  refusedNodes: {},
 };
 
 /** Sticky (monotonic) trigger facts — see the slice's `sticky` contract. */

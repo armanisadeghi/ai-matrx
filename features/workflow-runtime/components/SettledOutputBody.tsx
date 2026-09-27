@@ -62,9 +62,27 @@ export function JsonTextBody({ text }: { text: string }) {
 /** What a settled step PRODUCED, for a step whose shape has no component. */
 export function SettledOutputBody({
   output,
+  heldOutcome = null,
 }: {
   output: Record<string, unknown>;
+  /**
+   * A step held for approval, decided (lane HELD-STEP-WORDS, 2026-09-26).
+   * The generic "This step ran, and handed its result to the next one." is a
+   * lie here either way: refused, nothing ran and nothing was handed off; the
+   * run ended at this step on a person's decision. Approved-with-no-content
+   * output (a database write has nothing to hand a reader) is equally not
+   * silence — say what actually happened instead of falling through to a
+   * sentence written for an agent step that produced text.
+   */
+  heldOutcome?: "refused" | "approved" | null;
 }) {
+  if (heldOutcome === "refused") {
+    return (
+      <p className="text-xs text-muted-foreground">
+        Refused; nothing was written and the run ended here.
+      </p>
+    );
+  }
   const agent = readAgentRunOutput(output);
   if (!agent) return <JsonBody value={output} />;
   if (agent.content.length > 0) return <AgentContentList content={agent.content} />;
@@ -74,6 +92,13 @@ export function SettledOutputBody({
       <JsonTextBody text={agent.finalText} />
     ) : (
       <MarkdownStream imagePolicy="ai" content={agent.finalText} />
+    );
+  }
+  if (heldOutcome === "approved") {
+    return (
+      <p className="text-xs text-muted-foreground">
+        Approved; the change was written.
+      </p>
     );
   }
   return (

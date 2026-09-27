@@ -370,7 +370,10 @@ export function RunJourney({
     if (
       entry.kind === "started" ||
       entry.kind === "completed" ||
-      entry.kind === "skipped"
+      entry.kind === "skipped" ||
+      // Lifecycle, not a live signal — the settled Check icon already says
+      // "done"; the activity feed carries the "Approved…" sentence.
+      entry.kind === "approved"
     ) {
       continue;
     }

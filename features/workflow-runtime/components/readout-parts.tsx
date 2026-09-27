@@ -314,6 +314,18 @@ export function InvocationBody({
   const runStatus = useAppSelector(selectRunStatus(runId));
   const runOver = runIsOver(runStatus);
   const documentWins = settledOutput && (prefer === "persisted" || runOver);
+  // A step once held for approval, decided (lane HELD-STEP-WORDS, 2026-09-26)
+  // — read off the SAME sticky facts the step list and the activity feed use,
+  // so the deliverable body agrees with the card the person actually decided
+  // on. Refused always wins when both are somehow true: nothing was written.
+  const sticky = useAppSelector(selectRunStickyFacts(runId));
+  const heldOutcome: "refused" | "approved" | null = sticky.refusedNodes?.[
+    invocation.nodeId
+  ]
+    ? "refused"
+    : sticky.heldNodes?.[invocation.nodeId]
+      ? "approved"
+      : null;
   const working =
     invocation.phase === "running" || invocation.phase === "retrying";
   // A lane is only the truth once it has actually carried something. The
@@ -516,7 +528,9 @@ export function InvocationBody({
             // The readout cell already draws the titled card — a second border +
             // background + padding here is the box-in-a-box (THE WRAPPER LAW).
             variant="bare"
-            unroutableFallback={<SettledOutputBody output={invocation.output} />}
+            unroutableFallback={
+              <SettledOutputBody output={invocation.output} heldOutcome={heldOutcome} />
+            }
           />
           <WorkflowDocumentActions content={workflowDocumentText(invocation.output)} />
         </>
@@ -535,7 +549,7 @@ export function InvocationBody({
     return (
       <StructuredValueTabs value={invocation.output}>
         <>
-          <SettledOutputBody output={invocation.output} />
+          <SettledOutputBody output={invocation.output} heldOutcome={heldOutcome} />
           <WorkflowDocumentActions content={workflowDocumentText(invocation.output)} />
         </>
       </StructuredValueTabs>
