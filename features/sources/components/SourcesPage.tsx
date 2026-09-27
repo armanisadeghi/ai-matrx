@@ -393,6 +393,7 @@ export function SourcesPage() {
     rows,
     facts,
     orgNames,
+    orgNamesFailed,
     loading,
     error,
     factsError,
@@ -791,7 +792,11 @@ export function SourcesPage() {
       accessorFn: (r) => {
         return (
           orgNames.get(r.organization_id) ??
-          (factsLoading ? "…" : "an organization you belong to")
+          (factsLoading
+            ? "…"
+            : orgNamesFailed
+              ? "Couldn't load the organization's name"
+              : "an organization you belong to")
         );
       },
       filter: "select",

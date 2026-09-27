@@ -42,6 +42,8 @@ export interface UseSourcesResult {
   /** Keyed by processed document id; absent = not read (yet, or failed). */
   facts: Map<string, SourceFacts>;
   orgNames: Map<string, string>;
+  /** The organization-name read failed: labels say so instead of a vague stand-in. */
+  orgNamesFailed: boolean;
   loading: boolean;
   /** A sentence for the person when the list itself could not be read. */
   error: string | null;
@@ -157,6 +159,7 @@ export function useSources(
     rows: [],
     facts: new Map(),
     orgNames: new Map(),
+    orgNamesFailed: false,
     loading: true,
     error: null,
     factsError: null,
@@ -224,7 +227,8 @@ export function useSources(
       if (gen !== generation.current) return;
       setState((st) => {
         const orgNames = new Map(st.orgNames);
-        if (orgResult.status === "fulfilled" && !orgResult.value.error) {
+        const orgNamesOk = orgResult.status === "fulfilled" && !orgResult.value.error;
+        if (orgNamesOk) {
           for (const o of (orgResult.value.data ?? []) as { id: string; name: string }[])
             orgNames.set(o.id, o.name);
         }
@@ -242,6 +246,7 @@ export function useSources(
           factsFailed: failed,
           factsError: factsErrorFor(failed.size),
           orgNames,
+          orgNamesFailed: orgIds.length > 0 && !orgNamesOk,
           factsLoading: false,
         };
       });
