@@ -1,11 +1,11 @@
 // What Settings › Notifications SHOWS a person about an event — pure, no I/O.
 //
 // The event catalog (`communication.notification_event_type`) is written by
-// the features that send each notice, and many descriptions are the sending
-// feature's own spec ("Fires when … Audience: … Mandatory notice
-// (SPEC-NOTIFICATIONS ⚖) …"). That text is for engineers. This module is the
-// one place that decides what of it a person reads: an event's area heading,
-// and its description only when it is written for a person.
+// the features that send each notice. Since 2026-09-27 every source writes its
+// description for the person receiving it (aidream
+// `test_descriptions_are_for_people.py` fails spec-style text at the source,
+// with the same markers as below). This module stays the last-resort guard: a
+// description that still reads like an engineering spec is not shown.
 
 /** An event's area is the first segment of its key (`hr.leave.decided` → `hr`). */
 export function notificationArea(eventKey: string): string {
@@ -60,7 +60,8 @@ const SPEC_MARKERS: ReadonlyArray<RegExp> = [
   /`/,
   /\bNOT SUPPRESSIBLE\b/,
   /\p{Extended_Pictographic}/u,
-  /[⚖↗]/,
+  /[⚖↗✚]/,
+  /\b(first-party|authenticated recipient|payload|snapshot)\b/i,
 ];
 
 /**
