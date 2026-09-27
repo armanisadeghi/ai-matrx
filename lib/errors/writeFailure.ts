@@ -50,6 +50,24 @@ const LOOKS_TECHNICAL =
   /(^|\s)(GET|POST|PUT|PATCH|DELETE)\s+\/|https?:\/\/|\bHTTP \d{3}\b|Traceback|Exception\b|permission denied for|violates|row-level security|\brelation "|\bcolumn "|\bfunction .* does not exist|\bPGRST\d+|\bJWT\b|duplicate key|syntax error|invalid input syntax|JSON object requested|rows returned|\bnull value in column|\bundefined\b|\bat [\w.]+ \(/i;
 
 /**
+ * THE STORE'S OWN WORDS, WHEN IT SAID SOME (lane HANDOVER, 2026-09-27). A door that refuses raises a
+ * sentence for a person — `You can see this record, but "Allergies" is not yours to change.` — or the
+ * same sentence behind its own name (`cat_write: this category is not yours to change.`). Postgres's
+ * native refusals (`permission denied for table …`, `new row violates …`) are never that. This hands
+ * back the door's sentence, capitalised and ended, or null when the text is not a person's words.
+ * test@test.com's refused Allergies edit read "Permission denied" because the scopes mapper threw
+ * the door's sentence away for a fixed string.
+ */
+export function personSentence(text: unknown): string | null {
+  if (typeof text !== "string") return null;
+  let said = text.trim();
+  const named = /^[a-z][a-z0-9_]*[a-z0-9]: (.+)$/s.exec(said);
+  if (named) said = named[1].trim().replace(/^[a-z]/, (c) => c.toUpperCase());
+  if (said.length < 8 || LOOKS_TECHNICAL.test(said) || !/^[A-Z"“']/.test(said) || !/\s/.test(said)) return null;
+  return /[.!?]["”']?$/.test(said) ? said : `${said}.`;
+}
+
+/**
  * A PostgREST / Postgres refusal (a supabase-js `PostgrestError`, or a server action that passed one
  * through): `{ code, message, details, hint }`. Its `message` is the database's own line
  * ("new row violates row-level security policy for table …") — never words for a person.
@@ -136,9 +154,10 @@ export function describeWriteFailure(
   } else if (isSerializedRefusal(err)) {
     // A refusal that crossed a Redux thunk: `.unwrap()` rejects with a plain
     // `{ name, message }`, and its words are already a sentence for a person.
-    why = err.message;
+    why = /[.!?]["”']?$/.test(err.message.trim()) ? err.message.trim() : `${err.message.trim()}.`;
   } else if (isPostgrestShaped(err)) {
-    why = postgrestSentence(err.code);
+    // A door's own sentence beats the code's generic one; Postgres's native prose never shows.
+    why = personSentence(err.message) ?? postgrestSentence(err.code);
   } else if (err && typeof err === "object" && "status" in err && typeof (err as { status: unknown }).status === "number") {
     const e = err as { status: number; userMessage?: unknown };
     why = refusalSentence(e.status, typeof e.userMessage === "string" ? e.userMessage : null);

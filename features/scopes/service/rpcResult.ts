@@ -26,6 +26,8 @@
 
 import { isTransportFailure } from "@ai-matrx/data/net";
 
+import { personSentence } from "@/lib/errors/writeFailure";
+
 import type { ScopesRpcError, ScopesRpcResult } from "@/features/scopes/types";
 
 // Re-exported for convenience so a service file imports its envelope and its
@@ -72,7 +74,9 @@ export function mapPgError(e: unknown): ScopesRpcError {
   if (pgCode === "PGRST116") return { code: "not_found", message: "Not found" };
   if (pgCode === "42501")
     // access-errors: ok — maps Postgres 42501 (insufficient_privilege), the server's own explicit verdict, not a zero-row guess
-    return { code: "forbidden_org", message: "Permission denied" };
+    // The door's own sentence when it said one ("…is not yours to change."), never a bare
+    // "Permission denied" over it (lane HANDOVER, 2026-09-27).
+    return { code: "forbidden_org", message: personSentence(pgMessage) ?? "You do not have permission to do this." };
   // The session's JWT is gone or expired — the user is signed out, not broken.
   if (pgCode === "PGRST301" || pgCode === "PGRST303")
     // access-errors: ok — PGRST301/303 is PostgREST's own expired-JWT verdict, verified by code, not a guess
