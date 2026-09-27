@@ -30,8 +30,14 @@ import {
   UserRoundCog,
   BrainCircuit,
   ClipboardPen,
+  Code2,
+  FileText,
+  Globe,
+  Image as ImageIcon,
   Layers,
   PackageCheck,
+  StickyNote,
+  Type,
   type LucideIcon,
 } from "lucide-react";
 
@@ -50,7 +56,12 @@ import { selectRequestCarriesKindEnvelope } from "@/features/agents/redux/execut
 
 import type { PaceTier } from "@/features/spatial/engine/lod";
 import type { SpatialStore } from "@/features/spatial/engine/spatial-store";
-import { DEFAULT_THROW_ACTIONS, type ThrowDirection } from "@/features/spatial/engine/throw";
+import {
+  DEFAULT_THROW_ACTIONS,
+  type ThrowAction,
+  type ThrowDirection,
+} from "@/features/spatial/engine/throw";
+
 import { useBoard, type BoardFrame } from "@/features/spatial/board/useBoard";
 import { useWheelModePreference } from "@/features/spatial/board/useWheelModePreference";
 import { SpatialBoardMenu } from "@/features/spatial/components/SpatialBoardMenu";
@@ -63,6 +74,16 @@ import { Minimap, ZoomHud } from "@/features/spatial/components/SpatialChrome";
 import type { StatusFrom, TileStatusValue } from "@/features/spatial/streams/useSourceStatus";
 import { useRequestSource } from "@/features/spatial/streams/useRequestSource";
 import { StreamTileBody } from "@/features/spatial/tiles/StreamTileBody";
+import { MarkdownTileBody } from "@/features/spatial/tiles/MarkdownTileBody";
+import { HtmlTileBody, ImageTileBody } from "@/features/spatial/tiles/MediaTileBodies";
+import { NoteTileBody, TextTileBody } from "@/features/spatial/tiles/NoteTileBody";
+import { useEditingTile } from "@/features/spatial/engine/react";
+import { SpatialBoardSurface } from "@/features/spatial/components/SpatialBoardSurface";
+import type {
+  AddTileInput,
+  BoardToolHost,
+  EditTileInput,
+} from "@/features/spatial/tools/useBoardAgentTools";
 
 import { useWorkflowRun } from "../../hooks/useWorkflowRun";
 import { useFloatingWorkflowRun } from "../../floating/useFloatingWorkflowRun";
@@ -84,6 +105,9 @@ import {
 } from "../run/node-presentation";
 import { layoutWorkflowRunBoard, type RunBoardLayout } from "./run-board-layout";
 
+/** Down only takes a tile off this board — the step stays in its run. */
+const RUN_THROWS: Record<ThrowDirection, ThrowAction> = { ...DEFAULT_THROW_ACTIONS, down: "remove" };
+
 const FAMILY_TILE_ICON: Record<NodeFamily, LucideIcon> = {
   input: ClipboardPen,
   prepare: Layers,
@@ -92,15 +116,29 @@ const FAMILY_TILE_ICON: Record<NodeFamily, LucideIcon> = {
   deliver: PackageCheck,
 };
 
+/** What a tile holds: a STEP of the run (live results — never edited), or
+ * something an agent (or the person, later) put beside the run. */
+type RunTileContent =
+  | {
+      type: "step";
+      family: NodeFamily;
+      declaredKind: string | null;
+      /** Human names of the steps this one waits on. */
+      waitsFor: string[];
+    }
+  | { type: "markdown"; text: string }
+  | { type: "html"; src?: string; srcDoc?: string }
+  | { type: "image"; src: string }
+  | { type: "note"; noteId: string | null; text?: string }
+  | { type: "text"; text: string };
+
 interface RunTileSpec {
   id: string;
   rect: { x: number; y: number; w: number; h: number };
   title: string;
   subtitle: string;
   icon: LucideIcon;
-  declaredKind: string | null;
-  /** Human names of the steps this one waits on. */
-  waitsFor: string[];
+  content: RunTileContent;
 }
 
 type EnsureLane = (runId: string, invocationKey: string, seedText?: string) => string | null;
@@ -194,8 +232,12 @@ function buildBoard(
       title: label(t.nodeId),
       subtitle: kind ? `${role} · ${humanizeKind(kind)}` : role,
       icon: t.deliverable ? PackageCheck : FAMILY_TILE_ICON[family],
-      declaredKind: kind,
-      waitsFor: layout.edges.filter((e) => e.to === t.nodeId).map((e) => label(e.from)),
+      content: {
+        type: "step",
+        family,
+        declaredKind: kind,
+        waitsFor: layout.edges.filter((e) => e.to === t.nodeId).map((e) => label(e.from)),
+      },
     };
   });
   const frames = layout.frames.map((f): BoardFrame => {
@@ -236,6 +278,7 @@ function RunBoard({
   const [store, setStore] = useState<SpatialStore | null>(null);
   const [wheelMode, setWheelMode] = useWheelModePreference();
   const activeOrgId = useAppSelector(selectOrganizationId);
+  const reduxStore = useAppStore();
 
   const specOf = (id: string) => [...board.tiles, ...board.parked].find((t) => t.id === id);
 
@@ -285,7 +328,9 @@ function RunBoard({
     const ok = await confirm({
       title: `Take "${spec.title}" off this board?`,
       description:
-        "Only this board view changes: the run, this step and its output are kept, and the Page view still shows them. You can undo right after.",
+        spec.content.type === "step"
+          ? "Only this board view changes: the run, this step and its output are kept, and the Page view still shows them. You can undo right after."
+          : "The tile leaves this board. You can undo right after.",
       confirmLabel: "Take off board",
       variant: "destructive",
     });
@@ -294,65 +339,244 @@ function RunBoard({
     toast(`Took "${spec.title}" off the board`, { action: { label: "Undo", onClick: undo } });
   };
   const onThrow = (id: string, direction: ThrowDirection) => {
-    const action = DEFAULT_THROW_ACTIONS[direction];
+    const action = RUN_THROWS[direction];
     if (action === "park") park(id);
     else if (action === "save-close") void saveAndClose(id);
-    else if (action === "delete") void remove(id);
+    else if (action === "remove") void remove(id);
   };
 
   const rectById = new Map(board.tiles.map((t) => [t.id, t.rect]));
 
+  const agentHost: BoardToolHost<RunTileSpec> = {
+    board,
+    store,
+    boardTitle: workflowName,
+    createTile: createAgentTile,
+    editTile: editAgentTile,
+    describe: (tile) => {
+      const c = tile.content;
+      if (c.type !== "step") return { kind: c.type === "html" && c.srcDoc === undefined ? "web page" : c.type };
+      const status = selectStatusKey(runId, tile.id)(reduxStore.getState()).split(":")[0];
+      return { kind: `${familyNoun(c.family)}${c.declaredKind ? ` · ${humanizeKind(c.declaredKind)}` : ""}`, status };
+    },
+  };
+  const onContent = (id: string, content: RunTileContent, title?: string) =>
+    board.updateTile(id, title ? { content, title } : { content }, { history: false });
+
   return (
-    <SpatialBoardMenu
-      store={store}
-      actions={{
-        park,
-        saveAndClose: (id) => void saveAndClose(id),
-        remove: (id) => void remove(id),
-        removeLabel: "Take off this board…",
-      }}
-      parked={board.parked.map((t) => ({ id: t.id, title: t.title }))}
-      onUnpark={unpark}
-      wheelMode={wheelMode}
-      onWheelMode={setWheelMode}
-    >
-      <SpatialViewport
-        insets={{ top: 88, bottom: 56 }}
+    <SpatialBoardSurface host={agentHost}>
+      <SpatialBoardMenu
+        store={store}
+        actions={{
+          park,
+          saveAndClose: (id) => void saveAndClose(id),
+          remove: (id) => void remove(id),
+          removeLabel: "Take off this board…",
+        }}
+        parked={board.parked.map((t) => ({ id: t.id, title: t.title }))}
+        onUnpark={unpark}
         wheelMode={wheelMode}
-        onStore={setStore}
-        overlay={
-          <>
-            <RunBoardToolbar runId={runId} workflowName={workflowName} stepCount={steps.length} />
-            <ParkedShelf
-              parked={board.parked.map((t) => ({ id: t.id, title: t.title, icon: t.icon }))}
-              onRestore={unpark}
-            />
-            <ZoomHud />
-            <Minimap />
-          </>
-        }
+        onWheelMode={setWheelMode}
       >
-        {board.frames.map((f) => (
-          <SpatialFrame key={f.id} id={f.id} rect={f.rect} title={f.title} note={f.note} />
-        ))}
-        {built.layout.edges.map((e) => {
-          const from = rectById.get(e.from);
-          const to = rectById.get(e.to);
-          if (!from || !to) return null;
-          return <SpatialEdge key={e.id} from={from} to={to} />;
-        })}
-        {board.tiles.map((t) => (
-          <RunNodeTile
-            key={t.id}
-            runId={runId}
-            spec={t}
-            onMove={board.moveTile}
-            onThrow={onThrow}
-            ensureLane={ensureLane}
-          />
-        ))}
-      </SpatialViewport>
-    </SpatialBoardMenu>
+        <SpatialViewport
+          insets={{ top: 88, bottom: 56 }}
+          wheelMode={wheelMode}
+          onStore={setStore}
+          overlay={
+            <>
+              <RunBoardToolbar runId={runId} workflowName={workflowName} stepCount={steps.length} />
+              <ParkedShelf
+                parked={board.parked.map((t) => ({ id: t.id, title: t.title, icon: t.icon }))}
+                onRestore={unpark}
+              />
+              <ZoomHud />
+              <Minimap />
+            </>
+          }
+        >
+          {board.frames.map((f) => (
+            <SpatialFrame key={f.id} id={f.id} rect={f.rect} title={f.title} note={f.note} />
+          ))}
+          {built.layout.edges.map((e) => {
+            const from = rectById.get(e.from);
+            const to = rectById.get(e.to);
+            if (!from || !to) return null;
+            return <SpatialEdge key={e.id} from={from} to={to} />;
+          })}
+          {board.connections.map((c) => {
+            const from = rectById.get(c.from);
+            const to = rectById.get(c.to);
+            if (!from || !to) return null;
+            return <SpatialEdge key={c.id} from={from} to={to} />;
+          })}
+          {board.tiles.map((t) =>
+            t.content.type === "step" ? (
+              <RunNodeTile
+                key={t.id}
+                runId={runId}
+                spec={t}
+                declaredKind={t.content.declaredKind}
+                waitsFor={t.content.waitsFor}
+                onMove={board.moveTile}
+                onThrow={onThrow}
+                ensureLane={ensureLane}
+              />
+            ) : (
+              <AddedTile
+                key={t.id}
+                spec={t}
+                onMove={board.moveTile}
+                onThrow={onThrow}
+                onContent={onContent}
+              />
+            ),
+          )}
+        </SpatialViewport>
+      </SpatialBoardMenu>
+    </SpatialBoardSurface>
+  );
+}
+
+// ── what the board's agent tools make and change (useBoardAgentTools) ───────
+
+type Failure = { ok: false; error: string };
+
+const ADDED_ICON: Record<AddTileInput["kind"], LucideIcon> = {
+  note: StickyNote,
+  markdown: FileText,
+  text: Type,
+  html: Code2,
+  image: ImageIcon,
+};
+
+function createAgentTile(
+  id: string,
+  input: AddTileInput,
+  size: { w: number; h: number },
+): RunTileSpec | Failure {
+  const base = { id, rect: { x: 0, y: 0, ...size }, icon: ADDED_ICON[input.kind] };
+  switch (input.kind) {
+    case "note":
+      return {
+        ...base,
+        title: input.title ?? "Note",
+        subtitle: "Note · by an agent",
+        content: { type: "note", noteId: null, text: input.text ?? "" },
+      };
+    case "markdown":
+      if (!input.text) return { ok: false, error: "A markdown tile needs `text`." };
+      return {
+        ...base,
+        title: input.title ?? "Write-up",
+        subtitle: "Markdown · by an agent",
+        content: { type: "markdown", text: input.text },
+      };
+    case "text":
+      return {
+        ...base,
+        title: input.title ?? "Text",
+        subtitle: "Label",
+        content: { type: "text", text: input.text ?? input.title ?? "" },
+      };
+    case "html":
+      if (input.html)
+        return {
+          ...base,
+          title: input.title ?? "Page",
+          subtitle: "Generated page · by an agent",
+          content: { type: "html", srcDoc: input.html },
+        };
+      if (input.url)
+        return {
+          ...base,
+          icon: Globe,
+          title: input.title ?? "Page",
+          subtitle: "Web page · sandboxed",
+          content: { type: "html", src: input.url },
+        };
+      return { ok: false, error: "An html tile needs `html` (a complete document) or `url`." };
+    case "image":
+      if (!input.url) return { ok: false, error: "An image tile needs `url`." };
+      return {
+        ...base,
+        title: input.title ?? "Image",
+        subtitle: "Image",
+        content: { type: "image", src: input.url },
+      };
+  }
+}
+
+function editAgentTile(tile: RunTileSpec, input: EditTileInput): Partial<RunTileSpec> | Failure {
+  const c = tile.content;
+  if (c.type === "step")
+    return {
+      ok: false,
+      error: `"${tile.title}" is a step of this run — its content is the run's live result, so only its title and size change. Add a markdown tile beside it instead.`,
+    };
+  if (c.type === "note" && input.text !== undefined) return { content: { ...c, text: input.text } };
+  if (c.type === "markdown" && input.text !== undefined) return { content: { type: "markdown", text: input.text } };
+  if (c.type === "text" && input.text !== undefined) return { content: { type: "text", text: input.text } };
+  if (c.type === "html" && input.html !== undefined) return { content: { type: "html", srcDoc: input.html } };
+  return {
+    ok: false,
+    error: `"${tile.title}" is a ${c.type} tile; that content cannot be replaced (only its title and size). Add a new tile instead.`,
+  };
+}
+
+const ADDED_DONE: StatusFrom = { kind: "static", value: { status: "complete", progress: null } };
+const ADDED_IDLE: StatusFrom = { kind: "static", value: { status: "idle", progress: null } };
+
+/** A tile beside the run's steps — an agent's write-up, page, image, note or label. */
+function AddedTile({
+  spec,
+  onMove,
+  onThrow,
+  onContent,
+}: {
+  spec: RunTileSpec;
+  onMove: (id: string, x: number, y: number) => void;
+  onThrow: (id: string, direction: ThrowDirection) => void;
+  onContent: (id: string, content: RunTileContent, title?: string) => void;
+}) {
+  const interacting = useEditingTile() === spec.id;
+  const c = spec.content;
+  return (
+    <SpatialTile
+      id={spec.id}
+      rect={spec.rect}
+      title={spec.title}
+      subtitle={spec.subtitle}
+      icon={spec.icon}
+      statusFrom={c.type === "note" && !c.noteId ? ADDED_IDLE : ADDED_DONE}
+      onMove={onMove}
+      onThrow={onThrow}
+      throwActions={RUN_THROWS}
+    >
+      {(tier) => {
+        switch (c.type) {
+          case "markdown":
+            return <MarkdownTileBody id={spec.id} text={c.text} tier={tier} />;
+          case "html":
+            return (
+              <HtmlTileBody src={c.src} srcDoc={c.srcDoc} title={spec.title} tier={tier} active={interacting} />
+            );
+          case "image":
+            return <ImageTileBody src={c.src} alt={spec.title} />;
+          case "note":
+            return (
+              <NoteTileBody
+                noteId={c.noteId}
+                text={c.text}
+                onCreated={(noteId, label) => onContent(spec.id, { type: "note", noteId, text: c.text }, label)}
+              />
+            );
+          case "text":
+            return <TextTileBody text={c.text} onChange={(text) => onContent(spec.id, { type: "text", text })} />;
+          case "step":
+            return null;
+        }
+      }}
+    </SpatialTile>
   );
 }
 
@@ -424,12 +648,16 @@ function useNodeStatus(runId: string, nodeId: string): TileStatusValue {
 function RunNodeTile({
   runId,
   spec,
+  declaredKind,
+  waitsFor,
   onMove,
   onThrow,
   ensureLane,
 }: {
   runId: string;
   spec: RunTileSpec;
+  declaredKind: string | null;
+  waitsFor: string[];
   onMove: (id: string, x: number, y: number) => void;
   onThrow: (id: string, direction: ThrowDirection) => void;
   ensureLane: EnsureLane;
@@ -446,14 +674,15 @@ function RunNodeTile({
       statusFrom={statusFrom}
       onMove={onMove}
       onThrow={onThrow}
+      throwActions={RUN_THROWS}
     >
       {(tier) => (
         <RunNodeBody
           runId={runId}
           nodeId={spec.id}
           tier={tier}
-          declaredKind={spec.declaredKind}
-          waitsFor={spec.waitsFor}
+          declaredKind={declaredKind}
+          waitsFor={waitsFor}
           ensureLane={ensureLane}
         />
       )}

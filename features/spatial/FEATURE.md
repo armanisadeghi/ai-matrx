@@ -147,16 +147,33 @@ tool injection; no per-agent arming, no aidream change).
 | Handlers — host-agnostic, drive `useBoard` + the store; errors come back as `{ok:false, error}` with a remedy; remove toasts an Undo; adding never moves the camera | `tools/useBoardAgentTools.ts` |
 | Pure layout math | `engine/arrange.ts` |
 
-A host supplies a `BoardToolHost`: `createTile(id, input, size)` and optional `editTile` for the
-kinds it can hold (answer a failure for the rest), and `describe(tile)` for `board_read`.
+A host supplies a `BoardToolHost`: `board` (a `BoardToolTarget` — the NARROW interface the
+handlers call; `Board<T>` from `useBoard` satisfies it as-is), `createTile(id, input, size)` and
+optional `editTile` for the kinds it can hold (answer a failure for the rest; an empty patch means
+the host wrote the content into its own record), and `describe(tile)` for `board_read`. A host with
+its own layout model supplies an adapter: `updateTile` / `addFrame` / `connect` / `undo` are
+optional (absent = refused with `refusals[...]`, which names the remedy), `moveMany` may return a
+failure (nothing moves), `checkArrange` refuses an arrangement that would break the host's layout,
+and `read().removed` lists tiles off the board that `board_park parked:false` restores.
+`board_focus` on a parked/removed tile restores it and moves the camera once it has rendered.
 Markdown written by an agent renders through the stream pipeline (`tiles/MarkdownTileBody.tsx`,
 an instant `ReplayStream` → `StreamTileBody`), never a second renderer; an agent's note is a real
-Note (`NoteTileBody` `text` prop creates/saves it). Wired: the demo. Next: meeting board, workflow
-run board, War Room board.
+Note (`NoteTileBody` `text` prop creates/saves it). Wired: the demo; the meeting board
+(`features/meet/components/board/MeetingBoard.tsx` — markdown / html page or `srcDoc` / image; a
+"note" is the board's own scratchpad and "text" becomes markdown; the live meeting sections refuse
+content edits); the workflow run board (`features/workflow-runtime/components/spatial/WorkflowRunSpatialView.tsx`
+— real Note / markdown / text / html / image beside the steps; a step refuses content edits, and
+`describe` gives its family + declared kind and live status). Both render `board.frames` and
+`board.connections`; the War Room board (`features/war-room/components/board/roomBoardAgent.ts`, an
+adapter over its own `spatial_layout` model — parts are tiles, threads are frames; move / arrange
+within one thread / park / remove / focus work and persist, `text` on a Notes part writes the
+thread's note, add / group / connect / undo / rename / resize refuse with the remedy; see the War
+Room FEATURE.md Board section).
 
 ## Change Log
 
-- 2026-09-27 — Frame fly-to includes its title band in the fit target; War Room’s board-only down throw uses the reversible `remove` action, distinct from destructive `delete`.
+- 2026-09-27 — Frame fly-to includes its title band in the fit target; War Room’s board-only down throw uses the reversible 'remove' action, distinct from destructive 'delete'.
+
 - 2026-09-25 — Created: engine, zoom-paced streaming, demo board (research/study kinds, podcast
   pipeline, generated HTML, 100-stream stress test). Unit tests in `__tests__/engine.test.ts`.
   Same day: browser pass fixed controls swallowed by the pan handler, fit under the toolbar
@@ -174,6 +191,15 @@ run board, War Room board.
   `matrx-user/spatial-board` surface; `useBoard` gains connections, `moveMany`, a live `read()`
   (fixes back-to-back commands reading stale state — test fails before, passes after) and
   frame-aware placement. All 11 tools driven in the browser on the demo, 0 page errors.
+- 2026-09-27 — Board agent tools wired into the meeting board and the workflow run board
+  (`SpatialBoardSurface` host each). The meeting board now saves `{tiles, frames}` (older bare-array
+  boards still load) and keeps a scratchpad's text on the tile so an agent can write it.
+- 2026-09-27 — The tools depend on `BoardToolTarget` (a narrow interface `Board<T>` satisfies)
+  instead of the whole `useBoard` model, so a board with its own layout model can take them: the
+  War Room board is wired through an adapter. Absent operations refuse with the host's remedy;
+  `board_read` lists `removed` tiles; focusing a parked tile now waits for it to render before
+  moving the camera (it used to fly nowhere). Tests: `features/war-room/components/board/__tests__/roomBoardAgent.test.tsx`
+  drive the real handlers.
 
 ## Chat beside the board
 
