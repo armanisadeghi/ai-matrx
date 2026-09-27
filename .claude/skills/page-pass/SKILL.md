@@ -269,6 +269,11 @@ surface). Say which parts you judged as authored content.
 - **Numbers are plausible.** Sanity-check every computed figure against the
   rows behind it (a study time of 57 days, a count that disagrees with its
   list, a 0 shown beside content that exists are defects).
+- **Any change that loosens a gate is reviewed before it ships** — dropping an
+  organization requirement, a new grant or door, a row-security or auth
+  exemption: dispatch an independent reviewer (standard lane) to trace every
+  call path to the end (the org-free `/browse` declaration broke every Microsoft
+  browse five calls down). Say so in your report.
 - **First ask whether it needs an organization at all.** A person's own
   records (their connections, their settings, their history) never do — if the
   server demands one for them, fix the server declaration, don't hold the page.
