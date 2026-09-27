@@ -1320,7 +1320,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
             <button
               type="button"
               onClick={() => setRecentOpen((v) => !v)}
-              className="group flex items-center gap-1 w-full px-2 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3"
+              className="group flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3"
             >
               {recentOpen ? (
                 <ChevronDown className="opacity-60" />
@@ -1399,7 +1399,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
             <button
               type="button"
               onClick={() => setSharedOpen((v) => !v)}
-              className="group flex items-center gap-1 w-full px-2 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3"
+              className="group flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3"
             >
               {sharedOpen ? (
                 <ChevronDown className="opacity-60" />
@@ -1523,7 +1523,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
               const folderHeaderButton = (
                 <div
                   className={cn(
-                    "group flex items-center gap-1 w-full px-2 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3",
+                    "group flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3",
                     isFolderMode &&
                       dropTargetFolder === groupKey &&
                       "bg-primary/10 border-l-2 border-primary",
@@ -1669,7 +1669,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                 dispatch(fetchDeletedNotes());
               }
             }}
-            className="group flex items-center gap-1 w-full px-2 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3"
+            className="group flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3"
           >
             {trashOpen ? (
               <ChevronDown className="opacity-60" />
