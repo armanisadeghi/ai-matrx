@@ -11,6 +11,7 @@ import { useResearchStream } from "../../hooks/useResearchStream";
 import { assignTagsToSource, removeSourceTag, createTag } from "../../service";
 import type { ResearchDataEvent } from "../../types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface Suggestion {
   name: string;
@@ -68,8 +69,17 @@ export function SourceTagPicker({
 }) {
   const api = useResearchApi();
   const stream = useResearchStream();
-  const { data: tags, refresh: refreshTags } = useResearchTags(topicId);
-  const { data: sourceTags, refresh } = useSourceTags(sourceId);
+  const {
+    data: tags,
+    refresh: refreshTags,
+    error: tagsError,
+  } = useResearchTags(topicId);
+  const {
+    data: sourceTags,
+    refresh,
+    error: sourceTagsError,
+  } = useSourceTags(sourceId);
+  const tagReadError = tagsError ?? sourceTagsError;
   const [busyId, setBusyId] = useState<string | null>(null);
   const [suggesting, setSuggesting] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -184,7 +194,17 @@ export function SourceTagPicker({
 
   return (
     <div className="space-y-2.5">
-      {available.length > 0 ? (
+      {tagReadError ? (
+        <ReadFailure
+          error={tagReadError}
+          what="this source's tags"
+          onRetry={() => {
+            refreshTags();
+            refresh();
+          }}
+          className="m-0"
+        />
+      ) : available.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
           {available.map((tag) => {
             const on = assignedIds.has(tag.id);

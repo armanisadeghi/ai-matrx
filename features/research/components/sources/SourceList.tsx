@@ -110,6 +110,8 @@ import {
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { setSourceNavOrder } from "../../utils/sourceNavOrder";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 function formatPageAge(pageAge: string | null): {
   display: string;
@@ -898,10 +900,12 @@ export default function SourceList() {
     () => ({ ...filters, limit: FETCH_ALL_LIMIT, offset: 0 }),
     [filters],
   );
-  const { data: sources, refresh: refetchSources } = useResearchSources(
-    topicId,
-    fetchFilters,
-  );
+  const {
+    data: sources,
+    refresh: refetchSources,
+    error: sourcesError,
+    isLoading: sourcesLoading,
+  } = useResearchSources(topicId, fetchFilters);
   // One batched read of the global video library for every YouTube row.
   const { identityFor: videoIdentityFor } = useYouTubeVideoIndex(sources ?? []);
   const stream = useResearchStream(() => {
@@ -1323,6 +1327,15 @@ export default function SourceList() {
 
   return (
     <div className="p-3 sm:p-4 space-y-3 overflow-x-hidden">
+      {sourcesError && (sources?.length ?? 0) > 0 && (
+        <StaleDataNotice
+          hasData
+          what="this topic's sources"
+          onRetry={refetchSources}
+          retrying={sourcesLoading}
+          detail={sourcesError}
+        />
+      )}
       <SourceFilters
         filters={filters}
         onFilterChange={setFilters}
@@ -1549,11 +1562,22 @@ export default function SourceList() {
               ))}
             </tbody>
           </table>
-          {totalCount === 0 && (
-            <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
-              No sources found. Run a search to discover sources.
-            </div>
-          )}
+          {totalCount === 0 &&
+            (sourcesError ? (
+              <ReadFailure
+                error={sourcesError}
+                what="this topic's sources"
+                onRetry={refetchSources}
+              />
+            ) : sourcesLoading ? (
+              <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+                Loading sources…
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+                No sources found. Run a search to discover sources.
+              </div>
+            ))}
         </div>
       ) : (
         /* Mobile Card List */
@@ -1746,11 +1770,22 @@ export default function SourceList() {
               </Link>
             );
           })}
-          {totalCount === 0 && (
-            <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
-              No sources found.
-            </div>
-          )}
+          {totalCount === 0 &&
+            (sourcesError ? (
+              <ReadFailure
+                error={sourcesError}
+                what="this topic's sources"
+                onRetry={refetchSources}
+              />
+            ) : sourcesLoading ? (
+              <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+                Loading sources…
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+                No sources found.
+              </div>
+            ))}
         </div>
       )}
 

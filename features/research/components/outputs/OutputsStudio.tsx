@@ -69,6 +69,7 @@ import { getBundleBySlug, getResourceManifest } from "../../service/resources";
 import { resolveBundle } from "../../resources/resolve";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 /** Research content-engine generators run through AGENT MANDATES — the mandate is the
  *  identity, never a hardcoded agent id. The system default is managed in the
@@ -118,7 +119,19 @@ export default function OutputsStudio() {
   const [bundleFallbackFor, setBundleFallbackFor] = useState<string | null>(
     null,
   );
-  const reportLoading = Boolean(topicId) && reportLoadedFor !== topicId;
+  // A failed report read, keyed by topic + attempt — "No report yet" is only
+  // said after a read that succeeded (RC-B12).
+  const [reportAttempt, setReportAttempt] = useState(0);
+  const [reportFailure, setReportFailure] = useState<{
+    key: string;
+    error: unknown;
+  } | null>(null);
+  const reportKey = `${topicId}:${reportAttempt}`;
+  const reportError =
+    reportFailure && reportFailure.key === reportKey
+      ? reportFailure.error
+      : null;
+  const reportLoading = Boolean(topicId) && reportLoadedFor !== reportKey;
   const bundleFallback = Boolean(topicId) && bundleFallbackFor === topicId;
 
   useEffect(() => {
@@ -143,17 +156,20 @@ export default function OutputsStudio() {
         }
 
         // Direct read — the pre-bundle path, kept as the safety net only.
-        const [doc, synth] = await Promise.all([
-          getDocument(topicId).catch(() => null),
-          getSynthesis(topicId).catch(() => [] as ResearchSynthesis[]),
+        const [docRead, synthRead] = await Promise.allSettled([
+          getDocument(topicId),
+          getSynthesis(topicId),
         ]);
         if (cancelled) return;
+        const doc = docRead.status === "fulfilled" ? docRead.value : null;
+        const synth: ResearchSynthesis[] =
+          synthRead.status === "fulfilled" ? synthRead.value : [];
         let md = "";
         if (doc?.content?.trim()) {
           md = doc.content;
         } else {
           // PHASE-4 COMPAT: legacy rows carry scope="project" (= topic-wide).
-          const list = (synth ?? []).filter(
+          const list = synth.filter(
             (s) => normalizeSynthesisScope(s.scope) === "topic",
           );
           const current =
@@ -161,15 +177,31 @@ export default function OutputsStudio() {
             list.find((s) => s.result?.trim());
           md = current?.result ?? "";
         }
+        // No report found AND a read failed: that is not "no report yet".
+        const failed =
+          docRead.status === "rejected"
+            ? docRead.reason
+            : synthRead.status === "rejected"
+              ? synthRead.reason
+              : null;
+        if (!md.trim() && failed) throw failed;
         setReportMarkdown(md);
+      } catch (err) {
+        if (!cancelled) {
+          setReportMarkdown("");
+          setReportFailure({
+            key: reportKey,
+            error: err ?? new Error("The report read failed"),
+          });
+        }
       } finally {
-        if (!cancelled) setReportLoadedFor(topicId);
+        if (!cancelled) setReportLoadedFor(reportKey);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [topicId]);
+  }, [topicId, reportKey]);
 
   const hasReport = reportMarkdown.trim().length > 0;
   const outputs = useMemo(() => parseOutputs(topic?.outputs), [topic?.outputs]);
@@ -223,27 +255,37 @@ export default function OutputsStudio() {
           </div>
         )}
 
-        {!hasReport && !reportLoading && (
-          <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400">
-            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-            <span>
-              No report yet. Run the{" "}
-              <Link
-                href={`/research/topics/${topicId}/synthesis`}
-                className="underline hover:no-underline"
-              >
-                project synthesis
-              </Link>{" "}
-              (or generate the{" "}
-              <Link
-                href={`/research/topics/${topicId}/document`}
-                className="underline hover:no-underline"
-              >
-                document
-              </Link>
-              ) first — every output is built from it.
-            </span>
-          </div>
+        {reportError && !reportLoading ? (
+          <ReadFailure
+            error={reportError}
+            what="this topic's research report"
+            onRetry={() => setReportAttempt((n) => n + 1)}
+            className="m-0"
+          />
+        ) : (
+          !hasReport &&
+          !reportLoading && (
+            <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400">
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>
+                No report yet. Run the{" "}
+                <Link
+                  href={`/research/topics/${topicId}/synthesis`}
+                  className="underline hover:no-underline"
+                >
+                  project synthesis
+                </Link>{" "}
+                (or generate the{" "}
+                <Link
+                  href={`/research/topics/${topicId}/document`}
+                  className="underline hover:no-underline"
+                >
+                  document
+                </Link>
+                ) first — every output is built from it.
+              </span>
+            </div>
+          )
         )}
 
         <PodcastOutputCard
@@ -351,9 +393,9 @@ function DomainReportsCard({
                 <Link
                   href={domainOutputHref(def, topicId)}
                   className="flex min-w-0 flex-1 items-center gap-2"
-                   target="_blank"
-                   rel="noopener noreferrer"
-                 >
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <div className="min-w-0 flex-1">
                     <div className="text-xs font-medium text-foreground">
                       {def.label}

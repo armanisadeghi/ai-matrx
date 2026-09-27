@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { useDocumentVersions } from '../../hooks/useResearchState';
 import type { ResearchDocument } from '../../types';
+import { ReadFailure } from '@/components/read-state/ReadFailure';
+import { StaleDataNotice } from '@/components/official/stale-data/StaleDataNotice';
 
 interface VersionHistoryProps {
     open: boolean;
@@ -18,15 +20,23 @@ interface VersionHistoryProps {
 
 export function VersionHistory({ open, onOpenChange, topicId, currentVersion, onCompare }: VersionHistoryProps) {
     const isMobile = useIsMobile();
-    const { data: versions } = useDocumentVersions(topicId);
+    const { data: versions, error, isLoading, refresh } = useDocumentVersions(topicId);
 
     const versionList = versions ?? [];
 
     const content = (
         <div className="space-y-2 p-4">
-            {versionList.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No version history available.</p>
+            {error && versionList.length > 0 && (
+                <StaleDataNotice hasData what="this document's versions" onRetry={refresh} retrying={isLoading} detail={error} />
             )}
+            {versionList.length === 0 &&
+                (error ? (
+                    <ReadFailure error={error} what="this document's versions" onRetry={refresh} />
+                ) : isLoading ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">Loading versions…</p>
+                ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No version history available.</p>
+                ))}
             {versionList.map((doc, i) => (
                 <div key={doc.id} className="flex items-center justify-between rounded-lg border border-border p-3">
                     <div>

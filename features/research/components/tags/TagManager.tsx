@@ -46,6 +46,8 @@ import {
 import type { ResearchTag } from "../../types";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { CrossCuttingTagsPanel } from "./CrossCuttingTagsPanel";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 export default function TagManager() {
   const { topicId } = useTopicContext();
@@ -54,7 +56,12 @@ export default function TagManager() {
   const routerForSearch = useRouter();
   const pathnameForSearch = usePathname();
   const searchParamsForSearch = useSearchParams();
-  const { data: tags, refresh } = useResearchTags(topicId);
+  const {
+    data: tags,
+    refresh,
+    error: tagsError,
+    isLoading: tagsLoading,
+  } = useResearchTags(topicId);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editTag, setEditTag] = useState<ResearchTag | null>(null);
@@ -221,7 +228,26 @@ export default function TagManager() {
 
       <CrossCuttingTagsPanel onTagsCreated={refresh} />
 
-      {filtered.length === 0 ? (
+      {tagsError && tagList.length > 0 && (
+        <StaleDataNotice
+          hasData
+          what="this topic's tags"
+          onRetry={refresh}
+          retrying={tagsLoading}
+          detail={tagsError}
+        />
+      )}
+
+      {tagsError && tagList.length === 0 ? (
+        <ReadFailure error={tagsError} what="this topic's tags" onRetry={refresh} />
+      ) : tagsLoading && tagList.length === 0 ? (
+        <div
+          role="status"
+          className="flex min-h-[280px] items-center justify-center text-xs text-muted-foreground"
+        >
+          Loading tags…
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[280px] gap-3 text-center px-4">
           <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">
             <Layers className="h-6 w-6 text-primary/40" />

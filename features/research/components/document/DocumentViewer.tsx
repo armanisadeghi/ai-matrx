@@ -17,6 +17,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import MarkdownCore from "@/components/markdown-core/MarkdownCore";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTopicContext, useStreamDebug } from "../../context/ResearchContext";
 import { useResearchApi } from "../../hooks/useResearchApi";
@@ -54,6 +56,7 @@ export default function DocumentViewer() {
   const {
     data: docData,
     isLoading: docLoading,
+    error: docError,
     refresh: refetchDoc,
   } = useResearchDocument(topicId);
   const stream = useResearchStream();
@@ -190,6 +193,17 @@ export default function DocumentViewer() {
     return <DocumentSkeleton />;
   }
 
+  // The read failed — say so; "No document yet" would be a claim nobody read.
+  if (!document && docError) {
+    return (
+      <ReadFailure
+        error={docError}
+        what="this topic's research document"
+        onRetry={refetchDoc}
+      />
+    );
+  }
+
   if (!document) {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[320px] gap-3 p-6 text-center">
@@ -321,6 +335,16 @@ export default function DocumentViewer() {
 
       {/* Main Content */}
       <div className="flex-1 min-w-0 overflow-y-auto p-3 sm:p-4">
+        {docError && (
+          <StaleDataNotice
+            hasData
+            what="this document"
+            onRetry={refetchDoc}
+            retrying={docLoading}
+            detail={docError}
+            className="mb-3"
+          />
+        )}
         {/* Out-of-date document. Stated, never silently repaired: regenerating
             is a full document-assembly call, so it stays the user's call. */}
         {documentStale && (

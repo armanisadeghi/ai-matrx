@@ -57,6 +57,8 @@ import {
   SYNTHESIS_CSV_COLUMNS,
 } from "@/features/research/copy";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 const hasText = (s: string | null | undefined): s is string =>
   !!s && s.trim().length > 0;
@@ -307,6 +309,7 @@ export default function SynthesisList() {
   const {
     data: allSyntheses,
     isLoading: synthLoading,
+    error: synthError,
     refresh: refetchSyntheses,
   } = useResearchSynthesis(topicId);
   const { data: keywords } = useResearchKeywords(topicId);
@@ -728,12 +731,27 @@ export default function SynthesisList() {
             )}
           </div>
         )}
+        {synthError && synthList.length > 0 && (
+          <StaleDataNotice
+            hasData
+            what="this topic's syntheses"
+            onRetry={refetchSyntheses}
+            retrying={synthLoading}
+            detail={synthError}
+          />
+        )}
         {synthLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-14 rounded-xl" />
             ))}
           </div>
+        ) : synthError && filtered.length === 0 ? (
+          <ReadFailure
+            error={synthError}
+            what="this topic's syntheses"
+            onRetry={refetchSyntheses}
+          />
         ) : !synthLoading && filtered.length === 0 && !stream.isStreaming ? (
           <div className="flex flex-col items-center justify-center min-h-[280px] gap-3 text-center px-4">
             <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">

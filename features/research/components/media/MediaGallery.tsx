@@ -57,6 +57,8 @@ import {
   hostLabel,
 } from "./mediaEmbed";
 import MediaDebugPanel from "./MediaDebugPanel";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import {
   ResearchMediaImage,
   ResearchMediaOpen,
@@ -90,7 +92,12 @@ export default function MediaGallery() {
   const [relevanceFilter, setRelevanceFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
 
-  const { data: media, refresh } = useResearchMedia(topicId);
+  const {
+    data: media,
+    refresh,
+    error: mediaError,
+    isLoading: mediaLoading,
+  } = useResearchMedia(topicId);
 
   const mediaList = (media as ResearchMedia[]) ?? [];
 
@@ -222,6 +229,16 @@ export default function MediaGallery() {
         </Select>
       </div>
 
+      {mediaError && mediaList.length > 0 && (
+        <StaleDataNotice
+          hasData
+          what="this topic's media"
+          onRetry={refresh}
+          retrying={mediaLoading}
+          detail={mediaError}
+        />
+      )}
+
       {view === "debug" ? (
         <MediaDebugPanel
           topicId={topicId}
@@ -229,6 +246,19 @@ export default function MediaGallery() {
           totalCount={mediaList.length}
           scope="filtered"
         />
+      ) : mediaError && mediaList.length === 0 ? (
+        <ReadFailure
+          error={mediaError}
+          what="this topic's media"
+          onRetry={refresh}
+        />
+      ) : mediaLoading && mediaList.length === 0 ? (
+        <div
+          role="status"
+          className="flex min-h-[280px] items-center justify-center text-xs text-muted-foreground"
+        >
+          Loading media…
+        </div>
       ) : totalEmpty ? (
         <div className="flex flex-col items-center justify-center min-h-[280px] gap-3 text-center px-4">
           <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">
