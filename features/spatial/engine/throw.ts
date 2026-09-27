@@ -75,7 +75,9 @@ export function detectThrow(
   return null; // diagonal: ambiguous, so it is a move
 }
 
-export type ThrowAction = "park" | "save-close" | "delete" | "none";
+/** `delete` destroys what the tile shows (after a confirm); `remove` only takes
+ * the tile off the board — what it shows lives on elsewhere. */
+export type ThrowAction = "park" | "save-close" | "delete" | "remove" | "none";
 
 /** The board's defaults. Left is unassigned until a real need claims it. */
 export const DEFAULT_THROW_ACTIONS: Record<ThrowDirection, ThrowAction> = {
@@ -89,5 +91,6 @@ export const THROW_ACTION_LABEL: Record<ThrowAction, string> = {
   park: "Release to park",
   "save-close": "Release to save & close",
   delete: "Release to delete",
+  remove: "Release to take off the board",
   none: "",
 };
