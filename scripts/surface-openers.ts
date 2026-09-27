@@ -58,7 +58,7 @@ const targetClause = ownTargets.length
 console.log(`-- ${surface}: agent runs that OPEN with a lookup of this surface's values (last ${days} days).
 -- Read: runs_opening_with_lookup / runs_touching_surface is the share to drive toward 0.
 with calls as (
-  select conversation_id, tool_name, arguments->>'key' as key, created_at,
+  select conversation_id, tool_name, arguments, arguments->>'key' as key, created_at,
          row_number() over (partition by conversation_id order by created_at) as n
   from chat.tool_call
   where created_at > now() - interval '${days} days'
