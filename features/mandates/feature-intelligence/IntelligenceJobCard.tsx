@@ -45,6 +45,15 @@ import {
 } from "./job-card-parts";
 import type { FeatureIntelligenceRow, ResolvedPlace } from "./types";
 import { OutputMismatchNotice, outputMismatchRung } from "./OutputMismatchNotice";
+import { MandateRunHistory } from "../run-history/MandateRunHistory";
+
+/** The record page's Runs tab for this job (the card's "All runs" door). */
+function runsTabHref(detailsHref: string): string {
+  const [path, query = ""] = detailsHref.split("?");
+  const params = new URLSearchParams(query);
+  params.set("tab", "runs");
+  return `${path}?${params.toString()}`;
+}
 
 export { inputDisplayLabel };
 
@@ -328,6 +337,20 @@ export function IntelligenceJobCard({
                 Could not read the mandate layers: {job.ladder.error} <ErrorAlchemyMenu error={job.ladder.error} />
               </p>
             ) : null}
+          </div>
+
+          {/* RUNS — the last few runs of this job at this seat (yours; the
+              organization's on the organization level), with the door to all
+              of them on the record's Runs tab. */}
+          <div className="min-w-0 space-y-1.5 border-t border-border/60 p-4 md:col-span-2">
+            <div className={LABEL}>Runs</div>
+            <MandateRunHistory
+              mandateKey={row.mandateKey}
+              view={orgLevel && organizationId ? "org" : "mine"}
+              organizationId={orgLevel ? organizationId : null}
+              compact
+              seeAllHref={runsTabHref(detailsHref)}
+            />
           </div>
         </div>
       ) : null}
