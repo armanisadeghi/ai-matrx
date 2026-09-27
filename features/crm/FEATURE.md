@@ -1065,6 +1065,12 @@ module in the folder + the two deleted filenames).
 
 ## Change log
 
+- page-pass 2026-09-27 round 6 (/crm/[partyId]): unset fillable fields reach
+  the agent as ""/null; one note door (Notes card) and no direction toggle on a
+  note; phone order identity → contact points → activity → notes → record
+  data; More menu holds Copy link / Log an activity / Move to trash; compact
+  "Why this is in your CRM"; identity fields show a pencil; add forms sit on
+  the card surface, address form is a labelled grid; phone "Find" keeps a word.
 - page-pass 2026-09-27 round 5 (/crm/[partyId]), "good" → excellent: "Contact
   points" vs "Suggested contacts"; platform brand icon and a visible link;
   one-row suggestions header on phones; honest email action (Send email /
