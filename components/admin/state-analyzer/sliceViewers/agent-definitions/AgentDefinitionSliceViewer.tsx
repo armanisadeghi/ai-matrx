@@ -159,6 +159,7 @@ export default function AgentDefinitionSliceViewer({
 
       {!record ? (
         <div className="flex-1 overflow-auto p-1 text-[11px] text-muted-foreground">
+          {/* read-gate-exempt: the inspector's own record selection over a redux snapshot; the slice's status and error are printed above, no read here */}
           No record selected.
         </div>
       ) : (

@@ -271,6 +271,7 @@ export default function CodeWorkspaceDebug() {
                     </span>
                   ) : (
                     <span className="rounded bg-amber-500/15 px-1 py-0.5 text-[9px] uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                      {/* read-gate-exempt: a per-override flag (does this local override carry a token), not an empty list or a read's answer */}
                       no token
                     </span>
                   )}
