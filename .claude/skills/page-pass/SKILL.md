@@ -63,6 +63,11 @@ session, never you.
 | A view you cannot see | `deferred-visual` with the exact step | same |
 
 **Both lanes:**
+- A page that needs an organization or record opens with it in the URL
+  (`/hr/settings/employer?org=<slug>`, `/crm/<id>`): pass that full route to
+  `page:look` and the probe.
+- A check that is red only on files you did not touch is not your finding —
+  pass your paths when the check accepts them, and list the rest.
 - Type check only your files: write `tsconfig.focused.<you>.tmp.json` at the
   repo root — `{"extends":"./tsconfig.json","compilerOptions":{"noEmit":true,"incremental":false},"include":["global.d.ts","cartesia.d.ts","types/typecheck-env.d.ts", <your files>]}`
   — run `node --max-old-space-size=11000 node_modules/typescript/bin/tsc6 -p <it>`,
@@ -111,8 +116,10 @@ session, never you.
   provider goes AROUND the menu. A page showing a real record passes that
   record's own `contentSource` (and `entity` when it can be attached or
   shared); `{type:"raw"}` only when there is no primary text. Items are short
-  verbs with no subtext; a disabled item says why. Menu's last entry = this
-  page's label.
+  verbs with no subtext — the one exception is a disabled item, whose
+  `description` says why it is off and where it works. The menu's last entry
+  (this page's label) is added by the platform from `surfaceName`; if it reads
+  "This page" or another page's label, the surface mapping is wrong.
 - **Agents menu:** every AI job the page already runs appears once in the top
   Agents menu; nothing is added to the visible page to announce it, and no AI
   feature is invented to fill it. A mandate opens in place.
@@ -134,6 +141,12 @@ session, never you.
 - Every button, link and menu item does something real — no dead controls,
   no toast stubs, no disabled-looking controls that work or working-looking
   ones that don't.
+- **A write is proven by the saved row, never by the absence of an error.**
+  For every save/create/delete the page offers, follow the call to the
+  database function it reaches and confirm that function accepts it (a
+  generic upsert may refuse the kind you send); then, live, save a
+  `PP test —` value and read the row back with SQL, and restore it. A button
+  that "works" and saves nothing is the worst dead control.
 - Every load ends: data, an honest empty state, or a visible error with a
   retry after a bounded wait. Never an endless skeleton or spinner.
 - Loading says what is loading: `SuspenseLoader` with a `message` for compact
