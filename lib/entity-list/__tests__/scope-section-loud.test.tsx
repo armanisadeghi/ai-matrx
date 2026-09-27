@@ -91,7 +91,7 @@ function render(
   });
   // The sections live inside the popover; open it the way a person does.
   const trigger = container.querySelector<HTMLButtonElement>(
-    'button[aria-label="Filters and sort"]',
+    'button[aria-label^="Filters"]',
   );
   if (!trigger) throw new Error("the Filters trigger did not render at all");
   act(() => {

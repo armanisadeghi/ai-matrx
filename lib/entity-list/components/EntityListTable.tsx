@@ -127,6 +127,14 @@ interface Props<TRow> {
     onRefresh: () => void;
     onHiddenColumnsChange: (hidden: string[]) => void;
   };
+  /**
+   * The page's own toolbar row, when the page draws one (not table-toolbar
+   * mode). The table's remaining toolbar controls (copy / export, the eraser
+   * while something is filtered) are drawn INTO it, so a list page has two
+   * chrome rows, never three (page-pass 2026-09-27). `null` while that row is
+   * mounting: the table draws nothing rather than flash a row of its own.
+   */
+  pageToolbarSlot?: HTMLElement | null;
   emptyAction?: React.ReactNode;
   /** The outcome of the list read (RC-B12 r13) — the table shows `emptyState` only after it succeeded. */
   read?: ReadOutcome;
@@ -178,6 +186,8 @@ function fromTableFilters(state: ColumnFiltersState): EntityFilters {
   return out;
 }
 
+const PAGE_OWNS_COLUMN_PICKER = { columns: false } as const;
+
 export function EntityListTable<TRow>({
   config,
   actions,
@@ -201,6 +211,7 @@ export function EntityListTable<TRow>({
   read,
   selection,
   tableToolbar,
+  pageToolbarSlot,
 }: Props<TRow>) {
   const { favorite } = config;
 
@@ -353,6 +364,11 @@ export function EntityListTable<TRow>({
       zebra
       pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}
       className={cn(density === "compact" && "text-xs [&_td]:py-1 [&_th]:py-1")}
+      // SIZE TO CONTENT (page-pass 2026-09-27): the table's bordered box is
+      // full-height by default, so a list of three rows drew ~450px of empty
+      // box. A list's box ends at its last row and scrolls only when the rows
+      // outgrow the page.
+      tableClassName="h-auto max-h-full"
       query={{
         mode: "controlled",
         totalItems: total,
@@ -384,7 +400,17 @@ export function EntityListTable<TRow>({
               searchPlaceholder: tableToolbar.searchPlaceholder,
               refresh: { onRefresh: tableToolbar.onRefresh },
             }
-          : { search: false }
+          : {
+              search: false,
+              ...(pageToolbarSlot !== undefined
+                ? { portalInto: pageToolbarSlot }
+                : {}),
+              // The page owns the ONE column picker (EntityColumnPicker, which
+              // lists hidden columns too); the table's own Columns modal saw
+              // only the visible ones and disagreed with it. `toolbar.columns`
+              // ships in @ai-matrx/design-system after 0.48.1.
+              ...PAGE_OWNS_COLUMN_PICKER,
+            }
       }
       {...(tableToolbar
         ? {
@@ -399,6 +425,12 @@ export function EntityListTable<TRow>({
             },
           }
         : {})}
+      // NO WORKING VIEW TABS on a list page (page-pass 2026-09-27). The
+      // table's tab strip keeps its tabs in memory only: "+" made an unnamed
+      // "View 2" that was gone after a reload, so it looked like saved views
+      // and saved nothing — and it cost the page a third chrome row. A list
+      // page's view is its persisted view preferences (useListViewPrefs).
+      viewTabs={false}
       // Row click fires the surface's opener. Side panel / row-window stay off —
       // the kebab menu already carries Quick look and every other record action.
       detail={{ enabled: false }}

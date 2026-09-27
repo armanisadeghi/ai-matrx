@@ -12,7 +12,7 @@
 //     persisted per user and synced across devices.
 //   QUERY (scope, search, filters, page) → useEntityList, always starts clean.
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -166,6 +166,10 @@ export function EntityListPage<TRow>({
   // a page — its lane and filters belong in its address. `urlState: false`
   // is the explicit opt-out for a list that is NOT the page's own query.
   const urlState = config.urlState !== false;
+  // The page toolbar row's slot the table draws its own controls into — ONE
+  // chrome row for page and table (see EntityListTable `pageToolbarSlot`).
+  const [tableControlsSlot, setTableControlsSlot] =
+    useState<HTMLDivElement | null>(null);
   const defaultHidden = defaultHiddenColumns(config.columns);
   const { prefs, setPrefs, reset } = useListViewPrefs(config.surfaceKey, {
     version: config.prefsVersion,
@@ -370,6 +374,16 @@ export function EntityListPage<TRow>({
   const configuredEmptyAction =
     typeof emptyAction === "function" ? emptyAction(list) : emptyAction;
 
+  const searchMissAction =
+    list.query.search.trim() && configuredEmptyAction ? (
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        {configuredEmptyAction}
+        {clearSearchAndFilters}
+      </div>
+    ) : (
+      clearSearchAndFilters
+    );
+
   const allArchivedEmptyState =
     archivedCount > 0
       ? {
@@ -384,7 +398,7 @@ export function EntityListPage<TRow>({
           action: (
             <div className="flex flex-wrap items-center justify-center gap-2">
               {archivedDoor}
-              {isNarrowed ? clearSearchAndFilters : configuredEmptyAction}
+              {isNarrowed ? searchMissAction : configuredEmptyAction}
             </div>
           ),
         }
@@ -416,7 +430,11 @@ export function EntityListPage<TRow>({
               title: `No ${plural} match`,
               description:
                 "Nothing matched your current search and filters. Widen them, or check a different scope.",
-              action: clearSearchAndFilters,
+              // A SEARCH that found nothing keeps the page's own offer beside
+              // the widen door — `New topic "<search>"` is the whole point of
+              // an emptyAction render-prop that reads the search (page-pass
+              // 2026-09-27, /research/topics: the offer never showed).
+              action: searchMissAction,
             }
           : {
               // Reached only when the archive axis is off for this surface, or
@@ -707,6 +725,7 @@ export function EntityListPage<TRow>({
           hasCards={Boolean(cardsView)}
           hasRows={Boolean(rowsView)}
           onSearch={list.setSearch}
+          tableControlsRef={setTableControlsSlot}
           onPatchQuery={list.patchQuery}
           // Sort changes route through commitSort so the panel's sort and the
           // table header's sort write the same two places (prefs + URL).
@@ -837,6 +856,9 @@ export function EntityListPage<TRow>({
             hiddenColumns={prefs.hiddenColumns}
             onSaveEdits={saveEdits}
             emptyState={resolvedEmptyState}
+            {...(config.tableToolbar
+              ? {}
+              : { pageToolbarSlot: tableControlsSlot })}
             {...(tableSelection ? { selection: tableSelection } : {})}
             {...(config.tableToolbar
               ? {

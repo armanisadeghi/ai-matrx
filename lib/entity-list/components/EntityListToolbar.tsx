@@ -21,7 +21,6 @@ import {
   Rows2,
   RotateCcw,
   Settings2,
-  Check,
 } from "lucide-react";
 import {
   Tooltip,
@@ -30,6 +29,7 @@ import {
 } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -83,6 +83,11 @@ interface Props<TRow> {
   onPatchPrefs: (patch: Partial<ListViewPrefs>) => void;
   onResetFilters: () => void;
   onResetView: () => void;
+  /**
+   * Receives the element the TABLE draws its own toolbar controls into (copy /
+   * export, the eraser while filtered) — one row for page and table.
+   */
+  tableControlsRef?: (element: HTMLDivElement | null) => void;
 }
 
 function IconToggle({
@@ -144,6 +149,7 @@ export function EntityListToolbar<TRow>({
   onPatchPrefs,
   onResetFilters,
   onResetView,
+  tableControlsRef,
 }: Props<TRow>) {
   const hasAltViews = hasCards || hasRows;
   return (
@@ -167,7 +173,9 @@ export function EntityListToolbar<TRow>({
           // its mic/menu chrome would duplicate this surface's own controls.
           // The query is still exposed as a surface value/write target, and
           // 16px minimum prevents iOS zoom-on-focus.
-          className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground lg:text-sm"
+          // The browser's own clear (x) is hidden: the "Clear search" button
+          // below is the one clear control (two X's once you typed, 2026-09-27).
+          className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground lg:text-sm [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
         />
         {query.search && (
           <>
@@ -207,6 +215,7 @@ export function EntityListToolbar<TRow>({
           hasArchived={hasArchived}
           sort={prefs.sort}
           direction={prefs.direction}
+          hiddenColumns={prefs.hiddenColumns}
           favoritesFirst={prefs.favoritesFirst}
           onPatchQuery={onPatchQuery}
           onSortChange={(sort, direction) => onPatchPrefs({ sort, direction })}
@@ -266,22 +275,19 @@ export function EntityListToolbar<TRow>({
             </DropdownMenuRadioGroup>
           )}
           {hasAltViews && <DropdownMenuSeparator />}
-          <DropdownMenuItem
-            onSelect={() =>
-              onPatchPrefs({
-                density:
-                  prefs.density === "compact" ? "comfortable" : "compact",
-              })
+          {/* One shape for every row (page-pass 2026-09-27: the menu mixed rows
+              with and without icons): the state rides the left gutter, every
+              row carries its icon. */}
+          <DropdownMenuCheckboxItem
+            checked={prefs.density === "compact"}
+            onCheckedChange={(checked) =>
+              onPatchPrefs({ density: checked ? "compact" : "comfortable" })
             }
           >
-            {prefs.density === "compact" ? (
-              <Check className="mr-2 h-3.5 w-3.5" />
-            ) : (
-              <span className="mr-2 h-3.5 w-3.5" />
-            )}
+            <Rows2 className="mr-2 h-3.5 w-3.5" />
             Compact rows
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={onResetView}>
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuItem inset onSelect={onResetView}>
             <RotateCcw className="mr-2 h-3.5 w-3.5" />
             Reset view
           </DropdownMenuItem>
@@ -344,6 +350,14 @@ export function EntityListToolbar<TRow>({
           <RotateCcw className="h-3.5 w-3.5" />
         </IconToggle>
       </div>
+
+      {tableControlsRef && (
+        <div
+          ref={tableControlsRef}
+          data-entity-list-table-controls
+          className="flex shrink-0 items-center empty:hidden [&>*]:w-auto"
+        />
+      )}
     </div>
   );
 }

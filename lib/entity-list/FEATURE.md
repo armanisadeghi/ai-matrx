@@ -440,6 +440,21 @@ how that savior page gets built.
 
 ## Change log
 
+- 2026-09-27 — List chrome, shared page-pass defects (/education/flashcards, /research/topics,
+  /connected-sources). Filters & Sort: filters lead and Sort sits last; the "Recently updated /
+  created" presets exist only over a real sortable timestamp column and REPLACE that column's
+  newest-first row (never both); hidden columns are not offered unless they are the current sort;
+  a list with no sortable column shows no sort at all (`panelSortOptions`, guard
+  `__tests__/panel-sort-options.test.ts`). The table's in-memory working view tabs are off on list
+  pages (`viewTabs={false}` — "+" made a "View 2" that a reload lost); the table's remaining
+  toolbar controls are drawn INTO the page's toolbar row (`pageToolbarSlot` → `toolbar.portalInto`)
+  and its Columns modal is off (`toolbar.columns: false`, design-system after 0.48.1) — the page's
+  picker is the one; the table box sizes to its rows (`tableClassName="h-auto max-h-full"`); the
+  native search clear (x) is hidden beside "Clear search"; the phone Display menu rows share one
+  shape; a SEARCH that found nothing keeps the page's `emptyAction` (e.g. New topic "<search>")
+  beside the widen door. Package side (aidream 18ff49083b): actions column pinned right, eraser
+  absent when nothing is filtered.
+
 - 2026-09-27 — Right-click a table row now offers that row's own actions (its `menuFor`
   sections, the first marked `primary`) on every list. The table's registered row
   descriptor wins over `ItemContextMenu`'s resolution and carried only edit commands, and

@@ -57,11 +57,17 @@ import {
 
 type SortKey = `${string}-${ListViewPrefs["direction"]}`;
 
-/** Sort options are derived from the columns, so a new column is instantly
- *  sortable from the panel too — no second list to keep in step. */
-const EXTRA_SORTS: { value: SortKey; label: string }[] = [
-  { value: "updated-desc", label: "Recently updated" },
-  { value: "created-desc", label: "Recently created" },
+/**
+ * Sort options are derived from the columns, so a new column is instantly
+ * sortable from the panel too — no second list to keep in step. The two
+ * presets name the newest-first order of a REAL timestamp column; with no such
+ * sortable column there is no preset (a list whose columns cannot sort offers
+ * no sort at all — /connected-sources offered "Recently updated", page-pass
+ * 2026-09-27).
+ */
+const PRESET_SORTS: { ids: readonly string[]; label: string }[] = [
+  { ids: ["updated", "updated_at"], label: "Recently updated" },
+  { ids: ["created", "created_at"], label: "Recently created" },
 ];
 
 /**
@@ -111,6 +117,8 @@ interface Props<TRow> {
   hasArchived: boolean;
   sort: string;
   direction: ListViewPrefs["direction"];
+  /** Columns the person hid — not offered as a sort (unless current). */
+  hiddenColumns?: readonly string[];
   favoritesFirst: boolean;
   onPatchQuery: (patch: Partial<EntityListQuery>) => void;
   onSortChange: (sort: string, direction: ListViewPrefs["direction"]) => void;
@@ -136,22 +144,38 @@ function toOptions(
 
 /**
  * The panel's sort choices, derived from the columns. Exported for its guard
- * (`__tests__/panel-sort-options.test.ts`): a column that declared
- * `sortable: false` is never offered.
+ * (`__tests__/panel-sort-options.test.ts`):
+ * - a column that declared `sortable: false` is never offered;
+ * - a preset ("Recently updated") exists only over a real sortable timestamp
+ *   column and REPLACES that column's newest-first row — never both
+ *   ("Recently updated" beside "Updated (newest first)", only one of which
+ *   could ever read as selected);
+ * - a hidden column is not offered, unless it is the current sort (the
+ *   selection must stay visible and named).
  */
 export function panelSortOptions<TRow>(
   columns: EntityColumnSpec<TRow>[],
+  options: { hiddenColumns?: readonly string[]; current?: string } = {},
 ): { value: SortKey; label: string }[] {
+  const hidden = new Set(options.hiddenColumns ?? []);
+  const sortable = columns.filter((c) => entityColumnSortable(c));
+  const presets: { value: SortKey; label: string }[] = [];
+  const replaced = new Set<string>();
+  for (const preset of PRESET_SORTS) {
+    const column = sortable.find((c) => preset.ids.includes(c.id));
+    if (!column) continue;
+    const value = `${column.id}-desc` as SortKey;
+    presets.push({ value, label: preset.label });
+    replaced.add(value);
+  }
+  const offered = sortable.filter(
+    (c) =>
+      !hidden.has(c.id) ||
+      (options.current !== undefined && options.current.startsWith(`${c.id}-`)),
+  );
   return [
-    ...EXTRA_SORTS,
-    ...columns
-      // A column that declared `sortable: false` (a multi-valued Folders
-      // cell, a row of action buttons) is never offered as a sort here —
-      // the panel used to list "Folders (A→Z)", a choice the service ignores.
-      .filter(
-        (c) =>
-          c.id !== "updated" && c.id !== "created" && entityColumnSortable(c),
-      )
+    ...presets,
+    ...offered
       .flatMap((c) => {
         const words = sortWordsFor(c);
         return [
@@ -165,6 +189,7 @@ export function panelSortOptions<TRow>(
           },
         ];
       })
+      .filter((o) => !replaced.has(o.value))
       .slice(0, 12),
   ];
 }
@@ -183,6 +208,7 @@ export function EntityFilterPanel<TRow>({
   hasArchived,
   sort,
   direction,
+  hiddenColumns,
   favoritesFirst,
   onPatchQuery,
   onSortChange,
@@ -196,7 +222,12 @@ export function EntityFilterPanel<TRow>({
   const activeCount = countActiveFilters(query);
   const sortKey = `${sort}-${direction}` as SortKey;
 
-  const sortOptions = panelSortOptions(columns);
+  const sortOptions = panelSortOptions(columns, {
+    hiddenColumns,
+    current: sortKey,
+  });
+  // No sortable column → no sort anywhere in the panel (trigger included).
+  const canSort = sortOptions.length > 0;
   const sortLabel =
     sortOptions.find((o) => o.value === sortKey)?.label ?? "Custom";
 
@@ -230,8 +261,8 @@ export function EntityFilterPanel<TRow>({
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label="Filters and sort"
-          title="Filters and sort"
+          aria-label={canSort ? "Filters and sort" : "Filters"}
+          title={canSort ? "Filters and sort" : "Filters"}
           className={cn(
             "relative inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium transition-colors",
             activeCount > 0
@@ -246,11 +277,15 @@ export function EntityFilterPanel<TRow>({
               {activeCount}
             </span>
           )}
-          <span className="mx-0.5 hidden h-4 w-px bg-border sm:block" />
-          <ArrowUpDown className="h-3.5 w-3.5" />
-          <span className="hidden max-w-28 truncate lg:inline">
-            {sortLabel}
-          </span>
+          {canSort && (
+            <>
+              <span className="mx-0.5 hidden h-4 w-px bg-border sm:block" />
+              <ArrowUpDown className="h-3.5 w-3.5" />
+              <span className="hidden max-w-28 truncate lg:inline">
+                {sortLabel}
+              </span>
+            </>
+          )}
         </button>
       </PopoverTrigger>
 
@@ -266,7 +301,9 @@ export function EntityFilterPanel<TRow>({
         }}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-2.5">
-          <span className="text-sm font-semibold">Filters &amp; Sort</span>
+          <span className="text-sm font-semibold">
+            {canSort ? "Filters & Sort" : "Filters"}
+          </span>
           {activeCount > 0 && (
             <button
               type="button"
@@ -287,106 +324,6 @@ export function EntityFilterPanel<TRow>({
             scrollFade.fadeProps.className,
           )}
         >
-          <FilterSection label="Sort" active={sortKey !== "updated-desc"}>
-            <RadioSelect<SortKey>
-              value={sortKey}
-              onChange={(v) => {
-                const idx = v.lastIndexOf("-");
-                onSortChange(
-                  v.slice(0, idx),
-                  v.slice(idx + 1) as ListViewPrefs["direction"],
-                );
-              }}
-              options={sortOptions}
-            />
-            {hasFavorites && (
-              <button
-                type="button"
-                onClick={() => onFavoritesFirstChange(!favoritesFirst)}
-                className="mt-2 flex w-full items-center gap-2 text-left text-sm"
-              >
-                <span
-                  className={cn(
-                    "relative h-[18px] w-8 shrink-0 rounded-full transition-colors",
-                    favoritesFirst
-                      ? "bg-primary"
-                      : "border border-border bg-muted",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "absolute top-px h-4 w-4 rounded-full bg-background border border-primary shadow-sm transition-all",
-                      favoritesFirst ? "left-[14px]" : "left-px",
-                    )}
-                  />
-                </span>
-                <Star
-                  className={cn(
-                    "h-3.5 w-3.5",
-                    favoritesFirst && "fill-amber-400 text-amber-500",
-                  )}
-                />
-                <span className="text-foreground">Pin favorites to top</span>
-              </button>
-            )}
-          </FilterSection>
-
-          {hasFavorites && (
-            <FilterSection label="Favorites" active={favValue !== "all"}>
-              <RadioSelect
-                value={favValue}
-                onChange={setFav}
-                options={FAV_OPTIONS.map((o) =>
-                  o.value === "only"
-                    ? {
-                        ...o,
-                        hint: String(facetCount(facets, "favorite", "only")),
-                      }
-                    : { ...o },
-                )}
-              />
-            </FilterSection>
-          )}
-
-          {hasArchived && (
-            <FilterSection
-              label="Archived"
-              active={query.archived !== "active"}
-            >
-              {/* THE ONE archive control (@ai-matrx/design-system 0.13.0).
-                  This panel owns the URL/preference plumbing — `query.archived`
-                  is still a real server-side RPC parameter — but the CONTROL is
-                  the platform's, so the words and the shape here are the words
-                  and the shape in workflow-studio, the dashboard and the
-                  desktop. THE ARCHIVED-ITEMS LAW, Arman 2026-09-09. */}
-              <ArchiveFilter
-                value={query.archived}
-                onValueChange={(v) => onPatchQuery({ archived: v })}
-                // A count only while the facets were READ under a filter that
-                // includes archived rows. Facets are fetched with the current
-                // `archived` value (useEntityList), so under "Active only" the
-                // archived facet is 0 BY CONSTRUCTION even when archived rows
-                // exist — printing it would be a screen that lies, and the
-                // package's contract is explicit: pass a count only when it
-                // describes what the list would actually render. (The old
-                // RadioSelect printed that 0 as a hint; this is the fix.)
-                counts={
-                  query.archived === "active"
-                    ? undefined
-                    : { archived: facetCount(facets, "archived", "archived") }
-                }
-                // Shorter WORDING for a ~180px panel whose section is already
-                // headed "Archived" — never a different meaning (the package
-                // sanctions exactly this and owns the full wording elsewhere).
-                // At full length the three segments wrap to two lines each and
-                // the count lands beside a broken phrase.
-                labels={{ active: "Active", archived: "Archived", all: "All" }}
-                className="w-full"
-                aria-label="Archived"
-              />
-            </FilterSection>
-          )}
-
           {/* SCOPE NARROWING, in the panel — the SAME state the tab's dropdown
               writes, never a second filter. Rendered only while its own scope
               is the active one: offering "narrow to an organization" from a tab
@@ -486,6 +423,113 @@ export function EntityFilterPanel<TRow>({
               </FilterSection>
             );
           })}
+          {hasFavorites && (
+            <FilterSection label="Favorites" active={favValue !== "all"}>
+              <RadioSelect
+                value={favValue}
+                onChange={setFav}
+                options={FAV_OPTIONS.map((o) =>
+                  o.value === "only"
+                    ? {
+                        ...o,
+                        hint: String(facetCount(facets, "favorite", "only")),
+                      }
+                    : { ...o },
+                )}
+              />
+            </FilterSection>
+          )}
+
+          {hasArchived && (
+            <FilterSection
+              label="Archived"
+              active={query.archived !== "active"}
+            >
+              {/* THE ONE archive control (@ai-matrx/design-system 0.13.0).
+                  This panel owns the URL/preference plumbing — `query.archived`
+                  is still a real server-side RPC parameter — but the CONTROL is
+                  the platform's, so the words and the shape here are the words
+                  and the shape in workflow-studio, the dashboard and the
+                  desktop. THE ARCHIVED-ITEMS LAW, Arman 2026-09-09. */}
+              <ArchiveFilter
+                value={query.archived}
+                onValueChange={(v) => onPatchQuery({ archived: v })}
+                // A count only while the facets were READ under a filter that
+                // includes archived rows. Facets are fetched with the current
+                // `archived` value (useEntityList), so under "Active only" the
+                // archived facet is 0 BY CONSTRUCTION even when archived rows
+                // exist — printing it would be a screen that lies, and the
+                // package's contract is explicit: pass a count only when it
+                // describes what the list would actually render. (The old
+                // RadioSelect printed that 0 as a hint; this is the fix.)
+                counts={
+                  query.archived === "active"
+                    ? undefined
+                    : { archived: facetCount(facets, "archived", "archived") }
+                }
+                // Shorter WORDING for a ~180px panel whose section is already
+                // headed "Archived" — never a different meaning (the package
+                // sanctions exactly this and owns the full wording elsewhere).
+                // At full length the three segments wrap to two lines each and
+                // the count lands beside a broken phrase.
+                labels={{ active: "Active", archived: "Archived", all: "All" }}
+                className="w-full"
+                aria-label="Archived"
+              />
+            </FilterSection>
+          )}
+
+          {/* FILTERS LEAD (page-pass 2026-09-27): the column headers already
+              sort, so the panel opens on what only it offers — the filters —
+              and the sort list sits last. */}
+          {canSort && (
+            <FilterSection
+              label="Sort"
+              active={sortKey !== sortOptions[0]?.value}
+            >
+              <RadioSelect<SortKey>
+                value={sortKey}
+                onChange={(v) => {
+                  const idx = v.lastIndexOf("-");
+                  onSortChange(
+                    v.slice(0, idx),
+                    v.slice(idx + 1) as ListViewPrefs["direction"],
+                  );
+                }}
+                options={sortOptions}
+              />
+              {hasFavorites && (
+                <button
+                  type="button"
+                  onClick={() => onFavoritesFirstChange(!favoritesFirst)}
+                  className="mt-2 flex w-full items-center gap-2 text-left text-sm"
+                >
+                  <span
+                    className={cn(
+                      "relative h-[18px] w-8 shrink-0 rounded-full transition-colors",
+                      favoritesFirst
+                        ? "bg-primary"
+                        : "border border-border bg-muted",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "absolute top-px h-4 w-4 rounded-full bg-background border border-primary shadow-sm transition-all",
+                        favoritesFirst ? "left-[14px]" : "left-px",
+                      )}
+                    />
+                  </span>
+                  <Star
+                    className={cn(
+                      "h-3.5 w-3.5",
+                      favoritesFirst && "fill-amber-400 text-amber-500",
+                    )}
+                  />
+                  <span className="text-foreground">Pin favorites to top</span>
+                </button>
+              )}
+            </FilterSection>
+          )}
         </div>
       </PopoverContent>
     </Popover>
