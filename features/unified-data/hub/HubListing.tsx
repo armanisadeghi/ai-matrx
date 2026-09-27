@@ -209,8 +209,9 @@ export function HubListing({
       {open ? (
         <div className="border-t border-border">
           {state.phase === "reading" ? (
+            /* NEVER A DOOR'S NAME AT A PERSON (lane HANDOVER): this read "Asking custom.forms…". */
             <p className="px-3 py-3 text-xs text-muted-foreground">
-              Asking {capability.door}…
+              Reading {capability.title.toLowerCase()}…
             </p>
           ) : state.phase === "refused" ? (
             /* NOTHING FAILS SILENTLY. The store's own sentence, and what it means. */
@@ -218,7 +219,7 @@ export function HubListing({
               <p className="flex items-start gap-2 text-xs text-destructive">
                 <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
                 <span>
-                  {capability.door} did not answer, so nothing was read — this is not an empty
+                  {capability.title} could not be read, so nothing is listed — this is not an empty
                   list. {state.error.message}
                 </span>
                 <ErrorAlchemyMenu error={state.error.message} />

@@ -238,7 +238,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     what: "The tables you can open in this organization.",
     whatWhenSharedOnly:
       "The tables shared with you here. This organization shows each member only what is shared with them.",
-    empty: "No tables yet. Make one below, or drop a spreadsheet on it and the store reads the columns.",
+    empty: "No tables yet. Press New table above, or start from an example.",
     emptyWhenSharedOnly: SHARED_ONLY_EMPTY,
     door: "custom.read_records over the Table kernel",
     changedByKind: "structure",
@@ -465,7 +465,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
   {
     id: "checklists",
     title: "Checklists and runs",
-    what: "A process written down once — the steps, whose each one is, and what it waits for.",
+    what: "A process written down once: its steps, who does each one, and what each step waits for.",
     empty: "No checklists yet. Write the steps once and every run follows them.",
     door: "custom.checklist_templates",
     changedByKind: "structure",
@@ -497,7 +497,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
   {
     id: "automations",
     title: "Automations",
-    what: "The boards: stages records move through, and the rules the store checks on every move.",
+    what: "Boards whose records move through stages, and the rules checked on every move.",
     empty:
       "No boards yet. Give a table a column of choices and call it the stage — the board and its rules follow.",
     door: "custom.pipelines",

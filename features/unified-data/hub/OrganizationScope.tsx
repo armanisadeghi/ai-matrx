@@ -64,21 +64,25 @@ export function OrganizationScopeStrip({
           <span className="text-muted-foreground">
             Showing what is in <span className="font-medium text-foreground">{name}</span>
           </span>
-          <OrganizationPickerPopover
-            open={open}
-            onOpenChange={setOpen}
-            trigger={
-              <Button size="sm" variant="ghost" className="h-6 px-2 text-xs">
-                Change
-              </Button>
-            }
-          />
-          <span className="text-muted-foreground" aria-hidden>
-            &middot;
+          {/* ONE UNIT, SO A PHONE WRAPS IT WHOLE (lane HANDOVER, 2026-09-27): at 390 px the dot
+              wrapped alone onto the next line, "· All my organizations". */}
+          <span className="inline-flex items-center gap-x-2 whitespace-nowrap">
+            <OrganizationPickerPopover
+              open={open}
+              onOpenChange={setOpen}
+              trigger={
+                <Button size="sm" variant="ghost" className="h-6 px-2 text-xs">
+                  Change
+                </Button>
+              }
+            />
+            <span className="text-muted-foreground" aria-hidden>
+              &middot;
+            </span>
+            <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={onShowAll}>
+              All my organizations
+            </Button>
           </span>
-          <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={onShowAll}>
-            All my organizations
-          </Button>
         </>
       )}
       {trailing ? <div className="ml-auto flex flex-wrap items-center gap-1.5">{trailing}</div> : null}
