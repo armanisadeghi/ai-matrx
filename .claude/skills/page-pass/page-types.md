@@ -140,6 +140,10 @@ Judge by who is looking at it and why.
   clickable; the header drags it; its phone presentation is set (full screen
   or bottom sheet); its main field is focused when it opens (desktop); a dialog with its own fields marks its root
   `data-surface-layer`. Procedure: `window-panels`, `surface-authoring/references/overlay-surfaces.md`.
+- **Reachable on a phone:** tap your way to it at 375px from a real page — a
+  window whose only door lives in a desktop-only menu does not exist on a
+  phone. Forcing it open from a script proves nothing. It opens at the same
+  place every time, and its own right-click menu never offers to open itself.
 
 ## Shared link
 - **Recognize it:** a page someone was SENT — a form to fill in, a shared

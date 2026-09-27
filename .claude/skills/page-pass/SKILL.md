@@ -254,7 +254,8 @@ surface). Say which parts you judged as authored content.
   records) opens — open, new tab, peek or window. Every detected problem
   carries its one-click fix.
 - **What a person typed is never lost** — on every page, window and dialog:
-  closing, navigating or a refresh keeps the draft (or asks first).
+  closing, navigating or a refresh keeps the draft (or asks first). Any
+  non-empty text counts — a minimum length before saving a draft loses short reports.
 - **A control the device cannot run is absent** (screen capture on a phone),
   never a button that fails.
 - **The screen shows what was saved.** After a save the view re-reads (or
