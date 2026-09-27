@@ -143,6 +143,7 @@ export default function AgentDefinitionSliceViewerShadcn({
           </SelectContent>
         </Select>
         <span className="shrink-0 text-[11px] text-muted-foreground">
+          {/* read-gate-exempt: state-analyzer prints the raw redux snapshot field-for-field; the slice's status and error are printed beside it */}
           n={messages.length}
         </span>
       </div>
@@ -157,6 +158,7 @@ export default function AgentDefinitionSliceViewerShadcn({
         <KvRow label="activeAgentId">{activeAgentId ?? "null"}</KvRow>
         <KvRow label="status">{sliceState?.status ?? "—"}</KvRow>
         <KvRow label="error">{sliceState?.error ?? "null"}</KvRow>
+        {/* read-gate-exempt: state-analyzer prints the raw redux snapshot field-for-field; the slice's status and error are printed beside it */}
         <KvRow label="agents.length">{String(ids.length)}</KvRow>
       </div>
 
@@ -231,11 +233,13 @@ export default function AgentDefinitionSliceViewerShadcn({
                   "—"
                 )}
               </KvRow>
+              {/* read-gate-exempt: state-analyzer prints the raw redux snapshot field-for-field; the slice's status and error are printed beside it */}
               <KvRow label="tools.length">{String(record.tools.length)}</KvRow>
               <KvRow label="mcpServers">
                 {record.mcpServers.length ? record.mcpServers.join(", ") : "—"}
               </KvRow>
               <KvRow label="mcpServers.length">
+                {/* read-gate-exempt: state-analyzer prints the raw redux snapshot field-for-field; the slice's status and error are printed beside it */}
                 {String(record.mcpServers.length)}
               </KvRow>
 
