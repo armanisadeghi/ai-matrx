@@ -44,16 +44,6 @@
       "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. Same documented rollback-of-a-just-created-row pattern as udt_documents."
     },
     {
-      "file": "features/education/study/service/planService.ts",
-      "table": "education.study_plan_block",
-      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. Documented: regeneratePlan hard-deletes the old child rows, which are cheap, regenerable and versioned by trigger."
-    },
-    {
-      "file": "features/education/study/service/planService.ts",
-      "table": "education.study_plan_day",
-      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. Same regeneratePlan child-row rebuild as study_plan_block."
-    },
-    {
       "file": "features/files/virtual-sources/adapters/code-files.ts",
       "table": "code.code_files",
       "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. Behind an explicit `hard` flag; the same function soft-deletes when it is false — the retention action the owner's ruling allows."
