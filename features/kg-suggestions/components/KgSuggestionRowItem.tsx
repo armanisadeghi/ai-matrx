@@ -1071,7 +1071,7 @@ function SourceItemPreview({
   snippet: string | null;
   title: string | null;
 }) {
-  const { doc, loading } = useSourcePreviewDoc(kind, id);
+  const { doc, loading, error } = useSourcePreviewDoc(kind, id);
   const openPreview = useOpenSourcePreview();
   const body = doc?.body?.trim() || null;
 
@@ -1107,6 +1107,13 @@ function SourceItemPreview({
             <Skeleton className="h-2.5 w-[85%]" />
             <Skeleton className="h-2.5 w-[55%]" />
           </div>
+        ) : error ? (
+          // The card itself is the button, so no nested retry control here:
+          // opening the source re-reads it in the full preview panel.
+          <p className="text-[11px] text-destructive" role="alert">
+            Couldn&rsquo;t load this source&rsquo;s preview. Open the source to try again.
+            <ErrorAlchemyMenu error={error} operation="Load the source preview" />
+          </p>
         ) : body ? (
           <p className="line-clamp-4 whitespace-pre-wrap break-words text-[11px] leading-relaxed text-foreground/80">
             {body}
