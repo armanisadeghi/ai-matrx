@@ -1065,6 +1065,14 @@ module in the folder + the two deleted filenames).
 
 ## Change log
 
+- page-pass 2026-09-27 round 2 (/crm/[partyId]): empty is compact — identity
+  shows its name plus filled fields and one "Add details" menu; empty sections
+  (Contact, Addresses, People, Deals, Contact details) are one header line via
+  `SectionCard empty`; "Outputs about this customer" is absent until it has a
+  record. Row controls are TapButtons; "Find contact info" states the paid
+  lookup cost first; the candidates card loads with a Skeleton and its rows and
+  load error are agent values (`contact_candidates`,
+  `contact_candidates_load_error`).
 - page-pass 2026-09-27 (/crm/[partyId]): type single-record, posture ui-sharp
   after HubSpot's contact record. Fixed: tab title now leads with the record's
   name (generateMetadata); platform identities (YouTube channel ids etc.) show
