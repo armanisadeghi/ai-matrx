@@ -2,7 +2,7 @@ import { cache } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { TemplateReadFailure } from "@/features/message-templates/components/TemplateReadFailure";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { TemplateViewPage } from "@/features/message-templates/components/TemplateViewPage";
 import { publicLaneSelect } from "@/utils/permissions/publicLane";
@@ -66,7 +66,7 @@ export default async function TemplateDetailPage({ params }: PageProps) {
   if (readError) {
     return (
       <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
-        <ReadFailure error={readError} what="this message template" size="default" />
+        <TemplateReadFailure error={readError} />
       </div>
     );
   }

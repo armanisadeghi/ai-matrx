@@ -26,9 +26,9 @@ import { EntityCustomFields } from "@/features/unified-data/components/EntityCus
 import { ProInput } from "@/components/official/ProInput";
 import {
   MERGE_FIELD_CHIP_CLASS,
-  MergeFieldInput,
   type MergeFieldInputHandle,
 } from "@/components/merge-field-input/MergeFieldInput";
+import { MergeFieldTextarea } from "@/components/merge-field-input/MergeFieldTextarea";
 import { AgentAppTagsInput } from "@/features/agent-apps/components/inputs/AgentAppTagsInput";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -614,13 +614,18 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                       onInsert={(path) => subjectRef.current?.insertField(path)}
                     />
                   </div>
-                  <MergeFieldInput
+                  <MergeFieldTextarea
                     ref={subjectRef}
                     aria-labelledby="template-subject-label"
+                    multiline={false}
                     value={subject}
                     onChange={setSubject}
                     fieldLabel={mergeFieldLabel}
                     placeholder="Optional"
+                    surfaceName={MESSAGE_TEMPLATE_SURFACE_NAME}
+                    sourceFeature="chat"
+                    getApplicationScope={getScope}
+                    auxiliaryControlsLabel="email subject"
                   />
                 </div>
 
@@ -633,17 +638,17 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                       onInsert={(path) => bodyRef.current?.insertField(path)}
                     />
                   </div>
-                  {/* Not ProTextarea: a textarea can only draw characters, so it
-                      would show {{…}} code; MergeFieldInput draws each field as
-                      a readable chip over the exact stored text. */}
-                  <MergeFieldInput
+                  <MergeFieldTextarea
                     ref={bodyRef}
                     aria-labelledby="template-body-label"
-                    multiline
                     value={content}
                     onChange={setContent}
                     fieldLabel={mergeFieldLabel}
                     placeholder="Write the message. Use Insert field for a value filled in when it is sent."
+                    surfaceName={MESSAGE_TEMPLATE_SURFACE_NAME}
+                    sourceFeature="chat"
+                    getApplicationScope={getScope}
+                    auxiliaryControlsLabel="message"
                   />
                 </div>
 
