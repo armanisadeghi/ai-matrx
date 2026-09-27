@@ -105,10 +105,15 @@ hardware with a production build before tuning further.
 
 ## Input, focus, gestures
 
+- **A tile has three states (`SpatialTile`, store `editing`):** *idle* → click = *selected* (drag
+  from anywhere on it moves it; the wheel still zooms the board) → double-click, or a press on a
+  control (input, button, link, editor) = *interacting* (native input: typing, text selection, its
+  own scrolling, "Interacting · Esc" pill). Esc steps back one state; the header always drags.
+  While a tile is interacting only Esc reaches the board's keys.
 - **Scrolling (`engine/wheel-input.ts`, knob `WheelMode`, per-viewer):** `auto` (default) — a mouse
   wheel zooms at the cursor, a trackpad swipe pans, a pinch zooms; `zoom`; `pan`. One decision per
   gesture burst so an inertia tail never flips device. Drag empty space / space+drag / middle-drag
-  pans. **The one exception:** the SELECTED tile, under the pointer, with room to scroll that way,
+  pans. **The one exception:** the INTERACTING tile, under the pointer, with room to scroll that way,
   scrolls itself.
 - **Focus (`FocusLayer`):** Enter, F, the tile's expand button or the menu → the tile's live card
   portals into the focus layer and fills the board area (not browser fullscreen), growing out of its
@@ -121,9 +126,33 @@ hardware with a production build before tuning further.
   come first (`primary`), then Board (fit, 100%, Scrolling, Parked).
 - **Keys:** shift+1 fit all · shift+2 fit selection · shift+0 100% · +/- zoom · arrows nudge · esc
   leaves focus, then deselects.
-- **Board model (`board/useBoard.ts`):** tiles, positions, shelf, remove-with-undo, and `addTile`
-  with auto-placement in the nearest free space (`engine/placement.ts`) — the one path gestures,
-  the menu and agents change a board through.
+- **Board model (`board/useBoard.ts`):** tiles, positions, shelf, frames, shapes, connections, one
+  undo stack, remove-with-undo, `moveMany` (an arrangement = one step), and `addTile` with
+  auto-placement in the nearest free space clear of tiles AND frames (`engine/placement.ts`;
+  `within` lets it join one frame) — the one path gestures, the menu and agents change a board
+  through. Operations read a live snapshot (`read()`), so commands issued in one tick see each
+  other before React re-renders.
+
+## Agent tools — the board is a surface
+
+Every host wraps its board in **`components/SpatialBoardSurface.tsx`**: it mounts the
+`matrx-user/spatial-board` surface runtime (values `board_title`, `board_tiles`, `selected_tile`)
+and registers the board's client tools, so ANY agent running while a board is on screen (the chat
+beside it, a shortcut, a mandate) receives them automatically (`listLiveSurfaceClientTools` →
+tool injection; no per-agent arming, no aidream change).
+
+| Piece | File |
+|---|---|
+| Tool declarations: `board_read`, `board_add_tile` (note / markdown / text / html / image), `board_update_tile`, `board_remove_tile`, `board_move_tiles`, `board_arrange` (grid / tidy / row / column / align / distribute), `board_group` (named frame), `board_connect`, `board_focus`, `board_park`, `board_undo` | `tools/board-tools.ts` (carried by `features/surfaces/manifests/spatial-board.manifest.ts`) |
+| Handlers — host-agnostic, drive `useBoard` + the store; errors come back as `{ok:false, error}` with a remedy; remove toasts an Undo; adding never moves the camera | `tools/useBoardAgentTools.ts` |
+| Pure layout math | `engine/arrange.ts` |
+
+A host supplies a `BoardToolHost`: `createTile(id, input, size)` and optional `editTile` for the
+kinds it can hold (answer a failure for the rest), and `describe(tile)` for `board_read`.
+Markdown written by an agent renders through the stream pipeline (`tiles/MarkdownTileBody.tsx`,
+an instant `ReplayStream` → `StreamTileBody`), never a second renderer; an agent's note is a real
+Note (`NoteTileBody` `text` prop creates/saves it). Wired: the demo. Next: meeting board, workflow
+run board, War Room board.
 
 ## Change Log
 
@@ -140,6 +169,10 @@ hardware with a production build before tuning further.
   gestures with pre-release hints and undo, the parked shelf, the v3 right-click menu, save-to-Notes,
   `useBoard` + auto-placement. Browser-verified (wheel vs trackpad, focus + arrows + Esc, throw
   right/down, shelf restore, delete confirm, menu), 0 console errors.
+- 2026-09-27 — Tile interaction model (idle / selected / interacting). Board agent tools + the
+  `matrx-user/spatial-board` surface; `useBoard` gains connections, `moveMany`, a live `read()`
+  (fixes back-to-back commands reading stale state — test fails before, passes after) and
+  frame-aware placement. All 11 tools driven in the browser on the demo, 0 page errors.
 
 ## Chat beside the board
 
@@ -159,8 +192,6 @@ shape). Live on `/demos/spatial`.
 - **First version reads the DOM** (`[data-spatial-tile]`, `[data-spatial-card]`, `[data-spatial-body]`,
   the status dot's `title`, the selection ring). Follow-up: a store-backed `getBoardContext` once
   the board exposes its `SpatialStore` (kind payloads, not rendered text; a real `selected` field).
-- **Not yet a registered surface.** The platform's own submit-time path is a surface manifest +
-  `SurfaceRuntimeProvider.beforeExecute` (`refreshSurfaceScope`), which needs the conversation
-  stamped with a `surfaceName` — `launchMandate` does not pass one today. When a
-  `matrx-user/spatial-board` surface is registered, move the refresh there and drop the capture
-  handlers.
+- **The surface is registered now** (`matrx-user/spatial-board`, see Agent tools). The capture
+  handlers stay until conversations are stamped with a `surfaceName` (`launchMandate` does not pass
+  one today), which is what `SurfaceRuntimeProvider.beforeExecute` needs to refresh scope at submit.

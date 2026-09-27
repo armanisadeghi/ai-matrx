@@ -60,7 +60,16 @@ export function normalizeThreadTab(
  * attached token (registry-known only), stable-sorted by token.
  */
 export function useThreadTabs(threadId: string | null): ThreadTab[] {
-  const summary = useAppSelector(selectAssignmentTokenSummary(threadId));
+  return deriveThreadTabs(
+    useAppSelector(selectAssignmentTokenSummary(threadId)),
+  );
+}
+
+/** The pure derivation behind `useThreadTabs` — for callers that hold many
+ * threads at once (the Board lays out every thread's parts). */
+export function deriveThreadTabs(
+  summary: readonly { token: string }[],
+): ThreadTab[] {
   const entityTabs = summary
     .filter(
       (s) => !CORE_COVERED_TOKENS.has(s.token) && tryGetEntityInfo(s.token),
