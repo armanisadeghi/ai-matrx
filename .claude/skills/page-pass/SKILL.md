@@ -264,6 +264,14 @@ surface). Say which parts you judged as authored content.
   never landing inside a non-editable piece, Home/End/Enter at the edges, and
   the standard field toolbar (voice and the page-agent door). Test each one
   live by typing — every one of these failed on first build.
+- **A control's saved value must change what it claims to change.** Prove it
+  by the effect (switch the model off → it is gone from the picker), never by
+  the saved row alone: a settings switch once wrote a list nothing read.
+- **Catalog text written for engineers never reaches a person** ("Fires
+  when…", "Audience:", spec tags) — fix it at the source; a display filter is
+  only the stopgap while the source rewrite lands.
+- **An empty value is still a supplied value**: a context inspector or a check
+  that treats `null` as "missing" raises a false alarm.
 - **A control the device cannot run is absent** (screen capture on a phone),
   never a button that fails.
 - **The screen shows what was saved.** After a save the view re-reads (or
@@ -457,6 +465,15 @@ never "not mine". If it is small and nobody else is on that file, fix it at the
 source (step 4's second-page proof applies). Otherwise put it in your report
 under `SHARED:` with file, symptom and evidence; the coordinator gives each
 shared defect exactly one owner so parallel workers never edit it twice.
+
+When YOU change a shared piece (or a sibling route's code that renders into
+another page), look at every page that renders it, not just yours — a top bar
+added for the public route once doubled the title on the signed-in run page.
+
+When the page hosts content it does not own (a person's agent app, an
+embedded document), its quality limits are still yours to report: give the
+content the full width and the restored input through the host contract; what
+only the content's author can change goes in the report as `CONTENT-OWNED:`.
 
 ## Report — one per page
 
