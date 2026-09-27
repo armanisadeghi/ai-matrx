@@ -78,6 +78,7 @@ export default function KgNewSuggestionNotifier() {
       toast.custom(
         (id) => (
           <NewSuggestionToast
+            // read-gate-exempt: the toast fires only when unseen suggestions exist, so a failed read never announces 0
             count={count}
             onReview={() => {
               toast.dismiss(id);

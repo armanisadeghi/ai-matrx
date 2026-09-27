@@ -690,6 +690,7 @@ export function KgSuggestionRowItem({
                 className="flex w-full items-center justify-between gap-2 px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
               >
                 <span>
+                  {/* read-gate-exempt: section renders only when the enrichment returned a target with fields, never on a failed read */}
                   All {target.items.length} fields on {target.scope.name}
                 </span>
                 <ChevronDown

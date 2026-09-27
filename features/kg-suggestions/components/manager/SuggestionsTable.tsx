@@ -1,6 +1,7 @@
 // Desktop suggestions manager: server-paginated canonical table.
 "use client";
 
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 import {
   Check,
   ChevronDown,
@@ -61,6 +62,8 @@ export interface SuggestionsTableProps {
   rows: KgEnrichedSuggestionRow[];
   total: number;
   loading: boolean;
+  /** The read behind `rows`/`total`: a failed read shows the failure, never an empty table. */
+  read?: ReadOutcome;
   refresh: () => void;
   query: KgSuggestionsQuery;
   patchQuery: (patch: Partial<KgSuggestionsQuery>) => void;
@@ -81,6 +84,7 @@ export function SuggestionsTable(props: SuggestionsTableProps) {
     rows,
     total,
     loading,
+    read,
     refresh,
     query,
     patchQuery,
@@ -264,6 +268,7 @@ export function SuggestionsTable(props: SuggestionsTableProps) {
       viewTabs={false}
       isLoading={loading && !rows.length}
       isFetching={loading && !!rows.length}
+      read={read}
       query={{
         mode: "controlled",
         state,

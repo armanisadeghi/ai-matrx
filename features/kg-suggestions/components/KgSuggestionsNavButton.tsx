@@ -48,6 +48,7 @@ export function KgSuggestionsNavButton({
       <span>{label}</span>
       {count > 0 ? (
         <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold tabular-nums text-primary-foreground">
+          {/* read-gate-exempt: badge renders only when count is above 0, so a failed read hides it rather than saying 0 */}
           {count}
         </span>
       ) : null}

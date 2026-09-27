@@ -53,6 +53,7 @@ export function HeavyHitterSuggestionsInbox({
           Suggest a scope
         </span>
         <span className="text-xs text-muted-foreground">
+          {/* read-gate-exempt: rendered only when heavyHitters is non-empty (early return above), so a failed read hides it rather than saying 0 */}
           {heavyHitters.length} recurring{" "}
           {heavyHitters.length === 1 ? "entity" : "entities"}
         </span>

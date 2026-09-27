@@ -59,6 +59,7 @@ export function KgSuggestionsChip({
           aria-label={`${count} pending knowledge-graph ${text}`}
         >
           <Lightbulb className="h-3 w-3" />
+          {/* read-gate-exempt: chip returns null unless count is above 0, so a failed read hides it rather than saying 0 */}
           <span className="tabular-nums">{count}</span>
           <span className="hidden sm:inline">{text}</span>
         </button>

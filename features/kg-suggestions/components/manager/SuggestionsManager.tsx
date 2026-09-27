@@ -31,6 +31,12 @@ import {
 import { Skeleton } from "@ai-matrx/design-system";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/utils/cn";
+import {
+  UntrustedCount,
+  countReadState,
+  type CountRead,
+} from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import { useSuggestionsQuery } from "@/features/kg-suggestions/hooks/useSuggestionsQuery";
 import {
   KG_SUGGESTION_STAGE_FILTERS,
@@ -95,6 +101,8 @@ export function SuggestionsManager() {
   };
 
   const hasHeavy = heavyHitters.length > 0;
+  /** The suggestions read's outcome — counts and the table say "—" / the failure, never 0, when it failed. */
+  const suggestionsRead = readOf({ loading, error, refetch: refresh }, { what: "your suggestions" });
 
   // Surface scope (matrx-user/knowledge) — the suggestion-queue half of the
   // Knowledge surface. Built at TRIGGER time from live state, never on mount.
@@ -151,6 +159,7 @@ export function SuggestionsManager() {
           >
             <Trash2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
             <span className="font-medium">
+              {/* read-gate-exempt: section renders only when its count is above 0, so a failed read hides it and the error banner says why */}
               {lowQualityTotal} low-quality{" "}
               {lowQualityTotal === 1 ? "suggestion" : "suggestions"}
             </span>
@@ -191,6 +200,7 @@ export function SuggestionsManager() {
             </div>
             {lowQualityTotal > lowQuality.length ? (
               <p className="mt-2 text-center text-[10px] text-muted-foreground">
+                {/* read-gate-exempt: section renders only when its count is above 0, so a failed read hides it and the error banner says why */}
                 Showing the {lowQuality.length} strongest of {lowQualityTotal}.
                 Dismiss these or tighten your filters to see the rest.
               </p>
@@ -210,6 +220,7 @@ export function SuggestionsManager() {
           Suggested scopes
         </h2>
         <span className="rounded-full bg-amber-500/20 px-1.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
+          {/* read-gate-exempt: section renders only when its count is above 0, so a failed read hides it and the error banner says why */}
           {heavyHitters.length}
         </span>
       </div>
@@ -245,8 +256,10 @@ export function SuggestionsManager() {
         ) : null}
         <SuggestionsTable
           rows={rows}
+          // read-gate-exempt: the table takes read= below and shows the failure in place of its rows and total
           total={total}
           loading={loading}
+          read={suggestionsRead}
           refresh={refresh}
           query={query}
           patchQuery={patchQuery}
@@ -419,15 +432,15 @@ export function SuggestionsManager() {
           <div className="flex items-center gap-3 border-b border-border px-3 py-1.5 text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              {pendingCount} pending
+              <UntrustedCount value={pendingCount} trustworthy={!error} label="Pending" /> pending
             </span>
             <span className="inline-flex items-center gap-1">
               <Clock className="h-3 w-3 text-amber-500" />
-              {deferredCount} deferred
+              <UntrustedCount value={deferredCount} trustworthy={!error} label="Deferred" /> deferred
             </span>
             <span className="inline-flex items-center gap-1">
               <Star className="h-3 w-3 text-amber-500" />
-              {starredCount} starred
+              <UntrustedCount value={starredCount} trustworthy={!error} label="Starred" /> starred
             </span>
             {isMobile ? (
               <button
@@ -461,6 +474,7 @@ export function SuggestionsManager() {
                 page={query.page ?? 0}
                 pageSize={query.pageSize ?? 50}
                 total={total}
+                read={suggestionsRead}
                 patchQuery={patchQuery}
               />
             </>
@@ -499,19 +513,29 @@ function MobileSuggestionsPagination({
   page,
   pageSize,
   total,
+  read,
   patchQuery,
 }: {
   page: number;
   pageSize: number;
   total: number;
+  /** The read behind `total` — a failed read shows "—", never "0 of 0". */
+  read: CountRead;
   patchQuery: (patch: Partial<KgSuggestionsQuery>) => void;
 }) {
+  const totalKnown = countReadState({ read }) === "ready";
   const from = total === 0 ? 0 : page * pageSize + 1;
   const to = Math.min(total, (page + 1) * pageSize);
   return (
     <div className="flex items-center justify-between border-t border-border px-3 py-1.5 pb-safe text-[11px] text-muted-foreground">
       <span className="tabular-nums">
-        {from}–{to} of {total}
+        {totalKnown ? (
+          <>
+            {from}–{to} of {total}
+          </>
+        ) : (
+          <UntrustedCount value={total} read={read} label="Suggestions" />
+        )}
       </span>
       <div className="flex items-center gap-1">
         <button
@@ -525,7 +549,7 @@ function MobileSuggestionsPagination({
         </button>
         <button
           type="button"
-          disabled={(page + 1) * pageSize >= total}
+          disabled={!totalKnown || (page + 1) * pageSize >= total}
           onClick={() => patchQuery({ page: page + 1 })}
           className="inline-flex items-center gap-0.5 rounded px-2 py-1 transition-colors hover:bg-accent disabled:opacity-40"
         >

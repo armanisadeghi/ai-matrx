@@ -64,6 +64,7 @@ export function ScopeItemSuggestionsPanel({
       <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
         <Lightbulb className="h-3.5 w-3.5 text-primary" />
         <span>
+          {/* read-gate-exempt: panel returns null unless suggestions exist, so a failed read hides it rather than saying 0 */}
           {count} suggested {count === 1 ? "fill" : "fills"}
           {slotName ? ` for ${slotName}` : ""}
         </span>
