@@ -25,6 +25,7 @@ import {
   CalendarDays,
   CalendarPlus,
   Crown,
+  Film,
   History,
   Repeat,
   Search,
@@ -81,6 +82,8 @@ import {
   zoneLabel,
 } from "@/features/meet/lib/zoned-time";
 import { MeetingRowMenu } from "@/features/meet/components/manage/MeetingRowMenu";
+import { RecordingsLibrary } from "@/features/meet/components/record/RecordingsLibrary";
+import { MeetingContentSearch } from "@/features/meet/components/record/MeetingContentSearch";
 import { MeetingFormDialog } from "@/features/meet/components/manage/MeetingFormDialog";
 import { RsvpBadge } from "@/features/meet/components/manage/RsvpControl";
 import {
@@ -91,10 +94,11 @@ import type { OccurrenceRef } from "@/features/meet/components/manage/MeetingFor
 
 const MEETING_JOBS = MEET_PLACES.places.flatMap((place) => place.mandateKeys);
 
-type Tab = "upcoming" | "past" | "cancelled" | "archived";
+type Tab = "upcoming" | "past" | "recordings" | "cancelled" | "archived";
 const TABS: { tab: Tab; name: string; icon: typeof CalendarDays }[] = [
   { tab: "upcoming", name: "Upcoming", icon: CalendarDays },
   { tab: "past", name: "Past", icon: History },
+  { tab: "recordings", name: "Recordings", icon: Film },
   { tab: "cancelled", name: "Cancelled", icon: XCircle },
   { tab: "archived", name: "Archived", icon: Archive },
 ];
@@ -280,6 +284,7 @@ export function MeetingsHome() {
                 className="h-8 pl-8"
               />
             </div>
+            {tab !== "recordings" ? (
             <Select
               value={scope}
               onValueChange={(v) => setScope(v as AgendaScope)}
@@ -293,6 +298,7 @@ export function MeetingsHome() {
                 <SelectItem value="invited">Invited to</SelectItem>
               </SelectContent>
             </Select>
+            ) : null}
             <span
               className="ml-auto text-xs text-muted-foreground"
               title={zone}
@@ -301,7 +307,9 @@ export function MeetingsHome() {
             </span>
           </div>
 
-          {directory.failure !== null ? (
+          {tab === "recordings" ? (
+            <RecordingsLibrary query={query} />
+          ) : directory.failure !== null ? (
             <div
               role="alert"
               className="mt-6 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm"
@@ -353,6 +361,7 @@ export function MeetingsHome() {
               run={run}
             />
           )}
+          {tab !== "recordings" ? <MeetingContentSearch query={query} /> : null}
         </div>
       </div>
 
@@ -596,6 +605,7 @@ function MeetingList({
   if (meetings.length === 0) {
     const words: Record<Tab, string> = {
       upcoming: "",
+      recordings: "",
       past: "No past meetings yet. After a meeting ends, its summary, decisions and transcript live here.",
       cancelled: "No cancelled meetings.",
       archived:

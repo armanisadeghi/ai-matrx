@@ -41,7 +41,6 @@ import {
   XCircle,
 } from "lucide-react";
 import {
-  MeetingRecordView,
   meetingLink,
   type MeetingInvitee,
   type MeetingOccurrence,
@@ -73,6 +72,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { meetingOrigin } from "@/features/meet/components/invite/MeetingInviteButton";
 import { MeetingGuests } from "@/features/meet/components/manage/MeetingGuests";
+import { MeetingRecordWorkspace } from "@/features/meet/components/record/MeetingRecordWorkspace";
 import { RsvpControl } from "@/features/meet/components/manage/RsvpControl";
 import { MoveOccurrenceDialog } from "@/features/meet/components/manage/MoveOccurrenceDialog";
 import { useMeetingActionHost } from "@/features/meet/components/manage/useMeetingActionHost";
@@ -414,7 +414,7 @@ export function MeetingDetail({
         <div
           className={cn(
             "mx-auto px-4 pb-12 pt-4",
-            section === "record" ? "max-w-5xl" : "max-w-3xl",
+            section === "record" ? "max-w-6xl" : "max-w-3xl",
           )}
         >
           {section === "details" ? (
@@ -481,7 +481,7 @@ export function MeetingDetail({
           ) : null}
 
           {section === "record" ? (
-            <MeetingRecordView meeting={meeting} />
+            <MeetingRecordWorkspace meeting={meeting} canManage={canManage} />
           ) : null}
         </div>
       </div>
