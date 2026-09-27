@@ -248,3 +248,48 @@ describe("placement of a new tile", () => {
     expect(Math.hypot(spot.x + 200, spot.y + 150)).toBeLessThan(900);
   });
 });
+
+describe("saved board document", () => {
+  it("round-trips and reports what it could not read", async () => {
+    const { parseBoardDocument, serializeBoardDocument } = await import("../board/document");
+    const doc = {
+      camera: { x: 10, y: -20, z: 0.5 },
+      groups: [{ id: "g1", rect: { x: 0, y: 0, w: 900, h: 600 }, title: "Research", note: "why" }],
+      nodes: [
+        { id: "n1", rect: { x: 40, y: 40, w: 400, h: 300 }, title: "Report", source: { kind: "stream" as const, requestId: "r-1" } },
+        { id: "n2", rect: { x: 480, y: 40, w: 400, h: 300 }, title: "Page", source: { kind: "html" as const, url: "/p.html" }, parked: true },
+      ],
+      edges: [{ id: "e1", from: "n1", to: "n2" }],
+    };
+    const stored = JSON.parse(JSON.stringify(serializeBoardDocument(doc)));
+    const back = parseBoardDocument(stored);
+    expect(back.problems).toEqual([]);
+    expect(back.doc.groups).toEqual(doc.groups);
+    expect(back.doc.nodes[1]).toMatchObject({ id: "n2", parked: true });
+    expect(back.doc.edges).toEqual(doc.edges);
+
+    const bad = parseBoardDocument({ camera: "x", nodes: [{ id: "a" }, { id: "b", rect: { x: 0, y: 0, w: 1, h: 1 }, title: "B", source: { kind: "nope" } }], edges: [{}] });
+    expect(bad.doc.nodes).toEqual([]);
+    expect(bad.problems).toHaveLength(4);
+  });
+
+  it("exports JSON Canvas 1.0 node types", async () => {
+    const { toJsonCanvas } = await import("../board/document");
+    const out = toJsonCanvas(
+      {
+        camera: { x: 0, y: 0, z: 1 },
+        groups: [{ id: "g", rect: { x: 0, y: 0, w: 10, h: 10 }, title: "G" }],
+        nodes: [
+          { id: "t", rect: { x: 1.4, y: 2, w: 3, h: 4 }, title: "T", source: { kind: "text", markdown: "# hi" } },
+          { id: "h", rect: { x: 0, y: 0, w: 3, h: 4 }, title: "H", source: { kind: "html", url: "/x.html" } },
+        ],
+        edges: [{ id: "e", from: "t", to: "h" }],
+      },
+      "https://aimatrx.com",
+    );
+    expect(out.nodes.map((n) => n.type)).toEqual(["group", "text", "link"]);
+    expect(out.nodes[1]).toMatchObject({ x: 1, text: "# hi" });
+    expect(out.nodes[2]).toMatchObject({ url: "https://aimatrx.com/x.html" });
+    expect(out.edges[0]).toEqual({ id: "e", fromNode: "t", toNode: "h" });
+  });
+});

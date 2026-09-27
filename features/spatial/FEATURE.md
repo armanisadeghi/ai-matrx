@@ -56,6 +56,34 @@ stale text. By construction a batched tile renders once per interval instead of 
   `document.body`, window-relative drag bounds) and anything `position: fixed` cannot be tile
   bodies. A kind tuned for the 720px chat column needs a ≥ 720px tile.
 
+## Connecting agents — the seam (for the agent-integration session)
+
+The board takes a real run the same way it takes a replay. Nothing else is needed:
+
+1. Launch the run the normal way (agent/shortcut/workflow execution, or `adoptForeignStream` for a
+   server-orchestrated pipeline) and take its `requestId`.
+2. `const source = useRequestSource(requestId)` (`streams/useRequestSource.ts`) — a `PacedSource`
+   over the same `activeRequests` row `MarkdownStream` reads, holding the viewer retention.
+3. `board.addTile({ id, title, rect: { x: 0, y: 0, w, h }, content: { type: "stream", stream: source } }, near)`
+   (`board/useBoard.ts`) — `near` is usually the viewport centre in world px
+   (`screenToWorld(store.getCamera(), w/2, h/2)`); the tile lands in the nearest free space.
+4. For a saved board, the node is `{ source: { kind: "stream", requestId } }` (`board/document.ts`).
+A pipeline (notes → script → media) is several tiles plus `SpatialEdge`s inside a `SpatialFrame`;
+each stage's tile is added when that stage's request starts.
+
+## Saved boards — status
+
+`workspace.spatial_boards` is LIVE (2026-09-27, provisioned through `platform.create_entity_table`,
+token `spatial_board`, entity variant, versioned, soft delete, personal visibility, list scope
+`mine`, `iam.canonical_certify_ok` = true, `platform_admin_read` present). Columns: `title`,
+`description`, `camera`, `nodes`, `edges`, `settings`, `last_opened_at` + the base contract. The
+stored shape is `board/document.ts` (parse reports every malformed node; JSON Canvas 1.0 export).
+**Blocked on one step:** `pnpm db-types` must be re-run on a machine holding the Supabase access
+token (this cloud container has none, and the MCP generator emits only `public`), so the client
+service, autosave (`mergeJsonColumn`, debounced) and the manage page (`<EntityListPage>`: open,
+rename, duplicate, archive, delete) can compile against the generated row. No cast was used to
+get around it.
+
 ## Performance rules (each one measured on the 100-stream stress board)
 
 - **Status is read in leaves.** `useTileStatus` lives in the dot and the overview card; subscribing
