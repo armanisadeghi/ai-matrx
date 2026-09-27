@@ -373,7 +373,7 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
       const response: SaveTableResponse = {
         table_id: tableId,
         table_name: tableName.trim(),
-        row_count: String(rowCount - failedCount),
+        row_count: String(rowCount - failed.length),
         field_count: String(fieldDefs.length),
       };
 
