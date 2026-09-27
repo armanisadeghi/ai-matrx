@@ -212,7 +212,7 @@ export function DevicesSyncTab() {
           </p>
         ) : null}
 
-        {orphaned.length > 0 ? (
+        {!error && orphaned.length > 0 ? (
           <SettingsCallout tone="warning">
             {orphaned.length} synced folder
             {orphaned.length === 1 ? "" : "s"} belong to a device that is no

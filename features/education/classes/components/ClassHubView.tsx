@@ -25,6 +25,7 @@ import {
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
@@ -364,6 +365,13 @@ function ClassHubBody({
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-12 w-full" />
           </div>
+        ) : content.error ? (
+          <ReadFailure
+            error={content.error}
+            what="this class's study content"
+            onRetry={() => void content.reload()}
+            className="m-0"
+          />
         ) : content.totalCount === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-8 text-center">
             <p className="text-sm text-muted-foreground">
@@ -451,6 +459,13 @@ function MemberClassView({
             </h2>
             {content.loading ? (
               <Skeleton className="h-12 w-full" />
+            ) : content.error ? (
+              <ReadFailure
+                error={content.error}
+                what="this class's study content"
+                onRetry={() => void content.reload()}
+                className="m-0"
+              />
             ) : content.totalCount === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Nothing shared to this class yet.

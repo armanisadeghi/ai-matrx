@@ -320,9 +320,11 @@ export function GscPeekBody({
             {METRIC_LABEL[metric]} · last {days} days
           </p>
           <p className="flex items-baseline gap-1.5 text-lg font-semibold tabular-nums text-foreground">
-            {metric === "position"
-              ? formatPosition(windowTotal)
-              : formatMetric(windowTotal)}
+            {daily.isError
+              ? "—"
+              : metric === "position"
+                ? formatPosition(windowTotal)
+                : formatMetric(windowTotal)}
             {metric !== "position" ? <TrendDelta delta={delta} /> : null}
           </p>
         </div>

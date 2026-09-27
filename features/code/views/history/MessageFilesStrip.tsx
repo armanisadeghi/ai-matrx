@@ -131,6 +131,7 @@ export const MessageFilesStrip: React.FC<MessageFilesStripProps> = ({
     <div className="ml-10 mt-1 mb-2 max-w-[60ch] rounded border border-blue-200/80 bg-blue-50/60 p-1.5 text-[11px] dark:border-blue-900/60 dark:bg-blue-950/30">
       <div className="flex items-center gap-1.5 px-1 pb-1 text-[10px] uppercase tracking-wide text-blue-900/80 dark:text-blue-200/80">
         <Stars className="h-3 w-3" />
+        {/* read-gate-exempt: one message's snapshots arrive whole (live recording or one atomic mergeFromServer), and the strip is absent when there are none */}
         <span className="font-semibold">
           {snapshots.length} {snapshots.length === 1 ? "file" : "files"} edited
         </span>

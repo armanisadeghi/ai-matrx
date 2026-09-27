@@ -104,25 +104,25 @@ export function TasksWorkbenchHome() {
   // `selectSmartViewCounts` and `selectFilteredTasks` are projections of the
   // hierarchy cache. Until its one canonical read succeeds, an empty adapter
   // means "unknown", never zero tasks or an empty filtered result.
-  if (hierarchyStatus !== "success") {
-    if (hierarchyStatus === "error") {
-      return (
-        <section
-          aria-label="Task workbench"
-          className="flex h-full min-h-0 items-start bg-background p-4"
-        >
-          <StaleDataNotice
-            hasData={false}
-            what="your tasks"
-            detail={hierarchyError}
-            onRetry={() => {
-              void dispatchThunk(fetchFullContext());
-            }}
-          />
-        </section>
-      );
-    }
+  if (hierarchyStatus === "error") {
+    return (
+      <section
+        aria-label="Task workbench"
+        className="flex h-full min-h-0 items-start bg-background p-4"
+      >
+        <StaleDataNotice
+          hasData={false}
+          what="your tasks"
+          detail={hierarchyError}
+          onRetry={() => {
+            void dispatchThunk(fetchFullContext());
+          }}
+        />
+      </section>
+    );
+  }
 
+  if (hierarchyStatus !== "success") {
     return (
       <section
         aria-label="Loading tasks"

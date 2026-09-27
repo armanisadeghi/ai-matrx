@@ -532,6 +532,7 @@ export function FileContextMenu({
             <>
               <div className="flex items-center gap-1.5 px-2 py-1 text-[11px] uppercase tracking-wide text-muted-foreground">
                 <Layers className="h-3 w-3" />
+                {/* read-gate-exempt: size of the user's current multi-select (batchFileIds from the selection slice), not a read result */}
                 {batchFileIds.length}{" "}
                 {batchFileIds.length === 1 ? "file" : "files"} selected
               </div>
@@ -844,6 +845,7 @@ export function FileContextMenu({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
+              {/* read-gate-exempt: size of the user's current multi-select (batchFileIds from the selection slice), not a read result */}
               Delete {batchFileIds.length}{" "}
               {batchFileIds.length === 1 ? "file" : "files"}?
             </AlertDialogTitle>

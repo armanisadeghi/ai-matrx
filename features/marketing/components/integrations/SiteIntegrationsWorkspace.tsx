@@ -1289,6 +1289,7 @@ function SiteIntegrationsEditor({
             <Alert variant="destructive" className="py-2.5">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle className="text-xs">
+                {/* read-gate-exempt: issues are computed by integrationsWriteIssues from the in-memory draft, shown only when non-zero — not a read's rows */}
                 Resolve {visibleIssues.length} configuration issue
                 {visibleIssues.length === 1 ? "" : "s"}
               </AlertTitle>

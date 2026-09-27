@@ -29,6 +29,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -153,9 +154,12 @@ function BrandPortalsPanel({
           <h3 className="text-[11px] font-semibold text-foreground">
             Brand portals
           </h3>
-          <span className="text-[10px] tabular-nums text-muted-foreground">
-            {portals.length}
-          </span>
+          <UntrustedCount
+            value={portals.length}
+            trustworthy={!assetsQuery.isError}
+            label="Brand portals"
+            className="text-[10px] tabular-nums text-muted-foreground"
+          />
         </div>
         <p className="min-w-0 flex-1 basis-64 text-[10px] text-muted-foreground/70">
           Official press kits and media portals this brand is licensed to pull

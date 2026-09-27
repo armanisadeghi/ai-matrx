@@ -443,7 +443,9 @@ export function TaskEditorBody({
               {subtasks.length > 0 && (
                 <span className="inline-flex items-center gap-1 h-5 px-1.5 rounded-md bg-muted/60 text-[10px] font-medium text-foreground">
                   <CheckSquare className="w-2.5 h-2.5" />
-                  {completedSubtasks}/{subtasks.length}
+                  {subtasksRead.status === "error"
+                    ? "—"
+                    : `${completedSubtasks}/${subtasks.length}`}
                 </span>
               )}
             </div>
@@ -633,7 +635,7 @@ export function TaskEditorBody({
             <SectionHeader
               icon={CheckSquare}
               label={L.subtasks}
-              count={subtasks.length}
+              count={subtasksRead.status === "error" ? undefined : subtasks.length}
               className="mb-1"
             />
             <div

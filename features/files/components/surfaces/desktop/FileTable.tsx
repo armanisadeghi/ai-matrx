@@ -403,6 +403,7 @@ export function FileTable({
         <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-1.5 text-xs text-muted-foreground shrink-0">
           <SearchIcon className="h-3.5 w-3.5" />
           <span>
+            {/* read-gate-exempt: rows come from the whole-tree read; PageShell shows FilesTreeErrorState on treeStatus error and never mounts this view then */}
             Showing {rows.length} {rows.length === 1 ? "result" : "results"}{" "}
             from all folders for &ldquo;
             <span className="font-medium text-foreground">{searchQuery}</span>
@@ -413,6 +414,7 @@ export function FileTable({
       {capped ? (
         <div className="flex items-center gap-2 border-b border-warning/30 bg-warning/10 px-4 py-1.5 text-xs text-warning shrink-0">
           <span>
+            {/* read-gate-exempt: rows come from the whole-tree read; PageShell shows FilesTreeErrorState on treeStatus error and never mounts this view then */}
             Showing the {rows.length.toLocaleString()} most-recent of{" "}
             <span className="font-medium">
               {totalBeforeCap.toLocaleString()}
@@ -533,6 +535,7 @@ export function FileTable({
                   colSpan={totalColSpan(visibleIds.length)}
                   className="px-4 py-3 text-center text-[11px] text-muted-foreground"
                 >
+                  {/* read-gate-exempt: rows come from the whole-tree read; PageShell shows FilesTreeErrorState on treeStatus error and never mounts this view then */}
                   Showing all {rows.length.toLocaleString()} items.
                 </td>
               </tr>

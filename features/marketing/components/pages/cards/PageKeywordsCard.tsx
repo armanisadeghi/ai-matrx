@@ -45,6 +45,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { PageTaskButton } from "@/features/marketing/components/pages/PageTaskButton";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 export function PageKeywordsCard({
   page,
@@ -293,9 +294,12 @@ export function PageKeywordsCard({
           <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             <Tags className="h-3 w-3 text-primary" />
             Supporting
-            <span className="rounded-full bg-muted px-1.5 py-0.5 tabular-nums">
-              {supporting.length}
-            </span>
+            <UntrustedCount
+              value={supporting.length}
+              trustworthy={!board.isError}
+              label="Supporting keywords"
+              className="rounded-full bg-muted px-1.5 py-0.5 tabular-nums"
+            />
             {board.isFetching ? (
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : null}

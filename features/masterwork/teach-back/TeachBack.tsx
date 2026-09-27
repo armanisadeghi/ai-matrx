@@ -498,6 +498,7 @@ export function TeachBack({
               up to the organization's round knob. A confirm() per round would
               be intolerable on a lane whose whole point is momentum, so the
               price is stated plainly here, once, before anything is spent. */}
+          {/* read-gate-exempt: roundCount is the round-cap knob (or the run's own cap); a failed knob read falls back to the declared default and knobs.problem announces it above */}
           <p className="text-xs text-muted-foreground">
             Up to {roundCount} rounds, about {knobs.explanationSeconds} seconds of
             talking each.{" "}
@@ -665,6 +666,7 @@ export function TeachBack({
               <Label htmlFor="teach-back-correction" className="text-sm font-medium">
                 Where&apos;s that wrong?
               </Label>
+              {/* read-gate-exempt: rounds is this session's in-memory list of spoken rounds, and roundCount is the round-cap knob */}
               <span className="shrink-0 text-xs text-muted-foreground">
                 Round {rounds.length} of {roundCount}
               </span>
