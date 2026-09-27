@@ -98,10 +98,10 @@ returning name;
    - A menu's `resolveContextOnOpen` returns only DECLARED names (e.g. a right-clicked row's values
      in the surface's own terms), never new keys.
    - **A `MatrxDataTable` does not tell the page which rows it shows** after its own column filters
-     and sort (open gap, handoff item 1). Describe list values as "after the page's own filters"
+     and sort (open gap, handoff "MatrxDataTable must tell its host which rows are on screen"). Describe list values as "after the page's own filters"
      and name the gap in the readiness note.
    - **A docked panel with its own surface (e.g. the side canvas) replaces yours while open**
-     (handoff item 4). Never declare a value that only exists while such a panel is open.
+     (handoff "A docked panel with its own surface replaces the page's surface"). Never declare a value that only exists while such a panel is open.
    - `sourceFeature` must be a real slug from `types/python-generated/source-attribution.ts`. Map
      the surface in `features/agents/utils/source-feature-from-surface.ts`; if no slug fits, use
      the closest honest product and say so.
@@ -112,7 +112,30 @@ returning name;
      too, not just text boxes), and an `entity` target that takes an ARRAY and creates each item
      through the page's own create function, validating the whole list first. Without them,
      agents improvise with generic tools and create half-built records (2026-09-26, My Classes:
-     classes with no settings or owner). Worked example: `education-classes.manifest.ts`.
+     classes with no settings or owner). Worked example: `education-classes.manifest.ts`, its
+     validation `features/education/classes/classAgentWrites.ts`, its handlers in
+     `ClassesHome.tsx` (list) and `ClassFormDialog.tsx` (dialog).
+   - **Every write handler** calls the page's OWN save/create function (never a parallel path),
+     validates the WHOLE value before changing anything, and throws a sentence the agent can act
+     on. A list target also refuses names repeated in the list or already present, and on a
+     part-way failure says exactly which items were created, so a retry never duplicates. Declare
+     `updatesValue` on every target that has a read twin (the draft value, the list).
+   - **A dialog with its own fields:** mark its root `data-surface-layer="<surface>"` (import
+     `SURFACE_LAYER_ATTRIBUTE` from `features/surfaces/runtime/window-forms.ts`) so the platform's
+     generic form net stands down; that net fills only real inputs, never buttons or added rows.
+     If the dialog component stays mounted while closed, it registers its draft handler itself
+     with `useSurfaceWriteHandlers(surfaceName, …)` and opens itself; otherwise register it at the
+     page and pass the values down.
+   - **A create with no workspace selected** must ask, never return nothing: resolve the org with
+     `ensureOrgId(orgId)` (`lib/organizations/ensureOrgId.ts`) and treat
+     `isOrganizationSelectionCancelled(e)` as "not now" (no error toast; a write handler refuses
+     with `refuseSurfaceWrite("…ask which workspace…")`).
+   - **The intro** names the surface's write targets for the jobs agents will be asked to do
+     ("to add classes, use create_classes"), and says plainly not to use generic tools for this
+     data when they would skip the page's rules.
+   - **Route mapping:** `features/surfaces/utils/route-to-surface.ts`. When child routes
+     (`/x/[id]`) are a different page, map the list with an exact regex (`/^\/x\/?$/`) above the
+     prefix table, and add both cases to `route-to-surface.test.ts`.
    - Never run a formatter over a whole file you did not create: a formatted file becomes a
      900-line diff that collides with everyone. Format only files you created.
 5. **Readiness:** `partial`, with a note naming exactly what is not proven yet (normally: "no
@@ -122,7 +145,8 @@ returning name;
 
 - **Type check only what you touched** (the full `pnpm type-check` needs ~13 GB and is killed in a
   cloud container):
-  1. Write `tsconfig.focused.tmp.json` with
+  1. Write `tsconfig.focused.tmp.json` IN THE REPO ROOT (outside it, `types` cannot resolve and
+     every file errors) with
      `{"extends":"./tsconfig.json","compilerOptions":{"noEmit":true,"incremental":false},"include":["global.d.ts","cartesia.d.ts","types/typecheck-env.d.ts", <your files>]}`.
   2. Run `node node_modules/typescript/bin/tsc6 -p tsconfig.focused.tmp.json`. One run covers the
      whole batch, in about 3 minutes.
@@ -132,8 +156,8 @@ returning name;
   type check on every push.
 - `pnpm check:surface-drift` and `pnpm check:surface-routes` (seconds each). If drift is red because
   of someone else's clash, fix that one line too.
-- **Sync each surface's DB mirror.** Cloud sessions lack the direct-Postgres variables (handoff
-  item 3), so:
+- **Sync each surface's DB mirror.** Cloud sessions lack the direct-Postgres variables (handoff "Cloud
+  sessions cannot sync"), so:
   1. Run `pnpm exec tsx scripts/emit-surface-sync-sql.ts --organization-id 39c38960-d30c-4840-b0c1-c9960de95582 --surface <name> > sync.sql`.
   2. READ it: it has caught real bugs.
   3. Run the statements that changed through the Supabase MCP inside `begin; … commit;`.
@@ -162,7 +186,26 @@ pnpm surface:probe --surface <client/name> --commit <sha> \
   - Use `--fill` to change state (a search box, a filter input) and read the `after` block.
 - **Exit 1:** read `errors` and fix.
 
-Fix findings, commit, and re-probe after the next deploy.
+**Every surface with write targets also gets an agent write test** — a read probe cannot see a
+write that "succeeds" with half-built records:
+
+```bash
+pnpm surface:probe --surface <client/name> --route <route> \
+  --agent '<what a person would ask, e.g. "Add these classes: A (closed), B (open, final 2026-12-10)">' \
+  [--click 'button=>New class'] --out agent-<name>.json
+```
+
+It runs a real agent from the Agents menu, answers the workspace picker, and presses every Apply
+card (for real: use obviously named test data). Pass means ALL of:
+- `agent.approvals` shows the approval(s) you expected, and `agent.reply` reports what landed;
+- `afterAgent` shows the read twin supplied (a draft target) or the list changed (an entity target);
+- for an entity target, a read-only SQL query shows every created row COMPLETE — every field the
+  page's own create would set (settings, memberships, links), compared with a row made by hand;
+- one refusal case: send a value the handler must refuse (a duplicate, a bad date) and confirm the
+  reply carries the handler's reason and nothing was written.
+
+Fix findings, commit, and re-probe after the next deploy. Report the test rows you created so the
+person can delete them.
 
 ## 5. Independent review (once, near the end, on the deployed site)
 

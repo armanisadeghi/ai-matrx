@@ -18,7 +18,7 @@ campaign ends when the census says so, not when workers say so.
 | Two scoreboards disagreed: manifests self-declared "verified" while only 16 surfaces had ever been independently checked. Nobody could say what was done. | ONE list, computed from facts by `pnpm surface:census`, never from a worker's word. |
 | Claims from agents that died held surfaces "in progress" forever. | A claim expires after 6 hours (the worker brief's claim query enforces it). |
 | Certification found problems, and nobody was routed to fix them. | Whoever builds a surface fixes what its reviewer finds, in the same assignment. |
-| Cloud workers could not finish the required steps: the full type check needs ~13 GB of a 15 GB container; the dev server was killed when both ran; DB sync needs credentials cloud sessions lack. | Workers never run a dev server or the full type check. They verify on production with `pnpm surface:probe` (~40 s per surface). Sync goes through the SQL emitter until handoff item 3 lands. |
+| Cloud workers could not finish the required steps: the full type check needs ~13 GB of a 15 GB container; the dev server was killed when both ran; DB sync needs credentials cloud sessions lack. | Workers never run a dev server or the full type check. They verify on production with `pnpm surface:probe` (~40 s per surface). Sync goes through the SQL emitter until the handoff "Cloud sessions cannot sync" lands. |
 | About 1,500 lines of required reading for a ~200-line change. | Workers get one self-contained brief; skills are reference only. |
 | Stub vocabularies were written without an audit, and half their descriptions were wrong. | The completeness pass is always done from the components. |
 
@@ -40,7 +40,7 @@ teach the census when it's wrong.
 with no manifest.
 
 Run both at the start of every wave, and publish the wave table in your report: surface, facts,
-assigned worker, result. Until handoff item 5 makes `/administration/ui/surfaces` compute this
+assigned worker, result. Until the handoff "The admin board should compute status" makes `/administration/ui/surfaces` compute this
 itself, the census IS the board.
 
 ## Waves
@@ -54,7 +54,7 @@ drifts.
 - Clear stale claims older than 6 hours.
 - Settle the 4 "verified but not emitting" (probe each): either the census learns their emitter or
   their readiness drops to `partial`.
-- Dispatch handoff item 3 (cloud sync) if nobody owns it: it saves every worker the SQL paste.
+- Dispatch the handoff "Cloud sessions cannot sync" if nobody owns it: it saves every worker the SQL paste.
 
 **Each wave:**
 1. Pick the next unclaimed surfaces. Order:

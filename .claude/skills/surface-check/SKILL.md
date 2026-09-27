@@ -25,7 +25,10 @@ built yet goes through `surface-authoring` first; this skill checks one that exi
 `work_loop(action="claim")` result is the sole claim authority. Do not query or
 update `ui.ui_surface.check_claimed_*`; those columns are a legacy display aid,
 not a lock. No target in the claimed contract means no work: return to the
-coordinator for another atomic claim. A direct human request may name a surface
+coordinator for another atomic claim. (Exception: a worker dispatched under the
+surface campaign — `surface-authoring/references/campaign-worker.md` — claims
+through that brief's expiring `check_claimed_*` query, because cloud sessions
+have no Work Loop tool. One claim system per run, never both.) A direct human request may name a surface
 without Work Loop, but it still needs independent verification before it is
 certified.
 
