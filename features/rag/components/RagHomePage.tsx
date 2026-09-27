@@ -8,34 +8,42 @@
  * dashboard that surfaces the live state across data stores, the
  * processed-document library, and search.
  *
- * Pulls from /knowledge/library/summary/totals (already-implemented endpoint)
- * so users see "is anything happening?" without clicking through.
+ * The counts are the Sources page's own (`useSourcesCounts` →
+ * `readSourcesCounts`, the read behind its Saved / All captures toggle), in
+ * its words, each linking to the Sources page on that view — two screens can
+ * never report two different libraries.
  */
 
 import Link from "next/link";
 import {
   ArrowRight,
+  Bookmark,
   Database,
   FileText,
-  Layers,
+  Inbox,
   Search,
-  Zap,
   Eye,
-  AlertTriangle,
   CheckCircle2,
 } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
-import { useLibrarySummary } from "@/features/rag/hooks/useLibrary";
+import { useSourcesCounts } from "@/features/sources/hooks/useSources";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
 import { LibraryCatalogPane } from "@/features/rag/components/data-stores/LibraryCatalogPane";
 import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 export function RagHomePage() {
-  const { summary, loading, error } = useLibrarySummary();
+  const userId = useAppSelector(selectUserId);
+  // The Sources page opens on "Captured by Me"; the home counts that same view.
+  const { savedTotal, allTotal, loading, failed } = useSourcesCounts(
+    { kind: "mine" },
+    userId,
+  );
 
   // Entitled empty state — a user in an entitled org with zero personal
   // content must see their shared libraries FIRST, not an empty dashboard.
@@ -45,7 +53,8 @@ export function RagHomePage() {
   );
   const showEntitledHero =
     !loading &&
-    (summary?.documentsTotal ?? 0) === 0 &&
+    !failed &&
+    allTotal === 0 &&
     entitledLibraries.length > 0;
 
   return (
@@ -87,74 +96,39 @@ export function RagHomePage() {
               </div>
             </section>
           )}
-          {/* Live numbers */}
+          {/* Live numbers — the Sources page's own counts */}
           <section className="space-y-3">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              What's in your library right now
+              Your Sources right now
             </h2>
-            {error && (
-              <div className="border border-destructive/50 bg-destructive/5 rounded-md p-3 text-sm text-destructive">
-                <strong>Could not load summary:</strong> {error}
-                <p className="text-xs mt-1 text-muted-foreground">
-                  The endpoint is /knowledge/library/summary/totals. If you just
-                  deployed, give the backend a minute to restart, then refresh.
-                </p>
-                <ErrorAlchemyMenu error={error} />
-              </div>
+            {failed && (
+              <ErrorNotice
+                title="Your Source counts could not be read"
+                message="Refresh to try again, or open Sources to see the list itself."
+                operation="Count your Sources (Saved / All captures)"
+                calls={["docproc.processed_documents"]}
+              />
             )}
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <StatCard
-                label="Documents"
-                // read-gate-exempt: StatCard renders this through UntrustedCount with trustworthy={!error} from useLibrarySummary
-                value={summary?.documentsTotal}
+                label="Saved"
+                hint="Sources you kept or uploaded"
+                href="/knowledge/library?show=saved"
+                // read-gate-exempt: StatCard renders this through UntrustedCount with trustworthy={savedTotal !== null}
+                value={savedTotal}
                 loading={loading}
-                trustworthy={!error}
-                icon={<FileText className="h-3.5 w-3.5" />}
+                trustworthy={savedTotal !== null}
+                icon={<Bookmark className="h-3.5 w-3.5 text-primary" />}
               />
               <StatCard
-                label="Ready"
-                value={summary?.documentsReady}
+                label="All captures"
+                hint="Everything captured, saved or not"
+                href="/knowledge/library?show=all"
+                // read-gate-exempt: StatCard renders this through UntrustedCount with trustworthy={allTotal !== null}
+                value={allTotal}
                 loading={loading}
-                trustworthy={!error}
-                icon={<CheckCircle2 className="h-3.5 w-3.5 text-green-500" />}
-                tone="success"
-              />
-              <StatCard
-                label="Embedding"
-                value={summary?.documentsEmbedding}
-                loading={loading}
-                trustworthy={!error}
-                icon={<Zap className="h-3.5 w-3.5 text-blue-500" />}
-              />
-              <StatCard
-                label="Extracted"
-                value={summary?.documentsExtracted}
-                loading={loading}
-                trustworthy={!error}
-                icon={<AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />}
-                tone="warning"
-              />
-              <StatCard
-                label="Pending / failed"
-                value={summary?.documentsPending}
-                loading={loading}
-                trustworthy={!error}
-                icon={<AlertTriangle className="h-3.5 w-3.5 text-red-500" />}
-                tone="error"
-              />
-              <StatCard
-                label={`Total ${RAG_VOCAB.segmentsShort.toLowerCase()}`}
-                value={summary?.chunks}
-                loading={loading}
-                trustworthy={!error}
-                icon={<Layers className="h-3.5 w-3.5" />}
-              />
-              <StatCard
-                label="Data stores"
-                value={summary?.dataStores}
-                loading={loading}
-                trustworthy={!error}
-                icon={<Database className="h-3.5 w-3.5" />}
+                trustworthy={allTotal !== null}
+                icon={<Inbox className="h-3.5 w-3.5" />}
               />
             </div>
           </section>
@@ -168,9 +142,9 @@ export function RagHomePage() {
               <NavCard
                 href="/knowledge/library"
                 icon={<FileText className="h-5 w-5" />}
-                title="Library"
-                description={`Every document you've processed, with status, page counts, ${RAG_VOCAB.segmentsShort.toLowerCase()}, embeddings, and which data stores they're bound to.`}
-                cta="Open library"
+                title="Sources"
+                description="Every file, web page, transcript, and pasted text you've added, with its stage and where it's attached. Add new ones here."
+                cta="Open Sources"
               />
               <NavCard
                 href="/knowledge/data-stores"
@@ -197,30 +171,31 @@ export function RagHomePage() {
             </h3>
             <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal pl-5">
               <li>
-                <strong className="text-foreground">Add a document:</strong> go
-                to{" "}
-                <Link href="/knowledge/data-stores" className="underline">
-                  Data Stores
+                <strong className="text-foreground">Add a Source:</strong> open{" "}
+                <Link href="/knowledge/library" className="underline">
+                  Sources
                 </Link>{" "}
-                → drag a PDF onto a store → it uploads, processes, segments,
-                embeds, and binds in one step.
+                → Add → Upload a file, Paste a web address, Paste text, or
+                Import a transcript. It processes, segments, and embeds on its
+                own; attach it to a data store to make it retrievable.
               </li>
               <li>
                 <strong className="text-foreground">
                   See what processed correctly:
                 </strong>{" "}
-                open the{" "}
+                open{" "}
                 <Link href="/knowledge/library" className="underline">
-                  Library
+                  Sources
                 </Link>{" "}
-                and look at the status badge — Ready means it's fully
-                searchable; Extracted / Pending means it stalled.
+                and read each row's stage — Searchable means an agent can
+                retrieve it; anything else says what is still running or what
+                went wrong.
               </li>
               <li>
-                <strong className="text-foreground">Inspect a document:</strong>{" "}
-                click any row in the library — pages,{" "}
-                {RAG_VOCAB.segmentsShort.toLowerCase()}, embeddings, and
-                store-bindings are all there.
+                <strong className="text-foreground">Inspect a Source:</strong>{" "}
+                click any row on Sources — its text,{" "}
+                {RAG_VOCAB.segmentsShort.toLowerCase()}, and where it&apos;s
+                attached are all there.
               </li>
               <li>
                 <strong className="text-foreground">Test retrieval:</strong> use{" "}
@@ -245,30 +220,28 @@ export function RagHomePage() {
 
 function StatCard({
   label,
+  hint,
+  href,
   value,
   loading,
   trustworthy,
   icon,
-  tone,
 }: {
   label: string;
-  value: number | undefined;
+  hint: string;
+  /** The Sources page on the view this number counts. */
+  href: string;
+  value: number | null;
   loading: boolean;
-  /** False when the summary read failed: the tile shows "—", never 0. */
+  /** False when the count read failed: the tile shows "—", never 0. */
   trustworthy: boolean;
   icon: React.ReactNode;
-  tone?: "success" | "warning" | "error";
 }) {
-  const toneClass =
-    tone === "success"
-      ? "border-green-500/30 bg-green-500/5"
-      : tone === "warning"
-        ? "border-yellow-500/30 bg-yellow-500/5"
-        : tone === "error"
-          ? "border-red-500/30 bg-red-500/5"
-          : "bg-muted/30";
   return (
-    <div className={`rounded-md border p-3 flex flex-col gap-1 ${toneClass}`}>
+    <Link
+      href={href}
+      className="group rounded-md border bg-muted/30 p-3 flex flex-col gap-1 transition-colors hover:border-primary/50 hover:bg-accent/40"
+    >
       <span className="flex items-center gap-1 text-[11px] text-muted-foreground uppercase tracking-wide">
         {icon}
         {label}
@@ -278,13 +251,17 @@ function StatCard({
           <Skeleton className="h-6 w-12" />
         ) : (
           <UntrustedCount
-            value={value ?? 0}
+            value={(value ?? 0).toLocaleString()}
             trustworthy={trustworthy}
             label={label}
           />
         )}
       </span>
-    </div>
+      <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+        {hint}
+        <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+      </span>
+    </Link>
   );
 }
 

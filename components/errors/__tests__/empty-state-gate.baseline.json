@@ -226,7 +226,6 @@
     "features/pdf-extractor/studio/PdfStudioMobile.tsx": 1,
     "features/pdf/scanner/components/desktop/ScannerDesktop.tsx": 2,
     "features/projects/components/ProjectsWorkspace.tsx": 1,
-    "features/rag/components/RagHomePage.tsx": 1,
     "features/rag/components/data-stores/DataStoresPage.tsx": 1,
     "features/rag/components/documents/DocumentViewer.tsx": 1,
     "features/rag/components/library-catalog/LibraryCatalogPage.tsx": 3,
