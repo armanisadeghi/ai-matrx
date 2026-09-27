@@ -85,7 +85,7 @@ import {
   type FileUnderContainer,
 } from "@/features/knowledge/hub/hubActions";
 import { hitKey, openFullHref, tokenLabel } from "@/features/knowledge/hub/hubPresentation";
-import { anyContainerTypes, isViewLinkOnly, viewIsDirty } from "@/features/knowledge/hub/hubSavedViews";
+import { expandAnyContainers, isViewLinkOnly, viewIsDirty } from "@/features/knowledge/hub/hubSavedViews";
 import {
   createHubView,
   deleteView,
@@ -189,14 +189,24 @@ export function KnowledgeHubPage({
   const { state, setState } = useHubUrlState();
   const sample = state.data === "sample";
   const sidebar = useHubSidebarData(state.data);
-  const results = useKnowledgeResults(state.query, state.data);
+  const libraryIds =
+    sidebar.containers.media_source_library.status === "ready"
+      ? sidebar.containers.media_source_library.items.map((l) => l.id)
+      : undefined;
+  const idsByType = { media_source_library: libraryIds };
+  // `library:*` (the Libraries preset) → every library this person can see.
+  const expanded = expandAnyContainers(state.query, idsByType);
+  const results = useKnowledgeResults(expanded.query, state.data);
   const activeOrgId = useAppSelector(selectOrganizationId);
   const activeOrgName = useAppSelector(selectOrganizationName);
   const [saveDialog, setSaveDialog] = useState<null | { mode: "create" } | { mode: "rename"; view: HubSavedView }>(null);
   const viewCountInputs = sidebar.savedViews.items
     .filter((v) => v.definition)
     .slice(0, 40)
-    .map((v) => ({ id: v.id, query: v.definition!.query }));
+    .flatMap((v) => {
+      const x = expandAnyContainers(v.definition!.query, idsByType);
+      return x.status === "pending" ? [] : [{ id: v.id, query: x.query }];
+    });
   const { counts: viewCounts, refresh: refreshCounts } = useSavedViewCounts(
     viewCountInputs,
     state.data,
@@ -236,7 +246,8 @@ export function KnowledgeHubPage({
   const openSavedView =
     state.view.kind === "saved" ? (sidebar.savedViews.items.find((v) => v.id === (state.view as { id: string }).id) ?? null) : null;
   const dirty = openSavedView ? viewIsDirty(openSavedView.definition, { query: state.query, layout: state.layout }) : false;
-  const anyTypes = anyContainerTypes(state.query);
+  const noLibraries = expanded.status === "empty";
+  const expanding = expanded.status === "pending";
 
   // A view LINK (`/knowledge?view=saved:<id>` with no filters — what a shared
   // view's address is) opens the view: once its definition has loaded, its
@@ -753,31 +764,14 @@ export function KnowledgeHubPage({
       </div>
       {!searching ? <div className="sm:hidden">{layoutSwitch}</div> : null}
       {bulkBar}
-      {anyTypes.length ? (
-        <div className="rounded-md border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground" role="status">
-          <p>
-            Showing everything in every library at once needs the search service&apos;s any-library filter, which is not
-            built yet — so this view lists your libraries instead. Open one to see what is in it.
-          </p>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {(sidebar.containers.media_source_library.items ?? []).map((lib) => (
-              <button
-                key={lib.id}
-                type="button"
-                className="rounded-md border border-border bg-background px-2 py-1 text-foreground hover:bg-accent"
-                onClick={() => select({ kind: "container", type: "media_source_library", id: lib.id })}
-              >
-                {lib.title}
-              </button>
-            ))}
-            {sidebar.containers.media_source_library.status === "ready" &&
-            sidebar.containers.media_source_library.items.length === 0 ? (
-              <span>You have no libraries yet.</span>
-            ) : null}
-          </div>
-        </div>
+      {noLibraries ? (
+        <p className="px-2 py-4 text-sm text-muted-foreground" role="status">
+          You have no libraries you can open yet, so nothing is in any library. Create a library and add Sources to it.
+        </p>
+      ) : expanding ? (
+        <p className="px-2 py-4 text-sm text-muted-foreground" role="status">Reading your libraries…</p>
       ) : null}
-      <div className={anyTypes.length ? "hidden" : "flex min-h-0 flex-1 flex-col overflow-hidden"}>
+      <div className={noLibraries || expanding ? "hidden" : "flex min-h-0 flex-1 flex-col overflow-hidden"}>
         {state.view.kind === "favorites" && sidebar.favorites.status !== "ready" ? (
           sidebar.favorites.status === "error" ? (
             <p className="px-2 py-4 text-sm text-destructive">{sidebar.favorites.error}</p>

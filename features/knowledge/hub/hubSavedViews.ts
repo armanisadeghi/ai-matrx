@@ -81,6 +81,31 @@ export function anyContainerTypes(query: KnowledgeQuery): string[] {
   return (query.within ?? []).filter((r) => r.id === WITHIN_ANY).map((r) => r.type);
 }
 
+/**
+ * `type:*` → every container of that type the person can see (the service
+ * takes a list of container ids). `pending` until that list has loaded;
+ * `empty` when the person has none (nothing can match — never "everything").
+ */
+export function expandAnyContainers(
+  query: KnowledgeQuery,
+  idsByType: Record<string, string[] | undefined>,
+): { status: "ready" | "pending" | "empty"; query: KnowledgeQuery } {
+  const any = anyContainerTypes(query);
+  if (!any.length) return { status: "ready", query };
+  const within: NonNullable<KnowledgeQuery["within"]> = [];
+  for (const r of query.within ?? []) {
+    if (r.id !== WITHIN_ANY) {
+      within.push(r);
+      continue;
+    }
+    const ids = idsByType[r.type];
+    if (!ids) return { status: "pending", query };
+    for (const id of ids) within.push({ type: r.type, id });
+  }
+  if (!within.length) return { status: "empty", query };
+  return { status: "ready", query: { ...query, within } };
+}
+
 /** Which presets are missing from what the caller can read. */
 export function missingPresets(installedPresetKeys: Iterable<string>): HubPreset[] {
   const have = new Set(installedPresetKeys);
@@ -142,7 +167,7 @@ export async function countViewQuery(
   if (any.length)
     return {
       kind: "unsupported",
-      reason: "The search cannot count “anything in any library” yet — open a library to see its items.",
+      reason: "You have no libraries you can open yet.",
     };
   try {
     let engine: KnowledgeSearchEngine | null = null;
