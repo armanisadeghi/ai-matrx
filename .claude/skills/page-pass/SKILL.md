@@ -93,11 +93,18 @@ session, never you.
   pull, re-run `pnpm install --frozen-lockfile` if the lockfile changed.
 - Test data you create is obviously named (`PP test — …`) and listed in your report.
 
+**Content a person authored is not the page.** An app's own layout, a
+document's text, a user's template body are judged by their author; the rules
+here judge our chrome around them (header, menus, run controls, states, agent
+surface). Say which parts you judged as authored content.
+
 ## The core — seven areas, every page
 
 ### 1 · Agents can work on the page
 - **Registered:** a surface manifest in `features/surfaces/manifests/` whose
-  values describe THIS page (a list page never borrows its parent's
+  values describe THIS page (a record's sub-views — run, code, settings — may share the
+  record's family surface when every value is true on each; a sub-view with data
+  of its own gets a child surface) (a list page never borrows its parent's
   one-record surface — give it its own), label = the page's human name, route mapped in `route-to-surface.ts`, DB mirror synced.
 - **Sees everything:** every piece of data the page loads and a person could
   point at is a declared value, emitted by one pure scope module from state the
@@ -298,7 +305,9 @@ session, never you.
 - **Charts are readable:** axes and units visible and not clipped, a scale a
   person can read, and they render on a phone.
 - **One fact, once.** The same list or number never appears twice on a page.
-- Tab title leads with the specific word; the route has a favicon entry.
+- Tab title leads with the specific word (on a record page, the record's
+  name); follow the `route-metadata-favicons` helper's order for a record's
+  sub-views. The route has a favicon entry.
 - Checks: `pnpm check:ui-primitives` · `check:one-table-law` ·
   `check:archived-items-law` · `check:picker-add` · `check:canonical-pickers` ·
   `check:browser-dialogs` · `check:blocking-dialogs` · `check:popover-sizing` ·
