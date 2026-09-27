@@ -506,6 +506,13 @@ try {
         result.errors.push('"Surface Context" not found in the Agents popover');
       await page.waitForTimeout(4000);
       result.before = await readProbe(page);
+      // The surface key is an admin-only diagnostic in the Agents popover (and
+      // the admin lane is closed on user pages), so the page is also "named"
+      // when the Surface Context window it opens shows the key.
+      if (!result.surfaceNamed) {
+        const windowText = await page.evaluate(() => document.body.innerText || "");
+        result.surfaceNamed = windowText.includes(opts.surface);
+      }
       await shot(page, `${index}-before`);
 
       if (opts.fills.length) {
