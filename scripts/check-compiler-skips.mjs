@@ -53,6 +53,26 @@ const DATA_SURFACES = [
   "app/(core)/data-v2/[tableId]/page.tsx",
 ];
 
+/**
+ * WHO WROTE THE SKIPPED LINE (lane GUARDS-GREEN, 2026-09-27). A new skip is somebody's new code;
+ * the finding names the commit that last touched the line the compiler refused (git blame), so the
+ * report goes to its owner instead of reading as nobody's. A line the sweep committed on another
+ * lane's behalf ("local work not committed by agents who made them") says so: its author is unknown.
+ */
+function ownerOf(file, line) {
+  try {
+    const out = execFileSync("git", ["blame", "--porcelain", "-L", `${line},${line}`, "--", file], { cwd: ROOT, encoding: "utf8" });
+    const sha = out.slice(0, 10);
+    if (/^0{10}/.test(sha)) return "not committed yet (a working-tree edit)";
+    const summary = (out.match(/^summary (.*)$/m)?.[1] ?? "").slice(0, 110);
+    const when = new Date(Number(out.match(/^author-time (\d+)$/m)?.[1] ?? 0) * 1000).toISOString().slice(0, 16).replace("T", " ");
+    const swept = /local work not committed by agents who made them/.test(summary);
+    return `${sha} ${when}Z${swept ? " — committed by the release sweep for a lane that never committed it; author unknown" : ` — ${summary}`}`;
+  } catch {
+    return "unknown (git blame failed)";
+  }
+}
+
 function loadCompiler() {
   const require = createRequire(join(ROOT, "package.json"));
   const pnpm = join(ROOT, "node_modules/.pnpm");
@@ -325,7 +345,10 @@ async function main() {
     console.log(`\n[FAIL] ${grown.length} file(s) skip MORE functions than the baseline allows (a new silent skip = a component with no memoisation):`);
     for (const [f, n] of grown) {
       console.log(`   ${f}: ${n} (baseline ${baseline[f] ?? 0})`);
-      for (const s of results[f].skipped) console.log(`      ${s.name} @${s.line}: ${s.reason}${s.at ? ` (line ${s.at})` : ""}`);
+      for (const s of results[f].skipped) {
+        console.log(`      ${s.name} @${s.line}: ${s.reason}${s.at ? ` (line ${s.at})` : ""}`);
+        console.log(`        owner: ${ownerOf(f, s.at ?? s.line)}`);
+      }
     }
     console.log("  Remedy: make the function compile (the reason above is the compiler's own), or — only for a deliberate");
     console.log('  manual-memo helper — opt it out by name with "use no memo". Never raise the baseline.');
