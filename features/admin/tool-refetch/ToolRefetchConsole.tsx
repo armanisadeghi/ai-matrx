@@ -62,6 +62,7 @@ import {
   type ToolRefetchSummaryRow,
 } from "./service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 /* ── formatters that refuse to invent a number ─────────────────────────────── */
 
@@ -737,7 +738,8 @@ export function ToolRefetchConsole() {
         isLoading={loading}
         isFetching={refreshing}
         pageSize={50}
-        emptyState={{ title: error || timedOut ? "The report could not be read" : "No repeated tool calls in this window" }}
+        read={readOf(report, { what: "the re-fetch report" })}
+        emptyState={{ title: "No repeated tool calls in this window" }}
         toolbar={{
           search: true,
           searchPlaceholder: "Search tools…",

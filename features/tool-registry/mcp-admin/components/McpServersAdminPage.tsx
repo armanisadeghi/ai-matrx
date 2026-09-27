@@ -95,6 +95,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const PAGE_LOCATION =
   "AI Matrx Admin — Tool Registry · MCP Servers (/administration/agents/mcp-servers)";
@@ -880,6 +881,7 @@ function ToolsTab({
           agentRow: (row) => row,
           listContext: (visible) => ({ server: slug, count: visible.length }),
         }}
+        read={readOf({ loading, error }, { what: "this server's tools", onRetry: () => void load() })}
         emptyState={{
           title: "No tools registered for this server",
           description: "Try Refresh sync to retrieve its current tools.",

@@ -18,6 +18,7 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 interface EntitlementRow {
   capability: string;
@@ -230,6 +231,7 @@ export function EntitlementsTableClient() {
           getRowId={(r) => r.capability}
           isLoading={loading}
           pageSize={50}
+          read={readOf({ loading, error }, { what: "entitlements", onRetry: () => void load() })}
           emptyState={{ title: "No capabilities registered" }}
           toolbar={{
             search: true,

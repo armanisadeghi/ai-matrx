@@ -46,6 +46,7 @@ import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import { agentShortcutRecordSummary } from "../format";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 export interface ShortcutListProps extends ScopeProps {
   onEdit?: (shortcut: AgentShortcutRecord) => void;
@@ -722,6 +723,7 @@ export function ShortcutList({
             );
           }}
           mobileCardsBreakpoint="lg"
+          read={readOf({ isLoading, error }, { what: "shortcuts", onRetry: () => void refetch() })}
           emptyState={{
             title: "No shortcuts found",
             description: hasActiveFilters

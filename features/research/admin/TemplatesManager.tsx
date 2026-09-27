@@ -78,6 +78,7 @@ import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/th
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const SYSTEM_AGENT_TAB = ["system"] as const;
 
@@ -928,11 +929,8 @@ export function TemplatesManager() {
             detail={{ enabled: false }}
             window={{ enabled: false }}
             coverage={researchTemplatesCoverage(templates)}
-            emptyState={{
-              title: loadError
-                ? "Could not load research templates."
-                : "No templates yet. Create one to get started.",
-            }}
+            read={readOf({ loading, error: loadError }, { what: "research templates", onRetry: () => void loadData() })}
+            emptyState={{ title: "No templates yet. Create one to get started." }}
             rowActions={(template) => (
               <TemplateRowActions
                 template={template}

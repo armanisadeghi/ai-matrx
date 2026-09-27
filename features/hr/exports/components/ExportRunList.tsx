@@ -97,6 +97,7 @@ import { ExportFailDialog } from "./ExportFailDialog";
 import { ExportPreconditionAlert } from "./ExportPreconditionAlert";
 import { ExportSupersedeDialog } from "./ExportSupersedeDialog";
 import { HrIdentityDoor, PayPeriodDoor } from "./HrIdentityDoor";
+import { readOf } from "@/components/read-state/ReadGate";
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 // §4.5 — the state machine, as data. One place, so no cell and no menu re-derives it.
@@ -1042,6 +1043,7 @@ export function ExportRunList({
               </Button>
             ),
           }}
+          read={readOf({ isLoading: history.isLoading, error: history.failure }, { what: "export history", onRetry: history.reload })}
           emptyState={{
             icon: <Layers className="h-6 w-6" aria-hidden />,
             title: "This period has never been exported",

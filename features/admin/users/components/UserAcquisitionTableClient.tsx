@@ -37,6 +37,7 @@ import {
 } from "../types";
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 type Timeframe = "7d" | "30d" | "90d" | "all";
 
@@ -731,6 +732,7 @@ export function UserAcquisitionTableClient() {
           getRowId={(row) => row.row_id}
           isLoading={loading}
           pageSize={50}
+          read={readOf({ loading, error }, { what: "acquired identities", onRetry: () => void load(timeframe) })}
           emptyState={{
             title: "No acquired identities",
             description:

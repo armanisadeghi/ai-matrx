@@ -776,6 +776,7 @@ export function SiteKeywordPerformanceWorkspace() {
               tab: "overview",
             })
           }
+          // read-gate-exempt: loadFailed swaps this for the failed-read state and the retry banner above names the failure once
           emptyState={
             loadFailed
               ? {

@@ -66,6 +66,7 @@ import { buildAdminUserMenuSection } from "./admin-user-menu-section";
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const ROSTER_PAGE_SIZE = 50;
 
@@ -642,6 +643,7 @@ export function AccountsTableClient() {
           // filter miss — that blames a control the user never touched for a
           // record that simply is not in this list. The banner above says what
           // actually happened; this only has to stop contradicting it.
+          read={readOf({ loading, error }, { what: "user accounts" })}
           emptyState={
             focusMissed
               ? {

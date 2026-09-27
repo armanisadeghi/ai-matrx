@@ -187,6 +187,7 @@ import { RulingDialog, type RulingDraft } from "./RulingDialog";
 import { AddLevelDialog } from "../pickers/AddLevelDialog";
 import { RulingSession } from "./RulingSession";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const REVIEW_SORTS = new Set(["clicks", "impressions", "score", "keyword"]);
 
@@ -1662,6 +1663,7 @@ export function ValueWorkbench() {
                   }}
                   window={{ enabled: false }}
                   pageSize={50}
+                  read={readOf(review, { what: "the value review" })}
                   emptyState={{
                     icon: (
                       <CircleDollarSign className="h-8 w-8 text-muted-foreground" />

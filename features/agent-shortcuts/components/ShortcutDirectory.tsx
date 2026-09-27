@@ -46,6 +46,7 @@ import {
 } from "@/features/context-menu-v3/table-row-context-registry";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 export interface ShortcutDirectoryProps {
   mode: ShortcutDirectoryMode;
@@ -401,6 +402,7 @@ export function ShortcutDirectory({
           total: rows.length,
           answeredBy: "client",
         }}
+        read={readOf({ isLoading, error }, { what: "shortcuts", onRetry: () => void refetch() })}
         emptyState={{
           title: hasDirectoryFilters
             ? "No shortcuts match the current filters."

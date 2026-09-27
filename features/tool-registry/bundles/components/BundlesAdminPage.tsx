@@ -70,6 +70,7 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 type Filter = "active" | "all";
 
@@ -705,6 +706,7 @@ function BundleDetail({
             data={members}
             isLoading={loading}
             detail={{ enabled: false }}
+            read={readOf({ loading, error }, { what: "this bundle's tools", onRetry: () => void load() })}
             emptyState={{ title: "No tools in this bundle yet" }}
             columns={memberColumns(onSaveAlias)}
             tableId={`tool-registry/bundles/${bundle.id}/members`}

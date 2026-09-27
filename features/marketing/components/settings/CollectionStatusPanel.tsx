@@ -58,6 +58,7 @@ import {
   canUseGoogleAnalytics,
 } from "@/features/marketing/google/ga4-campaign";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 export function CollectionStatusPanel({
   site,
@@ -354,6 +355,7 @@ export function CollectionStatusPanel({
               ) : null}
             </>
           )}
+          read={readOf(status, { what: "collection status" })}
           emptyState={{
             title: "No data sources reported",
             description:

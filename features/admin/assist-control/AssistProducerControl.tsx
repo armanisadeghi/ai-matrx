@@ -17,6 +17,7 @@ import {
 } from "./service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { readOf } from "@/components/read-state/ReadGate";
 
 export function AssistProducerControl() {
   const [reason, setReason] = useState("");
@@ -158,6 +159,7 @@ export function AssistProducerControl() {
         isLoading={policies.isPending}
         isFetching={policies.isFetching}
         pageSize={25}
+        read={readOf(policies, { what: "Assist producer controls" })}
         emptyState={{ title: "No Assist producer controls" }}
         toolbar={{ search: true, searchPlaceholder: "Search producer controls…" }}
         detail={{ enabled: false }}

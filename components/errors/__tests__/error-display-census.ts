@@ -1045,11 +1045,35 @@ function knowsItIsARead(node: ts.Node, fn: ts.FunctionLikeDeclaration): boolean 
   );
 }
 
+/**
+ * A page-state wrapper that renders its failure INSTEAD of its children when
+ * handed the read's error (`<HrPageState loading error>`, `<HrSettingsShell
+ * error>`): everything inside it is gated on that read (RC-B12 r13).
+ */
+const READ_STATE_WRAPPER = /^(?:\w*PageState|\w*SettingsShell)$/;
+function isReadStateWrapper(el: ts.JsxElement): boolean {
+  if (!READ_STATE_WRAPPER.test(tagName(el))) return false;
+  return attributes(el).properties.some(
+    (p) =>
+      (ts.isJsxAttribute(p) && p.name.getText() === "error" && p.initializer !== undefined) ||
+      (ts.isJsxSpreadAttribute(p) && /[eE]rror|[rR]efusal/.test(p.expression.getText())),
+  );
+}
+
 function gatedByAncestors(node: ts.Node, fn: ts.Node): boolean {
   let child: ts.Node = node;
   let cur: ts.Node | undefined = node.parent;
   while (cur && cur !== fn) {
     if (ts.isJsxElement(cur) && tagName(cur) === "ReadGate") return true;
+    if (ts.isJsxElement(cur) && child !== cur.openingElement && isReadStateWrapper(cur)) return true;
+    // The empty state of a primitive that is told the read's outcome (`read=`) shows only after success.
+    if (
+      ts.isJsxAttribute(cur) &&
+      cur.name.getText() === "emptyState" &&
+      cur.parent.properties.some((p) => ts.isJsxAttribute(p) && p.name.getText() === "read")
+    ) {
+      return true;
+    }
     if (ts.isJsxAttribute(cur) && cur.parent?.parent && (ts.isJsxOpeningElement(cur.parent.parent) || ts.isJsxSelfClosingElement(cur.parent.parent)) && cur.parent.parent.tagName.getText() === "ReadGate") return true;
     if (ts.isConditionalExpression(cur) && child !== cur.condition && READ_GATE.test(cur.condition.getText())) return true;
     if (ts.isBinaryExpression(cur) && child === cur.right && READ_GATE.test(cur.left.getText())) return true;
