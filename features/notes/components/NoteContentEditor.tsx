@@ -179,8 +179,10 @@ export function NoteContentEditor({
 
   // TUI modes have no read-only support — degrade to preview. The editor body
   // and the outline panel's jump logic must agree on the mode actually shown.
+  // A host's read mode (forceReadOnly) reads the rendered note, always.
   const effectiveEditorMode =
-    readOnly && (editorMode === "wysiwyg" || editorMode === "markdown-split")
+    forceReadOnly ||
+    (readOnly && (editorMode === "wysiwyg" || editorMode === "markdown-split"))
       ? "preview"
       : editorMode;
 
@@ -836,7 +838,7 @@ export function NoteContentEditor({
             className="flex-1 flex flex-col min-h-0 min-w-0"
             data-surface-value="current_note"
           >
-            {readOnly && (
+            {access.readOnly && (
               <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-b border-border/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
                 <Eye className="w-3.5 h-3.5 shrink-0" />
                 <span className="text-xs truncate">
