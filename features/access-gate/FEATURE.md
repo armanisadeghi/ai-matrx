@@ -77,7 +77,7 @@ it. The states it can render:
 | Status      | What the user sees                                                           |
 | ----------- | ---------------------------------------------------------------------------- |
 | `denied`    | Kind, name, owner, org + **Request access** (view / edit + a note)           |
-| `deleted`   | "This site was deleted" — no request offer, a door back                      |
+| `deleted`   | "This site is in Trash" — archived, not erased; **Restore** for the owner / an editor (`entity_undelete`), otherwise who can restore it. Never "deleted" (`service/archivedWords.ts`) |
 | `missing`   | "We couldn't find this site" — the link may be wrong                         |
 | `anonymous` | "Sign in to open this site" → `/login?next=<here>`                           |
 | `ok`        | **They DO have access** — the read failed transiently. Retry actually works. |
@@ -288,6 +288,8 @@ surface means importing them too, never reimplementing the RPC call.
   `recordUnavailable`, assert some consumer reads `.isError`/`.error`.
 
 ## Change Log
+
+- 2026-09-27 — page-pass shared fix: an archived record is said as archived ("This template is in Trash … archived, not erased") with a **Restore** control for its owner or an editor (the generic `entity_undelete` door, then the surface re-reads — `router.refresh()` on a server page). Guard: `service/archivedWords.test.ts`.
 
 - **2026-09-25** — **`RequestAccess`: the platform answer to a control you
   cannot use.** Org-owned asks reuse the setting-request ledger + DM (new

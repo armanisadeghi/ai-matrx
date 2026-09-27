@@ -28,12 +28,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   ArrowLeft,
   Building2,
   Lock,
   LogIn,
   RefreshCw,
+  RotateCcw,
   SearchX,
   Trash2,
   TriangleAlert,
@@ -59,6 +61,69 @@ import type {
 // second and printed "AM".
 import { getInitials } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { toast } from "@/lib/toast";
+import { restoreFromTrash } from "@/features/trash/service";
+import {
+  archivedExplanation,
+  archivedHeadline,
+  mayRestoreArchived,
+} from "@/features/access-gate/service/archivedWords";
+
+/**
+ * Restore an archived record in place, through the ONE generic door
+ * (`entity_undelete`, the same call /trash makes). On success the surface
+ * re-reads: its own retry when it has one, otherwise a server re-render of this
+ * same URL — which is what a server page's gate needs.
+ */
+function RestoreArchived({
+  token,
+  id,
+  kind,
+  onRestored,
+}: {
+  token: string;
+  id: string;
+  kind: string;
+  onRestored: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<unknown>(null);
+  return (
+    <>
+      <Button
+        size="sm"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          setFailure(null);
+          try {
+            await restoreFromTrash(token, id);
+            toast.success(`Restored the ${kind}.`);
+            onRestored();
+          } catch (error) {
+            setFailure(error);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <RotateCcw className="mr-1.5 h-4 w-4" aria-hidden />
+        {busy ? "Restoring…" : "Restore"}
+      </Button>
+      {failure ? (
+        <ErrorNotice
+          size="inline"
+          className="basis-full text-sm"
+          title="Not restored"
+          error={failure}
+          operation={`Restore this ${kind}`}
+          records={[{ type: token, id }]}
+        />
+      ) : null}
+    </>
+  );
+}
 
 /**
  * One concrete way forward, offered by the surface that knows the feature.
@@ -117,7 +182,8 @@ function headline(context: AccessDeniedContext): string {
     case "denied":
       return `You don't have access to this ${kind}`;
     case "deleted":
-      return `This ${kind} was deleted`;
+      // Archived, in Trash, restorable — never "deleted" (archivedWords.ts).
+      return archivedHeadline(context);
     case "missing":
       return `We couldn't find this ${kind}`;
     case "anonymous":
@@ -150,7 +216,7 @@ function explanation(context: AccessDeniedContext): string {
         : `It belongs to someone else. You can ask for access below.`;
     }
     case "deleted":
-      return `It was removed, so there's nothing here to open.`;
+      return archivedExplanation(context);
     case "missing":
       // THE SAME SENTENCE FOR A STRANGER AND A RANDOM ID (V24-TAILS, chair ruling 2026-09-25):
       // the resolver answers a stranger to an unshared object exactly as it answers a missing id,
@@ -472,6 +538,19 @@ export function AccessDeniedView({
                 Sign in
               </Link>
             </Button>
+          ) : null}
+
+          {mayRestoreArchived(context) ? (
+            <RestoreArchived
+              token={context.entity.token}
+              id={id}
+              kind={context.entity.label.toLowerCase()}
+              onRestored={() => {
+                onChanged();
+                if (onRetry) onRetry();
+                else router.refresh();
+              }}
+            />
           ) : null}
 
           {(context.status === "ok" || context.status === "error") &&

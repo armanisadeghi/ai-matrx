@@ -19,7 +19,7 @@ export type AccessGateStatus =
   | "ok"
   /** Signed in, real record, genuinely no access. The request flow lives here. */
   | "denied"
-  /** The record was soft-deleted. Nothing to request. */
+  /** The record was soft-deleted: it is in Trash and restorable (a gone row is `missing`). Nothing to request. */
   | "deleted"
   /** No such record, or an id that never existed. */
   | "missing"
