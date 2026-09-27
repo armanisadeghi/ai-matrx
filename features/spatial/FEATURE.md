@@ -156,6 +156,7 @@ run board, War Room board.
 
 ## Change Log
 
+- 2026-09-27 — Frame fly-to includes its title band in the fit target; War Room’s board-only down throw uses the reversible `remove` action, distinct from destructive `delete`.
 - 2026-09-25 — Created: engine, zoom-paced streaming, demo board (research/study kinds, podcast
   pipeline, generated HTML, 100-stream stress test). Unit tests in `__tests__/engine.test.ts`.
   Same day: browser pass fixed controls swallowed by the pan handler, fit under the toolbar
