@@ -17,6 +17,8 @@
 
 import { useBackHref } from "@/lib/navigation/useBackHref";
 import { useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { usePhonePageActions } from "@/features/shell/components/header/phone-page-actions";
 import AppLink from "@/components/navigation/AppLink";
 import {
   Check,
@@ -142,6 +144,101 @@ function DesktopAction({ action }: { action: EntityHeaderAction }) {
   return <TapTargetButton {...shared} ariaLabel={action.label} />;
 }
 
+/**
+ * The mode + action rows — ONE list, drawn by this header's own sheet and, on a
+ * phone, directly inside the shell's ⋮ sheet ("This page"), so a record's
+ * options are one step, never a sheet that opens a second sheet (page-pass
+ * shared defects, 2026-09-27).
+ */
+function EntitySheetRows({
+  modes,
+  actions,
+  activeHref,
+  onDone,
+}: {
+  modes?: EntityModeHeaderProps["modes"];
+  actions?: EntityHeaderAction[];
+  activeHref?: string;
+  onDone: () => void;
+}) {
+  const router = useRouter();
+  const activeMode = activeHref ? { href: activeHref } : undefined;
+  const setSheetOpen = (_open: false) => onDone();
+  return (
+    <>
+            {modes?.map((m) => {
+        const Icon = m.icon;
+        const isActive = m.href === activeMode?.href;
+        return (
+          <button
+            key={m.href}
+            onClick={() => {
+              setSheetOpen(false);
+              router.push(m.href);
+            }}
+            className="flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge"
+          >
+            {Icon && (
+              <Icon
+                className={cn(
+                  "w-4 h-4 mr-3 shrink-0",
+                  isActive ? "text-primary" : "text-muted-foreground",
+                )}
+              />
+            )}
+            <span
+              className={cn(
+                "text-[15px] flex-1 text-left",
+                isActive && "font-medium",
+              )}
+            >
+              {m.name}
+            </span>
+            {isActive && (
+              <Check className="w-4 h-4 text-primary shrink-0" />
+            )}
+          </button>
+        );
+      })}
+      {actions?.map((a) => {
+        const Icon = a.icon;
+        return (
+          <button
+            key={a.label}
+            disabled={a.disabled}
+            onClick={() => {
+              setSheetOpen(false);
+              if (a.href) {
+                if (a.newTab || EXTERNAL_HREF_RE.test(a.href)) {
+                  window.open(a.href, "_blank", "noopener,noreferrer");
+                } else {
+                  router.push(a.href);
+                }
+              } else {
+                a.onPress?.();
+              }
+            }}
+            className={cn(
+              "flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge last:border-0",
+              a.destructive
+                ? "text-destructive"
+                : a.warning
+                  ? "text-warning"
+                  : "text-foreground",
+              a.disabled && "opacity-50",
+            )}
+          >
+            <Icon className="w-4 h-4 mr-3 shrink-0" />
+            <span className="text-[15px] flex-1 text-left">
+              {a.label}
+            </span>
+          </button>
+        );
+      })}
+    </>
+  );
+}
+
 export function EntityModeHeader({
   backHref,
   entityLabel,
@@ -153,7 +250,10 @@ export function EntityModeHeader({
   right,
 }: EntityModeHeaderProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
-  const router = useRouter();
+  // On a phone the shell's ⋮ hosts this header's options directly.
+  const isPhone = useIsMobile();
+  const { host: phoneSheetHost } = usePhonePageActions();
+  const inShellSheet = isPhone && phoneSheetHost != null;
   // Back returns where this tab came from (filters included); `backHref` is
   // the fallback for a page opened straight from a link.
   const resolvedBackHref = useBackHref(backHref);
@@ -234,6 +334,16 @@ export function EntityModeHeader({
           ) : undefined
         }
         right={
+          inShellSheet ? (
+            hasSheet ? (
+              <EntitySheetRows
+                modes={modes}
+                actions={actions}
+                activeHref={activeMode?.href}
+                onDone={() => {}}
+              />
+            ) : undefined
+          ) : (
           <>
             {/* Desktop: extras + declarative actions as tap targets */}
             <div className="hidden sm:flex items-center">
@@ -253,9 +363,10 @@ export function EntityModeHeader({
               </div>
             )}
           </>
+          )
         }
       />
-      {hasSheet && (
+      {hasSheet && !inShellSheet && (
         <BottomSheet
           open={sheetOpen}
           onOpenChange={setSheetOpen}
@@ -273,75 +384,12 @@ export function EntityModeHeader({
             }
           />
           <BottomSheetBody>
-            {modes?.map((m) => {
-              const Icon = m.icon;
-              const isActive = m.href === activeMode?.href;
-              return (
-                <button
-                  key={m.href}
-                  onClick={() => {
-                    setSheetOpen(false);
-                    router.push(m.href);
-                  }}
-                  className="flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge"
-                >
-                  {Icon && (
-                    <Icon
-                      className={cn(
-                        "w-4 h-4 mr-3 shrink-0",
-                        isActive ? "text-primary" : "text-muted-foreground",
-                      )}
-                    />
-                  )}
-                  <span
-                    className={cn(
-                      "text-[15px] flex-1 text-left",
-                      isActive && "font-medium",
-                    )}
-                  >
-                    {m.name}
-                  </span>
-                  {isActive && (
-                    <Check className="w-4 h-4 text-primary shrink-0" />
-                  )}
-                </button>
-              );
-            })}
-            {actions?.map((a) => {
-              const Icon = a.icon;
-              return (
-                <button
-                  key={a.label}
-                  disabled={a.disabled}
-                  onClick={() => {
-                    setSheetOpen(false);
-                    if (a.href) {
-                      if (a.newTab || EXTERNAL_HREF_RE.test(a.href)) {
-                        window.open(a.href, "_blank", "noopener,noreferrer");
-                      } else {
-                        router.push(a.href);
-                      }
-                    } else {
-                      a.onPress?.();
-                    }
-                  }}
-                  className={cn(
-                    "flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge last:border-0",
-                    a.destructive
-                      ? "text-destructive"
-                      : a.warning
-                        ? "text-warning"
-                        : "text-foreground",
-                    a.disabled && "opacity-50",
-                  )}
-                >
-                  <Icon className="w-4 h-4 mr-3 shrink-0" />
-                  <span className="text-[15px] flex-1 text-left">
-                    {a.label}
-                  </span>
-                </button>
-              );
-            })}
+            <EntitySheetRows
+              modes={modes}
+              actions={actions}
+              activeHref={activeMode?.href}
+              onDone={() => setSheetOpen(false)}
+            />
           </BottomSheetBody>
         </BottomSheet>
       )}
