@@ -176,6 +176,8 @@ async function buildJs(): Promise<{ code: string; meta: Metafile }> {
       sessionStorage: "__matrxFrameStorage",
       "window.localStorage": "__matrxFrameStorage",
       "window.sessionStorage": "__matrxFrameStorage",
+      "globalThis.localStorage": "__matrxFrameStorage",
+      "globalThis.sessionStorage": "__matrxFrameStorage",
     },
     logLevel: "info",
   });
