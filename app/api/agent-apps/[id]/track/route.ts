@@ -24,7 +24,7 @@ import { getClaimsUser } from "@/utils/supabase/resolveUser";
  * sub-route can track runs against draft/private apps. The legacy
  * `aga_executions_insert_anon` RLS policy required `status='published'`,
  * which would block tracking from the management shell. Auth is still
- * captured: if the request carries a session cookie we record `created_by`,
+ * captured: if the request carries a session cookie we record `runner_user_id`,
  * otherwise we fall back to the `X-Fingerprint-ID` header.
  *
  * Constraints:
@@ -86,7 +86,7 @@ export async function POST(
       );
     }
 
-    // Resolve identity: session cookie → created_by; otherwise fingerprint
+    // Resolve identity: session cookie → runner_user_id; otherwise fingerprint
     // header. Both branches end up using the admin client to write so RLS
     // policies don't gate tracking against draft apps.
     const supabaseSsr = await createClient();
@@ -167,7 +167,12 @@ export async function POST(
       organization_id: appRow.organization_id,
       kind: body.event === "visit" ? "visit" : "run",
       task_id: taskId,
-      created_by: user?.id ?? null,
+      // WHO RAN IT. Not `created_by`: on this component table the database
+      // stamps created_by with the APP OWNER, so the runner has its own column
+      // (a guest is NULL here and identified by fingerprint / IP). Keying the
+      // rate limiter on created_by made the second guest ever 500 on
+      // uq_aga_rate_limits_user (page-pass /p/[slug], 2026-09-27).
+      runner_user_id: user?.id ?? null,
       fingerprint: user ? null : fingerprint,
       ip_address: ip ?? null,
       user_agent: userAgent,

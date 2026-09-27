@@ -192,7 +192,7 @@ export default async function PublicAppPage({
           surfaceName={PUBLIC_AGENT_APP_SURFACE_NAME}
         />
       </main>
-      <MadeWithAiMatrx />
+      <MadeWithAiMatrx publisherName={rpcRow.publisher_name} />
       {/* Agent output can open the canvas; `(link)` carries no canvas host of
           its own, so the app page mounts the lazy front door itself. */}
       <CanvasSideSheet />

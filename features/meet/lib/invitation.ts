@@ -6,18 +6,33 @@
 
 import type { MeetingRecord } from "@ai-matrx/meet/react";
 import { endFromDuration, type CalendarEvent } from "@/lib/calendar/eventLinks";
+import { describeRecurrence } from "@/features/meet/lib/recurrence";
 
 /** The fields an invitation needs — a `MeetingRecord` satisfies it. */
 export type InvitableMeeting = Pick<
   MeetingRecord,
-  "id" | "title" | "kind" | "scheduledFor" | "scheduledDurationMinutes" | "endedAt"
+  | "id"
+  | "title"
+  | "kind"
+  | "scheduledFor"
+  | "scheduledDurationMinutes"
+  | "endedAt"
+  | "timeZone"
+  | "recurrenceRule"
+  | "agenda"
 >;
+
+/** The meeting's repeat rule, when it has one (a `kind` alone never invents a rule). */
+function ruleOf(meeting: InvitableMeeting): string | null {
+  const rule = meeting.recurrenceRule ?? null;
+  return rule !== null && rule.trim() !== "" ? rule : null;
+}
 
 export const JOIN_INSTRUCTIONS = "No account needed. Open the link and enter your name to join.";
 
 export interface InvitationOptions {
   readonly locale?: string;
-  /** IANA zone the time is written in; the viewer's own zone when omitted. */
+  /** IANA zone the time is written in; the MEETING's own zone when omitted (the viewer's when it has none). */
   readonly timeZone?: string;
 }
 
@@ -37,7 +52,9 @@ export function invitationWhen(
     hour: "numeric",
     minute: "2-digit",
     timeZoneName: "short",
-    ...(options.timeZone ? { timeZone: options.timeZone } : {}),
+    ...((options.timeZone ?? meeting.timeZone)
+      ? { timeZone: options.timeZone ?? meeting.timeZone }
+      : {}),
   });
 }
 
@@ -62,10 +79,16 @@ export function invitationText(
     const length = durationLabel(meeting.scheduledDurationMinutes);
     lines.push(`When: ${when}${length ? ` (${length})` : ""}`);
   }
-  if (meeting.kind === "recurring") {
+  const rule = ruleOf(meeting);
+  if (rule !== null) {
+    lines.push(`Repeats: ${describeRecurrence(rule, options.locale)}. The same link works for every session.`);
+  } else if (meeting.kind === "recurring") {
     lines.push("This is a recurring meeting. The same link works for every session.");
   }
-  lines.push(`Join: ${link}`, "", JOIN_INSTRUCTIONS);
+  lines.push(`Join: ${link}`);
+  const agenda = meeting.agenda?.trim();
+  if (agenda) lines.push("", "Agenda:", agenda);
+  lines.push("", JOIN_INSTRUCTIONS);
   return lines.join("\n");
 }
 
@@ -99,17 +122,22 @@ export function meetingCalendarEvent(
 ): CalendarEvent | null {
   if (meeting.scheduledFor === null || meeting.endedAt !== null) return null;
   if (Number.isNaN(new Date(meeting.scheduledFor).getTime())) return null;
+  const rule = ruleOf(meeting);
   const recurring =
-    meeting.kind === "recurring"
-      ? "\nThis is a recurring meeting. The same link works for every session."
+    rule !== null || meeting.kind === "recurring"
+      ? "\nThe same link works for every session."
       : "";
   return {
-    uid: `meet-${meeting.id}@aimatrx.com`,
+    // The SAME UID the server's emailed invitation carries, so a person who imports both
+    // gets one event that updates, never two.
+    uid: `${meeting.id}@meet.aimatrx.com`,
     title: meeting.title,
     start: new Date(meeting.scheduledFor).toISOString(),
     end: endFromDuration(meeting.scheduledFor, meeting.scheduledDurationMinutes),
     description: `Join: ${link}\n${JOIN_INSTRUCTIONS}${recurring}`,
     location: link,
     url: link,
+    rrule: rule,
+    timeZone: meeting.timeZone ?? null,
   };
 }

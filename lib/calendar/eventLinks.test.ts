@@ -4,6 +4,7 @@ import {
   icsContent,
   icsFileName,
   outlookCalendarUrl,
+  outlookWebSupports,
   toCalendarUtc,
   type CalendarEvent,
 } from "./eventLinks";
@@ -70,5 +71,41 @@ describe("calendar event links", () => {
   it("names the file after the event", () => {
     expect(icsFileName("Weekly client check-in")).toBe("weekly-client-check-in.ics");
     expect(icsFileName("!!!")).toBe("event.ics");
+  });
+});
+
+describe("a repeating event", () => {
+  const series: CalendarEvent = {
+    ...event,
+    start: "2026-10-06T17:00:00.000Z",
+    end: "2026-10-06T17:30:00.000Z",
+    rrule: "FREQ=WEEKLY;BYDAY=TU;UNTIL=20261222",
+    timeZone: "America/Los_Angeles",
+  };
+
+  it("hands Google the rule and the zone it expands in", () => {
+    const url = new URL(googleCalendarUrl(series));
+    expect(url.searchParams.get("recur")).toBe("RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261222T235959Z");
+    expect(url.searchParams.get("ctz")).toBe("America/Los_Angeles");
+  });
+
+  it("writes the .ics in the meeting's zone with the RRULE, so 10:00 survives DST", () => {
+    const ics = icsContent(series, new Date("2026-09-27T12:00:00.000Z"));
+    expect(ics).toContain("DTSTART;TZID=America/Los_Angeles:20261006T100000\r\n");
+    expect(ics).toContain("DTEND;TZID=America/Los_Angeles:20261006T103000\r\n");
+    expect(ics).toContain("RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261222T235959Z\r\n");
+    expect(ics).not.toContain("DTSTART:2026");
+  });
+
+  it("tells the panel Outlook on the web cannot carry a series", () => {
+    expect(outlookWebSupports(series)).toBe(false);
+    expect(outlookWebSupports(event)).toBe(true);
+  });
+
+  it("keeps a one-off event in UTC with no rule", () => {
+    const ics = icsContent(event, new Date("2026-09-27T12:00:00.000Z"));
+    expect(ics).toContain("DTSTART:20260928T170000Z");
+    expect(ics).not.toContain("RRULE");
+    expect(new URL(googleCalendarUrl(event)).searchParams.get("recur")).toBeNull();
   });
 });

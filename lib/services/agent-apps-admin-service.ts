@@ -94,6 +94,11 @@ export interface UpdateAgentAppAdminInput {
 export interface AgentAppExecutionRow {
   id: string;
   app_id: string;
+  /**
+   * The signed-in RUNNER — read from the row's `runner_user_id`. Never
+   * `created_by`, which on these component rows is the app's owner. NULL for
+   * a guest (then `fingerprint` / `ip_address`).
+   */
   user_id?: string | null;
   fingerprint?: string | null;
   ip_address?: string | null;
@@ -137,6 +142,11 @@ export interface AgentAppErrorRow {
 export interface AgentAppRateLimitRow {
   id: string;
   app_id: string;
+  /**
+   * The signed-in RUNNER — read from the row's `runner_user_id`. Never
+   * `created_by`, which on these component rows is the app's owner. NULL for
+   * a guest (then `fingerprint` / `ip_address`).
+   */
   user_id?: string | null;
   fingerprint?: string | null;
   ip_address?: string | null;
@@ -476,6 +486,7 @@ export async function fetchAgentAppExecutions(filters?: {
     const appMap = new Map((apps ?? []).map((a) => [a.id, a]));
     return data.map((item) => ({
       ...item,
+      user_id: item.runner_user_id,
       app_name: appMap.get(item.app_id)?.name,
       app_slug: appMap.get(item.app_id)?.slug,
     })) as AgentAppExecutionRow[];
@@ -617,6 +628,7 @@ export async function fetchAgentAppRateLimits(filters?: {
     const appMap = new Map((apps ?? []).map((a) => [a.id, a]));
     return data.map((item) => ({
       ...item,
+      user_id: item.runner_user_id,
       app_name: appMap.get(item.app_id)?.name,
       app_slug: appMap.get(item.app_id)?.slug,
     })) as AgentAppRateLimitRow[];
