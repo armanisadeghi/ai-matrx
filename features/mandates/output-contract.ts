@@ -17,6 +17,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { hasBrowserSession } from "@/lib/supabase/hasBrowserSession";
 import { isJsonObject } from "@/types/json";
 
 /**
@@ -118,13 +119,20 @@ export async function fetchAgentOutputSchemas(
   }
 
   const supabase = createClient();
-  const query = Promise.resolve(
-    supabase
-      .schema("agent")
-      .from("definition")
-      .select("id, output_schema")
-      .in("id", misses),
-  ).then(({ data, error }) => {
+  // `agent.definition` is a signed-in read; a guest (a public app at
+  // /p/<slug>) can read no agent's schema, so it has none — not a failure.
+  // Decided INSIDE the shared read so concurrent callers still dedupe on it.
+  const query = hasBrowserSession()
+    .then((signedIn) =>
+      signedIn
+        ? supabase
+            .schema("agent")
+            .from("definition")
+            .select("id, output_schema")
+            .in("id", misses)
+        : { data: [], error: null },
+    )
+    .then(({ data, error }) => {
     if (error) throw error;
     const byId = new Map(
       (data ?? []).map((row) => [

@@ -12,6 +12,10 @@ jest.mock("@/utils/supabase/client", () => ({
   }),
 }));
 
+jest.mock("@/lib/supabase/hasBrowserSession", () => ({
+  hasBrowserSession: () => Promise.resolve(true),
+}));
+
 import {
   fetchAgentOutputSchemas,
   invalidateOutputSchemaCache,
@@ -37,6 +41,8 @@ describe("fetchAgentOutputSchemas", () => {
 
     const first = fetchAgentOutputSchemas(["agent-1"]);
     const second = fetchAgentOutputSchemas(["agent-1"]);
+    // The read waits for the (local) session check before it is issued.
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(inCalls).toHaveBeenCalledTimes(1);
 
     resolveQuery?.({

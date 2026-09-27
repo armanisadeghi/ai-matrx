@@ -16,6 +16,7 @@
 // ENTITY tags (setEntityScopes, replace semantics) — never appContextSlice.
 // The sidebar's active selection is untouched regardless of choice.
 
+import { hasBrowserSession } from "@/lib/supabase/hasBrowserSession";
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import { promptScopeMismatch } from "@/components/dialogs/scope-mismatch/scopeMismatchOpener";
 import { selectActiveScopeIds } from "@/features/scopes/redux/selectors/active-context";
@@ -77,6 +78,9 @@ export function ensureConversationScopesOrAsk(
   conversationId: string,
 ): AppThunk<Promise<ConversationScopeGateResult>> {
   return async (dispatch, getState) => {
+    // A signed-out visitor (a guest on a public app) has no scopes and no
+    // saved tags to read — nothing to compare, nothing to ask.
+    if (!(await hasBrowserSession())) return { blocked: false };
     // Fetch (cached after first load) the chat's durable tags. A brand-new
     // conversation id simply has no assignment rows → C = ∅.
     await dispatch(ensureEntityScopes("conversation", conversationId));

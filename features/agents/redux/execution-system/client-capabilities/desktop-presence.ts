@@ -23,6 +23,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { hasBrowserSession } from "@/lib/supabase/hasBrowserSession";
 
 /** matrx-local heartbeats every 5 min; allow one missed beat + 60s slack. */
 const LIVE_WINDOW_MS = 11 * 60_000;
@@ -64,6 +65,8 @@ function readEngineVersion(metadata: unknown): string {
 }
 
 async function fetchPresence(): Promise<DesktopPresence | null> {
+  // A signed-out visitor has no desktop app of their own to find.
+  if (!(await hasBrowserSession())) return null;
   const cutoff = new Date(Date.now() - LIVE_WINDOW_MS).toISOString();
   // VIEW LAW: container-scoped via RLS — app_instances rows are keyed (user_id, instance_id), see docblock above
   const { data, error } = await supabase
