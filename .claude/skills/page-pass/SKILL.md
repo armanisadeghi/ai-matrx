@@ -94,7 +94,7 @@ session, never you.
 |---|---|---|
 | Server | none needed to look; `pnpm preview:start` (the ONE shared server, `http://<session>.localhost:3001`) only when you must see an unreleased change | **none** — a container cannot run a dev server and a type check together |
 | Look and prove | `TMPDIR=/tmp/pl-<you> pnpm page:look --route <route> --commit <sha>` against `https://aimatrx.com` after the release carrying your commit (about hourly; exit 3 = not live yet — work on something else) | same |
-| Agent surface proof | `TMPDIR=/tmp/pp-<you> pnpm surface:probe --surface <name> --route <route> --commit <sha> --out <file>` (+ `--agent '<request>'` for write targets) | same |
+| Agent surface proof | `TMPDIR=/tmp/pp-<you> pnpm surface:probe --surface <name> --route <route> --commit <sha> --out <file>` (a window/dialog surface: add `--open 'SELECTOR=>TEXT'` so it is opened before the read) (+ `--agent '<request>'` for write targets) | same |
 | A view you cannot see | `deferred-visual` with the exact step | same |
 
 **Both lanes:**
@@ -250,6 +250,10 @@ surface). Say which parts you judged as authored content.
 - Every record the page names (a person, agent, document, a count over our
   records) opens — open, new tab, peek or window. Every detected problem
   carries its one-click fix.
+- **What a person typed is never lost** — on every page, window and dialog:
+  closing, navigating or a refresh keeps the draft (or asks first).
+- **A control the device cannot run is absent** (screen capture on a phone),
+  never a button that fails.
 - **The screen shows what was saved.** After a save the view re-reads (or
   applies the returned row) — never the pre-save copy. **Saving an untouched
   form changes nothing:** a save writes only the fields the person changed, and

@@ -138,7 +138,7 @@ Judge by who is looking at it and why.
 - **Adds:** it mounts its OWN right-click menu and surface (otherwise the page
   underneath answers with the wrong agents); the page behind stays visible and
   clickable; the header drags it; its phone presentation is set (full screen
-  or bottom sheet); a dialog with its own fields marks its root
+  or bottom sheet); its main field is focused when it opens (desktop); a dialog with its own fields marks its root
   `data-surface-layer`. Procedure: `window-panels`, `surface-authoring/references/overlay-surfaces.md`.
 
 ## Shared link

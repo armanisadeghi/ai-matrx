@@ -29,6 +29,9 @@
  * real agent writing through it, not a read. Added 2026-09-26 after an agent on
  * /education/classes "succeeded" through a generic tool and left half-built
  * records that a read probe could never have caught.
+ *   --open 'SELECTOR=>TEXT'   before the FIRST read, click to open a window or
+ *                         dialog (repeatable, in order) — probes an overlay
+ *                         surface instead of the page underneath.
  *   --click 'SELECTOR=>TEXT'  before the agent runs, click the first SELECTOR
  *                         whose text starts with TEXT (e.g. open a dialog:
  *                         'button=>New class'). Repeatable.
@@ -72,7 +75,7 @@ const args = process.argv.slice(2);
 const opts = {
   routes: [],
   fills: [],
-  clicks: [],
+  clicks: [], opens: [],
   base: "https://aimatrx.com",
   settle: 12000,
   agentName: "Badass Agent",
@@ -92,6 +95,7 @@ for (let i = 0; i < args.length; i += 1) {
   else if (a === "--login-url") (opts.loginUrl = v), (i += 1);
   else if (a === "--commit") (opts.commit = v), (i += 1);
   else if (a === "--click") opts.clicks.push(v), (i += 1);
+  else if (a === "--open") opts.opens.push(v), (i += 1);
   else if (a === "--agent") (opts.agent = v), (i += 1);
   else if (a === "--agent-name") (opts.agentName = v), (i += 1);
   else if (a === "--agent-wait") (opts.agentWait = Number(v)), (i += 1);
@@ -502,6 +506,16 @@ try {
       await page.waitForTimeout(opts.settle);
       result.finalUrl = page.url().replace(/\?.*$/, "");
       result.signedIn = (await page.locator('input[type="email"]').count()) === 0;
+      // --open: open a window/dialog BEFORE reading, so an overlay surface is
+      // probed instead of the page underneath ('SELECTOR=>TEXT', repeatable,
+      // run in order on this load).
+      for (const spec of opts.opens) {
+        const sep = spec.indexOf("=>");
+        const sel = sep < 0 ? spec : spec.slice(0, sep);
+        const text = sep < 0 ? undefined : spec.slice(sep + 2);
+        if (!(await pointerClick(page, sel, text))) result.errors.push(`--open ${spec}: not found`);
+        await page.waitForTimeout(2500);
+      }
 
       if (!(await pointerClick(page, '[aria-label="Agents for this page"]')))
         result.errors.push('header button "Agents for this page" not found');
