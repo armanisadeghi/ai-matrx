@@ -1245,6 +1245,19 @@ function main() {
     for (const name of exportedComponents(src)) menuCarriers.add(name);
   }
 
+  /**
+   * A component handed to a carrier as its CONTENT is under that carrier's
+   * menu too — e.g. MergeFieldInput rendered in ProTextarea's `editor` slot by
+   * MergeFieldTextarea: ProTextarea's EditableContextMenu wraps the editor.
+   * So every tag in a file that renders a carrier joins the ancestor net.
+   */
+  for (const [, src] of files) {
+    if (MOUNTS_MENU.test(src)) continue;
+    const tags = [...src.matchAll(/<([A-Z]\w*)[\s/>]/g)].map((m) => m[1]);
+    if (!tags.some((t) => menuCarriers.has(t))) continue;
+    for (const t of tags) renderedUnderAMenu.add(t);
+  }
+
   const findings: Finding[] = [];
   const covered: Finding[] = [];
 
