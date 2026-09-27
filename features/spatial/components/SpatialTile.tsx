@@ -208,7 +208,10 @@ export function SpatialTile({
       header.removeEventListener("pointerup", up);
       header.removeEventListener("pointercancel", cancel);
     };
-  }, [store, id, canMove]);
+  // Focus moves the card through a portal, replacing the header element on
+  // both legs of the round trip. Rebind when either portal state changes so
+  // the returned on-board header can still start a drag.
+  }, [store, id, canMove, focused, focusHost]);
 
   // Entering focus: the card grows out of the tile's on-board rect (FLIP).
   useEffect(() => {
