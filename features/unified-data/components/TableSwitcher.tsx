@@ -17,6 +17,7 @@ import Link from "next/link";
 import { Check, ChevronDown, LayoutGrid, Search } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { useTables } from "@ai-matrx/records/react";
+import { laneFor } from "@ai-matrx/records-ui";
 import { cn } from "@/lib/utils";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -41,8 +42,16 @@ export function TableSwitcher({ tableId, name, allTablesHref, footer }: TableSwi
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const tables = useTables();
+  // A person switches between THEIR tables. The app's own tables — a choice column's list of
+  // choices ("Plan Type options"), a scope's table (Patient, Procedure) — are kept by the app and
+  // are not places to go (lane DATA-V2-BASICS: the switcher listed "Spore test choices" three times
+  // among Harbor Dental's real tables). The same rule as the tables home's lanes (`laneFor`).
   const listed = useMemo(
-    () => tablesMatching((tables.data ?? []).filter((t) => (t.name ?? "").trim() !== ""), query),
+    () =>
+      tablesMatching(
+        (tables.data ?? []).filter((t) => (t.name ?? "").trim() !== "" && laneFor(t) !== "app" && laneFor(t) !== "system"),
+        query,
+      ),
     [tables.data, query],
   );
 
