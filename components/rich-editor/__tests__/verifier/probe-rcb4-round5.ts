@@ -1,6 +1,6 @@
 import { marked } from "marked";
-import { rewriteTableSource } from "/Users/armanisadeghi/code/matrx-frontend/components/rich-editor/core/table-source";
-import { parseMarkdownTable } from "/Users/armanisadeghi/code/matrx-frontend/components/mardown-display/blocks/table/parseMarkdownTable";
+import { rewriteTableSource } from "@/components/rich-editor/core/table-source";
+import { parseMarkdownTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
 const t = "Dock | Owner | Status\n--- | --- | ---\nD1 | Dana | ok\nD2 | Luis | late";
 const g = parseMarkdownTable(t)!; console.log("parsed", !!g);
 for (const v of ["-", "- n/a", "1. first", "# 3", "> see", "+", "D2"]) {

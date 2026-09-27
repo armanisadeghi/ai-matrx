@@ -1,8 +1,8 @@
 import { Editor, getSchema } from "@tiptap/core";
 import { marked } from "marked";
 import fs from "node:fs";
-import { createRichEditorExtensions } from "/Users/armanisadeghi/code/matrx-frontend/components/rich-editor/core/extensions";
-import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "/Users/armanisadeghi/code/matrx-frontend/components/rich-editor/core/visual-document";
+import { createRichEditorExtensions } from "@/components/rich-editor/core/extensions";
+import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "@/components/rich-editor/core/visual-document";
 const ext = createRichEditorExtensions(); const schema = getSchema(ext);
 const text = fs.readFileSync(process.argv[2], "utf8");
 const alpha = ["a", " ", "\\", "|", "`", "*", "_", "\\|", "<", "$", "[", "]", "-", "#", ">", "1.", "~", "&"];

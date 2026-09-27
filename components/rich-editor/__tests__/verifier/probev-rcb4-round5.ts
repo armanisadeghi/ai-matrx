@@ -1,7 +1,7 @@
 import { Editor, getSchema } from "@tiptap/core";
 import { marked } from "marked";
-import { createRichEditorExtensions } from "/Users/armanisadeghi/code/matrx-frontend/components/rich-editor/core/extensions";
-import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "/Users/armanisadeghi/code/matrx-frontend/components/rich-editor/core/visual-document";
+import { createRichEditorExtensions } from "@/components/rich-editor/core/extensions";
+import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "@/components/rich-editor/core/visual-document";
 const ext = createRichEditorExtensions(); const schema = getSchema(ext);
 const text = "# Docks\n\nDock | Owner | Status\n--- | --- | ---\nD1 | Dana | ok\nD2 | Luis | late\n\nEnd.\n";
 for (const v of ["-", "- n/a", "1. first", "> see", "# 3"]) {
