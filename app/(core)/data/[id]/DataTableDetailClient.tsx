@@ -76,10 +76,56 @@ function useWhereThisTableLives(tableId: string): Home & { retry: () => void } {
 }
 
 /**
+ * DID THIS TABLE MOVE HERE FROM THE OLDER STORE? A moved table keeps its older row, archived, with
+ * `metadata.moved_to`; a table born in the new system has none. `null` while asking; any failure to
+ * read answers "not moved", so the page never claims a move it cannot see.
+ */
+function useCameFromTheOlderStore(tableId: string): boolean | null {
+  const [moved, setMoved] = useState<boolean | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const { data, error } = await supabase
+          .schema("workbench")
+          .from("udt_datasets")
+          .select("id, metadata")
+          .eq("id", tableId)
+          .maybeSingle();
+        const metadata = (data as { metadata?: unknown } | null)?.metadata;
+        if (alive) setMoved(!error && typeof metadata === "object" && metadata !== null && "moved_to" in metadata);
+      } catch {
+        if (alive) setMoved(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [tableId]);
+  return moved;
+}
+
+/**
  * THE TABLE LIVES IN THE NEW SYSTEM. The new table page (records-ui TablePage, the /data-v2 screen)
  * under one line that says so; the line names where to switch back.
  */
 function MovedTable({ tableId }: { tableId: string }) {
+  const router = useRouter();
+  const moved = useCameFromTheOlderStore(tableId);
+  // BORN IN THE NEW SYSTEM, IT HAS NO OLD ADDRESS (lane HANDOVER, 2026-09-27): a table made there
+  // and opened at /data/<id> (an older link shape some lists still use) read "This table now lives
+  // in the new system … its organization switched its Data tables", which it never did. It opens at
+  // its own address instead.
+  useEffect(() => {
+    if (moved === false) router.replace(`/data-v2/${tableId}`);
+  }, [moved, router, tableId]);
+  if (moved !== true) {
+    return (
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+        <p className="p-4 text-sm text-muted-foreground">Opening the table&hellip;</p>
+      </div>
+    );
+  }
   return (
     <LivesInTheNewSystem tableId={tableId} testId="table-lives-in-new-system">
       This table now lives in the new system. Same table, same address; its organization switched its

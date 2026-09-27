@@ -116,6 +116,10 @@ export default function OrgTablesPage() {
             selectColumns={SELECT_COLS}
             ownedQuery={ownedQuery}
             mapRow={mapRow}
+            // A table in the new system opens at its own address; only an older one at /data/<id>
+            // (lane HANDOVER: every card opened the older address, which then claimed the table
+            // had moved there).
+            getHref={(id) => (storeTableIds.has(id) ? `/data-v2/${id}` : `/data/${id}`)}
             emptyTitle="No shared tables yet"
             emptyDescription="Data tables owned by this organization will appear here, along with tables other members share."
             emptyIcon={
