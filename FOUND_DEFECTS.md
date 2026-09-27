@@ -15,7 +15,19 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D355 — Any signed-in person can grant themselves Premium: `billing.user_plan` is client-writable (2026-09-27)
+### D355 — FIXED 2026-09-27 — Any signed-in person could grant themselves Premium: `billing.user_plan` was client-writable
+
+**Fixed live (2026-09-27, page-pass coordinator):** `platform.entity_types.client_read_only = true` for
+`billing_user_plan` and `billing_usage_ledger` (the same hole: a person could delete their own usage rows to
+reset metered caps), then `iam.apply_table_grants('billing', <table>, 'personal')`. `authenticated` now holds
+SELECT only on both (table and column level); proven as the test admin: `update billing.user_plan set
+tier='premium'` and `delete from billing.usage_ledger` both refuse 42501, own-row SELECT still returns the
+row. Writers are unaffected: `seed_prelaunch_complimentary` and `entitlement_consume` are SECURITY DEFINER,
+Stripe sync and aidream use the service role. The registry flag makes every future `apply_rls` /
+`apply_table_grants` keep the read-only grant. Left as is, deliberately: the catalog tables (`plan`,
+`price`, `product`, `plan_limit`, `capability`, `capability_limit`, `spend_guardrail`) keep client writes
+because admin screens write them from the browser; a non-admin can only touch rows they created, which the
+resolvers and pricing reads do not select. Original report:
 
 Measured live 2026-09-27 (read-only): `authenticated` holds INSERT/UPDATE/DELETE on
 `billing.user_plan` (column UPDATE on `tier` included), and the RLS policies `std_insert` /
