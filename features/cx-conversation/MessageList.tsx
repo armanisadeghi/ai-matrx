@@ -145,7 +145,7 @@ export function MessageList({
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3 py-12">
         <MessageSquare className="h-10 w-10 opacity-30" />
-        {/* read-gate-exempt: messages come from _legacy-stubs selectors that return a constant empty list; no read exists here to fail */}
+        {/* read-gate-exempt: UNREACHABLE — no route renders features/cx-conversation (UnifiedChatWrapper is imported only as a type); its stub list is removed with the directory in the chat-UI package plan, step 7 (common-docs/projects/npm-package-extraction/CHAT-UI-PACKAGE-DESIGN.md). Wiring a dead chain to live data would ship nothing to anyone. */}
         <p className="text-sm">No messages yet. Start a conversation.</p>
       </div>
     );
