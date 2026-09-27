@@ -64,6 +64,8 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ className }) => {
   const [scannedFiles, setScannedFiles] = useState(0);
   const [searching, setSearching] = useState(false);
   const [truncated, setTruncated] = useState(false);
+  /** Folders/files the fallback walker could not read — their matches are missing. */
+  const [unreadable, setUnreadable] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
@@ -118,11 +120,14 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ className }) => {
       const needle = caseSensitive ? q : q.toLowerCase();
       const hits: Match[] = [];
       let scanned = 0;
+      let failedReads = 0;
 
       const walk = async (dir: string): Promise<FilesystemNode[]> => {
         try {
           return await filesystem.listChildren(dir);
         } catch {
+          failedReads++;
+          if (runId === activeRun.current) setUnreadable(failedReads);
           return [];
         }
       };
@@ -156,6 +161,9 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ className }) => {
               setScannedFiles(scanned);
             }
           } catch {
+            // Its matches are missing — counted and said, never a silent "No matches".
+            failedReads++;
+            if (runId === activeRun.current) setUnreadable(failedReads);
             continue;
           }
         }
@@ -205,6 +213,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ className }) => {
       setPathResults([]);
       setScannedFiles(0);
       setTruncated(false);
+      setUnreadable(0);
       if (!trimmed) {
         abortRef.current?.abort();
         return;
@@ -375,9 +384,26 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ className }) => {
           mode === "content" &&
           matches.length === 0 && (
             <div className="p-3 text-[11px] text-neutral-500">
-              No matches found.
+              {unreadable > 0
+                ? `No matches in the files that could be read — ${unreadable} folder${unreadable === 1 ? "" : "s"}/file${unreadable === 1 ? "" : "s"} couldn't be read, so this is not a complete answer.`
+                : "No matches found."}
+              {unreadable > 0 ? (
+                <ErrorAlchemyMenu
+                  error={`${unreadable} folders/files couldn't be read during the search`}
+                  operation="Search file contents"
+                />
+              ) : null}
             </div>
           )}
+        {query && !searching && unreadable > 0 && mode === "content" && matches.length > 0 && (
+          <div className="px-3 py-1.5 text-[11px] text-amber-600 dark:text-amber-400" role="status">
+            {unreadable} folder{unreadable === 1 ? "" : "s"}/file{unreadable === 1 ? "" : "s"} couldn&rsquo;t be read — their matches are missing from this list.
+            <ErrorAlchemyMenu
+              error={`${unreadable} folders/files couldn't be read during the search`}
+              operation="Search file contents"
+            />
+          </div>
+        )}
         {query &&
           !searching &&
           !error &&
