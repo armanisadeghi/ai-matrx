@@ -104,10 +104,8 @@ export async function listPublicDecks({
     p_certified_only: certifiedOnly ?? false,
     p_limit: limit ?? 60,
   });
-  if (error) {
-    console.error("[library] listPublicDecks failed:", error.message);
-    return [];
-  }
+  // A failed read THROWS: `[]` read as "No public decks match yet" (RC-B12).
+  if (error) throw new Error(`Couldn't load the community decks: ${error.message}`);
   return ((data ?? []) as PublicDeckRow[]).map(mapPublicDeck);
 }
 

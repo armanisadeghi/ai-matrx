@@ -23,6 +23,9 @@ import {
   parseCopyDecksValue,
   parseCreateDeckSuggestionsValue,
 } from "../communitySurface";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { extractErrorMessage } from "@/utils/errors";
 
 /**
  * Community library browse surface. Search + certified-only facet over public
@@ -31,11 +34,14 @@ import {
  */
 export function LibraryBrowser({
   initialDecks,
+  initialError = null,
   isSuperAdmin,
   isSignedIn: isSignedInOnServer,
   openSuggestionCount = 0,
 }: {
   initialDecks: PublicDeck[];
+  /** The server's first read failed — say it, never "no decks". */
+  initialError?: string | null;
   isSuperAdmin: boolean;
   isSignedIn: boolean;
   /** Open suggestions on the viewer's own decks — the badge on the inbox door. */
@@ -48,6 +54,7 @@ export function LibraryBrowser({
   const isSignedInOnClient = useAppSelector(selectIsAuthenticated);
   const isSignedIn = isSignedInOnServer || isSignedInOnClient;
   const [decks, setDecks] = useState<PublicDeck[]>(initialDecks);
+  const [loadError, setLoadError] = useState<unknown>(initialError);
   const [search, setSearch] = useState("");
   const [certifiedOnly, setCertifiedOnly] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -55,8 +62,13 @@ export function LibraryBrowser({
 
   const runQuery = useCallback((s: string, c: boolean) => {
     startTransition(async () => {
-      const next = await listPublicDecks({ search: s, certifiedOnly: c });
-      setDecks(next);
+      try {
+        const next = await listPublicDecks({ search: s, certifiedOnly: c });
+        setDecks(next);
+        setLoadError(null);
+      } catch (err) {
+        setLoadError(err);
+      }
     });
   }, []);
 
@@ -211,7 +223,23 @@ export function LibraryBrowser({
         </Button>
       </div>
 
-      {decks.length === 0 ? (
+      {loadError && decks.length > 0 ? (
+        <StaleDataNotice
+          hasData
+          what="the community decks"
+          detail={extractErrorMessage(loadError)}
+          onRetry={() => runQuery(search, certifiedOnly)}
+          className="mb-4"
+        />
+      ) : null}
+      {loadError && decks.length === 0 ? (
+        <ReadFailure
+          error={loadError}
+          what="the community decks"
+          onRetry={() => runQuery(search, certifiedOnly)}
+          className="m-0"
+        />
+      ) : decks.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border py-20 text-center text-muted-foreground">
           {isPending ? "Searching…" : "No public decks match yet."}
         </div>

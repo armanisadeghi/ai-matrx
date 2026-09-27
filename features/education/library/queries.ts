@@ -42,7 +42,9 @@ export async function fetchOwnerOpenSuggestionCount(): Promise<number> {
   return count ?? 0;
 }
 
-export async function fetchInitialPublicDecks(limit = 60): Promise<PublicDeck[]> {
+export async function fetchInitialPublicDecks(
+  limit = 60,
+): Promise<{ decks: PublicDeck[]; error: string | null }> {
   const sb = getScriptSupabaseClient();
   const { data, error } = await sb.rpc("edu_public_decks", {
     p_search: undefined,
@@ -50,12 +52,13 @@ export async function fetchInitialPublicDecks(limit = 60): Promise<PublicDeck[]>
     p_limit: limit,
   });
   if (error) {
-    // Loud, but don't 500 the whole library on a listing hiccup — the client
-    // re-query will retry. Log so it's visible.
+    // Don't 500 the whole library on a listing hiccup — but never hand the
+    // page an empty list as if the community had no decks: the failure goes
+    // to the browser, which says it and offers a retry (RC-B12).
     console.error("[library] fetchInitialPublicDecks failed:", error.message);
-    return [];
+    return { decks: [], error: error.message };
   }
-  return ((data ?? []) as PublicDeckRow[]).map(mapPublicDeck);
+  return { decks: ((data ?? []) as PublicDeckRow[]).map(mapPublicDeck), error: null };
 }
 
 /**
