@@ -683,7 +683,7 @@ export function FinalSwitchScreen() {
             {board.blocking.length > 0 && (
               <section className="flex flex-col gap-1 rounded-md border border-destructive/40 bg-destructive/5 p-3">
                 <p className="text-sm font-medium">
-                  Fix these first — copying again cannot
+                  Fix these first — Step 1 cannot
                 </p>
                 <ul className="flex list-disc flex-col gap-0.5 pl-5 text-xs">
                   {board.blocking.map((b) => (
