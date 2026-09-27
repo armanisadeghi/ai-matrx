@@ -3,6 +3,7 @@ import HeaderChooseOrgButton from "./header-right-menu/HeaderChooseOrgButton";
 import { CanvasShellHeaderToggle } from "@/features/canvas/core/CanvasHeaderToggle";
 import { SurfaceAgentsHeaderButton } from "@/features/surfaces/components/chrome/SurfaceAgentsHeaderButton";
 import { InboxHeaderButton } from "@/features/notifications/components/InboxHeaderButton";
+import { CommandBarHeaderButton } from "@/features/knowledge/command-bar/OpenCommandBarButtons";
 
 interface HeaderProps {
   isAuthenticated: boolean;
@@ -14,7 +15,9 @@ interface HeaderProps {
  * things for that top-right section … never hiding things and only disabling
  * when inactive"):
  *
- *   [ route-injected actions ] [ Agents ] [ Canvas ] [ Inbox ]
+ *   [ route-injected actions ] [ Search ] [ Agents ] [ Canvas ] [ Inbox ]
+ *
+ * Search opens the ⌘K bar — the phone's way in, where there is no keyboard.
  *
  * Each control owns a fixed 44px slot and is ALWAYS mounted. A control with
  * nothing to do is `disabled` with a tooltip that says why (Canvas with
@@ -40,6 +43,7 @@ export default function Header({ isAuthenticated }: HeaderProps) {
         {/* Renders nothing once an org is active. In header flow on purpose —
             it replaced a fixed drop-down card that covered route chrome. */}
         {isAuthenticated && <HeaderChooseOrgButton />}
+        <CommandBarHeaderButton isAuthenticated={isAuthenticated} />
         <SurfaceAgentsHeaderButton isAuthenticated={isAuthenticated} />
         <CanvasShellHeaderToggle />
         <InboxHeaderButton isAuthenticated={isAuthenticated} />

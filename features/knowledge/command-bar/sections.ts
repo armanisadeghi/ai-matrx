@@ -13,6 +13,7 @@ import {
   type KnowledgeSectionKey,
 } from "@/features/knowledge/api/knowledgeSearch";
 import {
+  MENTION_REF_TYPE,
   RELATIVE_DATE_LABEL,
   type QueryChip,
 } from "@/features/knowledge/api/knowledgeQueryText";
@@ -100,6 +101,7 @@ export function chipLabel(chip: QueryChip): string {
     case "origin":
       return `From: ${chip.value}`;
     case "within":
+      if (chip.ref.type === MENTION_REF_TYPE) return `@${chip.ref.name ?? ""}`;
       return chip.ref.type === "tag"
         ? `#${chip.ref.name ?? chip.ref.id ?? ""}`
         : `In: ${chip.ref.name ?? chip.ref.id ?? chip.ref.type}`;

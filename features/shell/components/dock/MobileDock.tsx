@@ -4,6 +4,7 @@
 import MobileDockShell from "./MobileDockShell";
 import MobileDockItems from "./MobileDockItems";
 import MobileDockVoiceButton from "./MobileDockVoiceButton";
+import { CommandBarDockButton } from "@/features/knowledge/command-bar/OpenCommandBarButtons";
 
 export default function MobileDock({
   isAuthenticated,
@@ -12,6 +13,7 @@ export default function MobileDock({
 }) {
   return (
     <MobileDockShell>
+      <CommandBarDockButton isAuthenticated={isAuthenticated} />
       <MobileDockItems isAuthenticated={isAuthenticated} />
       <MobileDockVoiceButton />
     </MobileDockShell>

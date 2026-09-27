@@ -21,7 +21,11 @@ import {
   type KnowledgeSection,
   type KnowledgeSectionKey,
 } from "@/features/knowledge/api/knowledgeSearch";
-import { searchKnowledgeFixture } from "@/features/knowledge/api/knowledgeSearchFixture";
+import {
+  findFixtureContainer,
+  searchKnowledgeFixture,
+} from "@/features/knowledge/api/knowledgeSearchFixture";
+import { withMentionResolution } from "@/features/knowledge/api/mentionResolution";
 import { normalizeQuery } from "@/features/knowledge/hub/hubState";
 
 export interface SectionState {
@@ -86,8 +90,12 @@ function describe(err: unknown): string {
   return "The search failed and did not say why.";
 }
 
+// `@name` resolves to a container (or an entity) before any runner sees it.
+const LIVE_RUNNER = withMentionResolution(searchKnowledge);
+const SAMPLE_RUNNER = withMentionResolution(searchKnowledgeFixture, findFixtureContainer);
+
 export function runnerFor(data: "live" | "sample"): KnowledgeSearchRunner {
-  return data === "sample" ? searchKnowledgeFixture : searchKnowledge;
+  return data === "sample" ? SAMPLE_RUNNER : LIVE_RUNNER;
 }
 
 export function useKnowledgeResults(

@@ -15,7 +15,13 @@
  *   in:inbox | in:kept | in:archived        → state
  *   by:me | by:anyone                       → captured_by
  *   sort:recent | sort:title | sort:relevance
- *   @Ava  @"Client Ava"                     → entities (people, places, orgs)
+ *   @Ava  @"Client Ava"                     → within a CONTAINER named Ava (project,
+ *                                              scope, tag, library, topic, data
+ *                                              store) — plan §2. Parsed as a
+ *                                              `mention` ref; `resolveMentions`
+ *                                              makes it that container, or, when
+ *                                              no container has the name, an
+ *                                              extracted entity (`entities`).
  *   #grant-2026  #"two words"               → within a tag (resolved by name)
  *   today · yesterday · this week · last week · last 7 days · last 30 days ·
  *   last month · this year                  → date (relative)
@@ -94,6 +100,44 @@ export const RELATIVE_DATE_LABEL: Record<string, string> = {
   this_year: "This year",
 };
 
+/**
+ * `@name` before it is resolved: a container reference known only by name.
+ * It never reaches the server — `resolveMentions` (run by every live runner
+ * through `withMentionResolution`) turns it into the container or an entity.
+ */
+export const MENTION_REF_TYPE = "mention";
+
+/** A container a mention can name, found by exact (case-insensitive) name. */
+export type FindContainerByName = (name: string) => Promise<EntityRef | null>;
+
+/**
+ * `@Ava` → `within` the container named Ava when one exists, otherwise
+ * `entities: ["Ava"]` (a person/place/org found in content). Never drops it.
+ */
+export async function resolveMentions(
+  query: KnowledgeQuery,
+  findContainer: FindContainerByName,
+): Promise<KnowledgeQuery> {
+  const mentions = (query.within ?? []).filter((r) => r.type === MENTION_REF_TYPE);
+  if (!mentions.length) return query;
+  const kept = (query.within ?? []).filter((r) => r.type !== MENTION_REF_TYPE);
+  const within: EntityRef[] = [...kept];
+  const entities = [...(query.entities ?? [])];
+  for (const m of mentions) {
+    const name = (m.name ?? "").trim();
+    if (!name) continue;
+    const container = await findContainer(name).catch(() => null);
+    if (container) {
+      if (!within.some((r) => sameRef(r, container))) within.push(container);
+    } else if (!entities.includes(name)) {
+      entities.push(name);
+    }
+  }
+  const out: KnowledgeQuery = { ...query, within: within.length ? within : undefined };
+  out.entities = entities.length ? entities : undefined;
+  return out;
+}
+
 const STATES: readonly TriageState[] = ["inbox", "kept", "archived"];
 const SORTS: readonly KnowledgeSort[] = ["relevance", "recent", "title"];
 
@@ -130,7 +174,7 @@ export function parseQueryText(raw: string): {
   for (const tok of tokenize(rest)) {
     if (tok.length > 1 && tok.startsWith("@")) {
       const v = unquote(tok.slice(1)).trim();
-      if (v) chips.push({ kind: "entity", value: v });
+      if (v) chips.push({ kind: "within", ref: { type: MENTION_REF_TYPE, name: v } });
       continue;
     }
     if (tok.length > 1 && tok.startsWith("#")) {

@@ -42,6 +42,12 @@ export const FIXTURE_CONTAINERS = {
 } satisfies Record<string, FiledRef>;
 
 const C = FIXTURE_CONTAINERS;
+
+/** The sample data's containers, found by exact name (mention resolution). */
+export async function findFixtureContainer(name: string): Promise<FiledRef | null> {
+  const key = name.trim().toLowerCase();
+  return Object.values(FIXTURE_CONTAINERS).find((c) => c.name.toLowerCase() === key) ?? null;
+}
 const DAY = 86_400_000;
 const NOW = Date.now();
 const ago = (days: number) => new Date(NOW - days * DAY).toISOString();

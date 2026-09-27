@@ -33,14 +33,18 @@ const read = (file: string) => readFileSync(path.join(REPO, file), "utf8");
 describe("the header right set", () => {
   const header = read("features/shell/components/header/Header.tsx");
 
-  it("mounts Agents, Canvas and Inbox in that order, unconditionally", () => {
+  it("mounts Search, Agents, Canvas and Inbox in that order, unconditionally", () => {
+    const search = header.indexOf("<CommandBarHeaderButton");
     const agents = header.indexOf("<SurfaceAgentsHeaderButton");
+    expect(search).toBeGreaterThan(-1);
+    expect(agents).toBeGreaterThan(search);
     const canvas = header.indexOf("<CanvasShellHeaderToggle");
     const inbox = header.indexOf("<InboxHeaderButton");
     expect(agents).toBeGreaterThan(-1);
     expect(canvas).toBeGreaterThan(agents);
     expect(inbox).toBeGreaterThan(canvas);
     for (const control of [
+      "<CommandBarHeaderButton",
       "<SurfaceAgentsHeaderButton",
       "<CanvasShellHeaderToggle",
       "<InboxHeaderButton",

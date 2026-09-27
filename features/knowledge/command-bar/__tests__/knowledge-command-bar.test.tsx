@@ -128,9 +128,12 @@ describe("operators become removable chips", () => {
 
     const lastQuery = runner.mock.calls.at(-1)![0];
     expect(lastQuery.text).toBe("budget");
-    expect(lastQuery.entities).toEqual(["Ava"]);
+    // `@Ava` travels as a mention; the live runner resolves it (mentions.test.ts).
     expect(lastQuery.source_kinds).toEqual(["cld_file"]);
-    expect(lastQuery.within).toEqual([{ type: "tag", name: "grant-2026" }]);
+    expect(lastQuery.within).toEqual([
+      { type: "mention", name: "Ava" },
+      { type: "tag", name: "grant-2026" },
+    ]);
     expect(lastQuery.date).toEqual({ field: "updated", relative: "last_week" });
     expect(runner.mock.calls.at(-1)![1]?.asYouType).toBe(true);
   });

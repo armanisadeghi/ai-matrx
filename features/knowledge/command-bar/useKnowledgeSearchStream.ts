@@ -18,6 +18,7 @@ import {
   type KnowledgeSection,
   type KnowledgeSectionKey,
 } from "@/features/knowledge/api/knowledgeSearch";
+import { withMentionResolution } from "@/features/knowledge/api/mentionResolution";
 
 export const AS_YOU_TYPE_DEBOUNCE_MS = 120;
 
@@ -49,8 +50,11 @@ function stateFor(section: KnowledgeSection): SectionState {
     : { status: "ready", section };
 }
 
+// Mentions (`@Ava`) resolve to a container or an entity before the query leaves.
+const LIVE_RUNNER = withMentionResolution(searchKnowledge);
+
 export function useKnowledgeSearchStream(
-  runner: KnowledgeSearchRunner = searchKnowledge,
+  runner: KnowledgeSearchRunner = LIVE_RUNNER,
 ) {
   const [sections, setSections] = useState<SectionStates>(() =>
     allSections({ status: "idle", section: null }),

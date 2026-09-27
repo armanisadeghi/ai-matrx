@@ -14,6 +14,7 @@ import {
   applyChips,
   chipKey,
   chipsFromQuery,
+  MENTION_REF_TYPE,
   parseQueryText,
   removeChip,
   type QueryChip,
@@ -35,6 +36,7 @@ export function chipLabel(c: QueryChip, titleFor: (ref: EntityRef) => string): s
     case "origin":
       return `From ${ORIGIN_WORDS[c.value] ?? c.value}`;
     case "within":
+      if (c.ref.type === MENTION_REF_TYPE) return `@${c.ref.name ?? ""}`;
       return c.ref.type === "tag" && !c.ref.id ? `#${c.ref.name ?? ""}` : titleFor(c.ref);
     case "entity":
       return `@${c.value}`;
