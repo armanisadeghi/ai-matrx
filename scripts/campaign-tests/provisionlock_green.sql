@@ -43,6 +43,7 @@
 select substr(md5(clock_timestamp()::text || random()::text), 1, 6) as run,
        (select id::text from auth.users where email = 'admin@admin.com') as admin_id \gset
 select 'pl_recall_visits_' || :'run' as tok, 'workbench.pl_recall_visits_' || :'run' as rel \gset
+select set_config('pl.tok', :'tok', false) \g /dev/null
 \echo run :run as admin@admin.com :admin_id -> :rel
 
 -- ── T1: the build ────────────────────────────────────────────────────────────────────────────
@@ -93,9 +94,28 @@ begin;
 set local statement_timeout = '15s';
 set local lock_timeout = '5s';
 select clock_timestamp() as t2_start \gset
-select platform.provision_attach_base_contract(:'rel')::text as a1 \gset
-select (select count(*) from pg_locks l where l.pid = pg_backend_pid() and l.relation = 'auth.users'::regclass and l.mode = 'AccessExclusiveLock') as t2_users_ae \gset
+create or replace function pg_temp.pl_attach(p text) returns jsonb language plpgsql as $$
+begin
+  return platform.provision_attach_base_contract(p);
+exception when others then
+  return jsonb_build_object('ok', false, 'error', sqlstate || ': ' || sqlerrm);
+end $$;
+select pg_temp.pl_attach(:'rel')::text as a1 \gset
 commit;
+select ((:'a1'::jsonb->>'ok')::boolean is not true) as t2_refused \gset
+\if :t2_refused
+-- A refused seal leaves the table built, closed (RLS on, no policy) and listed as owed; this
+-- suite retires it rather than leaving a disposable table behind, then reports.
+begin;
+set local lock_timeout = '20s';
+update platform.entity_types
+   set is_active = false, type = 'deprecated', custom_fields_enabled = false,
+       notes = coalesce(notes || E'\n', '') || 'Retired ' || now()::date || ' by lane PROVISION-LOCK: provisionlock_green built it and its access seal was refused (see the suite output). Soft-retired, never dropped.'
+ where token = :'tok';
+commit;
+\echo 'T2 REFUSED (table retired):' :a1
+do $f$ begin raise exception 'provisionlock_green: T2 refused (see the line above)'; end $f$;
+\endif
 select clock_timestamp() as t2_end \gset
 select coalesce(string_agg(problem, E'\n  - '), '') as t2_problems from (
   select 'attach answer: ' || left(:'a1', 400) as problem where (:'a1'::jsonb->>'ok')::boolean is not true
@@ -126,6 +146,40 @@ select ((:'v1'::jsonb->>'certified')::boolean is true) as t3_ok \gset
 \echo 'T3 FAILED — validate answered' :v1
 select c.* from iam.canonical_certify('workbench', :'tok', :'tok') c where c.status in ('FAIL','WARN');
 do $f$ begin raise exception 'provisionlock_green: T3 FAILED (see above)'; end $f$;
+\endif
+
+-- ── T5 (clone only): a stale kernel REFUSES policy generation, rolled back ───────────────────
+-- migrations/campaign/provisionlock_a_stale_kernel_refuses_policy_generation.sql. The plant is the
+-- self-heal suite's harmless one: a comment appended to public.library_is_open moves the kernel
+-- fingerprint without changing an answer. Everything here is rolled back.
+select (:'matrx_db' = 'DEV CLONE') as t5_run \gset
+\if :t5_run
+begin;
+set local statement_timeout = '30s';
+set local lock_timeout = '5s';
+do $t5$
+declare v_def text; v_src text; v_err text;
+begin
+  select pg_get_functiondef(p.oid), p.prosrc into v_def, v_src
+    from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = 'library_is_open'
+   order by pronargs desc limit 1;
+  execute replace(v_def, v_src, v_src || E'\n  -- planted by provisionlock_green T5: a comment moves the fingerprint, not an answer');
+  if iam.entity_read_kernel_fingerprint() is not distinct from iam.entity_read_kernel_expected() then
+    raise exception 'T5 PRECONDITION — the plant did not make the kernel stale';
+  end if;
+  begin
+    perform iam.apply_rls('workbench', current_setting('pl.tok'), current_setting('pl.tok'), 'entity');
+  exception when others then
+    v_err := sqlerrm;
+  end;
+  if v_err is null or position('nothing was generated' in v_err) = 0 then
+    raise exception 'T5 FAILED — with a stale kernel iam.apply_rls did not refuse (error: %)', coalesce(v_err, 'none: it generated');
+  end if;
+  raise notice 'T5 PASSED — stale kernel: iam.apply_rls refused: %', left(v_err, 200);
+end $t5$;
+rollback;
+\else
+\echo 'T5 skipped (clone only: it plants a kernel change, rolled back)'
 \endif
 
 -- ── T4: retire the disposable table (soft; never dropped) ───────────────────────────────────
