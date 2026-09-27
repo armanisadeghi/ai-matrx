@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
 import {
   AlertDialog,
@@ -102,20 +102,24 @@ export default function UserCategoriesPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-textured">
-      <PageHeader>
-        <div className="flex items-center w-full min-w-0 gap-0 p-0">
-          <h1 className="text-sm font-medium text-foreground truncate">
-            My Categories
-          </h1>
-          <div className="ml-auto flex items-center">
+      <RouteHeader
+        left={
+          <>
+            <h1 className="text-sm font-medium text-foreground truncate">
+              My Categories
+            </h1>
+          </>
+        }
+        right={
+          <>
             <RefreshCwTapButton
               onClick={() => refetch()}
               disabled={isLoading}
               ariaLabel="Refresh categories"
             />
-          </div>
-        </div>
-      </PageHeader>
+          </>
+        }
+      />
 
       <div className="flex-1 overflow-y-auto p-4 pt-[calc(var(--shell-header-h)+1rem)]">
         <CategoryTree

@@ -40,7 +40,15 @@ const SKIP = [/[\\/]\(dev\)[\\/]/, /[\\/]demos[\\/]/, /\.test\.|\.spec\./, /[\\/
 const SHARED = /<(RouteHeader|EntityModeHeader|CrumbTrailHeader)\b/;
 const CONTROL = /TapButton|TapTarget|<Button\b|onClick/;
 
-export function findingsInSource(source) {
+/** Blank out comments (keeping newlines, so line numbers hold): a comment naming `<PageHeader>` is not a header. */
+function withoutComments(source) {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, " "))
+    .replace(/(^|[^:"'`])\/\/[^\n]*/g, (c, pre) => pre + " ".repeat(c.length - pre.length));
+}
+
+export function findingsInSource(raw) {
+  const source = withoutComments(raw);
   const hits = [];
   for (const m of source.matchAll(/<PageSpecificHeader\b/g)) {
     hits.push({ line: source.slice(0, m.index).split("\n").length, kind: "PageSpecificHeader" });
@@ -87,13 +95,15 @@ function selfTest() {
   const shared = `export default () => <RouteHeader left={<span>T</span>} right={<TapTargetButton onClick={x}/>} />;`;
   const titleOnly = `export default () => <PageHeader><h1>Title</h1></PageHeader>;`;
   const legacy = `export default () => <PageSpecificHeader><div/></PageSpecificHeader>;`;
+  const commentOnly = `// injected via <PageHeader>, like AgentRunHeader\nexport const X = () => <div onClick={f}/>;`;
   const backOnly = `export default () => <PageHeader><ChevronLeftTapButton href="/x" ariaLabel="Back" /><h1>T</h1></PageHeader>;`;
   const ok =
     findingsInSource(bad).length === 1 &&
     findingsInSource(shared).length === 0 &&
     findingsInSource(titleOnly).length === 0 &&
     findingsInSource(legacy).length === 1 &&
-    findingsInSource(backOnly).length === 0;
+    findingsInSource(backOnly).length === 0 &&
+    findingsInSource(commentOnly).length === 0;
   console.log(ok ? "[bespoke-headers] self-test PASS" : "[bespoke-headers] self-test FAIL");
   process.exit(ok ? 0 : 1);
 }

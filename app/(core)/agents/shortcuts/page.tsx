@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { PlusTapButton, ListTapButton } from "@ai-matrx/tap-target/buttons";
 import { DuplicateShortcutModal } from "@/features/agent-shortcuts/components/DuplicateShortcutModal";
 import { PromoteToGlobalModal } from "@/features/agent-shortcuts/components/PromoteToGlobalModal";
@@ -74,12 +74,16 @@ export default function UserShortcutsPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-textured">
-      <PageHeader>
-        <div className="flex items-center w-full min-w-0 gap-0 p-0">
-          <h1 className="text-sm font-medium text-foreground truncate">
-            My Shortcuts
-          </h1>
-          <div className="ml-auto flex items-center">
+      <RouteHeader
+        left={
+          <>
+            <h1 className="text-sm font-medium text-foreground truncate">
+              My Shortcuts
+            </h1>
+          </>
+        }
+        right={
+          <>
             <ListTapButton
               href="/agents/shortcuts/all"
               ariaLabel="Browse all shortcuts"
@@ -91,9 +95,9 @@ export default function UserShortcutsPage() {
               onClick={handleCreate}
               ariaLabel="New shortcut"
             />
-          </div>
-        </div>
-      </PageHeader>
+          </>
+        }
+      />
 
       <div className="flex-1 min-h-0 pt-[var(--shell-header-h)]">
         <ShortcutList

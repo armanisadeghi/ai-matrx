@@ -4,10 +4,9 @@
 // around the canonical LabelBatchDetail.
 
 import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { LabelBatchDetail } from "@/features/commerce-intake/labels/components/LabelBatchDetail";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -19,22 +18,16 @@ export function LabelBatchRouteClient({ batchId }: { batchId: string }) {
   const organizationId = useAppSelector(selectOrganizationId);
   return (
     <>
-      <PageHeader>
-        <div className="flex min-w-0 items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={() => router.back()}
-            aria-label="Back"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="truncate text-sm font-semibold text-foreground">
-            Label batch
-          </h1>
-        </div>
-      </PageHeader>
+      <RouteHeader
+        left={
+          <>
+            <ChevronLeftTapButton onClick={() => router.back()} ariaLabel="Back" />
+            <h1 className="truncate text-sm font-semibold text-foreground">
+              Label batch
+            </h1>
+          </>
+        }
+      />
       <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
         <div className="px-3 pt-3">
           <LabelBatchDetail batchId={batchId} organizationId={organizationId} />
