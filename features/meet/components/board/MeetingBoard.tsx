@@ -42,7 +42,6 @@ import {
   Captions,
   ConsentNotice,
   ControlBar,
-  HostMenu,
   RecordingIndicator,
   participantSummary,
   useElapsed,
@@ -74,12 +73,16 @@ import { type Rect, screenToWorld } from "@/features/spatial/engine/camera";
 import { useEditingTile } from "@/features/spatial/engine/react";
 import type { SpatialStore } from "@/features/spatial/engine/spatial-store";
 import { DEFAULT_THROW_ACTIONS, type ThrowDirection } from "@/features/spatial/engine/throw";
-import { useBoard } from "@/features/spatial/board/useBoard";
+import { useBoard, type BoardFrame } from "@/features/spatial/board/useBoard";
 import { SpatialBoardMenu } from "@/features/spatial/components/SpatialBoardMenu";
 import { ParkedShelf } from "@/features/spatial/components/ParkedShelf";
 import { SpatialViewport } from "@/features/spatial/components/SpatialViewport";
 import { SpatialTile } from "@/features/spatial/components/SpatialTile";
 import { SpatialFrame } from "@/features/spatial/components/SpatialFrame";
+import { SpatialEdge } from "@/features/spatial/components/SpatialEdge";
+import { SpatialBoardSurface } from "@/features/spatial/components/SpatialBoardSurface";
+import type { AddTileInput, BoardToolHost, EditTileInput } from "@/features/spatial/tools/useBoardAgentTools";
+import { MarkdownTileBody } from "@/features/spatial/tiles/MarkdownTileBody";
 import { Minimap, ZoomHud } from "@/features/spatial/components/SpatialChrome";
 import { ReplayStream } from "@/features/spatial/streams/stream-source";
 import { StreamTileBody } from "@/features/spatial/tiles/StreamTileBody";
@@ -98,10 +101,14 @@ import { useWheelModePreference } from "@/features/spatial/board/useWheelModePre
 
 type TileContent =
   | { type: "meeting"; section: MeetingSection }
-  | { type: "html"; src: string }
+  /** A page by address (`src`) or one an agent wrote (`srcDoc`). */
+  | { type: "html"; src?: string; srcDoc?: string }
   | { type: "image"; src: string }
   | { type: "replay" }
-  | { type: "scratch" };
+  /** `text` absent only on a scratchpad saved before its text lived on the tile. */
+  | { type: "scratch"; text?: string }
+  /** An agent's write-up, rendered through the stream pipeline. */
+  | { type: "markdown"; text: string };
 
 interface BoardSpec {
   id: string;
@@ -169,10 +176,11 @@ function iconOf(content: TileContent): LucideIcon {
     case "meeting":
       return SECTION_ICON[content.section];
     case "html":
-      return content.src.startsWith("/samples/") ? Code2 : Globe;
+      return !content.src || content.src.startsWith("/samples/") ? Code2 : Globe;
     case "image":
       return ImageIcon;
     case "replay":
+    case "markdown":
       return FileText;
     case "scratch":
       return StickyNote;
@@ -190,30 +198,67 @@ const SAMPLE_PAGES = [
 const boardKey = (meetingId: string) => `matrx.meet.board.${meetingId}`;
 const scratchKey = (meetingId: string, id: string) => `matrx.meet.scratch.${meetingId}.${id}`;
 
+const isRect = (r: unknown): r is Rect => {
+  if (typeof r !== "object" || r === null) return false;
+  const { x, y, w, h } = r as Partial<Rect>;
+  return [x, y, w, h].every((n) => typeof n === "number" && Number.isFinite(n));
+};
+const optStr = (v: unknown) => v === undefined || typeof v === "string";
+
+function isContent(value: unknown): value is TileContent {
+  if (typeof value !== "object" || value === null) return false;
+  const c = value as Record<string, unknown>;
+  switch (c.type) {
+    case "meeting":
+      return typeof c.section === "string" && c.section in SECTION_ICON;
+    case "html":
+      return optStr(c.src) && optStr(c.srcDoc) && (typeof c.src === "string" || typeof c.srcDoc === "string");
+    case "image":
+      return typeof c.src === "string";
+    case "replay":
+      return true;
+    case "scratch":
+      return optStr(c.text);
+    case "markdown":
+      return typeof c.text === "string";
+    default:
+      return false;
+  }
+}
+
 function isSpec(value: unknown): value is BoardSpec {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Partial<BoardSpec>;
-  const r = v.rect;
   return (
     typeof v.id === "string" &&
     typeof v.title === "string" &&
     typeof v.subtitle === "string" &&
-    typeof v.content === "object" &&
-    v.content !== null &&
-    typeof r === "object" &&
-    r !== null &&
-    [r.x, r.y, r.w, r.h].every((n) => typeof n === "number" && Number.isFinite(n))
+    isContent(v.content) &&
+    isRect(v.rect)
   );
 }
 
-function loadBoard(meetingId: string): BoardSpec[] {
+function isFrame(value: unknown): value is BoardFrame {
+  if (typeof value !== "object" || value === null) return false;
+  const f = value as Partial<BoardFrame>;
+  return typeof f.id === "string" && typeof f.title === "string" && optStr(f.note) && isRect(f.rect);
+}
+
+/** The saved board: `{ tiles, frames }` (frames are the groups made on it), or
+ * the older bare tile array. Anything unreadable opens the default board. */
+function loadBoard(meetingId: string): { tiles: BoardSpec[]; frames: BoardFrame[] } {
+  const fresh = { tiles: MEETING_TILES, frames: [] };
   try {
     const raw = window.localStorage.getItem(boardKey(meetingId));
-    if (!raw) return MEETING_TILES;
+    if (!raw) return fresh;
     const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.every(isSpec) ? parsed : MEETING_TILES;
+    if (Array.isArray(parsed)) return parsed.every(isSpec) ? { tiles: parsed, frames: [] } : fresh;
+    if (typeof parsed !== "object" || parsed === null) return fresh;
+    const { tiles, frames } = parsed as { tiles?: unknown; frames?: unknown };
+    if (!Array.isArray(tiles) || !tiles.every(isSpec)) return fresh;
+    return { tiles, frames: Array.isArray(frames) ? frames.filter(isFrame) : [] };
   } catch {
-    return MEETING_TILES;
+    return fresh;
   }
 }
 
@@ -225,19 +270,15 @@ function saveBoard(meetingId: string, serialized: string): void {
   }
 }
 
-function readScratch(meetingId: string, id: string): string {
+/** A scratchpad's text: on the tile itself (saved with the board, so an
+ * agent can write it and ⌘Z covers it), or — for a scratchpad saved before
+ * the text moved onto the tile — its own storage key. */
+function scratchText(meetingId: string, id: string, text: string | undefined): string {
+  if (text !== undefined) return text;
   try {
     return window.localStorage.getItem(scratchKey(meetingId, id)) ?? "";
   } catch {
     return "";
-  }
-}
-
-function writeScratch(meetingId: string, id: string, text: string): void {
-  try {
-    window.localStorage.setItem(scratchKey(meetingId, id), text);
-  } catch {
-    // Storage blocked: the text lives while this page is open.
   }
 }
 
@@ -249,11 +290,9 @@ type Asking = "html" | "image" | null;
 export function MeetingBoard({
   meeting,
   onLayout,
-  headerControls,
 }: {
   meeting: MeetingRecord;
   onLayout: (next: MeetingLayoutChoice) => void;
-  headerControls?: ReactNode;
 }) {
   const meetingId = meeting.id;
   const tiles = useBoard<BoardSpec>(() => loadBoard(meetingId));
@@ -263,7 +302,7 @@ export function MeetingBoard({
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const activeOrgId = useAppSelector(selectOrganizationId);
 
-  const serialized = JSON.stringify([...tiles.tiles, ...tiles.parked]);
+  const serialized = JSON.stringify({ tiles: [...tiles.tiles, ...tiles.parked], frames: tiles.frames });
   useEffect(() => saveBoard(meetingId, serialized), [meetingId, serialized]);
 
   const specOf = (id: string) => [...tiles.tiles, ...tiles.parked].find((t) => t.id === id);
@@ -307,9 +346,13 @@ export function MeetingBoard({
 
   const tileText = (spec: BoardSpec): string => {
     const c = spec.content;
-    if (c.type === "html") return `# ${spec.title}\n\nPage: ${new URL(c.src, window.location.origin).href}`;
+    if (c.type === "html")
+      return c.src
+        ? `# ${spec.title}\n\nPage: ${new URL(c.src, window.location.origin).href}`
+        : `# ${spec.title}\n\n\`\`\`html\n${c.srcDoc ?? ""}\n\`\`\``;
     if (c.type === "image") return `# ${spec.title}\n\n![${spec.title}](${new URL(c.src, window.location.origin).href})`;
-    if (c.type === "scratch") return readScratch(meetingId, spec.id);
+    if (c.type === "scratch") return scratchText(meetingId, spec.id, c.text);
+    if (c.type === "markdown") return c.text;
     const body = document.querySelector<HTMLElement>(
       `[data-spatial-tile="${CSS.escape(spec.id)}"] [data-spatial-body]`,
     );
@@ -377,10 +420,8 @@ export function MeetingBoard({
   const confirmUrl = (value: string) => {
     const kind = asking;
     setAsking(null);
-    const normalized = normalizeUrl(value);
-    if (!normalized) return;
-    const url = normalized.href;
-    const host = normalized.hostname;
+    const url = value.trim();
+    const host = new URL(url).hostname;
     if (kind === "html") {
       addUserTile({
         rect: { x: 0, y: 0, w: 640, h: 460 },
@@ -398,100 +439,194 @@ export function MeetingBoard({
     }
   };
 
+  const rectById = new Map(tiles.tiles.map((t) => [t.id, t.rect]));
+
+  const agentHost: BoardToolHost<BoardSpec> = {
+    board: tiles,
+    store,
+    boardTitle: meeting.title,
+    createTile: createAgentTile,
+    editTile: editAgentTile,
+    describe: describeTile,
+  };
+
   return (
-    <div className="mx-meet">
-      <ConsentNotice />
-      <AttendanceNotice />
-      <BoardHeader onLayout={onLayout} headerControls={headerControls} />
-      <div className="relative min-h-0 flex-1">
-        <SpatialBoardMenu
-          store={store}
-          actions={{ park, saveAndClose: (id) => void saveAndClose(id), remove: (id) => void remove(id) }}
-          parked={tiles.parked.map((t) => ({ id: t.id, title: t.title }))}
-          onUnpark={unpark}
-          wheelMode={wheelMode}
-          onWheelMode={setWheelMode}
-        >
-          <SpatialViewport
-            insets={{ top: 64, bottom: 64 }}
+    <SpatialBoardSurface host={agentHost}>
+      <div className="mx-meet">
+        <ConsentNotice />
+        <AttendanceNotice />
+        <BoardHeader onLayout={onLayout} headerControls={headerControls} />
+        <div className="relative min-h-0 flex-1">
+          <SpatialBoardMenu
+            store={store}
+            actions={{ park, saveAndClose: (id) => void saveAndClose(id), remove: (id) => void remove(id) }}
+            parked={tiles.parked.map((t) => ({ id: t.id, title: t.title }))}
+            onUnpark={unpark}
             wheelMode={wheelMode}
-            onStore={setStore}
-            overlay={
-              <>
-                <BoardToolbar
-                  onMeetingNotes={showMeetingNotes}
-                  onAsk={setAsking}
-                  onAdd={addUserTile}
-                />
-                <ParkedShelf
-                  className="left-4 right-auto top-16"
-                  parked={tiles.parked.map((t) => ({ id: t.id, title: t.title, icon: iconOf(t.content) }))}
-                  onRestore={unpark}
-                />
-                <ZoomHud />
-                <Minimap />
-                <div className="pointer-events-none absolute inset-x-0 bottom-16 flex justify-center">
-                  <Captions />
-                </div>
-                <PeopleStrip />
-              </>
-            }
+            onWheelMode={setWheelMode}
           >
-            <SpatialFrame {...NOTES_FRAME} />
-            {tiles.tiles.map((t) => (
-              <BoardTile
-                key={t.id}
-                spec={t}
-                meetingId={meetingId}
-                onMove={tiles.moveTile}
-                onThrow={onThrow}
-              />
-            ))}
-          </SpatialViewport>
-        </SpatialBoardMenu>
+            <SpatialViewport
+              insets={{ top: 64, bottom: 64 }}
+              wheelMode={wheelMode}
+              onStore={setStore}
+              overlay={
+                <>
+                  <BoardToolbar
+                    onMeetingNotes={showMeetingNotes}
+                    onAsk={setAsking}
+                    onAdd={addUserTile}
+                  />
+                  <ParkedShelf
+                    className="left-4 right-auto top-16"
+                    parked={tiles.parked.map((t) => ({ id: t.id, title: t.title, icon: iconOf(t.content) }))}
+                    onRestore={unpark}
+                  />
+                  <ZoomHud />
+                  <Minimap />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-16 flex justify-center">
+                    <Captions />
+                  </div>
+                  <PeopleStrip />
+                </>
+              }
+            >
+              <SpatialFrame {...NOTES_FRAME} />
+              {tiles.frames.map((f) => (
+                <SpatialFrame key={f.id} {...f} />
+              ))}
+              {tiles.connections.map((c) => {
+                const from = rectById.get(c.from);
+                const to = rectById.get(c.to);
+                if (!from || !to) return null;
+                return <SpatialEdge key={c.id} from={from} to={to} />;
+              })}
+              {tiles.tiles.map((t) => (
+                <BoardTile
+                  key={t.id}
+                  spec={t}
+                  meetingId={meetingId}
+                  onMove={tiles.moveTile}
+                  onThrow={onThrow}
+                  onContent={(id, content) => tiles.updateTile(id, { content }, { history: false })}
+                />
+              ))}
+            </SpatialViewport>
+          </SpatialBoardMenu>
+        </div>
+        <ControlBar />
+        <TextInputDialog
+          key={asking ?? "closed"}
+          open={asking !== null}
+          onOpenChange={(open) => {
+            if (!open) setAsking(null);
+          }}
+          title={asking === "image" ? "Add an image" : "Add a web page"}
+          description={
+            asking === "image"
+              ? "Paste the image's address. It sits on your board only — nobody else in the meeting sees it."
+              : "Paste the page's address. It runs sandboxed and sits on your board only. Some sites refuse to be shown inside another page; those say so in the tile."
+          }
+          placeholder="https://"
+          confirmLabel="Add to board"
+          validate={validateUrl}
+          onConfirm={confirmUrl}
+        />
       </div>
-      <ControlBar />
-      <TextInputDialog
-        key={asking ?? "closed"}
-        open={asking !== null}
-        onOpenChange={(open) => {
-          if (!open) setAsking(null);
-        }}
-        title={asking === "image" ? "Add an image" : "Add a web page"}
-        description={
-          asking === "image"
-            ? "Paste the image's address. It sits on your board only — nobody else in the meeting sees it."
-            : "Paste the page's address. It runs sandboxed and sits on your board only. Some sites refuse to be shown inside another page; those say so in the tile."
-        }
-        placeholder="https://"
-        confirmLabel="Add to board"
-        validate={validateUrl}
-        onConfirm={confirmUrl}
-      />
-    </div>
+    </SpatialBoardSurface>
   );
 }
 
-/** Accepts a scheme-less address (e.g. pasted from a browser bar that hides
- * "https://") by retrying with it assumed, instead of rejecting valid pages. */
-function normalizeUrl(value: string): URL | null {
-  const trimmed = value.trim();
-  try {
-    return new URL(trimmed);
-  } catch {
-    // fall through
+// ── what the board's agent tools make and change (useBoardAgentTools) ───────
+
+type Failure = { ok: false; error: string };
+
+function createAgentTile(id: string, input: AddTileInput, size: { w: number; h: number }): BoardSpec | Failure {
+  const rect = { x: 0, y: 0, ...size };
+  switch (input.kind) {
+    case "note":
+      // A note here is this board's scratchpad: the viewer's own, kept with the board.
+      return {
+        id,
+        rect,
+        title: input.title ?? "Note",
+        subtitle: "Scratchpad · by an agent",
+        content: { type: "scratch", text: input.text ?? "" },
+      };
+    case "markdown":
+    case "text":
+      if (!input.text) return { ok: false, error: `A ${input.kind} tile needs \`text\`.` };
+      return {
+        id,
+        rect,
+        title: input.title ?? (input.kind === "text" ? "Text" : "Write-up"),
+        subtitle: "Markdown · by an agent",
+        content: { type: "markdown", text: input.text },
+      };
+    case "html":
+      if (input.html)
+        return {
+          id,
+          rect,
+          title: input.title ?? "Page",
+          subtitle: "Generated page · sandboxed",
+          content: { type: "html", srcDoc: input.html },
+        };
+      if (input.url)
+        return {
+          id,
+          rect,
+          title: input.title ?? "Page",
+          subtitle: "Web page · sandboxed",
+          content: { type: "html", src: input.url },
+        };
+      return { ok: false, error: "An html tile needs `html` (a complete document) or `url`." };
+    case "image":
+      if (!input.url) return { ok: false, error: "An image tile needs `url`." };
+      return { id, rect, title: input.title ?? "Image", subtitle: "Image", content: { type: "image", src: input.url } };
   }
-  try {
-    return new URL(`https://${trimmed}`);
-  } catch {
-    return null;
+}
+
+function editAgentTile(tile: BoardSpec, input: EditTileInput): Partial<BoardSpec> | Failure {
+  const c = tile.content;
+  if (c.type === "meeting")
+    return {
+      ok: false,
+      error: `"${tile.title}" is live from the meeting assistant — only its title and size change. Add a markdown tile beside it instead.`,
+    };
+  if (c.type === "markdown" && input.text !== undefined) return { content: { type: "markdown", text: input.text } };
+  if (c.type === "scratch" && input.text !== undefined) return { content: { type: "scratch", text: input.text } };
+  if (c.type === "html" && input.html !== undefined) return { content: { type: "html", srcDoc: input.html } };
+  return {
+    ok: false,
+    error: `"${tile.title}" is a ${describeTile(tile).kind} tile; that content cannot be replaced (only its title and size). ${
+      c.type === "html" ? "Pass `html` to replace a page." : "Add a new tile instead."
+    }`,
+  };
+}
+
+function describeTile(tile: BoardSpec): { kind: string; status?: string | null } {
+  const c = tile.content;
+  switch (c.type) {
+    case "meeting":
+      return { kind: `meeting ${c.section}`, status: "live" };
+    case "scratch":
+      return { kind: "note" };
+    case "replay":
+      return { kind: "stream" };
+    case "html":
+      return { kind: c.srcDoc !== undefined ? "html" : "web page" };
+    default:
+      return { kind: c.type };
   }
 }
 
 function validateUrl(value: string): string | null {
-  const url = normalizeUrl(value);
-  if (!url) return "That is not a web address";
-  return url.protocol === "https:" || url.protocol === "http:" ? null : "Use a web address, not a file or app link";
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "https:" || url.protocol === "http:" ? null : "Use an address that starts with https://";
+  } catch {
+    return "That is not a web address — it should start with https://";
+  }
 }
 
 // ── header ───────────────────────────────────────────────────────────────────
@@ -521,9 +656,16 @@ function BoardHeader({
             <Lock className="h-3 w-3" /> Locked
           </span>
         )}
-        {/* The package's own host menu (lock / end), @ai-matrx/meet 0.7.5 — the
-            Board used to send a host back to the Room layout for it. */}
-        {isHost && <HostMenu />}
+        {isHost && (
+          <button
+            type="button"
+            className="mx-meet__link shrink-0 whitespace-nowrap"
+            title="Locking and ending the meeting live in the Room layout"
+            onClick={() => onLayout("room")}
+          >
+            Host controls
+          </button>
+        )}
         {headerControls}
         <LayoutSwitch value="board" onChange={onLayout} />
       </header>
@@ -581,7 +723,7 @@ function BoardToolbar({
                 rect: { x: 0, y: 0, w: 480, h: 360 },
                 title: "Scratchpad",
                 subtitle: "Yours · kept in this browser",
-                content: { type: "scratch" },
+                content: { type: "scratch", text: "" },
               })
             }
           >
@@ -640,6 +782,8 @@ interface TileProps {
   meetingId: string;
   onMove: (id: string, x: number, y: number) => void;
   onThrow: (id: string, direction: ThrowDirection) => void;
+  /** Content changed from inside the tile (typing) — no undo step. */
+  onContent: (id: string, content: TileContent) => void;
 }
 
 function BoardTile(props: TileProps) {
@@ -691,7 +835,7 @@ function ReplayTile({ spec, onMove, onThrow }: TileProps) {
 
 const DONE = { kind: "static", value: { status: "complete", progress: null } } as const;
 
-function StaticTile({ spec, meetingId, onMove, onThrow }: TileProps) {
+function StaticTile({ spec, meetingId, onMove, onThrow, onContent }: TileProps) {
   const interacting = useEditingTile() === spec.id;
   const c = spec.content;
   return (
@@ -706,24 +850,27 @@ function StaticTile({ spec, meetingId, onMove, onThrow }: TileProps) {
       onThrow={onThrow}
     >
       {(tier) => {
-        if (c.type === "html") return <HtmlTileBody src={c.src} title={spec.title} tier={tier} active={interacting} />;
+        if (c.type === "html")
+          return <HtmlTileBody src={c.src} srcDoc={c.srcDoc} title={spec.title} tier={tier} active={interacting} />;
         if (c.type === "image") return <ImageTileBody src={c.src} alt={spec.title} />;
-        return <ScratchBody meetingId={meetingId} id={spec.id} />;
+        if (c.type === "markdown") return <MarkdownTileBody id={spec.id} text={c.text} tier={tier} />;
+        return (
+          <ScratchBody
+            text={scratchText(meetingId, spec.id, c.type === "scratch" ? c.text : undefined)}
+            onChange={(text) => onContent(spec.id, { type: "scratch", text })}
+          />
+        );
       }}
     </SpatialTile>
   );
 }
 
-function ScratchBody({ meetingId, id }: { meetingId: string; id: string }) {
-  const [text, setText] = useState(() => readScratch(meetingId, id));
+function ScratchBody({ text, onChange }: { text: string; onChange: (text: string) => void }) {
   return (
     <textarea
       data-spatial-scroll
       value={text}
-      onChange={(e) => {
-        setText(e.target.value);
-        writeScratch(meetingId, id, e.target.value);
-      }}
+      onChange={(e) => onChange(e.target.value)}
       placeholder="Anything you want beside the meeting. It stays on this board, in this browser."
       aria-label="Scratchpad"
       className="h-full w-full resize-none bg-card p-4 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
