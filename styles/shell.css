@@ -1360,7 +1360,8 @@ button.shell-nav-flyout-item {
 }
 
 .shell-sidebar-switch-label {
-  font-size: 0.6875rem;
+  /* 12px: text a person reads is never under 12px (page-pass core 5). */
+  font-size: 0.75rem;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;

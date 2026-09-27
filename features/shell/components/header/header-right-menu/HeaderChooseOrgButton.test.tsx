@@ -143,7 +143,7 @@ describe("HeaderChooseOrgButton — the trigger tells the truth about itself", (
     // for a real alarm; the control keeps the primary call-to-action tint.
     mount();
 
-    expect(trigger().textContent).toContain("Choose org");
+    expect(trigger().textContent).toContain("Choose organization");
     expect(trigger().className).toContain("text-primary");
     expect(trigger().className).toContain("bg-primary/10");
     expect(trigger().className).not.toMatch(/\b(text|bg|ring|border)-(red|destructive)/);
@@ -164,7 +164,7 @@ describe("HeaderChooseOrgButton — the trigger tells the truth about itself", (
     // The ask's call-to-action tint goes with the ask.
     expect(trigger().className).not.toContain("bg-primary/10");
     expect(trigger().getAttribute("aria-label")).toBe(
-      "Workspace: AI Matrx. Change workspace",
+      "Organization: AI Matrx. Change organization",
     );
   });
 
@@ -177,7 +177,7 @@ describe("HeaderChooseOrgButton — the trigger tells the truth about itself", (
     rerender();
 
     expect(trigger().textContent).not.toContain("Choose org");
-    expect(trigger().textContent).toContain("Change workspace");
+    expect(trigger().textContent).toContain("Change organization");
     expect(trigger().className).not.toContain("text-red-600");
   });
 });
