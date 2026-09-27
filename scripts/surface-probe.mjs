@@ -25,6 +25,25 @@
  *   --base                defaults to https://aimatrx.com. A local preview works
  *                         too: http://<session>.localhost:3001.
  *
+ * AGENT WRITE TEST (first --route only) — the proof a write target works is a
+ * real agent writing through it, not a read. Added 2026-09-26 after an agent on
+ * /education/classes "succeeded" through a generic tool and left half-built
+ * records that a read probe could never have caught.
+ *   --click 'SELECTOR=>TEXT'  before the agent runs, click the first SELECTOR
+ *                         whose text starts with TEXT (e.g. open a dialog:
+ *                         'button=>New class'). Repeatable.
+ *   --agent 'MESSAGE'     open the Agents menu, run --agent-name, send MESSAGE,
+ *                         answer the workspace picker if it asks (--workspace),
+ *                         and press every Apply/Allow card for up to
+ *                         --agent-wait seconds (default 150; stops early once
+ *                         the reply stops changing). Reports approvals, the
+ *                         agent's last words, and the Surface Context read again
+ *                         ("afterAgent"). APPROVES FOR REAL: use test data, then
+ *                         check the rows it wrote with a read-only SQL query —
+ *                         on screen is not proof the record is complete.
+ *   --agent-name NAME     default "Badass Agent" (its "Run NAME" button).
+ *   --workspace NAME      default "admin's Workspace".
+ *
  * Signs in with AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD from the environment (the
  * sanctioned test identity) through the /login form, in a persistent profile so
  * later runs reuse the session. On a *.localhost base, sign in with
@@ -50,7 +69,16 @@ function fail(message) {
 
 // ── args ──────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
-const opts = { routes: [], fills: [], base: "https://aimatrx.com", settle: 8000 };
+const opts = {
+  routes: [],
+  fills: [],
+  clicks: [],
+  base: "https://aimatrx.com",
+  settle: 8000,
+  agentName: "Badass Agent",
+  agentWait: 150,
+  workspace: "admin's Workspace",
+};
 for (let i = 0; i < args.length; i += 1) {
   const a = args[i];
   const v = args[i + 1];
@@ -63,6 +91,11 @@ for (let i = 0; i < args.length; i += 1) {
   else if (a === "--settle") (opts.settle = Number(v)), (i += 1);
   else if (a === "--login-url") (opts.loginUrl = v), (i += 1);
   else if (a === "--commit") (opts.commit = v), (i += 1);
+  else if (a === "--click") opts.clicks.push(v), (i += 1);
+  else if (a === "--agent") (opts.agent = v), (i += 1);
+  else if (a === "--agent-name") (opts.agentName = v), (i += 1);
+  else if (a === "--agent-wait") (opts.agentWait = Number(v)), (i += 1);
+  else if (a === "--workspace") (opts.workspace = v), (i += 1);
   else fail(`unknown argument ${a} — see the header of scripts/surface-probe.mjs`);
 }
 if (!opts.surface || opts.routes.length === 0)
@@ -216,6 +249,119 @@ async function readProbe(page) {
   });
 }
 
+async function openAgentsMenu(page) {
+  // The popover opens flakily on a cold page: retry, closing between tries.
+  for (let i = 0; i < 4; i += 1) {
+    await pointerClick(page, '[aria-label="Agents for this page"]');
+    await page.waitForTimeout(2500);
+    if (await page.locator("[data-radix-popper-content-wrapper]").count()) return true;
+    await page.keyboard.press("Escape");
+  }
+  return false;
+}
+
+async function openSurfaceContext(page) {
+  if (!(await openAgentsMenu(page))) return false;
+  const ok = await pointerClick(page, "[data-radix-popper-content-wrapper] button", "Surface Context");
+  await page.waitForTimeout(4000);
+  return ok;
+}
+
+/** Answer "Which workspace is this for?" with --workspace. */
+async function pickWorkspaceIfAsked(page) {
+  const asked = await page.evaluate(() => /Which workspace is this for\?/.test(document.body.innerText || ""));
+  if (!asked) return false;
+  await page.evaluate((name) => {
+    const el = Array.from(document.querySelectorAll("[role=dialog] *"))
+      .filter((e) => (e.textContent || "").trim() === name)
+      .pop();
+    const target = el?.closest("button,[role=option],[role=radio],label,li") || el;
+    if (!target) return;
+    for (const type of ["pointerdown", "mousedown", "pointerup", "mouseup", "click"]) {
+      const Ctor = type.startsWith("pointer") ? PointerEvent : MouseEvent;
+      target.dispatchEvent(new Ctor(type, { bubbles: true, cancelable: true }));
+    }
+  }, opts.workspace);
+  await page.waitForTimeout(800);
+  await page.getByRole("button", { name: "Continue" }).click({ force: true }).catch(() => {});
+  await page.waitForTimeout(2000);
+  return true;
+}
+
+/** Press one approval card's confirm button, if any is showing. */
+async function approveOne(page) {
+  return page.evaluate(() => {
+    const btn = Array.from(document.querySelectorAll("button")).find((b) =>
+      /^(Allow|Apply|Approve|Accept|Yes, apply|Apply changes)$/i.test((b.textContent || "").trim()),
+    );
+    if (!btn) return null;
+    for (const type of ["pointerdown", "mousedown", "pointerup", "mouseup", "click"]) {
+      const Ctor = type.startsWith("pointer") ? PointerEvent : MouseEvent;
+      btn.dispatchEvent(new Ctor(type, { bubbles: true, cancelable: true }));
+    }
+    return (btn.textContent || "").trim();
+  });
+}
+
+async function agentReply(page) {
+  return page.evaluate(() => {
+    const panel = Array.from(document.querySelectorAll("[data-window-panel]")).find((p) =>
+      p.querySelector("[data-agent-input-shell]"),
+    );
+    return panel ? (panel.innerText || "").replace(/\s+/g, " ").trim() : null;
+  });
+}
+
+async function runAgent(page, result) {
+  const agent = { name: opts.agentName, message: opts.agent, approvals: [], workspaceAsked: false, errors: [] };
+  const t = Date.now();
+  for (const click of opts.clicks) {
+    const sep = click.indexOf("=>");
+    const clicked = await pointerClick(page, sep < 0 ? click : click.slice(0, sep), sep < 0 ? null : click.slice(sep + 2));
+    if (!clicked) agent.errors.push(`--click found nothing for ${click}`);
+    await page.waitForTimeout(2000);
+  }
+  if (!(await openAgentsMenu(page))) agent.errors.push('Agents menu did not open');
+  if (!(await pointerClick(page, `[aria-label="Run ${opts.agentName}"]`)))
+    agent.errors.push(`no "Run ${opts.agentName}" button in the Agents menu (--agent-name)`);
+  await page.waitForTimeout(6000);
+  const box = page.locator("[data-agent-input-shell] textarea").first();
+  if (!(await box.count())) {
+    agent.errors.push("the agent window's message box did not appear");
+  } else {
+    await box.fill(opts.agent);
+    await page.waitForTimeout(700);
+    // Enter does not send in every composer mode; the button always does.
+    await pointerClick(page, '[aria-label="Send message"]');
+    await page.waitForTimeout(2500);
+    let last = null;
+    let stable = 0;
+    while ((Date.now() - t) / 1000 < opts.agentWait) {
+      await page.waitForTimeout(5000);
+      if (await pickWorkspaceIfAsked(page)) agent.workspaceAsked = true;
+      const pressed = await approveOne(page);
+      if (pressed) {
+        agent.approvals.push(pressed);
+        stable = 0;
+        continue;
+      }
+      const reply = await agentReply(page);
+      stable = reply === last ? stable + 1 : 0;
+      last = reply;
+      if (stable >= 4 && (Date.now() - t) / 1000 > 30) break;
+    }
+    agent.reply = (last ?? (await agentReply(page)) ?? "").slice(-1500);
+  }
+  agent.seconds = Math.round((Date.now() - t) / 1000);
+  await shot(page, "agent-after");
+  // Read the page's surface again, with the agent's writes in it. No Escape
+  // first: it would close a dialog the agent just filled.
+  if (await openSurfaceContext(page)) result.afterAgent = await readProbe(page);
+  else agent.errors.push("could not reopen Surface Context after the agent run");
+  result.agent = agent;
+  result.errors.push(...agent.errors);
+}
+
 async function shot(page, name) {
   if (!opts.shots) return;
   try {
@@ -318,10 +464,16 @@ try {
       result.menuOpened = menu && menuText.length > 0;
       result.menuDiagnostics = /INERT MENU|VALUE MAPPING GAP/.test(menuText);
       await page.keyboard.press("Escape");
+
+      if (opts.agent && index === 0) await runAgent(page, result);
     } catch (error) {
       result.errors.push(String(error?.message ?? error).slice(0, 300));
     }
-    const undeclared = [...(result.before?.undeclared ?? []), ...(result.after?.undeclared ?? [])];
+    const undeclared = [
+      ...(result.before?.undeclared ?? []),
+      ...(result.after?.undeclared ?? []),
+      ...(result.afterAgent?.undeclared ?? []),
+    ];
     result.pass = Boolean(result.signedIn && result.surfaceNamed && undeclared.length === 0 && result.errors.length === 0);
     if (!result.pass) exitCode = 1;
     results.push(result);
