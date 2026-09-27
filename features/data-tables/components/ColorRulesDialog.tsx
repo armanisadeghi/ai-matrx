@@ -170,9 +170,17 @@ export function ColorRulesDialog({
   // the sanctioned "adjust state while rendering" pattern — no effect, no
   // cascading render.
   const [lastOpen, setLastOpen] = useState(open);
+  /**
+   * The colour-by the table had when the dialog opened (DATA-V2-BASICS-2 C2). Picking a column
+   * repaints at once — the preview — and Cancel puts this back: Cancel changes nothing.
+   */
+  const [openedColorBy, setOpenedColorBy] = useState<TableStyle["colorBy"] | null>(() => style.colorBy ?? null);
   if (open !== lastOpen) {
     setLastOpen(open);
-    if (open) setRules(style.rules ? style.rules.map((r) => ({ ...r })) : []);
+    if (open) {
+      setRules(style.rules ? style.rules.map((r) => ({ ...r })) : []);
+      setOpenedColorBy(style.colorBy ?? null);
+    }
   }
 
   const colorByCandidates = fields.filter((f) => {
@@ -236,6 +244,16 @@ export function ColorRulesDialog({
     }
   };
 
+  /** Cancel, Escape and the close button: nothing the dialog changed is kept. */
+  const closeWithoutSaving = async () => {
+    const now = style.colorBy ?? null;
+    const same =
+      (now === null && openedColorBy === null) ||
+      (now !== null && openedColorBy !== null && now.field === openedColorBy.field && now.target === openedColorBy.target);
+    if (!same) await onSetPath(stylePath.colorBy(), openedColorBy);
+    onOpenChange(false);
+  };
+
   const optionsFor = (fieldName: string): ChoiceOption[] => {
     const resolved = choicesByField?.[fieldName];
     let declared: ChoiceOption[] = [];
@@ -253,7 +271,7 @@ export function ColorRulesDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : void closeWithoutSaving())}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Table colors</DialogTitle>
@@ -508,14 +526,14 @@ export function ColorRulesDialog({
           <Button
             type="button"
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={() => void closeWithoutSaving()}
             disabled={savingRules}
           >
             Cancel
           </Button>
           <Button type="button" onClick={() => void saveRules()} disabled={savingRules}>
             {savingRules ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-            Save rules
+            Save
           </Button>
         </DialogFooter>
       </DialogContent>
