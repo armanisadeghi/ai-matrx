@@ -16,6 +16,10 @@
  *   - `openExisting(id)`   — load a history conversation IN PLACE through the
  *     canonical `loadConversation` thunk (the path the agent-app shell and
  *     the tutor use), never a navigation.
+ *   - `startWith(agentId)` — a fresh conversation with the chosen agent.
+ * A host that owns SEVERAL conversations (one per board tile) passes `start`:
+ * what to open on mount (a saved conversation, a chosen agent, or new). It is
+ * read once, at mount.
  * A failure carries its real reason and a retry — nothing fails silently.
  *
  * A NEW chat waits for an active organization instead of racing its
@@ -51,6 +55,36 @@ type Request =
   | { kind: "agent"; agentId: string; nonce: number }
   | { kind: "open"; conversationId: string; nonce: number };
 
+/** What to open on mount. Default: a new conversation under the mandate. */
+export type CanvasWorkspaceStart =
+  | { kind: "new" }
+  | { kind: "agent"; agentId: string }
+  | { kind: "open"; conversationId: string };
+
+function initialRequest(start: CanvasWorkspaceStart | undefined): Request {
+  if (start?.kind === "agent") return { kind: "agent", agentId: start.agentId, nonce: 0 };
+  if (start?.kind === "open") return { kind: "open", conversationId: start.conversationId, nonce: 0 };
+  return { kind: "new", nonce: 0 };
+}
+
+/**
+ * `CanvasWorkspaceStart` stays accepted directly for tile callers; hosts that
+ * defer work until visible use the named options form.
+ */
+export type CanvasWorkspaceConversationOptions = {
+  enabled?: boolean;
+  start?: CanvasWorkspaceStart;
+};
+
+function resolveStartOptions(
+  input: CanvasWorkspaceStart | CanvasWorkspaceConversationOptions | undefined,
+): { enabled: boolean; start: CanvasWorkspaceStart | undefined } {
+  if (input && ("enabled" in input || "start" in input)) {
+    return { enabled: input.enabled ?? true, start: input.start };
+  }
+  return { enabled: true, start: input };
+}
+
 export interface CanvasWorkspaceConversationController {
   conversation: CanvasWorkspaceConversation;
   /** The id when ready, else null. */
@@ -68,11 +102,12 @@ export interface CanvasWorkspaceConversationController {
 
 export function useCanvasWorkspaceConversation(
   surfaceKey: string,
-  { enabled = true }: { enabled?: boolean } = {},
+  input?: CanvasWorkspaceStart | CanvasWorkspaceConversationOptions,
 ): CanvasWorkspaceConversationController {
+  const { enabled, start } = resolveStartOptions(input);
   const dispatch = useAppDispatch();
   const { launchMandate, launchAgent } = useAgentLauncher();
-  const [request, setRequest] = useState<Request>({ kind: "new", nonce: 0 });
+  const [request, setRequest] = useState<Request>(() => initialRequest(start));
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const handled = useRef<string | null>(null);

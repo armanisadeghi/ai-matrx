@@ -91,3 +91,6 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
 - **2026-09-27** — `/demos/spatial` hosts the workspace (listed in `CANVAS_CHROME_ROUTES` again); the spatial
   host passes no snapshot — the board's own surface carries it; `matrx-user/spatial-board` registered in
   `ui.ui_surface` (it was unregistered, so every send beside a board failed 422).
+- **2026-09-27** — `useCanvasWorkspaceConversation(surfaceKey, start?)`: an optional mount request (`new` /
+  `agent` / `open`), so a host owning several conversations — one per Board chat tile
+  (`features/spatial/items/work-items.tsx`) — reuses this hook and `CanvasChatColumn` instead of a copy.
