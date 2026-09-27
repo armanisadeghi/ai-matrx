@@ -49,6 +49,20 @@ export interface ElementThumbnailOptions {
 // ─── Low-level capture primitives ─────────────────────────────────────────────
 
 /**
+ * An image the renderer cannot fetch (a cross-origin avatar with no CORS
+ * header — every signed-in page has one) used to REJECT the whole capture:
+ * html-to-image sets the failed image's src to "" and its onerror rejects.
+ * It becomes a transparent pixel instead, so the capture always completes
+ * (page-pass 2026-09-27: "Tab capture failed" on /notes for every user).
+ */
+const TRANSPARENT_PIXEL =
+  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+export const RESILIENT_IMAGE_OPTIONS = {
+  imagePlaceholder: TRANSPARENT_PIXEL,
+  onImageErrorHandler: () => undefined,
+} as const;
+
+/**
  * Capture the current page via html2canvas.
  * Caller must already have hidden any overlays; this function does not hide anything.
  */
@@ -70,6 +84,7 @@ export async function captureTabViaCanvas(
   const dataUrl = await htmlToImage.toPng(document.body, {
     pixelRatio: window.devicePixelRatio || 1,
     filter,
+    ...RESILIENT_IMAGE_OPTIONS,
   });
 
   const res = await fetch(dataUrl);
@@ -101,6 +116,7 @@ export async function captureElementThumbnail(
     canvasWidth,
     canvasHeight,
     skipFonts: true,
+    ...RESILIENT_IMAGE_OPTIONS,
   });
 
   return new Promise<Blob | null>((resolve) => {

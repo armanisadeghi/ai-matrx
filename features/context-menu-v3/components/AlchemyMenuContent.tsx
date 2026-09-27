@@ -79,10 +79,18 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
   );
 
   const hasRichDocument = m.registryActions.length > 0;
+  // The source can be written back only when its adapter can save, or the
+  // menu itself edits the field. A raw source (a table row's words, rendered
+  // text) is read-only by definition — marking it writable put "Open in
+  // full-screen editor" on every table row (live 2026-09-27).
+  const sourceWritable =
+    hasRichDocument &&
+    !m.richDocCtx.source.readOnly &&
+    (Boolean(m.richDocCtx.sourceAdapter.edit) || Boolean(menuProps.isEditable));
   const makeTarget = (withRich: boolean) =>
     createClickTarget({
-      readOnly: hasRichDocument ? Boolean(m.richDocCtx.source.readOnly) : !menuProps.isEditable,
-      writable: hasRichDocument && !m.richDocCtx.source.readOnly ? [SOURCE_WRITE_TARGET] : [],
+      readOnly: hasRichDocument ? !sourceWritable : !menuProps.isEditable,
+      writable: sourceWritable ? [SOURCE_WRITE_TARGET] : [],
       // The strip's Copy IS the registry's one-tap copy here — one row, not two.
       excludedActionIds: [...(menuProps.excludedRichActions ?? []), ...(hasRichDocument ? ["copy"] : [])],
       organizationId: m.richDocCtx.organizationId,

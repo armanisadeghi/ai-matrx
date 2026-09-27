@@ -38,6 +38,7 @@ import {
 import type { FieldBaseType, FieldFormatConfig, FieldFormatOptions } from "@ai-matrx/design-system/field-formats";
 import {
   ChoiceOptionsEditor,
+  type ChoiceOptionsEditorProps,
   type ChoiceSuggestion,
 } from "./ChoiceOptionsEditor";
 
@@ -71,6 +72,14 @@ export type FieldFormatPickerProps = {
    * them (its options narrow to the group that column's cell names).
    */
   siblingFields?: { field_name: string; display_name: string }[];
+  /**
+   * Removing a choice records still hold (lane CHOICE-TAILS): how many records
+   * hold each choice, and where the records of each removed one go. Passed
+   * straight to the choice editor; omit on the older store.
+   */
+  choiceUsage?: ChoiceOptionsEditorProps["usage"];
+  rehome?: ChoiceOptionsEditorProps["rehome"];
+  onRehomeChange?: ChoiceOptionsEditorProps["onRehomeChange"];
   className?: string;
   optionsClassName?: string;
   triggerClassName?: string;
@@ -139,6 +148,9 @@ export function FieldFormatPicker({
   label,
   suggestions,
   siblingFields,
+  choiceUsage,
+  rehome,
+  onRehomeChange,
   className,
   optionsClassName,
   triggerClassName,
@@ -193,6 +205,9 @@ export function FieldFormatPicker({
             onChange={(next) => onChange({ id: activeId, options: next })}
             suggestions={suggestions}
             siblingFields={siblingFields}
+            usage={choiceUsage ?? null}
+            {...(rehome ? { rehome } : {})}
+            {...(onRehomeChange ? { onRehomeChange } : {})}
           />
         </div>
       )}

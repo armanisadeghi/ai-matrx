@@ -42,7 +42,7 @@ import {
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { useMediaQueryState } from "@/hooks/use-media-query";
 import { MatrxFloatingFrame } from "@/components/matrx/resizable/MatrxFloatingFrame";
 import { DockedSidePanel } from "@/components/official/side-panel/DockedSidePanel";
 import {
@@ -186,7 +186,10 @@ export function ChatCanvasWorkspace({
   initialMode = null,
   onClose,
 }: ChatCanvasWorkspaceProps) {
-  const compact = useMediaQuery(COMPACT_QUERY);
+  // `null` until the viewport is known (server, hydration): layout treats it as
+  // wide (CSS hides the wide panels on a phone), but nothing LAUNCHES on a guess.
+  const viewportCompact = useMediaQueryState(COMPACT_QUERY);
+  const compact = viewportCompact === true;
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const surfaceKey = `canvas-workspace:${id}`;
   const nav = useCanvasNavState(initialLayout?.nav ?? "collapsed");
@@ -194,15 +197,22 @@ export function ChatCanvasWorkspace({
   const [chatState, setChatStateRaw] = useState<CanvasChatState>(
     initialLayout?.chat ?? { placement: "side", open: defaultChatOpen },
   );
-  // A chat that starts closed launches nothing until it is first opened.
-  const [chatWanted, setChatWanted] = useState(chatState.open);
-  const chat = useCanvasWorkspaceConversation(surfaceKey, { enabled: chatWanted });
-  const [propertiesOpen, setPropertiesOpenRaw] = useState(initialLayout?.propertiesOpen ?? true);
-  const [fullScreen, setFullScreen] = useState(false);
-  const [canvasEl, setCanvasEl] = useState<HTMLDivElement | null>(null);
   const [mobileSheet, setMobileSheet] = useState<
     "chat" | "nav" | "properties" | null
   >(null);
+  const [fullScreen, setFullScreen] = useState(false);
+  // The chat is on screen right now — docked or floating on a wide screen, the
+  // sheet on a phone. Nothing launches until it is: a chat that starts closed
+  // costs nothing, and a phone's first render never launches on a guess.
+  const chatOnScreen =
+    viewportCompact === null
+      ? false
+      : viewportCompact
+        ? mobileSheet === "chat"
+        : chatState.open && !fullScreen;
+  const chat = useCanvasWorkspaceConversation(surfaceKey, { enabled: chatOnScreen });
+  const [propertiesOpen, setPropertiesOpenRaw] = useState(initialLayout?.propertiesOpen ?? true);
+  const [canvasEl, setCanvasEl] = useState<HTMLDivElement | null>(null);
   const floatingSize = readFloatingSize(
     useSessionKnob(COMPOSER_KNOBS.floatingPanelSize),
   );
@@ -210,7 +220,6 @@ export function ChatCanvasWorkspace({
   const placement = chatState.placement;
   const setChatState = (next: CanvasChatState) => {
     setChatStateRaw(next);
-    if (next.open) setChatWanted(true);
     writeCanvasChatCookie(id, next);
   };
   /** Dock or float the chat — always open. */
@@ -220,10 +229,7 @@ export function ChatCanvasWorkspace({
     setChatState({ placement, open: true });
   };
   const closeChat = () => setChatState({ placement, open: false });
-  const openMobileChat = () => {
-    setChatWanted(true);
-    setMobileSheet("chat");
-  };
+  const openMobileChat = () => setMobileSheet("chat");
   /** Nav "+" / history: the conversation shows wherever the chat is — opening it if hidden. */
   const newChatInPanel = () => {
     chat.startNew();
@@ -237,10 +243,7 @@ export function ChatCanvasWorkspace({
 
   // ⌘\ shows / hides the chat (the global canvas sheet stands down here).
   const onShortcut = useEffectEvent(() => {
-    if (compact) {
-      setChatWanted(true);
-      setMobileSheet((open) => (open === "chat" ? null : "chat"));
-    }
+    if (compact) setMobileSheet((open) => (open === "chat" ? null : "chat"));
     else if (chatState.open && !fullScreen) closeChat();
     else openChat();
   });
@@ -283,7 +286,6 @@ export function ChatCanvasWorkspace({
   );
 
   const openFromHistory = (conversation: { conversationId: string }) => {
-    setChatWanted(true);
     chat.openExisting(conversation.conversationId);
     if (compact) setMobileSheet("chat");
     else if (!chatState.open || fullScreen) openChat();
@@ -337,6 +339,14 @@ export function ChatCanvasWorkspace({
           edge="left"
           open={navShown}
           overlay={nav.overlay}
+          // Hover is tracked on the whole panel — its resize handle included —
+          // so reaching for the handle never closes a hover preview.
+          onPointerEnter={(e) => {
+            if (nav.state === "hover" && e.pointerType === "mouse") nav.hoverEnter();
+          }}
+          onPointerLeave={(e) => {
+            if (nav.state === "hover" && e.pointerType === "mouse") nav.hoverLeave();
+          }}
           sizes={CANVAS_NAV_SIZES}
           initialWidth={initialLayout?.widths.nav}
           aria-label="Navigation"
@@ -391,7 +401,7 @@ export function ChatCanvasWorkspace({
             </button>
           </div>
           <div className="flex min-h-0 flex-1 flex-col">
-            {placement === "side" ? chatColumn : null}
+            {placement === "side" && (chatOnScreen || conversationId) ? chatColumn : null}
           </div>
         </DockedSidePanel>
       ) : null}

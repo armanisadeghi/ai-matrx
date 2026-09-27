@@ -73,6 +73,7 @@ import {
 } from "@/features/education/trust/types";
 import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 import { runSpokenGrader } from "./grading-core";
+import { ensureFastFireSession } from "../redux/fastFireSession";
 import {
   gradePending,
   gradeResolved,
@@ -90,7 +91,8 @@ export interface GradeCardArgs {
   secondsAllowed: number;
   /** The per-card response clip assembled from the continuous stream. */
   clip: Blob | null;
-  sessionId: string | null;
+  /** The drill's client run id (stale-dispatch guard), never a database id. */
+  runId: string | null;
 }
 
 // Coercion of the grader's structured output is the shared `coerceSpokenGrade`
@@ -107,7 +109,10 @@ export function gradeCard(args: GradeCardArgs) {
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<void> => {
-    const { cardId, front, back, secondsAllowed, clip, sessionId } = args;
+    const { cardId, front, back, secondsAllowed, clip, runId } = args;
+    // The first answer opens the run's study session (once); later answers
+    // share it. Null offline or with no run — attempts stay session-less.
+    const sessionId = await dispatch(ensureFastFireSession(runId));
     // Whose outbox an offline attempt joins. Read once, up front: the thunk is
     // fire-and-forget and can resolve long after the drill moved on.
     const userId = selectUserId(getState()) ?? "";
@@ -161,7 +166,7 @@ export function gradeCard(args: GradeCardArgs) {
     //     hold and nothing to grade, ever. Record it result-less and move on.
     // Either way this thunk records no grade, which is the invariant.
     if (!responseAudioFileId) {
-      dispatch(gradeSkipped({ cardId, responseAudioFileId, runId: sessionId }));
+      dispatch(gradeSkipped({ cardId, responseAudioFileId, runId }));
       await recordAttempt(
         {
           userId,
@@ -200,7 +205,7 @@ export function gradeCard(args: GradeCardArgs) {
       return;
     }
 
-    dispatch(gradePending({ cardId, responseAudioFileId, runId: sessionId }));
+    dispatch(gradePending({ cardId, responseAudioFileId, runId }));
 
     try {
       // 2. Use THE shared spoken grader. It sends the durable file id as the
@@ -237,7 +242,7 @@ export function gradeCard(args: GradeCardArgs) {
       dispatch(
         gradeResolved({
           cardId,
-          runId: sessionId,
+          runId,
           score: grade.score,
           result,
           rubric: grade.rubric,
@@ -267,7 +272,7 @@ export function gradeCard(args: GradeCardArgs) {
     } catch (err) {
       const message = err instanceof Error ? err.message : "grading failed";
       console.error(`[fastfire.gradeCard] card ${cardId}:`, err);
-      dispatch(gradeFailed({ cardId, error: message, runId: sessionId }));
+      dispatch(gradeFailed({ cardId, error: message, runId }));
       // Still record the attempt (result-less) so the response audio + session
       // are not lost just because the grade failed.
       await recordAttempt({

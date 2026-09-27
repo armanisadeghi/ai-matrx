@@ -36,6 +36,8 @@ export function ChatDockHeaderButton({
   const dock = useChatDock(initialOpen);
   const openAuthGate = useOpenAuthGateDialog();
   const unavailable = dock.unavailableReason !== null;
+  // A guest has no dock, whatever a cookie remembers.
+  const pressed = isAuthenticated && dock.pressed;
 
   return (
     <div className="relative shrink-0" style={SLOT_BOX} data-chat-dock-header-slot>
@@ -47,20 +49,20 @@ export function ChatDockHeaderButton({
             ? "Chat — sign in to chat beside any page"
             : unavailable
               ? `Chat (${dock.unavailableReason})`
-              : dock.pressed
+              : pressed
                 ? CHAT_DOCK_TOOLTIP_OPEN
                 : CHAT_DOCK_TOOLTIP_CLOSED
         }
         tooltip={
           isAuthenticated && unavailable
             ? (dock.unavailableReason ?? undefined)
-            : dock.pressed
+            : pressed
               ? CHAT_DOCK_TOOLTIP_OPEN
               : CHAT_DOCK_TOOLTIP_CLOSED
         }
         className={cn(
           isAuthenticated && unavailable ? "text-muted-foreground" : "text-primary",
-          dock.pressed && "bg-primary/10",
+          pressed && "bg-primary/10",
           !unavailable && "hover:bg-primary/10",
         )}
       />

@@ -86,7 +86,7 @@ export default function AppShell({
 
           <main className="shell-main">{children}</main>
           {/* The chat dock — the grid's third column, closed (0px) by default. */}
-          {isAuthenticated ? <ShellChatDockSlot /> : null}
+          {isAuthenticated ? <ShellChatDockSlot pathname={pathname} /> : null}
 
           <MobileSideSheet
             isAuthenticated={isAuthenticated}

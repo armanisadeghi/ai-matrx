@@ -38,7 +38,7 @@ function drillAtIndex(index: number, adaptive = true): FastFireState {
   state = reducer(state, updateConfig({ adaptive }));
   state = reducer(
     state,
-    startDrill({ cards: CARDS, sessionId: "run-1", setName: "Test" }),
+    startDrill({ cards: CARDS, runId: "run-1", setName: "Test" }),
   );
   state = reducer(state, beginRecording());
   for (let i = 0; i < index; i++) {

@@ -15,7 +15,7 @@
 
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { useMediaQueryState } from "@/hooks/use-media-query";
 import {
   selectChatDockOpen,
   selectChatDockSheetOpen,
@@ -32,6 +32,12 @@ export interface ChatDockController {
   /** Phone/tablet sheet open. */
   sheetOpen: boolean;
   compact: boolean;
+  /**
+   * The chat is on screen right now (column on a wide screen, sheet below
+   * 1024px). False until the viewport is KNOWN — a phone's first render must
+   * never start the conversation of a dock left open on a desktop.
+   */
+  shown: boolean;
   /** Null when the dock can open on this route; otherwise why not. */
   unavailableReason: string | null;
   /** What the header control shows as pressed. */
@@ -44,13 +50,15 @@ export interface ChatDockController {
 export function useChatDock(initialOpen: boolean): ChatDockController {
   const dispatch = useAppDispatch();
   const pathname = usePathname();
-  const compact = useMediaQuery(CHAT_DOCK_COMPACT_QUERY);
+  const viewportCompact = useMediaQueryState(CHAT_DOCK_COMPACT_QUERY);
+  const compact = viewportCompact === true;
   const stored = useAppSelector(selectChatDockOpen);
   const sheetOpenRaw = useAppSelector(selectChatDockSheetOpen);
   const unavailableReason = chatDockUnavailableReason(pathname ?? "/");
   const available = unavailableReason === null;
   const dockOpen = available && (stored ?? initialOpen);
   const sheetOpen = available && compact && sheetOpenRaw;
+  const shown = viewportCompact === null ? false : viewportCompact ? sheetOpen : dockOpen;
 
   const setDock = (open: boolean) => {
     dispatch(setChatDockOpen(open));
@@ -61,6 +69,7 @@ export function useChatDock(initialOpen: boolean): ChatDockController {
     dockOpen,
     sheetOpen,
     compact,
+    shown,
     unavailableReason,
     pressed: compact ? sheetOpen : dockOpen,
     toggle: () => {

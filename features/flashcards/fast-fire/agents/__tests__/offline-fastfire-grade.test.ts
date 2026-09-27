@@ -58,6 +58,7 @@ jest.mock(
   "@/features/agents/redux/execution-system/thunks/run-headless-agent-json",
   () => ({
     runHeadlessAgentJson: (...args: unknown[]) => runHeadlessAgentJson(...args),
+    mandateOutputUnusableSentence: () => null,
   }),
 );
 jest.mock("@/features/education/study/service/studyService", () => ({
@@ -116,7 +117,7 @@ function args(overrides: Record<string, unknown> = {}) {
     back: "back",
     secondsAllowed: 20,
     clip: clip(),
-    sessionId: SESSION,
+    runId: SESSION,
     ...overrides,
   };
 }
@@ -380,7 +381,7 @@ describe("FastFire — the offline split (STATE §4.1 B8)", () => {
     // fire-and-forget and share no component instance), so a suite that reused
     // one session id would be asserting leftover state from an earlier test.
     for (const id of ["ff-a", "ff-b", "ff-c", "ff-d"]) {
-      await gradeCard(args({ cardId: id, sessionId: "ff-session-burst" }))(
+      await gradeCard(args({ cardId: id, runId: "ff-session-burst" }))(
         dispatch,
         getState,
       );

@@ -48,7 +48,7 @@ export function ensureFastFireSession(runId: string | null) {
   ): Promise<string | null> => {
     if (!runId) return Promise.resolve(null);
     const ff = getState().fastFire;
-    if (ff.runId === runId && ff.sessionId) return Promise.resolve(ff.sessionId);
+    if (ff?.runId === runId && ff.sessionId) return Promise.resolve(ff.sessionId);
     if (!armed || armed.runId !== runId) return Promise.resolve(null);
     if (armed.pending) return armed.pending;
     // Offline: the insert would only burn retries against a dead connection.
@@ -86,7 +86,7 @@ export function awaitFastFireSession(runId: string | null) {
   ): Promise<string | null> => {
     if (!runId) return Promise.resolve(null);
     const ff = getState().fastFire;
-    if (ff.runId === runId && ff.sessionId) return Promise.resolve(ff.sessionId);
+    if (ff?.runId === runId && ff.sessionId) return Promise.resolve(ff.sessionId);
     if (armed && armed.runId === runId && armed.pending) return armed.pending;
     return Promise.resolve(null);
   };

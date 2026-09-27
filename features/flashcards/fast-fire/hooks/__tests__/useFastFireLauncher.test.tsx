@@ -59,6 +59,8 @@ jest.mock("../../audio/continuousCapture", () => ({
 }));
 
 import { useFastFireLauncher } from "../useFastFireLauncher";
+import { ensureFastFireSession } from "../../redux/fastFireSession";
+import type { RootState } from "@/lib/redux/store";
 
 describe("useFastFireLauncher", () => {
   beforeEach(() => {
@@ -91,7 +93,7 @@ describe("useFastFireLauncher", () => {
     await hook.unmount();
   });
 
-  it("creates the study session only after capture is ready", async () => {
+  it("Start writes no study session; the first answer opens exactly one", async () => {
     const order: string[] = [];
     startContinuousCapture.mockImplementation(async () => {
       order.push("capture");
@@ -107,7 +109,26 @@ describe("useFastFireLauncher", () => {
       started = await hook.current.start();
     });
 
+    // Starting the drill (mic warm, deck loaded) writes nothing.
     expect(started).toBe(true);
+    expect(order).toEqual(["capture"]);
+    expect(createSession).not.toHaveBeenCalled();
+
+    // The drill runs under a CLIENT run id, never a database id.
+    const drill = dispatch.mock.calls
+      .map(([action]) => action as { type: string; payload?: { runId?: string } })
+      .find((a) => a.type === "fastFire/startDrill");
+    const runId = drill?.payload?.runId ?? null;
+    expect(runId).toEqual(expect.any(String));
+
+    // The first answer opens the session; a second answer shares it.
+    const state = () =>
+      ({ fastFire: { runId, sessionId: null } }) as unknown as RootState;
+    const first = await ensureFastFireSession(runId)(dispatch, state);
+    const second = await ensureFastFireSession(runId)(dispatch, state);
+    expect(first).toBe("session-fastfire");
+    expect(second).toBe("session-fastfire");
+    expect(createSession).toHaveBeenCalledTimes(1);
     expect(order).toEqual(["capture", "session"]);
     await hook.unmount();
   });

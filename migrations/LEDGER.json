@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-27T18:31:48.434Z",
+  "generated_at": "2026-09-27T18:34:24.557Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -661,6 +661,12 @@
       "filename": "databasics_a_new_column_never_takes_a_key_another_column_holds.sql",
       "checksum": "8dd35478f614075338bfa8209db98de77dc647051bed008cf0e05b2b8f1b1356",
       "applied_at": "2026-09-27 16:25:53.354011+00"
+    },
+    "migrations/campaign/databasics_readiness_judges_a_blank_as_empty.sql": {
+      "source": "matrx-frontend",
+      "filename": "databasics_readiness_judges_a_blank_as_empty.sql",
+      "checksum": "9ebba1bb418a2228a4c3ac99d1e712c5c131e74fd87b78ecc5409f9f8230fe4c",
+      "applied_at": "2026-09-27 18:34:22.783184+00"
     },
     "migrations/campaign/databasics_two_columns_never_carry_the_same_name.sql": {
       "source": "matrx-frontend",

@@ -19,9 +19,17 @@
  *                 TIERED options for free. Narrowing to one group of a list is
  *                 a dropdown here, not a second list to maintain.
  *
- * Nothing here can damage data. Options are a display layer: adding, removing,
- * renaming, or clearing them rewrites no cell, and a value that stops matching
- * simply renders in amber. That is why this editor has no confirmation step.
+ * On the older store, options are a display layer: adding, removing, renaming,
+ * or clearing them rewrites no cell, and a value that stops matching simply
+ * renders in amber.
+ *
+ * REMOVING A CHOICE RECORDS STILL HOLD ASKS FIRST (lane CHOICE-TAILS, 2026-09-27).
+ * On a record-store table the caller hands `usage` (how many records hold each
+ * choice) and `onRehomeChange`. Removing a choice that records hold asks,
+ * Notion-style: "3 records use “X-ray”." — move them to another choice, keep the
+ * words as other values (only where the column allows other values), or clear
+ * them. The answer rides the same save as the list (`rehome`), and the save can
+ * be undone.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -50,6 +58,7 @@ import {
 } from "./choices";
 import type { FieldChoice, FieldFormatOptions } from "@ai-matrx/design-system/field-formats";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { recordsUseSentence, rehomeSentence, type ChoiceRehome, type ChoiceUsage } from "@ai-matrx/records";
 
 /** One observed value of the column, and how many rows carry it. */
 export type ChoiceSuggestion = {
@@ -72,8 +81,23 @@ export type ChoiceOptionsEditorProps = {
    * dependent-column control simply does not appear.
    */
   siblingFields?: { field_name: string; display_name: string }[];
+  /**
+   * How many records hold each choice, keyed by the option's id (a record-store
+   * table's `getChoiceUsage`). With `onRehomeChange`, removing a choice records
+   * hold asks where they go; without them, a removal is immediate (older store).
+   */
+  usage?: Record<string, ChoiceUsage> | null;
+  /** Where the records of each removed choice go, keyed by the option's id. */
+  rehome?: Record<string, ChoiceRehome>;
+  onRehomeChange?: (next: Record<string, ChoiceRehome>) => void;
   className?: string;
 };
+
+/** The option id a choice carries on a record-store table (the seam's `StoreChoice`). */
+function choiceIdOf(choice: FieldChoice | undefined): string | undefined {
+  const id = (choice as (FieldChoice & { id?: unknown }) | undefined)?.id;
+  return typeof id === "string" && id !== "" ? id : undefined;
+}
 
 type Source = "inline" | "list";
 
@@ -82,6 +106,9 @@ export function ChoiceOptionsEditor({
   onChange,
   suggestions = [],
   siblingFields = [],
+  usage = null,
+  rehome = {},
+  onRehomeChange,
   className,
 }: ChoiceOptionsEditorProps) {
   const binding = options.structuredList;
@@ -113,6 +140,58 @@ export function ChoiceOptionsEditor({
   const updateChoice = (index: number, next: Partial<FieldChoice>) => {
     setChoices(choices.map((c, i) => (i === index ? { ...c, ...next } : c)));
   };
+
+  // ─── Removing a choice records still hold (lane CHOICE-TAILS) ─────────────
+  // `asking` is the queue of choices waiting for an answer (one, or every used one
+  // on Clear all); `removed` remembers each answered one so it can be put back.
+  const [asking, setAsking] = useState<FieldChoice[]>([]);
+  const [moveTo, setMoveTo] = useState<string>("");
+  const [removed, setRemoved] = useState<Record<string, { choice: FieldChoice; index: number }>>({});
+  const heldBy = (choice: FieldChoice): number => {
+    const id = choiceIdOf(choice);
+    return id && onRehomeChange ? (usage?.[id]?.records ?? 0) : 0;
+  };
+  const removeChoice = (index: number) => {
+    const choice = choices[index];
+    if (choice && heldBy(choice) > 0) {
+      setAsking([choice]);
+      setMoveTo("");
+      return;
+    }
+    setChoices(choices.filter((_, i) => i !== index));
+  };
+  const clearAll = () => {
+    const held = choices.filter((c) => heldBy(c) > 0);
+    setChoices(held);
+    setAsking(held);
+    setMoveTo("");
+  };
+  const asked = asking[0];
+  const answer = (spec: ChoiceRehome) => {
+    if (!asked || !onRehomeChange) return;
+    const id = choiceIdOf(asked)!;
+    const index = choices.findIndex((c) => choiceIdOf(c) === id);
+    setRemoved({ ...removed, [id]: { choice: asked, index: index < 0 ? choices.length : index } });
+    setChoices(choices.filter((c) => choiceIdOf(c) !== id));
+    onRehomeChange({ ...rehome, [id]: spec });
+    setAsking(asking.slice(1));
+    setMoveTo("");
+  };
+  const putBack = (id: string) => {
+    const was = removed[id];
+    if (!was) return;
+    const next = [...choices];
+    next.splice(Math.min(was.index, next.length), 0, was.choice);
+    setChoices(next);
+    const { [id]: _gone, ...rest } = rehome;
+    onRehomeChange?.(rest);
+    const { [id]: _was, ...keep } = removed;
+    setRemoved(keep);
+  };
+  const wordsOfId = (id: string) =>
+    choices.find((c) => choiceIdOf(c) === id)?.value ?? removed[id]?.choice.value ?? usage?.[id]?.words ?? "";
+  const waiting = new Set(asking.map(choiceIdOf));
+  const moveTargets = choices.filter((c) => choiceIdOf(c) && !waiting.has(choiceIdOf(c)));
 
   // ─── Shared list ───────────────────────────────────────────────────────────
 
@@ -382,15 +461,82 @@ export function ChoiceOptionsEditor({
                     size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-destructive"
                     aria-label={`Remove ${choice.value}`}
-                    onClick={() =>
-                      setChoices(choices.filter((_, i) => i !== index))
-                    }
+                    onClick={() => removeChoice(index)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               ))}
             </div>
+          )}
+
+          {/* THE QUESTION, Notion-style: where do the records that hold it go? */}
+          {asked && (
+            <div
+              role="group"
+              aria-label={recordsUseSentence(heldBy(asked), asked.value)}
+              data-choice-removal-ask=""
+              className="flex flex-col gap-1.5 rounded-md border border-border bg-muted/40 p-2"
+            >
+              <p className="text-xs">{recordsUseSentence(heldBy(asked), asked.value)}</p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {moveTargets.length > 0 && (
+                  <>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      disabled={moveTo === ""}
+                      onClick={() => answer({ then: "move", to: moveTo })}
+                    >
+                      Move them to
+                    </Button>
+                    <Select value={moveTo || undefined} onValueChange={setMoveTo}>
+                      <SelectTrigger className="h-7 w-36 text-xs" aria-label="Another choice">
+                        <SelectValue placeholder="Another choice" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {moveTargets.map((c) => (
+                          <SelectItem key={choiceIdOf(c)} value={choiceIdOf(c)!} className="text-xs">
+                            {c.value}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </>
+                )}
+                {options.allowOther !== false && (
+                  <Button type="button" variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={() => answer({ then: "keep" })}>
+                    Keep the words as other values
+                  </Button>
+                )}
+                <Button type="button" variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={() => answer({ then: "clear" })}>
+                  Clear them
+                </Button>
+                <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setAsking([])}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* What each answered removal will do on Save, with a way to put it back. */}
+          {Object.entries(rehome).map(([id, spec]) =>
+            removed[id] ? (
+              <div key={id} className="flex items-center justify-between gap-2 text-xs text-muted-foreground" data-choice-rehome="">
+                <span>
+                  {rehomeSentence(
+                    usage?.[id]?.records ?? 0,
+                    removed[id]!.choice.value,
+                    spec,
+                    spec.then === "move" ? wordsOfId(spec.to) : undefined,
+                  )}
+                </span>
+                <button type="button" className="shrink-0 hover:text-foreground" onClick={() => putBack(id)}>
+                  Put it back
+                </button>
+              </div>
+            ) : null,
           )}
 
           <div className="flex items-center gap-1.5">
@@ -424,7 +570,7 @@ export function ChoiceOptionsEditor({
             <button
               type="button"
               className="self-start text-xs text-muted-foreground hover:text-foreground"
-              onClick={() => setChoices([])}
+              onClick={clearAll}
             >
               <X className="mr-1 inline h-3 w-3" />
               Clear all options

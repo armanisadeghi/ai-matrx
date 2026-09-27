@@ -230,6 +230,17 @@ export function EntityFilterPanel<TRow>({
   const canSort = sortOptions.length > 0;
   const sortLabel =
     sortOptions.find((o) => o.value === sortKey)?.label ?? "Custom";
+  // A panel with nothing in it is absent, never a button that opens an empty
+  // box (/connected-sources, page-pass 2026-09-27: no sortable column, no
+  // facet, no archive axis).
+  const hasFilters =
+    hasFavorites ||
+    hasArchived ||
+    scopeSections.some((section) => query.scope.kind === section.scope) ||
+    facetSections.some(
+      (section) =>
+        facetValues(facets, section.facet).length >= (section.minOptions ?? 1),
+    );
 
   /** Read/write one entry of the shared filter bag. */
   const setSelect = (id: string, values: string[]) => {
@@ -255,6 +266,8 @@ export function EntityFilterPanel<TRow>({
     else next.favorite = { kind: "boolean", value: v === "only" };
     onPatchQuery({ filters: next });
   };
+
+  if (!canSort && !hasFilters && activeCount === 0) return null;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -296,7 +309,9 @@ export function EntityFilterPanel<TRow>({
         align="end"
         sideOffset={8}
         collisionPadding={16}
-        className="flex flex-col overflow-hidden p-0"
+        // The popover portals out of the list root, so it carries the touch
+        // floor itself (its chips and sort rows measured 22-32px on a phone).
+        className="matrx-touch-targets flex flex-col overflow-hidden p-0"
         style={{
           maxHeight:
             "var(--radix-popover-content-available-height, calc(100dvh - 120px))",

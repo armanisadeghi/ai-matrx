@@ -76,13 +76,19 @@ export type CanvasWorkspaceConversationOptions = {
   start?: CanvasWorkspaceStart;
 };
 
+/** A bare start (`{ kind }`) — as opposed to the options form, which never carries `kind`. */
+function isCanvasWorkspaceStart(
+  input: CanvasWorkspaceStart | CanvasWorkspaceConversationOptions,
+): input is CanvasWorkspaceStart {
+  return "kind" in input;
+}
+
 function resolveStartOptions(
   input: CanvasWorkspaceStart | CanvasWorkspaceConversationOptions | undefined,
 ): { enabled: boolean; start: CanvasWorkspaceStart | undefined } {
-  if (input && ("enabled" in input || "start" in input)) {
-    return { enabled: input.enabled ?? true, start: input.start };
-  }
-  return { enabled: true, start: input };
+  if (!input) return { enabled: true, start: undefined };
+  if (isCanvasWorkspaceStart(input)) return { enabled: true, start: input };
+  return { enabled: input.enabled ?? true, start: input.start };
 }
 
 export interface CanvasWorkspaceConversationController {

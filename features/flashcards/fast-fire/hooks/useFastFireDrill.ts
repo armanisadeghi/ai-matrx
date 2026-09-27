@@ -45,7 +45,7 @@ import {
   selectFastFireCards,
   selectFastFireCurrentCard,
   selectFastFireCurrentIndex,
-  selectFastFireSessionId,
+  selectFastFireRunId,
   selectFastFireAdvanceReason,
 } from "../redux/fastFire.selectors";
 import type { AdvanceReason } from "../redux/fastFireSlice";
@@ -64,6 +64,10 @@ import {
   normalizeAudioType,
 } from "@ai-matrx/browser-audio/core";
 import { gradeCard } from "../agents/gradeCard.thunk";
+import {
+  awaitFastFireSession,
+  ensureFastFireSession,
+} from "../redux/fastFireSession";
 import { reviewSession } from "../agents/reviewSession.thunk";
 import { studyService } from "@/features/education/study/service/studyService";
 import { reviewAfterPendingGrades } from "./pending-grades";
@@ -108,7 +112,9 @@ export function useFastFireDrill(): UseFastFireDrillResult {
   const cards = useAppSelector(selectFastFireCards);
   const currentCard = useAppSelector(selectFastFireCurrentCard);
   const currentIndex = useAppSelector(selectFastFireCurrentIndex);
-  const sessionId = useAppSelector(selectFastFireSessionId);
+  // The drill's client run id. The study session is separate: it opens on the
+  // FIRST ANSWER (fastFireSession.ts), so starting and leaving writes nothing.
+  const runId = useAppSelector(selectFastFireRunId);
 
   // The wall-clock deadline for the current card. STATE so the timer hook
   // restarts its single loop exactly once when it changes. null = no deadline.
@@ -277,8 +283,11 @@ export function useFastFireDrill(): UseFastFireDrillResult {
       front: card.front,
       back: card.back,
       secondsAllowed: answerSeconds,
-      sessionId,
+      runId,
     };
+    // This card was answered: open the run's session now (once) so finalize
+    // can find it; the grade thunk shares the same in-flight open.
+    void dispatch(ensureFastFireSession(runId));
     const pendingGrade = stopCardClip(card.id)
       .then((clip) => dispatch(gradeCard({ ...cardSnapshot, clip })))
       .catch((error: unknown) => {
@@ -342,6 +351,9 @@ export function useFastFireDrill(): UseFastFireDrillResult {
       // Stop the continuous recording and grab the full-session blob.
       const full = stopContinuousCapture();
       setDeadlineTs(null);
+      // The session the first answer opened (null when nothing was answered —
+      // then there is nothing to close). Waits for an open in flight.
+      const sessionId = await dispatch(awaitFastFireSession(runId));
 
       // 1) TERMINAL FIRST. Mark the session completed IMMEDIATELY, before the
       //    (potentially slow) session-audio upload and the optional holistic
@@ -419,7 +431,7 @@ export function useFastFireDrill(): UseFastFireDrillResult {
     return () => {
       cancelled = true;
     };
-  }, [phase, sessionId, dispatch]);
+  }, [phase, runId, dispatch]);
 
   // Reset the finalize guard whenever we leave finalize (so a re-run can finalize).
   useEffect(() => {
@@ -446,9 +458,11 @@ export function useFastFireDrill(): UseFastFireDrillResult {
     setDeadlineTs(null);
     // H1+H4: close the study_session so it doesn't leak as `active` forever.
     // Best-effort and fire-and-forget — abandoning the UI must not block on the DB.
-    if (sessionId) {
+    {
       void (async () => {
         try {
+          const sessionId = await dispatch(awaitFastFireSession(runId));
+          if (!sessionId) return; // nothing answered, nothing written
           const res = await studyService.updateSession(sessionId, {
             status: "abandoned",
             ended_at: new Date().toISOString(),

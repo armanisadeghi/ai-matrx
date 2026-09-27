@@ -30,6 +30,7 @@ import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 
 import { rewriteFormulaReferences } from "@ai-matrx/design-system/formulas";
 import { inlineChoices } from "@/lib/field-formats/choices";
+import type { ChoiceRehome, ChoicesRehomed, ChoiceUsage } from "@ai-matrx/records";
 import * as recordStore from "./data-source/record-store";
 import { placeTableInRecordStore, recordStoreHomeOf } from "./data-source/table-home";
 import { recordChangeActions } from "./data-source/record-store-grid";
@@ -579,7 +580,38 @@ export type SetFieldFormatArgs = {
   fieldId: string;
   /** Pass `null` to clear the format and fall back to the storage type. */
   format: FieldFormatConfig | null;
+  /**
+   * Where the records of each removed choice go, keyed by the option's id (lane CHOICE-TAILS):
+   * moved to another choice, kept as other values, or cleared — in the same save as the list.
+   * Only a record-store table's choices carry ids; the older store rewrites no cell.
+   */
+  rehome?: Record<string, ChoiceRehome> | undefined;
 };
+
+/**
+ * How many records hold each choice of a column (lane CHOICE-TAILS), keyed by the option's id —
+ * or `null` for a table in the older store, whose choices are a display layer that rewrites no
+ * cell, so there is nothing to ask before one is removed.
+ */
+export async function getChoiceUsage(args: {
+  tableId: string;
+  fieldId: string;
+}): Promise<ServiceResult<Record<string, ChoiceUsage> | null>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (!home) return { success: true, data: null };
+  return recordStore.getChoiceUsage(home, args);
+}
+
+/** Puts a choice removal back: the list and every cell as they were, one save (lane CHOICE-TAILS). */
+export async function undoChoiceRemoval(args: {
+  tableId: string;
+  fieldId: string;
+  undo: ChoicesRehomed["undo"];
+}): Promise<ServiceResult<{ field_id: string; cells_back: number }>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (!home) return { success: false, error: "Only a record-store table's choice removals can be put back from here." };
+  return recordStore.undoChoiceRemoval(home, args);
+}
 
 /**
  * Writes a column's display format to `udt_dataset_fields.metadata.format`.
@@ -590,7 +622,7 @@ export type SetFieldFormatArgs = {
  */
 export async function setFieldFormat(
   args: SetFieldFormatArgs,
-): Promise<ServiceResult<{ field_id: string }>> {
+): Promise<ServiceResult<{ field_id: string; undo?: ChoicesRehomed["undo"]; rehomed?: ChoicesRehomed["rehomed"] }>> {
   const home = recordStoreHomeOf(args.tableId);
   if (home) return recordStore.setFieldFormat(home, args);
   const { data, error } = await supabase.rpc("udt_set_field_format", {

@@ -244,15 +244,8 @@ export function CanvasNav({
   );
 
   return (
-    <div
-      onPointerEnter={(e) => {
-        if (hover && e.pointerType === "mouse") nav.hoverEnter();
-      }}
-      onPointerLeave={(e) => {
-        if (hover && e.pointerType === "mouse") nav.hoverLeave();
-      }}
-      className={cn("flex h-full min-h-0 flex-col p-2", hover ? "bg-card" : "bg-muted/40", className)}
-    >
+    // Hover enter/leave is tracked by the host's DockedSidePanel (handle included).
+    <div className={cn("flex h-full min-h-0 flex-col p-2", hover ? "bg-card" : "bg-muted/40", className)}>
       <div className="min-h-0 flex-1">
         <ConversationHistorySidebar
           variant="consumer"

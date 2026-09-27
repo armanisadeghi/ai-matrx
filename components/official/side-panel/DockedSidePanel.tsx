@@ -12,6 +12,11 @@
  *   - The resize handle is a real separator: drag it, double-click it for the
  *     default width, or focus it and use ← / → (Shift = bigger steps),
  *     Home / End for min / max.
+ *   - The width is always clamped to the space the panel has NOW: never more
+ *     than `maxShare` of its parent (re-checked whenever the parent resizes),
+ *     so a width chosen on a wide monitor never crushes the page in a small
+ *     window. The person's chosen width is kept and comes back when there is
+ *     room again.
  *   - `overlay` lays the same panel OVER the page (the hover preview of a
  *     collapsed nav) instead of beside it.
  *
@@ -19,14 +24,21 @@
  * (`readSidePanelWidth`) passes `initialWidth`, so the first paint is right.
  */
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { cn } from "@/lib/utils";
 import { clampSidePanelWidth, writeSidePanelWidth, type SidePanelSizes } from "./side-panel-width";
 
 /** Arrow-key step, and the Shift+arrow step, in px. */
 const KEY_STEP_PX = 16;
 const KEY_STEP_LARGE_PX = 64;
-/** A drag never takes more than this share of the space the panel sits in. */
+/** A panel never takes more than this share of the space it sits in. */
 const DEFAULT_MAX_SHARE = 0.6;
 
 export interface DockedSidePanelProps {
@@ -40,10 +52,16 @@ export interface DockedSidePanelProps {
   initialWidth?: number;
   /** Lay the panel over the page (a hover preview) instead of beside it. */
   overlay?: boolean;
-  /** Largest share of the parent a drag may take (default 0.6). */
+  /** Largest share of the parent the panel may take (default 0.6). */
   maxShare?: number;
   /** No handle: the panel keeps its width. */
   resizable?: boolean;
+  /**
+   * A CSS custom property set on the PARENT element to the width the panel
+   * takes right now (0px when closed) — for page UI pinned to the viewport
+   * that must stay clear of it. Written straight to the DOM: no re-render.
+   */
+  publishWidthAs?: `--${string}`;
   onWidthChange?: (width: number) => void;
   "aria-label": string;
   children: ReactNode;
@@ -51,6 +69,7 @@ export interface DockedSidePanelProps {
   className?: string;
   /** Classes for the panel's own box (e.g. `max-lg:hidden` for a desktop-only panel). */
   outerClassName?: string;
+  /** Pointer entered / left the panel (its handle included). Not reported while dragging. */
   onPointerEnter?: (event: React.PointerEvent<HTMLElement>) => void;
   onPointerLeave?: (event: React.PointerEvent<HTMLElement>) => void;
 }
@@ -64,6 +83,7 @@ export function DockedSidePanel({
   overlay = false,
   maxShare = DEFAULT_MAX_SHARE,
   resizable = true,
+  publishWidthAs,
   onWidthChange,
   children,
   className,
@@ -72,22 +92,43 @@ export function DockedSidePanel({
   onPointerLeave,
   "aria-label": ariaLabel,
 }: DockedSidePanelProps) {
-  const [storedWidth, setWidthState] = useState(initialWidth ?? sizes.defaultPx);
-  // Always inside today's limits, even if the host's limits changed.
-  const width = clampSidePanelWidth(storedWidth, sizes);
-  const [dragging, setDragging] = useState(false);
   const outerRef = useRef<HTMLElement>(null);
-  const drag = useRef<{ startX: number; startWidth: number } | null>(null);
+  /** The person's chosen width (kept even when there is no room for it now). */
+  const [chosenWidth, setChosenWidth] = useState(initialWidth ?? sizes.defaultPx);
+  const [parentWidth, setParentWidth] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const drag = useRef<{ startX: number; startWidth: number; latest: number } | null>(null);
 
-  const effectiveMax = () => {
-    const parent = outerRef.current?.parentElement?.clientWidth ?? 0;
-    return parent > 0 ? Math.max(sizes.minPx, Math.min(sizes.maxPx, Math.floor(parent * maxShare))) : sizes.maxPx;
-  };
-  const clampNow = (next: number) =>
-    clampSidePanelWidth(next, { ...sizes, maxPx: effectiveMax() });
+  // The space the panel sits in, tracked so the clamp follows the window.
+  useEffect(() => {
+    const parent = outerRef.current?.parentElement;
+    if (!parent) return undefined;
+    const observer = new ResizeObserver(() => setParentWidth(parent.clientWidth));
+    observer.observe(parent);
+    return () => observer.disconnect();
+  }, []);
+
+  const maxNow =
+    parentWidth > 0
+      ? Math.max(sizes.minPx, Math.min(sizes.maxPx, Math.floor(parentWidth * maxShare)))
+      : sizes.maxPx;
+  const limits: SidePanelSizes = { defaultPx: sizes.defaultPx, minPx: sizes.minPx, maxPx: maxNow };
+  const width = clampSidePanelWidth(chosenWidth, limits);
+  const occupied = open ? width : 0;
+
+  useEffect(() => {
+    if (!publishWidthAs) return undefined;
+    outerRef.current?.parentElement?.style.setProperty(publishWidthAs, `${occupied}px`);
+    return undefined;
+  }, [publishWidthAs, occupied]);
+  useEffect(() => {
+    if (!publishWidthAs) return undefined;
+    const parent = outerRef.current?.parentElement;
+    return () => parent?.style.setProperty(publishWidthAs, "0px");
+  }, [publishWidthAs]);
 
   const commit = (next: number) => {
-    setWidthState(next);
+    setChosenWidth(next);
     writeSidePanelWidth(panelId, next);
     onWidthChange?.(next);
   };
@@ -98,47 +139,58 @@ export function DockedSidePanel({
   const onHandlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
     e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    drag.current = { startX: e.clientX, startWidth: width };
+    drag.current = { startX: e.clientX, startWidth: width, latest: width };
     setDragging(true);
   };
-  const onHandlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const start = drag.current;
-    if (!start) return;
-    setWidthState(clampNow(start.startWidth + (e.clientX - start.startX) * grow));
-  };
-  const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!drag.current) return;
+  // Window-level while dragging: the drag ends cleanly wherever the pointer is
+  // released — even if the panel closed or its handle went away mid-drag.
+  const onDragMove = useEffectEvent((e: PointerEvent) => {
+    const current = drag.current;
+    if (!current) return;
+    current.latest = clampSidePanelWidth(current.startWidth + (e.clientX - current.startX) * grow, limits);
+    setChosenWidth(current.latest);
+  });
+  const onDragEnd = useEffectEvent(() => {
+    const current = drag.current;
     drag.current = null;
     setDragging(false);
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-    commit(width);
-  };
-  const onHandleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    const step = e.shiftKey ? KEY_STEP_LARGE_PX : KEY_STEP_PX;
-    let next: number | null = null;
-    if (e.key === "ArrowRight") next = width + step * grow;
-    else if (e.key === "ArrowLeft") next = width - step * grow;
-    else if (e.key === "Home") next = sizes.minPx;
-    else if (e.key === "End") next = effectiveMax();
-    if (next === null) return;
-    e.preventDefault();
-    commit(clampNow(next));
-  };
-
-  // While dragging the whole page shows the resize cursor and selects nothing.
+    if (current) commit(current.latest);
+  });
   useEffect(() => {
     if (!dragging) return undefined;
+    const move = (e: PointerEvent) => onDragMove(e);
+    const end = () => onDragEnd();
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+    window.addEventListener("blur", end);
+    // The whole page shows the resize cursor and selects nothing meanwhile.
     const { cursor, userSelect } = document.body.style;
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
     return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
+      window.removeEventListener("blur", end);
       document.body.style.cursor = cursor;
       document.body.style.userSelect = userSelect;
     };
   }, [dragging]);
 
-  const outerStyle: CSSProperties = { width: open ? width : 0 };
+  const onHandleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const step = e.shiftKey ? KEY_STEP_LARGE_PX : KEY_STEP_PX;
+    let next: number | null = null;
+    if (e.key === "ArrowRight") next = width + step * grow;
+    else if (e.key === "ArrowLeft") next = width - step * grow;
+    else if (e.key === "Home") next = limits.minPx;
+    else if (e.key === "End") next = limits.maxPx;
+    if (next === null) return;
+    e.preventDefault();
+    commit(clampSidePanelWidth(next, limits));
+  };
+
+  const outerStyle: CSSProperties = { width: occupied };
 
   return (
     <aside
@@ -148,8 +200,12 @@ export function DockedSidePanel({
       inert={!open}
       data-side-panel={panelId}
       data-state={open ? "open" : "closed"}
-      onPointerEnter={onPointerEnter}
-      onPointerLeave={onPointerLeave}
+      onPointerEnter={(e) => {
+        if (!dragging) onPointerEnter?.(e);
+      }}
+      onPointerLeave={(e) => {
+        if (!dragging) onPointerLeave?.(e);
+      }}
       style={outerStyle}
       className={cn(
         "relative flex h-full min-h-0 shrink-0 overflow-hidden",
@@ -168,16 +224,13 @@ export function DockedSidePanel({
           role="separator"
           aria-orientation="vertical"
           aria-label={`Resize ${ariaLabel.toLowerCase()}`}
-          aria-valuemin={sizes.minPx}
-          aria-valuemax={sizes.maxPx}
+          aria-valuemin={limits.minPx}
+          aria-valuemax={limits.maxPx}
           aria-valuenow={width}
           tabIndex={0}
           title="Drag to resize · double-click to reset"
           onPointerDown={onHandlePointerDown}
-          onPointerMove={onHandlePointerMove}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
-          onDoubleClick={() => commit(clampNow(sizes.defaultPx))}
+          onDoubleClick={() => commit(clampSidePanelWidth(sizes.defaultPx, limits))}
           onKeyDown={onHandleKeyDown}
           className={cn(
             "group/handle absolute inset-y-0 z-10 w-2 cursor-col-resize touch-none outline-none",

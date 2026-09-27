@@ -1,11 +1,26 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Bell } from "lucide-react";
-import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
-import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
-import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
-import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
+import { Bell, ChevronRight } from "lucide-react";
+import {
+  Badge,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Switch,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ai-matrx/design-system";
+import { ResetTapButton } from "@ai-matrx/tap-target/buttons";
+import { SearchInput } from "@/components/official/SearchInput";
+import { cn } from "@/lib/utils";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { toast } from "@/lib/toast";
@@ -21,6 +36,13 @@ import {
 } from "../notification-preferences";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { useSurfaceScopeContribution, useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ROLE_BOUND_AREAS,
+  notificationArea,
+  notificationAreaLabel,
+  personFacingEventDescription,
+} from "../notification-display";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 // The canonical Notification System preferences tab: every event the platform
@@ -150,11 +172,108 @@ export default function NotificationsTab() {
     [scopeId, reload],
   );
 
+  // ── Search and grouping ────────────────────────────────────────────────
+  const [query, setQuery] = useState("");
+  // Areas the person opened or closed; absent = the default (role-bound areas
+  // such as HR start folded, everything else starts open).
+  const [openOverride, setOpenOverride] = useState<Record<string, boolean>>({});
+  const needle = query.trim().toLowerCase();
+  const matches = (event: NotificationEventSetting) =>
+    !needle ||
+    event.label.toLowerCase().includes(needle) ||
+    (personFacingEventDescription(event.description) ?? "").toLowerCase().includes(needle) ||
+    notificationAreaLabel(notificationArea(event.eventKey)).toLowerCase().includes(needle);
+  const groups = new Map<string, NotificationEventSetting[]>();
+  for (const event of settings ?? []) {
+    if (!matches(event)) continue;
+    const area = notificationArea(event.eventKey);
+    groups.set(area, [...(groups.get(area) ?? []), event]);
+  }
+  const orderedAreas = [...groups.keys()].sort((a, b) => {
+    const roleA = ROLE_BOUND_AREAS.has(a) ? 1 : 0;
+    const roleB = ROLE_BOUND_AREAS.has(b) ? 1 : 0;
+    return roleA - roleB || notificationAreaLabel(a).localeCompare(notificationAreaLabel(b));
+  });
+  const isOpen = (area: string) =>
+    needle ? true : (openOverride[area] ?? !ROLE_BOUND_AREAS.has(area));
+
+  // ── Agent twin: what the grid shows, and the same switches ────────────
+  // Role-bound areas (HR: ~176 notices) are summarized unless the person
+  // changed one, so the page stays inside its context budget.
+  useSurfaceScopeContribution("matrx-user/settings", "notifications-tab", () =>
+    settings === null
+      ? {}
+      : {
+          notification_scope: activeScope ? { id: activeScope.organizationId, name: activeScope.label } : null,
+          notification_events: settings
+            .filter((event) => {
+              const area = notificationArea(event.eventKey);
+              if (!ROLE_BOUND_AREAS.has(area)) return true;
+              return NOTIFICATION_CHANNELS.some(
+                ({ key }) => event.availableChannels[key] && event.channels[key] !== Boolean(event.defaults[key]),
+              );
+            })
+            .map((event) => ({
+              event_key: event.eventKey,
+              label: event.label,
+              area: notificationAreaLabel(notificationArea(event.eventKey)),
+              required: event.mandatory,
+              channels: Object.fromEntries(
+                NOTIFICATION_CHANNELS.filter(({ key }) => event.availableChannels[key]).map(({ key }) => [
+                  key,
+                  event.channels[key],
+                ]),
+              ),
+            })),
+          notification_areas: [...new Set((settings ?? []).map((e) => notificationArea(e.eventKey)))].map((area) => ({
+            area: notificationAreaLabel(area),
+            events: (settings ?? []).filter((e) => notificationArea(e.eventKey) === area).length,
+          })),
+        },
+  );
+
+  const validateNotificationWrites = (value: unknown) => {
+    if (!Array.isArray(value) || value.length === 0)
+      throw new Error("notification_preferences expects a non-empty array of { event_key, channel, enabled }.");
+    if (!scopeId || !settings) throw new Error("Notification settings are not loaded yet.");
+    for (const item of value as Array<Record<string, unknown>>) {
+      const event = settings.find((e) => e.eventKey === item?.event_key);
+      if (!event) throw new Error(`Unknown notification event_key: ${String(item?.event_key)}.`);
+      const channel = String(item.channel);
+      if (!event.availableChannels[channel])
+        throw new Error(`${event.label} cannot be sent by ${channel}. Allowed: ${NOTIFICATION_CHANNELS.filter(({ key }) => event.availableChannels[key]).map(({ key }) => key).join(", ")}.`);
+      if (typeof item.enabled !== "boolean") throw new Error(`enabled must be true or false for ${event.eventKey}.`);
+      if (event.mandatory && item.enabled === false) {
+        const stillOn = NOTIFICATION_CHANNELS.filter(({ key }) => event.availableChannels[key] && key !== channel && event.channels[key]);
+        if (stillOn.length === 0) throw new Error(`${event.label} is required: at least one channel must stay on.`);
+      }
+    }
+  };
+  useSurfaceWriteHandlers("matrx-user/settings", {
+    notification_preferences: {
+      validate: validateNotificationWrites,
+      apply: async (value: unknown) => {
+        validateNotificationWrites(value);
+        const writes = value as Array<{ event_key: string; channel: string; enabled: boolean }>;
+        for (const w of writes) {
+          await setNotificationPreference(w.event_key, w.channel, w.enabled, scopeId);
+        }
+        reload();
+        return { saved: writes, organization_id: scopeId };
+      },
+    },
+  });
+
+  const channelColumns = NOTIFICATION_CHANNELS.map((c) => ({
+    ...c,
+    short: c.key === "sms" ? "Text" : c.label,
+  }));
+
   return (
     <>
       <SettingsSubHeader
         title="Notifications"
-        description="Choose how the platform reaches you, per event. Each event has a sensible default until you change it."
+        description="Choose which channels each notice reaches you on. A notice follows its default until you change it."
         icon={Bell}
       />
       {organizationState !== "ready" ? (
@@ -170,90 +289,153 @@ export default function NotificationsTab() {
           {loadError}
           <ErrorAlchemyMenu error={loadError} />
         </SettingsCallout>
+      ) : settings === null ? (
+        <div className="flex items-center justify-center py-8">
+          <SuspenseLoader size="sm" message="Loading your notification events…" />
+        </div>
+      ) : settings.length === 0 ? (
+        <SettingsCallout tone="info" title="No notification events yet">
+          Features add their notices here as they come online.
+        </SettingsCallout>
       ) : (
-        <>
-          {showScopePicker && scopes && scopeId ? (
-            <SettingsSection title="Who these settings are about">
-              <SettingsSelect
-                label="Applies to"
-                description={`Only ${activeScope?.label ?? "this organization"}. Anything you leave untouched follows your most recent choice in another organization, or the event's default.`}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <SearchInput
+              value={query}
+              onValueChange={setQuery}
+              placeholder="Search notices"
+              aria-label="Search notices"
+              debounceTime={0}
+              className="min-w-48 flex-1"
+            />
+            {showScopePicker && scopes && scopeId ? (
+              <Select
                 value={scopeId}
-                onValueChange={(nextScopeId: string) => {
-                  // Clear the previous organization's rows so the loader
-                  // shows instead of the old switches under the new name.
+                onValueChange={(next) => {
+                  // Clear the previous organization's rows so the loader shows
+                  // instead of the old switches under the new name.
                   setSettings(null);
-                  setScopeId(nextScopeId);
+                  setScopeId(next);
                 }}
-                options={scopes.map((scope) => ({
-                  value: scope.organizationId,
-                  label: scope.label,
-                }))}
-                width="lg"
-                last
-              />
-            </SettingsSection>
-          ) : null}
-          {settings === null ? (
-            <div className="flex items-center justify-center py-8">
-              <SuspenseLoader size="sm" message="Loading your notification events…" />
-            </div>
-          ) : settings.length === 0 ? (
-            <SettingsCallout tone="info" title="No notification events yet">
-              Features register their events here as they come online.
-            </SettingsCallout>
-          ) : (
-            settings.map((event) => {
-              const availableChannels = NOTIFICATION_CHANNELS.filter(
-                ({ key }) => event.availableChannels[key],
-              );
-              const hasOwnRow = availableChannels.some(
-                ({ key }) => !event.inherited[key],
-              );
-              return (
-                <SettingsSection
-                  key={event.eventKey}
-                  title={event.label}
-                  description={event.description ?? undefined}
-                >
-                  {availableChannels.map(({ key, label }, index) => (
-                    <SettingsSwitch
-                      key={key}
-                      label={label}
-                      // The default, once per row. Where an untouched row's value
-                      // comes from is said once, on "Applies to" above — not
-                      // repeated under every switch.
-                      description={event.defaults[key] ? "On by default" : "Off by default"}
-                      modified={Boolean(event.channels[key]) !== Boolean(event.defaults[key])}
-                      checked={Boolean(event.channels[key])}
-                      onCheckedChange={(enabled: boolean) =>
-                        handleToggle(event.eventKey, key, enabled)
-                      }
-                      disabled={savingKey === `${event.eventKey}:${key}`}
-                      last={index === availableChannels.length - 1 && !(hasOwnRow && showScopePicker)}
-                    />
+              >
+                <SelectTrigger className="w-56" aria-label="Organization these choices apply to">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {scopes.map((scope) => (
+                    <SelectItem key={scope.organizationId} value={scope.organizationId}>
+                      For {scope.label}
+                    </SelectItem>
                   ))}
-                  {hasOwnRow && showScopePicker ? (
-                    <SettingsButton
-                      label={`Set separately for ${activeScope?.label ?? "this organization"}`}
-                      description="Go back to following your choice elsewhere or the event default."
-                      actionLabel="Stop setting it here"
-                      kind="outline"
-                      size="sm"
-                      onClick={() =>
-                        handleReset(
-                          event.eventKey,
-                          availableChannels.map(({ key }) => key),
-                        )
-                      }
-                      loading={savingKey === `${event.eventKey}:reset`}
-                      last
-                    />
-                  ) : null}
-                </SettingsSection>
-              );
-            })
+                </SelectContent>
+              </Select>
+            ) : null}
+          </div>
+
+          {orderedAreas.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">No notices match.</p>
+          ) : (
+            <div className="matrx-touch-targets overflow-hidden rounded-lg border border-border bg-card">
+              <div className="grid grid-cols-[minmax(0,1fr)_repeat(3,3.5rem)_2.75rem] items-center border-b border-border px-3 py-1.5 text-xs font-medium text-muted-foreground sm:grid-cols-[minmax(0,1fr)_repeat(3,4.5rem)_2.75rem]">
+                <span>Notice</span>
+                {channelColumns.map((c) => (
+                  <span key={c.key} className="text-center">{c.short}</span>
+                ))}
+                <span className="sr-only">Reset</span>
+              </div>
+              {orderedAreas.map((area) => {
+                const events = groups.get(area) ?? [];
+                return (
+                  <Collapsible
+                    key={area}
+                    open={isOpen(area)}
+                    onOpenChange={(open) => setOpenOverride((prev) => ({ ...prev, [area]: open }))}
+                  >
+                    <CollapsibleTrigger className="flex w-full items-center gap-2 border-b border-border bg-muted/40 px-3 py-2 text-left text-sm font-medium text-foreground">
+                      <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen(area) && "rotate-90")} aria-hidden />
+                      <span className="flex-1">{notificationAreaLabel(area)}</span>
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {events.length}
+                        {ROLE_BOUND_AREAS.has(area) ? " · only if you work in HR or are an employee, candidate or manager" : ""}
+                      </span>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      {events.map((event) => {
+                        const description = personFacingEventDescription(event.description);
+                        const onChannels = channelColumns.filter(({ key }) => event.availableChannels[key] && event.channels[key]);
+                        const hasOwnRow = channelColumns.some(({ key }) => event.availableChannels[key] && !event.inherited[key]);
+                        return (
+                          <div
+                            key={event.eventKey}
+                            className="grid grid-cols-[minmax(0,1fr)_repeat(3,3.5rem)_2.75rem] items-center border-b border-border/50 px-3 py-1.5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_repeat(3,4.5rem)_2.75rem]"
+                          >
+                            <div className="min-w-0 py-1">
+                              <div className="flex flex-wrap items-center gap-1.5 text-sm text-foreground">
+                                <span>{event.label}</span>
+                                {event.mandatory ? (
+                                  <TooltipProvider delayDuration={150}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Badge variant="outline" className="text-xs font-normal">Required</Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="max-w-xs text-xs">
+                                        You can choose which channels carry this notice, but at least one stays on.
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                ) : null}
+                              </div>
+                              {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
+                            </div>
+                            {channelColumns.map(({ key, label }) => {
+                              if (!event.availableChannels[key]) {
+                                return <span key={key} className="text-center text-xs text-muted-foreground" aria-label={`${label}: not available for this notice`}>—</span>;
+                              }
+                              const checked = Boolean(event.channels[key]);
+                              const lastRequired = event.mandatory && checked && onChannels.length === 1;
+                              const id = `notif-${event.eventKey}-${key}`;
+                              return (
+                                <label
+                                  key={key}
+                                  htmlFor={id}
+                                  className="matrx-tap-area flex justify-center"
+                                  title={lastRequired ? "Required notice: turn another channel on first." : `${label}, default ${event.defaults[key] ? "on" : "off"}`}
+                                >
+                                  <Switch
+                                    id={id}
+                                    size="sm"
+                                    checked={checked}
+                                    disabled={savingKey === `${event.eventKey}:${key}` || lastRequired}
+                                    onCheckedChange={(enabled: boolean) => handleToggle(event.eventKey, key, enabled)}
+                                    aria-label={`${event.label}: ${label}`}
+                                  />
+                                </label>
+                              );
+                            })}
+                            <div className="flex justify-center">
+                              {showScopePicker && hasOwnRow ? (
+                                <ResetTapButton
+                                  variant="transparent"
+                                  ariaLabel={`Stop setting ${event.label} separately for ${activeScope?.label ?? "this organization"}`}
+                                  onClick={() =>
+                                    handleReset(
+                                      event.eventKey,
+                                      channelColumns.filter(({ key }) => event.availableChannels[key]).map(({ key }) => key),
+                                    )
+                                  }
+                                />
+                              ) : null}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })}
+            </div>
           )}
-        </>
+        </div>
       )}
     </>
   );

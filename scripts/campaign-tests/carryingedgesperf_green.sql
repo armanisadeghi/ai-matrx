@@ -26,7 +26,8 @@
 -- contractor's job book, reused, plus the task "Order the Kitchen tile" holding the delivery-window
 -- note.
 --
--- Run (from matrx-frontend): psql -f scripts/campaign-tests/carryingedgesperf_green.sql   (dev clone)
+-- Run (from matrx-frontend): psql -f scripts/campaign-tests/carryingedgesperf_green.sql   (dev clone, SESSION pooler port 5432:
+-- the transaction pooler cannot keep the session-level transaction_timeout lift)
 \set ON_ERROR_STOP on
 \set suite 'carryingedgesperf_green.sql'
 \set expect 'clone'
@@ -38,8 +39,12 @@
 \else
 \set plant none
 \endif
+-- The walks and census 12 run minutes; the role's 10-minute transaction_timeout would end the
+-- connection mid-proof, and it is armed at BEGIN, so it is lifted for this session first.
+set transaction_timeout = 0;
 begin;
 set local statement_timeout = 0;
+do $tt$ begin if current_setting('transaction_timeout') <> '0' then raise exception 'transaction_timeout is % - this suite needs it lifted (a session pooler, or the direct host)', current_setting('transaction_timeout'); end if; end $tt$;
 set local lock_timeout = '10s';
 
 create temp table rmo (k text primary key, v uuid) on commit drop;
@@ -148,6 +153,10 @@ begin
     'name', 'Site Notes', 'slug', 'site_notes', 'label_singular', 'Site Note', 'label_plural', 'Site Notes',
     'title_field', 'note', 'parent_id', v_home::text, 'fields', jsonb_build_array(jsonb_build_object('name', 'note'))));
   perform custom.field_declare(v_org, v_notes, jsonb_build_object('key', 'note', 'label', 'Note', 'type', 'text', 'sort', 10, 'required', true));
+  -- a second note nothing carries, so the read door's class probe has a row the crew lead may NOT
+  -- see and the carried note has to be answered by the carrying walk itself
+  v_id := custom.record_write(v_org, v_notes, jsonb_build_object('note', 'Dumpster swap Friday: driveway clear by 8 AM'));
+  insert into rmo values ('n_dumpster', v_id);
   v_id := custom.record_write(v_org, v_notes, jsonb_build_object('note', 'Tile delivery window: Thursday 7-9 AM, side gate'));
   insert into rmo values ('n_delivery', v_id);
   insert into workspace.tasks (title, organization_id, created_by)
@@ -205,7 +214,7 @@ begin
   select v into v_rooms from rmo where k = 'rooms'; select v into v_rooms2 from rmo where k = 'rooms2';
   select v into v_quotes from rmo where k = 'quotes'; select v into v_notes from rmo where k = 'notes';
   select array_agg(v order by k) into v_all from rmo
-   where k in ('Kitchen', 'Primary bath', 'Garage', 'Mudroom', 'q_voltway', 'q_harbor', 'b_hall', 'b_backsplash', 'n_delivery');
+   where k in ('Kitchen', 'Primary bath', 'Garage', 'Mudroom', 'q_voltway', 'q_harbor', 'b_hall', 'b_backsplash', 'n_delivery', 'n_dumpster');
   -- every id the dump reads is gathered HERE, as the suite's own role: the seated person may not
   -- read custom.record directly, and must not need to — she only ever goes through the doors
   select jsonb_agg(jsonb_build_object('id', x.id, 'org', x.organization_id) order by x.id) into v_recs
@@ -360,6 +369,9 @@ create function pg_temp.walk_dump(p_tag text) returns int language plpgsql as $w
 declare s record; t record; v_rdc record; v_n int := 0; v_body text;
 begin
   for s in select * from cep_scope order by org, member loop
+    -- each seat asked as itself, the way census 12 asks: some rung reads the session's own
+    -- principal, so the claims are fixed per seat and never left over from the previous dump
+    perform set_config('request.jwt.claims', json_build_object('sub', s.member::text, 'role', 'authenticated')::text, true);
     for t in select distinct r.table_id as tbl from custom.record r
               where r.organization_id = s.org and r.deleted_at is null and r.table_id is not null order by 1 loop
       v_rdc := custom.read_door_carried_ids(s.member, s.org, t.tbl, 'viewer'::public.permission_level);
@@ -379,6 +391,7 @@ begin
       v_n := v_n + 1;
     end loop;
   end loop;
+  perform set_config('request.jwt.claims', '', true);
   return v_n;
 end $w$;
 

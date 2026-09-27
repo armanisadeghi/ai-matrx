@@ -32,7 +32,7 @@
 // cell write patches it from the write's own answer, and nothing is re-read.
 
 import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
-import { actionRefusals, mintOpId } from "@ai-matrx/records";
+import { actionRefusals, mintOpId, type ChoiceRehome, type ChoicesRehomed, type ChoiceUsage } from "@ai-matrx/records";
 import type {
   DecorationPath,
   Field,
@@ -1181,10 +1181,48 @@ export async function deleteField(
   };
 }
 
+/**
+ * HOW MANY RECORDS HOLD EACH CHOICE of one choice column (lane CHOICE-TAILS), keyed by the
+ * option's id — what the column editor says before a choice records still hold is removed:
+ * "3 records use “X-ray”." A column that is not a choice column answers `{}`.
+ */
+export async function getChoiceUsage(
+  home: RecordStoreHome,
+  args: { tableId: string; fieldId: string },
+): Promise<ServiceResult<Record<string, ChoiceUsage>>> {
+  const answer = await clientFor(home).fieldChoiceUsage({ field_id: args.fieldId });
+  if (!answer.ok) return refused(answer.error);
+  return { success: true, data: answer.data };
+}
+
+/**
+ * PUT A CHOICE REMOVAL BACK (lane CHOICE-TAILS): the list as it was and every cell as it was, in
+ * ONE save through the same door that removed it (`custom.field_update_rehoming_choices`).
+ */
+export async function undoChoiceRemoval(
+  home: RecordStoreHome,
+  args: { tableId: string; fieldId: string; undo: ChoicesRehomed["undo"] },
+): Promise<ServiceResult<{ field_id: string; cells_back: number }>> {
+  const answer = await clientFor(home).fieldUpdateRehomingChoices({
+    field_id: args.fieldId,
+    patch: { options: args.undo.options },
+    cells_back: args.undo.cells_back,
+  });
+  invalidateRecordStoreTable(args.tableId);
+  if (!answer.ok) return refused(answer.error);
+  return { success: true, data: { field_id: args.fieldId, cells_back: answer.data.cells_back } };
+}
+
 export async function setFieldFormat(
   home: RecordStoreHome,
-  args: { tableId: string; fieldId: string; format: FieldFormatConfig | null },
-): Promise<ServiceResult<{ field_id: string }>> {
+  args: {
+    tableId: string;
+    fieldId: string;
+    format: FieldFormatConfig | null;
+    /** Where the records of each removed choice go, keyed by the option's id (lane CHOICE-TAILS). */
+    rehome?: Record<string, ChoiceRehome> | undefined;
+  },
+): Promise<ServiceResult<{ field_id: string; undo?: ChoicesRehomed["undo"]; rehomed?: ChoicesRehomed["rehomed"] }>> {
   const field = await fieldById(home, args.tableId, args.fieldId);
   if (!field.success) return field;
   const client = clientFor(home);
@@ -1203,8 +1241,21 @@ export async function setFieldFormat(
   }
   const write = storeFormatWrite(field.data, args.format, current);
   if (!write.ok) return plainFailure(write.says);
+  let undo: ChoicesRehomed["undo"] | undefined;
+  let rehomed: ChoicesRehomed["rehomed"] | undefined;
+  const rehome = args.rehome && Object.keys(args.rehome).length > 0 ? args.rehome : undefined;
   for (const [i, patch] of write.patches.entries()) {
-    const written = await client.fieldUpdate({ field_id: args.fieldId, patch: patch as never });
+    // THE LIST AND WHERE ITS REMOVED CHOICES' RECORDS GO, ONE SAVE (lane CHOICE-TAILS): the patch
+    // that carries the choices goes through the door that also moves, keeps or clears those cells.
+    const withRehome = rehome && Array.isArray((patch as { options?: unknown }).options);
+    const written = withRehome
+      ? await client.fieldUpdateRehomingChoices({ field_id: args.fieldId, patch: patch as never, rehome })
+      : await client.fieldUpdate({ field_id: args.fieldId, patch: patch as never });
+    if (written.ok && withRehome) {
+      const answer = written.data as ChoicesRehomed;
+      undo = answer.undo;
+      rehomed = answer.rehomed;
+    }
     if (!written.ok) {
       invalidateRecordStoreTable(args.tableId);
       if (i === 0) return refused(written.error);
@@ -1223,7 +1274,7 @@ export async function setFieldFormat(
       );
     }
   }
-  return { success: true, data: { field_id: args.fieldId } };
+  return { success: true, data: { field_id: args.fieldId, ...(undo ? { undo, rehomed } : {}) } };
 }
 
 export async function backfillAutonumber(

@@ -15,7 +15,8 @@
  */
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { ChoiceRehome, ChoicesRehomed, ChoiceUsage } from "@ai-matrx/records";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { TableField } from "@/utils/user-table-utls/table-utils";
 
@@ -59,8 +61,10 @@ import { isComputedColumn } from "@ai-matrx/design-system/formulas";
 import { effectiveRowLabel, isRowLabelField } from "@/features/data-tables/row-label";
 import {
   changeFieldType,
+  getChoiceUsage,
   renameColumn,
   setFieldFormat,
+  undoChoiceRemoval,
   setTableRowLabel,
   updateTableConfig,
 } from "@/features/data-tables/service";
@@ -145,6 +149,22 @@ function ColumnSettingsForm({
   const [asRowLabel, setAsRowLabel] = useState(isLabel);
   const [saving, setSaving] = useState(false);
   const original = field;
+  // REMOVING A CHOICE RECORDS STILL HOLD (lane CHOICE-TAILS): how many records hold each choice
+  // (a record-store table only; the older store answers null and nothing is asked), and where the
+  // records of each removed choice go — sent in the same save as the list.
+  const [choiceUsage, setChoiceUsage] = useState<Record<string, ChoiceUsage> | null>(null);
+  const [rehome, setRehome] = useState<Record<string, ChoiceRehome>>({});
+  const choosing = format?.id === "choice" || format?.id === "multi_choice";
+  useEffect(() => {
+    if (!choosing) return;
+    let live = true;
+    void getChoiceUsage({ tableId, fieldId: field.id }).then((answer) => {
+      if (live && !isServiceFailure(answer)) setChoiceUsage(answer.data);
+    });
+    return () => {
+      live = false;
+    };
+  }, [choosing, tableId, field.id]);
 
 
   const computed = isComputedColumn({
@@ -172,6 +192,8 @@ function ColumnSettingsForm({
       return;
     }
     setSaving(true);
+    let rehomedUndo: ChoicesRehomed["undo"] | null = null;
+    let rehomedCells = 0;
     try {
       if (typeChanged) {
         const ok = await confirmDialog({
@@ -196,8 +218,10 @@ function ColumnSettingsForm({
       }
       const priorFormat = resolveFieldFormat(original.data_type, original.metadata);
       if (JSON.stringify(format) !== JSON.stringify(priorFormat)) {
-        const formatted = await setFieldFormat({ tableId, fieldId: original.id, format });
+        const formatted = await setFieldFormat({ tableId, fieldId: original.id, format, rehome });
         if (isServiceFailure(formatted)) throw new Error(formatted.error);
+        rehomedUndo = formatted.data.undo ?? null;
+        rehomedCells = (formatted.data.rehomed ?? []).reduce((n, r) => n + r.records, 0);
       }
       const nextRules = serializeValidationRules(rules);
       const priorRules = serializeValidationRules(parseValidationRules(original.validation_rules));
@@ -215,7 +239,32 @@ function ColumnSettingsForm({
         });
         if (isServiceFailure(label)) throw new Error(label.error);
       }
-      toast({ title: `Saved "${trimmed}"` });
+      const undo = rehomedUndo;
+      toast({
+        title: `Saved "${trimmed}"`,
+        ...(undo && rehomedCells > 0
+          ? {
+              description: `${rehomedCells} ${rehomedCells === 1 ? "record was" : "records were"} changed with the choices.`,
+              action: (
+                <ToastAction
+                  altText="Undo the choice change"
+                  onClick={() =>
+                    void undoChoiceRemoval({ tableId, fieldId: original.id, undo }).then((back) => {
+                      if (isServiceFailure(back)) {
+                        toast({ title: "Could not undo the choice change", description: back.error, variant: "destructive" });
+                        return;
+                      }
+                      toast({ title: `Put back "${trimmed}"'s choices and the records that held them` });
+                      onSaved();
+                    })
+                  }
+                >
+                  Undo
+                </ToastAction>
+              ),
+            }
+          : {}),
+      });
       onSaved();
       onOpenChange(false);
     } catch (e) {
@@ -289,6 +338,9 @@ function ColumnSettingsForm({
                 setFormat(next);
               }}
               siblingFields={siblings}
+              choiceUsage={choiceUsage}
+              rehome={rehome}
+              onRehomeChange={setRehome}
               triggerClassName="h-9 w-full text-sm"
             />
             {format?.id === "formula" && (

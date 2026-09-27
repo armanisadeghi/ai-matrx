@@ -32,9 +32,9 @@
 
 "use client";
 
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useTransition, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   Building2,
@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@ai-matrx/design-system";
+import { OrganizationPicker, Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 import { HR_ORG_PARAM } from "../constants";
@@ -400,6 +400,8 @@ export function HrNoAccess({
  */
 export function HrEmployerPicker({ className }: { className?: string } = {}) {
   const { employers, isLoading, error, refresh } = useHrContext();
+  const router = useRouter();
+  const [, startTransition] = useTransition();
   // The picker is itself the pre-employer-context state.
   const pathname = usePathname() ?? hrHref(null);
   const askedEmployerRef =
@@ -481,27 +483,6 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
     .filter((e) => !e.module_enabled && isOrgSteward(e.org_role))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const row = (employer: HrEmployer, action: string, list: HrEmployer[]) => {
-    const ref = employer.slug?.trim() || employer.organization_id;
-    // Two organizations with one name are numbered, never shown by their raw slug.
-    const same = list.filter((e) => e.name === employer.name);
-    const nth = same.length > 1 ? same.indexOf(employer) + 1 : 0;
-    return (
-      <li key={employer.organization_id}>
-        <Link
-          href={hrSwitchEmployerHref(pathname, ref)}
-          className="flex min-h-10 w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-accent"
-        >
-          <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-            {employer.name}
-            {nth ? <span className="ml-1.5 text-muted-foreground">({nth})</span> : null}
-          </span>
-          <span className="shrink-0 text-xs text-muted-foreground">{action}</span>
-        </Link>
-      </li>
-    );
-  };
-
   if (ready.length + unfinished.length + off.length === 0) {
     return (
       <p className={cn("px-4 py-3 text-sm text-muted-foreground sm:px-6", className)}>
@@ -510,24 +491,42 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
     );
   }
 
+  // THE PLATFORM'S ONE ORGANIZATION PICKER (page-pass shared defects,
+  // 2026-09-27): search once the list passes eight rows, each row saying what
+  // a click does, the HR-off organizations folded and counted. The order is
+  // this page's — set up, then unfinished, then off — kept as given.
+  const rows = [
+    ...ready.map((e) => ({ employer: e, detail: "Open", folded: false })),
+    ...unfinished.map((e) => ({ employer: e, detail: "Finish setup", folded: false })),
+    ...off.map((e) => ({ employer: e, detail: "Turn on HR", folded: true })),
+  ];
+
   return (
-    <div className={cn("matrx-touch-targets w-full min-w-0 space-y-4 px-4 py-3 sm:px-6", className)}>
-      {ready.length + unfinished.length > 0 ? (
-        <ul className="divide-y divide-border rounded-md border border-border bg-card">
-          {ready.map((e) => row(e, "Open", ready))}
-          {unfinished.map((e) => row(e, "Finish setup", unfinished))}
-        </ul>
-      ) : null}
-      {off.length > 0 ? (
-        <details className="group" open={ready.length + unfinished.length === 0}>
-          <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
-            Organizations without HR ({off.length})
-          </summary>
-          <ul className="mt-2 divide-y divide-border rounded-md border border-border bg-card">
-            {off.map((e) => row(e, "Turn on HR", off))}
-          </ul>
-        </details>
-      ) : null}
+    <div className={cn("matrx-touch-targets w-full min-w-0 max-w-xl px-4 py-3 sm:px-6", className)}>
+      <div className="rounded-md border border-border bg-card p-1">
+        <OrganizationPicker
+          hideHeading
+          hideStatus
+          foldedLabel="Organizations without HR"
+          organizations={rows.map(({ employer, detail, folded }) => ({
+            id: employer.organization_id,
+            name: employer.name,
+            // Shown only under a name two rows share.
+            distinguisher: employer.slug,
+            detail,
+            folded,
+          }))}
+          activeOrganizationId={null}
+          onSelect={(picked) => {
+            const employer = rows.find((r) => r.employer.organization_id === picked.id)?.employer;
+            if (!employer) return;
+            const ref = employer.slug?.trim() || employer.organization_id;
+            startTransition(() => {
+              router.push(hrSwitchEmployerHref(pathname, ref));
+            });
+          }}
+        />
+      </div>
     </div>
   );
 }
