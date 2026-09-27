@@ -74,7 +74,7 @@ const opts = {
   fills: [],
   clicks: [],
   base: "https://aimatrx.com",
-  settle: 8000,
+  settle: 12000,
   agentName: "Badass Agent",
   agentWait: 150,
   workspace: "admin's Workspace",
