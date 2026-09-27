@@ -284,12 +284,15 @@ export function SettingsRow({
             controlLayout === "wide"
               ? "w-full min-w-0 max-w-full [&_button]:max-w-full [&_input]:max-w-full @[40rem]/settings:w-auto @[40rem]/settings:shrink-0"
               : "w-auto min-w-0 max-w-full shrink-0 [&_button]:max-w-full [&_input]:max-w-full",
+            resetButton && "flex items-center gap-2",
             disabled && "opacity-50",
           )}
         >
-          {children}
+          {/* The reset sits beside its control on every width, never on a
+              line of its own under it. */}
+          {resetButton ? <div className="min-w-0 flex-1">{children}</div> : children}
+          {resetButton}
         </div>
-        {resetButton}
       </div>
     </SettingAnchor>
   );

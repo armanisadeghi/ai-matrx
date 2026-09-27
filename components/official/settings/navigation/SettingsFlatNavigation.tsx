@@ -78,7 +78,14 @@ export function settingsNavigationSections(
 
       const overview = node.children.find((child) => child.label === "Overview");
       if (overview) {
-        items.push(asItem({ ...overview, label: node.label }, [...path, node.label].join(" / ")));
+        // The domain's own icon travels with its name; the Overview leaf has
+        // none, which drew the same fallback gear on every domain row.
+        items.push(
+          asItem(
+            { ...overview, label: node.label, icon: overview.icon ?? node.icon },
+            [...path, node.label].join(" / "),
+          ),
+        );
         return;
       }
       for (const child of node.children) collect(child, [...path, node.label]);
