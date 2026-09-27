@@ -139,7 +139,7 @@ export const connectedSourcesManifest: SurfaceManifest = {
     "Connected sources (/connected-sources): the accounts the person connected and the items inside the one on screen, read live from the provider.",
   readiness: "partial",
   readinessNote:
-    "Built 2026-09-27 (page-pass). Not yet proven live with surface:probe; read-only by design (no write targets).",
+    "Built 2026-09-27 (page-pass). surface:probe on 79d017fb6e: pass, nothing undeclared, load_error supplied while the server still refused a no-organization read (fix aidream d508e223e1 awaiting deploy). Not yet proven: the accounts/rows values through the probe's own profile. Read-only by design (no write targets).",
   label: "Connected sources",
   urlPattern: "/connected-sources",
   intro: `<surface_intro>
