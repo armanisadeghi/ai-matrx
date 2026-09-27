@@ -4,7 +4,7 @@
 // Same lifecycle as RouteMenuSlot: match → import → auto-switch.
 // Portals route menu content into .shell-mobile-route-nav.
 
-import { useEffect, useRef, useState, type ComponentType } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import {
@@ -28,16 +28,27 @@ export default function MobileRouteMenuSlot() {
   const [RouteMenu, setRouteMenu] = useState<ComponentType<{
     expanded: boolean;
   }> | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [currentView, setCurrentView] = useState<SidebarView>("main");
+  const match = findMatch(pathname);
+  const matchKey = match?.pathPattern.source ?? null;
+
+  // 🚨 A LARGE ROUTE'S DRAWER OPENS ON ITS ROUTE MENU (page-pass shared
+  // defects, 2026-09-27) — never the main menu first, then a swap once the
+  // menu chunk loads. The drawer mounts on open, so the view is set before
+  // its first paint (layout effect) and the skeleton shows while it loads.
+  const [loading, setLoading] = useState(!!match);
+  const [currentView, setCurrentView] = useState<SidebarView>(match ? "route" : "main");
   const [routeNavTarget, setRouteNavTarget] = useState<HTMLElement | null>(
     null,
   );
   const matchRef = useRef<RouteMenuEntry | null>(null);
-  const hasAutoSwitched = useRef(false);
+  const hasAutoSwitched = useRef(!!match);
 
-  const match = findMatch(pathname);
-  const matchKey = match?.pathPattern.source ?? null;
+  // Mount only (a ref, not state): later flips go through the handlers below.
+  const initialViewRef = useRef(currentView);
+  useLayoutEffect(() => {
+    const sheet = document.querySelector<HTMLElement>(".shell-mobile-sheet");
+    if (sheet && !sheet.dataset.sidebarView) sheet.dataset.sidebarView = initialViewRef.current;
+  }, []);
 
   useEffect(() => {
     const el = document.querySelector<HTMLElement>(".shell-mobile-route-nav");
