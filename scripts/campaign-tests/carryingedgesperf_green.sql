@@ -159,8 +159,10 @@ begin
   insert into rmo values ('n_dumpster', v_id);
   v_id := custom.record_write(v_org, v_notes, jsonb_build_object('note', 'Tile delivery window: Thursday 7-9 AM, side gate'));
   insert into rmo values ('n_delivery', v_id);
-  insert into workspace.tasks (title, organization_id, created_by)
-  values ('Order the Kitchen tile (Zellige 4x4, 62 sq ft + 10% overage)', v_org, c_admin) returning id into v_task;
+  -- the task is the contractor's OWN (personal), so the crew lead cannot reach it directly: the note
+  -- reaches her only from the Kitchen, through the task
+  insert into workspace.tasks (title, organization_id, created_by, visibility)
+  values ('Order the Kitchen tile (Zellige 4x4, 62 sq ft + 10% overage)', v_org, c_admin, 'personal') returning id into v_task;
   insert into rmo values ('task', v_task);
   insert into platform.associations (source_type, source_id, target_type, target_id, organization_id, role, created_by) values
     ('record', (select v from rmo where k = 'Kitchen'), 'task', v_task, v_org, 'contains', c_admin),
