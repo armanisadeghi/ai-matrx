@@ -72,6 +72,7 @@ import { KIND_CONFIG, type KindConfig } from "../kindConfig";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const FIELD = "text-base"; // 16px+ prevents iOS zoom-on-focus
 
@@ -140,6 +141,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
   const [userRequest, setUserRequest] = useState("");
   const [selectedDeck, setSelectedDeck] = useState<FcSetRow | null>(null);
   const [decks, setDecks] = useState<FcSetRow[] | null>(null);
+  const [decksError, setDecksError] = useState<string | null>(null);
   const [selectedDoc, setSelectedDoc] = useState<LibraryDocSummary | null>(null);
 
   const busy = isGenerating || isNavigating;
@@ -149,6 +151,12 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
   const loadDecks = async () => {
     if (decks) return;
     const res = await fcService.listSets();
+    // A failed read is said, never "You have no decks yet" (RC-B12).
+    if (res.error) {
+      setDecksError(res.error);
+      return;
+    }
+    setDecksError(null);
     setDecks(res.data ?? []);
   };
 
@@ -551,7 +559,14 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
             {mode === "deck" && (
               <div className="flex flex-col gap-1.5">
                 <Label>Flashcard deck</Label>
-                {decks === null ? (
+                {decks === null && decksError ? (
+                  <ReadFailure
+                    error={decksError}
+                    what="your flashcard decks"
+                    onRetry={() => void loadDecks()}
+                    className="m-0"
+                  />
+                ) : decks === null ? (
                   <Skeleton className="h-10 w-full rounded-md" />
                 ) : decks.length === 0 ? (
                   <p className="text-sm text-muted-foreground">

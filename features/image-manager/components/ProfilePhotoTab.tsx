@@ -89,6 +89,7 @@ export function ProfilePhotoTab() {
           <div className="text-xs text-muted-foreground truncate">
             {currentAvatar
               ? "Replace your current avatar by uploading a new image."
+              // read-gate-exempt: the signed-in user's avatar from the auth session, not a list read
               : "No avatar set yet — upload one and we'll save it."}
           </div>
         </div>

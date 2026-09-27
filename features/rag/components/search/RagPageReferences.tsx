@@ -546,6 +546,7 @@ export function RagPageReferences({
             label: "Verified",
             detail: page.verificationFlags.length
               ? `${page.verificationFlags.length} flags`
+              // read-gate-exempt: renders only for a page that was read and verified (page.verifiedAt); zero verification flags is a fact about that loaded page
               : "No flags",
             icon: CheckCircle2,
           },
