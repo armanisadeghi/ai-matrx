@@ -26,6 +26,11 @@ import {
   resolveTransferPreferences,
 } from "@ai-matrx/kit/content-transfer";
 import { toast } from "@/lib/toast";
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
+import {
+  ensureOrganizationForWrite,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 import {
   currentAlchemySession,
   subscribeAlchemySession,
@@ -51,6 +56,10 @@ function AlchemySession({ request }: { request: AlchemySessionRequest }) {
   const capabilities = useContentTransferCapabilities();
   const router = useRouter();
   const ran = React.useRef(false);
+  // The destinations are offered only with a workspace selected; the run below
+  // may ASK for one and must then read the capabilities the pick produced.
+  const capabilitiesRef = React.useRef(capabilities);
+  capabilitiesRef.current = capabilities;
 
   React.useEffect(() => {
     if (ran.current) return;
@@ -68,20 +77,45 @@ function AlchemySession({ request }: { request: AlchemySessionRequest }) {
       void open.catch((error: unknown) => toast.error("Alchemy could not open", { description: errorText(error) }));
       return;
     }
-    const actions = [
-      ...(capabilities.email ? createTransferEmailActions(capabilities.email) : []),
-      ...(capabilities.actions ?? []),
-    ];
-    const action = actions.find((a) => a.id === intent.actionId);
-    if (!action) {
-      toast.error(`${intent.label} is not available`, {
-        description: "Sign in and choose an organization to use Matrx destinations.",
-      });
-      return;
-    }
-    const toastId = toast.loading(`${intent.label}…`);
+    const findAction = () => {
+      const caps = capabilitiesRef.current;
+      const actions = [
+        ...(caps.email ? createTransferEmailActions(caps.email) : []),
+        ...(caps.actions ?? []),
+      ];
+      return actions.find((a) => a.id === intent.actionId);
+    };
+    const hasWorkspace = () => {
+      const state = getStoreSingleton()?.getState() as { appContext?: { organization_id?: string | null } } | undefined;
+      return Boolean(state?.appContext?.organization_id);
+    };
     const controllerAbort = new AbortController();
     void (async () => {
+      let action = findAction();
+      // A Matrx destination is filed under a workspace. With none selected the
+      // person pressed this row, so ASK through the one write helper (never a
+      // bare "not available"); the pick re-renders the host with the
+      // destinations, which we wait for. Dismiss = nothing happened.
+      if (!action && !hasWorkspace()) {
+        try {
+          await ensureOrganizationForWrite();
+        } catch (error) {
+          if (isOrganizationSelectionCancelled(error)) return;
+          toast.error(`${intent.label} did not work`, { description: errorText(error) });
+          return;
+        }
+        for (let i = 0; i < 40 && !action; i++) {
+          await new Promise((r) => setTimeout(r, 50));
+          action = findAction();
+        }
+      }
+      if (!action) {
+        toast.error(`${intent.label} is not available`, {
+          description: "Sign in and choose an organization to use Matrx destinations.",
+        });
+        return;
+      }
+      const toastId = toast.loading(`${intent.label}…`);
       try {
         const source = request.formatSources?.markdown ?? request.source;
         const { snapshot } = await capture(source, controllerAbort.signal);

@@ -702,7 +702,7 @@ async function ensureOrganizationContextForCall(
   method: string,
   interactiveOverride: boolean | undefined,
 ): Promise<string> {
-  const { ensureOrganizationForRequest, personJustActed } = await import(
+  const { ensureOrganizationForRequest, ensureOrganizationForWrite, personJustActed } = await import(
     "@/lib/organization/organization-gate"
   );
   // THE ONE LINE, drawn the same way for every write through callApi: a write
@@ -710,11 +710,14 @@ async function ensureOrganizationContextForCall(
   // continues with the pick; dismiss = OrganizationSelectionCancelled, which
   // the catch below turns into "nothing happened"). A background write keeps
   // the fail-closed refusal. Nothing is ever picked for anybody.
-  return ensureOrganizationForRequest({
-    method,
-    organizationId:
-      overrideOrganizationId ?? adminLaneOrganizationId() ?? selectedOrganizationId,
-    interactive: interactiveOverride ?? (personJustActed() ? undefined : false),
+  const organizationId =
+    overrideOrganizationId ?? adminLaneOrganizationId() ?? selectedOrganizationId;
+  // Reads never ask; a write asks through the ONE write helper.
+  if (/^(GET|HEAD|OPTIONS)$/i.test(method)) {
+    return ensureOrganizationForRequest({ method, organizationId, interactive: false });
+  }
+  return ensureOrganizationForWrite(organizationId, {
+    interactive: interactiveOverride ?? personJustActed(),
   });
 }
 

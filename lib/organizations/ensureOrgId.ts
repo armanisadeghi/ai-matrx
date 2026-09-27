@@ -116,11 +116,13 @@ export async function ensureOrgId(
     if (activeOrgId) return activeOrgId;
   }
 
-  // Boot has looked and there is genuinely no selection. ASK.
-  const { ensureOrganizationContext } = await import(
+  // Boot has looked and there is genuinely no selection. ASK — through the
+  // ONE write helper: only after a deliberate act (a debounced autosave that
+  // lands here never raises the picker mid-sentence; it refuses instead).
+  const { ensureOrganizationForWrite } = await import(
     "@/lib/organization/organization-gate"
   );
-  return ensureOrganizationContext();
+  return ensureOrganizationForWrite();
 }
 
 /**

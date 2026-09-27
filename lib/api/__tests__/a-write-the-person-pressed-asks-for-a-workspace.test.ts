@@ -20,8 +20,11 @@
  */
 
 import { callApi } from "../call-api";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   __resetDeliberateActsForTests,
+  ensureOrganizationForWrite,
   registerOrganizationPicker,
   settleOrganizationSelection,
 } from "@/lib/organization/organization-gate";
@@ -213,5 +216,22 @@ describe("a write with no workspace selected", () => {
     })(jest.fn(), noOrganizationState, undefined);
     expect(opened).toBe(0);
     expect(result.error).toBeUndefined();
+  });
+
+  it("the direct-to-DB funnel and the Alchemy destinations ask through the SAME write helper", async () => {
+    // The helper itself: typing never asks; a click asks and returns the pick.
+    type("draft");
+    await expect(ensureOrganizationForWrite()).rejects.toMatchObject({ code: "organization_context_required" });
+    expect(opened).toBe(0);
+    click();
+    await expect(ensureOrganizationForWrite()).resolves.toBe(CHOSEN);
+    expect(opened).toBe(1);
+
+    const root = join(__dirname, "..", "..", "..");
+    const ensureOrgId = readFileSync(join(root, "lib/organizations/ensureOrgId.ts"), "utf8");
+    expect(ensureOrgId).toContain("ensureOrganizationForWrite()");
+    expect(ensureOrgId).not.toMatch(/return ensureOrganizationContext\(\)/);
+    const portal = readFileSync(join(root, "components/agent-copy/AlchemySessionPortal.tsx"), "utf8");
+    expect(portal).toContain("await ensureOrganizationForWrite()");
   });
 });

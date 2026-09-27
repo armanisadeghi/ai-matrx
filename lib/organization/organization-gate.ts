@@ -386,6 +386,26 @@ export function __resetDeliberateActsForTests(): void {
   lastDeliberateActAt = 0;
 }
 
+/**
+ * THE ONE ASK FOR A WRITE, whatever its transport — callApi, a direct-to-DB
+ * service (`ensureOrgId`), an Alchemy destination. With nothing selected it
+ * opens the canonical workspace picker ONLY after a deliberate act
+ * (`personJustActed`: a click/tap, Enter/Space on a control, a modifier
+ * shortcut — never typing), waits, and continues with the pick; otherwise it
+ * refuses (fail-closed) without a dialog, so a debounced autosave can never
+ * raise a picker mid-sentence. `interactive` overrides for a caller that
+ * knows better. Never auto-picks.
+ */
+export function ensureOrganizationForWrite(
+  organizationId?: string | null,
+  options: { interactive?: boolean } = {},
+): Promise<string> {
+  return ensureOrganizationContext({
+    organizationId,
+    interactive: options.interactive ?? personJustActed(),
+  });
+}
+
 export function ensureOrganizationForRequest(options: {
   method?: string | null;
   organizationId?: string | null;
