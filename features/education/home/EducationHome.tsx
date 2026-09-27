@@ -105,8 +105,8 @@ const BLOCKS: HomeBlock[] = [
   },
   {
     id: "kits",
-    // The hero for a sparse account: one kit and no study history still fills
-    // the page with something that is unmistakably theirs.
+    // A kit earns a place in the home feed; the tool navigation keeps the
+    // collection reachable when the learner has none yet.
     signal: (s) =>
       s.availability.kits.state === "ready" && s.kits.recent.length > 0
         ? 800
@@ -329,27 +329,9 @@ export function EducationHome() {
         )
         .sort((a, b) => b.signal - a.signal)
     : [];
-  const recent = blocks.find(({ block }) => block.id === "recent");
-  const study = blocks.filter(
-    ({ block }) => block.id === "study-today" || block.id === "due-by-mode",
-  );
-  const kits = blocks.filter(({ block }) => block.id === "kits");
-  const otherBlocks = blocks.filter(
-    ({ block }) =>
-      block.id !== "recent" &&
-      block.id !== "study-today" &&
-      block.id !== "due-by-mode" &&
-      block.id !== "kits",
-  );
-
   const tools = snapshot ? toolNavigation(snapshot) : [];
   // What an agent sees: the blocks in the order they render below.
-  const visibleBlocks = [
-    ...(recent ? [recent] : []),
-    ...study,
-    ...otherBlocks,
-    ...kits,
-  ].map(({ block }) => block.id);
+  const visibleBlocks = blocks.map(({ block }) => block.id);
   const getScope = () =>
     buildEducationOverviewScope({
       snapshot,
@@ -387,16 +369,7 @@ export function EducationHome() {
               snapshot={snapshot}
               onRetry={() => setReloadKey((key) => key + 1)}
             />
-            {recent?.block.render(snapshot)}
-            <div className="grid gap-5 xl:grid-cols-2">
-              <div className="flex flex-col gap-5">
-                {study.map(({ block }) => block.render(snapshot))}
-                {otherBlocks.map(({ block }) => block.render(snapshot))}
-              </div>
-              <div className="flex flex-col gap-5">
-                {kits.map(({ block }) => block.render(snapshot))}
-              </div>
-            </div>
+            {blocks.map(({ block }) => block.render(snapshot))}
           </>
         )}
       </div>

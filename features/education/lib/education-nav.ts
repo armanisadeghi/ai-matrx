@@ -50,6 +50,13 @@ export interface EduToolNavEntry {
  */
 export const EDU_TOOL_NAV: EduToolNavEntry[] = [
   {
+    slug: "kits",
+    label: "Kits",
+    iconName: "Package",
+    group: "Study",
+    description: "Your material and everything made from it, together",
+  },
+  {
     slug: "study-guides",
     label: "Study Guides",
     iconName: "BookOpen",
@@ -128,13 +135,6 @@ export const EDU_TOOL_NAV: EduToolNavEntry[] = [
     iconName: "FileText",
     group: "Understand",
     description: "Grounded summaries of anything you bring in",
-  },
-  {
-    slug: "kits",
-    label: "Study Kits",
-    iconName: "Package",
-    group: "Understand",
-    description: "One upload, and everything made from it in one place",
   },
   {
     slug: "notes",

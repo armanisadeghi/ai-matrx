@@ -6,6 +6,7 @@ import {
   FilePlus2,
   GraduationCap,
   Library,
+  Package,
   Target,
 } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -24,6 +25,11 @@ const EDUCATION_NAV_ITEMS = [
     name: "Create kit",
     href: "/education/start",
     icon: FilePlus2,
+  },
+  {
+    name: "Kits",
+    href: "/education/kits",
+    icon: Package,
   },
   {
     name: "Library",

@@ -153,15 +153,13 @@ export function KitsBlock({
         <h2 className="text-sm font-semibold text-foreground">
           Your study kits
         </h2>
-        {total > kits.length && (
-          <Link
-            href="/education/kits"
-            className="inline-flex items-center gap-1 text-xs text-primary"
-          >
-            All {total}
-            <ArrowRight className="h-3 w-3" />
-          </Link>
-        )}
+        <Link
+          href="/education/kits"
+          className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary hover:underline"
+        >
+          View all kits{total > 0 ? ` (${total})` : ""}
+          <ArrowRight className="h-4 w-4" />
+        </Link>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {kits.map((kit) => (
