@@ -188,6 +188,9 @@ export function PartyRecordPage({ partyId }: Props) {
       contactCandidatesLoadError,
       deals,
       dealsLoadError,
+      lifecycleStageOptions: lifecycleStages.map((c) => ({ id: c.id, name: c.name })),
+      ratingOptions: ratings.map((c) => ({ id: c.id, name: c.name })),
+      roleOptions: partyRoles.map((c) => ({ id: c.id, name: c.name })),
       attachedTaskIds: partyEdges
         .filter((edge) => edge.otherType === "task")
         .map((edge) => edge.otherId),

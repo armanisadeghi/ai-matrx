@@ -51,6 +51,10 @@ export interface BuildCrmRecordContextDataArgs {
   /** The Deals card's rows (`null` = not read yet) and its failure sentence. */
   deals?: DealRow[] | null;
   dealsLoadError?: string | null;
+  /** The choices the Stage / Rating / Roles controls offer (loaded categories). */
+  lifecycleStageOptions?: CrmRecordCategoryScope[];
+  ratingOptions?: CrmRecordCategoryScope[];
+  roleOptions?: CrmRecordCategoryScope[];
   /** Ids of the tasks and files attached to this record (the Tasks / Files tiles). */
   attachedTaskIds?: string[];
   attachedFileIds?: string[];
@@ -122,6 +126,9 @@ function summarize(
   };
 }
 
+/** What the Stage and Rating selects show when nothing is chosen: "None". */
+const NONE_CHOSEN = { id: null, name: "None" } as const;
+
 /** Canonical `contextData` for the CRM record surface. */
 export function buildCrmRecordContextData(
   args: BuildCrmRecordContextDataArgs,
@@ -163,8 +170,11 @@ export function buildCrmRecordContextData(
     timezone: party.timezone ?? undefined,
     // Shown on the page as "None" when unset — so the agent sees it as set to
     // nothing (null), never as a value it was not told about.
-    lifecycle_stage: args.lifecycleStage ?? null,
-    rating: args.rating ?? null,
+    lifecycle_stage: args.lifecycleStage ?? NONE_CHOSEN,
+    rating: args.rating ?? NONE_CHOSEN,
+    lifecycle_stage_options: args.lifecycleStageOptions,
+    rating_options: args.ratingOptions,
+    role_options: args.roleOptions,
     roles: args.roles ?? [],
     expert_status: party.expert_status ?? undefined,
     record_class: party.record_class,

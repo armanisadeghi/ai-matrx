@@ -209,7 +209,7 @@ const values: SurfaceValue[] = [
     name: "lifecycle_stage",
     label: "Lifecycle stage",
     description:
-      "The record's current CRM lifecycle category as { id, name }, or null when the page shows None.",
+      "The record's current CRM lifecycle category as { id, name }; { id: null, name: \"None\" } when the page shows None. Choices are in lifecycle_stage_options.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 90,
@@ -220,7 +220,7 @@ const values: SurfaceValue[] = [
     name: "rating",
     label: "Rating",
     description:
-      "The record's current CRM rating category as { id, name }, or null when the page shows None.",
+      "The record's current CRM rating category as { id, name }; { id: null, name: \"None\" } when the page shows None. Choices are in rating_options.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 90,
@@ -582,6 +582,39 @@ const values: SurfaceValue[] = [
     sortOrder: 241,
   },
   {
+    name: "lifecycle_stage_options",
+    label: "Stage choices",
+    description:
+      "Every lifecycle stage the Stage select offers, as { id, name }. lifecycle_stage_id takes one of these ids. Empty when the organization has defined none.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 300,
+    group: "record_identity",
+    sortOrder: 161,
+  },
+  {
+    name: "rating_options",
+    label: "Rating choices",
+    description:
+      "Every rating the Rating select offers, as { id, name }. rating_id takes one of these ids.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 200,
+    group: "record_identity",
+    sortOrder: 162,
+  },
+  {
+    name: "role_options",
+    label: "Role choices",
+    description:
+      "Every CRM role the Roles picker offers, as { id, name }. party_role_ids takes ids from here.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 300,
+    group: "record_identity",
+    sortOrder: 163,
+  },
+  {
     name: "deals",
     label: "Deals",
     description:
@@ -906,6 +939,11 @@ export interface CrmRecordCategoryScope {
   name: string;
 }
 
+/** A selected category, or the "None" the select shows when nothing is. */
+export type CrmRecordCategoryChoice =
+  | CrmRecordCategoryScope
+  | { readonly id: null; readonly name: "None" };
+
 export function createCrmRecordScope(values: {
   party_id?: string;
   party_kind?: string;
@@ -920,8 +958,11 @@ export function createCrmRecordScope(values: {
   bio?: string;
   primary_domain?: string;
   timezone?: string;
-  lifecycle_stage?: CrmRecordCategoryScope | null;
-  rating?: CrmRecordCategoryScope | null;
+  lifecycle_stage?: CrmRecordCategoryChoice;
+  rating?: CrmRecordCategoryChoice;
+  lifecycle_stage_options?: CrmRecordCategoryScope[];
+  rating_options?: CrmRecordCategoryScope[];
+  role_options?: CrmRecordCategoryScope[];
   roles?: CrmRecordCategoryScope[];
   expert_status?: string;
   record_class?: string;
