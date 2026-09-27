@@ -29,9 +29,23 @@ describe("mediumDisplay — the one way a contact value becomes text", () => {
     );
     expect(shown).toEqual({
       text: "UC0DZj1PNa_Fp0MU6uPSKv5w",
+      raw: null,
       platform: "YouTube",
       href: "https://www.youtube.com/channel/UC0DZj1PNa_Fp0MU6uPSKv5w",
     });
+  });
+
+  it("shows a platform identity by its handle, else the record's own name", () => {
+    const channel = medium({
+      channel: "external_id",
+      value_raw: "UC0DZj1PNa_Fp0MU6uPSKv5w",
+      platform_slug: "youtube",
+    });
+    expect(mediumDisplay(channel, "Cloud Codes")).toMatchObject({
+      text: "Cloud Codes",
+      raw: "UC0DZj1PNa_Fp0MU6uPSKv5w",
+    });
+    expect(mediumDisplay({ ...channel, handle: "cloudcodes" }, "Cloud Codes").text).toBe("@cloudcodes");
   });
 
   it("keeps the formatted display value for email and phone", () => {

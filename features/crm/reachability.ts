@@ -179,6 +179,8 @@ const PLATFORM_WORDS: Record<string, string> = {
 export interface MediumDisplay {
   /** The value as a person reads it. */
   text: string;
+  /** The raw value, when `text` shows a name instead of it (for a tooltip). */
+  raw: string | null;
   /** The platform it lives on ("YouTube"), when the medium names one. */
   platform: string | null;
   /** A link that opens the identity on its platform, when we hold one. */
@@ -198,7 +200,15 @@ export function platformWord(slug: string | null | undefined): string | null {
   );
 }
 
-export function mediumDisplay(medium: ContactMediumRow): MediumDisplay {
+export function mediumDisplay(
+  medium: ContactMediumRow,
+  /**
+   * The name the identity is known by — for a platform id that IS this
+   * record's identity (a YouTube channel id on the channel's own record), the
+   * record's name. An opaque id is never the headline when a name is known.
+   */
+  knownName?: string | null,
+): MediumDisplay {
   const platform = platformWord(medium.platform_slug);
   const caseMatters = medium.channel !== "email" && medium.channel !== "phone";
   const text =
@@ -206,5 +216,11 @@ export function mediumDisplay(medium: ContactMediumRow): MediumDisplay {
       ? (medium.value_raw ?? medium.handle ?? medium.display_value)
       : (medium.display_value ?? medium.value_raw)) ?? "";
   const href = medium.profile_url?.startsWith("http") ? medium.profile_url : null;
-  return { text, platform, href };
+  // A handle is what people recognize; an opaque external id is not.
+  if (medium.channel === "external_id") {
+    const handle = medium.handle?.trim();
+    if (handle) return { text: handle.startsWith("@") ? handle : `@${handle}`, raw: text, platform, href };
+    if (knownName?.trim()) return { text: knownName.trim(), raw: text, platform, href };
+  }
+  return { text, raw: null, platform, href };
 }

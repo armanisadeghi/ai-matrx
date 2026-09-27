@@ -358,7 +358,10 @@ export function ContactPointsCard({
         <ul className="space-y-0.5">
           {points.map((point) => {
             const Icon = CHANNEL_ICONS[point.channel ?? ""] ?? Globe;
-            const shown = mediumDisplay(point.medium);
+            const shown = mediumDisplay(
+              point.medium,
+              point.is_identity_key ? partyLabel : null,
+            );
             return (
               <li
                 key={point.id}
@@ -370,13 +373,20 @@ export function ContactPointsCard({
                     href={shown.href}
                     target="_blank"
                     rel="noreferrer"
-                    className="min-w-0 truncate text-sm text-foreground hover:underline"
-                    title={`Open on ${shown.platform ?? "the web"}`}
+                    className="inline-flex min-h-11 min-w-0 items-center truncate text-sm text-foreground hover:underline sm:min-h-0"
+                    title={
+                      shown.raw
+                        ? `${shown.raw} — open on ${shown.platform ?? "the web"}`
+                        : `Open on ${shown.platform ?? "the web"}`
+                    }
                   >
                     {shown.text}
                   </a>
                 ) : (
-                  <span className="min-w-0 truncate text-sm text-foreground">
+                  <span
+                    className="min-w-0 truncate text-sm text-foreground"
+                    title={shown.raw ?? undefined}
+                  >
                     {shown.text}
                   </span>
                 )}
