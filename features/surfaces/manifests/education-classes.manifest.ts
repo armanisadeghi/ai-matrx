@@ -45,6 +45,7 @@
  * a ref, so `getScope` stays synchronous (it is polled every 400ms).
  */
 
+import { INLINE_TIER } from "@/features/surfaces/types";
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
@@ -85,6 +86,18 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 10,
     sortOrder: 100,
+    group: "classes",
+  },
+  {
+    name: "class_list",
+    label: "Class list",
+    description:
+      'What the page lists: the person\'s active classes in the page\'s order (by name), first 25, each { id, name, teacher, term, period, access_mode, next_exam: { title, date } | null }. Use the ids with update_classes / delete_classes. owned_class_count is the total; owned_classes has every field (description, all exam dates, price). Absent while loading or when no workspace is selected; an empty array when they own none.',
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 900,
+    inlineUpTo: INLINE_TIER.list,
+    sortOrder: 105,
     group: "classes",
   },
   {
@@ -158,6 +171,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 300,
+    inlineUpTo: INLINE_TIER.record,
     sortOrder: 210,
     group: "new_class",
   },
@@ -245,6 +259,17 @@ If organization_state is not "ready", no workspace is selected; a create will as
   writeTargets,
 };
 
+/** One row of `class_list` — what a person scans. */
+export interface ClassListRow {
+  id: string;
+  name: string;
+  teacher: string | null;
+  term: string | null;
+  period: string | null;
+  access_mode: string;
+  next_exam: { title: string; date: string } | null;
+}
+
 /** One entry of `owned_classes` or `archived_classes`. */
 export interface ClassScopeEntry {
   id: string;
@@ -289,6 +314,7 @@ export function createEducationClassesScope(values: {
   class_dialog_open: boolean;
   selection?: string;
   context?: Record<string, unknown>;
+  class_list?: ClassListRow[];
   owned_classes?: ClassScopeEntry[];
   archived_classes?: ClassScopeEntry[];
   owned_class_count?: number;
