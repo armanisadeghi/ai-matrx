@@ -465,54 +465,69 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
     );
   }
 
-  // Set up first, then half-set-up, then off; a name shared by two organizations
-  // carries its address slug so the two rows can be told apart.
-  const rank = (e: HrEmployer) => (e.module_enabled ? (e.is_activated ? 0 : 1) : 2);
-  const sorted = [...choosable].sort(
-    (a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name),
-  );
-  const nameCount = new Map<string, number>();
-  for (const e of sorted) nameCount.set(e.name, (nameCount.get(e.name) ?? 0) + 1);
+  // Only employers this person can act on, each saying what a click does:
+  //  - HR set up → opens it (anyone listed may);
+  //  - HR on, setup unfinished → "Finish setup" (owners/admins only — for anyone
+  //    else it is someone else's to-do, so it is not offered);
+  //  - HR off → "Turn on HR" (owners/admins only), folded away under a disclosure
+  //    because most organizations without HR are not what someone came here for.
+  const ready = choosable
+    .filter((e) => e.module_enabled && e.is_activated)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const unfinished = choosable
+    .filter((e) => e.module_enabled && !e.is_activated && isOrgSteward(e.org_role))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const off = choosable
+    .filter((e) => !e.module_enabled && isOrgSteward(e.org_role))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const row = (employer: HrEmployer, action: string, list: HrEmployer[]) => {
+    const ref = employer.slug?.trim() || employer.organization_id;
+    // Two organizations with one name are numbered, never shown by their raw slug.
+    const same = list.filter((e) => e.name === employer.name);
+    const nth = same.length > 1 ? same.indexOf(employer) + 1 : 0;
+    return (
+      <li key={employer.organization_id}>
+        <Link
+          href={hrSwitchEmployerHref(pathname, ref)}
+          className="flex min-h-10 w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-accent"
+        >
+          <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+            {employer.name}
+            {nth ? <span className="ml-1.5 text-muted-foreground">({nth})</span> : null}
+          </span>
+          <span className="shrink-0 text-xs text-muted-foreground">{action}</span>
+        </Link>
+      </li>
+    );
+  };
+
+  if (ready.length + unfinished.length + off.length === 0) {
+    return (
+      <p className={cn("px-4 py-3 text-sm text-muted-foreground sm:px-6", className)}>
+        No employer you belong to has HR ready yet. Its owner or an admin sets it up.
+      </p>
+    );
+  }
 
   return (
-    <div className={cn("matrx-touch-targets w-full min-w-0 px-4 py-3 sm:px-6", className)}>
-      <p className="text-sm text-muted-foreground">
-        HR opens for one employer at a time. Choose it here or in the header&apos;s
-        organization switcher.
-      </p>
-      <ul className="mt-3 divide-y divide-border rounded-md border border-border bg-card">
-        {sorted.map((employer) => {
-          const ref = employer.slug?.trim() || employer.organization_id;
-          const status = employer.module_enabled
-            ? employer.is_activated
-              ? "HR set up"
-              : "Setup not finished"
-            : "HR off";
-          return (
-            <li key={employer.organization_id}>
-              <Link
-                href={hrSwitchEmployerHref(pathname, ref)}
-                className="flex min-h-10 w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-accent"
-              >
-                <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-                  {employer.name}
-                  {(nameCount.get(employer.name) ?? 0) > 1 && employer.slug ? (
-                    <span className="ml-2 text-muted-foreground">{employer.slug}</span>
-                  ) : null}
-                </span>
-                <span
-                  className={cn(
-                    "shrink-0 text-xs",
-                    rank(employer) === 0 ? "text-foreground" : "text-muted-foreground",
-                  )}
-                >
-                  {status}
-                </span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+    <div className={cn("matrx-touch-targets w-full min-w-0 space-y-4 px-4 py-3 sm:px-6", className)}>
+      {ready.length + unfinished.length > 0 ? (
+        <ul className="divide-y divide-border rounded-md border border-border bg-card">
+          {ready.map((e) => row(e, "Open", ready))}
+          {unfinished.map((e) => row(e, "Finish setup", unfinished))}
+        </ul>
+      ) : null}
+      {off.length > 0 ? (
+        <details className="group" open={ready.length + unfinished.length === 0}>
+          <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+            Organizations without HR ({off.length})
+          </summary>
+          <ul className="mt-2 divide-y divide-border rounded-md border border-border bg-card">
+            {off.map((e) => row(e, "Turn on HR", off))}
+          </ul>
+        </details>
+      ) : null}
     </div>
   );
 }
