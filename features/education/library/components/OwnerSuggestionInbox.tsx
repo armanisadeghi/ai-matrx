@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition, type ReactNode } from "react";
 import { Check, Inbox, Loader2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,11 @@ import {
 
 /** The deck owner's inbox of suggest-edits on their decks. Accept/decline
  *  routes through the owner-gated RPC. */
-export function OwnerSuggestionInbox() {
+/**
+ * `header` is the page's title block, rendered INSIDE the surface's
+ * right-click menu so the menu covers the whole page, not just the list.
+ */
+export function OwnerSuggestionInbox({ header }: { header?: ReactNode } = {}) {
   const [rows, setRows] = useState<DeckSuggestionRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -116,7 +120,10 @@ export function OwnerSuggestionInbox() {
         getApplicationScope={getScope}
         contentSource={{ type: "raw" }}
       >
-        <div className="contents">{renderInbox()}</div>
+        <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 py-8">
+          {header}
+          {renderInbox()}
+        </div>
       </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
