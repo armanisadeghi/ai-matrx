@@ -74,6 +74,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -303,7 +304,7 @@ export function CodeFileManagerWindow({
       <FolderOpen className="h-3.5 w-3.5 shrink-0" />
       <span className="truncate">{selectedFolderName}</span>
       <span className="text-gray-400 dark:text-gray-600">
-        ({mgr.visibleFiles.length})
+        (<UntrustedCount value={mgr.visibleFiles.length} trustworthy={!mgr.error} label="Files" />)
       </span>
     </div>
   );
@@ -312,6 +313,7 @@ export function CodeFileManagerWindow({
     mgr.selectedFileIds.length > 0 ? (
       <div className="flex items-center gap-1">
         <span className="text-[11px] text-gray-500 dark:text-gray-400">
+          {/* read-gate-exempt: local selection count held in component state, not a read */}
           {mgr.selectedFileIds.length} selected
         </span>
         <button

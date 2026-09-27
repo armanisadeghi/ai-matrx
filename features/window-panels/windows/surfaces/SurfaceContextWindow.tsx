@@ -236,6 +236,8 @@ export default function SurfaceContextWindow({
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .slice(0, 8);
   const presentation = statusPresentation(live.status);
+  /** The live runtime answered — write-target counts below are only said when it did. */
+  const liveRuntimeFailed = live.status === "error";
   // THE NAMING LAW — only the canonical manifest label, never an override.
   const friendlySurfaceName = surfaceName
     ? getSurfaceDisplayLabel(surfaceName)
@@ -560,17 +562,17 @@ export default function SurfaceContextWindow({
               /{liveWriteTargets.length} agent-writable
             </span>
           )}
-          {unwiredTargets.length > 0 && (
+          {!liveRuntimeFailed && unwiredTargets.length > 0 && (
             <span className="flex items-center gap-1 text-destructive">
               <TriangleAlert className="h-3 w-3" />
               {unwiredTargets.length} write target
               {unwiredTargets.length === 1 ? "" : "s"} unwired
             </span>
           )}
-          {runtimeOnlyKeys.length > 0 && (
+          {!liveRuntimeFailed && runtimeOnlyKeys.length > 0 && (
             <span>{runtimeOnlyKeys.length} runtime-only</span>
           )}
-          {otherViewTargets.length > 0 && (
+          {!liveRuntimeFailed && otherViewTargets.length > 0 && (
             <span title={otherViewTargets.map((entry) => entry.target.label).join(", ")}>
               {otherViewTargets.length} on another view
             </span>
@@ -593,7 +595,7 @@ export default function SurfaceContextWindow({
               available here
             </span>
           )}
-          {topMissingKeys.length > 0 && (
+          {availableHere.loaded && topMissingKeys.length > 0 && (
             <span
               className="text-amber-600 dark:text-amber-400"
               title={`Declare (or emit) one of these and the count in brackets becomes available here:\n${topMissingKeys

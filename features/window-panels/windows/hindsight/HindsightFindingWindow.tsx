@@ -60,6 +60,7 @@ export default function HindsightFindingWindow({
   const sidebar = (
     <div className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 border-b border-border px-2 py-1.5 text-xs font-medium">
+        {/* read-gate-exempt: falls back to the parent-supplied findings list, so a failed detail read never shows 0 */}
         Review items ({availableFindings.length})
       </div>
       <div className="min-h-0 flex-1 space-y-1 p-1.5">
@@ -99,6 +100,7 @@ export default function HindsightFindingWindow({
         {availableFindings.findIndex((item) => item.id === activeFinding.id) +
           1}
         {" of "}
+        {/* read-gate-exempt: falls back to the parent-supplied findings list, so a failed detail read never shows 0 */}
         {availableFindings.length}
       </span>
       <FindingActions

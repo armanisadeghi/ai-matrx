@@ -305,6 +305,7 @@ function OverviewTab({
               mono
               dim
             />
+            {/* read-gate-exempt: in-memory Redux agent instance state, not a server read */}
             <KvRow label="messages" value={String(messages.length)} />
             <KvRow
               label="displayMode"
@@ -382,6 +383,7 @@ function InstancesTab({
         <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex-1">
           conversations
         </span>
+        {/* read-gate-exempt: in-memory Redux agent instance state, not a server read */}
         <Badge label={`${allInstances.length} total`} />
       </div>
       {conversationId && selected ? (

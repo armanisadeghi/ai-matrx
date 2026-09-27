@@ -818,6 +818,7 @@ function SurfaceContextInspectorWindowInner({
             {isEditable && <span>Editable surface</span>}
             <span>
               <span className="font-semibold text-foreground">
+                {/* read-gate-exempt: counts of the surface manifest and live runtime values in memory, not a read */}
                 {model.declared.length}
               </span>{" "}
               declared
@@ -841,6 +842,7 @@ function SurfaceContextInspectorWindowInner({
             {model.undeclared.length > 0 && (
               <span>
                 <span className="font-semibold text-foreground">
+                  {/* read-gate-exempt: counts of the surface manifest and live runtime values in memory, not a read */}
                   {model.undeclared.length}
                 </span>{" "}
                 undeclared

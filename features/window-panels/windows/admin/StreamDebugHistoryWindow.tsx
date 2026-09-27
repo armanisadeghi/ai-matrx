@@ -162,11 +162,13 @@ function ConversationSidebarRow({
           )}
           {requestIds.length > 1 && (
             <span className="text-[9px] text-muted-foreground/60 font-mono shrink-0">
+              {/* read-gate-exempt: stream debug history captured client-side in Redux, not a read */}
               {requestIds.length}req
             </span>
           )}
           {eventCount > 0 && (
             <span className="text-[9px] text-muted-foreground/50 font-mono shrink-0">
+              {/* read-gate-exempt: stream debug history captured client-side in Redux, not a read */}
               {eventCount}ev
             </span>
           )}
@@ -262,6 +264,7 @@ function StreamDebugSidebar({
         <>
           <div className="px-2 pt-2 pb-0.5 shrink-0">
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+              {/* read-gate-exempt: stream debug history captured client-side in Redux, not a read */}
               Conversations ({totalCount})
             </span>
           </div>

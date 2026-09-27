@@ -285,10 +285,12 @@ function ChatDebugWindowInner({
                 </div>
                 <div>
                   <span className="text-foreground">messages:</span>{" "}
+                  {/* read-gate-exempt: in-memory Redux chat session counts, not a server read */}
                   {messages.length}
                 </div>
                 <div>
                   <span className="text-foreground">resources:</span>{" "}
+                  {/* read-gate-exempt: in-memory Redux chat session counts, not a server read */}
                   {resources.length}
                 </div>
                 <div>

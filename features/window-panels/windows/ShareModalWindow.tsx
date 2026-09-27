@@ -252,7 +252,7 @@ export default function ShareModalWindow({
             <TabsTrigger value="users" className="gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Users</span>
-              {userPermissions.length > 0 && (
+              {!error && userPermissions.length > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/10 rounded-full">
                   {userPermissions.length}
                 </span>

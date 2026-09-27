@@ -33,6 +33,7 @@ import {
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { Input } from "@ai-matrx/design-system";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -41,6 +42,7 @@ import {
   listScopeTypeItems,
   selectItemsByType,
   selectItemsLoadedForType,
+  selectItemsErrorForType,
   updateContextItem,
   type ContextItem,
 } from "@/features/scopes/redux/contextItemCatalog";
@@ -517,6 +519,9 @@ function ContextItemsWindowInner({
   const loaded = useAppSelector((s) =>
     selectItemsLoadedForType(s, scopeTypeId),
   );
+  const itemsError = useAppSelector((s) =>
+    selectItemsErrorForType(s, scopeTypeId),
+  );
   const selectScopeType = useMemo(() => makeSelectScopeType(), []);
   const scopeType = useAppSelector((s) => selectScopeType(s, scopeTypeId));
 
@@ -640,7 +645,12 @@ function ContextItemsWindowInner({
       }
       footerLeft={
         <span className="text-[11px] text-muted-foreground">
-          <span className="font-semibold text-foreground">{items.length}</span>{" "}
+          <UntrustedCount
+            className="font-semibold text-foreground"
+            value={items.length}
+            read={{ status: itemsError ? "error" : loaded ? "ready" : "loading", error: itemsError }}
+            label="Items"
+          />{" "}
           item{items.length === 1 ? "" : "s"}
         </span>
       }

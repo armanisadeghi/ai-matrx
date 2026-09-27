@@ -335,6 +335,7 @@ function PdfBatchExtractDebugWindowInner({
             variant="outline"
             className="mr-1 h-4 px-1.5 py-0 font-mono text-[10px]"
           >
+            {/* read-gate-exempt: client-captured debug sessions held in Redux, never fetched */}
             {sessions.length}
           </Badge>
         ) : undefined
