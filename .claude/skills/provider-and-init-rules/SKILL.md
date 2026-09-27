@@ -1,6 +1,6 @@
 ---
 name: provider-and-init-rules
-description: "Startup rules for the app shell, layouts, and global providers. Use when editing app/Providers.tsx, app/DeferredSingletons.tsx, a layout.tsx, StoreProvider, or a global provider; adding startup fetches or mount-time useEffects high in the tree; or reading auth state (isAdmin, isGuest, fingerprintId) client-side."
+description: "Startup rules for the app shell, layouts, and global providers. Use when editing app/Providers.tsx, app/DeferredSingletonWrapper.tsx / DeferredSingletonCore.tsx, a layout.tsx, StoreProvider, or a global provider; adding startup fetches or mount-time useEffects high in the tree; or reading auth state (isAdmin, isGuest, fingerprintId) client-side."
 ---
 
 # Provider & Initialization Rules
@@ -136,7 +136,7 @@ const { ready } = useIdleGate(key, priority, callback);
 
 | File | Purpose |
 |------|---------|
-| `app/DeferredSingletons.tsx` | Deferred background logic: broker registration (p5), preferences load (p2), PostHog identify (p3), plus UI singletons gated behind `useIdleReady()` |
+| `app/DeferredSingletonWrapper.tsx` → `DeferredSingletonCore.tsx` | Deferred background logic: broker registration (p5), preferences load (p2), PostHog identify (p3), plus UI singletons gated behind `useIdleReady()` |
 | `features/shell/islands/DeferredIslands.tsx` | Heavy layout-level UI chunks (Canvas, Messaging, VoicePad, WindowTray) gated behind `useIdleReady()` |
 
 ---
@@ -213,7 +213,7 @@ function MyFeaturePage() {
 1. Create a slice in `lib/redux/slices/` or `features/<name>/redux/`.
 2. Add typed selectors (memoized with `createSelector` when derived).
 3. If async initialization is needed, use a thunk dispatched via `useIdleTask` in
-   `DeferredSingletons.tsx` or triggered by the first consumer that needs the data.
+   `DeferredSingletonCore.tsx` or triggered by the first consumer that needs the data.
 
 ---
 
@@ -225,10 +225,10 @@ function MyFeaturePage() {
 | Theme detection | `ThemeProvider` | Immediately (reads cookie, no network — prevents FOUC) |
 | Schema hydration | `SchemaProvider` | Immediately (server-passed data, zero network) |
 | Query client creation | `ReactQueryProvider` | Immediately (synchronous, zero network) |
-| User preferences load | `DeferredSingletons` | Idle priority 2 |
-| Broker registration | `DeferredSingletons` | Idle priority 5 |
-| PostHog identify | `DeferredSingletons` | Idle priority 3 |
-| Admin debug tools | `DeferredSingletons` → `AdminFeatureProvider` | Idle (rendered after `useIdleReady()`) |
+| User preferences load | `DeferredSingletonCore` | Idle priority 2 |
+| Broker registration | `DeferredSingletonCore` | Idle priority 5 |
+| PostHog identify | `DeferredSingletonCore` | Idle priority 3 |
+| Admin debug tools | `DeferredSingletonCore` → `AdminFeatureProvider` | Idle (rendered after `useIdleReady()`) |
 | Heavy layout islands | `DeferredIslands` | After `useIdleReady()` returns true |
 | Feature data (tasks, transcripts, files, audio recovery) | Feature consumer calls `initialize()` | When user navigates to or opens that feature |
 

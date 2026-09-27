@@ -160,7 +160,6 @@ export const SourceFolderNode: React.FC<SourceFolderNodeProps> = ({
         contextData={{ content: adapter.label }}
         contentSource={{ type: "raw" }}
         extraSections={sourceMenuSections}
-        enableFloatingIcon={false}
       >
         <div
           role="treeitem"

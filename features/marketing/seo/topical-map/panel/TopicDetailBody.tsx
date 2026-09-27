@@ -244,7 +244,6 @@ function TopicDetailBodyInner({
     <NonEditableContextMenu
       sourceFeature="marketing"
       surfaceName={TOPICAL_MAP_SURFACE_NAME}
-      enableFloatingIcon={false}
       contextData={{ map_id: mapId, topic_slug: slug, content: topic.description ?? topic.name }}
       extraSections={menuSections}
     >

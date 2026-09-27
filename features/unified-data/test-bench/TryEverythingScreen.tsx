@@ -326,7 +326,13 @@ export default function TryEverythingScreen({ routes }: { routes: RoutesInThisBu
     /** The membership port the sibling pages bind — a person field must offer people. */
     const members = useCallback(async () => {
         if (!organizationId) return [];
-        const roster = await getOrganizationMembers(organizationId);
+        // OPEN (RC-B12 r13): records-ui's `host.members()` consumers do not handle a
+        // rejection yet, so a failed roster read answers [] here WITH a log; the honest
+        // failure state belongs in @ai-matrx/records-ui's people picker.
+        const roster = await getOrganizationMembers(organizationId).catch((err: unknown) => {
+          console.error("[records members port] roster read failed:", err);
+          return [];
+        });
         return roster.map((member) => ({
             userId: member.userId,
             name: member.user?.displayName ?? null,

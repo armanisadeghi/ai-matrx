@@ -78,7 +78,6 @@ body { font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem); }
 
 **Current (Legacy):**
 - Heavy use of Framer Motion (`motion` package) for all animations
-- Animation presets in `componentConfig.ts` files
 - `AnimatePresence` for entrance/exit animations
 
 **Best Practice:**
@@ -96,9 +95,7 @@ body { font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem); }
 ### 3. Container Queries: Minimal → Expand Usage
 
 **Current:**
-- Only 2 files use `@container`:
-  - `app/entities/forms/EntityFormStandard.tsx`
-  - `app/(authenticated)/demo/component-demo/container-queries/page.tsx`
+- ~40 files use `@container` (2026-09-26).
 
 **Best Practice:**
 - All reusable components should use container queries
@@ -111,22 +108,13 @@ body { font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem); }
 
 ---
 
-### 4. Component Wrappers: Raw shadcn/ui → Custom Wrappers
+### 4. Primitives come from the design system
 
-**Current:**
-- Mix of raw shadcn/ui components and some custom wrappers
-- Custom wrappers exist (e.g., `FloatingSheet`) but not systematic
-
-**Best Practice:**
-- Every shadcn/ui primitive should have a project wrapper
-- Wrappers enforce consistency and include common logic
-
-**Action:**
-- **New code:** Create custom wrappers before using any new shadcn/ui component
-- **Migration priority:** High — improves consistency across app
-- **Location:** `components/ui/app-*.tsx` (e.g., `app-dialog.tsx`, `app-sheet.tsx`)
-
-**Audit needed:** Check `components/ui/` for which primitives need wrappers.
+Dialog, Sheet, Button, Input, Skeleton, the data table and the rest ship from
+`@ai-matrx/design-system`; `components/ui/*.tsx` are thin host re-exports of the
+same components. Import either — never write a local wrapper around a primitive
+(no `AppDialog`-style layer: a second implementation of something we own is a
+defect). A fix to a primitive is made in the package.
 
 ---
 
@@ -190,13 +178,6 @@ Custom thin scrollbars are defined globally:
 
 Use `.scrollbar-hide` or `.scrollbar-thin` utilities.
 
-### Animation Presets (Framer Motion)
-
-When Framer Motion is appropriate, use existing presets:
-
-- Location: `components/matrx/Entity/prewired-components/quick-reference/componentConfig.ts`
-- Presets: `none`, `subtle`, `smooth`, `energetic`, `playful`
-
 ### Layout Components
 
 - `ResponsiveLayout`: Switches between desktop/mobile layouts at 1024px
@@ -214,7 +195,6 @@ When Framer Motion is appropriate, use existing presets:
 | Sheet component | `components/official/FloatingSheet.tsx` |
 | Responsive layout | `components/layout/new-layout/ResponsiveLayout.tsx` |
 | Mobile detection hook | `hooks/use-mobile.tsx` |
-| Animation presets | `components/matrx/Entity/prewired-components/quick-reference/componentConfig.ts` |
 
 ---
 
@@ -222,7 +202,6 @@ When Framer Motion is appropriate, use existing presets:
 
 | Item | Priority | Approach |
 |------|----------|----------|
-| Custom component wrappers | **High** | Create wrappers before using new shadcn/ui components |
 | Fluid typography | **Medium** | Use `clamp()` in new code, migrate existing incrementally |
 | Container queries | **Medium** | Use `@container` in new reusable components |
 | CSS entrance animations | **Low** | Use `@starting-style` in new code |
@@ -245,14 +224,13 @@ When writing new UI code in this project:
 // ✅ DO: CSS entrance animations
 <div className="[@starting-style]:opacity-0 [@starting-style]:translate-y-4 transition-all">
 
-// ✅ DO: Custom wrapper components
-import { AppDialog } from "@/components/ui/app-dialog";
+// ✅ DO: Design-system primitives (host re-export or the package)
+import { Dialog } from "@/components/ui/dialog";
 
 // ❌ DON'T: Fixed font sizes with breakpoints
 <h1 className="text-2xl md:text-3xl lg:text-4xl">
 
-// ❌ DON'T: Raw shadcn/ui without wrapper
-import { Dialog } from "@/components/ui/dialog"; // Use AppDialog instead
+// ❌ DON'T: A local wrapper around a design-system primitive
 
 // ❌ DON'T: Framer Motion for simple entrance animations
 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}> // Use @starting-style

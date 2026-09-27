@@ -30,7 +30,7 @@ import { createVisualExtensions, type RichShellActions } from "./visual-extensio
 import { findHighlightKey } from "./decorations";
 import { BlockHandle } from "./BlockHandle";
 import { useSelectionZone } from "@/components/selection-toolbar/selection-zones";
-import { RICH_EDITOR_HOST_KEY, tableAnchorOf, type RichEditorSelectionHost } from "./format-actions";
+import { RICH_EDITOR_HOST_KEY, islandSelectionOf, tableAnchorOf, type RichEditorSelectionHost } from "./format-actions";
 import { useRichEditorContext } from "../RichEditorContext";
 
 const HEADLESS_SCHEMA = getSchema(createRichEditorExtensions());
@@ -303,12 +303,17 @@ export function VisualEditor({
       ? {
           editable: !context.readOnly,
           host: { [RICH_EDITOR_HOST_KEY]: editorHalf },
-          // The caret in a table keeps the one toolbar up with the table actions.
+          // The caret in a table keeps the one toolbar up with the table actions; a
+          // selected code block (an island) gets it too, acting on the block's source.
           caretAnchor: () => {
-            if (!editor || editor.isDestroyed || context.readOnly || !editor.isFocused) return null;
+            if (!editor || editor.isDestroyed || !editor.isFocused) return null;
+            const island = islandSelectionOf(editor);
+            if (island) return { left: island.box.left, top: island.box.top, bottom: island.box.top + 1, width: island.box.width };
+            if (context.readOnly) return null;
             const box = tableAnchorOf(editor);
             return box ? { left: box.left, top: box.top, bottom: box.top + 1, width: Math.min(box.width, 40) } : null;
           },
+          caretText: () => (editor && !editor.isDestroyed ? (islandSelectionOf(editor)?.raw ?? "") : ""),
         }
       : null,
   );

@@ -6,8 +6,8 @@ import {
   BugTapButton,
   type TapButtonProps,
 } from "@ai-matrx/tap-target/buttons";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { useOpenFeedbackWindow } from "@/features/overlays/openers/feedbackDialog";
 
 // The "NEW!" highlight (PartyPopper, X, bouncing tooltip, dismiss + view-count
 // logic) lives in a separate chunk. Most users have already exhausted the 5
@@ -25,7 +25,7 @@ export default function FeedbackButton({
   variant = "glass",
   tooltip,
 }: FeedbackButtonProps) {
-  const dispatch = useAppDispatch();
+  const openFeedback = useOpenFeedbackWindow();
   const userId = useAppSelector((state) => state.userAuth.id);
   const isAnonymous = useAppSelector((state) => state.userAuth.isAnonymous);
   const feedbackFeatureViewCount = useAppSelector(
@@ -48,8 +48,8 @@ export default function FeedbackButton({
 
   const handleClick = useCallback(() => {
     if (shouldShowHighlight) setDismissTick((n) => n + 1);
-    dispatch(openOverlay({ overlayId: "feedbackDialog" }));
-  }, [dispatch, shouldShowHighlight]);
+    openFeedback();
+  }, [openFeedback, shouldShowHighlight]);
 
   return (
     <div className="relative">

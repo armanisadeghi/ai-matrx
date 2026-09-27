@@ -67,7 +67,6 @@ const ModernOneColumnProfileDisplay = ({ data }: { data: CandidateProfileData })
         if (!(item instanceof HTMLElement)) return null;
         return { content: item.innerText.trim() };
       }}
-      enableFloatingIcon={false}
     >
     <div className="max-w-5xl mx-auto overflow-hidden rounded-xl shadow-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700">
       {/* Modern Gradient Header */}

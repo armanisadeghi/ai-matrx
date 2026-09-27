@@ -151,7 +151,6 @@ export const PersistedLibraryFileRow: React.FC<
       contentSource={{ type: "raw" }}
       entity={{ type: "code_file", id: file.id, title: file.name }}
       extraSections={fileMenuSections}
-      enableFloatingIcon={false}
     >
       <div
         role="treeitem"
@@ -335,7 +334,6 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
           title: folder.name,
         }}
         extraSections={folderMenuSections}
-        enableFloatingIcon={false}
       >
         <div
           ref={rowRef}

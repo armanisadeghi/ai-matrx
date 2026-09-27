@@ -27,6 +27,7 @@ import { Button, Checkbox } from "@ai-matrx/design-system";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
+import { ReadEmpty, ReadStaleNotice, type ReadOutcome } from "@/components/read-state/ReadGate";
 
 export type ReviewMode = "one_by_one" | "accept_all" | "reject_all" | "batch";
 
@@ -55,6 +56,11 @@ export interface ReviewDeckProps {
   /** The sentence shown before accept_all / reject_all / batch runs. */
   consequence: (ids: string[], verb: "accept" | "reject") => string;
   emptyState?: ReactNode;
+  /**
+   * The outcome of the read behind the rows (RC-B12 r13). `emptyState` shows
+   * only after a read that succeeded; a failed read shows the failure + retry.
+   */
+  read?: ReadOutcome;
   className?: string;
 }
 
@@ -86,6 +92,7 @@ export function ReviewDeck({
   rejectOptions,
   consequence,
   emptyState,
+  read,
   className,
 }: ReviewDeckProps) {
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
@@ -162,7 +169,7 @@ export function ReviewDeck({
       <div className={cn("flex h-full w-full min-h-0 flex-col gap-3", className)}>
         <div className="flex items-center justify-between gap-2">{switcher}</div>
         <div className="flex flex-1 items-center justify-center p-6 text-xs text-muted-foreground">
-          {emptyState ?? "Nothing left to review."}
+          <ReadEmpty read={read}>{emptyState ?? "Nothing left to review."}</ReadEmpty>
         </div>
       </div>
     );
@@ -193,6 +200,7 @@ export function ReviewDeck({
       }}
       tabIndex={mode === "one_by_one" ? 0 : undefined}
     >
+      <ReadStaleNotice read={read} />
       <div className="flex flex-wrap items-center justify-between gap-2">
         {switcher}
         <span className="text-xs tabular-nums text-muted-foreground">

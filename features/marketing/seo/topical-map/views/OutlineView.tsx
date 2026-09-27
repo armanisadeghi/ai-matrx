@@ -348,7 +348,6 @@ function OutlineBody({ mapId, siteId, readOnly, knobs }: OutlineBodyProps) {
         <NonEditableContextMenu
           sourceFeature="marketing"
           surfaceName={SURFACE_NAME}
-          enableFloatingIcon={false}
           resolveContextOnOpen={(target) => {
             const rowElement = target?.closest("[data-topic-tree-row]");
             const rowId = rowElement?.getAttribute("data-topic-tree-row") ?? null;

@@ -88,11 +88,25 @@ export function OrgResourceDetail() {
     new Map(),
   );
 
+  // A failed organization read is its own state (RC-B12 r13): it used to
+  // answer null and show the access gate ("not found / no access").
+  const [orgReadError, setOrgReadError] = React.useState<unknown>(null);
+  const [orgReadAttempt, setOrgReadAttempt] = React.useState(0);
+
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
       setResolving(true);
-      const resolved = await getOrganizationBySlugOrId(orgParam);
+      setOrgReadError(null);
+      let resolved: Awaited<ReturnType<typeof getOrganizationBySlugOrId>>;
+      try {
+        resolved = await getOrganizationBySlugOrId(orgParam);
+      } catch (err) {
+        if (cancelled) return;
+        setOrgReadError(err ?? new Error("The organization read failed"));
+        setResolving(false);
+        return;
+      }
       if (cancelled) return;
       if (!resolved) {
         setOrg(null);
@@ -101,8 +115,15 @@ export function OrgResourceDetail() {
       }
       setOrg({ id: resolved.id, name: resolved.name, slug: resolved.slug });
       setResolving(false);
-      // Members → user map for "who shared" attribution.
-      const members = await getOrganizationMembers(resolved.id);
+      // Members → user map for "who shared" attribution. Enrichment only: a
+      // failed roster read leaves the rows' own attribution ("A teammate").
+      let members: Awaited<ReturnType<typeof getOrganizationMembers>>;
+      try {
+        members = await getOrganizationMembers(resolved.id);
+      } catch (err) {
+        console.error("[OrgResourceDetail] member names unavailable:", err);
+        return;
+      }
       if (cancelled) return;
       const map = new Map<string, UserLike>();
       for (const m of members) {
@@ -120,7 +141,7 @@ export function OrgResourceDetail() {
     return () => {
       cancelled = true;
     };
-  }, [orgParam]);
+  }, [orgParam, orgReadAttempt]);
 
   const shared = useOrgSharedItems(org?.id ?? null, entry);
   const mine = useOrgContributableItems(
@@ -172,6 +193,19 @@ export function OrgResourceDetail() {
             Organizations
           </Button>
         </Card>
+      </CenterState>
+    );
+  }
+
+  if (orgReadError != null) {
+    return (
+      <CenterState>
+        <ReadFailure
+          error={orgReadError}
+          what="this organization"
+          onRetry={() => setOrgReadAttempt((n) => n + 1)}
+          size="default"
+        />
       </CenterState>
     );
   }

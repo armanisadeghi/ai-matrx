@@ -253,7 +253,6 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
         contextData={{ content: "My Files" }}
         contentSource={{ type: "raw" }}
         extraSections={rootMenuSections}
-        enableFloatingIcon={false}
       >
         <div
           role="treeitem"

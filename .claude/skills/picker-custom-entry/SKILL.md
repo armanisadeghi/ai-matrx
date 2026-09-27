@@ -37,7 +37,7 @@ no "+ Add" is a defect, not a simplification.
 1. **A type-ahead, not a bare list.** When the typed text matches nothing, the
    control offers `Create "what you typed"` — never make them retype it into a
    different box. (matrx-frontend reference implementation:
-   `features/marketing/seo/value-system/pickers/CreatablePicker.tsx`.)
+   `components/ui/creatable-picker.tsx`; guard `pnpm check:picker-add`.)
 2. **The add affordance lives OUTSIDE the scrolling list**, so a search that
    matches nothing cannot hide the one thing they came to do.
 3. **Call the vocabulary's ONE existing write path.** Never hand-roll a second

@@ -50,7 +50,18 @@ export interface WebSourceInputs {
   capturedByRung?: string | null;
 }
 
-export type StoredWebShape = "extension_capture" | "page_html" | "none";
+export type StoredWebShape =
+  | "scraper_envelope"
+  | "extension_capture"
+  | "page_html"
+  | "none";
+
+/**
+ * The `__kind` the scraper stamps on the original it stores for a saved page:
+ * its own `fetch_results` envelope holding exactly that page's full result
+ * (aidream `matrx_scraper.source_landing.SCRAPER_ENVELOPE_SHAPE`).
+ */
+export const SCRAPER_ENVELOPE_KIND = "scraper_fetch_results.v1";
 
 export interface WebSourceView {
   shape: StoredWebShape;
@@ -89,7 +100,31 @@ export function parseExtensionCapture(original: string | null): Obj | null {
   return null;
 }
 
+/**
+ * The scraper's own per-page result, when the original is the scraper's
+ * stored `fetch_results` envelope — the richest thing a scraper Source holds,
+ * so it is shown exactly as the live scraper showed it.
+ */
+export function parseScraperEnvelope(
+  original: string | null,
+): { page: Obj; metadata: Obj } | null {
+  const t = original?.trimStart() ?? "";
+  if (!t.startsWith("{")) return null;
+  try {
+    const parsed = obj(JSON.parse(t));
+    const isEnvelope =
+      parsed.__kind === SCRAPER_ENVELOPE_KIND ||
+      (parsed.type === "fetch_results" && Array.isArray(parsed.results));
+    const page = obj(arr(parsed.results)[0]);
+    if (!isEnvelope || !Object.keys(page).length) return null;
+    return { page, metadata: obj(parsed.metadata) };
+  } catch {
+    return null;
+  }
+}
+
 export function detectStoredShape(original: string | null): StoredWebShape {
+  if (parseScraperEnvelope(original)) return "scraper_envelope";
   if (parseExtensionCapture(original)) return "extension_capture";
   const t = original?.trimStart() ?? "";
   if (t.startsWith("<")) return "page_html";
@@ -377,6 +412,37 @@ function fromScraper(
  */
 export function webSourceToScrape(inputs: WebSourceInputs): WebSourceView {
   const structured = obj(inputs.structured);
+  const stored = parseScraperEnvelope(inputs.original);
+  if (stored) {
+    // The scraper's own result for this page, as it was captured. Only what
+    // it lacks is filled from the Source (an edited version's sections are
+    // the Source's text, so they win for the text views).
+    const page = stored.page as ScrapedResult;
+    const result: ScrapedResult = {
+      ...page,
+      success: page.success ?? true,
+      failure_reason: page.failure_reason ?? null,
+      url: page.url ?? inputs.url ?? "",
+      markdown_renderable:
+        str(page.markdown_renderable) ?? sectionsAsMarkdown(inputs.sections),
+      organized_data: page.organized_data ?? sectionsAsOrganized(inputs.sections),
+      text_data: str(page.text_data) ?? inputs.sections.map((s) => s.text).join("\n\n"),
+      scraped_at: page.scraped_at ?? inputs.capturedAt ?? undefined,
+      overview: { page_title: inputs.name, url: inputs.url ?? undefined, ...obj(page.overview) },
+    };
+    const engine =
+      asScrapeEngine(page.engine) ?? asScrapeEngine(inputs.capturedByRung ?? null);
+    if (engine) result.engine = engine;
+    // The raw page HTML rides in the envelope's metadata; the JSON tabs show
+    // the result, not a megabyte of markup.
+    const { raw_html: _rawHtml, ...metadata } = stored.metadata;
+    void _rawHtml;
+    return {
+      shape: "scraper_envelope",
+      engine,
+      envelope: { type: "fetch_results", metadata, results: [result] },
+    };
+  }
   const capture = parseExtensionCapture(inputs.original);
   const shape = detectStoredShape(inputs.original);
   const result = capture
@@ -400,6 +466,9 @@ export function webSourceToScrape(inputs: WebSourceInputs): WebSourceView {
  */
 export function webSourcePageData(view: WebSourceView) {
   const processed = ScraperDataUtils.processFullData(view.envelope);
+  // The scraper's own stored result goes through its processor untouched —
+  // exactly what the live scraper screen does with it.
+  if (view.shape === "scraper_envelope") return processed;
   const built = view.envelope.results[0];
   return {
     ...processed,

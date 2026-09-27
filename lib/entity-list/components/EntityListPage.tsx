@@ -818,6 +818,7 @@ export function EntityListPage<TRow>({
       */}
       <div className="min-h-[16rem] flex-1 overflow-y-auto px-3 pb-4">
         {view === "table" ? (
+          // read-gate-exempt: a failed read swaps resolvedEmptyState for failureEmptyState, and the alert above names the failure once
           <EntityListTable
             config={config}
             actions={actions}

@@ -260,7 +260,6 @@ const ProcessorExtractorBody = ({ jsonData, configKey }: ProcessorExtractorProps
                           ] satisfies ContextMenuExtraSection[])
                         : []
                 }
-                enableFloatingIcon={false}
             >
                 {/* Real DOM element for the Radix asChild trigger. */}
                 <div>
@@ -341,7 +340,6 @@ const ProcessorExtractorBody = ({ jsonData, configKey }: ProcessorExtractorProps
                     sourceFeature="content-extractor"
                     contentSource={{ type: "raw" }}
                     contextData={{ content: displayJsonStr }}
-                    enableFloatingIcon={false}
                 >
                     <pre className="whitespace-pre-wrap bg-gray-50 dark:bg-gray-800 p-4 rounded-md text-sm text-gray-800 dark:text-gray-200 overflow-auto max-h-[60dvh]">
                         {displayJsonStr}

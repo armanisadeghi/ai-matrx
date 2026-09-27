@@ -120,7 +120,16 @@ export async function creatorNames(
 ): Promise<Map<string, string>> {
   const byUser = new Map<string, string>();
   const unique = [...new Set(organizationIds)].filter(Boolean);
-  const lists = await Promise.all(unique.map((id) => getOrganizationMembers(id)));
+  // Label enrichment only: a roster that fails to read leaves its creators on
+  // the row's own truth ("A teammate") — it never fails the records read.
+  const lists = await Promise.all(
+    unique.map((id) =>
+      getOrganizationMembers(id).catch((err: unknown) => {
+        console.error("[records] creator names unavailable for an organization:", err);
+        return [];
+      }),
+    ),
+  );
   for (const members of lists) {
     for (const m of members) {
       // A member row without a resolvable user is skipped rather than named:

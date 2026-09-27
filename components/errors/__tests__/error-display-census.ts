@@ -1190,3 +1190,173 @@ export function findSoftFailureToasts(source: string, fileName = "file.tsx"): nu
   visit(sf);
   return lines;
 }
+
+// ─── A list/table primitive's emptyState is gated by the read (RC-B12 r13) ──
+//
+// `<MatrxDataTable data={rows} isLoading={q.isLoading} emptyState={{ title:
+// "No tasks yet" }} />` renders "No tasks yet" when the read FAILED: the
+// primitive only knew "loading" or "not loading". Every primitive that takes
+// an `emptyState` also takes `read` (a ReadOutcome — status + error + onRetry)
+// and shows the empty state only after a read that succeeded. An element that
+// passes `emptyState=` over read-backed rows without `read=` is ungated.
+
+/** Props that say the element's rows hang off a read (a loading/query/error input). */
+const READ_SIGNAL_ATTR = /^(?:isLoading|loading|isFetching|isPending|isRefreshing|query|status|error|isError|loadError)$/;
+/** Props that carry the rows a primitive lists. */
+const ROWS_ATTR =
+  /^(?:data|rows|items|files|nodes|tree|entries|conversations|cards|tags|results|sources|records|keywords|options|list|groups|sections|examples|topics|decks)$/;
+
+function jsxAttr(node: JsxLike, name: string): ts.JsxAttribute | null {
+  for (const prop of attributes(node).properties) {
+    if (ts.isJsxAttribute(prop) && prop.name.getText() === name) return prop;
+  }
+  return null;
+}
+
+/** Does this expression mention an identifier a read hook produced? */
+function mentionsAny(n: ts.Node, names: Set<string>): boolean {
+  if (names.size === 0) return false;
+  let hit = false;
+  const walk = (m: ts.Node) => {
+    if (hit) return;
+    // `rows.map((r) => …)` — the callback's own parameters are not the read.
+    if (ts.isIdentifier(m) && names.has(m.text) && !(m.parent && ts.isPropertyAccessExpression(m.parent) && m.parent.name === m)) hit = true;
+    m.forEachChild(walk);
+  };
+  walk(n);
+  return hit;
+}
+
+function exemptAround(sourceLines: string[], lines: number[]): boolean {
+  return lines.some((line) => isExempt(sourceLines, line));
+}
+
+/**
+ * Lines of every `emptyState=` handed to a primitive over read-backed rows
+ * without the read's outcome (`read=`), where nothing above already gates the
+ * element on the read's failure. Rows that are a pure local value (props,
+ * `useState`, a constant) are not a read and are not flagged.
+ */
+export function findUngatedEmptyStateProps(source: string, fileName = "file.tsx"): number[] {
+  const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const sourceLines = source.split("\n");
+  const lines = new Set<number>();
+  const readNameCache = new Map<ts.Node, Set<string>>();
+  const visit = (n: ts.Node) => {
+    if (ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n)) {
+      const empty = jsxAttr(n, "emptyState");
+      if (empty && !jsxAttr(n, "read")) {
+        const fn = enclosingFunction(n);
+        if (fn && fn.body) {
+          let names = readNameCache.get(fn);
+          if (!names) { names = readDerivedNames(fn); readNameCache.set(fn, names); }
+          const props = attributes(n).properties.filter(ts.isJsxAttribute);
+          const readBacked =
+            props.some((p) => READ_SIGNAL_ATTR.test(p.name.getText())) ||
+            props.some((p) => ROWS_ATTR.test(p.name.getText()) && p.initializer !== undefined && mentionsAny(p.initializer, names!));
+          if (readBacked && !gatedByAncestors(n, fn) && !gatedByEarlyReturn(n, fn)) {
+            const at = sf.getLineAndCharacterOfPosition(empty.getStart()).line + 1;
+            const start = sf.getLineAndCharacterOfPosition(n.getStart()).line + 1;
+            if (!exemptAround(sourceLines, [at, start])) lines.add(at);
+          }
+        }
+      }
+    }
+    n.forEachChild(visit);
+  };
+  visit(sf);
+  return [...lines].sort((a, b) => a - b);
+}
+
+// ─── A count from a failed read is a lie too (RC-B12 r13) ───────────────────
+//
+// "0 rate limits", "0 loaded", a stat tile reading `rows.length`: when the read
+// failed the rows are [] and every count derived from them says 0 in confident
+// type. A count rendered from a read hook's data must sit behind a check of that
+// read's failure (or go through <UntrustedCount trustworthy={…}/>).
+
+/** Props of a component that it draws as its words or number (a stat tile's `value`). */
+const COUNT_PROP = /^(?:value|count|total|badge|number|stat|label|title|description|subtitle|children)$/;
+/** Components whose `value`/`label` is not a count shown to the person. */
+const NOT_A_COUNT_TAG =
+  /^(?:UntrustedCount|ReadGate|ReadFailure|Input|Textarea|Select\w*|Slider|Progress|Checkbox|Switch|Radio\w*|Tabs\w*|Toggle\w*|Option|Command\w*|DropdownMenu\w*|Tooltip\w*|Label|input|option|select|textarea|progress|meter|data|li|ol)$/;
+
+/** Is this expression a count derived from read data (`rows.length`, `stats.total`, `count`)? */
+function isReadCount(e: ts.Expression, names: Set<string>): boolean {
+  let x: ts.Expression = e;
+  while (ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x)) x = x.expression;
+  if (ts.isTemplateExpression(x)) return x.templateSpans.some((span) => isReadCount(span.expression, names));
+  if (ts.isCallExpression(x)) {
+    const callee = x.expression;
+    // `rows.length.toLocaleString()`, `formatCount(rows.length)`, `String(count)`.
+    if (ts.isPropertyAccessExpression(callee) && /^(?:toLocaleString|toString|toFixed)$/.test(callee.name.text)) {
+      return isReadCount(callee.expression, names);
+    }
+    if (/(?:^|\.)(?:format\w*|String|Number|pluralize|plural)$/.test(callee.getText())) {
+      return x.arguments.some((arg) => isReadCount(arg, names));
+    }
+    return false;
+  }
+  if (ts.isPropertyAccessExpression(x)) {
+    const prop = x.name.text;
+    if (/^(?:length|size)$/.test(prop) || /(?:^count$|^total$|_count$|Count$|_total$|Total$)/.test(prop)) {
+      return mentionsAny(x.expression, names);
+    }
+    return false;
+  }
+  if (ts.isIdentifier(x)) return names.has(x.text) && /(?:^count$|^total$|_count$|Count$|_total$|Total$|^num[A-Z])/.test(x.text);
+  return false;
+}
+
+/**
+ * Lines of every count rendered from a read hook's data — as a JSX child
+ * (`{rows.length} loaded`) or a component's word/number prop
+ * (`<StatTile value={rows.length} />`) — with no check of that read's failure
+ * above it. Same function scope and read-hook detection as the empty-view census.
+ */
+export function findUngatedCounts(source: string, fileName = "file.tsx"): number[] {
+  const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const sourceLines = source.split("\n");
+  const lines = new Set<number>();
+  const readNameCache = new Map<ts.Node, Set<string>>();
+  const namesFor = (fn: ts.FunctionLikeDeclaration) => {
+    let names = readNameCache.get(fn);
+    if (!names) { names = readDerivedNames(fn); readNameCache.set(fn, names); }
+    return names;
+  };
+  const insideTag = (n: ts.Node, re: RegExp): boolean => jsxAncestors(n).some((a) => re.test(tagName(a)));
+  const consider = (holder: ts.Node, value: ts.Expression) => {
+    const fn = enclosingFunction(holder);
+    if (!fn || !fn.body) return;
+    const names = namesFor(fn);
+    if (names.size === 0) return;
+    // The component must know its data is a read (it mentions loading/error/status):
+    // a hook value in a component that never reads anything is UI state, not a read.
+    if (!HAS_READ.test(fn.body.getText())) return;
+    const leaves: ts.Expression[] = [];
+    renderedLeaves(value, leaves);
+    // A count in the arm of a failure check (`{error ? "—" : rows.length}`) is gated.
+    if (!leaves.some((leaf) => isReadCount(leaf, names) && !gatedByAncestors(leaf, fn))) return;
+    if (insideTag(holder, /^(?:UntrustedCount|ReadGate)$/)) return;
+    if (gatedByAncestors(holder, fn) || gatedByEarlyReturn(holder, fn)) return;
+    const line = sf.getLineAndCharacterOfPosition(holder.getStart()).line + 1;
+    if (isExempt(sourceLines, line)) return;
+    lines.add(line);
+  };
+  const visit = (n: ts.Node) => {
+    if (ts.isJsxExpression(n) && n.expression && n.parent && (ts.isJsxElement(n.parent) || ts.isJsxFragment(n.parent))) {
+      const owner = n.parent;
+      const ownerTag = ts.isJsxElement(owner) ? tagName(owner) : "";
+      if (!NOT_A_COUNT_TAG.test(ownerTag) && !CONTROLS.test(ownerTag)) consider(n, n.expression);
+    } else if (ts.isJsxAttribute(n) && n.initializer && ts.isJsxExpression(n.initializer) && n.initializer.expression) {
+      const el = n.parent.parent;
+      const tag = el.tagName.getText();
+      if (/^[A-Z]/.test(tag) && COUNT_PROP.test(n.name.getText()) && !NOT_A_COUNT_TAG.test(tag) && !CONTROLS.test(tag)) {
+        consider(n, n.initializer.expression);
+      }
+    }
+    n.forEachChild(visit);
+  };
+  visit(sf);
+  return [...lines].sort((a, b) => a - b);
+}

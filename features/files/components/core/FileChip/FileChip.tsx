@@ -24,6 +24,7 @@ import { truncateFilename, formatFileSize } from "@/features/files/utils/format"
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { FileIcon } from "@ai-matrx/media/react";
 import { FileDuplicateOfBadge } from "@/features/files/components/core/FileBadges/FileDuplicateOfBadge";
+import { ReadEmpty, ReadStaleNotice, type ReadOutcome } from "@/components/read-state/ReadGate";
 
 export interface FileChipProps {
   fileId: string;
@@ -162,6 +163,11 @@ export interface FileChipListProps {
   density?: "sm" | "md";
   className?: string;
   emptyState?: React.ReactNode;
+  /**
+   * The outcome of the read behind `fileIds` (RC-B12 r13): `emptyState` shows
+   * only after a read that succeeded; a failed read shows the failure + retry.
+   */
+  read?: ReadOutcome;
 }
 
 export function FileChipList({
@@ -173,12 +179,15 @@ export function FileChipList({
   density,
   className,
   emptyState,
+  read,
 }: FileChipListProps) {
+  if (fileIds.length === 0 && read && read.status !== "ready") return <ReadEmpty read={read} />;
   if (fileIds.length === 0 && emptyState) {
     return <>{emptyState}</>;
   }
   return (
     <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
+      <ReadStaleNotice read={read} className="w-full" />
       {fileIds.map((id) => (
         <FileChip
           key={id}

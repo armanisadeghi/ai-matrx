@@ -375,8 +375,6 @@ export interface ContextMenuV3CoreProps {
   scope?: Scope;
   scopeId?: string | null;
 
-  // ── Presentation ────────────────────────────────────────────────────────
-  enableFloatingIcon?: boolean;
   className?: string;
   /** Arrangement of the menu body. Default `DEFAULT_MENU_LAYOUT`. */
   menuLayout?: ContextMenuLayout;

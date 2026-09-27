@@ -207,7 +207,6 @@ export function ContextMenuV3({
   hasHistory = false,
   scope = "global",
   scopeId = null,
-  enableFloatingIcon = true,
   className,
   menuLayout = DEFAULT_MENU_LAYOUT,
   menuDensity = DEFAULT_MENU_DENSITY,
@@ -574,9 +573,8 @@ export function ContextMenuV3({
   // (a note's split view), so the toolbar reads editing from the DOM (a text
   // field or contenteditable under the selection), never from the wrapper.
   useSelectionZone(selectionOwner, {
-    // `enableFloatingIcon={false}` (a chat answer with its own action bar) and a
-    // suppressed menu (streaming) keep the selection toolbar away from this text.
-    suppress: !enableFloatingIcon || suppressed,
+    // A suppressed menu (the text is streaming) keeps the toolbar away until it settles.
+    suppress: suppressed,
     host: { [CONTEXT_MENU_SELECTION_HOST_KEY]: selectionHost },
   });
 

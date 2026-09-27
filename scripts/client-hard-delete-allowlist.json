@@ -19,11 +19,6 @@
       "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. clearPlan resets an agent's working state; the readers key on status/updated_at and no person manages these rows as records."
     },
     {
-      "file": "features/agents/ui-first-tools/service/agent-task.service.ts",
-      "table": "chat.agent_task",
-      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (c) NEEDS A LANE — chat. listTasks is the only reader and it does not filter deleted_at, so a soft delete would leave removed and cleared tasks on screen. The reader must be fixed with the write."
-    },
-    {
       "file": "features/agents/ui-first-tools/service/user-todo.service.ts",
       "table": "chat.user_todo",
       "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (c) NEEDS A LANE — chat. Same defect as chat.agent_task: listUserTodos does not filter deleted_at."

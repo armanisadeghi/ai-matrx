@@ -74,16 +74,14 @@ export interface UseSourcesResult {
 }
 
 /**
- * FEW LARGE BATCHES, ONE AT A TIME. `docproc.source_list_facts` costs ~6 s
- * PER CALL whatever its batch size (its row-level security materializes every
- * processed_document the caller can see, once per call); the per-id cost is
- * small. Measured 2026-09-26, admin, 548 Sources after the library grew to
- * ~10,000: 25-id batches x 8 parallel -> 22 of 22 hit the 8 s statement timeout
- * (57014) and every row read "Couldn't read status"; 200-id batches one at a
- * time -> 0 failures at ~6.2 s each, and two at a time failed minutes later
- * under a busier DB. This only lowers the load: the per-call cost is the DB
- * lane's to fix, and until then a busy DB can still time a batch out (the rows
- * then say so and offer Retry).
+ * FEW LARGE BATCHES, ONE AT A TIME. Measured 2026-09-27 from the browser as
+ * admin, after migration 1308 made `docproc.source_list_facts` SECURITY
+ * DEFINER with one access check per id: 1 id ~205 ms, 200 ids ~320 ms (a bare
+ * one-row PostgREST read is ~110 ms, so the function itself costs ~100 ms).
+ * The earlier "~6 s per call" (2026-09-26, invoker RLS materializing every
+ * readable processed_document per call) no longer holds; the batching stays
+ * because it costs nothing and keeps a busy DB from timing batches out.
+ * Stage polling (`factsPollDelayMs`) asks only for the rows still indexing.
  */
 const FACTS_BATCH = 200;
 const FACTS_PARALLEL = 1;

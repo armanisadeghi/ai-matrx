@@ -81,7 +81,11 @@ export function ProjectManage() {
       setProject(resolved);
       setResolving(false);
       if (resolved?.organizationId) {
-        const o = await getOrganizationBySlugOrId(resolved.organizationId);
+        // Label enrichment only: without the slug the back link uses the id.
+        const o = await getOrganizationBySlugOrId(resolved.organizationId).catch((err: unknown) => {
+          console.error("[ProjectManage] organization label unavailable:", err);
+          return null;
+        });
         if (!cancelled && o) setOrgSlug(o.slug);
       }
     })();

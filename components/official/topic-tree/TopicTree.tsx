@@ -26,6 +26,7 @@ import { DndContext, DragOverlay, pointerWithin, useDroppable } from "@dnd-kit/c
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { cn } from "@/lib/utils";
+import { ReadEmpty, ReadStaleNotice } from "@/components/read-state/ReadGate";
 
 import {
   TOPIC_TREE_HOVER_DELAY_MS,
@@ -60,6 +61,7 @@ export function TopicTree({
   onRenameCommit,
   renderHover,
   emptyState,
+  read,
   className,
 }: TopicTreeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -176,9 +178,11 @@ export function TopicTree({
   const body =
     rows.length === 0 ? (
       <div className="flex h-full w-full items-center justify-center p-6 text-xs text-muted-foreground">
-        {emptyState ?? "Nothing here yet."}
+        <ReadEmpty read={read}>{emptyState ?? "Nothing here yet."}</ReadEmpty>
       </div>
     ) : (
+      <>
+      <ReadStaleNotice read={read} className="m-2" />
       <div
         ref={containerRef}
         role="tree"
@@ -224,6 +228,7 @@ export function TopicTree({
           ))
         )}
       </div>
+      </>
     );
 
   const tree = (

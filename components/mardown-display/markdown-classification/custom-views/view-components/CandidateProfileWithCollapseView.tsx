@@ -43,7 +43,6 @@ const CandidateProfileWithCollapseDisplay = ({ data }: { data: { extracted?: Can
         if (!(item instanceof HTMLElement)) return null;
         return { content: item.innerText.trim() };
       }}
-      enableFloatingIcon={false}
     >
     <div className="max-w-5xl mx-auto rounded-xl shadow-lg bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
       {/* Header */}

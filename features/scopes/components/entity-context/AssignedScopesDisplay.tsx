@@ -72,9 +72,15 @@ export function AssignedScopesDisplay({
       setLoading(true);
       // Org name (the entity's single org), resolved separately.
       if (showOrg && organizationId) {
-        getOrganizationBySlugOrId(organizationId).then((o) => {
-          if (!cancelled) setOrgName(o?.name ?? null);
-        });
+        // Label enrichment only: the org heading is omitted without it.
+        getOrganizationBySlugOrId(organizationId).then(
+          (o) => {
+            if (!cancelled) setOrgName(o?.name ?? null);
+          },
+          (err: unknown) => {
+            console.error("[AssignedScopesDisplay] organization label unavailable:", err);
+          },
+        );
       } else {
         setOrgName(null);
       }

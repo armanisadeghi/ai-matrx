@@ -76,7 +76,7 @@ export default function SelectionToolbarFrame({
   rect,
   anchor,
   docked,
-  focusToolbar,
+  focusSignal,
   panel,
 }: {
   seq: number;
@@ -88,7 +88,8 @@ export default function SelectionToolbarFrame({
   /** The node the selection lives in — its scroll container bounds the toolbar. */
   anchor: Node | null;
   docked: boolean;
-  focusToolbar: boolean;
+  /** Changes on every keyboard open (Ctrl/Cmd+Alt+M): focus the first control. */
+  focusSignal: number;
   panel: React.ReactNode | null;
 }): React.ReactElement | null {
   const frameRef = React.useRef<HTMLDivElement>(null);
@@ -160,7 +161,7 @@ export default function SelectionToolbarFrame({
 
   // Opened from the keyboard (Ctrl/Cmd+Alt+M): focus the first control once it draws.
   React.useEffect(() => {
-    if (!focusToolbar) return;
+    if (!focusSignal) return;
     let tries = 0;
     let id = 0;
     const focusFirst = () => {
@@ -172,7 +173,7 @@ export default function SelectionToolbarFrame({
     };
     id = requestAnimationFrame(focusFirst);
     return () => cancelAnimationFrame(id);
-  }, [seq, focusToolbar]);
+  }, [focusSignal]);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (panel) return; // a panel (a composer) owns its keys

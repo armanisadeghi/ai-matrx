@@ -38,6 +38,7 @@ import {
   formatYouTubeDuration,
 } from "@/features/marketing/discovery/youtube/formatters";
 import type { YouTubeVideoIdentity } from "../../service";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
 function tierFromSource(source: ResearchSource): string | null {
   return authorityTier(source.authority_tier, source.authority_score);
@@ -105,6 +106,7 @@ export function SourceResultsTable({
   sourceSearch,
   onSourceSearchChange,
   emptyState,
+  read,
 }: {
   sources: ResearchSource[];
   topicId: string;
@@ -118,6 +120,8 @@ export function SourceResultsTable({
   sourceSearch?: string;
   onSourceSearchChange?: (value: string) => void;
   emptyState?: MatrxDataTableEmptyState;
+  /** The outcome of the read behind `sources` (RC-B12 r13) — the table shows `emptyState` only after it succeeded. */
+  read?: ReadOutcome;
 }) {
   const router = useRouter();
   const { identityFor } = useYouTubeVideoIndex(sources);
@@ -437,6 +441,7 @@ export function SourceResultsTable({
       data={sources}
       columns={displayedColumns}
       emptyState={emptyState}
+      read={read}
       getRowId={(source) => source.id}
       detail={{ enabled: false }}
       getRowHref={(source) =>

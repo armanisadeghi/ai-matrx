@@ -9,7 +9,7 @@ description: "iOS-native mobile web UX rules. Use when building any UI component
 
 Single source of truth for mobile UX. Desktop stays unchanged; mobile gets iOS-native treatment.
 
-**Reference implementations:** `components/layout/FeedbackButton.tsx`, `components/admin/McpToolsManager.tsx`, `components/admin/ToolUiComponentEditor.tsx`
+**Reference implementations:** `features/feedback/FeedbackButton.tsx` (tap button), `features/canvas/social/CanvasShareSheet.tsx` (explicit Drawer branch).
 
 ---
 
@@ -20,11 +20,12 @@ Single source of truth for mobile UX. Desktop stays unchanged; mobile gets iOS-n
 3. **Fields are ≥16px on touch** — enforced globally by THE iOS ZOOM FLOOR in `app/globals.css`; author mobile-facing fields `text-base` anyway, and never set an inline `fontSize` below 16px on one
 4. **Always 44pt touch targets** — and NEVER one element at a time. Put `matrx-touch-targets` on the feature/section/dialog ROOT (`app/globals.css`): it floors every button, tab, menu item and `a[data-tap-target]` inside it — including files written later — under `pointer: coarse` or below `lg` only, so desktop density never moves. A control that must stay SMALL because its size is the control (a bare checkbox, a radio, a 14px switch) is excluded there by design and takes `matrx-tap-area` on its `<label>` instead: an invisible 44×44 ring, painted box unchanged. Opt one control out of the floor with `data-touch-exempt` + a reason at the call site. A Radix dialog PORTALS out of its route's subtree, so its `DialogContent` carries the class itself
 5. **Header tokens:** `--shell-header-h` / `--header-height` — never hardcode in calc
-6. **Always Drawer on mobile** — never Dialog
+6. **Dialogs become bottom sheets on mobile automatically** — a plain `<Dialog>` already does it (see "Dialog = Desktop, Drawer = Mobile"); hand-roll a `Drawer` branch only for a drag handle or a genuinely different mobile layout
 7. **Never tabs on mobile** — stack vertically
 8. **Never nested scrolling** — single scroll area per view
 9. **Always test iOS Safari** — on real device
 10. **A data table reflows on a phone** — `<Table wrapperClassName="phone-stack">` (see *Tables on phones*); a fixed-width table with no reflow fails `pnpm check:phone-layout`
+11. **Nothing is hover-only on touch** — a control revealed by `opacity-0 group-hover:opacity-100` also carries `pointer-coarse:opacity-100`, so a phone shows it. Dense desktop sizes (`h-5`/`h-7` icon buttons) are fine on desktop; the 44px floor (rule 4) grows them on touch only. The one sanctioned exception is `RouteModeNav` (see `core-route-headers`), whose phone reach is its bottom-sheet rows
 
 ---
 
@@ -336,18 +337,18 @@ What that means for you:
 - [ ] No nested scrolling; proper overflow management
 
 ### Dialogs & Modals
-- [ ] `useIsMobile()` conditional: mobile=Drawer, desktop=Dialog
-- [ ] Drawer: `max-h-[85dvh]`, `overscroll-contain`, `pb-safe`
-- [ ] Dialog: `max-h-[90dvh]`, `overflow-hidden flex flex-col`
+- [ ] Plain `<Dialog>` (it becomes a bottom sheet on mobile by itself); `mobileSheet={false}` only with a reason at the call site
+- [ ] Hand-rolled Drawer (only when needed): `max-h-[85dvh]`, `overscroll-contain`, `pb-safe`
+- [ ] Its `DialogContent` carries `matrx-touch-targets` (it portals out of the route subtree)
 
 ### Tabs & Sections
 - [ ] Mobile: vertical stack with accent bars; Desktop: tabs OK (max 5)
 
 ### Inputs & Forms
-- [ ] All inputs/textareas: `text-base` + `style={{ fontSize: '16px' }}`
+- [ ] Mobile-facing inputs/textareas authored `text-base`; no inline `fontSize` below 16px (THE iOS ZOOM FLOOR handles zoom — never add an inline 16px just for it)
 
 ### Touch & Interaction
-- [ ] Touch targets ≥44pt (`h-10 w-10`); no hover-only interactions
+- [ ] Touch targets ≥44px via `matrx-touch-targets` on the section root (never `h-10`, which is 40px); hover-revealed controls also carry `pointer-coarse:opacity-100`
 - [ ] Action buttons full-width on mobile
 
 ### Responsive
@@ -359,8 +360,8 @@ What that means for you:
 
 ```
 Modal content needed?
-├── Mobile → Drawer (max-h-[85dvh], pb-safe, overscroll-contain)
-└── Desktop → Dialog (max-h-[90dvh], flex flex-col)
+├── Plain <Dialog> → centered card on desktop, bottom sheet on mobile, automatically
+└── Drag handle or different mobile layout needed → explicit Drawer branch (max-h-[85dvh], pb-safe, overscroll-contain)
 
 Multiple sections?
 ├── Mobile → Stack vertically (accent bars + border separators)

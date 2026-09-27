@@ -1270,7 +1270,12 @@ export const selectUnifiedSlots = (requestId: string) =>
           }
         } else if (
           entry.kind === "tool_event" &&
-          entry.data.event === "tool_started" &&
+          // A call's card opens at its FIRST event: normally `tool_started`,
+          // but a call that fails argument validation streams only
+          // `tool_error` — it is persisted as a tool call all the same, so a
+          // reload shows its card and the live turn must too.
+          (entry.data.event === "tool_started" ||
+            entry.data.event === "tool_error") &&
           !seenTools.has(entry.data.call_id)
         ) {
           pendingStatus = null;

@@ -6,15 +6,59 @@ export function studyGuideOutlineTitle(outline: readonly NoteOutlineItem[]): Not
   return h1Items.length === 1 ? h1Items[0] : null;
 }
 
-export function studyGuideOutlineItems(outline: readonly NoteOutlineItem[]): NoteOutlineItem[] {
-  const title = studyGuideOutlineTitle(outline);
-  return title ? outline.filter((item) => item !== title) : [...outline];
+/** Notes without a sole H1 still have a document title. Use it as a virtual
+ * outline parent; -1 targets the reader's displayed title, not a Markdown H1. */
+export function studyGuideOutlineDisplayTitle(outline: readonly NoteOutlineItem[], label: string): NoteOutlineItem {
+  return studyGuideOutlineTitle(outline) ?? {
+    level: 0,
+    text: label || "Untitled guide",
+    charOffset: -1,
+    headingIndex: -1,
+  };
 }
 
-/** Show at most three visual tiers, relative to the first outline heading level. */
+/** Some generated notes contain source-page artifacts written as ATX headings.
+ * Only structural extraction markers are excluded; uncertain headings remain. */
+function isExtractionArtifact(item: NoteOutlineItem): boolean {
+  const text = item.text;
+  return /<page\s+number\s*=/i.test(text)
+    || /^\|.+\|/.test(text)
+    || /={4,}/.test(text)
+    || /(^|\s-\s)[•▪]/.test(text)
+    || /\(\d+\s+of\s+\d+\)\s*-/i.test(text)
+    || /\.\.\.\s*-\s*Example\b.*\(\d+\s+of\s+\d+\)$/i.test(text);
+}
+
+export function studyGuideOutlineItems(outline: readonly NoteOutlineItem[]): NoteOutlineItem[] {
+  const title = studyGuideOutlineTitle(outline);
+  return outline.filter((item) => item !== title && !isExtractionArtifact(item));
+}
+
+/** Three visual tiers beneath the document title. No heading is orphaned. */
 export function outlineIndentLevel(item: NoteOutlineItem, outline: readonly NoteOutlineItem[]): number {
   const rootLevel = Math.min(...outline.map((heading) => heading.level));
-  return Math.min(2, Math.max(0, item.level - rootLevel));
+  return Math.min(3, Math.max(1, item.level - rootLevel + 1));
+}
+
+export interface StudyGuideOutlineNode {
+  item: NoteOutlineItem;
+  children: StudyGuideOutlineNode[];
+}
+
+/** The document title is the parent of every root returned here. Markdown
+ * heading levels determine deeper parentage; skipped levels attach to the
+ * nearest preceding lower-level heading rather than producing an orphan. */
+export function studyGuideOutlineTree(outline: readonly NoteOutlineItem[]): StudyGuideOutlineNode[] {
+  const roots: StudyGuideOutlineNode[] = [];
+  const ancestors: StudyGuideOutlineNode[] = [];
+  for (const item of outline) {
+    while (ancestors.length && ancestors[ancestors.length - 1].item.level >= item.level) ancestors.pop();
+    const node: StudyGuideOutlineNode = { item, children: [] };
+    if (ancestors.length) ancestors[ancestors.length - 1].children.push(node);
+    else roots.push(node);
+    ancestors.push(node);
+  }
+  return roots;
 }
 
 export function visibleOutlineItems(

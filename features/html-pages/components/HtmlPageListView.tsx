@@ -511,7 +511,6 @@ export default function HtmlPageListView({
             <HtmlPagesContextMenu
               pages={filtered}
               page={page}
-              enableFloatingIcon={false}
               onNewPage={onCreatePage}
               onOpenPage={(pageId) => captureScrollAndOpen(pageId, {})}
             >

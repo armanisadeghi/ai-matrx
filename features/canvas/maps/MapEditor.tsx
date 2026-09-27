@@ -373,7 +373,6 @@ export function MapEditor({ mapId }: { mapId: string }) {
         menuVersion={1}
         getApplicationScope={getApplicationScope}
         resolveContextOnOpen={resolveMapContextOnOpen}
-        enableFloatingIcon={false}
         extraSections={[
           {
             id: "map-item-actions",

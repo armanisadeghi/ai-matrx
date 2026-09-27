@@ -161,6 +161,10 @@ export const errorRenderCarriesAlchemy = {
  * no failure check says "nothing here" while the read failed. Gate it:
  * <ReadGate status={readStatusOf(read)} …> (components/read-state/ReadGate.tsx),
  * or a failure branch before it (`isError ? <ReadFailure …/> : …`).
+ * Round 13 adds two shapes: an `emptyState=` handed to a list/table primitive
+ * over read-backed rows without `read=` (the primitive then cannot tell a
+ * failed read from an empty one), and a count rendered from a read with no
+ * failure check ("0 loaded" over a failed read).
  * Warn severity: the shrink-only burn-down lives in
  * components/errors/__tests__/empty-state-gate.baseline.json.
  */
@@ -172,6 +176,10 @@ export const emptyStateNeedsReadGate = {
     messages: {
       ungated:
         "This empty view hangs off a read (a loading check is above it) but nothing above it checks whether the read FAILED — a failed read would say \"nothing here\". Wrap it in <ReadGate status={readStatusOf(read)} …> from @/components/read-state/ReadGate, or add a failure branch first (isError ? <ReadFailure error={error} what=\"…\" /> : …).",
+      ungatedProp:
+        "This emptyState is handed to a list/table primitive over read-backed rows, but the primitive is not told the read's outcome — a failed read would show the empty state. Pass read={readOf(query, { what: \"…\" })} (ReadOutcome from @/components/read-state/ReadGate) beside it (RC-B12 round 13).",
+      ungatedCount:
+        "This count comes from a read, and nothing above it checks whether that read FAILED — a failed read renders 0 as if it were the answer. Gate it on the read's failure, or render it through <UntrustedCount value={…} trustworthy={!isError} label=\"…\" /> (@/components/official/stale-data/UntrustedCount) (RC-B12 round 13).",
     },
   },
   create(context) {
@@ -183,6 +191,12 @@ export const emptyStateNeedsReadGate = {
         const source = (context.sourceCode ?? context.getSourceCode()).text;
         for (const line of census.findUngatedEmptyStates(source, rel)) {
           context.report({ loc: { start: { line, column: 0 }, end: { line, column: 0 } }, messageId: "ungated" });
+        }
+        for (const line of census.findUngatedEmptyStateProps(source, rel)) {
+          context.report({ loc: { start: { line, column: 0 }, end: { line, column: 0 } }, messageId: "ungatedProp" });
+        }
+        for (const line of census.findUngatedCounts(source, rel)) {
+          context.report({ loc: { start: { line, column: 0 }, end: { line, column: 0 } }, messageId: "ungatedCount" });
         }
       },
     };

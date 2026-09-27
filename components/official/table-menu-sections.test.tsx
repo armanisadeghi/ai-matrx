@@ -99,7 +99,6 @@ describe("the canonical table's neutral sections in the app menu", () => {
         root.render(
           <NonEditableContextMenu
             sourceFeature="system"
-            enableFloatingIcon={false}
             resolveExtraSectionsOnOpen={(target) => {
               asked.push(target);
               return [{ id: "table-cell", label: "Cell", items: [{ kind: "item", id: "cut", label: "Cut", onSelect: () => {} }] }];
@@ -127,7 +126,6 @@ describe("the canonical table's neutral sections in the app menu", () => {
         root.render(
           <NonEditableContextMenu
             sourceFeature="system"
-            enableFloatingIcon={false}
             extraSections={[{ id: "page", label: "Page", items: [{ kind: "item", id: "p", label: "P", onSelect: () => {} }] }]}
           >
             <span data-testid="plain">plain</span>

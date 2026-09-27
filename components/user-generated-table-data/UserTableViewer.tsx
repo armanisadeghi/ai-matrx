@@ -4663,7 +4663,6 @@ const UserTableViewer = ({
         // editing cell put it on top of the column header (ui-change-inventory
         // row 18, 2026-09-26). Right-click and the cell's own "…" open the
         // same menu — the chat transcript makes the same choice.
-        enableFloatingIcon={false}
         // Only the /data/[id] mount IS the data-tables surface; inside another
         // surface's window the menu resolves the host surface instead.
         surfaceName={emitSurfaceScope ? DATA_TABLES_SURFACE_NAME : undefined}

@@ -101,6 +101,8 @@ export function LensChip({
       ref={buttonRef}
       type="button"
       onClick={onClick}
+      aria-label={nodes.length === 0 ? "Set context" : `Context: ${summarizeLensSelection(nodes)}`}
+      title={nodes.length === 0 ? "Set context" : summarizeLensSelection(nodes)}
       className={cn(
         "inline-flex h-7 min-w-0 max-w-full items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-card px-2.5 text-xs text-foreground hover:bg-muted",
         className,
@@ -108,8 +110,10 @@ export function LensChip({
     >
       {nodes.length === 0 ? (
         <>
-          <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-muted-foreground">Set context</span>
+          <Layers className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          {/* A phone header has no room for the words: the chip goes
+              icon-only (named by its aria-label), never a clipped "Se". */}
+          <span className="min-w-0 truncate text-muted-foreground max-[480px]:hidden">Set context</span>
         </>
       ) : (
         <>

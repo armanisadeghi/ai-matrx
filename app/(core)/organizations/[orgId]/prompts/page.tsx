@@ -8,14 +8,14 @@
  * agents explicitly shared with the org via the `permissions` table.
  */
 
-import React from "react";
 import { useParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { FaIndent } from "react-icons/fa6";
 import { OrgResourceLayout } from "../OrgResourceLayout";
 import { OrgResourceList } from "@/features/organizations/components/OrgResourceList";
 import { supabase } from "@/utils/supabase/client";
-import { getOrganizationBySlugOrId } from "@/features/organizations/service";
+import { useResolvedOrganization } from "@/features/organizations/hooks";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const SELECT_COLS = "id, name, description, category, tags, updated_at";
 
@@ -47,24 +47,22 @@ const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => ({
 export default function OrgAgentsPage() {
   const params = useParams();
   const orgIdParam = params.orgId as string;
-  const [resolvedOrgId, setResolvedOrgId] = React.useState<string | null>(null);
+  // The org is resolved by THE one resolver (RC-B12 r13): its read used to
+  // log-and-null inside a bare effect, so a failure spun here forever.
+  const {
+    organizationId: resolvedOrgId,
+    error: orgReadError,
+    refresh: retryOrgRead,
+  } = useResolvedOrganization(orgIdParam);
 
-  React.useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const org = await getOrganizationBySlugOrId(orgIdParam);
-      if (!cancelled && org) setResolvedOrgId(org.id);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [orgIdParam]);
 
   return (
     <OrgResourceLayout
       resourceName="Agents"
     >
-      {!resolvedOrgId ? (
+      {!resolvedOrgId && orgReadError != null ? (
+        <ReadFailure error={orgReadError} what="this organization" onRetry={retryOrgRead} />
+      ) : !resolvedOrgId ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>

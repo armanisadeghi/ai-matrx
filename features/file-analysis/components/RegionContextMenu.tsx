@@ -256,7 +256,6 @@ export function PdfRegionContextMenu({
         };
       }}
       extraSections={extraSections}
-      enableFloatingIcon={false}
     >
       {/* Real DOM element for the Radix asChild trigger — a component child
           would silently drop the trigger's cloned event handlers. */}

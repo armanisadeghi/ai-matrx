@@ -13,5 +13,14 @@ import type { ReactNode } from "react";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export function WindowSelectionSurface({ children }: { children: ReactNode }) {
-  return <NonEditableContextMenu sourceFeature="system">{children}</NonEditableContextMenu>;
+  // A real element for the menu to slot onto: a window body is often a component that
+  // does not forward refs, and a slot onto it would leave no element to hold the text.
+  // `display: contents` keeps the body's layout exactly as it was.
+  return (
+    <NonEditableContextMenu sourceFeature="system">
+      <div className="contents" data-window-selection-surface="">
+        {children}
+      </div>
+    </NonEditableContextMenu>
+  );
 }

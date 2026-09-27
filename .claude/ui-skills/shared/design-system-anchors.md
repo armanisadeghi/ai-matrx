@@ -30,8 +30,8 @@ Glass is a first-class part of this app. Use it; just use ours.
 
 ## Tables & lists
 
-- `components/generic-table/GenericDataTable.tsx` (+ `GenericTableHeader.tsx`, `GenericTablePagination.tsx`) — reusable data table with **filter + sort + pagination** already built. Reach for this before writing a `<table>`.
-- `components/official/unified-list/UnifiedListLayout.tsx` — list layout with filtering/pagination.
+- **Tables:** `MatrxDataTable` from `@ai-matrx/design-system/data-table` (~240 route files) — sort + filter on every column, canonical Copy / Copy-for-AI. Column/toolbar rules live in the `canonical-table-usage` skill. `GenericDataTable` is legacy (2 callers) — never for new work.
+- **Lists:** `EntityListPage` (`lib/entity-list/components/EntityListPage.tsx`) + `useListViewPrefs`, which also owns the real empty state.
 - `components/official/card-and-grid/{Card,Grid,List,HorizontalCard}.tsx`, `components/official/cards/{SimpleCard,SectionCard,EmptyStateCard,CardGrid}.tsx` — when cards/boards/galleries are the right tool.
 
 ## Layout & responsive
@@ -51,7 +51,8 @@ Glass is a first-class part of this app. Use it; just use ours.
 
 ## Loading / empty / error (never plain "Loading…")
 
-- `components/matrx/LoadingComponents.tsx` — `Small/Medium/Large/FullPageLoading`, `CardLoading`, `TableLoadingComponent`, `MatrxTableLoading`, `FormLoading*`, `SidebarLoading`, `EmptySidebar` (pulsing skeletons).
+- **Compact loading:** `components/loaders/SuspenseLoader.tsx` with a `message` naming the work (`Loading model providers…`).
+- **Content loading:** `Skeleton` from `@ai-matrx/design-system`, shaped like the content that replaces it. The rule body lives in the `real-loading-states` skill. (`components/matrx/LoadingComponents.tsx` is legacy — one caller; do not add more.)
 - `components/official/cards/EmptyStateCard.tsx` — empty state.
 
 ## Dialogs & toasts (`window.confirm`/`alert`/`prompt` are banned)

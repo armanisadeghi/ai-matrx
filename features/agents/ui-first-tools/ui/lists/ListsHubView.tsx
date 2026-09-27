@@ -67,6 +67,7 @@ export function ListsHubView() {
           .schema("chat").from("agent_task")
           .select("*, conversation!inner(created_by)")
           .eq("conversation.created_by", userId)
+          .is("deleted_at", null)
           .order("updated_at", { ascending: false })
           .limit(2000),
         db

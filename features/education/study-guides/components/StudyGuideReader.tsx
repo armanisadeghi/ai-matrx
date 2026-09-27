@@ -2,7 +2,7 @@
 
 import { RichContent } from "@/components/rich-content/RichContent";
 import Link from "next/link";
-import { initialOutlineExpansion, outlineIndentLevel, studyGuideOutlineItems, studyGuideOutlineTitle, toggleOutlineSection, visibleOutlineItems } from "../outline";
+import { initialOutlineExpansion, studyGuideOutlineDisplayTitle, studyGuideOutlineItems, studyGuideOutlineTree, toggleOutlineSection, type StudyGuideOutlineNode } from "../outline";
 import { OutlineHeader } from "./OutlineHeader";
 import { StudyFlashcardLinks } from "./StudyFlashcardLinks";
 import { useEffect, useRef, useState } from "react";
@@ -117,34 +117,43 @@ function GuideList({ guides, activeId, activeLabel, content, onJump, loading, er
             </div>
           </PopoverContent>
         </Popover>
-        <Outline key={content} content={content} onJump={onJump} />
+        <Outline key={content} content={content} titleLabel={activeLabel || activeGuide?.label || "Untitled guide"} onJump={onJump} />
       </div>
     </aside>
   );
 }
 
 
-function Outline({ content, onJump }: { content: string; onJump: (headingIndex: number) => void }) {
+function Outline({ content, titleLabel, onJump }: { content: string; titleLabel: string; onJump: (headingIndex: number) => void }) {
   const headings = parseNoteOutline(content);
-  const title = studyGuideOutlineTitle(headings);
+  const title = studyGuideOutlineDisplayTitle(headings, titleLabel);
   const outline = studyGuideOutlineItems(headings);
+  const tree = studyGuideOutlineTree(outline);
   const [expanded, setExpanded] = useState(() => initialOutlineExpansion(outline));
   const [activeHeading, setActiveHeading] = useState<number | null>(null);
   if (!title && !outline.length) return null;
   return (
-    <div className="border-t border-border py-1">
-      <OutlineHeader title={title} active={activeHeading === title?.headingIndex} onJump={(headingIndex) => { setActiveHeading(headingIndex); onJump(headingIndex); }} />
-      <div className="grid gap-0.5">{visibleOutlineItems(outline, expanded).map((item) => {
-        const index = outline.indexOf(item);
-        const hasChildren = outline[index + 1]?.level > item.level;
-        return <OutlineItem key={`${item.headingIndex}:${item.charOffset}`} item={item} indentLevel={outlineIndentLevel(item, outline)} active={activeHeading === item.headingIndex} onJump={(headingIndex) => { setActiveHeading(headingIndex); if (hasChildren && expanded[headingIndex] === false) setExpanded((current) => toggleOutlineSection(outline, current, headingIndex)); onJump(headingIndex); }} hasChildren={hasChildren} expanded={expanded[item.headingIndex] !== false} onToggle={() => setExpanded((current) => toggleOutlineSection(outline, current, item.headingIndex))} />;
-      })}</div>
+    <div className="border-t border-border py-1" role="tree" aria-label="Study guide outline">
+      <div role="treeitem" aria-level={1} aria-expanded={true} aria-selected={activeHeading === title.headingIndex}>
+        <OutlineHeader title={title} active={activeHeading === title.headingIndex} onJump={(headingIndex) => { setActiveHeading(headingIndex); onJump(headingIndex); }} />
+        <div role="group" className="grid gap-0.5">{tree.map((node) => <OutlineBranch key={`${node.item.headingIndex}:${node.item.charOffset}`} node={node} depth={1} outline={outline} expanded={expanded} setExpanded={setExpanded} activeHeading={activeHeading} setActiveHeading={setActiveHeading} onJump={onJump} />)}</div>
+      </div>
     </div>
   );
 }
 
-function OutlineItem({ item, indentLevel, onJump, hasChildren, expanded, onToggle, active }: { item: NoteOutlineItem; indentLevel: number; onJump: (index: number) => void; hasChildren: boolean; expanded: boolean; onToggle: () => void; active: boolean }) {
-  return <div className={cn("flex min-w-0 items-center border-l-2", active ? "border-primary bg-primary/10" : "border-transparent")} style={{ paddingLeft: `${indentLevel * 10}px` }}>{hasChildren ? <button type="button" aria-expanded={expanded} aria-label={`${expanded ? "Collapse" : "Expand"} ${item.text}`} onClick={onToggle} className="grid h-5 w-5 shrink-0 place-items-center rounded hover:bg-accent">{expanded ? <ChevronDown className="h-3.5 w-3.5" aria-hidden /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}</button> : <span className="w-5 shrink-0" />}<button type="button" onClick={() => onJump(item.headingIndex)} title={item.text} className={cn("min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap rounded px-1 py-1 text-left text-xs hover:bg-accent [mask-image:linear-gradient(to_right,black_calc(100%_-_12px),transparent)]", active ? "font-medium text-primary" : "text-muted-foreground hover:text-foreground")}>{item.text}</button></div>;
+function OutlineBranch({ node, depth, outline, expanded, setExpanded, activeHeading, setActiveHeading, onJump }: { node: StudyGuideOutlineNode; depth: number; outline: NoteOutlineItem[]; expanded: Readonly<Record<number, boolean>>; setExpanded: React.Dispatch<React.SetStateAction<Record<number, boolean>>>; activeHeading: number | null; setActiveHeading: React.Dispatch<React.SetStateAction<number | null>>; onJump: (index: number) => void }) {
+  const { item, children } = node;
+  const hasChildren = children.length > 0;
+  const isExpanded = expanded[item.headingIndex] !== false;
+  const toggle = () => setExpanded((current) => toggleOutlineSection(outline, current, item.headingIndex));
+  return <div role="treeitem" aria-level={depth + 1} aria-expanded={hasChildren ? isExpanded : undefined} aria-selected={activeHeading === item.headingIndex}>
+    <div className={cn("flex min-w-0 items-center border-l-2", activeHeading === item.headingIndex ? "border-primary bg-primary/10" : "border-transparent")} style={{ paddingLeft: "10px" }}>
+      {hasChildren ? <button type="button" aria-expanded={isExpanded} aria-label={`${isExpanded ? "Collapse" : "Expand"} ${item.text}`} onClick={toggle} className="grid h-5 w-5 shrink-0 place-items-center rounded hover:bg-accent">{isExpanded ? <ChevronDown className="h-3.5 w-3.5" aria-hidden /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}</button> : <span className="w-5 shrink-0" />}
+      <button type="button" onClick={() => { setActiveHeading(item.headingIndex); if (hasChildren && !isExpanded) toggle(); onJump(item.headingIndex); }} title={item.text} className={cn("min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap rounded px-1 py-1 text-left text-xs hover:bg-accent [mask-image:linear-gradient(to_right,black_calc(100%_-_12px),transparent)]", activeHeading === item.headingIndex ? "font-medium text-primary" : "text-muted-foreground hover:text-foreground")}>{item.text}</button>
+    </div>
+    {hasChildren && isExpanded && <div role="group" className={depth < 3 ? "ml-2.5" : undefined}>{children.map((child) => <OutlineBranch key={`${child.item.headingIndex}:${child.item.charOffset}`} node={child} depth={depth + 1} outline={outline} expanded={expanded} setExpanded={setExpanded} activeHeading={activeHeading} setActiveHeading={setActiveHeading} onJump={onJump} />)}</div>}
+  </div>;
 }
 
 function Inspector({ guide, tab, onTabChange, terms, loading, error, onRetry }: { guide: Note | null; tab: InspectorTab; onTabChange: (tab: InspectorTab) => void; terms: StudyTerm[]; loading: boolean; error: string | null; onRetry: () => void; mobile?: boolean }) {
@@ -203,8 +212,9 @@ function ReaderContent({ guide, onRetry, onEdit, getScope, jumpRequest }: { guid
   const passage = useStudyPassageActions(guide);
   useEffect(() => {
     if (jumpRequest === null) return;
-    const headings = readerRef.current?.querySelectorAll("h1,h2,h3,h4,h5,h6");
-    headings?.item(jumpRequest.index)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const headings = readerRef.current?.querySelector(".study-guide-reader-content")?.querySelectorAll("h1,h2,h3,h4,h5,h6");
+    const target = jumpRequest.index === -1 ? readerRef.current?.querySelector("h1") : headings?.item(jumpRequest.index);
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [jumpRequest]);
   return <main className="relative flex h-full min-h-0 flex-col bg-background">
     <Button size="icon" variant="outline" className="absolute right-3 top-2 z-20 h-8 w-8 bg-background" aria-label="Edit study guide" title="Edit study guide" onClick={onEdit}><Pencil className="h-4 w-4" aria-hidden /></Button>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import StructuredSectionCard from "@/components/official/StructuredSectionCard";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import GenericTablePagination from "@ai-matrx/design-system/data-table/pagination";
+import { ReadEmpty, ReadStaleNotice, type ReadOutcome } from "@/components/read-state/ReadGate";
 
 export interface ColumnConfig<T> {
     key: string;
@@ -72,6 +73,11 @@ interface GenericDataTableProps<T> {
     filteredItems: T[];
     paginatedItems: T[];
     isLoading: boolean;
+    /**
+     * The outcome of the read behind `items` (RC-B12 r13): the empty state
+     * shows only after a read that succeeded; a failed read shows the failure.
+     */
+    read?: ReadOutcome;
     
     // Column configuration
     columns: ColumnConfig<T>[];
@@ -137,6 +143,7 @@ export default function GenericDataTable<T>({
     filteredItems,
     paginatedItems,
     isLoading,
+    read,
     columns,
     idField,
     iconField,
@@ -402,7 +409,10 @@ export default function GenericDataTable<T>({
             title={title} 
             headerActions={headerActions} 
         >
-            {isLoading ? (
+            {items.length > 0 ? <ReadStaleNotice read={read} className="mb-2" /> : null}
+            {read && read.status !== "ready" && items.length === 0 ? (
+                <ReadEmpty read={read} />
+            ) : isLoading ? (
                 <div className="flex justify-center items-center h-64">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
                 </div>

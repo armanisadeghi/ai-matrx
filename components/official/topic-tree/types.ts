@@ -7,6 +7,7 @@
  */
 
 import type { ReactNode } from "react";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
 /** One flattened, currently-visible row. The host owns filtering and expansion. */
 export interface TopicTreeRow {
@@ -52,5 +53,10 @@ export interface TopicTreeProps {
   /** Hover-card content. Never opens on a coarse pointer. */
   renderHover?: (row: TopicTreeRow) => ReactNode;
   emptyState?: ReactNode;
+  /**
+   * The outcome of the read behind `rows` (RC-B12 r13): `emptyState` shows
+   * only after a read that succeeded; a failed read shows the failure + retry.
+   */
+  read?: ReadOutcome;
   className?: string;
 }

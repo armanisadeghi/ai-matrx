@@ -38,6 +38,7 @@ import {
   createTableRowMenuDescriptor,
 } from "@/features/context-menu-v3/table-row-context-registry";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
 interface Props<TRow> {
   config: EntityListConfig<TRow>;
@@ -88,6 +89,8 @@ interface Props<TRow> {
     onHiddenColumnsChange: (hidden: string[]) => void;
   };
   emptyAction?: React.ReactNode;
+  /** The outcome of the list read (RC-B12 r13) — the table shows `emptyState` only after it succeeded. */
+  read?: ReadOutcome;
   /** Resolved empty state from the page (which knows if a search/filter is on). */
   emptyState?: {
     title: string;
@@ -156,6 +159,7 @@ export function EntityListTable<TRow>({
   onQueryChange,
   emptyAction,
   emptyState,
+  read,
   selection,
   tableToolbar,
 }: Props<TRow>) {
@@ -415,6 +419,7 @@ export function EntityListTable<TRow>({
       // `bulkActions` must reach the table with the key absent (see Props).
       {...(selection ? { selection } : {})}
       emptyState={emptyState ?? { ...config.emptyState, action: emptyAction }}
+      read={read}
     />
   );
 }

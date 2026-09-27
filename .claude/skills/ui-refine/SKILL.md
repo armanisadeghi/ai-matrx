@@ -21,10 +21,12 @@ Run this when the current page is roughly right and you want it sharpened withou
 
 ## Read first
 
-- `/Users/armanisadeghi/code/matrx-frontend/.claude/ui-skills/shared/ground-rules.md` — the non-negotiable floor (above all: **build it real, never fake**).
-- `/Users/armanisadeghi/code/matrx-frontend/.claude/ui-skills/shared/design-system-anchors.md` — exact tokens / glass / components to reuse.
+- `.claude/ui-skills/shared/ground-rules.md` — the non-negotiable floor (above all: **build it real, never fake**).
+- `.claude/ui-skills/shared/design-system-anchors.md` — exact tokens / glass / components to reuse.
 
 ## Interview first — 2-3 questions, in plain conversation, skippable
+
+> **Only when a person asked you, live, to redesign this page.** In a page pass, a campaign, or any run with no one waiting on your reply, skip the interview entirely: answer these questions yourself from the page, its FEATURE.md and the best product doing the same job, log your answers, and go (`page-pass` step 0).
 
 Ask in normal prose (never a multiple-choice UI). Skip if the user already covered it. These keep your refinement aimed at the real target:
 
@@ -37,7 +39,7 @@ Ask in normal prose (never a multiple-choice UI). Skip if the user already cover
 - **Study the current implementation closely.** Keep its structure and the user's mental model. You are sharpening, not replacing.
 - **Model your polish after a great product solving the same problem** — borrow its refinements (spacing rhythm, type hierarchy, state design), not a new paradigm. Name the reference (ruled set + bones-not-skin: ground-rules §4).
 - **Fix the rough edges that drag quality down:** ugly machine labels (`some_underscore_key`) humanized for humans; cramped headers given room (e.g. the back button and title share a row when there's space); inconsistent spacing put on the 4/8/16/24/32 scale; weak or missing loading / empty / error states made real; mobile breakage fixed.
-- **Reuse app primitives aggressively** — it's the fastest path to consistency (`GenericDataTable`, official cards/sheets, `LoadingComponents`).
+- **Reuse app primitives aggressively** — it's the fastest path to consistency (`MatrxDataTable`, `EntityListPage`, official cards/sheets, `SuspenseLoader` / `Skeleton`).
 
 ## Guardrail
 

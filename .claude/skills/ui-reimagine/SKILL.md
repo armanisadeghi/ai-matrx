@@ -13,10 +13,12 @@ The boldest reconception. You ignore the current layout and ask *"what should th
 
 ## Read first
 
-- `/Users/armanisadeghi/code/matrx-frontend/.claude/ui-skills/shared/ground-rules.md` — the non-negotiable floor (above all: **build it real, never fake**).
-- `/Users/armanisadeghi/code/matrx-frontend/.claude/ui-skills/shared/design-system-anchors.md` — exact tokens / glass / components to reuse.
+- `.claude/ui-skills/shared/ground-rules.md` — the non-negotiable floor (above all: **build it real, never fake**).
+- `.claude/ui-skills/shared/design-system-anchors.md` — exact tokens / glass / components to reuse.
 
 ## Interview first — 2-3 questions, in plain conversation, skippable
+
+> **Only when a person asked you, live, to redesign this page.** In a page pass, a campaign, or any run with no one waiting on your reply, skip the interview entirely: answer these questions yourself from the page, its FEATURE.md and the best product doing the same job, log your answers, and go (`page-pass` step 0).
 
 Ask in normal prose (never a multiple-choice UI). Skip if the user said "just go." These three target your specific blind spots:
 

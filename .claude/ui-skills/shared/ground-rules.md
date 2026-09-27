@@ -20,7 +20,7 @@ Why this is the top rule: a fake feature fools everyone — including you — in
 A mock answers none of these, so a mock-built UI is wrong in exactly the ways you can't see until a user hits them. Build against the real backend from the first line.
 
 Every UI must therefore handle the **full reality of its data**:
-- Real **loading**, **empty**, and **error** states — never a blank screen, never a lone spinner, never plain "Loading…". Use the app's loading skeletons (`components/matrx/LoadingComponents.tsx`).
+- Real **loading**, **empty**, and **error** states — never a blank screen, never a lone spinner, never plain "Loading…". Use `SuspenseLoader` with a `message` for compact states and a content-shaped `Skeleton` for content (rule owner: `real-loading-states`).
 - Streaming / long-running surfaces: stage-by-stage progress that handles the stream **stalling** (nothing for 10-20s), arriving **out of order**, delivering **partial** data, or **failing mid-way** — gracefully, visibly, with no dead-ends.
 - Errors are **designed, not swallowed**: structured handling, a real recovery path, and loud when a recovery layer fires (a recovery firing means a real bug slipped the proactive layer).
 
@@ -48,7 +48,7 @@ The reference product you model — the discipline's champion (`common-docs/poli
 
 Two very different things wear the word "reuse," and conflating them kills redesigns:
 
-- **The design system — always reuse.** Tokens, glass, shared primitives (`Button`, `Input`, `GenericDataTable`, official cards/sheets, `LoadingComponents`, `confirm()` / `toast` / `TextInputDialog`) and the data/service hooks. Forking a generic primitive that already exists (a second `DataTable`) is the duplication this app forbids — check `design-system-anchors.md` first.
+- **The design system — always reuse.** Tokens, glass, shared primitives (`Button`, `Input`, `MatrxDataTable`, `EntityListPage`, official cards/sheets, `SuspenseLoader` / `Skeleton`, `confirm()` / `toast` / `TextInputDialog`) and the data/service hooks. Forking a generic primitive that already exists (a second `DataTable`) is the duplication this app forbids — check `design-system-anchors.md` first.
 - **A feature's existing *composed* screens/components — do NOT feel bound to them.** In a redesign you are free to rebuild every screen-level component from scratch. **Reuse the system; reinvent the surface.** Dropping the old composed UI back in to save effort is exactly how a redesign dies — and nobody will tell you that you did it.
 
 ## 6. Desktop-first, but never broken on mobile

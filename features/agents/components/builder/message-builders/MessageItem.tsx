@@ -812,7 +812,6 @@ export function MessageItem({
             contentSource={{ type: "raw" }}
             getTextarea={() => textareaRef.current}
             contextData={contextMenuData}
-            enableFloatingIcon={true}
             onTextReplace={handleTextReplace}
             onTextInsertBefore={handleTextInsertBefore}
             onTextInsertAfter={handleTextInsertAfter}
