@@ -167,7 +167,9 @@ export function buildAssessmentColumns(
     {
       id: "topic",
       label: "Topic",
-      phone: "primary",
+      // Behind "more fields" on a phone: most topics only repeat the title,
+      // and the card never drops an empty field.
+      phone: "rest",
       column: {
         id: "topic",
         width: 220,
