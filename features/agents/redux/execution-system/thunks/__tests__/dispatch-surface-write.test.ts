@@ -40,7 +40,10 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
   captureError: jest.fn(),
 }));
 
-import { dispatchSurfaceWrite } from "../dispatch-surface-write.thunk";
+import {
+  dispatchSurfaceWrite,
+  surfaceWriteFailureSentence,
+} from "../dispatch-surface-write.thunk";
 import {
   registerSurfaceRuntime,
   type SurfaceWriteHandlers,
@@ -185,5 +188,25 @@ describe("apply_surface_write tool result", () => {
       expect.objectContaining({ ok: false, declined: true }),
     );
     expect(submitted.output.message).toContain("Nothing was changed.");
+  });
+});
+
+describe("surfaceWriteFailureSentence", () => {
+  it("says 'Nothing was changed.' once when the page's message already does", () => {
+    const sentence = surfaceWriteFailureSentence(
+      "create_classes",
+      { error: "create_classes was refused: 2 problems. 1. a 2. b Nothing was changed.", phase: "before_approval", refused: true },
+      false,
+    );
+    expect(sentence.match(/Nothing was changed\./g)).toHaveLength(1);
+  });
+
+  it("adds it when the page's message does not", () => {
+    const sentence = surfaceWriteFailureSentence(
+      "create_classes",
+      { error: "bad date", phase: "before_approval", refused: true },
+      false,
+    );
+    expect(sentence).toContain("bad date. Nothing was changed. Correct the value");
   });
 });
