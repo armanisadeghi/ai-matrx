@@ -129,7 +129,7 @@ export const studyMediaService = {
     patch: Pick<StudyMediaPatch, "title" | "ir_envelope">,
   ): Promise<MediaResult<StudyMediaRow>> {
     try {
-      const result = await guardedUpdate({
+      const result = await guardedUpdate<StudyMediaRow>({
         expectedVersion,
         applyUpdate: ({ expectedVersion: expected, nextVersion }) => EDU()
           .from("study_media")
