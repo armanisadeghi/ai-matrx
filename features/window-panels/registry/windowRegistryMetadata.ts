@@ -1411,6 +1411,41 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "multi",
   },
 
+  // ── Agent Picker ─────────────────────────────────────────────────────────
+  // THE agent picker as a window: the dropdown's list + peek at the same size.
+  // Open via `useOpenAgentPickerWindow({ onPicked })`.
+  {
+    slug: "agent-picker-window",
+    overlayId: "agentPickerWindow",
+    kind: "window",
+    label: "Choose an agent",
+    defaultData: {
+      callbackGroupId: null as string | null,
+      title: null as string | null,
+      activeAgentId: null as string | null,
+    },
+    mobilePresentation: "drawer",
+    instanceMode: "multi",
+    ephemeral: true,
+  },
+
+  // ── Send to another agent ───────────────────────────────────────────────
+  // The agent picker window, then where the content goes. Carries the content
+  // being sent, so it is ephemeral and never restored from a link.
+  {
+    slug: "send-to-agent-window",
+    overlayId: "sendToAgentWindow",
+    kind: "window",
+    label: "Send to another agent",
+    defaultData: {
+      initialContent: null as string | null,
+      initialSourceTitle: null as string | null,
+    },
+    mobilePresentation: "drawer",
+    instanceMode: "singleton",
+    ephemeral: true,
+  },
+
   // ── Curated Icon Picker ───────────────────────────────────────────────────
   // Floating gallery for picking from the curated icon set. Open via
   // `useOpenCuratedIconPickerWindow()` and listen for the `picked` event.

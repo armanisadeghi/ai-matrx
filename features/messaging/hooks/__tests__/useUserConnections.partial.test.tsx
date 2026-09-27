@@ -16,9 +16,10 @@ import { renderHook, settle } from "@/test-utils/renderHook";
 const OURS = "11111111-1111-4111-8111-111111111111";
 const DOWN = "33333333-3333-4333-8333-333333333333";
 
+let failingOrganizations = new Set([DOWN]);
 const rpc = jest.fn(async (name: string, args: Record<string, string>) => {
   if (name === "get_organization_members_with_users") {
-    if (args.p_org_id === DOWN) return { data: null, error: { message: "forced roster failure" } };
+    if (failingOrganizations.has(args.p_org_id)) return { data: null, error: { message: "forced roster failure" } };
     return {
       data: [
         {
@@ -44,8 +45,8 @@ jest.mock("@/utils/supabase/client", () => ({
 }));
 const ME = { id: "u-me" };
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => ME }));
-const CONVERSATIONS_RESULT = { conversations: [], isInitialLoading: false };
-jest.mock("@ai-matrx/messaging/react", () => ({ useConversations: () => CONVERSATIONS_RESULT }));
+let conversationsResult = { conversations: [], isInitialLoading: false };
+jest.mock("@ai-matrx/messaging/react", () => ({ useConversations: () => conversationsResult }));
 const ORGANIZATIONS_RESULT = {
   organizations: [
     { id: OURS, name: "Cedar Ridge Dental", role: "owner" },
@@ -62,7 +63,11 @@ jest.mock("@/features/organizations/types", () => ({ canManageInvitations: () =>
 import { useUserConnections, describeConnectionFailures } from "../useUserConnections";
 import { forgetOrganizationMemberRows } from "@/features/organizations/service/orgMemberRows";
 
-beforeEach(() => forgetOrganizationMemberRows());
+beforeEach(() => {
+  forgetOrganizationMemberRows();
+  failingOrganizations = new Set([DOWN]);
+  conversationsResult = { conversations: [], isInitialLoading: false };
+});
 
 describe("useUserConnections — a partly failed roster names what it could not read", () => {
   it("keeps the rows it read and names the organization it could not", async () => {
@@ -75,5 +80,30 @@ describe("useUserConnections — a partly failed roster names what it could not 
       { source: "Calder Approvals", error: expect.stringContaining("forced roster failure") },
     ]);
     expect(describeConnectionFailures(hook.current.partialFailures)).toBe("the people in Calder Approvals");
+  });
+
+  it("keeps conversation participants and exposes every failed roster as partial", async () => {
+    failingOrganizations = new Set([OURS, DOWN]);
+    conversationsResult = {
+      conversations: [
+        {
+          participants: [
+            { userId: "u-me", email: "me@clinic.test", displayName: "Me", avatarUrl: "" },
+            { userId: "u-conversation", email: "past-contact@clinic.test", displayName: "Past Contact", avatarUrl: "" },
+          ],
+        },
+      ],
+      isInitialLoading: false,
+    };
+
+    const hook = await renderHook(() => useUserConnections({ includeConversations: true }));
+    await settle(hook, (v) => !v.isLoading, "the connections to load");
+
+    expect(hook.current.connections.map((c) => c.email)).toEqual(["past-contact@clinic.test"]);
+    expect(hook.current.error).toBeNull();
+    expect(hook.current.partialFailures.map((failure) => failure.source)).toEqual([
+      "Cedar Ridge Dental",
+      "Calder Approvals",
+    ]);
   });
 });

@@ -7,6 +7,7 @@
     "This file is the CENSUS of the class, not a permission slip. `addressless` holds windows that genuinely must not have an address, each with its reason. `unaddressedBaseline` is DEBT: windows whose payload names a durable subject and that still have no address. The guard only lets it SHRINK — a new window in either list fails, and an entry that has since been addressed must be deleted from here."
   ],
   "addressless": {
+    "agentPickerWindow": "Returns a value to the caller that opened it (its payload carries `callbackGroupId`). A deep link would open a picker with nothing to hand its answer back to, so this window is addressed by the surface that raised it and nothing else.",
     "createProjectWindow": "Returns a value to the caller that opened it (its payload carries `callbackGroupId`). A deep link would open a picker with nothing to hand its answer back to, so this window is addressed by the surface that raised it and nothing else.",
     "curatedIconPickerWindow": "Returns a value to the caller that opened it (its payload carries `callbackGroupId`). A deep link would open a picker with nothing to hand its answer back to, so this window is addressed by the surface that raised it and nothing else.",
     "directiveReferencePickerWindow": "Returns a value to the caller that opened it (its payload carries `callbackGroupId`). A deep link would open a picker with nothing to hand its answer back to, so this window is addressed by the surface that raised it and nothing else.",
@@ -16,6 +17,7 @@
     "marketingMediaAssetWindow": "Returns a value to the caller that opened it (its payload carries `callbackGroupId`). A deep link would open a picker with nothing to hand its answer back to, so this window is addressed by the surface that raised it and nothing else.",
     "masterworkAddRuleWindow": "Returns a value to the caller that opened it (its payload carries `callbackGroupId`). A deep link would open a picker with nothing to hand its answer back to, so this window is addressed by the surface that raised it and nothing else.",
     "masterworkBuildWindow": "Returns a value to the caller that opened it (its payload carries `callbackGroupId`). A deep link would open a picker with nothing to hand its answer back to, so this window is addressed by the surface that raised it and nothing else.",
+    "sendToAgentWindow": "Carries the text being handed to another agent — content only the surface that raised it holds. A deep link would open it empty, so this window is addressed by the surface that raised it and nothing else.",
     "surfaceAgentBindWindow": "Returns a value to the caller that opened it (its payload carries `callbackGroupId`). A deep link would open a picker with nothing to hand its answer back to, so this window is addressed by the surface that raised it and nothing else.",
     "userSearchWindow": "Returns a value to the caller that opened it (its payload carries `callbackGroupId`). A deep link would open a picker with nothing to hand its answer back to, so this window is addressed by the surface that raised it and nothing else."
   },

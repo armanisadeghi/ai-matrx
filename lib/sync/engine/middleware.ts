@@ -29,6 +29,7 @@ import { noopAdapter } from "../persistence/noop";
 import type { PersistenceAdapter } from "../persistence/types";
 import type { SyncChannel } from "../channel";
 import { isRehydrateAction } from "./rehydrate";
+import { isRemoteFetchStatusAction } from "./remoteFetchStatus";
 import { applyPrePaintDescriptors } from "./applyPrePaint";
 import {
   createRemoteWriteScheduler,
@@ -324,7 +325,10 @@ export function createSyncMiddleware(ctx: SyncMiddlewareContext): Middleware {
 
       // --- Persist (sync write-through for boot-critical; debounced for warm-cache) ---
       // Rehydrate actions flow through reducers but must NOT trigger a re-persist.
-      if (!isRehydrateAction(a)) {
+      // Neither may the engine's own load-status bookkeeping: a `failed` load
+      // leaves the slice on defaults, and persisting then would write those
+      // defaults over the person's saved record.
+      if (!isRehydrateAction(a) && !isRemoteFetchStatusAction(a)) {
         for (const policy of ctx.policies) {
           const caps = getPreset(policy.config.preset);
           if (caps.writeStrategy === "none") continue;

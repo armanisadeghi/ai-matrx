@@ -10,6 +10,10 @@ import {
   REHYDRATE_ACTION_TYPE,
   type RehydrateAction,
 } from "@/lib/sync/engine/rehydrate";
+import {
+  REMOTE_FETCH_STATUS_ACTION_TYPE,
+  type RemoteFetchStatusAction,
+} from "@/lib/sync/engine/remoteFetchStatus";
 // Note: the Supabase client is imported lazily inside `remote.fetch`/`remote.write`
 // rather than at module load. This keeps unit tests — which mount the slice
 // without the browser Supabase env — from blowing up at import time.
@@ -727,10 +731,25 @@ export interface UserPreferences {
   connectors: ConnectorsPreferences;
 }
 
+/**
+ * Whether the person's SAVED preferences are what the slice holds.
+ *   - `loading` — not yet: the slice holds built-in defaults
+ *   - `loaded`  — a saved record (cache or server) landed, or the source
+ *                 answered that there is none (so the defaults ARE the answer)
+ *   - `failed`  — the read failed and nothing saved has landed: the defaults
+ *                 on screen are NOT the person's settings
+ * Set only by the sync engine's load outcomes (REHYDRATE and
+ * `sync/remoteFetchStatus`) — see the extraReducers below.
+ */
+export type PreferencesLoadStatus = "loading" | "loaded" | "failed";
+
 // Add state interface for async operations
 export interface UserPreferencesState extends UserPreferences {
   _meta: {
     isLoading: boolean;
+    /** Load status of the person's saved preferences (see PreferencesLoadStatus). */
+    loadStatus: PreferencesLoadStatus;
+    /** Why the last load of the saved preferences failed; null once a load succeeds. */
     error: string | null;
     lastSaved: string | null;
     hasUnsavedChanges: boolean;
@@ -957,12 +976,16 @@ export const initializeUserPreferencesState = (
   // Callers pass PERSISTED data here (store bootstrap / SSR-loaded rows) —
   // a load boundary, so every known legacy shape drift is normalized.
   const preferences = sanitizeLoadedPreferences(rawPreferences);
-  const defaultMeta = {
+  const defaultMeta: UserPreferencesState["_meta"] = {
     isLoading: false,
+    // Store construction holds DEFAULTS, never the person's saved record —
+    // even when `setAsLoaded` snapshots them for reset. Only the sync
+    // engine's load outcome moves this.
+    loadStatus: "loading",
     error: null,
     lastSaved: null,
     hasUnsavedChanges: false,
-    loadedPreferences: null as UserPreferences | null,
+    loadedPreferences: null,
   };
 
   const defaultPreferences: UserPreferences = {
@@ -1335,7 +1358,8 @@ const userPreferencesSlice = createSlice({
       // with no user-actionable Save button. Leaving the flag at its current
       // value (which is `false` once REHYDRATE has fired) means the UI never
       // surfaces a phantom dirty state.
-      state._meta.error = null;
+      // `_meta.error` is the LOAD failure (see extraReducers) — an edit does
+      // not make a failed read succeed, so edits never clear it.
     },
     setModulePreferences: <T extends keyof UserPreferences>(
       state: Draft<UserPreferencesState>,
@@ -1350,7 +1374,6 @@ const userPreferencesSlice = createSlice({
         ...preferences,
       } as Draft<UserPreferencesState>[T];
       // See note in `setPreference` — auto-save handles persistence.
-      state._meta.error = null;
     },
     resetModulePreferences: <T extends keyof UserPreferences>(
       state: Draft<UserPreferencesState>,
@@ -1361,9 +1384,20 @@ const userPreferencesSlice = createSlice({
         moduleKey
       ] as Draft<UserPreferencesState>[T];
       // See note in `setPreference` — auto-save handles persistence.
-      state._meta.error = null;
     },
-    resetAllPreferences: () => initializeUserPreferencesState(),
+    // Resetting the person's CHOICES must not forget whether their saved
+    // record ever loaded — the load status belongs to the read, not the values.
+    resetAllPreferences: (state) => {
+      const fresh = initializeUserPreferencesState();
+      return {
+        ...fresh,
+        _meta: {
+          ...fresh._meta,
+          loadStatus: state._meta.loadStatus,
+          error: state._meta.error,
+        },
+      };
+    },
     resetToLoadedPreferences: (state) => {
       if (state._meta.loadedPreferences) {
         // Restore each module from loaded preferences
@@ -1419,7 +1453,6 @@ const userPreferencesSlice = createSlice({
           ...state._meta.loadedPreferences.lists,
         };
         state._meta.hasUnsavedChanges = false;
-        state._meta.error = null;
       }
     },
     // ── Favorites / pinning ────────────────────────────────────────────────
@@ -1430,13 +1463,11 @@ const userPreferencesSlice = createSlice({
       const next = state.favorites.items.filter((f) => f.id !== item.id);
       next.unshift(item); // newest first
       state.favorites.items = next.slice(0, FAVORITES_MAX);
-      state._meta.error = null;
     },
     removeFavorite: (state, action: PayloadAction<string>) => {
       state.favorites.items = state.favorites.items.filter(
         (f) => f.id !== action.payload,
       );
-      state._meta.error = null;
     },
     toggleFavorite: (state, action: PayloadAction<FavoriteItem>) => {
       const item = action.payload;
@@ -1450,7 +1481,6 @@ const userPreferencesSlice = createSlice({
         next.unshift(item);
         state.favorites.items = next.slice(0, FAVORITES_MAX);
       }
-      state._meta.error = null;
     },
     reorderFavorites: (state, action: PayloadAction<string[]>) => {
       // payload = new ordered list of ids; unknown ids dropped, missing ones appended
@@ -1465,11 +1495,9 @@ const userPreferencesSlice = createSlice({
       }
       for (const f of byId.values()) next.push(f);
       state.favorites.items = next;
-      state._meta.error = null;
     },
     setFavorites: (state, action: PayloadAction<FavoriteItem[]>) => {
       state.favorites.items = action.payload.slice(0, FAVORITES_MAX);
-      state._meta.error = null;
     },
     clearUnsavedChanges: (state) => {
       state._meta.hasUnsavedChanges = false;
@@ -1595,8 +1623,42 @@ const userPreferencesSlice = createSlice({
       } as UserPreferences;
       // Engine-managed persistence = never "unsaved" from the user's POV.
       state._meta.hasUnsavedChanges = false;
+      // The person's saved record is what the slice now holds.
+      state._meta.loadStatus = "loaded";
       state._meta.error = null;
     });
+    // The engine's load outcomes for this slice (lib/sync/engine/remoteFetchStatus.ts).
+    // Success is the REHYDRATE above; these are the other three answers.
+    builder.addCase(
+      REMOTE_FETCH_STATUS_ACTION_TYPE,
+      (state, action: RemoteFetchStatusAction) => {
+        const { sliceName, phase, reason, error } = action.payload;
+        if (sliceName !== "userPreferences") return;
+        if (phase === "started") {
+          // A background refresh over a loaded record changes nothing on
+          // screen; a cold-boot fetch or a retry means the saved record is
+          // not here yet.
+          if (reason !== "stale-refresh" || state._meta.loadStatus !== "loaded") {
+            state._meta.loadStatus = "loading";
+          }
+          return;
+        }
+        if (phase === "empty") {
+          // The source answered: there is no saved record, so the defaults
+          // ARE this person's preferences.
+          state._meta.loadStatus = "loaded";
+          state._meta.error = null;
+          return;
+        }
+        // failed — say why. A failed background refresh keeps the record that
+        // already loaded (still true, just not re-confirmed); anything else
+        // leaves defaults on screen that are NOT the person's settings.
+        state._meta.error = error ?? "Your saved preferences could not be loaded.";
+        if (reason !== "stale-refresh" || state._meta.loadStatus !== "loaded") {
+          state._meta.loadStatus = "failed";
+        }
+      },
+    );
   },
 });
 
@@ -1706,7 +1768,12 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
         .eq("user_id", identity.userId)
         .abortSignal(signal)
         .maybeSingle();
-      if (error || !data) return null;
+      // A failed read THROWS — the engine turns that into the slice's
+      // `failed` load status. Returning null here used to make a failure look
+      // exactly like "this person saved nothing", and every settings page
+      // then rendered the defaults as their settings.
+      if (error) throw error;
+      if (!data) return null;
       return data.preferences as Partial<UserPreferencesState>;
     },
     write: async ({ identity, signal, body }) => {

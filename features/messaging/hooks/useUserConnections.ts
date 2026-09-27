@@ -238,12 +238,19 @@ export function useUserConnections(
   const refresh = async () => {
     setNonce((value) => value + 1);
   };
+  const partialFailures = current?.partialFailures ?? [];
 
   return {
     connections,
     isLoading,
-    error: current?.error ?? null,
-    partialFailures: current?.partialFailures ?? [],
+    // A roster failure is a full read failure only when no source supplied a row. In particular,
+    // conversation rows are merged above and must turn a failed roster read into a visible
+    // partial-read notice rather than silently hiding it.
+    error:
+      connections.length === 0 && partialFailures.length > 0
+        ? `Couldn't load ${describeConnectionFailures(partialFailures)}`
+        : current?.error ?? null,
+    partialFailures,
     refresh,
   };
 }
@@ -384,17 +391,9 @@ async function fetchOrgConnections(
     }
   }
 
-  // Nobody read and a roster failed: that is a failed read, never "no
-  // connections yet" — the hook reports it as `error`.
-  if (usersMap.size === 0 && failures.length > 0) {
-    const first = failures[0]!.error;
-    const detail = first instanceof Error ? first.message : String(first);
-    throw new Error(
-      `Couldn't load the people in ${failures.map((f) => f.orgName).join(", ")}: ${detail}`,
-    );
-  }
-
-  // Some read, some did not: return what was read AND name what was not.
+  // Keep roster failures separate from roster rows. Conversation participants merge after this
+  // function returns, so deciding that an empty roster is a total failure here would discard
+  // the fact that the caller still has usable connection rows from conversations.
   return {
     users: Array.from(usersMap.values()),
     failures: failures.map((f) => ({

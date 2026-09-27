@@ -829,8 +829,12 @@ const AttachResourceDialog = lazyOverlay(
   () => import("@/features/connectors/AttachResourceDialog"),
   { ssr: false },
 );
-const SendToAgentDialog = lazyOverlay(
-  () => import("@/features/agents/components/send-to-agent/SendToAgentDialog"),
+const AgentPickerWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/agents/AgentPickerWindow"),
+  { ssr: false },
+);
+const SendToAgentWindow = lazyOverlay(
+  () => import("@/features/agents/components/send-to-agent/SendToAgentWindow"),
   { ssr: false },
 );
 const AddToRulebookDialog = lazyOverlay(
@@ -1352,8 +1356,8 @@ export default function OverlayController() {
     masterworkYourWordsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "masterworkYourWordsWindow"),
     ),
-    sendToAgentDialog: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "sendToAgentDialog"),
+    sendToAgentWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "sendToAgentWindow"),
     ),
     addToRulebookDialog: useAppSelector((s) =>
       selectIsOverlayOpen(s, "addToRulebookDialog"),
@@ -1793,8 +1797,8 @@ export default function OverlayController() {
     masterworkYourWordsWindow: useAppSelector((s) =>
       selectOverlayData(s, "masterworkYourWordsWindow"),
     ) as Record<string, unknown> | null,
-    sendToAgentDialog: useAppSelector((s) =>
-      selectOverlayData(s, "sendToAgentDialog"),
+    sendToAgentWindow: useAppSelector((s) =>
+      selectOverlayData(s, "sendToAgentWindow"),
     ) as Record<string, unknown> | null,
     addToRulebookDialog: useAppSelector((s) =>
       selectOverlayData(s, "addToRulebookDialog"),
@@ -2259,6 +2263,9 @@ export default function OverlayController() {
     htmlPreview: useAppSelector((s) => selectOpenInstances(s, "htmlPreview")),
     copySubsetWindow: useAppSelector((s) =>
       selectOpenInstances(s, "copySubsetWindow"),
+    ),
+    agentPickerWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "agentPickerWindow"),
     ),
     imageUploaderWindow: useAppSelector((s) =>
       selectOpenInstances(s, "imageUploaderWindow"),
@@ -3248,18 +3255,19 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* sendToAgentDialog — "Send to another agent…" from a response's ⋯
-          menu: pick an agent, choose the destination, open it unsent. */}
+      {/* sendToAgentWindow — "Send to another agent…" from a response's ⋯
+          menu: the agent picker window, then where the content goes, then
+          the agent opens unsent. */}
       {(() => {
-        const isOpen = isOpenById.sendToAgentDialog;
-        const data = dataById.sendToAgentDialog as
+        const isOpen = isOpenById.sendToAgentWindow;
+        const data = dataById.sendToAgentWindow as
           Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
-          <SendToAgentDialog
+          <SendToAgentWindow
             isOpen
             onClose={() =>
-              dispatch(closeOverlay({ overlayId: "sendToAgentDialog" }))
+              dispatch(closeOverlay({ overlayId: "sendToAgentWindow" }))
             }
             initialContent={
               typeof data?.initialContent === "string"
@@ -3269,11 +3277,6 @@ export default function OverlayController() {
             initialSourceTitle={
               typeof data?.initialSourceTitle === "string"
                 ? data.initialSourceTitle
-                : null
-            }
-            initialOrganizationId={
-              typeof data?.initialOrganizationId === "string"
-                ? data.initialOrganizationId
                 : null
             }
           />
@@ -5189,6 +5192,38 @@ export default function OverlayController() {
               typeof data?.isAgentSystem === "boolean"
                 ? data.isAgentSystem
                 : undefined
+            }
+          />
+        );
+      })}
+
+      {/* agentPickerWindow — multi-instance. THE agent picker as a window;
+          the pick returns through the opener's callback group. */}
+      {instancesById.agentPickerWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        return (
+          <AgentPickerWindow
+            key={inst.instanceId}
+            isOpen
+            instanceId={inst.instanceId}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "agentPickerWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+            title={typeof data?.title === "string" ? data.title : null}
+            activeAgentId={
+              typeof data?.activeAgentId === "string"
+                ? data.activeAgentId
+                : null
             }
           />
         );

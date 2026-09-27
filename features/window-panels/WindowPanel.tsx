@@ -44,6 +44,7 @@ import {
   type LayoutIconType,
 } from "./components/LayoutIcon";
 import {
+  resolvePosition,
   useWindowPanel,
   type UseWindowPanelOptions,
   type ResizeEdge,
@@ -745,6 +746,24 @@ export function WindowPanel({
 
   // ── fitContent: sync measured shell size back into Redux ─────────────────
   const fitContentRef = useRef<HTMLDivElement>(null);
+  // A preset position ("center", a corner) was resolved from the DEFAULT size
+  // before anything was measured, so a window that fits its content grew away
+  // from where it was placed — a centered 694px picker opened with its left
+  // edge at the viewport's middle and its right side off-screen. So the preset
+  // FOLLOWS the measured size — a lazy body measures small first, then its
+  // real size — until the person first drags or resizes the window; from then
+  // on it stays where they put it. Same choice `useWindowPanel` made at
+  // registration: only when the window was NOT opened at a saved
+  // `initialRect` place, and only for an explicit preset (the cascade default
+  // is never re-run; it advances a shared counter).
+  const fitPlacedRef = useRef(false);
+  useEffect(() => {
+    if (isInteracting) fitPlacedRef.current = true;
+  }, [isInteracting]);
+  const fitPresetPosition = hookOpts.position;
+  const fitMayReplace =
+    hookOpts.initialRect?.x === undefined &&
+    hookOpts.initialRect?.y === undefined;
 
   useEffect(() => {
     if (!fitContent || isMobile) return undefined;
@@ -757,19 +776,28 @@ export function WindowPanel({
       // Include border (2px each side) to match the element's full box size
       const borderH = el.offsetHeight - el.clientHeight;
       const borderW = el.offsetWidth - el.clientWidth;
+      const fitWidth = Math.ceil(width + borderW);
+      const fitHeight = Math.ceil(height + borderH);
+      const placeNow =
+        !fitPlacedRef.current &&
+        fitMayReplace &&
+        fitPresetPosition !== undefined;
       dispatch(
         updateWindowRect({
           id,
           rect: {
-            width: Math.ceil(width + borderW),
-            height: Math.ceil(height + borderH),
+            width: fitWidth,
+            height: fitHeight,
+            ...(placeNow
+              ? resolvePosition(fitPresetPosition, fitWidth, fitHeight)
+              : {}),
           },
         }),
       );
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, [fitContent, id, dispatch]);
+  }, [fitContent, id, dispatch, fitPresetPosition, fitMayReplace]);
 
   const toggleSidebar = useCallback(() => {
     const panel = sidebarPanelRef.current;

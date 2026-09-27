@@ -27,6 +27,7 @@ import {
 } from "@ai-matrx/kit/content-transfer";
 import { toast } from "@/lib/toast";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
+import { selectUserId } from "@/lib/redux/slices/userSlice";
 import {
   ensureOrganizationForWrite,
   isOrganizationSelectionCancelled,
@@ -110,8 +111,13 @@ function AlchemySession({ request }: { request: AlchemySessionRequest }) {
         }
       }
       if (!action) {
-        toast.error(`${intent.label} is not available`, {
-          description: "Sign in and choose an organization to use Matrx destinations.",
+        // Say what is TRUE: signed out → sign in; signed in (the workspace was
+        // asked for above) → this host did not offer the destination.
+        const signedIn = Boolean(selectUserId(getStoreSingleton()?.getState() as Parameters<typeof selectUserId>[0]));
+        toast.error(`${intent.label} did not open`, {
+          description: signedIn
+            ? "This page did not offer that destination. Reload the page and try again."
+            : "Sign in to save or send from here.",
         });
         return;
       }

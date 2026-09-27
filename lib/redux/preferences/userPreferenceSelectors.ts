@@ -24,6 +24,7 @@ import type {
   OrganizationPreferences,
   FavoritesPreferences,
   FavoriteItem,
+  PreferencesLoadStatus,
 } from "@/lib/redux/preferences/userPreferencesSlice";
 
 // Base selector
@@ -246,6 +247,19 @@ export const selectPreferencesLoading = createSelector(
   selectUserPreferences,
   (state): boolean => state._meta.isLoading,
 );
+
+/**
+ * Whether the slice holds the person's SAVED preferences: `loading` (defaults,
+ * not yet theirs), `loaded`, or `failed` (the read failed — the defaults on
+ * screen are NOT their settings). Every settings surface gates on this.
+ */
+export const selectPreferencesLoadStatus = (
+  state: RootState,
+): PreferencesLoadStatus => state.userPreferences._meta.loadStatus;
+
+/** Why the last load of the saved preferences failed; null once one succeeds. */
+export const selectPreferencesLoadError = (state: RootState): string | null =>
+  state.userPreferences._meta.error;
 
 export const selectPreferencesError = createSelector(
   selectUserPreferences,

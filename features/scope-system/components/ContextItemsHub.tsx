@@ -612,6 +612,15 @@ function ContextItemsOrgView({
         </div>
       </Card>
 
+      {treeError && scopeTypes.length > 0 ? (
+        <StaleDataNotice
+          hasData
+          what="this organization's scope types"
+          detail={treeError}
+          onRetry={() => void dispatch(ensureScopeTree({ refresh: true }))}
+        />
+      ) : null}
+
       {treeError && scopeTypes.length === 0 ? (
         <ReadFailure
           error={treeError}
@@ -690,6 +699,15 @@ function ScopeTypeItemsSection({
           <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
         </Link>
       </div>
+
+      {itemsError && items.length > 0 ? (
+        <StaleDataNotice
+          hasData
+          what={`the ${type.label_plural.toLowerCase()} context items`}
+          detail={itemsError}
+          onRetry={() => void dispatch(listScopeTypeItems(type.id))}
+        />
+      ) : null}
 
       {itemsError && items.length === 0 ? (
         <ReadFailure

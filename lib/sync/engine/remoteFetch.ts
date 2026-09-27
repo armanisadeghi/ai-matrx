@@ -7,9 +7,11 @@
  * `store._sync.refresh(sliceName)` in dev.
  *
  * Contract (see `phase-2-plan.md` §5.3):
+ *   - Every fetch first dispatches `sync/remoteFetchStatus` phase `started`.
  *   - `fetch` returns Partial<TState> → engine rehydrates.
- *   - `fetch` returns null → engine leaves state as-is (no dispatch).
- *   - `fetch` throws → caught + logged; state unchanged.
+ *   - `fetch` returns null → state unchanged; phase `empty` dispatched.
+ *   - `fetch` throws → caught + logged; state unchanged; phase `failed`
+ *     dispatched with the error in words (see `remoteFetchStatus.ts`).
  *   - If identity changes mid-flight, AbortController is triggered and the
  *     response (should it arrive) is dropped.
  */
@@ -24,6 +26,7 @@ import { extractErrorMessage } from "@/utils/errors";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FallbackContext, IdentityKey, Policy } from "../types";
 import { buildRehydrateAction } from "./rehydrate";
+import { buildRemoteFetchStatusAction } from "./remoteFetchStatus";
 import { logger } from "../logger";
 import { writeSlice } from "../persistence/idb";
 import { localStorageAdapter } from "../persistence/local-storage";
@@ -66,6 +69,9 @@ export async function invokeRemoteFetch(opts: InvokeRemoteFetchOptions): Promise
         meta: { reason, identity: startIdentity.key },
     });
 
+    const sliceName = policy.config.sliceName;
+    store.dispatch(buildRemoteFetchStatusAction(sliceName, "started", reason));
+
     const started = typeof performance !== "undefined" ? performance.now() : 0;
     try {
         const result = await fetchFn(ctx);
@@ -84,6 +90,7 @@ export async function invokeRemoteFetch(opts: InvokeRemoteFetchOptions): Promise
 
         if (result == null) {
             logger.debug("fallback.empty", { sliceName: policy.config.sliceName });
+            store.dispatch(buildRemoteFetchStatusAction(sliceName, "empty", reason));
             return;
         }
 
@@ -97,6 +104,9 @@ export async function invokeRemoteFetch(opts: InvokeRemoteFetchOptions): Promise
                     sliceName: policy.config.sliceName,
                     meta: { error: extractErrorMessage(err) },
                 });
+                store.dispatch(
+                    buildRemoteFetchStatusAction(sliceName, "failed", reason, extractErrorMessage(err)),
+                );
                 return;
             }
         }
@@ -186,6 +196,13 @@ export async function invokeRemoteFetch(opts: InvokeRemoteFetchOptions): Promise
             sliceName: policy.config.sliceName,
             meta: { error: extractErrorMessage(err), reason },
         });
+        // Say it to the slice too — unless the read was superseded (identity
+        // swapped / aborted), in which case the newer fetch owns the outcome.
+        if (getIdentity().key === startIdentity.key && !controller.signal.aborted) {
+            store.dispatch(
+                buildRemoteFetchStatusAction(sliceName, "failed", reason, extractErrorMessage(err)),
+            );
+        }
     } finally {
         if (externalSignal) {
             externalSignal.removeEventListener("abort", abortOnExternal);

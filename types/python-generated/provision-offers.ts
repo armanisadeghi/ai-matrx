@@ -123,6 +123,12 @@ export interface ChatMandatedStartOffer {
 })[];
 }
 
+/** Offered shape of provision `checks.cleanup_bakeoff` (kind `checks.cleanup_bakeoff.offer`). */
+export interface ChecksCleanupBakeoffOffer {
+  __kind?: "checks.cleanup_bakeoff.offer";
+  packet: string;
+}
+
 /** Offered shape of provision `code_editor.session` (kind `code_editor.session.offer`). */
 export interface CodeEditorSessionOffer {
   __kind?: "code_editor.session.offer";
@@ -2064,6 +2070,8 @@ export interface MasterworksBenchOffer {
   subject?: string;
   source_material?: string;
   source_material_open?: string;
+  research_log?: string;
+  research_budget?: string;
 }
 
 /** Offered shape of provision `masterworks.vanilla_arm` (kind `masterworks.vanilla_arm.offer`). */
@@ -3585,6 +3593,7 @@ export interface ProvisionOffers {
   "ambient.page_guidance": AmbientPageGuidanceOffer;
   "audio.speech": AudioSpeechOffer;
   "chat.mandated_start": ChatMandatedStartOffer;
+  "checks.cleanup_bakeoff": ChecksCleanupBakeoffOffer;
   "code_editor.session": CodeEditorSessionOffer;
   "commerce_intake.asset_capture": CommerceIntakeAssetCaptureOffer;
   "commerce_intake.batch_capture": CommerceIntakeBatchCaptureOffer;
@@ -3884,6 +3893,7 @@ export const PROVISION_OFFER_KINDS = {
   "ambient.page_guidance": "ambient.page_guidance.offer",
   "audio.speech": "audio.speech.offer",
   "chat.mandated_start": "chat.mandated_start.offer",
+  "checks.cleanup_bakeoff": "checks.cleanup_bakeoff.offer",
   "code_editor.session": "code_editor.session.offer",
   "commerce_intake.asset_capture": "commerce_intake.asset_capture.offer",
   "commerce_intake.batch_capture": "commerce_intake.batch_capture.offer",

@@ -642,12 +642,19 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
-  // "Send to another agent…" from any response's ⋯ menu — pick an agent,
-  // choose where the content goes, open it prefilled and unsent.
-  sendToAgentDialog: {
+  // THE agent picker as a floating window — the dropdown's exact two-column
+  // picker (list + peek, 680 × 528). Picks return through a callback group.
+  agentPickerWindow: {
+    label: "Choose an agent",
+    instanceMode: "multi",
+    isWindow: true,
+  },
+  // "Send to another agent…" from any response's ⋯ menu — the picker window,
+  // then where the content goes, then the agent opens prefilled and unsent.
+  sendToAgentWindow: {
     label: "Send to another agent",
     instanceMode: "singleton",
-    isWindow: false,
+    isWindow: true,
   },
   addToRulebookDialog: {
     label: "Add to Rulebook",

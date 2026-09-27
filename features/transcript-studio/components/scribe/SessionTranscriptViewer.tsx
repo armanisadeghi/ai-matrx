@@ -62,12 +62,13 @@ export function SessionTranscriptViewer({
   const readError = useAppSelector(
     selectSessionReadError(sessionId, isClean ? "cleaned" : "raw"),
   );
-  const retryRead = () =>
-    void dispatch(
-      isClean
-        ? fetchCleanedSegmentsThunk({ sessionId })
-        : fetchRawSegmentsThunk({ sessionId }),
-    );
+  const retryRead = () => {
+    if (isClean) {
+      void dispatch(fetchCleanedSegmentsThunk({ sessionId }));
+      return;
+    }
+    void dispatch(fetchRawSegmentsThunk({ sessionId }));
+  };
   const title = isClean ? "All clean transcripts" : "All raw transcripts";
 
   const refreshAll = async () => {

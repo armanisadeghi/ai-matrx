@@ -15,6 +15,7 @@ import type { SettingsTreeNode } from "@/components/official/settings/tree/types
 import type { SettingsTabDef } from "../types";
 import { SettingsPage } from "@/components/official/settings/SettingsPage";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
 type SettingsTabHostProps = {
   activeTab: SettingsTabDef | null;
@@ -80,7 +81,15 @@ export function SettingsTabHost({
           <TabErrorBoundary key={activeTab.id} tabLabel={activeTab.label}>
             <ActiveSettingsTabIdContext.Provider value={activeTab.id}>
               <Suspense fallback={<TabLoading tabLabel={activeTab.label} />}>
-                <TabComponent />
+                {activeTab.readsUserPreferences ? (
+                  <PreferencesLoadGate
+                    what={`your ${activeTab.label} settings`}
+                  >
+                    <TabComponent />
+                  </PreferencesLoadGate>
+                ) : (
+                  <TabComponent />
+                )}
               </Suspense>
             </ActiveSettingsTabIdContext.Provider>
           </TabErrorBoundary>

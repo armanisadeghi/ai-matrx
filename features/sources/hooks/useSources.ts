@@ -46,6 +46,8 @@ export interface UseSourcesResult {
   orgNames: Map<string, string>;
   /** The organization-name read failed: labels say so instead of a vague stand-in. */
   orgNamesFailed: boolean;
+  /** Organization ids whose names could not be read; only their rows carry the failure label. */
+  orgNameFailedIds: Set<string>;
   loading: boolean;
   /** A sentence for the person when the list itself could not be read. */
   error: string | null;
@@ -150,6 +152,17 @@ export interface SourcesListOptions {
   search: string;
 }
 
+/** Preserve failures from earlier pages until those same organization ids succeed. */
+export function mergeOrganizationNameFailures(
+  previous: ReadonlySet<string>,
+  organizationIds: readonly string[],
+  succeeded: boolean,
+): Set<string> {
+  const next = new Set(previous);
+  organizationIds.forEach((id) => (succeeded ? next.delete(id) : next.add(id)));
+  return next;
+}
+
 export function useSources(
   scope: SourcesScope | null,
   userId: string | null,
@@ -162,6 +175,7 @@ export function useSources(
     facts: new Map(),
     orgNames: new Map(),
     orgNamesFailed: false,
+    orgNameFailedIds: new Set(),
     loading: true,
     error: null,
     factsError: null,
@@ -230,6 +244,7 @@ export function useSources(
       setState((st) => {
         const orgNames = new Map(st.orgNames);
         const orgNamesOk = orgResult.status === "fulfilled" && !orgResult.value.error;
+        const orgNameFailedIds = mergeOrganizationNameFailures(st.orgNameFailedIds, orgIds, orgNamesOk);
         if (orgNamesOk) {
           for (const o of (orgResult.value.data ?? []) as { id: string; name: string }[])
             orgNames.set(o.id, o.name);
@@ -248,7 +263,8 @@ export function useSources(
           factsFailed: failed,
           factsError: factsErrorFor(failed.size),
           orgNames,
-          orgNamesFailed: orgIds.length > 0 && !orgNamesOk,
+          orgNamesFailed: orgNameFailedIds.size > 0,
+          orgNameFailedIds,
           factsLoading: false,
         };
       });
@@ -267,6 +283,9 @@ export function useSources(
       error: null,
       factsLoading: true,
       facts: new Map(),
+      orgNames: new Map(),
+      orgNamesFailed: false,
+      orgNameFailedIds: new Set(),
       factsFailed: new Set(),
       factsRetrying: new Set(),
       factsError: null,

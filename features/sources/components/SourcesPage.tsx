@@ -138,6 +138,7 @@ import {
 } from "@/features/sources/sourceRows";
 import { cn } from "@/utils/cn";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 /** Canonical `ui_surface.name` this page emits (unchanged from the old library). */
 const RAG_LIBRARY_SURFACE = "matrx-user/knowledge-library";
@@ -394,6 +395,7 @@ export function SourcesPage() {
     facts,
     orgNames,
     orgNamesFailed,
+    orgNameFailedIds,
     loading,
     error,
     factsError,
@@ -794,7 +796,7 @@ export function SourcesPage() {
           orgNames.get(r.organization_id) ??
           (factsLoading
             ? "…"
-            : orgNamesFailed
+            : orgNameFailedIds.has(r.organization_id)
               ? "Couldn't load the organization's name"
               : "an organization you belong to")
         );
@@ -955,6 +957,14 @@ export function SourcesPage() {
             </button>
             <ErrorAlchemyMenu error={factsError} />
           </p>
+        ) : null}
+        {orgNamesFailed ? (
+          <StaleDataNotice
+            hasData
+            what="the organization names for some Sources"
+            detail="Those rows are marked with the failed organization-name read."
+            onRetry={refresh}
+          />
         ) : null}
         {scopeChoice === "org" && !activeOrgId ? (
           <p className="rounded-md border border-border p-3 text-sm text-muted-foreground">
