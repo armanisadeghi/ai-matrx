@@ -109,9 +109,10 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
             });
     }, []);
  
-    // Update the editor content when it changes
+    // Update the editor content when it changes (including to empty — a
+    // switch to an empty document must clear the previous one's text).
     useEffect(() => {
-        if (isActive && editorRef.current && isClient && content) {
+        if (isActive && editorRef.current && isClient) {
             try {
                 const instance = editorRef.current.getInstance();
                 if (instance) {
@@ -141,7 +142,7 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
  
     // Sync content when becoming active
     useEffect(() => {
-        if (isActive && editorRef.current && isClient && content) {
+        if (isActive && editorRef.current && isClient) {
             // Ensure editor is visible when switching back to this tab
             setIsThemeReady(true);
             
@@ -280,8 +281,10 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
         getRootElement: () => editorRef.current?.getRootElement() ?? null,
     }));
  
-    // Don't render editor until client is ready and content is converted
-    if (!isClient || !content) {
+    // Wait only for the client. An empty string is a real document (a new
+    // note, a cleared draft) and must open an empty editor — gating on
+    // `!content` left every empty document on "Loading editor..." forever.
+    if (!isClient) {
         return <EditorLoading />;
     }
 
