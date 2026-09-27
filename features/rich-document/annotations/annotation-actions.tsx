@@ -16,6 +16,7 @@ import {
   declareSelectionProvider,
   placeSelectionActions,
   hostHalf,
+  SELECTION_COMMON_HOST_KEY,
   selectionToolbarHostOf,
   shownInSelectionMode,
   type SelectionCommonHost,
