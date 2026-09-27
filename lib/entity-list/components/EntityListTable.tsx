@@ -37,18 +37,46 @@ import {
   buildDefaultTableRowMenuDescriptor,
   createTableRowMenuDescriptor,
 } from "@/features/context-menu-v3/table-row-context-registry";
-import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
 import { itemMenuConfigToExtraSections } from "@/components/official/item/itemMenuToV3";
 import { resolveItemMenuConfig } from "@/components/official/item/types";
 import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
-/** The row's own menu as context-menu sections, its first section `primary`. */
-function rowMenuSections<TRow>(actions: EntityRowActions<TRow>, row: TRow) {
+/**
+ * The row's own menu merged into the table's ONE primary "Row" section (an
+ * approved heading — a primary section must carry one, and a second "Row"
+ * would repeat it). Its sections are kept apart by separators; the table's
+ * edit commands follow.
+ */
+function withRowMenu<TRow>(
+  actions: EntityRowActions<TRow>,
+  row: TRow,
+  tableSections: ContextMenuExtraSection[],
+): ContextMenuExtraSection[] {
   const menu = resolveItemMenuConfig(actions.menuFor(row));
-  if (!Array.isArray(menu.sections) || menu.sections.length === 0) return [];
-  return itemMenuConfigToExtraSections(menu).map((section, i) =>
-    i === 0 ? { ...section, primary: true } : section,
+  if (!Array.isArray(menu.sections) || menu.sections.length === 0) return tableSections;
+  const rowItems = itemMenuConfigToExtraSections(menu).flatMap((section, i) =>
+    i === 0
+      ? section.items
+      : [{ kind: "separator" as const, id: `sep-${section.id}` }, ...section.items],
   );
+  const tableRow = tableSections.find((section) => section.id === "table-row");
+  const editItems = tableRow?.items ?? [];
+  return [
+    {
+      id: "table-row",
+      label: "Row",
+      primary: true,
+      anchor: "after-clipboard",
+      items: editItems.length
+        ? [...rowItems, { kind: "separator" as const, id: "sep-table-edit" }, ...editItems]
+        : rowItems,
+    },
+    ...tableSections.filter((section) => section !== tableRow),
+  ];
 }
 
 interface Props<TRow> {
@@ -414,12 +442,9 @@ export function EntityListTable<TRow>({
           );
           return createTableRowMenuDescriptor({
             ...descriptor,
-            // The row's first section (Open …) is `primary`: the thing the
+            // The row's actions lead the primary "Row" section: the thing the
             // person right-clicked answers first, above the universal rows.
-            extraSections: [
-              ...rowMenuSections(actions, row),
-              ...descriptor.extraSections,
-            ],
+            extraSections: withRowMenu(actions, row, descriptor.extraSections),
             context: {
               content: config.getRowAgentContext?.(row) ?? config.getRowName(row),
               context: { id: config.getRowId(row) },

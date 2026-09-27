@@ -89,7 +89,7 @@ describe("right-clicking a table row", () => {
     container.remove();
   });
 
-  it("offers that row's own actions, its first section first", () => {
+  it("offers that row's own actions first, under the one Row heading", () => {
     act(() => {
       root.render(
         <EntityListTable
@@ -134,6 +134,9 @@ describe("right-clicking a table row", () => {
     );
     expect(labels).toContain("Open this rulebook");
     expect(labels).toContain("Delete E-waste Manual Sort Decider");
-    expect(descriptor?.extraSections[0].primary).toBe(true);
+    // One primary section under the approved "Row" heading — a primary section
+    // with no heading throws in the menu's heading check (live, 2026-09-27).
+    expect(descriptor?.extraSections[0]).toMatchObject({ label: "Row", primary: true });
+    expect(descriptor?.extraSections.filter((s) => s.primary)).toHaveLength(1);
   });
 });
