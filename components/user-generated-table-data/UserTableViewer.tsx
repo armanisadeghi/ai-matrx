@@ -2775,9 +2775,8 @@ const UserTableViewer = ({
         });
         return;
       }
-      const failed = new Set(
-        result.data.results.filter(isBulkOpError).map((r) => r.row_id),
-      );
+      const failedOps = result.data.results.filter(isBulkOpError);
+      const failed = new Set(failedOps.map((r) => r.row_id));
       for (const { address, prior } of targets) {
         if (failed.has(address.rowId)) continue;
         cellUndo.record({
@@ -2794,7 +2793,7 @@ const UserTableViewer = ({
       if (failed.size > 0) {
         toast({
           title: `Cleared ${targets.length - failed.size} of ${targets.length}`,
-          description: `${failed.size} row${failed.size === 1 ? "" : "s"} could not be found — they may have been removed by someone else.`,
+          description: describeBulkFailures(failedOps),
           variant: "destructive",
         });
       } else if (targets.length > 1) {
