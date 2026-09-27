@@ -206,3 +206,14 @@ test("the wire adapter reads the server's ask events", () => {
     { kind: "text", text: "." },
   ]);
 });
+
+test("Sources behind the filter's Segments are listed and usable even when no Source title matched", async () => {
+  const segs: KnowledgeHit[] = [
+    { entity: "segment", id: "seg-a", title: "Quadrant", segment: { source_id: "doc-q", source_title: "Quadrant (instrument)" } },
+    { entity: "segment", id: "seg-b", title: "Quadrant", segment: { source_id: "doc-q", source_title: "Quadrant (instrument)" } },
+  ];
+  await render(<AskPanel query={{ text: "quadrant?" }} sources={[]} segments={segs} runAsk={scripted(CITED)} runSearch={noSearch} />);
+  expect(container.querySelector('[data-testid="ask-no-sources"]')).toBeNull();
+  expect(container.textContent).toContain("Using 1 of 1 Source");
+  expect(container.textContent).toContain("Quadrant (instrument)");
+});

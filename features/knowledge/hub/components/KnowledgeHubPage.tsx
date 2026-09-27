@@ -71,6 +71,7 @@ import {
 } from "@/features/knowledge/hub/hubState";
 import { useHubUrlState } from "@/features/knowledge/hub/hooks/useHubUrlState";
 import { useKnowledgeResults } from "@/features/knowledge/hub/hooks/useKnowledgeResults";
+import { AskPanel } from "@/features/knowledge/ask/AskPanel";
 import {
   HUB_CONTAINER_LABEL,
   HUB_CONTAINER_TOKENS,
@@ -216,7 +217,9 @@ export function KnowledgeHubPage({
   const idsByType = { media_source_library: libraryIds };
   // `library:*` (the Libraries preset) → every library this person can see.
   const expanded = expandAnyContainers(state.query, idsByType);
-  const results = useKnowledgeResults(expanded.query, state.data);
+  // Ask (H4) answers over the same filter in a docked panel; the results keep listing it.
+  const asking = state.query.mode === "ask";
+  const results = useKnowledgeResults(asking ? { ...expanded.query, mode: "find" } : expanded.query, state.data);
   const activeOrgId = useAppSelector(selectOrganizationId);
   const activeOrgName = useAppSelector(selectOrganizationName);
   const [saveDialog, setSaveDialog] = useState<null | { mode: "create" } | { mode: "rename"; view: HubSavedView }>(null);
@@ -1021,6 +1024,17 @@ export function KnowledgeHubPage({
     />
   );
 
+  const askSources = results.sections.find((s) => s.key === "sources");
+  const askSegments = results.sections.find((s) => s.key === "segments");
+  const askNode = asking ? (
+    <AskPanel
+      query={{ ...expanded.query, mode: "ask" }}
+      sources={askSources?.status === "ready" ? (askSources.section?.items ?? []) : undefined}
+      segments={askSegments?.section?.items}
+      onClose={() => write({ query: { ...state.query, mode: "find" } }, { replace: true })}
+    />
+  ) : null;
+
   const peekNode = peekKey ? (
     <HubPeek
       key={`${peekKey}:${filedVersion}`}
@@ -1152,7 +1166,7 @@ export function KnowledgeHubPage({
       <>
         {header}
         <div className="h-full overflow-hidden pt-[var(--shell-header-h)]" data-testid="knowledge-hub-mobile">
-          {peekNode ? peekNode : mobilePane === "sidebar" ? sidebarNode : main}
+          {askNode ? askNode : peekNode ? peekNode : mobilePane === "sidebar" ? sidebarNode : main}
         </div>
         {dialogs}
       </>
@@ -1192,6 +1206,14 @@ export function KnowledgeHubPage({
               <Handle />
               <Panel id="peek" defaultSize="32%" minSize="22%" maxSize="55%">
                 <div className="h-full overflow-hidden border-l border-border bg-card pt-[var(--shell-header-h)]">{peekNode}</div>
+              </Panel>
+            </>
+          ) : null}
+          {askNode ? (
+            <>
+              <Handle />
+              <Panel id="ask" defaultSize="34%" minSize="24%" maxSize="55%">
+                <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">{askNode}</div>
               </Panel>
             </>
           ) : null}

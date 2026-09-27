@@ -342,22 +342,33 @@ function erroredSection(
   };
 }
 
+/** The three honest sentences — never swapped for one another. */
+export const SECTION_SENTENCE = {
+  /** Only after the stream said `done` without this section. */
+  didNotAnswer: "This section did not answer.",
+  /** The stream stopped (connection, server) before `done`. */
+  interrupted: "The search stopped before this section answered.",
+} as const;
+
 /**
- * The real service. Throws `KnowledgeSearchUnavailableError` when the hub's
- * service did not answer: a 404/405, or a stream that ended without ever
- * saying `search_started` (the older RAG route at this path answers that way).
- * Every other failure — a 422 validation refusal included — becomes an error
- * on every section that had not answered yet, in the server's own words.
+ * The real service. Throws `KnowledgeSearchUnavailableError` ONLY for a
+ * 404/405 — the route is not on this server. Nothing else falls back: a slow
+ * `search_started` is just a search still running (sections stay loading); a
+ * request aborted by a newer keystroke rethrows the abort and is ignored by
+ * every caller; a stream that ends before `done` marks the sections it never
+ * sent as interrupted; `done` without a section marks that one as not
+ * answering; any other refusal (a 422 included) is the server's own sentence.
  */
 export const searchKnowledgeServer: KnowledgeSearchRunner = async (
   query,
   options = {},
 ) => {
   const received = new Map<KnowledgeSectionKey, KnowledgeSection>();
-  let started = false;
-  const failRest = (message: string) => {
+  let done = false;
+  const aborted = () => new DOMException("Aborted", "AbortError");
+  const failRest = (message: string, skipTopHit = false) => {
     for (const key of KNOWLEDGE_SECTION_KEYS) {
-      if (received.has(key)) continue;
+      if (received.has(key) || (skipTopHit && key === "top_hit")) continue;
       const s = erroredSection(key, message);
       received.set(key, s);
       options.onSection?.(s);
@@ -372,8 +383,9 @@ export const searchKnowledgeServer: KnowledgeSearchRunner = async (
     for await (const evt of stream) {
       const adapted = adaptServerSearchEvent(evt);
       if (!adapted) continue;
-      if (adapted.type === "started") {
-        started = true;
+      if (options.signal?.aborted) throw aborted();
+      if (adapted.type === "done") {
+        done = true;
       } else if (adapted.type === "section") {
         // A later event for a key replaces the earlier one (section_update). An
         // error after results keeps the results shown and carries the error.
@@ -386,17 +398,25 @@ export const searchKnowledgeServer: KnowledgeSearchRunner = async (
         options.onSection?.(next);
       } else if (adapted.type === "stream_error") {
         // An in-band error is the envelope speaking: show it, never fall back.
-        started = true;
         failRest(adapted.message);
+        done = true;
       }
     }
   } catch (err) {
-    if (options.signal?.aborted) throw err;
+    if (options.signal?.aborted) throw err instanceof DOMException ? err : aborted();
     if (isRouteMissing(err)) throw new KnowledgeSearchUnavailableError();
     failRest(refusalSentence(err));
-    started = true;
+    done = true;
   }
-  if (!started) throw new KnowledgeSearchUnavailableError();
+  // An abort can also end the body quietly; a newer search owns the screen.
+  if (options.signal?.aborted) throw aborted();
+  if (!done) {
+    failRest(SECTION_SENTENCE.interrupted);
+  } else if (!query.types?.length && !query.source_kinds?.length) {
+    // A narrowed query may leave sections out on purpose; an open one may not.
+    // No top hit is an answer (nothing matched exactly), not a silent lane.
+    failRest(SECTION_SENTENCE.didNotAnswer, true);
+  }
   return KNOWLEDGE_SECTION_KEYS.flatMap((k) => {
     const s = received.get(k);
     return s ? [s] : [];

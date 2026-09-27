@@ -112,6 +112,7 @@ import {
 import type { MandateWorkspaceTab } from "@/features/mandates/workspace/MandateWorkspace";
 import { RecordAdminPanels } from "./RecordAdminPanels";
 import { MandateTryPanel } from "./MandateTryPanel";
+import { MandateRunHistory } from "@/features/mandates/run-history/MandateRunHistory";
 import {
   OwnerDefinitionEditor,
   useDefinitionRights,
@@ -352,9 +353,14 @@ function OneMandateRecordBody({
   // is this page's addition, so it exports as the Overrides tab it mirrors.
   const tabIds = (tabs ?? visibleRecordTabs(showAdmin))
     .map((tab) => tab.id)
-    .filter((id): id is MandateWorkspaceTab => id !== "overrides-simple");
+    .filter((id): id is MandateWorkspaceTab => id !== "overrides-simple" && id !== "runs");
+  // Runs is a live read, not saved mandate data — it exports as Definition.
   const exportTab: MandateWorkspaceTab =
-    activeTab === "overrides-simple" ? "overrides" : activeTab;
+    activeTab === "overrides-simple"
+      ? "overrides"
+      : activeTab === "runs"
+        ? "definition"
+        : activeTab;
   const orgName =
     perspective === "organization" && principal.kind === "org"
       ? nameOfOrg(principal.orgId)
@@ -588,6 +594,27 @@ function OneMandateRecordBody({
           />
         ) : null}
       </div>
+      {/* THE RUNS TAB (member seats) — this mandate's run history at this
+          seat: a person sees their own runs; an organization's owner/admin
+          sees the organization's; a member who does not manage it sees their
+          own runs in it. The admin route shows the platform-wide history in
+          its Health tab instead. */}
+      {perspective !== "system" ? (
+        <div
+          role="tabpanel"
+          id="mandate-panel-runs"
+          hidden={activeTab !== "runs"}
+          className={activeTab === "runs" ? "space-y-3" : "hidden"}
+        >
+          {activeTab === "runs" ? (
+            <MandateRunHistory
+              mandateKey={data.mandate.mandate_key}
+              view={principal.kind === "org" && !readOnly ? "org" : "mine"}
+              organizationId={principal.kind === "org" ? principal.orgId : null}
+            />
+          ) : null}
+        </div>
+      ) : null}
       <div
         role="tabpanel"
         id="mandate-panel-notes"

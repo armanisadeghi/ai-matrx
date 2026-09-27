@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-27T10:38:17.586Z",
+  "generated_at": "2026-09-27T11:11:14.347Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2665,6 +2665,12 @@
       "filename": "invitedelivery_the_peek_lives_where_a_stranger_can_reach_it.sql",
       "checksum": "2212a86dd9da9d09f5bee962c4a841fa1da00cbd4a65a990c03eb14525ae5a69",
       "applied_at": "2026-09-21 05:13:10.146423+00"
+    },
+    "migrations/campaign/kernel1294_an_organization_owner_administers_an_organization_level_interview_session.sql": {
+      "source": "matrx-frontend",
+      "filename": "kernel1294_an_organization_owner_administers_an_organization_level_interview_session.sql",
+      "checksum": "b4569332f4fe0bfad2aeb34534405e5381ab57faaf2a214dda91b2e2b2edb38c",
+      "applied_at": "2026-09-27 11:11:05.508756+00"
     },
     "migrations/campaign/kerneltails_a_stale_kernel_refusal_is_a_logged_row.sql": {
       "source": "campaign",

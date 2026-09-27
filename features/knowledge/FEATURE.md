@@ -71,8 +71,9 @@ Plan: `common-docs/projects/knowledge-system/KNOWLEDGE-HUB.md` §5.1.
   `query` (the filter; `text` pre-fills the question), `sources` (the filter's `sources` section —
   omitted → the panel reads it through `searchKnowledge`), `onOpenCitation` (the hub's peek; omitted →
   the citation link opens `/knowledge/sources/<id>?chunk=<segment>` in a new tab), `onClose`.
-  **The hub docks it** beside its results for `mode=ask` URLs (⌘↵ in the bar already lands there);
-  until it does, `/knowledge/ask?<hub params>` (`AskRoute.tsx`) is the page that hosts it.
+  **The hub docks it** as a right panel whenever the URL carries `mode=ask` (⌘↵ in the bar lands
+  there; its results keep listing the same filter in `find` mode). `/knowledge/ask?<hub params>`
+  redirects to `/knowledge?<same>&mode=ask`.
 - `askKnowledge.ts` — the one client + wire adapter for `POST /knowledge/search` `mode: "ask"`:
   `ask_started → answer_delta… (answer_reset) → citations → sources_used → ask_done`, or `ask_refused`
   (org monthly cap / no organization). Not a body-carried read: Ask spends against the selected

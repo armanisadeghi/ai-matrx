@@ -132,10 +132,24 @@ export function useKnowledgeResults(
         if (ctrl.signal.aborted) return;
         if (data === "sample") setEngine("fixture");
         const byKey = new Map(all.map((s) => [s.key, s]));
+        // A query narrowed by type/kind leaves other sections out on purpose:
+        // that is "not part of this search", never "did not answer" (the live
+        // walk showed seven red errors on a Sources-only browse).
+        const narrowed = Boolean(q.types?.length || q.source_kinds?.length);
         setSections((prev) =>
-          prev.map((p) =>
-            p.status === "loading" ? toState(p.key, byKey.get(p.key)) : p,
-          ),
+          prev.map((p) => {
+            if (p.status !== "loading") return p;
+            const got = byKey.get(p.key);
+            if (!got && narrowed)
+              return toState(p.key, {
+                key: p.key,
+                label: KNOWLEDGE_SECTION_LABEL[p.key],
+                count: 0,
+                items: [],
+                next_cursor: null,
+              });
+            return toState(p.key, got);
+          }),
         );
         setLoading(false);
       })

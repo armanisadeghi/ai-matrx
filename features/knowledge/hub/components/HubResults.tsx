@@ -39,9 +39,19 @@ import {
 
 // ─── shared pieces ──────────────────────────────────────────────────────────
 
-export function RowsSkeleton({ rows = 3, label }: { rows?: number; label: string }) {
+export function RowsSkeleton({
+  rows = 3,
+  label,
+  sentence,
+}: {
+  rows?: number;
+  label: string;
+  /** A visible line ("Still searching Chats…") — a section still streaming. */
+  sentence?: string;
+}) {
   return (
     <div className="space-y-2 px-2 py-1.5" aria-label={label} role="status">
+      {sentence ? <p className="text-xs text-muted-foreground">{sentence}</p> : null}
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="flex items-start gap-2.5">
           <Skeleton className="mt-0.5 h-4 w-4" />
@@ -138,7 +148,7 @@ export function SearchSections({
                 <span className="tabular-nums normal-case tracking-normal">{s.section.count}</span>
               ) : null}
             </h3>
-            {s.status === "loading" ? <RowsSkeleton label={`Searching ${label}`} rows={2} /> : null}
+            {s.status === "loading" ? <RowsSkeleton label={`Searching ${label}`} sentence={`Still searching ${label}…`} rows={2} /> : null}
             {s.status === "error" && s.section?.error ? (
               <SectionError
                 message={s.section.error.message}

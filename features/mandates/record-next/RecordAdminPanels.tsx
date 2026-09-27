@@ -43,6 +43,9 @@ import { readMandateAddress } from "@/features/mandates/mandate-address";
 import type { RecordTabId } from "./record-tabs";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { MandateHealthSummary } from "./MandateHealthSummary";
+import { usePathname } from "next/navigation";
+import { isAdminLanePath } from "@/utils/supabase/adminLane";
+import { MandateRunHistory } from "@/features/mandates/run-history/MandateRunHistory";
 
 type AdminSection = "test" | "permissions" | "source" | "diagnostics";
 
@@ -100,6 +103,10 @@ export function RecordAdminPanels({
   // Once opened, the data stays for this mandate (the host keys this panel to
   // the mandate), so moving between tabs never re-reads it.
   const section = adminSectionOf(activeTab);
+  // The admin section reads every run on the platform; the same panel opened
+  // in the window on a user page is an ordinary person's seat (the admin lane
+  // is closed there), so it shows that person's own runs.
+  const onAdminSeat = isAdminLanePath(usePathname() ?? "");
   const [opened, setOpened] = useState(false);
   if (isSuperAdmin && section !== null && !opened) setOpened(true);
   const wanted = opened;
@@ -206,6 +213,17 @@ export function RecordAdminPanels({
           {/* key-is-the-subject: a key handed to the health summary's key prop, never rendered as a name */}
           <MandateHealthSummary mandateKey={mandate?.mandate_key ?? mandateKey} />
         </div>
+      ) : null}
+      {/* RUN HISTORY — inside Health (the ten tabs are protected; no new tab
+          on the admin route). Every run across the platform, filterable by
+          organization or person; never "Mine". */}
+      {section === "diagnostics" ? (
+        <MandateRunHistory
+          mandateKey={mandate?.mandate_key ?? mandateKey}
+          view={onAdminSeat ? "platform" : "mine"}
+          audience={onAdminSeat ? "admin" : "product"}
+          className="mb-4"
+        />
       ) : null}
       {loadError ? (
         <div role="alert" className="flex items-center gap-2 text-sm text-destructive">

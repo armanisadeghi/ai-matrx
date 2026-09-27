@@ -12,6 +12,8 @@ import { ExternalLink, FolderInput, Lightbulb, Star, X } from "lucide-react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { useAssociations, useEntityTitles } from "@ai-matrx/associations/react";
 import { Button } from "@/components/ui/button";
+import { useSearchParams } from "next/navigation";
+import { PeekSourceSegments } from "./PeekSourceSegments";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { FiledRef, KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import { actionTarget } from "@/features/knowledge/hub/hubActions";
@@ -107,6 +109,7 @@ export function HubPeek({
   extraActions,
   tagsSection,
 }: HubPeekProps) {
+  const searchParams = useSearchParams();
   if (!hit) {
     const [entity, id] = [peekKey.slice(0, peekKey.indexOf(":")), peekKey.slice(peekKey.indexOf(":") + 1)];
     const href = tryGetEntityInfo(entity)?.hrefFor?.(id) ?? null;
@@ -128,6 +131,10 @@ export function HubPeek({
   }
   const Icon = kindIcon(hit);
   const target = actionTarget(hit);
+  // Browsing (nothing typed): a Source's "Top segments" are its OWN first
+  // Segments, read from the Source — no search term means no passage matched.
+  const browsing = !(searchParams?.get("q") ?? "").trim();
+  const readFromSource = browsing && !sample && target.entity === "processed_document";
   const href = openFullHref(hit);
   const segments =
     hit.entity === "segment" && hit.snippet
@@ -204,8 +211,10 @@ export function HubPeek({
         </section>
 
         <section>
-          <Heading>Top segments</Heading>
-          {segments.length ? (
+          <Heading>{readFromSource ? "First segments" : "Top segments"}</Heading>
+          {readFromSource ? (
+            <PeekSourceSegments sourceId={target.id} />
+          ) : segments.length ? (
             <ul className="space-y-2">
               {segments.map((g) => (
                 <li key={g.id} className="rounded-md border-l-2 border-primary/40 bg-muted/30 px-3 py-2 text-sm">

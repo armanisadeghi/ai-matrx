@@ -47,6 +47,9 @@ export interface AskPanelProps {
   query: KnowledgeQuery;
   /** The current filter's `sources` section; omitted → the panel reads it. */
   sources?: KnowledgeHit[] | null;
+  /** The filter's `segments` section: their Sources are what the answer draws
+   *  from even when no Source title matches the question. */
+  segments?: KnowledgeHit[] | null;
   onClose?: () => void;
   /** Open a citation in place (the hub's peek). Omitted → a new tab. */
   onOpenCitation?: (citation: AskCitation, href: string) => void;
@@ -75,6 +78,7 @@ function sourcesFromProps(sources: KnowledgeHit[] | null | undefined): SourcesSt
 export function AskPanel({
   query,
   sources,
+  segments,
   onClose,
   onOpenCitation,
   className,
@@ -131,7 +135,14 @@ export function AskPanel({
   // The filter's Sources, plus any Source the last answer drew a passage from
   // that the filter's first page did not list — so every Source the answer
   // used has its own checkbox for the next question.
-  const listed = state.status === "ready" ? state.items : [];
+  const fromSegments: KnowledgeHit[] = [];
+  for (const seg of segments ?? []) {
+    const sid = seg.segment?.source_id;
+    if (!sid || fromSegments.some((s) => s.id === sid)) continue;
+    fromSegments.push({ entity: "processed_document", id: sid, title: seg.segment?.source_title || seg.title });
+  }
+  const filterItems = state.status === "ready" ? state.items : [];
+  const listed = [...fromSegments, ...filterItems.filter((s) => !fromSegments.some((f) => f.id === s.id))];
   const extra: KnowledgeHit[] = (used ?? [])
     .filter((u) => u.segments > 0 && !listed.some((s) => s.id === u.source_id))
     .map((u) => ({ entity: "processed_document", id: u.source_id, title: u.title }));

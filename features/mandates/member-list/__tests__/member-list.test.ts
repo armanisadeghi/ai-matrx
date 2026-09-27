@@ -204,8 +204,13 @@ describe("record tabs per seat", () => {
       expect(tabRowOf(tabs).map((t) => t.id)).not.toContain("create-agent");
     }
   });
-  it("a read-only org member sees definition, binding, test and notes only", () => {
-    expect(ids("organization", true)).toEqual(["definition", "holder", "test", "notes"]);
+  it("a read-only org member sees definition, binding, test, notes and their own runs only", () => {
+    expect(ids("organization", true)).toEqual(["definition", "holder", "test", "notes", "runs"]);
+  });
+  it("Runs is a member-seat tab; the admin route keeps its ten tabs (history lives in Health)", () => {
+    expect(ids("person")).toContain("runs");
+    expect(ids("organization")).toContain("runs");
+    expect(ids("system")).not.toContain("runs");
   });
 });
 
