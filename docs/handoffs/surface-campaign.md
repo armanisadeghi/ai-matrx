@@ -142,6 +142,23 @@ names the page and lists its live values. His review inbox gets one row per fini
       2026-09-26 21:39 UTC) and the three type-level context items are test debris. The person
       decides whether to delete them.
 
+12. **The server must honour a surface value's max_inline_chars.**
+    - **Where:** aidream, where a surface's values are expanded into context items
+      (`<surface>::<value>`), and the same expansion for every level of `surface_chain`.
+    - **Problem (seen live 2026-09-27 on /education/classes):** only values of 200 characters or
+      less are shown inline. `owned_classes` (~1,500 chars, 8 classes) became a look-up item, and
+      the agent called the `context` tool four times to read it.
+    - **What the frontend did:** a surface value may now declare `inlineUpTo`, mirrored to the
+      nullable column `ui.ui_surface_value.max_inline_chars` (NULL = platform default). My Classes
+      sets `owned_classes` and `archived_classes` to 12000 and `joined_classes` to 4000.
+    - **What the server must do:** when expanding `<surface>::<value>`, read
+      `ui_surface_value.max_inline_chars` for that `(surface_name, item_type, name)` and use it as
+      that item's inline ceiling (`max_inline_chars` on the context item), capped by the platform
+      hard cap. NULL keeps today's default (200). Apply it to the `surface_chain` levels too, so a
+      value from another open screen gets the same ceiling.
+    - **Done when:** an agent on /education/classes answers "how many classes do I have and what
+      are they" with zero `context` tool calls.
+
 ## Resources
 
 - Worker brief: `.claude/skills/surface-authoring/references/campaign-worker.md`

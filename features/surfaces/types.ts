@@ -127,6 +127,17 @@ export interface SurfaceValue extends DeclaredValue {
    * Mirrored to `ui_surface_value.group_key`.
    */
   group?: string;
+
+  /**
+   * Show this value in full to the agent when its serialized size is ≤ N
+   * chars (the server's hard cap still applies); omit for the platform
+   * default (200). Above the ceiling the value becomes a "look it up" item the
+   * agent must fetch with the `context` tool — so a list the agent almost
+   * always needs (e.g. "my classes", when there aren't a crazy number) should
+   * set a ceiling that fits a normal list. Positive integer. Mirrored to
+   * `ui_surface_value.max_inline_chars` by manifest sync.
+   */
+  inlineUpTo?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -536,6 +547,17 @@ export interface SurfaceManifest extends SurfaceDeclaration {
    * surface-context item the agent sees. Mirrored to `ui_surface.intro`.
    */
   intro?: string;
+  /**
+   * Repo-relative path to this surface's runtime GUIDE — a markdown file that
+   * tells an in-app agent how to work on the page: what each value means,
+   * which write target does what (with example values), the rules and the
+   * pitfalls. Convention: `features/surfaces/guides/<slug>.md`, where the slug
+   * is the part of `surfaceName` after the `/`. Manifest sync upserts it as the
+   * platform skill `surface-guide-<slug>` (loadable with the agent `skill`
+   * tool) and appends a pointer to it to the stored `ui_surface.intro`, so the
+   * authored `intro` stays clean. See `utils/surface-guide.ts`.
+   */
+  guide?: string;
   /** Flat list of SurfaceValues this surface declares. */
   values: readonly SurfaceValue[];
   /**

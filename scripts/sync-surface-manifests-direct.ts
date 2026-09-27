@@ -22,7 +22,12 @@ import {
   planManifestSync,
   toPackageResolved,
 } from "@/features/surfaces/declare/surface-declare";
-import { emitSurfaceSyncSql } from "./emit-surface-sync-sql";
+import {
+  emitSurfaceSyncSql,
+  readSurfaceGuide,
+  surfaceGuideSourceHash,
+} from "./emit-surface-sync-sql";
+import { surfaceGuideSkillId } from "@/features/surfaces/utils/surface-guide";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
 import {
   CHILD_TABLES,
@@ -217,6 +222,27 @@ async function main() {
           failures.push(`${label} ${key}: visibility is not public`);
       }
     });
+    // Surface guides: the platform skill must exist and carry this guide's text.
+    for (const manifest of manifests) {
+      if (!manifest.guide) continue;
+      const skillId = surfaceGuideSkillId(manifest.surfaceName);
+      const skill = await client.query<{ hash: string | null }>(
+        "select config->>'source_hash' as hash from skill.definition where skill_id = $1 and organization_id = $2 and deleted_at is null and is_active",
+        [skillId, organizationId],
+      );
+      if (skill.rows.length !== 1)
+        failures.push(
+          `surface ${manifest.surfaceName}: guide skill ${skillId} has ${skill.rows.length} live rows (expected 1)`,
+        );
+      else if (
+        !registrationOnly &&
+        skill.rows[0]?.hash !==
+          surfaceGuideSourceHash(readSurfaceGuide(manifest.guide))
+      )
+        failures.push(
+          `surface ${manifest.surfaceName}: guide skill ${skillId} body differs from ${manifest.guide}`,
+        );
+    }
     if (!registrationOnly)
       failures.push(
         ...childMetadataFailures(

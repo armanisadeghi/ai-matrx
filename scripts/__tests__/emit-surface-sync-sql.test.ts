@@ -71,3 +71,72 @@ describe("surface manifest SQL emitter", () => {
     expect(metadataUpdate).not.toContain("parent_surface_name =");
   });
 });
+
+describe("surface agent hints in the emitted SQL", () => {
+  const CLASSES = "matrx-user/education-classes";
+  const sql = () =>
+    emitSurfaceSyncSql({ surfaceNames: [CLASSES], organizationId: SYSTEM_ORG });
+
+  function valueRow(text: string, name: string): string {
+    const line = text
+      .split("\n")
+      .find((l) => l.startsWith(`('${SYSTEM_ORG}', 'public', '${CLASSES}', '', '${name}',`));
+    if (!line) throw new Error(`no value row for ${name}`);
+    return line;
+  }
+
+  it("writes max_inline_chars on every value row and rewrites it on conflict", () => {
+    const text = sql();
+    const start = text.indexOf("INSERT INTO ui.ui_surface_value (");
+    const header = text.slice(start, text.indexOf(") VALUES", start));
+    expect(header).toContain("max_inline_chars");
+    const conflict = text.slice(text.indexOf("ON CONFLICT", start));
+    expect(conflict.slice(0, conflict.indexOf(";\n"))).toContain(
+      "max_inline_chars = EXCLUDED.max_inline_chars",
+    );
+    // The column is the row's last value (after synced_from).
+    expect(valueRow(text, "owned_classes")).toMatch(/, 12000\),?$/);
+    expect(valueRow(text, "joined_classes")).toMatch(/, 4000\),?$/);
+    // A value with no inlineUpTo stores NULL = the platform default.
+    expect(valueRow(text, "organization_state")).toMatch(/, NULL\),?$/);
+  });
+
+  it("appends the guide pointer inside the stored intro, on insert and on update", () => {
+    const text = sql();
+    const pointer =
+      "For the full guide to this page, load skill `surface-guide-education-classes` (skill tool, action get) before writing.\n</surface_intro>";
+    const insert = text.slice(0, text.indexOf("ON CONFLICT (name) DO NOTHING"));
+    const update = text.slice(text.indexOf("UPDATE ui.ui_surface SET"));
+    expect(insert).toContain(pointer);
+    expect(update.slice(0, update.indexOf("WHERE name ="))).toContain(pointer);
+  });
+
+  it("upserts the guide as a public system reference skill, governance insert-only", () => {
+    const text = sql();
+    const update = text.slice(text.indexOf("UPDATE skill.definition SET"));
+    const updateStmt = update.slice(0, update.indexOf(";\n"));
+    expect(updateStmt).toContain(
+      "label = 'My Classes — how to work on this page'",
+    );
+    expect(updateStmt).toContain("WHERE skill_id = 'surface-guide-education-classes'");
+    expect(updateStmt).not.toMatch(/organization_id\s*=\s*'[^']*',/);
+    expect(updateStmt).not.toMatch(/visibility\s*=/);
+    const insert = text.slice(text.indexOf("INSERT INTO skill.definition"));
+    expect(insert).toContain(
+      `'reference', '# My Classes — how to work on this page`,
+    );
+    expect(insert).toContain(`true, true, '${SYSTEM_ORG}', 'public'`);
+    expect(insert).toContain(
+      "WHERE NOT EXISTS (SELECT 1 FROM skill.definition WHERE skill_id = 'surface-guide-education-classes'",
+    );
+  });
+
+  it("emits no skill SQL for a surface without a guide", () => {
+    const text = emitSurfaceSyncSql({
+      surfaceNames: [SURFACE],
+      organizationId: SYSTEM_ORG,
+    });
+    expect(text).not.toContain("skill.definition");
+    expect(text).not.toContain("load skill `surface-guide-");
+  });
+});
