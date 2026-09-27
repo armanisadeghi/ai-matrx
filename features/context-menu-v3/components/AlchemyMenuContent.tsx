@@ -92,7 +92,7 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
       readOnly: hasRichDocument ? !sourceWritable : !menuProps.isEditable,
       writable: sourceWritable ? [SOURCE_WRITE_TARGET] : [],
       // The strip's Copy IS the registry's one-tap copy here — one row, not two.
-      excludedActionIds: [...(menuProps.excludedRichActions ?? []), ...(hasRichDocument ? ["copy"] : [])],
+      excludedActionIds: [...m.excludedRichActionIds, ...(hasRichDocument ? ["copy"] : [])],
       organizationId: m.richDocCtx.organizationId,
       auth: {
         authenticated: m.richDocCtx.isAuthenticated,

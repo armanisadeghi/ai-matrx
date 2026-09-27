@@ -248,6 +248,8 @@ export interface ContextMenuActions {
   boundAgentsError: string | null;
   /** Re-run the library fetches after a failure or a missed deadline. */
   retryLibraries: () => void;
+  /** Rich-document action ids this menu must not draw (surface exclusions + already-here). */
+  excludedRichActionIds: string[];
   richDocCtx: RichDocumentActionContext;
   /** The registry actions this menu shows — rendered as the ONE tree. */
   registryActions: RichDocumentAction[];
@@ -518,19 +520,23 @@ export function useContextMenuActions(
     applicationScope: scope,
     ...(props.richDocCtxExtras ?? {}),
   };
+  // Never an action that targets the place this menu already is (Save to
+  // Notes inside a note, Edit inside the editor). The SAME list goes to the
+  // click target (AlchemyMenuContent), because the rich-document provider
+  // draws its rows from the target, not from this resolve — live on
+  // /notes/<id> the preview still showed them while only this list had them.
+  const excludedRichActionIds = [
+    ...(props.excludedRichActions ?? []),
+    ...actionsAlreadyHere({
+      sourceType: richDocSource.type,
+      surfaceName,
+      isEditable: Boolean(isEditable),
+    }),
+  ];
   const richActions =
     actionText.source !== "none"
       ? resolveActions(richDocCtx, {
-          // Never an action that targets the place this menu already is
-          // (Save to Notes inside a note, Edit inside the editor).
-          exclude: [
-            ...(props.excludedRichActions ?? []),
-            ...actionsAlreadyHere({
-              sourceType: richDocSource.type,
-              surfaceName,
-              isEditable: Boolean(isEditable),
-            }),
-          ],
+          exclude: excludedRichActionIds,
           extra: props.extraRichActions,
         })
       : [];
@@ -1233,6 +1239,7 @@ export function useContextMenuActions(
     boundAgentSections,
     boundAgentsLoading,
     boundAgentsError,
+    excludedRichActionIds,
     retryLibraries: () => {
       void refresh();
       void refreshBoundAgents();
