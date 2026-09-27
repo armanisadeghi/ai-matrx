@@ -99,11 +99,13 @@ const ALL_TAB_IDS: TabId[] = [
 ];
 
 const TAB_LABELS: Record<TabId, string> = {
-  write: "Plain Text Editor",
-  matrx_split: "Matrx Split",
-  markdown: "Split View Editor",
-  wysiwyg: "Rich Text Editor",
-  preview: "Preview",
+  // THE ONE VOCABULARY for editor views (same words as the Notes header):
+  // Write / Read / Markdown / Markdown + preview / Markdown with toolbar.
+  write: "Markdown",
+  matrx_split: "Markdown + preview",
+  markdown: "Markdown with toolbar",
+  wysiwyg: "Write",
+  preview: "Read",
   analysis: "Analysis",
   metadata: "Metadata",
   config: "Config",
