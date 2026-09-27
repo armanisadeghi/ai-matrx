@@ -176,6 +176,13 @@ export const WRITERS: Row[] = [
     functions: ["platform.tag_scope_id", "platform.tag_scope_type_id"],
   },
   {
+    id: "S13",
+    what: "Switch back: the copy's own words carried back to the current screens",
+    status: "flip_time",
+    plain: "platform._cutover_scope_own_words_back, the scopes switch's step to old (platform._cutover_seam_apply), writes a scope type's description / sort order and a field's category / tags / status note back into context.* from the store copy's carried words — only words the copy has, never an erase (suite scopestails_the_copy_carries_own_words B4). It is the store-to-image direction, so it goes when the image does at the final switch.",
+    functions: ["platform._cutover_scope_own_words_back"],
+  },
+  {
     id: "S10",
     what: "A template applied from a definition (and every catalogue template)",
     status: "proven",
