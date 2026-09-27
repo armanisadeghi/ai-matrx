@@ -1,31 +1,29 @@
 /**
  * Surface manifest — Assessments (`matrx-user/education-assessment`).
  *
- * ONE surface covering BOTH /education/quizzes AND /education/practice-tests.
- * The two routes render the identical component set (AssessmentHome /
- * AssessmentCreate / AssessmentDetail / the take flow) parameterized only by
- * `kindConfig.ts` (kind "quiz" | "practice_test", timed, defaultCount, metered
- * capability) — so they are one surface, not two. `urlPattern` names the
- * quizzes route; the route map covers /education/practice-tests as the same
- * surface (handled in `utils/route-to-surface.ts`, not here).
+ * ONE surface covering one quiz or practice test — its create, detail, take,
+ * edit and results views under /education/quizzes/* AND
+ * /education/practice-tests/*. They render the identical component set
+ * (AssessmentCreate / AssessmentDetail / the take flow) parameterized only by
+ * `kindConfig.ts`. The two LISTS (`/education/quizzes`,
+ * `/education/practice-tests` exactly) are their own surfaces since the
+ * 2026-09-27 page pass — `education-quizzes.manifest.ts` /
+ * `education-practice-tests.manifest.ts` — so this manifest carries no list
+ * vocabulary.
  *
- * The surface spans list / create / detail / take views, so most values are
- * view-scoped and optional. The two honest always-available values are
- * `assessment_kind` (every view knows which kind it is showing — the list and
- * create views from their route, the detail/take views from the loaded row)
- * and `view` (each emitter knows which view it is).
+ * The surface spans create / detail / take views, so most values are
+ * view-scoped and optional. The two always-available values are
+ * `assessment_kind` and `view`.
  *
  * Curated groups (band 0-899):
  *
  *   assessment_identity  Which kind + which view the learner is in
- *   library              The list view: loaded rows + live filter state
  *   generation           The create view: the full generation config
  *   record               The open assessment: row, items, access
  *   attempts             The open assessment's results history + take state
  *
- * Emitters: `features/education/assessment/components/AssessmentHome.tsx`,
- * `.../components/create/AssessmentCreate.tsx`, and
- * `.../components/AssessmentDetail.tsx` (which also covers the take flow —
+ * Emitters: `features/education/assessment/components/create/AssessmentCreate.tsx`
+ * and `.../components/AssessmentDetail.tsx` (which also covers the take flow —
  * the taker renders inside the detail route's provider).
  */
 
@@ -53,14 +51,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Assessment identity",
     sortOrder: 100,
     description:
-      "Which assessment kind (quiz or practice test) and which view (list / create / detail / take) the learner is in — read these first, they decide which other groups are populated.",
-  },
-  {
-    key: "library",
-    label: "Assessment library",
-    sortOrder: 200,
-    description:
-      "The list view: every assessment of this kind the learner can see, plus the live search + visibility filter state deciding what is on screen.",
+      "Which assessment kind (quiz or practice test) and which view (create / detail / take) the learner is in — read these first, they decide which other groups are populated.",
   },
   {
     key: "generation",
@@ -91,7 +82,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "assessment_kind",
     label: "Assessment kind",
     description:
-      'Which assessment family this surface is showing: "quiz" or "practice_test". Always present — the list and create views know it from the route, the detail/take views from the loaded row.',
+      'Which assessment family this surface is showing: "quiz" or "practice_test". Always present — the create view knows it from the route, the detail/take views from the loaded row.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 13,
@@ -102,92 +93,12 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "view",
     label: "Current view",
     description:
-      'Which view of the surface the learner is in: "list" (the library), "create" (the generator form), "detail" (one assessment\'s overview), or "take" (mid-attempt). Always present.',
+      'Which view of the surface the learner is in: "create" (the generator form), "detail" (one assessment\'s overview), or "take" (mid-attempt). Always present. (The list is its own surface.)',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 6,
     sortOrder: 310,
     group: "assessment_identity",
-  },
-
-  // ── Library (list view only) ──────────────────────────────────────────
-  {
-    name: "assessments_loaded",
-    label: "Assessments loaded",
-    description:
-      "True once the list view's assessment query finished successfully; false while loading or after a failure (see `list_error`). Absent outside the list view.",
-    valueType: "boolean",
-    alwaysAvailable: false,
-    typicalCharCount: 5,
-    sortOrder: 400,
-    group: "library",
-  },
-  {
-    name: "assessment_count",
-    label: "Total assessments",
-    description:
-      "How many assessments of this kind the learner can see in total, before search/visibility filters. Zero for a learner with none yet. Absent until the list loads (and outside the list view).",
-    valueType: "number",
-    alwaysAvailable: false,
-    typicalCharCount: 3,
-    sortOrder: 410,
-    group: "library",
-  },
-  {
-    name: "assessments",
-    label: "All assessments",
-    description:
-      "Every loaded assessment of this kind, recent-first, as { id, title, topic, exam_type, depth, status, visibility, updated_at }. Absent outside the list view and until the query resolves. Can be large — bindable-only; bind `visible_assessments` for what is on screen.",
-    valueType: "array",
-    alwaysAvailable: false,
-    typicalCharCount: 6000,
-    autoContext: false,
-    sortOrder: 420,
-    group: "library",
-  },
-  {
-    name: "visible_assessments",
-    label: "Assessments on screen",
-    description:
-      "The assessments currently passing the search + visibility filters, in render order, same shape as `assessments`. Empty array when the filters match nothing. Absent outside the list view. This — not `assessments` — is what the learner is looking at.",
-    valueType: "array",
-    alwaysAvailable: false,
-    typicalCharCount: 2000,
-    sortOrder: 430,
-    group: "library",
-  },
-  {
-    name: "search_query",
-    label: "Search query",
-    description:
-      "The learner's list-view search text, matched across title, topic, description, and exam type. Absent when the box is empty or outside the list view.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 30,
-    sortOrder: 440,
-    group: "library",
-  },
-  {
-    name: "visibility_filter",
-    label: "Visibility filter",
-    description:
-      'The list view\'s active visibility chip: "all", "mine", "shared", or "public". Absent outside the list view (defaults to "all" inside it).',
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 6,
-    sortOrder: 450,
-    group: "library",
-  },
-  {
-    name: "list_error",
-    label: "List load error",
-    description:
-      "The error shown in place of the list when the assessment query failed. Absent on the happy path — present so an agent helps with the real failure instead of hallucinating an empty library.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 120,
-    sortOrder: 460,
-    group: "library",
   },
 
   // ── Generation config (create view only) ──────────────────────────────
@@ -630,33 +541,21 @@ export const educationAssessmentManifest: SurfaceManifest = {
   client: "matrx-user",
   executionMode: "python-stream",
   description:
-    "Quizzes + practice tests: one assessment surface (/education/quizzes, /education/practice-tests).",
+    "One quiz or practice test: its create, detail, take, edit and results views (/education/quizzes/*, /education/practice-tests/*). The two lists are their own surfaces.",
   readiness: "partial",
   readinessNote:
-    "Manifest + emitters shipped for the list, create, and detail/take views (one surface spanning /education/quizzes and /education/practice-tests). Not yet stamped verified: the DB sync, a live non-matching-name binding test, and the Matrx-vs-matrix context check have not been run; no agent roles are declared (the generator/grader agents resolve via ASSESSMENT_AGENTS ids, not surface roles); no `data-surface-value` Locate anchors are tagged; and the detail emitter mounts only after the row loads, so the loading/error states emit nothing.",
+    "Manifest + emitters shipped for the create and detail/take views (the lists moved to education-quizzes / education-practice-tests on 2026-09-27) (one surface spanning /education/quizzes and /education/practice-tests). Not yet stamped verified: the DB sync, a live non-matching-name binding test, and the Matrx-vs-matrix context check have not been run; no agent roles are declared (the generator/grader agents resolve via ASSESSMENT_AGENTS ids, not surface roles); no `data-surface-value` Locate anchors are tagged; and the detail emitter mounts only after the row loads, so the loading/error states emit nothing.",
   label: "Assessments",
-  urlPattern: "/education/quizzes",
+  urlPattern: "/education/quizzes/[id]",
   intro: `<surface_intro>
-You are on the Assessments surface — ONE surface behind both /education/quizzes and /education/practice-tests. Quizzes and practice tests share every component; assessment_kind tells you which family the learner is in, and practice tests are the timed, longer variant.
-Read assessment_kind and view first — view decides which groups are populated. In "list" the learner is browsing their library (visible_assessments is what is actually on screen after their search + visibility filters; the full set is bindable via assessments). In "create" they are composing a generation: the Generation config group is the exact request they are about to send (source_mode says whether it is an ungrounded topic run or grounded in a deck/document — grounded runs cite their source). In "detail" one assessment is open: the Open assessment group describes it and the Attempts group carries their history.
+You are on the Assessments surface — ONE quiz or practice test (create, detail, take), under /education/quizzes/* or /education/practice-tests/*. Quizzes and practice tests share every component; assessment_kind tells you which family the learner is in, and practice tests are the timed, longer variant.
+Read assessment_kind and view first — view decides which groups are populated. In "create" they are composing a generation: the Generation config group is the exact request they are about to send (source_mode says whether it is an ungrounded topic run or grounded in a deck/document — grounded runs cite their source). In "detail" one assessment is open: the Open assessment group describes it and the Attempts group carries their history.
 When is_taking is true the learner is mid-attempt: never reveal correct answers, hints toward the key, or the contents of items — help with process, pacing, and understanding only. The questions list (items) includes answer keys and is deliberately bindable-only for that reason.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
   writeTargets,
 };
-
-/** One entry in `assessments` / `visible_assessments`. */
-export interface AssessmentListSummary {
-  id: string;
-  title: string;
-  topic: string | null;
-  exam_type: string | null;
-  depth: string | null;
-  status: string;
-  visibility: string;
-  updated_at: string;
-}
 
 /** One entry in `items` (answer keys included — bindable-only). */
 export interface AssessmentItemSummary {
@@ -694,18 +593,10 @@ export interface AssessmentSourceSummary {
 export function createEducationAssessmentScope(values: {
   // alwaysAvailable: true → required
   assessment_kind: string;
-  view: "list" | "create" | "detail" | "take";
+  view: "create" | "detail" | "take";
   // alwaysAvailable: false → optional
   selection?: string;
   context?: Record<string, unknown>;
-  // library (list view)
-  assessments_loaded?: boolean;
-  assessment_count?: number;
-  assessments?: AssessmentListSummary[];
-  visible_assessments?: AssessmentListSummary[];
-  search_query?: string;
-  visibility_filter?: string;
-  list_error?: string;
   // generation (create view)
   source_mode?: string;
   topic?: string;

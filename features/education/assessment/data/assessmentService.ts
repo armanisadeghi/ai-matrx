@@ -11,7 +11,7 @@
 
 "use client";
 
-import { withDisplayTitle } from "@/components/markdown-core/plain-title";
+import { displayTitle, withDisplayTitle } from "@/components/markdown-core/plain-title";
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
@@ -78,13 +78,16 @@ export const assessmentService = {
         .insert({
           organization_id: orgId,
           assessment_kind: input.assessmentKind,
-          title: input.title,
+          // Titles and topics are plain text at the write boundary: a source
+          // named "# AP Chemistry…" must never file a quiz under that raw line
+          // (components/markdown-core/plain-title.ts).
+          title: displayTitle(input.title),
           description: input.description ?? null,
           status: input.status ?? "draft",
           source_kind: input.sourceKind ?? null,
           source_id: input.sourceId ?? null,
-          source_title: input.sourceTitle ?? null,
-          topic: input.topic ?? null,
+          source_title: input.sourceTitle ? displayTitle(input.sourceTitle) : null,
+          topic: input.topic ? displayTitle(input.topic) : null,
           exam_type: input.examType ?? null,
           depth: input.depth ?? null,
           time_limit_seconds: input.timeLimitSeconds ?? null,
@@ -108,9 +111,12 @@ export const assessmentService = {
     patch: AssessmentPatch,
   ): Promise<AsResult<AssessmentRow>> {
     try {
+      const clean: AssessmentPatch = { ...patch };
+      if (typeof clean.title === "string") clean.title = displayTitle(clean.title);
+      if (typeof clean.topic === "string") clean.topic = displayTitle(clean.topic) || null;
       const { data, error } = await EDU()
         .from("assessment")
-        .update(patch as never)
+        .update(clean as never)
         .eq("id", id)
         .select("*")
         .single();

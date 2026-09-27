@@ -78,7 +78,7 @@ const SOURCE_COLUMNS: EntityColumnSpec<ConnectedSourceRow>[] = [
       cell: (row) => (
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-sm">{row.title}</span>
-          {row.subtitle ? (
+          {row.subtitle && row.subtitle !== row.author ? (
             <span className="truncate text-xs text-muted-foreground">
               {row.subtitle}
             </span>
@@ -335,8 +335,14 @@ function useConnectedSourceRowActions(
           items: [
             {
               id: "open",
-              label: row.url ? "Open where it lives" : "No link for this item",
+              label: "Open where it lives",
               disabled: !row.url,
+              ...(row.url
+                ? {}
+                : {
+                    description:
+                      "The provider gives this item no link of its own. Select it and use Read corrections, Read history or Export list instead.",
+                  }),
               onSelect: () => openRow(row),
             },
           ],
@@ -358,7 +364,7 @@ export function createConnectedSourceListConfig(
   return {
     surfaceKey: "connected-sources-browse",
     entityLabel: { singular: "Source", plural: "Sources" },
-    sourceFeature: "transcription",
+    sourceFeature: "media_catalog",
     scopes: CONNECTED_SOURCE_SCOPES,
     service: createConnectedSourceListService(dispatch, target, onReport),
     // The active organization and the chosen account are BOTH inputs to this
@@ -377,9 +383,9 @@ export function createConnectedSourceListConfig(
     bulkActions: bulkActions(dispatch),
     bulkSelection: { noun: "source" },
     emptyState: {
-      title: "Nothing here yet",
+      title: "Nothing in this account matches",
       description:
-        "Pick a connected account above and press Browse. The whole drive, mailbox, calendar or chat list is walked live — nothing is copied into AI Matrx until you select it.",
+        "The account was read live and holds nothing matching your search. Clear the search, or pick another account above.",
     },
   };
 }

@@ -167,6 +167,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/knowledge/viewer", surface: "matrx-user/knowledge-viewer" },
   { prefix: "/knowledge", surface: "matrx-user/knowledge-library" },
   { prefix: "/research", surface: "matrx-user/research" },
+  { prefix: "/connected-sources", surface: "matrx-user/connected-sources" },
   { prefix: "/sandbox", surface: "matrx-user/sandboxes" },
   { prefix: "/transcripts/cleanup", surface: "matrx-user/transcripts-cleanup" },
   { prefix: "/transcripts/scribe", surface: "matrx-user/transcript-scribe" },
@@ -763,6 +764,17 @@ export function surfaceFromPathname(
   // `/research` prefix mapping — they describe one topic, not a list.
   if (/^\/research\/topics\/?$/.test(stripped)) {
     return "matrx-user/research-topics";
+  }
+
+  // The Quizzes and Practice Tests LISTS are exactly `/education/quizzes` and
+  // `/education/practice-tests`, each its own list surface. One assessment's
+  // detail / take / edit / results and `/new` keep the shared
+  // `matrx-user/education-assessment` via the prefix table.
+  if (/^\/education\/quizzes\/?$/.test(stripped)) {
+    return "matrx-user/education-quizzes";
+  }
+  if (/^\/education\/practice-tests\/?$/.test(stripped)) {
+    return "matrx-user/education-practice-tests";
   }
 
   // My Classes is exactly `/education/classes`. A class HUB

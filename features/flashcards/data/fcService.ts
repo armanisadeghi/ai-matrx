@@ -126,7 +126,10 @@ export const fcService = {
         .from("fc_set")
         .insert({
           organization_id: orgId,
-          name: input.name,
+          // A deck name is plain text at the write boundary — a source named
+          // "# AP Chemistry…" never files a deck under that raw line
+          // (components/markdown-core/plain-title.ts).
+          name: displayTitle(input.name),
           description: input.description ?? null,
           topic: input.topic ?? null,
           lesson: input.lesson ?? null,
@@ -150,9 +153,11 @@ export const fcService = {
     >,
   ): Promise<FcResult<FcSetRow>> {
     try {
+      const clean =
+        typeof patch.name === "string" ? { ...patch, name: displayTitle(patch.name) } : patch;
       const { data, error } = await EDU()
         .from("fc_set")
-        .update(patch)
+        .update(clean)
         .eq("id", setId)
         .select("*")
         .single();

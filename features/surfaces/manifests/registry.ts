@@ -61,6 +61,7 @@ import { searchManifest } from "./search.manifest";
 import { documentsManifest } from "./documents.manifest";
 import { researchManifest } from "./research.manifest";
 import { researchTopicsManifest } from "./research-topics.manifest";
+import { connectedSourcesManifest } from "./connected-sources.manifest";
 import { tasksManifest } from "./tasks.manifest";
 import { dataTablesManifest } from "./data-tables.manifest";
 import { filesManifest } from "./files.manifest";
@@ -138,6 +139,8 @@ import { educationFlashcardSetManifest } from "./education-flashcard-set.manifes
 import { educationFlashcardEditorManifest } from "./education-flashcard-editor.manifest";
 import { educationFastfireManifest } from "./education-fastfire.manifest";
 import { educationAssessmentManifest } from "./education-assessment.manifest";
+import { educationQuizzesManifest } from "./education-quizzes.manifest";
+import { educationPracticeTestsManifest } from "./education-practice-tests.manifest";
 import { educationGradeWorkManifest } from "./education-grade-work.manifest";
 import { educationPlannerManifest } from "./education-planner.manifest";
 import { educationClassesManifest } from "./education-classes.manifest";
@@ -303,6 +306,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   documentsManifest,
   researchManifest,
   researchTopicsManifest,
+  connectedSourcesManifest,
   tasksManifest,
   dataTablesManifest,
   filesManifest,
@@ -391,6 +395,8 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationFlashcardEditorManifest,
   educationFastfireManifest,
   educationAssessmentManifest,
+  educationQuizzesManifest,
+  educationPracticeTestsManifest,
   educationGradeWorkManifest,
   educationPlannerManifest,
   educationClassesManifest,

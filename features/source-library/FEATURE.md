@@ -168,6 +168,7 @@ nothing moves; the claim is gone. The day the server publishes a word count,
 
 ## Change log
 
+- `2026-09-27` — page-pass 2026-09-27: /connected-sources (`features/connected-sources/`), type list, posture sharp after Linear, fixed: the page opened on the server's raw no-organization refusal and never re-asked after one was picked (now held with the inline picker, reloads on org change); title renamed to "Connected sources" with no subtitle (matched the tab); five full-width cards of explanatory sentences replaced by one account picker above the list (first connected account opens by itself, each source's reach in a tooltip, "Connect Microsoft" as a real link to Settings → Integrations); list clears the header, no meaningless "Mine 0" tab, row subtitle no longer repeats the From column, disabled menu item says why; new read-only agent surface `matrx-user/connected-sources` (accounts, XML source bundle, full rows, server summary, load_error).
 - `2026-09-20` — Claude (Opus): **the dialogs' BODIES now speak the Library's
   own noun, and three things that could never be true are gone (jobs-bar
   cold-walk-13: N6 + Friction).** Walk 12 fixed the headers; walk 13 found

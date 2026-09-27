@@ -90,7 +90,7 @@ export const EDU_TOOLS: EduToolEntry[] = [
   },
   {
     slug: "quizzes",
-    name: "Quiz Builder",
+    name: "Quizzes",
     tagline: "Auto-generate quizzes from any material",
     description: "Generate MC, T/F, fill-in-blank, short-answer, and written-response questions from any deck or upload.",
     icon: ListChecks,
