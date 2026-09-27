@@ -1,7 +1,7 @@
 'use client';
 
 import {Card, CardHeader, CardTitle, CardDescription} from '@/components/ui/card';
-import Link from 'next/link';
+import Link from "@/components/navigation/AppLink";
 import {usePathname} from 'next/navigation';
 import type {NavCardProps, NavItem} from './types';
 

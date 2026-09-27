@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import Link from "@/components/navigation/AppLink";
 import { useRouter, usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { Home, Settings, Boxes, TestTube2 } from "lucide-react";

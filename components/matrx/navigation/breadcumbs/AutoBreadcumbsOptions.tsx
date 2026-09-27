@@ -10,7 +10,7 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import {Component, ChevronRight, LucideIcon} from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/navigation/AppLink";
 import React from "react";
 import { cn } from "@/lib/utils";
 

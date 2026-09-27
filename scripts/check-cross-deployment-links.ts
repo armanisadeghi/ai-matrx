@@ -68,6 +68,10 @@ const SATELLITE_TREES = [
   "app/(dev)/",
   "features/shell/",
   "components/layout/",
+  // The module header every admin page mounts (AdminModuleHeader → ResponsiveModuleHeader*):
+  // its phone Home button was a `next/link` to /dashboard, so every admin page at phone
+  // width printed the preflight CORS error (lane HANDOVER, 2026-09-27, context inspector).
+  "components/matrx/navigation/",
   "features/admin/",
   "features/administration/",
 ];
@@ -189,13 +193,14 @@ export function scanSource(
   const constantHref = constants.size
     ? new RegExp(`href\\s*=\\s*[{]\\s*(${[...constants.keys()].join("|")})\\s*[}]`)
     : null;
-  if (
-    SATELLITE_TREES.some((tree) => file.startsWith(tree)) &&
-    /^import\s+Link\b[^\n]*from\s+["']next\/link["']/m.test(source)
-  ) {
+  const nextLinkImport = SATELLITE_TREES.some((tree) => file.startsWith(tree))
+    ? /^import\s+Link\b[^\n]*from\s+["']next\/link["']/m.exec(source)
+    : null;
+  if (nextLinkImport) {
     found.push({
       file,
-      line: lineOf(source, source.indexOf('from "next/link"')),
+      // The match's own line: a single-quoted import used to report the file's last line.
+      line: lineOf(source, nextLinkImport.index),
       text: 'import Link from "next/link"',
       why:
         "this tree renders on a SATELLITE deployment, which serves only its " +

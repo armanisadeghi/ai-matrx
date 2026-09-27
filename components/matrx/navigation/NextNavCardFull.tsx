@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import Link from 'next/link';
+import Link from "@/components/navigation/AppLink";
 import { usePathname } from 'next/navigation';
 import {NavCardProps, NavItem} from "./types";
 import { cva } from 'class-variance-authority';

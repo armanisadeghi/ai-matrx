@@ -4,7 +4,7 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
 import { ChevronLeft, Home, ShieldPlus } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/navigation/AppLink";
 import { Button } from "@/components/ui/button";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { cn } from "@/lib/utils";

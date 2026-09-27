@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import Link from "@/components/navigation/AppLink";
 import { ChevronRight } from 'lucide-react';
 import {cn} from "@/utils/cn";
 
