@@ -34,6 +34,7 @@ import {
   sendSecureDelivery,
   type SentSecureDelivery,
 } from "./secureDeliveryService";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SecureLinkPanelProps {
   resourceType: string;
@@ -203,7 +204,12 @@ export function SecureLinkPanel({ resourceType, resourceId, resourceName }: Secu
         </p>
       ) : null}
 
-      {optionsError ? <p className="text-xs text-destructive">{optionsError}</p> : null}
+      {optionsError ? (
+        <p className="text-xs text-destructive">
+          {optionsError}
+          <ErrorAlchemyMenu error={optionsError} operation="Load the secure-link options" />
+        </p>
+      ) : null}
       {protectedFields.length > 0 ? (
         <fieldset className="space-y-2">
           <legend className="text-xs font-medium">Include protected fields from {resourceName}</legend>

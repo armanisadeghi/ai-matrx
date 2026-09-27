@@ -57,6 +57,7 @@ import {
   buildLaunchPlan,
   type SendToAgentDestinationOption,
 } from "./send-to-agent-plan";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface SendToAgentDialogProps {
   isOpen: boolean;
@@ -214,6 +215,7 @@ export default function SendToAgentDialog({
         <div className="space-y-3 py-4 text-sm">
           <p className="text-destructive">
             Couldn&apos;t read {agentName}&apos;s inputs: {load.message}
+            <ErrorAlchemyMenu error={load.message} operation={`Read ${agentName}'s inputs`} />
           </p>
           <Button
             size="sm"
