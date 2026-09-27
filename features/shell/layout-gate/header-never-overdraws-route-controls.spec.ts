@@ -61,19 +61,21 @@ const TAILWIND_SUBSET = `
  * Menu — `shrink-0`, like AgentHeader's), then the right set: the org chip with
  * its compactable words, then Search / Agents / Canvas / Inbox.
  */
-const PAGE = (routeWidth: number) => `
+const PAGE = (routeWidth: number, variant: "plain" | "squeezed" | "badge" = "plain") => `
 <div class="shell-root">
   <header class="shell-header">
     <button class="slot" data-testid="hamburger">=</button>
     <div class="shell-header-center" id="shell-header-center">
       <div class="shell-header-inject flex">
+        ${variant === "squeezed" ? `<div class="flex items-center w-full" style="min-width:0"><div style="flex:1 1 0%; min-width:0">` : ""}
         <div class="flex items-center justify-between w-full" data-testid="route-row">
           <div data-testid="route-left" style="width:${routeWidth - 150}px; flex-shrink:0">Quick Test Agent · modes</div>
           <div class="flex items-center gap shrink-0" data-testid="route-actions">
             <button data-testid="save" aria-label="Save changes">Save</button>
-            <button class="slot" data-testid="menu" aria-label="Menu">M</button>
+            <button class="slot" data-testid="menu" aria-label="Menu"${variant === "badge" ? ` style="position:relative"` : ""}>M${variant === "badge" ? `<span style="position:absolute; right:-10px; top:0; width:14px">3</span>` : ""}</button>
           </div>
         </div>
+        ${variant === "squeezed" ? `</div><div class="flex shrink-0"><button class="slot" data-testid="toggle" aria-label="Hide surface details">T</button><button class="slot" aria-label="Hide agent access">U</button></div></div>` : ""}
       </div>
     </div>
     <div class="shell-header-right" data-header-right-set>
@@ -90,9 +92,15 @@ const PAGE = (routeWidth: number) => `
 </div>
 `;
 
-async function mount(page: Page, width: number, routeWidth: number, guard: boolean) {
+async function mount(
+  page: Page,
+  width: number,
+  routeWidth: number,
+  guard: boolean,
+  variant: "plain" | "squeezed" | "badge" = "plain",
+) {
   await page.setViewportSize({ width, height: 600 });
-  await page.setContent(PAGE(routeWidth));
+  await page.setContent(PAGE(routeWidth, variant));
   await page.addStyleTag({ content: TAILWIND_SUBSET });
   await page.addStyleTag({ content: SHELL_CSS });
   if (guard) {
@@ -176,4 +184,24 @@ test("when even the icons cannot make room, the header says so instead of overla
   const overdrawn = await page.evaluate(() => document.querySelector(".shell-header")!.getAttribute("data-header-overdrawn"));
   expect(Number(overdrawn)).toBeGreaterThan(0);
   expect(warnings.join("\n")).toContain("[shell-header] OVERDRAWN");
+});
+
+test("a route header squeezed inside its own row (the surfaces page's toggles) counts as crowded too", async ({ page }) => {
+  // 1024px: the center fits as a whole, but the inner flex-1/min-w-0 wrapper is
+  // narrower than the route row, so Menu slides under the page's own toggle.
+  await mount(page, LAPTOP, ROUTE - 88 + 20, false, "squeezed");
+  const before = await hitTest(page, "menu");
+  expect(before.receivers).not.toEqual(["menu", "menu", "menu"]);
+  await mount(page, LAPTOP, ROUTE - 88 + 20, true, "squeezed");
+  expect((await hitTest(page, "menu")).receivers).toEqual(["menu", "menu", "menu"]);
+  expect((await hitTest(page, "toggle")).receivers).toEqual(["toggle", "toggle", "toggle"]);
+});
+
+test("a badge hanging off a button is design, not a spill: the chip keeps its words", async ({ page }) => {
+  await mount(page, 1440, ROUTE, true, "badge");
+  const state = await page.evaluate(() => ({
+    crowded: document.querySelector(".shell-header")!.hasAttribute("data-header-crowded"),
+    overdrawn: document.querySelector(".shell-header")!.hasAttribute("data-header-overdrawn"),
+  }));
+  expect(state).toEqual({ crowded: false, overdrawn: false });
 });

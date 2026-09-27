@@ -38,7 +38,49 @@ export function installHeaderCrowdingGuard(header: HTMLElement): () => void {
   let warnedFor = "";
   let frame = 0;
 
-  const overflowOf = () => center.scrollWidth - center.clientWidth;
+  // The worst spill anywhere in the route header: an in-flow box that runs past
+  // the right edge of the box that holds it — the center itself, or any box
+  // inside it. The inner case is a route header squeezed INSIDE its own row:
+  // `/agents/<id>/surfaces` wraps AgentHeader in `flex-1 min-w-0` between its
+  // column toggles, so at 1024px the builder's Menu slid under "Hide surface
+  // details" while the center as a whole still fit. Measured from rects, not
+  // `scrollWidth`: an absolutely placed badge hanging off a button is designed,
+  // not a spill, and `scrollWidth` rounds (a 2.4px spill on /agents/<id>/latest
+  // already put the Menu's edge under the chip). Boxes that clip on purpose
+  // (`truncate`, scrollers) hold their own overflow and are skipped.
+  const overflowOf = () => {
+    let worst = 0;
+    const clipped = new Set<Element>();
+    // In-flow boxes laid out by `holder`, looking through `display: contents`
+    // wrappers (the portal roots are exactly that).
+    const boxesOf = (holder: Element): Element[] =>
+      [...holder.children].flatMap((child) => {
+        const style = getComputedStyle(child);
+        if (style.display === "contents") return boxesOf(child);
+        if (style.display === "none" || style.position === "absolute" || style.position === "fixed") return [];
+        return [child];
+      });
+    const holders = [center, ...center.querySelectorAll<HTMLElement>("*")];
+    for (const holder of holders) {
+      // Inside a box that clips, nothing can paint over a neighbour.
+      if (holder.parentElement && clipped.has(holder.parentElement)) {
+        clipped.add(holder);
+        continue;
+      }
+      if (holder !== center && getComputedStyle(holder).overflowX !== "visible") {
+        clipped.add(holder);
+        continue;
+      }
+      if (!(holder instanceof HTMLElement) || holder.clientWidth === 0) continue;
+      const edge = holder.getBoundingClientRect().right;
+      for (const box of boxesOf(holder)) {
+        const rect = box.getBoundingClientRect();
+        if (rect.width === 0) continue;
+        worst = Math.max(worst, rect.right - edge);
+      }
+    }
+    return worst > 0.5 ? Math.ceil(worst) : 0;
+  };
 
   const evaluate = () => {
     frame = 0;
@@ -46,10 +88,10 @@ export function installHeaderCrowdingGuard(header: HTMLElement): () => void {
     // — the only way to ever give the words back after a window widens.
     header.removeAttribute("data-header-crowded");
     header.removeAttribute("data-header-overdrawn");
-    if (overflowOf() <= 1) return;
+    if (overflowOf() <= 0) return;
     header.setAttribute("data-header-crowded", "");
     const still = overflowOf();
-    if (still <= 1) return;
+    if (still <= 0) return;
     header.setAttribute("data-header-overdrawn", String(still));
     const key = `${location.pathname}@${window.innerWidth}`;
     if (warnedFor !== key) {
@@ -70,9 +112,18 @@ export function installHeaderCrowdingGuard(header: HTMLElement): () => void {
   if (right) resize.observe(right);
 
   // The center's own box is sized by the flex row, not by its content, so a
-  // route header that grows (a Save button appearing, a label changing) never
-  // resizes it — watch the content itself.
-  const mutation = new MutationObserver(schedule);
+  // route header that grows (a Save button appearing, a label changing, a web
+  // font or an avatar finishing loading) never resizes it — watch the content
+  // itself: DOM changes via the MutationObserver, and the size of every element
+  // in the route header via the ResizeObserver (re-collected on each change;
+  // observing an element twice is a no-op).
+  const observeContent = () => {
+    for (const el of center.querySelectorAll("*")) resize.observe(el);
+  };
+  const mutation = new MutationObserver(() => {
+    observeContent();
+    schedule();
+  });
   mutation.observe(center, {
     childList: true,
     subtree: true,
@@ -81,6 +132,7 @@ export function installHeaderCrowdingGuard(header: HTMLElement): () => void {
     attributeFilter: ["class", "style", "hidden"],
   });
 
+  observeContent();
   evaluate();
 
   return () => {
