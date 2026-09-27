@@ -165,6 +165,9 @@ async function provisionScopeTableInTheStore(
 
 // ─── service ────────────────────────────────────────────────────────
 
+/** Scopes per context-values request: 100 ids keep the address well under the gateway's limit. */
+const CONTEXT_VALUES_SCOPES_PER_REQUEST = 100;
+
 export const scopesService = {
   /** Organization-scoped immutable schemas available for per-scope table values. */
   async listTableTemplates(
@@ -765,21 +768,41 @@ export const scopesService = {
     try {
       requireUserId();
       if (scopeIds.length === 0) return ok({ values: [] });
-      const { data, error } = await contextDb(supabase)
-        .from("context_item_values")
-        .select(
-          `scope_id, context_item_id, id, version, is_current,
-           value_text, value_number, value_boolean, value_date, value_json,
-           value_document_url, value_document_size_bytes,
-           value_timestamp, value_time,
-           value_reference_id, value_reference_type,
-           source_type, authored_by, created_at`,
-        )
-        .in("scope_id", scopeIds)
-        .eq("is_current", true);
-      if (error) return err(...mapPgErrorPair(error));
+      // IN BATCHES, EACH READ WHOLE (lane HANDOVER, 2026-09-27). One `.in()` over every listed scope
+      // put 600+ ids in the address: the gateway refused it before PostgREST saw it, the browser
+      // reported a CORS failure, and /scopes drew its tables with no values (9 console errors on
+      // admin@admin.com's hub). And one response is capped at 1,000 rows, so a large hub silently
+      // lost cells even when the address fit. Now: 100 scopes per request, each read to its
+      // declared total (`readAllRows` throws rather than return a short list).
+      const batches: string[][] = [];
+      for (let i = 0; i < scopeIds.length; i += CONTEXT_VALUES_SCOPES_PER_REQUEST) {
+        batches.push(scopeIds.slice(i, i + CONTEXT_VALUES_SCOPES_PER_REQUEST));
+      }
+      const pages = await Promise.all(
+        batches.map((batch) =>
+          readAllRows(
+            ({ from, to }) =>
+              contextDb(supabase)
+                .from("context_item_values")
+                .select(
+                  `scope_id, context_item_id, id, version, is_current,
+                   value_text, value_number, value_boolean, value_date, value_json,
+                   value_document_url, value_document_size_bytes,
+                   value_timestamp, value_time,
+                   value_reference_id, value_reference_type,
+                   source_type, authored_by, created_at`,
+                  { count: "exact" },
+                )
+                .in("scope_id", batch)
+                .eq("is_current", true)
+                .order("id", { ascending: true })
+                .range(from, to),
+            { label: "context.context_item_values (current, by scope)" },
+          ),
+        ),
+      );
       return ok({
-        values: (data ?? []) as (ContextItemValue & { scope_id: string })[],
+        values: pages.flat() as (ContextItemValue & { scope_id: string })[],
       });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
