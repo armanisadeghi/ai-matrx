@@ -24,7 +24,12 @@ import {
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { ProInput } from "@/components/official/ProInput";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import {
+  MERGE_FIELD_CHIP_CLASS,
+  MergeFieldInput,
+  type MergeFieldInputHandle,
+} from "@/components/merge-field-input/MergeFieldInput";
+import { AgentAppTagsInput } from "@/features/agent-apps/components/inputs/AgentAppTagsInput";
 import { Switch } from "@/components/ui/switch";
 import { SegmentedControl } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
@@ -70,7 +75,8 @@ import {
 } from "@/features/message-templates/lib/message-template-scope";
 import {
   COMMON_MERGE_FIELDS,
-  mergeFieldToken,
+  type MergeFieldInfo,
+  mergeFieldLabel,
   mergeFieldsIn,
   previewParts,
 } from "@/features/message-templates/lib/merge-fields";
@@ -106,14 +112,6 @@ function draftFrom(template: MessageTemplateDB): MessageTemplateDraftScope {
   };
 }
 
-function parseTags(input: string): string[] {
-  const out: string[] = [];
-  for (const raw of input.split(",")) {
-    const tag = raw.trim();
-    if (tag && !out.includes(tag)) out.push(tag);
-  }
-  return out;
-}
 
 function sameDraft(a: MessageTemplateDraftScope, b: MessageTemplateDraftScope) {
   return JSON.stringify(a) === JSON.stringify(b);
@@ -135,12 +133,11 @@ function FilledText({ text, show }: { text: string; show: "names" | "example" })
           <span
             key={i}
             title={`${part.field.label} — filled in when the template is used`}
-            className={cn(
-              "rounded px-1",
+            className={
               show === "names"
-                ? "bg-primary/10 font-medium text-primary"
-                : "bg-muted text-foreground",
-            )}
+                ? MERGE_FIELD_CHIP_CLASS
+                : "rounded bg-muted px-1 text-foreground"
+            }
           >
             {show === "names" ? part.field.label : part.field.example}
           </span>
@@ -150,45 +147,106 @@ function FilledText({ text, show }: { text: string; show: "names" | "example" })
   );
 }
 
-/** Subject + body as a person reads them, fields named or filled with examples. */
-function MessagePreview({ subject, body }: { subject: string; body: string }) {
-  const [show, setShow] = useState<"names" | "example">("names");
-  const fields = mergeFieldsIn(subject, body);
+type FieldShow = "names" | "example";
+
+/** Field names vs example values — one compact control. */
+function ShowToggle({
+  value,
+  onChange,
+}: {
+  value: FieldShow;
+  onChange: (v: FieldShow) => void;
+}) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-1.5">
-        <span className="text-xs font-medium text-muted-foreground">
-          {fields.length === 0
-            ? "No fields — every send is the same text"
-            : `Filled in when used: ${fields.map((f) => f.label).join(", ")}`}
-        </span>
-        {fields.length > 0 && (
-          <SegmentedControl
-            size="sm"
-            className="ml-auto"
-            value={show}
-            onValueChange={(v) => setShow(v === "example" ? "example" : "names")}
-            data={[
-              { value: "names", label: "Field names" },
-              { value: "example", label: "Example" },
-            ]}
-          />
-        )}
-      </div>
+    <SegmentedControl
+      size="sm"
+      className="shrink-0"
+      value={value}
+      onValueChange={(v) => onChange(v === "example" ? "example" : "names")}
+      data={[
+        { value: "names", label: "Fields" },
+        { value: "example", label: "Example" },
+      ]}
+    />
+  );
+}
+
+/** Subject + body as a person reads them — rows of the one record surface. */
+function MessageBody({
+  subject,
+  body,
+  show,
+}: {
+  subject: string;
+  body: string;
+  show: FieldShow;
+}) {
+  return (
+    <>
       {subject && (
         <div className="border-b border-border px-3 py-2 text-sm">
-          <span className="text-muted-foreground">Subject: </span>
+          <span className="text-muted-foreground">Subject </span>
           <FilledText text={subject} show={show} />
         </div>
       )}
-      <div className="whitespace-pre-wrap break-words p-3 text-sm leading-relaxed text-foreground">
+      <div className="whitespace-pre-wrap break-words px-3 py-3 text-sm leading-relaxed text-foreground">
         {body.trim() ? (
           <FilledText text={body} show={show} />
         ) : (
           <span className="text-muted-foreground">The message is empty.</span>
         )}
       </div>
-    </div>
+    </>
+  );
+}
+
+/** Insert a field into ONE input — each field that takes fields has its own. */
+function InsertFieldMenu({
+  used,
+  onInsert,
+  target,
+}: {
+  used: MergeFieldInfo[];
+  onInsert: (path: string) => void;
+  target: string;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+          aria-label={`Insert a field into the ${target}`}
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Insert field
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <div className="max-h-[60dvh] overflow-y-auto">
+          {used.length > 0 && (
+            <>
+              <DropdownMenuLabel>In this template</DropdownMenuLabel>
+              {used.map((f) => (
+                <DropdownMenuItem key={`used-${f.path}`} onSelect={() => onInsert(f.path)}>
+                  {f.label}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+            </>
+          )}
+          <DropdownMenuLabel>Common fields</DropdownMenuLabel>
+          {COMMON_MERGE_FIELDS.filter((f) => !used.some((u) => u.path === f.path)).map(
+            (f) => (
+              <DropdownMenuItem key={f.path} onSelect={() => onInsert(f.path)}>
+                {f.label}
+              </DropdownMenuItem>
+            ),
+          )}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -207,17 +265,19 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
   const [subject, setSubject] = useState(templateSubject(saved));
   const [role, setRole] = useState<MessageRole | null>(saved.role ?? null);
   const [isPublic, setIsPublic] = useState(isPubliclyVisible(saved.visibility));
-  const [tagsInput, setTagsInput] = useState((saved.tags ?? []).join(", "));
+  const [tags, setTags] = useState<string[]>(saved.tags ?? []);
+  const [show, setShow] = useState<FieldShow>("names");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const bodyRef = useRef<MergeFieldInputHandle>(null);
+  const subjectRef = useRef<MergeFieldInputHandle>(null);
 
   const draft: MessageTemplateDraftScope = {
     label: label.trim(),
     content,
     subject_template: subject.trim(),
     role,
-    tags: parseTags(tagsInput),
+    tags,
     visibility: isPublic ? "public" : "private",
   };
   const savedDraft = draftFrom(saved);
@@ -233,6 +293,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
   const isEmail = Boolean(savedSubject || subject.trim());
   const showRole = !isEmail;
   const usedFields = mergeFieldsIn(subject, content);
+  const viewFields = mergeFieldsIn(templateSubject(saved), saved.content ?? "");
   const updated = saved.updated_at ? DATE_FORMAT.format(new Date(saved.updated_at)) : null;
 
   // Unsaved edits are never lost to a refresh or a closed tab.
@@ -271,7 +332,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
         if (next.content !== undefined) setContent(next.content);
         if (next.subject_template !== undefined) setSubject(next.subject_template);
         if (next.role !== undefined) setRole(next.role);
-        if (next.tags !== undefined) setTagsInput(next.tags.join(", "));
+        if (next.tags !== undefined) setTags(next.tags);
         if (next.visibility !== undefined) setIsPublic(next.visibility === "public");
         if (mode !== "edit") router.replace(editHref, { scroll: false });
         return {
@@ -294,19 +355,6 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
       },
     },
   });
-
-  const insertField = (path: string) => {
-    const token = mergeFieldToken(path);
-    const el = bodyRef.current;
-    const start = el?.selectionStart ?? content.length;
-    const end = el?.selectionEnd ?? content.length;
-    setContent(content.slice(0, start) + token + content.slice(end));
-    requestAnimationFrame(() => {
-      if (!el) return;
-      el.focus();
-      el.setSelectionRange(start + token.length, start + token.length);
-    });
-  };
 
   const handleSave = async () => {
     if (isSaving || !canSave || !isDirty) return;
@@ -337,7 +385,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
       setSubject(templateSubject(row));
       setRole(row.role ?? null);
       setIsPublic(isPubliclyVisible(row.visibility));
-      setTagsInput((row.tags ?? []).join(", "));
+      setTags(row.tags ?? []);
       toast.success("Template saved");
       router.replace(pageHref, { scroll: false });
     } catch (err) {
@@ -375,7 +423,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
 
   const managedNotice =
     managedBy || note ? (
-      <div className="flex gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
+      <div className="flex gap-2 px-3 py-2 text-sm">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="space-y-0.5">
           {managedBy && (
@@ -421,16 +469,25 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
             : undefined
         }
         activeModeHref={mode === "edit" ? editHref : pageHref}
+        entityStatus={
+          mode === "edit" ? (
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {isSaving ? "Saving…" : isDirty ? "Unsaved changes" : "Saved"}
+            </span>
+          ) : undefined
+        }
         actions={
           canEdit
             ? [
-                ...(mode === "edit"
+                // Save exists only when there is something to save; the
+                // "Saved" state is the status text beside the name.
+                ...(mode === "edit" && isDirty
                   ? [
                       {
-                        label: isSaving ? "Saving" : isDirty ? "Save" : "Saved",
+                        label: isSaving ? "Saving" : "Save",
                         icon: Save,
                         primary: true,
-                        disabled: isSaving || !isDirty || !canSave,
+                        disabled: isSaving || !canSave,
                         onPress: handleSave,
                       },
                     ]
@@ -461,51 +518,51 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
         <div className="matrx-touch-targets h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
           <div className="mx-auto max-w-4xl space-y-3 px-4 pb-16 pt-3">
             {mode === "view" ? (
-              <>
-                <div className="flex flex-wrap items-center gap-2">
-                  {showRole && saved.role && (
-                    <Badge variant="outline" className="text-xs capitalize">
-                      {saved.role} message
+              // ONE record surface: header row, the managing job, subject, body.
+              <article className="overflow-hidden rounded-lg border border-border bg-card">
+                <div className="flex items-start gap-2 border-b border-border px-3 py-2">
+                  <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+                    {showRole && saved.role && (
+                      <Badge variant="outline" className="text-xs font-normal capitalize text-muted-foreground">
+                        {saved.role} message
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
+                      {isPubliclyVisible(saved.visibility) ? "Shared with everyone" : "Only you"}
                     </Badge>
-                  )}
-                  <Badge variant="secondary" className="text-xs">
-                    {isPubliclyVisible(saved.visibility)
-                      ? "Shared with everyone"
-                      : "Only you"}
-                  </Badge>
-                  {(saved.tags ?? []).map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                  {metaLine}
-                  <div className="ml-auto">
-                    <CopyButtons
-                      size="sm"
-                      label={`Message template ${displayLabel}`}
-                      human={copyText}
-                      json={() => saved}
-                      agent={() =>
-                        buildMessageTemplateScope({
-                          template: saved,
-                          canEdit: false,
-                          mode: "view",
-                          draft: savedDraft,
-                          isDirty: false,
-                          saveError: null,
-                        }).message_template as string
-                      }
-                    />
+                    {(saved.tags ?? []).map((tag) => (
+                      <Badge key={tag} variant="outline" className="text-xs font-normal">
+                        {tag}
+                      </Badge>
+                    ))}
+                    {metaLine}
                   </div>
+                  {viewFields.length > 0 && <ShowToggle value={show} onChange={setShow} />}
+                  <CopyButtons
+                    size="sm"
+                    label={`Message template ${displayLabel}`}
+                    human={copyText}
+                    json={() => saved}
+                    agent={() =>
+                      buildMessageTemplateScope({
+                        template: saved,
+                        canEdit: false,
+                        mode: "view",
+                        draft: savedDraft,
+                        isDirty: false,
+                        saveError: null,
+                      }).message_template as string
+                    }
+                  />
                 </div>
-
-                {managedNotice}
-
-                <MessagePreview subject={savedSubject} body={saved.content ?? ""} />
-              </>
+                {managedNotice && <div className="border-b border-border">{managedNotice}</div>}
+                <MessageBody subject={savedSubject} body={saved.content ?? ""} show={show} />
+              </article>
             ) : (
               <>
-                {managedNotice}
+                {managedNotice && (
+                  <div className="overflow-hidden rounded-lg border border-border">{managedNotice}</div>
+                )}
 
                 <div
                   className={cn(
@@ -549,86 +606,66 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="template-subject">Email subject</Label>
-                  <ProInput
-                    id="template-subject"
+                  <div className="flex items-end justify-between gap-2">
+                    <Label id="template-subject-label">Email subject</Label>
+                    <InsertFieldMenu
+                      target="email subject"
+                      used={usedFields}
+                      onInsert={(path) => subjectRef.current?.insertField(path)}
+                    />
+                  </div>
+                  <MergeFieldInput
+                    ref={subjectRef}
+                    aria-labelledby="template-subject-label"
                     value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    placeholder="Optional — fields work here too"
-                    className="text-base sm:text-sm"
+                    onChange={setSubject}
+                    fieldLabel={mergeFieldLabel}
+                    placeholder="Optional"
                   />
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex items-end justify-between gap-2">
-                    <Label htmlFor="template-body">Message</Label>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-8 gap-1">
-                          <Plus className="h-3.5 w-3.5" />
-                          Insert field
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-64">
-                        <div className="max-h-[60dvh] overflow-y-auto">
-                          {usedFields.length > 0 && (
-                            <>
-                              <DropdownMenuLabel>In this template</DropdownMenuLabel>
-                              {usedFields.map((f) => (
-                                <DropdownMenuItem
-                                  key={`used-${f.path}`}
-                                  onSelect={() => insertField(f.path)}
-                                >
-                                  {f.label}
-                                </DropdownMenuItem>
-                              ))}
-                              <DropdownMenuSeparator />
-                            </>
-                          )}
-                          <DropdownMenuLabel>Common fields</DropdownMenuLabel>
-                          {COMMON_MERGE_FIELDS.filter(
-                            (f) => !usedFields.some((u) => u.path === f.path),
-                          ).map((f) => (
-                            <DropdownMenuItem
-                              key={f.path}
-                              onSelect={() => insertField(f.path)}
-                            >
-                              {f.label}
-                            </DropdownMenuItem>
-                          ))}
-                        </div>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Label id="template-body-label">Message</Label>
+                    <InsertFieldMenu
+                      target="message"
+                      used={usedFields}
+                      onInsert={(path) => bodyRef.current?.insertField(path)}
+                    />
                   </div>
-                  <ProTextarea
-                    id="template-body"
+                  {/* Not ProTextarea: a textarea can only draw characters, so it
+                      would show {{…}} code; MergeFieldInput draws each field as
+                      a readable chip over the exact stored text. */}
+                  <MergeFieldInput
                     ref={bodyRef}
+                    aria-labelledby="template-body-label"
+                    multiline
                     value={content}
-                    onChange={(e) => setContent(e.target.value)}
+                    onChange={setContent}
+                    fieldLabel={mergeFieldLabel}
                     placeholder="Write the message. Use Insert field for a value filled in when it is sent."
-                    autoGrow
-                    minHeight={160}
-                    surfaceName={MESSAGE_TEMPLATE_SURFACE_NAME}
-                    sourceFeature="chat"
-                    getApplicationScope={getScope}
-                    className="font-mono text-base leading-relaxed sm:text-sm"
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Preview</Label>
-                  <MessagePreview subject={subject.trim()} body={content} />
-                </div>
+                {usedFields.length > 0 && (
+                  <section className="overflow-hidden rounded-lg border border-border bg-card">
+                    <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
+                      <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground">
+                        Preview
+                      </span>
+                      <ShowToggle value={show} onChange={setShow} />
+                    </div>
+                    <MessageBody subject={subject.trim()} body={content} show={show} />
+                  </section>
+                )}
 
                 <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_auto]">
                   <div className="space-y-1">
-                    <Label htmlFor="template-tags">Tags</Label>
-                    <ProInput
-                      id="template-tags"
-                      value={tagsInput}
-                      onChange={(e) => setTagsInput(e.target.value)}
-                      placeholder="Separate tags with commas"
-                      className="text-base sm:text-sm"
+                    <Label>Tags</Label>
+                    <AgentAppTagsInput
+                      value={tags}
+                      onChange={setTags}
+                      placeholder="Add a tag and press Enter"
                     />
                   </div>
                   <label className="matrx-tap-area flex h-9 cursor-pointer items-center gap-2 text-sm text-foreground">
