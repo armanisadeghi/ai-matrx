@@ -432,7 +432,7 @@ export function OrgManage({
               id="trash"
               icon={Trash2}
               title="Trash"
-              description="Items members archived in this organization. Restore puts them back and tells the owner."
+              description="What members archived here. Restoring puts it back, records it in the audit log and tells its owner; nothing here is deleted for good."
             >
               <OrgTrashSection organizationId={displayOrganization.id} />
             </SectionCard>

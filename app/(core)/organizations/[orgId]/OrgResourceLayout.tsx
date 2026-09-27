@@ -78,8 +78,11 @@ export function OrgResourceLayout({
           </Badge>
         }
       />
+      {/* BELOW THE GLASS HEADER (lane HANDOVER, 2026-09-27): p-4/p-6 put the first row of cards
+          under the header on every organization resource page (Tables, Notes, Files, …), their
+          titles inside the glass. The scroller's own padding starts the content under it. */}
       <div className="h-full overflow-y-auto bg-textured">
-        <div className="max-w-7xl mx-auto p-4 md:p-6">{children}</div>
+        <div className="max-w-7xl mx-auto px-4 pb-4 pt-[calc(var(--shell-header-h)+1rem)] md:px-6 md:pb-6">{children}</div>
       </div>
     </>
   );

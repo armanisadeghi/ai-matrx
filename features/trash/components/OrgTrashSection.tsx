@@ -20,12 +20,9 @@ export function OrgTrashSection({ organizationId }: { organizationId: string }) 
     .sort((a, b) => a.label.localeCompare(b.label));
 
   return (
+    // ONE SENTENCE, THE SECTION'S OWN (lane HANDOVER, 2026-09-27): this said again, in more words,
+    // what the Trash section's heading line above it had just said.
     <div className="space-y-2">
-      <p className="text-muted-foreground text-sm">
-        What members archived in this organization. Restoring puts it back where it was, records
-        it in the organization&apos;s audit log, and tells the person who owns it. Nothing here is
-        deleted for good.
-      </p>
       <TrashList scope={{ mode: "organization", organizationId, members: options }} />
     </div>
   );

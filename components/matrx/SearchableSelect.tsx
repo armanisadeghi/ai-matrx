@@ -80,23 +80,21 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
             />
             <CommandEmpty className="text-sm py-2 px-2">{noResultsText}</CommandEmpty>
             <CommandGroup className="max-h-60 overflow-auto">
+              {/* onSelect, not a click on an inner div (lane HANDOVER, 2026-09-27): the div's click
+                  was the only way to choose, so arrow keys and Enter highlighted an option and
+                  chose nothing. cmdk calls onSelect for Enter and for a click alike. */}
               {filteredOptions.map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.value}
+                  onSelect={() => {
+                    onChange(option);
+                    setOpen(false);
+                    setSearch('');
+                  }}
                   className="text-ellipsis overflow-hidden hover:bg-primary hover:text-primary-foreground"
                 >
-                  <div 
-                    className="flex-1"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onChange(option);
-                      setOpen(false);
-                    }}
-                  >
-                    <span className="truncate">{option.label}</span>
-                  </div>
+                  <span className="flex-1 truncate">{option.label}</span>
                 </CommandItem>
               ))}
             </CommandGroup>

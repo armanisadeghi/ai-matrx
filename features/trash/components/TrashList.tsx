@@ -16,6 +16,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import SearchableSelect from "@/components/matrx/SearchableSelect";
 import { Loader2, RotateCcw, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,11 @@ import {
 
 /** Rows per page — per kind in personal mode, per merged page in organization mode. */
 export const TRASH_PAGE = 50;
+/** Past this many kinds, the kind filter is one searchable picker instead of a row of chips. */
+const KIND_CHIPS_AT_MOST = 8;
+/** The picker's value for "every kind" (the chips' Recent / All). */
+const ALL_KINDS = "__all_kinds__";
+
 /** Rows per kind in the personal "Recent" overview. */
 const OVERVIEW_PER_KIND = 10;
 const EVERYONE = "__everyone__";
@@ -313,7 +319,31 @@ export function TrashList({
         </div>
       )}
 
-      {counts.length > 0 && (
+      {/* MANY KINDS ARE ONE SEARCHABLE PICKER, A FEW ARE CHIPS (lane HANDOVER, 2026-09-27): a
+          person with seventy kinds in Trash met seven rows of chips, and the first archived item
+          sat at the bottom of a 1600x900 screen. */}
+      {counts.length > KIND_CHIPS_AT_MOST && (
+        <div className="flex flex-wrap items-center gap-2 pb-3">
+          <span className="text-muted-foreground text-sm">Kind</span>
+          <div className="w-72 max-w-full">
+            <SearchableSelect
+              options={[
+                { value: ALL_KINDS, label: org ? "All" : "Recent" },
+                ...counts.map((c) => ({
+                  value: c.artifact_kind,
+                  label: `${c.label} (${Number(c.n).toLocaleString()})`,
+                })),
+              ]}
+              value={kind ?? ALL_KINDS}
+              onChange={(option) => setKind(option.value === ALL_KINDS ? null : option.value)}
+              placeholder={org ? "All" : "Recent"}
+              searchPlaceholder="Find a kind…"
+              noResultsText="No kind by that name is in Trash."
+            />
+          </div>
+        </div>
+      )}
+      {counts.length > 0 && counts.length <= KIND_CHIPS_AT_MOST && (
         <div className="flex flex-wrap gap-1.5 pb-3">
           <Button
             size="sm"
