@@ -122,7 +122,6 @@ export function conversationJson(conv: CapturedConversation): Payload {
     value: {
       title: conv.title,
       complete: conv.complete,
-      message_count: conv.messages.length,
       messages: conv.messages.map((m) => ({ ...m })),
     },
   };
