@@ -264,7 +264,8 @@ export function buildNotesEditorContextData(
     current_note_id: noteOpen ? noteId : undefined,
     current_note_title: noteRecord?.label || undefined,
     current_note_folder: noteRecord?.folder_name || undefined,
-    current_note_tags: noteRecord?.tags ?? undefined,
+    // Loaded and empty is [] — never omitted (the agent must see "no tags").
+    current_note_tags: noteRecord ? (noteRecord.tags ?? []) : undefined,
     current_note_visibility: noteRecord?.visibility || undefined,
     current_note_word_count: wordCount,
     current_note_updated_at: noteRecord?.updated_at || undefined,
