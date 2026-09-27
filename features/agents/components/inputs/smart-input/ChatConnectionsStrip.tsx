@@ -180,8 +180,7 @@ export function ChatConnectionsStrip({
     // What was chosen is only spoken once the read ANSWERED: before that a
     // "+ Choose…" chip would claim nothing is chosen, and after a failed read
     // the chip says so and retries — never a count of 0 that is really an error.
-    const attachmentsFailed = attachments.status === "failed";
-    const attachmentsReadSucceeded = attachments.status === "succeeded" && !attachments.error;
+    const attachmentsRead = attachments.error ? "failed" : attachments.status;
     return (
       <>
         {connections.map((connection) => {
@@ -248,7 +247,7 @@ export function ChatConnectionsStrip({
                 </button>
                 {/* Work: the chooser rides the connection chip as a count.
                     Advanced lists what was chosen as chips of their own. */}
-                {chooserLabel && attachmentsReadSucceeded && !showResources && chosen.length > 0 ? (
+                {chooserLabel && attachmentsRead === "succeeded" && !showResources && chosen.length > 0 ? (
                   <button
                     type="button"
                     onClick={openChooser}
@@ -261,7 +260,7 @@ export function ChatConnectionsStrip({
                   </button>
                 ) : null}
               </span>
-              {chooserLabel && attachmentsFailed ? (
+              {chooserLabel && attachmentsRead === "failed" ? (
                 <button
                   type="button"
                   onClick={attachments.reload}
@@ -275,7 +274,7 @@ export function ChatConnectionsStrip({
                   <span className="truncate">What is attached did not load · Retry</span>
                 </button>
               ) : null}
-              {chooserLabel && attachmentsReadSucceeded && showResources
+              {chooserLabel && attachmentsRead === "succeeded" && showResources
                 ? chosen.map((item) => {
                     // The provider's own default branch when it published one
                     // (a repository); any other resource simply has none.
@@ -302,7 +301,7 @@ export function ChatConnectionsStrip({
                     );
                   })
                 : null}
-              {chooserLabel && attachmentsReadSucceeded && showResources && chosen.length === 0 ? (
+              {chooserLabel && attachmentsRead === "succeeded" && showResources && chosen.length === 0 ? (
                 <button
                   type="button"
                   onClick={openChooser}
@@ -455,9 +454,11 @@ export function ChatConnectionsStrip({
                   }
                   aria-label={`${chooserLabel} from ${connection.name}${attachedCount > 0 ? ` — ${attachedCount} attached to this chat` : ""}`}
                   title={
-                    attachedCount > 0
-                      ? `${attachedCount} attached to this chat — ${chooserLabel}`
-                      : chooserLabel
+                    attachments.error
+                      ? `What is attached did not load (${attachments.error}) — ${chooserLabel}`
+                      : attachedCount > 0
+                        ? `${attachedCount} attached to this chat — ${chooserLabel}`
+                        : chooserLabel
                   }
                   className={cn(
                     "inline-flex h-4 items-center gap-0.5 rounded-r-full border-l border-border/50 pl-1 pr-1.5 transition-colors",
@@ -468,7 +469,7 @@ export function ChatConnectionsStrip({
                   )}
                 >
                   <Paperclip className="h-2.5 w-2.5" aria-hidden />
-                  {attachedCount > 0 ? (
+                  {attachments.status === "succeeded" && attachedCount > 0 ? (
                     <span className="tabular-nums">{attachedCount}</span>
                   ) : (
                     <span className="font-normal">{chooserLabel}</span>
