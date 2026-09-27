@@ -5566,7 +5566,7 @@ const UserTableViewer = ({
         >
           <div className="flex min-w-0 items-center gap-1 text-sm text-gray-600 dark:text-gray-400 md:gap-2">
             <Select value={String(limit)} onValueChange={steady.handleLimitChange}>
-              <SelectTrigger className="h-10 w-16 md:h-8 md:w-[70px]">
+              <SelectTrigger className="h-10 w-20 md:h-8 md:w-[70px]" aria-label="Rows per page">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">

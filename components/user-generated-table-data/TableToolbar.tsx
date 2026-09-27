@@ -342,7 +342,7 @@ export default function TableToolbar({
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Search table..."
+                placeholder="Search rows"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 data-surface-value="search_term"
