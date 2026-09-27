@@ -136,6 +136,8 @@ import { educationAssessmentManifest } from "./education-assessment.manifest";
 import { educationGradeWorkManifest } from "./education-grade-work.manifest";
 import { educationPlannerManifest } from "./education-planner.manifest";
 import { educationClassesManifest } from "./education-classes.manifest";
+import { educationOverviewManifest } from "./education-overview.manifest";
+import { educationStartManifest } from "./education-start.manifest";
 import { educationMindMapsManifest } from "./education-mind-maps.manifest";
 import { educationMemoryManifest } from "./education-memory.manifest";
 import { educationPracticeOralManifest } from "./education-practice-oral.manifest";
@@ -377,6 +379,8 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationGradeWorkManifest,
   educationPlannerManifest,
   educationClassesManifest,
+  educationOverviewManifest,
+  educationStartManifest,
   educationMindMapsManifest,
   educationMemoryManifest,
   educationPracticeOralManifest,

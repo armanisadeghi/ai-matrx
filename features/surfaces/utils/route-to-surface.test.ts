@@ -470,6 +470,13 @@ describe("Education tool-family resolution", () => {
     expect(surfaceFromPathname("/education/classes/ap-biology")).toBe(
       "matrx-user/education",
     );
+    expect(surfaceFromPathname("/education/overview")).toBe(
+      "matrx-user/education-overview",
+    );
+    expect(surfaceFromPathname("/education/start")).toBe(
+      "matrx-user/education-start",
+    );
+    expect(surfaceFromPathname("/education")).toBe("matrx-user/education");
   });
 
   it("keeps the pre-existing education surfaces and the hub fallback", () => {

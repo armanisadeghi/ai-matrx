@@ -730,6 +730,15 @@ export function surfaceFromPathname(
     return "matrx-user/education-classes";
   }
 
+  // The signed-in Study Hub home and the Create a study kit form are their
+  // own pages with their own vocabulary (dashboard; kit request + build).
+  if (/^\/education\/overview\/?$/.test(stripped)) {
+    return "matrx-user/education-overview";
+  }
+  if (/^\/education\/start\/?$/.test(stripped)) {
+    return "matrx-user/education-start";
+  }
+
   // Study-guide AUTHORING is `/education/learn/admin`, which sits under the
   // `/education/learn` prefix below — and that prefix also covers the PUBLIC
   // library index and the public `[...slug]` article. Those are anonymous
