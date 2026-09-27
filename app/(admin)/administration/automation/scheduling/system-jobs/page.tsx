@@ -95,6 +95,7 @@ import {
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 // The trigger types humanizeTrigger knows. A system trigger's `type` arrives
 // as a plain string on this wire (defensive contract), so an unknown value
@@ -937,13 +938,10 @@ export default function SystemJobsPage() {
             isFetching={fetching}
             pageSize={50}
             rowActions={(r) => renderRowActions(r)}
+            read={readOf({ loading, error: loadError }, { what: "system jobs", onRetry: () => void load() })}
             emptyState={{
-              title: loadError
-                ? "System jobs could not be loaded"
-                : "No system jobs",
-              description:
-                loadError ??
-                "The server has not registered any recurring system jobs (kind=tool) yet.",
+              title: "No system jobs",
+              description: "The server has not registered any recurring system jobs (kind=tool) yet.",
             }}
             toolbar={{
               search: true,
@@ -1005,13 +1003,8 @@ export default function SystemJobsPage() {
             isFetching={dbFetching}
             pageSize={25}
             rowActions={(r) => renderDbRowActions(r)}
-            emptyState={{
-              title: dbLoadError
-                ? "Database jobs could not be loaded"
-                : "No database jobs",
-              description:
-                dbLoadError ?? "The database has no pg_cron jobs registered.",
-            }}
+            read={readOf({ loading: dbLoading, error: dbLoadError }, { what: "database jobs", onRetry: () => void loadDb() })}
+            emptyState={{ title: "No database jobs", description: "The database has no pg_cron jobs registered." }}
             toolbar={{
               search: true,
               searchPlaceholder: "Search job, classification, command…",

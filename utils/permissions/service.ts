@@ -968,8 +968,11 @@ export async function listPermissions(
 
     return (data || []).map(transformPermissionFromRpcRow);
   } catch (error: unknown) {
+    // A failed read is not "no grants" (RC-B12 r13) — it throws, and every
+    // caller's own failure state (usePermissions error, checkPermission's
+    // "Error checking permission") says so.
     console.error("listPermissions error:", error);
-    return [];
+    throw error instanceof Error ? error : new Error(errMessage(error) || "Could not read the permissions");
   }
 }
 
@@ -1176,8 +1179,9 @@ export async function getSharedWithMe(
 
     return (data || []).map(transformPermissionFromTableRow);
   } catch (error) {
+    // A failed read is not "nothing shared with me" (RC-B12 r13).
     console.error("getSharedWithMe error:", error);
-    return [];
+    throw error instanceof Error ? error : new Error(errMessage(error) || "Could not read what is shared with you");
   }
 }
 

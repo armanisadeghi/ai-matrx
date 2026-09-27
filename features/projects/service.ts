@@ -238,19 +238,19 @@ export async function deleteProject(
 }
 
 export async function getProject(projectId: string): Promise<Project | null> {
-  try {
-    const { data, error } = await workspaceDb(supabase)
-      .from("projects")
-      .select("*")
-      .is("deleted_at", null)
-      .eq("id", projectId)
-      .single();
-    if (error) throw pgErrorToError(error);
-    return transformProjectFromDb(data);
-  } catch (error) {
+  // null = no row this person can read. A FAILED read throws (RC-B12 r13) —
+  // it used to log and answer null, so a fault read as "no such project".
+  const { data, error } = await workspaceDb(supabase)
+    .from("projects")
+    .select("*")
+    .is("deleted_at", null)
+    .eq("id", projectId)
+    .maybeSingle();
+  if (error) {
     console.error("Error fetching project:", error);
-    return null;
+    throw pgErrorToError(error);
   }
+  return data ? transformProjectFromDb(data) : null;
 }
 
 // URL params may carry either a slug or a project UUID — newly-created projects
@@ -278,8 +278,9 @@ export async function getProjectBySlug(
     if (error) throw pgErrorToError(error);
     return data ? transformProjectFromDb(data) : null;
   } catch (error) {
+    // A failed read is not "no such project" (RC-B12 r13).
     console.error("Error fetching project by slug:", error);
-    return null;
+    throw pgErrorToError(error);
   }
 }
 
@@ -384,14 +385,13 @@ export async function isProjectSlugAvailable(
       .eq("slug", slug);
     query = query.eq("organization_id", orgId);
     const { data, error } = await query.limit(1).maybeSingle();
-    if (error) {
-      console.error("Error checking project slug availability:", error.message);
-      return false;
-    }
+    if (error) throw pgErrorToError(error);
     return !data;
   } catch (error) {
+    // A failed check is not "taken" (RC-B12 r13): it throws, and the form says
+    // the check could not run.
     console.error("Error checking project slug availability:", error);
-    return false;
+    throw pgErrorToError(error);
   }
 }
 
@@ -542,15 +542,18 @@ export async function getProjectUserRole(
     const currentUserId = requireUserId();
 
     const result = await membershipsService.forUser("project");
-    if (isScopesRpcErr(result)) return null;
+    if (isScopesRpcErr(result)) {
+      throw new Error(result.error.message || "Could not read your role in this project");
+    }
 
     const membership = result.data.memberships.find(
       (m) => m.containerId === projectId && m.userId === currentUserId,
     );
     return (membership?.role as ProjectRole) ?? null;
   } catch (error) {
+    // A failed role read is not "no role" (RC-B12 r13).
     console.error("Error fetching project user role:", error);
-    return null;
+    throw pgErrorToError(error);
   }
 }
 
@@ -790,7 +793,7 @@ export async function getUserProjectInvitations(): Promise<
         "Error fetching user project invitations:",
         result.error.message,
       );
-      return [];
+      throw new Error(result.error.message || "Could not read your project invitations");
     }
 
     const invitations = result.data.invitations.filter(
@@ -804,8 +807,9 @@ export async function getUserProjectInvitations(): Promise<
       })),
     );
   } catch (error) {
+    // A failed read is not "no invitations" (RC-B12 r13).
     console.error("Error fetching user project invitations:", error);
-    return [];
+    throw pgErrorToError(error);
   }
 }
 

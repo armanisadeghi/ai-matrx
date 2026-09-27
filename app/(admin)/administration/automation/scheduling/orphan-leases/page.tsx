@@ -29,6 +29,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 import { useScheduledRunMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { readOf } from "@/components/read-state/ReadGate";
 
 export default function OrphanLeasesPage() {
   const [rows, setRows] = useState<AdminRunRow[]>([]);
@@ -222,10 +223,8 @@ export default function OrphanLeasesPage() {
           isFetching={fetching}
           pageSize={50}
           coverage={{ cap: 200, answeredBy: "client", noun: "orphan lease" }}
-          emptyState={{
-            title: loadError ? "Orphan leases unavailable" : "No orphan leases",
-            description: loadError ? "The lease source failed. Refresh to retry." : "System is healthy.",
-          }}
+          read={readOf({ loading, error: loadError }, { what: "orphan leases", onRetry: () => void load() })}
+          emptyState={{ title: "No orphan leases", description: "System is healthy." }}
           toolbar={{
             search: true,
             searchPlaceholder: "Search orphan leases…",

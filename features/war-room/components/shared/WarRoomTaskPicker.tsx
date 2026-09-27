@@ -63,7 +63,12 @@ export function WarRoomTaskPicker({
     openCreateTask({
       prePopulate: prefill ? { title: prefill } : undefined,
       onSaved: async (taskId) => {
-        const row = await getTaskById(taskId);
+        // Title enrichment for a task just saved: a failed re-read falls back
+        // to what the person typed.
+        const row = await getTaskById(taskId).catch((err: unknown) => {
+          console.error("[WarRoomTaskPicker] task re-read failed:", err);
+          return null;
+        });
         const title = row?.title?.trim() || prefill || "Untitled task";
         setOptimistic({ id: taskId, title });
         onSelect(taskId, title);

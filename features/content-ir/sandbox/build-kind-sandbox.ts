@@ -71,6 +71,10 @@ const ALIAS: Record<string, string> = {
     __dirname,
     "runtime/FrameErrorSurfaceSnapshot.ts",
   ),
+  "@/components/read-state/ReadGate": resolve(
+    __dirname,
+    "runtime/FrameReadGate.tsx",
+  ),
   "@/features/google-workspace/export/sendToGoogle": resolve(
     __dirname,
     "runtime/FrameSendToGoogle.ts",

@@ -135,8 +135,9 @@ export async function getSchemaTemplates(
     
     return data || [];
   } catch (err) {
+    // A failed read is not "no templates" (RC-B12 r13).
     console.error('Error in getSchemaTemplates:', err);
-    return [];
+    throw err instanceof Error ? err : new Error('Could not read the schema templates');
   }
 }
 
@@ -161,8 +162,9 @@ export async function getSchemaTemplateById(
     
     return data;
   } catch (err) {
+    // A failed read is not "no such template" (RC-B12 r13).
     console.error('Error in getSchemaTemplateById:', err);
-    return null;
+    throw err instanceof Error ? err : new Error('Could not read the schema template');
   }
 }
 

@@ -37,6 +37,7 @@ import type { RunStatus, Surface } from "@/features/scheduling/types";
 import { SURFACE_VALUES } from "@/features/scheduling/constants/surfaces";
 import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 import { useScheduledRunMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const STATUSES: RunStatus[] = [
   "queued",
@@ -52,6 +53,8 @@ export default function AdminRunsPage() {
   const [rows, setRows] = useState<AdminRunRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
+  // A failed read is not "No runs match" (RC-B12 r13).
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [status, setStatus] = useState<"__all__" | RunStatus>("__all__");
   const [surface, setSurface] = useState<"__all__" | Surface>("__all__");
 
@@ -73,7 +76,9 @@ export default function AdminRunsPage() {
           limit: 200,
         }),
       );
+      setLoadError(null);
     } catch (err) {
+      setLoadError(err ?? new Error("The runs read failed"));
       toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
@@ -189,6 +194,7 @@ export default function AdminRunsPage() {
           isLoading={loading}
           isFetching={fetching}
           pageSize={50}
+          read={readOf({ loading, error: loadError }, { what: "runs", onRetry: () => void load() })}
           emptyState={{ title: "No runs match" }}
           toolbar={{
             search: true,

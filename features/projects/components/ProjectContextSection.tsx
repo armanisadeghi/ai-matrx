@@ -63,7 +63,12 @@ function projectSaveAdapter(
 
     // Org may have been adopted when the first scope was assigned.
     if (r.wroteScopes) {
-      const fresh = await getProject(projectId);
+      // Follow-up re-read after a successful save: a failure leaves the org
+      // chip as saved and is logged — the save itself already landed.
+      const fresh = await getProject(projectId).catch((err: unknown) => {
+        console.error("[ProjectContextSection] project re-read failed:", err);
+        return null;
+      });
       if (
         fresh?.organizationId &&
         fresh.organizationId !== currentOrganizationId

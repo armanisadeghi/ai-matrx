@@ -10,6 +10,7 @@
  * fidelity check; everything else works for every diagram type.
  */
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Check,
@@ -344,10 +345,17 @@ export default function MermaidWorkbench({
 
   // ── Version history ──────────────────────────────────────────────────────
   const [history, setHistory] = useState<CanvasArtifactRow[] | null>(null);
+  // A failed history read is said, never "No saved versions yet" (RC-B12 r13).
+  const [historyError, setHistoryError] = useState<unknown>(null);
   const loadHistory = async () => {
     if (!canvasItemId) return;
-    const rows = await canvasArtifactService.getVersionHistory(canvasItemId);
-    setHistory(rows.sort((a, b) => b.version - a.version));
+    setHistoryError(null);
+    try {
+      const rows = await canvasArtifactService.getVersionHistory(canvasItemId);
+      setHistory(rows.sort((a, b) => b.version - a.version));
+    } catch (err) {
+      setHistoryError(err ?? new Error("The version history read failed"));
+    }
   };
   const restoreVersion = (row: CanvasArtifactRow) => {
     const stored =
@@ -704,7 +712,14 @@ export default function MermaidWorkbench({
                     <DropdownMenuLabel className="text-xs">
                       Versions
                     </DropdownMenuLabel>
-                    {history === null ? (
+                    {historyError != null && history === null ? (
+                      <ReadFailure
+                        error={historyError}
+                        what="the saved versions"
+                        onRetry={() => void loadHistory()}
+                        className="m-1"
+                      />
+                    ) : history === null ? (
                       <div className="flex justify-center py-3">
                         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                       </div>

@@ -71,6 +71,7 @@ import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { curatedTokens } from "@/features/scopes/registry/entityRegistry";
 import { ProjectTaskList } from "./ProjectTaskList";
 import { ProjectCopyForAiButton } from "./ProjectCopyForAiButton";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 
 const UUID_RE =
@@ -123,24 +124,40 @@ export function ProjectWorkspace() {
     };
   }, [project?.organizationId]);
 
+  // A failed project read is its own state (RC-B12 r13) — `getProject` used
+  // to answer null for a fault, which showed the access gate.
+  const [projectReadError, setProjectReadError] = React.useState<unknown>(null);
+  const [projectReadAttempt, setProjectReadAttempt] = React.useState(0);
+
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
       setResolving(true);
+      setProjectReadError(null);
       let resolved: Project | null = null;
-      if (UUID_RE.test(projectParam)) {
-        resolved = await getProject(projectParam);
-      } else {
-        // Slug fallback (slugs aren't globally unique; take first match).
-        const { data } = await workspaceDb(supabase)
-          .from("projects")
-          .select("id")
-          .is("deleted_at", null)
-          .eq("slug", projectParam)
-          .limit(1)
-          .maybeSingle();
-        const id = (data as { id?: string } | null)?.id;
-        if (id) resolved = await getProject(id);
+      try {
+        if (UUID_RE.test(projectParam)) {
+          resolved = await getProject(projectParam);
+        } else {
+          // Slug fallback (slugs aren't globally unique; take first match).
+          const { data, error: slugError } = await workspaceDb(supabase)
+            .from("projects")
+            .select("id")
+            .is("deleted_at", null)
+            .eq("slug", projectParam)
+            .limit(1)
+            .maybeSingle();
+          if (slugError) throw slugError;
+          const id = (data as { id?: string } | null)?.id;
+          if (id) resolved = await getProject(id);
+        }
+      } catch (err) {
+        console.error("[project page] project read failed:", err);
+        if (!cancelled) {
+          setProjectReadError(err ?? new Error("The project read failed"));
+          setResolving(false);
+        }
+        return;
       }
       if (cancelled) return;
       setProject(resolved);
@@ -157,7 +174,7 @@ export function ProjectWorkspace() {
     return () => {
       cancelled = true;
     };
-  }, [projectParam]);
+  }, [projectParam, projectReadAttempt]);
 
   const { members } = useProjectMembers(project?.id);
   const { role, canManageSettings } = useProjectUserRole(project?.id);
@@ -200,6 +217,24 @@ export function ProjectWorkspace() {
         <CenterState>
           <Loader2 className="h-7 w-7 animate-spin text-primary" />
         </CenterState>
+      </>
+    );
+  }
+
+  if (projectReadError != null) {
+    return (
+      <>
+        <RouteHeader
+          left={<ChevronLeftTapButton href="/projects" ariaLabel="Back" />}
+        />
+        <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
+          <ReadFailure
+            error={projectReadError}
+            what="this project"
+            onRetry={() => setProjectReadAttempt((n) => n + 1)}
+            size="default"
+          />
+        </div>
       </>
     );
   }

@@ -11,6 +11,12 @@
 | `selection-zones.ts` | `useSelectionZone(element, contribution)` — a surface registers the element its text lives in plus its contribution: its half of the click target (`host`), `editable`, `suppress`, panels it draws (`renderPanel`), a panel to open immediately (`initialPanel`). |
 | `selection-actions.ts` | **The mode table** `SELECTION_ACTION_MODES` (which action shows while editing vs reading — registry data, one place), `shownInSelectionMode()`, the toolbar's own host half (`mode`, knobs, `ui`), the passage-actions provider (a surface's own actions, e.g. the study guide's tutor), and `declareSelectionProvider()`. |
 
+**Host kinds (what a person gets, by where the text is — `SELECTION_HOST_KINDS` in selection-actions.ts):** annotated reading (study guide, document Annotate): highlight ×5, comment, suggest, link, report, AI and more (+ the study guide's tutor pair). Rich editor: formatting + AI and more (+ Copy / Save to notes); the caret or a selection in a TABLE adds the table actions (align and delete under More); a selected CODE BLOCK opens the toolbar on its source. Plain reading and text fields (chat answers, note preview, studio preview and source, every window): Copy, Save to notes, AI and more — never a one-button bar. Comment in the Visual editor needs an annotatable record under the editor (not yet: the studio edits an unsaved buffer).
+
+**Caret mode:** a zone's `caretAnchor()` keeps the toolbar up with no selected text (a table caret, a selected code block); `caretText()` supplies the text it acts on.
+
+**Every window** is a selection surface: `features/window-panels/WindowSelectionSurface.tsx` wraps every desktop and mobile body path of `WindowPanel` (its own `display:contents` element — a body component that does not forward refs would otherwise leave the menu nothing to hold).
+
 **Providers (all ordinary Alchemy actions in the one registry):** rich-editor formatting `components/rich-editor/visual/format-actions.ts`; annotations `features/rich-document/annotations/annotation-actions.tsx` (highlight ×5, comment, suggest, link — they write through the sidecar API exactly as before); the context menu's "AI and more" `features/context-menu-v3/selection-provider.ts` (opens the same Alchemy menu over the selection); the study guide's "I don't get this", "Ask a question", "Report an issue" as `passageActions` on `AnnotatedContent`.
 
 **Fitting a phone:** the docked bar never scrolls. The root computes how many buttons fit (`slots`, 44px touch targets on coarse pointers); `SELECTION_PRIORITY` (selection-actions.ts) decides which actions keep a button, and every selection provider returns its actions through `placeSelectionActions`, which moves the rest to `placement: "overflow"` — the package layout's More. At 320 the reading bar is yellow highlight, comment, suggest, "I don't get this", "AI and more", More.
@@ -21,13 +27,17 @@
 
 - **Never draw a second selection popup.** A new passage action = a registry action + a row in `SELECTION_ACTION_MODES`. Guard: `components/selection-toolbar/__tests__/one-selection-toolbar.census.test.ts` (fails on a Tiptap BubbleMenu, the package selection layout outside the frame, a component named like a selection popup, or a new `selectionchange` listener; it proves itself red on planted files in a temp dir).
 - **Panels render in the toolbar's portal, outside the zone's React tree.** A zone whose panel reads React context re-provides it around the panel (the annotation sidecar wraps its panel in `SidecarContext.Provider`) — a panel that calls a context hook without it crashes the page.
-- `enableFloatingIcon={false}` on a context menu (and a `suppressed` menu) means no toolbar over that text: the zone suppresses everything outside it.
+- Only a `suppressed` context menu (the text is streaming) keeps the toolbar away. `enableFloatingIcon` is retired (the floating icon is gone).
+- Position is measured against the nearest scroll container: flipped inside the pane, never over its header, hidden while the selection is scrolled out of view. Keyboard: one tab stop (roving tabindex), arrows within, Ctrl/Cmd+Alt+M focuses the first control on every press.
+- The census (`one-selection-toolbar.census.test.ts`) also catches selection-driven floating UI BY BEHAVIOUR (reads the selection + a gesture-end listener + measures + renders something positioned), whatever it is named. The Red Pen dialog's marking and the agent builder's drag-to-edit are recorded there as non-popup behaviours.
 
 ## Known gaps
 
 - ~~A soft-deleted passage comment has no restore path~~ — fixed 2026-09-26: comments are on /trash and every panel removal has Undo (see `features/rich-document/FEATURE.md`). A detached passage link is still not on /trash (toast Undo only).
 
 ## Change Log
+
+- 2026-09-26 — Verify round 1 fixes: table tools are toolbar actions (the Tiptap table bubble is deleted); scroll-container positioning; every window gets the toolbar; the common pair (Copy, Save to notes) where nothing richer owns the passage; Report is every annotated passage's; code blocks; roving tabindex; quotes render as inline rich text; census by behaviour; `enableFloatingIcon` retired from 37 callers.
 
 - 2026-09-26 — Phone fit: the docked bar no longer scrolls sideways; lower-priority actions move to the registry overflow (More). Annotation cards carry `data-annotation-key` / `data-annotation-kind` so tests and cleanup act on a card by its own id, never by position.
 

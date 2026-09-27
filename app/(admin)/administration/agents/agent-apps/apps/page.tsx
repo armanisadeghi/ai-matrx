@@ -48,6 +48,7 @@ import {
 } from "@/features/agent-apps/components/AgentAppRef";
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 function getStatusBadge(status: string) {
   const map: Record<string, { cls: string; Icon: typeof Clock }> = {
@@ -570,11 +571,8 @@ export default function AgentAppsAdminListPage() {
                 `/administration/agents/agent-apps/edit/${app.id}`
               }
               onRowOpen={(app) => handleOpenEdit(app.id)}
-              emptyState={{
-                title: loadError
-                  ? "Could not load agent apps."
-                  : "No agent apps found",
-              }}
+              read={readOf({ loading, error: loadError }, { what: "agent apps", onRetry: () => void load() })}
+              emptyState={{ title: "No agent apps found" }}
               rowActions={(app) => (
                 <>
                   <DropdownMenu>

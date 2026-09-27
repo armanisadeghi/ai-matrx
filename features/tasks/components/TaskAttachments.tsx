@@ -14,6 +14,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import * as taskService from "@/features/tasks/services/taskService";
 import type { TaskAttachment } from "@/features/tasks/services/taskService";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { formatFileSize } from "@ai-matrx/kit/format";
 
 interface TaskAttachmentsProps {
@@ -39,10 +40,19 @@ export default function TaskAttachments({ taskId }: TaskAttachmentsProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // A failed read is said, never "Click to attach a file" (RC-B12 r13).
+  const [readError, setReadError] = useState<unknown>(null);
+
   const loadAttachments = async () => {
-    const data = await taskService.getTaskAttachments(taskId);
-    setAttachments(data);
-    setIsLoading(false);
+    setReadError(null);
+    try {
+      const data = await taskService.getTaskAttachments(taskId);
+      setAttachments(data);
+    } catch (err) {
+      setReadError(err ?? new Error("The attachments read failed"));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -112,6 +122,13 @@ export default function TaskAttachments({ taskId }: TaskAttachmentsProps) {
         <div className="flex items-center justify-center py-3">
           <Loader2 size={16} className="animate-spin text-muted-foreground" />
         </div>
+      ) : readError != null && attachments.length === 0 ? (
+        <ReadFailure
+          error={readError}
+          what="this task's attachments"
+          onRetry={() => void loadAttachments()}
+          className="m-0"
+        />
       ) : attachments.length === 0 ? (
         <button
           type="button"

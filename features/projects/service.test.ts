@@ -111,6 +111,9 @@ describe("isProjectSlugAvailable", () => {
     expect(query.maybeSingle).toHaveBeenCalledTimes(1);
   });
 
+  // Still fails closed — but as a THROWN failure, never as "taken" (RC-B12
+  // r13): createProject turns it into its own refusal with the real reason,
+  // and the availability hook shows "unknown" instead of "already exists".
   it("fails closed when the availability query errors", async () => {
     const query: Record<string, jest.Mock> = {};
     for (const method of ["select", "is", "eq", "limit"]) {
@@ -130,10 +133,10 @@ describe("isProjectSlugAvailable", () => {
         "unknown-slug",
         "00000000-0000-4000-8000-000000000003",
       ),
-    ).resolves.toBe(false);
+    ).rejects.toThrow("database unavailable");
     expect(consoleError).toHaveBeenCalledWith(
       "Error checking project slug availability:",
-      "database unavailable",
+      expect.anything(),
     );
 
     consoleError.mockRestore();

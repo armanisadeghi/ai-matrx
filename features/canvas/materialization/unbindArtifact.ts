@@ -138,6 +138,8 @@ export function rewriteContentRemovingArtifactRefs(
 }
 
 export type UnbindFailureReason =
+  /** The artifact read FAILED — unknown, not "not found" (RC-B12 r13). */
+  | "read_failed"
   | "row_not_found"
   | "not_inert"
   | "ref_not_found"
@@ -193,11 +195,18 @@ export async function unbindArtifact(
 
   // Resolve the version chain: export from the LATEST version; replace refs
   // carrying ANY chain id (the message tag holds the root id).
-  const history = await deps.getVersionHistory(artifactId);
-  const latest =
-    history.length > 0
-      ? history.reduce((max, r) => (r.version > max.version ? r : max), history[0]!)
-      : await deps.getById(artifactId);
+  let history: CanvasArtifactRow[];
+  let latest: CanvasArtifactRow | null;
+  try {
+    history = await deps.getVersionHistory(artifactId);
+    latest =
+      history.length > 0
+        ? history.reduce((max, r) => (r.version > max.version ? r : max), history[0]!)
+        : await deps.getById(artifactId);
+  } catch (err) {
+    errors.push(`Could not read the artifact: ${err instanceof Error ? err.message : String(err)}`);
+    return fail("read_failed");
+  }
   if (!latest) {
     errors.push(
       recordUnavailable({

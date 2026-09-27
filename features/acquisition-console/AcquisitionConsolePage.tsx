@@ -33,6 +33,7 @@ import { BLOCKED_COLUMNS, CONNECTED_COLUMNS, HAVE_COLUMNS } from "./columns";
 import { loadConsole, type ConsoleData } from "./service";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const EMPTY: ConsoleData = {
   have: [],
@@ -161,6 +162,9 @@ export function AcquisitionConsolePage() {
     );
   }
 
+  // One read feeds all three tables: a refused read is never "Nothing from this expert yet" (RC-B12 r13).
+  const consoleRead = readOf({ loading, error: failure }, { what: "this workspace's sources", onRetry: () => void refresh() });
+
   return (
     <>
       <PageHeader>
@@ -241,6 +245,7 @@ export function AcquisitionConsolePage() {
             columns={HAVE_COLUMNS}
             getRowId={(row) => row.id}
             isLoading={loading}
+            read={consoleRead}
             pageSize={25}
             viewTabs={false}
             density="condensed"
@@ -271,6 +276,7 @@ export function AcquisitionConsolePage() {
             columns={CONNECTED_COLUMNS}
             getRowId={(row) => row.id}
             isLoading={loading}
+            read={consoleRead}
             pageSize={25}
             viewTabs={false}
             density="condensed"
@@ -301,6 +307,7 @@ export function AcquisitionConsolePage() {
             columns={BLOCKED_COLUMNS}
             getRowId={(row) => row.id}
             isLoading={loading}
+            read={consoleRead}
             pageSize={25}
             viewTabs={false}
             density="condensed"
