@@ -162,7 +162,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "create_deck_suggestions",
     label: "Suggest edits",
     description:
-      'Sends suggestions to the OWNERS of one or more public decks, exactly as the "Suggest edit" dialog does (sent immediately; it never changes their deck — the owner accepts or declines). Value is a JSON ARRAY (not a string) of 1-10 objects, each { deck_id: string (from public_deck_list), body: string (the suggestion, plain text, 1-4000 characters) }, e.g. [{ "deck_id": "…", "body": "Card 12 should say the Calvin cycle runs in the stroma." }]. Suggest improvements to the deck, never answers for the person. Refused, with nothing sent, when the person is signed out, a deck_id is not on the page, or a body is empty or too long.',
+      'Sends suggestions to the OWNERS of one or more public decks, exactly as the "Suggest edit" dialog does (sent immediately; it never changes their deck — the owner accepts or declines). Value is a JSON ARRAY (not a string) of 1-10 objects, each { deck_id: string (from public_deck_list), body: string (the suggestion, plain text, 1-4000 characters) }, e.g. [{ "deck_id": "…", "body": "Card 12 should say the Calvin cycle runs in the stroma." }]. Suggest improvements to the deck, never answers for the person. Refused, with nothing sent, when the person is signed out, a deck_id is not on the page, or a body is empty or too long. A deck the person owns cannot take a suggestion: the server refuses it after approval ("cannot suggest an edit to your own deck") — the page does not know deck owners, so check with the person first when a deck may be theirs.',
     valueType: "array",
     mode: "entity",
     applyPolicy: "ask",
