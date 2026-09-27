@@ -9,10 +9,10 @@
 --
 -- What must hold, from the signed-in person's seat:
 --   A. the new "Renews" choice column is a NEW column (its own id, key renews_2), never the old one;
---   B. a "Renews" text column is another new column (renews_3);
+--   B. a second "Renews" is refused by name (no column reads the same as another);
 --   C. a column added after "Notes" was retired never takes `notes` (the retired values sit under it);
 --   D. a key a caller ASKED for, held by another column, is refused naming that column;
---   E. adding a column whose NAME and kind are already there is still that column (idempotent).
+--   E. adding "Renews" again by name is refused by name, never answered with a second id.
 --
 -- RUN IT (clone; always rolled back):
 --   psql-17 "<clone DSN>" -v ON_ERROR_STOP=1 -f scripts/campaign-tests/databasics_a_new_column_never_takes_a_key_another_column_holds.sql
@@ -77,12 +77,17 @@ begin
     raise exception 'A: the new "Renews" column took key % (want renews_2)', v_key;
   end if;
 
-  -- B. "Renews" as text: another new column, its own key.
-  v_text := custom.field_declare(c_ws, v_table, jsonb_build_object('label', 'Renews', 'type', 'text'));
-  select f.data ->> 'key' into v_key from custom.applicable_fields(c_ws, v_table, null) f where f.id = v_text;
-  if v_text in (v_plan, v_new) or v_key is distinct from 'renews_3' then
-    raise exception 'B: a "Renews" text column did not get its own column and key (got %)', v_key;
-  end if;
+  -- B. "Renews" again as text: the name is taken now (the file after this one,
+  --    databasics_two_columns_never_carry_the_same_name.sql), so it is refused by name.
+  begin
+    v_text := custom.field_declare(c_ws, v_table, jsonb_build_object('label', 'Renews', 'type', 'text'));
+    raise exception 'B: a second column called "Renews" was taken';
+  exception when unique_violation then
+    get stacked diagnostics v_msg = message_text;
+    if v_msg not like 'You already have a column called "Renews".%' then
+      raise exception 'B: the refusal does not name the column: %', v_msg;
+    end if;
+  end;
 
   -- C. retire "Notes", add "Notes" again.
   perform custom.field_retire(c_ws, v_notes);
@@ -103,12 +108,14 @@ begin
     end if;
   end;
 
-  -- E. the same column said twice is that column.
-  v_again := custom.field_declare(c_ws, v_table, jsonb_build_object(
-    'label', 'Renews', 'type', 'select', 'options', jsonb_build_array('Monthly', 'Yearly')));
-  if v_again is distinct from v_new then
-    raise exception 'E: declaring "Renews" (choice) a second time made another column';
-  end if;
+  -- E. the same column said twice, by name only, is refused by name (not a silent second id).
+  begin
+    v_again := custom.field_declare(c_ws, v_table, jsonb_build_object(
+      'label', 'Renews', 'type', 'select', 'options', jsonb_build_array('Monthly', 'Yearly')));
+    raise exception 'E: declaring "Renews" (choice) a second time was taken (%)', v_again;
+  exception when unique_violation then
+    null;
+  end;
 
   raise notice 'GREEN: A B C D E — a new column never takes a key another column holds';
 end

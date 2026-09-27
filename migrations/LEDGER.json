@@ -644,6 +644,12 @@
       "checksum": "8dd35478f614075338bfa8209db98de77dc647051bed008cf0e05b2b8f1b1356",
       "applied_at": "2026-09-27 16:25:53.354011+00"
     },
+    "migrations/campaign/databasics_two_columns_never_carry_the_same_name.sql": {
+      "source": "matrx-frontend",
+      "filename": "databasics_two_columns_never_carry_the_same_name.sql",
+      "checksum": "a763c19c8ab0014a6882f89baf336d00864c915028c46b6e9034258b481f15da",
+      "applied_at": "2026-09-27 17:10:47.171993+00"
+    },
     "migrations/campaign/datacreatefix_a_new_data_table_carries_its_organization.sql": {
       "source": "matrx-frontend",
       "filename": "datacreatefix_a_new_data_table_carries_its_organization.sql",
