@@ -282,6 +282,9 @@ function measure(isPhone) {
   const zeroSizeGraphics = [];
   for (const el of document.querySelectorAll("svg, canvas, img")) {
     if (el.closest("header") || el.closest("[aria-hidden='true']")) continue;
+    // Deliberately hidden (display:none / visibility:hidden on it or an
+    // ancestor — e.g. the shell's sidebar avatar on a phone) is not "squeezed".
+    if (typeof el.checkVisibility === "function" && !el.checkVisibility({ visibilityProperty: true })) continue;
     const r = el.getBoundingClientRect();
     const intrinsic =
       el.tagName === "IMG" ? el.naturalWidth : Number(el.getAttribute("width")) || (el.tagName === "CANVAS" ? el.width : 0);
