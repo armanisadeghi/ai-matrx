@@ -171,3 +171,80 @@ describe("spatial store culling", () => {
     expect(store.getTier()).toBe("overview");
   });
 });
+
+describe("wheel input", () => {
+  const ev = (p: Partial<import("../engine/wheel-input").WheelSample>) => ({
+    deltaX: 0, deltaY: 0, deltaMode: 0, ctrlKey: false, metaKey: false, timeStamp: 0, ...p,
+  });
+
+  it("classifies wheels and trackpads", async () => {
+    const { classifyDevice } = await import("../engine/wheel-input");
+    expect(classifyDevice(ev({ deltaY: 100 }))).toBe("mouse");
+    expect(classifyDevice(ev({ deltaY: 3, deltaMode: 1 }))).toBe("mouse");
+    expect(classifyDevice(ev({ deltaY: 4.5 }))).toBe("trackpad");
+    expect(classifyDevice(ev({ deltaX: 2, deltaY: 60 }))).toBe("trackpad");
+    expect(classifyDevice(ev({ deltaY: 12 }))).toBe("trackpad");
+  });
+
+  it("auto: mouse wheel zooms, trackpad pans, pinch zooms", async () => {
+    const { WheelInterpreter } = await import("../engine/wheel-input");
+    const w = new WheelInterpreter("auto");
+    expect(w.intent(ev({ deltaY: 100, timeStamp: 0 }))).toBe("zoom");
+    expect(w.intent(ev({ deltaY: 2.5, deltaX: 1, timeStamp: 1000 }))).toBe("pan");
+    expect(w.intent(ev({ deltaY: 3, ctrlKey: true, timeStamp: 2000 }))).toBe("zoom");
+  });
+
+  it("keeps one decision for a whole trackpad swipe, inertia tail included", async () => {
+    const { WheelInterpreter } = await import("../engine/wheel-input");
+    const w = new WheelInterpreter("auto");
+    expect(w.intent(ev({ deltaY: 3.2, timeStamp: 0 }))).toBe("pan");
+    // A big whole-number step mid-swipe (fast swipe) stays a pan.
+    expect(w.intent(ev({ deltaY: 80, timeStamp: 16 }))).toBe("pan");
+    expect(w.intent(ev({ deltaY: 1, timeStamp: 32 }))).toBe("pan");
+  });
+
+  it("honours the knob", async () => {
+    const { WheelInterpreter } = await import("../engine/wheel-input");
+    expect(new WheelInterpreter("pan").intent(ev({ deltaY: 100 }))).toBe("pan");
+    expect(new WheelInterpreter("zoom").intent(ev({ deltaY: 2.5, deltaX: 1 }))).toBe("zoom");
+  });
+});
+
+describe("throw gestures", () => {
+  it("a slow drag is a move, a flick is a throw", async () => {
+    const { VelocityTracker, detectThrow } = await import("../engine/throw");
+    const slow = new VelocityTracker();
+    slow.reset({ x: 0, y: 0, t: 0 });
+    for (let i = 1; i <= 10; i++) slow.push({ x: i * 20, y: 0, t: i * 50 });
+    expect(detectThrow(slow.velocity(), { dx: 200, dy: 0 })).toBeNull();
+
+    const fast = new VelocityTracker();
+    fast.reset({ x: 0, y: 0, t: 0 });
+    for (let i = 1; i <= 6; i++) fast.push({ x: i * 40, y: 2, t: i * 16 });
+    expect(detectThrow(fast.velocity(), { dx: 240, dy: 2 })).toBe("right");
+  });
+
+  it("needs real travel, and a diagonal flick is ambiguous", async () => {
+    const { detectThrow } = await import("../engine/throw");
+    expect(detectThrow({ vx: 0, vy: -3 }, { dx: 0, dy: -20 })).toBeNull();
+    expect(detectThrow({ vx: 0, vy: -3 }, { dx: 0, dy: -120 })).toBe("up");
+    expect(detectThrow({ vx: 2, vy: 2 }, { dx: 150, dy: 150 })).toBeNull();
+  });
+});
+
+describe("placement of a new tile", () => {
+  it("lands centred on the point when free, and never overlaps", async () => {
+    const { findFreeSpot } = await import("../engine/placement");
+    const { rectsIntersect } = await import("../engine/camera");
+    const size = { w: 400, h: 300 };
+    expect(findFreeSpot([], size, { x: 0, y: 0 })).toEqual({ x: -200, y: -150, w: 400, h: 300 });
+    const occupied = [
+      { x: -300, y: -300, w: 600, h: 600 },
+      { x: 400, y: -300, w: 600, h: 600 },
+    ];
+    const spot = findFreeSpot(occupied, size, { x: 0, y: 0 });
+    for (const o of occupied) expect(rectsIntersect(spot, o)).toBe(false);
+    // and it stays close: within a few hundred px of where it was wanted
+    expect(Math.hypot(spot.x + 200, spot.y + 150)).toBeLessThan(900);
+  });
+});

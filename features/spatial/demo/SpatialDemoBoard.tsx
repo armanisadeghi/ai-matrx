@@ -32,11 +32,26 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
+import { NotesAPI } from "@/features/notes/service/notesApi";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import { buildWireText } from "@/features/content-ir/studio/stream-simulator";
 import type { Rect } from "../engine/camera";
 import { useSelectedTile } from "../engine/react";
+import type { SpatialStore } from "../engine/spatial-store";
+import { DEFAULT_THROW_ACTIONS, type ThrowDirection } from "../engine/throw";
+import type { WheelMode } from "../engine/wheel-input";
+import { useBoard } from "../board/useBoard";
+import { SpatialBoardMenu } from "../components/SpatialBoardMenu";
+import { ParkedShelf } from "../components/ParkedShelf";
 import { SpatialViewport } from "../components/SpatialViewport";
 import { SpatialTile } from "../components/SpatialTile";
 import { SpatialFrame } from "../components/SpatialFrame";
@@ -272,8 +287,11 @@ export function SpatialDemoBoard({
           { kind: "quiz_set", label: "Quiz", example: QUIZ_FALLBACK },
         ];
   const [board] = useState(() => buildBoard(effectiveKinds));
+  const tiles = useBoard<TileSpec>(() => board.tiles);
+  const activeOrgId = useAppSelector(selectOrganizationId);
   const [stress, setStress] = useState<ReturnType<typeof buildStress> | null>(null);
-  const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [store, setStore] = useState<SpatialStore | null>(null);
+  const [wheelMode, setWheelMode] = useWheelModePreference();
 
   useEffect(() => {
     void kindRegistry.ensureWarm();
@@ -305,26 +323,106 @@ export function SpatialDemoBoard({
     };
   }, [stress]);
 
+  const toggleStress = () => {
+    if (stress) {
+      tiles.dropTiles(stress.tiles.map((t) => t.id));
+      setStress(null);
+    } else {
+      const next = buildStress(board.bottom + 220);
+      tiles.addTiles(next.tiles);
+      setStress(next);
+    }
+  };
+
   const restart = (instant: boolean) => {
     if (!instant) board.script.reset();
     startStreams(board.tiles, new Set(instant ? [] : [board.script]), instant);
     if (stress) startStreams(stress.tiles, new Set(), instant);
   };
 
-  const onMove = (id: string, x: number, y: number) =>
-    setPositions((prev) => ({ ...prev, [id]: { x, y } }));
+  // ── what a throw, a menu item or the shelf does — one path each ──────────
+  const specOf = (id: string) => [...tiles.tiles, ...tiles.parked].find((t) => t.id === id);
 
-  const allTiles = stress ? [...board.tiles, ...stress.tiles] : board.tiles;
-  const rectOf = (t: TileSpec): Rect => {
-    const p = positions[t.id];
-    return p ? { ...t.rect, x: p.x, y: p.y } : t.rect;
+  const park = (id: string) => {
+    const spec = specOf(id);
+    const undo = tiles.parkTile(id);
+    toast(`Parked "${spec?.title ?? "tile"}"`, { action: { label: "Undo", onClick: undo } });
   };
+
+  const unpark = (id: string) => {
+    tiles.unparkTile(id);
+    // The tile re-registers on its next render; fly once it is back.
+    requestAnimationFrame(() => requestAnimationFrame(() => store?.fitItem(id)));
+  };
+
+  const saveAndClose = async (id: string) => {
+    const spec = specOf(id);
+    if (!spec) return;
+    const markdown = tileMarkdown(spec);
+    if (!markdown.trim()) {
+      toast.error(`"${spec.title}" has nothing to save yet — it is still waiting for content.`);
+      return;
+    }
+    try {
+      const organizationId = await ensureOrganizationContext({ organizationId: activeOrgId });
+      await NotesAPI.create({
+        label: spec.title,
+        content: markdown,
+        folder_name: "Scratch",
+        tags: ["board"],
+        organization_id: organizationId,
+      });
+    } catch (err) {
+      if (isOrganizationSelectionCancelled(err)) return;
+      toast.error(`Could not save "${spec.title}" to Notes: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
+    const undo = tiles.removeTile(id);
+    toast.success(`Saved "${spec.title}" to Notes (Scratch) and closed it`, {
+      action: { label: "Put back", onClick: undo },
+    });
+  };
+
+  const remove = async (id: string) => {
+    const spec = specOf(id);
+    if (!spec) return;
+    const ok = await confirm({
+      title: `Delete "${spec.title}" from this board?`,
+      description:
+        spec.content.type === "stream"
+          ? "The tile and its live view leave the board, and anything it has not finished streaming is not kept. You can undo right after."
+          : "The tile leaves the board. You can undo right after.",
+      confirmLabel: "Delete from board",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    const undo = tiles.removeTile(id);
+    toast(`Deleted "${spec.title}" from the board`, { action: { label: "Undo", onClick: undo } });
+  };
+
+  const onThrow = (id: string, direction: ThrowDirection) => {
+    const action = DEFAULT_THROW_ACTIONS[direction];
+    if (action === "park") park(id);
+    else if (action === "save-close") void saveAndClose(id);
+    else if (action === "delete") void remove(id);
+  };
+
+  const allTiles = tiles.tiles;
   const byId = new Map(allTiles.map((t) => [t.id, t]));
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <SpatialBoardMenu
+      store={store}
+      actions={{ park, saveAndClose: (id) => void saveAndClose(id), remove: (id) => void remove(id) }}
+      parked={tiles.parked.map((t) => ({ id: t.id, title: t.title }))}
+      onUnpark={unpark}
+      wheelMode={wheelMode}
+      onWheelMode={setWheelMode}
+    >
       <SpatialViewport
         insets={{ top: 72, bottom: 56 }}
+        wheelMode={wheelMode}
+        onStore={setStore}
         overlay={
           <>
             <BoardToolbar
@@ -333,7 +431,11 @@ export function SpatialDemoBoard({
               stressOn={!!stress}
               onRestart={() => restart(false)}
               onInstant={() => restart(true)}
-              onToggleStress={() => setStress((s) => (s ? null : buildStress(board.bottom + 220)))}
+              onToggleStress={toggleStress}
+            />
+            <ParkedShelf
+              parked={tiles.parked.map((t) => ({ id: t.id, title: t.title, icon: t.icon }))}
+              onRestore={unpark}
             />
             <ZoomHud />
             <Minimap />
@@ -348,15 +450,57 @@ export function SpatialDemoBoard({
           const from = byId.get(a);
           const to = byId.get(b);
           if (!from || !to) return null;
-          return <SpatialEdge key={`${a}->${b}`} from={rectOf(from)} to={rectOf(to)} />;
+          return <SpatialEdge key={`${a}->${b}`} from={from.rect} to={to.rect} />;
         })}
         {allTiles.map((t) => (
-          <BoardTile key={t.id} spec={t} rect={rectOf(t)} onMove={onMove} />
+          <BoardTile key={t.id} spec={t} rect={t.rect} onMove={tiles.moveTile} onThrow={onThrow} />
         ))}
       </SpatialViewport>
-    </div>
+    </SpatialBoardMenu>
   );
 }
+
+/** The markdown a tile saves as: its stream's text, or a reference to its media. */
+function tileMarkdown(spec: TileSpec): string {
+  const c = spec.content;
+  switch (c.type) {
+    case "stream":
+      return c.stream
+        .get()
+        .blocks.map((b) => b.content ?? "")
+        .join("\n\n");
+    case "html":
+      return `# ${spec.title}\n\nGenerated page: ${new URL(c.src, window.location.origin).href}`;
+    case "image":
+      return `# ${spec.title}\n\n![${spec.title}](${new URL(c.src, window.location.origin).href})`;
+    case "pending":
+      return "";
+  }
+}
+
+/** Per-viewer preference: how scrolling behaves on the board. Kept in this
+ * browser only (a convenience, not shared state); absent storage = default. */
+function useWheelModePreference(): [WheelMode, (m: WheelMode) => void] {
+  const [mode, setMode] = useState<WheelMode>(() => {
+    try {
+      const saved = window.localStorage.getItem(WHEEL_MODE_KEY);
+      return saved === "zoom" || saved === "pan" || saved === "auto" ? saved : "auto";
+    } catch {
+      return "auto";
+    }
+  });
+  const update = (m: WheelMode) => {
+    setMode(m);
+    try {
+      window.localStorage.setItem(WHEEL_MODE_KEY, m);
+    } catch {
+      // Storage blocked (private window): the choice lasts for this visit.
+    }
+  };
+  return [mode, update];
+}
+
+const WHEEL_MODE_KEY = "matrx.spatial.wheelMode";
 
 // ── tiles ────────────────────────────────────────────────────────────────────
 
@@ -364,10 +508,12 @@ function BoardTile({
   spec,
   rect,
   onMove,
+  onThrow,
 }: {
   spec: TileSpec;
   rect: Rect;
   onMove: (id: string, x: number, y: number) => void;
+  onThrow: (id: string, direction: ThrowDirection) => void;
 }) {
   const c = spec.content;
   const selected = useSelectedTile() === spec.id;
@@ -387,6 +533,7 @@ function BoardTile({
       icon={spec.icon}
       statusFrom={statusFrom}
       onMove={onMove}
+      onThrow={onThrow}
     >
       {(tier) => {
         switch (c.type) {

@@ -24,6 +24,7 @@ import {
   visibleWorldRect,
 } from "./camera";
 import { type DetailTier, detailTierForZoom } from "./lod";
+import { type WheelMode, WheelInterpreter } from "./wheel-input";
 
 type Listener = () => void;
 
@@ -48,6 +49,11 @@ export class SpatialStore {
   private tierListeners = new Set<Listener>();
   private visibleListeners = new Map<string, Set<Listener>>();
   private selectionListeners = new Set<Listener>();
+  private focusListeners = new Set<Listener>();
+  private focused: string | null = null;
+  /** The camera to return to when focus mode exits. */
+  private focusReturn: Camera | null = null;
+  readonly wheel = new WheelInterpreter();
 
   private tier: DetailTier;
   private visible = new Set<string>();
@@ -151,12 +157,26 @@ export class SpatialStore {
 
   // ── items (world rects, for culling / fit / minimap) ──────────────────────
 
+  /** Move/resize a registered item without unregistering it (a drag must
+   * never drop the tile's selection or focus). */
+  updateItem(id: string, rect: Rect): void {
+    if (!this.items.has(id)) return;
+    this.items.set(id, rect);
+    this.scheduleCoarse();
+  }
+
   registerItem(id: string, rect: Rect): () => void {
     this.items.set(id, rect);
     this.scheduleCoarse();
     return () => {
       this.items.delete(id);
       this.visible.delete(id);
+      if (this.focused === id) {
+        this.focused = null;
+        this.focusReturn = null;
+        for (const l of this.focusListeners) l();
+      }
+      if (this.selected === id) this.select(null);
     };
   }
 
@@ -194,6 +214,57 @@ export class SpatialStore {
   subscribeSelection = (l: Listener): (() => void) => {
     this.selectionListeners.add(l);
     return () => this.selectionListeners.delete(l);
+  };
+
+  // ── focus mode: one tile fills the board area; Esc returns ───────────────
+
+  setWheelMode(mode: WheelMode): void {
+    this.wheel.mode = mode;
+  }
+
+  getFocused = (): string | null => this.focused;
+
+  focus(id: string): void {
+    if (!this.items.has(id) || id.startsWith("frame:")) return;
+    if (this.focused === null) this.focusReturn = this.camera;
+    this.focused = id;
+    this.select(id);
+    for (const l of this.focusListeners) l();
+  }
+
+  unfocus(): void {
+    if (this.focused === null) return;
+    const id = this.focused;
+    this.focused = null;
+    for (const l of this.focusListeners) l();
+    // Return to where the person was — with the tile they looked at in view.
+    const back = this.focusReturn;
+    this.focusReturn = null;
+    const rect = this.items.get(id);
+    if (back && rect && rectsIntersect(rect, visibleWorldRect(back, this.size))) this.setCamera(back);
+    else this.fitItem(id);
+  }
+
+  /** Step focus through tiles in reading order (top-to-bottom, left-to-right). */
+  focusStep(dir: 1 | -1): void {
+    const order = this.readingOrder();
+    if (order.length === 0) return;
+    const at = this.focused ? order.indexOf(this.focused) : -1;
+    const next = order[(at + dir + order.length) % order.length];
+    this.focus(next);
+  }
+
+  /** Tile ids (frames excluded) in reading order: rows by top edge, then x. */
+  readingOrder(): string[] {
+    const tiles = [...this.items.entries()].filter(([id]) => !id.startsWith("frame:"));
+    const ROW_SLOP = 80;
+    tiles.sort(([, a], [, b]) => (Math.abs(a.y - b.y) <= ROW_SLOP ? a.x - b.x : a.y - b.y));
+    return tiles.map(([id]) => id);
+  }
+
+  subscribeFocus = (l: Listener): (() => void) => {
+    this.focusListeners.add(l);
+    return () => this.focusListeners.delete(l);
   };
 
   private scheduleCoarse(): void {

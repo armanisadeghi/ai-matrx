@@ -75,11 +75,27 @@ standing still with 100 live streams 58 fps (was 21); panning with 100 live stre
 7–8); panning when nothing streams 60 fps; the 12-tile board pans at 60 fps. Re-measure on real
 hardware with a production build before tuning further.
 
-## Gestures (the Figma/FigJam/tldraw standard)
+## Input, focus, gestures
 
-Wheel / two-finger pan · ⌘/ctrl+wheel or pinch zoom at cursor · drag empty space, space+drag or
-middle-drag pan · shift+1 fit all · shift+2 fit selection · shift+0 100% · +/- zoom · arrows nudge ·
-esc deselect · double-click a tile to fly to it · wheel over the SELECTED tile scrolls it.
+- **Scrolling (`engine/wheel-input.ts`, knob `WheelMode`, per-viewer):** `auto` (default) — a mouse
+  wheel zooms at the cursor, a trackpad swipe pans, a pinch zooms; `zoom`; `pan`. One decision per
+  gesture burst so an inertia tail never flips device. Drag empty space / space+drag / middle-drag
+  pans. **The one exception:** the SELECTED tile, under the pointer, with room to scroll that way,
+  scrolls itself.
+- **Focus (`FocusLayer`):** Enter, F, the tile's expand button or the menu → the tile's live card
+  portals into the focus layer and fills the board area (not browser fullscreen), growing out of its
+  on-board rect. ←/→ step in reading order; Esc returns to the exact camera. Double-click = fly to.
+- **Throws (`engine/throw.ts`):** a header drag released at ≥ 1.1 px/ms after ≥ 70px travel, on a
+  dominant axis. Defaults (`DEFAULT_THROW_ACTIONS`, a knob): → park on the shelf · ↑ save to Notes
+  and close · ↓ delete from the board after a consequence-naming confirm · ← unassigned. The action
+  is named on the tile BEFORE release; every result toasts an Undo.
+- **Right-click (`SpatialBoardMenu`):** the ONE v3 menu, one per board; the clicked tile's actions
+  come first (`primary`), then Board (fit, 100%, Scrolling, Parked).
+- **Keys:** shift+1 fit all · shift+2 fit selection · shift+0 100% · +/- zoom · arrows nudge · esc
+  leaves focus, then deselects.
+- **Board model (`board/useBoard.ts`):** tiles, positions, shelf, remove-with-undo, and `addTile`
+  with auto-placement in the nearest free space (`engine/placement.ts`) — the one path gestures,
+  the menu and agents change a board through.
 
 ## Change Log
 
@@ -92,3 +108,7 @@ esc deselect · double-click a tile to fly to it · wheel over the SELECTED tile
   768px (global `* { max-width: 100% }` in globals.css — every spatial element is `max-w-none`),
   a reload right after a move lost it (hash now throttled, not debounced), and a 1.8× zoom per
   mouse notch (now ~1.22×). Zoom-at-cursor measured exact to 0.1 world px over 23%→400%.
+- 2026-09-27 — Owner round 2: wheel-zooms input model with the auto/zoom/pan knob, focus mode, throw
+  gestures with pre-release hints and undo, the parked shelf, the v3 right-click menu, save-to-Notes,
+  `useBoard` + auto-placement. Browser-verified (wheel vs trackpad, focus + arrows + Esc, throw
+  right/down, shelf restore, delete confirm, menu), 0 console errors.
