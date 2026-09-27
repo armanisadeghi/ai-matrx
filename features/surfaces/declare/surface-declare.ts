@@ -26,9 +26,10 @@ import {
   type SurfaceSyncPlan,
   type SyncSchema,
 } from "@ai-matrx/alchemy/checks";
-import type {
-  ResolvedSurfaceManifest,
-  SurfaceManifest,
+import {
+  INLINE_TIER,
+  type ResolvedSurfaceManifest,
+  type SurfaceManifest,
 } from "@/features/surfaces/types";
 import { resolveSurfaceUrlPattern } from "@/features/surfaces/utils/surface-url-pattern";
 import {
@@ -221,6 +222,11 @@ export const agentHintsExtension: DeclarationExtension<Manifest> = {
       if (n === undefined) continue;
       if (typeof n !== "number" || !Number.isInteger(n) || n < 1)
         out.push(issue(s, `values/${v.name}/inlineUpTo`, `Surface "${s}" value "${v.name}" has inlineUpTo ${JSON.stringify(n)} — it must be a positive integer (chars).`, "Use a positive integer, or omit it for the platform default (200)."));
+      else if (
+        !(Object.values(INLINE_TIER) as number[]).includes(n) &&
+        !(v as { inlineApproval?: unknown }).inlineApproval
+      )
+        out.push(issue(s, `values/${v.name}/inlineUpTo`, `Surface "${s}" value "${v.name}" has inlineUpTo ${n}, which is not one of the inline tiers (record ${INLINE_TIER.record}, list ${INLINE_TIER.list}, recent ${INLINE_TIER.recent}) and carries no inlineApproval.`, "Use INLINE_TIER.record / .list / .recent under the policy on SurfaceValue.inlineUpTo, or omit it. Any other size needs Arman's approval recorded in inlineApproval."));
     }
     if (m.guide !== undefined) {
       const expected = surfaceGuidePath(s);
