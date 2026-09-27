@@ -2,6 +2,7 @@ import { cache } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { TemplateViewPage } from "@/features/message-templates/components/TemplateViewPage";
 import { publicLaneSelect } from "@/utils/permissions/publicLane";
@@ -10,6 +11,8 @@ import type { MessageTemplateDB } from "@/features/message-templates/types/messa
 interface PageProps {
   params: Promise<{ id: string }>;
 }
+
+const READ_TIMEOUT_MS = 8000;
 
 /** One read per request, shared by the tab title and the page. */
 const loadTemplate = cache(async (id: string) => {
@@ -32,13 +35,16 @@ const loadTemplate = cache(async (id: string) => {
   // An archived template is in Trash: its page shows the access gate. Anon
   // holds no grant on deleted_at, and its RLS lane (pub_read) already hides
   // archived rows, so the filter is added only for a signed-in reader.
-  const templateResult = await (userId
-    ? base.is("deleted_at", null)
-    : base
-  ).maybeSingle();
+  // Bounded: a slow database answers with an honest error, never a 504.
+  const templateResult = await (userId ? base.is("deleted_at", null) : base)
+    .abortSignal(AbortSignal.timeout(READ_TIMEOUT_MS))
+    .maybeSingle();
 
   return {
     template: (templateResult.data as MessageTemplateDB | null) ?? null,
+    // maybeSingle() answers "no row" with data null and NO error; an error
+    // here is a failed read (timeout, network), not a missing template.
+    readError: templateResult.error ? templateResult.error.message : null,
     userId,
   };
 });
@@ -55,7 +61,15 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function TemplateDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const { template, userId } = await loadTemplate(id);
+  const { template, readError, userId } = await loadTemplate(id);
+
+  if (readError) {
+    return (
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+        <ReadFailure error={readError} what="this message template" size="default" />
+      </div>
+    );
+  }
 
   // An empty or refused read shows the canonical access gate, which says
   // which of denied / deleted / never existed / signed out it is.

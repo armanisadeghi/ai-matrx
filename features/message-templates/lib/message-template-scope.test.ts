@@ -1,5 +1,6 @@
 import {
   humanizeManagedBy,
+  parseArchiveTemplateValue,
   buildMessageTemplateBundle,
   buildMessageTemplateScope,
   parseTemplateDraftValue,
@@ -78,6 +79,11 @@ describe("buildMessageTemplateScope", () => {
     expect(scope.template_draft).toEqual(draft);
     expect(scope.save_error).toBe("network down");
     expect(scope.template_content).toBe(template.content);
+    expect(scope.template_fields).toEqual([
+      { path: "reply.subject", label: "Reply subject" },
+      { path: "contact.first_name", label: "Contact first name" },
+      { path: "reply.body", label: "Reply body" },
+    ]);
   });
 });
 
@@ -118,5 +124,18 @@ describe("humanizeManagedBy", () => {
   it("turns a job key into words a person reads", () => {
     expect(humanizeManagedBy("crm.reply_drafting")).toBe("CRM reply drafting");
     expect(humanizeManagedBy("notifications.digest")).toBe("Notifications digest");
+  });
+});
+
+describe("parseArchiveTemplateValue", () => {
+  it("accepts true for the owner", () => {
+    expect(() => parseArchiveTemplateValue(true, true)).not.toThrow();
+  });
+  it.each([
+    [true, false, /belongs to someone else/],
+    [false, true, /expects true/],
+    [{}, true, /expects true/],
+  ])("refuses %j (can edit %s)", (value, canEdit, message) => {
+    expect(() => parseArchiveTemplateValue(value, canEdit as boolean)).toThrow(message);
   });
 });

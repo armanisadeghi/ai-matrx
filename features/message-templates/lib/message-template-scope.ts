@@ -17,6 +17,7 @@ import {
   xmlText,
 } from "@/features/surfaces/runtime/context-bundle";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import { mergeFieldsIn } from "./merge-fields";
 import {
   readMessageTemplateMetadata,
   type MessageTemplateDB,
@@ -90,6 +91,9 @@ export function buildMessageTemplateScope(input: {
     template_id: template.id,
     template_label: template.label ?? "",
     template_content: template.content ?? "",
+    template_fields: mergeFieldsIn(templateSubject(template), template.content ?? "").map(
+      ({ path, label }) => ({ path, label }),
+    ),
     can_edit: canEdit,
     template_mode: mode,
     has_unsaved_changes: isDirty,
@@ -189,4 +193,14 @@ export function parseTemplateDraftValue(
   if (changes.length === 0)
     throw new Error("template_draft would change nothing — the form already holds these values.");
   return out;
+}
+
+/** Checks an `archive_template` value: the owner, and exactly `true`. */
+export function parseArchiveTemplateValue(value: unknown, canEdit: boolean): void {
+  if (!canEdit)
+    throw new Error(
+      "This template belongs to someone else, so it cannot be archived here. Tell the person instead.",
+    );
+  if (value !== true && value !== "true")
+    throw new Error("archive_template expects true (it moves this template to Trash).");
 }
