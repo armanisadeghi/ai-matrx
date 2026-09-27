@@ -24,6 +24,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { fetchNoteContent } from "../../redux/thunks";
 import { useNoteAccess } from "../../hooks/useNoteAccess";
 import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
+import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
 import { cn } from "@/lib/utils";
 import MobileNotesList from "./MobileNotesList";
 import MobileNoteEditor, { type MobileEditorMode } from "./MobileNoteEditor";
@@ -277,31 +278,37 @@ export default function MobileNotesView({
               {noteDisplayLabel(selectedNote)}
             </span>
 
+            {/* The record's actions live in the shell's ⋮ sheet ("This page"),
+                so the title keeps the row — one overflow per phone header
+                (page-pass shared defects, 2026-09-27). */}
+            <PageHeaderRightPortal>
             {/* View mode — two modes, so one button that switches to the
-                other (a two-pill toggle squeezed the title to nothing and
-                its pills to 16px targets). */}
-            {(() => {
-              const next =
-                VIEW_MODES.find((m) => m.mode !== editorMode) ?? VIEW_MODES[0];
-              return (
-                <button
-                  type="button"
-                  onClick={() => setEditorMode(next.mode)}
-                  aria-label={`Switch to ${next.label}`}
-                  title={next.label}
-                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-                >
-                  {next.icon}
-                </button>
-              );
-            })()}
+                  other (a two-pill toggle squeezed the title to nothing and
+                  its pills to 16px targets). */}
+              {(() => {
+                const next =
+                  VIEW_MODES.find((m) => m.mode !== editorMode) ?? VIEW_MODES[0];
+                return (
+                  <button
+                    type="button"
+                    onClick={() => setEditorMode(next.mode)}
+                    aria-label={`Switch to ${next.label}`}
+                    title={next.label}
+                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                  >
+                    {next.icon}
+                  </button>
+                );
+              })()}
 
-            {/* Clean up content — mutates the note, so viewers don't get it.
-                The reference copy lives in the More sheet (a bookmark glyph
-                here read as "bookmark", not "copy reference"). */}
-            {!selectedAccess.readOnly && (
-              <NoteCleanupButton noteId={selectedNote.id} asTapButton />
-            )}
+              {/* Clean up content — mutates the note, so viewers don't get it.
+                  The reference copy lives in the More sheet (a bookmark glyph
+                  here read as "bookmark", not "copy reference"). */}
+              {!selectedAccess.readOnly && (
+                <NoteCleanupButton noteId={selectedNote.id} asTapButton />
+              )}
+
+            </PageHeaderRightPortal>
 
             {/* Save state */}
             <div className="flex-shrink-0 flex items-center relative">

@@ -171,8 +171,10 @@ function EntitySheetRows({
   const router = useRouter();
   const activeMode = activeHref ? { href: activeHref } : undefined;
   const setSheetOpen = (_open: false) => onDone();
+  // Full-width rows, stacked — inside the shell's sheet these must read as a
+  // list of one-tap items, never squeezed side by side ("Vie w").
   return (
-    <>
+    <div className="flex w-full min-w-0 flex-col" data-entity-sheet-rows>
             {modes?.map((m) => {
         const Icon = m.icon;
         const isActive = m.href === activeMode?.href;
@@ -243,7 +245,7 @@ function EntitySheetRows({
           </button>
         );
       })}
-    </>
+    </div>
   );
 }
 

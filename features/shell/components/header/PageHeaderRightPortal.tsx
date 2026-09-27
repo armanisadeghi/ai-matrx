@@ -9,6 +9,8 @@ import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { setPhonePageActionCount, usePhonePageActions } from "./phone-page-actions";
+import { PhoneSheetAction } from "./RouteHeader";
+import { flattenActions } from "./route-header-layout";
 
 interface PageHeaderRightPortalProps {
   children: React.ReactNode;
@@ -41,8 +43,11 @@ export default function PageHeaderRightPortal({
 
   if (toSheet && host) {
     return createPortal(
-      <div data-page-header-right-phone className="flex flex-wrap items-center px-1">
-        {children}
+      // One named row per control, as RouteHeader's actions are.
+      <div data-page-header-right-phone className="flex flex-col gap-0.5">
+        {flattenActions(children).map((a) => (
+          <PhoneSheetAction key={a.key} action={a} />
+        ))}
       </div>,
       host,
     );

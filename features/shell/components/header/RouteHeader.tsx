@@ -119,7 +119,7 @@ function iconControlsWidth(el: HTMLElement): number {
  * none (a record's own "…" menu) is named by the accessible name it renders —
  * in a list a bare icon is neither absent nor honest.
  */
-function PhoneSheetAction({ action }: { action: ReturnType<typeof flattenActions>[number] }) {
+export function PhoneSheetAction({ action }: { action: ReturnType<typeof flattenActions>[number] }) {
   const declared = overflowItemLabel(action.node);
   const ref = useRef<HTMLDivElement>(null);
   const [rendered, setRendered] = useState<string | null>(null);
