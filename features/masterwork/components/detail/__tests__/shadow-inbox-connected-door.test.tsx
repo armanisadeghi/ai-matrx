@@ -43,6 +43,8 @@ import type { Rulebook } from "../../../types";
 /** What the server answers the connection probe with, per test. */
 const connectionAnswer: { data: Record<string, unknown> } = { data: {} };
 const dispatched: { path: string }[] = [];
+let holdConnectionProbe = false;
+let resolveConnection: ((value: { data: Record<string, unknown> }) => void) | null = null;
 
 // The platform's shared textarea reaches for the Redux store and the
 // transcription-cleanup assist, neither of which is this door's code (same
@@ -61,6 +63,11 @@ jest.mock("@/lib/redux/hooks", () => ({
       const path = action.__path ?? "";
       dispatched.push({ path });
       if (path === "/masterworks/inbox/connection") {
+        if (holdConnectionProbe) {
+          return new Promise<{ data: Record<string, unknown> }>((resolve) => {
+            resolveConnection = resolve;
+          });
+        }
         return Promise.resolve({ data: connectionAnswer.data });
       }
       return Promise.resolve({ data: {} });
@@ -120,6 +127,7 @@ const RULEBOOK = {
 const NOT_CONNECTED_SENTENCE =
   "Connect a Google mailbox with permission to read your replies, and this " +
   "lane can pick the threads for you.";
+const SITTING_KEY = `matrx.masterwork.shadow-inbox.v1:${RULEBOOK.id}`;
 
 let container: HTMLDivElement;
 let root: Root;
@@ -140,10 +148,13 @@ async function mount() {
       </TooltipProvider>,
     );
   });
-  // Let the connection probe's promise settle and re-render.
-  await act(async () => {
-    await Promise.resolve();
-  });
+  // Let the connection probe's promise settle and re-render unless this test
+  // deliberately holds it while a person chooses another door.
+  if (!holdConnectionProbe) {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
 }
 
 function text(): string {
@@ -167,6 +178,9 @@ async function chooseConnectedDoor() {
 beforeEach(() => {
   dispatched.length = 0;
   launch.mockClear();
+  holdConnectionProbe = false;
+  resolveConnection = null;
+  window.localStorage.clear();
 });
 
 afterEach(() => {
@@ -213,6 +227,49 @@ describe("the shadow-inbox connected door", () => {
     const labels = buttons().map((b) => b.textContent ?? "");
     expect(labels.some((l) => l.includes("Paste a thread"))).toBe(true);
     expect(labels.some((l) => l.includes("Upload an export"))).toBe(true);
+  });
+
+  it("moves a restored connected sitting onto paste when the server closes Gmail", async () => {
+    connectionAnswer.data = { connected: false, how_to_connect: NOT_CONNECTED_SENTENCE };
+    window.localStorage.setItem(
+      SITTING_KEY,
+      JSON.stringify({
+        savedAt: Date.now(),
+        door: "connected",
+        sourceNote: "Northline Friday pickup reply",
+        expertEmail: "admin@admin.com",
+        text: "We can collect the decommissioned equipment after ten with a signed chain of custody.",
+      }),
+    );
+
+    await mount();
+
+    expect(container.querySelector("#shadow-inbox-text")).toBeTruthy();
+    expect(text()).not.toContain("When you select Shadow my last");
+    expect(
+      buttons().some((node) =>
+        (node.textContent ?? "").includes("Shadow my last"),
+      ),
+    ).toBe(false);
+  });
+
+  it("keeps an Upload choice made before an unavailable status response", async () => {
+    connectionAnswer.data = { connected: false, how_to_connect: NOT_CONNECTED_SENTENCE };
+    holdConnectionProbe = true;
+
+    await mount();
+    const uploadDoor = buttons().find((node) =>
+      (node.textContent ?? "").includes("Upload an export"),
+    );
+    await act(async () => {
+      uploadDoor?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await act(async () => {
+      resolveConnection?.({ data: connectionAnswer.data });
+    });
+
+    expect(container.querySelector('input[type="file"]')).toBeTruthy();
+    expect(container.querySelector("#shadow-inbox-text")).toBeNull();
   });
 
   it("offers the inbox door once a mailbox can be read", async () => {

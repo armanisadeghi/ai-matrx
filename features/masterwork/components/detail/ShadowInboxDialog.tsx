@@ -380,13 +380,21 @@ export function ShadowInboxDialog({
             };
           }
         ).data;
+        const connected = Boolean(data?.connected);
         setConnection({
-          connected: Boolean(data?.connected),
+          connected,
           accountEmail: data?.account_email ?? null,
           connectionId: data?.connection_id ?? null,
           daysBackDefault: data?.days_back_default ?? null,
           howToConnect: data?.how_to_connect ?? null,
         });
+        // A sitting can restore the formerly available connected door before
+        // this probe returns. Never leave its connected-only panel or action
+        // visible when the server has closed that door; the pasted source is
+        // already restored and becomes visible on the always-available door.
+        if (!connected) {
+          setDoor((current) => (current === "connected" ? "paste" : current));
+        }
         if (data?.days_back_default) setDaysBack(data.days_back_default);
       });
 
