@@ -1464,7 +1464,9 @@ export function WindowPanel({
         />
         {isDebugMode && <DebugStrip rect={rect} zIndex={zIndex} />}
         <div className={cn("flex-1 overflow-auto min-h-0", bodyClassName)}>
-          {mobileBody}
+          {/* Same menu as the drawer/card paths and desktop: long-press in a
+              fullscreen phone window used to open nothing. */}
+          <WindowSelectionSurface>{mobileBody}</WindowSelectionSurface>
         </div>
         {footerBar}
       </div>

@@ -60,6 +60,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
+import { useTextDraft } from "@/lib/drafts/useTextDraft";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useScreenCapture } from "@/hooks/useScreenCapture";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
@@ -330,10 +332,41 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     )
     .map((a) => a.fileId);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const isMobile = useIsMobile();
+
+  // Typed text survives closing the window (Cancel, the close button, a
+  // reload): the shared draft keeper restores it on the next open and says so;
+  // only a successful submit forgets it.
+  const draft = useTextDraft(
+    subject ? `feedback:${subject.sourceToken}:${subject.sourceId}` : "feedback",
+    description,
+    setDescription,
+    true,
+  );
+
+  // The window body mounts through a portal AFTER this hook's first effect,
+  // so an effect saw no textarea and nothing was focused. Focus when the
+  // field itself attaches — on desktop only: on a phone it would throw the
+  // keyboard over the sheet before the person chose to type.
+  const focusedOnceRef = useRef(false);
+  const attachTextarea = useCallback(
+    (el: HTMLTextAreaElement | null) => {
+      textareaRef.current = el;
+      if (el && !focusedOnceRef.current && !isMobile) {
+        focusedOnceRef.current = true;
+        el.focus({ preventScroll: true });
+      }
+    },
+    [isMobile],
+  );
+
+  // Screen Capture needs the Screen Capture API, which phones do not have.
+  const canCaptureScreen =
+    typeof navigator !== "undefined" &&
+    typeof navigator.mediaDevices?.getDisplayMedia === "function";
 
   useEffect(() => {
-    textareaRef.current?.focus();
     return () => {
       if (submitTimeoutRef.current) clearTimeout(submitTimeoutRef.current);
       if (slowHintTimeoutRef.current) clearTimeout(slowHintTimeoutRef.current);
@@ -664,6 +697,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     setIsSlowConnection(false);
 
     if (result.success) {
+      draft.forget();
       setSubmitted(true);
       if (result.data) setSubmittedItem(result.data);
       setDescription("");
@@ -696,6 +730,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     categoryId,
     assigneeId,
     selectedOrganizationId,
+    draft,
   ]);
 
   // ── Surface seam (`matrx-user/feedback`) ─────────────────────────────────
@@ -848,6 +883,9 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     // derived
     uploadedImageFileIds,
     textareaRef,
+    attachTextarea,
+    draft,
+    canCaptureScreen,
     isCapturing,
     // surface seam
     getScope,
@@ -899,6 +937,9 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
     assignableAdmins,
     isLoadingAdminOptions,
     textareaRef,
+    attachTextarea,
+    draft,
+    canCaptureScreen,
     isCapturing,
     getApplicationScope,
     handlePasteButton,
@@ -993,7 +1034,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
               key={value}
               value={value}
               aria-label={label}
-              className="gap-1.5 px-2.5 text-xs [&_svg]:h-3.5 [&_svg]:w-3.5"
+              className="gap-1.5 px-2.5 text-xs [&_svg]:h-3.5 [&_svg]:w-3.5 data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
             >
               <Icon />
               {label}
@@ -1035,7 +1076,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
           onTextInsertAfter={(text) => setDescription(description + text)}
         >
           <ProTextarea
-            ref={textareaRef}
+            ref={attachTextarea}
             surfaceName={FEEDBACK_SURFACE_NAME}
             getApplicationScope={getApplicationScope}
             className="w-full h-28 px-3 py-2 text-base leading-relaxed text-foreground bg-muted/40 border border-border rounded-lg outline-none resize-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:bg-background"
@@ -1046,6 +1087,24 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             disabled={isSubmitting}
           />
         </EditableContextMenu>
+        {draft.restored ? (
+          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+            Your unsent text was restored.
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              onClick={draft.acknowledge}
+            >
+              OK
+            </Button>
+          </p>
+        ) : null}
+        {!draft.available ? (
+          <p className="text-xs text-muted-foreground">
+            This browser is not keeping drafts — your text is lost if the window closes.
+          </p>
+        ) : null}
         <p className="text-[10px] text-muted-foreground pointer-coarse:hidden">
           Ctrl+Enter to submit · Ctrl+V to paste screenshots
         </p>
@@ -1175,17 +1234,19 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             <Camera />
             Tab Capture
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleScreenCapture}
-            disabled={isSubmitting || isCapturing}
-            title="Select any window or screen to capture (browser picker)"
-          >
-            <Monitor />
-            Screen Capture
-          </Button>
+          {canCaptureScreen ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleScreenCapture}
+              disabled={isSubmitting || isCapturing}
+              title="Select any window or screen to capture (browser picker)"
+            >
+              <Monitor />
+              Screen Capture
+            </Button>
+          ) : null}
         </div>
 
         {/* Attachment thumbnails — pending / error / ready */}
