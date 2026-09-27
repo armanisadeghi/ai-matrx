@@ -39,7 +39,7 @@ jest.mock("@/features/agents/redux/execution-system/conversations/conversations.
   selectConversationTitle: () => () => "Pool route plan",
 }));
 jest.mock("../load-full-history", () => ({
-  loadFullConversationHistory: async () => ({ complete: true, loaded: 3 }),
+  loadFullConversationHistory: async () => ({ complete: true, loaded: 4 }),
 }));
 jest.mock("@/features/agents/message-pins/pinned-messages-store", () => ({
   isMessagePinned: (id: string) => id === "m2",
@@ -50,6 +50,7 @@ const MESSAGES = [
   { id: "m1", role: "user", text: "Plan Tuesday's pool route for the Irvine crew.", createdAt: "2026-09-25T09:00:00Z" },
   { id: "m2", role: "assistant", text: "| Stop | Pool |\n|---|---|\n| 1 | Chen residence |\n| 2 | Oakwood HOA |", createdAt: "2026-09-25T09:00:05Z" },
   { id: "m3", role: "user", text: "Move Oakwood HOA before lunch and add a chlorine check.", createdAt: "2026-09-25T09:01:00Z" },
+  { id: "m4", role: "assistant", text: 'Done — Oakwood is stop 1.\n\n<!--MATRX_TRUST_V1 {"confidence":"inferred","groundedIn":"none","citations":[]}-->', createdAt: null },
   { id: "sys", role: "system", text: "hidden system prompt", createdAt: null },
 ];
 
@@ -100,9 +101,13 @@ describe("the conversation is ONE source; each format reads the right representa
       ["user", "You"],
       ["assistant", "Assistant"],
       ["user", "You"],
+      ["assistant", "Assistant"],
     ]);
     expect(conv.messages[1]?.pinned).toBe(true);
     expect(conv.markdown).not.toContain("hidden system prompt");
+    // Storage plumbing never reaches a reader (live: a tutor answer's trust comment did).
+    expect(conv.markdown).not.toContain("MATRX_TRUST_V1");
+    expect(conv.messages[3]?.text).toBe("Done — Oakwood is stop 1.");
     expect(conv.fileBase).toBe("Pool-route-plan");
   });
 
@@ -110,7 +115,7 @@ describe("the conversation is ONE source; each format reads the right representa
     const json = conversationPayloadFor(conv, "json");
     if (json.kind !== "json") throw new Error(`expected a JSON payload, got ${json.kind}`);
     const value = json.value as { messages: { role: string }[] };
-    expect(value.messages.map((m) => m.role)).toEqual(["user", "assistant", "user"]);
+    expect(value.messages.map((m) => m.role)).toEqual(["user", "assistant", "user", "assistant"]);
     for (const f of ["plain", "markdown", "rich-html"]) {
       expect(conversationPayloadFor(conv, f)).toEqual({ kind: "markdown", text: conv.markdown });
     }
@@ -129,7 +134,7 @@ describe("the conversation is ONE source; each format reads the right representa
 
   it("offers one section per message so the preparation workspace can choose messages", () => {
     const sections = conversationSections(conv);
-    expect(sections.map((s) => s.path)).toEqual(["/messages/0", "/messages/1", "/messages/2"]);
+    expect(sections.map((s) => s.path)).toEqual(["/messages/0", "/messages/1", "/messages/2", "/messages/3"]);
     expect(sections[0]?.label).toMatch(/^1\. You: Plan Tuesday/);
   });
 

@@ -24,6 +24,7 @@ import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { isMessagePinned } from "@/features/agents/message-pins/pinned-messages-store";
+import { stripTurnTrust } from "@/features/education/tutor/turnTrust";
 import { openAlchemySession } from "@/components/agent-copy/alchemy-session";
 import { buildConversationMarkdown } from "./conversation-markdown";
 import { documentMarkdown } from "./document-markdown";
@@ -77,8 +78,9 @@ export function conversationFromState(
     .filter((r) => !r.deletedAt)
     .map((r) => ({
       role: String(r.role),
-      // Envelopes are storage plumbing — a reader gets the table, not the tag.
-      text: unwrapKindEnvelopes(extractFlatText(r)),
+      // Envelopes and the tutor's trust comment are storage plumbing — a
+      // reader gets the table, not the tag (the chat renderer drops both).
+      text: stripTurnTrust(unwrapKindEnvelopes(extractFlatText(r))),
       createdAt: r.createdAt ?? null,
       pinned: isMessagePinned(r.id),
     }));
@@ -282,17 +284,11 @@ export async function runConversationTransfer(
   const opened = openAlchemySession({
     key: `conversation:${conversationId}:${Date.now()}`,
     label: title,
-    source: sources.primary,
+    // Copy for AI prepares the ordered messages with their roles, one section
+    // per message — the workspace's "Sections" is how she chooses messages.
+    // A destination sends the readable transcript.
+    source: row.group === "prepare" ? sources.chooseMessages : sources.primary,
     formatSources: sources.formatSources,
-    variants: [
-      {
-        id: "choose-messages",
-        label: "Choose messages",
-        copyLabel: "Choose messages to copy",
-        hint: "Pick which messages go in",
-        source: sources.chooseMessages,
-      },
-    ],
     intent: row.group === "prepare" ? { kind: "prepare" } : { kind: "action", actionId: row.destination, label: row.label },
   });
   if (!opened) {
