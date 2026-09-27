@@ -49,7 +49,9 @@ canvas chrome, and with no session the dock is absent.
 
 **The conversation.** `useCanvasWorkspaceConversation("shell-chat-dock", { enabled: shown })` — the
 `chat.default_new_chat` job, organization-gated, launched only when the chat is first shown. A closed dock costs
-nothing on page load.
+nothing on page load. `shown` is false until the viewport is KNOWN (`useMediaQueryState`, `hooks/use-media-query.ts`
+— `null` on the server and during hydration): a phone that inherits a desktop "open" cookie starts no chat
+(verified: zero launch requests at 390px).
 
 **Page context.** `useConversationFollowsPage` (features/surfaces/runtime) keeps the conversation's surface
 stamp equal to `useActivePageSurface()` while "Sees" is on, so every turn's `refresh-surface-scope` reads the
@@ -57,8 +59,8 @@ page the person is on NOW — it follows them across pages. Off clears the stamp
 over. On by default: this is the explicit, visible, switchable helper-context choice
 (common-docs/systems/mandates/STATE.md), not ambient inheritance. Quick Chat uses the same hook.
 
-**Viewport-pinned page UI.** `--shell-chat-dock-w` on `.shell-root` (0 when closed; server-painted when open,
-kept current by the dock) — anything pinned to the viewport that must clear the dock reads it
+**Viewport-pinned page UI.** `--shell-chat-dock-w` on `.shell-root` (0 when closed; server-painted when open on
+an available route, kept current by `DockedSidePanel publishWidthAs`) — anything pinned to the viewport that must clear the dock reads it
 (`.ambient-assistant-dock` centres left of it).
 
 ---
@@ -75,5 +77,7 @@ kept current by the dock) — anything pinned to the viewport that must clear th
 
 ## Change Log
 
+- **2026-09-27** — Review fixes: no launch before the viewport is known; the dock takes at most half the window;
+  a guest's control is never pressed; no width variable on unavailable routes.
 - **2026-09-27** — Created: dock, header control (Search · Agents · Chat · Canvas · Inbox), phone row, page
   context that follows navigation, `--shell-chat-dock-w`. Verified on `/education/overview` → `/education/planner`.
