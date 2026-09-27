@@ -101,7 +101,12 @@ function analyse(tools, file, source) {
     const at = d.loc?.start?.line ?? d.options?.details?.[0]?.loc?.start?.line ?? d.primaryLocation?.()?.start?.line ?? null;
     const head = lines.slice(Math.max(0, line - 1), line + 3).join("\n");
     const name = (head.match(/(?:function\s+|const\s+|let\s+)([A-Za-z0-9_$]+)/) ?? [])[1] ?? "(anonymous)";
-    byFn.set(line, { line, name, reason, at, optOut: /["']use no memo["']/.test(head) });
+    // The directive is the body's first statement (comments may sit above it): look within the
+    // function's own lines, at most 20 in.
+    const end = Math.min(e.fnLoc?.end?.line ?? line + 20, line + 20);
+    const body = lines.slice(Math.max(0, line - 1), end).map((l) => l.trim()).filter((l) => l && !l.startsWith("//") && !l.startsWith("*") && !l.startsWith("/*"));
+    const optOut = body.slice(0, 3).some((l) => /^["']use no memo["'];?$/.test(l));
+    byFn.set(line, { line, name, reason, at, optOut });
   }
   const all = [...byFn.values()];
   return { compiled, skipped: all.filter((f) => !f.optOut), optedOut: all.filter((f) => f.optOut) };

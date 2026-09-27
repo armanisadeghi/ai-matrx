@@ -102,6 +102,12 @@ function sameSheetRow<R>(a: SheetBodyRowProps<R>, b: SheetBodyRowProps<R>): bool
 }
 
 export const SheetBodyRow = memo(function SheetBodyRow<R>({ row, index, render }: SheetBodyRowProps<R>) {
+  // "use no memo" — THE BOUNDARY IS THE MEMO (lane RENDER-2). Compiled, this body caches
+  // `render(row, index)` on [render, row, index]; once the Sheet compiled, `render` stopped
+  // changing, so a row whose FACTS changed (a cell opening its editor) re-rendered and returned
+  // the cached, stale drawing — the editor never opened. `render` reads the viewer's latest scope,
+  // which the compiler cannot see; `sameSheetRow` above is what decides when a row draws.
+  "use no memo";
   return <>{render(row, index)}</>;
 }, sameSheetRow) as <R>(props: SheetBodyRowProps<R> & { key?: string }) => ReactNode;
 
