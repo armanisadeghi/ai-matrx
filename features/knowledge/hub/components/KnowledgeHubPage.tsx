@@ -85,7 +85,7 @@ import {
   type FileUnderContainer,
 } from "@/features/knowledge/hub/hubActions";
 import { hitKey, openFullHref, tokenLabel } from "@/features/knowledge/hub/hubPresentation";
-import { anyContainerTypes, viewIsDirty } from "@/features/knowledge/hub/hubSavedViews";
+import { anyContainerTypes, isViewLinkOnly, viewIsDirty } from "@/features/knowledge/hub/hubSavedViews";
 import {
   createHubView,
   deleteView,
@@ -237,6 +237,23 @@ export function KnowledgeHubPage({
     state.view.kind === "saved" ? (sidebar.savedViews.items.find((v) => v.id === (state.view as { id: string }).id) ?? null) : null;
   const dirty = openSavedView ? viewIsDirty(openSavedView.definition, { query: state.query, layout: state.layout }) : false;
   const anyTypes = anyContainerTypes(state.query);
+
+  // A view LINK (`/knowledge?view=saved:<id>` with no filters — what a shared
+  // view's address is) opens the view: once its definition has loaded, its
+  // query and layout land in the URL. Once per view per visit, so clearing a
+  // view's filters on purpose is never undone. (Felt in the H5 walk: a
+  // teammate opening the shared link saw Everything.)
+  const appliedViewLink = useRef<string | null>(null);
+  useEffect(() => {
+    if (state.view.kind !== "saved" || !openSavedView?.definition) return;
+    if (appliedViewLink.current === openSavedView.id) return;
+    appliedViewLink.current = openSavedView.id;
+    if (isViewLinkOnly(state)) {
+      const { query, layout } = selectionQuery(state.view, openSavedView.definition);
+      write({ query, layout: layout ?? state.layout }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.view, openSavedView?.id, openSavedView?.definition]);
   const total = results.sections.every((s) => typeof s.section?.count === "number")
     ? results.sections
         .filter((s) => s.key !== "top_hit" && s.key !== "segments")

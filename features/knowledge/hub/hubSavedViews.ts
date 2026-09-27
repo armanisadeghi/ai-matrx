@@ -18,9 +18,11 @@ import {
   type KnowledgeSearchRunner,
 } from "@/features/knowledge/api/knowledgeSearch";
 import {
+  hubStateToParams,
   normalizeQuery,
   type HubLayout,
   type HubSavedViewDefinition,
+  type HubState,
 } from "@/features/knowledge/hub/hubState";
 
 export const HUB_SAVED_VIEW_SURFACE = "knowledge/hub";
@@ -96,6 +98,15 @@ export function viewIsDirty(
     JSON.stringify(normalizeQuery(def.query)) !== JSON.stringify(normalizeQuery(current.query)) ||
     def.layout !== current.layout
   );
+}
+
+/**
+ * The address carries a saved view and nothing else (no filters, default
+ * layout) — a view LINK, which should open the view's own filters.
+ */
+export function isViewLinkOnly(state: HubState): boolean {
+  const params = hubStateToParams({ ...state, peek: null });
+  return [...params.keys()].every((k) => k === "view" || k === "data");
 }
 
 // ─── Live counts ────────────────────────────────────────────────────────────

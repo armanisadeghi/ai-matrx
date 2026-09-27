@@ -1,17 +1,19 @@
 // /demos/spatial — the spatial view proof: many live AI results on one
-// pannable, zoomable plane, with streaming paced by zoom level — and the
-// platform chat on the left, fed the board as context (features/spatial/chat/).
-// Engine + doctrine: features/spatial/FEATURE.md.
+// pannable, zoomable plane, with streaming paced by zoom level — hosted in the
+// ONE chat-beside-a-canvas layout (features/canvas/workspace/FEATURE.md): the
+// platform chat docks beside it (or floats over it) and receives the board as
+// ONE `spatial_board` context entry. Engine + doctrine: features/spatial/FEATURE.md.
 
 import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import type { DemoKindExample } from "@/features/spatial/demo/SpatialDemoBoard";
-import { SpatialDemoBoardWithChat } from "@/features/spatial/chat/SpatialDemoBoardWithChat";
-import { boardChatCookieName } from "@/features/spatial/chat/board-context";
-import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
+import { readCanvasNavCookie } from "@/features/shell/canvas-chrome/canvas-nav.server";
+import { readCanvasChatCookie } from "@/features/canvas/workspace/workspace-cookies.server";
+import { readComposerModeCookie } from "@/features/agents/components/inputs/smart-input/composer/composer-mode.server";
+import { SpatialCanvasWorkspaceDemo } from "../canvas-workspace/SpatialCanvasWorkspaceDemo";
 
-/** The chat | board split's group id (and, via `panels:<id>`, its layout cookie). */
-const CHAT_GROUP_ID = "spatial-demo-chat";
+/** The workspace id (its chat surface key and cookies). */
+const WORKSPACE_ID = "demo-spatial-board";
 
 export const metadata: Metadata = {
   title: "Spatial View",
@@ -70,17 +72,21 @@ async function loadCanonicalExamples(): Promise<{
 }
 
 export default async function SpatialDemoPage() {
-  const [{ kinds, note }, defaultLayout] = await Promise.all([
+  const [{ kinds, note }, initialNav, initialChat, initialMode] = await Promise.all([
     loadCanonicalExamples(),
-    readLayoutCookie(boardChatCookieName(CHAT_GROUP_ID)),
+    readCanvasNavCookie(),
+    readCanvasChatCookie(WORKSPACE_ID),
+    readComposerModeCookie(),
   ]);
   return (
     <div className="h-full min-h-0">
-      <SpatialDemoBoardWithChat
-        groupId={CHAT_GROUP_ID}
+      <SpatialCanvasWorkspaceDemo
+        workspaceId={WORKSPACE_ID}
         kinds={kinds}
         examplesNote={note}
-        defaultLayout={defaultLayout}
+        initialNav={initialNav}
+        initialChat={initialChat}
+        initialMode={initialMode}
       />
     </div>
   );

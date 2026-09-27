@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-27T09:35:17.880Z",
+  "generated_at": "2026-09-27T10:38:17.586Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -823,6 +823,18 @@
       "filename": "doorsdecide3_two_doors_ask_the_wall_in_their_own_body.sql",
       "checksum": "64784bc1ae089ca93bf3af41cbfc11e0b5b5b2c68b4c5d5d9533417f0a3f4399",
       "applied_at": "2026-09-22 07:58:45.596489+00"
+    },
+    "migrations/campaign/doorsdecidelast_a_meeting_its_host_archives_is_in_trash.sql": {
+      "source": "matrx-frontend",
+      "filename": "doorsdecidelast_a_meeting_its_host_archives_is_in_trash.sql",
+      "checksum": "1df3c6c7cbbe6b12910d1d9a25177cf7de5e84ab6dd4baba9006aba901d98211",
+      "applied_at": "2026-09-27 10:32:23.062418+00"
+    },
+    "migrations/campaign/doorsdecidelast_the_last_four_store_door_findings_are_closed.sql": {
+      "source": "matrx-frontend",
+      "filename": "doorsdecidelast_the_last_four_store_door_findings_are_closed.sql",
+      "checksum": "f983c6cf6f07ed468fe53a2c0d80fe18110a58aca359464ac0cc8c8c87a109f9",
+      "applied_at": "2026-09-27 10:38:14.998823+00"
     },
     "migrations/campaign/doorsgreen_a_capture_sheet_asks_the_wall_in_its_own_body.sql": {
       "source": "matrx-frontend",
@@ -2366,6 +2378,12 @@
       "checksum": "eff04e67841fae03c7488dad2db1b723be966e91ba0ad9e1492f93c17a150359",
       "applied_at": "2026-09-27 09:22:55.197251+00"
     },
+    "migrations/campaign/guardsgreen_trash_reads_are_index_walks_on_every_sizable_kind.sql": {
+      "source": "matrx-frontend",
+      "filename": "guardsgreen_trash_reads_are_index_walks_on_every_sizable_kind.sql",
+      "checksum": "1f91d8c48dfe9ff672c9875fdfa2172c0b8f95f247d018952e9e686768875004",
+      "applied_at": "2026-09-27 09:50:10.62162+00"
+    },
     "migrations/campaign/guardstamps_definer_census_asks_the_one_ladder.sql": {
       "source": "matrx-frontend",
       "filename": "guardstamps_definer_census_asks_the_one_ladder.sql",
@@ -3379,6 +3397,30 @@
       "filename": "reach_the_write_doors_ask_the_switch.sql",
       "checksum": "988c16a9e438702b27c4697b44f622a7781a1cfdd5ffbe52380e7085b710c21d",
       "applied_at": "2026-09-19 13:42:02.43982+00"
+    },
+    "migrations/campaign/readinesscap_the_400_write_cap_is_a_knob.sql": {
+      "source": "matrx-frontend",
+      "filename": "readinesscap_the_400_write_cap_is_a_knob.sql",
+      "checksum": "73882446b96e122b7fa051b76920b53a4ee92bc7127bfa49b8fde9f0dc541fc9",
+      "applied_at": "2026-09-27 05:16:32.424165+00"
+    },
+    "migrations/campaign/readinesscap_the_bag_census_row_ceiling_is_a_knob.sql": {
+      "source": "matrx-frontend",
+      "filename": "readinesscap_the_bag_census_row_ceiling_is_a_knob.sql",
+      "checksum": "907d3493c4d488619eb0950a5d8d4a74c6ef0f8bd38d4b4a4585f375ca8a7017",
+      "applied_at": "2026-09-27 05:16:32.424165+00"
+    },
+    "migrations/campaign/readinesscap_the_check_reports_its_true_total.sql": {
+      "source": "matrx-frontend",
+      "filename": "readinesscap_the_check_reports_its_true_total.sql",
+      "checksum": "cf348990ea630a88484d5df73c8b3e863401340c8c1e44598b455b4d4646d531",
+      "applied_at": "2026-09-27 05:16:32.424165+00"
+    },
+    "migrations/campaign/readinesscap_the_check_says_when_it_hit_the_cap.sql": {
+      "source": "matrx-frontend",
+      "filename": "readinesscap_the_check_says_when_it_hit_the_cap.sql",
+      "checksum": "61d9257f4f35f9e03b048c408567d91c98f1b3840caa7540af2edf3ff1dbf9c1",
+      "applied_at": "2026-09-27 05:16:32.424165+00"
     },
     "migrations/campaign/readinline_the_page_passes_the_row_it_already_holds.sql": {
       "source": "matrx-frontend",
@@ -5257,6 +5299,12 @@
       "filename": "trashcoverage2_every_archivable_thing_a_person_sees_is_in_trash.sql",
       "checksum": "497c0f64767ed79d8406f85c5b17cf88b3238ae360199e82f167325450781aeb",
       "applied_at": "2026-09-26 08:40:41.03514+00"
+    },
+    "migrations/campaign/trashcoverage2_organization_trash_reads_shared_rows_through_their_own_index.sql": {
+      "source": "matrx-frontend",
+      "filename": "trashcoverage2_organization_trash_reads_shared_rows_through_their_own_index.sql",
+      "checksum": "327fed47f3e14317022243324de7c2ca9e237455f284b6975fef5a913fa866f1",
+      "applied_at": "2026-09-26 09:14:28.902464+00"
     },
     "migrations/campaign/trashcoverage2_organization_trash_walks_shared_and_own_personal_rows_apart.sql": {
       "source": "matrx-frontend",

@@ -227,3 +227,13 @@ describe("live count under the title stand-in", () => {
     expect(countLabel(typesOnly)).toBe("99+");
   });
 });
+
+describe("view link", () => {
+  it("a bare saved-view address is a link to open; any filter or layout makes it a working state", async () => {
+    const { isViewLinkOnly } = await import("@/features/knowledge/hub/hubSavedViews");
+    const base = { ...DEFAULT_HUB_STATE, view: { kind: "saved" as const, id: "v1" } };
+    expect(isViewLinkOnly(base)).toBe(true);
+    expect(isViewLinkOnly({ ...base, query: { mode: "find", types: ["note"] } })).toBe(false);
+    expect(isViewLinkOnly({ ...base, layout: "board" })).toBe(false);
+  });
+});
