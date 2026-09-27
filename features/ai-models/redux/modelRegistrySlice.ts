@@ -368,6 +368,16 @@ export const fetchModelById = createAsyncThunk(
   },
   {
     condition: (modelId: string, { getState }) => {
+      // `ai.model_config` is a signed-in read. A known fingerprint guest (a
+      // signed-out visitor running a public app at /p/<slug>) can never read
+      // it, so it is not asked — it only answered 401 (page-pass 2026-09-27).
+      const auth = getState() as {
+        userAuth?: { accessToken?: string | null };
+        userProfile?: { fingerprintId?: string | null };
+      };
+      if (!auth.userAuth?.accessToken && auth.userProfile?.fingerprintId) {
+        return false;
+      }
       const { entities, detailStatusById } = (
         getState() as { modelRegistry: ModelRegistryState }
       ).modelRegistry;
