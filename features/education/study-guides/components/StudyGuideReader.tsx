@@ -43,7 +43,6 @@ import { setNoteEditorMode } from "@/features/notes/redux/slice";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationStudyGuidesScope } from "@/features/surfaces/manifests/education-study-guides.manifest";
 import { createEducationStudyGuideScope, EDUCATION_STUDY_GUIDE_SURFACE_NAME } from "@/features/surfaces/manifests/education-study-guide.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
 import { StudyGuideAgentBridge, type StudyGuideAnnotationSnapshot } from "./StudyGuideAgentBridge";
@@ -214,7 +213,7 @@ function useStudyPassageActions(guide: Note): { actions: Action[]; tutor: React.
   return { actions, tutor };
 }
 
-function ReaderContent({ guide, onRetry, onEdit, getScope, surfaceName, jumpRequest }: { guide: Note; onRetry: () => void; onEdit: () => void; getScope: () => SurfaceScopePayload; surfaceName: string; jumpRequest: { index: number; nonce: number } | null }) {
+function ReaderContent({ guide, onEdit, jumpRequest }: { guide: Note; onEdit: () => void; jumpRequest: { index: number; nonce: number } | null }) {
   const readerRef = useRef<HTMLDivElement>(null);
   const passage = useStudyPassageActions(guide);
   useEffect(() => {
@@ -228,11 +227,9 @@ function ReaderContent({ guide, onRetry, onEdit, getScope, surfaceName, jumpRequ
     <div className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto">
       <div ref={readerRef} className="w-full px-3 py-3">
         {!/^\s*#\s/.test(guide.content ?? "") && <div className="mb-7 border-b border-border pb-5"><p className="text-xs font-medium uppercase tracking-wide text-primary">Study guide</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{guide.label || "Untitled guide"}</h1></div>}
-        <NonEditableContextMenu sourceFeature="notes" surfaceName={surfaceName} getApplicationScope={getScope} contentSource={noteIdentityContentSource(guide.id)} entity={{ type: "note", id: guide.id, title: guide.label || "Untitled guide" }} contextData={{ content: guide.content ?? "", guideId: guide.id }} extraSections={[{ id: "study-guide-selection", label: "Study guide", primary: true, items: [{ kind: "item", id: "retry-study-guide", label: "Refresh study guide", icon: BookOpen, onSelect: onRetry }] }]}>
-          <AnnotatedContent className="study-guide-reader-content" passageActions={passage.actions}>
-            <RichDocument imagePolicy="ai" content={guide.content ?? ""} source={noteIdentityContentSource(guide.id)} actionsVariant="icon-only" actionsPosition="top-right" actionsBehavior="hover-only" />
-          </AnnotatedContent>
-        </NonEditableContextMenu>
+        <AnnotatedContent className="study-guide-reader-content" passageActions={passage.actions}>
+          <RichDocument imagePolicy="ai" content={guide.content ?? ""} source={noteIdentityContentSource(guide.id)} actionsVariant="icon-only" actionsPosition="top-right" actionsBehavior="hover-only" />
+        </AnnotatedContent>
       </div>
     </div>
     {passage.tutor}
@@ -341,6 +338,8 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
     const termsReady = Boolean(guide) && !detailsLoading.terms && !detailsError.terms;
     const guideReady = Boolean(guide) && !loading && !error;
     const detailsFailure = detailsError.terms || notes.error;
+    // A finished read that found nothing is the access gate (missing or not shared), never an empty guide.
+    const missing = !loading && !guide && !error ? "This study guide does not exist, or the person does not have access to it." : null;
     return createEducationStudyGuideScope({
       guide_loaded: guideReady,
       reader_mode: editingGuide ? "edit" : "read",
@@ -367,7 +366,7 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
       } : {}),
       ...(!guidesLoading && !guidesError ? { available_guides: guides.map((item) => ({ id: item.id, title: item.label })) } : {}),
       ...(termsReady ? { key_terms: terms.map((item) => ({ id: item.id, term: item.term, definition: item.definition })) } : {}),
-      ...(guidesError || error || editError ? { load_error: guidesError || editError || (error instanceof Error ? error.message : "Could not load the guide.") } : {}),
+      ...(missing || guidesError || error || editError ? { load_error: missing || guidesError || editError || (error instanceof Error ? error.message : "Could not load the guide.") } : {}),
       ...(detailsFailure ? { details_error: detailsFailure } : {}),
     });
   };
@@ -418,16 +417,36 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
 
   const getScope = initialGuideId ? getDetailScope : getListScope;
   const agentBridge = guide && initialGuideId ? <StudyGuideAgentBridge snapshotRef={annotationsRef} isEditing={editingGuide} /> : null;
+  // The canonical right-click menu covers the whole reader (sidebars and gate states
+  // included), carrying the open guide's identity when there is one.
+  const withMenu = (node: React.ReactNode) => (
+    <NonEditableContextMenu
+      sourceFeature="notes"
+      surfaceName={surfaceName}
+      menuVersion={1}
+      getApplicationScope={getScope}
+      {...(guide
+        ? {
+            contentSource: noteIdentityContentSource(guide.id),
+            entity: { type: "note", id: guide.id, title: guide.label || "Untitled guide" },
+            contextData: { content: guide.content ?? "", guideId: guide.id },
+            extraSections: [{ id: "study-guide-selection", label: "Study guide", primary: true, items: [{ kind: "item" as const, id: "retry-study-guide", label: "Refresh study guide", icon: BookOpen, onSelect: retryGuide }] }],
+          }
+        : { contentSource: { type: "raw" as const } })}
+    >
+      <div className="contents">{node}</div>
+    </NonEditableContextMenu>
+  );
 
-  const readerState = loading ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />Loading study guide</div> : error || (initialGuideId && !guide) ? <AccessGate token="note" id={initialGuideId ?? ""} error={error} onRetry={retryGuide} fallbackHref="/education/study-guides" fallbackLabel="Study guides" /> : guide ? editingGuide ? <main className="relative h-full min-h-0 bg-background"><Button size="sm" variant="outline" className="absolute right-3 top-2 z-20 bg-background" onClick={() => { void finishEditing(); }}><BookOpen className="mr-1.5 h-4 w-4" aria-hidden />Back to reading</Button>{editError && <ErrorNotice size="inline" className="absolute right-3 top-12 z-20 max-w-xs rounded border border-destructive bg-background p-2 text-xs" message={editError} />}<NotesView config={{ singleNote: guide.id, showSidebar: false, showTabs: false, hidePageHeader: true, syncUrl: false }} className="h-full" /></main> : <ReaderContent guide={guide} onRetry={retryGuide} onEdit={() => { setEditError(null); dispatch(setNoteEditorMode({ id: guide.id, mode: "wysiwyg" })); setEditingGuide(true); }} getScope={getScope} surfaceName={surfaceName} jumpRequest={outlineJump} /> : <div className="flex h-full items-center justify-center px-6 text-center"><div><BookOpen className="mx-auto h-8 w-8 text-primary" aria-hidden /><h1 className="mt-3 text-lg font-semibold">Choose a study guide</h1><p className="mt-1 text-sm text-muted-foreground">Select a guide from the left to start reviewing.</p></div></div>;
+  const readerState = loading ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />Loading study guide</div> : error || (initialGuideId && !guide) ? <AccessGate token="note" id={initialGuideId ?? ""} error={error} onRetry={retryGuide} fallbackHref="/education/study-guides" fallbackLabel="Study guides" /> : guide ? editingGuide ? <main className="relative h-full min-h-0 bg-background"><Button size="sm" variant="outline" className="absolute right-3 top-2 z-20 bg-background" onClick={() => { void finishEditing(); }}><BookOpen className="mr-1.5 h-4 w-4" aria-hidden />Back to reading</Button>{editError && <ErrorNotice size="inline" className="absolute right-3 top-12 z-20 max-w-xs rounded border border-destructive bg-background p-2 text-xs" message={editError} />}<NotesView config={{ singleNote: guide.id, showSidebar: false, showTabs: false, hidePageHeader: true, syncUrl: false }} className="h-full" /></main> : <ReaderContent guide={guide} onEdit={() => { setEditError(null); dispatch(setNoteEditorMode({ id: guide.id, mode: "wysiwyg" })); setEditingGuide(true); }} jumpRequest={outlineJump} /> : <div className="flex h-full items-center justify-center px-6 text-center"><div><BookOpen className="mx-auto h-8 w-8 text-primary" aria-hidden /><h1 className="mt-3 text-lg font-semibold">Choose a study guide</h1><p className="mt-1 text-sm text-muted-foreground">Select a guide from the left to start reviewing.</p></div></div>;
 
   const reader = loading || error || !guide ? <div className="scroll-page-end-space h-full min-h-0 overflow-y-auto">{readerState}</div> : readerState;
 
   const withSidecar = (node: React.ReactNode) => guide ? <AnnotationSidecarProvider source={guideSource(guide, () => { void loadStudyGuide(guide.id).then((next) => { if (next) setGuide(next); }); })}>{node}</AnnotationSidecarProvider> : node;
 
-  if (isMobile) return withSidecar(<SurfaceRuntimeProvider surfaceName={surfaceName} getScope={getScope} getWriteHandlers={getWriteHandlers}>{agentBridge}<PanelControlProvider initialLayouts={[defaultLayout]}><div className="matrx-touch-targets flex h-full min-h-0 flex-col"><div className="flex items-center justify-between border-b border-border bg-background px-3 py-2"><Button size="sm" variant="ghost" onClick={() => setMobilePanel("guides")}>Study guides</Button><Button size="sm" variant="ghost" onClick={() => setMobilePanel("details")}>Notes & terms</Button></div><div className="min-h-0 flex-1">{reader}</div><Drawer open={mobilePanel === "guides"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study guides</DrawerTitle></DrawerHeader><DrawerBody><GuideList guides={guides} activeLabel={guide?.label} activeId={guide?.id ?? initialGuideId} content={guide?.content ?? ""} onJump={(index) => { setOutlineJump((current) => ({ index, nonce: (current?.nonce ?? 0) + 1 })); setMobilePanel(null); }} loading={guidesLoading} error={guidesError} onRetry={retryIndex} /></DrawerBody></DrawerContent></Drawer><Drawer open={mobilePanel === "details"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study details</DrawerTitle></DrawerHeader><DrawerBody><Inspector guide={guide} mobile tab={tab} onTabChange={setTab} terms={terms} loading={detailsLoading[tab]} error={detailsError[tab]} onRetry={retryDetails} /></DrawerBody></DrawerContent></Drawer></div></PanelControlProvider></SurfaceRuntimeProvider>);
+  if (isMobile) return withSidecar(<SurfaceRuntimeProvider surfaceName={surfaceName} getScope={getScope} getWriteHandlers={getWriteHandlers}>{agentBridge}{withMenu(<PanelControlProvider initialLayouts={[defaultLayout]}><div className="matrx-touch-targets flex h-full min-h-0 flex-col"><div className="flex items-center justify-between border-b border-border bg-background px-3 py-2"><Button size="sm" variant="ghost" onClick={() => setMobilePanel("guides")}>Study guides</Button><Button size="sm" variant="ghost" onClick={() => setMobilePanel("details")}>Notes & terms</Button></div><div className="min-h-0 flex-1">{reader}</div><Drawer open={mobilePanel === "guides"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study guides</DrawerTitle></DrawerHeader><DrawerBody><GuideList guides={guides} activeLabel={guide?.label} activeId={guide?.id ?? initialGuideId} content={guide?.content ?? ""} onJump={(index) => { setOutlineJump((current) => ({ index, nonce: (current?.nonce ?? 0) + 1 })); setMobilePanel(null); }} loading={guidesLoading} error={guidesError} onRetry={retryIndex} /></DrawerBody></DrawerContent></Drawer><Drawer open={mobilePanel === "details"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study details</DrawerTitle></DrawerHeader><DrawerBody><Inspector guide={guide} mobile tab={tab} onTabChange={setTab} terms={terms} loading={detailsLoading[tab]} error={detailsError[tab]} onRetry={retryDetails} /></DrawerBody></DrawerContent></Drawer></div></PanelControlProvider>)}</SurfaceRuntimeProvider>);
 
-  return withSidecar(<SurfaceRuntimeProvider surfaceName={surfaceName} getScope={getScope} getWriteHandlers={getWriteHandlers}>{agentBridge}<PanelControlProvider initialLayouts={[defaultLayout]}>
+  return withSidecar(<SurfaceRuntimeProvider surfaceName={surfaceName} getScope={getScope} getWriteHandlers={getWriteHandlers}>{agentBridge}{withMenu(<PanelControlProvider initialLayouts={[defaultLayout]}>
     <div className="relative h-full min-h-0 overflow-hidden">
       <ReaderPanelControls />
       <ClientGroup id="study-guide-reader" groupKey="study-guide-reader" cookieName="panels:study-guide-reader" defaultLayout={defaultLayout} orientation="horizontal" className="h-full w-full" resizeTargetMinimumSize={{ coarse: 20, fine: 10 }}>
@@ -444,7 +463,7 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
         </RegisteredPanel>
       </ClientGroup>
     </div>
-  </PanelControlProvider></SurfaceRuntimeProvider>);
+  </PanelControlProvider>)}</SurfaceRuntimeProvider>);
 }
 
 export function StudyGuideReader(props: StudyGuideReaderProps) {
