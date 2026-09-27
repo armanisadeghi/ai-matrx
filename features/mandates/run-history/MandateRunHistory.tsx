@@ -193,6 +193,9 @@ export function MandateRunHistory({
   const total = page?.total ?? 0;
   const lastPage = Math.max(1, Math.ceil(total / limit));
   const showOrg = view === "platform";
+  // Only the filters this seat applies count — a stray `runs_person` on a
+  // member's own list is ignored by the read, so it must not say "filtered".
+  const filtering = Boolean(url.status || (view === "platform" && url.org) || (view !== "mine" && url.person));
 
   return (
     <div className={cn("min-w-0 space-y-2", className)} data-mandate-runs={mandateKey}>
@@ -280,7 +283,7 @@ export function MandateRunHistory({
               ) : page && page.rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} className="py-6 text-center text-muted-foreground">
-                    {url.status || url.org || url.person
+                    {filtering
                       ? "No runs match these filters."
                       : view === "mine"
                         ? "You have not run this job yet."
@@ -464,7 +467,7 @@ function RunRow({
       <TableCell className="hidden sm:table-cell" title={rungTitle(run.rung)}>
         <span className={cn(run.rung ? "text-foreground" : "text-muted-foreground")}>{rungWords(run.rung)}</span>
       </TableCell>
-      <TableCell className="max-w-[8rem] sm:max-w-[16rem]">
+      <TableCell className="max-w-[11rem] sm:max-w-[16rem]">
         {run.holderId ? (
           <EntityRef
             token={run.holderType}
@@ -504,7 +507,7 @@ function RunRow({
               Open
               <ArrowUpRight className="h-3 w-3" />
             </Link>
-            <NewTabLink href={outputHref} label={`This run's ${outputLabel}`} />
+            <NewTabLink href={outputHref} label={`this run's ${outputLabel}`} />
           </span>
         ) : (
           <span

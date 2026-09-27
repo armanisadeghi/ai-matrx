@@ -5,7 +5,7 @@
  * production on 2026-09-27 (Quick Test Agent on flashcards.grade_typed_answer,
  * a workflow-held referral letter run).
  */
-import { parseRunPage } from "../service";
+import { parseRunPage, readableError } from "../service";
 import {
   costWords,
   durationWords,
@@ -142,5 +142,22 @@ describe("the words a row prints", () => {
   it("names the missing output keys on a warned run", () => {
     expect(outputWarningTitle(conversation)).toBeNull();
     expect(outputWarningTitle(workflow)).toContain("letter");
+  });
+});
+
+describe("a run's error reads as a sentence", () => {
+  it("reads the message out of the server's JSON error", () => {
+    expect(
+      readableError('{"error_type":"invalid_request","message":"Anthropic rejected the request: messages: at least one message is required"}'),
+    ).toBe("Anthropic rejected the request: messages: at least one message is required");
+  });
+  it("reads the message out of a JSON error the database cut short", () => {
+    expect(readableError('{"error_type":"matrx_catalog_error","message":"This AI step is configured with a model route that is no lon')).toBe(
+      "This AI step is configured with a model route that is no lon…",
+    );
+  });
+  it("keeps a plain sentence as it is", () => {
+    expect(readableError("Timed out after 120s")).toBe("Timed out after 120s");
+    expect(readableError(null)).toBeNull();
   });
 });
