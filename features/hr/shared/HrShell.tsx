@@ -32,29 +32,22 @@
 
 "use client";
 
-import { useRef, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, ChevronDown, Users } from "lucide-react";
+import { ChevronDown, Users } from "lucide-react";
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import {
   RouteModeNav,
   type RouteNavItem,
 } from "@/features/shell/components/header/RouteModeNav";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { cn } from "@/lib/utils";
 
-import { hrHref, hrSwitchEmployerHref } from "../routes";
-import { HrDisclosureClaimed, HrEmployerSubstitutionNotice } from "./HrStates";
+import { hrHref } from "../routes";
+import { HrDisclosureClaimed, HrEmployerChoices, HrEmployerSubstitutionNotice } from "./HrStates";
 import { resolveHrNav } from "./hr-nav";
 import { useHrContext } from "./useHrContext";
 import { isOrgSteward, useHrPersona } from "./useHrPersona";
@@ -249,6 +242,7 @@ function EmployerSwitcher({
   activeOrganizationId: string | null;
 }) {
   const label = employerName || "HR";
+  const [open, setOpen] = useState(false);
 
   if (employers.length < 2) {
     return (
@@ -259,44 +253,32 @@ function EmployerSwitcher({
     );
   }
 
+  // The ONE employer list (`HrEmployerChoices`) — search, what each click
+  // does, HR-off folded — never a 150-row dropdown (page-pass, 2026-09-27).
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className="flex min-h-11 items-center gap-1.5 rounded-md px-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent sm:min-h-9">
-        <Users className="h-4 w-4 shrink-0 text-primary" />
-        <span className="max-w-[110px] truncate sm:max-w-[220px]">{label}</span>
-        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64">
-        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-          HR shows one employer at a time.
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {employers.map((employer) => {
-          const ref = employer.slug?.trim() || employer.organization_id;
-          const isActive = employer.organization_id === activeOrganizationId;
-          return (
-            <DropdownMenuItem key={employer.organization_id} asChild>
-              {/* A full context change: the SAME route, a new `?org=`. */}
-              <Link
-                href={hrSwitchEmployerHref(pathname, ref)}
-                className={cn(
-                  "flex min-h-11 cursor-pointer items-center gap-2 sm:min-h-9",
-                  isActive && "font-medium",
-                )}
-              >
-                <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate">{employer.name}</span>
-                {isActive ? (
-                  <span className="shrink-0 text-[0.6875rem] text-muted-foreground">
-                    Showing
-                  </span>
-                ) : null}
-              </Link>
-            </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="flex min-h-11 items-center gap-1.5 rounded-md px-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent sm:min-h-9"
+          aria-label={`Employer: ${label}. Change employer`}
+        >
+          <Users className="h-4 w-4 shrink-0 text-primary" />
+          <span className="max-w-[110px] truncate sm:max-w-[220px]">{label}</span>
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        </button>
+      </PopoverTrigger>
+      {/* Fixed width: the list searches as you type. */}
+      <PopoverContent sizing="fixed" align="start" className="matrx-touch-targets w-80 p-1">
+        <p className="px-2 pb-1 pt-1 text-xs text-muted-foreground">HR shows one employer at a time.</p>
+        <HrEmployerChoices
+          employers={employers}
+          activeOrganizationId={activeOrganizationId}
+          pathname={pathname}
+          onChosen={() => setOpen(false)}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
 

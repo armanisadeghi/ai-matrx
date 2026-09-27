@@ -400,8 +400,6 @@ export function HrNoAccess({
  */
 export function HrEmployerPicker({ className }: { className?: string } = {}) {
   const { employers, isLoading, error, refresh } = useHrContext();
-  const router = useRouter();
-  const [, startTransition] = useTransition();
   // The picker is itself the pre-employer-context state.
   const pathname = usePathname() ?? hrHref(null);
   const askedEmployerRef =
@@ -467,68 +465,106 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
     );
   }
 
-  // Only employers this person can act on, each saying what a click does:
-  //  - HR set up → opens it (anyone listed may);
-  //  - HR on, setup unfinished → "Finish setup" (owners/admins only — for anyone
-  //    else it is someone else's to-do, so it is not offered);
-  //  - HR off → "Turn on HR" (owners/admins only), folded away under a disclosure
-  //    because most organizations without HR are not what someone came here for.
-  const ready = choosable
-    .filter((e) => e.module_enabled && e.is_activated)
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const unfinished = choosable
-    .filter((e) => e.module_enabled && !e.is_activated && isOrgSteward(e.org_role))
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const off = choosable
-    .filter((e) => !e.module_enabled && isOrgSteward(e.org_role))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  return (
+    <div className={cn("matrx-touch-targets w-full min-w-0 max-w-xl px-4 py-3 sm:px-6", className)}>
+      <HrEmployerChoices
+        employers={choosable}
+        activeOrganizationId={null}
+        pathname={pathname}
+        framed
+        emptyClassName="text-sm text-muted-foreground"
+      />
+    </div>
+  );
+}
+
+/**
+ * THE ONE EMPLOYER LIST — the no-employer page AND the header switcher
+ * (`HrShell`'s `EmployerSwitcher`) draw this, so both search, both say what a
+ * click does and both fold the HR-off organizations (page-pass shared defects,
+ * 2026-09-27: the header's dropdown listed ~150 employers with no search).
+ *
+ * Only employers this person can act on, each saying what a click does:
+ *  - HR set up → opens it (anyone listed may);
+ *  - HR on, setup unfinished → "Finish setup" (owners/admins only — for anyone
+ *    else it is someone else's to-do, so it is not offered);
+ *  - HR off → "Turn on HR" (owners/admins only), folded away under a disclosure
+ *    because most organizations without HR are not what someone came here for.
+ * The employer on screen is always listed (marked), whatever its state.
+ * Choosing navigates: the SAME route with a new `?org=`.
+ */
+export function HrEmployerChoices({
+  employers,
+  activeOrganizationId,
+  pathname,
+  framed = false,
+  onChosen,
+  emptyClassName,
+}: {
+  employers: readonly HrEmployer[];
+  activeOrganizationId: string | null;
+  pathname: string;
+  framed?: boolean;
+  onChosen?: () => void;
+  emptyClassName?: string;
+}) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+  const byName = (a: HrEmployer, b: HrEmployer) => a.name.localeCompare(b.name);
+  const isActive = (e: HrEmployer) => e.organization_id === activeOrganizationId;
+  const ready = employers.filter((e) => e.module_enabled && e.is_activated).sort(byName);
+  const unfinished = employers
+    .filter((e) => e.module_enabled && !e.is_activated && (isOrgSteward(e.org_role) || isActive(e)))
+    .sort(byName);
+  const off = employers
+    .filter((e) => !e.module_enabled && (isOrgSteward(e.org_role) || isActive(e)))
+    .sort(byName);
 
   if (ready.length + unfinished.length + off.length === 0) {
     return (
-      <p className={cn("px-4 py-3 text-sm text-muted-foreground sm:px-6", className)}>
+      <p className={cn("px-2 py-2", emptyClassName ?? "text-xs text-muted-foreground")}>
         No employer you belong to has HR ready yet. Its owner or an admin sets it up.
       </p>
     );
   }
 
-  // THE PLATFORM'S ONE ORGANIZATION PICKER (page-pass shared defects,
-  // 2026-09-27): search once the list passes eight rows, each row saying what
-  // a click does, the HR-off organizations folded and counted. The order is
-  // this page's — set up, then unfinished, then off — kept as given.
+  // THE PLATFORM'S ONE ORGANIZATION PICKER: search once the list passes eight
+  // rows, each row saying what a click does, the HR-off organizations folded
+  // and counted. The order is HR's — set up, then unfinished, then off.
   const rows = [
     ...ready.map((e) => ({ employer: e, detail: "Open", folded: false })),
     ...unfinished.map((e) => ({ employer: e, detail: "Finish setup", folded: false })),
-    ...off.map((e) => ({ employer: e, detail: "Turn on HR", folded: true })),
+    ...off.map((e) => ({ employer: e, detail: "Turn on HR", folded: !isActive(e) })),
   ];
 
-  return (
-    <div className={cn("matrx-touch-targets w-full min-w-0 max-w-xl px-4 py-3 sm:px-6", className)}>
-      <div className="rounded-md border border-border bg-card p-1">
-        <OrganizationPicker
-          hideHeading
-          hideStatus
-          foldedLabel="Organizations without HR"
-          organizations={rows.map(({ employer, detail, folded }) => ({
-            id: employer.organization_id,
-            name: employer.name,
-            // Shown only under a name two rows share.
-            distinguisher: employer.slug,
-            detail,
-            folded,
-          }))}
-          activeOrganizationId={null}
-          onSelect={(picked) => {
-            const employer = rows.find((r) => r.employer.organization_id === picked.id)?.employer;
-            if (!employer) return;
-            const ref = employer.slug?.trim() || employer.organization_id;
-            startTransition(() => {
-              router.push(hrSwitchEmployerHref(pathname, ref));
-            });
-          }}
-        />
-      </div>
-    </div>
+  const picker = (
+    <OrganizationPicker
+      hideHeading
+      hideStatus
+      foldedLabel="Organizations without HR"
+      organizations={rows.map(({ employer, detail, folded }) => ({
+        id: employer.organization_id,
+        name: employer.name,
+        // Shown only under a name two rows share.
+        distinguisher: employer.slug,
+        detail: isActive(employer) ? "Showing" : detail,
+        folded,
+      }))}
+      activeOrganizationId={activeOrganizationId}
+      onSelect={(picked) => {
+        const employer = rows.find((r) => r.employer.organization_id === picked.id)?.employer;
+        if (!employer) return;
+        onChosen?.();
+        if (isActive(employer)) return;
+        const ref = employer.slug?.trim() || employer.organization_id;
+        startTransition(() => {
+          router.push(hrSwitchEmployerHref(pathname, ref));
+        });
+      }}
+    />
   );
+
+  return framed ? <div className="rounded-md border border-border bg-card p-1">{picker}</div> : picker;
 }
 
 // ── 4b. The employer we opened is not the one you asked for ─────────────────
