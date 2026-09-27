@@ -127,3 +127,48 @@ export function parseFeedbackDraft(value: unknown): FeedbackDraftPatch {
 
   return patch;
 }
+
+// ─── feedback_attachment ─────────────────────────────────────────────────────
+
+/** Fields `feedback_attachment` accepts. */
+export const FEEDBACK_ATTACHMENT_FIELDS = ["file_id", "name"] as const;
+
+export interface FeedbackAttachmentPatch {
+  /** The platform file id (cld_files) of a file the agent already has. */
+  fileId: string;
+  /** Optional display name for the tile. */
+  name?: string;
+}
+
+const FILE_ID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Validate an agent-supplied `feedback_attachment` value — ONE existing file,
+ * by its file id (an image the agent generated, a file in the person's
+ * library). THROWS on every bad shape, with a message written for the model.
+ */
+export function parseFeedbackAttachment(value: unknown): FeedbackAttachmentPatch {
+  if (typeof value !== "object" || value === null || Array.isArray(value))
+    throw new Error(
+      "feedback_attachment expects an object { file_id, name? } — one file per write, as structured arguments.",
+    );
+  const v = value as Record<string, unknown>;
+  const unknownKeys = Object.keys(v).filter(
+    (k) => !(FEEDBACK_ATTACHMENT_FIELDS as readonly string[]).includes(k),
+  );
+  if (unknownKeys.length)
+    throw new Error(
+      `feedback_attachment does not accept ${unknownKeys.join(", ")}. Allowed: file_id, name.`,
+    );
+  if (typeof v.file_id !== "string" || !FILE_ID.test(v.file_id.trim()))
+    throw new Error(
+      "feedback_attachment.file_id must be a platform file id (a UUID) of a file that already exists — not a URL, path or data URI.",
+    );
+  if (v.name !== undefined && (typeof v.name !== "string" || !v.name.trim()))
+    throw new Error("feedback_attachment.name, when sent, must be non-empty text.");
+  return {
+    fileId: v.file_id.trim(),
+    ...(typeof v.name === "string" ? { name: v.name.trim() } : {}),
+  };
+}

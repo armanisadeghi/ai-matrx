@@ -2,6 +2,13 @@
 
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import React, { useEffect, useState, useTransition, useCallback } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import {
+  FEEDBACK_LIST_HREF,
+  inFeedbackGroup,
+  isFeedbackCountGroup,
+} from "@/features/feedback/feedback-status-groups";
 import {
   getUserFeedback,
   confirmFeedbackResolution,
@@ -878,6 +885,10 @@ function FeedbackItem({
 }
 
 export default function UserFeedbackPage() {
+  // `?show=pending|resolved` — the Feedback window's success counts link here,
+  // each to exactly the rows it counted (feedback-status-groups.ts).
+  const showParam = useSearchParams()?.get("show") ?? null;
+  const show = isFeedbackCountGroup(showParam) ? showParam : null;
   const [items, setItems] = useState<UserFeedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -908,6 +919,33 @@ export default function UserFeedbackPage() {
     return (
       <div className="p-6 text-center">
         <p className="text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
+      </div>
+    );
+  }
+
+  if (show) {
+    const shown = items.filter((i) => inFeedbackGroup(i.status, show));
+    return (
+      <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-4">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-foreground">
+            {show === "pending" ? "Pending feedback" : "Resolved feedback"} ({shown.length})
+          </h2>
+          <Link href={FEEDBACK_LIST_HREF} className="text-sm text-primary hover:underline">
+            Show all
+          </Link>
+        </div>
+        {shown.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            None {show === "pending" ? "pending" : "resolved"} right now.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {shown.map((item) => (
+              <FeedbackItem key={item.id} item={item} onUpdate={loadItems} />
+            ))}
+          </div>
+        )}
       </div>
     );
   }

@@ -200,8 +200,8 @@ const surfaceSpecific: SurfaceValue[] = [
  *    ownership/identity class the bar excludes, and the assignee gets an
  *    in-app message and an email as a side effect. An agent has no standing to
  *    make that call, so neither field is declared.
- *  - **`attachments`.** Real uploaded Files with storage URLs. An agent cannot
- *    produce a screenshot, and there is nothing here to write.
+ *  - **Capturing the screen.** An agent cannot take a screenshot of what the
+ *    person sees; attaching a file it ALREADY has is `feedback_attachment`.
  *  - The submission record — `submitted`, `submitted_item_id`,
  *    `error_message`. That is the account of what the server actually did; an
  *    agent writing it would be fabricating an outcome.
@@ -234,6 +234,25 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "feedback_form",
     sortOrder: 500,
   },
+  {
+    // An agent that already holds a file — an image it generated, a file in
+    // the person's library — attaches it to the report by id. It appears as a
+    // tile beside the person's own screenshots; the person still presses
+    // Submit. An agent cannot capture the screen, so it never "takes" one.
+    name: "feedback_attachment",
+    label: "Attach a file",
+    description: [
+      "Attaches ONE existing platform file to the open feedback report, by its file id. Value: { file_id, name? } as structured arguments.",
+      "`file_id` — the UUID of a file that already exists (an image you generated, a file from the person's library). Never a URL, path or data URI; those are refused.",
+      "`name` — optional label for the attachment tile.",
+      "Staged only: it shows beside the person's own screenshots and is filed when THEY press Submit. Refused once the report has been submitted or while it is submitting. You cannot capture the person's screen.",
+    ].join(" "),
+    valueType: "object",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "feedback_form",
+    sortOrder: 510,
+  },
 ];
 
 export const feedbackManifest: SurfaceManifest = {
@@ -244,13 +263,14 @@ export const feedbackManifest: SurfaceManifest = {
     "Feedback / bug report submission",
   readiness: "partial",
   readinessNote:
-    "Emitter wired on FeedbackWindow (type, route, description, attachment count, submission state and admin routing all live) and the write half (feedback_draft) is registered; page-pass 2026-09-27 re-proof of the write with a live agent is still owed",
+    "Emitter wired on FeedbackWindow (type, route, description, attachment count, submission state and admin routing all live) and the write half (feedback_draft, feedback_attachment) is registered; page-pass 2026-09-27 re-proof of the write with a live agent is still owed",
   overlayId: "feedbackDialog",
   label: "Feedback",
   intro: `<surface_intro>
 You are in the Feedback window — the user is filing a bug report, feature request, or suggestion into the platform feedback tracker. Feedback form carries the chosen type, the route the report is filed from, the description draft (the baseline content), and any attachments; Submission state tells you whether it has been sent, the created item id, and any admin routing choices. Helping here usually means sharpening the description into a clear, actionable report.
 You can also WRITE to this surface through the single feedback_draft target: the report body and the type chip that classifies it. This is exactly the moment those are worth writing — you have just watched what happened, and you can describe the route, the steps, and the expected-versus-actual far better than the user is about to type. Read the current content first and send back the complete text you want, since it replaces the whole textarea. Everything is STAGED into the open form; the user reads it and presses Submit.
-You cannot submit the feedback, attach screenshots, or set the admin category and assignee — filing the report and deciding who is handed the ticket stay with the user.
+You can also attach ONE existing file you already hold (feedback_attachment, by file id) — never a URL, and you cannot capture the person's screen.
+You cannot submit the feedback or set the admin category and assignee — filing the report and deciding who is handed the ticket stay with the user.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("context"), surfaceSpecific),
