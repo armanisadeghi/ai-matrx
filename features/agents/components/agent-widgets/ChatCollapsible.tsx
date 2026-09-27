@@ -129,7 +129,7 @@ export function ChatCollapsible({
       <Collapsible
         open={isOpen}
         onOpenChange={setIsOpen}
-        className="w-96 bg-card border border-border rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-right-5 duration-300"
+        className="w-[min(24rem,calc(100vw-2rem))] bg-card border border-border rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-right-5 duration-300"
       >
         <div
           className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30 cursor-grab active:cursor-grabbing touch-none select-none"

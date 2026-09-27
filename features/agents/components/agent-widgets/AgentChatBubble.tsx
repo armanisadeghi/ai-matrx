@@ -37,7 +37,7 @@ export function AgentChatBubble({
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-96 h-[500px] bg-card border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden">
+    <div className="fixed bottom-4 right-4 z-50 w-[min(24rem,calc(100vw-2rem))] h-[min(500px,calc(100dvh-2rem))] bg-card border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0 bg-muted/30">
         <span className="text-xs font-medium">Agent Chat</span>
         <div className="flex items-center gap-1">

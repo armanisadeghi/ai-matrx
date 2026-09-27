@@ -88,7 +88,7 @@ export function AgentToastOverlay({
           zIndex: 200 + index,
         }}
       >
-        <div className="w-96 h-[420px] bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in-0 zoom-in-95 duration-200">
+        <div className="w-[min(24rem,calc(100vw-2rem))] h-[min(420px,calc(100dvh-2rem))] bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in-0 zoom-in-95 duration-200">
           <div
             className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0 bg-muted/30 cursor-grab active:cursor-grabbing touch-none select-none"
             onPointerDown={handlePointerDown}
