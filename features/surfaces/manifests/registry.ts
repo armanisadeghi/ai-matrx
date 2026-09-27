@@ -61,6 +61,7 @@ import { searchManifest } from "./search.manifest";
 import { documentsManifest } from "./documents.manifest";
 import { researchManifest } from "./research.manifest";
 import { researchTopicsManifest } from "./research-topics.manifest";
+import { connectedSourcesManifest } from "./connected-sources.manifest";
 import { tasksManifest } from "./tasks.manifest";
 import { dataTablesManifest } from "./data-tables.manifest";
 import { filesManifest } from "./files.manifest";
@@ -305,6 +306,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   documentsManifest,
   researchManifest,
   researchTopicsManifest,
+  connectedSourcesManifest,
   tasksManifest,
   dataTablesManifest,
   filesManifest,

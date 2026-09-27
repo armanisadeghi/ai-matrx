@@ -167,6 +167,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/knowledge/viewer", surface: "matrx-user/knowledge-viewer" },
   { prefix: "/knowledge", surface: "matrx-user/knowledge-library" },
   { prefix: "/research", surface: "matrx-user/research" },
+  { prefix: "/connected-sources", surface: "matrx-user/connected-sources" },
   { prefix: "/sandbox", surface: "matrx-user/sandboxes" },
   { prefix: "/transcripts/cleanup", surface: "matrx-user/transcripts-cleanup" },
   { prefix: "/transcripts/scribe", surface: "matrx-user/transcript-scribe" },
