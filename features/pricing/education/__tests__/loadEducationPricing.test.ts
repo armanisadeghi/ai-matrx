@@ -67,6 +67,13 @@ it("headlines each capability in its own window, phrased as a unit", async () =>
   ]);
 });
 
+it("states the 5-hour pacing as a real limit from the rolling_5h row", async () => {
+  const { freePacing } = await loadEducationPricing();
+  expect(freePacing).toEqual({ unit: "flashcard decks", limit: 10 });
+  rows.capability_limit = rows.capability_limit.filter((r) => r.period !== "rolling_5h");
+  expect((await loadEducationPricing()).freePacing).toBeNull();
+});
+
 it("omits a capability with no row for its window rather than inventing one", async () => {
   rows.capability_limit = rows.capability_limit.filter((r) => r.period !== "day");
   const { freeHighlights } = await loadEducationPricing();

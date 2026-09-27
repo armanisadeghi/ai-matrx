@@ -16,7 +16,7 @@
 //    a button); Free users get a real Stripe Checkout (/api/stripe/checkout);
 //    everyone signed in gets a real link into the study tools.
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
@@ -55,9 +55,10 @@ function formatPrice(amountCents: number, currency: string): string {
   }).format(amountCents / 100);
 }
 
-const FREE_ALWAYS = [
+// Included in EVERY plan — shown once under both cards, not repeated per card.
+const EVERY_PLAN = [
   "Unlimited studying, review & spaced repetition",
-  "Keep every deck, note & kit — forever",
+  "Keep every deck, note & kit forever",
   "Export your library anytime",
   "Every card cited back to your own material",
 ];
@@ -73,41 +74,57 @@ const PREMIUM_PLUS = [
   "Unlimited study audio",
   "Unlimited practice tests & memory aids",
   "Unlimited card images",
-  "No 5-hour pacing windows",
+  "No 5-hour pacing",
 ];
 
 const STUDY_HOME = "/education/start";
 const CTA = "w-full gap-2";
 
-function PlanLabel({ name, current, note, inverted }: {
+// Both cards share one row template on desktop (CSS subgrid): header · action ·
+// features · footer, so the feature lists and footers line up Stripe/Linear
+// style whatever each card holds.
+const CARD =
+  "matrx-touch-targets flex flex-col gap-5 rounded-2xl bg-card p-6 lg:row-span-4 lg:grid lg:grid-rows-subgrid lg:gap-5 lg:p-8";
+
+function PlanLabel({
+  name,
+  badge,
+  emphasis,
+}: {
   name: string;
-  current: boolean;
-  note?: string;
-  inverted?: boolean;
+  badge?: string;
+  emphasis?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2">
+    <div className="flex min-h-6 items-center justify-between gap-2">
       <span
         className={cn(
           "text-xs font-semibold uppercase tracking-[0.2em]",
-          inverted ? "text-background/60" : "text-muted-foreground",
+          emphasis ? "text-primary" : "text-muted-foreground",
         )}
       >
         {name}
       </span>
-      {current ? (
-        <Badge
-          variant="outline"
-          className={cn(
-            "gap-1 text-xs font-medium",
-            inverted && "border-background/30 text-background",
-          )}
-        >
+      {badge ? (
+        <Badge variant="secondary" className="gap-1 text-xs font-medium">
           <Check className="h-3 w-3" />
-          Your plan{note ? ` · ${note}` : ""}
+          {badge}
         </Badge>
       ) : null}
     </div>
+  );
+}
+
+function Line({ icon: Icon, children, muted }: {
+  icon: typeof Check;
+  children: ReactNode;
+  muted?: boolean;
+}) {
+  return (
+    <li className={cn("flex items-start gap-2.5 text-sm", muted && "text-muted-foreground")}>
+      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" strokeWidth={2.25} />
+      <span>{children}</span>
+    </li>
   );
 }
 
@@ -174,160 +191,166 @@ export function EducationPricing({
   };
 
   const premium = pricing.premium;
-  const invertedCta = `${CTA} bg-background text-foreground hover:bg-background/90`;
 
-  return (
-    // items-start: each card is its own height — stretching the shorter one
-    // to match only manufactures an empty block (final look, 2026-09-27).
-    <section className="grid items-start gap-6 lg:grid-cols-2">
-      {/* Free */}
-      <div className="matrx-touch-targets flex flex-col gap-5 rounded-2xl border border-border bg-card p-6 lg:p-8">
-        <div className="flex flex-col gap-1">
-          <PlanLabel name="Free" current={isFreeMember} />
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-4xl font-semibold tracking-tight tabular-nums">
-              $0
-            </span>
-            <span className="text-sm text-muted-foreground">forever</span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Enough to finish real study work every month.
-          </p>
-        </div>
-
-        {isPremium ? (
-          <p className="flex min-h-10 items-center text-sm text-muted-foreground">
-            Everything here is included in your Premium plan.
-          </p>
-        ) : (
-          <Button asChild variant="outline" size="lg" className={CTA}>
-            <Link href={isFreeMember ? STUDY_HOME : signUpHref} data-tap-target>
-              {isFreeMember ? "Open study tools" : "Start free"}
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
-        )}
-
-        <ul className="flex flex-col gap-2.5">
-          {pricing.freeHighlights.map((h) => (
-            <li
-              key={`${h.capability}:${h.period}`}
-              className="flex items-start gap-2.5 text-sm"
-            >
-              <Check
-                className="mt-0.5 h-4 w-4 shrink-0 text-primary"
-                strokeWidth={2.25}
-              />
-              <span>
-                <span className="font-medium tabular-nums">{h.limit}</span>{" "}
-                {h.unit} / {h.period}
-              </span>
-            </li>
-          ))}
-          {FREE_ALWAYS.map((line) => (
-            <li
-              key={line}
-              className="flex items-start gap-2.5 text-sm text-muted-foreground"
-            >
-              <Check
-                className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
-                strokeWidth={2}
-              />
-              <span>{line}</span>
-            </li>
-          ))}
-        </ul>
-        <p className="text-xs text-muted-foreground">
-          AI generation is also paced over rolling 5-hour windows, so one
-          session can&apos;t spend the month.
-        </p>
-      </div>
-
-      {/* Premium */}
-      <div className="matrx-touch-targets flex flex-col gap-5 rounded-2xl border border-foreground bg-foreground p-6 text-background lg:p-8">
-        <div className="flex flex-col gap-1">
-          <PlanLabel
-            name="Premium"
-            current={isPremium}
-            note={isComplimentary ? "complimentary" : undefined}
-            inverted
-          />
-          {premium ? (
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-4xl font-semibold tracking-tight tabular-nums">
-                {formatPrice(premium.amountCents, premium.currency)}
-              </span>
-              <span className="text-sm text-background/60">
-                / {premium.interval}
-              </span>
-            </div>
-          ) : (
-            <div className="text-4xl font-semibold tracking-tight">
-              Coming soon
-            </div>
-          )}
-          <p className="text-sm text-background/70">
-            {isComplimentary
-              ? "Complimentary before launch — no card on file."
-              : "No limits on AI generation, in any study tool."}
-          </p>
-        </div>
-
-        {isAuthenticated ? (
-          isPremium ? (
-            <Button asChild size="lg" className={invertedCta}>
-              <Link href={STUDY_HOME} data-tap-target>
-                Open study tools
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              size="lg"
-              onClick={upgrade}
-              disabled={!premium || checkingOut}
-              className={invertedCta}
-            >
-              {checkingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {premium ? "Upgrade to Premium" : "Not available yet"}
-              {premium && !checkingOut ? <ArrowRight className="h-3.5 w-3.5" /> : null}
-            </Button>
-          )
-        ) : PRELAUNCH_COMPLIMENTARY_PREMIUM ? (
-          <Button asChild size="lg" className={invertedCta}>
-            <Link href={signUpHref} data-tap-target>
+  // The Premium card's one action.
+  let premiumAction: ReactNode;
+  if (isPremium) {
+    premiumAction = (
+      <Button asChild size="lg" className={CTA}>
+        <Link href={STUDY_HOME} data-tap-target>
+          Open study tools
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+      </Button>
+    );
+  } else if (isAuthenticated) {
+    premiumAction = (
+      <Button
+        type="button"
+        size="lg"
+        onClick={upgrade}
+        disabled={!premium || checkingOut}
+        className={CTA}
+      >
+        {checkingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+        {premium ? "Upgrade to Premium" : "Not available yet"}
+        {premium && !checkingOut ? <ArrowRight className="h-3.5 w-3.5" /> : null}
+      </Button>
+    );
+  } else {
+    premiumAction = (
+      <Button asChild size="lg" className={CTA}>
+        <Link href={PRELAUNCH_COMPLIMENTARY_PREMIUM ? signUpHref : loginHref} data-tap-target>
+          {PRELAUNCH_COMPLIMENTARY_PREMIUM ? (
+            <>
               <Gift className="h-4 w-4" />
               Get Premium free before launch
-            </Link>
-          </Button>
-        ) : (
-          <Button asChild size="lg" className={invertedCta}>
-            <Link href={loginHref} data-tap-target>
+            </>
+          ) : (
+            <>
               Sign in to upgrade
               <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
-        )}
+            </>
+          )}
+        </Link>
+      </Button>
+    );
+  }
 
-        <ul className="flex flex-col gap-2.5 text-sm">
-          <li className="font-medium">Everything in Free, plus:</li>
-          {PREMIUM_PLUS.map((line) => (
-            <li key={line} className="flex items-start gap-2.5">
-              <InfinityIcon
-                className="mt-0.5 h-4 w-4 shrink-0 text-background/80"
-                strokeWidth={2.25}
-              />
-              <span>{line}</span>
-            </li>
+  // The Free card's action. For a Premium member Free is included in their
+  // plan: the label's badge says so and the action row stays empty (their one
+  // action sits on the Premium card); the subgrid keeps both cards' rows aligned.
+  const freeAction = (
+    <Button asChild variant="outline" size="lg" className={CTA}>
+      <Link href={isAuthenticated ? STUDY_HOME : signUpHref} data-tap-target>
+        {isAuthenticated ? "Open study tools" : "Start free"}
+        <ArrowRight className="h-3.5 w-3.5" />
+      </Link>
+    </Button>
+  );
+
+  return (
+    <section className="flex flex-col gap-6">
+      <div className="grid gap-6 lg:grid-cols-2 lg:grid-rows-[auto_auto_1fr_auto]">
+        {/* Free */}
+        <div className={cn(CARD, "border border-border")}>
+          <div className="flex flex-col gap-1">
+            <PlanLabel
+              name="Free"
+              badge={isFreeMember ? "Your plan" : isPremium ? "Included in your plan" : undefined}
+            />
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-4xl font-semibold tracking-tight tabular-nums">$0</span>
+              <span className="text-sm text-muted-foreground">forever</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Enough to finish real study work every month.
+            </p>
+          </div>
+
+          {isPremium ? <div aria-hidden className="hidden lg:block" /> : freeAction}
+
+          <ul className="flex flex-col gap-2.5">
+            {pricing.freeHighlights.map((h) => (
+              <Line key={`${h.capability}:${h.period}`} icon={Check}>
+                <span className="font-medium tabular-nums">{h.limit}</span> {h.unit} / {h.period}
+              </Line>
+            ))}
+            {pricing.freePacing ? (
+              <Line icon={Check}>
+                Paced per 5 hours — up to{" "}
+                <span className="font-medium tabular-nums">{pricing.freePacing.limit}</span>{" "}
+                {pricing.freePacing.unit} in any 5-hour window
+              </Line>
+            ) : null}
+          </ul>
+
+          <p className="text-sm text-muted-foreground">No card needed.</p>
+        </div>
+
+        {/* Premium — the sold plan: primary border and ring, primary action.
+            Tokens only; no inverted slab (it glared as near-white in dark). */}
+        <div
+          className={cn(
+            CARD,
+            "border-2 border-primary shadow-lg ring-4 ring-primary/10",
+            // A Premium member's own plan comes first on a phone.
+            isPremium && "order-first lg:order-none",
+          )}
+        >
+          <div className="flex flex-col gap-1">
+            <PlanLabel
+              name="Premium"
+              emphasis
+              badge={isPremium ? (isComplimentary ? "Your plan · complimentary" : "Your plan") : undefined}
+            />
+            {premium ? (
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-4xl font-semibold tracking-tight tabular-nums">
+                  {formatPrice(premium.amountCents, premium.currency)}
+                </span>
+                <span className="text-sm text-muted-foreground">/ {premium.interval}</span>
+              </div>
+            ) : (
+              <div className="text-4xl font-semibold tracking-tight">Coming soon</div>
+            )}
+            <p className="text-sm text-muted-foreground">
+              {isComplimentary
+                ? "Complimentary before launch — no card on file."
+                : "No limits on AI generation, in any study tool."}
+            </p>
+          </div>
+
+          {premiumAction}
+
+          <ul className="flex flex-col gap-2.5">
+            <li className="text-sm font-medium">Everything in Free, plus:</li>
+            {PREMIUM_PLUS.map((line) => (
+              <Line key={line} icon={InfinityIcon}>
+                {line}
+              </Line>
+            ))}
+          </ul>
+
+          <p className="text-sm text-muted-foreground">
+            {!isAuthenticated && PRELAUNCH_COMPLIMENTARY_PREMIUM
+              ? "Every new account gets Premium at no charge until launch."
+              : isComplimentary
+                ? "Nothing is charged while it is complimentary."
+                : "Cancel anytime from the billing portal."}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card/60 px-6 py-4 lg:flex-row lg:items-center lg:gap-6 lg:px-8">
+        <span className="shrink-0 text-sm font-medium">Every plan includes</span>
+        <ul className="grid gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:gap-x-6">
+          {EVERY_PLAN.map((line) => (
+            <Line key={line} icon={Check} muted>
+              {line}
+            </Line>
           ))}
         </ul>
-        {!isAuthenticated && PRELAUNCH_COMPLIMENTARY_PREMIUM ? (
-          <p className="text-xs text-background/60">
-            Every new account gets Premium at no charge until launch. No card
-            needed.
-          </p>
-        ) : null}
       </div>
     </section>
   );

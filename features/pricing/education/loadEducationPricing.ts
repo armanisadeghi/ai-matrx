@@ -43,9 +43,20 @@ export interface FreeHighlight {
   period: "month" | "day";
 }
 
+/**
+ * The Free tier's rolling 5-hour pacing, shown as a real limit line (not small
+ * print): one representative capability's `rolling_5h` row.
+ */
+export interface FreePacing {
+  unit: string;
+  limit: number;
+}
+
 export interface EducationPricing {
   premium: PremiumPlan | null;
   freeHighlights: FreeHighlight[];
+  /** `null` when no rolling_5h row exists for the pacing capability. */
+  freePacing: FreePacing | null;
 }
 
 // The capabilities we headline on the Free card, in display order, each with
@@ -71,6 +82,9 @@ const HEADLINE_FREE: ReadonlyArray<{
 
 // PRELAUNCH_COMPLIMENTARY_PREMIUM lives in ./pricingPolicy.ts — a plain module,
 // because the client card needs it and this loader is server-only.
+
+// The capability whose rolling 5-hour cap stands for the Free tier's pacing.
+const PACING = { capability: "education.generate_cards" as Capability, unit: "flashcard decks" };
 
 /**
  * Every read here is BOUNDED. This loader runs inside the server render of a
@@ -177,7 +191,7 @@ export async function loadEducationPricing(): Promise<EducationPricing> {
     }
   }
 
-  // --- Free-tier headline caps (monthly + daily windows) --------------------
+  // --- Free-tier headline caps (month + day windows) + 5-hour pacing ---------
   const { data: limits, error: limitsError } = await bounded(
     "billing.capability_limit",
     supabase
@@ -185,7 +199,7 @@ export async function loadEducationPricing(): Promise<EducationPricing> {
       .from("capability_limit")
       .select("capability, limit_value, period, tier")
       .eq("tier", "free")
-      .in("period", ["month", "day"]),
+      .in("period", ["month", "day", "rolling_5h"]),
   );
 
   // Same rule as the product/price reads: a Free card silently missing its
@@ -213,5 +227,9 @@ export async function loadEducationPricing(): Promise<EducationPricing> {
     return [{ capability: h.capability, unit: h.unit, limit, period: h.period }];
   });
 
-  return { premium, freeHighlights };
+  const pacingLimit = limitByCapPeriod.get(`${PACING.capability}:rolling_5h`);
+  const freePacing: FreePacing | null =
+    pacingLimit == null ? null : { unit: PACING.unit, limit: pacingLimit };
+
+  return { premium, freeHighlights, freePacing };
 }

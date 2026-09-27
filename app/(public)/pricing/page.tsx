@@ -1,11 +1,5 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  Eye,
-  FolderDown,
-  Gauge,
-  MousePointerClick,
-} from "lucide-react";
+import { ArrowRight, CalendarX2, Eye, Gauge, ShieldCheck } from "lucide-react";
 import { EducationPricing } from "@/features/pricing/education/EducationPricing";
 import { loadEducationPricing } from "@/features/pricing/education/loadEducationPricing";
 
@@ -22,7 +16,7 @@ import { loadEducationPricing } from "@/features/pricing/education/loadEducation
 // launch"; none of those appear here).
 const PLEDGE = [
   {
-    icon: MousePointerClick,
+    icon: CalendarX2,
     title: "One-click cancel",
     body: "Cancel from the billing portal in one click — no retention maze.",
   },
@@ -37,9 +31,9 @@ const PLEDGE = [
     body: "Studying, reviewing and keeping what you made are never metered.",
   },
   {
-    icon: FolderDown,
-    title: "Your work stays yours",
-    body: "Keep every deck, note and kit forever, and export your library anytime.",
+    icon: ShieldCheck,
+    title: "No ads, no silent charges",
+    body: "We never sell your attention, and nothing is charged that you didn't choose.",
   },
 ];
 
@@ -72,28 +66,30 @@ export default async function PricingPage() {
             <h2 id="pricing-pledge" className="text-xl font-semibold tracking-tight">
               Priced to earn trust, not to trap you
             </h2>
-            <div className="matrx-touch-targets flex flex-wrap items-center gap-x-4">
-              <Link
-                href="/pricing/pledge"
-                data-tap-target
-                className="inline-flex items-center gap-1 text-sm font-medium text-foreground underline-offset-4 hover:underline"
-              >
-                Read the full pledge
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-              <Link
-                href="/pricing/compare"
-                data-tap-target
-                className="inline-flex items-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-              >
-                How we compare
-              </Link>
+            {/* Two siblings, one style: neither reads as primary or disabled. */}
+            <div className="matrx-touch-targets flex flex-wrap items-center gap-x-5">
+              {[
+                { href: "/pricing/pledge", label: "Read the full pledge" },
+                { href: "/pricing/compare", label: "How we compare" },
+              ].map(({ href, label }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  data-tap-target
+                  className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  {label}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              ))}
             </div>
           </div>
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {PLEDGE.map(({ icon: Icon, title, body }) => (
               <li key={title} className="flex flex-col gap-1.5">
-                <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={2} />
+                <span className="mb-1 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Icon className="h-5 w-5" strokeWidth={2} />
+                </span>
                 <span className="text-sm font-medium">{title}</span>
                 <span className="text-sm text-muted-foreground">{body}</span>
               </li>
