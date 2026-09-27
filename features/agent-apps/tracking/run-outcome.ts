@@ -36,6 +36,15 @@ export function requestFailure(request: RequestLike | undefined): string | null 
 
 export function runOutcome(request: RequestLike | undefined): RunOutcome {
   if (!request) return { kind: "pending" };
+  // A request that ENDED carrying an error payload was refused, whatever its
+  // status says — never a success.
+  if (request.status === "complete" && request.error) {
+    return {
+      kind: "failure",
+      errorType: request.error.error_type || "refused",
+      message: requestFailure(request) ?? "This run was refused.",
+    };
+  }
   if (request.status === "complete") return { kind: "success" };
   // A cancelled run is the person stopping it: the record stays unfinished
   // (success = NULL), the tracker's own abort rule — never a failure.
@@ -104,17 +113,10 @@ export function waitForRunOutcome(
 }
 
 interface RunTrackerLike {
-  complete: () => void;
-  error: (args: { errorType: string; errorMessage: string }) => void;
+  settle: (outcome: RunOutcome) => void;
 }
 
-/**
- * Write the outcome onto the app's run record. A success only when the
- * request completed; a failure with its reason; nothing for a cancelled or
- * unresolved run (the record stays unfinished — never a guessed success).
- */
+/** Write the outcome onto the app's run record (see `RunTracker.settle`). */
 export function recordRunOutcome(tracker: RunTrackerLike, outcome: RunOutcome): void {
-  if (outcome.kind === "success") tracker.complete();
-  else if (outcome.kind === "failure")
-    tracker.error({ errorType: outcome.errorType, errorMessage: outcome.message });
+  tracker.settle(outcome);
 }

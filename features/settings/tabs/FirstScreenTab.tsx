@@ -39,7 +39,8 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceScopeContribution, useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { setKnobOverride } from "@/lib/scoped-config/service";
 
 /** The registry keys the first screen shows, in order (USD-12). */
 export const FIRST_SCREEN_MODEL_KEY = "agents.model_prefs.chat_default_model";
@@ -115,6 +116,50 @@ export default function FirstScreenTab() {
         }),
   }));
 
+  // ── Agent twin of the AI and voice rows (write target `ai_voice_defaults`).
+  // Saves the PERSON's own value through the same ladder door the rows use
+  // (`platform.knob_override_set`, user rung, this organization); `null`
+  // removes the person's value so the row follows the organization again.
+  const firstScreenKeys = [FIRST_SCREEN_MODEL_KEY, FIRST_SCREEN_VOICE_KEY, ...FIRST_SCREEN_MORE_KEYS] as string[];
+  const validateAiVoice = (value: unknown) => {
+    if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length === 0)
+      throw new Error(`ai_voice_defaults expects an object keyed by any of: ${firstScreenKeys.join(", ")}.`);
+    if (!settings.organizationId) throw new Error("No organization is selected, so these defaults cannot be changed yet.");
+    if (!settings.userId) throw new Error("Not signed in.");
+    for (const [key, next] of Object.entries(value as Record<string, unknown>)) {
+      const knob = settings.knobByKey(key);
+      if (!firstScreenKeys.includes(key) || !knob) throw new Error(`Unknown default: ${key}. Allowed: ${firstScreenKeys.join(", ")}.`);
+      if (knob.user_override_locked) throw new Error(`${knob.label} is locked by your organization.`);
+      if (next !== null && typeof next !== "string") throw new Error(`${knob.label} expects an id string, or null to follow the organization.`);
+      if (next !== null && knob.allowed_values && !knob.allowed_values.includes(next))
+        throw new Error(`${knob.label} must be one of: ${knob.allowed_values.join(", ")}.`);
+    }
+  };
+  useSurfaceWriteHandlers("matrx-user/settings", {
+    ai_voice_defaults: {
+      validate: validateAiVoice,
+      apply: async (value: unknown) => {
+        validateAiVoice(value);
+        const saved: string[] = [];
+        for (const [key, next] of Object.entries(value as Record<string, string | null>)) {
+          const knob = settings.knobByKey(key)!;
+          const result = await setKnobOverride({
+            feature: knob.feature,
+            key: knob.key,
+            scopeKind: "user",
+            scopeId: settings.userId!,
+            organizationId: settings.organizationId!,
+            value: next,
+          });
+          if (!result.ok) throw new Error(result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`);
+          saved.push(knob.label);
+        }
+        settings.refresh();
+        return { summary: `Saved ${saved.join(", ")}.`, data: { saved: value } };
+      },
+    },
+  });
+
   return (
     <>
       {settings.editingContext === "system" && <RegistryCoverage />}
@@ -156,8 +201,18 @@ export default function FirstScreenTab() {
             modified={Boolean(defaultOrganizationId)}
             onReset={() => setDefaultOrganizationId(null)}
             resetLabel="Clear the default organization"
-            last={settings.organizationsStatus !== "error"}
+            last={settings.organizationsStatus !== "error" && organizationState === "ready"}
           />
+          {/* One card, not two: with no organization selected, the choice of
+              one sits right under the default-organization row. */}
+          {organizationState !== "ready" && (
+            <OrganizationContextNotice
+              state={organizationState}
+              what="Your AI and voice defaults"
+              description="Your AI model and voice defaults are kept per organization. Choose the one you are working in to see them."
+              compact
+            />
+          )}
           {settings.organizationsStatus === "error" && (
             <ReadFailure
               error={settings.organizationsError ?? true}
@@ -179,15 +234,6 @@ export default function FirstScreenTab() {
           {settings.error}
           <ErrorAlchemyMenu error={settings.error} />
         </SettingsCallout>
-      )}
-      {settings.editingContext === "user" && organizationState !== "ready" && (
-        <OrganizationContextNotice
-          state={organizationState}
-          what="Your AI and voice defaults"
-          description="Your AI model and voice defaults are kept per organization. Choose the one you are working in."
-          compact
-          className="rounded-lg border border-border bg-card"
-        />
       )}
       {missingKeys.length > 0 && (
         <SettingsCallout

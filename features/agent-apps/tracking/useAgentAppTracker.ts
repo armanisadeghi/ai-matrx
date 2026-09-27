@@ -1,5 +1,6 @@
 "use client";
 
+import type { RunOutcome } from "./run-outcome";
 import { useCallback, useRef } from "react";
 import { useApiAuth } from "@/hooks/useApiAuth";
 
@@ -23,11 +24,17 @@ import { useApiAuth } from "@/hooks/useApiAuth";
  */
 
 export interface RunTracker {
-  /** Reused as the `task_id` column for the run row. */
   taskId: string;
-  /** Mark the run as success; pass an explicit ms duration to override. */
-  complete: (executionTimeMs?: number) => void;
-  /** Mark the run as failed. */
+  /**
+   * Record the run as what its request actually ENDED as. There is no bare
+   * "mark success": a refused run used to be written `success = true` because
+   * a caller called `complete()` when `submit()` resolved (the /p guest run,
+   * 2026-09-27). Success is only reachable from a `RunOutcome` built from the
+   * request's terminal state (`runOutcome` / `waitForRunOutcome`); a cancelled
+   * or unresolved run leaves the row unfinished.
+   */
+  settle: (outcome: RunOutcome) => void;
+  /** A run that failed before any request existed (a thrown submit). */
   error: (info: { errorType?: string; errorMessage?: string }) => void;
 }
 
@@ -82,16 +89,23 @@ export function useAgentAppTracker(appId: string) {
 
       return {
         taskId,
-        complete(executionTimeMs) {
-          const ms =
-            typeof executionTimeMs === "number"
-              ? executionTimeMs
-              : Math.round(
-                  (typeof performance !== "undefined"
-                    ? performance.now()
-                    : Date.now()) - startedAt,
-                );
-          post({ event: "run_complete", taskId, executionTimeMs: ms });
+        settle(outcome) {
+          const ms = Math.round(
+            (typeof performance !== "undefined"
+              ? performance.now()
+              : Date.now()) - startedAt,
+          );
+          if (outcome.kind === "success") {
+            post({ event: "run_complete", taskId, executionTimeMs: ms });
+          } else if (outcome.kind === "failure") {
+            post({
+              event: "run_error",
+              taskId,
+              executionTimeMs: ms,
+              errorType: outcome.errorType,
+              errorMessage: outcome.message,
+            });
+          }
         },
         error(info) {
           const ms = Math.round(

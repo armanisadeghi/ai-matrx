@@ -46,12 +46,14 @@ function hasValue(value: unknown): boolean {
 }
 
 /**
- * Present but empty (`[]`, `{}`, `""`). A surface emits these on purpose to say
- * "loaded, and there is nothing" — which must never read as "not supplied"
- * (an omitted key). They still do not count toward "supplied".
+ * Present but empty (`[]`, `{}`, `""`, `null`). A surface emits these on
+ * purpose to say "loaded, and there is nothing" — which must never read as
+ * "not supplied" (an omitted key, i.e. `undefined`). A nullable value such as
+ * "no default organization chosen" is `null` by contract (page-pass rule: not
+ * loaded → omit the key). They still do not count toward "supplied".
  */
 function isPresentEmpty(value: unknown): boolean {
-  return value !== undefined && value !== null && !hasValue(value);
+  return value !== undefined && !hasValue(value);
 }
 
 function displayValue(value: unknown): string {

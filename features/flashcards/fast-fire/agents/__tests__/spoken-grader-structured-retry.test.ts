@@ -11,6 +11,8 @@ jest.mock(
   () => ({
     runHeadlessAgentJson: (...args: unknown[]) =>
       runHeadlessAgentJson(...args),
+    // Only the no-usable-output path reads it; these cases answer.
+    mandateOutputUnusableSentence: () => null,
   }),
 );
 

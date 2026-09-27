@@ -21,6 +21,12 @@ const SAVE_INTO_WHERE_YOU_ARE: ReadonlyArray<{ sourceType: string; surface: stri
   { sourceType: "task", surface: "matrx-user/tasks", actionId: "save-to-task" },
 ];
 
+/** Opening a window from inside that same window (surface-only rules). */
+const OPEN_WHERE_YOU_ARE: ReadonlyArray<{ surface: string; actionId: string }> = [
+  // The Feedback window's menus offered "Submit feedback" — reopening itself.
+  { surface: "matrx-user/feedback", actionId: "submit-feedback" },
+];
+
 /** Opening an editor from inside the editor. */
 const EDITOR_DOORS = ["edit", "open-fullscreen-editor"] as const;
 
@@ -28,6 +34,9 @@ export function actionsAlreadyHere(where: WhereTheMenuIs): string[] {
   const out: string[] = [];
   for (const rule of SAVE_INTO_WHERE_YOU_ARE) {
     if (where.sourceType === rule.sourceType || where.surfaceName === rule.surface) out.push(rule.actionId);
+  }
+  for (const rule of OPEN_WHERE_YOU_ARE) {
+    if (where.surfaceName === rule.surface) out.push(rule.actionId);
   }
   if (where.isEditable) out.push(...EDITOR_DOORS);
   return out;

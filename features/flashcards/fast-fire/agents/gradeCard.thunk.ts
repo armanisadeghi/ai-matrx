@@ -172,6 +172,7 @@ export function gradeCard(args: GradeCardArgs) {
           userId,
           cardId,
           sessionId,
+          runId,
           responseAudioFileId,
           result: null,
           scoreValue: null,
@@ -258,6 +259,7 @@ export function gradeCard(args: GradeCardArgs) {
         userId,
         cardId,
         sessionId,
+        runId,
         responseAudioFileId,
         result,
         scoreValue: grade.score,
@@ -279,6 +281,7 @@ export function gradeCard(args: GradeCardArgs) {
         userId,
         cardId,
         sessionId,
+        runId,
         responseAudioFileId,
         result: null,
         scoreValue: null,
@@ -299,6 +302,8 @@ async function recordAttempt(
     userId: string;
     cardId: string;
     sessionId: string | null;
+    /** The drill run — the "told you once" notice is per run. */
+    runId: string | null;
     responseAudioFileId: string | null;
     result: GradeResult | null;
     scoreValue: number | null;
@@ -339,7 +344,7 @@ async function recordAttempt(
     noticeClipRejected(res.clipRejection);
   }
   if (res.queued) {
-    noticeOfflineOnce(input.sessionId, res.heldForGrade);
+    noticeOfflineOnce(input.runId ?? input.sessionId, res.heldForGrade);
   }
 }
 

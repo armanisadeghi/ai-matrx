@@ -35,6 +35,10 @@ import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import { useModels } from "@/features/ai-models/hooks/useModels";
+import {
+  useSurfaceScopeContribution,
+  useSurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 type ShowFilter = "all" | "shown" | "hidden";
 const ALL_MAKERS = "__all__";
@@ -72,6 +76,36 @@ const AiModelsPreferences = () => {
         ? hiddenIds.filter((id) => id !== modelId)
         : [...new Set([...hiddenIds, modelId])],
     );
+
+  // Agent twin: the hidden list and the same switch (`hidden_models`).
+  useSurfaceScopeContribution("matrx-user/settings", "models-tab", () =>
+    models.length === 0
+      ? {}
+      : {
+          hidden_models: models
+            .filter((m) => hidden.has(m.id))
+            .map((m) => ({ id: m.id, name: m.common_name || m.name, maker: m.maker ?? null })),
+          model_catalog_count: models.length,
+        },
+  );
+  const validateHidden = (value: unknown) => {
+    if (!Array.isArray(value) || value.some((id) => typeof id !== "string"))
+      throw new Error("hidden_models expects the full list of model ids to hide ([] shows every model).");
+    const known = new Set(models.map((m) => m.id));
+    const unknown = (value as string[]).filter((id) => !known.has(id));
+    if (unknown.length > 0) throw new Error(`Not current catalog models: ${unknown.join(", ")}.`);
+  };
+  useSurfaceWriteHandlers("matrx-user/settings", {
+    hidden_models: {
+      validate: validateHidden,
+      apply: (value: unknown) => {
+        validateHidden(value);
+        const next = [...new Set(value as string[])];
+        setHidden(next);
+        return { summary: `${next.length} model${next.length === 1 ? "" : "s"} hidden from your pickers.`, data: { hidden: next } };
+      },
+    },
+  });
 
   const q = query.trim().toLowerCase();
   const rows = models.filter((m) => {

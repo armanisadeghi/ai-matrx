@@ -126,7 +126,9 @@ export function SettingsRow({
       <div className="flex min-w-0 flex-wrap items-center gap-1.5">
         {modified && (
           <span
-            aria-label="Modified from default"
+            role="img"
+            aria-label="Changed from the default"
+            title="Changed from the default"
             className="h-1.5 w-1.5 rounded-full bg-primary shrink-0"
           />
         )}
@@ -156,7 +158,9 @@ export function SettingsRow({
           </label>
         )}
         {badge && <BadgePill badge={badge} />}
-        {designVariant === "compact" && (description || helpText) && (
+        {/* The description is printed in full under the label, so the help
+            icon only exists for extra help — never to repeat the line below. */}
+        {designVariant === "compact" && helpText && (
           <CompactHelpPopover
             label={label}
             description={description}
@@ -196,7 +200,6 @@ export function SettingsRow({
         <div
           className={cn(
             "mt-0.5 break-words text-xs leading-snug text-muted-foreground",
-            designVariant === "compact" && "@[40rem]/settings:truncate",
             disabled && "opacity-50",
           )}
         >

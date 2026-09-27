@@ -123,6 +123,7 @@ import React, {
   Suspense,
 } from "react";
 import type { ContentSource } from "@/features/rich-document/types";
+import { actionsAlreadyHere } from "@/features/context-menu-v3/utils/already-here";
 
 // The ONE action registry rendered as a list inside this field's "…" popover.
 // A React.lazy edge inside the popover (never a new next/dynamic front door —
@@ -220,6 +221,8 @@ import {
   ProTextFieldStatsPanel,
 } from "./ProTextFieldStats";
 import { ProTextAgentActionPopoverBody } from "./ProTextAgentActionPopoverBody";
+import { proTextareaClusterPlacement } from "./proTextareaControlPlacement";
+import type { ProTextareaEditorSlot } from "./pro-textarea-editor";
 import {
   composerKeyIntent,
   intentTakesTheKey,
@@ -428,6 +431,14 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
    * non-card surfaces, use `<Field>` with the above-label style instead.
    */
   floatingLabel?: string;
+  /**
+   * Host a different editor in place of the <textarea> (e.g. MergeFieldInput,
+   * which draws {{merge fields}} as chips). The whole toolbar — mic, "…" menu,
+   * agents, stats, right-click menu — reads and writes through `handle`.
+   * Enter/submit handling and auto-grow belong to the editor then.
+   * Contract: `./pro-textarea-editor.ts`.
+   */
+  editor?: ProTextareaEditorSlot;
 }
 
 export const ProTextarea = React.forwardRef<
@@ -482,6 +493,7 @@ export const ProTextarea = React.forwardRef<
       id: idProp,
       placeholder,
       style,
+      editor,
       ...props
     },
     ref,
@@ -647,6 +659,7 @@ export const ProTextarea = React.forwardRef<
      * announce success only on true.
      */
     const pushToTextarea = useCallback((newValue: string): boolean => {
+      if (editor) return editor.handle.current?.write(newValue) ?? false;
       const el = textareaRef.current;
       if (!el) return false;
       const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
@@ -657,7 +670,7 @@ export const ProTextarea = React.forwardRef<
       nativeInputValueSetter.call(el, newValue);
       el.dispatchEvent(new Event("input", { bubbles: true }));
       return el.value === newValue;
-    }, []);
+    }, [editor]);
 
     // Voice-to-text now rides the ONE shared recorder (start-always-wins,
     // one-at-a-time, survives navigation) via the reusable `useMicField`
@@ -684,7 +697,10 @@ export const ProTextarea = React.forwardRef<
     } = useMicField({
       instanceId: inputId,
       label: typeof floatingLabel === "string" ? floatingLabel : undefined,
-      getValue: () => textareaRef.current?.value ?? String(value ?? ""),
+      getValue: () =>
+        editor
+          ? (editor.handle.current?.getValue() ?? String(value ?? ""))
+          : (textareaRef.current?.value ?? String(value ?? "")),
       writeValue: pushToTextarea,
       appendTranscript,
       protect: protectTranscription,
@@ -834,20 +850,25 @@ export const ProTextarea = React.forwardRef<
       (text: string): ApplicationScope => {
         if (getApplicationScope) return getApplicationScope();
         const el = textareaRef.current;
-        const start = el?.selectionStart ?? 0;
-        const end = el?.selectionEnd ?? 0;
+        const handle = editor?.handle.current ?? null;
+        const full = handle ? handle.getValue() : (el?.value ?? null);
+        const sel = handle
+          ? handle.getSelection()
+          : { start: el?.selectionStart ?? 0, end: el?.selectionEnd ?? 0 };
+        const start = sel.start;
+        const end = sel.end;
         const selection =
-          start !== end && el
-            ? el.value.slice(Math.min(start, end), Math.max(start, end))
+          start !== end && full !== null
+            ? full.slice(Math.min(start, end), Math.max(start, end))
             : "";
         return {
           content: text,
           selection,
-          text_before: el ? el.value.slice(0, start) : "",
-          text_after: el ? el.value.slice(end) : "",
+          text_before: full !== null ? full.slice(0, start) : "",
+          text_after: full !== null ? full.slice(end) : "",
         };
       },
-      [getApplicationScope],
+      [getApplicationScope, editor],
     );
 
     const resolveAgentContextItems = useCallback(
@@ -865,7 +886,7 @@ export const ProTextarea = React.forwardRef<
 
     const openBoundAgentView = useCallback(
       (entry: SurfaceBoundAgentEntry) => {
-        const text = textareaRef.current?.value ?? valueAsString;
+        const text = (editor ? editor.handle.current?.getValue() : textareaRef.current?.value) ?? valueAsString;
         if (!text.trim()) {
           toast.info("Add some text before running an agent");
           return;
@@ -881,7 +902,7 @@ export const ProTextarea = React.forwardRef<
     const openAgentActionView = useCallback(
       (actionId: ProTextareaAgentActionId) => {
         const definition = PRO_TEXTAREA_AGENT_ACTIONS[actionId];
-        const text = textareaRef.current?.value ?? valueAsString;
+        const text = (editor ? editor.handle.current?.getValue() : textareaRef.current?.value) ?? valueAsString;
         if (definition.requiresSourceText && !text.trim()) {
           toast.info(definition.emptyTextToast);
           return;
@@ -940,7 +961,7 @@ export const ProTextarea = React.forwardRef<
       ) {
         return;
       }
-      const text = textareaRef.current?.value ?? valueAsString;
+      const text = (editor ? editor.handle.current?.getValue() : textareaRef.current?.value) ?? valueAsString;
       if (!text.trim()) {
         toast.info(
           menuMode === "boundAgent"
@@ -1140,6 +1161,49 @@ export const ProTextarea = React.forwardRef<
     const insideAncestorMenu = useIsInsideContextMenu();
     const mountOwnMenu = enableContextMenu && !insideAncestorMenu && !disabled;
 
+    // The field surface, shared by the <textarea> and a hosted editor.
+    const fieldClassName = cn(
+      "flex w-full border border-border bg-card px-3 py-2 text-sm shadow-sm placeholder:text-neutral-500 dark:placeholder:text-neutral-400",
+      // The pinned stats bar is desktop-only (see its render below),
+      // so the flat bottom edge that pairs with it is sm+ only too.
+      showPinnedTextStatsBar
+        ? "rounded-md sm:rounded-b-none sm:border-b-0"
+        : "rounded-md",
+      "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+      "disabled:cursor-not-allowed disabled:opacity-50",
+      fillHeight
+        ? "min-h-0 flex-1 resize-none overflow-y-auto"
+        : "resize-y",
+      // Auto-grow disables the manual resize handle. Use overflow-y-auto
+      // (not overflow-hidden) so that once content hits `maxHeight` the
+      // textarea becomes internally scrollable instead of clipping text
+      // the user can never reach. While growing (height === scrollHeight)
+      // no scrollbar shows; it only appears once capped at maxHeight.
+      autoGrow && "resize-none overflow-y-auto",
+      // Coarse pointers keep the controls visible in a dedicated
+      // 44px bottom row, preserving the full width of every line and
+      // the natural top inset. When a submit control already owns
+      // the bottom-right, reserve the controls at the top instead.
+      // Fine pointers: a field WITHOUT its own submit button reserves
+      // a shallow bottom row too — the cluster used to float over
+      // the first line of text (page-pass 2026-09-27, Feedback
+      // window: the mic pill sat on the words being typed).
+      "pr-3",
+      hasCoarseControls &&
+        (onSubmit
+          ? "pointer-coarse:pt-12"
+          : "pb-10 pointer-coarse:pb-12"),
+      // Bottom padding for the submit button — TapTargetButtonSolid is
+      // 44px tall (h-11), so reserve enough vertical clearance.
+      onSubmit && "pb-14",
+      className,
+    );
+    const fieldStyle: React.CSSProperties = {
+      ...style,
+      minHeight: minHeight !== undefined ? `${minHeight}px` : style?.minHeight,
+      maxHeight: maxHeight !== undefined ? `${maxHeight}px` : style?.maxHeight,
+    };
+
     const field = (
       <div
         className={cn("relative group", wrapperClassName)}
@@ -1170,61 +1234,37 @@ export const ProTextarea = React.forwardRef<
               fillHeight && "flex min-h-0 flex-1 flex-col",
             )}
           >
-            <textarea
-              ref={setTextareaRef}
-              id={inputId}
-              placeholder={floatingLabel ? undefined : placeholder}
-              className={cn(
-                "flex w-full border border-border bg-card px-3 py-2 text-sm shadow-sm placeholder:text-neutral-500 dark:placeholder:text-neutral-400",
-                // The pinned stats bar is desktop-only (see its render below),
-                // so the flat bottom edge that pairs with it is sm+ only too.
-                showPinnedTextStatsBar
-                  ? "rounded-md sm:rounded-b-none sm:border-b-0"
-                  : "rounded-md",
-                "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                "disabled:cursor-not-allowed disabled:opacity-50",
-                fillHeight
-                  ? "min-h-0 flex-1 resize-none overflow-y-auto"
-                  : "resize-y",
-                // Auto-grow disables the manual resize handle. Use overflow-y-auto
-                // (not overflow-hidden) so that once content hits `maxHeight` the
-                // textarea becomes internally scrollable instead of clipping text
-                // the user can never reach. While growing (height === scrollHeight)
-                // no scrollbar shows; it only appears once capped at maxHeight.
-                autoGrow && "resize-none overflow-y-auto",
-                // Coarse pointers keep the controls visible in a dedicated
-                // 44px bottom row, preserving the full width of every line and
-                // the natural top inset. When a submit control already owns
-                // the bottom-right, reserve the controls at the top instead.
-                // Fine pointers: a field WITHOUT its own submit button reserves
-                // a shallow bottom row too — the cluster used to float over
-                // the first line of text (page-pass 2026-09-27, Feedback
-                // window: the mic pill sat on the words being typed).
-                "pr-3",
-                hasCoarseControls &&
-                  (onSubmit
-                    ? "pointer-coarse:pt-12"
-                    : "pb-10 pointer-coarse:pb-12"),
-                // Bottom padding for the submit button — TapTargetButtonSolid is
-                // 44px tall (h-11), so reserve enough vertical clearance.
-                onSubmit && "pb-14",
-                className,
-              )}
-              style={{
-                ...style,
-                minHeight:
-                  minHeight !== undefined ? `${minHeight}px` : style?.minHeight,
-                maxHeight:
-                  maxHeight !== undefined ? `${maxHeight}px` : style?.maxHeight,
-              }}
-              value={value}
-              onChange={onChange}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              onKeyDown={handleKeyDown}
-              disabled={disabled}
-              {...props}
-            />
+            {editor ? (
+              editor.render({
+                id: inputId,
+                className: fieldClassName,
+                style: fieldStyle,
+                placeholder: floatingLabel ? undefined : placeholder,
+                disabled,
+                onFocus: () => setIsFocused(true),
+                onBlur: () => setIsFocused(false),
+                // Enter/submit belong to the editor; typing still hides the
+                // hover controls exactly as it does in the textarea.
+                onKeyDown: () => {
+                  if (isHovered) setIsHovered(false);
+                },
+              })
+            ) : (
+              <textarea
+                ref={setTextareaRef}
+                id={inputId}
+                placeholder={floatingLabel ? undefined : placeholder}
+                className={fieldClassName}
+                style={fieldStyle}
+                value={value}
+                onChange={onChange}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                onKeyDown={handleKeyDown}
+                disabled={disabled}
+                {...props}
+              />
+            )}
 
             {floatingLabel && inputId && (
               <Label
@@ -1251,10 +1291,10 @@ export const ProTextarea = React.forwardRef<
             <div
               className={cn(
                 "absolute right-0 top-0 flex items-center transition-opacity duration-200 z-10 focus-within:opacity-100 focus-within:pointer-events-auto",
-                // Coarse pointers can't hover. Textareas without a submit
-                // button move the cluster to the reserved bottom row; submit
-                // textareas retain the top row to avoid a button collision.
-                !onSubmit && "top-auto bottom-0",
+                // Always in a RESERVED row, never over text: the bottom row
+                // (beside the submit button when there is one) —
+                // proTextareaControlPlacement.ts.
+                proTextareaClusterPlacement(!!onSubmit).className,
                 "pointer-coarse:opacity-100 pointer-coarse:pointer-events-auto",
                 showControls || menuOpen
                   ? "opacity-100"
@@ -1346,6 +1386,14 @@ export const ProTextarea = React.forwardRef<
                             actions={{
                               exclude: [
                                 ...(showCopyButton ? [] : TEXT_FIELD_COPY_IDS),
+                                // Never an action that reopens the place this
+                                // field already sits in (Submit feedback in
+                                // the Feedback window).
+                                ...actionsAlreadyHere({
+                                  sourceType: TEXT_FIELD_SOURCE.type,
+                                  surfaceName,
+                                  isEditable: false,
+                                }),
                                 ...TEXT_AGENT_ACTION_IDS.filter(
                                   ([, localId]) =>
                                     !enabledAgentActionIds.includes(localId),

@@ -170,7 +170,9 @@ describe("FastFire — the offline split (STATE §4.1 B8)", () => {
       itemType: "fc_card",
       method: "fast_fire",
       responseKind: "spoken",
-      sessionId: SESSION,
+      // The session opens on the first answer, and an answer given offline
+      // cannot open one — so it queues session-less (the answer survives).
+      sessionId: null,
     });
 
     // 🚨 THE LOAD-BEARING NEGATIVE, unchanged and never to be weakened: an

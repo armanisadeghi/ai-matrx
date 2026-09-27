@@ -15,4 +15,8 @@ describe("actionsAlreadyHere", () => {
   it("a chat answer keeps every action", () => {
     expect(actionsAlreadyHere({ sourceType: "chat-message", surfaceName: "matrx-user/chat", isEditable: false })).toEqual([]);
   });
+  it("inside the Feedback window: no Submit feedback (it would reopen itself)", () => {
+    expect(actionsAlreadyHere({ sourceType: "raw", surfaceName: "matrx-user/feedback", isEditable: true })).toContain("submit-feedback");
+    expect(actionsAlreadyHere({ sourceType: "raw", surfaceName: "matrx-user/notes", isEditable: false })).not.toContain("submit-feedback");
+  });
 });

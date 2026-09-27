@@ -14,8 +14,18 @@ import {
   waitForRunOutcome,
 } from "./run-outcome";
 
+/** The real tracker's settle semantics, observed through what it posts. */
 function tracker() {
-  return { complete: jest.fn(), error: jest.fn() };
+  const complete = jest.fn();
+  const error = jest.fn();
+  return {
+    complete,
+    error,
+    settle: (o: Parameters<typeof recordRunOutcome>[1]) => {
+      if (o.kind === "success") complete();
+      else if (o.kind === "failure") error({ errorType: o.errorType, errorMessage: o.message });
+    },
+  };
 }
 
 it("a refused request is a failure with the server's reason", () => {
@@ -65,4 +75,20 @@ it("waits for THIS run's request (not an older one) to end", async () => {
   } as unknown as RootState;
   listeners.forEach((l) => l());
   await expect(pending).resolves.toEqual({ kind: "failure", errorType: "refused", message: "Not allowed" });
+});
+
+it("a request that completed carrying a refusal payload is a failure, not a success", () => {
+  const t = tracker();
+  recordRunOutcome(
+    t,
+    runOutcome({
+      status: "complete",
+      error: { error_type: "guest_limit_reached", message: "limit", user_message: "You've used your free runs." },
+    }),
+  );
+  expect(t.complete).not.toHaveBeenCalled();
+  expect(t.error).toHaveBeenCalledWith({
+    errorType: "guest_limit_reached",
+    errorMessage: "You've used your free runs.",
+  });
 });

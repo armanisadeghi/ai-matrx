@@ -259,7 +259,10 @@ export default function NotificationsTab() {
           await setNotificationPreference(w.event_key, w.channel, w.enabled, scopeId);
         }
         reload();
-        return { saved: writes, organization_id: scopeId };
+        return {
+          summary: `Saved ${writes.length} notification choice${writes.length === 1 ? "" : "s"} for ${activeScope?.label ?? "this organization"}.`,
+          data: { saved: writes, organization_id: scopeId },
+        };
       },
     },
   });
