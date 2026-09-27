@@ -25,118 +25,143 @@ skill: that is `surface-writeback.ts` + `features/surfaces/FEATURE.md`.
   entity targets through canonical services, handlers registered from a
   child via `useSurfaceWriteHandlers`.
 
-## Step 0 — the judgment bar (this is why an agent, not a sweep, does this)
+## Step 0 — what a page gets (decided 2026-09-27, from the My Classes test)
 
-**Not every input earns a target.** The extra code is only worth it where an
-agent plausibly produces the value. Rank the surface first:
+**Every record type a page lists gets full CRUD over LISTS**, through the
+page's own save functions, each target `ask`:
 
-- **YES:** authored content an agent can draft better/faster (descriptions,
-  briefs, meta tags, summaries, keywords, labels, plans); planning fields
-  derivable from context (status, priority, due date); decomposition actions
-  (add subtasks, add items).
-- **NO:** identity/ownership fields, ids, credentials, billing, permissions,
-  anything destructive (delete stays human), pure-mechanical toggles nobody
-  would ask an agent to flip, and surfaces that are read-only reports.
-- A surface with fewer than ~2 YES fields probably doesn't earn the work —
-  say so and pick a better surface. A surface where EVERY input is
-  agent-drivable (marketing-page class) is the jackpot.
+| Target | Value | Notes |
+|---|---|---|
+| `create_<plural>` | array of 1-25 objects | only what the page's own create would take |
+| `update_<plural>` | array of `{ id, …fields to change }` | only the fields sent change; merge onto the current record |
+| `delete_<plural>` | array of ids (or `{ id }`) | description states exactly what is lost and steers to archive when the record can be archived |
+| `<record>_draft` | object | only when the page has a "New ___" dialog: opens it and fills EVERY field, nothing saved |
+
+- **One set per record type**, built with `collectionWriteHandlers`
+  (`features/surfaces/runtime/collection-write-targets.ts`). A page with five
+  record types calls it five times. Never one catch-all target.
+- Archive/restore is a field on `update_<plural>` (`archived: true|false`) when
+  the record can be archived.
+- Deletion is allowed: the person approves every one on the card, and the
+  description states the consequence (law: a destructive action states what
+  is lost). Prefer archive in the description.
+- Still NO targets for: ids/ownership, credentials, billing, permissions, and
+  derived evidence (scores, mastery, counts). Those stay read-only values.
+- Authored fields on an editor page (a description, a brief, meta tags) keep
+  their `draft` targets as before (worked reference: `tasks.manifest.ts` +
+  `TaskEditorBody.tsx`).
+
+Worked example of all of it: `features/surfaces/manifests/education-classes.manifest.ts`,
+`features/education/classes/classAgentWrites.ts` (pure parsers + tests),
+`features/education/classes/components/ClassesHome.tsx` (the helper) and
+`ClassFormDialog.tsx` (the draft target).
 
 ## Step 1 — declare targets on the manifest
 
-In the surface's `manifests/<name>.manifest.ts`, add a
-`SurfaceWriteTarget[]` and `writeTargets` on the export. Per target:
+Per target: `name`, `label`, `valueType` (`array` for the CRUD targets),
+`updatesValue` (the list value it changes), `mode` (`entity` for CRUD,
+`draft` for the dialog), `applyPolicy: "ask"`, `group`, `sortOrder`.
 
-- `name` lower_snake, unique on the surface. `label` = THE canonical label.
-- `description` is **model-facing contract prose**: exact value shape,
-  vocabulary enums spelled out (`low | medium | high`), replace-vs-append
-  semantics ("replaces the FULL set — include existing values from
-  <read-twin>"), and where it lands. The agent sees exactly this.
-- `valueType`, `updatesValue` (the read-twin value — the evidence loop),
-  `group`/`sortOrder` (existing groups).
-- `mode`: `"draft"` stages into the page's editor state, user still saves
-  (PREFERRED — additive, reversible); `"entity"` persists immediately through
-  the page's canonical service; `"ui"` ephemeral view state.
-- `applyPolicy`: **`"ask"` is the default for anything agents should drive**
-  (in-place confirm, decline is a normal outcome). `"auto"` only for
-  ephemeral `ui` targets. Omit (= `manual`) for targets meant only for
-  user-click kind components. **A target left `manual` is never offered to
-  agents** — declaring it does nothing for this campaign.
+The `description` is the ONLY contract the model sees (until the target names
+a `valueKind`). Write it so a small model gets it right the first time:
+- start with what it does and whether it saves ("saved immediately" / "NOTHING
+  is saved");
+- "Value is a JSON ARRAY of objects, each { … }" — spell every field, its
+  type, allowed values (`"open" | "closed" | "paid"`), formats (`YYYY-MM-DD`),
+  and which are required;
+- what is refused (duplicates, unknown ids, rules between fields);
+- for delete: what is lost, and "prefer update with archived: true".
+
+Every record type also gets its list as a value (`owned_<plural>` or the
+page's name for it) with the ids the targets need, and an `archived_<plural>`
+value when archived records exist, so update and restore can name them.
 
 ## Step 2 — register handlers on the page
 
-Two equivalent seams — pick by where the state lives:
+A handler entry is `{ validate, apply }`
+(`SurfaceWriteHandlerEntry`, `features/surfaces/runtime/SurfaceRuntimeContext.tsx`):
+- `validate(value)` runs BEFORE the person's approval card. Throw a sentence
+  the agent can act on and no card is shown. Put the whole-list check here
+  (a pure parser, unit-tested).
+- `apply(value)` runs after approval. Re-parse against the live page, save,
+  and RETURN `{ summary, data }`: what landed, with ids. The agent's page
+  snapshot was taken when its run started and will not show new records, so
+  this return value is how it knows.
+- `collectionWriteHandlers` does both for list CRUD, plus the part-way failure
+  message ("Created 1 of 3 … Not attempted: …") so a retry never duplicates.
 
-- Owner component mounts the provider: `<SurfaceRuntimeProvider … getWriteHandlers={buildHandlers}>`.
-- A deep child owns the state: `useSurfaceWriteHandlers(SURFACE_NAME, handlers)`.
+The seam (`surface-writeback.ts`) already, for every target:
+- turns a JSON string into the array/object the target declares, and refuses a
+  wrong type before the card, naming expected vs received;
+- returns every outcome to the agent: refused before approval, declined by the
+  person, failed after approval (with the handler's message), or succeeded
+  (with your `summary`/`data`).
 
-Handler rules (see the TaskEditorBody block):
-- **Validate input and THROW on bad shape** — the seam converts throws to
-  safe error envelopes the agent reads. Enum checks against the real
-  vocabulary constants, never re-typed literals.
-- Draft handlers dispatch the SAME action the user's typing uses
-  (`patch`/slice draft) — never a parallel write path.
-- Entity handlers call the canonical thunk/service — never raw supabase.
-- Never silently coerce; a wrong value is the agent's error to hear about.
+Rules that still bite:
+- **Save through the page's canonical function** (the one its button calls),
+  never a parallel write. If it replaces a whole JSON column (settings), merge
+  onto the current value first.
+- **No workspace selected:** a create resolves it with `ensureOrgId(orgId)`,
+  which asks the person; treat `isOrganizationSelectionCancelled` as a refusal
+  ("ask which workspace"), never a silent no-op.
+- **A dialog with its own fields:** mark its root
+  `data-surface-layer="<surface>"` (`SURFACE_LAYER_ATTRIBUTE`) so the generic
+  window-form net stands down, and register its draft handler with
+  `useSurfaceWriteHandlers` from the component that owns the fields (it stays
+  mounted while closed, so it can open itself).
+- **Intro:** name the targets for the jobs agents will be asked to do, and say
+  not to use generic tools (scope/context tools) for this data.
 
-## Step 3 — verify with a REAL agent run (non-negotiable)
+## Step 3 — verify with a REAL agent on the live site (non-negotiable)
 
-Mock nothing. On the one machine-wide dev server (`pnpm preview:start`, port
-3001 — never raw `pnpm dev`; login
-`/login` admin@admin.com / <see AI_ADMIN_PASSWORD in .env>):
+No dev server. After the release carrying your commit is live:
 
-1. Open the page; open the header **Agents** popover ("Agents for this
-   page") and Run a bound agent (Badass Agent is globally bound).
-2. Ask it in plain language to change several targets in one message.
-3. Confirm: an inline **approval card** (`ApprovalCard`, `kind: "approval"`)
-   renders per target, in the chat stream — not a blocking dialog; the user
-   can keep reading/typing around it. Its header names the change, its body
-   shows your target's description plus the proposed value as a
-   before→after diff, and its footer offers three actions: **Apply** lands
-   the value through your handler (draft → editor shows staged value + Save
-   bar; entity → persisted + toast); **Keep as is** declines without an
-   error and the agent acknowledges gracefully; **Respond** lets the user
-   type free-text instructions back to the agent instead of a flat decline
-   (the agent receives that text and can retry with a different value).
-4. Ask for something you did NOT declare — expect a loud refusal.
-5. Send one deliberately INVALID value and confirm your handler's throw
-   reaches the agent verbatim. A good model often refuses to send a value it
-   can see is invalid — say you are testing validation and want the exact
-   error. Confirm nothing was staged (validate-then-apply).
-6. Check the Error Inspector — zero new `surface-writeback` captures, **on a
-   page load where you did NOT force an invalid value**. A handler throw is a
-   capture BY DESIGN: `applySurfaceWrite`'s catch routes to `fail()`, which
-   fires `toast.error` AND `captureError({source:"surface-writeback"})`. Step
-   5 therefore MANUFACTURES a capture. Reload (captures are per page load),
-   redo only the valid applies + a decline, and check that load — otherwise
-   you find your own test and report a defect that is not one.
+```bash
+pnpm surface:probe --surface <client/name> --route <route> --commit <sha> \
+  --agent '<a real request, e.g. "Add these classes: A (closed), B (open, final 2026-12-10)">'
+```
 
-Then run `pnpm check:surface-drift` and `pnpm type-check`. When this task is
-authorized to integrate the manifest, run the focused sync and matching
-`--check` from `surface-authoring` Layer 4; record that receipt before claiming
-the target is available to server-side agents. A source-only incremental change
-may remain `partial` with its owner and boundary named, but "pending" cannot
-support a functioning-integration, `verified`, or certification claim.
+It runs a real agent from the Agents menu and presses Apply for you (use
+obviously named test data). Run, for each record type:
+1. create two items in one request; `agent.approvals` shows ONE approval and
+   `agent.reply` names both with ids;
+2. update one field on one item and archive another;
+3. a request that must be refused (a duplicate name, a bad date): the reply
+   carries your validator's reason and `agent.approvals` is EMPTY (refused
+   before the card);
+4. then a read-only SQL query: every created row is COMPLETE (every field the
+   page's own create sets, links and memberships included), compared with one
+   made by hand.
 
-## Step 4 — document + the avalanche contract
+Then `pnpm check:surface-drift`, the focused type check, and the DB mirror
+sync (see `surface-authoring/references/campaign-worker.md` §3). Report the
+test rows you created so the person can remove them.
 
-- FEATURE.md of the touched feature: one Change Log line. The surfaces
-  FEATURE.md "360 loop" section lists live adopters — add yours.
-- Register the surface in `agent.review_queue` (skill `agent-review-queue`)
-  so Arman can test it.
-- **Keep the avalanche going with SUBAGENTS, never `spawn_task` chips**
-  (law 7; `common-docs/policies/subagent-model-ladder.md`). Scout 3-5 further
-  surfaces and dispatch ONE subagent per surface, **lane named**
-  (`standard` = opus, medium — this is implementation). Each brief names the
-  manifest + page component + candidate targets you scouted, and tells the
-  subagent to invoke THIS skill (`surface-write-targets`), verify with a live
-  agent run, and **return 3-5 scouted next surfaces to you** — it does not
-  dispatch further. You own every result: check it, then dispatch the next
-  wave from what came back. Stop only when you genuinely cannot find worthy
-  surfaces left — check `features/surfaces/manifests/` for manifests without
-  `writeTargets` whose pages have real editable state.
-- **Live verification is one lane at a time.** Step 3 runs on the one
-  machine-wide dev server + Browser: code work fans out in parallel, live
-  agent runs never do.
+## Step 4 — what the agent sees up front, the guide, and feedback
+
+- **Show the basics in full.** A value over 200 characters reaches the model
+  only as a "look it up" item unless the value declares `inlineUpTo: N`
+  (mirrored to `ui_surface_value.max_inline_chars`). Set it on every list the
+  agent needs to act on at the size a normal account fills (classes list:
+  12000). Leave it off large or rarely-needed values. (The live server must
+  honour the column — handoff "The server must honour a surface value's
+  max_inline_chars"; until it does, agents fetch.)
+- **A guide for any page with more than one record type or any rule the
+  descriptions can't hold.** Write `features/surfaces/guides/<surface-slug>.md`
+  (80-150 lines: what the page is, each value, each target with a worked
+  example value, the rules, what to do when stuck) and set
+  `guide: "features/surfaces/guides/<slug>.md"` on the manifest. The sync
+  publishes it as the platform skill `surface-guide-<slug>` and adds a pointer
+  to the intro. Worked example: `features/surfaces/guides/education-classes.md`.
+  The intro stays short: the basics and which target does which job.
+- **Read the page's agent feedback before changing a surface.** Every page
+  offers agents the platform target `surface_feedback` (saved to the central
+  feedback system, tagged with the surface). Before editing, run
+  `pnpm surface:feedback --surface <client/name>` and run the SQL it prints
+  through the Supabase MCP; fix what it reports or say why not. Mark handled
+  rows resolved.
+- **Document:** one Change Log line in the touched feature's `FEATURE.md`;
+  file an `agent.review_queue` row (skill `agent-review-queue`).
 
 ## Traps
 
@@ -153,12 +178,10 @@ support a functioning-integration, `verified`, or certification claim.
 - Multiple values in one field object (like `page_meta_tags`
   `{meta_title?, meta_description?}`) beat five micro-targets when they're
   edited together; separate targets when they're independent decisions.
-- **The inline-tool layer PARSES a JSON-looking argument before your handler
-  sees it.** A `valueType: "string"` target cannot receive raw JSON text — it
-  arrives already parsed as an object, the handler throws, and the agent
-  "fixes" it by double-encoding (escaped `\n`, stray quotes in the field).
-  If a target legitimately takes structured data, accept the OBJECT and
-  serialize it yourself. Bit `shapes`; don't rediscover it.
+- **The seam parses a JSON string into the declared object/array** (since
+  2026-09-27). A `valueType: "string"` target still receives a string, so if a
+  target legitimately takes structured data, declare `object`/`array` and
+  accept the value itself.
 - **CHECK FOR A COLLISION BEFORE YOU WRITE ANYTHING, and again before you
   commit.** Subagents and other sessions fan out in parallel, and the same
   surface gets assigned more than once. `git fetch origin main` and confirm the manifest
@@ -215,6 +238,3 @@ support a functioning-integration, `verified`, or certification claim.
   that writes and then re-reads within one thread reports its own writes as
   missing. Start a fresh run to prove a read twin — that is the design, not a
   stale twin, and it is worth saying so before someone "fixes" it.
-- **A 404 on a route that worked ten minutes ago is usually a corrupt `.next`**
-  after the dev server was killed mid-compile, not your code. `rm -rf .next`
-  and restart before you go looking for a bug you did not write.
