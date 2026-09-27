@@ -65,6 +65,29 @@ const loadList = cache(
   },
 );
 
+/**
+ * DID THIS STORE LIST MOVE, OR WAS IT BORN THERE? (lane HANDOVER, 2026-09-27) A moved list keeps its
+ * older row, archived, with `metadata.moved_to` pointing at the copy; a list born in the new system
+ * has no older row. Read as the person (the row is theirs or their organization's); any failure to
+ * read answers "not moved", so the page never claims a move it cannot see.
+ */
+async function listMovedFromOlderStore(listId: string): Promise<boolean> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .schema("workbench")
+      .from("udt_structured_lists")
+      .select("id, metadata")
+      .eq("id", listId)
+      .maybeSingle();
+    if (error || !data) return false;
+    const metadata = (data as { metadata?: unknown }).metadata;
+    return typeof metadata === "object" && metadata !== null && "moved_to" in metadata;
+  } catch {
+    return false;
+  }
+}
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
@@ -135,9 +158,10 @@ export default async function ListDetailPage({ params }: PageProps) {
 
   // lane LISTS-AFTER-SWITCH: a list that lives in the new system opens here as the new table page.
   if (list.lives_in === "record") {
+    const moved = await listMovedFromOlderStore(id);
     return (
       <div className="h-full overflow-hidden">
-        <StoreListPage listId={id} />
+        <StoreListPage listId={id} moved={moved} />
       </div>
     );
   }

@@ -24,7 +24,7 @@
 //     text, inline media for a file — never a JSON dump.
 
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, FlaskConical, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -90,6 +90,28 @@ function isBlank(value: unknown): boolean {
   );
 }
 
+/**
+ * A problem with what the PERSON typed — a required input left blank, or a
+ * value that doesn't parse — as opposed to a transport/server failure.
+ *
+ * 🚨 THE DEFECT THIS EXISTS FOR: `buildTryVariables` used to throw a plain
+ * `Error`, which `run()` caught and handed to `describeMandateRunFailure` —
+ * the SAME path a dead socket takes. `RunFailureCard` then printed "The run
+ * never reached the server… check your connection", which is a LIE for a run
+ * that was never even attempted because a required field was empty. Carrying
+ * the field name here lets the panel name exactly which input is missing and
+ * put focus on it, instead of routing a client-side validation problem
+ * through the network-failure card.
+ */
+export class MandateInputProblem extends Error {
+  readonly fieldName: string;
+  constructor(fieldName: string, message: string) {
+    super(message);
+    this.name = "MandateInputProblem";
+    this.fieldName = fieldName;
+  }
+}
+
 function componentForKind(kind: string): VariableCustomComponent | undefined {
   if (kind === "number" || kind === "integer") return { type: "number" };
   if (kind === "boolean") return { type: "toggle" };
@@ -120,7 +142,10 @@ export function buildTryVariables(
     const value = values[field.name] ?? "";
     if (isBlank(value)) {
       if (field.sourcing !== "optional") {
-        throw new Error(`${fieldLabel(field)} is required.`);
+        throw new MandateInputProblem(
+          field.name,
+          `${fieldLabel(field)} is required.`,
+        );
       }
       continue;
     }
@@ -131,7 +156,8 @@ export function buildTryVariables(
           ? (JSON.parse(value) as JsonValue)
           : (JSON.parse(JSON.stringify(value)) as JsonValue);
     } catch {
-      throw new Error(
+      throw new MandateInputProblem(
+        field.name,
         `${fieldLabel(field)} needs a valid ${structured ? "JSON value" : "value"}.`,
       );
     }
@@ -183,16 +209,40 @@ export function MandateTryPanel({
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<MandateTestResponse | null>(null);
   const [failure, setFailure] = useState<MandateRunFailure | null>(null);
+  /** Which required/invalid input blocked the last attempt, named exactly —
+   * kept SEPARATE from `failure` (a transport/server outcome) because this is
+   * neither: nothing was sent. */
+  const [inputProblem, setInputProblem] = useState<{
+    fieldName: string;
+    message: string;
+  } | null>(null);
+  const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const candidate = tryCandidateFor(mode, draft);
+
+  function focusField(fieldName: string) {
+    const el = fieldRefs.current[fieldName];
+    if (!el) return;
+    el.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    const focusable = el.querySelector<HTMLElement>(
+      "textarea, input, select, [contenteditable='true'], [tabindex]",
+    );
+    (focusable ?? el).focus();
+  }
 
   const run = async () => {
     if (!candidate) return;
     setFailure(null);
+    setInputProblem(null);
     let variables: JsonObject;
     try {
       variables = buildTryVariables(fields, values);
     } catch (error: unknown) {
+      if (error instanceof MandateInputProblem) {
+        setInputProblem({ fieldName: error.fieldName, message: error.message });
+        focusField(error.fieldName);
+        return;
+      }
       setFailure(describeMandateRunFailure(error));
       return;
     }
@@ -213,8 +263,10 @@ export function MandateTryPanel({
     }
   };
 
-  const setValue = (name: string, value: unknown) =>
+  const setValue = (name: string, value: unknown) => {
     setValues((current) => ({ ...current, [name]: value }));
+    setInputProblem((current) => (current?.fieldName === name ? null : current));
+  };
 
   return (
     <div className="space-y-4" data-testid="mandate-try-panel">
@@ -270,8 +322,16 @@ export function MandateTryPanel({
         {fields.map((field) => {
           const label = fieldLabel(field);
           const value = values[field.name] ?? "";
+          const problem =
+            inputProblem?.fieldName === field.name ? inputProblem.message : null;
           return (
-            <div key={field.name} className="space-y-1">
+            <div
+              key={field.name}
+              ref={(el) => {
+                fieldRefs.current[field.name] = el;
+              }}
+              className="space-y-1"
+            >
               <label className="text-xs font-medium text-foreground">
                 {label}
                 {field.sourcing === "optional" ? (
@@ -324,6 +384,11 @@ export function MandateTryPanel({
                   autoFocus={false}
                 />
               )}
+              {problem ? (
+                <p className="text-xs text-destructive" role="alert">
+                  {problem}
+                </p>
+              ) : null}
             </div>
           );
         })}
