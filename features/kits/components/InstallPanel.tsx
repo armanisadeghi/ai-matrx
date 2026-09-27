@@ -22,8 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
+import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
 import { ErrorNotice } from "./ErrorNotice";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
@@ -190,16 +189,13 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
             <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="truncate font-medium">{orgName}</span>
             {!busy && (
-              <Popover>
-                <PopoverTrigger asChild>
+              <OrganizationPickerPopover
+                trigger={
                   <button type="button" className="ml-1 text-xs font-medium text-primary hover:underline">
                     change
                   </button>
-                </PopoverTrigger>
-                <PopoverContent sizing="content" align="start" className="p-0">
-                  <OrganizationPickerPanel />
-                </PopoverContent>
-              </Popover>
+                }
+              />
             )}
           </div>
         ) : null}

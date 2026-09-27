@@ -11,7 +11,8 @@
  *   1. `WorkspaceGate` shows the host's own waiting UI while the wait is real
  *      (`ready`, `resolving`) and ONLY then;
  *   2. once boot settled with no workspace, the same area says the host's one
- *      sentence and draws the canonical workspace picker — never the spinner;
+ *      sentence and offers the canonical workspace picker behind one button
+ *      (opened on demand, never drawn inline) — never the spinner;
  *   3. the census: every mandate-driven chat host that waited on the
  *      workspace with a spinner now waits through the gate.
  */
@@ -68,14 +69,30 @@ describe("WorkspaceGate", () => {
     expect(host.textContent).not.toContain(SENTENCE);
   });
 
-  it("with no workspace chosen, says the host's sentence and draws the picker — never the spinner", () => {
+  it("with no workspace chosen, says the host's sentence and offers the picker — never the spinner", () => {
     STATE = "required";
     const host = render(<WorkspaceGate blocked sentence={SENTENCE}>{SPINNER}</WorkspaceGate>);
     expect(host.querySelector('[data-testid="host-spinner"]')).toBeNull();
     expect(host.textContent).toContain(SENTENCE);
-    expect(host.querySelector('[data-testid="workspace-picker"]')).not.toBeNull();
+    // 🚨 ONE LINE AND A BUTTON (page-pass shared defects, 2026-09-27): the
+    // list is not drawn inline — on an account with a hundred memberships it
+    // was a ~600px block that pushed the page below the fold.
+    expect(host.querySelector('[data-testid="workspace-picker"]')).toBeNull();
+    const button = host.querySelector<HTMLButtonElement>('[data-testid="organization-picker-button"]');
+    expect(button?.textContent).toContain("Choose organization");
     // One sentence: the default "Nothing was loaded because…" paragraph is not appended.
     expect(host.textContent).not.toContain("Nothing was loaded");
+  });
+
+  it("the button opens the canonical picker on demand", () => {
+    STATE = "required";
+    const host = render(<WorkspaceGate blocked sentence={SENTENCE}>{SPINNER}</WorkspaceGate>);
+    const button = host.querySelector<HTMLButtonElement>('[data-testid="organization-picker-button"]');
+    act(() => {
+      button!.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+      button!.click();
+    });
+    expect(document.querySelector('[data-testid="workspace-picker"]')).not.toBeNull();
   });
 
   it("loading is not a missing workspace: an ordinary wait keeps its spinner even while none is chosen", () => {

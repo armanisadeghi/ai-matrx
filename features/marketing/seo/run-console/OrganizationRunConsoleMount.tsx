@@ -19,13 +19,7 @@
 
 import { Building2 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@ai-matrx/design-system";
-import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
+import { OrganizationPickerButton } from "@/features/organizations/components/OrganizationPickerPopover";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { RunConsole } from "./RunConsole";
@@ -48,17 +42,7 @@ function OrganizationRequiredNotice() {
           Automations run against the brands your active organization
           controls — select one to see them.
         </p>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button size="sm" variant="outline" className="mt-3 h-8">
-              <Building2 className="mr-1.5 h-3.5 w-3.5" />
-              Choose organization
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent sizing="content" align="center" className="p-1">
-            <OrganizationPickerPanel />
-          </PopoverContent>
-        </Popover>
+        <OrganizationPickerButton align="center" className="mt-3 h-8" />
       </div>
     </div>
   );

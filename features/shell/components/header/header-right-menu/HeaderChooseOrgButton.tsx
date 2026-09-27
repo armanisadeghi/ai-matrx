@@ -18,18 +18,6 @@
 
 import { useState } from "react";
 import { Building2 } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@ai-matrx/design-system";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
 import {
@@ -37,14 +25,13 @@ import {
   selectOrganizationName,
   selectShouldPromptForOrganization,
 } from "@/lib/redux/slices/appContextSlice";
-import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
+import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
 import { usePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
 
 export default function HeaderChooseOrgButton() {
   const shouldPrompt = useAppSelector(selectShouldPromptForOrganization);
   const organizationId = useAppSelector(selectOrganizationId);
   const organizationName = useAppSelector(selectOrganizationName);
-  const isMobile = useIsMobile();
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
   // An object page (a table, a file) reads its organization FROM THE OBJECT, so nothing on it is
@@ -136,32 +123,15 @@ export default function HeaderChooseOrgButton() {
     </button>
   );
 
-  if (isMobile) {
-    return (
-      <>
-        <span onClick={() => setOpen(true)}>{trigger}</span>
-        <Drawer open={open} onOpenChange={setOpen}>
-          <DrawerContent className="bg-textured pb-safe max-h-[85dvh]">
-            <DrawerHeader className="sr-only">
-              <DrawerTitle>Choose an organization</DrawerTitle>
-            </DrawerHeader>
-            <div className="overflow-y-auto px-2 pb-4">
-              <OrganizationPickerPanel />
-            </div>
-          </DrawerContent>
-        </Drawer>
-      </>
-    );
-  }
-
+  // The ONE picker opener (popover on desktop, sheet on a phone). No
+  // auto-close on select — "Keep it at the top" only enables once an org is
+  // active. Outside-click / Esc closes.
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      {/* No auto-close on select — the user may still toggle "Set as default"
-          (enabled only once an org is active). Outside-click / Esc closes. */}
-      <PopoverContent sizing="content" align="end" sideOffset={8} className="p-1">
-        <OrganizationPickerPanel />
-      </PopoverContent>
-    </Popover>
+    <OrganizationPickerPopover
+      open={open}
+      onOpenChange={setOpen}
+      align="end"
+      trigger={trigger}
+    />
   );
 }

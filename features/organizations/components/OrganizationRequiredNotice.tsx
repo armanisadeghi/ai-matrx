@@ -40,7 +40,7 @@ import {
 } from "@/features/organizations/useOrganizationRequired";
 import { Button } from "@/components/ui/button";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
-import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
+import { OrganizationPickerButton } from "@/features/organizations/components/OrganizationPickerPopover";
 
 // The recogniser's ONE home is `lib/organizations/organizationRequiredError`.
 // It is re-exported here because this component and that predicate are always
@@ -88,9 +88,7 @@ export function organizationNeededFor(what: string): string {
 }
 
 const DEFAULT_DESCRIPTION =
-  "Nothing was loaded because no organization is selected for this session. " +
-  "Every request is filed under one organization, so pick the one you are " +
-  "working in — you can switch any time from the avatar menu.";
+  "Nothing was loaded because no organization is selected for this session.";
 
 export function OrganizationRequiredNotice({
   what,
@@ -103,17 +101,21 @@ export function OrganizationRequiredNotice({
   const headline =
     title ?? (what ? organizationNeededFor(what) : "Choose an organization");
 
-  const picker = (
-    <div className="w-full rounded-md border border-border p-1 text-left">
-      <OrganizationPickerPanel />
+  // 🚨 ONE LINE AND A BUTTON, NEVER THE WHOLE LIST (page-pass shared defects,
+  // 2026-09-27). The picker used to be drawn inline — ~600px on an account
+  // with a hundred memberships — and it pushed the page's real content below
+  // the fold. The list now opens on demand from the button, the same popover /
+  // bottom sheet the header uses (`OrganizationPickerPopover`).
+  const actions = (
+    <div className={compact ? "flex flex-wrap items-center gap-2" : "flex flex-wrap items-center justify-center gap-2"}>
+      <OrganizationPickerButton align={compact ? "start" : "center"} />
+      {onRetry ? (
+        <Button size="sm" variant="ghost" onClick={onRetry}>
+          Try again
+        </Button>
+      ) : null}
     </div>
   );
-
-  const retry = onRetry ? (
-    <Button size="sm" variant="outline" onClick={onRetry}>
-      Try again
-    </Button>
-  ) : null;
 
   if (compact) {
     return (
@@ -122,13 +124,12 @@ export function OrganizationRequiredNotice({
         role="status"
         data-testid="organization-required-notice"
       >
-        <div className="space-y-2 p-3">
-          <div>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 p-3">
+          <div className="min-w-0">
             <h3 className="text-sm font-semibold text-foreground">{headline}</h3>
-            {description ? <p className="mt-1 text-xs text-muted-foreground">{description}</p> : null}
+            {description ? <p className="mt-0.5 text-xs text-muted-foreground">{description}</p> : null}
           </div>
-          {picker}
-          {retry}
+          {actions}
         </div>
       </div>
     );
@@ -140,15 +141,14 @@ export function OrganizationRequiredNotice({
       role="status"
       data-testid="organization-required-notice"
     >
-      <div className="mx-auto flex max-w-md flex-col items-center gap-3 p-6 text-center">
+      <div className="mx-auto flex max-w-md flex-col items-center gap-2 p-6 text-center">
         <Building2
-          className="h-6 w-6 text-amber-600 dark:text-amber-400"
+          className="h-5 w-5 text-muted-foreground"
           aria-hidden="true"
         />
         <h3 className="text-sm font-semibold text-foreground">{headline}</h3>
         {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
-        {picker}
-        {retry}
+        <div className="pt-1">{actions}</div>
       </div>
     </div>
   );

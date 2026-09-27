@@ -19,11 +19,11 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Building2, Layers } from "lucide-react";
-import { Button, Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system";
 import type { RecordsDataSource } from "@ai-matrx/records";
 import { WhereItLives } from "@ai-matrx/records-ui";
 
-import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
+import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
 import * as doors from "./doors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -64,16 +64,15 @@ export function OrganizationScopeStrip({
           <span className="text-muted-foreground">
             Showing what is in <span className="font-medium text-foreground">{name}</span>
           </span>
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
+          <OrganizationPickerPopover
+            open={open}
+            onOpenChange={setOpen}
+            trigger={
               <Button size="sm" variant="ghost" className="h-6 px-2 text-xs">
                 Change
               </Button>
-            </PopoverTrigger>
-            <PopoverContent /* sizing: fixed — the organization picker searches as you type; a content-sized box would reflow on every keystroke */ align="start" className="w-72 p-2">
-              <OrganizationPickerPanel />
-            </PopoverContent>
-          </Popover>
+            }
+          />
           <span className="text-muted-foreground" aria-hidden>
             &middot;
           </span>

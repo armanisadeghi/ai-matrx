@@ -14,8 +14,8 @@
 // the workspace, or while the organization is ready or still resolving, the children (the spinner or skeleton) render unchanged —
 // that wait is real. When boot settled with no workspace (or the read failed,
 // or the person is signed out), the SAME area shows the one honest notice:
-// the host's own sentence plus the canonical inline workspace picker
-// (`OrganizationContextNotice` → `OrganizationPickerPanel`). Picking one
+// the host's own sentence plus the canonical workspace picker behind one
+// button (`OrganizationContextNotice` → `OrganizationPickerPopover`). Picking one
 // selects it; the mandate cache drops on the switch, the host re-resolves and
 // loads. Nothing is ever chosen for the person.
 //

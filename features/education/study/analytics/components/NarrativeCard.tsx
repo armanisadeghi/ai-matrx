@@ -15,7 +15,6 @@
 //
 // React Compiler is on: no manual memo.
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@ai-matrx/design-system";
 import { ChevronRight, Loader2, RefreshCw } from "lucide-react";
@@ -28,7 +27,7 @@ import type { PlanBlockKind } from "../../planner/types";
 import type { NarrativeReport } from "../narrative";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { OrganizationPickerButton } from "@/features/organizations/components/OrganizationPickerPopover";
 import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 
 const STUDY_ANALYTICS_NARRATIVE_KIND = "study_analytics_narrative" as const;
@@ -139,9 +138,6 @@ export function NarrativeCard({
   // little" (there IS data) or "choose one" (we don't know yet).
   const checkingOrganization =
     !report && !loading && organizationState === "resolving";
-  // The picker is a whole list — it stays folded behind one button so the
-  // numbers below keep the first screen.
-  const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
     <section className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-transparent p-4">
@@ -172,22 +168,14 @@ export function NarrativeCard({
       </div>
 
       {needsOrganization ? (
-        pickerOpen ? (
-          <OrganizationRequiredNotice
-            compact
-            what="Your insights"
-            description="Insights are written by an agent, and every agent run is filed under one organization. Pick the one you are working in and they will appear here."
-          />
-        ) : (
-          <div className="flex flex-wrap items-center justify-between gap-2 py-1">
-            <p className="text-sm text-muted-foreground">
-              Choose an organization and your insights will be written here.
-            </p>
-            <Button size="sm" variant="outline" onClick={() => setPickerOpen(true)}>
-              Choose organization
-            </Button>
-          </div>
-        )
+        // The picker is a whole list: it opens from the shared button (popover
+        // on desktop, sheet on a phone) so the numbers below keep the first screen.
+        <div className="flex flex-wrap items-center justify-between gap-2 py-1">
+          <p className="text-sm text-muted-foreground">
+            Choose an organization and your insights will be written here.
+          </p>
+          <OrganizationPickerButton align="end" />
+        </div>
       ) : checkingOrganization ? (
         <div className="flex flex-col gap-2 py-1" aria-label="Checking your organization">
           <Skeleton className="h-4 w-3/4 rounded" />

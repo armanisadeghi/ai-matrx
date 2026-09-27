@@ -21,12 +21,7 @@ import Link from "next/link";
 import { Building2, LifeBuoy, RotateCcw, ShieldAlert, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@ai-matrx/design-system";
-import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
+import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
 import { useOpenFeedbackWindow } from "@/features/overlays/openers/feedbackDialog";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { RecordUnavailableError } from "@/lib/records/recordUnavailable";
@@ -96,17 +91,16 @@ export function RecordUnavailableNotice({
                 <Link href={marketingRoutes.brands()}>All brands</Link>
               </Button>
               {deleted ? null : (
-                <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-                  <PopoverTrigger asChild>
+                <OrganizationPickerPopover
+                  open={pickerOpen}
+                  onOpenChange={setPickerOpen}
+                  trigger={
                     <Button size="sm" variant="outline" className="h-7">
                       <Building2 className="mr-1.5 h-3.5 w-3.5" />
                       Switch organization
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent sizing="content" align="start" className="p-1">
-                    <OrganizationPickerPanel />
-                  </PopoverContent>
-                </Popover>
+                  }
+                />
               )}
               <Button
                 size="sm"

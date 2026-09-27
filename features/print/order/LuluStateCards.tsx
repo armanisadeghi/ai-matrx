@@ -12,7 +12,7 @@
 import { Building2, KeyRound, RefreshCcw, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
-import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
+import { OrganizationPickerButton } from "@/features/organizations/components/OrganizationPickerPopover";
 
 interface AwaitingCredentialsProps {
   detail: string;
@@ -119,13 +119,11 @@ export function NeedsOrganizationCard() {
               Choose an organization to see live pricing
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Pricing is calculated per organization. Pick one below and the
+              Pricing is calculated per organization. Pick one and the
               calculator picks up automatically.
             </p>
           </div>
-          <div className="rounded-md border border-border bg-card">
-            <OrganizationPickerPanel />
-          </div>
+          <OrganizationPickerButton />
         </div>
       </div>
     </div>
