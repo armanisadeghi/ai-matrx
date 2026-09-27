@@ -14,5 +14,8 @@ export const educationQuizzesManifest: SurfaceManifest = buildAssessmentListMani
   noun: "quiz",
   plural: "quizzes",
   targetPlural: "quizzes",
+  defaultCount: 8,
+  countMax: 30,
+  timed: false,
   urlPattern: "/education/quizzes",
 });

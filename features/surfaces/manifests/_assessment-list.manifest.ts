@@ -36,6 +36,9 @@ export interface AssessmentListWords {
   plural: string; // "quizzes" (prose)
   targetPlural: string; // "quizzes" | "practice_tests"
   urlPattern: string;
+  defaultCount: number;
+  countMax: number;
+  timed: boolean;
 }
 
 export function buildAssessmentListManifest(w: AssessmentListWords): SurfaceManifest {
@@ -75,7 +78,7 @@ export function buildAssessmentListManifest(w: AssessmentListWords): SurfaceMani
     {
       name: "assessment_list",
       label: `${w.label} list`,
-      description: `The page of ${w.plural} on screen as one XML bundle: <assessments lane matching sort search archive> with one <assessment id title topic questions depth exam status visibility updated archived/> per row (first 25). The ids are the ones update_${w.targetPlural} / delete_${w.targetPlural} take for the person's own ${w.plural}. Absent until the list has loaded.`,
+      description: `The page of ${w.plural} on screen as one XML bundle: <assessments lane matching sort search archive> with one <assessment id title topic questions my_attempts my_best depth exam status visibility updated archived/> per row (first 25). The ids are the ones update_${w.targetPlural} / delete_${w.targetPlural} take for the person's own ${w.plural}. Absent until the list has loaded.`,
       valueType: "string",
       alwaysAvailable: false,
       typicalCharCount: 2500,
@@ -96,7 +99,7 @@ export function buildAssessmentListManifest(w: AssessmentListWords): SurfaceMani
     {
       name: "visible_assessments",
       label: `${w.label} on screen`,
-      description: `The rows on the current page in render order as { id, title, topic, question_count, depth, exam_type, status, visibility, updated_at, archived }. Empty array when nothing matches. Absent until the list loads. \`assessment_list\` is the same page condensed.`,
+      description: `The rows on the current page in render order as { id, title, topic, question_count, my_attempts, my_best_score (0-1 or null), depth, exam_type, status, visibility, updated_at, archived }. Empty array when nothing matches. Absent until the list loads. \`assessment_list\` is the same page condensed.`,
       valueType: "array",
       alwaysAvailable: false,
       typicalCharCount: 3000,
@@ -158,7 +161,7 @@ export function buildAssessmentListManifest(w: AssessmentListWords): SurfaceMani
     {
       name: "list_sort",
       label: "Sort",
-      description: 'How the list is sorted, as "<column> <asc|desc>" — e.g. "updated desc". Columns: title, topic, questions, depth, exam_type, status, visibility, updated, created. Always present.',
+      description: 'How the list is sorted, as "<column> <asc|desc>" — e.g. "updated desc". Columns: title, topic, questions, attempts, best_score, depth, exam_type, status, visibility, updated, created. Always present.',
       valueType: "string",
       alwaysAvailable: true,
       typicalCharCount: 14,
@@ -194,13 +197,24 @@ export function buildAssessmentListManifest(w: AssessmentListWords): SurfaceMani
     {
       name: `create_${w.targetPlural}`,
       label: `Create ${w.plural}`,
-      description: `Creates one or more EMPTY ${w.plural} (no questions yet), saved immediately as drafts in the person's active organization (they may be asked to pick one). Value is a JSON ARRAY (not a string) of 1-25 objects, each { ${FIELDS} }, e.g. [{ "title": "Cell Biology Checkpoint", "topic": "Cell biology", "depth": "applied" }]. Questions are added on the ${w.noun}'s Edit questions page, or the person generates a full ${w.noun} with New ${w.noun} (metered AI generation — never started from here). A missing title, an unknown key, a bad depth, a title repeated in the list or one the person's live ${w.plural} already use refuses the whole write with every reason, and nothing is created.`,
+      description: `Creates one or more EMPTY ${w.plural} (no questions yet), saved immediately as drafts in the person's active organization (they may be asked to pick one). Value is a JSON ARRAY (not a string) of 1-25 objects, each { ${FIELDS} }, e.g. [{ "title": "Cell Biology Checkpoint", "topic": "Cell biology", "depth": "applied" }]. Questions are added on the ${w.noun}'s Edit questions page, or the person generates a full ${w.noun} with New ${w.noun} (or generate_${w.targetPlural}, which is metered). A missing title, an unknown key, a bad depth, a title repeated in the list or one the person's live ${w.plural} already use refuses the whole write with every reason, and nothing is created.`,
       valueType: "array",
       updatesValue: "my_assessments",
       mode: "entity",
       applyPolicy: "ask",
       group: "changes",
       sortOrder: 110,
+    },
+    {
+      name: `generate_${w.targetPlural}`,
+      label: `Generate a ${w.noun} with AI — uses one ${w.noun} generation from the plan`,
+      description: `COSTS the person one ${w.noun} generation from their plan (the same metered allowance the New ${w.noun} form shows; the plan is checked before the approval card and a spent-out plan is refused with nothing started). Runs the page's own generator: writes graded questions from a topic, or from one of the person's flashcard decks or Knowledge documents (those two are cited), and saves a ready ${w.noun}. ONE ${w.noun} per call — value is a JSON OBJECT: { source: "topic" | "deck" | "document", topic?: string (required for topic), deck?: deck id or exact name, document?: document id or exact name, question_count?: 1-${w.countMax} (default ${w.defaultCount}), difficulty?: "Easy" | "Medium" | "Hard" (default Medium), depth?: "recall" | "applied" | "exam" (default applied), question_types?: subset of multiple_choice, true_false, fill_blank, short_answer, written_response (empty = automatic mix), exam_type?: string, instructions?: string${w.timed ? ", time_limit_minutes?: 0-600 (default 20; 0 = untimed)" : ""} }. Generation takes up to a few minutes and streams in a live window. Use create_${w.targetPlural} instead for an empty draft the person fills by hand (free).`,
+      valueType: "object",
+      updatesValue: "my_assessments",
+      mode: "entity",
+      applyPolicy: "ask",
+      group: "changes",
+      sortOrder: 105,
     },
     {
       name: `update_${w.targetPlural}`,
@@ -230,7 +244,7 @@ export function buildAssessmentListManifest(w: AssessmentListWords): SurfaceMani
     surfaceName: w.surfaceName,
     client: "matrx-user",
     executionMode: "python-stream",
-    description: `${w.label} — the person's ${w.plural} on the canonical list (lanes, search, sort and filter on every column, archive); agents can create, change and archive the person's own ${w.plural}.`,
+    description: `${w.label} — the person's ${w.plural} on the canonical list (lanes, search, sort and filter on every column, archive); agents can generate (metered), create, change and archive the person's own ${w.plural}.`,
     readiness: "partial",
     readinessNote: `page-pass 2026-09-27: the list moved onto EntityListPage over education.assessment_list_scoped with its own surface, the assessment_list bundle and create/update/delete_${w.targetPlural}. Live agent proof is recorded in the page-pass report.`,
     label: w.label,
@@ -238,7 +252,7 @@ export function buildAssessmentListManifest(w: AssessmentListWords): SurfaceMani
     intro: `<surface_intro>
 You are on ${w.label} at ${w.urlPattern} — the person's LIST of ${w.plural}, not a ${w.noun} being taken. Lanes (Mine, My Orgs, Shared, Public), a search box, sort and filter on every column and an archive filter decide what is on screen; each row opens the ${w.noun}, Take starts it.
 Read assessment_list first: it is the page on screen, with ids. While assessments_loaded is false the list is loading (or load_error explains a real failure) — never say the person has none. If a lane, search, filter or the archive filter narrows the list (visibility_filter, search_query, list_filters, archive_filter), say so rather than concluding a ${w.noun} does not exist.
-To change ${w.plural} use ONLY create_${w.targetPlural} (empty drafts), update_${w.targetPlural} (title, topic, description, exam, depth, archive/restore) and delete_${w.targetPlural} (archive), on ${w.plural} the person made. Questions are edited on each ${w.noun}'s own page; generating a full ${w.noun} with AI is the person's New ${w.noun} button.
+To make a full ${w.noun} with AI questions use generate_${w.targetPlural} — it spends one generation from the person's plan, so say so before calling it. To change ${w.plural} use ONLY create_${w.targetPlural} (empty drafts), update_${w.targetPlural} (title, topic, description, exam, depth, archive/restore) and delete_${w.targetPlural} (archive), on ${w.plural} the person made. Questions are edited on each ${w.noun}'s own page.
 </surface_intro>`,
     groups,
     values: mergeBaselineValues(pickBaseline("selection", "context"), values),
@@ -263,6 +277,8 @@ export interface AssessmentListSummaryRow {
   title: string;
   topic: string | null;
   question_count: number;
+  my_attempts: number;
+  my_best_score: number | null;
   depth: string | null;
   exam_type: string | null;
   status: string;

@@ -21,6 +21,7 @@ import ShellIcon from "../ShellIcon";
 import MobileRouteMenuSlot from "./MobileRouteMenuSlot";
 import MobileSheetNavLink from "./MobileSheetNavLink";
 import AdminMobileMenuItem from "../sidebar/admin-menu/AdminMobileMenuItem";
+import MobileDrawerUserRow from "../user-block/MobileDrawerUserRow";
 import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
 import {
   findActiveNavChild,
@@ -283,6 +284,13 @@ export default function MobileNavigationDrawer({
         />
       )}
       <AdminMobileMenuItem />
+
+      {/* The person, at the end of the navigation — mobile's bottom-left and
+          the phone's only door to the account menu (Submit Feedback,
+          Preferences, Sign out…). A 2026-09-20 merge dropped it silently;
+          guard: MobileNavigationDrawer.account-row.test.ts. */}
+      <div className="shell-mobile-section-divider" />
+      <MobileDrawerUserRow />
     </div>
   );
 

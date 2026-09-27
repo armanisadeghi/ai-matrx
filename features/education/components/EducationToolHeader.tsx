@@ -4,14 +4,20 @@
 //
 // The shared shell-header identity for every Education TOOL home route
 // (/education/flashcards, /education/tutor, /education/memory, ...). Injects
-// back-to-hub + the tool title into the shell header center via RouteHeader,
-// replacing the education section-nav fallback the layout mounts. Tool homes
+// back-to-hub + the tool title into the shell header's left slot via
+// RouteHeader, and keeps the Education section nav (center) and the page's
+// intelligence mark (right) that `EducationHeader` shows on every other
+// education route — a tool home used to drop both, so the section nav vanished
+// on the list and came back on its detail and New pages. Tool homes
 // must never render an in-body title bar or title/description prose block —
 // this component IS the page identity (core-route-headers doctrine).
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import HeaderActions from "@/features/shell/components/header/variants/shared/HeaderActions";
+import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { EDUCATION_NAV_ITEMS } from "./EducationHeader";
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";
 
 export function EducationToolHeader({
@@ -48,8 +54,10 @@ export function EducationToolHeader({
           </span>
         </div>
       }
+      center={<RouteModeNav items={EDUCATION_NAV_ITEMS} />}
       right={
         <>
+          <IntelligenceIndicator feature="education" scope="route" label="This page" />
           {right}
           {actions?.length ? (
             <HeaderActions actions={actions} sheetTitle={sheetTitle ?? title} />

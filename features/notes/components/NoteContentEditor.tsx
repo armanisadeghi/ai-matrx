@@ -124,6 +124,12 @@ interface NoteContentEditorProps {
    */
   embedded?: boolean;
   /**
+   * The host shows this note as an active tab whose chip carries the mic and
+   * the "…" menu (the Notes page). The editor then draws neither itself —
+   * two of each on one screen was the defect.
+   */
+  tabCarriesActions?: boolean;
+  /**
    * Show the note read-only even when the person may edit it — a host's read
    * mode (the Knowledge hub's peek opens a note to read, with an Edit switch).
    * Never grants editing: a viewer-level sharee stays read-only either way.
@@ -135,6 +141,7 @@ export function NoteContentEditor({
   noteId,
   actionsSurfaceId,
   embedded = false,
+  tabCarriesActions = false,
   forceReadOnly = false,
 }: NoteContentEditorProps) {
   const dispatch = useAppDispatch();
@@ -877,7 +884,11 @@ export function NoteContentEditor({
               textareaRef={textareaRef}
               surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
               getApplicationScope={getApplicationScope}
-              showVoiceButton={editorMode !== "preview" && !readOnly}
+              // On the Notes page the active tab carries the one mic and the
+              // one "…" menu; the editor's own floating copies duplicated them
+              // (page-pass 2026-09-27). Embedded hosts have no tab strip.
+              showVoiceButton={!tabCarriesActions && editorMode !== "preview" && !readOnly}
+              previewActionsVariant={tabCarriesActions ? "none" : undefined}
               placeholder="Start typing..."
               className="flex-1 min-h-0"
               resetKey={`${noteId}:${resetGen}`}

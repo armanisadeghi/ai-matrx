@@ -230,6 +230,10 @@ export const defaultUserPreferences: UserPreferences = {
   scratchpad: {
     activeId: null,
   },
+  // Notes open rendered (Rich) unless the person chose another view.
+  notes: {
+    defaultEditorMode: "wysiwyg",
+  },
   siteWorkbench: {
     bookmarks: [],
   },

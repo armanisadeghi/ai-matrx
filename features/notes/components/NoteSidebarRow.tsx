@@ -133,7 +133,14 @@ export function NoteSidebarRow({
               {isOpenTab && !isActive && (
                 <span className="h-1 w-1 rounded-full bg-foreground/40" />
               )}
-              <span className="text-[0.625rem] opacity-40 tabular-nums">
+              <span
+                className="text-xs text-muted-foreground tabular-nums"
+                title={
+                  note.updated_at
+                    ? `Edited ${new Date(note.updated_at).toLocaleString()}`
+                    : undefined
+                }
+              >
                 {formatTime(note.updated_at)}
               </span>
             </>

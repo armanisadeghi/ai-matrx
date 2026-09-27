@@ -381,6 +381,17 @@ export interface AgentContextPreferences {
  * at all times and is auto-attached (read-only) to every conversation's agent
  * context — unless empty. Null = none yet; the first open/type creates one.
  */
+/**
+ * Notes. `defaultEditorMode` is the view a note opens in when the person has
+ * not chosen one for that note — Rich (rendered, WYSIWYG) by default, like
+ * Notion / Apple Notes / Bear; raw markdown is never what a non-technical
+ * person meets first. Picking a view in the Notes header saves it here.
+ * Values are the notes EditorMode union.
+ */
+export interface NotesPreferences {
+  defaultEditorMode: "wysiwyg" | "split" | "plain" | "markdown-split" | "preview";
+}
+
 export interface ScratchpadPreferences {
   activeId: string | null;
 }
@@ -744,6 +755,7 @@ export interface UserPreferences {
   mediaDevices: MediaDevicePreferences;
   organization: OrganizationPreferences;
   scratchpad: ScratchpadPreferences;
+  notes: NotesPreferences;
   siteWorkbench: SiteWorkbenchPreferences;
   listViews: ListViewsPreferences;
   lists: ListsPreferences;
@@ -1249,6 +1261,9 @@ export const initializeUserPreferencesState = (
       // null = no scratchpad yet; the first open/type creates + activates one.
       activeId: null,
     },
+    notes: {
+      defaultEditorMode: "wysiwyg",
+    },
     siteWorkbench: {
       bookmarks: [],
     },
@@ -1336,6 +1351,10 @@ export const initializeUserPreferencesState = (
     scratchpad: {
       ...defaultPreferences.scratchpad,
       ...preferences.scratchpad,
+    },
+    notes: {
+      ...defaultPreferences.notes,
+      ...preferences.notes,
     },
     siteWorkbench: {
       ...defaultPreferences.siteWorkbench,
@@ -1480,6 +1499,9 @@ const preferenceEditReducers = {
       };
       state.scratchpad = {
         ...state._meta.loadedPreferences.scratchpad,
+      };
+      state.notes = {
+        ...state._meta.loadedPreferences.notes,
       };
       state.siteWorkbench = {
         ...state._meta.loadedPreferences.siteWorkbench,
@@ -1693,6 +1715,11 @@ const userPreferencesSlice = createSlice({
           ...state.scratchpad,
           ...loaded.scratchpad,
         };
+      if (loaded.notes)
+        state.notes = {
+          ...state.notes,
+          ...loaded.notes,
+        };
       if (loaded.siteWorkbench)
         state.siteWorkbench = {
           ...state.siteWorkbench,
@@ -1834,6 +1861,7 @@ const PREFERENCE_MODULE_KEYS: readonly (keyof UserPreferences)[] = [
   "mediaDevices",
   "organization",
   "scratchpad",
+  "notes",
   "siteWorkbench",
   "listViews",
   // THE ARCHIVED-ITEMS LAW's knob. A module missing from this list is written

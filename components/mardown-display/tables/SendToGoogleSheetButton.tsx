@@ -28,22 +28,24 @@ interface SendToGoogleSheetButtonProps {
   className?: string;
 }
 
-export function SendToGoogleSheetButton({
+/** The Google Sheet push as a hook, shared by the button and `TableSaveToMenu`. */
+export function useSendToGoogleSheet({
   headers,
   rows,
   name,
-  className,
-}: SendToGoogleSheetButtonProps) {
+}: {
+  headers: string[];
+  rows: string[][];
+  name?: string;
+}) {
   const [pushing, setPushing] = useState(false);
-
-  if (!headers.length) return null;
 
   const sheetName =
     name?.trim() ||
     (headers[0] ? `Table: ${headers[0]}`.slice(0, 60) : "Table");
 
-  const handleClick = async () => {
-    if (pushing) return;
+  const send = async () => {
+    if (pushing || !headers.length) return;
     setPushing(true);
     try {
       const { sendRowsToGoogleSheet } = await import(
@@ -105,15 +107,27 @@ export function SendToGoogleSheetButton({
     }
   };
 
+  return { available: headers.length > 0, pushing, send };
+}
+
+export function SendToGoogleSheetButton({
+  headers,
+  rows,
+  name,
+  className,
+}: SendToGoogleSheetButtonProps) {
+  const sheet = useSendToGoogleSheet({ headers, rows, ...(name !== undefined ? { name } : {}) });
+  if (!sheet.available) return null;
+
   return (
     <Button
       variant="outline"
       size="sm"
-      onClick={handleClick}
-      disabled={pushing}
+      onClick={() => void sheet.send()}
+      disabled={sheet.pushing}
       className={className ?? "flex items-center gap-2"}
     >
-      {pushing ? (
+      {sheet.pushing ? (
         <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
         <Sheet className="h-4 w-4" />

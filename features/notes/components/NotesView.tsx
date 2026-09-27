@@ -16,14 +16,14 @@ import React, {
 } from "react";
 import dynamic from "next/dynamic";
 import { initialTabsFromUrl } from "@/features/notes/initialTabsFromUrl";
+import { FileText, X, ChevronDown, Check } from "lucide-react";
 import {
-  FileText,
-  SplitSquareHorizontal,
-  PilcrowRight,
-  Columns,
-  Eye,
-  X,
-} from "lucide-react";
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { NOTE_VIEW_MODES } from "./NoteViewControls";
 import {
   usePanelRef,
   type Layout,
@@ -115,6 +115,8 @@ import { NoteSidebar } from "./NoteSidebar";
 import { FolderQuickPick } from "./FolderQuickPick";
 import { cn } from "@/lib/utils";
 import { useRecordTitle } from "@/lib/record-title/record-title";
+import { useSetting } from "@/features/settings/hooks/useSetting";
+import type { EditorMode } from "./NoteEditorCore";
 import {
   NAV_ITEM_SELECTED,
   NAV_ITEM_UNSELECTED,
@@ -425,11 +427,18 @@ export function NotesView({
     preferredDefaultMode,
   );
 
+  // Picking a view is the person's choice for every note that has none of
+  // its own — saved to their preferences (notes.defaultEditorMode).
+  const [, saveDefaultEditorMode] = useSetting<EditorMode>(
+    "userPreferences.notes.defaultEditorMode",
+  );
   const setMode = useCallback(
     (mode: string) => {
-      if (activeTabId) dispatch(setNoteEditorMode({ id: activeTabId, mode: normalizeNoteEditorMode(mode, preferredDefaultMode) }));
+      const next = normalizeNoteEditorMode(mode, preferredDefaultMode);
+      if (activeTabId) dispatch(setNoteEditorMode({ id: activeTabId, mode: next }));
+      if (syncUrl) saveDefaultEditorMode(next);
     },
-    [dispatch, activeTabId, preferredDefaultMode],
+    [dispatch, activeTabId, preferredDefaultMode, syncUrl, saveDefaultEditorMode],
   );
 
   const outlineOpen = useAppSelector(selectInstanceOutlineOpen(instanceId));
@@ -595,7 +604,7 @@ export function NotesView({
 
   const modeBtnClass = (mode: string) =>
     cn(
-      "flex items-center gap-1 px-2.5 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer",
+      "flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium rounded-full transition-colors cursor-pointer",
       "[&_svg]:w-3.5 [&_svg]:h-3.5",
       editorMode === mode
         ? NAV_ITEM_SELECTED
@@ -629,7 +638,7 @@ export function NotesView({
             /* ── Split view: two editors side-by-side ─────────── */
             <div className="flex-1 flex min-h-0">
               <div className="flex-1 flex flex-col min-w-0 min-h-0">
-                <NoteContentEditor noteId={activeTabId} />
+                <NoteContentEditor noteId={activeTabId} tabCarriesActions={showTabs && !singleNote} />
               </div>
               <div className="w-px bg-border shrink-0" />
               <div className="flex-1 flex flex-col min-w-0 min-h-0">
@@ -649,7 +658,7 @@ export function NotesView({
               </div>
             </div>
           ) : (
-            <NoteContentEditor noteId={activeTabId} />
+            <NoteContentEditor noteId={activeTabId} tabCarriesActions={showTabs && !singleNote} />
           )
         ) : (
           <FolderQuickPick instanceId={instanceId} className="scroll-page-end-space" />
@@ -685,45 +694,57 @@ export function NotesView({
       <div className="flex min-w-0 flex-1 items-center justify-center">
         {activeTabId && (
           <div className="matrx-glass-thin-border flex items-center gap-0.5 rounded-full p-0.5">
-            <button
-              type="button"
-              className={modeBtnClass("plain")}
-              onClick={() => setMode("plain")}
-            >
-              <FileText /> Edit
-            </button>
-            {canShowWideModes && (
-              <>
+            {/* Write and Read are the everyday views; the Markdown source
+                views sit behind one "Markdown" menu. Labels come from the one
+                NOTE_VIEW_MODES list. */}
+            {NOTE_VIEW_MODES.filter((m) => !m.markdown).map(({ mode, label, hint, icon: Icon }) => (
+              <button
+                key={mode}
+                type="button"
+                title={hint}
+                className={modeBtnClass(mode)}
+                onClick={() => setMode(mode)}
+              >
+                <Icon /> {label}
+              </button>
+            ))}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className={modeBtnClass("split")}
-                  onClick={() => setMode("split")}
+                  title="Edit the Markdown source"
+                  className={cn(
+                    modeBtnClass(
+                      NOTE_VIEW_MODES.find((m) => m.mode === editorMode)?.markdown
+                        ? editorMode
+                        : "__none__",
+                    ),
+                  )}
                 >
-                  <SplitSquareHorizontal /> Split
+                  <FileText />
+                  {NOTE_VIEW_MODES.find((m) => m.mode === editorMode && m.markdown)?.label ?? "Markdown"}
+                  <ChevronDown className="opacity-60" />
                 </button>
-                <button
-                  type="button"
-                  className={modeBtnClass("wysiwyg")}
-                  onClick={() => setMode("wysiwyg")}
-                >
-                  <PilcrowRight /> Rich
-                </button>
-                <button
-                  type="button"
-                  className={modeBtnClass("markdown-split")}
-                  onClick={() => setMode("markdown-split")}
-                >
-                  <Columns /> MD Split
-                </button>
-              </>
-            )}
-            <button
-              type="button"
-              className={modeBtnClass("preview")}
-              onClick={() => setMode("preview")}
-            >
-              <Eye /> Preview
-            </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="min-w-[220px]">
+                {NOTE_VIEW_MODES.filter((m) => m.markdown && (canShowWideModes || !m.wide)).map(
+                  ({ mode, label, hint, icon: Icon }) => (
+                    <DropdownMenuItem
+                      key={mode}
+                      onSelect={() => setMode(mode)}
+                      className="items-start gap-2"
+                    >
+                      <Icon className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span className="flex min-w-0 flex-col">
+                        <span className="text-sm">{label}</span>
+                        <span className="text-xs text-muted-foreground">{hint}</span>
+                      </span>
+                      {editorMode === mode && <Check className="ml-auto mt-0.5 h-3.5 w-3.5 shrink-0" />}
+                    </DropdownMenuItem>
+                  ),
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
       </div>
@@ -856,7 +877,7 @@ export function NotesView({
                 panelRef={sidebarPanelRef}
                 collapsible
                 collapsedSize={0}
-                defaultSize="220px"
+                defaultSize="264px"
                 minSize="180px"
                 maxSize="42%"
                 onResize={trackSidebarCollapse}

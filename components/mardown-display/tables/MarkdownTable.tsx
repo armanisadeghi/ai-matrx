@@ -23,8 +23,6 @@ import {
   FileSpreadsheet,
   FileDown,
   ChevronDown,
-  Database,
-  ArrowUpRight,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -36,8 +34,6 @@ import {
 import { useToastManager } from "@/hooks/useToastManager";
 import { THEMES, type DisplayTheme } from "../themes";
 import SaveTableModal from "./SaveTableModal";
-import { SendToWorkbookButton } from "./SendToWorkbookButton";
-import { SendToGoogleSheetButton } from "./SendToGoogleSheetButton";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { TableEditToolbar } from "./editing/TableEditToolbar";
@@ -49,6 +45,8 @@ import { useSpecimenMode } from "../specimen/SpecimenContext";
 import { MarkdownTableScrollArea } from "./MarkdownTableScrollArea";
 import { ChartThisButton, TableChartPanel } from "../blocks/chart/TableChart";
 import { tableActionRowClass, useTableActionTitles } from "./table-action-row";
+import { TableSaveToMenu } from "./TableSaveToMenu";
+import { phoneStackCellProps, useTableViewer } from "./table-viewer";
 import {
   appendRow,
   appendColumn,
@@ -241,6 +239,9 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
   isStreamActive = false,
 }) => {
   const isMobile = useIsMobile();
+  // A signed-out visitor gets only the actions that work for her (view, chart,
+  // copy, download) — never a write that answers 401 (table-viewer.ts).
+  const { canWrite } = useTableViewer();
   // A DECLARED SPECIMEN CARRIES NO ACTIONS (feedback 729b59bd): no Export, no
   // Send to Workbook / Google Sheet, no Save as data, no Edit on content the
   // product has just told the Expert is deliberately false. RichDocument
@@ -652,34 +653,9 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
     );
   };
 
-  const renderTableActionButton = () => {
-    if (!internalTableData.normalizedData) return null;
-    if (savedTableInfo) {
-      return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleViewSavedTable}
-          className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
-        >
-          <ArrowUpRight className="h-4 w-4" />
-          View Saved Table
-        </Button>
-      );
-    } else {
-      return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowSaveModal(true)}
-          className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
-        >
-          <Database className="h-4 w-4" />
-          Save
-        </Button>
-      );
-    }
-  };
+  // On a phone the table reads as the PHONE-STACK card list (each row a card,
+  // each value labelled) — except while editing, which needs the grid.
+  const phoneStack = isMobile && !isEditingEnabled;
 
   return (
     <div className={cn("relative", className)}>
@@ -703,15 +679,16 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
           className={cn(
             isEditingEnabled ? editingBorderStyle : normalBorderStyle,
             isMobile && "-mx-1",
+            phoneStack && "phone-stack",
           )}
         >
           <table
             className={cn(
               "border-collapse",
-              isMobile ? "min-w-max w-full" : "w-full",
+              isMobile && !phoneStack ? "min-w-max w-full" : "w-full",
             )}
             style={{ fontSize: `${tableFontsize}px` }}
-            onDoubleClick={handleTableDoubleClick}
+            onDoubleClick={canWrite ? handleTableDoubleClick : undefined}
           >
             <thead className={tableTheme.header}>
               <tr onClick={handleHeaderClick}>
@@ -798,10 +775,14 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
                       data-cell="body"
                       data-cell-row={rowIndex}
                       data-cell-col={colIndex}
+                      {...(phoneStack
+                        ? phoneStackCellProps(internalTableData.headers, colIndex)
+                        : {})}
                       className={cn(
                         "p-2",
                         colIndex === 0 && "font-semibold",
                         isMobile &&
+                          !phoneStack &&
                           "whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis",
                       )}
                     >
@@ -882,18 +863,14 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
                 active={showChart}
                 onToggle={() => setShowChart((v) => !v)}
               />
-              {renderTableActionButton()}
-              {internalTableData.normalizedData && (
-                <>
-                  <SendToWorkbookButton
-                    headers={internalTableData.headers}
-                    rows={internalTableData.rows}
-                  />
-                  <SendToGoogleSheetButton
-                    headers={internalTableData.headers}
-                    rows={internalTableData.rows}
-                  />
-                </>
+              {canWrite && internalTableData.normalizedData && (
+                <TableSaveToMenu
+                  headers={internalTableData.headers}
+                  rows={internalTableData.rows}
+                  savedTableName={savedTableInfo?.table_name ?? null}
+                  onSaveAsDataTable={() => setShowSaveModal(true)}
+                  onOpenSavedTable={handleViewSavedTable}
+                />
               )}
               <ExportDropdownMenu
                 tableData={internalTableData}
@@ -930,7 +907,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
                 Cancel
               </Button>
             </>
-          ) : (
+          ) : canWrite ? (
             <Button
               variant="outline"
               size="sm"
@@ -940,7 +917,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
               <Edit className="h-4 w-4" />
               Edit
             </Button>
-          )}
+          ) : null}
         </div>
       )}
       {showSaveModal && internalTableData.normalizedData && (

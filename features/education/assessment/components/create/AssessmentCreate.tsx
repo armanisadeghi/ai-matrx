@@ -37,21 +37,16 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
-import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
-import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { useLibrary } from "@/features/rag/hooks/useLibrary";
-import { useDocumentChunks } from "@/features/rag/hooks/useDocument";
 import type { LibraryDocSummary } from "@/features/rag/types/library";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
-import { attachSourceRefs } from "@/features/education/trust/grounding";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { createEducationAssessmentScope } from "@/features/surfaces/manifests/education-assessment.manifest";
-import { assessmentService } from "../../data/assessmentService";
 import { ASSESSMENT_MANDATES } from "../../data/mandates";
-import { useGenerateQuiz } from "../../data/useGenerateQuiz";
+import { useAssessmentGeneration } from "../../data/useAssessmentGeneration";
 import {
   DEPTHS,
   DIFFICULTIES,
@@ -62,10 +57,8 @@ import {
 } from "../../data/types";
 import type {
   AssessmentKind,
-  AssessmentSourceKind,
   Depth,
   Difficulty,
-  NewAssessmentItemInput,
   QuestionType,
 } from "../../data/types";
 import { KIND_CONFIG, type KindConfig } from "../kindConfig";
@@ -103,7 +96,6 @@ const QUESTION_TYPE_OPTIONS = QUESTION_TYPES.map((value) => ({
   label: QUESTION_TYPE_LABELS[value],
 }));
 
-const CHUNK_FETCH_LIMIT = 800;
 /** Bounds the write handlers enforce (the form's own inputs are unbounded text). */
 const TOPIC_MAX = 500;
 const EXAM_TYPE_MAX = 100;
@@ -114,11 +106,11 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
   const config: KindConfig = KIND_CONFIG[kind];
   const router = useRouter();
   const base = `/education/${config.base}`;
-  const { generate, isGenerating, conversationId } = useGenerateQuiz();
-  const entitlement = useEntitlementGuard(config.capability);
-  // School-safe COPPA gate: an under-13 account with no active guardian link is
-  // blocked from AI generation until a parent approves (never a silent failure).
-  const coppa = useAiComplianceGate();
+  // THE one generation path (COPPA gate → plan check → generator → save →
+  // usage), shared with the list's generate_<plural> agent target.
+  const generation = useAssessmentGeneration(config);
+  const { isGenerating, conversationId } = generation;
+
   const [isNavigating, startNavigation] = useTransition();
 
   // Exam-hub deep links (P6 Phase B CTAs) seed the create surface:
@@ -165,10 +157,6 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
     status: "ready",
     search: undefined,
   });
-  const { data: docChunks } = useDocumentChunks(
-    mode === "document" ? (selectedDoc?.id ?? null) : null,
-    { limit: CHUNK_FETCH_LIMIT },
-  );
 
   const toggleType = (t: QuestionType) =>
     setTypes((prev) => {
@@ -186,156 +174,37 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
-    // School-safe gate FIRST (COPPA): is this account allowed to collect/process
-    // data at all? An unconsented under-13 opens the "a parent must approve"
-    // dialog and never reaches the billing gate or starts a run.
-    if (!(await coppa.ensureAllowed())) return;
-    // Canonical guard: server-truth check BEFORE spending; a cap-hit opens the
-    // respectful contextual paywall (not a toast) and never starts generation.
-    await entitlement.guard(async () => {
-    const safeCount = Math.min(config.countMax, Math.max(1, count || 1));
-    const questionTypes = Array.from(types).join(",");
-    const sharedVars = {
-      count: safeCount,
+    const source =
+      mode === "topic"
+        ? ({ mode: "topic", topic } as const)
+        : mode === "deck" && selectedDeck
+          ? ({ mode: "deck", deck: { id: selectedDeck.id, name: selectedDeck.name } } as const)
+          : mode === "document" && selectedDoc
+            ? ({ mode: "document", document: { id: selectedDoc.id, name: selectedDoc.name } } as const)
+            : null;
+    if (!source) return;
+    const outcome = await generation.run({
+      source,
+      count,
       difficulty,
       depth,
-      question_types: questionTypes,
-      exam_type: examType.trim(),
-      user_request: userRequest.trim(),
-    };
-
-    try {
-      let generated;
-      let sourceKind: AssessmentSourceKind;
-      let sourceId: string | null = null;
-      let sourceTitle: string | null = null;
-      // Backfill hook for openable citations (document/deck modes).
-      let attach: ((q: NewAssessmentItemInput) => NewAssessmentItemInput) | null =
-        null;
-
-      if (mode === "topic") {
-        sourceKind = "topic";
-        generated = await generate(ASSESSMENT_MANDATES.generateQuiz, {
-          topic: topic.trim(),
-          grade_level: "",
-          ...sharedVars,
-        });
-      } else if (mode === "deck" && selectedDeck) {
-        sourceKind = "deck";
-        sourceId = selectedDeck.id;
-        sourceTitle = selectedDeck.name;
-        const setRes = await fcService.getSetWithCards(selectedDeck.id);
-        const cards = setRes.data?.cards ?? [];
-        if (cards.length === 0) {
-          toast.error("That deck has no cards to build from.");
-          return;
-        }
-        const sourceContent = cards
-          .map((c) => `### Card ${c.id}\nQ: ${c.front}\nA: ${c.back}`)
-          .join("\n\n");
-        generated = await generate(ASSESSMENT_MANDATES.generateQuizFromSource, {
-          source_content: sourceContent,
-          source_label: selectedDeck.name,
-          ...sharedVars,
-        });
-      } else if (mode === "document" && selectedDoc) {
-        sourceKind = "source";
-        sourceId = selectedDoc.id;
-        sourceTitle = selectedDoc.name;
-        const chunks = (docChunks ?? [])
-          .slice()
-          .sort((a, b) => a.chunk_index - b.chunk_index);
-        if (chunks.length === 0) {
-          toast.error("That document has no processed passages yet.");
-          return;
-        }
-        const sourceContent = chunks
-          .map((c) => {
-            const pages = c.page_numbers?.length
-              ? ` (page ${c.page_numbers.join(", ")})`
-              : "";
-            return `### Chunk ${c.chunk_id}${pages}\n${c.content_text}`;
-          })
-          .join("\n\n");
-        const pageByChunk = new Map(
-          chunks.map((c) => [
-            c.chunk_id,
-            c.page_numbers?.length ? c.page_numbers[0] : undefined,
-          ]),
-        );
-        attach = (q) => ({
-          ...q,
-          trust: attachSourceRefs(q.trust, {
-            documentId: selectedDoc.id,
-            title: selectedDoc.name,
-            pageForCitation: (cit) =>
-              cit.sourceId ? pageByChunk.get(cit.sourceId) : undefined,
-          }),
-        });
-        generated = await generate(ASSESSMENT_MANDATES.generateQuizFromSource, {
-          source_content: sourceContent,
-          source_label: selectedDoc.name,
-          ...sharedVars,
-        });
-      } else {
-        return;
-      }
-
-      const items = attach ? generated.questions.map(attach) : generated.questions;
-      const timeLimitSeconds =
-        config.timed && timeLimitMin > 0 ? timeLimitMin * 60 : null;
-
-      const created = await assessmentService.createWithItems(
-        {
-          assessmentKind: config.kind,
-          title: generated.title || topic.trim() || sourceTitle || config.label,
-          description: generated.description,
-          status: "ready",
-          sourceKind,
-          sourceId,
-          sourceTitle,
-          topic: mode === "topic" ? topic.trim() : sourceTitle,
-          examType: examType.trim() || null,
-          depth,
-          timeLimitSeconds,
-          config: {
-            count: safeCount,
-            difficulty,
-            depth,
-            questionTypes: Array.from(types),
-            examType: examType.trim() || null,
-            timeLimitSeconds,
-            userRequest: userRequest.trim() || null,
-          },
-          metadata: { question_count: items.length },
-        },
-        items,
-      );
-
-      if (created.error || !created.data) {
-        toast.error(created.error ?? `Could not save the ${config.noun}`);
-        return;
-      }
-      // Metered action SUCCEEDED — record real usage so the meter decrements
-      // (honest even while enforced:false; the capability is quiz_generate or
-      // practice_test_generate per `config.capability`). Failed branches return
-      // first, so a failed generation never burns quota.
-      await entitlement.commit();
-      recordToast.success(
-        {
-          type: "assessment",
-          id: created.data.assessment.id,
-          title: created.data.assessment.title,
-        },
-        `Created "${created.data.assessment.title}" with ${items.length} question${items.length === 1 ? "" : "s"}`,
-      );
-      startNavigation(() =>
-        router.push(`${base}/${created.data!.assessment.id}`),
-      );
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : `Failed to generate the ${config.noun}`);
-    }
+      questionTypes: Array.from(types),
+      examType,
+      userRequest,
+      timeLimitMinutes: timeLimitMin,
     });
+    // A blocked run already showed its own dialog (COPPA / paywall) or toast.
+    if (outcome.status === "failed") {
+      toast.error(outcome.error);
+      return;
+    }
+    if (outcome.status !== "created") return;
+    const { assessment, questionCount } = outcome;
+    recordToast.success(
+      { type: "assessment", id: assessment.id, title: assessment.title },
+      `Created "${assessment.title}" with ${questionCount} question${questionCount === 1 ? "" : "s"}`,
+    );
+    startNavigation(() => router.push(`${base}/${assessment.id}`));
   };
 
   // Live surface scope for the Agents chrome (matrx-user/education-assessment,
@@ -771,8 +640,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
 
             {/* Metering (visible BEFORE the action — TRUST §6), canonical primitive */}
             <EntitlementMeter capability={config.capability} showAllWindows />
-            <entitlement.Paywall />
-            <coppa.Gate />
+            <generation.Gates />
 
             <div className="flex items-center justify-end gap-2 pt-1">
               <Button
@@ -784,7 +652,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
               </Button>
               <Button
                 onClick={() => void handleGenerate()}
-                disabled={!canGenerate || entitlement.isChecking}
+                disabled={!canGenerate || generation.isChecking}
               >
                 <AGENT_ICON className="mr-1.5 h-4 w-4" />
                 Generate

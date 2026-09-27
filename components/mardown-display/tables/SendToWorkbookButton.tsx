@@ -33,26 +33,32 @@ interface SendToWorkbookButtonProps {
   className?: string;
 }
 
-export function SendToWorkbookButton({
+/**
+ * The workbook push as a hook, so a menu item can run it while the success
+ * dialog lives outside the menu (a closed menu would unmount it). The button
+ * below and `TableSaveToMenu` both use it.
+ */
+export function useSendToWorkbook({
   headers,
   rows,
   name,
-  className,
-}: SendToWorkbookButtonProps) {
+}: {
+  headers: string[];
+  rows: string[][];
+  name?: string;
+}) {
   const [pushing, setPushing] = useState(false);
   const [created, setCreated] = useState<{
     route: string;
     title: string;
   } | null>(null);
 
-  if (!headers.length) return null;
-
   const workbookName =
     name?.trim() ||
     (headers[0] ? `Table: ${headers[0]}`.slice(0, 60) : "Table");
 
-  const handleClick = async () => {
-    if (pushing) return;
+  const send = async () => {
+    if (pushing || !headers.length) return;
     setPushing(true);
     try {
       const organizationId = await ensureOrganizationContext();
@@ -84,35 +90,50 @@ export function SendToWorkbookButton({
     }
   };
 
+  const dialog = (
+    <OpenDestinationDialog
+      open={created !== null}
+      onOpenChange={(o) => {
+        if (!o) setCreated(null);
+      }}
+      title={created?.title ?? ""}
+      resourceName={workbookName}
+      route={created?.route ?? "/"}
+    />
+  );
+
+  return { available: headers.length > 0, pushing, send, dialog };
+}
+
+export function SendToWorkbookButton({
+  headers,
+  rows,
+  name,
+  className,
+}: SendToWorkbookButtonProps) {
+  const workbook = useSendToWorkbook({ headers, rows, ...(name !== undefined ? { name } : {}) });
+  if (!workbook.available) return null;
+
   return (
     <>
       <Button
         variant="outline"
         size="sm"
-        onClick={handleClick}
-        disabled={pushing}
+        onClick={() => void workbook.send()}
+        disabled={workbook.pushing}
         className={
           className ??
           "flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
         }
       >
-        {pushing ? (
+        {workbook.pushing ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
           <FileSpreadsheet className="h-4 w-4" />
         )}
         Workbook
       </Button>
-
-      <OpenDestinationDialog
-        open={created !== null}
-        onOpenChange={(o) => {
-          if (!o) setCreated(null);
-        }}
-        title={created?.title ?? ""}
-        resourceName={workbookName}
-        route={created?.route ?? "/"}
-      />
+      {workbook.dialog}
     </>
   );
 }

@@ -95,14 +95,10 @@ export function NoteStatsFooter({
       <PlainTextMetricsBar
         text={content}
         compact
-        metrics={[
-          "charCount",
-          "whitespaceCharCount",
-          "wordCount",
-          "lineCount",
-          "paragraphCount",
-        ]}
-        className="min-w-0 flex-1 border-t-0 bg-transparent px-0 py-0 text-xs shadow-none"
+        // What a writer counts: words and characters, in the page's own font
+        // (whitespace / line / paragraph counters were developer readouts).
+        metrics={["wordCount", "charCount"]}
+        className="min-w-0 flex-1 border-t-0 bg-transparent px-0 py-0 font-sans text-xs shadow-none"
       />
     </div>
   );

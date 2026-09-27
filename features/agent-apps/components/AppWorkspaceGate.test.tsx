@@ -36,12 +36,22 @@ jest.mock("@/features/organizations/components/WorkspaceGate", () => ({
   WorkspaceGate: ({
     blocked,
     sentence,
+    description,
     children,
   }: {
     blocked: boolean;
     sentence: string;
+    description?: string;
     children: React.ReactNode;
-  }) => (blocked ? <div data-testid="gate">{sentence}</div> : <>{children}</>),
+  }) =>
+    blocked ? (
+      <div data-testid="gate">
+        {sentence}
+        <p data-testid="gate-description">{description}</p>
+      </div>
+    ) : (
+      <>{children}</>
+    ),
 }));
 
 import { useAppHolder } from "../lib/appHolder";
@@ -51,6 +61,7 @@ import type { PublicAgentApp } from "../types";
 const app = {
   id: "app-1",
   name: "Fact Checker",
+  tagline: "Deconstruct claims and uncover the objective truth.",
   agent_id: "agent-1",
   mandate_id: "mandate-1",
   mandate_key: "app.precision_fact_checker",
@@ -89,8 +100,11 @@ it("AppWorkspaceGate shows the workspace picker instead of the app", () => {
       </AppWorkspaceGate>,
     ),
   );
-  expect(container.querySelector('[data-testid="gate"]')?.textContent).toBe(
-    "Fact Checker needs a workspace to run.",
+  expect(container.querySelector('[data-testid="gate"]')?.firstChild?.textContent).toBe(
+    "Choose an organization to run Fact Checker.",
+  );
+  expect(container.querySelector('[data-testid="gate-description"]')?.textContent).toBe(
+    "Deconstruct claims and uncover the objective truth.",
   );
   expect(container.querySelector('[data-testid="app-body"]')).toBeNull();
 });

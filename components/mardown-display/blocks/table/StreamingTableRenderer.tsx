@@ -24,12 +24,10 @@ import {
   FileSpreadsheet,
   FileDown,
   ChevronDown,
-  Database,
   Table2,
   Columns3,
   Maximize2,
   EyeOff,
-  ArrowUpRight,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -44,8 +42,8 @@ import { useOpenTableViewerWindow } from "@/features/overlays/openers/tableViewe
 import { useToastManager } from "@/hooks/useToastManager";
 import { THEMES, type DisplayTheme } from "../../themes";
 import SaveTableModal from "../../tables/SaveTableModal";
-import { SendToWorkbookButton } from "../../tables/SendToWorkbookButton";
-import { SendToGoogleSheetButton } from "../../tables/SendToGoogleSheetButton";
+import { TableSaveToMenu } from "../../tables/TableSaveToMenu";
+import { phoneStackCellProps, useTableViewer } from "../../tables/table-viewer";
 import { ChartThisButton, TableChartPanel } from "../chart/TableChart";
 import { tableActionRowClass, useTableActionTitles } from "../../tables/table-action-row";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -317,6 +315,9 @@ const StreamingTableRendererCore: React.FC<
 }) => {
   const toast = useToastManager();
   const isMobile = useIsMobile();
+  // A signed-out visitor gets only the actions that work for her (view, chart,
+  // copy, download) — never a write that answers 401 (tables/table-viewer.ts).
+  const { canWrite } = useTableViewer();
   const openTableWindow = useOpenTableViewerWindow();
   // The trailing row may still be arriving whenever the text around this table
   // is a live stream — its block status alone is not enough (a statically
@@ -717,47 +718,21 @@ const StreamingTableRendererCore: React.FC<
     );
   };
 
+  // The one table-specific write that is not a "Save to" destination.
   const renderTableActionButton = () => {
-    if (!tableData.normalizedData) return null;
-    if (convertToTable) {
-      return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={convertToTable.onClick}
-          disabled={convertToTable.disabled || convertToTable.busy}
-          className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
-        >
-          <Table2 className="h-4 w-4" />
-          {convertToTable.busy ? "Converting…" : "Convert to table"}
-        </Button>
-      );
-    }
-    if (savedTableInfo) {
-      return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleViewSavedTable}
-          className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
-        >
-          <ArrowUpRight className="h-4 w-4" />
-          View Saved Table
-        </Button>
-      );
-    } else {
-      return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowSaveModal(true)}
-          className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
-        >
-          <Database className="h-4 w-4" />
-          Save
-        </Button>
-      );
-    }
+    if (!tableData.normalizedData || !convertToTable) return null;
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={convertToTable.onClick}
+        disabled={convertToTable.disabled || convertToTable.busy}
+        className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
+      >
+        <Table2 className="h-4 w-4" />
+        {convertToTable.busy ? "Converting…" : "Convert to table"}
+      </Button>
+    );
   };
 
   // ========================================================================
@@ -765,6 +740,9 @@ const StreamingTableRendererCore: React.FC<
   // ========================================================================
 
   const isEditingEnabled = editMode !== "none";
+  // On a phone the table reads as the PHONE-STACK card list — except while
+  // editing, which needs the grid.
+  const phoneStack = isMobile && !isEditingEnabled;
   const isEditingHeader = editMode === "header";
   const editingBorderStyle =
     "overflow-x-auto rounded-xl border-3 border-dashed border-red-500";
@@ -828,15 +806,16 @@ const StreamingTableRendererCore: React.FC<
               "border border-border rounded-lg shadow-sm",
               isEditingEnabled && "border-dashed border-red-500 border-2",
               isMobile && "-mx-1",
+              phoneStack && "phone-stack",
             )}
           >
             <table
               className={cn(
                 "divide-y divide-border",
-                isMobile ? "min-w-max w-full" : "min-w-full",
+                isMobile && !phoneStack ? "min-w-max w-full" : phoneStack ? "w-full" : "min-w-full",
               )}
               style={{ fontSize: `${fontSize}px` }}
-              onDoubleClick={handleTableDoubleClick}
+              onDoubleClick={canWrite ? handleTableDoubleClick : undefined}
             >
               {/* Header */}
               <thead className={tableTheme.header} onClick={handleHeaderClick}>
@@ -960,10 +939,11 @@ const StreamingTableRendererCore: React.FC<
                           data-cell="body"
                           data-cell-row={rowIndex}
                           data-cell-col={colIndex}
+                          {...(phoneStack ? phoneStackCellProps(headers, colIndex) : {})}
                           className={cn(
                             cellPaddingClass,
                             "text-foreground",
-                            isMobile
+                            isMobile && !phoneStack
                               ? "whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis"
                               : "whitespace-normal",
                           )}
@@ -1141,13 +1121,17 @@ const StreamingTableRendererCore: React.FC<
                     active={showChart}
                     onToggle={() => setShowChart((v) => !v)}
                   />
-                  {renderTableActionButton()}
-                  {tableData.normalizedData && (
-                    <>
-                      <SendToWorkbookButton headers={headers} rows={rows} />
-                      <SendToGoogleSheetButton headers={headers} rows={rows} />
-                </>
-              )}
+                  {canWrite && renderTableActionButton()}
+                  {canWrite && tableData.normalizedData && (
+                    <TableSaveToMenu
+                      headers={headers}
+                      rows={rows}
+                      savedTableName={savedTableInfo?.table_name ?? null}
+                      {...(convertToTable ? { hideDataTable: true } : {})}
+                      onSaveAsDataTable={() => setShowSaveModal(true)}
+                      onOpenSavedTable={handleViewSavedTable}
+                    />
+                  )}
               <ExportDropdownMenu
                 tableData={tableData}
                 content={content}
@@ -1183,7 +1167,7 @@ const StreamingTableRendererCore: React.FC<
                     Cancel
                   </Button>
                 </>
-              ) : (
+              ) : canWrite ? (
                 <Button
                   variant="outline"
                   size="sm"
@@ -1193,7 +1177,7 @@ const StreamingTableRendererCore: React.FC<
                   <Edit className="h-4 w-4" />
                   Edit
                 </Button>
-              )}
+              ) : null}
             </div>
           )}
         </>

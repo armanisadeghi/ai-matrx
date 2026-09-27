@@ -26,7 +26,6 @@ import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificH
 import { cn } from "@/lib/utils";
 import MobileNotesList from "./MobileNotesList";
 import MobileNoteEditor, { type MobileEditorMode } from "./MobileNoteEditor";
-import { NoteReferenceCopyButton } from "../NoteReferenceCopyButton";
 import { NoteSyncStatusStrip } from "../NoteSyncStatusStrip";
 import { NoteCleanupButton } from "../cleanup/NoteCleanupButton";
 import {
@@ -43,7 +42,7 @@ const VIEW_MODES: {
   label: string;
 }[] = [
   { mode: "plain", icon: <FileText size={16} />, label: "Edit" },
-  { mode: "preview", icon: <Eye size={16} />, label: "Preview" },
+  { mode: "preview", icon: <Eye size={16} />, label: "Read" },
 ];
 
 export default function MobileNotesView({
@@ -62,7 +61,7 @@ export default function MobileNotesView({
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(
     singleNoteId,
   );
-  const [editorMode, setEditorMode] = useState<MobileEditorMode>("plain");
+  const [editorMode, setEditorMode] = useState<MobileEditorMode>("preview");
   // Shared filter state — owned here so header dropdown and list stay in sync
   const [filters, setFilters] =
     useState<NotesFilterState>(DEFAULT_FILTER_STATE);
@@ -298,22 +297,12 @@ export default function MobileNotesView({
               );
             })()}
 
-            {/* Clean up content — mutates the note, so viewers don't get it */}
+            {/* Clean up content — mutates the note, so viewers don't get it.
+                The reference copy lives in the More sheet (a bookmark glyph
+                here read as "bookmark", not "copy reference"). */}
             {!selectedAccess.readOnly && (
-              <NoteCleanupButton
-                noteId={selectedNote.id}
-                triggerClassName="flex flex-shrink-0 items-center justify-center w-8 h-8 rounded-full hover:bg-muted/60 transition-colors text-muted-foreground [&_svg]:w-4 [&_svg]:h-4"
-                triggerActiveClassName="bg-muted/60 text-foreground"
-              />
+              <NoteCleanupButton noteId={selectedNote.id} asTapButton />
             )}
-
-            {/* Copy reference */}
-            <NoteReferenceCopyButton
-              noteId={selectedNote.id}
-              label={selectedNote.label}
-              size="sm"
-              className="h-8 w-8 flex-shrink-0"
-            />
 
             {/* Save state */}
             <div className="flex-shrink-0 flex items-center relative">

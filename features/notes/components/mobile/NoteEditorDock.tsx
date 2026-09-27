@@ -22,7 +22,10 @@ import {
   Loader2,
   Network,
   Database,
+  Link2,
 } from "lucide-react";
+import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
+import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { cn } from "@/lib/utils";
 import {
   BottomSheet,
@@ -110,6 +113,8 @@ export function NoteEditorDock({
   // item's RENDER index (items can be filtered, so positions aren't fixed).
   const items: {
     key: string;
+    /** The word shown under the icon (every dock item is named). */
+    label: string;
     tooltip: string;
     Icon: LucideIcon;
     onPress: (index: number) => void;
@@ -121,7 +126,8 @@ export function NoteEditorDock({
       : [
           {
             key: "folder",
-            tooltip: folder,
+            label: "Folder",
+            tooltip: `Folder: ${folder}`,
             Icon: FolderOpen,
             onPress: (index: number) => {
               setActiveIndex(index);
@@ -130,6 +136,7 @@ export function NoteEditorDock({
           },
           {
             key: "tags",
+            label: "Tags",
             tooltip:
               tags.length > 0
                 ? `${tags.length} tag${tags.length !== 1 ? "s" : ""}`
@@ -143,7 +150,8 @@ export function NoteEditorDock({
         ]),
     {
       key: "copy",
-      tooltip: "Copy",
+      label: "Copy",
+      tooltip: "Copy the note's text",
       Icon: Copy,
       onPress: () => {
         navigator.clipboard
@@ -154,7 +162,8 @@ export function NoteEditorDock({
     },
     {
       key: "export",
-      tooltip: "Export",
+      label: "Export",
+      tooltip: "Download as a Markdown file",
       Icon: Download,
       onPress: () => {
         onExport();
@@ -162,7 +171,8 @@ export function NoteEditorDock({
     },
     {
       key: "context",
-      tooltip: "Context",
+      label: "Context",
+      tooltip: "Organization, project and scopes",
       Icon: Network,
       onPress: (index: number) => {
         setActiveIndex(index);
@@ -171,7 +181,8 @@ export function NoteEditorDock({
     },
     {
       key: "more",
-      tooltip: "More",
+      label: "More",
+      tooltip: "More note actions",
       Icon: MoreHorizontal,
       onPress: (index: number) => {
         setActiveIndex(index);
@@ -218,7 +229,15 @@ export function NoteEditorDock({
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <>
-      <nav className="md:hidden absolute bottom-0 left-0 right-0 z-40 pb-safe px-3 pointer-events-none">
+      {/* The dock steps aside while one of its sheets is open — it used to
+          ghost through the sheet's glass. */}
+      <nav
+        className={cn(
+          "md:hidden absolute bottom-0 left-0 right-0 z-40 pb-safe px-3 pointer-events-none transition-opacity",
+          sheetOpen && "opacity-0",
+        )}
+        aria-hidden={sheetOpen ? true : undefined}
+      >
         <div
           ref={navRef}
           className="relative flex items-stretch matrx-glass-core rounded-[22px] mb-2 pointer-events-auto"
@@ -258,7 +277,7 @@ export function NoteEditorDock({
                   aria-label={item.tooltip}
                   title={item.tooltip}
                   className={cn(
-                    "relative z-10 flex items-center justify-center w-full py-2.5 px-1 transition-colors duration-200",
+                    "relative z-10 flex w-full flex-col items-center justify-center gap-0.5 px-1 py-1.5 transition-colors duration-200",
                     isActive
                       ? "text-primary"
                       : "text-muted-foreground hover:text-foreground",
@@ -271,6 +290,9 @@ export function NoteEditorDock({
                         "drop-shadow-[0_0_6px_hsl(var(--primary)/0.4)]",
                     )}
                   />
+                  <span className="max-w-full truncate text-xs leading-none">
+                    {item.label}
+                  </span>
                 </button>
               </div>
             );
@@ -335,6 +357,8 @@ export function NoteEditorDock({
         open={sheetOpen === "more"}
         onOpenChange={(open) => setSheetOpen(open ? "more" : null)}
         title="Note Actions"
+        surface="solid"
+        contentClassName="min-h-0"
       >
         <BottomSheetHeader title="Note Actions" />
         <BottomSheetBody>
@@ -351,8 +375,8 @@ export function NoteEditorDock({
                 ? "Knowledge base"
                 : "Add to knowledge base"}
               {ingest.state === "ingested" && (
-                <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <span className="ml-auto inline-flex items-center gap-1 text-xs text-success">
+                  <span className="h-1.5 w-1.5 rounded-full bg-success" />
                   Indexed
                 </span>
               )}
@@ -377,6 +401,20 @@ export function NoteEditorDock({
               <Share2 className="h-5 w-5 text-muted-foreground" />
               Share
             </button>
+            <button
+              onClick={() => {
+                setSheetOpen(null);
+                void copyReferenceFence(
+                  buildRecordReferenceFence({ type: "note", id: noteId, label: noteLabel }),
+                ).then((ok) => {
+                  if (ok) toast.success("Reference copied — paste it into any agent chat");
+                });
+              }}
+              className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent/50 transition-colors"
+            >
+              <Link2 className="h-5 w-5 text-muted-foreground" />
+              Copy reference for an agent
+            </button>
             <div className="h-px bg-border/40 my-1" />
             <button
               onClick={() => {
@@ -391,7 +429,7 @@ export function NoteEditorDock({
               ) : (
                 <Trash2 className="h-5 w-5" />
               )}
-              {isDeleting ? "Deleting..." : "Delete Note"}
+              {isDeleting ? "Moving to Trash…" : "Move to Trash"}
             </button>
           </div>
         </BottomSheetBody>

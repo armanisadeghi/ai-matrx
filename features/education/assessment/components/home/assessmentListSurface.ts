@@ -26,9 +26,19 @@ import { assessmentService } from "../../data/assessmentService";
 import { fetchOwnAssessmentsFor } from "../../data/assessmentListService";
 import type { AssessmentPatch } from "../../data/types";
 import { KIND_CONFIG, type KindConfig } from "../kindConfig";
+import { displayTitle } from "@/components/markdown-core/plain-title";
+import { supabase } from "@/utils/supabase/client";
+import { fcService } from "@/features/flashcards/data/fcService";
+import type { EntitlementCheckResult } from "@/features/entitlements/types";
+import type {
+  GenerationOutcome,
+  GenerationRequest,
+  GenerationSource,
+} from "../../data/useAssessmentGeneration";
 import {
   parseCreateAssessmentsValue,
   parseDeleteAssessmentsValue,
+  parseGenerateValue,
   parseUpdateAssessmentsValue,
   type AssessmentWriteFields,
   type CurrentAssessment,
@@ -50,6 +60,8 @@ export function buildAssessmentListBundle(list: Controller): string {
         title: row.title,
         topic: distinctTopic(row),
         questions: row.question_count,
+        my_attempts: row.my_attempts || null,
+        my_best: row.my_best_score == null ? null : `${Math.round(row.my_best_score * 100)}%`,
         depth: row.depth,
         exam: row.exam_type,
         status: row.status === "ready" ? null : row.status,
@@ -75,6 +87,8 @@ const toSummary = (r: AssessmentListItem): AssessmentListSummaryRow => ({
   title: r.title,
   topic: r.topic,
   question_count: r.question_count,
+  my_attempts: r.my_attempts,
+  my_best_score: r.my_best_score,
   depth: r.depth,
   exam_type: r.exam_type,
   status: r.status,
@@ -150,7 +164,18 @@ function toPatch(fields: AssessmentWriteFields): AssessmentPatch {
   return patch as AssessmentPatch;
 }
 
-type HandlerInput = { list: Controller; userId: string; config: KindConfig };
+/** The shared generation hook's two calls the agent target needs. */
+export interface AssessmentGenerator {
+  run: (req: GenerationRequest) => Promise<GenerationOutcome>;
+  check: () => Promise<EntitlementCheckResult>;
+}
+
+type HandlerInput = {
+  list: Controller;
+  userId: string;
+  config: KindConfig;
+  generator: AssessmentGenerator;
+};
 type CollectionOps = Omit<Parameters<typeof collectionWriteHandlers>[0], "plural" | "singular">;
 
 /**
@@ -186,7 +211,10 @@ export function buildQuizWriteHandlers(input: Omit<HandlerInput, "config">): Sur
       },
     };
   }
-  return quizOut;
+  return {
+    ...quizOut,
+    generate_quizzes: generateHandler(input2, "quizzes"),
+  };
 }
 
 /** create_practice_tests / update_practice_tests / delete_practice_tests on /education/practice-tests. */
@@ -219,7 +247,98 @@ export function buildPracticeTestWriteHandlers(
       },
     };
   }
-  return practiceOut;
+  return {
+    ...practiceOut,
+    generate_practice_tests: generateHandler(input2, "practice_tests"),
+  };
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const sameName = (a: string, b: string) =>
+  displayTitle(a).trim().toLowerCase() === displayTitle(b).trim().toLowerCase();
+
+/** A deck the person can see, by id or exact name. */
+async function resolveDeck(where: string, ref: string): Promise<{ id: string; name: string }> {
+  const res = await fcService.listSets();
+  if (res.error) throw new Error(`${where}: the person's decks could not be read (${res.error}).`);
+  const decks = res.data ?? [];
+  const hit = UUID.test(ref) ? decks.find((d) => d.id === ref) : decks.filter((d) => sameName(d.name, ref));
+  const found = Array.isArray(hit) ? hit : hit ? [hit] : [];
+  if (found.length === 0)
+    throw new Error(`${where}.deck "${ref}" is not a flashcard deck the person can see. Use its id or exact name.`);
+  if (found.length > 1)
+    throw new Error(`${where}.deck "${ref}" matches ${found.length} decks; send the deck's id instead.`);
+  return { id: found[0].id, name: displayTitle(found[0].name) };
+}
+
+/** A ready Knowledge document the person can see, by id or exact name. */
+async function resolveDocument(where: string, ref: string): Promise<{ id: string; name: string }> {
+  const { data, error } = await supabase.rpc("rag_library_list", {
+    p_limit: 50,
+    p_offset: 0,
+    p_search: UUID.test(ref) ? undefined : ref,
+    p_status_filter: "ready",
+    p_source_kind: undefined,
+  });
+  if (error) throw new Error(`${where}: the person's documents could not be read (${error.message}).`);
+  const docs = ((data as { documents?: { id: string; name: string }[] } | null)?.documents ?? []);
+  const found = UUID.test(ref) ? docs.filter((d) => d.id === ref) : docs.filter((d) => sameName(d.name, ref));
+  if (found.length === 0)
+    throw new Error(`${where}.document "${ref}" is not a processed document in the person's Knowledge library. Use its id or exact name.`);
+  if (found.length > 1)
+    throw new Error(`${where}.document "${ref}" matches ${found.length} documents; send its id instead.`);
+  return { id: found[0].id, name: found[0].name };
+}
+
+/**
+ * generate_<plural>: ONE AI generation through the page's own generation path
+ * (useAssessmentGeneration — the New form's path), metered on the person's
+ * plan. The plan is checked before the approval card; nothing is spent on a
+ * refusal or a failed run.
+ */
+function generateHandler(input: HandlerInput, plural: string): SurfaceWriteHandlerEntry {
+  const { config, generator, list } = input;
+  const where = `generate_${plural}`;
+  let resolved: GenerationSource | null = null;
+  const prepare = async (value: unknown): Promise<GenerationRequest> => {
+    const parsed = parseGenerateValue(plural, value, config);
+    const src = parsed.source;
+    resolved =
+      src.mode === "topic"
+        ? src
+        : src.mode === "deck"
+          ? { mode: "deck", deck: await resolveDeck(where, src.ref) }
+          : { mode: "document", document: await resolveDocument(where, src.ref) };
+    const { source: _ignored, ...rest } = parsed;
+    return { ...rest, source: resolved };
+  };
+  return {
+    validate: async (value) => {
+      await prepare(value);
+      const verdict = await generator.check();
+      if (!verdict.allowed)
+        refuseSurfaceWrite(
+          verdict.reason === "resolver_error"
+            ? `${where}: the plan check could not be reached; nothing was started. Try again.`
+            : `${where}: the person's plan has no ${config.noun} generations left this period${
+                verdict.limit != null ? ` (${verdict.used} of ${verdict.limit} used)` : ""
+              }. Nothing was started.`,
+        );
+    },
+    apply: async (value) => {
+      const req = await prepare(value);
+      const outcome = await generator.run(req);
+      if (outcome.status === "blocked") refuseSurfaceWrite(`${where}: ${outcome.reason} Nothing was spent.`);
+      if (outcome.status === "failed")
+        throw new Error(`${where}: generation failed — ${outcome.error} Nothing was spent.`);
+      if (outcome.status !== "created") throw new Error(`${where}: not saved.`);
+      list.refresh();
+      return {
+        summary: `Generated "${outcome.assessment.title}" with ${outcome.questionCount} questions (one ${config.noun} generation used).`,
+        data: { id: outcome.assessment.id, title: outcome.assessment.title, questions: outcome.questionCount },
+      };
+    },
+  };
 }
 
 /** The create / update / delete operations over the person's own assessments of one kind. */

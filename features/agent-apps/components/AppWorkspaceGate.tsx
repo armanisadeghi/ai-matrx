@@ -34,7 +34,10 @@ export function AppWorkspaceGate({
   return (
     <WorkspaceGate
       blocked={holder.organizationPending}
-      sentence={`${app.name?.trim() || "This app"} needs a workspace to run.`}
+      // One word everywhere — the header, the picker and this line all say
+      // "organization" — and the app says what it is, so the state is no void.
+      sentence={`Choose an organization to run ${app.name?.trim() || "this app"}.`}
+      description={app.tagline?.trim() || app.description?.trim() || ""}
     >
       {children}
     </WorkspaceGate>

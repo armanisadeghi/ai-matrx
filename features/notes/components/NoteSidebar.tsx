@@ -927,7 +927,9 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
     if (Date.now() - d.getTime() >= NOTE_AGE_CUTOFF_MS) {
       return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
     }
-    return formatRelativeTime(d, { style: "short", fallback: "" });
+    // "8h", not "8h ago": the title gets the room (the full time is the
+    // row's tooltip).
+    return formatRelativeTime(d, { style: "short", fallback: "" }).replace(/\s*ago$/, "");
   };
 
   const sortLabel =
@@ -1542,11 +1544,16 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                     ) : (
                       <FolderIcon className={cn("opacity-70", iconColor)} />
                     )}
-                    <span className="flex-1 truncate">
-                      {label}
+                    <span
+                      className="flex min-w-0 flex-1 items-center gap-1"
+                      title={orgSuffix ? `${label} — in ${orgSuffix}` : undefined}
+                    >
+                      <span className="shrink-0">{label}</span>
                       {orgSuffix && (
-                        <span className="ml-1 font-normal normal-case tracking-normal opacity-60">
-                          · {orgSuffix}
+                        // The organization is what tells same-name folders
+                        // apart, so it gets its own chip that truncates last.
+                        <span className="min-w-0 truncate rounded bg-muted px-1 text-xs font-normal normal-case tracking-normal text-muted-foreground">
+                          {orgSuffix}
                         </span>
                       )}
                     </span>

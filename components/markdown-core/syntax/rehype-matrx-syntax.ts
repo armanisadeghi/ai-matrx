@@ -58,6 +58,7 @@ const ANCHOR_CLASS = [
   "hover:text-primary",
   "focus:opacity-100",
   "[:hover>&]:opacity-100",
+  "after:content-['#']",
 ];
 
 interface TocEntry {
@@ -119,8 +120,12 @@ export default function rehypeMatrxSyntax(options: RehypeMatrxSyntaxOptions = {}
             type: "element",
             tagName: "a",
             // data-content-chrome: renderer-added UI, not the source's words (the annotation text mapper skips it).
-            properties: { href: `#${id}`, className: ANCHOR_CLASS, ariaLabel: "Link to this section", dataHeadingAnchor: true, dataContentChrome: true },
-            children: [{ type: "text", value: "#" }],
+            // The "#" is drawn by CSS and the link is hidden from assistive
+            // tech: it used to join the heading's accessible name and copied
+            // text ("Clinic intake checklist#"). The heading's id stays the
+            // link target; the hover "#" is a mouse convenience.
+            properties: { href: `#${id}`, className: ANCHOR_CLASS, ariaHidden: "true", tabIndex: -1, title: "Link to this section", dataHeadingAnchor: true, dataContentChrome: true },
+            children: [],
           });
         }
         return;

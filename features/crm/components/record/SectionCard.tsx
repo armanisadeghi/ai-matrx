@@ -41,7 +41,10 @@ export function SectionCard({
   return (
     <section
       className={cn(
-        "group/section rounded-md border border-border bg-card",
+        // Dense on a desktop mouse: header TapButtons shrink to 28px (the
+        // package's own size variable), so a one-row card is one short band.
+        // Touch and narrow screens keep the 44px target.
+        "group/section rounded-md border border-border bg-card lg:pointer-fine:[--matrx-tap-target-size:1.75rem]",
         className,
       )}
     >

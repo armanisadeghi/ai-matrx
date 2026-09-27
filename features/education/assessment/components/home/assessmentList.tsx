@@ -30,7 +30,9 @@ import type {
 } from "@/lib/entity-list/types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
 import { visibilityWords } from "@/lib/record-words";
-import { PlayTapButton } from "@ai-matrx/tap-target/buttons";
+import Link from "next/link";
+import { Play } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   fetchAssessmentFacets,
   fetchAssessmentLaneCounts,
@@ -131,14 +133,15 @@ function TakeCell({ row, config }: { row: AssessmentListItem; config: KindConfig
   if (row.archived) return <Muted>Archived</Muted>;
   if (row.question_count === 0) return <Muted>No questions</Muted>;
   return (
-    // The row itself opens the assessment; Take is its own door.
+    // The row itself opens the assessment; Take is its own labelled door —
+    // one tap on the phone card, where it is the card's primary action.
     <span className="flex items-center" onClick={(e) => e.stopPropagation()}>
-      <PlayTapButton
-        href={assessmentTakeHref(config, row)}
-        variant="transparent"
-        tooltip={`Take ${config.noun}`}
-        ariaLabel={`Take ${row.title}`}
-      />
+      <Button asChild size="sm" variant="outline" className="h-11 gap-1.5 px-3 sm:h-7">
+        <Link href={assessmentTakeHref(config, row)} aria-label={`Take ${row.title}`}>
+          <Play className="h-3.5 w-3.5" />
+          Take
+        </Link>
+      </Button>
     </span>
   );
 }
@@ -154,8 +157,8 @@ export function buildAssessmentColumns(
       phone: "title",
       column: {
         id: "title",
-        width: 420,
-        className: "max-w-[26rem] overflow-hidden",
+        width: 380,
+        className: "max-w-[24rem] overflow-hidden",
         accessorKey: "title",
         header: "Title",
         filter: "text",
@@ -172,8 +175,9 @@ export function buildAssessmentColumns(
       phone: "rest",
       column: {
         id: "topic",
-        width: 220,
-        className: "max-w-[14rem] overflow-hidden",
+        // Topics are often a source's opening sentence: give them the room.
+        width: 340,
+        className: "max-w-[22rem] overflow-hidden",
         accessorKey: "topic",
         header: "Topic",
         filter: "text",
@@ -197,10 +201,50 @@ export function buildAssessmentColumns(
       },
     },
     {
+      id: "attempts",
+      label: "My attempts",
+      phone: "meta",
+      sortWords: { asc: "fewest first", desc: "most first" },
+      column: {
+        id: "attempts",
+        accessorKey: "my_attempts",
+        header: "My attempts",
+        filter: false,
+        cell: (row) =>
+          row.my_attempts ? (
+            <span className="tabular-nums">{row.my_attempts}</span>
+          ) : (
+            <Muted>None yet</Muted>
+          ),
+      },
+    },
+    {
+      id: "best_score",
+      label: "My best",
+      phone: "meta",
+      sortWords: { asc: "lowest first", desc: "highest first" },
+      column: {
+        id: "best_score",
+        accessorKey: "my_best_score",
+        header: "My best",
+        filter: false,
+        cell: (row) =>
+          row.my_best_score == null ? (
+            <Muted>—</Muted>
+          ) : (
+            <span className="tabular-nums">{Math.round(row.my_best_score * 100)}%</span>
+          ),
+      },
+    },
+    {
       id: "depth",
       label: "Depth",
       facet: "depth",
       formatFacetValue: depthLabel,
+      // Off by default: one kind is generated at one depth almost always
+      // (quizzes "Applied", practice tests "Exam level"), so the column rarely
+      // tells rows apart. It stays in the column picker and the Filters panel.
+      defaultHidden: true,
       phone: "rest",
       column: {
         id: "depth",
@@ -216,6 +260,9 @@ export function buildAssessmentColumns(
       label: "Exam",
       facet: "exam_type",
       formatFacetValue: examLabel,
+      // Off by default: the exam is optional and mostly blank. It stays in the
+      // column picker and the Filters panel.
+      defaultHidden: true,
       phone: "rest",
       column: {
         id: "exam_type",
@@ -327,7 +374,8 @@ export function buildAssessmentListConfig(input: {
     service: buildService(config.kind),
     serviceKey: `${input.userId}:${config.kind}`,
     columns: buildAssessmentColumns(config),
-    prefsVersion: 1,
+    // v2 (2026-09-27): Depth/Exam hidden by default, My attempts / My best added.
+    prefsVersion: 2,
     prefsDefaults: { sort: "updated", direction: "desc" },
     getRowId: (row) => row.id,
     getRowName: (row) => row.title,
@@ -360,6 +408,7 @@ export function buildAssessmentListConfig(input: {
           row.title,
           distinctTopic(row) ?? "",
           `${row.question_count} questions`,
+          row.my_attempts ? `${row.my_attempts} attempts, best ${Math.round((row.my_best_score ?? 0) * 100)}%` : "",
           row.depth ? depthLabel(row.depth) : "",
           row.exam_type ?? "",
           `edited ${row.updated_at.slice(0, 10)}`,

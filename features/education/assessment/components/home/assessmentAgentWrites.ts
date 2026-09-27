@@ -17,7 +17,13 @@ import {
   repeatsProblem,
 } from "@/features/surfaces/runtime/collection-write-targets";
 import { displayTitle } from "@/components/markdown-core/plain-title";
-import { DEPTHS, type Depth } from "../../data/types";
+import {
+  DEPTHS,
+  DIFFICULTIES,
+  QUESTION_TYPES,
+  type Depth,
+  type QuestionType,
+} from "../../data/types";
 
 export const ASSESSMENT_WRITE_KEYS = [
   "title",
@@ -295,4 +301,140 @@ export function parseDeleteAssessmentsValue(
       ],
     },
   );
+}
+
+// ── generate_<plural> — the paid AI generation, one assessment per call ──────
+
+export const GENERATE_KEYS = [
+  "source",
+  "topic",
+  "deck",
+  "document",
+  "question_count",
+  "difficulty",
+  "depth",
+  "question_types",
+  "exam_type",
+  "instructions",
+  "time_limit_minutes",
+] as const;
+
+/** A parsed generation request; deck/document are still references (id or name). */
+export interface GenerateRequestValue {
+  source:
+    | { mode: "topic"; topic: string }
+    | { mode: "deck"; ref: string }
+    | { mode: "document"; ref: string };
+  count: number;
+  difficulty: (typeof DIFFICULTIES)[number];
+  depth: Depth;
+  questionTypes: QuestionType[];
+  examType: string;
+  userRequest: string;
+  timeLimitMinutes: number;
+}
+
+/**
+ * Read one generate_<plural> value. Defaults match the New form (count by
+ * kind, Medium, applied, automatic mix). Every problem is reported at once.
+ */
+export function parseGenerateValue(
+  plural: string,
+  value: unknown,
+  limits: { defaultCount: number; countMax: number; timed: boolean },
+): GenerateRequestValue {
+  const where = `generate_${plural}`;
+  if (value === null || typeof value !== "object" || Array.isArray(value))
+    throw new Error(
+      `${where} takes ONE object (a JSON object, not a list): { source: "topic" | "deck" | "document", topic | deck | document, … }; received ${JSON.stringify(value)}.`,
+    );
+  const r = value as Record<string, unknown>;
+  const problems = new ProblemList(where);
+  const unknownKeys = Object.keys(r).filter((k) => !(GENERATE_KEYS as readonly string[]).includes(k));
+  if (unknownKeys.length > 0)
+    problems.add(`${where} does not accept ${unknownKeys.join(", ")}. Allowed keys: ${GENERATE_KEYS.join(", ")}.`);
+
+  const text = (key: string): string | undefined => {
+    const v = r[key];
+    if (v === undefined || v === null) return undefined;
+    if (typeof v !== "string") {
+      problems.add(`${where}.${key} must be plain text; received ${JSON.stringify(v)}.`);
+      return undefined;
+    }
+    return v.trim() || undefined;
+  };
+
+  const mode = r.source === undefined ? (r.deck ? "deck" : r.document ? "document" : "topic") : r.source;
+  let source: GenerateRequestValue["source"] | null = null;
+  if (mode === "topic") {
+    const topic = text("topic");
+    if (!topic) problems.add(`${where}.topic is required when source is "topic".`);
+    else if (topic.length > 500) problems.add(`${where}.topic must be at most 500 characters.`);
+    else source = { mode: "topic", topic: displayTitle(topic) };
+  } else if (mode === "deck" || mode === "document") {
+    const ref = text(mode);
+    if (!ref)
+      problems.add(`${where}.${mode} is required when source is "${mode}" (its id or exact name).`);
+    else source = { mode, ref };
+  } else {
+    problems.add(`${where}.source must be "topic", "deck" or "document"; received ${JSON.stringify(r.source)}.`);
+  }
+
+  let count = limits.defaultCount;
+  if (r.question_count !== undefined) {
+    const n = r.question_count;
+    if (typeof n !== "number" || !Number.isInteger(n) || n < 1 || n > limits.countMax)
+      problems.add(`${where}.question_count must be a whole number from 1 to ${limits.countMax}; received ${JSON.stringify(n)}.`);
+    else count = n;
+  }
+
+  let difficulty: GenerateRequestValue["difficulty"] = "Medium";
+  if (r.difficulty !== undefined) {
+    const d = String(r.difficulty).trim().toLowerCase();
+    const hit = DIFFICULTIES.find((x) => x.toLowerCase() === d);
+    if (!hit) problems.add(`${where}.difficulty must be one of ${DIFFICULTIES.join(", ")}; received ${JSON.stringify(r.difficulty)}.`);
+    else difficulty = hit;
+  }
+
+  let depth: Depth = "applied";
+  if (r.depth !== undefined) {
+    const d = String(r.depth).trim().toLowerCase();
+    if (!(DEPTHS as readonly string[]).includes(d))
+      problems.add(`${where}.depth must be one of ${DEPTHS.join(", ")}; received ${JSON.stringify(r.depth)}.`);
+    else depth = d as Depth;
+  }
+
+  let questionTypes: QuestionType[] = [];
+  if (r.question_types !== undefined) {
+    const list = r.question_types;
+    if (!Array.isArray(list) || list.some((t) => typeof t !== "string" || !(QUESTION_TYPES as readonly string[]).includes(t)))
+      problems.add(`${where}.question_types must be a list drawn from ${QUESTION_TYPES.join(", ")} (empty = automatic mix); received ${JSON.stringify(list)}.`);
+    else questionTypes = [...new Set(list as QuestionType[])];
+  }
+
+  const examType = text("exam_type") ?? "";
+  if (examType.length > EXAM_MAX) problems.add(`${where}.exam_type must be at most ${EXAM_MAX} characters.`);
+  const userRequest = text("instructions") ?? "";
+  if (userRequest.length > 2000) problems.add(`${where}.instructions must be at most 2000 characters.`);
+
+  let timeLimitMinutes = limits.timed ? 20 : 0;
+  if (r.time_limit_minutes !== undefined) {
+    const n = r.time_limit_minutes;
+    if (!limits.timed) problems.add(`${where}.time_limit_minutes applies only to practice tests.`);
+    else if (typeof n !== "number" || !Number.isInteger(n) || n < 0 || n > 600)
+      problems.add(`${where}.time_limit_minutes must be a whole number from 0 (untimed) to 600.`);
+    else timeLimitMinutes = n;
+  }
+
+  problems.throwIfAny();
+  return {
+    source: source!,
+    count,
+    difficulty,
+    depth,
+    questionTypes,
+    examType,
+    userRequest,
+    timeLimitMinutes,
+  };
 }

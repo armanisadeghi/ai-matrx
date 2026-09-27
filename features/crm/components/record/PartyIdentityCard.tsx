@@ -523,6 +523,9 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
               checked={party.do_not_contact}
               onCheckedChange={(v) => void toggleDnc(v)}
               aria-label="Do not contact"
+              // The 44px target is the whole row — this <label> — per the
+              // matrx-tap-area contract; the painted switch stays switch-sized.
+              data-touch-exempt=""
             />
           </div>
         </label>

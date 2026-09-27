@@ -48,6 +48,12 @@ export interface AssessmentListRow {
   depth: string | null;
   time_limit_seconds: number | null;
   question_count: number;
+  /** The signed-in person's completed attempts on this assessment. */
+  my_attempts: number;
+  /** Their best completed score, 0-1; null before a first attempt. */
+  my_best_score: number | null;
+  /** Their latest completed attempt — the Results door. */
+  my_last_result_id: string | null;
 }
 
 export interface AssessmentListQuery {
@@ -78,6 +84,9 @@ function cleanRow(row: AssessmentListRow): AssessmentListRow {
     topic,
     source_title: row.source_title ? displayTitle(row.source_title) : null,
     question_count: Number(row.question_count ?? 0),
+    my_attempts: Number(row.my_attempts ?? 0),
+    my_best_score: row.my_best_score == null ? null : Number(row.my_best_score),
+    my_last_result_id: row.my_last_result_id ?? null,
   };
 }
 

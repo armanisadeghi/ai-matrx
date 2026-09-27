@@ -14,5 +14,8 @@ export const educationPracticeTestsManifest: SurfaceManifest = buildAssessmentLi
   noun: "practice test",
   plural: "practice tests",
   targetPlural: "practice_tests",
+  defaultCount: 20,
+  countMax: 60,
+  timed: true,
   urlPattern: "/education/practice-tests",
 });

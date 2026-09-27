@@ -13,14 +13,19 @@
 
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Building2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import type { EntityListSurfaceController } from "@/lib/entity-list/components/EntityListPage";
+import type { EntityListController } from "@/lib/entity-list/config";
+import {
+  useOpenLiveRunWindow,
+  type LiveRunWindowHandle,
+} from "@/features/overlays/openers/liveRunWindow";
+import { useAssessmentGeneration } from "../data/useAssessmentGeneration";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAuthReady, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
@@ -44,28 +49,80 @@ const ROW_ACTIONS = {
 
 export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
   const config: KindConfig = KIND_CONFIG[kind];
-  const router = useRouter();
   const userId = useAppSelector(selectUserId);
   const authReady = useAppSelector(selectAuthReady);
   const loginHref = useLoginHref();
-  const [isPending, startTransition] = useTransition();
   const newHref = `/education/${config.base}/new`;
+  // THE one generation path, shared with the New form — the agent's
+  // generate_<plural> target runs it here, metered exactly the same.
+  const generation = useAssessmentGeneration(config);
+  const generator = { run: generation.run, check: generation.check };
+
+  // An agent-started generation streams into the floating live-run window,
+  // never a spinner (THE FLOATING LAW).
+  const openLiveRun = useOpenLiveRunWindow();
+  const liveRun = useRef<LiveRunWindowHandle | null>(null);
+  const { conversationId, isGenerating } = generation;
+  useEffect(() => {
+    if (!isGenerating || !conversationId) return;
+    if (liveRun.current) liveRun.current.update({ conversationId });
+    else
+      liveRun.current = openLiveRun({
+        conversationId,
+        label: `Generating a ${config.noun}`,
+        workingMessage: `Writing the ${config.noun}'s questions…`,
+        completeMessage: `The ${config.noun} is saved in your list.`,
+      });
+  }, [isGenerating, conversationId, openLiveRun, config.noun]);
+  useEffect(() => {
+    if (!isGenerating) liveRun.current = null;
+  }, [isGenerating]);
 
   const listConfig = userId
     ? buildAssessmentListConfig({ config, userId, useRowActions: ROW_ACTIONS[kind] })
     : null;
 
-  const createButton = (
-    <Button
-      size="sm"
-      className="h-11 lg:h-7"
-      disabled={isPending}
-      onClick={() => startTransition(() => router.push(newHref))}
-    >
-      <Plus className="h-4 w-4" />
-      <span className="max-sm:sr-only">New {config.noun}</span>
+  // Navigation is a link. In the tab row the label hides on a phone (the
+  // accessible name stays); the empty state always shows it.
+  const createButton = (showLabel: boolean) => (
+    <Button asChild size="sm" className="h-11 lg:h-7">
+      <Link href={newHref} aria-label={`New ${config.noun}`}>
+        <Plus className="h-4 w-4" />
+        <span className={showLabel ? undefined : "max-sm:sr-only"}>New {config.noun}</span>
+      </Link>
     </Button>
   );
+
+  // An empty lane that is not the whole story says where the rest are: a
+  // member whose own lane is empty but whose organizations share quizzes gets
+  // one tap to them, beside New.
+  const emptyAction = (list: EntityListController<AssessmentListItem>) => {
+    const orgCount = list.counts.byKind.orgs ?? 0;
+    const inMine = list.query.scope.kind === "mine";
+    return (
+      <div className="flex flex-col items-center gap-3">
+        {inMine && orgCount > 0 ? (
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Your organizations share {orgCount} {orgCount === 1 ? config.noun : config.pluralLabel.toLowerCase()} with you.
+          </p>
+        ) : null}
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {inMine && orgCount > 0 ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-11 lg:h-8"
+              onClick={() => list.setScope({ kind: "orgs", organizationId: null })}
+            >
+              <Building2 className="h-4 w-4" />
+              See My Orgs ({orgCount})
+            </Button>
+          ) : null}
+          {createButton(true)}
+        </div>
+      </div>
+    );
+  };
 
   // Literal surface names and builders per kind, so the surface checks can
   // read which targets each page registers.
@@ -78,25 +135,26 @@ export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
           surfaceName: "matrx-user/education-quizzes",
           getScope,
           getWriteHandlers: (list: EntityListSurfaceController<AssessmentListItem>) =>
-            buildQuizWriteHandlers({ list, userId }),
+            buildQuizWriteHandlers({ list, userId, generator }),
         }
       : {
           surfaceName: "matrx-user/education-practice-tests",
           getScope,
           getWriteHandlers: (list: EntityListSurfaceController<AssessmentListItem>) =>
-            buildPracticeTestWriteHandlers({ list, userId }),
+            buildPracticeTestWriteHandlers({ list, userId, generator }),
         };
 
   return (
     <>
       <EducationToolHeader title={config.pluralLabel} />
+      <generation.Gates />
       {listConfig ? (
         <EntityListPage
           config={listConfig}
           // The education layout already starts every route below the header.
           clearsShellHeader={false}
-          headerActions={createButton}
-          emptyAction={createButton}
+          headerActions={createButton(false)}
+          emptyAction={emptyAction}
           surface={surface}
         />
       ) : authReady && !userId ? (

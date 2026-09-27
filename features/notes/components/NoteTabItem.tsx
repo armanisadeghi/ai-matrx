@@ -17,7 +17,6 @@ import React, { useRef, useState, useCallback, useEffect } from "react";
 import {
   Save,
   Copy,
-  Check,
   CopyPlus,
   Share2,
   Trash2,
@@ -76,7 +75,6 @@ import { cn } from "@/lib/utils";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
-import { NoteContextStatusIcon } from "./NoteContextSection";
 import { MoveNoteDialog } from "./MoveNoteDialog";
 import { noteFolderReference, type FolderReference } from "../types";
 import { noteIdentityContentSource } from "../richDocumentSource";
@@ -395,8 +393,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
 
   // Secondary actions — the "Tab" section of the universal v3 menu, which
   // both right-click and the "…" button open (one menu, so they never
-  // drift). Primary actions (copy content, share, context, mic) live inline
-  // on the tab.
+  // drift). Only the mic lives inline on the tab.
   type TabMenuItem = {
     id: string;
     icon: LucideIcon;
@@ -410,6 +407,18 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       icon: Save,
       label: isSaving ? "Saving…" : "Save",
       fn: () => void handleSave(),
+    },
+    {
+      id: "copy-content",
+      icon: Copy,
+      label: "Copy note text",
+      fn: handleCopyContent,
+    },
+    {
+      id: "share",
+      icon: Share2,
+      label: "Share…",
+      fn: () => setShareOpen(true),
     },
     {
       id: "copy-reference",
@@ -588,29 +597,11 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
                 bumpTabInteraction();
               }}
             >
-              <button
-                className={actionBtnClass}
-                onClick={handleCopyContent}
-                title="Copy content"
-                aria-label="Copy note content"
-              >
-                {contentCopied ? (
-                  <Check className="text-green-500" />
-                ) : (
-                  <Copy />
-                )}
-              </button>
-              <button
-                className={actionBtnClass}
-                onClick={() => setShareOpen(true)}
-                title="Share note"
-              >
-                <Share2 />
-              </button>
-              {/* Context shortcut — amber = no context yet (nudge), green = set.
-                Same picker + same save behavior as the note-footer panel.
-                Already sized/shaped to match the other action buttons. */}
-              <NoteContextStatusIcon noteId={noteId} />
+              {/* The tab keeps two actions — dictate into the note, and the
+                  one "…" menu (Copy, Share, Export, Duplicate…). Copy, Share
+                  and a colored context shield used to sit here too; the
+                  shield duplicated the footer's Context chip and explained
+                  nothing (page-pass 2026-09-27). */}
               <MicrophoneIconButton
                 onTranscriptionComplete={handleTranscription}
                 variant="icon-only"

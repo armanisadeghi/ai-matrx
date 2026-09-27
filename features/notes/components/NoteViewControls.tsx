@@ -10,7 +10,7 @@ import React, { useCallback } from "react";
 import {
   FileText,
   SplitSquareHorizontal,
-  PilcrowRight,
+  PenLine,
   Columns,
   Eye,
   History,
@@ -43,12 +43,17 @@ import {
   usePreferredDefaultEditorMode,
 } from "../hooks/usePreferredDefaultEditorMode";
 
+/**
+ * The note views, in plain words, in the order a person meets them. Write is
+ * the rendered editor (the platform default); the three Markdown views show
+ * the source. ONE list — the page header and this menu both read it.
+ */
 export const NOTE_VIEW_MODES = [
-  { mode: "plain", label: "Edit", icon: FileText },
-  { mode: "split", label: "Split", icon: SplitSquareHorizontal },
-  { mode: "wysiwyg", label: "Rich", icon: PilcrowRight },
-  { mode: "markdown-split", label: "MD Split", icon: Columns },
-  { mode: "preview", label: "Preview", icon: Eye },
+  { mode: "wysiwyg", label: "Write", hint: "Edit the formatted note", icon: PenLine, markdown: false, wide: false },
+  { mode: "preview", label: "Read", hint: "Read the formatted note", icon: Eye, markdown: false, wide: false },
+  { mode: "plain", label: "Markdown", hint: "Edit the Markdown source", icon: FileText, markdown: true, wide: false },
+  { mode: "split", label: "Markdown + preview", hint: "Markdown source beside the formatted result", icon: SplitSquareHorizontal, markdown: true, wide: true },
+  { mode: "markdown-split", label: "Markdown with toolbar", hint: "Markdown editor with a formatting toolbar and live preview", icon: Columns, markdown: true, wide: true },
 ] as const;
 
 export type NoteViewMode = (typeof NOTE_VIEW_MODES)[number]["mode"];
@@ -102,7 +107,7 @@ export function NoteViewControls({
           <button
             type="button"
             title="Change view mode"
-            className="flex cursor-pointer items-center gap-1 rounded bg-accent/50 px-2 py-0.5 text-[0.6875rem] font-medium text-foreground transition-colors hover:bg-accent [&_svg]:h-3.5 [&_svg]:w-3.5"
+            className="flex cursor-pointer items-center gap-1 rounded bg-accent/50 px-2 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-accent [&_svg]:h-3.5 [&_svg]:w-3.5"
           >
             <CurrentIcon />
             <span>{current.label}</span>
@@ -136,7 +141,7 @@ export function NoteViewControls({
         onClick={toggleOutline}
         title="Outline"
         className={cn(
-          "flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
+          "flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
           outlineOpen
             ? "bg-accent text-foreground"
             : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
@@ -151,7 +156,7 @@ export function NoteViewControls({
         onClick={toggleHistory}
         title="Versions"
         className={cn(
-          "flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
+          "flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
           historyOpen
             ? "bg-accent text-foreground"
             : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",

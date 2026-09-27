@@ -13,7 +13,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@ai-matrx/design-system";
-import { TapTargetButtonForGroup } from "@ai-matrx/tap-target";
+import { TapTargetButtonForGroup, TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { cleanContent } from "@/lib/content-cleanup/clean";
@@ -35,6 +35,7 @@ export function NoteCleanupButton({
   showLabel = false,
   label = "Clean up",
   asTapGroup = false,
+  asTapButton = false,
 }: {
   noteId: string;
   className?: string;
@@ -46,6 +47,8 @@ export function NoteCleanupButton({
   label?: string;
   /** Render the trigger as a TapTargetButtonForGroup (header action groups). */
   asTapGroup?: boolean;
+  /** Render the trigger as a standalone TapTargetButtonTransparent (named, 44px on touch). */
+  asTapButton?: boolean;
 }) {
   const { content, label: noteLabel, apply } = useNoteCleanup(noteId);
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -125,10 +128,22 @@ export function NoteCleanupButton({
               <path d="M22 21H7" />
               <path d="m5 11 9 9" />
             </TapTargetButtonForGroup>
+          ) : asTapButton ? (
+            <TapTargetButtonTransparent
+              ariaLabel="Clean up content"
+              tooltip="Clean up content"
+              disabled={!hasContent}
+              className={cn(popoverOpen && "text-primary", className)}
+            >
+              <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" />
+              <path d="M22 21H7" />
+              <path d="m5 11 9 9" />
+            </TapTargetButtonTransparent>
           ) : (
             <button
               type="button"
               title="Clean up content"
+              aria-label={showLabel ? undefined : "Clean up content"}
               disabled={!hasContent}
               className={cn(
                 triggerClassName ??

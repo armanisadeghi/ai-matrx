@@ -10,11 +10,12 @@
 // Dense two-column layout on desktop (identity rail + activity main), single
 // stacked scroll on mobile. One scroll area per view.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/lib/toast";
-import { Building2, Send, Trash2, User } from "lucide-react";
+import { Building2, Plus, Send, Trash2, User } from "lucide-react";
+import { contactPointBlockReason } from "../../reachability";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import {
   ChevronLeftTapButton,
@@ -132,6 +133,30 @@ export function PartyRecordPage({ partyId }: Props) {
 
   const party = detail?.party ?? null;
   const isPerson = party?.party_kind === "person";
+
+  // HONEST EMAIL ACTION. A record with a usable address offers "Send email";
+  // one whose addresses are all blocked says so; one with no address at all
+  // offers the step that comes first — "Add email", which opens Contact points
+  // on the email channel.
+  const emailPoints = (detail?.contactPoints ?? []).filter(
+    (point) => point.medium.channel === "email",
+  );
+  const usableEmail =
+    party != null &&
+    emailPoints.some((point) => contactPointBlockReason(party, point) === null);
+  const emailAction: "send" | "blocked" | "add" = usableEmail
+    ? "send"
+    : emailPoints.length > 0
+      ? "blocked"
+      : "add";
+  const [addEmailRequest, setAddEmailRequest] = useState(0);
+  const requestAddEmail = () => setAddEmailRequest((n) => n + 1);
+
+  // The tab leads with the record's name as soon as it loads — the server
+  // title is a bounded best effort and may fall back to "CRM record".
+  useEffect(() => {
+    if (party?.display_name) document.title = party.display_name;
+  }, [party?.display_name]);
 
   const openCompose = () => {
     if (!party) return;
@@ -303,10 +328,16 @@ export function PartyRecordPage({ partyId }: Props) {
                 <DropdownMenuContent align="end">
                   {/* On a phone the header keeps only "…", so the record's
                       name reads in full; Send email lives here instead. */}
-                  {isMobile && (
+                  {isMobile && emailAction === "send" && (
                     <DropdownMenuItem onSelect={openCompose}>
                       <Send className="mr-2 h-3.5 w-3.5" />
                       Send email
+                    </DropdownMenuItem>
+                  )}
+                  {isMobile && emailAction === "add" && (
+                    <DropdownMenuItem onSelect={requestAddEmail}>
+                      <Plus className="mr-2 h-3.5 w-3.5" />
+                      Add email
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem
@@ -324,7 +355,7 @@ export function PartyRecordPage({ partyId }: Props) {
                   further down the page, so arriving on a Person showed no way to
                   write to them (VERIFY-B1-B2 A1). It opens the window over the
                   record; the record stays readable behind it. */}
-              {!isMobile && (
+              {!isMobile && emailAction === "send" && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -334,6 +365,24 @@ export function PartyRecordPage({ partyId }: Props) {
                   <Send className="mr-1 h-3.5 w-3.5" />
                   Send email
                 </Button>
+              )}
+              {!isMobile && emailAction === "add" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={requestAddEmail}
+                  className="h-7 px-2 text-xs"
+                >
+                  <Plus className="mr-1 h-3.5 w-3.5" />
+                  Add email
+                </Button>
+              )}
+              {!isMobile && emailAction === "blocked" && (
+                // Not a disabled-looking button: the sentence IS the state,
+                // and the Contact points card below names each block.
+                <span className="px-2 text-xs text-muted-foreground">
+                  Email blocked for this record
+                </span>
               )}
             </>
           ) : undefined
@@ -386,150 +435,194 @@ export function PartyRecordPage({ partyId }: Props) {
                 "lg:grid-cols-[minmax(280px,26rem)_1fr]",
               )}
             >
+              {/* TWO COLUMNS ON A DESKTOP, ONE STACK ON A PHONE — AND THE STACK
+                  IS ORDERED BY WHAT A PERSON DOES FIRST. Below lg the two column
+                  wrappers are `display: contents`, so every card is a direct
+                  item of this grid and `max-lg:order-*` puts the actions (add
+                  to my contacts, log an activity, a note) right after the
+                  identity instead of ~1,000px down. `empty:hidden` drops the
+                  wrapper of a card that renders nothing, so no gap is left. */}
               {/* Identity rail */}
-              <div className="space-y-3">
-                {/* Dedup status: merged-into banner, duplicate suggestions,
-                  absorbed merges — renders nothing when clean. */}
-                <MergeStatusCard party={party} onChanged={refresh} />
-                <PartyIdentityCard party={party} onChanged={refresh} />
-                {/* Renders nothing unless this person is (or was proposed as)
-                    an expert — see ExpertStatusCard. */}
-                <ExpertStatusCard party={party} onChanged={refresh} />
-                <ContactPointsCard
-                  partyId={party.id}
-                  partyLabel={party.display_name}
-                  orgId={party.organization_id}
-                  points={detail.contactPoints}
-                  onChanged={refresh}
-                />
-                <AddressesCard
-                  partyId={party.id}
-                  partyLabel={party.display_name}
-                  orgId={party.organization_id}
-                  addresses={detail.addresses}
-                  onChanged={refresh}
-                />
+              <div className="max-lg:contents lg:space-y-3">
+                <div className="empty:hidden max-lg:order-1">
+                  {/* Dedup status: merged-into banner, duplicate suggestions,
+                      absorbed merges — renders nothing when clean. */}
+                  <MergeStatusCard party={party} onChanged={refresh} />
+                </div>
+                <div className="max-lg:order-2">
+                  <PartyIdentityCard party={party} onChanged={refresh} />
+                </div>
+                <div className="empty:hidden max-lg:order-3">
+                  {/* Renders nothing unless this person is (or was proposed
+                      as) an expert — see ExpertStatusCard. */}
+                  <ExpertStatusCard party={party} onChanged={refresh} />
+                </div>
+                <div className="max-lg:order-7">
+                  <ContactPointsCard
+                    addEmailRequest={addEmailRequest}
+                    partyId={party.id}
+                    partyLabel={party.display_name}
+                    orgId={party.organization_id}
+                    points={detail.contactPoints}
+                    onChanged={refresh}
+                  />
+                </div>
+                <div className="max-lg:order-10">
+                  <AddressesCard
+                    partyId={party.id}
+                    partyLabel={party.display_name}
+                    orgId={party.organization_id}
+                    addresses={detail.addresses}
+                    onChanged={refresh}
+                  />
+                </div>
                 {/* SPEC-UI-IA §6 — a CRM record and an employee record must
                     never look like two unrelated search results for the same
                     person. Renders NOTHING when this party is not an employee
-                    here, or when HR is off for this org: absent, not a card
-                    that announces the absence. */}
+                    here, or when HR is off for this org. */}
                 {isPerson && (
-                  <PartyEmployeeCard
-                    partyId={party.id}
-                    orgId={party.organization_id}
-                  />
+                  <div className="empty:hidden max-lg:order-11">
+                    <PartyEmployeeCard
+                      partyId={party.id}
+                      orgId={party.organization_id}
+                    />
+                  </div>
                 )}
-                {isPerson ? (
-                  <EmploymentCard
-                    mode="person"
-                    partyId={party.id}
-                    partyLabel={party.display_name}
-                    orgId={party.organization_id}
-                    affiliations={detail.affiliations}
-                    onChanged={refresh}
-                  />
-                ) : (
-                  <EmploymentCard
-                    mode="company"
-                    partyId={party.id}
-                    partyLabel={party.display_name}
-                    orgId={party.organization_id}
-                    members={detail.members}
-                    onChanged={refresh}
-                  />
-                )}
-                {/* Deals with this person/company — the door goes both ways
-                    (a deal names its party; the party names its deals). */}
-                <PartyDealsCard
-                  party={party}
-                  onStateChange={(rows, loadError) => {
-                    setDeals(rows);
-                    setDealsLoadError(loadError);
-                  }}
-                />
-                {/* Files and Tasks sit in the rail: full width here, and the rail no
-                    longer ends in empty space halfway down the page. */}
-                <PrimaryEntityProvider
-                  value={{
-                    type: "party",
-                    id: party.id,
-                    orgId: party.organization_id,
-                    label: party.display_name,
-                  }}
-                >
-                  <AssociationCardGrid tokens={["task", "file"]} />
-                </PrimaryEntityProvider>
+                <div className="max-lg:order-12">
+                  {isPerson ? (
+                    <EmploymentCard
+                      mode="person"
+                      partyId={party.id}
+                      partyLabel={party.display_name}
+                      orgId={party.organization_id}
+                      affiliations={detail.affiliations}
+                      onChanged={refresh}
+                    />
+                  ) : (
+                    <EmploymentCard
+                      mode="company"
+                      partyId={party.id}
+                      partyLabel={party.display_name}
+                      orgId={party.organization_id}
+                      members={detail.members}
+                      onChanged={refresh}
+                    />
+                  )}
+                </div>
+                {/* Files and Tasks sit in the rail, where their tiles use the
+                    full width. */}
+                <div className="max-lg:order-18">
+                  <PrimaryEntityProvider
+                    value={{
+                      type: "party",
+                      id: party.id,
+                      orgId: party.organization_id,
+                      label: party.display_name,
+                    }}
+                  >
+                    <AssociationCardGrid tokens={["task", "file"]} />
+                  </PrimaryEntityProvider>
+                </div>
               </div>
 
               {/* Activity main */}
-              <div className="min-w-0 space-y-3">
-                {/* "Why is this org in my CRM?" — the G1 provenance edge,
-                    rendered as real doors. Renders nothing for a record the
-                    user typed in themselves. */}
-                <PartyProvenanceCard party={party} onChanged={refresh} />
-                {/* REC-34 / SCR-12 — the organization's OWN fields on this
-                    standard entity, from the unified record store. One line,
-                    no per-entity code: a field an organization adds to
-                    contacts appears here the same afternoon. Absent (not an
-                    empty box) until this org declares one. */}
-                <EntityCustomFields entityToken="party" recordId={party.id} organizationId={party.organization_id} />
-                {!isPerson && party.primary_domain && (
-                  <OutreachContactCandidatesCard outletPartyId={party.id} />
-                )}
-                {/* The persisted candidate queue (IC-3): every producer — the
-                    crawl, the paid waterfall, the registries, the extension —
-                    writes ONE ranked list, and none of it is contactable until
-                    somebody confirms a row here. */}
-                <ContactCandidatesCard
-                  partyId={party.id}
-                  onChanged={refresh}
-                  onStateChange={(rows, loadError) => {
-                    setContactCandidates(rows);
-                    setContactCandidatesLoadError(loadError);
-                  }}
-                />
-                {/* Only for people, and only when we have somewhere to look:
-                    "is this journalist still there, and what do they cover?" */}
-                {isPerson && (
-                  <JournalistIntelligenceCard
-                    partyId={party.id}
-                    storedActivity={storedJournalistActivity(party)}
+              <div className="min-w-0 max-lg:contents lg:space-y-3">
+                <div className="empty:hidden max-lg:order-4">
+                  {/* "Why is this org in my CRM?" — the G1 provenance edge,
+                      rendered as real doors, with "Add to my contacts".
+                      Renders nothing for a record the user typed in. */}
+                  <PartyProvenanceCard party={party} onChanged={refresh} />
+                </div>
+                <div className="empty:hidden max-lg:order-14">
+                  {/* REC-34 / SCR-12 — the organization's OWN fields on this
+                      standard entity. Absent until this org declares one. */}
+                  <EntityCustomFields
+                    entityToken="party"
+                    recordId={party.id}
+                    organizationId={party.organization_id}
                   />
+                </div>
+                {!isPerson && party.primary_domain && (
+                  <div className="empty:hidden max-lg:order-9">
+                    <OutreachContactCandidatesCard outletPartyId={party.id} />
+                  </div>
                 )}
-                {/* "Outputs about this customer" — the reverse view slice 2
-                    built for sites, pointed at this party (DD-131 slice 3). */}
-                <PartyOutputsSection
-                  partyId={party.id}
-                  partyName={party.display_name}
-                />
-                {/* "Upcoming with this person" (PLAN §4.6): the ONE agenda
-                    component, filtered to this record's own email addresses.
-                    Renders NOTHING when it has none — absent, not a card that
-                    announces an absence. */}
-                <PersonUpcomingCard partyId={party.id} partyName={party.display_name} />
-                <InteractionTimeline
-                  partyId={party.id}
-                  orgId={party.organization_id}
-                  interactions={detail.interactions}
-                  onChanged={refresh}
-                  getApplicationScope={getScope}
-                  writeSurfaceName={CRM_RECORD_SURFACE_NAME}
-                  copyParent={copyParent}
-                  partyLabel={party.display_name}
-                  showSendEmail={false}
-                />
-                <PartyNotes
-                  partyId={party.id}
-                  orgId={party.organization_id}
-                  getApplicationScope={getScope}
-                  writeSurfaceName={CRM_RECORD_SURFACE_NAME}
-                  copyParent={copyParent}
-                  onNotesStateChange={(nextNotes, nextError) => {
-                    setNotes(nextNotes);
-                    setNotesLoadError(nextError);
-                  }}
-                />
+                <div className="max-lg:order-8">
+                  {/* The persisted candidate queue (IC-3): every producer
+                      writes ONE ranked list, and none of it is contactable
+                      until somebody confirms a row here. */}
+                  <ContactCandidatesCard
+                    partyId={party.id}
+                    onChanged={refresh}
+                    onStateChange={(rows, loadError) => {
+                      setContactCandidates(rows);
+                      setContactCandidatesLoadError(loadError);
+                    }}
+                  />
+                </div>
+                {isPerson && (
+                  <div className="empty:hidden max-lg:order-15">
+                    {/* Only for people: "is this journalist still there, and
+                        what do they cover?" */}
+                    <JournalistIntelligenceCard
+                      partyId={party.id}
+                      storedActivity={storedJournalistActivity(party)}
+                    />
+                  </div>
+                )}
+                <div className="max-lg:order-13">
+                  {/* Deals with this person/company — the door goes both ways
+                      (a deal names its party; the party names its deals). */}
+                  <PartyDealsCard
+                    party={party}
+                    onStateChange={(rows, loadError) => {
+                      setDeals(rows);
+                      setDealsLoadError(loadError);
+                    }}
+                  />
+                </div>
+                <div className="empty:hidden max-lg:order-16">
+                  {/* "Outputs about this customer" (DD-131 slice 3). Absent
+                      until something was produced about them. */}
+                  <PartyOutputsSection
+                    partyId={party.id}
+                    partyName={party.display_name}
+                  />
+                </div>
+                <div className="empty:hidden max-lg:order-17">
+                  {/* "Upcoming with this person" (PLAN §4.6). Renders NOTHING
+                      when the record has no email address. */}
+                  <PersonUpcomingCard
+                    partyId={party.id}
+                    partyName={party.display_name}
+                  />
+                </div>
+                <div className="max-lg:order-5">
+                  <InteractionTimeline
+                    partyId={party.id}
+                    orgId={party.organization_id}
+                    interactions={detail.interactions}
+                    onChanged={refresh}
+                    getApplicationScope={getScope}
+                    writeSurfaceName={CRM_RECORD_SURFACE_NAME}
+                    copyParent={copyParent}
+                    partyLabel={party.display_name}
+                    showSendEmail={false}
+                  />
+                </div>
+                <div className="max-lg:order-6">
+                  <PartyNotes
+                    partyId={party.id}
+                    orgId={party.organization_id}
+                    getApplicationScope={getScope}
+                    writeSurfaceName={CRM_RECORD_SURFACE_NAME}
+                    copyParent={copyParent}
+                    onNotesStateChange={(nextNotes, nextError) => {
+                      setNotes(nextNotes);
+                      setNotesLoadError(nextError);
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </NonEditableContextMenu>

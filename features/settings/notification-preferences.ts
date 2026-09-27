@@ -70,6 +70,12 @@ export interface NotificationEventSetting {
    * default). Flipping such a switch creates this organization's own row.
    */
   inherited: Record<string, boolean>;
+  /**
+   * A notice the person may move between channels but never switch off
+   * everywhere (`config.mandatory`, e.g. statutory HR notices). The server
+   * enforces it; the screen says so.
+   */
+  mandatory: boolean;
 }
 
 function asBooleanMap(value: unknown): Record<string, boolean> {
@@ -198,6 +204,7 @@ export async function loadNotificationSettings(
       defaults,
       availableChannels,
       inherited,
+      mandatory: asRecord(event.config).mandatory === true,
     }];
   });
 }

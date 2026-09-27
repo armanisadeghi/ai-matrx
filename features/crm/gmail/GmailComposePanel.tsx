@@ -502,6 +502,8 @@ export function GmailComposePanel({
           placeholder="name@example.com"
           className="text-base"
         />
+        {/* The record's addresses as one-click chips; with none, the field
+            and its placeholder say everything — no filler line. */}
         {options.length > 0 ? (
           <div className="flex flex-wrap gap-1.5">
             {options.map((option) => (
@@ -513,17 +515,12 @@ export function GmailComposePanel({
               />
             ))}
           </div>
-        ) : (
-          <p className="text-[11px] text-muted-foreground">
-            This record holds no email address yet — type one, and it will be
-            sent on your own judgement.
-          </p>
-        )}
+        ) : null}
         {matched?.warning ? (
-          <p className="text-[11px] text-warning">{matched.warning}</p>
+          <p className="text-xs text-warning">{matched.warning}</p>
         ) : null}
         {!gated && to.trim().includes("@") ? (
-          <p className="text-[11px] text-warning">
+          <p className="text-xs text-warning">
             This address is not one this record holds. It is still checked
             against your organization&apos;s unsubscribes and blocklist before it
             sends — but the message will be recorded on no record&apos;s

@@ -162,7 +162,15 @@ export interface FastFireState {
   /** Why the current card advanced — drives the TIME'S UP hold vs a quick skip.
    *  Reset to null when a new card starts recording. */
   lastAdvanceReason: AdvanceReason | null;
-  /** The study_session id (study spine). Null until the session opens. */
+  /**
+   * The drill's CLIENT run id, minted at Start. It guards stale grade
+   * dispatches from an earlier run. Never a database id.
+   */
+  runId: string | null;
+  /**
+   * The study_session id (study spine). Null until the FIRST ANSWER opens it
+   * (see fastFireSession.ts) — Start alone writes nothing.
+   */
   sessionId: string | null;
   /** Full-session recording, uploaded at finalize. */
   sessionAudioFileId: string | null;
@@ -189,6 +197,7 @@ const initialState: FastFireState = {
   cards: [],
   currentIndex: -1,
   lastAdvanceReason: null,
+  runId: null,
   sessionId: null,
   sessionAudioFileId: null,
   gradesByCard: {},
@@ -305,24 +314,35 @@ const fastFireSlice = createSlice({
       state.config = { ...state.config, ...action.payload };
     },
 
+    /** The first answer opened this run's study session. */
+    sessionOpened(
+      state,
+      action: PayloadAction<{ runId: string; sessionId: string }>,
+    ) {
+      if (action.payload.runId !== state.runId) return;
+      state.sessionId = action.payload.sessionId;
+    },
+
     /**
-     * Begin the drill: lock in the resolved card queue + session id and run the
-     * countdown. Cards are already trimmed to `cardLimit` by the caller.
+     * Begin the drill: lock in the resolved card queue + the client run id and
+     * run the countdown. No session exists yet — the first answer opens it.
+     * Cards are already trimmed to `cardLimit` by the caller.
      */
     startDrill(
       state,
       action: PayloadAction<{
         cards: DrillCard[];
-        sessionId: string | null;
+        runId: string;
         setName: string | null;
         /** Sub-cards folded out by collapse-on-mastery (receipt, spec 26a). */
         foldedCount?: number;
       }>,
     ) {
-      const { cards, sessionId, setName } = action.payload;
+      const { cards, runId, setName } = action.payload;
       state.phase = "countdown";
       state.cards = cards;
-      state.sessionId = sessionId;
+      state.runId = runId;
+      state.sessionId = null;
       state.config.setName = setName;
       state.foldedCount = action.payload.foldedCount ?? 0;
       state.currentIndex = -1;
@@ -384,9 +404,9 @@ const fastFireSlice = createSlice({
       // M4: ignore a result from a PREVIOUS run. In-flight grade thunks can
       // resolve late, after `restart()`/`openSetup()` reset state and a new run
       // started — writing a stale grade would corrupt the new drill. Each grade
-      // dispatch is stamped with the run's sessionId; drop any whose runId no
+      // dispatch is stamped with the run's client runId; drop any whose runId no
       // longer matches the current session.
-      if (action.payload.runId !== state.sessionId) return;
+      if (action.payload.runId !== state.runId) return;
       const { cardId, responseAudioFileId } = action.payload;
       const grade = state.gradesByCard[cardId] ?? blankGrade(cardId);
       grade.status = "pending";
@@ -414,7 +434,7 @@ const fastFireSlice = createSlice({
     ) {
       const p = action.payload;
       // M4: drop a stale grade from a previous run (see gradePending).
-      if (p.runId !== state.sessionId) return;
+      if (p.runId !== state.runId) return;
       const grade = state.gradesByCard[p.cardId] ?? blankGrade(p.cardId);
       grade.status = "resolved";
       grade.score = p.score;
@@ -447,7 +467,7 @@ const fastFireSlice = createSlice({
       }>,
     ) {
       // M4: drop a stale grade from a previous run (see gradePending).
-      if (action.payload.runId !== state.sessionId) return;
+      if (action.payload.runId !== state.runId) return;
       const { cardId, responseAudioFileId } = action.payload;
       const grade = state.gradesByCard[cardId] ?? blankGrade(cardId);
       grade.status = "skipped";
@@ -461,7 +481,7 @@ const fastFireSlice = createSlice({
       action: PayloadAction<{ cardId: string; error: string; runId: string | null }>,
     ) {
       // M4: drop a stale grade from a previous run (see gradePending).
-      if (action.payload.runId !== state.sessionId) return;
+      if (action.payload.runId !== state.runId) return;
       const { cardId, error } = action.payload;
       const grade = state.gradesByCard[cardId] ?? blankGrade(cardId);
       grade.status = "error";
@@ -519,6 +539,7 @@ export const {
   openSetup,
   updateConfig,
   startDrill,
+  sessionOpened,
   beginRecording,
   advanceCard,
   commitAdvance,

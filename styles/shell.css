@@ -2671,9 +2671,16 @@ body:has(.shell-root[data-pathname^="/administration"]) {
   text-overflow: ellipsis;
 }
 
-/* The sidebar's footer stops above the block so Settings is never under it. */
-.shell-sidebar-footer {
-  padding-bottom: calc(var(--shell-user-block-h) + 0.25rem);
+/* 🚨 THE SIDEBAR ITSELF STOPS ABOVE THE ACCOUNT BLOCK (page-pass shared
+   defects, 2026-09-27). The reservation used to live on `.shell-sidebar-footer`,
+   and a route that hides the footer (the settings sidebar, `[data-settings-
+   route]`) lost it: /user-settings' last item ("Text generation") sat under the
+   fixed avatar. Reserving on the column itself covers every nav it holds — the
+   main nav, a route menu, the footer — whether or not the footer shows. */
+@media (min-width: 1024px) {
+  .shell-sidebar {
+    padding-bottom: var(--shell-user-block-h);
+  }
 }
 
 @media (max-width: 1023px) {

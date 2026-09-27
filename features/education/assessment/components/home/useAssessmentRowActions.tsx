@@ -90,13 +90,19 @@ export function makeAssessmentRowActions(config: KindConfig) {
           disabled: row.archived,
           disabledReason: restoreFirst,
         },
-        {
-          id: "results",
-          label: "Results",
-          icon: BarChart3,
-          kind: "link",
-          href: `${href}/results`,
-        },
+        // Results only once there is one to show: the results route without a
+        // result id falls back to the overview, which was a second "Open".
+        ...(row.my_last_result_id
+          ? [
+              {
+                id: "results",
+                label: "Results",
+                icon: BarChart3,
+                kind: "link",
+                href: `${href}/results?r=${row.my_last_result_id}`,
+              } satisfies ItemMenuEntry,
+            ]
+          : []),
       ];
       return {
         header: { title: row.title },

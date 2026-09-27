@@ -30,6 +30,10 @@ import {
   isMicrophonePermissionDenial,
 } from "@/features/audio/utils/microphone-diagnostics";
 import { startDrill, setError } from "../redux/fastFireSlice";
+import {
+  armFastFireSession,
+  newFastFireRunId,
+} from "../redux/fastFireSession";
 import { selectFastFireConfig } from "../redux/fastFire.selectors";
 import type { DrillCard } from "../redux/fastFireSlice";
 
@@ -163,31 +167,34 @@ export function useFastFireLauncher(
       //    not leave an orphaned active study_session behind.
       await startContinuousCapture();
 
-      // 4. Open a study session on the shared spine (best-effort — a failed
-      //    session does NOT block the drill; attempts are valid session-less).
-      const sessionRes = await studyService.createSession({
-        mode: STUDY_MODE,
-        // `study_session.source_kind` CHECK allows set/dynamic_batch/adaptive
-        // (the source TYPE, not the table) — a single-set run is `set`.
-        sourceKind: "set",
-        sourceSetId: set.id,
-        status: "active",
-        settings: {
-          seconds_per_card: config.secondsPerCard,
-          card_count: drillCards.length,
-          live_score: config.liveScore,
-        },
-      });
-      if (sessionRes.error) {
-        console.error("[useFastFireLauncher] createSession:", sessionRes.error);
-      }
-      const sessionId = sessionRes.data?.id ?? null;
+      // 4. Arm (never write) the study session on the shared spine: the
+      //    FIRST ANSWER opens it, so starting a drill and leaving writes
+      //    nothing. The drill's identity is a client run id, not the session.
+      const runId = newFastFireRunId();
+      const seconds = config.secondsPerCard;
+      const liveScore = config.liveScore;
+      const cardCount = drillCards.length;
+      armFastFireSession(runId, () =>
+        studyService.createSession({
+          mode: STUDY_MODE,
+          // `study_session.source_kind` CHECK allows set/dynamic_batch/adaptive
+          // (the source TYPE, not the table) — a single-set run is `set`.
+          sourceKind: "set",
+          sourceSetId: set.id,
+          status: "active",
+          settings: {
+            seconds_per_card: seconds,
+            card_count: cardCount,
+            live_score: liveScore,
+          },
+        }),
+      );
 
       // 5. Hand off to the state machine.
       dispatch(
         startDrill({
           cards: drillCards,
-          sessionId,
+          runId,
           setName: set.name,
           foldedCount,
         }),

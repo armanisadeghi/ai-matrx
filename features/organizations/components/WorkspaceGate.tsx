@@ -40,6 +40,8 @@ export interface WorkspaceGateProps {
   blocked: boolean;
   /** One plain sentence naming what needs the workspace, e.g. "This thread needs a workspace to open." */
   sentence: string;
+  /** One optional line under it — what the host is, so the state is not a void. */
+  description?: string;
   /** The host's own waiting UI, shown while the wait is real. */
   children: ReactNode;
   /** Framed-card form for a host that is already inside a small panel. */
@@ -47,7 +49,7 @@ export interface WorkspaceGateProps {
   className?: string;
 }
 
-export function WorkspaceGate({ sentence, blocked, children, compact = false, className }: WorkspaceGateProps) {
+export function WorkspaceGate({ sentence, description = "", blocked, children, compact = false, className }: WorkspaceGateProps) {
   const { organizationState } = useOrganizationRequired();
   if (!blocked || organizationState === "ready" || organizationState === "resolving") {
     return <>{children}</>;
@@ -60,7 +62,7 @@ export function WorkspaceGate({ sentence, blocked, children, compact = false, cl
       <OrganizationContextNotice
         state={organizationState}
         title={sentence}
-        description=""
+        description={description}
         compact={compact}
       />
     </div>

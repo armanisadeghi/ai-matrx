@@ -41,6 +41,10 @@ export const selectFastFireAdvanceReason = (
 export const selectFastFireSessionId = (state: RootState): string | null =>
   state.fastFire.sessionId;
 
+/** The drill's client run id (never a database id). */
+export const selectFastFireRunId = (state: RootState): string | null =>
+  state.fastFire.runId;
+
 export const selectFastFireSessionAudioFileId = (
   state: RootState,
 ): string | null => state.fastFire.sessionAudioFileId;

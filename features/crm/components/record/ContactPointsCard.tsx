@@ -19,7 +19,7 @@ import {
 } from "@/components/icons/brand-icons";
 import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import { PlusTapButton, TrashTapButton, XTapButton } from "@ai-matrx/tap-target/buttons";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import {
   AtSign,
@@ -109,6 +109,11 @@ interface Props {
   orgId: string;
   points: ContactPoint[];
   onChanged: () => Promise<void>;
+  /**
+   * Bumped by the page's "Add email" header action: opens the add form on the
+   * email channel and scrolls this card into view.
+   */
+  addEmailRequest?: number;
 }
 
 /**
@@ -137,6 +142,7 @@ export function ContactPointsCard({
   orgId,
   points,
   onChanged,
+  addEmailRequest,
 }: Props) {
   // The acting user — stamped on the suppression audit trail (the timeline
   // note and the medium's own history entry).
@@ -146,6 +152,18 @@ export function ContactPointsCard({
   const [value, setValue] = useState("");
   const [label, setLabel] = useState("");
   const [saving, setSaving] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [seenRequest, setSeenRequest] = useState(addEmailRequest ?? 0);
+  // A new request from the header (render-time, no effect cascade).
+  if ((addEmailRequest ?? 0) !== seenRequest) {
+    setSeenRequest(addEmailRequest ?? 0);
+    setAdding(true);
+    setChannel("email");
+  }
+  useEffect(() => {
+    if (!addEmailRequest) return;
+    cardRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [addEmailRequest]);
   const copyParent: CrmRecordCopyParent = {
     type: "party",
     id: partyId,
@@ -291,6 +309,7 @@ export function ContactPointsCard({
   });
 
   return (
+    <div ref={cardRef}>
     <SectionCard
       empty={points.length === 0 && !adding}
       title="Contact points"
@@ -480,5 +499,6 @@ export function ContactPointsCard({
         </ul>
       )}
     </SectionCard>
+    </div>
   );
 }
