@@ -440,6 +440,8 @@ how that savior page gets built.
 
 ## Change log
 
+- 2026-09-27 (round 3, live-verified at aimatrx.com `0d18617a38`, design-system 0.48.8) — A "+" view survives a real reload: named "PP test — saved view" on /research/topics, reloaded, the tab was listed and reapplied its Name A→Z sort. Phone: the search owns its own line, the table's row never wraps, scope tabs are unboxed, the cards scroller has no frame (design-system), cards omit empty fields and read the meta line at 12px, the list root and the Filters popover carry the touch floor (the table's own floor now also applies below 640px). The Filters button is absent when the panel would be empty (/connected-sources; `__tests__/filter-panel-never-empty.test.tsx`). Two of these hunks were swept into `675bc5a7e5` by the sync.
+
 - 2026-09-27 (round 2, coordinator rulings) — The table's "+" views are RESTORED and now kept:
   named on creation (the name field opens at once; Escape discards), stored in the surface's
   view preferences (`ListViewPrefs.savedViews`, survives a shape bump and "Reset view"), and a
