@@ -113,18 +113,36 @@ function CountBadge({ count }: { count: number }) {
   );
 }
 
-/** The inbox total for the trigger badge — signed in only (a guest has none). */
-function SignedInTriggerBadge() {
-  const counts = useInboxCounts();
-  if (counts.total <= 0) return null;
+const TRIGGER_LABEL = "Search, agents, chat, canvas and inbox";
+
+/**
+ * 🚨 THE UNREAD MARK NEVER SITS ON THE ⋮ (page-pass shared defects,
+ * 2026-09-27). A "99+" pill in the 44px button's corner covered the glyph on
+ * a phone. The trigger now carries a small DOT in the button's own corner,
+ * clear of the icon (the glyph is ~20px centred; the dot sits in the outer
+ * 8px ring), the number is in the button's accessible name, and the sheet's
+ * Inbox row shows the full count.
+ */
+function OverflowTrigger({ onOpen, unread }: { onOpen: () => void; unread: number }) {
+  const label =
+    unread > 0 ? `${TRIGGER_LABEL} — ${unread > 99 ? "99+" : unread} new in the inbox` : TRIGGER_LABEL;
   return (
-    <span
-      className="pointer-events-none absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold leading-none text-primary-foreground"
-      aria-hidden
-    >
-      {counts.total > 99 ? "99+" : counts.total}
-    </span>
+    <>
+      <TapTargetButton icon={<EllipsisVertical />} ariaLabel={label} onClick={onOpen} />
+      {unread > 0 ? (
+        <span
+          className="pointer-events-none absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background"
+          data-header-overflow-unread
+          aria-hidden
+        />
+      ) : null}
+    </>
   );
+}
+
+function SignedInOverflowTrigger({ onOpen }: { onOpen: () => void }) {
+  const counts = useInboxCounts();
+  return <OverflowTrigger onOpen={onOpen} unread={counts.total} />;
 }
 
 function InboxRowTrailing() {
@@ -164,12 +182,11 @@ export function HeaderPhoneOverflow({
 
   return (
     <div className="shell-header-overflow relative shrink-0" data-header-phone-overflow>
-      <TapTargetButton
-        icon={<EllipsisVertical />}
-        ariaLabel="Search, agents, chat, canvas and inbox"
-        onClick={() => setOpen(true)}
-      />
-      {isAuthenticated ? <SignedInTriggerBadge /> : null}
+      {isAuthenticated ? (
+        <SignedInOverflowTrigger onOpen={() => setOpen(true)} />
+      ) : (
+        <OverflowTrigger onOpen={() => setOpen(true)} unread={0} />
+      )}
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="bg-textured pb-safe max-h-[85dvh]">
           <DrawerHeader className={view === "menu" ? "sr-only" : "flex flex-row items-center gap-1 px-2 py-1 text-left"}>

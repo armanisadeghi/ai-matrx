@@ -101,7 +101,7 @@ function click(el: Element | null | undefined) {
 }
 
 function openSheet() {
-  click(host.querySelector('button[aria-label="Search, agents, chat, canvas and inbox"]'));
+  click(host.querySelector('button[aria-label^="Search, agents"]'));
 }
 
 function row(label: string): HTMLButtonElement | undefined {
@@ -174,7 +174,13 @@ describe("HeaderPhoneOverflow — the same four, the same states", () => {
 
   it("signed in, Inbox opens the inbox in the sheet and the count rides the button", () => {
     mount(true);
-    expect(host.textContent).toContain("3");
+    // The number rides the button's name; the visible mark is a dot in the
+    // corner, never a "99+" pill over the ⋮ (page-pass, 2026-09-27).
+    const trigger = host.querySelector('button[aria-label^="Search, agents"]');
+    expect(trigger?.getAttribute("aria-label")).toContain("3 new in the inbox");
+    const dot = host.querySelector("[data-header-overflow-unread]");
+    expect(dot?.className).toContain("h-2 w-2");
+    expect(dot?.textContent).toBe("");
     openSheet();
     click(row("Inbox"));
     expect(document.querySelector('[data-testid="inbox-panel"]')).not.toBeNull();
