@@ -36,6 +36,10 @@ import type { WorkflowRunEvent } from "@/features/workflow-runtime/types";
 import { activityLine } from "@/features/workflow-runtime/components/run/activity-copy";
 import { RunJourney } from "@/features/workflow-runtime/components/run/RunJourney";
 import { SettledOutputBody } from "@/features/workflow-runtime/components/SettledOutputBody";
+import {
+  settledOutputFallback,
+  useHeldOutcome,
+} from "@/components/mardown-display/blocks/runtime-wrappers/NodeOutcomeBlock";
 
 const RUN = "run-harbor-morning-recalls-2";
 const CHECKPOINT = "cp-0000-held";
@@ -115,6 +119,42 @@ function approvedState(): WorkflowRunsState {
   ]);
 }
 
+function refusedState(): WorkflowRunsState {
+  return foldEvents([
+    {
+      event: "node_started",
+      run_id: RUN,
+      step: 1,
+      node_id: "save_confirmation",
+      spec_type: "data.table.upsert",
+      attempt: 1,
+      dispatch_id: "",
+      item_index: 0,
+      invocation_count: 1,
+      ts: "2026-09-27T09:00:00Z",
+    },
+    {
+      event: "run_interrupted",
+      run_id: RUN,
+      node_id: "save_confirmation",
+      payload: {
+        title: "Waiting for your approval",
+        held_write: {},
+        matrx_held_write: { approval_id: APPROVAL, node_id: "save_confirmation" },
+      },
+      checkpoint_id: CHECKPOINT,
+      ts: "2026-09-27T09:00:01Z",
+    },
+    // Dana refuses instead of approving: the run ends here, on this node.
+    {
+      event: "run_cancelled",
+      run_id: RUN,
+      error: { cause: "refused" },
+      ts: "2026-09-27T09:05:00Z",
+    },
+  ]);
+}
+
 describe("a held step, APPROVED", () => {
   test("the activity feed says it was approved and written, with the row id — never 'Not needed this time'", () => {
     const activity = (approvedState().byRunId[RUN] as unknown as {
@@ -187,6 +227,61 @@ describe("a held step's deliverable body, REFUSED", () => {
 
   test("an ordinary settled step with no held decision keeps the original honest fallback", () => {
     act(() => root.render(<SettledOutputBody output={{ final_text: "" }} />));
+    expect(host.textContent).toBe("This step ran, and handed its result to the next one.");
+  });
+});
+
+// RunResultCard (readout-parts.tsx) shows a finished run through
+// KindInstanceRender(kind=RUN_RESULT_KIND), which the block registry routes to
+// RunResultBlock → NodeOutcomeBlock per terminal node. Those bindings' "no
+// component for this shape" fallback is `@ai-matrx/content-ir-react`'s
+// `fallback` callback, which only ever receives the bare `output` — never the
+// wrapper's `run_id`/`node_id` — so before this lane, NodeOutcomeBlock (and
+// RunResultBlock, which used to render through the package's `RunResultView`
+// with that same node-blind callback) had no way to pass `heldOutcome` to
+// `SettledOutputBody`, and a refused held step's run-result card still said
+// "This step ran, and handed its result to the next one." — the same false
+// sentence lane HELD-STEP-WORDS fixed everywhere else. NodeOutcomeBlock now
+// reads its own wrapper first and looks up the sticky fact itself
+// (`useHeldOutcome`), then threads it into the SAME fallback
+// (`settledOutputFallback`) the package calls — this proves that seam alone,
+// without pulling in the full content-ir render stack.
+describe("the run-result card's per-node fallback (NodeOutcomeBlock / RunResultBlock)", () => {
+  function renderHeldOutcome(
+    state: WorkflowRunsState,
+    nodeId: string,
+    output: Record<string, unknown>,
+  ) {
+    const store = configureStore({
+      reducer: { workflowRuns: workflowRunsReducer },
+      preloadedState: { workflowRuns: state },
+    });
+    function Probe() {
+      const heldOutcome = useHeldOutcome(RUN, nodeId);
+      return <>{settledOutputFallback(output, heldOutcome)}</>;
+    }
+    act(() =>
+      root.render(
+        <Provider store={store}>
+          <Probe />
+        </Provider>,
+      ),
+    );
+  }
+
+  test("a refused node's outcome says the refusal, never 'handed its result to the next one'", () => {
+    renderHeldOutcome(refusedState(), "save_confirmation", {});
+    expect(host.textContent).toBe("Refused; nothing was written and the run ended here.");
+    expect(host.textContent).not.toContain("handed its result to the next one");
+  });
+
+  test("an approved held node's outcome says the approval", () => {
+    renderHeldOutcome(approvedState(), "save_confirmation", { final_text: "" });
+    expect(host.textContent).toBe("Approved; the change was written.");
+  });
+
+  test("a node with no held decision keeps the original honest fallback", () => {
+    renderHeldOutcome(approvedState(), "some_other_node_never_held", { final_text: "" });
     expect(host.textContent).toBe("This step ran, and handed its result to the next one.");
   });
 });
