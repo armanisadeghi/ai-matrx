@@ -58,6 +58,10 @@ Judge by who is looking at it and why.
   `archived_at` (the entity type's `user_artifact_kind` puts it in Trash).
   When the table only soft-deletes, `delete_<plural>` archives and its
   description says so.
+- **The agent can change the view.** Targets that act on rows on screen need a
+  `list_view` target (`ui` mode, applies without asking: scope, archived,
+  search) so an agent can reach rows that are not showing (worked:
+  `features/research/browse/`).
 - **Date columns** filter with `filter: "select"` over the shared date buckets,
   and the service honors them; an id-valued facet (a project) shows names.
 - **Duplicates are distinguishable:** two rows — or two folder/group headers —
