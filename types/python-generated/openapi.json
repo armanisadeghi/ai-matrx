@@ -196344,6 +196344,18 @@
             "description": "True while the person is still typing: the INSTANT pass only (top hit, items, messages) — Segments never run while typing. Same as pass='instant'.",
             "default": false
           },
+          "rerank": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rerank",
+            "description": "Rerank passage (Segment) results with the relevance model. Omitted = the organization's setting (knowledge.search_rerank). Honoured on the content pass and on submit only; typing never reranks."
+          },
           "pass": {
             "anyOf": [
               {
