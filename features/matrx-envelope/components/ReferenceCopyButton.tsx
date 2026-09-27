@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TapTargetButton } from "@ai-matrx/tap-target";
 import { toast } from "@/lib/toast";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
@@ -15,7 +16,12 @@ interface ReferenceCopyButtonProps {
   label?: string;
   /** Human-readable label for the success toast. */
   toastLabel: string;
-  size?: "sm" | "md";
+  /**
+   * `"tap"` renders the standard header TapTargetButton (44px hit area on
+   * touch, the same glass circle as its neighbours) — use it in route headers,
+   * where a bare 24px icon sat beside 44px buttons.
+   */
+  size?: "sm" | "md" | "tap";
   className?: string;
 }
 
@@ -33,9 +39,9 @@ export function ReferenceCopyButton({
 }: ReferenceCopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
+  const handleCopy = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    e?.preventDefault();
     const didCopy = await copyReferenceFence(
       buildRecordReferenceFence({ type: referenceType, id, label }),
     );
@@ -48,6 +54,24 @@ export function ReferenceCopyButton({
       setTimeout(() => setCopied(false), 1500);
     }
   };
+
+  if (size === "tap") {
+    return (
+      <TapTargetButton
+        icon={
+          copied ? (
+            <BookmarkCheck className="h-4 w-4 fill-primary" />
+          ) : (
+            <Bookmark className="h-4 w-4" />
+          )
+        }
+        ariaLabel={copied ? "Copied!" : `Copy reference for ${toastLabel}`}
+        tooltip={copied ? "Copied!" : "Copy reference"}
+        onClick={() => void handleCopy()}
+        className={className}
+      />
+    );
+  }
 
   const iconSize = size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";
   const btnSize = size === "sm" ? "h-6 w-6" : "h-8 w-8";

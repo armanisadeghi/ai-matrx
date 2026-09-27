@@ -16,7 +16,7 @@ export function AgentAppReferenceCopySlot({
       id={appId}
       label={appName}
       toastLabel={appName}
-      size="sm"
+      size="tap"
     />
   );
 }
