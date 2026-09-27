@@ -36,6 +36,7 @@ import {
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { describeLaunchError } from "./describe-launch-error";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type CanvasWorkspaceConversation =
   | { state: "opening"; purpose: "new" | "open" }
@@ -43,7 +44,10 @@ export type CanvasWorkspaceConversation =
   | { state: "ready"; conversationId: string }
   | { state: "failed"; purpose: "new" | "open"; reason: string; retry: () => void };
 
-type Request = { kind: "new"; nonce: number } | { kind: "open"; conversationId: string; nonce: number };
+type Request =
+  | { kind: "new"; nonce: number }
+  | { kind: "agent"; agentId: string; nonce: number }
+  | { kind: "open"; conversationId: string; nonce: number };
 
 export interface CanvasWorkspaceConversationController {
   conversation: CanvasWorkspaceConversation;
@@ -51,18 +55,25 @@ export interface CanvasWorkspaceConversationController {
   conversationId: string | null;
   startNew: () => void;
   openExisting: (conversationId: string) => void;
+  /**
+   * The composer's agent switch (ComposerAgentControl.onSelectAgent): a fresh
+   * conversation with that agent — never a revival. `via.mandateKey` (Custom =
+   * the default-chat job) launches through the job instead, the only launch
+   * that applies the person's own default chat model.
+   */
+  startWith: (agentId: string, via?: { mandateKey: AnyMandateKey }) => void;
 }
 
 export function useCanvasWorkspaceConversation(surfaceKey: string): CanvasWorkspaceConversationController {
   const dispatch = useAppDispatch();
-  const { launchMandate } = useAgentLauncher();
+  const { launchMandate, launchAgent } = useAgentLauncher();
   const [request, setRequest] = useState<Request>({ kind: "new", nonce: 0 });
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const handled = useRef<string | null>(null);
   const organizationId = useAppSelector(selectOrganizationId);
   const promptForOrganization = useAppSelector(selectShouldPromptForOrganization);
-  const waitingForOrganization = request.kind === "new" && !organizationId;
+  const waitingForOrganization = request.kind !== "open" && !organizationId;
 
   useEffect(() => {
     if (waitingForOrganization) return;
@@ -73,12 +84,16 @@ export function useCanvasWorkspaceConversation(surfaceKey: string): CanvasWorksp
     handled.current = key;
     const stale = () => handled.current !== key;
 
-    if (request.kind === "new") {
-      launchMandate(DEFAULT_NEW_CHAT_MANDATE_KEY, {
-        surfaceKey,
-        // A REGISTERED feature, never a new string: this surface IS the chat.
-        sourceFeature: "chat",
-      }).then(
+    if (request.kind === "new" || request.kind === "agent") {
+      const launch =
+        request.kind === "agent"
+          ? launchAgent(request.agentId, { surfaceKey, sourceFeature: "chat" })
+          : launchMandate(DEFAULT_NEW_CHAT_MANDATE_KEY, {
+              surfaceKey,
+              // A REGISTERED feature, never a new string: this surface IS the chat.
+              sourceFeature: "chat",
+            });
+      launch.then(
         (result) => {
           if (!stale()) setConversationId(result.conversationId);
         },
@@ -101,12 +116,21 @@ export function useCanvasWorkspaceConversation(surfaceKey: string): CanvasWorksp
           },
         );
     }
-  }, [surfaceKey, request, launchMandate, dispatch, waitingForOrganization]);
+  }, [surfaceKey, request, launchMandate, launchAgent, dispatch, waitingForOrganization]);
 
   const startNew = () => {
     setConversationId(null);
     setFailure(null);
     setRequest((current) => ({ kind: "new", nonce: current.nonce + 1 }));
+  };
+  const startWith = (agentId: string, via?: { mandateKey: AnyMandateKey }) => {
+    setConversationId(null);
+    setFailure(null);
+    setRequest((current) =>
+      via?.mandateKey
+        ? { kind: "new", nonce: current.nonce + 1 }
+        : { kind: "agent", agentId, nonce: current.nonce + 1 },
+    );
   };
   const openExisting = (id: string) => {
     if (id === conversationId) return;
@@ -120,7 +144,7 @@ export function useCanvasWorkspaceConversation(surfaceKey: string): CanvasWorksp
   else if (failure) {
     conversation = {
       state: "failed",
-      purpose: request.kind,
+      purpose: request.kind === "open" ? "open" : "new",
       reason: failure,
       retry: () => {
         setFailure(null);
@@ -138,7 +162,7 @@ export function useCanvasWorkspaceConversation(surfaceKey: string): CanvasWorksp
         });
       },
     };
-  } else conversation = { state: "opening", purpose: request.kind };
+  } else conversation = { state: "opening", purpose: request.kind === "open" ? "open" : "new" };
 
-  return { conversation, conversationId, startNew, openExisting };
+  return { conversation, conversationId, startNew, openExisting, startWith };
 }

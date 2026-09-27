@@ -72,11 +72,17 @@ import { RunToolPicker } from "./RunToolPicker";
 export interface ChatConnectionsStripProps {
   conversationId: string | null | undefined;
   className?: string;
+  /**
+   * The composer's chips row shows only what is LIVE (brief §7): with nothing
+   * connected it renders nothing — the + menu's Connectors row stays the door.
+   */
+  hideWhenEmpty?: boolean;
 }
 
 export function ChatConnectionsStrip({
   conversationId,
   className,
+  hideWhenEmpty = false,
 }: ChatConnectionsStripProps) {
   const { serverStates } = useMcpCatalog();
   const openRunControlsWindow = useOpenRunControlsWindow();
@@ -160,7 +166,7 @@ export function ChatConnectionsStrip({
   // to look busy. With no conversation there is no picker to open, and nothing
   // truthful to say, so the line is absent rather than dead.
   if (connections.length === 0) {
-    if (!conversationId) return null;
+    if (!conversationId || hideWhenEmpty) return null;
     return (
       <>
         <div

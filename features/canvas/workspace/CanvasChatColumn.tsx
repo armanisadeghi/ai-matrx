@@ -28,6 +28,14 @@ import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { cn } from "@/lib/utils";
 import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
 import type { CanvasWorkspaceConversation } from "./useCanvasWorkspaceConversation";
+import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
+import { COMPOSER_KNOBS } from "@/features/agents/components/inputs/smart-input/composer/composer-mode-cookie";
+import type {
+  ComposerAgentControl,
+  ComposerMode,
+  ComposerPresentation,
+} from "@/features/agents/components/inputs/smart-input/composer/composer-types";
+import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 
 /** What a host hands the workspace: its canvas as ONE context entry. */
 export interface CanvasContextEntry {
@@ -39,14 +47,26 @@ export interface CanvasContextEntry {
 }
 
 /**
- * 🚧 THE ONE PLACE the workspace's smart-input props are built.
- * The owner is adding a `composer` prop to SmartAgentInput; when it lands,
- * this is the only line that switches to it.
+ * THE ONE PLACE the workspace's smart-input props are built: the COMPACT
+ * composer (A5 — "the third size of the same component"), in the tab-wide
+ * mode, with the agent switch owned by the workspace and the input growing to
+ * `agents.chat_composer.compact_input_max_height_pct` of the panel.
  */
-function buildCanvasSmartInputProps(contextChip: AttachedContextRailItem | undefined) {
+function buildCanvasSmartInputProps(args: {
+  contextChip: AttachedContextRailItem | undefined;
+  mode: ComposerMode;
+  onSelectAgent?: ComposerAgentControl["onSelectAgent"];
+  maxInputHeightPx: number | undefined;
+}): { composer: ComposerPresentation; contextRailAttachedItems?: readonly AttachedContextRailItem[] } {
   return {
-    compact: true,
-    contextRailAttachedItems: contextChip ? [contextChip] : undefined,
+    composer: {
+      size: "compact",
+      mode: args.mode,
+      agent: { onSelectAgent: args.onSelectAgent },
+      placeholder: "Reply",
+      maxInputHeightPx: args.maxInputHeightPx,
+    },
+    contextRailAttachedItems: args.contextChip ? [args.contextChip] : undefined,
   };
 }
 
@@ -58,6 +78,10 @@ interface CanvasChatColumnProps {
   surfaceKey: string;
   getCanvasContext?: () => CanvasContextEntry;
   contextChip?: AttachedContextRailItem;
+  /** The workspace's agent switch — a fresh conversation with that agent. */
+  onSelectAgent?: ComposerAgentControl["onSelectAgent"];
+  /** Server-read "last mode used" cookie, for a first paint with no flash. */
+  initialMode?: ComposerMode | null;
   className?: string;
 }
 
@@ -66,9 +90,25 @@ export function CanvasChatColumn({
   surfaceKey,
   getCanvasContext,
   contextChip,
+  onSelectAgent,
+  initialMode,
   className,
 }: CanvasChatColumnProps) {
   const dispatch = useAppDispatch();
+  const { mode } = useComposerMode(initialMode);
+  // A5: the reply input grows to a share of THIS panel (docked or floating),
+  // then scrolls inside. The share is the org/user knob, 50% by default.
+  const pctKnob = useSessionKnob(COMPOSER_KNOBS.compactInputMaxHeightPct);
+  const pct = typeof pctKnob === "number" && pctKnob > 0 ? pctKnob : 50;
+  const [panelHeight, setPanelHeight] = useState(0);
+  const [panelEl, setPanelEl] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!panelEl) return undefined;
+    const observer = new ResizeObserver(() => setPanelHeight(panelEl.clientHeight));
+    observer.observe(panelEl);
+    return () => observer.disconnect();
+  }, [panelEl]);
+  const maxInputHeightPx = panelHeight > 0 ? Math.round((panelHeight * pct) / 100) : undefined;
   const conversationId = conversation.state === "ready" ? conversation.conversationId : null;
 
   const writeContext = (id: string) => {
@@ -129,6 +169,7 @@ export function CanvasChatColumn({
 
   return (
     <div
+      ref={setPanelEl}
       className={cn("flex h-full min-h-0 flex-col", className)}
       // (2) Capture phase: runs BEFORE the composer's send button / Enter handler.
       onPointerDownCapture={refresh}
@@ -141,7 +182,7 @@ export function CanvasChatColumn({
       <AgentConversationColumn
         conversationId={conversation.conversationId}
         surfaceKey={surfaceKey}
-        smartInputProps={buildCanvasSmartInputProps(contextChip)}
+        smartInputProps={buildCanvasSmartInputProps({ contextChip, mode, onSelectAgent, maxInputHeightPx })}
       />
     </div>
   );

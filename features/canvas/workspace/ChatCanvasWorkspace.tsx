@@ -248,6 +248,8 @@ export function ChatCanvasWorkspace({
       surfaceKey={surfaceKey}
       getCanvasContext={getCanvasContext}
       contextChip={contextChip}
+      onSelectAgent={chat.startWith}
+      initialMode={initialMode}
     />
   );
 

@@ -77,7 +77,7 @@ export function ComposerChipsRow({
           />
         </PopoverContent>
       </Popover>
-      <ChatConnectionsStrip conversationId={conversationId} className="min-w-0" />
+      <ChatConnectionsStrip conversationId={conversationId} className="min-w-0 flex-1" hideWhenEmpty />
     </div>
   );
 }

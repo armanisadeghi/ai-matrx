@@ -113,6 +113,7 @@ export function KindsCanvasWorkspaceDemo({
       })}
       contextChip={{
         id: "registered-shapes",
+        contextKey: "registered_shapes",
         icon: Shapes,
         label: TITLE,
         word: "Shapes",

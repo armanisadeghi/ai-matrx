@@ -13,7 +13,7 @@
 import { useRef, useState } from "react";
 import { LayoutDashboard } from "lucide-react";
 import { type DemoKindExample, SpatialDemoBoard } from "@/features/spatial/demo/SpatialDemoBoard";
-import { boardContextEntry, readBoardContextFromDom } from "@/features/spatial/chat/board-context";
+import { BOARD_CONTEXT_KEY, boardContextEntry, readBoardContextFromDom } from "@/features/spatial/chat/board-context";
 import { toast } from "@/lib/toast";
 import { ChatCanvasWorkspace } from "@/features/canvas/workspace/ChatCanvasWorkspace";
 import type { CanvasNavPersisted } from "@/features/shell/canvas-chrome/canvas-nav-cookie";
@@ -57,6 +57,7 @@ export function SpatialCanvasWorkspaceDemo({
       }}
       contextChip={{
         id: "spatial-board",
+        contextKey: BOARD_CONTEXT_KEY,
         icon: LayoutDashboard,
         label: `Board: ${BOARD_TITLE}`,
         word: "Board",

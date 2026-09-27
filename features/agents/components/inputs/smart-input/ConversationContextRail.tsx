@@ -135,6 +135,13 @@ export interface AttachedContextRailItem {
   detail?: string;
   hint?: string;
   onOpen: () => void;
+  /**
+   * The instanceContext key this pill PRESENTS, when the input does ride
+   * instanceContext (a canvas snapshot written by `setContextEntries`). The
+   * rail then shows this host pill INSTEAD of the generic one for that key —
+   * one input, one pill. Absent = an input delivered outside instanceContext.
+   */
+  contextKey?: string;
 }
 
 type RailTone = "default" | "primary";
@@ -457,7 +464,12 @@ export function ConversationContextRail({
       });
     }
 
+    const presentedByHost = new Set(
+      attachedItems.flatMap((item) => (item.contextKey ? [item.contextKey] : [])),
+    );
     for (const e of valued) {
+      // A host pill already presents this entry (see `contextKey`).
+      if (presentedByHost.has(e.key)) continue;
       // Doc-like keys (working doc, scratchpad, attached-scratchpad extras):
       // when their slice-driven pill rendered above, never re-surface the
       // published context value as a generic pill. But a doc-kind entry can
