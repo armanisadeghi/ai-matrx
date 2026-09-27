@@ -77,6 +77,13 @@ jest.mock("@/features/scopes/service/scopesService", () => ({
   },
 }));
 
+// SCOPES-WRITE-THROUGH: the writes moved to the one store-backed writer (scopeStore); its doors are
+// stood in by the same mocked methods, so every assertion below reads the write the thunk made.
+jest.mock("@/features/scopes/service/scopeStore", () => {
+  const { scopesService } = jest.requireMock("@/features/scopes/service/scopesService");
+  return { scopeStore: scopesService };
+});
+
 const svc = jest.mocked(scopesService);
 // A plain mock: `jest.mocked(supabase.rpc)` instantiates the whole generated
 // RPC overload set (TS2589).

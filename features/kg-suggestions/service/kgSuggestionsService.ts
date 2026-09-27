@@ -28,6 +28,7 @@ import { operationFailed } from "@/utils/errors";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { scopesService } from "@/features/scopes/service/scopesService";
+import { scopeStore } from "@/features/scopes/service/scopeStore";
 import { isScopesRpcErr, type EntityType } from "@/features/scopes/types";
 import type { Database } from "@/types/database.types";
 import {
@@ -412,7 +413,7 @@ export async function acceptValueSuggestion(
   if (row.suggested_value == null) {
     throw new Error("Suggestion has no value to write.");
   }
-  const res = await scopesService.setContextValue({
+  const res = await scopeStore.setContextValue({
     context_item_id: row.target.scope_item_id,
     scope_id: row.target.scope_id,
     value_text: row.suggested_value,
@@ -446,7 +447,7 @@ export async function acceptAssociationSuggestion(
   );
   if (isScopesRpcErr(current)) throw new Error(current.error.message);
   const next = Array.from(new Set([...current.data.scope_ids, scopeId]));
-  const written = await scopesService.setEntityScopes(
+  const written = await scopeStore.setEntityScopes(
     entityType as EntityType,
     row.source_id,
     next,

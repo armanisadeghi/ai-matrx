@@ -10,7 +10,7 @@
 // toast/error path.
 
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
-import { scopesService } from "@/features/scopes/service/scopesService";
+import { scopeStore } from "@/features/scopes/service/scopeStore";
 import { contextValuesActions } from "@/features/scopes/redux/contextValuesSlice";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type {
@@ -27,7 +27,7 @@ export function setContextValue(
   payload: SetContextValuePayload,
 ): AppThunk<Promise<ScopesRpcResult<SetContextValueResult>>> {
   return async (dispatch) => {
-    const res = await scopesService.setContextValue(payload);
+    const res = await scopeStore.setContextValue(payload);
     if (!isScopesRpcErr(res)) {
       // Echo the persisted write into the sidecar. The RPC result carries the
       // authoritative id/version/value_text/source_type; the remaining cell
