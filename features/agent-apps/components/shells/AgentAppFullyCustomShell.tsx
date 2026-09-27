@@ -318,7 +318,10 @@ export function AgentAppFullyCustomShell({
           {/* A finished result keeps its title and its actions at the TOP as
               well as the bottom: a long answer never hides what it is, how to
               copy it, or how to run the app again (page-pass /p/[slug]). */}
-          {showActionBar && (
+          {/* Public page only: in the management workspace the route header
+              already names the app, so a second title there is a duplicate
+              and the bottom bar carries the actions. */}
+          {showActionBar && surface && (
             <AppResultBar
               appName={app.name}
               response={ctx.response}
