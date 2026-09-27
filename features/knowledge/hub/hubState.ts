@@ -23,6 +23,8 @@ export const HUB_LAYOUTS: readonly HubLayout[] = ["list", "table", "board", "gal
 
 export type HubView =
   | { kind: "inbox" }
+  | { kind: "kept" }
+  | { kind: "archived" }
   | { kind: "everything" }
   | { kind: "favorites" }
   | { kind: "saved"; id: string }
@@ -131,7 +133,9 @@ export function selectionQuery(
 ): { query: KnowledgeQuery; layout?: HubLayout } {
   switch (view.kind) {
     case "inbox":
-      return { query: { mode: "find", state: ["inbox"] } };
+    case "kept":
+    case "archived":
+      return { query: { mode: "find", state: [view.kind] } };
     case "everything":
     case "favorites":
       return { query: { mode: "find" } };
@@ -159,6 +163,8 @@ export function sameView(a: HubView, b: HubView): boolean {
 function viewToParam(v: HubView): string {
   switch (v.kind) {
     case "inbox":
+    case "kept":
+    case "archived":
     case "everything":
     case "favorites":
       return v.kind;
@@ -173,7 +179,8 @@ function viewToParam(v: HubView): string {
 
 function viewFromParam(p: string | null): HubView {
   if (!p) return { kind: "everything" };
-  if (p === "inbox" || p === "everything" || p === "favorites") return { kind: p };
+  if (p === "inbox" || p === "kept" || p === "archived" || p === "everything" || p === "favorites")
+    return { kind: p };
   if (p.startsWith("saved:") && p.length > 6) return { kind: "saved", id: p.slice(6) };
   if (p.startsWith("kind:") && p.length > 5) return { kind: "kind", key: p.slice(5) };
   if (p.startsWith("in:")) {

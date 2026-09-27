@@ -7,8 +7,7 @@
  *                  (`associationsService.add`, little → big: the item is the
  *                  source, the container the target). The sentence names the
  *                  container by its REGISTRY label ("Project", "Scope"…).
- *   Keep         → Sources only: the Source save door (`POST /sources/{id}/keep`).
- *                  Other kinds are already kept; the sentence says so.
+ *   (Keep / Archive are personal triage: features/knowledge/hub/triage/.)
  *   Trash        → the ONE archive (`archiveRecord`): the record leaves the
  *                  list and is restorable from Trash.
  *
@@ -119,31 +118,6 @@ export async function fileUnder(
     ? `Filed ${plural(ok, "item")} under ${where}.${failureTail(failed).replace("could not be", "could not be filed")}`
     : `Nothing was filed under ${where}.${failureTail(failed).replace("could not be", "could not be filed")}`;
   return { ok, failed, sentence };
-}
-
-// ─── Keep (Sources) ─────────────────────────────────────────────────────────
-
-export type KeepSourceDoor = (id: string, organizationId: string | null) => Promise<void>;
-
-export async function keepItems(hits: KnowledgeHit[], keep: KeepSourceDoor): Promise<ActionOutcome> {
-  const targets = uniqueTargets(hits);
-  const sources = targets.filter((t) => t.entity === "processed_document");
-  const others = targets.length - sources.length;
-  const failed: ActionOutcome["failed"] = [];
-  let ok = 0;
-  for (const t of sources) {
-    try {
-      await keep(t.id, t.organization_id ?? null);
-      ok += 1;
-    } catch (err) {
-      failed.push({ target: t, message: err instanceof Error ? err.message : String(err) });
-    }
-  }
-  const parts: string[] = [];
-  if (ok) parts.push(`Kept ${plural(ok, "Source")}.`);
-  if (others) parts.push(`${plural(others, "other item")} ${others === 1 ? "is" : "are"} already kept — only Sources wait to be kept.`);
-  if (!ok && !others && !failed.length) parts.push("Nothing to keep.");
-  return { ok, failed, sentence: `${parts.join(" ")}${failureTail(failed).replace("could not be", "could not be kept")}`.trim() };
 }
 
 // ─── Trash ──────────────────────────────────────────────────────────────────

@@ -33,6 +33,8 @@ import {
   BookmarkPlus,
   Check,
   FolderInput,
+  Hash,
+  Inbox,
   Save,
   Trash2,
   X,
@@ -49,7 +51,6 @@ import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { recordToast, toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId, selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
@@ -79,7 +80,6 @@ import {
 import {
   actionTarget,
   fileUnder,
-  keepItems,
   trashItems,
   uniqueTargets,
   type FileUnderContainer,
@@ -114,6 +114,18 @@ import {
 import { HubPeek } from "@/features/knowledge/hub/components/HubPeek";
 import { FileUnderDialog } from "@/features/knowledge/hub/components/FileUnderDialog";
 import type { ResultHandlers } from "@/features/knowledge/hub/components/HubResultRow";
+import type { SectionState } from "@/features/knowledge/hub/hooks/useKnowledgeResults";
+import type { TriageState } from "@/features/knowledge/api/knowledgeSearch";
+import { setTriageState, TRIAGE_LABEL } from "@/features/knowledge/hub/triage/triageApi";
+import { nextFocusAfterRemoval, triageCommandForKey, triageItems, undoTriage } from "@/features/knowledge/hub/triage/triageActions";
+import { countText, useTriage } from "@/features/knowledge/hub/triage/useTriage";
+import { TriageHelpSheet } from "@/features/knowledge/hub/triage/TriageHelpSheet";
+import { fileUnderTag } from "@/features/knowledge/hub/tags/tagApi";
+import { tagItems, TAG_REF_TYPE } from "@/features/knowledge/hub/tags/tagActions";
+import { useHubTags } from "@/features/knowledge/hub/tags/useHubTags";
+import { TagDialog } from "@/features/knowledge/hub/tags/TagDialog";
+import { PeekTags } from "@/features/knowledge/hub/tags/PeekTags";
+import { TagsSidebarGroup } from "@/features/knowledge/hub/tags/TagsSidebarGroup";
 
 const GROUP_ID = "knowledge-hub";
 const GROUP_KEY = "knowledge-hub";
@@ -138,6 +150,10 @@ function viewTitle(view: HubView, sidebar: HubSidebarData): string {
   switch (view.kind) {
     case "inbox":
       return "Inbox";
+    case "kept":
+      return "Kept";
+    case "archived":
+      return "Archived";
     case "everything":
       return "Everything";
     case "favorites":
@@ -158,7 +174,11 @@ function emptySentence(view: HubView, title: string, filtered: boolean): string 
   if (filtered) return "Nothing matches these filters. Remove a filter to see more.";
   switch (view.kind) {
     case "inbox":
-      return "Your Inbox is empty. New captures land here until you keep, file or archive them.";
+      return "Your Inbox is empty — you are caught up. New captures land here: pages you save with the browser extension, files you upload, URLs and text you add on Sources, and what agents and research capture for you. Keep (s) or archive (e) each one to clear it.";
+    case "kept":
+      return "Nothing kept yet. Press s on an Inbox item to keep it here.";
+    case "archived":
+      return "Nothing archived yet. Press e on an Inbox item to archive it; press i here to bring one back.";
     case "favorites":
       return "No favorites yet. Star anything and it stays here.";
     case "container":
@@ -232,8 +252,48 @@ export function KnowledgeHubPage({
     .map((r) => ({ entity: r.token, id: r.id, title: favTitle(r) }))
     .filter((h) => !state.query.text || h.title.toLowerCase().includes(state.query.text.toLowerCase()));
 
+  // Inbox / Kept / Archived read the person's own triage (platform.triage_items).
+  const triageView: TriageState | null =
+    !sample && (state.view.kind === "inbox" || state.view.kind === "kept" || state.view.kind === "archived")
+      ? state.view.kind
+      : null;
+  const triage = useTriage(triageView, !sample);
+  const hubTags = useHubTags(!sample);
+  const triageHits = (triage.list.hits ?? []).filter(
+    (h) => !state.query.text || h.title.toLowerCase().includes(state.query.text.toLowerCase()),
+  );
+  const triageSections: SectionState[] = triageView
+    ? [
+        {
+          key: "sources",
+          status: triage.list.status === "error" ? "error" : triage.list.status === "ready" ? "ready" : "loading",
+          section: {
+            key: "sources",
+            label: TRIAGE_LABEL[triageView],
+            count: triage.list.hits.length,
+            items: triageHits,
+            next_cursor: triage.list.nextCursor,
+            error: triage.list.error ? { message: triage.list.error, retryable: true } : null,
+          },
+          loadingMore: triage.list.loadingMore,
+          moreError: null,
+        },
+      ]
+    : [];
+  // Triage lists read the person's own rows; they filter by words only. Any
+  // other filter (a #tag, a type…) is said, with the way to apply it.
+  const triageFiltered =
+    Boolean(triageView) &&
+    Object.keys(normalizeQuery(state.query)).some((k) => !["text", "mode", "state", "sort"].includes(k));
+  const [tagFor, setTagFor] = useState<KnowledgeHit[] | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+  /** Bumped after a tag/file write: the peek remounts and re-reads where the item is filed. */
+  const [filedVersion, setFiledVersion] = useState(0);
+
   const hits: KnowledgeHit[] =
-    state.view.kind === "favorites"
+    triageView
+      ? triageHits
+      : state.view.kind === "favorites"
       ? favoriteHits
       : searching
         ? orderedSearchHits(results.sections)
@@ -449,6 +509,7 @@ export function KnowledgeHubPage({
     onFocus: (h) => setFocusedKey(hitKey(h)),
     onOpen: openPeek,
     onOpenFull: openFull,
+    onFilterTag: (name) => filterByTag(name),
   };
 
   // ─── writes ───────────────────────────────────────────────────────────────
@@ -472,7 +533,10 @@ export function KnowledgeHubPage({
       });
       if (outcome.failed.length) toast.error(outcome.sentence);
       else toast.success(outcome.sentence);
-      if (outcome.ok) results.refresh();
+      if (outcome.ok) {
+        setFiledVersion((n) => n + 1);
+        results.refresh();
+      }
     } finally {
       setBusy(false);
     }
@@ -481,26 +545,98 @@ export function KnowledgeHubPage({
   const acceptSuggestion = (hit: KnowledgeHit, target: FiledRef) =>
     void doFileUnder([hit], { token: target.type, id: target.id, title: target.name ?? "Untitled" });
 
-  const doKeep = async (items: KnowledgeHit[]) => {
+  // ─── triage (Readwise Reader) and tags ────────────────────────────────────
+
+  /** Keep a Source through its keep door (which starts its processing), then file it. */
+  const triageDoor = async (token: string, id: string, next: TriageState, orgId?: string | null) => {
+    if (next === "kept" && token === "processed_document") {
+      try {
+        await keepSource(id, { organizationId: await ensureOrgId(orgId ?? activeOrgId) });
+      } catch (err) {
+        throw new Error(sourceRefusalSentence(err));
+      }
+    }
+    await setTriageState(token, id, next);
+  };
+
+  const afterTriageWrite = () => {
+    triage.refresh();
+    results.refresh();
+  };
+
+  const doTriage = async (items: KnowledgeHit[], next: TriageState) => {
+    if (sample) {
+      toast.info(SAMPLE_WRITE_REFUSAL);
+      return;
+    }
+    if (!items.length) return;
+    setBusy(true);
+    try {
+      const outcome = await triageItems(items, next, triageDoor);
+      if (outcome.ok && triageView && triageView !== next) {
+        const moved = new Set(
+          uniqueTargets(items)
+            .filter((t) => !outcome.failed.some((f) => f.target.id === t.id))
+            .map((t) => `${t.entity}:${t.id}`),
+        );
+        const nextFocus = nextFocusAfterRemoval(hits.map(hitKey), moved, focusedKey);
+        triage.removeLocally(moved);
+        setFocusedKey(nextFocus);
+        if (peekKey && moved.has(peekKey)) {
+          const nh = nextFocus ? byKey.get(nextFocus) : undefined;
+          write({ peek: nh ? { entity: nh.entity, id: nh.id } : null }, { replace: true });
+        }
+      }
+      setSelected(new Set());
+      const undo = outcome.undo.length
+        ? {
+            label: "Undo",
+            onClick: () =>
+              void undoTriage(outcome.undo, setTriageState).then((u) => {
+                if (u.failed.length) toast.error(u.sentence);
+                else toast.success(u.sentence);
+                afterTriageWrite();
+              }),
+          }
+        : undefined;
+      if (outcome.failed.length) toast.error(outcome.sentence, undo ? { action: undo } : undefined);
+      else toast.success(outcome.sentence, undo ? { action: undo } : undefined);
+      if (outcome.ok) afterTriageWrite();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const doTag = async (items: KnowledgeHit[], name: string) => {
     if (sample) {
       toast.info(SAMPLE_WRITE_REFUSAL);
       return;
     }
     setBusy(true);
     try {
-      const outcome = await keepItems(items, async (id, orgId) => {
-        try {
-          await keepSource(id, { organizationId: await ensureOrgId(orgId ?? activeOrgId) });
-        } catch (err) {
-          throw new Error(sourceRefusalSentence(err));
-        }
-      });
-      if (outcome.failed.length) toast.error(outcome.sentence);
+      const outcome = await tagItems(items, name, fileUnderTag);
+      if (outcome.failed.length || !outcome.ok) toast.error(outcome.sentence);
       else toast.success(outcome.sentence);
-      if (outcome.ok) results.refresh();
+      if (outcome.ok) {
+        setFiledVersion((n) => n + 1);
+        hubTags.retry();
+        results.refresh();
+        triage.refresh();
+      }
     } finally {
       setBusy(false);
     }
+  };
+
+  /** `#tag` → filter by it (the chip resolves to the tag scope when the query runs). */
+  const filterByTag = (name: string) => {
+    setSelected(new Set());
+    setFocusedKey(null);
+    write({
+      view: { kind: "everything" },
+      query: normalizeQuery({ mode: "find", within: [{ type: TAG_REF_TYPE, name }] }),
+      peek: null,
+    });
   };
 
   const doTrash = async (items: KnowledgeHit[]) => {
@@ -546,7 +682,7 @@ export function KnowledgeHubPage({
   };
 
   const onKey = (e: KeyboardEvent) => {
-    if (fileUnderFor || filtersOpen || saveDialog) return;
+    if (fileUnderFor || filtersOpen || saveDialog || tagFor || helpOpen) return;
     if (document.querySelector("[role=dialog][data-state=open], [role=alertdialog][data-state=open]")) return;
     const focused = focusedKey ? byKey.get(focusedKey) : undefined;
     if (e.key === "Escape") {
@@ -575,6 +711,23 @@ export function KnowledgeHubPage({
       return;
     }
     if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const command = triageCommandForKey(e);
+    if (command) {
+      const targets = selectedHits.length ? selectedHits : focused ? [focused] : peekHit ? [peekHit] : [];
+      if (command === "help") {
+        e.preventDefault();
+        setHelpOpen(true);
+        return;
+      }
+      if (!targets.length) return;
+      e.preventDefault();
+      if (command === "keep") void doTriage(targets, "kept");
+      else if (command === "archive") void doTriage(targets, "archived");
+      else if (command === "inbox") void doTriage(targets, "inbox");
+      else if (command === "file") setFileUnderFor(targets);
+      else if (command === "tag") setTagFor(targets);
+      return;
+    }
     switch (e.key) {
       case "j":
       case "ArrowDown":
@@ -668,12 +821,20 @@ export function KnowledgeHubPage({
       <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => setFileUnderFor(selectedHits)}>
         <FolderInput className="h-3.5 w-3.5" /> File under…
       </Button>
-      <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => void doKeep(selectedHits)}>
+      <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => setTagFor(selectedHits)} title="Tag (t)">
+        <Hash className="h-3.5 w-3.5" /> Tag…
+      </Button>
+      <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => void doTriage(selectedHits, "kept")} title="Keep (s)">
         <Check className="h-3.5 w-3.5" /> Keep
       </Button>
-      <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => void announceComingSoon("knowledge.hub-archive")}>
+      <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => void doTriage(selectedHits, "archived")} title="Archive (e)">
         <Archive className="h-3.5 w-3.5" /> Archive
       </Button>
+      {triageView && triageView !== "inbox" ? (
+        <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => void doTriage(selectedHits, "inbox")} title="Back to Inbox (i)">
+          <Inbox className="h-3.5 w-3.5" /> Back to Inbox
+        </Button>
+      ) : null}
       <Button
         size="sm"
         variant="ghost"
@@ -764,6 +925,20 @@ export function KnowledgeHubPage({
       </div>
       {!searching ? <div className="sm:hidden">{layoutSwitch}</div> : null}
       {bulkBar}
+      {triageFiltered ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground" role="status">
+          <span className="min-w-0 flex-1">
+            {title} lists your own triage and filters by words only, so these filters are not applied here.
+          </span>
+          <button
+            type="button"
+            className="font-medium text-foreground underline-offset-2 hover:underline"
+            onClick={() => write({ view: { kind: "everything" }, query: normalizeQuery({ ...state.query, state: undefined }), peek: null })}
+          >
+            Apply them to Everything
+          </button>
+        </div>
+      ) : null}
       {noLibraries ? (
         <p className="px-2 py-4 text-sm text-muted-foreground" role="status">
           You have no libraries you can open yet, so nothing is in any library. Create a library and add Sources to it.
@@ -778,7 +953,7 @@ export function KnowledgeHubPage({
           ) : (
             <p className="px-2 py-4 text-sm text-muted-foreground" role="status">Reading your favorites…</p>
           )
-        ) : searching && state.view.kind !== "favorites" ? (
+        ) : searching && state.view.kind !== "favorites" && !triageView ? (
           <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
             <SearchSections
               text={state.query.text ?? ""}
@@ -791,7 +966,7 @@ export function KnowledgeHubPage({
         ) : (
           <BrowseResults
             layout={state.layout}
-            sections={state.view.kind === "favorites" ? [] : results.sections}
+            sections={triageView ? triageSections : state.view.kind === "favorites" ? [] : results.sections}
             hits={hits}
             handlers={handlers}
             emptySentence={emptySentence(
@@ -800,14 +975,18 @@ export function KnowledgeHubPage({
               JSON.stringify(normalizeQuery(state.query)) !==
                 JSON.stringify(normalizeQuery(selectionQuery(state.view).query)),
             )}
-            onShowMore={results.showMore}
-            onRetry={results.retry}
+            onShowMore={triageView ? triage.showMore : results.showMore}
+            onRetry={triageView ? triage.refresh : results.retry}
           />
         )}
       </div>
       <p className="hidden shrink-0 text-[11px] text-muted-foreground lg:block">
-        <kbd>j</kbd>/<kbd>k</kbd> move · <kbd>↵</kbd> peek · <kbd>⌘↵</kbd> open · <kbd>x</kbd> select · <kbd>f</kbd> filter ·{" "}
-        <kbd>/</kbd> search · <kbd>Esc</kbd> close
+        <kbd>j</kbd>/<kbd>k</kbd> move · <kbd>↵</kbd> peek · <kbd>⌘↵</kbd> open · <kbd>x</kbd> select · <kbd>s</kbd> keep · <kbd>e</kbd> archive · <kbd>t</kbd> tag ·{" "}
+        <kbd>m</kbd> file · <kbd>f</kbd> filter ·{" "}
+        <kbd>/</kbd> search · <kbd>Esc</kbd> close ·{" "}
+        <button type="button" className="underline-offset-2 hover:underline" onClick={() => setHelpOpen(true)}>
+          <kbd>?</kbd> all shortcuts
+        </button>
       </p>
     </div>
   );
@@ -821,11 +1000,30 @@ export function KnowledgeHubPage({
       viewCounts={viewCounts}
       onSaveView={() => setSaveDialog({ mode: "create" })}
       onViewAction={(v, a) => void onViewAction(v, a)}
+      triageCounts={
+        sample
+          ? undefined
+          : {
+              inbox: countText(triage.counts.inbox),
+              kept: countText(triage.counts.kept),
+              archived: countText(triage.counts.archived),
+            }
+      }
+      tagsGroup={
+        sample ? null : (
+          <TagsSidebarGroup
+            tags={hubTags}
+            activeScopeId={state.view.kind === "container" && state.view.type === "scope" ? state.view.id : null}
+            onSelect={(id) => select({ kind: "container", type: "scope", id })}
+          />
+        )
+      }
     />
   );
 
   const peekNode = peekKey ? (
     <HubPeek
+      key={`${peekKey}:${filedVersion}`}
       hit={peekHit}
       peekKey={peekKey}
       sample={sample}
@@ -835,6 +1033,31 @@ export function KnowledgeHubPage({
       onAcceptSuggestion={acceptSuggestion}
       isFavorite={peekHit ? favoriteKeys.has(`${actionTarget(peekHit).entity}:${actionTarget(peekHit).id}`) : false}
       onToggleFavorite={(h) => void toggleFavorite(h)}
+      extraActions={
+        peekHit ? (
+          <>
+            <Button size="sm" variant="outline" className="h-8 gap-1.5" disabled={busy} onClick={() => setTagFor([peekHit])} title="Tag (t)">
+              <Hash className="h-3.5 w-3.5" /> Tag
+            </Button>
+            {peekHit.triage_state !== "kept" ? (
+              <Button size="sm" variant="outline" className="h-8 gap-1.5" disabled={busy} onClick={() => void doTriage([peekHit], "kept")} title="Keep (s)">
+                <Check className="h-3.5 w-3.5" /> Keep
+              </Button>
+            ) : null}
+            {peekHit.triage_state !== "archived" ? (
+              <Button size="sm" variant="outline" className="h-8 gap-1.5" disabled={busy} onClick={() => void doTriage([peekHit], "archived")} title="Archive (e)">
+                <Archive className="h-3.5 w-3.5" /> Archive
+              </Button>
+            ) : null}
+            {peekHit.triage_state && peekHit.triage_state !== "inbox" ? (
+              <Button size="sm" variant="outline" className="h-8 gap-1.5" disabled={busy} onClick={() => void doTriage([peekHit], "inbox")} title="Back to Inbox (i)">
+                <Inbox className="h-3.5 w-3.5" /> Back to Inbox
+              </Button>
+            ) : null}
+          </>
+        ) : null
+      }
+      tagsSection={peekHit ? <PeekTags hit={peekHit} live={!sample} onFilter={filterByTag} /> : null}
     />
   ) : null;
 
@@ -894,6 +1117,20 @@ export function KnowledgeHubPage({
         }
       }}
     />
+    <TagDialog
+      open={tagFor !== null}
+      onOpenChange={(o) => {
+        if (!o) setTagFor(null);
+      }}
+      count={tagFor ? uniqueTargets(tagFor).length : 0}
+      tags={hubTags.items}
+      onPick={(name) => {
+        const items = tagFor ?? [];
+        setTagFor(null);
+        void doTag(items, name);
+      }}
+    />
+    <TriageHelpSheet open={helpOpen} onOpenChange={setHelpOpen} />
     <FileUnderDialog
       open={fileUnderFor !== null}
       onOpenChange={(o) => {

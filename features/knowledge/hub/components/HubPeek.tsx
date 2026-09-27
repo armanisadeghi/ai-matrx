@@ -35,6 +35,10 @@ interface HubPeekProps {
   /** Starred in MY favorites (platform.user_entity_state). */
   isFavorite?: boolean;
   onToggleFavorite?: (hit: KnowledgeHit) => void;
+  /** Triage and Tag buttons (features/knowledge/hub/triage, tags). */
+  extraActions?: React.ReactNode;
+  /** The Tags section (chips; click = filter). */
+  tagsSection?: React.ReactNode;
 }
 
 function Heading({ children }: { children: React.ReactNode }) {
@@ -100,6 +104,8 @@ export function HubPeek({
   onAcceptSuggestion,
   isFavorite = false,
   onToggleFavorite,
+  extraActions,
+  tagsSection,
 }: HubPeekProps) {
   if (!hit) {
     const [entity, id] = [peekKey.slice(0, peekKey.indexOf(":")), peekKey.slice(peekKey.indexOf(":") + 1)];
@@ -171,11 +177,14 @@ export function HubPeek({
             {isFavorite ? "Favorited" : "Favorite"}
           </Button>
         ) : null}
+        {extraActions}
       </div>
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden px-4 py-4">
         {hit.snippet && hit.entity !== "segment" ? (
           <p className="text-sm leading-relaxed text-foreground/90">{hit.snippet}</p>
         ) : null}
+
+        {tagsSection}
 
         <section>
           <Heading>Filed under</Heading>

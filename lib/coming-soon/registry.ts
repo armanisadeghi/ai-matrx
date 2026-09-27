@@ -1014,19 +1014,6 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     stage: "planned",
     surfaces: ["Intelligence page job card — set-aside warning"],
   },
-  "knowledge.hub-archive": {
-    id: "knowledge.hub-archive",
-    label: "Archive",
-    owner: "knowledge",
-    promise:
-      "Move items out of your Inbox into your archive — still searchable, just no longer waiting for you. Your own triage state, never anyone else's.",
-    stage: "planned",
-    // KNOWLEDGE-HUB §4 / §8 H5: per-person triage state (`triage_state` on
-    // platform.user_entity_state) does not exist yet. Trash (the one archive
-    // of the record itself) works today; this is the personal Inbox → Archived
-    // move, which lands with H5.
-    surfaces: ["/knowledge hub bulk bar — Archive"],
-  },
   "knowledge.saved-view-alerts": {
     id: "knowledge.saved-view-alerts",
     label: "Notify me when new items match",

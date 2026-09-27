@@ -16,6 +16,8 @@ import {
   kindLabel,
   originLabel,
 } from "@/features/knowledge/hub/hubPresentation";
+import { TagChips } from "@/features/knowledge/hub/tags/TagChips";
+import { hitTags } from "@/features/knowledge/hub/tags/tagActions";
 
 export interface ResultHandlers {
   selected: Set<string>;
@@ -25,6 +27,8 @@ export interface ResultHandlers {
   onFocus: (hit: KnowledgeHit) => void;
   onOpen: (hit: KnowledgeHit) => void;
   onOpenFull: (hit: KnowledgeHit) => void;
+  /** Clicking a `#tag` chip filters the hub by that tag. */
+  onFilterTag?: (name: string) => void;
 }
 
 function filedWords(hit: KnowledgeHit): string | null {
@@ -113,8 +117,9 @@ export function ResultRow({
         {hit.snippet ? (
           <div className="line-clamp-1 text-xs text-muted-foreground">{hit.snippet}</div>
         ) : null}
-        <div className="flex min-w-0 text-[11px] text-muted-foreground/90">
+        <div className="flex min-w-0 items-center gap-2 text-[11px] text-muted-foreground/90">
           <ResultMeta hit={hit} />
+          <TagChips tags={hitTags(hit)} onFilter={handlers.onFilterTag} className="shrink-0 flex-nowrap" />
         </div>
       </div>
     </div>
@@ -166,6 +171,7 @@ export function ResultCard({
           {hit.snippet}
         </div>
       ) : null}
+      <TagChips tags={hitTags(hit)} onFilter={handlers.onFilterTag} />
       <div className="mt-auto flex min-w-0 text-[11px] text-muted-foreground/90">
         <ResultMeta hit={hit} />
       </div>
