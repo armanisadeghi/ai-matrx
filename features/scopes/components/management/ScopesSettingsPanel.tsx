@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectTreeFetchedAt } from "@/features/scopes/redux/selectors/tree";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
@@ -99,7 +100,16 @@ export function ScopesSettingsPanel() {
           settings page. Pick an organization to jump in.
         </p>
         <div className="space-y-1">
-          {organizations.length === 0 ? (
+          {error && organizations.length === 0 ? (
+            <ReadFailure
+              error={error}
+              what="your organizations"
+              onRetry={() => void refresh()}
+              className="m-0"
+            />
+          ) : status === "loading" && organizations.length === 0 ? (
+            <div className="text-xs text-muted-foreground">Loading organizations…</div>
+          ) : organizations.length === 0 ? (
             <div className="text-xs text-muted-foreground italic">
               No organizations.
             </div>

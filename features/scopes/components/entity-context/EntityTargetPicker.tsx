@@ -290,6 +290,7 @@ export function EntityTargetPicker(props: EntityTargetPickerProps) {
         Icon: FolderKanban,
         accentClass: "text-amber-500",
         defaultLabel: "Project",
+        // read-gate-exempt: label text only; the list renders ReadFailure instead of emptyText when the tree read fails
         defaultEmpty: orgId
           ? "No projects in this organization"
           : "Select an organization first",

@@ -10,7 +10,10 @@ import {
   getScopeContext,
   selectValuesByScope,
   selectScopeValuesLoading,
+  selectScopeValuesReadError,
 } from "@/features/scopes/redux/scopeContextView";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { listScopeTypeItems } from "@/features/scopes/redux/contextItemCatalog";
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";
@@ -80,6 +83,15 @@ export function ScopeContextItemsHub({
   const loading = useAppSelector((s) =>
     selectScopeValuesLoading(s, scopeId ?? ""),
   );
+  const readError = useAppSelector((s) =>
+    selectScopeValuesReadError(s, scopeId ?? ""),
+  );
+  const retryRead = () => {
+    if (scopeId)
+      void dispatch(
+        getScopeContext({ scope_id: scopeId, include_empty: true, refresh: true }),
+      );
+  };
   const suggestions = useScopeSuggestions();
   const scopeSuggestions = suggestions.forScope(scopeId);
 
@@ -180,7 +192,23 @@ export function ScopeContextItemsHub({
             Loading context items…
           </div>
         )}
-        {rows && rows.length === 0 && (
+        {readError && !rows ? (
+          <ReadFailure
+            error={readError}
+            what={`this ${scopeType.label_singular.toLowerCase()}'s context items`}
+            onRetry={retryRead}
+            className="m-0"
+          />
+        ) : null}
+        {readError && rows ? (
+          <StaleDataNotice
+            hasData
+            what={`this ${scopeType.label_singular.toLowerCase()}'s context items`}
+            onRetry={retryRead}
+            detail={readError}
+          />
+        ) : null}
+        {!readError && rows && rows.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-6">
             No context items defined for {scopeType.label_plural.toLowerCase()}{" "}
             yet.

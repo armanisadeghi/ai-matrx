@@ -282,3 +282,17 @@ export const selectItemsLoadedForType = (
   const entry = selectCatalogs(state)[typeId];
   return !!entry && (entry.status === "ready" || entry.fetchedAt !== null);
 };
+
+/**
+ * Why this type's catalog read failed, or null (RC-B12 r12): a failed catalog
+ * read is not "no items yet". `selectItemsLoadedForType` stays false after a
+ * first-read failure, so a view gated only on it spins forever; this names the
+ * failure so the view can say it (with a retry) instead.
+ */
+export const selectItemsErrorForType = (
+  state: RootState,
+  typeId: string,
+): string | null => {
+  const entry = selectCatalogs(state)[typeId];
+  return entry?.status === "error" ? (entry.error ?? "The read failed.") : null;
+};

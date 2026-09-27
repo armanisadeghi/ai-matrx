@@ -30,7 +30,9 @@ import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree"
 import {
   makeSelectScope,
   makeSelectScopeTypesForOrg,
+  selectTreeError,
 } from "@/features/scopes/redux/selectors/tree";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { useUniversalEntitySearch } from "@/features/scopes/hooks/useUniversalEntitySearch";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
@@ -183,6 +185,8 @@ function ScopeTypeAdder({
     [],
   );
   const scopeTypes = useAppSelector((s) => selectScopeTypesForOrg(s, orgId));
+  const treeError = useAppSelector(selectTreeError);
+  const retryTree = () => void dispatch(ensureScopeTree({ refresh: true }));
 
   const candidates = useMemo(() => {
     const allow =
@@ -199,6 +203,17 @@ function ScopeTypeAdder({
     const q = search.trim().toLowerCase();
     return q ? out.filter((c) => c.name.toLowerCase().includes(q)) : out;
   }, [scopeTypes, allowedScopeTypeIds, search]);
+
+  if (treeError && scopeTypes.length === 0) {
+    return (
+      <ReadFailure
+        error={treeError}
+        what="your scopes"
+        onRetry={retryTree}
+        className="m-0"
+      />
+    );
+  }
 
   if (!orgId) {
     return (
@@ -229,12 +244,15 @@ function ScopeTypeAdder({
           style={{ fontSize: "16px" }}
         />
       </div>
+      {treeError ? (
+        <StaleDataNotice hasData what="your scopes" onRetry={retryTree} detail={treeError} />
+      ) : null}
       <div
         role="listbox"
         aria-label="Scope results"
         className="max-h-56 space-y-0.5 overflow-y-auto"
       >
-        {candidates.length === 0 && (
+        {!treeError && candidates.length === 0 && (
           <p className="px-1 py-2 text-xs text-muted-foreground">
             No scopes found.
           </p>

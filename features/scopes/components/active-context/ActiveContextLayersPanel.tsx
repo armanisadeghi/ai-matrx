@@ -69,6 +69,7 @@ export function ActiveContextLayersPanel({
         )}
       >
         <Layers className="h-5 w-5 text-muted-foreground/60" />
+        {/* read-gate-exempt: nothing is SELECTED in the active-context selection (client state); no read's answer is being claimed here */}
         <p className="text-xs text-muted-foreground">
           No context selected yet. Pick an organization, scopes, a project, or a
           task above to see what they carry.

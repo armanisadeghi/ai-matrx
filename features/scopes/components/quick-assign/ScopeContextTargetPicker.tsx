@@ -39,7 +39,9 @@ import {
   selectOrganizationsList,
   makeSelectScopeTypesForOrg,
   makeSelectScopesForType,
+  selectTreeError,
 } from "@/features/scopes/redux/selectors/tree";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { ensureScopeTypeItems } from "@/features/scopes/redux/thunks/ensureScopeTypeItems";
 import {
@@ -95,6 +97,7 @@ export function ScopeContextTargetPicker({
   const dispatch = useAppDispatch();
   const activeOrgId = useAppSelector(selectActiveOrganizationId);
   const orgs = useAppSelector(selectOrganizationsList);
+  const treeError = useAppSelector(selectTreeError);
 
   const orgId = value.orgId || activeOrgId || "";
   const scopeTypeId = value.scopeTypeId || "";
@@ -268,7 +271,9 @@ export function ScopeContextTargetPicker({
                 placeholder={
                   !scopeTypeId
                     ? "Pick a scope type first"
-                    : scopes.length === 0
+                    : treeError && scopes.length === 0
+                      ? "Couldn't load the scopes"
+                      : scopes.length === 0
                       ? "No scopes of this type"
                       : "Choose a scope…"
                 }
@@ -328,7 +333,9 @@ export function ScopeContextTargetPicker({
                   !scopeId
                     ? "Pick a scope first"
                     : items.length === 0
-                      ? itemsLoaded
+                      ? itemsStatus === "error"
+                        ? "Couldn't load the context items"
+                        : itemsLoaded
                         ? "No items on this scope type"
                         : "Loading…"
                       : "Choose a context item…"
@@ -375,6 +382,21 @@ export function ScopeContextTargetPicker({
           ) : null}
         </div>
       </div>
+      {treeError ? (
+        <ReadFailure
+          error={treeError}
+          what="your organizations and scopes"
+          onRetry={() => void dispatch(ensureScopeTree({ refresh: true }))}
+          className="m-0 sm:col-span-2"
+        />
+      ) : itemsStatus === "error" && scopeTypeId ? (
+        <ReadFailure
+          error
+          what="this scope type's context items"
+          onRetry={() => void dispatch(ensureScopeTypeItems(scopeTypeId, { refresh: true }))}
+          className="m-0 sm:col-span-2"
+        />
+      ) : null}
     </div>
   );
 }

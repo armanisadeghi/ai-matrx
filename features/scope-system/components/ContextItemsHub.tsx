@@ -50,9 +50,12 @@ import {
   listScopeTypeItems,
   updateContextItem,
   selectItemsByType,
+  selectItemsErrorForType,
   selectItemsLoadedForType,
   type ContextItem,
 } from "@/features/scopes/redux/contextItemCatalog";
+import { selectTreeError } from "@/features/scopes/redux/selectors/tree";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ContextItemAddForm } from "./ContextItemAddForm";
 import { EditContextItemSheet } from "./EditContextItemSheet";
@@ -387,6 +390,12 @@ function ContextItemsTypeView({
   const itemsLoaded = useAppSelector((s) =>
     resolvedTypeId ? selectItemsLoadedForType(s, resolvedTypeId) : false,
   );
+  const itemsError = useAppSelector((s) =>
+    resolvedTypeId ? selectItemsErrorForType(s, resolvedTypeId) : null,
+  );
+  const retryItems = () => {
+    if (resolvedTypeId) void dispatch(listScopeTypeItems(resolvedTypeId));
+  };
 
   const [addingItem, setAddingItem] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -492,7 +501,22 @@ function ContextItemsTypeView({
         </div>
       </Card>
 
-      {!itemsLoaded ? (
+      {itemsError && items.length > 0 ? (
+        <StaleDataNotice
+          hasData
+          what={`the ${scopeType.label_plural.toLowerCase()} context items`}
+          onRetry={retryItems}
+          detail={itemsError}
+        />
+      ) : null}
+
+      {itemsError && items.length === 0 ? (
+        <ReadFailure
+          error={itemsError}
+          what={`the ${scopeType.label_plural.toLowerCase()} context items`}
+          onRetry={retryItems}
+        />
+      ) : !itemsLoaded ? (
         <CenteredSpinner />
       ) : (
         <Card className="overflow-hidden">
@@ -562,6 +586,8 @@ function ContextItemsOrgView({
   const typesLoaded = useAppSelector((s) =>
     selectScopeTypesLoadedForOrg(s, orgId),
   );
+  const treeError = useAppSelector(selectTreeError);
+  const dispatch = useAppDispatch();
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   return (
@@ -586,7 +612,13 @@ function ContextItemsOrgView({
         </div>
       </Card>
 
-      {!typesLoaded ? (
+      {treeError && scopeTypes.length === 0 ? (
+        <ReadFailure
+          error={treeError}
+          what="this organization's scope types"
+          onRetry={() => void dispatch(ensureScopeTree({ refresh: true }))}
+        />
+      ) : !typesLoaded ? (
         <CenteredSpinner />
       ) : scopeTypes.length === 0 ? (
         <Card className="p-8 text-center text-sm text-muted-foreground">
@@ -632,6 +664,7 @@ function ScopeTypeItemsSection({
   const dispatch = useAppDispatch();
   const items = useAppSelector((s) => selectItemsByType(s, type.id));
   const loaded = useAppSelector((s) => selectItemsLoadedForType(s, type.id));
+  const itemsError = useAppSelector((s) => selectItemsErrorForType(s, type.id));
   const color = resolveColor(type);
 
   useEffect(() => {
@@ -658,7 +691,13 @@ function ScopeTypeItemsSection({
         </Link>
       </div>
 
-      {!loaded ? (
+      {itemsError && items.length === 0 ? (
+        <ReadFailure
+          error={itemsError}
+          what={`the ${type.label_plural.toLowerCase()} context items`}
+          onRetry={() => void dispatch(listScopeTypeItems(type.id))}
+        />
+      ) : !loaded ? (
         <div className="flex items-center py-6 px-4">
           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
         </div>

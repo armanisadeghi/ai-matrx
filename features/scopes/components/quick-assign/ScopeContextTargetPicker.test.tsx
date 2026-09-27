@@ -117,6 +117,7 @@ jest.mock("@/features/scopes/redux/selectors/tree", () => ({
   selectOrganizationsList: () => mockOrganizations,
   makeSelectScopeTypesForOrg: () => () => mockScopeTypes,
   makeSelectScopesForType: () => () => mockScopes,
+  selectTreeError: () => null,
 }));
 
 jest.mock("@/features/scopes/redux/selectors/context-items", () => ({

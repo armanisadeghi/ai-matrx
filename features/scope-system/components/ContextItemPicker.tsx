@@ -68,6 +68,7 @@ import {
   listScopeTypeItems,
   listSystemContextItems,
   selectItemsByType,
+  selectItemsErrorForType,
   selectItemsLoadedForType,
   SYSTEM_ITEMS_KEY,
   type ContextItem,
@@ -79,6 +80,7 @@ import {
 } from "@/features/scopes/lib/scopeRoutes";
 import { CreateOrgModal } from "@/features/organizations/components/CreateOrgModal";
 import { ContextItemAddForm } from "./ContextItemAddForm";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   selectScopeTypesByOrg,
   selectScopeTypesLoadedForOrg,
@@ -187,6 +189,13 @@ export function ContextItemPicker({
   const items = useAppSelector((s) =>
     itemsKey ? selectItemsByType(s, itemsKey) : [],
   );
+  const itemsError = useAppSelector((s) =>
+    itemsKey ? selectItemsErrorForType(s, itemsKey) : null,
+  );
+  const retryItems = () => {
+    if (isSystem) void dispatch(listSystemContextItems());
+    else if (scopeTypeId) void dispatch(listScopeTypeItems(scopeTypeId));
+  };
 
   const org = orgs.find((o) => o.id === orgId);
   const scopeType = scopeTypes.find((t) => t.id === scopeTypeId);
@@ -307,7 +316,9 @@ export function ContextItemPicker({
     : scopeTypePending
       ? "Loading…"
       : items.length === 0
-        ? itemsLoaded
+        ? itemsError
+          ? "Couldn't load the context items"
+          : itemsLoaded
           ? isSystem
             ? "No system context items"
             : "No items yet — type a name to create one"
@@ -484,10 +495,18 @@ export function ContextItemPicker({
             disabled={readonly || scopeTypeMissing || scopeTypePending}
             loading={
               scopeTypePending ||
-              (Boolean(itemsKey) && !scopeTypeMissing && !itemsLoaded)
+              (Boolean(itemsKey) && !scopeTypeMissing && !itemsLoaded && !itemsError)
             }
             ariaLabel={isSystem ? "System context item" : "Context item"}
           />
+          {itemsError && !scopeTypeMissing ? (
+            <ReadFailure
+              error={itemsError}
+              what={isSystem ? "the system context items" : "this scope type's context items"}
+              onRetry={retryItems}
+              className="m-0"
+            />
+          ) : null}
           {isSystem && (
             <p className="text-[11px] text-muted-foreground">
               Resolves for every user with no scope selection. Ambient items are

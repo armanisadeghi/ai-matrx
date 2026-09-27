@@ -274,6 +274,24 @@ export const selectScopeValuesLoading = (
   );
 };
 
+/**
+ * Why either half of the scope's view failed to read, or null (RC-B12 r12).
+ * `selectValuesByScope` stays `undefined` after a failed first read, so a view
+ * gated only on rows/loading spins or says nothing; this names the failure.
+ */
+export const selectScopeValuesReadError = (
+  state: RootState,
+  scopeId: string,
+): string | null => {
+  if (!scopeId) return null;
+  const values = state.contextValues.byScope[scopeId];
+  if (values?.status === "error") return values.error ?? "The values could not be read.";
+  const typeId = scopeTypeIdFor(state, scopeId);
+  const catalog = typeId ? state.scopesTree.contextItemsByTypeId[typeId] : undefined;
+  if (catalog?.status === "error") return catalog.error ?? "The fields could not be read.";
+  return null;
+};
+
 export const selectIsSavingPair = (
   state: RootState,
   scopeId: string,

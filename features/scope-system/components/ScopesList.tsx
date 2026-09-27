@@ -52,9 +52,12 @@ import {
   updateContextItem,
   deleteContextItem,
   selectItemsByType,
+  selectItemsErrorForType,
   selectItemsLoadedForType,
   type ContextItem,
 } from "@/features/scopes/redux/contextItemCatalog";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import {
   getScopeContext,
   selectValuesByScope,
@@ -130,6 +133,9 @@ export function ScopesList({
   );
   const itemsLoaded = useAppSelector((s) =>
     selectItemsLoadedForType(s, resolvedTypeId ?? ""),
+  );
+  const itemsError = useAppSelector((s) =>
+    resolvedTypeId ? selectItemsErrorForType(s, resolvedTypeId) : null,
   );
   const suggestions = useScopeSuggestions();
   const openContextItemsWindow = useOpenContextItemsWindow();
@@ -557,7 +563,25 @@ export function ScopesList({
           </div>
         </div>
 
-        {!itemsLoaded ? (
+        {itemsError && items.length > 0 ? (
+          <StaleDataNotice
+            hasData
+            what={`the ${scopeType.label_plural.toLowerCase()} context items`}
+            onRetry={() => {
+              if (resolvedTypeId) void dispatch(listScopeTypeItems(resolvedTypeId));
+            }}
+            detail={itemsError}
+          />
+        ) : null}
+        {itemsError && items.length === 0 ? (
+          <ReadFailure
+            error={itemsError}
+            what={`the ${scopeType.label_plural.toLowerCase()} context items`}
+            onRetry={() => {
+              if (resolvedTypeId) void dispatch(listScopeTypeItems(resolvedTypeId));
+            }}
+          />
+        ) : !itemsLoaded ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
