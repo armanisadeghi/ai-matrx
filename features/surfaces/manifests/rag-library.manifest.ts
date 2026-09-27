@@ -3,7 +3,7 @@
  *
  * The user's own Knowledge corpus and the shared-library catalog beside it:
  *
- *   - `/knowledge/library`         — every `docproc.processed_documents` row the
+ *   - `/knowledge` (the hub; `/knowledge/library` redirects there) — every `docproc.processed_documents` row the
  *                              caller owns or curates, with derived page /
  *                              segment / embedding counts, a pipeline status
  *                              badge, a rollup of corpus totals, and the live
@@ -25,7 +25,9 @@
  *
  * Emitters (both via `buildRagLibraryContextData` in
  * `features/rag/agent-context/buildRagLibraryContextData.ts`):
- *   - `features/sources/components/SourcesPage.tsx` (the Sources page; emits the library view from Source rows)
+ *   - `features/knowledge/hub/components/KnowledgeHubPage.tsx` (the Knowledge hub; emits the library view from the
+ *     Sources it lists, and takes `library_filters` / `selected_document_id` — the retired Sources page's
+ *     handlers, H6a 2026-09-27)
  *   - `features/rag/components/library-catalog/LibraryCatalogPage.tsx`
  *
  * DELIBERATELY NOT DECLARED: the open document's page text and segment

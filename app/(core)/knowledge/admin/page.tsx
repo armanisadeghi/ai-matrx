@@ -27,9 +27,9 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
   routes: [
     {
       url: "/knowledge",
-      label: "Knowledge home",
+      label: "Knowledge hub",
       description:
-        "Landing page surfacing live state across data stores, library, and search.",
+        "The one place to keep, organize and search everything: views, containers, kinds, Trash, Stage facet, Add, bulk Attach / Process now, peek, Ask (KNOWLEDGE-HUB). /rag and every /rag/* alias redirect to their /knowledge twins.",
       filePath: "app/(core)/knowledge/page.tsx",
       status: "Live",
     },
@@ -43,17 +43,17 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/knowledge/library",
-      label: "Library",
+      label: "Sources (retired → hub)",
       description:
-        "Processed documents: 'where did my content go' list with per-document detail ([id]).",
+        "Retired 2026-09-27 (H6a): redirects to /knowledge?view=kind:processed_document keeping ?show= and ?q=.",
       filePath: "app/(core)/knowledge/library/page.tsx",
       status: "Live",
     },
     {
       url: "/knowledge/search",
-      label: "Search",
+      label: "Search Lab (retired → hub / admin)",
       description:
-        "Semantic/Knowledge search over entitled stores (requires aidream — secrets + rag internals).",
+        "Retired 2026-09-27 (H6a): ?q= / ?store_id= land in the hub's search; ?tab=agent-sim|agent-chat|diagnostics land in /administration/knowledge/search-lab.",
       filePath: "app/(core)/knowledge/search/page.tsx",
       status: "Live",
     },
@@ -81,8 +81,8 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/knowledge/visualization",
-      label: "Visualization",
-      description: "Embedding/chunk visualization.",
+      label: "Visualization (retired → hub)",
+      description: "Retired 2026-09-27 (H6a): the animation demo had no user actions; redirects to /knowledge. The animation lives on at /knowledge/flow.",
       filePath: "app/(core)/knowledge/visualization/page.tsx",
       status: "Live",
     },
@@ -132,9 +132,9 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
 
   components: [
     {
-      name: "RagHomePage",
-      filePath: "features/rag/components/RagHomePage.tsx",
-      description: "Knowledge home dashboard.",
+      name: "KnowledgeHubPage",
+      filePath: "features/knowledge/hub/components/KnowledgeHubPage.tsx",
+      description: "The Knowledge hub (replaced the Knowledge home and the Sources page).",
     },
     {
       name: "DataStoresPage",
@@ -159,12 +159,6 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/rag/components/library-curate/LibraryCuratePage.tsx",
       description:
         "The curator front door. Reuses features/admin/shared-knowledge/packs/PackDetail rather than forking a second pack editor.",
-    },
-    {
-      name: "LibraryCatalogPane",
-      filePath: "features/rag/components/data-stores/LibraryCatalogPane.tsx",
-      description:
-        "Tenant-facing catalog of discoverable library stores (subscribe/unsubscribe). P3 grows this into /knowledge/library-catalog.",
     },
     {
       name: "SharedKnowledgeAdminClient",

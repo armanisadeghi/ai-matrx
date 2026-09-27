@@ -1,8 +1,8 @@
 "use client";
 
 // RagHubHeader — the ONE shell header for the Knowledge/Knowledge hub level
-// (`/knowledge`, `/knowledge/data-stores`, `/knowledge/library`, `/knowledge/search`,
-// `/knowledge/repositories`). Center is the canonical section nav (RouteModeNav);
+// (`/knowledge/data-stores`, `/knowledge/library-catalog`, `/knowledge/library-curate`,
+// `/knowledge/repositories`; Sources and Search are the hub since H6a). Center is the canonical section nav (RouteModeNav);
 // callers pass their contextual action tap-buttons via `right`. No title
 // text — the nav IS the identity. Pattern mirrors CmsHubHeader.
 
@@ -12,17 +12,16 @@ import {
   Home,
   Database,
   FileText,
-  Search,
   Code2,
   Library,
 } from "lucide-react";
+import { HUB_SOURCES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 const HUB_NAV_ITEMS = [
   { name: "Hub", href: "/knowledge", icon: Home },
   { name: "Data Stores", href: "/knowledge/data-stores", icon: Database },
-  { name: "Sources", href: "/knowledge/library", icon: FileText },
+  { name: "Sources", href: HUB_SOURCES_HREF, icon: FileText },
   { name: "Catalog", href: "/knowledge/library-catalog", icon: Library },
-  { name: "Search", href: "/knowledge/search", icon: Search },
   { name: "Repositories", href: "/knowledge/repositories", icon: Code2 },
 ];
 

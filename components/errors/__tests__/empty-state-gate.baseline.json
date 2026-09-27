@@ -261,7 +261,6 @@
     "features/skills/components/SkillProjectAssociations.tsx": 1,
     "features/skills/components/SkillResourcesPanel.tsx": 1,
     "features/source-library/components/RulebookParamPicker.tsx": 1,
-    "features/sources/components/SourcesPage.tsx": 1,
     "features/surfaces/admin/batch/SurfaceBindingsBatchEditor.tsx": 2,
     "features/surfaces/admin/columns/SurfaceDetailsColumn.tsx": 3,
     "features/surfaces/admin/columns/SurfaceRolesSection.tsx": 1,

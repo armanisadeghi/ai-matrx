@@ -10,9 +10,9 @@ const redirect = jest.fn((to: string) => {
 jest.mock("next/navigation", () => ({ redirect: (to: string) => redirect(to) }));
 
 import KnowledgeViewer from "@/app/(core)/knowledge/viewer/[id]/page";
-import RagViewer from "@/app/(core)/rag/viewer/[id]/page";
+import RagViewer from "@/app/(core)/knowledge/viewer/[id]/page";
 import KnowledgePreview from "@/app/(core)/knowledge/library/[id]/preview/page";
-import RagPreview from "@/app/(core)/rag/library/[id]/preview/page";
+import RagPreview from "@/app/(core)/knowledge/library/[id]/preview/page";
 import PdfStudioDoc from "@/app/(core)/tools/pdf-extractor/[id]/page";
 
 type RoutePage = (props: {

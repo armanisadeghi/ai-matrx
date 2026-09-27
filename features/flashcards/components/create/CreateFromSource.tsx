@@ -76,6 +76,7 @@ import {
   ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
 } from "@/features/agents/components/shared/assistant-message-layout";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { HUB_SOURCES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -440,7 +441,7 @@ function DocPickerStep({
             from.
           </p>
           <Button variant="outline" size="sm" asChild className="mt-1">
-            <a href="/knowledge/library">Open Knowledge library</a>
+            <a href={HUB_SOURCES_HREF}>Open your Sources</a>
           </Button>
         </div>
       ) : (

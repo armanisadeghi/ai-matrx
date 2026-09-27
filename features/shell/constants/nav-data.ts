@@ -61,6 +61,7 @@ import {
 import { NAV_WINDOW_PANEL_ICON } from "./nav-window-panels";
 import { AGENT_ICON_NAME, INTELLIGENCE_ICON_NAME } from "@/components/icons/domain-icons";
 import { USER_LAUNCHPAD_PATH } from "@/features/launchpad/constants";
+import { HUB_SOURCES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 export type { ShellNavPanelActionId };
 export { NAV_WINDOW_PANEL_ICON };
@@ -874,7 +875,6 @@ export const primaryNavItems: ShellNavItem[] = [
     description:
       "Knowledge data stores, knowledge graph, deep research, and org-wide search",
     color: "amber",
-    ownedRoutePrefixes: ["/rag"],
     children: [
       {
         label: "Research",
@@ -904,14 +904,8 @@ export const primaryNavItems: ShellNavItem[] = [
         group: "Knowledge",
       },
       {
-        label: "Search",
-        href: "/knowledge/search",
-        iconName: "Search",
-        group: "Knowledge",
-      },
-      {
-        label: "Library",
-        href: "/knowledge/library",
+        label: "Sources",
+        href: HUB_SOURCES_HREF,
         iconName: "FileText",
         group: "Knowledge",
       },

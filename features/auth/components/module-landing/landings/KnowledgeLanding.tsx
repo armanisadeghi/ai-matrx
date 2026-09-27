@@ -12,6 +12,7 @@ import {
   type ModuleStep,
   type ModuleSubArea,
 } from "@/features/auth/components/module-landing/ModuleLanding";
+import { HUB_SOURCES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 const CAPABILITIES: ModuleCapability[] = [
   {
@@ -82,7 +83,7 @@ const SUB_AREAS: ModuleSubArea[] = [
   {
     title: "Search",
     status: "Live",
-    href: "/knowledge/search",
+    href: "/knowledge",
     items: [
       "Hybrid retrieval",
       "Per-store filtering",
@@ -93,7 +94,7 @@ const SUB_AREAS: ModuleSubArea[] = [
   {
     title: "Document library",
     status: "Live",
-    href: "/knowledge/library",
+    href: HUB_SOURCES_HREF,
     items: [
       "Every doc you've added",
       "Filter + sort",

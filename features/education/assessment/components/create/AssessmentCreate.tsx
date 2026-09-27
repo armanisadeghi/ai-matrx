@@ -73,6 +73,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { HUB_SOURCES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 const FIELD = "text-base"; // 16px+ prevents iOS zoom-on-focus
 
@@ -602,7 +603,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
                 ) : docs.filter((d) => d.chunks > 0).length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     No processed documents. Upload one in your{" "}
-                    <a className="underline" href="/knowledge/library">
+                    <a className="underline" href={HUB_SOURCES_HREF}>
                       Knowledge library
                     </a>{" "}
                     first.

@@ -68,3 +68,6 @@ export function searchLabToHref(params: LegacySearchParams): string {
   };
   return hubHref({ ...DEFAULT_HUB_STATE, query });
 }
+
+/** Where "Sources" lives now — every Source, in the hub. The link every retired "/knowledge/library" pointer uses. */
+export const HUB_SOURCES_HREF = libraryToHubHref({});

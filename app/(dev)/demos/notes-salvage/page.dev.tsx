@@ -17,6 +17,7 @@ import { toast } from "@/lib/toast";
 import { Database, Trash2, ArrowRightLeft, Info } from "lucide-react";
 import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
 import { useNoteIngestStatus } from "@/features/notes/hooks/useNoteIngestStatus";
+import { HUB_SOURCES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 /** The salvaged cluster, faithful to the deleted NoteToolbar (lines 174-210). */
 function RagCluster({ noteId }: { noteId: string | null }) {
@@ -41,7 +42,7 @@ function RagCluster({ noteId }: { noteId: string | null }) {
           toast.success("Note indexed for Knowledge", {
             action: {
               label: "View in library",
-              onClick: () => router.push("/knowledge/library"),
+              onClick: () => router.push(HUB_SOURCES_HREF),
             },
           });
         }}

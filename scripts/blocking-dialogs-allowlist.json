@@ -9,7 +9,7 @@
     {
       "file": "components/ui/sidebar.tsx",
       "kind": "blocking-sheet",
-      "reason": "phone-only presentation of the shell sidebar (rendered only when useIsMobile() is true) \u2014 a drawer is allowed as the phone presentation, never the desktop host"
+      "reason": "phone-only presentation of the shell sidebar (rendered only when useIsMobile() is true) — a drawer is allowed as the phone presentation, never the desktop host"
     },
     {
       "file": "features/canvas/core/CanvasSideSheetImpl.tsx",
@@ -38,11 +38,6 @@
     },
     {
       "file": "features/marketing/seo/topical-map/panel/sections/AssociationsSection.tsx",
-      "kind": "blocking-sheet",
-      "reason": "pre-existing, pending conversion to MatrxDynamicPanelHost"
-    },
-    {
-      "file": "features/rag/components/library/LibraryTrashSheet.tsx",
       "kind": "blocking-sheet",
       "reason": "pre-existing, pending conversion to MatrxDynamicPanelHost"
     },

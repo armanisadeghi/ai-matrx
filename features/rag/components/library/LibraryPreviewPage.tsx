@@ -86,6 +86,7 @@ import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamic
 import { KnowledgeAssetPanel } from "./KnowledgeAssetPanel";
 import { PageContentHeader } from "./PageContentHeader";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { HUB_SOURCES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 // Full-page payload — DERIVED from the generated contract (never hand-mirrored).
 type ApiFullPage = components["schemas"]["LibraryFullPage"];
@@ -287,7 +288,7 @@ export function LibraryPreviewPage({
       <div className="relative flex flex-col bg-background h-full">
         {!embedded && (
           <EntityModeHeader
-            backHref="/rag/library"
+            backHref={HUB_SOURCES_HREF}
             entityLabel={docLoading || !doc ? "Loading…" : doc.name}
             actions={
               doc
@@ -412,8 +413,8 @@ export function LibraryPreviewPage({
                 docReadError ?? (docError ? new Error(docError) : undefined)
               }
               onRetry={reloadDoc}
-              fallbackHref="/rag/library"
-              fallbackLabel="Your library"
+              fallbackHref={HUB_SOURCES_HREF}
+              fallbackLabel="Your Sources"
             />
           )}
 

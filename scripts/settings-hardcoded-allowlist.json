@@ -6121,10 +6121,6 @@
       "name": "MAX_TEXT_CHARS"
     },
     {
-      "file": "matrx-frontend/features/rag/components/data-stores/LibraryCatalogPane.tsx",
-      "name": "TEASER_LIMIT"
-    },
-    {
       "file": "matrx-frontend/features/rag/components/library/PageContentHeader.tsx",
       "name": "MAX_SEGMENTS"
     },

@@ -8,8 +8,8 @@
  *
  * Class guard: scans every file that calls
  * `fn_delete_library_document_and_source` for permanence wording. The sheet
- * was retired 2026-09-26 with the old library page; the Sources page's bulk
- * delete (SOURCE-CONVERGENCE §8.1) is the surface guarded by name now.
+ * was retired 2026-09-26 with the old library page; the Knowledge hub's
+ * trash (sourceActions.trashSource, H6a) is the surface guarded by name now.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -61,15 +61,17 @@ describe("library document 'delete file' confirm is honest about a soft delete",
     expect(offences).toEqual([]);
   });
 
-  it("the Sources page's bulk delete names the truth: trash and restore, not permanence", () => {
-    const source = readFileSync(
-      join(REPO_ROOT, "features/sources/components/SourcesPage.tsx"),
+  it("the Knowledge hub trashes a Source through the one soft-delete door, with a restorable confirm", () => {
+    const hub = readFileSync(
+      join(REPO_ROOT, "features/knowledge/hub/components/KnowledgeHubPage.tsx"),
       "utf8",
     );
-    // The confirm sits in an AlertDialog and says where the Sources go and how they come back.
-    expect(source).toMatch(/AlertDialog/);
-    expect(source).toMatch(/to the\s+trash\.\s+Restorable from the trash\./);
-    expect(source).toMatch(/goes to the trash together with its file/);
-    expect(source).toMatch(/Move to trash/);
+    const door = readFileSync(join(REPO_ROOT, "features/sources/sourceActions.ts"), "utf8");
+    // The Sources page retired 2026-09-27 (KNOWLEDGE-HUB H6a); its delete moved here.
+    expect(door).toMatch(/fn_delete_library_document_and_source/);
+    expect(door).toMatch(/moved to the trash/);
+    expect(hub).toMatch(/trashSource\(row\)/);
+    expect(hub).toMatch(/archiveConfirmSentence/);
+    expect(hub).toMatch(/Move to Trash/);
   });
 });

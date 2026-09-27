@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1285,
+  "routeCount": 1280,
   "routes": [
     {
       "pattern": "/",
@@ -2654,6 +2654,11 @@
       "source": "app/(core)/education/quizzes/new/page.tsx"
     },
     {
+      "pattern": "/education/sessions",
+      "status": "live",
+      "source": "app/(core)/education/sessions/page.tsx"
+    },
+    {
       "pattern": "/education/start",
       "status": "live",
       "source": "app/(core)/education/start/page.tsx"
@@ -3459,6 +3464,21 @@
       "pattern": "/knowledge-graph",
       "status": "live",
       "source": "app/(core)/knowledge-graph/page.tsx"
+    },
+    {
+      "pattern": "/knowledge/about",
+      "status": "live",
+      "source": "app/(core)/knowledge/about/page.tsx"
+    },
+    {
+      "pattern": "/knowledge/admin",
+      "status": "live",
+      "source": "app/(core)/knowledge/admin/page.tsx"
+    },
+    {
+      "pattern": "/knowledge/ask",
+      "status": "live",
+      "source": "app/(core)/knowledge/ask/page.tsx"
     },
     {
       "pattern": "/knowledge/data-stores",
@@ -4896,6 +4916,11 @@
       "source": "app/(core)/meetings/page.tsx"
     },
     {
+      "pattern": "/meetings/[id]",
+      "status": "live",
+      "source": "app/(core)/meetings/[id]/page.tsx"
+    },
+    {
       "pattern": "/messages",
       "status": "live",
       "source": "app/(core)/messages/page.tsx"
@@ -5501,61 +5526,6 @@
       "source": "app/(public)/r/[token]/page.tsx"
     },
     {
-      "pattern": "/rag",
-      "status": "live",
-      "source": "app/(core)/rag/page.tsx"
-    },
-    {
-      "pattern": "/rag/admin",
-      "status": "live",
-      "source": "app/(core)/rag/admin/page.tsx"
-    },
-    {
-      "pattern": "/rag/data-stores",
-      "status": "live",
-      "source": "app/(core)/rag/data-stores/page.tsx"
-    },
-    {
-      "pattern": "/rag/flow",
-      "status": "live",
-      "source": "app/(core)/rag/flow/page.tsx"
-    },
-    {
-      "pattern": "/rag/library",
-      "status": "live",
-      "source": "app/(core)/rag/library/page.tsx"
-    },
-    {
-      "pattern": "/rag/library-catalog",
-      "status": "live",
-      "source": "app/(core)/rag/library-catalog/page.tsx"
-    },
-    {
-      "pattern": "/rag/library/[id]/preview",
-      "status": "live",
-      "source": "app/(core)/rag/library/[id]/preview/page.tsx"
-    },
-    {
-      "pattern": "/rag/repositories",
-      "status": "live",
-      "source": "app/(core)/rag/repositories/page.tsx"
-    },
-    {
-      "pattern": "/rag/search",
-      "status": "live",
-      "source": "app/(core)/rag/search/page.tsx"
-    },
-    {
-      "pattern": "/rag/viewer/[id]",
-      "status": "live",
-      "source": "app/(core)/rag/viewer/[id]/page.tsx"
-    },
-    {
-      "pattern": "/rag/visualization",
-      "status": "live",
-      "source": "app/(core)/rag/visualization/page.tsx"
-    },
-    {
       "pattern": "/registered-results",
       "status": "live",
       "source": "app/(transitional)/registered-results/page.tsx"
@@ -5739,6 +5709,11 @@
       "pattern": "/resources/term-lists",
       "status": "live",
       "source": "app/(core)/resources/term-lists/page.tsx"
+    },
+    {
+      "pattern": "/rsvp/[secret]",
+      "status": "live",
+      "source": "app/(link)/rsvp/[secret]/page.tsx"
     },
     {
       "pattern": "/s/[token]",
