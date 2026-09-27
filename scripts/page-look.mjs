@@ -328,9 +328,13 @@ try {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(`${opts.base}${opts.routes[0]}`, { timeout: 600000 });
     await page.waitForTimeout(opts.settle);
-    const trigger = page.locator('button[aria-label="Choose an organization"], button[aria-label^="Organization:"]').first();
+    // The header chip reads "Choose an organization" with none chosen and
+    // "Workspace: <name>. Change workspace" once one is (HeaderChooseOrgButton).
+    const trigger = page
+      .locator('button[aria-label="Choose an organization"], button[aria-label^="Workspace:"], button[aria-label="Change workspace"]')
+      .first();
     const current = (await trigger.getAttribute("aria-label").catch(() => null)) ?? "";
-    if (current === `Organization: ${opts.org}`) {
+    if (current.startsWith(`Workspace: ${opts.org}.`)) {
       report.org = `${opts.org} (already active)`;
     } else if (await trigger.count()) {
       await trigger.click();

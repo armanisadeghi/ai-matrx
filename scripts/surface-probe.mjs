@@ -29,6 +29,7 @@
  * real agent writing through it, not a read. Added 2026-09-26 after an agent on
  * /education/classes "succeeded" through a generic tool and left half-built
  * records that a read probe could never have caught.
+ *   --org "<name>"        choose the active organization first (header chip).
  *   --open 'SELECTOR=>TEXT'   before the FIRST read, click to open a window or
  *                         dialog (repeatable, in order) — probes an overlay
  *                         surface instead of the page underneath.
@@ -75,7 +76,7 @@ const args = process.argv.slice(2);
 const opts = {
   routes: [],
   fills: [],
-  clicks: [], opens: [],
+  clicks: [], opens: [], org: null,
   base: "https://aimatrx.com",
   settle: 12000,
   agentName: "Badass Agent",
@@ -96,6 +97,7 @@ for (let i = 0; i < args.length; i += 1) {
   else if (a === "--commit") (opts.commit = v), (i += 1);
   else if (a === "--click") opts.clicks.push(v), (i += 1);
   else if (a === "--open") opts.opens.push(v), (i += 1);
+  else if (a === "--org") (opts.org = v), (i += 1);
   else if (a === "--agent") (opts.agent = v), (i += 1);
   else if (a === "--agent-name") (opts.agentName = v), (i += 1);
   else if (a === "--agent-wait") (opts.agentWait = Number(v)), (i += 1);
@@ -496,6 +498,30 @@ try {
         .waitForFunction(() => !document.querySelector('input[type="email"]'), null, { timeout: 45000 })
         .catch(() => {});
       await page.waitForTimeout(2000);
+    }
+  }
+
+  // --org "<name>": choose the active organization through the header chip
+  // first, so an organization-scoped page is probed with its data.
+  if (opts.org) {
+    await page.goto(`${opts.base}${opts.routes[0]}`, { timeout: 600000 });
+    await page.waitForTimeout(opts.settle);
+    const trigger = page
+      .locator('button[aria-label="Choose an organization"], button[aria-label^="Workspace:"], button[aria-label="Change workspace"]')
+      .first();
+    const current = (await trigger.getAttribute("aria-label").catch(() => null)) ?? "";
+    if (!current.startsWith(`Workspace: ${opts.org}.`) && (await trigger.count())) {
+      await trigger.click();
+      await page.waitForTimeout(2500);
+      const option = page
+        .locator("[data-radix-popper-content-wrapper] button, [data-radix-popper-content-wrapper] [role=option], [role=dialog] button")
+        .filter({ hasText: opts.org })
+        .first();
+      if (await option.count()) {
+        await option.click();
+        await page.waitForTimeout(2500);
+        await page.keyboard.press("Escape");
+      } else console.error(`[surface-probe] organization "${opts.org}" not found in the header picker`);
     }
   }
 

@@ -266,6 +266,10 @@ surface). Say which parts you judged as authored content.
 - **Numbers are plausible.** Sanity-check every computed figure against the
   rows behind it (a study time of 57 days, a count that disagrees with its
   list, a 0 shown beside content that exists are defects).
+- **First ask whether it needs an organization at all.** A person's own
+  records (their connections, their settings, their history) never do — if the
+  server demands one for them, fix the server declaration, don't hold the page.
+  A page re-runs its loads when the header organization changes.
 - **A request that needs an organization is held, never failed.** With no
   organization selected, the page shows the person's memberships inline and
   proceeds once one is chosen (`lib/organization/organization-gate.ts`); an
@@ -331,8 +335,10 @@ surface). Say which parts you judged as authored content.
   `matrx-touch-targets` (44px on touch, desktop stays compact — but a control's
   own `h-*`/`min-h-*` class overrides the floor, so check the rendered size); a checkbox,
   radio or switch gets `matrx-tap-area` on its label.
-- Nothing hover-only: a control revealed with `opacity-0 group-hover:opacity-100`
-  also carries `pointer-coarse:opacity-100`.
+- Nothing hover-only — including a tooltip that carries real information (a
+  limit, a reason): on touch it opens on tap (a popover), or the text is shown.
+  A control revealed with `opacity-0 group-hover:opacity-100` also carries
+  `pointer-coarse:opacity-100`.
 - A plain `<Dialog>` becomes a bottom sheet by itself; hand-roll a Drawer only
   for a drag handle or a genuinely different layout.
 - `dvh` never `vh`; `pb-safe` on anything fixed to the bottom; one scroll area;
