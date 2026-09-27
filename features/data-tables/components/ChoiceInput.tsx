@@ -75,6 +75,13 @@ export type ChoiceInputProps = {
    * tick, so a caller reading its own state here would read the previous value.
    */
   onDone?: (value: unknown) => void;
+  /**
+   * What the person started typing on the selected cell (type-to-edit). It is the list's SEARCH,
+   * never the value: the letters narrow the choices, Enter picks, Escape changes nothing (lane
+   * DATA-V2-BASICS — "W" of "Waiting on parts" used to become the cell's value and the rest landed
+   * in the search, and Escape saved "W").
+   */
+  initialQuery?: string | null;
   className?: string;
 };
 
@@ -102,10 +109,11 @@ export function ChoiceInput({
   row,
   autoOpen = false,
   onDone,
+  initialQuery = null,
   className,
 }: ChoiceInputProps) {
   const [open, setOpen] = useState(autoOpen);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery ?? "");
   // A person column's options are the organization's members, provided at
   // the grid's root; every other format ignores the second argument.
   const personChoices = usePersonChoices();

@@ -208,15 +208,21 @@ export function EditableCell({
   // just started typing (the spreadsheet reflex of "type to replace"), and from
   // the stored value otherwise.
   const wasEditing = useRef(false);
+  const seedIsTheSearch = (() => {
+    const kind = format ? getFieldFormat(format.id)?.editor : undefined;
+    return kind === "select" || kind === "multiselect";
+  })();
   useEffect(() => {
     // Opening the editor again is the person answering the refusal; the notice goes.
     if (editing && !wasEditing.current) {
-      setDraft(seed ?? value);
+      // A CHOICE takes the typed letters as its list's search (ChoiceInput `initialQuery`), never
+      // as the value — the draft stays what is stored, so closing the list changes nothing.
+      setDraft(seedIsTheSearch ? value : (seed ?? value));
       setRefusal(null);
       setRuleRefusal(null);
     }
     wasEditing.current = editing;
-  }, [editing, seed, value]);
+  }, [editing, seed, value, seedIsTheSearch]);
 
   const cancelEdit = useCallback(() => {
     setDraft(value);
@@ -596,6 +602,7 @@ export function EditableCell({
           onChange={(next) => setDraft(next)}
           onDone={(final) => void commitEdit({ value: final })}
           className="min-w-[10rem]"
+          initialQuery={seed}
         />
       </div>
     );
