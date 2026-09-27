@@ -20,6 +20,7 @@
 //      silently dialed.
 
 import { supabase } from "@/utils/supabase/client";
+import { readAllRows } from "@ai-matrx/data/db";
 import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import {
@@ -78,22 +79,25 @@ function crm() {
 export async function fetchOutreachLists(
   ctx: CrmQueryContext,
 ): Promise<OutreachListWithCount[]> {
-  let q = crm()
-    .from("outreach_list")
-    // Embedded count = live members only (soft-deleted rows excluded).
-    .select("*, members:outreach_list_member(count)")
-    .is("deleted_at", null)
-    .is("members.deleted_at", null)
-    .order("updated_at", { ascending: false })
-    .order("id", { ascending: true });
-  q = ctx.orgIds.length
-    ? q.or(
-        `created_by.eq.${ctx.userId},organization_id.in.(${ctx.orgIds.join(",")})`,
-      )
-    : q.eq("created_by", ctx.userId);
-  const { data, error } = await q;
-  if (error) throw pgError(error);
-  return (data ?? []) as OutreachListWithCount[];
+  return readAllRows<OutreachListWithCount>(
+    ({ from, to }) => {
+      let q = crm()
+        .from("outreach_list")
+        // Embedded count = live members only (soft-deleted rows excluded).
+        .select("*, members:outreach_list_member(count)", { count: "exact" })
+        .is("deleted_at", null)
+        .is("members.deleted_at", null)
+        .order("updated_at", { ascending: false })
+        .order("id", { ascending: true });
+      q = ctx.orgIds.length
+        ? q.or(
+            `created_by.eq.${ctx.userId},organization_id.in.(${ctx.orgIds.join(",")})`,
+          )
+        : q.eq("created_by", ctx.userId);
+      return q.range(from, to);
+    },
+    { label: "crm.outreach_list" },
+  );
 }
 
 export async function fetchOutreachList(id: string): Promise<OutreachListRow> {
