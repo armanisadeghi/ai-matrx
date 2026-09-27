@@ -28,6 +28,7 @@ import {
 } from "@ai-matrx/meet/react";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
+import { respondThroughServer } from "@/features/meet/lib/in-app-rsvp";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -235,9 +236,23 @@ export function useMeetingActions() {
       });
     },
 
+    /**
+     * Going? — through aidream, which writes `meet_respond` for this person AND
+     * tells the host when the answer changed (in-app-rsvp.ts). A server that does
+     * not have the route yet (a deploy in flight) falls back to the database door
+     * and SAYS so: the answer is saved, the host is not told.
+     */
     async respond(meetingId: MeetingRecord["id"], answer: RsvpAnswer) {
       const h = require();
-      return h.repository.respond(meetingId, answer, null);
+      const result = await respondThroughServer(h.api, meetingId, answer, null);
+      if (!result.routeMissing) return result;
+      console.warn(
+        "[meet] POST /api/v1/meet/meetings/{id}/rsvp is not on this server yet — the answer " +
+          "was saved through the database door and the host was NOT notified. Remedy: deploy " +
+          "aidream with the in-app RSVP route (services/meet/rsvp.py::respond_in_app).",
+      );
+      await h.repository.respond(meetingId, answer, null);
+      return result;
     },
   };
 }

@@ -128,12 +128,13 @@ doors + `announceMeeting`).
   guest list shows each answer and whether they were emailed; "Email invitation to N guests"
   covers anyone not yet told. A true per-person RESEND is not available (announce only sends what
   a person has not been told) — named, not built.
-- **RSVP** three ways: in-app Going? (`meet_respond`) on the meeting page and the pre-join screen
-  (invitees only); the emailed link `/rsvp/<secret>` reads `meet_invitation_by_token` and answers
+- **RSVP** three ways: in-app Going? on the meeting page and the pre-join screen (invitees only)
+  goes through aidream `POST /api/v1/meet/meetings/{id}/rsvp` (`lib/in-app-rsvp.ts`), which writes
+  `meet_respond` for the caller and notifies the host of a changed answer; a server without that
+  route (deploy lag) falls back to the door with a console warning; the emailed link `/rsvp/<secret>` reads `meet_invitation_by_token` and answers
   through aidream `POST /api/v1/meet/rsvp` (secret in the body) so the host is notified
   (`meet.rsvp_received`). The clicked answer rides `?answer=` and is sent once the page is on
-  screen (a scanner fetching the URL runs no script). An in-app answer does not notify the host
-  yet (aidream gap).
+  screen (a scanner fetching the URL runs no script).
 - **Calendar links carry the rule** (`lib/calendar/eventLinks.ts`): Google gets `recur` + `ctz`,
   the `.ics` writes `DTSTART;TZID=` + `RRULE` (a date-only UNTIL becomes end of day UTC), and the
   UID is the server's `<id>@meet.aimatrx.com` so importing both is one event. Outlook on the web
