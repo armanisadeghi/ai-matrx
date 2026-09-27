@@ -8,6 +8,9 @@ import { PartyRecordPage } from "@/features/crm/components/record/PartyRecordPag
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** How long the tab-title read may take before the generic title is used. */
+const METADATA_READ_MS = 1500;
+
 const GENERIC = {
   title: "CRM record",
   description: "A person or company in your CRM.",
@@ -32,11 +35,15 @@ export async function generateMetadata({
   }
   try {
     const supabase = await createClient();
+    // BOUNDED: a slow database must never hold the page's render (and so
+    // become a platform 504) for a tab title. Past the limit the read is
+    // aborted and the generic title stands; the body resolves the record.
     const { data } = await supabase
       .schema("crm")
       .from("party")
       .select("display_name, party_kind")
       .eq("id", partyId)
+      .abortSignal(AbortSignal.timeout(METADATA_READ_MS))
       .maybeSingle();
     if (!data?.display_name) return createDynamicRouteMetadata("/crm", GENERIC);
     return createDynamicRouteMetadata("/crm", {
