@@ -743,6 +743,8 @@ export const settingsRegistry: SettingsTabDef[] = [
     id: "integrations",
     label: "Connectors",
     icon: Plug,
+    navigable: true,
+    navigationLabel: "All connectors",
     description:
       "Connect Google, MCP servers and other services, and see exactly what each one may do.",
     searchKeywords: [
@@ -897,6 +899,8 @@ export function getTabTreeNodes(isAdmin: boolean): SettingsTreeNode[] {
     icon: t.icon,
     description: t.description,
     searchKeywords: t.searchKeywords,
+    navigable: t.navigable,
+    navigationLabel: t.navigationLabel,
     children: t.children?.map(toNode),
   });
   return getTabTree(isAdmin).map(toNode);

@@ -32,6 +32,10 @@ export type SettingsTabDef = {
   icon: LucideIcon;
   /** Parent tab id — omit for top-level tabs. */
   parentId?: string;
+  /** A folder with its own useful page also appears as a destination in navigation. */
+  navigable?: boolean;
+  /** Label for the folder's own destination when its heading already uses `label`. */
+  navigationLabel?: string;
   /** Short description shown under the label in the drawer and in breadcrumbs. */
   description?: string;
   /** Extra keywords searched alongside label/description. */

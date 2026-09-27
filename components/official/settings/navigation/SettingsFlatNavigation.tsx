@@ -70,6 +70,9 @@ export function settingsNavigationSections(
     // Registry folders are headings. Configuration domains use their routable
     // Overview child while keeping the domain's human name in the flat list.
     const items: SettingsNavigationItem[] = [];
+    if (root.navigable) {
+      items.push(asItem({ ...root, label: root.navigationLabel ?? root.label }, "Settings"));
+    }
     const collect = (node: SettingsTreeNode, path: string[]): void => {
       if (!node.children?.length) {
         items.push(asItem(node, path.join(" / ")));
