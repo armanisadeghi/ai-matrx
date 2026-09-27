@@ -28,11 +28,10 @@ export interface PremiumPlan {
   currency: string;
   /** Billing interval ("month" | "year" | …). */
   interval: string;
-  /**
-   * True when the page cannot PROVE this price is final, which — until a
-   * signed-off price is seeded — is always. See `loadEducationPricing`.
-   */
-  isTest: boolean;
+  // No "is this price final" flag: the only source (product.metadata) is not
+  // anon-readable, and a "test pricing" caveat is internal wording that must
+  // not reach a visitor (page-pass 2026-09-27). The page shows the live active
+  // price; a final price is a new billing.price row, no code change.
 }
 
 export interface FreeHighlight {
@@ -137,15 +136,6 @@ export async function loadEducationPricing(): Promise<EducationPricing> {
         amountCents: price.unit_amount,
         currency: price.currency ?? "usd",
         interval: price.interval ?? "month",
-        // FAIL-SAFE, not a guess. The flag that used to answer this lived in
-        // `billing.product.metadata.matrx_test`, which a signed-out reader may
-        // not read and must not — so the page cannot prove a price is final and
-        // therefore never claims one is. It always renders the "introductory
-        // test pricing — final pricing coming soon" caveat beside the number.
-        // When a signed-off price ships, the honest way to drop the caveat is a
-        // column `anon` may read (a `billing.price.is_final`), not a metadata
-        // grant. Until then the caveat is the truthful state.
-        isTest: true,
       };
     }
   }

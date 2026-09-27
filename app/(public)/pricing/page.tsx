@@ -1,6 +1,11 @@
 import Link from "next/link";
-import { ArrowRight, ScrollText, Scale, ShieldCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  ArrowRight,
+  Eye,
+  FolderDown,
+  Gauge,
+  MousePointerClick,
+} from "lucide-react";
 import { EducationPricing } from "@/features/pricing/education/EducationPricing";
 import { loadEducationPricing } from "@/features/pricing/education/loadEducationPricing";
 
@@ -12,63 +17,88 @@ import { loadEducationPricing } from "@/features/pricing/education/loadEducation
 // the (dev)/demos/upgrade demos that still consume it — see
 // features/entitlements/FEATURE.md for the structure decision.
 
+// The billing-integrity promises shown under the plans — each one is true
+// today (the pledge page marks the ones still being built "Before paid
+// launch"; none of those appear here).
+const PLEDGE = [
+  {
+    icon: MousePointerClick,
+    title: "One-click cancel",
+    body: "Cancel from the billing portal in one click — no retention maze.",
+  },
+  {
+    icon: Eye,
+    title: "Limits you can see",
+    body: "Every limit is on this page, and the app shows what you have left.",
+  },
+  {
+    icon: Gauge,
+    title: "We meter generation only",
+    body: "Studying, reviewing and keeping what you made are never metered.",
+  },
+  {
+    icon: FolderDown,
+    title: "Your work stays yours",
+    body: "Keep every deck, note and kit forever, and export your library anytime.",
+  },
+];
+
 export default async function PricingPage() {
   const pricing = await loadEducationPricing();
 
   return (
     <div className="h-full overflow-y-auto bg-textured">
-      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-        {/* Trust banner — the billing-integrity promise, above the plans */}
-        <section className="pt-8 lg:pt-10">
-          <div className="flex flex-col gap-5 rounded-2xl border border-border bg-card/60 p-6 sm:flex-row sm:items-center sm:justify-between lg:px-8 lg:py-6">
-            <div className="flex flex-col gap-2">
-              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2} />
-                Billing integrity, in writing
-              </span>
-              <h1 className="text-balance text-2xl font-semibold tracking-tight md:text-3xl">
-                Priced to earn trust, not to trap you.
-              </h1>
-              <p className="max-w-xl text-pretty text-sm leading-relaxed text-muted-foreground">
-                One-click cancel. Limits you can see before you hit them. A free
-                tier generous enough to finish real work. We meter AI
-                generation, never the content you&apos;ve already made.
-              </p>
-            </div>
-            {/* Secondary on purpose: the plan cards below carry this screen's
-                one primary action (start free / create an account). */}
-            <div className="matrx-touch-targets flex shrink-0 flex-col gap-1 sm:items-end">
-              <Button asChild variant="outline" className="gap-2">
-                <Link href="/pricing/pledge" data-tap-target>
-                  <ScrollText className="h-4 w-4" strokeWidth={2} />
-                  Read our billing pledge
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </Button>
-              <Button asChild variant="ghost" className="gap-1.5 text-muted-foreground">
-                <Link href="/pricing/compare" data-tap-target>
-                  <Scale className="h-3.5 w-3.5" strokeWidth={2} />
-                  How we compare to the incumbents
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </section>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-10 sm:px-6 lg:gap-12 lg:px-8 lg:py-14">
+        <header className="mx-auto flex max-w-2xl flex-col items-center gap-3 text-center">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            Pricing
+          </span>
+          <h1 className="text-balance text-3xl font-semibold tracking-tight md:text-4xl">
+            Study free. Go unlimited with Premium.
+          </h1>
+          <p className="text-pretty text-base text-muted-foreground">
+            The free plan covers real study work every month. Premium removes
+            every limit on AI generation.
+          </p>
+        </header>
 
         <EducationPricing pricing={pricing} />
 
-        {/* Footer trust reminder */}
-        <section className="border-t border-border/40 py-10 text-center">
-          <p className="text-sm text-muted-foreground">
-            Every plan is backed by our{" "}
-            <Link
-              href="/pricing/pledge"
-              className="font-medium text-foreground underline-offset-4 hover:underline"
-            >
-              billing-integrity pledge
-            </Link>
-            . No ads, no dark patterns, no silent charges.
-          </p>
+        <section
+          aria-labelledby="pricing-pledge"
+          className="flex flex-col gap-6 border-t border-border/60 pt-10"
+        >
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <h2 id="pricing-pledge" className="text-xl font-semibold tracking-tight">
+              Priced to earn trust, not to trap you
+            </h2>
+            <div className="matrx-touch-targets flex flex-wrap items-center gap-x-4">
+              <Link
+                href="/pricing/pledge"
+                data-tap-target
+                className="inline-flex items-center gap-1 text-sm font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                Read the full pledge
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+              <Link
+                href="/pricing/compare"
+                data-tap-target
+                className="inline-flex items-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                How we compare
+              </Link>
+            </div>
+          </div>
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {PLEDGE.map(({ icon: Icon, title, body }) => (
+              <li key={title} className="flex flex-col gap-1.5">
+                <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={2} />
+                <span className="text-sm font-medium">{title}</span>
+                <span className="text-sm text-muted-foreground">{body}</span>
+              </li>
+            ))}
+          </ul>
         </section>
       </div>
     </div>

@@ -71,36 +71,40 @@ export function PublicHeader() {
             className="flex min-w-0 items-center"
           />
 
-          <Link href={MATRX_LOCAL_DOWNLOAD_PATH}>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                "h-7 gap-1.5 rounded-lg px-2 text-xs font-medium matrx-glass-thin-border sm:px-3",
-                "text-zinc-600 dark:text-zinc-400",
-                "hover:text-zinc-900 dark:hover:text-zinc-100",
-                "transition-all duration-200",
-              )}
-            >
+          {/* A link is a link: Button renders AS the anchor (asChild) — never
+              an <a> wrapping a <button>. On touch it is a 44px icon square
+              (PUBLIC_HEADER_ICON_BUTTON); from sm up it grows to show text. */}
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className={cn(
+              PUBLIC_HEADER_ICON_BUTTON,
+              "gap-1.5 rounded-lg px-0 text-xs font-medium matrx-glass-thin-border sm:h-7 sm:w-auto sm:px-3",
+              "text-zinc-600 dark:text-zinc-400",
+              "hover:text-zinc-900 dark:hover:text-zinc-100",
+              "transition-all duration-200",
+            )}
+          >
+            <Link href={MATRX_LOCAL_DOWNLOAD_PATH} aria-label="Download">
               <Download className="h-3.5 w-3.5" aria-hidden="true" />
               <span className="hidden sm:inline">Download</span>
-            </Button>
-          </Link>
+            </Link>
+          </Button>
 
-          <Link href="/canvas/discover" className="hidden md:block">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                "h-7 px-3 text-xs font-medium matrx-glass-thin-border rounded-lg",
-                "text-zinc-600 dark:text-zinc-400",
-                "hover:text-zinc-900 dark:hover:text-zinc-100",
-                "transition-all duration-200",
-              )}
-            >
-              Discover
-            </Button>
-          </Link>
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "hidden h-7 px-3 text-xs font-medium matrx-glass-thin-border rounded-lg md:inline-flex",
+              "text-zinc-600 dark:text-zinc-400",
+              "hover:text-zinc-900 dark:hover:text-zinc-100",
+              "transition-all duration-200",
+            )}
+          >
+            <Link href="/canvas/discover">Discover</Link>
+          </Button>
 
           <Suspense fallback={null}>
             <PublicHeaderFeedback />
