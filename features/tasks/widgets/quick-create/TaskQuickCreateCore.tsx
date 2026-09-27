@@ -596,6 +596,7 @@ export function TaskQuickCreateCore({
                   variant="outline"
                   className="h-4 px-1 text-[9px] font-medium"
                 >
+                  {/* read-gate-exempt: number of scopes the user has selected for this draft task (useState / app scope selections), not a count of read rows */}
                   {effectiveScopeIds.length}
                 </Badge>
               )}

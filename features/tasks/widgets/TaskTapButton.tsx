@@ -32,6 +32,7 @@ import { selectAllTasksFlat } from "@/features/tasks/redux/selectors";
 import {
   fetchTasksForEntity,
   selectTasksForEntity,
+  selectTasksForEntityError,
 } from "@/features/tasks/redux/taskAssociationsSlice";
 import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import {
@@ -39,6 +40,7 @@ import {
   selectFullContextStatus,
 } from "@/features/agent-context/redux/hierarchySlice";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 type Variant = "glass" | "transparent" | "solid" | "group";
@@ -106,6 +108,11 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
 
   const linked = useAppSelector((s) =>
     entityType && entityId ? selectTasksForEntity(entityType, entityId)(s) : [],
+  );
+  const linkedError = useAppSelector((s) =>
+    entityType && entityId
+      ? selectTasksForEntityError(entityType, entityId)(s)
+      : null,
   );
   const allTasks = useAppSelector(selectAllTasksFlat);
   const hierarchyStatus = useAppSelector(selectFullContextStatus);
@@ -197,9 +204,9 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
             onClick={() => setOpen((v) => !v)}
             className={cn(linkedCount > 0 && "text-primary")}
           />
-          {linkedCount > 0 && (
+          {(linkedCount > 0 || linkedError) && (
             <span className="pointer-events-none absolute -top-1 -right-1 min-w-[14px] h-[14px] rounded-full bg-primary text-primary-foreground text-[9px] font-semibold flex items-center justify-center px-1">
-              {linkedCount}
+              <UntrustedCount value={linkedCount} trustworthy={!linkedError} label="Linked tasks" />
             </span>
           )}
         </div>
@@ -212,11 +219,19 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         {/* Already-linked chips */}
-        {source && linked.length > 0 && !showCreate && (
+        {source && (linked.length > 0 || linkedError) && !showCreate && (
           <div className="px-2 py-1.5 border-b border-border/50">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-              Linked ({linked.length})
+              Linked (<UntrustedCount value={linked.length} trustworthy={!linkedError} label="Linked tasks" />)
             </div>
+            {linkedError && entityType && entityId && (
+              <ReadFailure
+                error={linkedError}
+                what="the tasks linked here"
+                onRetry={() => dispatch(fetchTasksForEntity({ entityType, entityId }))}
+                className="mb-1"
+              />
+            )}
             <div className="space-y-0.5 max-h-28 overflow-y-auto">
               {linked.map((link) => (
                 <div

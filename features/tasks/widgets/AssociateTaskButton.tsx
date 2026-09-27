@@ -29,6 +29,7 @@ import { selectAllTasksFlat } from "@/features/tasks/redux/selectors";
 import {
   fetchTasksForEntity,
   selectTasksForEntity,
+  selectTasksForEntityError,
 } from "@/features/tasks/redux/taskAssociationsSlice";
 import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import {
@@ -36,6 +37,7 @@ import {
   selectFullContextStatus,
 } from "@/features/agent-context/redux/hierarchySlice";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import type { TaskWithProject } from "@/features/tasks/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
@@ -93,6 +95,9 @@ export default function AssociateTaskButton(props: AssociateTaskButtonProps) {
   const hierarchyStatus = useAppSelector(selectFullContextStatus);
   const hierarchyError = useAppSelector(selectFullContextError);
   const existing = useAppSelector(selectTasksForEntity(entityType, entityId));
+  const existingError = useAppSelector(
+    selectTasksForEntityError(entityType, entityId),
+  );
   const existingIds = useMemo(
     () => new Set(existing.map((x) => x.task_id)),
     [existing],
@@ -196,9 +201,9 @@ export default function AssociateTaskButton(props: AssociateTaskButtonProps) {
             )}
           >
             <Link2 className="w-3.5 h-3.5" />
-            {existing.length > 0 && (
+            {(existing.length > 0 || existingError) && (
               <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] rounded-full bg-primary text-primary-foreground text-[9px] font-semibold flex items-center justify-center px-1">
-                {existing.length}
+                <UntrustedCount value={existing.length} trustworthy={!existingError} label="Linked tasks" />
               </span>
             )}
           </button>
@@ -212,9 +217,9 @@ export default function AssociateTaskButton(props: AssociateTaskButtonProps) {
           >
             <Link2 className="w-3.5 h-3.5" />
             <span>{label_text}</span>
-            {existing.length > 0 && (
+            {(existing.length > 0 || existingError) && (
               <span className="ml-auto text-[10px] text-primary">
-                {existing.length}
+                <UntrustedCount value={existing.length} trustworthy={!existingError} label="Linked tasks" />
               </span>
             )}
           </button>
@@ -222,9 +227,9 @@ export default function AssociateTaskButton(props: AssociateTaskButtonProps) {
           <Button size="sm" variant="outline" className={cn("h-7", className)}>
             <Link2 className="w-3.5 h-3.5 mr-1" />
             {label_text}
-            {existing.length > 0 && (
+            {(existing.length > 0 || existingError) && (
               <span className="ml-1.5 text-[10px] text-primary">
-                ({existing.length})
+                (<UntrustedCount value={existing.length} trustworthy={!existingError} label="Linked tasks" />)
               </span>
             )}
           </Button>
@@ -237,11 +242,19 @@ export default function AssociateTaskButton(props: AssociateTaskButtonProps) {
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         {/* Currently linked tasks */}
-        {existing.length > 0 && !showCreate && (
+        {(existing.length > 0 || existingError) && !showCreate && (
           <div className="px-2 py-1.5 border-b border-border/50">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-              Linked ({existing.length})
+              Linked (<UntrustedCount value={existing.length} trustworthy={!existingError} label="Linked tasks" />)
             </div>
+            {existingError && (
+              <ReadFailure
+                error={existingError}
+                what="the tasks linked here"
+                onRetry={() => dispatch(fetchTasksForEntity({ entityType, entityId }))}
+                className="mb-1"
+              />
+            )}
             <div className="space-y-0.5 max-h-28 overflow-y-auto">
               {existing.map((link) => (
                 <LinkedRow
