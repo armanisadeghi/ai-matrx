@@ -403,6 +403,27 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "sky",
   },
   {
+    // The person's own board: the one canvas where anything the platform
+    // supports is put side by side and worked on (features/spatial). Its
+    // children are the boards — theirs, and each feature's board view.
+    label: "Board",
+    href: "/board",
+    iconName: "LayoutGrid",
+    section: "primary",
+    profileMenu: true,
+    dashboard: true,
+    description: "Your own canvas — chats, notes, files, tasks and every feature, side by side",
+    color: "teal",
+    guestHidden: true,
+    children: [
+      { label: "My board", href: "/board", iconName: "LayoutGrid", exact: true },
+      { label: "All boards", href: "/board/all", iconName: "Layers" },
+      { label: "War Room", href: "/war-room", iconName: "Radar", group: "Feature boards" },
+      { label: "Meetings", href: "/meetings", iconName: "Video", group: "Feature boards" },
+      { label: "Workflow runs", href: "/workflows/runs", iconName: "Workflow", group: "Feature boards" },
+    ],
+  },
+  {
     label: "Launchpad",
     href: USER_LAUNCHPAD_PATH,
     iconName: "Rocket",

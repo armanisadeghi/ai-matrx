@@ -176,7 +176,7 @@ All boards and each feature's board view (War Room, Meetings, Workflow runs).
 | Page: the ONE chat-beside-a-canvas layout (`ChatCanvasWorkspace`, `features/canvas/workspace`) with the saved board as canvas; title menu Rename / New board / All boards; byline shows save state | `home/BoardPage.tsx`, `app/(core)/board/**` |
 | The board: placement, Add menu, Start panel (empty board), drop + paste, tools, shelf, layers, agent tools host | `home/UserBoard.tsx`, `home/AddMenu.tsx` |
 | What a paste/drop of text becomes (a link → web page / image, other text → a new Note) | `home/board-intake.ts` |
-| Saving: `useSavedBoard({home:true} \| {boardId})`, debounced guarded autosave, flush on pagehide | `persistence/` |
+| Saving: `useSavedBoard({home:true} \| {boardId})` — debounced autosave (`AUTOSAVE_DELAY_MS`), flush on unmount and pagehide. `saveBoardDocument(id, doc, { expectedVersion, baseFingerprint })` is version-guarded (`guardedUpdate`): a version moved only by a rename or the opened stamp retries; a document changed elsewhere is a `conflict` the person is told about | `persistence/` |
 | Manage page | `boards/`, `app/(core)/board/all` |
 
 **Item types — how a feature gets onto every board.** `items/types.ts` is the contract: a
