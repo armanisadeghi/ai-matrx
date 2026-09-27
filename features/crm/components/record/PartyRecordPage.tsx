@@ -14,7 +14,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/lib/toast";
-import { Building2, MailX, Plus, Send, Trash2, User } from "lucide-react";
+import {
+  Building2,
+  History,
+  Link2,
+  MailX,
+  Plus,
+  Send,
+  Trash2,
+  User,
+} from "lucide-react";
 import { contactPointBlockReason } from "../../reachability";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import {
@@ -25,6 +34,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -169,6 +179,24 @@ export function PartyRecordPage({ partyId }: Props) {
         void refresh();
       },
     });
+  };
+
+  const copyLink = async () => {
+    if (!party) return;
+    try {
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/crm/${party.id}`,
+      );
+      toast.success("Link copied");
+    } catch {
+      toast.error("Could not copy the link — your browser blocked the clipboard.");
+    }
+  };
+
+  const jumpToActivity = () => {
+    const activity = document.getElementById("crm-record-activity");
+    activity?.scrollIntoView({ block: "start", behavior: "smooth" });
+    activity?.querySelector<HTMLElement>("input, textarea")?.focus({ preventScroll: true });
   };
 
   const onDelete = async () => {
@@ -340,6 +368,18 @@ export function PartyRecordPage({ partyId }: Props) {
                       Add email
                     </DropdownMenuItem>
                   )}
+                  {/* The record's own actions, so the menu is never a lone trash
+                      item: copy its link, jump to the activity log — then the
+                      destructive one, set apart. */}
+                  <DropdownMenuItem onSelect={() => void copyLink()}>
+                    <Link2 className="mr-2 h-3.5 w-3.5" />
+                    Copy link
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={jumpToActivity}>
+                    <History className="mr-2 h-3.5 w-3.5" />
+                    Log an activity
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
                     onSelect={() => void onDelete()}
@@ -448,9 +488,9 @@ export function PartyRecordPage({ partyId }: Props) {
               {/* TWO COLUMNS ON A DESKTOP, ONE STACK ON A PHONE — AND THE STACK
                   IS ORDERED BY WHAT A PERSON DOES FIRST. Below lg the two column
                   wrappers are `display: contents`, so every card is a direct
-                  item of this grid and `max-lg:order-*` puts the actions (add
-                  to my contacts, log an activity, a note) right after the
-                  identity instead of ~1,000px down. `empty:hidden` drops the
+                  item of this grid and `max-lg:order-*` orders the phone stack:
+                  identity, contact points, then the actions (activity, notes),
+                  then the rest of the record's data. `empty:hidden` drops the
                   wrapper of a card that renders nothing, so no gap is left. */}
               {/* Identity rail */}
               <div className="max-lg:contents lg:space-y-3">
@@ -467,7 +507,7 @@ export function PartyRecordPage({ partyId }: Props) {
                       as) an expert — see ExpertStatusCard. */}
                   <ExpertStatusCard party={party} onChanged={refresh} />
                 </div>
-                <div className="max-lg:order-7">
+                <div className="max-lg:order-4">
                   <ContactPointsCard
                     addEmailRequest={addEmailRequest}
                     partyId={party.id}
@@ -477,7 +517,7 @@ export function PartyRecordPage({ partyId }: Props) {
                     onChanged={refresh}
                   />
                 </div>
-                <div className="max-lg:order-10">
+                <div className="max-lg:order-8">
                   <AddressesCard
                     partyId={party.id}
                     partyLabel={party.display_name}
@@ -491,14 +531,14 @@ export function PartyRecordPage({ partyId }: Props) {
                     person. Renders NOTHING when this party is not an employee
                     here, or when HR is off for this org. */}
                 {isPerson && (
-                  <div className="empty:hidden max-lg:order-11">
+                  <div className="empty:hidden max-lg:order-9">
                     <PartyEmployeeCard
                       partyId={party.id}
                       orgId={party.organization_id}
                     />
                   </div>
                 )}
-                <div className="max-lg:order-12">
+                <div className="max-lg:order-10">
                   {isPerson ? (
                     <EmploymentCard
                       mode="person"
@@ -537,7 +577,7 @@ export function PartyRecordPage({ partyId }: Props) {
 
               {/* Activity main */}
               <div className="min-w-0 max-lg:contents lg:space-y-3">
-                <div className="empty:hidden max-lg:order-4">
+                <div className="empty:hidden max-lg:order-5">
                   {/* "Why is this org in my CRM?" — the G1 provenance edge,
                       rendered as real doors, with "Add to my contacts".
                       Renders nothing for a record the user typed in. */}
@@ -553,11 +593,11 @@ export function PartyRecordPage({ partyId }: Props) {
                   />
                 </div>
                 {!isPerson && party.primary_domain && (
-                  <div className="empty:hidden max-lg:order-9">
+                  <div className="empty:hidden max-lg:order-13">
                     <OutreachContactCandidatesCard outletPartyId={party.id} />
                   </div>
                 )}
-                <div className="max-lg:order-8">
+                <div className="max-lg:order-12">
                   {/* The persisted candidate queue (IC-3): every producer
                       writes ONE ranked list, and none of it is contactable
                       until somebody confirms a row here. */}
@@ -580,7 +620,7 @@ export function PartyRecordPage({ partyId }: Props) {
                     />
                   </div>
                 )}
-                <div className="max-lg:order-13">
+                <div className="max-lg:order-11">
                   {/* Deals with this person/company — the door goes both ways
                       (a deal names its party; the party names its deals). */}
                   <PartyDealsCard
@@ -607,7 +647,7 @@ export function PartyRecordPage({ partyId }: Props) {
                     partyName={party.display_name}
                   />
                 </div>
-                <div className="max-lg:order-5">
+                <div id="crm-record-activity" className="scroll-mt-16 max-lg:order-6">
                   <InteractionTimeline
                     partyId={party.id}
                     orgId={party.organization_id}
@@ -621,7 +661,7 @@ export function PartyRecordPage({ partyId }: Props) {
                     offerNoteChannel={false}
                   />
                 </div>
-                <div className="max-lg:order-6">
+                <div className="max-lg:order-7">
                   <PartyNotes
                     partyId={party.id}
                     orgId={party.organization_id}
