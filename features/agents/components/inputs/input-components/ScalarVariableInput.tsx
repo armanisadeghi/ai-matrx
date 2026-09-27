@@ -13,6 +13,7 @@
  * text-style inputs routed through VariableInputComponent.
  */
 
+import { datetimeLocalValue } from "@/lib/dates/datetimeLocalValue";
 import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
@@ -131,8 +132,7 @@ export function ScalarVariableInput({
 
   // datetime / time / email / url / phone — one native input. datetime-local
   // wants "YYYY-MM-DDTHH:mm"; a stored ISO timestamp is sliced to fit.
-  const current =
-    kind === "datetime" && value.length > 16 ? value.slice(0, 16) : value;
+  const current = kind === "datetime" ? datetimeLocalValue(value) : value;
   return (
     <Input
       type={NATIVE_TYPE[kind]}

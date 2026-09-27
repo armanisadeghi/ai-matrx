@@ -19,6 +19,7 @@
  * callers with an explicit Save button can pass the same setter to both.
  */
 
+import { datetimeLocalValue } from "@/lib/dates/datetimeLocalValue";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -294,17 +295,8 @@ export function ContextValueInput({
   // datetime-local wants "YYYY-MM-DDTHH:mm"; a stored ISO timestamp is sliced to fit.
   if (NATIVE_INPUT_TYPE[valueType]) {
     const raw = typeof value === "string" ? value : "";
-    // A DATE STORED BEFORE THE ITEM BECAME DATE & TIME (lane HANDOVER, 2026-09-27): "1984-03-12"
-    // is not a datetime-local value, so the input drew empty while the page said "3 of 7 filled" —
-    // the person's date looked gone. A date-only value is read as that day at midnight.
-    const current =
-      valueType === "datetime"
-        ? /^\d{4}-\d{2}-\d{2}$/.test(raw.trim())
-          ? `${raw.trim()}T00:00`
-          : raw.length > 16
-            ? raw.slice(0, 16)
-            : raw
-        : raw;
+    // A date stored before the item became Date & time reads as that day (datetimeLocalValue).
+    const current = valueType === "datetime" ? datetimeLocalValue(raw) : raw;
     return (
       <Input
         id={id}
