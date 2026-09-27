@@ -25,7 +25,11 @@ import {
   googleWorkspacePickScopeSentence,
   googleWorkspacePickTitle,
 } from "@/features/google-workspace/resource-types";
-import { pickGoogleWorkspaceFile } from "@/lib/googlePicker";
+import {
+  GOOGLE_FORM_MIME_TYPE,
+  pickGoogleForm,
+  pickGoogleWorkspaceFile,
+} from "@/lib/googlePicker";
 
 interface Captured {
   mimeTypes: string | null;
@@ -108,6 +112,15 @@ async function openPicker(): Promise<{ pending: Promise<unknown> }> {
   return { pending };
 }
 
+async function openFormPicker(): Promise<{ pending: Promise<unknown> }> {
+  const pending = pickGoogleForm("access-token");
+  for (let tick = 0; tick < 50 && !captured.callback; tick += 1) {
+    await Promise.resolve();
+  }
+  expect(captured.callback).not.toBeNull();
+  return { pending };
+}
+
 it("asks Google for every MIME type the record declares", async () => {
   const { pending } = await openPicker();
   const offered = (captured.mimeTypes ?? "").split(",");
@@ -173,4 +186,50 @@ it("still refuses a file type the record does not carry, by name", async () => {
     ],
   });
   await expect(pending).rejects.toThrow(/Slides decks/);
+});
+
+it("offers only Forms in the separate Form mode and returns a selected Form", async () => {
+  const { pending } = await openFormPicker();
+  expect(captured.mimeTypes).toBe(GOOGLE_FORM_MIME_TYPE);
+  expect(captured.title).toBe("Choose a Google Form");
+  captured.callback!({
+    action: "picked",
+    docs: [
+      {
+        id: "form-1",
+        name: "Customer survey",
+        mimeType: GOOGLE_FORM_MIME_TYPE,
+        url: null,
+      },
+    ],
+  });
+  await expect(pending).resolves.toEqual({
+    id: "form-1",
+    name: "Customer survey",
+    mimeType: GOOGLE_FORM_MIME_TYPE,
+    url: null,
+  });
+});
+
+it("cancels or refuses an error/non-Form result in Form mode", async () => {
+  const cancelled = await openFormPicker();
+  captured.callback!({ action: "cancel" });
+  await expect(cancelled.pending).resolves.toBeNull();
+
+  const failed = await openFormPicker();
+  captured.callback!({ action: "error", message: "Picker unavailable" });
+  await expect(failed.pending).rejects.toThrow("Picker unavailable");
+
+  const nonForm = await openFormPicker();
+  captured.callback!({
+    action: "picked",
+    docs: [
+      {
+        id: "sheet-1",
+        name: "Not a Form",
+        mimeType: "application/vnd.google-apps.spreadsheet",
+      },
+    ],
+  });
+  await expect(nonForm.pending).rejects.toThrow("Choose a Google Form.");
 });
