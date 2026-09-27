@@ -35,12 +35,20 @@ import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import { useModels } from "@/features/ai-models/hooks/useModels";
+import { useModelCatalog } from "@/features/ai-models/hooks/useModelCatalog";
 import {
   useSurfaceScopeContribution,
   useSurfaceWriteHandlers,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 type ShowFilter = "all" | "shown" | "hidden";
+type ModelType = "text" | "speech_to_text" | "voice" | "image";
+const MODEL_TYPES: ReadonlyArray<{ key: ModelType; label: string }> = [
+  { key: "text", label: "Text and chat" },
+  { key: "speech_to_text", label: "Speech to text" },
+  { key: "voice", label: "Voice" },
+  { key: "image", label: "Image" },
+];
 const ALL_MAKERS = "__all__";
 
 const AiModelsPreferences = () => {
@@ -49,6 +57,10 @@ const AiModelsPreferences = () => {
     (state) => state.userPreferences.aiModels.inactiveModels,
   );
   const { models, isLoading, error } = useModels();
+  // The render-ready catalog carries what each model takes and makes, and its
+  // one-line description — used only to group and describe the rows.
+  const { models: catalog } = useModelCatalog("user");
+  const catalogById = new Map(catalog.map((m) => [m.id, m]));
 
   const [query, setQuery] = useState("");
   const [show, setShow] = useState<ShowFilter>("all");
@@ -149,9 +161,33 @@ const AiModelsPreferences = () => {
   const hiddenCount = models.filter((m) => hidden.has(m.id)).length;
   const shownCount = models.length - hiddenCount;
 
+  // Group by what a model is FOR, from the catalog's modalities.
+  const typeOf = (id: string): ModelType => {
+    const facts = catalogById.get(id);
+    if (!facts) return "text";
+    if (facts.output.includes("image")) return "image";
+    if (facts.output.includes("audio")) return "voice";
+    if (facts.input.includes("audio") && !facts.input.includes("text")) return "speech_to_text";
+    return "text";
+  };
+  const groups = MODEL_TYPES.map((type) => ({
+    type,
+    models: rows.filter((m) => typeOf(m.id) === type.key),
+  })).filter((group) => group.models.length > 0);
+
+  // "What it's for", in plain words: the catalog's one-line description,
+  // never the raw model id (that lives in the row's help tooltip).
+  const factsFor = (id: string, maker: string | null) => {
+    const description = catalogById.get(id)?.description?.trim();
+    const firstSentence = description ? description.split(/(?<=[.!?])\s/)[0] : null;
+    return [maker, firstSentence].filter(Boolean).join(" · ");
+  };
+
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2 px-1">
+      {/* The toolbar stays in reach while the list scrolls, edge-aligned with
+          the cards below it. */}
+      <div className="sticky top-[var(--shell-header-h)] z-10 -mx-1 flex flex-wrap items-center gap-2 bg-textured px-1 py-2">
         <SearchInput
           value={query}
           onValueChange={setQuery}
@@ -184,54 +220,45 @@ const AiModelsPreferences = () => {
         </Select>
       </div>
 
-
-
-      <SettingsSection
-        title={
-          show === "hidden"
-            ? "Hidden from your pickers"
-            : "Offered in your model pickers"
-        }
-      >
-        {rows.length === 0 ? (
-          <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-            No models match.
-          </p>
-        ) : (
-          rows.map((model, index) => {
-            const shown = !hidden.has(model.id);
-            const label = model.common_name || model.name;
-            return (
-              <SettingsSwitch
-                key={model.id}
-                id={`model-${model.id}`}
-                label={label}
-                description={[
-                  model.maker,
-                  model.common_name && model.name !== model.common_name
-                    ? model.name
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-                checked={shown}
-                onCheckedChange={(next: boolean) => toggle(model.id, next)}
-                last={index === rows.length - 1 && hiddenCount === 0}
-              />
-            );
-          })
-        )}
-        {hiddenCount > 0 ? (
+      {groups.length === 0 ? (
+        <p className="px-4 py-6 text-center text-sm text-muted-foreground">No models match.</p>
+      ) : (
+        groups.map((group) => (
+          <SettingsSection
+            key={group.type.key}
+            title={`${group.type.label} · ${group.models.length}${show === "hidden" ? " hidden" : show === "shown" ? " shown" : ""}`}
+          >
+            {group.models.map((model, index) => {
+              const shown = !hidden.has(model.id);
+              return (
+                <SettingsSwitch
+                  key={model.id}
+                  id={`model-${model.id}`}
+                  label={model.common_name || model.name}
+                  description={factsFor(model.id, model.maker)}
+                  helpText={`Model id: ${model.name}`}
+                  badge={shown ? undefined : { label: "Hidden", variant: "default" }}
+                  checked={shown}
+                  onCheckedChange={(next: boolean) => toggle(model.id, next)}
+                  last={index === group.models.length - 1}
+                />
+              );
+            })}
+          </SettingsSection>
+        ))
+      )}
+      {hiddenCount > 0 ? (
+        <SettingsSection title="Hidden models">
           <SettingsButton
-            label={`${hiddenCount} hidden`}
+            label={`${hiddenCount} hidden from your pickers`}
             actionLabel="Show all again"
             kind="outline"
             size="sm"
             onClick={() => setHidden([])}
             last
           />
-        ) : null}
-      </SettingsSection>
+        </SettingsSection>
+      ) : null}
     </div>
   );
 };
