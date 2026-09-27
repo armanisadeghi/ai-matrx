@@ -1,4 +1,5 @@
 -- Inverse of handover_a_new_picklist_is_kept_with_the_choices_b.sql: the body it replaced, byte for byte.
+-- based-on: platform._pick_list_born_in_store(uuid, text, text, jsonb) 33ff988e90e5c3958c7742fa1549d45452db0fe3bc1ea9e0972ada041bc14344
 -- chair-step: restores the body of platform._pick_list_born_in_store that handover_a_new_picklist_is_kept_with_the_choices_b.sql replaced (a new picklist not marked kept with the choices)
 
 CREATE OR REPLACE FUNCTION platform._pick_list_born_in_store(p_organization_id uuid, p_list_name text, p_description text, p_items jsonb)

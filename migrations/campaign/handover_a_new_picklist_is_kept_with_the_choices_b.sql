@@ -3,9 +3,9 @@
 --
 -- HANDOVER (2026-09-27) — A NEW PICKLIST IS KEPT WITH THE CHOICES (second file).
 --
--- The first file (handover_a_new_picklist_is_kept_with_the_choices.sql) wrote only , and
--- custom.table_declare refuses a  on a table that is not  ("only a table
--- the app keeps says which feature keeps it"), so every new picklist in a switched organization was
+-- The first file (handover_a_new_picklist_is_kept_with_the_choices.sql) wrote only kept_for, and
+-- custom.table_declare refuses a kept_for on a table that is not kept_by_the_app ("only a table the
+-- app keeps says which feature keeps it"), so every new picklist in a switched organization was
 -- refused on production from 19:10:35Z until its inverse restored the old body at 19:11:03Z. This
 -- file says both. Same use case: a picklist born in the store sits with the app's choice lists
 -- (behind "Show everything" on the data home and the organization's Tables page), as a moved one
