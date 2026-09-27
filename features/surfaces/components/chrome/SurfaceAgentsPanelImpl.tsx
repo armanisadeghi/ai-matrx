@@ -103,13 +103,15 @@ export default function SurfaceAgentsPanelImpl({
             {primaryLabel}
           </p>
           {!primaryName && (
-            <Badge variant="outline" className="shrink-0 text-[9px]">
+            <Badge variant="outline" className="shrink-0 text-xs">
               Unregistered
             </Badge>
           )}
         </div>
-        {primaryName && (
-          <p className="truncate font-mono text-[10px] text-muted-foreground">
+        {/* The surface key is an engineer's handle — admin-only, like the
+            mandate keys below (cold walk 20). Everyone else sees the label. */}
+        {primaryName && isAdmin && (
+          <p className="truncate font-mono text-xs text-muted-foreground">
             {primaryName}
           </p>
         )}

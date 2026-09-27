@@ -1085,16 +1085,22 @@ export function useContextMenuActions(
       openSurfaceContextWindow({ surfaceName: ref.name, isEditable: false }),
   }));
   const surfaceChildren: ContextMenuExtraItem[] = [
-    {
-      kind: "item",
-      id: "surface:location",
-      label: resolvedSurfaceName ?? "No surface registered for this page",
-      description: resolvedSurfaceName ? "Surface location · click to copy" : undefined,
-      icon: ClipboardCopy,
-      disabled: !resolvedSurfaceName,
-      onSelect: () => resolvedSurfaceName && copyText(resolvedSurfaceName),
-    },
-    { kind: "separator", id: "surface:sep1" },
+    // The surface key is an engineer's handle — admin-only (cold walk 20),
+    // like the Agents panel's sub-line. Everyone else sees the label only.
+    ...(isAdmin
+      ? ([
+          {
+            kind: "item",
+            id: "surface:location",
+            label: resolvedSurfaceName ?? "No surface registered for this page",
+            description: resolvedSurfaceName ? "Surface location · click to copy" : undefined,
+            icon: ClipboardCopy,
+            disabled: !resolvedSurfaceName,
+            onSelect: () => resolvedSurfaceName && copyText(resolvedSurfaceName),
+          },
+          { kind: "separator", id: "surface:sep1" },
+        ] satisfies ContextMenuExtraItem[])
+      : []),
     {
       kind: "item",
       id: "surface:context",
