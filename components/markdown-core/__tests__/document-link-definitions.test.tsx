@@ -45,6 +45,25 @@ it("a table block split from the definitions still shows its links", () => {
   expect(container.textContent).not.toContain("]:");
 });
 
+it("a table CELL (inline-only preset) resolves the link and never prints the definitions", () => {
+  const { container } = render(
+    <DocumentNumberingProvider source={DOC}>
+      <MarkdownCoreImpl preset="chat-cell">{"([Apple Support][1])"}</MarkdownCoreImpl>
+    </DocumentNumberingProvider>,
+  );
+  expect([...container.querySelectorAll("a")].map((a) => a.getAttribute("href"))).toEqual(["https://support.apple.com/en-us/111851"]);
+  expect(container.textContent).toBe("(Apple Support)");
+});
+
+it("a cell with no reference prints no definitions", () => {
+  const { container } = render(
+    <DocumentNumberingProvider source={DOC}>
+      <MarkdownCoreImpl preset="chat-cell">{"Model"}</MarkdownCoreImpl>
+    </DocumentNumberingProvider>,
+  );
+  expect(container.textContent).toBe("Model");
+});
+
 it("without a document root nothing is invented", () => {
   const { container } = render(<MarkdownCoreImpl>{TABLE_BLOCK}</MarkdownCoreImpl>);
   expect(container.querySelectorAll("a").length).toBe(0);

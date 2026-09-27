@@ -39,10 +39,10 @@ export interface DocumentNumbering {
   /** Footnote identifier (lower-case) → its number, in order of FIRST reference across the whole document. */
   footnotes: Map<string, number>;
   /**
-   * The document's link reference definitions as definition lines
-   * (`[label]: <url> "title"`), "" when none — appended to every block's source
-   * so a block split from them still resolves `[text][label]` (GFM renders a
-   * definition as nothing).
+   * The document's link reference definitions as canonical definition lines
+   * (`[label]: <url> "title"`), "" when none — every block resolves its
+   * `[text][label]` references against them (prepareCoreSource), so a block
+   * split from them still shows the link GFM shows.
    */
   linkDefinitions: string;
 }

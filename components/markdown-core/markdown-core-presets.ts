@@ -35,7 +35,7 @@ import remarkMatrxSyntax from "./syntax/remark-matrx-syntax";
 import rehypeMatrxSyntax from "./syntax/rehype-matrx-syntax";
 import { rewriteContainerSpellings } from "./syntax/prepare-syntax-source";
 import type { DocumentNumbering } from "./syntax/document-numbering";
-import { fenceLineKinds } from "@ai-matrx/content-ir/source";
+import { collectLinkDefinitions, fenceLineKinds, resolveReferenceLinks } from "@ai-matrx/content-ir/source";
 import type { Options } from "react-markdown";
 import {
   normalizeMathDelimiters,
@@ -163,14 +163,18 @@ export function rehypeWithNumbering(
 /** The source a preset parses: math presets run the one normalizer. */
 export function prepareCoreSource(source: string, preset: MarkdownPreset, numbering?: DocumentNumbering | null): string {
   if (preset === "plain") return source;
-  // The WHOLE document's link definitions ride along (a definition renders as
-  // nothing), so a block split from them resolves `[text][label]` as GFM does —
-  // unless the block ends inside an open fence, where they would become code.
-  if (numbering?.linkDefinitions) {
+  // A block split from the document's link definitions still resolves
+  // `[text][label]` as GFM does: every reference whose label the WHOLE document
+  // defines is written inline (`[text](url)`) before parsing — in prose lines
+  // only, never in code, and in every preset (a table cell parses inline-only,
+  // where a definition cannot exist). THE link-reference rule, content-ir.
+  if (numbering?.linkDefinitions && source.includes("[")) {
+    const defs = collectLinkDefinitions(numbering.linkDefinitions);
     const kinds = fenceLineKinds(source);
-    if (kinds[kinds.length - 1] === "prose" || kinds[kinds.length - 1] === "close") {
-      source = `${source}\n\n${numbering.linkDefinitions}`;
-    }
+    source = source
+      .split("\n")
+      .map((line, i) => (kinds[i] === "prose" ? resolveReferenceLinks(line, defs) : line))
+      .join("\n");
   }
   // Page-break lines get their own block before parsing (remarkMatrxPageBreak).
   // MkDocs `!!! note` / Docusaurus `:::note Title` → the one directive grammar.
