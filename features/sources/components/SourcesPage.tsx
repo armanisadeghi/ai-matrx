@@ -1150,26 +1150,24 @@ export function SourcesPage() {
           }}
         />
         )}
-        {/* The list is paged by the server: say how much is listed and offer the rest. */}
-        {rows.length > 0 && total !== null ? (
+        {/* The source is paged: show its raw match count without duplicating the table's distinct loaded count. */}
+        {rows.length > 0 && total !== null && hasMore ? (
           <div className="flex items-center justify-center gap-3 py-2 text-xs text-muted-foreground">
-            <span>
-              {rows.length.toLocaleString()} of {total.toLocaleString()} listed
+            <span title="Includes recaptures; the number of distinct Sources may be smaller.">
+              {total.toLocaleString()} matching capture records
             </span>
-            {hasMore ? (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs"
-                disabled={loadingMore}
-                onClick={loadMore}
-              >
-                {loadingMore ? (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                ) : null}
-                Load {Math.min(100, total - rows.length).toLocaleString()} more
-              </Button>
-            ) : null}
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              disabled={loadingMore}
+              onClick={loadMore}
+            >
+              {loadingMore ? (
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              ) : null}
+              Load more
+            </Button>
           </div>
         ) : null}
       </div>
