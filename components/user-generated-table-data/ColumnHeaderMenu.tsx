@@ -38,6 +38,9 @@ import {
 } from "@/features/data-tables/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+/** A menu with no rows in hand yet. */
+const NO_ROWS: readonly { data?: Record<string, unknown> | null }[] = [];
+
 interface ColumnHeaderMenuProps {
   /**
    * The user-data table this column belongs to — the identity `getColumnFacets`
@@ -71,7 +74,13 @@ interface ColumnHeaderMenuProps {
    * Rows the browser ALREADY holds. When these cover the whole table the value
    * list is computed from them and no request is made at all.
    */
-  localRows: readonly { data?: Record<string, unknown> | null }[];
+  localRows?: readonly { data?: Record<string, unknown> | null }[];
+  /**
+   * The same rows, READ WHEN THE MENU OPENS instead of handed on every render (lane RENDER-3): a
+   * header that took the page's rows as a prop redrew on every write to any cell. Use this OR
+   * `localRows`.
+   */
+  readLocalRows?: () => readonly { data?: Record<string, unknown> | null }[];
   /** Total rows after the active search — how we know whether `localRows` is all of them. */
   totalCount: number;
   onSortAsc: () => void;
@@ -140,7 +149,8 @@ const ColumnHeaderMenu = ({
   sortDirection,
   filter,
   searchTerm,
-  localRows,
+  localRows: handedRows,
+  readLocalRows,
   totalCount,
   onSortAsc,
   onSortDesc,
@@ -157,13 +167,25 @@ const ColumnHeaderMenu = ({
 }: ColumnHeaderMenuProps) => {
   const hasFilter = isActiveFilter(filter);
   const [open, setOpen] = useState(false);
+  // The rows this open menu reads: handed, or read once each time it opens (`readLocalRows`).
+  const [openedRows, setOpenedRows] = useState<readonly { data?: Record<string, unknown> | null }[] | null>(null);
   // A new outside request opens the menu once — adjusted during render (React's
   // "storing information from previous renders"), not in an effect.
   const [seenOpenRequest, setSeenOpenRequest] = useState(openRequest);
   if (openRequest !== seenOpenRequest) {
     setSeenOpenRequest(openRequest);
-    if (openRequest > 0) setOpen(true);
+    if (openRequest > 0) {
+      setOpen(true);
+      if (readLocalRows) setOpenedRows(readLocalRows());
+    }
   }
+  /** Open or close the menu; opening reads the rows it lists (`readLocalRows`) at that moment. */
+  const openMenu = (next: boolean) => {
+    setOpen(next);
+    if (readLocalRows) setOpenedRows(next ? readLocalRows() : null);
+  };
+  const rowsReady = !readLocalRows || openedRows !== null;
+  const localRows = handedRows ?? openedRows ?? NO_ROWS;
   const [facets, setFacets] = useState<ColumnFacets | null>(null);
   const [facetError, setFacetError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -205,7 +227,7 @@ const ColumnHeaderMenu = ({
 
   // Fetched facets only ever fill the gap the local path cannot.
   useEffect(() => {
-    if (!open || haveAllRows) return undefined;
+    if (!open || haveAllRows || !rowsReady) return undefined;
     if (!canFetchFacets) return undefined;
     if (attemptRef.current === attemptKey) return undefined;
     attemptRef.current = attemptKey;
@@ -248,7 +270,7 @@ const ColumnHeaderMenu = ({
         attemptRef.current = null;
       }
     };
-  }, [open, haveAllRows, canFetchFacets, attemptKey, tableId, fetchFacets, fieldName, searchTerm]);
+  }, [open, haveAllRows, rowsReady, canFetchFacets, attemptKey, tableId, fetchFacets, fieldName, searchTerm]);
 
   // Closing resets so reopening after an edit never shows stale counts, and a
   // failed attempt is allowed to be retried.
@@ -302,7 +324,7 @@ const ColumnHeaderMenu = ({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={openMenu}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"

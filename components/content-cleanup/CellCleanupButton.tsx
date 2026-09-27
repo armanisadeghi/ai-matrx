@@ -33,11 +33,20 @@ import type {
 import { CellCleanupOptionsPopover } from "./CellCleanupOptionsPopover";
 import { CellCleanupReviewDialog } from "./CellCleanupReviewDialog";
 
+/** No rows in hand yet. */
+const NO_ROWS: readonly CleanableRow[] = [];
+
 interface CellCleanupButtonProps {
   /** Columns to scan. Non-text cells are skipped by the engine regardless. */
   fields: readonly CleanableField[];
   /** Rows already in hand (the current page) — scanned until `loadAllRows` resolves. */
-  rows: readonly CleanableRow[];
+  rows?: readonly CleanableRow[];
+  /**
+   * The same rows, READ WHEN THE POPOVER OPENS instead of handed on every render (lane RENDER-3):
+   * a toolbar control that took the page's rows as a prop redrew the toolbar on every cell write.
+   * Use this OR `rows`.
+   */
+  readRows?: () => readonly CleanableRow[];
   /**
    * Pull EVERY row so the scan covers the whole table, not just the page.
    * Called once each time the popover opens. Omit when `rows` is already complete.
@@ -55,7 +64,8 @@ interface CellCleanupButtonProps {
 
 export function CellCleanupButton({
   fields,
-  rows,
+  rows: handedRows,
+  readRows,
   loadAllRows,
   scopeLabel,
   onApply,
@@ -99,7 +109,9 @@ export function CellCleanupButton({
     };
   }, [popoverOpen, loadAllRows]);
 
-  const scanRows = allRows ?? rows;
+  // The page's rows while the full set loads: handed, or read once when the popover opened.
+  const [openedRows, setOpenedRows] = useState<readonly CleanableRow[] | null>(null);
+  const scanRows = allRows ?? handedRows ?? openedRows ?? NO_ROWS;
 
   // Live preview while the popover is open (compiler-memoized on inputs).
   let preview: CellsCleanupReport | null = null;
@@ -136,7 +148,14 @@ export function CellCleanupButton({
 
   return (
     <>
-      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+      <Popover
+        open={popoverOpen}
+        onOpenChange={(next) => {
+          setPopoverOpen(next);
+          // Opening reads the page's rows at that moment (`readRows`).
+          if (readRows) setOpenedRows(next ? readRows() : null);
+        }}
+      >
         <PopoverTrigger asChild>
           <Button
             variant="outline"

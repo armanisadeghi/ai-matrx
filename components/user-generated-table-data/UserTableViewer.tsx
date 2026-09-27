@@ -1,8 +1,19 @@
 "use client";
 
 import React, { useEffect, useEffectEvent, useRef, useState } from "react";
-import { SheetBodyRow, choiceMapSignature, contentSignature, shareUnchangedRows, useLatest, useLatestBox, useRowEpoch, useSlot, useSteadyHandlers } from "@/features/data-tables/components/sheet-body-row";
-import { createPortal } from "react-dom";
+import { SheetBodyRow, choiceMapSignature, contentSignature, shareUnchangedRows, useHeldByContent, useLatest, useLatestBox, useRowEpoch, useSlot, useSteadyHandlers, useSteadyLate, SheetChromePart, useSheetUndoSource } from "@/features/data-tables/components/sheet-body-row";
+import {
+  SheetCleanupControl,
+  SheetCopyControls,
+  SheetHeaderCell,
+  SheetInPageRow,
+  SheetMobileViewControls,
+  SheetMoreActions,
+  SheetToolbar,
+  SheetViewControls,
+  type SheetChromeActs,
+  type SheetViewProps,
+} from "@/features/data-tables/components/sheet-chrome";
 import * as RecordsUi from "@ai-matrx/records-ui";
 import {
   Table,
@@ -516,6 +527,9 @@ const PAGE_OWNED_EXPORT_ACTIONS = ["html-preview", "copy-html-page", "email-to-m
 
 /** Shared with the saved-view codec so "default page size" means one thing. */
 const SAVED_VIEW_DEFAULTS = { pageSize: 20 } as const;
+
+/** No rows handed while Table settings is closed (lane RENDER-3). */
+const NO_PAGE_ROWS: readonly { id: string; data: Record<string, unknown> }[] = [];
 
 const UserTableViewer = ({
   tableId,
@@ -1129,12 +1143,15 @@ const UserTableViewer = ({
   // filtered page's chips resolved too; without it the visible page is the set.
   // See features/data-tables/relation-words.tsx for the three states, including
   // why an id the store answers nothing for is deliberately absent here.
-  const { choicesByField: relationChoices, wordsByField: relationWords } = useRelationWordsFor(
+  const { choicesByField: relationChoicesRead, wordsByField: relationWords } = useRelationWordsFor(
     tableInfo?.organization_id ?? null,
     formatFields,
     fullDatasetCache ?? data,
     tableId,
   );
+  // Held while it says the same thing (lane RENDER-3): the hook rebuilds it whenever the rows move,
+  // and it is handed to the toolbar and every row.
+  const relationChoices = useHeldByContent(relationChoicesRead, choiceMapSignature);
   const choiceMap = useFieldChoiceMap(formatFields, personChoices, relationChoices);
 
   /** Machine field name → its resolved format, for the readers below. */
@@ -3269,7 +3286,7 @@ const UserTableViewer = ({
     onRedo: () => void cellUndo.redo(),
   });
   // Destructured: the compiler reads `grid.containerRef` (a property load) as a ref read in render.
-  const { containerRef: gridContainerRef } = grid;
+  const { containerRef: gridContainerRef, selectColumn: gridSelectColumn, refocusGrid: gridRefocus } = grid;
 
   // ─── The ONE right-click menu for the grid ──────────────────────────────
   //
@@ -3360,7 +3377,14 @@ const UserTableViewer = ({
   // function each (`useSteadyHandlers`): the compiler leaves these as plain values, so without it
   // every Sheet render redrew the toolbar and every header (lane RENDER-2). Never a function the
   // render itself calls (`columnWidthStyle`, `displayValueOf`, `isFormulaField` stay direct).
+  // The toolbar's Undo pair reads its own source, and the headers and toolbar slots act through
+  // ONE steady object whose handlers are put below the early returns (lane RENDER-3).
+  const undoSource = useSheetUndoSource(cellUndo);
+  const { put: putChromeActs, steady: chromeActs } = useSteadyLate<SheetChromeActs>();
+
   const steady = useSteadyHandlers({
+    // The grid's own surface, for the toolbar's ⋯ (read when it opens, never while drawing).
+    getGridSurface: () => gridContainerRef.current,
     dropColumn,
     beginColumnResize,
     loadTableData,
@@ -3851,8 +3875,6 @@ const UserTableViewer = ({
 
   /** The table page's one toolbar row is where the Sheet's toolbar goes, when there is one. */
   const inPageRow = toolbarSlot !== undefined;
-  const placeInPageRow = (node: React.ReactNode): React.ReactNode =>
-    toolbarSlot === undefined ? node : toolbarSlot ? createPortal(node, toolbarSlot) : null;
   /**
    * THE SORT, AS ONE COMPACT CONTROL in the page's row — records-ui's `SortStateControl` (the
    * grid's own), never a copy. It ships in records-ui 0.86.0, the release that hands the Sheet its
@@ -3952,6 +3974,86 @@ const UserTableViewer = ({
     reloadCurrentPage: () => steady.loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true),
   };
   sheetLatest.put(sheetRowScope);
+  putChromeActs({
+    selectColumn: (fieldName) => {
+      gridSelectColumn(fieldName);
+      gridRefocus();
+    },
+    headerDragStart: (fieldName) => setHeaderDrag({ from: fieldName, over: null, side: "left" }),
+    headerDragOver: (fieldName, side) => {
+      if (!headerDrag) return;
+      if (headerDrag.over !== fieldName || headerDrag.side !== side) setHeaderDrag({ ...headerDrag, over: fieldName, side });
+    },
+    headerDrop: (fieldName) => {
+      if (headerDrag) dropColumn(headerDrag.from, fieldName, headerDrag.side);
+      setHeaderDrag(null);
+    },
+    headerDragEnd: () => setHeaderDrag(null),
+    togglePageSelection: () => togglePageSelection(),
+    beginColumnResize: (e, fieldName) => steady.beginColumnResize(e, fieldName),
+    resetColumnWidth: (fieldName) => setColumnWidth(fieldName, null),
+    setRenameDraft: (value) => setRenameDraft(value),
+    commitColumnRename: () => void commitColumnRename(),
+    cancelColumnRename: () => cancelColumnRename(),
+    handleSort: (fieldName, direction) => handleSort(fieldName, direction),
+    clearSort: () => clearSort(),
+    handleColumnFilterChange: (fieldName, value) => handleColumnFilterChange(fieldName, value),
+    startColumnRename: (fieldName) => startColumnRename(fieldName),
+    insertColumnBeside: (fieldOrder, side) => {
+      setPendingColumnInsert({ order: side === "left" ? fieldOrder : fieldOrder + 1 });
+      setShowAddColumnModal(true);
+    },
+    hideColumn: (fieldName) =>
+      setHiddenColumns(hiddenColumns.includes(fieldName) ? hiddenColumns : [...hiddenColumns, fieldName]),
+    makeRowLabelColumn: (fieldName) => setColumnAsRowLabel(fieldName),
+    configureColumn: (fieldName) => setSettingsFieldName(fieldName),
+    deleteColumn: (fieldName) => {
+      const field = fields.find((f) => f.field_name === fieldName);
+      if (field) void handleDeleteColumn(field);
+    },
+    labelForValue: (fieldName, value) =>
+      choiceMap.get(fieldName)?.choices.find((c) => c.value === value)?.label ??
+      // A RELATION VALUE NOTHING RESOLVED IS STILL NOT A BARE UUID: the filter list shows the
+      // same words the grid's cell shows (the amber identifier chip), never the stored id.
+      ((cellTextForReader(value, formatByField.get(fieldName), relationWords, fieldName) as string) || value),
+    // Rows the browser already holds: the full cache when filtering has loaded it, otherwise the
+    // current page — which IS the whole table for the many tables that fit on one page.
+    readLocalRows: (fieldName) =>
+      isFormulaField(fieldName)
+        ? computeColumns(fullDatasetCache ?? data, fields, displayValueOf).rows
+        : (fullDatasetCache ?? data),
+    setHiddenColumns: (next) => setHiddenColumns(next),
+    setColumnOrder: (next) => setColumnOrder(next),
+    setLayoutMode: (next) => setLayoutMode(next),
+    setRowDensity: (next) => setRowDensity(next),
+    setFreezeFirstColumn: (next) => setFreezeFirstColumn(next),
+    setWrapText: (next) => setWrapText(next),
+    clearColumnWidths: () => clearColumnWidths(),
+    resetView: () => resetView(),
+    addColumnAtEnd: () => {
+      setPendingColumnInsert(null);
+      setShowAddColumnModal(true);
+    },
+    saveDefaultSort: () => void saveDefaultSort(),
+    clearDefaultSort: () => void clearDefaultSort(),
+    readPageRows: () => data,
+    loadAllRowsForCopy: async () => {
+      const complete = await getCompleteTable({ tableId, sortField, sortDirection });
+      if (isServiceFailure(complete)) failWith(complete.error);
+      // Same rule as `steady.loadRowsForCopy`: formula columns are computed
+      // before anything downstream (export, sort) reads the rows.
+      const rows = computeColumns(complete.data.rows, fields, displayValueOf).rows;
+      const ordered: typeof rows = sortField
+        ? (smartSort(
+            rows as unknown as TableDataRow[],
+            sortField,
+            sortDirection,
+            getFieldDataType(sortField),
+          ) as unknown as typeof rows)
+        : rows;
+      return rowsForReaders(ordered);
+    },
+  });
   const S = sheetLatest.get;
   /** The facts of ONE row that change without its record changing. */
   const sheetRowFacts = (row: TableDataRow): readonly unknown[] => {
@@ -4500,6 +4602,242 @@ const UserTableViewer = ({
     </TableRow>
   );
 
+  /*
+   * THE TOOLBAR'S SLOTS, EACH ITS OWN COMPILED COMPONENT (lane RENDER-3). Built inline in the
+   * toolbar's JSX they were four new elements on every Sheet render, and the toolbar — with every
+   * closed dialog it holds — redrew three times per cell edit. Their props are values that do not
+   * move on an edit; the Undo pair reads its own source.
+   */
+  const sheetViewProps: SheetViewProps = {
+    savedViews,
+    readOnly: isReadOnly,
+    fields,
+    hiddenColumns,
+    columnOrder,
+    layoutMode,
+    rowDensity,
+    defaultLayout: layoutDefaults.layout,
+    defaultRowHeight: layoutDefaults.rowHeight,
+    fitMaxColumns: layoutDefaults.fitMaxColumns,
+    freezeFirstColumn,
+    wrapText,
+    customWidthCount: Object.keys(columnWidths).length,
+    viewCustomized: isViewCustomized,
+    sortField,
+    sortDirection,
+    rowOrderingEnabled,
+    savingSortPreference,
+    sortSaved: isSortSaved,
+    savedSortField,
+    undoSource,
+    act: chromeActs,
+  };
+  const sheetViewControls = <SheetViewControls {...sheetViewProps} />;
+  const sheetMobileViewControls = <SheetMobileViewControls {...sheetViewProps} />;
+  const sheetCopyControls = (onChooseReference: () => void) => (
+    <SheetCopyControls
+      tableId={tableId}
+      tableName={tableInfo.table_name}
+      fields={fields}
+      hiddenColumns={hiddenColumns}
+      selectedRowIds={selectedRowIds}
+      loadRows={steady.loadRowsForCopy}
+      loadAllRows={chromeActs.loadAllRowsForCopy}
+      onChooseReference={onChooseReference}
+    />
+  );
+  const sheetCleanupControl = isReadOnly ? null : (
+    <SheetCleanupControl
+      fields={fields}
+      readRows={chromeActs.readPageRows}
+      loadAllRows={steady.loadAllRowsForCleanup}
+      scopeLabel={tableInfo.table_name}
+      onApply={steady.applyCleanupPatches}
+    />
+  );
+  const sheetMoreActions = <SheetMoreActions getSurface={steady.getGridSurface} />;
+
+  // EVERYTHING THE COLUMN-HEADER ROW SHOWS (lane RENDER-3): a Sheet render that moved none of these
+  // redraws no header — a cell write moves the rows, and the headers read no row.
+  const sheetHeaderFacts: unknown[] = [
+    allRowsOnPageSelected,
+    someRowsOnPageSelected,
+    displayRows.length === 0,
+    isReadOnly,
+    isMobile,
+    tableId,
+    tableInfo?.table_name,
+    sortField,
+    sortDirection,
+    columnFilters,
+    searchTerm,
+    renamingField,
+    renameDraft,
+    renameSaving,
+    renameOpenedAt,
+    headerDrag?.from,
+    headerDrag?.over,
+    headerDrag?.side,
+    freezeFirstColumn,
+    firstViewFieldName,
+    surfaceOpenCell?.fieldName,
+    totalCount,
+    fields.length,
+    filterOpenRequest?.field,
+    filterOpenRequest?.n,
+    contentSignature(rowActions),
+    rowChangeSchedule,
+    scheduleNavigationPending,
+    chromeActs,
+    ...viewFields.flatMap((field) => [
+      field,
+      columnWidths[field.field_name],
+      isRowLabelField(field.field_name, tableInfo?.metadata, fields),
+      isFormulaField(field.field_name),
+      Boolean(choiceMap.get(field.field_name)?.choices.some((c) => c.label && c.label !== c.value)),
+    ]),
+  ];
+  // The toolbar as its own statement, so the compiler holds it while none of its props moved.
+  const sheetToolbar = (
+      <SheetToolbar
+        inPageRow={inPageRow}
+        {...(inPageRow && sheetSortState ? { sortState: sheetSortState } : {})}
+        pageOwnsShareAndExport={Boolean(pageOwnsShareAndExport)}
+        tableId={tableId}
+        tableInfo={tableInfo}
+        fields={fields}
+        loadTableData={(forceReload) =>
+          steady.loadTableData(
+            currentPage,
+            limit,
+            sortField,
+            sortDirection,
+            searchTerm,
+            forceReload,
+          )
+        }
+        selectedRowId={selectedRowId}
+        selectedRowData={selectedRowData}
+        isReadOnly={isReadOnly}
+        // Search props
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        handleSearch={steady.handleSearch}
+        clearSearch={steady.clearSearch}
+        // Modal visibility state
+        showEditModal={showEditModal}
+        showDeleteModal={showDeleteModal}
+        showAddColumnModal={showAddColumnModal}
+        showAddRowModal={showAddRowModal}
+        showTableConfigModal={showTableConfigModal}
+        showReferenceOverlay={showReferenceOverlay}
+        showRowOrderingModal={showRowOrderingModal}
+        showPasteRowsDialog={showPasteRowsDialog}
+        // Modal visibility state setters
+        setShowEditModal={setShowEditModal}
+        setShowDeleteModal={setShowDeleteModal}
+        setShowAddColumnModal={(show) => {
+          // Opening from the toolbar appends; only the right-click insert
+          // carries a position, and it is consumed once the modal closes.
+          if (!show) setPendingColumnInsert(null);
+          setShowAddColumnModal(show);
+        }}
+        setShowAddRowModal={setShowAddRowModal}
+        // The SAME map the grid's cells are handed — one resolution of the
+        // relation words for the whole screen, so the row modal cannot show a
+        // different name (or a raw id) from the cell it was opened from.
+        relationChoices={relationChoices}
+        // Table settings reads the rows only while it is open; handed on every render, they
+        // redrew the whole toolbar on every cell write (lane RENDER-3).
+        sampleRow={showTableConfigModal ? (displayRows[0] ?? null) : null}
+        rows={showTableConfigModal ? displayRows : NO_PAGE_ROWS}
+        addColumnInsertAtOrder={pendingColumnInsert?.order}
+        onColumnAdded={async () => {
+          const insert = pendingColumnInsert;
+          setPendingColumnInsert(null);
+          if (!insert) return;
+          // The new column already sits AT `order`; shift the columns that
+          // held that slot or a later one so no two share a position.
+          const result = await renumberFields({
+            tableId,
+            updates: fields
+              .filter((f) => f.field_order >= insert.order)
+              .map((f) => ({ id: f.id, field_order: f.field_order + 1 })),
+          });
+          if (isServiceFailure(result)) {
+            toast({
+              title: "Column added at the end instead",
+              description: `It could not be moved into place: ${result.error}. Drag it in Table Settings.`,
+              variant: "destructive",
+            });
+          }
+        }}
+        colorsControl={
+          !isReadOnly ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowColorsDialog(true)}
+              className="whitespace-nowrap"
+              title="Color rows by a column, or add color rules"
+            >
+              <Paintbrush className="h-3.5 w-3.5 md:mr-1.5" />
+              <span className="hidden md:inline">Colors</span>
+            </Button>
+          ) : undefined
+        }
+        setShowTableConfigModal={(show) => {
+          if (!show) setTableConfigTab("fields");
+          setShowTableConfigModal(show);
+        }}
+        configTab={tableConfigTab}
+        viewControls={sheetViewControls}
+        setShowReferenceOverlay={setShowReferenceOverlay}
+        setShowRowOrderingModal={setShowRowOrderingModal}
+        setShowPasteRowsDialog={setShowPasteRowsDialog}
+        // Success callbacks
+        onEditSuccess={() => {
+          setShowEditModal(false);
+          setSelectedRowId(null);
+          setSelectedRowData(null);
+          // Clear sorted data cache when data is modified
+          setAllSortedData(null);
+          steady.loadTableData(currentPage, limit);
+        }}
+        onDeleteSuccess={() => {
+          setShowDeleteModal(false);
+          setSelectedRowId(null);
+          // Clear sorted data cache when data is modified
+          setAllSortedData(null);
+          steady.loadTableData(currentPage, limit);
+        }}
+        // Sort state for export
+        sortField={sortField}
+        sortDirection={sortDirection}
+        // Cell cleanup — single-cell helpers for the row editor, plus the bulk
+        // control itself (the toolbar just hosts it; the button owns the flow).
+        cleanCellValue={cleanCellValue}
+        isCellValueDirty={isCellValueDirty}
+        cleanupControl={sheetCleanupControl}
+        // Row ordering functions
+        rowOrderingEnabled={rowOrderingEnabled}
+        disableRowOrdering={steady.disableRowOrdering}
+        onRowOrderingSuccess={() => {
+          // Clear any active sorting when row ordering is updated
+          setSortField(null);
+          setSortDirection("asc");
+          // Clear sorted data cache when row ordering changes
+          setAllSortedData(null);
+          steady.loadTableData(currentPage, limit, null, "asc", searchTerm, true);
+        }}
+        copyControls={sheetCopyControls}
+        mobileViewControls={sheetMobileViewControls}
+        toolbarTrailing={toolbarTrailing}
+        // The grid's ONE menu has a ⋯ (ALC-15): table-level, the same shell and
+        // rows right-click opens, anchored at the button.
+        moreActions={sheetMoreActions}
+      />
+  );
   const body = (
     // fillHeight: a three-band column (chrome / grid / pagination) where only
     // the grid scrolls, so the table uses every pixel the route gives it and
@@ -4624,511 +4962,7 @@ const UserTableViewer = ({
       )}
 
       {/* Toolbar with search — in place, or in the table page's one toolbar row. */}
-      {placeInPageRow(
-      <TableToolbar
-        inPageRow={inPageRow}
-        {...(inPageRow && sheetSortState ? { sortState: sheetSortState } : {})}
-        pageOwnsShareAndExport={Boolean(pageOwnsShareAndExport)}
-        tableId={tableId}
-        tableInfo={tableInfo}
-        fields={fields}
-        loadTableData={(forceReload) =>
-          steady.loadTableData(
-            currentPage,
-            limit,
-            sortField,
-            sortDirection,
-            searchTerm,
-            forceReload,
-          )
-        }
-        selectedRowId={selectedRowId}
-        selectedRowData={selectedRowData}
-        isReadOnly={isReadOnly}
-        // Search props
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        handleSearch={steady.handleSearch}
-        clearSearch={steady.clearSearch}
-        // Modal visibility state
-        showEditModal={showEditModal}
-        showDeleteModal={showDeleteModal}
-        showAddColumnModal={showAddColumnModal}
-        showAddRowModal={showAddRowModal}
-        showTableConfigModal={showTableConfigModal}
-        showReferenceOverlay={showReferenceOverlay}
-        showRowOrderingModal={showRowOrderingModal}
-        showPasteRowsDialog={showPasteRowsDialog}
-        // Modal visibility state setters
-        setShowEditModal={setShowEditModal}
-        setShowDeleteModal={setShowDeleteModal}
-        setShowAddColumnModal={(show) => {
-          // Opening from the toolbar appends; only the right-click insert
-          // carries a position, and it is consumed once the modal closes.
-          if (!show) setPendingColumnInsert(null);
-          setShowAddColumnModal(show);
-        }}
-        setShowAddRowModal={setShowAddRowModal}
-        // The SAME map the grid's cells are handed — one resolution of the
-        // relation words for the whole screen, so the row modal cannot show a
-        // different name (or a raw id) from the cell it was opened from.
-        relationChoices={relationChoices}
-        sampleRow={displayRows[0] ?? null}
-        rows={displayRows}
-        addColumnInsertAtOrder={pendingColumnInsert?.order}
-        onColumnAdded={async () => {
-          const insert = pendingColumnInsert;
-          setPendingColumnInsert(null);
-          if (!insert) return;
-          // The new column already sits AT `order`; shift the columns that
-          // held that slot or a later one so no two share a position.
-          const result = await renumberFields({
-            tableId,
-            updates: fields
-              .filter((f) => f.field_order >= insert.order)
-              .map((f) => ({ id: f.id, field_order: f.field_order + 1 })),
-          });
-          if (isServiceFailure(result)) {
-            toast({
-              title: "Column added at the end instead",
-              description: `It could not be moved into place: ${result.error}. Drag it in Table Settings.`,
-              variant: "destructive",
-            });
-          }
-        }}
-        colorsControl={
-          !isReadOnly ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowColorsDialog(true)}
-              className="whitespace-nowrap"
-              title="Color rows by a column, or add color rules"
-            >
-              <Paintbrush className="h-3.5 w-3.5 md:mr-1.5" />
-              <span className="hidden md:inline">Colors</span>
-            </Button>
-          ) : undefined
-        }
-        setShowTableConfigModal={(show) => {
-          if (!show) setTableConfigTab("fields");
-          setShowTableConfigModal(show);
-        }}
-        configTab={tableConfigTab}
-        viewControls={
-          <>
-          <div className="flex shrink-0 items-center [&>div]:flex-nowrap">
-            <SavedViewBar
-              views={savedViews.views}
-              loading={savedViews.loading}
-              liveDefinition={savedViews.liveDefinition}
-              activeViewId={savedViews.activeViewId}
-              readOnly={isReadOnly}
-              displayNameFor={(fieldName) =>
-                fields.find((f) => f.field_name === fieldName)?.display_name ??
-                fieldName
-              }
-              onApply={savedViews.apply}
-              onClearActive={savedViews.clearActive}
-              onSaveNew={savedViews.saveNew}
-              onUpdate={savedViews.update}
-              onRename={savedViews.rename}
-              onSetDefault={savedViews.setDefault}
-              onDelete={savedViews.remove}
-            />
-          </div>
-
-          {/* Column visibility + order for THIS VIEW. Deliberately next to the
-              grid rather than inside Table Settings: Table Settings edits the
-              table for everyone, this edits only what you are looking at. */}
-          <div className="flex shrink-0 items-center gap-1">
-            <ColumnViewMenu
-              fields={fields.map((f) => ({
-                field_name: f.field_name,
-                display_name: f.display_name,
-                field_order: f.field_order,
-              }))}
-              hidden={hiddenColumns}
-              order={columnOrder}
-              onHiddenChange={setHiddenColumns}
-                    onAddColumn={
-                      isReadOnly
-                        ? undefined
-                        : () => {
-                            setPendingColumnInsert(null);
-                            setShowAddColumnModal(true);
-                          }
-                    }
-              onOrderChange={setColumnOrder}
-            />
-            <TableLayoutMenu
-              layoutMode={chosenLayoutMode}
-              autoResolvesTo={resolveTableLayout("auto", viewFields.length, layoutDefaults.fitMaxColumns)}
-              fitMaxColumns={layoutDefaults.fitMaxColumns}
-              // Picking the organization's own default clears the personal override,
-              // so the view stays "not customized" and follows the org if it changes.
-              onLayoutModeChange={(next) =>
-                setLayoutMode(next === layoutDefaults.layout ? "default" : next)
-              }
-              rowDensity={chosenRowDensity}
-              onRowDensityChange={(next) =>
-                setRowDensity(next === layoutDefaults.rowHeight ? "default" : next)
-              }
-              isCustomized={
-                layoutMode !== "default" ||
-                rowDensity !== "default" ||
-                freezeFirstColumn ||
-                wrapText ||
-                Object.keys(columnWidths).length > 0
-              }
-              freezeFirstColumn={freezeFirstColumn}
-              onFreezeFirstColumnChange={setFreezeFirstColumn}
-              wrapText={wrapText}
-              onWrapTextChange={setWrapText}
-              customWidthCount={Object.keys(columnWidths).length}
-              onResetColumnWidths={clearColumnWidths}
-            />
-            {isViewCustomized && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
-                onClick={() => {
-                  resetView();
-                  // The bar must stop claiming a view is active — otherwise it
-                  // highlights a chip whose settings are no longer on screen.
-                  savedViews.clearActive();
-                }}
-                title="Clear search, sort, filters and column choices"
-              >
-                Reset view
-              </Button>
-            )}
-          </div>
-
-          {/* Undo lives beside the grid, not only on Cmd-Z: a shortcut nobody can
-              see is not a safety net for a non-technical user. */}
-          {!isReadOnly && (cellUndo.canUndo || cellUndo.canRedo) && (
-            <div className="flex shrink-0 items-center gap-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1.5 px-2 text-xs"
-                disabled={!cellUndo.canUndo || cellUndo.busy}
-                onClick={() => void cellUndo.undo()}
-                title="Undo the last change — a cell, or everything one action changed (⌘Z)"
-              >
-                <Undo2 className="h-3.5 w-3.5" />
-                Undo
-                {cellUndo.undoDepth > 1 && (
-                  <span className="tabular-nums text-muted-foreground">
-                    {cellUndo.undoDepth}
-                  </span>
-                )}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1.5 px-2 text-xs"
-                disabled={!cellUndo.canRedo || cellUndo.busy}
-                onClick={() => void cellUndo.redo()}
-                title="Redo (⇧⌘Z)"
-              >
-                <Redo2 className="h-3.5 w-3.5" />
-                Redo
-              </Button>
-            </div>
-          )}
-          </>
-        }
-        setShowReferenceOverlay={setShowReferenceOverlay}
-        setShowRowOrderingModal={setShowRowOrderingModal}
-        setShowPasteRowsDialog={setShowPasteRowsDialog}
-        // Success callbacks
-        onEditSuccess={() => {
-          setShowEditModal(false);
-          setSelectedRowId(null);
-          setSelectedRowData(null);
-          // Clear sorted data cache when data is modified
-          setAllSortedData(null);
-          steady.loadTableData(currentPage, limit);
-        }}
-        onDeleteSuccess={() => {
-          setShowDeleteModal(false);
-          setSelectedRowId(null);
-          // Clear sorted data cache when data is modified
-          setAllSortedData(null);
-          steady.loadTableData(currentPage, limit);
-        }}
-        // Sort state for export
-        sortField={sortField}
-        sortDirection={sortDirection}
-        // Cell cleanup — single-cell helpers for the row editor, plus the bulk
-        // control itself (the toolbar just hosts it; the button owns the flow).
-        cleanCellValue={cleanCellValue}
-        isCellValueDirty={isCellValueDirty}
-        cleanupControl={
-          isReadOnly ? null : (
-            <CellCleanupButton
-              fields={fields.map((f) => ({
-                fieldName: f.field_name,
-                label: f.display_name,
-              }))}
-              rows={data}
-              loadAllRows={steady.loadAllRowsForCleanup}
-              scopeLabel={tableInfo.table_name}
-              onApply={steady.applyCleanupPatches}
-            />
-          )
-        }
-        // Row ordering functions
-        rowOrderingEnabled={rowOrderingEnabled}
-        disableRowOrdering={steady.disableRowOrdering}
-        onRowOrderingSuccess={() => {
-          // Clear any active sorting when row ordering is updated
-          setSortField(null);
-          setSortDirection("asc");
-          // Clear sorted data cache when row ordering changes
-          setAllSortedData(null);
-          steady.loadTableData(currentPage, limit, null, "asc", searchTerm, true);
-        }}
-        copyControls={(onChooseReference) => (
-          <TableCopyControls
-            tableId={tableId}
-            tableName={tableInfo.table_name}
-            fields={fields}
-            hiddenColumns={hiddenColumns}
-            selectedRowIds={selectedRowIds}
-            loadRows={steady.loadRowsForCopy}
-            loadAllRows={async () => {
-              const complete = await getCompleteTable({ tableId, sortField, sortDirection });
-              if (isServiceFailure(complete)) failWith(complete.error);
-              // Same rule as `steady.loadRowsForCopy`: formula columns are computed
-              // before anything downstream (export, sort) reads the rows.
-              const rows = computeColumns(complete.data.rows, fields, displayValueOf).rows;
-              const ordered: typeof rows = sortField
-                ? (smartSort(
-                    rows as unknown as TableDataRow[],
-                    sortField,
-                    sortDirection,
-                    getFieldDataType(sortField),
-                  ) as unknown as typeof rows)
-                : rows;
-              return rowsForReaders(ordered);
-            }}
-            onChooseReference={onChooseReference}
-          />
-        )}
-        mobileViewControls={
-          <div className="space-y-2">
-            {!sortField && rowOrderingEnabled ? (
-              <div className="rounded-lg bg-muted/40 px-3 py-2.5 text-sm" data-sort-mode="manual">
-                <div className="flex min-h-11 items-center gap-2 text-muted-foreground">
-                  Sort: <span className="font-medium text-foreground">Manual</span>
-                  <span className="text-xs">· set by hand</span>
-                </div>
-              </div>
-            ) : null}
-            {sortField && !isReadOnly && rowOrderingEnabled ? (
-              <div className="rounded-lg bg-muted/40 px-3 py-2.5 text-sm">
-                <div className="min-h-11 truncate py-2 text-muted-foreground">
-                  Sorted by{" "}
-                  <span className="font-medium text-foreground">
-                    {fields.find((field) => field.field_name === sortField)?.display_name || sortField}
-                  </span>{" "}
-                  {sortDirection === "asc" ? "↑" : "↓"} · hand-set order set aside
-                </div>
-                <div className="flex gap-2">
-                  <Button type="button" variant="ghost" size="sm" className="h-11 flex-1 text-xs" onClick={steady.clearSort}>
-                    Back to manual
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-11 flex-1 text-xs text-primary"
-                    onClick={steady.saveDefaultSort}
-                    disabled={savingSortPreference}
-                  >
-                    {savingSortPreference ? "Saving…" : "Use this sort instead"}
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-            {sortField && !isReadOnly && !rowOrderingEnabled ? (
-              <div className="rounded-lg bg-muted/40 px-3 py-2.5 text-sm">
-                <div className="flex min-h-11 items-center gap-2">
-                  <span className="min-w-0 flex-1 truncate text-muted-foreground">
-                    Sorted by{" "}
-                    <span className="font-medium text-foreground">
-                      {fields.find((field) => field.field_name === sortField)
-                        ?.display_name || sortField}
-                    </span>{" "}
-                    {sortDirection === "asc" ? "↑" : "↓"}
-                  </span>
-                  {isSortSaved ? (
-                    <span className="flex shrink-0 items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                      Default
-                    </span>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-11 shrink-0 px-2 text-xs text-primary"
-                      onClick={steady.saveDefaultSort}
-                      disabled={savingSortPreference}
-                    >
-                      {savingSortPreference ? "Saving…" : "Make default"}
-                    </Button>
-                  )}
-                </div>
-                {savedSortField ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-11 w-full justify-start px-2 text-xs text-muted-foreground"
-                    onClick={steady.clearDefaultSort}
-                    disabled={savingSortPreference}
-                  >
-                    Clear default sort
-                  </Button>
-                ) : null}
-              </div>
-            ) : null}
-
-            <div className="[&_button]:min-h-11">
-              <SavedViewBar
-                views={savedViews.views}
-                loading={savedViews.loading}
-                liveDefinition={savedViews.liveDefinition}
-                activeViewId={savedViews.activeViewId}
-                readOnly={isReadOnly}
-                displayNameFor={(fieldName) =>
-                  fields.find((field) => field.field_name === fieldName)
-                    ?.display_name ?? fieldName
-                }
-                onApply={savedViews.apply}
-                onClearActive={savedViews.clearActive}
-                onSaveNew={savedViews.saveNew}
-                onUpdate={savedViews.update}
-                onRename={savedViews.rename}
-                onSetDefault={savedViews.setDefault}
-                onDelete={savedViews.remove}
-              />
-            </div>
-
-            {!isReadOnly && (cellUndo.canUndo || cellUndo.canRedo) ? (
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-11 justify-start gap-2 px-3 text-sm"
-                  disabled={!cellUndo.canUndo || cellUndo.busy}
-                  onClick={() => void cellUndo.undo()}
-                >
-                  <Undo2 className="h-4 w-4" />
-                  Undo
-                  {cellUndo.undoDepth > 1 ? (
-                    <span className="tabular-nums text-muted-foreground">
-                      {cellUndo.undoDepth}
-                    </span>
-                  ) : null}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-11 justify-start gap-2 px-3 text-sm"
-                  disabled={!cellUndo.canRedo || cellUndo.busy}
-                  onClick={() => void cellUndo.redo()}
-                >
-                  <Redo2 className="h-4 w-4" />
-                  Redo
-                </Button>
-              </div>
-            ) : null}
-
-            <div className="[&>button]:h-11 [&>button]:w-full [&>button]:justify-start [&>button]:px-2 [&>button]:text-sm">
-              <ColumnViewMenu
-                fields={fields.map((field) => ({
-                  field_name: field.field_name,
-                  display_name: field.display_name,
-                  field_order: field.field_order,
-                }))}
-                hidden={hiddenColumns}
-                order={columnOrder}
-                onHiddenChange={setHiddenColumns}
-                onAddColumn={
-                  isReadOnly
-                    ? undefined
-                    : () => {
-                        setPendingColumnInsert(null);
-                        setShowAddColumnModal(true);
-                      }
-                }
-                onOrderChange={setColumnOrder}
-              />
-              <TableLayoutMenu
-                layoutMode={chosenLayoutMode}
-                autoResolvesTo={resolveTableLayout("auto", viewFields.length, layoutDefaults.fitMaxColumns)}
-                fitMaxColumns={layoutDefaults.fitMaxColumns}
-                // Picking the organization's own default clears the personal override,
-                // so the view stays "not customized" and follows the org if it changes.
-                onLayoutModeChange={(next) =>
-                  setLayoutMode(next === layoutDefaults.layout ? "default" : next)
-                }
-                rowDensity={chosenRowDensity}
-                onRowDensityChange={(next) =>
-                  setRowDensity(next === layoutDefaults.rowHeight ? "default" : next)
-                }
-                isCustomized={
-                  layoutMode !== "default" ||
-                  rowDensity !== "default" ||
-                  freezeFirstColumn ||
-                  wrapText ||
-                  Object.keys(columnWidths).length > 0
-                }
-                freezeFirstColumn={freezeFirstColumn}
-                onFreezeFirstColumnChange={setFreezeFirstColumn}
-          wrapText={wrapText}
-          onWrapTextChange={setWrapText}
-                customWidthCount={Object.keys(columnWidths).length}
-                onResetColumnWidths={clearColumnWidths}
-              />
-            </div>
-
-            {isViewCustomized ? (
-              <Button
-                type="button"
-                variant="ghost"
-                className="h-11 w-full justify-start px-2 text-sm text-muted-foreground"
-                onClick={() => {
-                  resetView();
-                  savedViews.clearActive();
-                }}
-              >
-                Reset search, sort, filters, and columns
-              </Button>
-            ) : null}
-          </div>
-        }
-        toolbarTrailing={toolbarTrailing}
-        // The grid's ONE menu has a ⋯ (ALC-15): table-level, the same shell and
-        // rows right-click opens, anchored at the button.
-        moreActions={
-          <OpenSurfaceMenuButton
-            getSurface={() => gridContainerRef.current}
-            label="More actions"
-            className="h-11 w-11 md:h-7 md:w-7"
-          />
-        }
-      />,
-      )}
+      <SheetInPageRow slot={toolbarSlot}>{sheetToolbar}</SheetInPageRow>
 
       {/* A filter that could not read every row must SAY so. Both of these were
           silent before: the cap produced a confident wrong count, and a failed
@@ -5334,6 +5168,10 @@ const UserTableViewer = ({
             effectiveLayout === "fit" && "md:w-full md:min-w-full md:table-fixed",
           )}
         >
+          {/* THE COLUMN-HEADER ROW, drawn only when one of its facts changed (lane RENDER-3). */}
+          <SheetChromePart
+            facts={sheetHeaderFacts}
+            render={() => (
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className="sticky left-0 top-0 z-30 w-10 bg-gray-100 px-2 dark:bg-gray-800 md:px-3">
@@ -5345,7 +5183,7 @@ const UserTableViewer = ({
                         ? "indeterminate"
                         : false
                   }
-                  onCheckedChange={togglePageSelection}
+                  onCheckedChange={chromeActs.togglePageSelection}
                   disabled={displayRows.length === 0}
                   aria-label={
                     allRowsOnPageSelected
@@ -5355,252 +5193,39 @@ const UserTableViewer = ({
                 />
               </TableHead>
               {viewFields.map((field) => {
-                const isSorted = sortField === field.field_name;
-                const columnFilter = columnFilters[field.field_name];
+                // ONE COMPONENT PER COLUMN (lane RENDER-3): plain values and one steady actions
+                // object, so a Sheet render that changed nothing a header shows redraws none.
+                const name = field.field_name;
+                const renaming = renamingField === name;
                 return (
-                  <TableHead
+                  <SheetHeaderCell
                     key={field.id}
-                    {...{ [GRID_FIELD_DOM_ATTR]: field.field_name }}
-                    data-surface-value="table_schema"
-                    // Clicking the header's own surface (not its sort label
-                    // or its menu) selects the whole column — the Excel and
-                    // Sheets gesture. Ctrl/Cmd+Space does the same from the
-                    // keyboard.
-                    onClick={(e) => {
-                      if ((e.target as HTMLElement).closest("button")) return;
-                      grid.selectColumn(field.field_name);
-                      grid.refocusGrid();
-                    }}
-                    title={`Click to select the ${field.display_name} column`}
-                    // Drag to reorder (desktop). The resize handle cancels
-                    // its own mousedown, so a drag can only start from the
-                    // header body; a header being renamed is not draggable.
-                    draggable={!isMobile && renamingField !== field.field_name}
-                    onDragStart={(e) => {
-                      e.dataTransfer.effectAllowed = "move";
-                      e.dataTransfer.setData("text/plain", field.field_name);
-                      setHeaderDrag({ from: field.field_name, over: null, side: "left" });
-                    }}
-                    onDragOver={(e) => {
-                      if (!headerDrag) return;
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = "move";
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const side = e.clientX < rect.left + rect.width / 2 ? "left" : "right";
-                      if (headerDrag.over !== field.field_name || headerDrag.side !== side) {
-                        setHeaderDrag({ ...headerDrag, over: field.field_name, side });
-                      }
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      if (headerDrag) steady.dropColumn(headerDrag.from, field.field_name, headerDrag.side);
-                      setHeaderDrag(null);
-                    }}
-                    onDragEnd={() => setHeaderDrag(null)}
-                    style={columnWidthStyle(field.field_name)}
-                    className={cn(
-                      "sticky top-0 z-20 max-w-[70vw] border-b border-gray-200 bg-gray-100 py-1.5 font-semibold text-gray-700 transition-colors hover:bg-gray-200/70 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/70 md:max-w-none",
-                      // The 150px floor is the platform's; a dragged width
-                      // replaces it (that is what dragging narrower means).
-                      !columnWidths[field.field_name] && "md:min-w-[150px]",
-                      // Drop indicator while a header is being dragged over.
-                      headerDrag?.over === field.field_name &&
-                        headerDrag.from !== field.field_name &&
-                        (headerDrag.side === "left"
-                          ? "shadow-[inset_3px_0_0_theme(colors.primary.DEFAULT)]"
-                          : "shadow-[inset_-3px_0_0_theme(colors.primary.DEFAULT)]"),
-                      headerDrag?.from === field.field_name && "opacity-50",
-                      // Frozen first column: sits right of the 2.5rem
-                      // checkbox column and above scrolling neighbours.
-                      freezeFirstColumn &&
-                        field.field_name === firstViewFieldName &&
-                        "left-10 z-30 shadow-[inset_-1px_0_0_theme(colors.gray.200)] dark:shadow-[inset_-1px_0_0_theme(colors.gray.700)]",
-                    )}
-                  >
-                    {/* Drag handle on the right edge; double-click resets. */}
-                    {!isMobile && (
-                      <span
-                        role="separator"
-                        aria-orientation="vertical"
-                        aria-label={`Resize the ${field.display_name} column`}
-                        title="Drag to resize · double-click to reset"
-                        onMouseDown={(e) => steady.beginColumnResize(e, field.field_name)}
-                        onDoubleClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setColumnWidth(field.field_name, null);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize select-none hover:bg-primary/40 active:bg-primary/60"
-                      />
-                    )}
-                    <div
-                      data-surface-value="column_list"
-                      className="flex items-center justify-between gap-1"
-                    >
-                      {renamingField === field.field_name ? (
-                        <input
-                          autoFocus
-                          aria-label={`Rename the ${field.display_name} column`}
-                          value={renameDraft}
-                          disabled={renameSaving}
-                          onChange={(e) => setRenameDraft(e.target.value)}
-                          onFocus={(e) => e.currentTarget.select()}
-                          onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => {
-                            // The grid owns arrow keys / typing; none of it
-                            // may fire while a name is being typed.
-                            e.stopPropagation();
-                            if (e.key === "Enter") void steady.commitColumnRename();
-                            if (e.key === "Escape") steady.cancelColumnRename();
-                          }}
-                          onBlur={(e) => {
-                            // A closing menu / popover hands focus back to its
-                            // trigger a moment AFTER this input mounts. That
-                            // is not the user leaving the field — take focus
-                            // back instead of ending the rename they just
-                            // asked for (live-found 2026-09-17).
-                            if (Date.now() - renameOpenedAt < 700) {
-                              const input = e.currentTarget;
-                              window.setTimeout(() => input.focus(), 0);
-                              return;
-                            }
-                            void steady.commitColumnRename();
-                          }}
-                          className="min-w-0 flex-1 rounded border border-primary bg-background px-1.5 py-0.5 text-sm font-semibold text-foreground outline-none ring-2 ring-primary/30"
-                        />
-                      ) : (
-                      <button
-                        type="button"
-                        data-surface-value={
-                          surfaceOpenCell?.fieldName === field.field_name
-                            ? "current_column_name"
-                            : undefined
-                        }
-                        onClick={() => steady.handleSort(field.field_name)}
-                        className="flex min-w-0 flex-1 items-center gap-1 rounded px-1 py-0.5"
-                        title={`Sort by ${field.display_name}`}
-                      >
-                        {/* The row label: the column that names a row
-                            everywhere it is referred to (row-label.ts). */}
-                        {isRowLabelField(field.field_name, tableInfo?.metadata, fields) && (
-                          <span title="Row label — rows of this table are called by this column">
-                            <KeyRound className="h-3 w-3 shrink-0 text-amber-600" aria-label="Row label column" />
-                          </span>
-                        )}
-                        <span className="truncate">{field.display_name}</span>
-                        {isSorted && (
-                          <span className="flex-shrink-0">
-                            {sortDirection === "asc" ? "↑" : "↓"}
-                          </span>
-                        )}
-                      </button>
-                      )}
-                      <ColumnHeaderMenu
-                        // A formula column has no stored value, so the server
-                        // facet RPC would return nothing for it. Omitting the
-                        // table identity makes the menu work from the rows the
-                        // browser holds (with computed values) and say when
-                        // that is not every row — its own honest fallback.
-                        tableId={isFormulaField(field.field_name) ? undefined : tableId}
-                        fieldName={field.field_name}
-                        displayName={field.display_name}
-                        dataType={field.data_type}
-                        isSorted={isSorted}
-                        sortDirection={sortDirection}
-                        filter={columnFilter}
-                        searchTerm={searchTerm}
-                        // Rows the browser already holds. The full cache when
-                        // filtering has loaded it, otherwise the current page —
-                        // which IS the whole table for the many tables that fit
-                        // on one page. The menu asks the server only when these
-                        // do not cover `totalCount`.
-                        localRows={
-                          isFormulaField(field.field_name)
-                            ? computeColumns(fullDatasetCache ?? data, fields, displayValueOf).rows
-                            : (fullDatasetCache ?? data)
-                        }
-                        totalCount={totalCount}
-                        onSortAsc={() => steady.handleSort(field.field_name, "asc")}
-                        onSortDesc={() => steady.handleSort(field.field_name, "desc")}
-                        onClearSort={steady.clearSort}
-                        onFilterChange={(value) =>
-                          steady.handleColumnFilterChange(field.field_name, value)
-                        }
-                        onRename={
-                          isReadOnly
-                            ? undefined
-                            : () => steady.startColumnRename(field.field_name)
-                        }
-                        // A choice column's stored values may differ from what
-                        // people read (a Person column stores user ids) — the
-                        // filter list shows the label, filters by the value.
-                        labelForValue={
-                          choiceMap.get(field.field_name)?.choices.some((c) => c.label && c.label !== c.value)
-                            ? (value) =>
-                                choiceMap.get(field.field_name)?.choices.find((c) => c.value === value)?.label ??
-                                (
-                                // A RELATION VALUE NOTHING RESOLVED IS STILL NOT A BARE UUID.
-                                // The checklist fell straight back to the stored value, so the
-                                // one cell on the Rincon board pointing at a customer who is
-                                // not there put a raw uuid in the filter list while the grid
-                                // beside it showed the amber identifier chip — one column,
-                                // two answers. Caught by the headless walk, not by a test.
-                                (cellTextForReader(
-                                  value,
-                                  formatByField.get(field.field_name),
-                                  relationWords,
-                                  field.field_name,
-                                ) as string) ||
-                                  value)
-                            : undefined
-                        }
-                        // The same three doors the right-click Column section
-                        // has — a column is managed from its own header too.
-                        onInsert={
-                          isReadOnly
-                            ? undefined
-                            : (side) => {
-                                setPendingColumnInsert({
-                                  order:
-                                    side === "left"
-                                      ? field.field_order
-                                      : field.field_order + 1,
-                                });
-                                setShowAddColumnModal(true);
-                              }
-                        }
-                        onHide={
-                          viewFields.length <= 1
-                            ? undefined
-                            : () =>
-                                setHiddenColumns(
-                                  hiddenColumns.includes(field.field_name)
-                                    ? hiddenColumns
-                                    : [...hiddenColumns, field.field_name],
-                                )
-                        }
-                        onUseAsRowLabel={
-                          isReadOnly || isRowLabelField(field.field_name, tableInfo?.metadata, fields)
-                            ? undefined
-                            : () => setColumnAsRowLabel(field.field_name)
-                        }
-                        openRequest={
-                          filterOpenRequest?.field === field.field_name ? filterOpenRequest.n : 0
-                        }
-                        onConfigure={
-                          isReadOnly
-                            ? undefined
-                            : () => setSettingsFieldName(field.field_name)
-                        }
-                        onDelete={
-                          isReadOnly || fields.length <= 1
-                            ? undefined
-                            : () => void steady.handleDeleteColumn(field)
-                        }
-                      />
-                    </div>
-                  </TableHead>
+                    field={field}
+                    tableId={tableId}
+                    readOnly={isReadOnly}
+                    mobile={isMobile}
+                    sortDirection={sortField === name ? (sortDirection === "desc" ? "desc" : "asc") : null}
+                    filter={columnFilters[name]}
+                    searchTerm={searchTerm}
+                    width={columnWidths[name]}
+                    renaming={renaming}
+                    renameDraft={renaming ? renameDraft : ""}
+                    renameSaving={renaming && renameSaving}
+                    renameOpenedAt={renaming ? renameOpenedAt : 0}
+                    dragging={headerDrag !== null}
+                    dragFrom={headerDrag?.from === name}
+                    dropSide={headerDrag?.over === name ? headerDrag.side : null}
+                    frozen={freezeFirstColumn && name === firstViewFieldName}
+                    currentColumn={surfaceOpenCell?.fieldName === name}
+                    rowLabel={isRowLabelField(name, tableInfo?.metadata, fields)}
+                    formula={isFormulaField(name)}
+                    totalCount={totalCount}
+                    canHide={viewFields.length > 1}
+                    canDelete={fields.length > 1}
+                    openRequest={filterOpenRequest?.field === name ? filterOpenRequest.n : 0}
+                    choiceLabels={Boolean(choiceMap.get(name)?.choices.some((c) => c.label && c.label !== c.value))}
+                    act={chromeActs}
+                  />
                 );
               })}
               {/* Where every spreadsheet puts it: a slim "+" column after the
@@ -5615,10 +5240,7 @@ const UserTableViewer = ({
                     className="h-7 w-7"
                     title="Add a column at the end"
                     aria-label="Add a column at the end"
-                    onClick={() => {
-                      setPendingColumnInsert(null);
-                      setShowAddColumnModal(true);
-                    }}
+                    onClick={chromeActs.addColumnAtEnd}
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </Button>
@@ -5705,6 +5327,8 @@ const UserTableViewer = ({
               </TableHead>
             </TableRow>
           </TableHeader>
+            )}
+          />
           <TableBody>
             {showLoadingRow ? (
               // Table-shaped skeleton rows that match the real column layout —

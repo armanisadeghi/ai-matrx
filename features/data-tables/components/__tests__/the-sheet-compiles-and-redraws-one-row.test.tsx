@@ -25,7 +25,7 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { act, useState } from "react";
+import { act, memo, useState, useSyncExternalStore } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import ts from "typescript";
 import * as asWritten from "../sheet-body-row";
@@ -195,5 +195,139 @@ describe.each(MODULES)("the Sheet's row boundary (%s)", (_label, load) => {
     const button = container.querySelector('[data-row="r1"] button') as HTMLButtonElement;
     act(() => button.click());
     expect(lastScope?.clicks).toEqual(["r1@v2"]);
+  });
+});
+
+// ── 3. The Sheet's toolbar and column headers hold still on a cell edit (lane RENDER-3) ─────────
+//
+// Measured on /data-v2 (Hygiene Recall Schedule) after RENDER-2: one cell edit redrew the toolbar
+// 181 times and the column headers 291 times — once per Sheet render, three per edit — because the
+// Sheet handed the toolbar four JSX slots rebuilt every render plus the page's rows, and drew every
+// header inline with fresh closures. After: toolbar 7 (the Undo pair alone, as its count moves),
+// headers 0. jest here runs without the compiler and cannot mount the whole Sheet, so this proves
+// the two halves the browser number rests on: (a) the Sheet's WIRING — the toolbar and the header
+// row sit behind memo boundaries and are handed nothing that moves with the rows — RED on the
+// pre-lane bytes; (b) the BOUNDARIES themselves, as written and compiled.
+
+const VIEWER = resolve(ROOT, process.env.SHEET_VIEWER_UNDER_TEST ?? "components/user-generated-table-data/UserTableViewer.tsx");
+/** Values that change on every cell write, realtime patch or page read. */
+const ROW_VALUES = new Set(["displayRows", "data", "cellUndo", "fullDatasetCache", "relationChoicesRead", "computedPage"]);
+
+function viewerSource() {
+  return ts.createSourceFile(VIEWER, readFileSync(VIEWER, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+}
+function jsxNamed(sf: ts.SourceFile, name: string): Array<ts.JsxOpeningLikeElement> {
+  const out: ts.JsxOpeningLikeElement[] = [];
+  const walk = (n: ts.Node) => {
+    if ((ts.isJsxOpeningElement(n) || ts.isJsxSelfClosingElement(n)) && n.tagName.getText(sf) === name) out.push(n);
+    ts.forEachChild(n, walk);
+  };
+  walk(sf);
+  return out;
+}
+/** Every const of the viewer, by name → its initializer. */
+function constsOf(sf: ts.SourceFile): Map<string, ts.Expression> {
+  const out = new Map<string, ts.Expression>();
+  const walk = (n: ts.Node) => {
+    if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer) out.set(n.name.text, n.initializer);
+    ts.forEachChild(n, walk);
+  };
+  walk(sf);
+  return out;
+}
+/**
+ * The row values an expression reaches, following the Sheet's own `sheet*` consts (its toolbar
+ * slots and facts). Allowed: `displayRows.length` (a count), and anything under a
+ * `showTableConfigModal ? … : …` (Table settings reads the rows only while it is open).
+ */
+function rowValuesReached(node: ts.Node, sf: ts.SourceFile, consts: Map<string, ts.Expression>, seen = new Set<string>()): string[] {
+  const found: string[] = [];
+  const walk = (n: ts.Node) => {
+    if (ts.isConditionalExpression(n) && n.condition.getText(sf) === "showTableConfigModal") return;
+    if (ts.isPropertyAccessExpression(n) && n.expression.getText(sf) === "displayRows" && n.name.text === "length") return;
+    if (ts.isIdentifier(n)) {
+      const parent = n.parent;
+      const isName = (ts.isPropertyAccessExpression(parent) && parent.name === n) || (ts.isPropertyAssignment(parent) && parent.name === n) || ts.isJsxAttribute(parent);
+      if (!isName) {
+        if (ROW_VALUES.has(n.text)) found.push(`${n.text} @${sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1}`);
+        if (n.text.startsWith("sheet") && consts.has(n.text) && !seen.has(n.text)) {
+          seen.add(n.text);
+          found.push(...rowValuesReached(consts.get(n.text)!, sf, consts, seen));
+        }
+      }
+    }
+    ts.forEachChild(n, walk);
+  };
+  walk(node);
+  return found;
+}
+
+describe("the Sheet's toolbar and column headers are handed nothing a cell edit moves", () => {
+  const sf = viewerSource();
+  const consts = constsOf(sf);
+
+  it("the toolbar is drawn through its memo boundary, with no row value in any prop or slot", () => {
+    const lineOf = (n: ts.Node) => `line ${sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1}`;
+    // A <TableToolbar> drawn straight in the Sheet sits outside the memo boundary.
+    expect({ tableToolbarDrawnDirectly: jsxNamed(sf, "TableToolbar").map(lineOf) }).toEqual({ tableToolbarDrawnDirectly: [] });
+    const toolbars = jsxNamed(sf, "SheetToolbar");
+    expect(toolbars.length).toBe(1);
+    expect(rowValuesReached(toolbars[0]!.attributes, sf, consts)).toEqual([]);
+  });
+
+  it("the column-header row is drawn through its memo boundary, and its facts read no row value", () => {
+    const parts = jsxNamed(sf, "SheetChromePart");
+    const headerPart = parts.find((p) => jsxNamed(sf, "TableHeader").some((h) => h.getStart(sf) > p.getStart(sf) && h.getEnd() < p.parent.getEnd()));
+    expect(headerPart).toBeDefined();
+    const facts = headerPart!.attributes.properties.find((a) => ts.isJsxAttribute(a) && a.name.getText(sf) === "facts");
+    expect(facts).toBeDefined();
+    expect(rowValuesReached(facts!, sf, consts)).toEqual([]);
+    // Every header cell is its own boundary too, keyed by its column.
+    expect(jsxNamed(sf, "SheetHeaderCell")).toHaveLength(1);
+  });
+});
+
+describe.each(MODULES)("the Sheet's chrome boundaries (%s)", (_label, load) => {
+  it("a chrome part redraws from its LATEST render only when one of its facts changed", () => {
+    const { SheetChromePart } = load();
+    const drawn: string[] = [];
+    function Host({ label, sorted, rows }: { label: string; sorted: string; rows: number }) {
+      // The rows move on every edit; the part's facts do not read them.
+      void rows;
+      return <SheetChromePart facts={[sorted]} render={() => { drawn.push(label); return <span data-part="">{`${sorted}:${label}`}</span>; }} />;
+    }
+    act(() => root.render(<Host label="v1" sorted="patient" rows={8} />));
+    expect(drawn).toEqual(["v1"]);
+    act(() => root.render(<Host label="v2" sorted="patient" rows={9} />));
+    expect(drawn).toEqual(["v1"]); // a cell edit: nothing the part shows moved
+    act(() => root.render(<Host label="v3" sorted="recall_due" rows={9} />));
+    expect(drawn).toEqual(["v1", "v3"]);
+    expect(container.querySelector("[data-part]")?.textContent).toBe("recall_due:v3");
+  });
+
+  it("the Undo pair's source never changes identity, tells its reader alone, and undoes through the latest undo", () => {
+    const { useSheetUndoSource } = load();
+    const reads: number[] = [];
+    const undone: string[] = [];
+    const seen: unknown[] = [];
+    function Pair({ source }: { source: ReturnType<typeof useSheetUndoSource> }) {
+      const face = useSyncExternalStore(source.subscribe, source.face, source.face);
+      reads.push(face.depth);
+      return <button type="button" data-undo="" onClick={source.undo}>{`Undo ${face.depth}`}</button>;
+    }
+    const SteadyPair = memo(Pair);
+    function Toolbar({ depth, tag }: { depth: number; tag: string }) {
+      const source = useSheetUndoSource({ canUndo: depth > 0, canRedo: false, busy: false, undoDepth: depth, undo: () => undone.push(tag), redo: () => undefined });
+      seen.push(source);
+      return <SteadyPair source={source} />;
+    }
+    act(() => root.render(<Toolbar depth={0} tag="t0" />));
+    act(() => root.render(<Toolbar depth={1} tag="t1" />));
+    act(() => root.render(<Toolbar depth={1} tag="t2" />));
+    expect(new Set(seen).size).toBe(1);
+    expect(reads).toEqual([0, 1]); // drawn once more when the count moved, never for a render that moved nothing
+    expect(container.querySelector("[data-undo]")?.textContent).toBe("Undo 1");
+    act(() => (container.querySelector("[data-undo]") as HTMLButtonElement).click());
+    expect(undone).toEqual(["t2"]);
   });
 });

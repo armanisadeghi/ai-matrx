@@ -15,7 +15,7 @@
  */
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { toast } from "@/components/ui/use-toast";
 
@@ -103,6 +103,15 @@ export function useSavedViews(args: {
    * default is for "I just opened my table", never for "I followed a link".
    */
   const autoAppliedFor = useRef<string | null>(null);
+  // `viewIsPristine` is read at load time on purpose; it must not re-trigger the load. An effect
+  // event, not a disabled hook-lint line: the lint line made the React Compiler skip this whole
+  // hook, so `liveDefinition` and every handler were new on every render and redrew the Sheet's
+  // toolbar on every cell edit (lane RENDER-3).
+  const applyDefaultIfPristine = useEffectEvent((loaded: SavedView[]) => {
+    if (!viewIsPristine) return;
+    const fallback = loaded.find((v) => v.isDefault);
+    if (fallback) apply(fallback);
+  });
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -110,15 +119,11 @@ export function useSavedViews(args: {
       if (cancelled) return;
       if (autoAppliedFor.current === tableId) return;
       autoAppliedFor.current = tableId;
-      if (!viewIsPristine) return;
-      const fallback = loaded.find((v) => v.isDefault);
-      if (fallback) apply(fallback);
+      applyDefaultIfPristine(loaded);
     })();
     return () => {
       cancelled = true;
     };
-    // `viewIsPristine` is read at load time on purpose; it must not re-trigger.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tableId, load]);
 
   const saveNew = useCallback(

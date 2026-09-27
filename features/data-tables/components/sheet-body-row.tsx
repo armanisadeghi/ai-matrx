@@ -19,7 +19,7 @@
 // The row reads everything through the viewer's LATEST scope (a ref refreshed on every render), so
 // a row the memo kept never acts on the render it was drawn in.
 
-import { memo, useRef, useState, type ReactNode } from "react";
+import { memo, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 /**
  * A slot a handler (or a render, for the latest box) writes and reads, held in a closure rather
@@ -191,4 +191,125 @@ export function choiceMapSignature(map: ReadonlyMap<string, unknown>): unknown {
   } catch {
     return map;
   }
+}
+
+/**
+ * STEADY HANDLERS FOR WHAT THE SHEET BUILDS BELOW ITS EARLY RETURNS (lane RENDER-3). `put` the
+ * handlers on every render that reaches them; `steady` never changes identity, nor does any
+ * function read from it, and calling one runs the handler of the LATEST render — the same contract
+ * as `useSteadyHandlers`, for handlers a hook call above the returns cannot see. Event handlers
+ * only: never a function the render itself calls for a value it draws.
+ */
+export function useSteadyLate<T extends object>(): { put: (handlers: T) => void; steady: T } {
+  const box = useLatestBox<T>();
+  const [steady] = useState(() => {
+    const made = new Map<PropertyKey, (...args: unknown[]) => unknown>();
+    return new Proxy({} as T, {
+      get: (_target, key) => {
+        let fn = made.get(key);
+        if (!fn) {
+          fn = (...args: unknown[]) =>
+            Reflect.apply((box.get() as Record<PropertyKey, (...a: unknown[]) => unknown>)[key]!, undefined, args);
+          made.set(key, fn);
+        }
+        return fn;
+      },
+    });
+  });
+  return { put: box.put, steady };
+}
+
+/**
+ * A value held while its CONTENT is the same (lane RENDER-3): a map a hook rebuilds whenever the
+ * rows move — the relation choices — keeps its identity while it says the same thing, so the
+ * toolbar and the rows it is handed to hold still. Reads and writes a ref during render on purpose
+ * (the named opt-out, like `useRowEpoch`); a signature that cannot be written out is the value
+ * itself, so it never holds a stale one.
+ */
+export function useHeldByContent<T>(value: T, signature: (value: T) => unknown): T {
+  "use no memo";
+  const held = useRef<{ sig: unknown; value: T } | null>(null);
+  const sig = signature(value);
+  if (held.current !== null && Object.is(held.current.sig, sig)) return held.current.value;
+  held.current = { sig, value };
+  return value;
+}
+
+/**
+ * A PART OF THE SHEET DRAWN FROM ITS LATEST RENDER, AGAIN ONLY WHEN ONE OF ITS FACTS CHANGED — the
+ * column-header row (lane RENDER-3), the same boundary as `SheetBodyRow`. `facts` lists every value
+ * the part shows; its handlers act through steady functions, so a kept part never acts on the render
+ * it was drawn in.
+ */
+export const SheetChromePart = memo(
+  function SheetChromePart({ render }: { facts: readonly unknown[]; render: () => ReactNode }) {
+    // "use no memo" — compiled, this would cache `render()` on [render]; the facts decide instead.
+    "use no memo";
+    return <>{render()}</>;
+  },
+  (a, b) => a.facts.length === b.facts.length && a.facts.every((fact, i) => Object.is(fact, b.facts[i])),
+);
+
+// ── The Sheet's Undo / Redo pair, as a source of its own (lane RENDER-3) ──────────────────────
+
+/** What the Undo / Redo pair shows. */
+export interface SheetUndoFace {
+  canUndo: boolean;
+  canRedo: boolean;
+  busy: boolean;
+  depth: number;
+}
+
+/** A stable source for the pair: it alone redraws when its counts move (an edit adds a step). */
+export interface SheetUndoSource {
+  face: () => SheetUndoFace;
+  subscribe: (listener: () => void) => () => void;
+  undo: () => void;
+  redo: () => void;
+}
+
+interface UndoLike {
+  canUndo: boolean;
+  canRedo: boolean;
+  busy: boolean;
+  undoDepth: number;
+  undo: () => unknown;
+  redo: () => unknown;
+}
+
+/**
+ * The Sheet's cell undo as ONE source that never changes identity. Handing the toolbar the undo
+ * object itself — a new one on every accepted cell — redrew the whole toolbar on every edit.
+ */
+export function useSheetUndoSource(undo: UndoLike): SheetUndoSource {
+  const [store] = useState(() => {
+    let face: SheetUndoFace = { canUndo: undo.canUndo, canRedo: undo.canRedo, busy: undo.busy, depth: undo.undoDepth };
+    let latest = undo;
+    const listeners = new Set<() => void>();
+    return {
+      face: () => face,
+      subscribe: (listener: () => void) => {
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+      undo: () => void latest.undo(),
+      redo: () => void latest.redo(),
+      keep: (next: UndoLike) => {
+        latest = next;
+      },
+      publish: (next: SheetUndoFace) => {
+        if (next.canUndo === face.canUndo && next.canRedo === face.canRedo && next.busy === face.busy && next.depth === face.depth) return;
+        face = next;
+        for (const listener of listeners) listener();
+      },
+    };
+  });
+  const { canUndo, canRedo, busy, undoDepth } = undo;
+  useLayoutEffect(() => {
+    store.keep(undo);
+    store.publish({ canUndo, canRedo, busy, depth: undoDepth });
+  });
+  return store;
 }
