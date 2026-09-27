@@ -405,6 +405,7 @@ function InstancesTab({
             </div>
           ))}
           {allInstances.length === 0 && (
+            // read-gate-exempt: debug inspector of the in-memory redux instance state; it shows what the store holds, not a read's answer
             <div className="p-4 text-xs text-muted-foreground">
               No instances
             </div>
@@ -643,6 +644,7 @@ function HistoryTab({ conversationId }: { conversationId: string | null }) {
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-muted-foreground gap-1">
             <MessageSquare className="h-6 w-6 opacity-20" />
+            {/* read-gate-exempt: debug inspector of the in-memory redux conversation state; it shows what the store holds, not a read's answer */}
             <span className="text-xs">No messages yet</span>
           </div>
         ) : (
@@ -1124,6 +1126,7 @@ function AgentDebugWindowInner({
       ) : (
         <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
           <Cpu className="h-10 w-10 opacity-15" />
+          {/* read-gate-exempt: selection prompt in the debug inspector; nothing is being read here */}
           <p className="text-sm font-medium text-foreground">
             No agent selected
           </p>

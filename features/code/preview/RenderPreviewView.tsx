@@ -50,6 +50,7 @@ export const RenderPreviewView: React.FC<RenderPreviewViewProps> = ({
 
   if (!sourceTab) {
     return (
+      // read-gate-exempt: the source tab is closed (local editor state); nothing is being read
       <PreviewEmpty
         icon={<AlertTriangle size={36} strokeWidth={1.2} />}
         title="Source file is closed"
@@ -61,6 +62,7 @@ export const RenderPreviewView: React.FC<RenderPreviewViewProps> = ({
   const Previewer = getRenderPreviewerForTabId(sourceTab.id);
   if (!Previewer) {
     return (
+      // read-gate-exempt: no previewer is registered for this file type (static registry); nothing is being read
       <PreviewEmpty
         icon={<AlertTriangle size={36} strokeWidth={1.2} />}
         title="No preview available for this file type"
@@ -73,6 +75,7 @@ export const RenderPreviewView: React.FC<RenderPreviewViewProps> = ({
   const parsed = adapter?.parseTabId(sourceTab.id) ?? null;
   if (!parsed) {
     return (
+      // read-gate-exempt: this IS the failure view: the tab id could not be parsed to a source row (local parse, not a read)
       <PreviewEmpty
         icon={<AlertTriangle size={36} strokeWidth={1.2} />}
         failed

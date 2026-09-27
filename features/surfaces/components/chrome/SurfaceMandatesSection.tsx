@@ -303,6 +303,7 @@ export function SurfaceMandatesSection({
                       {item.label}
                     </span>
                     <span className="block truncate text-[9px] text-muted-foreground">
+                      {/* read-gate-exempt: describes one listed item's requirement list, not an empty list */}
                       {item.requirements.length > 0
                         ? item.requirements.join(" · ")
                         : "no page values required"}

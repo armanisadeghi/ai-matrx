@@ -57,6 +57,7 @@ import { MandateStatusControl } from "@/features/mandates/status/MandateStatusCo
 import { mandateStatusOfRow } from "@/features/mandates/status/mandate-status";
 import { seatCanManageMandate } from "@/features/mandates/status/can-manage";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 export interface MandateWindowNextProps {
   isOpen?: boolean;
@@ -253,6 +254,14 @@ function MandateWindowNextInner({
         </div>
       </div>
       <div className="flex-1 min-h-0 space-y-px overflow-y-auto p-1">
+        {loadFailed && rows ? (
+          <StaleDataNotice
+            hasData
+            what="the mandate list"
+            onRetry={() => setReloads((n) => n + 1)}
+            className="mb-1"
+          />
+        ) : null}
         {visible.map((row) => {
           const feature = featureLabelOf(row.mandate_key, null);
           const bucket = scopeOf(row, userId);
@@ -290,7 +299,7 @@ function MandateWindowNextInner({
             </button>
           );
         })}
-        {rows && visible.length === 0 ? (
+        {rows && !loadFailed && visible.length === 0 ? (
           <p className="px-2 py-3 text-[11px] text-muted-foreground">
             No mandate matches.
           </p>

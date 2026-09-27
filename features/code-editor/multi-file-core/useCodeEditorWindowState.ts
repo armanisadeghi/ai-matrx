@@ -73,10 +73,33 @@ export function useCodeEditorWindowState({
   const isPersisted = Array.isArray(fileIds) && fileIds.length > 0;
 
   // ── Load persisted files on mount ─────────────────────────────────────────
+  // RC-B12 r12: the load's failure is kept and exposed (`filesLoadError`,
+  // `retryFilesLoad`) so the window says it instead of "no files loaded".
+  const [filesLoadError, setFilesLoadError] = useState<string | null>(null);
+  const [filesLoadAttempt, setFilesLoadAttempt] = useState(0);
+  const retryFilesLoad = useCallback(() => setFilesLoadAttempt((n) => n + 1), []);
   useEffect(() => {
     if (!isPersisted || !fileIds) return;
-    void dispatch(loadCodeFilesFull({ ids: fileIds }));
-  }, [dispatch, fileIds, isPersisted]);
+    let cancelled = false;
+    dispatch(loadCodeFilesFull({ ids: fileIds, force: filesLoadAttempt > 0 }))
+      .unwrap()
+      .then(() => {
+        if (!cancelled) setFilesLoadError(null);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setFilesLoadError(
+          err instanceof Error
+            ? err.message
+            : typeof err === "object" && err !== null && "message" in err
+              ? String((err as { message: unknown }).message)
+              : "The files could not be read.",
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, fileIds, isPersisted, filesLoadAttempt]);
 
   // ── Persisted-mode files (from Redux) ─────────────────────────────────────
   const filesMap = useAppSelector(selectCodeFilesMap);
@@ -221,6 +244,9 @@ export function useCodeEditorWindowState({
     files,
     setFiles,
     currentFile,
+    /** Persisted mode: why the files could not be read, or null. */
+    filesLoadError,
+    retryFilesLoad,
 
     // Tab state
     openTabs,

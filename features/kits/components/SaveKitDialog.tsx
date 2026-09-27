@@ -336,6 +336,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
                 </p>
               )}
               {detectError && <ErrorNotice title="The setup could not be read." error={detectError} onRetry={() => setAttempt((n) => n + 1)} />}
+              {/* read-gate-exempt: `detected` is set only by a SUCCESSFUL setup read (cleared when a read starts); its failure renders ErrorNotice on the line above */}
               {detected && detected.bindings.length === 0 && (
                 <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-foreground">
                   <p>{detected.agent.name} has no variable connected to a table yet, so there is nothing to share as a {KIT_WORD.oneLower}.</p>
@@ -473,6 +474,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
             </div>
           ) : step === "workflows" && detected ? (
             <div className="space-y-2">
+              {/* read-gate-exempt: this step renders only once `detected` exists, which only a SUCCESSFUL setup read sets; a failed read never reaches it */}
               {detected.workflows.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No workflow in {orgName} uses this agent or its tables, so the {KIT_WORD.oneLower} carries none.</p>
               ) : (

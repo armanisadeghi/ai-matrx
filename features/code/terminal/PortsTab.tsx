@@ -118,6 +118,7 @@ export const PortsTab: React.FC<PortsTabProps> = ({ className }) => {
       >
         <div className="flex flex-col items-center gap-2 text-center">
           <Network size={28} strokeWidth={1.2} />
+          {/* read-gate-exempt: says no sandbox is SELECTED (client state); the ports read below runs only once one is */}
           <p className="text-xs">No sandbox connected.</p>
         </div>
       </div>

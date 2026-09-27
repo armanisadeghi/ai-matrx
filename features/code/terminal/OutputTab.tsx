@@ -23,6 +23,7 @@ export const OutputTab: React.FC<OutputTabProps> = ({ className }) => {
       )}
     >
       {outputLines.length === 0 ? (
+        // read-gate-exempt: terminal lines are this session's in-memory output buffer; no read feeds this view
         <div className="text-muted-foreground">
           No task output yet. Commands run by workspace tools appear here.
         </div>

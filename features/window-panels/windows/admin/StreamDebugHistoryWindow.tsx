@@ -252,6 +252,7 @@ function StreamDebugSidebar({
       {sortedIds.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-2 text-muted-foreground px-3 text-center">
           <Radio className="h-6 w-6 opacity-20" />
+          {/* read-gate-exempt: stream debug data is captured in memory from this tab's own agent streams; no read feeds it */}
           <span className="text-xs">No stream data yet</span>
           <span className="text-[11px] opacity-60">
             Run an agent to see stream debug data here
@@ -378,6 +379,7 @@ function StreamDebugHistoryWindowInner({
         <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
           <Activity className="h-10 w-10 opacity-15" />
           <div className="space-y-1 text-center">
+            {/* read-gate-exempt: selection prompt; the sidebar lists in-memory stream captures, no read feeds it */}
             <p className="text-sm font-medium text-foreground">
               No conversation selected
             </p>

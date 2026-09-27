@@ -312,7 +312,10 @@ export function AgentVersionPicker({
           <div className="text-base font-semibold text-foreground truncate mt-0.5">
             {agent?.name ?? (
               <span className="italic text-muted-foreground">
-                No agent selected
+                {agentId
+                  ? "This agent's details are not loaded here"
+                  : // read-gate-exempt: shown only when no agent id was passed in (a selection state); a passed id whose row is not in the store says so above
+                    "No agent selected"}
               </span>
             )}
           </div>

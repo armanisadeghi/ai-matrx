@@ -138,6 +138,7 @@ export function FlashcardItemWindow({
             backImage={backImage}
           />
         ) : (
+          // read-gate-exempt: the card arrives as window props (front/back); no read feeds this view
           <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
             No flashcard to display.
           </div>

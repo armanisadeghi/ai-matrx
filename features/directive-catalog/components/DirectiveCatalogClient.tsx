@@ -104,6 +104,7 @@ export function DirectiveCatalogClient() {
             {baseUrl ? (
               <span className="hidden font-mono xl:inline">{baseUrl}</span>
             ) : (
+              // read-gate-exempt: server-config label (the active server has no base URL configured); not a read's answer
               <span className="hidden text-amber-600 dark:text-amber-400 sm:inline">
                 no base URL
               </span>

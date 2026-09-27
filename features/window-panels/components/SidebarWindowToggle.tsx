@@ -428,6 +428,7 @@ export default function SidebarWindowToggle() {
                     </div>
                   </>
                 ) : (
+                  // read-gate-exempt: open windows are the window manager's in-memory redux state; no read can fail here
                   <p className="px-3 py-2 text-xs text-muted-foreground/50 italic">
                     No windows open
                   </p>

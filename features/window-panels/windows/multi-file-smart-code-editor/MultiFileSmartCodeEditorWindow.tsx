@@ -514,6 +514,7 @@ export function MultiFileSmartCodeEditorWindow({
               />
             </div>
           ) : (
+            // read-gate-exempt: this window edits in-memory files handed over in its open payload; no read feeds this view
             <EmptyState files={files} onOpenFile={handleOpenFile} />
           )}
         </div>

@@ -469,6 +469,7 @@ export const TabDiffView: React.FC<TabDiffViewProps> = ({ tab }) => {
             onClick={goPrev}
             disabled={!prevTabId}
             title={
+              // read-gate-exempt: button tooltip over the local pending-patch tabs; not a read's answer
               prevTabId
                 ? "Previous file with pending changes"
                 : "No previous file"
@@ -487,6 +488,7 @@ export const TabDiffView: React.FC<TabDiffViewProps> = ({ tab }) => {
             onClick={goNext}
             disabled={!nextTabId}
             title={
+              // read-gate-exempt: button tooltip over the local pending-patch tabs; not a read's answer
               nextTabId ? "Next file with pending changes" : "No next file"
             }
             className={cn(

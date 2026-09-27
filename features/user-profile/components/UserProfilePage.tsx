@@ -878,6 +878,7 @@ function AccountInfoSection() {
                 );
               })
             ) : (
+              // read-gate-exempt: providers come from the signed-in user's auth record already in the store; not a list read
               <span className="text-xs text-muted-foreground">
                 No linked providers.
               </span>

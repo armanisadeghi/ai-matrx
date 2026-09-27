@@ -207,6 +207,7 @@ export function FlashcardsBlockWindow({
                 compact
               />
               {set.flashcards.length === 0 && (
+                // read-gate-exempt: cards are parsed from the message content handed to this window (useFlashcardsSet derives, never fetches)
                 <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
                   No flashcards available yet...
                 </div>
@@ -214,6 +215,7 @@ export function FlashcardsBlockWindow({
             </div>
           </NonEditableContextMenu>
         ) : (
+          // read-gate-exempt: cards are parsed from the message content handed to this window (useFlashcardsSet derives, never fetches)
           <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
             No flashcard content to display.
           </div>

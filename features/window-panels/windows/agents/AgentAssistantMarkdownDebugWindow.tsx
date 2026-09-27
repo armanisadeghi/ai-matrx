@@ -89,6 +89,7 @@ export default function AgentAssistantMarkdownDebugWindow({
               </SelectContent>
             </Select>
           ) : (
+            // read-gate-exempt: in-memory debug sink of assistant edits in this tab; no read feeds it
             <span className="text-xs text-muted-foreground">
               No draft yet — edit a table, code block, etc. in an assistant
               message (debug sink mode).

@@ -119,6 +119,7 @@ export function BindingColumn({ agent }: { agent: AgentDefinition }) {
 
   if (!surfaceName) {
     return (
+      // read-gate-exempt: selection prompt (no surface chosen yet); the bindings read has not been asked a question
       <EmptyState
         title="Pick a surface"
         body="Choose a surface from the left column to view its bindings or create a new one."

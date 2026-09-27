@@ -28,6 +28,7 @@ import type { ResolvedSurfaceValue } from "@/features/surfaces/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export interface SurfaceContextWindowProps {
   isOpen: boolean;
@@ -478,6 +479,7 @@ export default function SurfaceContextWindow({
                 })}
               </div>
             ))}
+            {/* read-gate-exempt: search result over the declared + live rows in this sidebar; a failed live read is announced by the ErrorAlchemyMenu notice this window pins at its bottom */}
             {filteredItems.length === 0 && (
               <p className="px-3 py-6 text-center text-xs text-muted-foreground">
                 No matching values.
@@ -701,6 +703,12 @@ export default function SurfaceContextWindow({
                 {selectedDisplay}
               </pre>
               </>
+            ) : live.status === "error" ? (
+              <ReadFailure
+                error={live.error ?? true}
+                what="this page's live values"
+                className="m-0"
+              />
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
                 <Braces className="h-10 w-10 text-muted-foreground/20" />
@@ -716,6 +724,11 @@ export default function SurfaceContextWindow({
             )}
           </div>
         </div>
+      ) : live.status === "error" ? (
+        <ReadFailure
+          error={live.error ?? true}
+          what="this page's live values"
+        />
       ) : (
         <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
           <Braces className="h-12 w-12 text-primary/15" />

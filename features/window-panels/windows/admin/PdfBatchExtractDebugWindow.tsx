@@ -424,6 +424,7 @@ function PdfBatchExtractDebugWindowInner({
           <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
             <Activity className="h-10 w-10 opacity-15" />
             <div className="space-y-1 text-center">
+              {/* read-gate-exempt: selection prompt over debug sessions captured in memory from this tab; no read feeds it */}
               <p className="text-sm font-medium text-foreground">
                 No session selected
               </p>

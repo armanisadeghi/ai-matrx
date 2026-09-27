@@ -29,6 +29,7 @@
  */
 
 import React, { useCallback } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   Pencil,
   Eye,
@@ -118,6 +119,8 @@ export function CodeEditorWindow({
     isDirty,
     isSaving,
     saveError,
+    filesLoadError,
+    retryFilesLoad,
   } = useCodeEditorWindowState({
     initialFiles,
     fileIds,
@@ -273,6 +276,12 @@ export function CodeEditorWindow({
                 showMinimapToggle={false}
               />
             </div>
+          ) : filesLoadError && files.length === 0 ? (
+            <ReadFailure
+              error={filesLoadError}
+              what="these code files"
+              onRetry={retryFilesLoad}
+            />
           ) : (
             <EmptyState files={files} onOpenFile={openFile} />
           )}

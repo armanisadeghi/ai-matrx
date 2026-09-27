@@ -238,6 +238,7 @@ export function BindingSuggestionsTab({
 
   if (unavailable) {
     return (
+      // read-gate-exempt: this IS the mandate read's failure view (unavailable = mandateError !== null); 'nothing here is blocked' says manual mapping still works
       <p className="rounded-md border border-dashed border-border px-3 py-4 text-xs text-muted-foreground">
         The AI mapping helper is not available right now
         {asClause(mandateError ? ` (${mandateError})` : "")}. Map values manually

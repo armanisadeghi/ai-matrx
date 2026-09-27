@@ -275,6 +275,7 @@ function MemorySidebar({
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground p-3">
         <AlertCircle className="h-6 w-6 opacity-20" />
+        {/* read-gate-exempt: debug view over memory events streamed into redux this session; it shows what the store holds, not a read's answer */}
         <span className="text-xs text-center">
           No conversations with memory yet.
         </span>

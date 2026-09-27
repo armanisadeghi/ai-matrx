@@ -533,6 +533,7 @@ export function GoogleTasksImportPanel({
                           importedAt: task.imported_at,
                           source: "Google Tasks",
                         })}.`
+                      // read-gate-exempt: provenance sentence for a task row that was already read, not an empty view
                       : "The import date was never recorded, so nothing here can say when."}
                   </p>
                 ) : null}

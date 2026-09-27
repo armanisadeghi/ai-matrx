@@ -163,6 +163,7 @@ export function FastFireScoreboard({
         {/* Per-card review list */}
         <div className="space-y-2">
           {rows.length === 0 && (
+            // read-gate-exempt: filter over this finished session's in-memory review rows; no read feeds this view
             <div className="rounded-lg border border-dashed border-border bg-card px-3 py-8 text-center text-xs text-muted-foreground">
               No cards match this filter.
             </div>

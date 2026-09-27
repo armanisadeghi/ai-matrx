@@ -242,6 +242,7 @@ function PlaybackSurface() {
     !currentPlayback && pending.length === 0 && playbackHistory.length === 0;
 
   if (isEmpty) {
+    // read-gate-exempt: audio sessions are the in-browser audio registry mirrored into redux; no network read feeds this view
     return <EmptyState icon={<AudioLines />} text="No audio playing" />;
   }
 
@@ -490,6 +491,7 @@ function RecordingSurface() {
   const hasActive = isGlobalRecording || !!currentRecording;
   const isEmpty = !hasActive && recordingHistory.length === 0;
   if (isEmpty) {
+    // read-gate-exempt: recordings are the in-browser audio registry mirrored into redux; no network read feeds this view
     return <EmptyState icon={<Mic />} text="Not recording" />;
   }
 

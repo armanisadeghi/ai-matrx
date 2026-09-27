@@ -323,6 +323,7 @@ function WatchedStep({
 
       {aggregate.invocations.length === 0 ? (
         <p className="text-xs text-muted-foreground">
+          {/* read-gate-exempt: per-step view over the live run stream in redux; a failed run is shown by the run's own status, not a list read */}
           {aggregate.phase === "idle" || aggregate.phase === "waiting"
             ? "Up ahead — this starts once the steps before it finish."
             : "Nothing to show for this step."}
