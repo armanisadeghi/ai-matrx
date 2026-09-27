@@ -1065,6 +1065,19 @@ module in the folder + the two deleted filenames).
 
 ## Change log
 
+- page-pass 2026-09-27 (/crm/[partyId]): type single-record, posture ui-sharp
+  after HubSpot's contact record. Fixed: tab title now leads with the record's
+  name (generateMetadata); platform identities (YouTube channel ids etc.) show
+  their case-preserved value, platform name and profile link via the one
+  `mediumDisplay` reader (card, copy, dossier, agent scope) instead of the
+  lowercased dedupe key; Delete no longer CSS-hidden on phones (folds into the
+  header overflow, Send email stays primary); record root carries
+  `matrx-touch-targets`, the do-not-contact row is a `matrx-tap-area` label;
+  hover-revealed row controls stay visible on touch (`pointer-fine:` hide);
+  11px text raised to 12px across the record cards; provenance card drops its
+  "0" count and redundant "no opportunity" line. Server half (aidream
+  b9874138b6): the party contact-candidate / beat GETs are resource reads, so
+  Contact details loads with no organization selected.
 - 2026-09-22 — Imported Gmail reply deletion now uses one atomic, idempotent
   database door keyed only by the internal interaction UUID. The door derives
   raw provider ids server-side, applies canonical interaction and organization

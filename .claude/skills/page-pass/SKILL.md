@@ -36,7 +36,9 @@ procedure — open it only when you are doing that job or the check fails.
    `blocked` (what blocks).
 4. **Fix what you found** — the cause, not the symptom. Never remove, rename or
    hide a feature to make a rule pass. If the fix belongs in a shared component
-   or package, fix it there.
+   or package, fix it there. If it belongs on the server (a read wrongly gated,
+   a 4xx/5xx the page can't fix), fix it in `../aidream` under that repo's
+   CLAUDE.md, same commit rules, and name both commits in your report.
 5. **Prove it live.** Every fix seen working on the real page; every main
    action carried through to its real saved result, then re-checked (console
    and Error Inspector clean after, not just on load).
@@ -65,6 +67,9 @@ session, never you.
   repo root — `{"extends":"./tsconfig.json","compilerOptions":{"noEmit":true,"incremental":false},"include":["global.d.ts","cartesia.d.ts","types/typecheck-env.d.ts", <your files>]}`
   — run `node --max-old-space-size=11000 node_modules/typescript/bin/tsc6 -p <it>`,
   delete it. Errors in files you didn't touch are not yours; list them.
+- **Commit right after each coherent edit** — a sync sweeps the shared
+  checkout every ~30 minutes and commits any dirty file under its own message,
+  so a file left uncommitted loses your authorship and message.
 - Commit by path per page: `git add <files>` → `git commit --only -m "page-pass(<route>): …" -- <files>` → push.
   One shared checkout on `main`: no branches, no worktrees, no tree-wide git,
   never format a file you didn't create, never run `release.sh`. After a
