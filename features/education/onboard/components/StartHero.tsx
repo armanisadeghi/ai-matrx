@@ -21,7 +21,7 @@ import {
   ShieldCheck,
   FolderOpen,
   BookOpenCheck,
-  ExternalLink,
+  Eye,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
@@ -696,7 +696,7 @@ function StoredFilePanel({
         title="Open this file"
       >
         <span className="truncate">{stored.fileName}</span>
-        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <Eye className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       </button>
       {isSource === true ? (
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
