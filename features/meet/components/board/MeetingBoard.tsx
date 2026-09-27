@@ -70,7 +70,7 @@ import {
 } from "@/lib/organization/organization-gate";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { type Rect, screenToWorld } from "@/features/spatial/engine/camera";
-import { useSelectedTile } from "@/features/spatial/engine/react";
+import { useEditingTile } from "@/features/spatial/engine/react";
 import type { SpatialStore } from "@/features/spatial/engine/spatial-store";
 import { DEFAULT_THROW_ACTIONS, type ThrowDirection } from "@/features/spatial/engine/throw";
 import { useBoard } from "@/features/spatial/board/useBoard";
@@ -674,7 +674,7 @@ function ReplayTile({ spec, onMove, onThrow }: TileProps) {
 const DONE = { kind: "static", value: { status: "complete", progress: null } } as const;
 
 function StaticTile({ spec, meetingId, onMove, onThrow }: TileProps) {
-  const selected = useSelectedTile() === spec.id;
+  const interacting = useEditingTile() === spec.id;
   const c = spec.content;
   return (
     <SpatialTile
@@ -688,7 +688,7 @@ function StaticTile({ spec, meetingId, onMove, onThrow }: TileProps) {
       onThrow={onThrow}
     >
       {(tier) => {
-        if (c.type === "html") return <HtmlTileBody src={c.src} title={spec.title} tier={tier} active={selected} />;
+        if (c.type === "html") return <HtmlTileBody src={c.src} title={spec.title} tier={tier} active={interacting} />;
         if (c.type === "image") return <ImageTileBody src={c.src} alt={spec.title} />;
         return <ScratchBody meetingId={meetingId} id={spec.id} />;
       }}

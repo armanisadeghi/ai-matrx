@@ -8,8 +8,8 @@
  * page runs, but in an opaque origin with no access to the app, its cookies
  * or its storage). It is laid out at a fixed design width and scaled to the
  * tile, so the page renders exactly as authored at any tile size. It is inert
- * (pointer-events off) until its tile is selected — the Claude Design "PLAY"
- * pattern — so dragging across the board never gets swallowed by a page.
+ * (pointer-events off) until its tile is INTERACTING (double-click) — the
+ * Claude Design "PLAY" pattern — so dragging across the board never gets swallowed by a page.
  * Off-screen the iframe unloads after a grace period; it reloads on return.
  *
  * Video — pauses whenever it is culled or reduced to an overview card.
@@ -34,7 +34,7 @@ export function HtmlTileBody({
   srcDoc?: string;
   title: string;
   tier: PaceTier;
-  /** The tile is selected: the page receives pointer input. */
+  /** The tile is interacting: the page receives pointer input. */
   active: boolean;
 }) {
   const boxRef = useRef<HTMLDivElement>(null);
@@ -83,7 +83,7 @@ export function HtmlTileBody({
       {!active && tier === "read" && (
         <div className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-foreground/80 px-2.5 py-1 text-[11px] font-medium text-background">
           <MousePointerClick className="h-3 w-3" />
-          Click to interact
+          Double-click to interact
         </div>
       )}
     </div>

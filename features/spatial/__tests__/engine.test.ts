@@ -293,3 +293,30 @@ describe("saved board document", () => {
     expect(out.edges[0]).toEqual({ id: "e", fromNode: "t", toNode: "h" });
   });
 });
+
+describe("tile interaction states", () => {
+  const raf = globalThis.requestAnimationFrame;
+  beforeAll(() => {
+    globalThis.requestAnimationFrame = (() => 0) as typeof requestAnimationFrame;
+  });
+  afterAll(() => {
+    globalThis.requestAnimationFrame = raf;
+  });
+
+  it("interacting implies selected; selecting elsewhere or nothing ends it", async () => {
+    const { SpatialStore } = await import("../engine/spatial-store");
+    const store = new SpatialStore({ x: 0, y: 0, z: 1 });
+    store.registerItem("a", { x: 0, y: 0, w: 10, h: 10 });
+    store.registerItem("b", { x: 20, y: 0, w: 10, h: 10 });
+    store.setEditing("a");
+    expect(store.getSelected()).toBe("a");
+    expect(store.getEditing()).toBe("a");
+    store.select("a"); // re-selecting the same tile keeps it interacting
+    expect(store.getEditing()).toBe("a");
+    store.select("b");
+    expect(store.getEditing()).toBeNull();
+    store.setEditing("b");
+    store.select(null);
+    expect(store.getEditing()).toBeNull();
+  });
+});
