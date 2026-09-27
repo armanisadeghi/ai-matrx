@@ -245,6 +245,7 @@ export function WorkflowListDropdown({
       </span>
       {core.activeFilterCount > 0 && (
         <span className="flex h-4 w-4 items-center justify-center rounded-md bg-primary text-[10px] text-primary-foreground">
+          {/* read-gate-exempt: count of filters chosen in this local UI, not a read */}
           {core.activeFilterCount}
         </span>
       )}
@@ -273,6 +274,7 @@ export function WorkflowListDropdown({
   const listPanel = (
     <WorkflowListContent
       workflows={core.workflows}
+      // read-gate-exempt: WorkflowListContent is handed readError below and renders this total through UntrustedCount
       total={core.total}
       isLoading={core.isLoading}
       readError={core.readError}

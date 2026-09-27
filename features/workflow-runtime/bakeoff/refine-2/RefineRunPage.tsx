@@ -389,6 +389,7 @@ function PromiseStrip({
           </span>
         ) : null}
         <span className="text-xs tabular-nums text-muted-foreground">
+          {/* read-gate-exempt: plan summary from the definition prop and the live run stream, not a list read */}
           {summary.done} of {summary.total} steps done
         </span>
       </div>

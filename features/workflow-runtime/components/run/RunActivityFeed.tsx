@@ -124,6 +124,7 @@ export function RunActivityFeed({
           Live activity
         </span>
         <span className="text-xs tabular-nums text-muted-foreground/80">
+          {/* read-gate-exempt: lines of the live run activity stream in redux, not a list read */}
           {count}
         </span>
         <ChevronDown

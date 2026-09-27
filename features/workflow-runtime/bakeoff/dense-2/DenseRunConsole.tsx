@@ -304,6 +304,7 @@ function Desk({
             className="text-xs tabular-nums text-foreground"
           />
           <span className="text-xs tabular-nums text-muted-foreground">
+            {/* read-gate-exempt: steps come from the loaded definition prop and progress from the live run stream, not a list read */}
             {doneCount}/{rows.length} steps
           </span>
           {cost > 0 ? (

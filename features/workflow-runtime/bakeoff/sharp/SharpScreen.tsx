@@ -283,6 +283,7 @@ function WatchedStep({
           {PHASE_LABEL[aggregate.phase] ?? aggregate.phase}
           {fanOut && aggregate.expectedCount > 0 ? (
             <span className="tabular-nums">
+              {/* read-gate-exempt: fan-out progress over the live run stream in redux, shown only when expected is above 0 */}
               {aggregate.settledCount}/{aggregate.expectedCount}
             </span>
           ) : null}

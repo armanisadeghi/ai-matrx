@@ -106,6 +106,7 @@ function NodeRow({ runId, nodeId }: { runId: string; nodeId: string }) {
           <span className="truncate text-xs text-muted-foreground">{specType}</span>
         ) : null}
         <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+          {/* read-gate-exempt: progress and cost over the live run stream in redux, not a list read */}
           {invocations.length > 1 || expectedCount > 1
             ? `${invocations.filter((i) => i.phase === "settled").length}/${Math.max(expectedCount, invocations.length)} · `
             : ""}
@@ -162,6 +163,7 @@ export function WorkflowRunBoard({
         <span className="text-sm font-medium">{PHASE_LABEL[status ?? ""] ?? status ?? "…"}</span>
         {costTotal > 0 ? (
           <span className="text-xs text-muted-foreground">
+            {/* read-gate-exempt: progress and cost over the live run stream in redux, not a list read */}
             ${costTotal.toFixed(4)}
           </span>
         ) : null}

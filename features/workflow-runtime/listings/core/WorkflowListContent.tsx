@@ -1,5 +1,6 @@
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useEffect, useRef } from "react";
 import { CircleAlert, Loader2 } from "lucide-react";
 
@@ -199,7 +200,8 @@ export function WorkflowListContent({
       <div className="h-px shrink-0 bg-border" />
       <div className="flex shrink-0 items-center justify-between px-2.5 py-1.5">
         <span className="text-[10px] tabular-nums text-muted-foreground">
-          {total} workflow{total !== 1 ? "s" : ""}
+          <UntrustedCount value={total} trustworthy={!readError} label="Workflows" /> workflow
+          {total !== 1 ? "s" : ""}
         </span>
         {controls.searchTerm && (
           <button

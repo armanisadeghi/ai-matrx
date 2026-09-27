@@ -259,6 +259,7 @@ export function RefineRunPage({ definitionId }: { definitionId: string }) {
           <div className="flex items-center gap-2 pr-2">
             {costTotal > 0 ? (
               <span className="hidden text-[11px] tabular-nums text-muted-foreground sm:inline">
+                {/* read-gate-exempt: run cost streamed into redux, shown only when above 0, not a list read */}
                 ${costTotal.toFixed(2)}
               </span>
             ) : null}

@@ -146,6 +146,7 @@ export function IntakePanel({
         </button>
         {/* Reserved line — appears without moving the button row. */}
         <span className="min-h-4 text-[11px] text-muted-foreground">
+          {/* read-gate-exempt: names of required inputs still unfilled in this local form, not a read */}
           {missing.length > 0 && (triedToStart || starting)
             ? `Still needed: ${missing.join(", ")}`
             : missing.length > 0

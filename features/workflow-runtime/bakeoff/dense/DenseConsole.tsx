@@ -137,6 +137,7 @@ export function DenseConsole({
           className="text-xs font-medium tabular-nums text-foreground"
         />
         <span className="text-xs tabular-nums text-muted-foreground">
+          {/* read-gate-exempt: progress over the live run stream in redux; a failed run shows as the run status, not a list read */}
           {doneCount}/{steps.length} steps
         </span>
         {cost > 0 ? (

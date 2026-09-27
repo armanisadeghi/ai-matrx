@@ -295,6 +295,7 @@ function NodeReadout({
       <div ref={hostRef} className="space-y-1">
         {invocations.length > 1 ? (
           <p className="text-[11px] text-muted-foreground">
+            {/* read-gate-exempt: invocations of the live run stream in redux, shown only when more than one exists */}
             {invocations.length} of {invocations.length} — showing the latest
           </p>
         ) : null}
