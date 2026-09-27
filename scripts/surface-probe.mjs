@@ -140,6 +140,16 @@ if (opts.commit) {
   }
 }
 
+// ── credentials: the environment, else this checkout's .env.local / .env (never printed)
+for (const file of [".env.local", ".env"]) {
+  if (process.env.AI_ADMIN_USERNAME && process.env.AI_ADMIN_PASSWORD) break;
+  if (!existsSync(file)) continue;
+  for (const line of readFileSync(file, "utf8").split("\n")) {
+    const m = line.match(/^\s*(AI_ADMIN_USERNAME|AI_ADMIN_PASSWORD)\s*=\s*"?([^"\n]*)"?\s*$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
+  }
+}
+
 // ── browser setup ─────────────────────────────────────────────────────────
 let chromium;
 try {

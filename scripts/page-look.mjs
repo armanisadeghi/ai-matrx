@@ -28,7 +28,8 @@
  * --signed-out looks as a visitor (fresh profile, no sign-in) — promotional
  * pages and shared links. --full adds a full-page screenshot per view
  * (`*-full.png`) so everything below the fold is seen too.
- * --click 'SELECTOR=>TEXT' (repeatable): on the desktop-light and phone-light
+ * --click '[right:]SELECTOR=>TEXT' (repeatable; `right:` right-clicks, e.g.
+ * 'right:tr=>My deck' opens a row's context menu): on the desktop-light and phone-light
  * views, after the screenshot, click the first SELECTOR whose text or
  * aria-label starts with TEXT (TEXT optional), then screenshot the result
  * (`*-click-N.png`) and record new console errors — open a menu, a dialog, a
@@ -287,7 +288,22 @@ try {
         let fullFile;
         if (opts.full) {
           fullFile = file.replace(/\.png$/, "-full.png");
-          await page.screenshot({ path: fullFile, fullPage: true, animations: "disabled", timeout: 30000 }).catch(() => {});
+          // Many app pages scroll inside their own container, not the window:
+          // grow the viewport to the tallest scroller's content so one shot
+          // holds everything, then restore it.
+          const tall = await page.evaluate(() => {
+            let extra = 0;
+            for (const el of document.querySelectorAll("*")) {
+              const st = getComputedStyle(el);
+              if (!/(auto|scroll)/.test(st.overflowY)) continue;
+              extra = Math.max(extra, el.scrollHeight - el.clientHeight);
+            }
+            return Math.max(document.documentElement.scrollHeight, window.innerHeight + extra);
+          });
+          await page.setViewportSize({ width: view.width, height: Math.min(8000, Math.ceil(tall)) });
+          await page.waitForTimeout(800);
+          await page.screenshot({ path: fullFile, animations: "disabled", timeout: 30000 }).catch(() => {});
+          await page.setViewportSize({ width: view.width, height: view.height });
         }
         const clickResults = [];
         if (theme === "light") {
@@ -296,20 +312,23 @@ try {
             await page.goto(`${opts.base}${route}`, { timeout: 600000 });
             await page.waitForTimeout(opts.settle);
             consoleErrors.length = 0;
-            const clicked = await page.evaluate(
+            const right = selector.startsWith("right:");
+            const sel = right ? selector.slice(6) : selector;
+            const box = await page.evaluate(
               ([sel, prefix]) => {
                 const el = [...document.querySelectorAll(sel)].find((e) => {
                   const label = (e.getAttribute("aria-label") || e.textContent || "").trim();
                   return !prefix || label.startsWith(prefix);
                 });
-                if (!el) return false;
+                if (!el) return null;
                 el.scrollIntoView({ block: "center" });
-                el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
-                el.click();
-                return true;
+                const r = el.getBoundingClientRect();
+                return { x: r.left + Math.min(r.width / 2, 40), y: r.top + r.height / 2 };
               },
-              [selector, text.trim()],
+              [sel, text.trim()],
             );
+            const clicked = Boolean(box);
+            if (box) await page.mouse.click(box.x, box.y, { button: right ? "right" : "left" });
             await page.waitForTimeout(1500);
             const clickFile = file.replace(/\.png$/, `-click-${n + 1}.png`);
             await page.screenshot({ path: clickFile, animations: "disabled", timeout: 20000 }).catch(() => {});

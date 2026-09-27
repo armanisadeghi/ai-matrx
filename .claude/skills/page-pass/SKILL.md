@@ -158,6 +158,13 @@ session, never you.
 - Every record the page names (a person, agent, document, a count over our
   records) opens — open, new tab, peek or window. Every detected problem
   carries its one-click fix.
+- **Nothing that decides what a person may do is writable by that person.**
+  When the page reads a plan, grant, quota, usage, role or approval, confirm
+  the browser cannot write it: `select has_table_privilege('authenticated',
+  '<schema.table>', 'UPDATE')` (and INSERT/DELETE) must be false. If it is
+  true, the fix is `client_read_only = true` on its `platform.entity_types`
+  row, then `iam.apply_table_grants(<schema>, <table>, <its rls_variant>)`,
+  proven by a refused write as the test user (the D355 pattern).
 - Reads and writes go straight to the database through the feature's service;
   a list treated as complete uses `readAllRows`.
 - A browser component never imports a value from server-only code (a loader
