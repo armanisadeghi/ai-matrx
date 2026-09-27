@@ -61,10 +61,14 @@ export function surfaceWriteFailureSentence(
   approvedByUser: boolean,
 ): string {
   const reason = result.error.trim().replace(/[.\s]*$/, ".");
+  // The page's own message may already end with the same assurance (the
+  // collectProblems format does); say it once.
+  const saysNothingChanged = /Nothing was changed\.$/.test(reason);
+  const nothingChanged = saysNothingChanged ? "" : "Nothing was changed. ";
   if (result.phase === "before_approval") {
     return (
       `apply_surface_write("${target}") was refused before the user was asked: ${reason} ` +
-      `Nothing was changed. Correct the value and call apply_surface_write again.`
+      `${nothingChanged}Correct the value and call apply_surface_write again.`
     );
   }
   if (approvedByUser) {
@@ -76,7 +80,7 @@ export function surfaceWriteFailureSentence(
   }
   return (
     `apply_surface_write("${target}") did not complete: ${reason} ` +
-    `Nothing was changed. Tell the user, or correct the value and call apply_surface_write again.`
+    `${nothingChanged}Tell the user, or correct the value and call apply_surface_write again.`
   );
 }
 

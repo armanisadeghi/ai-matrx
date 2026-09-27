@@ -57,6 +57,7 @@ const LIVE_CAPABILITIES = ["calendar"].map((capabilityKey) => ({
 const state = {
   refreshedThrough: [] as string[],
   events: [] as CalendarEventRow[],
+  readOverride: null as null | (() => Promise<CalendarEventRow[]>),
 };
 
 /**
@@ -80,7 +81,7 @@ const appContext = makeAppContextState({
 });
 
 jest.mock("@/features/google-workspace/calendar/service", () => ({
-  readAgendaEvents: async () => state.events,
+  readAgendaEvents: async () => state.readOverride ? state.readOverride() : state.events,
   readAttendeePeople: async () => new Map(),
   refreshCalendarWindow: async ({ connectionId }: { connectionId: string }) => {
     state.refreshedThrough.push(connectionId);
@@ -134,26 +135,37 @@ import { useAgenda, type AgendaValue } from "../useAgenda";
 
 let seen: AgendaValue | null = null;
 
-function Probe() {
-  seen = useAgenda();
+function Probe({ windowStart }: { windowStart?: Date }) {
+  const agenda = useAgenda(windowStart ? { refreshOnOpen: false, windowStart } : undefined);
+  React.useEffect(() => {
+    seen = agenda;
+  }, [agenda]);
   return null;
 }
 
-async function mount() {
+async function mount(windowStart?: Date) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
   await act(async () => {
-    root.render(<Probe />);
+    root.render(<Probe windowStart={windowStart} />);
   });
   for (let i = 0; i < 10; i += 1) {
     await act(async () => {
       await Promise.resolve();
     });
   }
-  return () => {
-    act(() => root.unmount());
-    container.remove();
+  return {
+    rerender: async (nextWindowStart: Date) => {
+      await act(async () => {
+        root.render(<Probe windowStart={nextWindowStart} />);
+        await Promise.resolve();
+      });
+    },
+    unmount: () => {
+      act(() => root.unmount());
+      container.remove();
+    },
   };
 }
 
@@ -161,6 +173,7 @@ describe("the agenda's refresh-on-open, and a detached event", () => {
   beforeEach(() => {
     state.refreshedThrough = [];
     state.events = [];
+    state.readOverride = null;
     seen = null;
   });
 
@@ -172,18 +185,39 @@ describe("the agenda's refresh-on-open, and a detached event", () => {
         synced_at: "2020-01-01T00:00:00Z",
       }),
     ];
-    const unmount = await mount();
+    const mounted = await mount();
     expect(state.refreshedThrough).toEqual([]);
     expect(seen?.groups.some((group) => group.events.some((e) => e.id === EVENT_ID))).toBe(
       true,
     );
-    unmount();
+    mounted.unmount();
   });
 
   it("still fires the window refresh when an available event in the window is stale (positive control)", async () => {
     state.events = [calendarEventRow({ sync_status: "available", synced_at: "2020-01-01T00:00:00Z" })];
-    const unmount = await mount();
+    const mounted = await mount();
     expect(state.refreshedThrough).toEqual([CALENDAR_ACCOUNT.id]);
-    unmount();
+    mounted.unmount();
+  });
+
+  it("holds the calendar in its loading state while a newly selected window is still reading", async () => {
+    state.events = [calendarEventRow({ id: "old-window-event" })];
+    const mounted = await mount();
+    let resolveRead: ((rows: CalendarEventRow[]) => void) | null = null;
+    state.readOverride = () => new Promise((resolve) => { resolveRead = resolve; });
+
+    await mounted.rerender(new Date("2026-10-01T12:00:00Z"));
+    expect(seen?.isLoading).toBe(true);
+    // The old rows may remain in memory for freshness, but callers must not
+    // render them as the answer for the new date window.
+    expect(seen?.events.map((event) => event.id)).toEqual(["old-window-event"]);
+
+    resolveRead?.([]);
+    for (let i = 0; i < 8; i += 1) {
+      await act(async () => { await Promise.resolve(); });
+    }
+    expect(seen?.isLoading).toBe(false);
+    expect(seen?.events).toEqual([]);
+    mounted.unmount();
   });
 });

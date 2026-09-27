@@ -144,6 +144,8 @@ export function useAgenda(options?: {
   const [peopleByEvent, setPeopleByEvent] = useState<Map<string, AttendeePerson[]>>(new Map());
   const [problems, setProblems] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  /** The display window whose mirror answer is actually on screen. */
+  const [loadedWindowKey, setLoadedWindowKey] = useState<string | null>(null);
   const [generation, setGeneration] = useState(0);
   const refreshedFor = useRef<string | null>(null);
 
@@ -173,10 +175,17 @@ export function useAgenda(options?: {
   const noAccount = !connector.isLoading && !connector.isError && connector.accounts.length === 0;
 
   const reload = useCallback(() => setGeneration((n) => n + 1), []);
+  // This is derived during render, not set from the effect, so changing Day →
+  // Week (or moving to a past day) immediately hides the prior window's rows.
+  // An effect-only loading flag leaves one committed stale frame before it runs.
+  const readWindowKey = `${options?.windowStart?.getTime() ?? "agenda"}:${options?.windowDays ?? days}:${generation}`;
 
   // ── The window read ───────────────────────────────────────────────────────
   useEffect(() => {
-    if (!organizationId || !userId) return;
+    if (!organizationId || !userId) {
+      setLoadedWindowKey(null);
+      return;
+    }
     let cancelled = false;
     const controller = new AbortController();
     void (async () => {
@@ -215,12 +224,13 @@ export function useAgenda(options?: {
       if (cancelled) return;
       setPeopleByEvent(people);
       setProblems(found);
+      setLoadedWindowKey(readWindowKey);
     })();
     return () => {
       cancelled = true;
       controller.abort();
     };
-  }, [organizationId, userId, days, generation, options?.windowStart?.getTime(), options?.windowDays]);
+  }, [organizationId, userId, days, readWindowKey, options?.windowStart?.getTime(), options?.windowDays]);
 
   // ── Refresh ───────────────────────────────────────────────────────────────
   const refresh = useCallback(async () => {
@@ -289,6 +299,7 @@ export function useAgenda(options?: {
     // either way: boot either lands on a selection or on "none".
     isLoading:
       organizationState === "resolving" ||
+      loadedWindowKey !== readWindowKey ||
       (events === null && Boolean(organizationId && userId)),
     isRefreshing,
     days,

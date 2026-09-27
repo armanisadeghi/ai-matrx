@@ -325,7 +325,7 @@ describe("every problem at once (owner ruling 2026-09-27)", () => {
     expect(lines[0]).toBe("create_classes was refused: 3 problems.");
     expect(lines[1]).toMatch(/^1\. create_classes\[1\] "Probe Test Gamma": exam_dates\[0\]\.date must be a real date as YYYY-MM-DD; received "2027-02-30"\.$/);
     expect(lines[2]).toMatch(/^2\. .*same class name more than once: "Probe Test Gamma" \(at \[1\], \[2\]\)/);
-    expect(lines[3]).toMatch(/^3\. The person already has "Probe Test Alpha"/);
+    expect(lines[3]).toMatch(/^3\. The person already has "Probe Test Alpha" \(create_classes\[0\]\)/);
     expect(lines[4]).toMatch(/Nothing was changed\.$/);
   });
 
