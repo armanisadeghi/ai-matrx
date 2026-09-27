@@ -16,9 +16,12 @@
  *     person presses Save changes.
  *   - `applicability_declarations` records declarations; saved on approval, through
  *     the same `hr_employer_profile_update` door the page's Declare button uses.
- * NOT writable, on purpose: the EIN (a tax identifier — the person types it), the
- * counted headcount and the derived flags (evidence), and establishments — this page
- * lists them but has no create/edit of its own yet (listed in the readiness note).
+ *   - `create_establishments` / `update_establishments` save through
+ *     `hr_establishment_upsert` (the page's own Add / Edit dialog uses the same door);
+ *     `establishment_draft` fills the New establishment dialog. There is no delete
+ *     door, so no delete target.
+ * NOT writable, on purpose: the EIN (a tax identifier — the person types it), and the
+ * counted headcount and derived flags (evidence).
  */
 
 import type {
@@ -163,6 +166,28 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "establishments",
   },
   {
+    name: "establishment_jurisdictions",
+    label: "Jurisdictions",
+    description:
+      "The jurisdictions an establishment can sit in: { id, key, name, level }. create_establishments accepts any of id, key or name.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 3500,
+    sortOrder: 215,
+    group: "establishments",
+  },
+  {
+    name: "establishment_draft",
+    label: "Establishment dialog",
+    description:
+      "The Add / Edit establishment dialog while it is open, as edited and not saved: { mode (\"create\" | \"edit\"), id, name, jurisdiction_id, jurisdiction (its name), is_headquarters, naics_code, eeo1_establishment_id, osha_establishment_name, annual_average_employees, address }. Absent when the dialog is closed.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 350,
+    sortOrder: 216,
+    group: "establishments",
+  },
+  {
     name: "tax_registrations_status",
     label: "Tax registrations",
     description:
@@ -200,6 +225,42 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "applicability",
     sortOrder: 200,
   },
+  {
+    name: "create_establishments",
+    label: "Add establishments",
+    description:
+      'Add establishments (sites this employer reports on for EEO-1 and OSHA). SAVED after the person approves. Value is a JSON ARRAY of 1-25 objects, each { "name": string (required, unique on this employer), "jurisdiction": id, key or name from establishment_jurisdictions, "is_headquarters"?: boolean, "naics_code"?: 2-6 digits | null, "eeo1_establishment_id"?: string | null, "osha_establishment_name"?: string | null, "annual_average_employees"?: whole number | null, "address"?: { "line1"?, "line2"?, "city"?, "region" (two letters)?, "postal_code"?, "country"? } | null } — jurisdiction is required. Refused (nothing saved): a name already used or repeated in the list, an unknown jurisdiction, an id (use update_establishments), a bad NAICS code or count. Returns each new establishment with its id.',
+    valueType: "array",
+    mode: "entity",
+    applyPolicy: "ask",
+    updatesValue: "establishments",
+    group: "establishments",
+    sortOrder: 300,
+  },
+  {
+    name: "update_establishments",
+    label: "Change establishments",
+    description:
+      'Change existing establishments. SAVED after the person approves. Value is a JSON ARRAY of 1-25 objects, each { "id": an id from establishments, plus only the fields to change from: name, jurisdiction, is_headquarters, naics_code, eeo1_establishment_id, osha_establishment_name, annual_average_employees, address }. Fields you leave out keep their value; address replaces the whole address. Refused (nothing saved): an unknown id, an id twice, a name another establishment uses, an item with nothing to change. Establishments cannot be deleted from this page.',
+    valueType: "array",
+    mode: "entity",
+    applyPolicy: "ask",
+    updatesValue: "establishments",
+    group: "establishments",
+    sortOrder: 310,
+  },
+  {
+    name: "establishment_draft",
+    label: "Fill the New establishment dialog",
+    description:
+      'Open the New establishment dialog (or fill the one already open) for the person to review. NOTHING is saved until the person presses Save. Value is a JSON object with any of the fields of create_establishments; only the keys you send change. Refused: an id, an unknown jurisdiction or field.',
+    valueType: "object",
+    mode: "draft",
+    applyPolicy: "ask",
+    updatesValue: "establishment_draft",
+    group: "establishments",
+    sortOrder: 320,
+  },
 ];
 
 export const hrEmployerManifest: SurfaceManifest = {
@@ -212,12 +273,13 @@ export const hrEmployerManifest: SurfaceManifest = {
   urlPattern: "/hr/settings/employer",
   readiness: "partial",
   readinessNote:
-    "Surface built 2026-09-27 (page-pass). Not proven yet: the live agent write test for both targets, and no outside-helper binding test. Establishments are listed but not agent-writable — the page has no create/edit for them yet (the hr_establishment_upsert door exists and nothing in the browser calls it). Tax registrations have no read door.",
+    "Surface built 2026-09-27 (page-pass). Proven live 2026-09-27 on a52ad38f28: employer_identity_draft (agent filled DBA + city/state, one approval) and applicability_declarations (row read back in SQL, then restored). Not proven yet: the three establishment targets (added after that release), and no outside-helper binding test. Establishments have no delete door. Tax registrations have no read door.",
   intro: `<surface_intro>
 You are on the HR Employer page of one organization: the employer of record, the employment laws that apply to it, and the sites it reports on. employer_overview has all of it in one bundle.
 
 - To fill in or correct the legal name, DBA, entity form, formation state or address, use employer_identity_draft. It fills the form; the person presses Save changes.
 - To record that FMLA, ACA, EEO-1 or federal-contractor status does or does not apply, use applicability_declarations with a one-sentence reason each. It saves after approval.
+- To add sites, use create_establishments (each needs a jurisdiction from establishment_jurisdictions); to change them, update_establishments with their ids; to let the person review one first, establishment_draft. Establishments cannot be deleted here.
 - Never set the EIN: the person types it into the EIN box. The EIN is never shown to anyone in a browser.
 - A flag whose value is null means nobody has counted or declared it — say that, never "no".
 Do not change this employer through generic scope or context tools; they skip the audit record.
