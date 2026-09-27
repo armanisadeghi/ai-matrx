@@ -24,6 +24,8 @@ import type { ConnectorAccount } from "../health";
 
 const DRIVE_FILE = "https://www.googleapis.com/auth/drive.file";
 const GMAIL_SEND = "https://www.googleapis.com/auth/gmail.send";
+const GMAIL_READONLY = "https://www.googleapis.com/auth/gmail.readonly";
+const GMAIL_MODIFY = "https://www.googleapis.com/auth/gmail.modify";
 const CALENDAR =
   "https://www.googleapis.com/auth/calendar.events.owned.readonly";
 const CALENDAR_LIST =
@@ -70,6 +72,23 @@ function account(scopes: string[]): ConnectorAccount {
 }
 
 describe("buildConsentPlan", () => {
+  it("asks for only Gmail reading and identity on a fresh reviewer account", () => {
+    const plan = buildConsentPlan({
+      provider,
+      selectedProductKeys: ["gmail_read"],
+      account: null,
+      rollout: rollout(),
+    });
+
+    expect(new Set(plan.request?.scopes)).toEqual(
+      new Set(["openid", "email", "profile", GMAIL_READONLY]),
+    );
+    expect(plan.request?.capabilityKeys).toEqual(["gmail_read"]);
+    expect(plan.request?.targetAccountId).toBeNull();
+    expect(plan.request?.scopes).not.toContain(GMAIL_MODIFY);
+    expect(plan.request?.scopes).not.toContain(GMAIL_SEND);
+  });
+
   it("asks only for the switched-on products, plus identity", () => {
     const plan = buildConsentPlan({
       provider,
