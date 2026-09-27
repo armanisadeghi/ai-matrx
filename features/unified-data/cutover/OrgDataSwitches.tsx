@@ -15,7 +15,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { usePageCaptureContribution } from "@/components/agent-copy/page-capture/usePageCapture";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { pressSeam, readSeamBoard, type Seam, type SeamBoard, type SeamState } from "./seamSwitches";
+import { pressSeam, readSeamBoard, type Seam, type SeamBoard, type SeamCheck, type SeamState } from "./seamSwitches";
 import { copyAgain, copyAgainClears } from "./copyAgain";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -29,6 +29,28 @@ function sentence(words: string): string {
 function whenText(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+/** One readiness check: met or waiting, the check's sentence, its detail, when it was measured. */
+function CheckLine({ check: c }: { check: SeamCheck }) {
+  return (
+    <li className="flex items-start gap-2 text-xs">
+      {c.met ? (
+        <Check className="h-3.5 w-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+      ) : (
+        <CircleDashed className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+      )}
+      <span>
+        <span className={c.met ? "" : "font-medium"}>{sentence(c.says)}</span>{" "}
+        {c.detail && <span className="text-muted-foreground">{c.detail}</span>}
+        {c.measured_at && (
+          <span className="block text-muted-foreground">
+            Last measured {whenText(c.measured_at)}; measured again with every release.
+          </span>
+        )}
+      </span>
+    </li>
+  );
 }
 
 export function OrgDataSwitches({ organizationId }: { organizationId: string }) {
@@ -217,26 +239,34 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
               </>
             ) : (
               <>
-                <ul className="flex flex-col gap-1.5">
-                  {seam.checks.map((c) => (
-                    <li key={c.key} className="flex items-start gap-2 text-xs">
-                      {c.met ? (
-                        <Check className="h-3.5 w-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                      ) : (
-                        <CircleDashed className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
-                      )}
-                      <span>
-                        <span className={c.met ? "" : "font-medium"}>{sentence(c.says)}</span>{" "}
-                        {c.detail && <span className="text-muted-foreground">{c.detail}</span>}
-                        {c.measured_at && (
-                          <span className="block text-muted-foreground">
-                            Last measured {whenText(c.measured_at)}; measured again with every release.
-                          </span>
-                        )}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                {/* WHAT HOLDS THE SWITCH FIRST, WHAT PASSED BEHIND ONE LINE (lane HANDOVER,
+                    2026-09-27): thirteen ticked lines stood between an owner and the button on an
+                    organization with nothing old in it. The unmet checks are the ones to act on;
+                    the met ones are one click away and still in the page. */}
+                {seam.checks.some((c) => !c.met) ? (
+                  <ul className="flex flex-col gap-1.5">
+                    {seam.checks.filter((c) => !c.met).map((c) => (
+                      <CheckLine key={c.key} check={c} />
+                    ))}
+                  </ul>
+                ) : null}
+                {seam.checks.some((c) => c.met) ? (
+                  <details className="group text-xs" data-met-checks={seam.key}>
+                    <summary className="flex cursor-pointer list-none items-center gap-2 text-muted-foreground hover:text-foreground">
+                      <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                      {seam.checks.every((c) => c.met)
+                        ? `All ${seam.checks.length} checks pass`
+                        : `${seam.checks.filter((c) => c.met).length} more checks pass`}
+                      <span className="underline underline-offset-2 group-open:hidden">Show</span>
+                      <span className="hidden underline underline-offset-2 group-open:inline">Hide</span>
+                    </summary>
+                    <ul className="mt-1.5 flex flex-col gap-1.5">
+                      {seam.checks.filter((c) => c.met).map((c) => (
+                        <CheckLine key={c.key} check={c} />
+                      ))}
+                    </ul>
+                  </details>
+                ) : null}
                 <p className="text-xs text-muted-foreground">
                   {seam.ready ? "Ready. " : "Not ready yet. "}Switching: {seam.flipDoes}
                 </p>
@@ -267,10 +297,13 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
             {elsewhere.map((seam) => (
               <li key={seam.key} className="flex flex-wrap items-baseline gap-x-2 text-xs">
                 <span className="font-medium">{seam.title}</span>
+                {/* THE STATE, NOT THE MECHANISM (lane HANDOVER): each line printed what the switch
+                    does in the database, down to a setting's internal key; that lives on the
+                    Final switch page, where the platform presses it. */}
                 <span className="text-muted-foreground">
                   {seam.pressKind === "already_switched" || seam.state === "new"
-                    ? `On the new system. ${seam.flipDoes}`
-                    : `On the old system. When it switches: ${seam.flipDoes}`}
+                    ? "On the new system"
+                    : "On the old system"}
                 </span>
               </li>
             ))}
