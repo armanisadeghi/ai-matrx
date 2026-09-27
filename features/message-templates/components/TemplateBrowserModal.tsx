@@ -13,6 +13,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   Select,
   SelectContent,
@@ -41,7 +42,6 @@ import {
   fetchMessageTemplates,
   getAllTags,
 } from "@/features/message-templates/services/message-templates-service";
-import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { RichDocument } from "@/features/rich-document/RichDocument";
@@ -70,6 +70,7 @@ export function TemplateBrowserModal({
 }: TemplateBrowserModalProps) {
   const [templates, setTemplates] = useState<MessageTemplateDB[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTemplate, setSelectedTemplate] =
     useState<MessageTemplateDB | null>(null);
@@ -79,7 +80,6 @@ export function TemplateBrowserModal({
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [tagSearchOpen, setTagSearchOpen] = useState(false);
-  const { toast } = useToast();
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -100,13 +100,10 @@ export function TemplateBrowserModal({
         order_direction: "desc",
       });
       setTemplates(data);
+      setLoadError(null);
     } catch (error) {
       console.error("Error loading templates:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load templates",
-        variant: "destructive",
-      });
+      setLoadError(error ?? new Error("Failed to load templates"));
     } finally {
       setLoading(false);
     }
@@ -366,6 +363,12 @@ export function TemplateBrowserModal({
               <div className="p-8 text-center text-muted-foreground">
                 Loading templates...
               </div>
+            ) : loadError && templates.length === 0 ? (
+              <ReadFailure
+                error={loadError}
+                what="the message templates"
+                onRetry={() => void loadTemplates()}
+              />
             ) : filteredTemplates.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />

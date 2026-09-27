@@ -53,6 +53,7 @@ import { TemplateCard } from "./TemplateCard";
 import { TemplateActionDrawer } from "./TemplateActionDrawer";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/slices/userSlice";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 type ActiveTab = "my" | "public";
 type SortOption =
@@ -206,6 +207,7 @@ export function UserMessageTemplateManager() {
 
   const [templates, setTemplates] = useState<MessageTemplateDB[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const { id: currentUserId } = useAppSelector(selectUser);
 
   // Filter & sort state
@@ -237,24 +239,28 @@ export function UserMessageTemplateManager() {
     try {
       const data = await fetchMessageTemplates();
       setTemplates(data);
+      setLoadError(null);
     } catch (err) {
       console.error("Error loading templates:", err);
-      toast({ title: "Failed to load templates", variant: "destructive" });
+      setLoadError(err ?? new Error("Failed to load templates"));
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     if (!currentUserId) return;
     void fetchMessageTemplates()
-      .then(setTemplates)
-      .catch((error) => {
+      .then((data) => {
+        setTemplates(data);
+        setLoadError(null);
+      })
+      .catch((error: unknown) => {
         console.error("Error loading templates:", error);
-        toast({ title: "Failed to load templates", variant: "destructive" });
+        setLoadError(error ?? new Error("Failed to load templates"));
       })
       .finally(() => setLoading(false));
-  }, [currentUserId, toast]);
+  }, [currentUserId]);
 
   // Derive all unique tags from all templates
   const allTags = useMemo(() => {
@@ -401,6 +407,17 @@ export function UserMessageTemplateManager() {
       <div className="h-[calc(100dvh-var(--header-height))] flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
+    );
+  }
+
+  if (loadError && templates.length === 0) {
+    return (
+      <ReadFailure
+        error={loadError}
+        what="your message templates"
+        onRetry={() => void loadData()}
+        size="default"
+      />
     );
   }
 

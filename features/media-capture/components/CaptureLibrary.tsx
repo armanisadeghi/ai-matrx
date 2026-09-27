@@ -45,6 +45,7 @@ import { CaptureRecoverySection } from "@/features/media-capture/components/Capt
 import { CaptureTransportStrip } from "@/features/media-capture/components/CaptureTransportStrip";
 import { CaptureItemActions } from "@/features/media-capture/components/CaptureItemActions";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 type CaptureKindFilter = "all" | "photo" | "video" | "audio";
 
@@ -118,7 +119,7 @@ export function CaptureLibrary({ refreshToken = 0 }: CaptureLibraryProps) {
   // `useCloudTree` triggers/observes the whole-user-tree read; the tree RPC is
   // identity-locked to the user with NO org filter, so every capture — flat or
   // org-namespaced — is in `filesById`. We collect by folder-path prefix.
-  const { status } = useCloudTree(userId);
+  const { status, error: treeError, refresh: retryTree } = useCloudTree(userId);
   const treeReady = status === "loaded";
   const filesById = useAppSelector(selectAllFilesMap);
 
@@ -149,7 +150,8 @@ export function CaptureLibrary({ refreshToken = 0 }: CaptureLibraryProps) {
     return c;
   }, [allCaptures]);
 
-  const loading = !treeReady;
+  const treeFailed = status === "error";
+  const loading = !treeReady && !treeFailed;
 
   return (
     <section className="flex min-h-0 flex-col gap-2">
@@ -180,7 +182,14 @@ export function CaptureLibrary({ refreshToken = 0 }: CaptureLibraryProps) {
         onRecovered={() => setRecoveryToken((t) => t + 1)}
       />
 
-      {loading ? (
+      {treeFailed ? (
+        <ReadFailure
+          error={treeError ?? true}
+          what="your captures"
+          onRetry={retryTree}
+          className="m-0"
+        />
+      ) : loading ? (
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="aspect-square w-full rounded-md" />

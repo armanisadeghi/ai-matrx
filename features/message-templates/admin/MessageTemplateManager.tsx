@@ -86,6 +86,7 @@ import {
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface MessageTemplateManagerProps {
   className?: string;
@@ -165,6 +166,7 @@ export function MessageTemplateManager({
   const [templates, setTemplates] = useState<MessageTemplateDB[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
     null,
   );
@@ -328,8 +330,10 @@ export function MessageTemplateManager({
       ]);
       setTemplates(templatesData);
       setAllTags(tagsData);
+      setLoadError(null);
     } catch (error) {
       console.error("Error loading data:", error);
+      setLoadError(error ?? new Error("Failed to load templates"));
       toast({
         title: "Error",
         description: "Failed to load templates",
@@ -637,6 +641,17 @@ export function MessageTemplateManager({
       <div className="flex items-center justify-center h-96">
         <MatrxMiniLoader />
       </div>
+    );
+  }
+
+  if (loadError && templates.length === 0) {
+    return (
+      <ReadFailure
+        error={loadError}
+        what="the message templates"
+        onRetry={() => void loadData()}
+        size="default"
+      />
     );
   }
 

@@ -32,6 +32,7 @@ import {
   type MemoryEntry,
 } from "../service/memoryService";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const PATH_RE = /^[A-Za-z0-9._/-]+$/;
 
@@ -45,6 +46,7 @@ const memoryChannel = defineChannelNamespace({
 export default function MemoryManager() {
   const [entries, setEntries] = useState<MemoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
@@ -57,11 +59,10 @@ export default function MemoryManager() {
     try {
       const data = await listMemory();
       setEntries(data);
+      setLoadError(null);
       return data;
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to load memory",
-      );
+      setLoadError(err ?? new Error("Failed to load memory"));
       return [];
     } finally {
       setLoading(false);
@@ -204,6 +205,13 @@ export default function MemoryManager() {
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Loading…
               </div>
+            ) : loadError && entries.length === 0 ? (
+              <ReadFailure
+                error={loadError}
+                what="your memory files"
+                onRetry={() => void refresh()}
+                className="m-1"
+              />
             ) : entries.length === 0 && !creatingNew ? (
               <p className="px-2 py-3 text-xs text-muted-foreground">
                 No memory yet. Create a file like{" "}

@@ -169,6 +169,7 @@ function BenchRecordLine({ bench }: { bench: BenchProofState }) {
   // permission sentence and is said only when the server actually refused, not
   // whenever a read failed (wall W3).
   const benchHeadline =
+    // read-gate-exempt: status "none" is produced only from a successful bench read with no proof; a failed read is status "unavailable" and says its own headline
     bench.status === "none" ? "No bench proof yet" : bench.headline;
   return (
     <div className="mt-2 rounded-md border border-dashed border-border px-2 py-1.5">

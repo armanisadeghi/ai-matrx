@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Switch } from "@/components/ui/switch";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { cn } from "@/lib/utils";
 import { callApi } from "@/lib/api/call-api";
 import { useAppStore } from "@/lib/redux/hooks";
@@ -193,6 +194,9 @@ export function MeetingScavengerDialog({
   const [tab, setTab] = useState<MeetingTab>("platform");
   const [meetings, setMeetings] = useState<MeetingRow[] | null>(null);
   const [loadingMeetings, setLoadingMeetings] = useState(false);
+  // The meetings read's failure. Without it a failed read left `meetings` null
+  // and the effect below re-read (and re-toasted) forever.
+  const [meetingsError, setMeetingsError] = useState<unknown>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -252,6 +256,7 @@ export function MeetingScavengerDialog({
 
   const loadMeetings = useCallback(async () => {
     setLoadingMeetings(true);
+    setMeetingsError(null);
     try {
       // Direct supabase-js — a plain DB listing, scoped by RLS exactly like the
       // /meetings workspace list. A meeting with no transcript rows is still
@@ -290,19 +295,17 @@ export function MeetingScavengerDialog({
         })),
       );
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Could not load your meetings.",
-      );
+      setMeetingsError(err ?? new Error("Could not load your meetings."));
     } finally {
       setLoadingMeetings(false);
     }
   }, []);
 
   useEffect(() => {
-    if (open && tab === "platform" && meetings === null && !loadingMeetings) {
+    if (open && tab === "platform" && meetings === null && !loadingMeetings && !meetingsError) {
       void loadMeetings();
     }
-  }, [open, tab, meetings, loadingMeetings, loadMeetings]);
+  }, [open, tab, meetings, loadingMeetings, meetingsError, loadMeetings]);
 
   const sourceBody = useCallback((): Record<string, unknown> | null => {
     if (tab === "platform") {
@@ -560,6 +563,13 @@ export function MeetingScavengerDialog({
                   <LoadingSpinner size="sm" />
                   Reading your meetings…
                 </div>
+              ) : meetingsError ? (
+                <ReadFailure
+                  error={meetingsError}
+                  what="your meetings"
+                  onRetry={() => void loadMeetings()}
+                  className="m-0"
+                />
               ) : meetings && meetings.length === 0 ? (
                 <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
                   You have no meetings here yet. Start one from the Meetings
