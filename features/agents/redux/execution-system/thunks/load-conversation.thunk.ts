@@ -50,6 +50,7 @@ import {
 } from "../instance-model-overrides/instance-model-overrides.slice";
 import { initInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.slice";
 import { fetchInputCapabilitiesSnapshot } from "../instance-input-capabilities/input-capabilities-snapshot";
+import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
 import { parsePersistedInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.persistence";
 import {
   initInstanceUIState,
@@ -477,12 +478,30 @@ export const loadConversation = createAsyncThunk<
       );
     }
 
-    const baseInputCapabilities = conv.initial_agent_id
-      ? await fetchInputCapabilitiesSnapshot({
+    // The agent's authored input settings. An agent the person can no longer
+    // read (another organization's, or moved to a level they are not in)
+    // must not stop their OWN conversation from reopening — the transcript
+    // opens with the default input settings, and says so.
+    let baseInputCapabilities: UiGates = {};
+    if (conv.initial_agent_id) {
+      try {
+        baseInputCapabilities = await fetchInputCapabilitiesSnapshot({
           agentId: conv.initial_agent_id,
           agentVersionId: conv.initial_agent_version_id,
-        })
-      : {};
+        });
+      } catch (capErr) {
+        console.warn("[loadConversation] agent input settings unreadable; using defaults", {
+          conversationId,
+          agentId: conv.initial_agent_id,
+          error: capErr instanceof Error ? capErr.message : String(capErr),
+        });
+        const { toast } = await import("@/lib/toast");
+        toast.info("This chat's agent isn't available to you anymore", {
+          description:
+            "The conversation opened with the default input settings. Ask the agent's owner to share it to use its own settings.",
+        });
+      }
+    }
     const persistedInputCapabilities = parsePersistedInputCapabilities(
       conv.metadata,
     );
