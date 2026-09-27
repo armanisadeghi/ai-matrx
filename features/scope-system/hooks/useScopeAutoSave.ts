@@ -1,9 +1,9 @@
 "use client";
 
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { useEffect, useRef, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setScopeContextValue } from "@/features/scopes/redux/scopeContextView";
-import { toast } from "@/lib/toast";
 import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
 import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
 
@@ -72,7 +72,7 @@ export function useScopeAutoSave(
       setStatus("saved");
     } catch (err) {
       setStatus("error");
-      toast.error(err instanceof Error ? err.message : "Failed to save");
+      toastWriteFailure(err, { action: "save this value", remedy: "Your text is still in the box." });
     }
   }
 

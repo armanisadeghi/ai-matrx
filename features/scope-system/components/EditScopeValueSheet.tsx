@@ -1,5 +1,6 @@
 "use client";
 
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { useState, useEffect, useId } from "react";
 import { Loader2, Pencil, AlertTriangle, Info } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
@@ -117,7 +118,7 @@ export function EditScopeValueSheet({
         toast.success("Saved");
         onOpenChange(false);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Failed to save");
+        toastWriteFailure(err, { action: "save this value" });
       } finally {
         setBusy(false);
       }
@@ -133,7 +134,7 @@ export function EditScopeValueSheet({
         toast.success("Saved");
         onOpenChange(false);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Failed to save");
+        toastWriteFailure(err, { action: "save this value" });
       } finally {
         setBusy(false);
       }
@@ -171,7 +172,7 @@ export function EditScopeValueSheet({
       toast.success("Saved");
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save");
+      toastWriteFailure(err, { action: "save this value" });
     } finally {
       setBusy(false);
     }

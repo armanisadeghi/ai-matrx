@@ -1,5 +1,6 @@
 "use client";
 
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -197,7 +198,7 @@ export function ScopesList({
         ).unwrap(),
       ]);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to reorder");
+      toastWriteFailure(err, { action: "save the new order" });
     } finally {
       setMovingId(null);
     }
@@ -237,7 +238,7 @@ export function ScopesList({
       await dispatch(deleteScope({ scope_id: id })).then(unwrapScopesRpc);
       toast.success(`${name} deleted`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete");
+      toastWriteFailure(err, { action: "archive it" });
     } finally {
       setDeletingScopeId(null);
     }
@@ -259,7 +260,7 @@ export function ScopesList({
       await dispatch(deleteContextItem(id)).unwrap();
       toast.success(`"${name}" deleted`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete");
+      toastWriteFailure(err, { action: "archive it" });
     } finally {
       setDeletingItemId(null);
     }

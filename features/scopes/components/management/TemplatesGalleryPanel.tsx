@@ -8,6 +8,7 @@
 
 "use client";
 
+import { humanizeTemplateCategory } from "@/features/scopes/utils/templateCategory";
 import { useMemo, type ReactNode } from "react";
 import Link from "next/link";
 import { AlertTriangle, Zap } from "lucide-react";
@@ -146,7 +147,7 @@ export function TemplatesGalleryPanel() {
       {Object.entries(grouped).map(([category, list]) => (
         <section key={category} className="space-y-2">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase">
-            {category}
+            {humanizeTemplateCategory(category)}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {list.map((t) => (

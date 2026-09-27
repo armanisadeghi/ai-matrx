@@ -11,6 +11,7 @@
 // server RPC takes no subset argument, so the client loops — parent-type
 // wiring is dropped and re-assigned via Edit later).
 
+import { humanizeTemplateCategory } from "@/features/scopes/utils/templateCategory";
 import { useEffect, useMemo, useState } from "react";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import {
@@ -67,12 +68,7 @@ const ALL = "__all__";
 
 type Mode = "templates" | "individual";
 
-function humanizeCategory(c: string): string {
-  return c
-    .split("_")
-    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
-    .join(" ");
-}
+const humanizeCategory = humanizeTemplateCategory;
 
 // The same scope ("Client") appears across a dozen templates. For the
 // "Individual scopes" mode — whose job is to TEACH the concept, not to

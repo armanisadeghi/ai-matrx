@@ -64,11 +64,13 @@ function isPostgrestShaped(err: unknown): err is { code: string; message?: strin
 function isSerializedRefusal(err: unknown): err is { name: string; message: string } {
   if (!err || typeof err !== "object" || err instanceof Error) return false;
   const e = err as { name?: unknown; message?: unknown };
-  return (
-    (e.name === "WriteRefusedError" || e.name === "WriteDidNotLandError") &&
-    typeof e.message === "string" &&
-    e.message.trim() !== ""
-  );
+  if (typeof e.message !== "string" || e.message.trim() === "") return false;
+  if (e.name === "WriteRefusedError" || e.name === "WriteDidNotLandError") return true;
+  // A thunk that threw a plain `new Error(<the store's sentence>)` crosses `.unwrap()` as
+  // `{ name: "Error", message }` (lane HANDOVER, 2026-09-27: a member's refused context value read
+  // "Failed to save" while the store had said "…is not yours to change."). Its words are a person's
+  // sentence when they do not read as technical.
+  return e.name === "Error" && !LOOKS_TECHNICAL.test(e.message);
 }
 
 function postgrestSentence(code: string): string {
