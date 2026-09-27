@@ -19,7 +19,7 @@
  *   - `create_establishments` / `update_establishments` save through
  *     `hr_establishment_upsert` (the page's own Add / Edit dialog uses the same door);
  *     `establishment_draft` fills the New establishment dialog. There is no delete
- *     door, so no delete target.
+ *     door; archive is `archived: true` on update (hr_establishment_set_archived).
  * NOT writable, on purpose: the EIN (a tax identifier — the person types it), and the
  * counted headcount and derived flags (evidence).
  */
@@ -217,7 +217,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "applicability_declarations",
     label: "Declare which laws apply",
     description:
-      'Record that a law does or does not apply to this employer, overriding what was counted. SAVED immediately after the person approves, with the reason on the audit record. Value is a JSON ARRAY of 1-4 objects: [{ "flag": "is_fmla_covered" | "is_aca_ale" | "is_eeo1_filer" | "is_federal_contractor", "applies": true | false, "reason": "one sentence — who advised it or what fact it rests on" }]. Refused (nothing saved): a flag named twice, E-Verify states (not declared here), a missing or one-word reason.',
+      'Record that a law does or does not apply to this employer, overriding what was counted. SAVED immediately after the person approves, with the reason on the audit record. Value is a JSON ARRAY of 1-5 objects: [{ "flag": "is_fmla_covered" | "is_aca_ale" | "is_eeo1_filer" | "is_federal_contractor", "applies": true | false, "reason": "one sentence — who advised it or what fact it rests on" }]; for E-Verify send { "flag": "everify_required_states", "states": ["AZ", …] ([] = none required), "reason": "…" }. Refused (nothing saved): a flag named twice, a state that is not a two-letter code, a missing or one-word reason.',
     valueType: "array",
     mode: "entity",
     applyPolicy: "ask",
@@ -241,7 +241,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "update_establishments",
     label: "Change establishments",
     description:
-      'Change existing establishments. SAVED after the person approves. Value is a JSON ARRAY of 1-25 objects, each { "id": an id from establishments, plus only the fields to change from: name, jurisdiction, is_headquarters, naics_code, eeo1_establishment_id, osha_establishment_name, annual_average_employees, address }. Fields you leave out keep their value; address replaces the whole address. Refused (nothing saved): an unknown id, an id twice, a name another establishment uses, an item with nothing to change. Establishments cannot be deleted from this page.',
+      'Change existing establishments. SAVED after the person approves. Value is a JSON ARRAY of 1-25 objects, each { "id": an id from establishments, plus only the fields to change from: name, jurisdiction, is_headquarters, naics_code, eeo1_establishment_id, osha_establishment_name, annual_average_employees, address, and "archived": true to archive it }. Fields you leave out keep their value; address replaces the whole address. Archiving removes it from this list and from EEO-1/OSHA per-site reporting (its record is kept); it is refused while a location still points at it. Refused (nothing saved): an unknown id, an id twice, a name another establishment uses, an item with nothing to change, archived: false (archived establishments are not listed here).',
     valueType: "array",
     mode: "entity",
     applyPolicy: "ask",
@@ -273,13 +273,13 @@ export const hrEmployerManifest: SurfaceManifest = {
   urlPattern: "/hr/settings/employer",
   readiness: "partial",
   readinessNote:
-    "Surface built 2026-09-27 (page-pass). Proven live 2026-09-27 with real agent runs, each checked by SQL read-back: employer_identity_draft (a52ad38f28), applicability_declarations (a52ad38f28, restored), create_establishments (two rows, one approval, complete), update_establishments (two fields on two rows, others untouched) and a pre-approval refusal (duplicate name + unknown jurisdiction, both reasons, nothing written) on 5f5730a1ea. Not proven: establishment_draft by agent, and no outside-helper binding test. Establishments have no delete or archive door. Tax registrations have no read door.",
+    "Surface built 2026-09-27 (page-pass). Proven live 2026-09-27 with real agent runs, each checked by SQL read-back: employer_identity_draft (a52ad38f28), applicability_declarations (a52ad38f28, restored), create_establishments (two rows, one approval, complete), update_establishments (two fields on two rows, others untouched) and a pre-approval refusal (duplicate name + unknown jurisdiction, both reasons, nothing written) on 5f5730a1ea. Not proven: establishment_draft by agent, and no outside-helper binding test. Archive added 2026-09-27 (hr_establishment_set_archived); archived establishments have no reader, so restore has no UI. Tax registrations have no read door and are not shown.",
   intro: `<surface_intro>
 You are on the HR Employer page of one organization: the employer of record, the employment laws that apply to it, and the sites it reports on. employer_overview has all of it in one bundle.
 
 - To fill in or correct the legal name, DBA, entity form, formation state or address, use employer_identity_draft. It fills the form; the person presses Save changes.
 - To record that FMLA, ACA, EEO-1 or federal-contractor status does or does not apply, use applicability_declarations with a one-sentence reason each. It saves after approval.
-- To add sites, use create_establishments (each needs a jurisdiction from establishment_jurisdictions); to change them, update_establishments with their ids; to let the person review one first, establishment_draft. Establishments cannot be deleted here.
+- To add sites, use create_establishments (each needs a jurisdiction from establishment_jurisdictions); to change them, update_establishments with their ids; to let the person review one first, establishment_draft. To archive one, use update_establishments with archived: true.
 - Never set the EIN: the person types it into the EIN box. The EIN is never shown to anyone in a browser.
 - A flag whose value is null means nobody has counted or declared it — say that, never "no".
 Do not change this employer through generic scope or context tools; they skip the audit record.
