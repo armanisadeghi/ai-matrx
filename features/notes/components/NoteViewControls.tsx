@@ -8,10 +8,9 @@
 
 import React, { useCallback } from "react";
 import {
-  FileText,
+  Type,
   SplitSquareHorizontal,
   PenLine,
-  Columns,
   Eye,
   History,
   ListTree,
@@ -34,27 +33,32 @@ import {
   selectInstanceActiveTab,
   selectInstanceHistoryOpen,
   selectInstanceOutlineOpen,
-  selectNoteEditorMode,
 } from "../redux/selectors";
 import { cn } from "@/lib/utils";
 import { NoteCleanupButton } from "./cleanup/NoteCleanupButton";
-import {
-  normalizeNoteEditorMode,
-  usePreferredDefaultEditorMode,
-} from "../hooks/usePreferredDefaultEditorMode";
+import { useNoteEditorMode } from "../hooks/usePreferredDefaultEditorMode";
 
 /**
- * The note views, in plain words, in the order a person meets them. Write is
- * the rendered editor (the platform default); the three Markdown views show
- * the source. ONE list — the page header and this menu both read it.
+ * The note modes, in plain words, in the order a person meets them (Arman,
+ * 2026-09-27). ONE list — the page header, this menu and the phone read it.
+ *   Split  the quick plain text on the left, the formatted note live on the
+ *          right (the desktop default)
+ *   Plain  that text alone — nothing is ever formatted for you
+ *   Write  the one editor, formatted
+ *   Read   read-only, rendered
+ * The phone has Plain (its default) and Write — `NOTE_PHONE_VIEW_MODES`.
  */
 export const NOTE_VIEW_MODES = [
-  { mode: "wysiwyg", label: "Write", hint: "Edit the formatted note", icon: PenLine, markdown: false, wide: false },
-  { mode: "preview", label: "Read", hint: "Read the formatted note", icon: Eye, markdown: false, wide: false },
-  { mode: "plain", label: "Markdown", hint: "Edit the Markdown source", icon: FileText, markdown: true, wide: false },
-  { mode: "split", label: "Markdown + preview", hint: "Markdown source beside the formatted result", icon: SplitSquareHorizontal, markdown: true, wide: true },
-  { mode: "markdown-split", label: "Markdown with toolbar", hint: "Markdown editor with a formatting toolbar and live preview", icon: Columns, markdown: true, wide: true },
+  { mode: "split", label: "Split", hint: "Plain text on the left, the formatted note live on the right", icon: SplitSquareHorizontal },
+  { mode: "plain", label: "Plain", hint: "Quick, unformatted text — nothing is ever formatted for you", icon: Type },
+  { mode: "write", label: "Write", hint: "Edit the formatted note", icon: PenLine },
+  { mode: "preview", label: "Read", hint: "Read the formatted note", icon: Eye },
 ] as const;
+
+export const NOTE_PHONE_VIEW_MODES = NOTE_VIEW_MODES.filter(
+  (m): m is Extract<(typeof NOTE_VIEW_MODES)[number], { mode: "plain" | "write" }> =>
+    m.mode === "plain" || m.mode === "write",
+);
 
 export type NoteViewMode = (typeof NOTE_VIEW_MODES)[number]["mode"];
 
@@ -71,13 +75,7 @@ export function NoteViewControls({
   const activeTabId = useAppSelector(selectInstanceActiveTab(instanceId));
   const historyOpen = useAppSelector(selectInstanceHistoryOpen(instanceId));
   const outlineOpen = useAppSelector(selectInstanceOutlineOpen(instanceId));
-  const preferredDefault = usePreferredDefaultEditorMode();
-  const editorMode = normalizeNoteEditorMode(
-    useAppSelector(
-      activeTabId ? selectNoteEditorMode(activeTabId) : () => undefined,
-    ),
-    preferredDefault,
-  );
+  const editorMode = useNoteEditorMode(activeTabId);
 
   const setMode = useCallback(
     (mode: NoteViewMode) => {

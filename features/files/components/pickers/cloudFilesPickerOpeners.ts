@@ -32,6 +32,12 @@ export interface UseFilePickerOpenOptions {
   allowedExtensions?: string[];
   title?: string;
   description?: string;
+  /**
+   * Show only this organization's files, and file an upload there — a FILTER on what the window
+   * shows, never a permission. The data grid's attachment cell passes the TABLE's organization
+   * (merged-grid review 2, fix lane F item 4).
+   */
+  organizationId?: string | null;
 }
 
 export type FileOpener = (

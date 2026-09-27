@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import { toast } from "@/lib/toast";
-import { IdCard, PhoneOff, Plus, UserRound } from "lucide-react";
+import { IdCard, Pencil, PhoneOff, Plus, UserRound } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -178,14 +178,24 @@ function InlineField({
           type="button"
           onClick={start}
           className={cn(
-            "min-h-11 min-w-0 flex-1 rounded px-1.5 py-0.5 text-left text-sm hover:bg-accent/50 sm:min-h-0",
+            "group/field flex min-h-11 min-w-0 flex-1 items-start gap-1 rounded px-1.5 py-0.5 text-left text-sm hover:bg-accent/50 sm:min-h-0",
             value ? "text-foreground" : "text-muted-foreground/60",
             saving && "opacity-60",
-            spec.multiline ? "whitespace-pre-wrap" : "truncate",
           )}
-          title="Click to edit"
+          title={`Edit ${spec.label.toLowerCase()}`}
+          aria-label={`Edit ${spec.label.toLowerCase()}: ${value || "empty"}`}
         >
-          {value || "—"}
+          <span
+            className={cn(
+              "min-w-0 flex-1",
+              spec.multiline ? "whitespace-pre-wrap" : "truncate",
+            )}
+          >
+            {value || "—"}
+          </span>
+          {/* Says the field is editable: always on touch, on hover with a
+              mouse — never a mystery which values can be changed. */}
+          <Pencil className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground opacity-0 group-hover/field:opacity-100 pointer-coarse:opacity-100" />
         </button>
       )}
     </div>

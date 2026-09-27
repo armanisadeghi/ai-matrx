@@ -23,6 +23,8 @@ import {
   removeInstanceTab,
   markTabInteraction,
   setInstanceOutlineOpen,
+  setNoteEditorMode,
+  closeFindReplace,
 } from "../redux/slice";
 import { getReduxSyncDelay } from "../redux/notes.types";
 import {
@@ -31,7 +33,6 @@ import {
   selectNoteContentLoadStatus,
   selectNoteContent,
   selectNoteEditor,
-  selectNoteEditorMode,
   selectNoteIsDirtyById,
   selectNoteFolder,
   selectNoteLabel,
@@ -50,10 +51,11 @@ import {
 import { useNotesInstanceId } from "../context/NotesInstanceContext";
 import { useNoteAccess } from "../hooks/useNoteAccess";
 import {
-  normalizeNoteEditorMode,
-  usePreferredDefaultEditorMode,
+  useNoteEditorMode,
+  useRememberNoteEditorMode,
 } from "../hooks/usePreferredDefaultEditorMode";
-import { NoteEditorCore } from "./NoteEditorCore";
+import { NoteEditorCore, isRichEditorMode, type EditorMode } from "./NoteEditorCore";
+import type { RichEditorController } from "@/components/rich-editor/RichEditor";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { getNoteLiveContent, setNoteLiveContent } from "../utils/noteLiveContent";
 import { useNotesSurfaceScope } from "../hooks/useNotesSurfaceScope";
@@ -156,12 +158,10 @@ export function NoteContentEditor({
 
   // ── Redux selectors (cached — stable references) ──────────────────
   const reduxContent = useAppSelector(selectNoteContent(noteId)) ?? "";
-  const preferredDefaultMode = usePreferredDefaultEditorMode();
-  const savedEditorMode = useAppSelector(selectNoteEditorMode(noteId));
-  const editorMode = normalizeNoteEditorMode(
-    savedEditorMode,
-    preferredDefaultMode,
-  );
+  // One rule for the mode a note opens in (session pick → the mode this note
+  // was last typed in → legacy metadata → the person's default, Write).
+  const editorMode = useNoteEditorMode(noteId);
+  const rememberEditedMode = useRememberNoteEditorMode();
 
   // The list read carries a preview, never the body (audit N-24), so a note
   // opened from the list is a "list" record until fetchNoteContent lands.
@@ -199,14 +199,18 @@ export function NoteContentEditor({
     dispatch(setInstanceOutlineOpen({ instanceId, open: false }));
   }, [dispatch, instanceId]);
 
-  // TUI modes have no read-only support — degrade to preview. The editor body
-  // and the outline panel's jump logic must agree on the mode actually shown.
+  // A note the person may not edit reads rendered: Write and Source are
+  // editing views, so a viewer sees Preview (Plain stays a read-only textarea).
+  // The editor body and the outline panel's jump logic agree on the mode shown.
   // A host's read mode (forceReadOnly) reads the rendered note, always.
-  const effectiveEditorMode =
-    forceReadOnly ||
-    (readOnly && (editorMode === "wysiwyg" || editorMode === "markdown-split"))
+  const effectiveEditorMode: EditorMode =
+    forceReadOnly || (readOnly && isRichEditorMode(editorMode))
       ? "preview"
       : editorMode;
+  // THE ONE EDITOR (Write / Source) is driven through its controller: caret
+  // inserts from the menu and agents, its own find bar, outline jumps.
+  const richEditorRef = useRef<RichEditorController | null>(null);
+  const richMode = isRichEditorMode(effectiveEditorMode);
 
   // ── Dialog state ──────────────────────────────────────────────────
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
@@ -380,8 +384,11 @@ export function NoteContentEditor({
       setLocalContent(content);
       setNoteLiveContent(noteId, content);
       syncToRedux(content);
+      // The person typed here: this note reopens in this mode (plain notes stay
+      // plain). Writes only when the remembered mode changes.
+      rememberEditedMode(noteId, effectiveEditorMode);
     },
-    [noteId, syncToRedux],
+    [noteId, syncToRedux, rememberEditedMode, effectiveEditorMode],
   );
 
   // ── Flush sync: local -> Redux immediately (no debounce) ───────────
@@ -445,6 +452,15 @@ export function NoteContentEditor({
   );
 
   const getApplicationScope = useCallback(() => {
+    // Write / Source: the one editor knows its own selection.
+    const rich = richMode ? richEditorRef.current : null;
+    if (rich) {
+      return buildApplicationScopeFromMenuContext({
+        selectedText: rich.selectedText(),
+        selectionRange: null,
+        contextData: buildSurfaceScope() as Record<string, unknown>,
+      });
+    }
     const el = textareaRef.current;
     const start = el?.selectionStart ?? 0;
     const end = el?.selectionEnd ?? 0;
@@ -457,7 +473,7 @@ export function NoteContentEditor({
       selectionRange: el ? { type: "editable", element: el, start, end } : null,
       contextData: buildSurfaceScope() as Record<string, unknown>,
     });
-  }, [buildSurfaceScope]);
+  }, [buildSurfaceScope, richMode]);
 
   // ── Note undo/redo ────────────────────────────────────────────────
   // Mounting this hook ALSO installs the capture-phase Cmd+Z / Ctrl+Z (and
@@ -594,6 +610,13 @@ export function NoteContentEditor({
   // in the note. Flushes straight to Redux (no debounce) like the demo.
   const insertAtCursor = useCallback(
     (text: string, position: "before" | "after") => {
+      // Write / Source: a new block before / after the selection, in the editor
+      // itself (its onChange carries it to the note like typing).
+      const rich = richMode ? richEditorRef.current : null;
+      if (rich) {
+        rich.insertText(text, position);
+        return;
+      }
       const ta = textareaRef.current;
       const base = localContent;
       if (!ta) {
@@ -610,7 +633,30 @@ export function NoteContentEditor({
           : base.slice(0, end) + "\n\n" + text + base.slice(end),
       );
     },
-    [localContent, handleChangeFlush],
+    [localContent, handleChangeFlush, richMode],
+  );
+
+  // ── Find in Write / Source → the one editor's own find bar ──────────
+  // Its bar highlights in the view that is showing and never matches inside
+  // protected content (code, math, kinds). ⌘F / the menu open the notes find
+  // state; in these modes it is handed to the editor and closed here, so ONE
+  // bar answers. Search across notes (global scope) stays the notes bar.
+  const findOpen = findReplaceState?.isOpen ?? false;
+  const findScope = findReplaceState?.scope;
+  const findWithReplace = findReplaceState?.showReplace ?? false;
+  useEffect(() => {
+    if (!richMode || !findOpen || findScope === "global") return;
+    richEditorRef.current?.openFind(findWithReplace);
+    dispatch(closeFindReplace({ instanceId }));
+  }, [richMode, findOpen, findScope, findWithReplace, dispatch, instanceId]);
+
+  // The editor switched its own view (⌘-shortcut, or back after a refused
+  // switch): the note's mode follows, so the header shows the truth.
+  const handleEditorModeChange = useCallback(
+    (mode: EditorMode) => {
+      dispatch(setNoteEditorMode({ id: noteId, mode }));
+    },
+    [dispatch, noteId],
   );
 
   // ── Write half of the notes surface (manifest `writeTargets`) ──────
@@ -818,7 +864,17 @@ export function NoteContentEditor({
         <EditableContextMenu
           {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
           extraSections={notesExtras}
-          getTextarea={() => textareaRef.current}
+          getTextarea={() => (richMode ? null : textareaRef.current)}
+          insertAtCaret={
+            richMode
+              ? (text: string) => {
+                  const rich = richEditorRef.current;
+                  if (!rich) return false;
+                  rich.replaceSelection(text);
+                  return true;
+                }
+              : undefined
+          }
           getApplicationScope={getApplicationScope}
           // Note-typed content source so the rich-document Export / Convert
           // actions (HTML preview save-back, Convert→Task linking) resolve the
@@ -877,9 +933,10 @@ export function NoteContentEditor({
                 onRestore={handleChangeFlush}
               />
             )}
-            {findReplaceState?.isOpen && (
-              <FindReplaceBar noteId={noteId} textareaRef={textareaRef} />
-            )}
+            {findReplaceState?.isOpen &&
+              (!richMode || findReplaceState.scope === "global") && (
+                <FindReplaceBar noteId={noteId} textareaRef={textareaRef} />
+              )}
             <NoteEditorCore imagePolicy={authoredBy(noteExists?.created_by, conflictActorId)}
               content={localContent}
               onChange={handleChange}
@@ -887,6 +944,11 @@ export function NoteContentEditor({
               readOnly={readOnly}
               editorMode={effectiveEditorMode}
               textareaRef={textareaRef}
+              richEditorRef={richEditorRef}
+              onEditorModeChange={handleEditorModeChange}
+              // The note's own menu (its rows, scope, agents) answers right-clicks
+              // in every mode — the one editor mounts none of its own here.
+              hostContextMenu
               surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
               getApplicationScope={getApplicationScope}
               // On the Notes page the active tab carries the one mic and the
@@ -960,6 +1022,7 @@ export function NoteContentEditor({
           textareaRef={textareaRef}
           previewContainerRef={previewContainerRef}
           editorRootRef={editorRootRef}
+          onJumpInEditor={(offset) => richEditorRef.current?.jumpToOffset(offset)}
           onClose={handleOutlineClose}
         />
       )}

@@ -1,10 +1,17 @@
 "use client";
 
 import { useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Copy } from "lucide-react";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
+import { toast } from "@/lib/toast";
 
-import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
 import { CanonicalizationToolbar } from "./CanonicalizationToolbar";
+import { readOf } from "@/components/read-state/ReadGate";
 import { useAuditDataset } from "../hooks/useAuditDataset";
 import { useCanonicalizationDatasetToolbar } from "../hooks/useCanonicalizationDatasetToolbar";
 import {
@@ -12,7 +19,11 @@ import {
   type AuditSchemaSummaryRow,
   type AuditSummaryRow,
 } from "../types";
-import { SCHEMA_SUMMARY_TABLE_COPY } from "../utils/aiExport";
+import {
+  auditRowsToAgentInput,
+  SCHEMA_SUMMARY_TABLE_COPY,
+} from "../utils/aiExport";
+import { exportRowsAsCsv } from "../utils/exportCsv";
 
 /** Rolls the per-table `audit.summary` rows up to one row per schema. */
 function rollUpBySchema(rows: AuditSummaryRow[]): AuditSchemaSummaryRow[] {
@@ -48,79 +59,108 @@ function certifiedPct(r: AuditSchemaSummaryRow): number | null {
   return scored === 0 ? null : Math.round((r.certified / scored) * 100);
 }
 
-const COLUMNS: AuditColumnDef<AuditSchemaSummaryRow>[] = [
+const schemaHref = (row: AuditSchemaSummaryRow) =>
+  `/administration/database/canonicalization/summary?schema=${encodeURIComponent(row.schema_name)}`;
+
+const COLUMNS: MatrxColumnDef<AuditSchemaSummaryRow>[] = [
   {
-    key: "schema_name",
+    id: "schema_name",
+    header: "Schema",
     label: "Schema",
-    type: "text",
-    getValue: (r) => r.schema_name,
-    width: "minmax(160px,1fr)",
-    copyable: true,
+    accessorFn: (r) => r.schema_name,
+    filter: "text",
+    width: 200,
+    cell: (row) => (
+      <div className="flex min-w-0 items-center gap-1">
+        <Link
+          href={schemaHref(row)}
+          onClick={(event) => event.stopPropagation()}
+          className="min-w-0 truncate text-primary hover:underline"
+          title={row.schema_name}
+        >
+          {row.schema_name}
+        </Link>
+        <button
+          type="button"
+          aria-label={`Copy ${row.schema_name}`}
+          className="shrink-0 text-muted-foreground hover:text-foreground"
+          onClick={(event) => {
+            event.stopPropagation();
+            void navigator.clipboard
+              .writeText(row.schema_name)
+              .then(() => toast.success("Copied to clipboard"))
+              .catch(() => toast.error("Could not copy schema name"));
+          }}
+        >
+          <Copy className="h-3 w-3" />
+        </button>
+      </div>
+    ),
   },
   {
-    key: "fails",
-    label: "Fails",
-    type: "number",
-    getValue: (r) => r.fails,
-    width: "90px",
+    id: "fails",
+    header: "Fails",
+    accessorFn: (r) => r.fails,
+    filter: "number",
+    width: 90,
     align: "right",
   },
   {
-    key: "warns",
-    label: "Warns",
-    type: "number",
-    getValue: (r) => r.warns,
-    width: "90px",
+    id: "warns",
+    header: "Warns",
+    accessorFn: (r) => r.warns,
+    filter: "number",
+    width: 90,
     align: "right",
   },
   {
-    key: "tables",
-    label: "Tables",
-    type: "number",
-    getValue: (r) => r.tables,
-    width: "90px",
+    id: "tables",
+    header: "Tables",
+    accessorFn: (r) => r.tables,
+    filter: "number",
+    width: 90,
     align: "right",
   },
   {
-    key: "failing_tables",
-    label: "Tables failing",
-    type: "number",
-    getValue: (r) => r.failing_tables,
-    width: "120px",
+    id: "failing_tables",
+    header: "Tables failing",
+    accessorFn: (r) => r.failing_tables,
+    filter: "number",
+    width: 120,
     align: "right",
   },
   {
-    key: "certified",
-    label: "Certified",
-    type: "number",
-    getValue: (r) => r.certified,
-    width: "100px",
+    id: "certified",
+    header: "Certified",
+    accessorFn: (r) => r.certified,
+    filter: "number",
+    width: 100,
     align: "right",
   },
   {
-    key: "uncertified",
-    label: "Not certified",
-    type: "number",
-    getValue: (r) => r.uncertified,
-    width: "120px",
+    id: "uncertified",
+    header: "Not certified",
+    accessorFn: (r) => r.uncertified,
+    filter: "number",
+    width: 120,
     align: "right",
   },
   {
-    key: "machinery",
-    label: "Machinery",
-    type: "number",
-    getValue: (r) => r.machinery,
-    width: "110px",
+    id: "machinery",
+    header: "Machinery",
+    accessorFn: (r) => r.machinery,
+    filter: "number",
+    width: 110,
     align: "right",
   },
   {
-    key: "certified_pct",
-    label: "% certified",
-    type: "number",
-    getValue: (r) => certifiedPct(r),
-    width: "110px",
+    id: "certified_pct",
+    header: "% certified",
+    accessorFn: (r) => certifiedPct(r),
+    filter: "number",
+    width: 130,
     align: "right",
-    render: (r) => {
+    cell: (r) => {
       const pct = certifiedPct(r);
       if (pct === null) {
         return <span className="text-muted-foreground">—</span>;
@@ -128,10 +168,7 @@ const COLUMNS: AuditColumnDef<AuditSchemaSummaryRow>[] = [
       return (
         <div className="flex w-full items-center justify-end gap-2">
           <div className="h-1.5 w-10 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full bg-primary"
-              style={{ width: `${pct}%` }}
-            />
+            <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
           </div>
           <span className="tabular-nums">{pct}%</span>
         </div>
@@ -142,6 +179,14 @@ const COLUMNS: AuditColumnDef<AuditSchemaSummaryRow>[] = [
 
 export function SchemaSummaryPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const legacySort = searchParams.get("sort");
+  const initialSort = COLUMNS.some((column) => column.id === legacySort)
+    ? {
+        id: legacySort ?? "fails",
+        direction: searchParams.get("dir") === "asc" ? ("asc" as const) : ("desc" as const),
+      }
+    : { id: "fails", direction: "desc" as const };
   const { rows, loading, error, reload } = useAuditDataset<AuditSummaryRow>(
     "summary",
     isAuditSummaryRow,
@@ -159,20 +204,66 @@ export function SchemaSummaryPage() {
         lastRefreshedAt={toolbar.lastRefreshedAt}
       />
       <div className="min-h-0 flex-1 overflow-hidden px-4 pb-4">
-        <AdminAuditTable
-          rows={schemaRows}
+        <MatrxDataTable<AuditSchemaSummaryRow>
+          data={schemaRows}
           columns={COLUMNS}
-          loading={loading}
-          error={error}
-          csvFilename="canonicalization-summary-by-schema.csv"
-          defaultSort={{ key: "fails", dir: "desc" }}
-          emptyMessage="No registered tables found."
-          copyForAi={SCHEMA_SUMMARY_TABLE_COPY}
-          onRowClick={(row) =>
-            router.push(
-              `/administration/database/canonicalization/summary?schema=${encodeURIComponent(row.schema_name)}`,
-            )
-          }
+          getRowId={(row) => row.schema_name}
+          isLoading={loading}
+          read={readOf(
+            { loading, error },
+            { what: "the schema summary", onRetry: reload },
+          )}
+          emptyState={{ title: "No registered tables found" }}
+          pageSize={0}
+          virtualize={{
+            enabled: true,
+            rowHeight: 34,
+            overscan: 12,
+            threshold: 1,
+          }}
+          urlState={{
+            id: "canonicalization-by-schema",
+            defaultSort: initialSort,
+          }}
+          toolbar={{ search: true, searchPlaceholder: "Search all columns…" }}
+          coverage={{
+            loaded: schemaRows.length,
+            total: schemaRows.length,
+            answeredBy: "source",
+            noun: "schema",
+          }}
+          facets={{ enabled: true, totalRows: schemaRows.length }}
+          getRowHref={schemaHref}
+          onRowOpen={(row) => router.push(schemaHref(row))}
+          detail={{ enabled: false }}
+          copy={{
+            ...SCHEMA_SUMMARY_TABLE_COPY,
+            listHuman: (visible) =>
+              visible.map(SCHEMA_SUMMARY_TABLE_COPY.humanRow).join("\n\n"),
+            listAgent: (visible, all) =>
+              auditRowsToAgentInput(SCHEMA_SUMMARY_TABLE_COPY, visible, all, {
+                filtered: visible.length !== all.length ? "yes" : "no",
+              }),
+            export: (visible) => ({
+              items: [
+                {
+                  id: "schema-summary-csv",
+                  label: "Export CSV",
+                  onSelect: () =>
+                    exportRowsAsCsv(
+                      "canonicalization-summary-by-schema.csv",
+                      visible,
+                      COLUMNS.map((column) => ({
+                        key: column.id ?? "",
+                        label: String(column.header),
+                        getValue: (row: AuditSchemaSummaryRow) =>
+                          column.accessorFn?.(row),
+                      })),
+                    ),
+                },
+              ],
+            }),
+          }}
         />
       </div>
     </div>

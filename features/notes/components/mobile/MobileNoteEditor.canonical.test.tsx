@@ -68,19 +68,30 @@ jest.mock("next/dynamic", () => {
     };
 });
 
-// The rich (WYSIWYG) editor, reduced to its one contract that matters here:
-// `getCurrentMarkdown()` can hold words its onChange has not delivered yet.
+// THE ONE EDITOR (Write mode), reduced to its one contract that matters here:
+// its controller's `flush()` can hold words its onChange has not delivered yet.
 let richLiveMarkdown = "";
 let richOnChange: ((value: string) => void) | null = null;
-jest.mock("@/components/mardown-display/chat-markdown/tui/TuiEditorContent", () => {
+jest.mock("@/components/rich-editor/RichEditor", () => {
   const ReactModule = jest.requireActual<typeof import("react")>("react");
-  const Tui = ReactModule.forwardRef(function Tui(props: { onChange?: (value: string) => void }, ref: React.Ref<unknown>) {
+  function RichEditor(props: {
+    value: string;
+    onChange?: (value: string) => void;
+    controllerRef?: React.Ref<unknown>;
+  }) {
     richOnChange = props.onChange ?? null;
-    ReactModule.useImperativeHandle(ref, () => ({ getCurrentMarkdown: () => richLiveMarkdown }));
+    ReactModule.useImperativeHandle(props.controllerRef, () => ({
+      flush: () => richLiveMarkdown || props.value,
+    }));
     return ReactModule.createElement("div", { "data-testid": "rich-editor" });
-  });
-  return { __esModule: true, default: Tui };
+  }
+  return { __esModule: true, default: RichEditor };
 });
+// The per-note mode memory writes preferences; this store has none.
+jest.mock("../../hooks/usePreferredDefaultEditorMode", () => ({
+  ...jest.requireActual("../../hooks/usePreferredDefaultEditorMode"),
+  useRememberNoteEditorMode: () => () => {},
+}));
 
 const ID = "33333333-3333-4333-8333-333333333333";
 const ORG = "11111111-1111-4111-8111-111111111111";
@@ -107,12 +118,12 @@ const makeStore = () =>
 type Store = ReturnType<typeof makeStore>;
 type State = ReturnType<Store["getState"]>;
 
-function Host({ mode = "plain" }: { mode?: "plain" | "wysiwyg" }) {
+function Host({ mode = "plain" }: { mode?: "plain" | "write" }) {
   const record = useSelector((state: State) => state.notes.notes[ID]);
   return <MobileNoteEditor note={record} editorMode={mode} onBack={() => {}} />;
 }
 
-async function mount(store: Store, mode: "plain" | "wysiwyg" = "plain") {
+async function mount(store: Store, mode: "plain" | "write" = "plain") {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -169,7 +180,7 @@ describe("MobileNoteEditor writes through the canonical path", () => {
   it("keeps rich-editor text its onChange never delivered when the note is closed", async () => {
     const store = makeStore();
     store.dispatch(upsertNoteFromServer({ note: row(), fetchStatus: "full" }));
-    const { container, unmount } = await mount(store, "wysiwyg");
+    const { container, unmount } = await mount(store, "write");
     // The lazily-imported rich editor resolves on a microtask.
     await act(async () => {
       await Promise.resolve();
@@ -195,7 +206,7 @@ describe("MobileNoteEditor writes through the canonical path", () => {
   it("opening a note in rich mode and leaving WITHOUT editing writes nothing, even if the rich editor re-serializes it", async () => {
     const store = makeStore();
     store.dispatch(upsertNoteFromServer({ note: row(), fetchStatus: "full" }));
-    const { unmount } = await mount(store, "wysiwyg");
+    const { unmount } = await mount(store, "write");
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();

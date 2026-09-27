@@ -14,6 +14,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { KeptByTheAppLine } from "@/features/unified-data/hub/KeptByTheAppLine";
+import { oneRowPerTable } from "@/features/data-tables/data-source/one-row-per-table";
 
 const SELECT_COLS = "id, table_name, description, version, updated_at";
 
@@ -36,7 +37,11 @@ const storeTableIds = new Set<string>();
 async function listTables(orgId: string): Promise<{ rows: Array<Record<string, unknown>>; kept: Array<Record<string, unknown>> }> {
   const store = await (supabase as unknown as SupabaseClient).schema("custom").rpc("table_list_everywhere", { p_organization_id: orgId });
   if (store.error) throw new Error(`The organization's tables could not be listed: ${store.error.message}`);
-  const tables = ((store.data as { tables?: unknown } | null)?.tables ?? []) as Array<Record<string, unknown>>;
+  // A table in both stores is listed once, for the store it lives in (review 2, fix lane F item 3).
+  const tables = await oneRowPerTable(
+    supabase as unknown as SupabaseClient,
+    ((store.data as { tables?: unknown } | null)?.tables ?? []) as Array<Record<string, unknown>>,
+  );
   storeTableIds.clear();
   for (const t of tables) if (t.store === "records") storeTableIds.add(String(t.id));
   const byRecent = (a: Record<string, unknown>, b: Record<string, unknown>) =>

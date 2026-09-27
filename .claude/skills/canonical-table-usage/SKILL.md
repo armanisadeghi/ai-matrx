@@ -19,3 +19,4 @@ timestamp: 2026-09-17
 2. Every value users need to sort or filter must have its own column and accessor, even if initially hidden.
 3. Deliberately combined cells must keep each intended line unwrapped, truncate overflow, and expose full values through canonical tooltips or detail controls.
 4. Use the canonical title, toolbar and footer. Do not add duplicate title/count rows or pagination footers.
+5. New and converted tables use the shared `MatrxDataTable` with adjustable desktop columns enabled by default. Do not disable `resizableColumns` or a column's `resizable` flag without recording the specific purpose and decision-maker. A legacy grid does not inherit this default; migrate it or explicitly track that capability gap.

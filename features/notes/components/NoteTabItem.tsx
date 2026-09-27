@@ -50,7 +50,6 @@ import {
   selectFolderReferences,
   selectNoteFolder,
   selectNoteById,
-  selectNoteEditorMode,
 } from "../redux/selectors";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
@@ -61,10 +60,7 @@ import type {
 import type { ContentSource } from "@/features/rich-document/types";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import { useNotesSurfaceScope } from "../hooks/useNotesSurfaceScope";
-import {
-  normalizeNoteEditorMode,
-  usePreferredDefaultEditorMode,
-} from "../hooks/usePreferredDefaultEditorMode";
+import { useNoteEditorMode } from "../hooks/usePreferredDefaultEditorMode";
 import { saveNote, copyNote, moveNoteToFolder, moveNoteToNewFolder } from "../redux/thunks";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
@@ -360,12 +356,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   // `matrx-user/notes` with the full manifest scope built at open time for
   // THIS tab's note. The tab has no textarea — a permanently-null ref keeps
   // the selection fields empty, which is correct for a tab strip.
-  const preferredDefaultMode = usePreferredDefaultEditorMode();
-  const savedEditorMode = useAppSelector(selectNoteEditorMode(noteId));
-  const editorMode = normalizeNoteEditorMode(
-    savedEditorMode,
-    preferredDefaultMode,
-  );
+  const editorMode = useNoteEditorMode(noteId);
   const noteRecord = useAppSelector(selectNoteById(noteId));
   const noTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   // The "…" button opens the tab's universal v3 menu ON this element.

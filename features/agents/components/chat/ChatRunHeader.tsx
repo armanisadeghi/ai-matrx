@@ -21,6 +21,7 @@ import {
   interceptChatAgentLink,
   stageChatAgentSwitch,
 } from "./begin-fresh-chat";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 
 interface ChatRunHeaderProps {
   /**
@@ -144,6 +145,9 @@ export function ChatRunHeader({
             sentence did. The chip renders for the OWNER and only when the
             conversation really does sit inside a room other people can reach. */}
         <ConversationRoomNotice conversationId={conversationId} />
+        {/* THE SHEET CONTRACT (page-pass shared defects, 2026-09-27): on a
+            phone these fold into the shell's one ⋮ ("This page"). */}
+        <HeaderActionsSlot className="flex shrink-0 items-center gap-1">
         {/* What this chat PRODUCED — the reverse view of the record chrome
             drawn under a kind block. Only an existing conversation can have
             produced anything, so `/chat/new` shows nothing rather than an
@@ -170,6 +174,7 @@ export function ChatRunHeader({
             href={`/chat/${conversationId}`}
           />
         )}
+        </HeaderActionsSlot>
       </div>
     </div>
   );

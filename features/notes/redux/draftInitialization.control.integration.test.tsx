@@ -61,6 +61,7 @@ jest.mock("../components/NoteHistoryPane", () => ({ NoteHistoryPane: () => null 
 jest.mock("../components/NotesWindowView", () => ({ NotesWindowView: () => null }));
 jest.mock("../components/NoteEditorCore", () => ({
   NoteEditorCore: ({ content, onChange }: { content: string; onChange: (value: string) => void }) => <textarea aria-label="Note editor" value={content} onChange={(event) => onChange(event.target.value)} />,
+  isRichEditorMode: (mode: string) => mode === "write" || mode === "source",
 }));
 jest.mock("../hooks/useNoteAccess", () => ({
   useNoteAccess: () => ({ loading: false, canEdit: true, ownerEmail: null, isOwner: true }),

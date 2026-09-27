@@ -334,7 +334,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "editor_mode",
     label: "Editor mode",
     description:
-      'Current Notes editor mode: "plain" (raw textarea), "split" (textarea + markdown preview), "preview" (read-only render), "wysiwyg" (visual markdown editor), or "markdown-split". Lets actions adapt or refuse when the mode is unsuitable (e.g. inserting at cursor is meaningless in preview).',
+      'Current Notes editor mode: "write" (the formatted editor), "plain" (quick unformatted text, never auto-formatted), "source" (Markdown source with a live preview), or "preview" (read-only render). Lets actions adapt or refuse when the mode is unsuitable (e.g. inserting at cursor is meaningless in preview).',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 14,
@@ -596,7 +596,7 @@ export function createNotesScope(values: {
   open_notes_summary: NotesOpenTabSummaryEntry[];
   all_folder_names: string[];
   note_scope_assignments: NotesScopeAssignmentEntry[];
-  editor_mode: "plain" | "split" | "preview" | "wysiwyg" | "markdown-split";
+  editor_mode: "write" | "plain" | "source" | "preview" | "split";
   is_split_pane_visible: boolean;
   history_pane_open: boolean;
   // alwaysAvailable: false → optional

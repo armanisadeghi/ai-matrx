@@ -52,6 +52,7 @@ import {
   type GetTableResult,
 } from "@/utils/user-table-utls/table-utils";
 import { whereANewTableIsBorn } from "./data-source/where-a-table-is-born";
+import { oneRowPerTable } from "./data-source/one-row-per-table";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import type {
@@ -1329,7 +1330,10 @@ export async function listTablesEverywhere(args: { organizationId?: string | nul
     .rpc("table_list_everywhere", { p_organization_id: organizationId });
   if (!everywhere.error) {
     const payload = everywhere.data as { success?: boolean; tables?: unknown } | null;
-    return { success: true, data: Array.isArray(payload?.tables) ? (payload.tables as UserTableListItem[]) : [] };
+    const tables = Array.isArray(payload?.tables) ? (payload.tables as UserTableListItem[]) : [];
+    // The door unions both stores, so a table in both came back twice (review 2: the picker drew it
+    // twice, React threw a duplicate key). One row, for the store it lives in.
+    return { success: true, data: await oneRowPerTable(supabase as unknown as SupabaseClient, tables) };
   }
   if (!DOOR_ABSENT.has(everywhere.error.code ?? "")) return refused(everywhere.error);
 

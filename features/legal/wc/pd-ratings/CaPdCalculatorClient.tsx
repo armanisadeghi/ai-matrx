@@ -17,6 +17,8 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
+import { usePhonePageActions } from "@/features/shell/components/header/phone-page-actions";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import {
@@ -142,6 +144,8 @@ export function CaPdCalculatorClient({
   }, [markClean]);
 
   const [sheetOpen, setSheetOpen] = React.useState(false);
+  const isPhone = useIsMobile();
+  const { host: phoneSheetHost } = usePhonePageActions();
 
   if (!hydrated) {
     return <WorkspaceSkeleton />;
@@ -169,6 +173,47 @@ export function CaPdCalculatorClient({
     </>
   );
 
+  // The options — ONE list: our own sheet draws it, and on a phone it is
+  // drawn directly in the shell's ⋮ ("This page"), one step.
+  const sheetRows = (
+    <>
+      <p className="text-xs text-muted-foreground px-1 pb-1">
+        {mode === "draft"
+          ? "Draft · unsaved"
+          : draft.claim.applicant_name
+            ? `Saved · ${draft.claim.applicant_name}`
+            : "Saved case"}
+      </p>
+      {isAuthed && (
+        <Link
+          href="/legal/ca-wc/cases"
+          onClick={() => setSheetOpen(false)}
+          className="flex items-center gap-3 w-full min-h-[52px] px-3 rounded-lg active:bg-muted transition-colors"
+        >
+          <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="text-[15px]">My cases</span>
+        </Link>
+      )}
+      {canReset && (
+        <button
+          type="button"
+          onClick={() => {
+            setSheetOpen(false);
+            resetDraft();
+          }}
+          className="flex items-center gap-3 w-full min-h-[52px] px-3 rounded-lg active:bg-muted transition-colors text-left"
+        >
+          <RotateCcw className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="text-[15px]">Reset</span>
+        </button>
+      )}
+      <div className="flex items-center gap-2 px-3 py-2">
+        {printAndSaveActions}
+      </div>
+    </>
+  );
+  const inShellSheet = isPhone && phoneSheetHost != null;
+
   return (
     <>
       <PageHeader
@@ -191,18 +236,26 @@ export function CaPdCalculatorClient({
               </span>
             </div>
             <div />
-            {/* Sheet contract: on a phone this folds into the shell's one ⋮. */}
+            {/* Sheet contract: on a phone the options are rows in the shell's
+                one ⋮ (one step); without it, one trigger for our own sheet. */}
             <HeaderActionsSlot className="flex items-center justify-end min-w-0">
-              <TapTargetButton
-                icon={<MoreHorizontal className="h-4 w-4" />}
-                ariaLabel="PD Rating options"
-                onClick={() => setSheetOpen(true)}
-              />
+              {inShellSheet ? (
+                <div className="flex w-full flex-col gap-1" data-pd-sheet-rows>
+                  {sheetRows}
+                </div>
+              ) : (
+                <TapTargetButton
+                  icon={<MoreHorizontal className="h-4 w-4" />}
+                  ariaLabel="PD Rating options"
+                  onClick={() => setSheetOpen(true)}
+                />
+              )}
             </HeaderActionsSlot>
           </div>
         }
       />
 
+      {!inShellSheet ? (
       <BottomSheet open={sheetOpen} onOpenChange={setSheetOpen} title="PD Rating options">
         <BottomSheetHeader
           title="PD Rating"
@@ -215,42 +268,9 @@ export function CaPdCalculatorClient({
             </button>
           }
         />
-        <BottomSheetBody className="px-4 pb-4 space-y-2">
-          <p className="text-xs text-muted-foreground px-1 pb-1">
-            {mode === "draft"
-              ? "Draft · unsaved"
-              : draft.claim.applicant_name
-                ? `Saved · ${draft.claim.applicant_name}`
-                : "Saved case"}
-          </p>
-          {isAuthed && (
-            <Link
-              href="/legal/ca-wc/cases"
-              onClick={() => setSheetOpen(false)}
-              className="flex items-center gap-3 w-full min-h-[52px] px-3 rounded-lg active:bg-muted transition-colors"
-            >
-              <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="text-[15px]">My cases</span>
-            </Link>
-          )}
-          {canReset && (
-            <button
-              type="button"
-              onClick={() => {
-                setSheetOpen(false);
-                resetDraft();
-              }}
-              className="flex items-center gap-3 w-full min-h-[52px] px-3 rounded-lg active:bg-muted transition-colors text-left"
-            >
-              <RotateCcw className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="text-[15px]">Reset</span>
-            </button>
-          )}
-          <div className="flex items-center gap-2 px-3 py-2">
-            {printAndSaveActions}
-          </div>
-        </BottomSheetBody>
+        <BottomSheetBody className="px-4 pb-4 space-y-2">{sheetRows}</BottomSheetBody>
       </BottomSheet>
+      ) : null}
 
       <main className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 pt-4 pb-16 space-y-4 lg:space-y-6">
         {showResumePanel && (

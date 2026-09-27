@@ -25,6 +25,7 @@ import {
   TablePage,
   personActor,
   recordsDataSource,
+  tableRightsAt,
   type AgentBuildAsk,
   type HostLayout,
   type OpenRecordsAsk,
@@ -74,12 +75,17 @@ export interface RecordsUiHostArgs {
   gridContext?: GridContextChannel | null;
   /** Layouts the host draws beside the package's own (the /data-v2 page's Sheet). */
   layouts?: HostLayout[];
+  /**
+   * The host's own narrower answer (records-ui `rights` port): a PREVIEW is read-only whatever the
+   * person holds. Left out, the store's own doors decide (`letTheStoreDecideRights`).
+   */
+  rights?: RecordsUiHost["rights"];
 }
 
 /**
  * THE HOST, WRITTEN ONCE. Pure: the same inputs give the same port list on every surface.
  */
-export function recordsUiHostFor({ ports, merged, gridContext, layouts }: RecordsUiHostArgs): RecordsUiHost {
+export function recordsUiHostFor({ ports, merged, gridContext, layouts, rights }: RecordsUiHostArgs): RecordsUiHost {
   return {
     Link,
     density: "condensed",
@@ -94,6 +100,8 @@ export function recordsUiHostFor({ ports, merged, gridContext, layouts }: Record
     // A value kept as a file opens at /files/f/<id>; the export reads its whole text; an
     // attachment cell attaches through the app's one file window (pickFiles).
     ...RECORDS_FILES,
+    // …in the TABLE's organization: the file window lists only its files and uploads there.
+    pickFiles: (ask) => RECORDS_FILES.pickFiles({ ...ask, organizationId: ports.organizationId }),
     members: ports.members,
     onAskForOne: ports.onAskForOne,
     openRecords: ports.openRecords,
@@ -102,8 +110,20 @@ export function recordsUiHostFor({ ports, merged, gridContext, layouts }: Record
     // The platform's ONE chat column bound to the record (AGT-N-9) — never a second chat.
     chat: (ctx) => <RecordScopedChat ctx={ctx} organizationId={ports.organizationId} />,
     ...(layouts && layouts.length > 0 ? { layouts } : {}),
+    ...(rights ? { rights } : {}),
   };
 }
+
+/**
+ * A PREVIEW'S RIGHTS (merged-grid review 2, fix lane F item 3): read and copy, nothing else — the
+ * tables picker previews a table, it does not edit it. Every "may not" names the way in.
+ */
+const PREVIEW_SAYS = "This is a preview. Open the table to change it.";
+export const PREVIEW_RIGHTS: NonNullable<RecordsUiHost["rights"]> = () => ({
+  ...tableRightsAt("viewer"),
+  reason: PREVIEW_SAYS,
+  why: () => PREVIEW_SAYS,
+});
 
 /**
  * The React-built ports, for a table living in `organizationId`.
@@ -227,6 +247,7 @@ export function RecordStoreTableHost({
   organizationId,
   menuExtras,
   className,
+  readOnly = false,
 }: {
   tableId: string;
   /** The organization the table lives in (`locateTable`'s answer), never the active one. */
@@ -234,6 +255,8 @@ export function RecordStoreTableHost({
   /** Host actions for the table's one menu ("Open in a window", "Revert to text", …). */
   menuExtras?: Array<{ key: string; label: string; onSelect: () => void }>;
   className?: string;
+  /** A preview: read-only whatever the person holds (the picker's preview). */
+  readOnly?: boolean;
 }): ReactNode {
   const userId = useAppSelector(selectUserId);
   const dataSource = useRecordsDataSource();
@@ -241,12 +264,13 @@ export function RecordStoreTableHost({
   const merged = useMergedGridKnob(organizationId);
   const gridContext = useGridContextChannel();
   const realtime = useMemo(() => createRecordsRealtimePort(organizationId), [organizationId]);
-  const host = recordsUiHostFor({ ports, merged, gridContext });
+  const host = recordsUiHostFor({ ports, merged, gridContext, ...(readOnly ? { rights: PREVIEW_RIGHTS } : {}) });
   return (
     <div
       className={className ?? "flex h-full min-h-0 flex-1 flex-col overflow-hidden"}
       data-record-store-table={tableId}
       data-grid={merged ? "merged" : "classic"}
+      {...(readOnly ? { "data-read-only": "preview" } : {})}
     >
       <RecordsMount
         letTheStoreDecideRights

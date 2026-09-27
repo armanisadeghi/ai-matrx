@@ -30,8 +30,8 @@ import {
 export const WORKING_DOC_VIEW_MODES = [
   { mode: "plain" as const, label: "Edit", icon: FileText },
   { mode: "split" as const, label: "Split", icon: SplitSquareHorizontal },
-  { mode: "wysiwyg" as const, label: "Rich", icon: PilcrowRight },
-  { mode: "markdown-split" as const, label: "MD Split", icon: Columns },
+  { mode: "write" as const, label: "Write", icon: PilcrowRight },
+  { mode: "source" as const, label: "Source", icon: Columns },
   { mode: "preview" as const, label: "Preview", icon: Eye },
 ];
 
@@ -47,9 +47,8 @@ interface WorkingDocumentViewControlsProps {
    */
   showDiff?: boolean;
   /**
-   * View-only sharee: hide the rich/TUI edit modes — those editors have no
-   * read-only rendering, and a viewer's writes are RLS-doomed. Plain / Split /
-   * Preview all honor readOnly.
+   * View-only sharee: hide the one editor's edit modes (Write / Source) — a
+   * viewer's writes are RLS-doomed. Plain / Split / Preview all honor readOnly.
    */
   readOnly?: boolean;
 }
@@ -65,7 +64,7 @@ export function WorkingDocumentViewControls({
 
   const modes = readOnly
     ? WORKING_DOC_VIEW_MODES.filter(
-        (m) => m.mode !== "wysiwyg" && m.mode !== "markdown-split",
+        (m) => m.mode !== "write" && m.mode !== "source",
       )
     : WORKING_DOC_VIEW_MODES;
   const current =

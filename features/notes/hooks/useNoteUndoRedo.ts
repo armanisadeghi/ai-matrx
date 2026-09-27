@@ -65,6 +65,15 @@ export function useNoteUndoRedo({
     function handleKeyDown(e: KeyboardEvent) {
       const mod = isMacLike() ? e.metaKey : e.ctrlKey;
       if (!mod) return;
+      // Write / Source: THE ONE EDITOR owns undo (it restores the caret and
+      // treats protected blocks as the person's own act). Its result reaches
+      // the note through onChange, like typing — never undo twice.
+      if (
+        e.target instanceof Element &&
+        e.target.closest("[data-rich-editor]")
+      ) {
+        return;
+      }
 
       if (e.key === "z" || e.key === "Z") {
         if (e.shiftKey) {

@@ -192,6 +192,7 @@ export default function CloudFilesPickerHostImpl() {
           multi={fileOptions.multi ?? false}
           pickedCount={pickedCount}
           onUnpick={handleFileUnpick}
+          organizationId={fileOptions.organizationId ?? null}
         />
       ) : null,
     [fileOpen, fileOptions, handleFileClose, handleFilePick, handleFileUnpick, pickedCount],

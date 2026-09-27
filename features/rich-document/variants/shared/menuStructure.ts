@@ -88,6 +88,8 @@ export const MENU_STRUCTURE: MenuSection[] = [
       // Send THIS message onward — one family, adjacent, no heading (no
       // approved name fits; "Ask in chat" was coined 2026-09-25).
       "send-to-agent",
+      // An answer in a "Custom agent…" window goes back into the text it came from.
+      "apply-to-source",
       "ask-followup",
       "quote-into-chat",
       "add-to-rulebook",

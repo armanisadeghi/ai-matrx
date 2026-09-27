@@ -384,14 +384,28 @@ export interface AgentContextPreferences {
  * context — unless empty. Null = none yet; the first open/type creates one.
  */
 /**
- * Notes. `defaultEditorMode` is the view a note opens in when the person has
- * not chosen one for that note — Rich (rendered, WYSIWYG) by default, like
- * Notion / Apple Notes / Bear; raw markdown is never what a non-technical
- * person meets first. Picking a view in the Notes header saves it here.
- * Values are the notes EditorMode union.
+ * Notes (Arman, 2026-09-27). `defaultEditorMode` is the mode a note opens in on
+ * a desktop when the person has not typed in that note before — Split (the quick
+ * plain textarea left, the formatted note live right) by default; the modes are
+ * split · plain · write (the one editor) · preview. `defaultPhoneEditorMode` is
+ * the phone's — Plain by default; the phone has plain · write. Picking a mode
+ * saves it for that device. `noteModes` remembers, per note, whether the person
+ * last typed it in Write ("write") or as text ("plain"), newest last, bounded —
+ * a note last edited in Write reopens in Write. Values stored before the one
+ * editor are read by `canonicalNoteEditorMode`: wysiwyg → write,
+ * markdown-split / split → split.
  */
 export interface NotesPreferences {
-  defaultEditorMode: "wysiwyg" | "split" | "plain" | "markdown-split" | "preview";
+  defaultEditorMode:
+    | "split"
+    | "plain"
+    | "write"
+    | "preview"
+    // Read-path aliases for values stored before the one editor (never written now).
+    | "wysiwyg"
+    | "markdown-split";
+  defaultPhoneEditorMode: "plain" | "write";
+  noteModes: Record<string, string>;
 }
 
 export interface ScratchpadPreferences {
@@ -1284,7 +1298,9 @@ export const initializeUserPreferencesState = (
       activeId: null,
     },
     notes: {
-      defaultEditorMode: "wysiwyg",
+      defaultEditorMode: "split",
+      defaultPhoneEditorMode: "plain",
+      noteModes: {},
     },
     siteWorkbench: {
       bookmarks: [],

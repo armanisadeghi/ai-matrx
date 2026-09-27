@@ -4,7 +4,18 @@
 // Works in ALL contexts: desktop workspace, mobile, floating window, quick notes, embedded panels.
 //
 // What it owns:
-// - Editor mode switching (plain, split, preview, wysiwyg, markdown-split)
+// - Editor mode switching:
+//     split    the quick textarea on the left (the agent-wired one when a host
+//              passes `surfaceName`), the formatted note live on the right
+//              through the shared renderer (MatrxSplit, scroll-synced) — the
+//              notes desktop default
+//     plain    that textarea alone — never auto-formats anything
+//     write    THE ONE EDITOR's visual view (components/rich-editor)
+//     preview  read-only, the shared renderer (RichDocument → RichContent full)
+//     source   THE ONE EDITOR's CodeMirror source view (hosts that offer it;
+//              notes do not — Split is notes' source-plus-preview mode)
+//   Toast UI is gone from this file for good (guard:
+//   features/notes/__tests__/notes-never-mount-toast-ui.test.ts).
 // - Textarea ref forwarding (cursor ops, voice input, context menus)
 // - Voice input integration
 // - Content rendering per mode
@@ -17,8 +28,6 @@
 // - Conflict resolution UI
 
 import React, { useRef, useCallback, useEffect } from "react";
-import dynamic from "next/dynamic";
-import { Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
@@ -38,7 +47,10 @@ import {
   NOTE_READONLY_SAVE_MESSAGE,
 } from "../utils/writeErrors";
 import { cn } from "@/lib/utils";
-import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
+import RichEditor, {
+  type RichEditorController,
+  type RichEditorView,
+} from "@/components/rich-editor/RichEditor";
 import { noteIdentityContentSource } from "../richDocumentSource";
 import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 
@@ -48,23 +60,24 @@ function assignRef<T>(ref: React.Ref<T> | undefined, node: T | null) {
   else (ref as React.MutableRefObject<T | null>).current = node;
 }
 
-const TuiEditorContent = dynamic(
-  () =>
-    import("@/components/mardown-display/chat-markdown/tui/TuiEditorContent"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
-      </div>
-    ),
-  },
-);
-
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type EditorMode =
-  "plain" | "split" | "preview" | "wysiwyg" | "markdown-split";
+export type EditorMode = "plain" | "write" | "source" | "preview" | "split";
+
+/** The modes THE ONE EDITOR renders (one instance serves both). */
+export function isRichEditorMode(mode: EditorMode): mode is "write" | "source" {
+  return mode === "write" || mode === "source";
+}
+
+const RICH_VIEW: Record<"write" | "source", RichEditorView> = {
+  write: "visual",
+  source: "source",
+};
+
+/** The editor's own view as a notes mode (its ⌘-shortcut can switch views). */
+export function editorModeForRichView(view: RichEditorView): EditorMode {
+  return view === "visual" ? "write" : view;
+}
 
 export interface NoteEditorCoreProps {
   /** Current note content (controlled) */
@@ -83,8 +96,18 @@ export interface NoteEditorCoreProps {
   editorMode: EditorMode;
   /** Ref to the underlying textarea (plain + split modes). Parent uses for cursor ops. */
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
-  /** Ref to TUI editor instance (wysiwyg + markdown-split modes) */
-  tuiEditorRef?: React.MutableRefObject<TuiEditorContentRef | null>;
+  /** THE ONE EDITOR's controller (write + source modes): caret inserts, find, outline jumps. */
+  richEditorRef?: React.Ref<RichEditorController>;
+  /**
+   * The editor switched its own view (write ↔ source ↔ preview) — by shortcut, or
+   * back after a refused switch. Hosts that hold the mode follow it.
+   */
+  onEditorModeChange?: (mode: EditorMode) => void;
+  /**
+   * The host wraps this core in its OWN right-click menu (the Notes editor's
+   * menu, with the note's rows and scope). The one editor then mounts none.
+   */
+  hostContextMenu?: boolean;
   /** Called when voice transcription completes. If not provided, default inserts at cursor. */
   onVoiceTranscription?: (text: string) => void;
   /** Show the microphone button (top-right overlay) */
@@ -214,7 +237,9 @@ export function NoteEditorCore({
   onChangeFlush,
   editorMode,
   textareaRef: externalTextareaRef,
-  tuiEditorRef: externalTuiRef,
+  richEditorRef,
+  onEditorModeChange,
+  hostContextMenu = false,
   onVoiceTranscription,
   showVoiceButton = false,
   placeholder = "Start typing your note...",
@@ -253,13 +278,11 @@ export function NoteEditorCore({
   const richSource: ContentSource =
     actionsSource ?? (noteId ? noteIdentityContentSource(noteId, `editor-core:${noteId}`) : { type: "raw" });
   const internalTextareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const internalTuiRef = useRef<TuiEditorContentRef>(null);
   const previewScrollRef = useRef<HTMLDivElement | null>(null);
   const inactiveScrollRef = useRef<HTMLElement | null>(null);
 
   // Use external refs if provided, otherwise internal
   const textareaRef = externalTextareaRef || internalTextareaRef;
-  const tuiEditorRef = externalTuiRef || internalTuiRef;
 
   useScrollEdgeIntent(
     scrollIntent,
@@ -319,21 +342,13 @@ export function NoteEditorCore({
     [onVoiceTranscription, flushChange, textareaRef],
   );
 
-  // TUI editor change handler
-  const handleTuiChange = useCallback(
-    (value: string) => {
-      onChange(value);
-    },
-    [onChange],
-  );
-
-  // The agent-wired ProTextarea (plain mode + `surfaceName`) brings its OWN
+  // The agent-wired ProTextarea (plain / split + `surfaceName`) brings its OWN
   // voice control, so suppress this overlay there to avoid two stacked mics.
-  // Every other mode (split / wysiwyg / markdown-split) still needs it.
+  // Every other editable mode (write / source) still needs it.
   const showVoiceOverlay =
     showVoiceButton &&
     !readOnly &&
-    !(editorMode === "plain" && Boolean(surfaceName));
+    !((editorMode === "plain" || editorMode === "split") && Boolean(surfaceName));
 
   return (
     <div className={cn("relative w-full h-full", className)}>
@@ -433,6 +448,8 @@ export function NoteEditorCore({
           actionsSurfaceId={actionsSurfaceId}
           contentResetKey={resetKey}
           scrollIntent={scrollIntent}
+          surfaceName={surfaceName}
+          getApplicationScope={getApplicationScope}
         />
       )}
 
@@ -476,56 +493,36 @@ export function NoteEditorCore({
         </div>
       )}
 
-      {/* ── WYSIWYG (TUI Editor) ────────────────────────────────────── */}
-      {editorMode === "wysiwyg" && (
+      {/* ── Write + Source (THE ONE EDITOR) ─────────────────────────── */}
+      {/* ONE instance serves both modes, so switching Write ↔ Source keeps the
+          editor (and delivers pending typing) instead of remounting it. The host's
+          mode control is the one view switch — the editor draws no toolbar row. */}
+      {isRichEditorMode(editorMode) && (
         <div className="absolute inset-0 w-full h-full">
-          <TuiEditorContent
-            ref={tuiEditorRef}
-            content={content}
-            onChange={handleTuiChange}
-            isActive={true}
-            editMode="wysiwyg"
-            // The Notes header is the one view switch (Write / Read / Markdown).
-            hideModeSwitch
-            className="w-full h-full"
-          />
-        </div>
-      )}
-
-      {/* ── Markdown Split (TUI Editor in markdown mode) ────────────── */}
-      {editorMode === "markdown-split" && (
-        <div className="absolute inset-0 w-full h-full">
-          <TuiEditorContent
-            ref={tuiEditorRef}
-            content={content}
-            onChange={handleTuiChange}
-            isActive={true}
-            editMode="markdown"
-            className="w-full h-full"
+          <RichEditor
+            key={resetKey}
+            value={content}
+            onChange={onChange}
+            view={RICH_VIEW[editorMode]}
+            onViewChange={
+              onEditorModeChange
+                ? (view) => onEditorModeChange(editorModeForRichView(view))
+                : undefined
+            }
+            chrome="bare"
+            hostContextMenu={hostContextMenu}
+            controllerRef={richEditorRef}
+            readOnly={readOnly}
+            placeholder={placeholder}
+            surfaceName={surfaceName ?? "matrx-user/notes"}
+            sourceFeature="notes"
+            contentSource={richSource}
+            defaultOutlineOpen={false}
+            imagePolicy={imagePolicy}
+            className="h-full"
           />
         </div>
       )}
     </div>
   );
-}
-
-// ── Helper: Get current content from the right source ────────────────────────
-
-/**
- * Reads the latest content from the appropriate editor surface.
- * Useful for force-save and mode-switch scenarios where TUI state
- * may diverge from the controlled `content` prop.
- */
-export function getCurrentEditorContent(
-  editorMode: EditorMode,
-  content: string,
-  tuiEditorRef?: React.MutableRefObject<TuiEditorContentRef | null>,
-): string {
-  if (
-    (editorMode === "wysiwyg" || editorMode === "markdown-split") &&
-    tuiEditorRef?.current?.getCurrentMarkdown
-  ) {
-    return tuiEditorRef.current.getCurrentMarkdown();
-  }
-  return content;
 }

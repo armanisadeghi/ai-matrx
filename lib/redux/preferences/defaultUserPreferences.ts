@@ -229,9 +229,13 @@ export const defaultUserPreferences: UserPreferences = {
   scratchpad: {
     activeId: null,
   },
-  // Notes open rendered (Rich) unless the person chose another view.
+  // Notes open in Split on a desktop (plain text left, the formatted note live
+  // right) and Plain on a phone, unless the person chose another mode; a note
+  // last edited in Write reopens in Write (noteModes).
   notes: {
-    defaultEditorMode: "wysiwyg",
+    defaultEditorMode: "split",
+    defaultPhoneEditorMode: "plain",
+    noteModes: {},
   },
   siteWorkbench: {
     bookmarks: [],

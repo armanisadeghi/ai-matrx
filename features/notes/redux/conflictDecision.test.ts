@@ -97,7 +97,8 @@ describe("Notes CAS conflict decision contract", () => {
       }),
     );
     expect(state.notes[ID]).toMatchObject({
-      _editorMode: "markdown-split",
+      // A pre-one-editor value is read as its successor (markdown → split).
+      _editorMode: "split",
       _editorModeSource: "persisted",
     });
   });

@@ -18,7 +18,7 @@ import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import type { RichEditorProps } from "./RichEditorImpl";
 
-export type { RichEditorProps, RichEditorView } from "./RichEditorImpl";
+export type { RichEditorProps, RichEditorView, RichEditorController } from "./RichEditorImpl";
 
 const RichEditor = dynamic(() => import("./RichEditorImpl"), {
   ssr: false,

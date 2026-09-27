@@ -1,9 +1,8 @@
 "use client";
 
 import React, {
-  useCallback,
   useEffect,
-  useMemo,
+  useEffectEvent,
   useRef,
   useState,
   useTransition,
@@ -58,6 +57,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
@@ -141,25 +146,22 @@ export function SurfacesContainer() {
     startTransition(() => router.push(href));
   };
 
-  const manifestedSurfaceNames = useMemo(
-    () => new Set(getRegisteredSurfaceNames()),
-    [],
-  );
+  const manifestedSurfaceNames = new Set(getRegisteredSurfaceNames());
 
   // The Drift report button's count is the drift report's own total (the ONE
   // helper, countDriftIssues) — it used to count only code manifests with no
   // registry row, so the badge and the report disagreed. null = not loaded.
   const [driftIssues, setDriftIssues] = useState<number | null>(null);
-  const loadDrift = useCallback(async () => {
+  const loadDrift = async () => {
     try {
       setDriftIssues(countDriftIssues(await getDriftReport()));
     } catch {
       // The report dialog shows the error itself; the badge just stays off.
       setDriftIssues(null);
     }
-  }, []);
+  };
 
-  const load = useCallback(async () => {
+  const load = async () => {
     void loadDrift();
     setLoading(true);
     setError(null);
@@ -175,11 +177,13 @@ export function SurfacesContainer() {
     } finally {
       setLoading(false);
     }
-  }, [loadDrift]);
+  };
 
+  // Load once on mount; every later load is an explicit refresh or a write.
+  const loadOnMount = useEffectEvent(() => void load());
   useEffect(() => {
-    void load();
-  }, [load]);
+    loadOnMount();
+  }, []);
 
   // Clear the per-row navigation loader if the transition settles without
   // unmounting (e.g. push to the same route).
@@ -187,18 +191,13 @@ export function SurfacesContainer() {
     if (!isPending) setNavigatingName(null);
   }, [isPending]);
 
-  const clientNames = useMemo(
-    () => clients.map((c) => c.name).sort((a, b) => a.localeCompare(b)),
-    [clients],
-  );
+  const clientNames = clients
+    .map((c) => c.name)
+    .sort((a, b) => a.localeCompare(b));
 
-  const parentNames = useMemo(
-    () => listParentFilterOptions(surfaces),
-    [surfaces],
-  );
+  const parentNames = listParentFilterOptions(surfaces);
 
-  const visible = useMemo(() => {
-    return surfaces.filter((s) => {
+  const visible = surfaces.filter((s) => {
       if (filters.client !== "__all__" && s.client_name !== filters.client) {
         return false;
       }
@@ -237,47 +236,32 @@ export function SurfacesContainer() {
       )
         return false;
       return true;
-    });
-  }, [surfaces, filters, manifestedSurfaceNames]);
+  });
 
-  const selected = useMemo(
-    () => surfaces.find((s) => s.name === selectedName) ?? null,
-    [surfaces, selectedName],
-  );
+  const selected = surfaces.find((s) => s.name === selectedName) ?? null;
 
-  const totalActive = useMemo(
-    () => surfaces.filter((s) => s.is_active).length,
-    [surfaces],
-  );
-  const totalUnused = useMemo(
-    () =>
-      surfaces.filter((s) => s.toolCount === 0 && s.agentCount === 0).length,
-    [surfaces],
-  );
+  const totalActive = surfaces.filter((s) => s.is_active).length;
+  const totalUnbound = surfaces.filter(
+    (s) => s.toolCount === 0 && s.agentCount === 0,
+  ).length;
   // Readiness rollup — scoped to the active client filter (before the other
   // filters) so the tiles always describe the client you're looking at.
-  const readinessCounts = useMemo(() => {
-    const counts: Record<SurfaceReadinessBucket, number> = {
+  const readinessCounts: Record<SurfaceReadinessBucket, number> = {
       verified: 0,
       partial: 0,
       stub: 0,
       unregistered: 0,
-    };
-    for (const s of surfaces) {
-      if (filters.client !== "__all__" && s.client_name !== filters.client) {
-        continue;
-      }
-      counts[readinessBucketOf(s)] += 1;
+  };
+  for (const s of surfaces) {
+    if (filters.client !== "__all__" && s.client_name !== filters.client) {
+      continue;
     }
-    return counts;
-  }, [surfaces, filters.client]);
+    readinessCounts[readinessBucketOf(s)] += 1;
+  }
 
-  const candidatesAvailable = useMemo(
-    () =>
-      SURFACE_CANDIDATES.filter((c) => !surfaces.some((s) => s.name === c.name))
-        .length,
-    [surfaces],
-  );
+  const candidatesAvailable = SURFACE_CANDIDATES.filter(
+    (c) => !surfaces.some((s) => s.name === c.name),
+  ).length;
   const driftSignal = driftIssues ?? 0;
 
   // Reversible: deactivating keeps every binding (the delete alternative).
@@ -412,6 +396,18 @@ export function SurfacesContainer() {
     },
   });
 
+  const peekPanel = (surface: SurfaceWithStats) => (
+    <SurfaceDetailPanel
+      surface={surface}
+      onClose={() => setSelectedName(null)}
+      onChanged={() => void load()}
+      onDeleted={(name) => {
+        if (selectedName === name) setSelectedName(null);
+        void load();
+      }}
+    />
+  );
+
   const actions = [
     {
       key: "drift",
@@ -465,149 +461,127 @@ export function SurfacesContainer() {
       contentSource={{ type: "raw" }}
     >
     <div className="h-[calc(100dvh-var(--header-height))] flex flex-col bg-background matrx-touch-targets">
-      {/* Toolbar — the page title lives in the shell header; this row holds
-          the registry counts, the readiness filter toggles and the actions. */}
+      {/* Summary row — the page title lives in the shell header. One line of
+          counts, the readiness filter toggles (desktop) and the actions. On a
+          phone it is ONE line: counts + one Actions menu; readiness moves into
+          the table's Filters sheet. */}
       <div
         data-matrx-table-page
         className="shrink-0 py-1.5 border-b border-border flex items-center gap-1.5 flex-wrap"
       >
-        {/* One line of counts, never four wrapping chips (phone). */}
         <span
-          className="whitespace-nowrap text-xs tabular-nums text-muted-foreground"
-          title="Surfaces with no agents and no tools count as unused"
+          className="min-w-0 truncate text-xs tabular-nums text-muted-foreground"
+          title={`${surfaces.length} surfaces · ${totalActive} active · ${manifestedSurfaceNames.size} with a code manifest · ${totalUnbound} with no agents or tools`}
         >
-          {surfaces.length} total · {totalActive} active ·{" "}
-          {manifestedSurfaceNames.size} manifests
-          {totalUnused > 0 && <> · {totalUnused} unused</>}
+          {surfaces.length} surfaces · {totalActive} active
+          {!isMobile && (
+            <>
+              {" "}· {manifestedSurfaceNames.size} with a code manifest
+              {totalUnbound > 0 && <> · {totalUnbound} with no agents or tools</>}
+            </>
+          )}
         </span>
         {loading && (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
         )}
         {/* Readiness filter — counts follow the client filter; pressing one
             filters the list by that bucket, pressing it again clears it. */}
-        <div className="flex flex-wrap items-center gap-1">
-          {(
-            [
-              { bucket: "verified", icon: CircleCheck },
-              { bucket: "partial", icon: CircleDashed },
-              { bucket: "stub", icon: Circle },
-              { bucket: "unregistered", icon: CircleAlert },
-            ] as const
-          ).map(({ bucket, icon: Icon }) => {
-            const meta = READINESS_META[bucket];
-            const active = filters.readiness === bucket;
-            return (
-              <Button
-                key={bucket}
-                size="sm"
-                variant={active ? "secondary" : "ghost"}
-                aria-pressed={active}
-                title={`${meta.description} — ${active ? "clear the" : "filter by this"} readiness`}
-                onClick={() =>
-                  setFilters((f) => ({
-                    ...f,
-                    readiness: active ? "all" : bucket,
-                  }))
-                }
-                className={`h-7 gap-1.5 px-2 text-xs ${active ? "ring-1 ring-primary" : ""}`}
-              >
-                <Icon className={`h-3.5 w-3.5 ${meta.iconClassName}`} />
-                <span className="capitalize">{meta.label}</span>
-                <span className="font-semibold tabular-nums">
-                  {readinessCounts[bucket]}
-                </span>
-              </Button>
-            );
-          })}
-        </div>
-
-        <div className="ml-auto flex items-center gap-1.5">
-          {isMobile ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+        {!isMobile && (
+          <div className="flex flex-wrap items-center gap-1">
+            {(
+              [
+                { bucket: "verified", icon: CircleCheck },
+                { bucket: "partial", icon: CircleDashed },
+                { bucket: "stub", icon: Circle },
+                { bucket: "unregistered", icon: CircleAlert },
+              ] as const
+            ).map(({ bucket, icon: Icon }) => {
+              const meta = READINESS_META[bucket];
+              const active = filters.readiness === bucket;
+              return (
                 <Button
+                  key={bucket}
+                  size="sm"
+                  variant={active ? "secondary" : "ghost"}
+                  aria-pressed={active}
+                  title={`${meta.description} — ${active ? "clear the" : "filter by this"} readiness`}
+                  onClick={() =>
+                    setFilters((f) => ({
+                      ...f,
+                      readiness: active ? "all" : bucket,
+                    }))
+                  }
+                  className={`h-7 gap-1.5 px-2 text-xs ${active ? "ring-1 ring-primary" : ""}`}
+                >
+                  <Icon className={`h-3.5 w-3.5 ${meta.iconClassName}`} />
+                  <span className="capitalize">{meta.label}</span>
+                  <span className="font-semibold tabular-nums">
+                    {readinessCounts[bucket]}
+                  </span>
+                </Button>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          {!isMobile &&
+            actions
+              .filter((a) => a.key === "drift" || a.key === "sync")
+              .map((a) => (
+                <Button
+                  key={a.key}
                   size="sm"
                   variant="outline"
+                  onClick={a.onClick}
+                  disabled={a.disabled}
                   className="h-7 gap-1.5 text-xs"
-                  aria-label="Registry actions"
+                  title={a.title}
                 >
-                  <MoreHorizontal className="h-3.5 w-3.5" />
-                  Actions
+                  <a.icon className="h-3.5 w-3.5" />
+                  {a.label}
+                  {a.badge > 0 && (
+                    <Badge variant="default" className="ml-1 h-4 px-1 text-xs">
+                      {a.badge}
+                    </Badge>
+                  )}
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {actions.map((a) => (
+              ))}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 w-7 p-0"
+                aria-label={isMobile ? "Registry actions" : "More registry actions"}
+                title={isMobile ? "Registry actions" : "New client, Candidates"}
+              >
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[200px]">
+              {actions
+                .filter(
+                  (a) => isMobile || (a.key !== "drift" && a.key !== "sync"),
+                )
+                .map((a) => (
                   <DropdownMenuItem
                     key={a.key}
                     disabled={a.disabled}
                     onSelect={a.onClick}
+                    className="gap-2"
                   >
-                    <a.icon className="h-4 w-4" />
-                    {a.label}
+                    <a.icon className="h-4 w-4 shrink-0" />
+                    <span className="flex-1">{a.label}</span>
                     {a.badge > 0 && (
-                      <span className="ml-auto tabular-nums text-muted-foreground">
+                      <span className="pl-3 tabular-nums text-muted-foreground">
                         {a.badge}
                       </span>
                     )}
                   </DropdownMenuItem>
                 ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <>
-            {actions.filter((a) => a.key === "drift" || a.key === "sync").map((a) => (
-              <Button
-                key={a.key}
-                size="sm"
-                variant="outline"
-                onClick={a.onClick}
-                disabled={a.disabled}
-                className="h-7 gap-1.5 text-xs"
-                title={a.title}
-              >
-                <a.icon className="h-3.5 w-3.5" />
-                {a.label}
-                {a.badge > 0 && (
-                  <Badge variant="default" className="ml-1 h-4 px-1 text-xs">
-                    {a.badge}
-                  </Badge>
-                )}
-              </Button>
-            ))}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 w-7 p-0"
-                  aria-label="More registry actions"
-                  title="New client, Candidates"
-                >
-                  <MoreHorizontal className="h-3.5 w-3.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {actions
-                  .filter((a) => a.key !== "drift" && a.key !== "sync")
-                  .map((a) => (
-                    <DropdownMenuItem
-                      key={a.key}
-                      disabled={a.disabled}
-                      onSelect={a.onClick}
-                    >
-                      <a.icon className="h-4 w-4" />
-                      {a.label}
-                      {a.badge > 0 && (
-                        <span className="ml-auto tabular-nums text-muted-foreground">
-                          {a.badge}
-                        </span>
-                      )}
-                    </DropdownMenuItem>
-                  ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            </>
-          )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -646,20 +620,31 @@ export function SurfacesContainer() {
           />
         </div>
 
-        {selected && (
-          <div className="w-[480px] shrink-0 border-l border-border min-w-0">
-            <SurfaceDetailPanel
-              surface={selected}
-              onClose={() => setSelectedName(null)}
-              onChanged={() => void load()}
-              onDeleted={(name) => {
-                if (selectedName === name) setSelectedName(null);
-                void load();
-              }}
-            />
+        {/* Peek — a side panel on desktop (narrow enough that the triage
+            columns stay in view), a bottom sheet on a phone. */}
+        {selected && !isMobile && (
+          <div className="w-[400px] shrink-0 border-l border-border min-w-0">
+            {peekPanel(selected)}
           </div>
         )}
       </div>
+      {isMobile && (
+        <Drawer
+          open={selected !== null}
+          onOpenChange={(open) => !open && setSelectedName(null)}
+        >
+          <DrawerContent className="h-[92dvh] pb-safe">
+            <DrawerHeader className="sr-only">
+              <DrawerTitle>
+                {selected ? (selected.label ?? selected.name) : "Surface"}
+              </DrawerTitle>
+            </DrawerHeader>
+            <div className="min-h-0 flex-1">
+              {selected && peekPanel(selected)}
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
 
       {/* Dialogs */}
       {creating && (
@@ -778,7 +763,7 @@ function NewClientDialog({
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label className="text-xs">Name (PK)</Label>
+            <Label className="text-xs">Name</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value.toLowerCase())}
@@ -811,7 +796,7 @@ function NewClientDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Sort order (in client tabs)</Label>
+            <Label className="text-xs">Position in the client tabs</Label>
             <Input
               type="number"
               value={sortOrder}

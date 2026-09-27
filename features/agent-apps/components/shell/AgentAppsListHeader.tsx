@@ -3,6 +3,7 @@
 import { AppWindow, Plus } from "lucide-react";
 import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 
 /** Injected route header for /agent-apps — the list/gallery entry point. */
 export function AgentAppsListHeader() {
@@ -10,7 +11,7 @@ export function AgentAppsListHeader() {
     <div className="flex items-center w-full gap-2 px-1">
       <AppWindow className="w-4 h-4 text-muted-foreground shrink-0" />
       <span className="text-sm font-semibold text-foreground">Agent Apps</span>
-      <div className="ml-auto flex items-center gap-1">
+      <HeaderActionsSlot className="ml-auto flex items-center gap-1">
         {/* THE DOOR LAW — the agent that writes an app's code is a Mandate
             (agent_apps.prompt_app_dev) the builder may swap for their own,
             with no deploy. Deep-linked to the `agent_apps` domain: the bare
@@ -20,8 +21,9 @@ export function AgentAppsListHeader() {
           href="/agent-apps/new"
           icon={<Plus className="h-4 w-4" />}
           label="New app"
+          ariaLabel="New app"
         />
-      </div>
+      </HeaderActionsSlot>
     </div>
   );
 }

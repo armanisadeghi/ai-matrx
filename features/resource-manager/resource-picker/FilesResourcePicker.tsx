@@ -167,6 +167,12 @@ interface FilesResourcePickerProps {
    */
   allowedBuckets?: string[];
   /**
+   * Only files in this organization are listed (recents, search and the folder tree) — a FILTER on
+   * what the window shows, never a permission. The data grid's attachment cell passes the table's
+   * organization (merged-grid review 2, fix lane F item 4). Absent: every file the person holds.
+   */
+  organizationId?: string | null;
+  /**
    * Initial file-type filter. Defaults to `"all"`. Callers embedding this
    * picker for a media-specific variable (image/audio/video) can open
    * already filtered without changing the Smart Agent Input path.
@@ -482,6 +488,13 @@ interface TreeNodeProps {
   multiple: boolean;
   selectedFileIds: ReadonlySet<string>;
   defaultOpen?: boolean;
+  /** Only this organization's files (see `FilesResourcePickerProps.organizationId`). */
+  organizationId?: string | null;
+}
+
+/** A file the window shows under an organization filter (none = every file). */
+function inOrganization(file: CloudFileRecord, organizationId: string | null | undefined): boolean {
+  return !organizationId || file.organizationId === organizationId;
 }
 
 function FolderNode({
@@ -496,6 +509,7 @@ function FolderNode({
   multiple,
   selectedFileIds,
   defaultOpen = false,
+  organizationId = null,
 }: TreeNodeProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
@@ -522,11 +536,12 @@ function FolderNode({
             (f): f is CloudFileRecord =>
               !!f &&
               !f.deletedAt &&
+              inOrganization(f, organizationId) &&
               matchesFileFilter(f, fileFilter, processedFileIds),
           ),
         fileSort,
       ),
-    [children.fileIds, filesById, fileFilter, fileSort, processedFileIds],
+    [children.fileIds, filesById, fileFilter, fileSort, processedFileIds, organizationId],
   );
 
   const paddingLeft = level * 1.25;
@@ -606,6 +621,7 @@ function FolderNode({
                     processedFileIds={processedFileIds}
                     multiple={multiple}
                     selectedFileIds={selectedFileIds}
+                    organizationId={organizationId}
                   />
                 );
               })}
@@ -645,6 +661,7 @@ export function FilesResourcePicker({
   allowedBuckets,
   initialFilter = "all",
   fillHost = false,
+  organizationId = null,
   title = "Cloud Files",
   headerIcon,
   topSlot,
@@ -830,11 +847,11 @@ export function FilesResourcePicker({
   // Recent files — same rules as the files list Recents view.
   const recentFiles = useMemo(() => {
     const pool = allFiles.filter(
-      (f) => !f.deletedAt && isRecentActivityFile(f),
+      (f) => !f.deletedAt && isRecentActivityFile(f) && inOrganization(f, organizationId),
     );
     pool.sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
     return pool.slice(0, RECENTS_CAP);
-  }, [allFiles]);
+  }, [allFiles, organizationId]);
 
   const visibleRecentFiles = useMemo(
     () =>
@@ -866,6 +883,7 @@ export function FilesResourcePicker({
         .filter(
           (file) =>
             !file.deletedAt &&
+            inOrganization(file, organizationId) &&
             (file.fileName.toLowerCase().includes(query) ||
               file.filePath.toLowerCase().includes(query)),
         )
@@ -874,7 +892,7 @@ export function FilesResourcePicker({
         ),
       fileSort,
     ).slice(0, SEARCH_RESULT_LIMIT);
-  }, [allFiles, debouncedSearchQuery, fileFilter, fileSort, processedFileIds]);
+  }, [allFiles, debouncedSearchQuery, fileFilter, fileSort, processedFileIds, organizationId]);
 
   const handleSearchChange = (value: string) => setSearchQuery(value);
 
@@ -1221,6 +1239,7 @@ export function FilesResourcePicker({
                         processedFileIds={processedFileIds}
                         multiple={selectionMode === "multiple"}
                         selectedFileIds={selectedFileIds}
+                        organizationId={organizationId}
                       />
                     ))}
                   </div>

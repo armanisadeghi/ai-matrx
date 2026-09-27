@@ -3,8 +3,6 @@
 import { noteDisplayLabel } from "@/features/notes/format";
 import React, { useState, useCallback, useMemo } from "react";
 import {
-  FileText,
-  Eye,
   Save,
   Loader2,
   Check,
@@ -29,6 +27,15 @@ import PageHeaderRightPortal from "@/features/shell/components/header/PageHeader
 import { cn } from "@/lib/utils";
 import MobileNotesList from "./MobileNotesList";
 import MobileNoteEditor, { type MobileEditorMode } from "./MobileNoteEditor";
+import { NOTE_PHONE_VIEW_MODES } from "../NoteViewControls";
+import {
+  DEFAULT_PHONE_EDITOR_MODE_SETTING,
+  useNoteEditorMode,
+  type PhoneNoteMode,
+} from "../../hooks/usePreferredDefaultEditorMode";
+import { setNoteEditorMode } from "../../redux/slice";
+import { useSetting } from "@/features/settings/hooks/useSetting";
+
 import { NoteSyncStatusStrip } from "../NoteSyncStatusStrip";
 import { NoteCleanupButton } from "../cleanup/NoteCleanupButton";
 import {
@@ -39,14 +46,6 @@ import type { Note } from "@/features/notes/types";
 
 type MobileView = "list" | "editor";
 
-const VIEW_MODES: {
-  mode: MobileEditorMode;
-  icon: React.ReactNode;
-  label: string;
-}[] = [
-  { mode: "plain", icon: <FileText size={16} />, label: "Edit" },
-  { mode: "preview", icon: <Eye size={16} />, label: "Read" },
-];
 
 export default function MobileNotesView({
   singleNoteId = null,
@@ -64,7 +63,16 @@ export default function MobileNotesView({
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(
     singleNoteId,
   );
-  const [editorMode, setEditorMode] = useState<MobileEditorMode>("preview");
+  // The phone's modes, by the same rule as desktop: this note's session pick →
+  // the mode it was last typed in (Write stays Write) → the person's phone
+  // default (Plain).
+  const resolvedMode = useNoteEditorMode(selectedNoteId, "phone");
+  const editorMode: MobileEditorMode = resolvedMode === "write" ? "write" : "plain";
+  const [, savePhoneDefaultMode] = useSetting<PhoneNoteMode>(DEFAULT_PHONE_EDITOR_MODE_SETTING);
+  const setEditorMode = (mode: PhoneNoteMode) => {
+    if (selectedNoteId) dispatch(setNoteEditorMode({ id: selectedNoteId, mode }));
+    savePhoneDefaultMode(mode);
+  };
   // Shared filter state — owned here so header dropdown and list stay in sync
   const [filters, setFilters] =
     useState<NotesFilterState>(DEFAULT_FILTER_STATE);
@@ -188,21 +196,23 @@ export default function MobileNotesView({
                 so the title keeps the row — one overflow per phone header
                 (page-pass shared defects, 2026-09-27). */}
             <PageHeaderRightPortal>
-            {/* View mode — two modes, so one button that switches to the
-                  other (a two-pill toggle squeezed the title to nothing and
-                  its pills to 16px targets). */}
+            {/* Mode — Plain and Write, so one button in the same slot
+                that switches to the other (a two-pill toggle squeezed the title
+                away). Labels and icons come from the one mode list. */}
               {(() => {
                 const next =
-                  VIEW_MODES.find((m) => m.mode !== editorMode) ?? VIEW_MODES[0];
+                  NOTE_PHONE_VIEW_MODES.find((m) => m.mode !== editorMode) ??
+                  NOTE_PHONE_VIEW_MODES[0];
+                const NextIcon = next.icon;
                 return (
                   <button
                     type="button"
                     onClick={() => setEditorMode(next.mode)}
                     aria-label={`Switch to ${next.label}`}
-                    title={next.label}
+                    title={`${next.label} — ${next.hint}`}
                     className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                   >
-                    {next.icon}
+                    <NextIcon size={16} />
                   </button>
                 );
               })()}

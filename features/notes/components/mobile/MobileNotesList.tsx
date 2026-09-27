@@ -29,6 +29,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectDeletedNotesList,
   selectSharedWithMeNotes,
+  selectNotesSharedError,
   selectNotesTrashStatus,
   selectNotesTrashError,
 } from "../../redux/selectors";
@@ -70,6 +71,7 @@ export default function MobileNotesList({
   const listStatus = useAppSelector(selectNotesListStatus);
   const listError = useAppSelector(selectNotesListError);
   const sharedNotes = useAppSelector(selectSharedWithMeNotes);
+  const sharedError = useAppSelector(selectNotesSharedError);
   const deletedNotes = useAppSelector(selectDeletedNotesList);
   const trashStatus = useAppSelector(selectNotesTrashStatus);
   const trashError = useAppSelector(selectNotesTrashError);
@@ -228,7 +230,7 @@ export default function MobileNotesList({
                   />
                   <span>Shared with me</span>
                   <span className="rounded-full bg-muted px-1.5 text-[10px]">
-                    {sharedNotes.length}
+                    <UntrustedCount value={sharedNotes.length} trustworthy={!sharedError} label="Notes shared with me" />
                   </span>
                   <ChevronDown
                     size={12}

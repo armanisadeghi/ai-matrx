@@ -62,7 +62,7 @@ export interface UseNotesSurfaceScopeParams {
   content: string;
   /** Reference to the editor textarea — selection is read live from the DOM. */
   textareaRef: RefObject<HTMLTextAreaElement | null>;
-  /** Active note's editor mode (plain / split / preview / wysiwyg / markdown-split). */
+  /** Active note's editor mode (write / plain / source / preview). */
   editorMode: EditorMode;
 }
 

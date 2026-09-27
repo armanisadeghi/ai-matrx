@@ -270,35 +270,38 @@ export function PartyProvenanceCard({
       // The count is of provenance edges; a "0" beside an explanation that
       // IS showing (origin stamp, discovered banner) reads as a contradiction.
       count={items?.length ? items.length : undefined}
+      compactAction
+      action={
+        // COMPACT: the sensible next step sits on the card's own header row,
+        // and the explanation is one line below it — not a paragraph that
+        // spans the whole column.
+        discovered ? (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1.5 text-xs"
+            disabled={promoting}
+            onClick={() => void promote()}
+          >
+            {promoting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <UserPlus className="h-3.5 w-3.5" />
+            )}
+            Add to my contacts
+          </Button>
+        ) : undefined
+      }
     >
       <div className="space-y-2">
-        {discovered && (
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs text-muted-foreground">
-              The platform found this record — it is not in your contact list
-              yet, so it stays out of pickers and searches.
-            </p>
-            {/* The sensible next step, offered where the explanation is. */}
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 gap-1.5"
-              disabled={promoting}
-              onClick={() => void promote()}
-            >
-              {promoting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <UserPlus className="h-3.5 w-3.5" />
-              )}
-              Add to my contacts
-            </Button>
-          </div>
-        )}
-
-        {party.source && (
+        {(party.source || discovered) && (
           <p className="text-xs text-muted-foreground">
-            Origin:{" "}
+            {discovered ? (
+              <span title="Not in your contact list yet, so it stays out of pickers and searches.">
+                Found by the platform{party.source ? " · " : ""}
+              </span>
+            ) : null}
+            {party.source ? <>Origin:{" "}
             <span className="text-foreground">
               {platformWord(party.source)}
             </span>
@@ -331,6 +334,7 @@ export function PartyProvenanceCard({
                 )}
               </>
             ) : null}
+            </> : null}
           </p>
         )}
 

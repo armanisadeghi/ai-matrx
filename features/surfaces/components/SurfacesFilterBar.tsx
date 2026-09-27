@@ -1,23 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@ai-matrx/design-system";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import {
   Select,
   SelectContent,
@@ -26,6 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { SurfaceReadinessBucket } from "@/features/surfaces/services/surfaces.service";
+import { READINESS_META } from "@/features/surfaces/components/SurfaceReadinessBadge";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 
 export type StatusFilter = "all" | "active" | "inactive";
 export type ManifestFilter = "all" | "with_manifest" | "without_manifest";
@@ -54,145 +47,70 @@ export const DEFAULT_FILTER_STATE: SurfacesFilterState = {
   checked: "all",
 };
 
+/** How many filters differ from the defaults (the phone Filters button's count). */
+export function activeFilterCount(state: SurfacesFilterState): number {
+  return (Object.keys(DEFAULT_FILTER_STATE) as (keyof SurfacesFilterState)[])
+    .filter((k) => state[k] !== DEFAULT_FILTER_STATE[k]).length;
+}
+
 interface Props {
   state: SurfacesFilterState;
   onChange: (patch: Partial<SurfacesFilterState>) => void;
   clientNames: string[];
   parentNames: string[];
+  /** Label for a parent surface key (its registry label when known). */
+  parentLabel?: (name: string) => string;
+  /**
+   * Phone: every filter sits behind ONE Filters button (a bottom sheet), and
+   * readiness joins them because the readiness toggles are not shown there.
+   */
+  compact?: boolean;
+  onClear?: () => void;
 }
 
-function parentFilterLabel(value: string): string {
-  if (value === "__all__") return "All parents";
-  if (value === "__none__") return "Root surfaces (no parent)";
-  return value;
-}
-
-function ParentFilterCombobox({
-  value,
-  parentNames,
-  onChange,
-}: {
-  value: string;
-  parentNames: string[];
-  onChange: (parent: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-
-  const label = parentFilterLabel(value);
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="h-7 w-[220px] justify-between px-2 text-xs font-normal bg-background text-foreground"
-        >
-          <span className="truncate font-mono">{label}</span>
-          <ChevronsUpDown className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent sizing="content" className="p-0" align="start">
-        <Command>
-          <CommandInput
-            placeholder="Search parent surfaces…"
-            className="text-xs h-9"
-          />
-          <CommandList className="max-h-[min(320px,50dvh)]">
-            <CommandEmpty>No parent surface found.</CommandEmpty>
-            <CommandGroup>
-              <CommandItem
-                value="all parents"
-                onSelect={() => {
-                  onChange("__all__");
-                  setOpen(false);
-                }}
-                className="text-xs"
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-3.5 w-3.5",
-                    value === "__all__" ? "opacity-100" : "opacity-0",
-                  )}
-                />
-                All parents
-              </CommandItem>
-              <CommandItem
-                value="root surfaces no parent"
-                onSelect={() => {
-                  onChange("__none__");
-                  setOpen(false);
-                }}
-                className="text-xs"
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-3.5 w-3.5",
-                    value === "__none__" ? "opacity-100" : "opacity-0",
-                  )}
-                />
-                Root surfaces (no parent)
-              </CommandItem>
-            </CommandGroup>
-            {parentNames.length > 0 && (
-              <>
-                <CommandSeparator />
-                <CommandGroup heading="Parent surface">
-                  {parentNames.map((name) => (
-                    <CommandItem
-                      key={name}
-                      value={name}
-                      onSelect={() => {
-                        onChange(name);
-                        setOpen(false);
-                      }}
-                      className="text-xs font-mono"
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-3.5 w-3.5 shrink-0",
-                          value === name ? "opacity-100" : "opacity-0",
-                        )}
-                      />
-                      <span className="truncate">{name}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </>
-            )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-export function SurfacesFilterBar({
+function FilterSelects({
   state,
   onChange,
   clientNames,
   parentNames,
-}: Props) {
-  const sortedParentNames = useMemo(
-    () => [...parentNames].sort((a, b) => a.localeCompare(b)),
-    [parentNames],
+  parentLabel = getSurfaceDisplayLabel,
+  stacked,
+}: Props & { stacked: boolean }) {
+  const w = (desktop: string) => (stacked ? "h-11 w-full text-base" : `h-7 ${desktop} text-xs`);
+  const sortedParentNames = [...parentNames].sort((a, b) =>
+    parentLabel(a).localeCompare(parentLabel(b)),
   );
 
   return (
     <>
-      <Select
-        value={state.client}
-        onValueChange={(v) => onChange({ client: v })}
-      >
-        <SelectTrigger className="h-7 w-[160px] text-xs">
+      {stacked && (
+        <Select
+          value={state.readiness}
+          onValueChange={(v) => onChange({ readiness: v as ReadinessFilter })}
+        >
+          <SelectTrigger className={w("w-[150px]")} aria-label="Readiness">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Any readiness</SelectItem>
+            {(Object.keys(READINESS_META) as SurfaceReadinessBucket[]).map((b) => (
+              <SelectItem key={b} value={b}>
+                <span className="capitalize">{READINESS_META[b].label}</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      <Select value={state.client} onValueChange={(v) => onChange({ client: v })}>
+        <SelectTrigger className={w("w-[160px]")} aria-label="Client">
           <SelectValue placeholder="Client" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="__all__">All clients</SelectItem>
           {clientNames.map((c) => (
             <SelectItem key={c} value={c}>
-              <span className="font-mono">{c}</span>
+              {c}
             </SelectItem>
           ))}
         </SelectContent>
@@ -202,7 +120,7 @@ export function SurfacesFilterBar({
         value={state.status}
         onValueChange={(v) => onChange({ status: v as StatusFilter })}
       >
-        <SelectTrigger className="h-7 w-[120px] text-xs">
+        <SelectTrigger className={w("w-[120px]")} aria-label="Status">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -217,8 +135,9 @@ export function SurfacesFilterBar({
         onValueChange={(v) => onChange({ checked: v as CheckedFilter })}
       >
         <SelectTrigger
-          className="h-7 w-[150px] text-xs"
-          title="Last completed full UI surface check (.claude/skills/surface-check)"
+          className={w("w-[150px]")}
+          aria-label="Last full check"
+          title="When the full surface check last completed"
         >
           <SelectValue />
         </SelectTrigger>
@@ -234,21 +153,75 @@ export function SurfacesFilterBar({
         value={state.manifest}
         onValueChange={(v) => onChange({ manifest: v as ManifestFilter })}
       >
-        <SelectTrigger className="h-7 w-[150px] text-xs">
+        <SelectTrigger className={w("w-[150px]")} aria-label="Code manifest">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All manifests</SelectItem>
-          <SelectItem value="with_manifest">Has SurfaceValues</SelectItem>
-          <SelectItem value="without_manifest">No SurfaceValues</SelectItem>
+          <SelectItem value="with_manifest">Has a code manifest</SelectItem>
+          <SelectItem value="without_manifest">No code manifest</SelectItem>
         </SelectContent>
       </Select>
 
-      <ParentFilterCombobox
-        value={state.parent}
-        parentNames={sortedParentNames}
-        onChange={(parent) => onChange({ parent })}
-      />
+      <Select value={state.parent} onValueChange={(v) => onChange({ parent: v })}>
+        <SelectTrigger className={w("w-[170px]")} aria-label="Parent surface">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="max-h-[min(360px,60dvh)]">
+          <SelectItem value="__all__">All parents</SelectItem>
+          <SelectItem value="__none__">Top level (no parent)</SelectItem>
+          {sortedParentNames.map((name) => (
+            <SelectItem key={name} value={name} title={name}>
+              {parentLabel(name)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </>
+  );
+}
+
+export function SurfacesFilterBar(props: Props) {
+  const [open, setOpen] = useState(false);
+  if (!props.compact) return <FilterSelects {...props} stacked={false} />;
+
+  const count = activeFilterCount(props.state);
+  return (
+    <>
+      <Button
+        size="sm"
+        variant={count > 0 ? "secondary" : "outline"}
+        className="h-9 gap-1.5"
+        onClick={() => setOpen(true)}
+        aria-label={count > 0 ? `Filters, ${count} on` : "Filters"}
+      >
+        <SlidersHorizontal className="h-4 w-4" />
+        Filters
+        {count > 0 && <span className="tabular-nums">{count}</span>}
+      </Button>
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerContent className="pb-safe max-h-[85dvh] matrx-touch-targets">
+          <DrawerHeader>
+            <DrawerTitle>Filters</DrawerTitle>
+          </DrawerHeader>
+          <div className="flex flex-col gap-2 overflow-y-auto px-4 pb-4">
+            <FilterSelects {...props} stacked />
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                className="h-11 flex-1"
+                disabled={count === 0}
+                onClick={() => props.onClear?.()}
+              >
+                Clear
+              </Button>
+              <Button className="h-11 flex-1" onClick={() => setOpen(false)}>
+                Done
+              </Button>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }

@@ -9,10 +9,10 @@
 // forever. Drop the `bodyLoaded` gate and this goes red.
 let mounted = 0;
 jest.mock("@/features/context-menu-v3/EditableContextMenu", () => ({ EditableContextMenu: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
-jest.mock("./NoteEditorCore", () => ({ NoteEditorCore: () => { mounted += 1; return <div data-testid="editor" />; } }));
+jest.mock("./NoteEditorCore", () => ({ NoteEditorCore: () => { mounted += 1; return <div data-testid="editor" />; }, isRichEditorMode: (mode: string) => mode === "write" || mode === "source" }));
 jest.mock("next/dynamic", () => () => () => null);
 jest.mock("../hooks/useNoteAccess", () => ({ useNoteAccess: () => ({ readOnly: false }) }));
-jest.mock("../hooks/usePreferredDefaultEditorMode", () => ({ normalizeNoteEditorMode: (v: string | undefined) => v ?? "wysiwyg", usePreferredDefaultEditorMode: () => "wysiwyg" }));
+jest.mock("../hooks/usePreferredDefaultEditorMode", () => ({ useNoteEditorMode: () => "write", useRememberNoteEditorMode: () => () => {} }));
 jest.mock("../hooks/useNotesSurfaceScope", () => ({ useNotesSurfaceScope: () => () => ({}) }));
 jest.mock("../hooks/useNoteUndoRedo", () => ({ useNoteUndoRedo: () => ({}) }));
 jest.mock("../hooks/useNoteArtifactMaterialization", () => ({ useNoteArtifactMaterialization: () => ({}) }));

@@ -94,6 +94,7 @@ import { OrganizationRequiredNotice } from "@/features/organizations/components/
 import {
   selectAllNotesList,
   selectSharedWithMeNotes,
+  selectNotesSharedError,
   selectDeletedNotesList,
   selectNotesTrashStatus,
   selectNotesTrashError,
@@ -284,6 +285,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   const trashStatus = useAppSelector(selectNotesTrashStatus);
   const trashError = useAppSelector(selectNotesTrashError);
   const sharedNotes = useAppSelector(selectSharedWithMeNotes);
+  const sharedError = useAppSelector(selectNotesSharedError);
   const [sharedOpen, setSharedOpen] = useState(true);
   const [groupByDropdown, setGroupByDropdown] = useState(false);
 
@@ -1409,7 +1411,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
               <Users className="text-indigo-500 dark:text-indigo-400" />
               <span className="flex-1 text-left truncate">Shared with me</span>
               <span className="text-xs font-normal opacity-50 tabular-nums">
-                {sharedNotes.length}
+                <UntrustedCount value={sharedNotes.length} trustworthy={!sharedError} label="Notes shared with me" />
               </span>
             </button>
             {sharedOpen && (

@@ -5,7 +5,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { whereThisTableLives } from "@/features/unified-data/whereThisTableLives";
-import { standInOrganizationId } from "@/features/unified-data/objectOrganization";
+import { resolveObjectOrganization, standInOrganizationId } from "@/features/unified-data/objectOrganization";
 
 import { placeTableInRecordStore, recordStoreHomeOf, type RecordStoreHome } from "./table-home";
 import { signedInUserId } from "./where-a-table-is-born";
@@ -47,4 +47,24 @@ export async function locateTable(tableId: string, organizationId?: string | nul
     return { ok: true, store: "record", home: { store: "record", ...home } };
   }
   return { ok: true, store: "older" };
+}
+
+/**
+ * Whether the record store ALSO holds a copy of an older table that this person may open
+ * (`custom.where_id_opens`, the one "which organization is this in?" door). It never changes where
+ * the table resolves — an older table stays the older table until the custom-data lead's one flip —
+ * it only lets a consumer SAY that the table it draws in the older grid also exists in the new store
+ * (merged-grid review 2, fix lane F item 2). Could not ask → false: the notice is a courtesy, and
+ * its absence claims nothing.
+ */
+export async function recordStoreCopyOf(tableId: string): Promise<boolean> {
+  const client = createClient();
+  const answer = await resolveObjectOrganization(
+    {
+      rpc: (fn, args, opts) =>
+        client.schema((opts?.schema ?? "custom") as never).rpc(fn as never, args as never) as never,
+    },
+    tableId,
+  ).catch(() => null);
+  return answer?.state === "found" && answer.kind === "table";
 }

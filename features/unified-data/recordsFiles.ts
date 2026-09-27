@@ -53,12 +53,26 @@ export function extensionsFromAccept(accept: string | undefined): string[] {
  *                 files"). Resolves the chosen file ids — the store turns each into its kernel
  *                 File record at the write door — or null when the person closed the window.
  */
-export async function pickFiles({ multiple, accept }: { multiple: boolean; accept?: string }): Promise<string[] | null> {
+export async function pickFiles({
+  multiple,
+  accept,
+  organizationId,
+}: {
+  multiple: boolean;
+  accept?: string;
+  /**
+   * The TABLE's organization: the window lists only its files and files an upload there (a filter
+   * on what is shown, not a permission — merged-grid review 2, fix lane F item 4). The shared host
+   * binding supplies it (`recordsUiHostFor`); records-ui's ask does not carry it.
+   */
+  organizationId?: string | null;
+}): Promise<string[] | null> {
   const allowedExtensions = extensionsFromAccept(accept);
   const picked = await openFilePicker({
     multi: multiple,
     title: multiple ? "Attach files" : "Attach a file",
     ...(allowedExtensions.length > 0 ? { allowedExtensions } : {}),
+    ...(organizationId ? { organizationId } : {}),
   });
   return picked && picked.length > 0 ? picked : null;
 }

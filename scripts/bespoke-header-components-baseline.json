@@ -1,18 +1,3 @@
 [
-  "app/(admin)/administration/agents/system-agents/agents/page.tsx -> AgentsListHeader",
-  "app/(core)/agent-apps/loading.tsx -> AgentAppsListHeader",
-  "app/(core)/agent-apps/page.tsx -> AgentAppsListHeader",
-  "app/(core)/agents/all/page.tsx -> AgentsListHeader",
-  "app/(core)/agents/classic/page.tsx -> AgentsListHeader",
-  "app/(core)/chat/[conversationId]/page.tsx -> ChatRunHeader",
-  "app/(core)/chat/a/[agentId]/page.tsx -> ChatRunHeader",
-  "app/(core)/chat/talk/[conversationId]/page.tsx -> ChatRunHeader",
-  "app/(core)/chat/talk/a/[agentId]/page.tsx -> ChatRunHeader",
-  "app/(core)/code/page.tsx -> CodeHeaderControls",
-  "app/(core)/images/layout.tsx -> ImagesListHeader",
-  "app/(core)/tasks/page.tsx -> TasksHeaderControls",
-  "app/(core)/workflows/all/page.tsx -> WorkflowsListHeader",
-  "features/agent-connections/components/AgentConnectionsRouteShell.tsx -> AgentConnectionsHeaderControls",
-  "features/pdf-extractor/studio/PdfStudioShell.tsx -> PdfStudioHeaderControls",
   "features/surfaces/admin/SurfacesAdminShell.tsx -> SurfacesAgentHeaderControls"
 ]

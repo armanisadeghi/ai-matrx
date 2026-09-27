@@ -53,6 +53,7 @@ import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 import { PdfStudioDocTitle } from "./PdfStudioDocTitle";
 import type { StudioDocSummary } from "./hooks/usePdfStudioDocs";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 
 export interface PdfStudioHeaderControlsProps {
   doc: PdfDocument | null;
@@ -159,10 +160,12 @@ export function PdfStudioHeaderControls({
           jumper; stretched, it fills exactly the column and the inner flex
           truncates the doc-title pill's filename instead. */}
       <div className="flex min-w-0 items-center">
-        <PanelLeftTapButton
-          onClick={onToggleSidebar}
-          ariaLabel={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-        />
+        <HeaderActionsSlot>
+          <PanelLeftTapButton
+            onClick={onToggleSidebar}
+            ariaLabel={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+          />
+        </HeaderActionsSlot>
         <ChevronLeftTapButton
           href="/tools/pdf-extractor"
           ariaLabel="Back to studio"
@@ -194,7 +197,8 @@ export function PdfStudioHeaderControls({
         )}
       </div>
 
-      <div className="flex items-center justify-self-end">
+      {/* THE SHEET CONTRACT: on a phone these fold into the shell's one ⋮. */}
+      <HeaderActionsSlot className="flex items-center justify-self-end">
         {doc && (
           <IntelligenceIndicator
             feature="pdf"
@@ -275,7 +279,7 @@ export function PdfStudioHeaderControls({
           onClick={onToggleInspector}
           ariaLabel={inspectorOpen ? "Collapse inspector" : "Expand inspector"}
         />
-      </div>
+      </HeaderActionsSlot>
     </div>
   );
 }

@@ -48,22 +48,8 @@ import {
   NOTES_EDITOR_CONTEXT_MENU_PROPS,
 } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
-import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
+import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
 import { CreateFolderDialog } from "./CreateFolderDialog";
-
-// Dynamic imports for heavy components (only load when needed)
-const TuiEditorContent = dynamic(
-  () =>
-    import("@/components/mardown-display/chat-markdown/tui/TuiEditorContent"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
-      </div>
-    ),
-  },
-);
 
 // Universal v3 context menu — the SAME menu everywhere. The wrappers are the
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
@@ -88,8 +74,8 @@ type EditorMode = "plain" | "wysiwyg" | "markdown" | "matrx-split" | "preview";
 // `editor_mode` SurfaceValue matches the manifest's declared enum.
 const SURFACE_EDITOR_MODE: Record<EditorMode, SurfaceEditorMode> = {
   plain: "plain",
-  wysiwyg: "wysiwyg",
-  markdown: "markdown-split",
+  wysiwyg: "write",
+  markdown: "source",
   "matrx-split": "split",
   preview: "preview",
 };
@@ -137,7 +123,8 @@ export function NoteEditor({
   const savedEditorMode = useAppSelector(
     note?.id ? selectNoteEditorMode(note.id) : () => undefined,
   );
-  const tuiEditorRef = useRef<TuiEditorContentRef>(null);
+  // THE ONE EDITOR (components/rich-editor) serves the rich modes; Toast UI is gone.
+  const richEditorRef = useRef<RichEditorController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const labelSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const toast = useToastManager("notes");
@@ -313,9 +300,9 @@ export function NoteEditor({
       if (
         currentNote &&
         (currentMode === "wysiwyg" || currentMode === "markdown") &&
-        tuiEditorRef.current?.getCurrentMarkdown
+        richEditorRef.current?.flush
       ) {
-        const markdown = tuiEditorRef.current.getCurrentMarkdown();
+        const markdown = richEditorRef.current.flush();
         if (markdown !== localContentRef.current) {
           // Update content immediately before switch
           updateWithAutoSave({
@@ -367,9 +354,9 @@ export function NoteEditor({
         const currentMode = editorModeRef.current;
         if (
           (currentMode === "wysiwyg" || currentMode === "markdown") &&
-          tuiEditorRef.current?.getCurrentMarkdown
+          richEditorRef.current?.flush
         ) {
-          currentContent = tuiEditorRef.current.getCurrentMarkdown();
+          currentContent = richEditorRef.current.flush();
         }
 
         // Update the auto-save queue with all current data
@@ -398,9 +385,9 @@ export function NoteEditor({
     const currentMode = editorModeRef.current;
     if (
       (currentMode === "wysiwyg" || currentMode === "markdown") &&
-      tuiEditorRef.current?.getCurrentMarkdown
+      richEditorRef.current?.flush
     ) {
-      const markdown = tuiEditorRef.current.getCurrentMarkdown();
+      const markdown = richEditorRef.current.flush();
       if (markdown !== localContentRef.current) {
         setLocalContent(markdown);
       }
@@ -435,7 +422,7 @@ export function NoteEditor({
     }
   };
 
-  const handleTuiChange = useCallback(
+  const handleRichChange = useCallback(
     (value: string) => {
       setLocalContent(value);
       const currentNote = noteRef.current;
@@ -445,7 +432,7 @@ export function NoteEditor({
           content: value,
           tags: localTagsRef.current,
         });
-        // Materialise phantom on TUI editor changes too
+        // Materialise phantom on rich editor changes too
         if (currentNote.id === "__phantom__") {
           onUpdate?.(currentNote.id, {
             content: value,
@@ -589,11 +576,10 @@ export function NoteEditor({
                 if (editorMode === "plain" && textareaRef.current) {
                   textareaRef.current.focus();
                 } else if (
-                  (editorMode === "wysiwyg" || editorMode === "markdown") &&
-                  tuiEditorRef.current?.getInstance
+                  editorMode === "wysiwyg" ||
+                  editorMode === "markdown"
                 ) {
-                  const editor = tuiEditorRef.current.getInstance();
-                  editor?.focus?.();
+                  richEditorRef.current?.focus();
                 }
               }
             }}
@@ -825,90 +811,38 @@ export function NoteEditor({
           </EditableContextMenu>
         )}
 
-        {editorMode === "wysiwyg" && (
+        {(editorMode === "wysiwyg" || editorMode === "markdown") && (
           <EditableContextMenu
             {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
             getApplicationScope={getApplicationScope}
             contentSource={menuContentSource}
             entity={menuEntity}
             contextData={contextData}
-            onTextReplace={(newText) => {
-              if (tuiEditorRef.current?.getInstance) {
-                const editor = tuiEditorRef.current.getInstance();
-                const range = editor.getSelection();
-                editor.replaceSelection(newText);
-              }
+            insertAtCaret={(text) => {
+              const rich = richEditorRef.current;
+              if (!rich) return false;
+              rich.replaceSelection(text);
+              return true;
             }}
-            onTextInsertBefore={(text) => {
-              if (tuiEditorRef.current?.getInstance) {
-                const editor = tuiEditorRef.current.getInstance();
-                editor.insertText(text + "\n\n");
-              }
-            }}
-            onTextInsertAfter={(text) => {
-              if (tuiEditorRef.current?.getInstance) {
-                const editor = tuiEditorRef.current.getInstance();
-                const currentContent =
-                  tuiEditorRef.current.getCurrentMarkdown();
-                handleTuiChange(currentContent + "\n\n" + text);
-              }
-            }}
-            onContentInserted={() => {
-              // Content block inserted via TUI editor
-            }}
+            onTextReplace={(newText) => richEditorRef.current?.replaceSelection(newText)}
+            onTextInsertBefore={(text) => richEditorRef.current?.insertText(text, "before")}
+            onTextInsertAfter={(text) => richEditorRef.current?.insertText(text, "after")}
+            onContentInserted={() => {}}
           >
             <div className="absolute inset-0 w-full h-full">
-              <TuiEditorContent
-                ref={tuiEditorRef}
-                content={localContent}
-                onChange={handleTuiChange}
-                isActive={true}
-                editMode="wysiwyg"
-                className="w-full h-full"
-              />
-            </div>
-          </EditableContextMenu>
-        )}
-
-        {editorMode === "markdown" && (
-          <EditableContextMenu
-            {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
-            getApplicationScope={getApplicationScope}
-            contentSource={menuContentSource}
-            entity={menuEntity}
-            contextData={contextData}
-            onTextReplace={(newText) => {
-              if (tuiEditorRef.current?.getInstance) {
-                const editor = tuiEditorRef.current.getInstance();
-                editor.replaceSelection(newText);
-              }
-            }}
-            onTextInsertBefore={(text) => {
-              if (tuiEditorRef.current?.getInstance) {
-                const editor = tuiEditorRef.current.getInstance();
-                editor.insertText(text + "\n\n");
-              }
-            }}
-            onTextInsertAfter={(text) => {
-              if (tuiEditorRef.current?.getInstance) {
-                const editor = tuiEditorRef.current.getInstance();
-                const currentContent =
-                  tuiEditorRef.current.getCurrentMarkdown();
-                handleTuiChange(currentContent + "\n\n" + text);
-              }
-            }}
-            onContentInserted={() => {
-              // Content block inserted
-            }}
-          >
-            <div className="absolute inset-0 w-full h-full">
-              <TuiEditorContent
-                ref={tuiEditorRef}
-                content={localContent}
-                onChange={handleTuiChange}
-                isActive={true}
-                editMode="markdown"
-                className="w-full h-full"
+              <RichEditor
+                key={note?.id}
+                value={localContent}
+                onChange={handleRichChange}
+                view={editorMode === "wysiwyg" ? "visual" : "source"}
+                chrome="bare"
+                hostContextMenu
+                controllerRef={richEditorRef}
+                surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
+                sourceFeature="notes"
+                defaultOutlineOpen={false}
+                imagePolicy={authoredBy(note?.created_by, editingActorId)}
+                className="h-full"
               />
             </div>
           </EditableContextMenu>

@@ -50,6 +50,8 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
+import { usePhonePageActions } from "@/features/shell/components/header/phone-page-actions";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import {
@@ -118,6 +120,8 @@ export function RoomHeader({
   onToggleRoomAgent: () => void;
 }) {
   const dispatch = useAppDispatch();
+  const isPhone = useIsMobile();
+  const { host: phoneSheetHost } = usePhonePageActions();
   const router = useRouter();
   const session = useAppSelector(selectSessionById(sessionId));
   const {
@@ -179,6 +183,126 @@ export function RoomHeader({
   function openAfterMenu(open: (v: boolean) => void) {
     setTimeout(() => open(true), 0);
   }
+
+  // The room's modes and actions — ONE list: the room's own sheet draws it,
+  // and on a phone it is drawn directly in the shell's ⋮ ("This page"), so
+  // everything is one step (page-pass shared defects, 2026-09-27).
+  const sheetRows = (
+    <>
+      <SheetRow
+        Icon={LayoutPanelLeft}
+        label="Stage view"
+        active={mode === "stage"}
+        onPress={() => {
+          setMode("stage" satisfies RoomMode);
+          setSheetOpen(false);
+        }}
+      />
+      <SheetRow
+        Icon={LayoutGrid}
+        label="Grid view"
+        active={mode === "grid"}
+        onPress={() => {
+          setMode("grid" satisfies RoomMode);
+          setSheetOpen(false);
+        }}
+      />
+      <SheetRow
+        Icon={AGENT_ICON}
+        label={roomAgentOpen ? "Close Room Agent" : "Room Agent"}
+        active={roomAgentOpen}
+        onPress={() => {
+          onToggleRoomAgent();
+          setSheetOpen(false);
+        }}
+      />
+      <SheetRow
+        Icon={Frame}
+        label="Board view"
+        active={mode === "board"}
+        onPress={() => {
+          setMode("board" satisfies RoomMode);
+          setSheetOpen(false);
+        }}
+      />
+      <SheetRow
+        Icon={density === "compact" ? Minimize2 : Maximize2}
+        label="Compact tiles"
+        active={density === "compact"}
+        onPress={() =>
+          setDensity(density === "compact" ? "comfortable" : "compact")
+        }
+      />
+      <p className="px-5 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Project all to one view
+      </p>
+      <SheetRow
+        Icon={Layers}
+        label="Each thread's own view"
+        active={projectedTab === null}
+        onPress={() => setProjectedTab(null)}
+      />
+      {THREAD_KIND_ORDER.map((id) => {
+        const k = threadKindOf(id);
+        return (
+          <SheetRow
+            key={id}
+            Icon={k.Icon}
+            label={k.label}
+            active={projectedTab === id}
+            onPress={() => setProjectedTab(id)}
+          />
+        );
+      })}
+      <p className="px-5 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Room
+      </p>
+      <SheetRow
+        Icon={Pencil}
+        label="Room details…"
+        onPress={() => {
+          setSheetOpen(false);
+          setIdentityOpen(true);
+        }}
+      />
+      <SheetRow
+        Icon={Paperclip}
+        label={
+          resourceCount > 0
+            ? `Room resources (${resourceCount})`
+            : "Room resources"
+        }
+        onPress={() => {
+          setSheetOpen(false);
+          setResourcesOpen(true);
+        }}
+      />
+      <SheetRow
+        Icon={FolderKanban}
+        label={
+          projectMode === "room" && roomProjectName
+            ? `Project: ${roomProjectName}`
+            : projectMode === "per-thread"
+              ? "Project: per-thread"
+              : "Link a project…"
+        }
+        onPress={() => {
+          setSheetOpen(false);
+          setProjectOpen(true);
+        }}
+      />
+      <SheetRow
+        Icon={Trash2}
+        label="Delete War Room"
+        destructive
+        onPress={() => {
+          setSheetOpen(false);
+          void handleDeleteRoom();
+        }}
+      />
+    </>
+  );
+  const inShellSheet = isPhone && phoneSheetHost != null;
 
   // A selected thread owns the route surface (and brings its own chrome) —
   // the room header steps aside entirely, same as the old `hidden` toggle.
@@ -375,14 +499,21 @@ export function RoomHeader({
                 </DropdownMenu>
               </div>
 
-              {/* Mobile — ONE trigger; everything lives in the bottom sheet. */}
-              <div className="sm:hidden shrink-0">
-                <TapTargetButton
-                  icon={<MoreHorizontal className="h-4 w-4" />}
-                  ariaLabel="War Room options"
-                  onClick={() => setSheetOpen(true)}
-                />
-              </div>
+              {/* Mobile — in the shell's ⋮ the rows themselves (one step);
+                  otherwise ONE trigger for the room's own sheet. */}
+              {inShellSheet ? (
+                <div className="flex w-full flex-col" data-war-room-sheet-rows>
+                  {sheetRows}
+                </div>
+              ) : (
+                <div className="sm:hidden shrink-0">
+                  <TapTargetButton
+                    icon={<MoreHorizontal className="h-4 w-4" />}
+                    ariaLabel="War Room options"
+                    onClick={() => setSheetOpen(true)}
+                  />
+                </div>
+              )}
               </HeaderActionsSlot>
 
               {/* Zero-size anchors for the overflow-launched popovers — the
@@ -424,7 +555,7 @@ export function RoomHeader({
       ) : null}
 
       {/* Mobile bottom sheet — modes AND actions, per the mobile doctrine. */}
-      {session ? (
+      {session && !inShellSheet ? (
         <BottomSheet
           open={sheetOpen}
           onOpenChange={setSheetOpen}
@@ -441,119 +572,7 @@ export function RoomHeader({
               </button>
             }
           />
-          <BottomSheetBody>
-            <SheetRow
-              Icon={LayoutPanelLeft}
-              label="Stage view"
-              active={mode === "stage"}
-              onPress={() => {
-                setMode("stage" satisfies RoomMode);
-                setSheetOpen(false);
-              }}
-            />
-            <SheetRow
-              Icon={LayoutGrid}
-              label="Grid view"
-              active={mode === "grid"}
-              onPress={() => {
-                setMode("grid" satisfies RoomMode);
-                setSheetOpen(false);
-              }}
-            />
-            <SheetRow
-              Icon={AGENT_ICON}
-              label={roomAgentOpen ? "Close Room Agent" : "Room Agent"}
-              active={roomAgentOpen}
-              onPress={() => {
-                onToggleRoomAgent();
-                setSheetOpen(false);
-              }}
-            />
-            <SheetRow
-              Icon={Frame}
-              label="Board view"
-              active={mode === "board"}
-              onPress={() => {
-                setMode("board" satisfies RoomMode);
-                setSheetOpen(false);
-              }}
-            />
-            <SheetRow
-              Icon={density === "compact" ? Minimize2 : Maximize2}
-              label="Compact tiles"
-              active={density === "compact"}
-              onPress={() =>
-                setDensity(density === "compact" ? "comfortable" : "compact")
-              }
-            />
-            <p className="px-5 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Project all to one view
-            </p>
-            <SheetRow
-              Icon={Layers}
-              label="Each thread's own view"
-              active={projectedTab === null}
-              onPress={() => setProjectedTab(null)}
-            />
-            {THREAD_KIND_ORDER.map((id) => {
-              const k = threadKindOf(id);
-              return (
-                <SheetRow
-                  key={id}
-                  Icon={k.Icon}
-                  label={k.label}
-                  active={projectedTab === id}
-                  onPress={() => setProjectedTab(id)}
-                />
-              );
-            })}
-            <p className="px-5 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Room
-            </p>
-            <SheetRow
-              Icon={Pencil}
-              label="Room details…"
-              onPress={() => {
-                setSheetOpen(false);
-                setIdentityOpen(true);
-              }}
-            />
-            <SheetRow
-              Icon={Paperclip}
-              label={
-                resourceCount > 0
-                  ? `Room resources (${resourceCount})`
-                  : "Room resources"
-              }
-              onPress={() => {
-                setSheetOpen(false);
-                setResourcesOpen(true);
-              }}
-            />
-            <SheetRow
-              Icon={FolderKanban}
-              label={
-                projectMode === "room" && roomProjectName
-                  ? `Project: ${roomProjectName}`
-                  : projectMode === "per-thread"
-                    ? "Project: per-thread"
-                    : "Link a project…"
-              }
-              onPress={() => {
-                setSheetOpen(false);
-                setProjectOpen(true);
-              }}
-            />
-            <SheetRow
-              Icon={Trash2}
-              label="Delete War Room"
-              destructive
-              onPress={() => {
-                setSheetOpen(false);
-                void handleDeleteRoom();
-              }}
-            />
-          </BottomSheetBody>
+          <BottomSheetBody>{sheetRows}</BottomSheetBody>
         </BottomSheet>
       ) : null}
     </>

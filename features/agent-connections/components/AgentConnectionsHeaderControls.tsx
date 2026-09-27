@@ -3,6 +3,7 @@
 import { PanelLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { usePanelControls } from "@/features/resizable-panels/PanelControlProvider";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 
 /**
  * Header controls for the /agent-connections route family. Lives inside the
@@ -25,12 +26,14 @@ export function AgentConnectionsHeaderControls() {
   return (
     <div className="flex items-center w-full min-w-0 gap-0 p-0">
       {!isMobile && (
-        <PanelLeftTapButton
-          onClick={() => toggle("sidebar")}
-          variant={sidebarCollapsed ? "transparent" : "glass"}
-          ariaLabel={sidebarCollapsed ? "Show sections" : "Hide sections"}
-          tooltip={sidebarCollapsed ? "Show sections" : "Hide sections"}
-        />
+        <HeaderActionsSlot>
+          <PanelLeftTapButton
+            onClick={() => toggle("sidebar")}
+            variant={sidebarCollapsed ? "transparent" : "glass"}
+            ariaLabel={sidebarCollapsed ? "Show sections" : "Hide sections"}
+            tooltip={sidebarCollapsed ? "Show sections" : "Hide sections"}
+          />
+        </HeaderActionsSlot>
       )}
       <h1 className={`text-sm font-medium text-foreground truncate ${isMobile ? "" : "ml-2"}`}>
         Agent Connections

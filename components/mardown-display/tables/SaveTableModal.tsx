@@ -39,7 +39,7 @@ import { cn } from "@/lib/utils";
 import { MultiStepLoader } from "@/components/ui/multi-step-loader";
 import type { FieldDefinition, TableField } from "@/utils/user-table-utls/table-utils";
 import { bulkWrite, createTable, listTablesEverywhere, readTableDetails } from "@/features/data-tables/service";
-import { isBulkOpError, isServiceFailure, type BulkOp } from "@/features/data-tables/types";
+import { describeBulkFailures, isBulkOpError, isServiceFailure, type BulkOp } from "@/features/data-tables/types";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -361,13 +361,10 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
       if (isServiceFailure(written)) {
         throw new Error(`Table "${tableName.trim()}" was created, but its rows were not saved: ${written.error}`);
       }
-      const failedCount = written.data.results.filter((r) => isBulkOpError(r)).length;
-      if (failedCount > 0) {
-        const firstError = written.data.results.find((r) => isBulkOpError(r));
+      const failed = written.data.results.filter(isBulkOpError);
+      if (failed.length > 0) {
         toast.warning(
-          `${failedCount} of ${rowCount} row(s) failed to save${
-            firstError && isBulkOpError(firstError) ? `: ${firstError.error}` : ""
-          }`,
+          `${failed.length} of ${rowCount} row(s) failed to save: ${describeBulkFailures(failed)}`,
         );
       }
 

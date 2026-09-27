@@ -163,9 +163,28 @@ export function VisualEditor({
     editor?.setEditable(!context.readOnly);
   }, [editor, context.readOnly]);
 
+  // Leaving this view (a host's mode switch, a tab close, a route change) with a
+  // report still waiting on its timer delivers it now — clearing the timer alone
+  // dropped the last ~120 ms of typing whenever the host unmounted the editor
+  // without flushing it first.
+  const liveEditor = useRef<Editor | null>(null);
+  const reportRef = useRef(report);
+  useEffect(() => {
+    liveEditor.current = editor;
+    reportRef.current = report;
+  });
   useEffect(
     () => () => {
-      if (timer.current !== null) window.clearTimeout(timer.current);
+      if (timer.current === null) return;
+      window.clearTimeout(timer.current);
+      timer.current = null;
+      const pending = liveEditor.current;
+      if (!pending) return;
+      try {
+        reportRef.current(pending);
+      } catch {
+        // A torn-down editor keeps the last delivered text.
+      }
     },
     [],
   );

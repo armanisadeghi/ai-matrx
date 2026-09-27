@@ -17,7 +17,7 @@
 // Loaded only through RichEditor.tsx (one dynamic boundary).
 
 import "./rich-editor.css";
-import { useDeferredValue, useEffect, useRef, useState, type ReactNode } from "react";
+import { useDeferredValue, useEffect, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from "react";
 import {
   AlignLeft,
   Check,
@@ -80,6 +80,27 @@ import { withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-
 export type RichEditorView = "visual" | "source" | "preview";
 const VIEWS: RichEditorView[] = ["visual", "source", "preview"];
 
+/**
+ * What a host that carries its OWN chrome (view switch, find, outline, dictation,
+ * its own right-click menu) drives the editor through. Every verb acts on the
+ * view that is showing.
+ */
+export interface RichEditorController {
+  focus: () => void;
+  /** The selected text of the showing view ("" when nothing is selected). */
+  selectedText: () => string;
+  /** Put text at the caret, replacing the selection (markdown stays markdown). */
+  replaceSelection: (text: string) => void;
+  /** Insert a new block before / after the selection. */
+  insertText: (text: string, where: "before" | "after") => void;
+  /** The text now, with any pending keystrokes delivered through onChange first. */
+  flush: () => string;
+  /** Open the editor's own find (and replace) bar — it skips protected content. */
+  openFind: (withReplace?: boolean) => void;
+  /** Scroll to the heading that starts at (or nearest before) this source offset. */
+  jumpToOffset: (offset: number) => void;
+}
+
 export interface RichEditorProps {
   /** The stored text — what the save gate compares against. */
   value: string;
@@ -95,6 +116,28 @@ export interface RichEditorProps {
   onDeclareVariable?: (name: string) => void;
   /** The view it opens in: source for prompts/templates/skills, visual for prose. */
   defaultView?: RichEditorView;
+  /**
+   * The view, held by the host (a host whose own control switches views). The
+   * editor delivers pending text before it switches, and reports every switch it
+   * makes itself (a shortcut, a refused switch) through `onViewChange`.
+   */
+  view?: RichEditorView;
+  onViewChange?: (view: RichEditorView) => void;
+  /**
+   * "full" (default): the editor's toolbar row — views, tools, dictation, Save.
+   * "bare": no row of its own; the host's chrome carries the view switch, find,
+   * outline and dictation (a host that saves by itself — autosave — has no Save).
+   * Shortcuts (⌘F, ⌘⌥H, ⌘⇧F, ⌘/) keep working either way.
+   */
+  chrome?: "full" | "bare";
+  /**
+   * The host wraps the editor in its OWN right-click menu (its surface, scope and
+   * record rows) — the editor then mounts none, so one menu answers. Drive text
+   * edits from that menu through `controllerRef`.
+   */
+  hostContextMenu?: boolean;
+  /** Receives the controller (see RichEditorController). */
+  controllerRef?: Ref<RichEditorController>;
   readOnly?: boolean;
   placeholder?: string;
   /** The right-click menu's surface + attribution. */
@@ -170,6 +213,11 @@ export default function RichEditorImpl({
   variables = null,
   onDeclareVariable,
   defaultView = "visual",
+  view: controlledView,
+  onViewChange,
+  chrome = "full",
+  hostContextMenu = false,
+  controllerRef,
   readOnly = false,
   placeholder,
   surfaceName = "matrx-user/markdown-studio",
@@ -187,11 +235,14 @@ export default function RichEditorImpl({
   const isMobile = useIsMobile();
   const [stored, setStored] = useState(value);
   const [current, setCurrent] = useState(value);
-  const [view, setView] = useState<RichEditorView>(defaultView);
+  const [view, setView] = useState<RichEditorView>(controlledView ?? defaultView);
   const [mountKey, setMountKey] = useState(0);
   const [findMode, setFindMode] = useState<null | "find" | "replace">(null);
   // null = the default for the device: open beside the text on desktop, closed on phones.
-  const [outlineChoice, setOutlineChoice] = useState<boolean | null>(defaultOutlineOpen ?? null);
+  // A bare host carries its own outline — the editor's opens only on request (⌘⌥H).
+  const [outlineChoice, setOutlineChoice] = useState<boolean | null>(
+    defaultOutlineOpen ?? (chrome === "bare" ? false : null),
+  );
   const outlineOpen = outlineChoice ?? !isMobile;
   const setOutlineOpen = (next: boolean | ((open: boolean) => boolean)) =>
     setOutlineChoice(typeof next === "function" ? next(outlineOpen) : next);
@@ -261,12 +312,21 @@ export default function RichEditorImpl({
     } catch (error) {
       // Leaving the view would drop an edit that cannot be written safely — stay, and say why.
       toast.error(error instanceof Error ? error.message : String(error));
+      // A host holding the view follows the editor back to the view it stayed in.
+      if (controlledView !== undefined) onViewChange?.(view);
       return;
     }
     handle.current?.clearFind();
     setView(next);
     setMountKey((key) => key + 1);
+    if (next !== controlledView) onViewChange?.(next);
   };
+
+  // The host switched views: deliver the showing view's text, then switch.
+  useEffect(() => {
+    if (controlledView !== undefined && controlledView !== view) switchView(controlledView);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only a host switch drives this
+  }, [controlledView]);
 
   const doSave = async (plan: SavePlan) => {
     if (!onSave) return;
@@ -410,6 +470,28 @@ export default function RichEditorImpl({
     if (isMobile) setOutlineOpen(false);
   };
 
+  useImperativeHandle(
+    controllerRef,
+    (): RichEditorController => ({
+      focus: () => handle.current?.focus(),
+      selectedText: () => handle.current?.selectedText() ?? "",
+      replaceSelection: (text) => handle.current?.replaceSelection(text),
+      insertText: (text, where) => handle.current?.insertText(text, where),
+      flush,
+      openFind: (withReplace = false) => setFindMode(withReplace ? "replace" : "find"),
+      jumpToOffset: (offset) => {
+        const entries = outlineOf(flush());
+        let entry: OutlineEntry | undefined;
+        for (const candidate of entries) {
+          if (candidate.offset > offset) break;
+          entry = candidate;
+        }
+        entry ??= entries[0];
+        if (entry) jump(entry);
+      },
+    }),
+  );
+
   const lockedCount = (loadStats?.lockedBlocks ?? 0) + (loadStats?.lockedChildren ?? 0);
   // What the old status bar row said, now carried by the toolbar's word count (its
   // tooltip) and the Save button — no row of its own (UI audit B, 2026-09-26).
@@ -426,6 +508,31 @@ export default function RichEditorImpl({
       ? `Saved ${saveState.at.toLocaleTimeString()}${saveState.verified ? " · verified byte-for-byte" : ""}`
       : "No changes";
 
+  const viewEditor =
+    view === "visual" ? (
+      <VisualEditor
+        key={`visual-${mountKey}`}
+        initialText={current}
+        onChange={updateCurrent}
+        onLoadStats={setLoadStats}
+        shell={shell}
+        placeholder={placeholder}
+        focusMode={focusMode}
+        handleRef={handle}
+      />
+    ) : (
+      <SourceEditor
+        key={`source-${mountKey}`}
+        initialText={current}
+        onChange={updateCurrent}
+        shell={shell}
+        placeholder={placeholder}
+        focusMode={focusMode}
+        renderIslands={renderIslands}
+        handleRef={handle}
+      />
+    );
+
   const body =
     view === "preview" ? (
       <div className="h-full overflow-y-auto">
@@ -440,6 +547,8 @@ export default function RichEditorImpl({
           />
         </div>
       </div>
+    ) : hostContextMenu ? (
+      <div className="h-full min-h-0">{viewEditor}</div>
     ) : (
       <EditableContextMenu
         sourceFeature={sourceFeature}
@@ -458,31 +567,7 @@ export default function RichEditorImpl({
         {/* A host element, not the editor component: the menu's trigger slots its
             right-click handlers onto its one child, and a component child that does
             not forward them leaves the menu dead. */}
-        <div className="h-full min-h-0">
-        {view === "visual" ? (
-          <VisualEditor
-            key={`visual-${mountKey}`}
-            initialText={current}
-            onChange={updateCurrent}
-            onLoadStats={setLoadStats}
-            shell={shell}
-            placeholder={placeholder}
-            focusMode={focusMode}
-            handleRef={handle}
-          />
-        ) : (
-          <SourceEditor
-            key={`source-${mountKey}`}
-            initialText={current}
-            onChange={updateCurrent}
-            shell={shell}
-            placeholder={placeholder}
-            focusMode={focusMode}
-            renderIslands={renderIslands}
-            handleRef={handle}
-          />
-        )}
-        </div>
+        <div className="h-full min-h-0">{viewEditor}</div>
       </EditableContextMenu>
     );
 
@@ -546,6 +631,9 @@ export default function RichEditorImpl({
       <div
         className={cn("relative flex h-full min-h-0 flex-col bg-textured", className)}
         data-testid="rich-editor"
+        // Hosts with page-level shortcuts (a notes undo stack) step aside inside
+        // the editor, which owns undo, find and its keys.
+        data-rich-editor=""
         onKeyDown={(event) => {
           // Escape leaves focus mode — unless a menu, the find bar or a picker used it first.
           // (ProseMirror prevents every Escape, so the visual view exits through its own keymap.)
@@ -573,7 +661,7 @@ export default function RichEditorImpl({
         {/* The find widget floats from this anchor over the text; nothing here
             ever adds a row under the toolbar (UI audit B, 2026-09-26). */}
         <div className="relative z-20 shrink-0">
-        {!focusMode && (
+        {!focusMode && chrome === "full" && (
           <div className="matrx-touch-targets flex min-h-10 items-center gap-1 border-b border-border bg-card/80 px-2 py-1 backdrop-blur">
             {/* The tools scroll sideways on a narrow screen; the host's actions and
                 Save never do — they stay in view at any width. */}

@@ -34,7 +34,7 @@ import {
   type CompleteTableField,
 } from "@/features/data-tables/service";
 import type { BulkOp } from "@/features/data-tables/types";
-import { isBulkOpError } from "@/features/data-tables/types";
+import { describeBulkFailures, isBulkOpError } from "@/features/data-tables/types";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
@@ -159,6 +159,11 @@ const scopeDatasetStore: ListStore<
         status: "refused",
         detail: "The table accepted the request but reported no result for it.",
       };
+    }
+    if (isBulkOpError(slot) && slot.error === "row_in_trash") {
+      // The row still exists but is in Trash: the change did NOT happen, and
+      // restoring the row is how the person makes it possible.
+      return { status: "refused", detail: describeBulkFailures([slot]) };
     }
     if (isBulkOpError(slot)) {
       // `udt_bulk_write` soft-fails a miss rather than raising. A row that is

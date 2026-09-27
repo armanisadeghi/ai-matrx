@@ -167,11 +167,16 @@ export type BulkOp =
  * Per-op result envelope returned inside `udt_bulk_write.results[]`.
  *
  * Note: insert / update / cell / delete that succeed return the full row.
- * Update / cell / delete against a non-existent row_id return an error
- * envelope (soft failure — the rest of the batch continues). Inserts that
- * fail RAISE and abort the entire batch.
+ * Update / cell / delete against a row that is gone return `row_not_found`;
+ * update / cell / merge against a row that is in Trash return `row_in_trash`
+ * (with the server's own sentence in `message`). Both are soft failures — the
+ * rest of the batch continues. Inserts that fail RAISE and abort the batch.
  */
-export type BulkOpError = { error: "row_not_found"; row_id: string };
+export type BulkOpError = {
+  error: "row_not_found" | "row_in_trash";
+  row_id: string;
+  message?: string;
+};
 export type BulkOpResult = DatasetRow | BulkOpError;
 
 /**
@@ -181,6 +186,28 @@ export type BulkOpResult = DatasetRow | BulkOpError;
  */
 export function isBulkOpError(r: BulkOpResult): r is BulkOpError {
   return typeof r === "object" && r !== null && "error" in r;
+}
+
+/**
+ * One plain sentence for the rows a batch could not change — the ONE wording
+ * every bulk surface uses. A row in Trash is named as such (it can be restored),
+ * never reported as "could not be found".
+ */
+export function describeBulkFailures(failed: BulkOpError[]): string {
+  const inTrash = failed.filter((f) => f.error === "row_in_trash").length;
+  const missing = failed.length - inTrash;
+  const parts: string[] = [];
+  if (inTrash > 0) {
+    parts.push(
+      `${inTrash} row${inTrash === 1 ? " is" : "s are"} in Trash — restore ${inTrash === 1 ? "it" : "them"} from Trash to edit`,
+    );
+  }
+  if (missing > 0) {
+    parts.push(
+      `${missing} row${missing === 1 ? "" : "s"} could not be found — ${missing === 1 ? "it" : "they"} may have been removed by someone else`,
+    );
+  }
+  return `${parts.join("; ")}.`;
 }
 
 export type BulkWriteResponse = {

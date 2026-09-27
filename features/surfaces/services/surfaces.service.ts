@@ -514,7 +514,7 @@ export const SURFACE_TIERS: readonly SurfaceTier[] = [
     min: 0,
     max: 99,
     label: "Reserved",
-    description: "Reserved sort_order band",
+    description: "Reserved for the platform's default surfaces",
   },
   {
     min: 100,

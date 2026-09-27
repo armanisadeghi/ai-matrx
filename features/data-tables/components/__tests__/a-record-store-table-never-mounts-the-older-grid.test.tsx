@@ -17,6 +17,8 @@ import { createRoot, type Root } from "react-dom/client";
 const locateTable = jest.fn();
 jest.mock("@/features/data-tables/data-source/locate-table", () => ({
   locateTable: (...args: unknown[]) => locateTable(...args),
+  // An older table with no copy in the new store (the both-store notice has its own test).
+  recordStoreCopyOf: async () => false,
 }));
 
 const viewerProps: Array<Record<string, unknown>> = [];

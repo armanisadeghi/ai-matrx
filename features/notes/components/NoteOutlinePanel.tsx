@@ -11,7 +11,7 @@
 //     transient mirror (utils/textareaMeasure) and set scrollTop (split's
 //     syncScroll then carries the preview pane along);
 //   - preview → scroll the preview container to the matching rendered h1–h6;
-//   - wysiwyg / markdown-split (TUI) → scrollIntoView on the matching heading
+//   - write / source (the one editor) → the editor's own heading jump
 //     inside the editor root.
 // Free-form drag/resize come from WindowPanel; the header adds two one-click
 // shape presets (compact / tall) via updateWindowRect.
@@ -54,8 +54,10 @@ interface NoteOutlinePanelProps {
   editorMode: EditorMode;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   previewContainerRef: React.RefObject<HTMLDivElement | null>;
-  /** Root of the editor body — heading lookup for the TUI modes. */
+  /** Root of the editor body. */
   editorRootRef: React.RefObject<HTMLDivElement | null>;
+  /** Write / Source: the one editor scrolls to the heading at this source offset. */
+  onJumpInEditor?: (offset: number) => void;
   onClose: () => void;
 }
 
@@ -64,9 +66,8 @@ function findRenderedHeading(
   root: HTMLElement,
   item: NoteOutlineItem,
 ): HTMLElement | null {
-  // Visible elements only — the TUI editor keeps a full hidden twin of the
-  // document (markdown + wysiwyg panes), and scrolling a hidden node's
-  // ancestor is a silent no-op.
+  // Visible elements only — scrolling a hidden node's ancestor is a silent
+  // no-op.
   const headings = Array.from(
     root.querySelectorAll<HTMLElement>(HEADING_SELECTOR),
   ).filter((el) => el.offsetParent !== null);
@@ -105,6 +106,7 @@ export function NoteOutlinePanel({
   textareaRef,
   previewContainerRef,
   editorRootRef,
+  onJumpInEditor,
   onClose,
 }: NoteOutlinePanelProps) {
   const dispatch = useAppDispatch();
@@ -147,8 +149,15 @@ export function NoteOutlinePanel({
         return;
       }
 
-      // preview → the preview container; wysiwyg / markdown-split → the TUI
-      // editor's rendered document inside the editor root. Both paths find the
+      // Write / Source: the one editor knows where its headings are (the
+      // visual view by anchor, the source view by offset).
+      if ((editorMode === "write" || editorMode === "source") && onJumpInEditor) {
+        onJumpInEditor(item.charOffset);
+        return;
+      }
+
+      // preview → the preview container (any other rich view → the editor
+      // root). Both paths find the
       // rendered heading, then scroll ONLY its nearest scrollable ancestor —
       // never scrollIntoView, which cascades up and drags the page shell too.
       // Instant, not smooth: something in the preview stack cancels smooth
@@ -171,7 +180,7 @@ export function NoteOutlinePanel({
         top: scroller.scrollTop + delta - JUMP_TOP_PAD_PX,
       });
     },
-    [editorMode, textareaRef, previewContainerRef, editorRootRef],
+    [editorMode, textareaRef, previewContainerRef, editorRootRef, onJumpInEditor],
   );
 
   return (

@@ -507,7 +507,16 @@ function applyServerNoteUpsert(
 
 // ── Initial state ───────────────────────────────────────────────────────────
 
-const initialState: NotesSliceState & {
+/**
+ * The "Shared with me" read (fetchSharedNotesList) — its own outcome, so the
+ * section's count says "—" when THAT read failed instead of 0 (RC-B12 r13).
+ */
+export interface NotesSharedReadState {
+  sharedStatus: "idle" | "loading" | "loaded" | "error";
+  sharedError: string | null;
+}
+
+const initialState: NotesSliceState & NotesSharedReadState & {
   // DEPRECATED — kept for backward compatibility during migration.
   // Remove in Phase 5 when old components are deleted.
   activeNoteId: string | null;
@@ -521,6 +530,8 @@ const initialState: NotesSliceState & {
   listError: null,
   trashStatus: "idle",
   trashError: null,
+  sharedStatus: "idle",
+  sharedError: null,
   conflictResolutionReceipts: {},
   currentConflictReviewKeys: {},
   retainedConflictReviews: {},
@@ -1731,6 +1742,29 @@ const notesSlice = createSlice({
       (state, action) => {
         state.trashStatus = "error";
         state.trashError = action.error?.message ?? "Couldn't load the trash";
+      },
+    );
+    // The "Shared with me" read's outcome (fetchSharedNotesList, matched by
+    // type string for the same circular-import reason as the Trash above).
+    builder.addMatcher(
+      (action) => action.type === "notes/fetchSharedNotesList/pending",
+      (state) => {
+        state.sharedStatus = "loading";
+      },
+    );
+    builder.addMatcher(
+      (action) => action.type === "notes/fetchSharedNotesList/fulfilled",
+      (state) => {
+        state.sharedStatus = "loaded";
+        state.sharedError = null;
+      },
+    );
+    builder.addMatcher(
+      (action): action is PayloadAction<unknown, string, unknown, { message?: string }> =>
+        action.type === "notes/fetchSharedNotesList/rejected",
+      (state, action) => {
+        state.sharedStatus = "error";
+        state.sharedError = action.error?.message ?? "Couldn't load the notes shared with you";
       },
     );
     builder.addMatcher(

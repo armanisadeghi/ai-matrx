@@ -505,19 +505,32 @@ function getPersistedEditorMode(metadata: unknown): NoteEditorMode | null {
   return canonicalNoteEditorMode((metadata as Record<string, unknown>).lastEditorMode);
 }
 
+/**
+ * THE read path for every stored notes mode (a person's default, a note's legacy
+ * `metadata.lastEditorMode`, a per-note memory). Notes have four modes — Split
+ * (the plain textarea left, the formatted note live right), Plain, Write (the one
+ * editor) and Preview. Values written before the one editor replaced Toast UI
+ * (2026-09-27) are read as their successor, never rewritten in storage:
+ *   wysiwyg → write · markdown-split / markdown / matrx-split / split → split ·
+ *   source → split (Split is the source-plus-preview mode).
+ */
 export function canonicalNoteEditorMode(value: unknown): NoteEditorMode | null {
-  if (value === "matrx-split") return "split";
-  if (value === "markdown") return "markdown-split";
-  if (
-    value === "plain" ||
-    value === "split" ||
-    value === "preview" ||
-    value === "wysiwyg" ||
-    value === "markdown-split"
-  ) {
-    return value;
+  switch (value) {
+    case "plain":
+    case "write":
+    case "split":
+    case "preview":
+      return value;
+    case "wysiwyg":
+      return "write";
+    case "markdown-split":
+    case "markdown":
+    case "matrx-split":
+    case "source":
+      return "split";
+    default:
+      return null;
   }
-  return null;
 }
 
 export function editorModeFromPhysicalMetadata(metadata: unknown): NoteEditorMode | null {

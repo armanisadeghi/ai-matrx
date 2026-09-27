@@ -65,8 +65,8 @@ const VIEW_MODES: ReadonlyArray<{
 }> = [
   { mode: "plain", label: "Edit", icon: FileText },
   { mode: "split", label: "Split", icon: SplitSquareHorizontal },
-  { mode: "wysiwyg", label: "Rich", icon: PilcrowRight },
-  { mode: "markdown-split", label: "MD Split", icon: Columns },
+  { mode: "write", label: "Write", icon: PilcrowRight },
+  { mode: "source", label: "Source", icon: Columns },
   { mode: "preview", label: "Preview", icon: Eye },
 ];
 

@@ -103,7 +103,10 @@ export const InlineCodeSnippet: React.FC<InlineCodeSnippetProps> = ({
   return (
     <div
       className={cn(
-        "my-2 rounded-md border border-border bg-muted/50 overflow-x-auto",
+        // not-prose: a surrounding `prose` block gave the <pre> its own
+        // ~1.7em top and bottom margins inside this frame (a tall empty band
+        // around one line of code on phones).
+        "not-prose my-2 rounded-md border border-border bg-muted/50 overflow-x-auto",
         className,
       )}
     >
@@ -119,7 +122,8 @@ export const InlineCodeSnippet: React.FC<InlineCodeSnippetProps> = ({
         </span>
         <button
           onClick={handleCopy}
-          className="p-0.5 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
+          // 44px under touch without growing the header row (negative margin).
+          className="flex items-center justify-center p-0.5 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors pointer-coarse:-my-3 pointer-coarse:-mr-2 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
           aria-label="Copy code"
         >
           {copied ? (

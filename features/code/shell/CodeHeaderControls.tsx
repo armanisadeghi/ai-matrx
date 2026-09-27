@@ -37,6 +37,7 @@ import {
   setRightOpen,
   setFarRightOpen,
 } from "../redux/codeWorkspaceSlice";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 
 export function CodeHeaderControls() {
   const dispatch = useAppDispatch();
@@ -90,7 +91,7 @@ export function CodeHeaderControls() {
   return (
     <div className="flex items-center w-full min-w-0 gap-0 p-0 space-x-0 space-y-0">
       {/* Toggles only make sense once the resizable panel layout is mounted. */}
-      <div className="hidden lg:flex items-center gap-0 p-0 space-x-0 space-y-0">
+      <HeaderActionsSlot className="hidden lg:flex items-center gap-0 p-0 space-x-0 space-y-0">
         <PanelLeftTapButton
           onClick={() => dispatch(setSideOpen(!sideOpen))}
           variant={sideOpen ? "glass" : "transparent"}
@@ -109,7 +110,7 @@ export function CodeHeaderControls() {
           ariaLabel={farRightOpen ? "Hide chat history" : "Show chat history"}
           tooltip={farRightOpen ? "Hide chat history" : "Show chat history"}
         />
-      </div>
+      </HeaderActionsSlot>
       <h1 className="ml-0 lg:ml-2 text-sm font-medium text-foreground truncate">
         Code
       </h1>
@@ -145,6 +146,7 @@ export function CodeHeaderControls() {
               {[activeSandbox.tier, resourceLabel].filter(Boolean).join(" · ")}
             </span>
           )}
+          <HeaderActionsSlot>
           <CopyTapButton
             variant="transparent"
             ariaLabel={`Copy sandbox ID ${activeSandbox.id}`}
@@ -162,6 +164,7 @@ export function CodeHeaderControls() {
             <span className="hidden lg:inline">Manage</span>
             <ExternalLink className="size-3" aria-hidden />
           </a>
+          </HeaderActionsSlot>
         </div>
       )}
     </div>

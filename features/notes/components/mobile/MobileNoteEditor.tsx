@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, useLayoutEffect } from "react";
 import dynamic from "next/dynamic";
-import { Eye, Loader2 } from "lucide-react";
+import { Eye } from "lucide-react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { useNotesRedux } from "../../hooks/useNotesRedux";
 import { useNoteAccess } from "../../hooks/useNoteAccess";
@@ -18,7 +18,9 @@ import { noteIdentityContentSource } from "../../richDocumentSource";
 import { usePreparedNoteContentSource } from "../../usePreparedNoteContentSource";
 import type { Note } from "@/features/notes/types";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
-import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
+import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
+import { isRichEditorMode, type EditorMode } from "../NoteEditorCore";
+import { useRememberNoteEditorMode } from "../../hooks/usePreferredDefaultEditorMode";
 import { updateNoteContent, updateNoteTags } from "../../redux/slice";
 import { saveNote } from "../../redux/thunks";
 import { getReduxSyncDelay } from "../../redux/notes.types";
@@ -36,8 +38,13 @@ import { NoteDraftRecoveryBanner } from "../NoteDraftRecoveryBanner";
 import { useNoteConflictChoreography } from "../../hooks/useNoteConflictChoreography";
 import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { cn } from "@/lib/utils";
 
-export type MobileEditorMode = "plain" | "wysiwyg" | "preview";
+/**
+ * The phone's modes: Plain (its default) and Write (the one editor). "preview"
+ * is never picked on a phone — it is what a viewer who may not edit is shown.
+ */
+export type MobileEditorMode = Extract<EditorMode, "plain" | "write" | "preview">;
 
 /** State the editor exposes to MobileNotesView's header save button/dirty poll. */
 interface MobileNoteEditorWindowState {
@@ -53,20 +60,6 @@ declare global {
     __mobileNoteEditorState?: MobileNoteEditorWindowState;
   }
 }
-
-// Heavy TUI editor — only loaded when needed
-const TuiEditorContent = dynamic(
-  () =>
-    import("@/components/mardown-display/chat-markdown/tui/TuiEditorContent"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-48">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    ),
-  },
-);
 
 // The SAME conflict window desktop mounts — never a mobile copy. It is a
 // Dialog, which on a phone fills the screen.
@@ -100,8 +93,11 @@ export default function MobileNoteEditor({
   // saves would otherwise silently discard every edit.
   const access = useNoteAccess(noteId);
   const readOnly = access.readOnly;
+  // Write is an editing view — a viewer reads the rendered note.
   const effectiveMode: MobileEditorMode =
-    readOnly && editorMode === "wysiwyg" ? "preview" : editorMode;
+    readOnly && isRichEditorMode(editorMode) ? "preview" : editorMode;
+  const richMode = isRichEditorMode(effectiveMode);
+  const rememberEditedMode = useRememberNoteEditorMode();
 
   // ── THE RECORD IS THE TRUTH ────────────────────────────────────────
   // This editor used to keep label/content/folder/tags in React state with a
@@ -125,7 +121,8 @@ export default function MobileNoteEditor({
   const noteIdRef = useRef(noteId);
   const editorMountedRef = useRef(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const tuiRef = useRef<TuiEditorContentRef>(null);
+  // THE ONE EDITOR (Write / Source).
+  const richRef = useRef<RichEditorController | null>(null);
 
   useEffect(() => {
     localContentRef.current = localContent;
@@ -222,11 +219,16 @@ export default function MobileNoteEditor({
 
   const handleChange = useCallback(
     (content: string) => {
+      // The ref moves with the keystroke, not a render later: a mode switch's
+      // flush (below) can run before the next render and must see this text.
+      localContentRef.current = content;
       setLocalContent(content);
       setNoteLiveContent(noteId, content);
       syncToRedux(content);
+      // This note reopens in the mode the person typed in (plain stays plain).
+      rememberEditedMode(noteId, effectiveMode);
     },
-    [noteId, syncToRedux],
+    [noteId, syncToRedux, rememberEditedMode, effectiveMode],
   );
 
   const handleChangeFlush = useCallback(
@@ -243,21 +245,21 @@ export default function MobileNoteEditor({
     [dispatch, noteId],
   );
 
-  /** The WYSIWYG surface's live markdown, when it is the mounted body. */
+  /** The one editor's text now (pending keystrokes delivered), when it is the body. */
   const readMountedContent = useCallback(() => {
-    if (effectiveMode !== "wysiwyg") return localContentRef.current;
+    if (!richMode) return localContentRef.current;
     try {
-      return tuiRef.current?.getCurrentMarkdown?.() ?? localContentRef.current;
+      return richRef.current?.flush() ?? localContentRef.current;
     } catch {
       return localContentRef.current;
     }
-  }, [effectiveMode]);
+  }, [richMode]);
 
   // TYPE, TAP BACK, GONE — closed at the class. A pending debounce is flushed
   // to Redux on unmount AND on a note switch (this effect is keyed by noteId,
   // so the cleanup runs with the OUTGOING note's id and buffer), exactly as
   // `NoteContentEditor` does. `autoSaveMiddleware` then persists it.
-  // On a TRUE unmount in rich (WYSIWYG) mode, the rich editor may hold words
+  // On a TRUE unmount in Write / Source, the one editor may hold words
   // its onChange has not delivered yet. A layout-effect cleanup runs before the
   // child editor detaches its imperative handle (and before the passive cleanup
   // below), so the live markdown is snapshotted here and flushed below. Never
@@ -267,16 +269,15 @@ export default function MobileNoteEditor({
     effectiveModeRef.current = effectiveMode;
   }, [effectiveMode]);
   const unmountSnapshotRef = useRef<string | null>(null);
-  /** Set by the rich editor's own onChange. Its re-serialized markdown can
-   *  differ from the stored text (list markers, escapes, a trailing newline)
-   *  with no edit at all, so the unmount snapshot is taken ONLY when the user
-   *  actually typed in rich mode — merely opening a note must never write it. */
+  /** Set by the one editor's own onChange. It reports only real edits (its
+   *  no-edit text is the stored bytes), and the unmount snapshot is still
+   *  taken ONLY when the person typed there — opening a note never writes it. */
   const richEditedRef = useRef(false);
   useLayoutEffect(
     () => () => {
-      if (effectiveModeRef.current !== "wysiwyg" || !richEditedRef.current) return;
+      if (!isRichEditorMode(effectiveModeRef.current) || !richEditedRef.current) return;
       try {
-        const markdown = tuiRef.current?.getCurrentMarkdown?.();
+        const markdown = richRef.current?.flush();
         if (typeof markdown === "string") unmountSnapshotRef.current = markdown;
       } catch {
         // A torn-down rich editor falls back to the last delivered buffer.
@@ -303,12 +304,13 @@ export default function MobileNoteEditor({
     };
   }, [dispatch, noteId]);
 
-  // Leaving the WYSIWYG surface commits whatever it holds before it unmounts.
+  // Leaving the one editor commits whatever it holds (it delivers its last
+  // keystrokes as it unmounts; this pushes them to Redux at once).
   const previousModeRef = useRef(effectiveMode);
   useEffect(() => {
     const previous = previousModeRef.current;
     previousModeRef.current = effectiveMode;
-    if (previous === effectiveMode || previous !== "wysiwyg") return;
+    if (previous === effectiveMode || !isRichEditorMode(previous)) return;
     const pending = localContentRef.current;
     if (pending !== lastReduxRef.current) handleChangeFlush(pending);
   }, [effectiveMode, handleChangeFlush]);
@@ -428,8 +430,58 @@ export default function MobileNoteEditor({
         <NoteConflictWindow {...conflict.conflictWindowProps} />
       )}
 
-      {/* ── Scrollable content area ─────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-32">
+      {/* ── Write: THE ONE EDITOR, the same one desktop uses ─────────────────
+          It scrolls itself (its text keeps clear of the dock), so it sits
+          outside the padded scroll area. The note's own menu answers
+          long-press, as in Plain. */}
+      {richMode && (
+        <EditableContextMenu
+          sourceFeature="notes"
+          surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
+          contextData={{ content: localContent }}
+          contentSource={editableContentSource}
+          entity={{
+            type: "note",
+            id: noteId,
+            title: noteLabel || note.label,
+            resourceType: "note",
+          }}
+          insertAtCaret={(text) => {
+            const rich = richRef.current;
+            if (!rich) return false;
+            rich.replaceSelection(text);
+            return true;
+          }}
+          onTextReplace={handleChangeFlush}
+          onTextInsertBefore={(text) => richRef.current?.insertText(text, "before")}
+          onTextInsertAfter={(text) => richRef.current?.insertText(text, "after")}
+        >
+          <div className="relative min-h-0 flex-1">
+            <RichEditor
+              key={noteId}
+              value={localContent}
+              onChange={(value: string) => {
+                richEditedRef.current = true;
+                handleChange(value);
+              }}
+              view="visual"
+              chrome="bare"
+              hostContextMenu
+              controllerRef={richRef}
+              surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
+              sourceFeature="notes"
+              contentSource={editableContentSource ?? noteIdentityContentSource(noteId, `mobile-editor:${noteId}`)}
+              defaultOutlineOpen={false}
+              placeholder="Start writing..."
+              imagePolicy={authoredBy(note.created_by, editingActorId)}
+              className="h-full"
+            />
+          </div>
+        </EditableContextMenu>
+      )}
+
+      {/* ── Scrollable content area (Plain / a viewer's Read) ─────────────── */}
+      <div className={cn("flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-32", richMode && "hidden")}>
         {/* Plain text — wrapped in the universal v3 menu: on mobile it mounts
             the long-press / selection-icon bottom-sheet drill-down, giving the
             phone editor the same Copy-as / Export / AI / agent actions as
@@ -492,22 +544,6 @@ export default function MobileNoteEditor({
           </EditableContextMenu>
         )}
 
-        {/* Rich (WYSIWYG) */}
-        {effectiveMode === "wysiwyg" && (
-          <div className="min-h-[calc(100dvh-200px)]">
-            <TuiEditorContent
-              ref={tuiRef}
-              content={localContent}
-              onChange={(val: string) => {
-                richEditedRef.current = true;
-                handleChange(val);
-              }}
-              isActive={true}
-              editMode="wysiwyg"
-              className="w-full"
-            />
-          </div>
-        )}
 
         {/* Preview */}
         {effectiveMode === "preview" && (

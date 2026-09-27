@@ -65,7 +65,7 @@ export function SurfaceReadinessBadge({
   return (
     <Badge
       variant="outline"
-      className={`text-[10px] ${meta.className} ${className ?? ""}`}
+      className={`text-xs capitalize ${meta.className} ${className ?? ""}`}
       title={row.readiness_note ?? meta.description}
     >
       {meta.label}

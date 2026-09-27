@@ -25,6 +25,8 @@ import type {
   RichDocumentActionsBehavior,
 } from "@/features/rich-document/types";
 import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 
 // Lazy — only pulled into the bundle when a caller opts into actions by
 // passing `actionsSource`. Consumers that don't use the action surface pay
@@ -134,6 +136,15 @@ export interface MatrxSplitProps {
    * renderer (components/rich-content/prose/remote-image-policy.tsx).
    */
   imagePolicy?: ImagePolicyDeclaration;
+  /**
+   * Surface Registry name (e.g. `matrx-user/notes`). When set, the writing pane
+   * is a `ProTextarea` carrying that surface's agents ("…" bound agents, voice,
+   * copy, clean-up) — the same quick textarea a host's plain mode shows, so a
+   * split view never loses the agent wiring. Omitted: a bare textarea.
+   */
+  surfaceName?: string;
+  /** Live scope builder for the surface's agents (only with `surfaceName`). */
+  getApplicationScope?: () => ApplicationScope;
 }
 
 /**
@@ -189,6 +200,8 @@ export function MatrxSplit({
   contentResetKey,
   scrollIntent,
   imagePolicy,
+  surfaceName,
+  getApplicationScope,
 }: MatrxSplitProps) {
   const previewChange = onPreviewChange ?? onChange;
   const isMobile = useIsMobile();
@@ -448,19 +461,42 @@ export function MatrxSplit({
     >
       <ResizablePanel defaultSize={defaultLayout[0]} minSize={20}>
         <div className="relative h-full w-full">
-          <textarea
-            ref={mergedTextareaRef}
-            value={localValue}
-            onChange={(e) => handleLocalChange(e.target.value)}
-            onScroll={handleEditorScroll}
-            placeholder={placeholder}
-            readOnly={readOnly}
-            aria-label="Markdown editor"
-            className={cn(
-              "h-full w-full resize-none border-none bg-transparent p-4 text-sm leading-[1.7] font-[inherit] text-foreground outline-none placeholder:text-muted-foreground overflow-y-auto scrollbar-thin-auto",
-              textareaClassName,
-            )}
-          />
+          {surfaceName ? (
+            // The host's agent-wired quick textarea — typing is stored exactly
+            // as typed; nothing formats it.
+            <ProTextarea
+              ref={mergedTextareaRef}
+              surfaceName={surfaceName}
+              getApplicationScope={getApplicationScope}
+              value={localValue}
+              onChange={(e) => handleLocalChange(e.target.value)}
+              onScroll={handleEditorScroll}
+              placeholder={placeholder}
+              readOnly={readOnly}
+              aria-label="Note text"
+              enableTextStats={false}
+              defaultShowTextStatsBar={false}
+              wrapperClassName="absolute inset-0 h-full w-full"
+              className={cn(
+                "h-full w-full resize-none rounded-none border-none bg-transparent p-4 text-sm leading-[1.7] font-[inherit] text-foreground shadow-none outline-none placeholder:text-muted-foreground overflow-y-auto scrollbar-thin-auto focus-visible:ring-0 focus-visible:ring-offset-0",
+                textareaClassName,
+              )}
+            />
+          ) : (
+            <textarea
+              ref={mergedTextareaRef}
+              value={localValue}
+              onChange={(e) => handleLocalChange(e.target.value)}
+              onScroll={handleEditorScroll}
+              placeholder={placeholder}
+              readOnly={readOnly}
+              aria-label="Markdown editor"
+              className={cn(
+                "h-full w-full resize-none border-none bg-transparent p-4 text-sm leading-[1.7] font-[inherit] text-foreground outline-none placeholder:text-muted-foreground overflow-y-auto scrollbar-thin-auto",
+                textareaClassName,
+              )}
+            />
+          )}
           {editorOverlay}
         </div>
       </ResizablePanel>

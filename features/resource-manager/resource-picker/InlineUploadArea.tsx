@@ -77,6 +77,11 @@ interface InlineUploadAreaProps {
   /** Lets the host disable navigation while uploads are in flight. */
   onBusyChange?: (busy: boolean) => void;
   selectionMode?: "single" | "multiple";
+  /**
+   * The workspace the host already knows the file belongs in (the data grid's attachment cell: the
+   * TABLE's organization). Declared, the upload choke point files it there without asking.
+   */
+  organizationId?: string | null;
 }
 
 function classifyUploadType(mimeType: string): string {
@@ -324,6 +329,7 @@ export function InlineUploadArea({
   onSelect,
   onBusyChange,
   selectionMode = "multiple",
+  organizationId = null,
 }: InlineUploadAreaProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
@@ -444,10 +450,13 @@ export function InlineUploadArea({
           // 2026-08-30 bug — the server then filed the attachment in the
           // uploader's own organization, which promptly disagreed with the
           // organization they picked for the conversation a minute later. The
-          // fix belongs at the one upload choke point, not in each door.
+          // fix belongs at the one upload choke point, not in each door. A host that KNOWS the
+          // workspace (the data grid's attachment cell: the table's organization) declares it,
+          // and the choke point honours a declared organization.
           const normalized = await upload(
             { kind: "file", file },
             {
+              ...(organizationId ? { metadata: { scope: { organization_id: organizationId } } } : {}),
               folderPath,
               visibility: "personal",
               createShareLink: true,
@@ -521,7 +530,7 @@ export function InlineUploadArea({
         setBusy(false);
       }
     },
-    [upload, onSelect, setBusy],
+    [upload, onSelect, setBusy, organizationId],
   );
 
   const handleDrop = useCallback(

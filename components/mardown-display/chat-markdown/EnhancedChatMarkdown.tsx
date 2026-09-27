@@ -608,6 +608,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
   const hasDbInterleavedSpecial = messageInterleavedContent.some(
     (s) => s.type === "db_tool" || s.type === "thinking",
   );
+  // [DBG-k9]
+  if (typeof window !== "undefined") { const w = window as unknown as { __dbgE?: unknown[] }; (w.__dbgE ??= []).push({ t: Math.round(performance.now()), mid: messageId?.slice(0, 8), rid: requestId?.slice(0, 12), active: !!isStreamActive, settled: settledFromRecord, uni: hasUnifiedSpecial, db: hasDbInterleavedSpecial, runs: recordMessageIds?.map((x) => x.slice(0, 8)).join(","), segs: messageInterleavedContent.map((x) => x.type).join(","), slots: unifiedSlots.map((x) => x.kind).join(",") }); }
 
   // Tool names for batching + the settled-turn agent-work fold (live path):
   // the unified slots only carry callIds; display-mode checks need the name.

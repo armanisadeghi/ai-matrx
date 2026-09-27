@@ -97,6 +97,8 @@ export function AssistantTurnGroup({
     ),
   );
   const members = membersForRender(rawMembers, persistedView);
+  // [DBG-k9] 
+  if (typeof window !== "undefined") { const w = window as unknown as { __dbgT?: unknown[] }; (w.__dbgT ??= []).push({ t: Math.round(performance.now()), raw: rawMembers.map((m) => [m.messageId?.slice(0, 8), m.requestId?.slice(0, 12), m.isStreamActive]), mem: members.map((m) => [m.key.slice(0, 16), m.messageId?.slice(0, 8), (m.recordMessageIds ?? []).map((x) => x.slice(0, 8)).join(",")]) }); }
 
   // The "answer anchor" for this group: the latest assistant member with
   // a real messageId. The trailing action bar binds Edit / Like / Delete

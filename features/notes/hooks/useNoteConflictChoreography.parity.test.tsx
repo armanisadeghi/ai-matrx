@@ -72,10 +72,11 @@ jest.mock("@/features/notes/components/NoteEditorCore", () => ({
   NoteEditorCore: ({ content, onChange }: { content: string; onChange: (value: string) => void }) => (
     <textarea aria-label="Note editor" value={content} onChange={(event) => onChange(event.target.value)} />
   ),
+  isRichEditorMode: (mode: string) => mode === "write" || mode === "source",
 }));
 jest.mock("@/features/notes/hooks/usePreferredDefaultEditorMode", () => ({
-  normalizeNoteEditorMode: (value: string | undefined) => value ?? "plain",
-  usePreferredDefaultEditorMode: () => "plain",
+  useNoteEditorMode: () => "plain",
+  useRememberNoteEditorMode: () => () => {},
 }));
 jest.mock("@/features/notes/hooks/useNotesSurfaceScope", () => ({ useNotesSurfaceScope: () => () => ({}) }));
 jest.mock("@/features/notes/hooks/useNoteUndoRedo", () => ({ useNoteUndoRedo: () => ({}) }));

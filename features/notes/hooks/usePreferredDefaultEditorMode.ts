@@ -1,38 +1,165 @@
 "use client";
 
-// Preferred default editor mode for notes that have no saved per-note mode.
-// The person's own choice (userPreferences.notes.defaultEditorMode, saved when
-// they pick a view in the header) wins; the platform default is Rich — the
-// rendered editor, never raw markdown first. A two-pane choice on a viewport
-// too narrow for two panes falls back to Rich.
+// Which mode a note opens in — ONE rule for every notes surface (the page
+// header, the tab chip, the window's view menu, the editor itself, the phone).
+//
+// The modes (Arman, 2026-09-27):
+//   desktop  Split (default) · Plain · Write · Preview
+//   phone    Plain (default) · Write
+// Split = the quick plain textarea on the left, the formatted note live on the
+// right. Plain = that textarea alone. Write = THE ONE EDITOR's visual view.
+//
+// The rule, in order:
+//   1. the mode the person picked for this note in this session;
+//   2. the mode the person last TYPED this note in (per person, every device —
+//      userPreferences.notes.noteModes): a note last edited in Write reopens in
+//      Write; a note last typed as text reopens in the device's text mode
+//      (desktop: the person's default when it is Split or Plain, else Split;
+//      phone: Plain) — quick unformatted notes stay unformatted;
+//   3. a legacy per-note `metadata.lastEditorMode` (read, never written);
+//   4. the person's default for the device — the knobs
+//      userPreferences.notes.defaultEditorMode (desktop, default Split) and
+//      userPreferences.notes.defaultPhoneEditorMode (phone, default Plain),
+//      saved when they pick a mode.
+//
+// Every stored value passes the one read path (`canonicalNoteEditorMode`), so a
+// value written before the one editor replaced Toast UI opens as its successor.
 
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useSetting } from "@/features/settings/hooks/useSetting";
 import { canonicalNoteEditorMode } from "../redux/notes.types";
 import type { EditorMode } from "../components/NoteEditorCore";
+import type { RootState } from "@/lib/redux/rootReducer";
 
-/** Viewport width below which the two-pane views are too cramped. */
-export const NOTES_SPLIT_MIN_WIDTH_PX = 900;
+export type NoteDevice = "desktop" | "phone";
+export type PhoneNoteMode = "plain" | "write";
 
-const PLATFORM_DEFAULT_EDITOR_MODE: EditorMode = "wysiwyg";
+/** The platform defaults: plain text with a live preview; the phone types plain. */
+export const PLATFORM_DEFAULT_EDITOR_MODE: EditorMode = "split";
+export const PLATFORM_DEFAULT_PHONE_EDITOR_MODE: PhoneNoteMode = "plain";
 
-export function usePreferredDefaultEditorMode(): EditorMode {
-  const isNarrow = useMediaQuery(
-    `(max-width: ${NOTES_SPLIT_MIN_WIDTH_PX - 1}px)`,
-  );
-  const [saved] = useSetting<string | undefined>(
-    "userPreferences.notes.defaultEditorMode",
-  );
-  const mode = canonicalNoteEditorMode(saved) ?? PLATFORM_DEFAULT_EDITOR_MODE;
-  if (isNarrow && (mode === "split" || mode === "markdown-split"))
-    return PLATFORM_DEFAULT_EDITOR_MODE;
-  return mode;
+/** The per-note memory keeps this many notes (oldest forgotten first). */
+export const NOTE_MODE_MEMORY_LIMIT = 300;
+
+export const DEFAULT_EDITOR_MODE_SETTING = "userPreferences.notes.defaultEditorMode";
+export const DEFAULT_PHONE_EDITOR_MODE_SETTING = "userPreferences.notes.defaultPhoneEditorMode";
+export const NOTE_MODE_MEMORY_SETTING = "userPreferences.notes.noteModes";
+
+/** What the memory records: typed in the one editor, or typed as text. */
+type RememberedMode = "write" | "plain";
+
+/** Any stored mode, as the phone shows it (the phone has Plain and Write). */
+export function phoneNoteMode(mode: unknown): PhoneNoteMode | null {
+  const canonical = canonicalNoteEditorMode(mode);
+  if (!canonical) return null;
+  return canonical === "write" ? "write" : "plain";
 }
 
-/** Map legacy / alias mode strings onto the live EditorMode union. */
+/** Map any stored / legacy mode string onto the notes modes. */
 export function normalizeNoteEditorMode(
   mode: string | null | undefined,
   fallback: EditorMode,
 ): EditorMode {
   return canonicalNoteEditorMode(mode) ?? fallback;
+}
+
+/** The person's default for this device (the knobs). */
+export function usePreferredDefaultEditorMode(device: NoteDevice = "desktop"): EditorMode {
+  const [desktop] = useSetting<string | undefined>(DEFAULT_EDITOR_MODE_SETTING);
+  const [phone] = useSetting<string | undefined>(DEFAULT_PHONE_EDITOR_MODE_SETTING);
+  if (device === "phone") return phoneNoteMode(phone) ?? PLATFORM_DEFAULT_PHONE_EDITOR_MODE;
+  return defaultDesktopMode(desktop);
+}
+
+/**
+ * The desktop default a stored value names. A default is a WRITING mode: a
+ * stored "preview" (saved by a Read click before 2026-09-27) would open every
+ * note read-only, so it reads as the platform default.
+ */
+export function defaultDesktopMode(stored: unknown): EditorMode {
+  const mode = canonicalNoteEditorMode(stored);
+  return mode && mode !== "preview" ? mode : PLATFORM_DEFAULT_EDITOR_MODE;
+}
+
+/** The pure rule (exported for the guard test). */
+export function resolveNoteEditorMode(input: {
+  device: NoteDevice;
+  sessionMode: string | null | undefined;
+  sessionModeSource: "uninitialized" | "persisted" | "local" | null | undefined;
+  rememberedMode: string | null | undefined;
+  preferredDefault: EditorMode;
+}): EditorMode {
+  const { device, sessionMode, sessionModeSource, rememberedMode, preferredDefault } = input;
+  const onDevice = (mode: unknown): EditorMode | null =>
+    device === "phone" ? phoneNoteMode(mode) : canonicalNoteEditorMode(mode);
+
+  if (sessionModeSource === "local") {
+    const picked = onDevice(sessionMode);
+    if (picked) return picked;
+  }
+  if (rememberedMode === "write") return "write";
+  if (rememberedMode === "plain") {
+    if (device === "phone") return "plain";
+    return preferredDefault === "plain" || preferredDefault === "split" ? preferredDefault : "split";
+  }
+  return onDevice(sessionMode) ?? onDevice(preferredDefault) ?? preferredDefault;
+}
+
+/** The mode this note opens in on this device (see the header of this file). */
+export function useNoteEditorMode(
+  noteId: string | null | undefined,
+  device?: NoteDevice,
+): EditorMode {
+  const isMobile = useIsMobile();
+  const resolvedDevice: NoteDevice = device ?? (isMobile ? "phone" : "desktop");
+  const preferredDefault = usePreferredDefaultEditorMode(resolvedDevice);
+  const [memory] = useSetting<Record<string, string> | undefined>(NOTE_MODE_MEMORY_SETTING);
+  const sessionMode = useAppSelector((state: RootState) =>
+    noteId ? state.notes?.notes?.[noteId]?._editorMode : undefined,
+  );
+  const sessionModeSource = useAppSelector((state: RootState) =>
+    noteId ? state.notes?.notes?.[noteId]?._editorModeSource : undefined,
+  );
+  return resolveNoteEditorMode({
+    device: resolvedDevice,
+    sessionMode,
+    sessionModeSource,
+    rememberedMode: noteId ? memory?.[noteId] : undefined,
+    preferredDefault,
+  });
+}
+
+/** The memory after recording `mode` for `noteId` (newest last, bounded). */
+export function rememberNoteMode(
+  memory: Record<string, string> | undefined,
+  noteId: string,
+  mode: RememberedMode,
+  limit = NOTE_MODE_MEMORY_LIMIT,
+): Record<string, string> {
+  const next: Record<string, string> = {};
+  const kept = Object.entries(memory ?? {}).filter(([id]) => id !== noteId);
+  for (const [id, value] of kept.slice(Math.max(0, kept.length - (limit - 1)))) {
+    next[id] = value;
+  }
+  next[noteId] = mode;
+  return next;
+}
+
+/**
+ * Returns `recordEdit(noteId, mode)` — call it when the person types. Typing in
+ * Write records "write"; typing in Plain or Split records "plain" (text). It
+ * writes only when this note's remembered mode actually changes (once per
+ * change, never per keystroke).
+ */
+export function useRememberNoteEditorMode(): (noteId: string, mode: EditorMode) => void {
+  const [memory, setMemory] = useSetting<Record<string, string> | undefined>(
+    NOTE_MODE_MEMORY_SETTING,
+  );
+  return (noteId: string, mode: EditorMode) => {
+    const remembered: RememberedMode | null =
+      mode === "write" ? "write" : mode === "plain" || mode === "split" ? "plain" : null;
+    if (!remembered || memory?.[noteId] === remembered) return;
+    setMemory(rememberNoteMode(memory, noteId, remembered));
+  };
 }

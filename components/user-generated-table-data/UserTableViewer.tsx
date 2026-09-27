@@ -203,6 +203,7 @@ import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDi
 import { columnRuleRefusal, type ColumnRuleRefusal } from "@/features/data-tables/validation-refusal";
 import { FieldRuleRefusal } from "@/features/data-tables/components/FieldRuleRefusal";
 import {
+  describeBulkFailures,
   isBulkOpError,
   isServiceFailure,
   type BulkMergeOp,
@@ -528,6 +529,11 @@ interface UserTableViewerProps {
    * row is still mounting (nothing yet). Absent (/data/<id>, every other mount): as always.
    */
   toolbarSlot?: HTMLElement | null | undefined;
+  /**
+   * A PREVIEW (the tables picker, merged-grid review 2 fix lane F item 3): read-only whatever the
+   * person holds, and every refused edit says it is a preview.
+   */
+  previewOnly?: boolean;
 }
 
 const DATA_TABLES_SURFACE_NAME = "matrx-user/data-tables" as const;
@@ -553,6 +559,7 @@ const UserTableViewer = ({
   emitSurfaceScope = false,
   pageOwnsShareAndExport,
   toolbarSlot,
+  previewOnly = false,
 }: UserTableViewerProps) => {
   const router = useRouter();
   const [scheduleNavigationPending, startScheduleNavigation] = React.useTransition();
@@ -874,9 +881,10 @@ const UserTableViewer = ({
     systemOrgId !== null &&
     tableInfo.organization_id === systemOrgId;
   const isReadOnly =
-    tableInfo !== null &&
-    currentUserId !== null &&
-    (isExampleTable || (!isOwner && !sharedEditor));
+    previewOnly ||
+    (tableInfo !== null &&
+      currentUserId !== null &&
+      (isExampleTable || (!isOwner && !sharedEditor)));
 
   useEffect(() => {
     if (!tableInfo || currentUserId === null || isOwner) return;
@@ -892,15 +900,19 @@ const UserTableViewer = ({
   // Why the grid is read-only, in one sentence, for the context menu's
   // disabled-item hints. The default "ask the owner for edit access" is a LIE
   // on an example table for the account that seeded it — it IS the owner.
-  const readOnlyReason = isExampleTable
-    ? "Platform example table — read-only for everyone"
-    : undefined;
+  const readOnlyReason = previewOnly
+    ? "A preview — open the table to change it"
+    : isExampleTable
+      ? "Platform example table — read-only for everyone"
+      : undefined;
 
   // Show toast when trying to edit in read-only mode
   const showReadOnlyToast = () => {
     toast({
       title: "View Only",
-      description: isExampleTable
+      description: previewOnly
+        ? "This is a preview. Open the table to change it."
+        : isExampleTable
         ? "This is one of the platform's example tables, so it is read-only for everyone. Create a table of your own to try this out."
         : "You don't have edit access to this shared table. You would need to duplicate it first to make changes.",
       variant: "default",
@@ -2824,7 +2836,7 @@ const UserTableViewer = ({
       if (failed.length > 0) {
         toast({
           title: `${describe.split(" ")[0]} ${ops.length - failed.length} of ${ops.length}`,
-          description: `${failed.length} row${failed.length === 1 ? "" : "s"} could not be found — they may have been removed by someone else.`,
+          description: describeBulkFailures(failed),
           variant: "destructive",
         });
       } else if (announce) {

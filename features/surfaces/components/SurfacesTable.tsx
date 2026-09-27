@@ -28,12 +28,15 @@ import {
   type SurfaceWithStats,
 } from "@/features/surfaces/services/surfaces.service";
 import { SurfaceReadinessBadge } from "@/features/surfaces/components/SurfaceReadinessBadge";
+import { getManifest } from "@/features/surfaces/manifests/registry";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import {
   checkAgeLabel,
   checkSortWeight,
   surfaceCheckState,
 } from "@/features/surfaces/utils/surface-check-ledger";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   SurfacesFilterBar,
   type SurfacesFilterState,
@@ -77,12 +80,10 @@ function checkedBadge(row: SurfaceWithStats) {
       variant="outline"
       title={title}
       className={cn(
-        "text-xs",
+        "text-xs capitalize",
         state === "never" && "bg-muted text-muted-foreground border-border",
-        state === "stale" &&
-          "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800",
-        state === "fresh" &&
-          "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800",
+        state === "stale" && "border-warning/40 text-warning",
+        state === "fresh" && "border-success/40 text-success",
       )}
     >
       {checkAgeLabel(row)}
@@ -90,144 +91,150 @@ function checkedBadge(row: SurfaceWithStats) {
   );
 }
 
+/** The ONE empty marker in this table. */
+const EMPTY = <span className="text-muted-foreground">—</span>;
+
+/** A surface's human name: its registry label, or the label its key implies. */
+export function surfaceRowTitle(row: SurfaceWithStats): string {
+  return row.label?.trim() || getSurfaceDisplayLabel(row.name);
+}
+
+/**
+ * Values declared in code (the manifest, with what it inherits) vs rows the
+ * database mirror holds. `null` = no code manifest declares this surface.
+ */
+function declaredValueCount(name: string): number | null {
+  const manifest = getManifest(name);
+  return manifest ? manifest.values.length : null;
+}
+
+function ValuesCell({ row }: { row: SurfaceWithStats }) {
+  const declared = declaredValueCount(row.name);
+  if (declared === null) {
+    return row.surfaceValueCount > 0 ? (
+      <span
+        className="tabular-nums text-muted-foreground"
+        title={`No code manifest declares this surface; ${row.surfaceValueCount} values are saved in the database`}
+      >
+        {row.surfaceValueCount} in DB
+      </span>
+    ) : (
+      EMPTY
+    );
+  }
+  const inSync = declared === row.surfaceValueCount;
+  return (
+    <span
+      className="whitespace-nowrap tabular-nums"
+      title={`Declared in code: ${declared} · Saved in the database: ${row.surfaceValueCount}${inSync ? "" : " — Sync manifests brings the database up to date"}`}
+    >
+      {declared}
+      {!inSync && (
+        <span className="ml-1 text-xs text-warning">
+          · {row.surfaceValueCount} in DB
+        </span>
+      )}
+    </span>
+  );
+}
+
+function NameCell({
+  row,
+  navigating,
+}: {
+  row: SurfaceWithStats;
+  navigating: boolean;
+}) {
+  // Lines are <div>s so the right-click heading reads the title line alone.
+  return (
+    <div className="flex min-w-0 items-center gap-1.5">
+      <div className="min-w-0">
+        <div className="truncate font-medium text-foreground">
+          {surfaceRowTitle(row)}
+        </div>
+        <div className="truncate font-mono text-xs text-muted-foreground">
+          {row.name}
+        </div>
+      </div>
+      {row.overlay_id && (
+        <Badge
+          variant="outline"
+          className="shrink-0 gap-1 text-xs"
+          title={`Window or dialog: ${row.overlay_id}`}
+        >
+          <AppWindow className="h-3 w-3" /> Window
+        </Badge>
+      )}
+      {navigating && (
+        <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" /> Opening…
+        </span>
+      )}
+    </div>
+  );
+}
+
+function ActiveBadge({ active }: { active: boolean }) {
+  return active ? (
+    <Badge variant="outline" className="text-xs border-success/40 text-success">
+      Active
+    </Badge>
+  ) : (
+    <Badge variant="outline" className="text-xs text-muted-foreground">
+      Inactive
+    </Badge>
+  );
+}
+
+// Columns in triage order: what needs work (readiness, bindings, values,
+// check age, active) first; where it lives (client, parent, tier) after.
+// Executor is folded into Client (it only differs on a few rows) and starts
+// hidden as its own column.
 function surfaceColumns(
-  manifestedSurfaceNames: Set<string>,
   navigatingName: string | null,
 ): MatrxColumnDef<SurfaceWithStats>[] {
   return [
     {
       accessorKey: "name",
       header: "Name",
-      width: 300,
-      filterValue: (row) => `${row.label ?? ""} ${row.name}`,
+      width: 280,
+      filterValue: (row) => `${surfaceRowTitle(row)} ${row.name}`,
+      sortValue: (row) => surfaceRowTitle(row).toLowerCase(),
       cell: (row) => (
-        <div className="flex min-w-0 items-center gap-1.5">
-          {row.label ? (
-            <span className="min-w-0 max-w-[280px]">
-              <span className="block truncate font-medium text-foreground">
-                {row.label}
-              </span>
-              <span className="block truncate font-mono text-xs text-muted-foreground">
-                {row.name}
-              </span>
-            </span>
-          ) : (
-            <span className="max-w-[260px] truncate font-mono text-foreground">
-              {row.name}
-            </span>
-          )}
-          {row.overlay_id && (
-            <Badge
-              variant="outline"
-              className="shrink-0 gap-1 text-xs"
-              title={row.overlay_id}
-            >
-              <AppWindow className="h-3 w-3" /> overlay
-            </Badge>
-          )}
-          {row.name === navigatingName && (
-            <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" /> Opening…
-            </span>
-          )}
-        </div>
+        <NameCell row={row} navigating={row.name === navigatingName} />
       ),
-    },
-    {
-      accessorKey: "client_name",
-      header: "Client",
-      width: 150,
-      cell: (row) => (
-        <span className="font-mono text-muted-foreground">
-          {row.client_name}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "executor_name",
-      header: "Executor",
-      width: 180,
-      cell: (row) =>
-        row.executor_name ? (
-          <span className="font-mono text-xs text-muted-foreground">
-            {row.executor_name}
-          </span>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        ),
-    },
-    {
-      accessorKey: "parent_surface_name",
-      header: "Parent",
-      width: 180,
-      cell: (row) =>
-        row.parent_surface_name ? (
-          <span className="font-mono text-xs text-muted-foreground">
-            {row.parent_surface_name}
-          </span>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        ),
-    },
-    {
-      accessorKey: "sort_order",
-      header: "Tier",
-      width: 110,
-      cell: (row) => {
-        const tier = tierFor(row.sort_order);
-        return (
-          <>
-            <Badge variant="outline" className="text-xs">
-              {tier.label}
-            </Badge>
-            <span className="ml-1 text-xs tabular-nums text-muted-foreground">
-              {row.sort_order}
-            </span>
-          </>
-        );
-      },
-    },
-    {
-      id: "surfaceValueCount",
-      header: "Values",
-      accessorFn: (row) => row.surfaceValueCount,
-      align: "right",
-      width: 90,
-      cell: (row) =>
-        manifestedSurfaceNames.has(row.name) ? (
-          <Badge
-            variant={row.surfaceValueCount > 0 ? "default" : "outline"}
-            className="text-xs tabular-nums"
-          >
-            {row.surfaceValueCount}
-          </Badge>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        ),
-    },
-    {
-      id: "agentCount",
-      header: "Agents",
-      accessorFn: (row) => row.agentCount,
-      align: "right",
-      width: 80,
-      cell: (row) => (row.agentCount > 0 ? row.agentCount : "—"),
-    },
-    {
-      id: "toolCount",
-      header: "Tools",
-      accessorFn: (row) => row.toolCount,
-      align: "right",
-      width: 80,
-      cell: (row) => (row.toolCount > 0 ? row.toolCount : "—"),
     },
     {
       id: "readiness",
       header: "Readiness",
       accessorFn: (row) => readinessBucketOf(row),
       sortValue: (row) => READINESS_SORT_WEIGHT[readinessBucketOf(row)],
-      width: 110,
+      width: 120,
       cell: (row) => <SurfaceReadinessBadge row={row} />,
+    },
+    {
+      id: "agentCount",
+      header: "Agents",
+      accessorFn: (row) => row.agentCount,
+      align: "right",
+      width: 84,
+      cell: (row) => (row.agentCount > 0 ? row.agentCount : EMPTY),
+    },
+    {
+      id: "toolCount",
+      header: "Tools",
+      accessorFn: (row) => row.toolCount,
+      align: "right",
+      width: 76,
+      cell: (row) => (row.toolCount > 0 ? row.toolCount : EMPTY),
+    },
+    {
+      id: "surfaceValueCount",
+      header: "Values",
+      accessorFn: (row) => declaredValueCount(row.name) ?? row.surfaceValueCount,
+      align: "right",
+      width: 130,
+      cell: (row) => <ValuesCell row={row} />,
     },
     {
       id: "lastChecked",
@@ -244,18 +251,74 @@ function surfaceColumns(
       header: "Active",
       filter: "boolean",
       width: 90,
+      cell: (row) => <ActiveBadge active={row.is_active !== false} />,
+    },
+    {
+      accessorKey: "client_name",
+      header: "Client",
+      width: 150,
+      cell: (row) => (
+        <div className="min-w-0">
+          <div className="truncate text-muted-foreground">{row.client_name}</div>
+          {row.executor_name && row.executor_name !== row.client_name && (
+            <div
+              className="truncate text-xs text-muted-foreground"
+              title="Executor — the client whose tools run for this surface"
+            >
+              runs in {row.executor_name}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "parent_surface_name",
+      header: "Parent",
+      width: 160,
+      filterValue: (row) =>
+        row.parent_surface_name
+          ? `${getSurfaceDisplayLabel(row.parent_surface_name)} ${row.parent_surface_name}`
+          : "",
       cell: (row) =>
-        row.is_active ? (
+        row.parent_surface_name ? (
+          <span
+            className="block truncate text-muted-foreground"
+            title={row.parent_surface_name}
+          >
+            {getSurfaceDisplayLabel(row.parent_surface_name)}
+          </span>
+        ) : (
+          EMPTY
+        ),
+    },
+    {
+      accessorKey: "sort_order",
+      header: "Tier",
+      width: 100,
+      filterValue: (row) => tierFor(row.sort_order).label,
+      cell: (row) => {
+        const tier = tierFor(row.sort_order);
+        return (
           <Badge
             variant="outline"
-            className="text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
+            className="text-xs"
+            title={`${tier.description} · position ${row.sort_order}`}
           >
-            active
+            {tier.label}
           </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "executor_name",
+      header: "Executor",
+      width: 150,
+      hidden: true,
+      cell: (row) =>
+        row.executor_name ? (
+          <span className="text-muted-foreground">{row.executor_name}</span>
         ) : (
-          <Badge variant="outline" className="text-xs">
-            inactive
-          </Badge>
+          EMPTY
         ),
     },
   ];
@@ -280,6 +343,7 @@ export function SurfacesTable({
   onRefresh,
   onAdd,
 }: Props) {
+  const isMobile = useIsMobile();
   const hasSpecializedFilters =
     filters.client !== "__all__" ||
     filters.status !== "all" ||
@@ -291,8 +355,11 @@ export function SurfacesTable({
   return (
     <MatrxDataTable<SurfaceWithStats>
       data={rows}
-      columns={surfaceColumns(manifestedSurfaceNames, navigatingName)}
+      columns={surfaceColumns(navigatingName)}
       tableId="administration/ui/surfaces"
+      // One view control: the saved-views menu. The working-view tab strip
+      // repeated its name ("Default view" twice).
+      viewTabs={false}
       getRowId={(row) => row.name}
       searchText={(row) =>
         [
@@ -337,6 +404,8 @@ export function SurfacesTable({
             onChange={onFilterChange}
             clientNames={clientNames}
             parentNames={parentNames}
+            compact={isMobile}
+            onClear={onClearFilters}
           />
         ),
         refresh: { onRefresh },
@@ -358,7 +427,7 @@ export function SurfacesTable({
             extraSections: [
               {
                 id: "surface-row",
-                label: row.label ?? row.name,
+                label: surfaceRowTitle(row),
                 primary: true,
                 anchor: "after-clipboard",
                 items: [
@@ -372,7 +441,7 @@ export function SurfacesTable({
                         icon: active ? PowerOff : Power,
                         disabled: true,
                         description:
-                          "Its code manifest sets this — Sync manifests would undo it. Change the manifest in code.",
+                          "Set by its code manifest — change it there; Sync manifests would undo a change made here.",
                         onSelect: () => undefined,
                       }
                     : {
@@ -388,7 +457,7 @@ export function SurfacesTable({
               ...descriptor.extraSections,
             ],
             context: {
-              content: [row.label, row.name, row.description].filter(Boolean).join(" — "),
+              content: surfaceRowTitle(row),
               context: { name: row.name },
               [CONTEXT_MENU_ENTITY_KEY]: null,
             },
@@ -400,22 +469,59 @@ export function SurfacesTable({
           <ViewTapButton
             variant="transparent"
             onClick={() => onPeek(row)}
-            ariaLabel={`Peek ${row.name}`}
-            tooltip="Peek (side panel)"
+            ariaLabel={`Peek ${surfaceRowTitle(row)}`}
+            tooltip="Peek"
           />
           <PencilTapButton
             variant="transparent"
             disabled={row.name === navigatingName}
             onClick={() => onEdit(row)}
-            ariaLabel={`Open editor for ${row.name}`}
+            ariaLabel={`Open editor for ${surfaceRowTitle(row)}`}
             tooltip="Open editor"
           />
           <TrashTapButton
             variant="transparent"
             onClick={() => onDelete(row)}
-            ariaLabel={`Delete ${row.name}`}
+            ariaLabel={`Delete ${surfaceRowTitle(row)}`}
+            tooltip="Delete"
           />
         </>
+      )}
+      mobileCards={(row, _index, controls) => (
+        <article
+          className={cn(
+            "space-y-2 rounded-md border p-3",
+            row.name === selectedName
+              ? "border-primary/40 bg-primary/5"
+              : "border-border",
+            row.is_active === false && "opacity-70",
+          )}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <button
+              type="button"
+              className="min-w-0 text-left"
+              onClick={() => onSelect(row)}
+            >
+              <NameCell row={row} navigating={row.name === navigatingName} />
+            </button>
+            <SurfaceReadinessBadge row={row} className="shrink-0" />
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span>
+              Agents <span className="tabular-nums text-foreground">{row.agentCount}</span>
+            </span>
+            <span>
+              Tools <span className="tabular-nums text-foreground">{row.toolCount}</span>
+            </span>
+            <span>
+              Values <ValuesCell row={row} />
+            </span>
+            <span>Checked {checkedBadge(row)}</span>
+            {row.is_active === false && <ActiveBadge active={false} />}
+          </div>
+          <div className="flex justify-end">{controls.actions}</div>
+        </article>
       )}
       emptyState={{ title: "No surfaces match these filters" }}
     />

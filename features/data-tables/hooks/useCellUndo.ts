@@ -42,7 +42,7 @@ import {
 import { toast } from "@/components/ui/use-toast";
 
 import { bulkWrite, upsertCell } from "../service";
-import { isBulkOpError, isServiceFailure } from "../types";
+import { describeBulkFailures, isBulkOpError, isServiceFailure } from "../types";
 
 /** One reversible cell write. */
 export type CellEdit = {
@@ -183,7 +183,7 @@ export function useCellUndo(options: {
       if (missing.length > 0) {
         toast({
           title: side === "undo" ? "Undo was only partly possible" : "Redo was only partly possible",
-          description: `${missing.length} row${missing.length === 1 ? " was" : "s were"} removed since, so ${missing.length === 1 ? "it" : "they"} could not be put back. Row history still has ${missing.length === 1 ? "its" : "their"} earlier values.`,
+          description: `${describeBulkFailures(missing)} Row history still has ${missing.length === 1 ? "its" : "their"} earlier values.`,
           variant: "destructive",
         });
       }

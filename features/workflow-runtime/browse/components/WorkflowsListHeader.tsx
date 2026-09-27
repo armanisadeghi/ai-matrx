@@ -9,6 +9,7 @@ import { Workflow as WorkflowIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { WaitingBadge } from "@/features/workflow-runtime/discovery/components/WaitingBadge";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 
 export function WorkflowsListHeader() {
   return (
@@ -22,10 +23,13 @@ export function WorkflowsListHeader() {
           exists to surface. */}
       <WaitingBadge />
 
+      {/* On a phone these fold into the shell's one ⋮ ("This page"). */}
+      <HeaderActionsSlot className="ml-auto flex shrink-0 items-center gap-2">
       <Button
         asChild
         variant="ghost"
         size="sm"
+        aria-label="Runs"
         className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
       >
         <Link href="/workflows/runs" title="Every run you can see">
@@ -37,11 +41,7 @@ export function WorkflowsListHeader() {
       {/* THE DOOR LAW: the Masterwork Studio is where a workflow is authored,
           and it is the only other place this record lives. `pr-*` on the row
           keeps the last control clear of the shell avatar. */}
-      <MandateDoorLink
-        feature="workflow"
-        label="Workflow agents"
-        className="ml-auto"
-      />
+      <MandateDoorLink feature="workflow" label="Workflow agents" />
 
       <Button
         asChild
@@ -54,6 +54,7 @@ export function WorkflowsListHeader() {
           <span className="sm:hidden">Build</span>
         </Link>
       </Button>
+      </HeaderActionsSlot>
     </div>
   );
 }

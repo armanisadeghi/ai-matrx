@@ -14,6 +14,7 @@ import { useOrganizationGatedControl } from "@/features/organizations/useOrganiz
 import { useOpenGoogleTasksImport } from "@/features/overlays/openers/googleImportWindows";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck } from "lucide-react";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 
 /**
  * Header controls for the /tasks route. Lives inside the shell glass header
@@ -81,12 +82,16 @@ export function TasksHeaderControls() {
       <span className="ml-1 shrink-0">
         <HrTasksDoor />
       </span>
+      {/* On a phone the import and the agents door fold into the shell's one
+          ⋮ ("This page"); the title keeps the row. */}
+      <HeaderActionsSlot className="ml-auto flex shrink-0 items-center gap-1">
       {/* Google-native PLAN §4.7 — the import opens IN PLACE as a window, so
           the list stays where it was. Read-only toward Google. */}
       <Button
         size="sm"
         variant="ghost"
-        className="ml-1 h-11 shrink-0 gap-1 px-2 text-xs lg:h-7"
+        className="h-11 shrink-0 gap-1 px-2 text-xs lg:h-7"
+        aria-label="Import from Google Tasks"
         disabled={importGate.disabled}
         title={importGate.title}
         // THE REMEDY IS THE PRESS (V-24 NEW-3). The gate's own handler opens the
@@ -101,7 +106,8 @@ export function TasksHeaderControls() {
         <CalendarCheck className="h-3.5 w-3.5" />
         <span className="max-sm:sr-only">Import from Google Tasks</span>
       </Button>
-      <MandateDoorLink feature="tasks" label="Task agents" className="ml-auto" />
+      <MandateDoorLink feature="tasks" label="Task agents" />
+      </HeaderActionsSlot>
     </div>
   );
 }

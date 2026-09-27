@@ -115,8 +115,10 @@ export function EntityCard({
               {subtitle ? (
                 <span
                   className={cn(
-                    "absolute inset-0 truncate text-muted-foreground transition-opacity",
-                    hoverAct && "group-hover/eh:opacity-0",
+                    // Text only: it never takes the press meant for the hover action drawn over it
+                    // (review 2: "Open in window" was covered by this span and could not be clicked).
+                    "pointer-events-none absolute inset-0 truncate text-muted-foreground transition-opacity",
+                    hoverAct && "group-hover/eh:opacity-0 group-focus-within/eh:opacity-0",
                   )}
                 >
                   {subtitle}
@@ -129,7 +131,9 @@ export function EntityCard({
                     e.stopPropagation();
                     hoverAct.onSelect?.();
                   }}
-                  className="absolute inset-0 flex w-full items-center gap-1 truncate text-left font-medium text-primary opacity-0 transition-opacity pointer-events-none  group-hover/eh:pointer-events-auto group-hover/eh:opacity-100"
+                  data-entity-hover-action=""
+                  // Shown on hover AND on keyboard focus (a Tab reaches it; before, it stayed invisible).
+                  className="absolute inset-0 flex w-full items-center gap-1 truncate text-left font-medium text-primary opacity-0 transition-opacity pointer-events-none group-hover/eh:pointer-events-auto group-hover/eh:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
                 >
                   {hoverAct.icon ? <hoverAct.icon className="h-3 w-3 shrink-0" /> : null}
                   <span className="truncate">{hoverAct.label}</span>

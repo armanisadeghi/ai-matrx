@@ -552,7 +552,10 @@ export function TablesResourcePicker({
 
       {/* Preview Modal */}
       <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>
-        <DialogContent className="max-w-[95vw] w-full h-[90dvh] p-0 gap-0 flex flex-col">
+        {/* A PREVIEW IS COMPACT AND READ-ONLY (merged-grid review 2, fix lane F item 3): it was a
+            near-full-screen, fully editable grid. The person is choosing a reference here, not
+            editing the table; it changes on its own page. */}
+        <DialogContent className="max-w-3xl w-full h-[60dvh] p-0 gap-0 flex flex-col" data-table-preview="">
           <DialogHeader className="px-6 py-4 border-b border-border flex-shrink-0">
             <div className="flex items-center justify-between">
               <DialogTitle className="text-base font-semibold">
@@ -562,8 +565,8 @@ export function TablesResourcePicker({
           </DialogHeader>
           <div className="flex-1 overflow-auto min-h-0">
             {previewTableId && (
-              <div className="h-full px-6 py-4">
-                <LocatedTableViewer tableId={previewTableId} />
+              <div className="h-full px-3 py-2">
+                <LocatedTableViewer tableId={previewTableId} readOnly />
               </div>
             )}
           </div>

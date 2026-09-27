@@ -11,6 +11,7 @@ import {
   RouteModeNav,
   type RouteNavItem,
 } from "@/features/shell/components/header/RouteModeNav";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 
 const IMAGE_MODE_ITEMS: RouteNavItem[] = [
   {
@@ -53,14 +54,16 @@ export function ImagesListHeader() {
         <RouteModeNav items={IMAGE_MODE_ITEMS} />
       </div>
 
-      <div className="hidden shrink-0 items-center gap-1 sm:flex">
+      {/* Desktop inline; on a phone they are rows in the shell's one ⋮
+          (they used to vanish below sm with no phone counterpart). */}
+      <HeaderActionsSlot className="flex shrink-0 items-center gap-1">
         <ZapTapButton
           href="/images/studio"
           ariaLabel="Open Image Studio"
           label="Studio"
         />
         <PlusTapButton href="/images/upload" ariaLabel="Upload image" />
-      </div>
+      </HeaderActionsSlot>
     </div>
   );
 }

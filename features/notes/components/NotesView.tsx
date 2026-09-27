@@ -16,13 +16,7 @@ import React, {
 } from "react";
 import dynamic from "next/dynamic";
 import { initialTabsFromUrl } from "@/features/notes/initialTabsFromUrl";
-import { FileText, X, ChevronDown, Check } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
+import { X } from "lucide-react";
 import { NOTE_VIEW_MODES } from "./NoteViewControls";
 import {
   usePanelRef,
@@ -52,10 +46,9 @@ import PageHeaderRightPortal from "@/features/shell/components/header/PageHeader
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import {
   normalizeNoteEditorMode,
-  usePreferredDefaultEditorMode,
-  NOTES_SPLIT_MIN_WIDTH_PX,
+  useNoteEditorMode,
+  DEFAULT_EDITOR_MODE_SETTING,
 } from "../hooks/usePreferredDefaultEditorMode";
-import { useMediaQuery } from "@/hooks/use-media-query";
 
 const MobileNotesView = dynamic(() => import("./mobile/MobileNotesView"), {
   ssr: false,
@@ -98,7 +91,6 @@ import {
   selectInstanceTabs,
   selectInstanceSplitNoteId,
   selectInstanceOutlineOpen,
-  selectNoteEditorMode,
   selectNoteLabel,
 } from "../redux/selectors";
 import PageHeader from "@/features/shell/components/header/PageHeader";
@@ -415,30 +407,23 @@ export function NotesView({
   const splitNoteLabel = useAppSelector(
     splitNoteId ? selectNoteLabel(splitNoteId) : () => null,
   );
-  const preferredDefaultMode = usePreferredDefaultEditorMode();
-  const isNarrowViewport = useMediaQuery(
-    `(max-width: ${NOTES_SPLIT_MIN_WIDTH_PX - 1}px)`,
-  );
-  const canShowWideModes = !isNarrowViewport;
-  const editorMode = normalizeNoteEditorMode(
-    useAppSelector(
-      activeTabId ? selectNoteEditorMode(activeTabId) : () => undefined,
-    ),
-    preferredDefaultMode,
-  );
+  const editorMode = useNoteEditorMode(activeTabId);
 
-  // Picking a view is the person's choice for every note that has none of
-  // its own — saved to their preferences (notes.defaultEditorMode).
+  // Picking a writing mode (Split / Plain / Write) is the person's choice for
+  // every note they have not typed in before — saved to their preferences
+  // (notes.defaultEditorMode).
   const [, saveDefaultEditorMode] = useSetting<EditorMode>(
-    "userPreferences.notes.defaultEditorMode",
+    DEFAULT_EDITOR_MODE_SETTING,
   );
   const setMode = useCallback(
     (mode: string) => {
-      const next = normalizeNoteEditorMode(mode, preferredDefaultMode);
+      const next = normalizeNoteEditorMode(mode, editorMode);
       if (activeTabId) dispatch(setNoteEditorMode({ id: activeTabId, mode: next }));
-      if (syncUrl) saveDefaultEditorMode(next);
+      // Only a writing mode becomes the default — reading one note must never
+      // make every note open read-only.
+      if (syncUrl && next !== "preview") saveDefaultEditorMode(next);
     },
-    [dispatch, activeTabId, preferredDefaultMode, syncUrl, saveDefaultEditorMode],
+    [dispatch, activeTabId, editorMode, syncUrl, saveDefaultEditorMode],
   );
 
   const outlineOpen = useAppSelector(selectInstanceOutlineOpen(instanceId));
@@ -694,57 +679,22 @@ export function NotesView({
       <div className="flex min-w-0 flex-1 items-center justify-center">
         {activeTabId && (
           <div className="matrx-glass-thin-border flex items-center gap-0.5 rounded-full p-0.5">
-            {/* Write and Read are the everyday views; the Markdown source
-                views sit behind one "Markdown" menu. Labels come from the one
-                NOTE_VIEW_MODES list. */}
-            {NOTE_VIEW_MODES.filter((m) => !m.markdown).map(({ mode, label, hint, icon: Icon }) => (
+            {/* The four note modes, one click each, from the one
+                NOTE_VIEW_MODES list: Write (formatted, the default), Plain
+                (quick unformatted text), Source (Markdown with a live
+                preview), Read. */}
+            {NOTE_VIEW_MODES.map(({ mode, label, hint, icon: Icon }) => (
               <button
                 key={mode}
                 type="button"
                 title={hint}
+                aria-pressed={editorMode === mode}
                 className={modeBtnClass(mode)}
                 onClick={() => setMode(mode)}
               >
                 <Icon /> {label}
               </button>
             ))}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  title="Edit the Markdown source"
-                  className={cn(
-                    modeBtnClass(
-                      NOTE_VIEW_MODES.find((m) => m.mode === editorMode)?.markdown
-                        ? editorMode
-                        : "__none__",
-                    ),
-                  )}
-                >
-                  <FileText />
-                  {NOTE_VIEW_MODES.find((m) => m.mode === editorMode && m.markdown)?.label ?? "Markdown"}
-                  <ChevronDown className="opacity-60" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="min-w-[220px]">
-                {NOTE_VIEW_MODES.filter((m) => m.markdown && (canShowWideModes || !m.wide)).map(
-                  ({ mode, label, hint, icon: Icon }) => (
-                    <DropdownMenuItem
-                      key={mode}
-                      onSelect={() => setMode(mode)}
-                      className="items-start gap-2"
-                    >
-                      <Icon className="mt-0.5 h-4 w-4 shrink-0" />
-                      <span className="flex min-w-0 flex-col">
-                        <span className="text-sm">{label}</span>
-                        <span className="text-xs text-muted-foreground">{hint}</span>
-                      </span>
-                      {editorMode === mode && <Check className="ml-auto mt-0.5 h-3.5 w-3.5 shrink-0" />}
-                    </DropdownMenuItem>
-                  ),
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         )}
       </div>

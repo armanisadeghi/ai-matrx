@@ -20,9 +20,10 @@
  */
 
 import { useEffect, useState, type ComponentProps } from "react";
+import { History } from "lucide-react";
 import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import { locateTable } from "@/features/data-tables/data-source/locate-table";
+import { locateTable, recordStoreCopyOf } from "@/features/data-tables/data-source/locate-table";
 import { RecordStoreTableHost } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -33,28 +34,38 @@ type ViewerProps = ComponentProps<typeof UserTableViewer> & {
    * viewer draws. Never a second toolbar row.
    */
   recordStoreMenuExtras?: Array<{ key: string; label: string; onSelect: () => void }>;
+  /**
+   * A PREVIEW (the tables picker): read-only in either grid — the records-ui `rights` port for a
+   * record-store table, `previewOnly` for an older one.
+   */
+  readOnly?: boolean;
 };
 
 type Located =
-  | { tableId: string; state: "older" }
+  /** `copyInRecordStore`: the new store also holds it (the lead's flip has not moved it yet). */
+  | { tableId: string; state: "older"; copyInRecordStore: boolean }
   | { tableId: string; state: "record"; organizationId: string }
   | { tableId: string; state: "refused"; why: string };
 
-export function LocatedTableViewer({ recordStoreMenuExtras, ...props }: ViewerProps) {
+export function LocatedTableViewer({ recordStoreMenuExtras, readOnly = false, ...props }: ViewerProps) {
   const { tableId } = props;
   const [located, setLocated] = useState<Located | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     void locateTable(tableId)
-      .then((answer) => {
+      .then(async (answer) => {
+        // A TABLE IN BOTH STORES (review 2, fix lane F item 2): it resolves to the older store
+        // until the custom-data lead's one flip — that is his routing and it is correct. The older
+        // grid then SAYS so, instead of drawing silently with the merged-grid knob on.
+        const copyInRecordStore = answer.ok && answer.store === "older" ? await recordStoreCopyOf(tableId) : false;
         if (cancelled) return;
         setLocated(
           !answer.ok
             ? { tableId, state: "refused", why: answer.error }
             : answer.store === "record"
               ? { tableId, state: "record", organizationId: answer.home.organizationId }
-              : { tableId, state: "older" },
+              : { tableId, state: "older", copyInRecordStore },
         );
       })
       .catch((err: unknown) => {
@@ -91,10 +102,41 @@ export function LocatedTableViewer({ recordStoreMenuExtras, ...props }: ViewerPr
         tableId={tableId}
         organizationId={located.organizationId}
         menuExtras={recordStoreMenuExtras}
+        readOnly={readOnly}
       />
     );
   }
-  return <UserTableViewer {...props} />;
+  if (!located.copyInRecordStore) return <UserTableViewer {...props} {...(readOnly ? { previewOnly: true } : {})} />;
+  return (
+    <UserTableViewer
+      {...props}
+      {...(readOnly ? { previewOnly: true } : {})}
+      toolbarTrailing={
+        <>
+          <OlderStoreNotice />
+          {props.toolbarTrailing}
+        </>
+      }
+    />
+  );
+}
+
+/**
+ * THE OLDER GRID SAYS WHY IT IS DRAWN, in its own toolbar row (the read-only chip's pattern) — never
+ * a second row, a redirect, or a second grid.
+ */
+function OlderStoreNotice() {
+  return (
+    <span
+      role="note"
+      data-table-store-notice="older"
+      className="inline-flex max-w-full shrink items-center gap-1.5 truncate rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground"
+      title="The new store also holds a copy of this table. It opens there once an owner switches this organization's Data tables over."
+    >
+      <History className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      <span className="truncate">This table still runs in the older store until it is switched over</span>
+    </span>
+  );
 }
 
 export default LocatedTableViewer;

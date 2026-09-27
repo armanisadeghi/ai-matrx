@@ -13,6 +13,7 @@ import {
   worstSeverityFromCounts,
 } from "@/features/agents/components/usages/severity";
 import type { DriftSeverity } from "@/features/agents/redux/usages/usages.types";
+import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 
 const INFO_ONLY = new Set<DriftSeverity>(["info"]);
 
@@ -41,12 +42,15 @@ export function AgentsListHeader() {
       <Webhook className="w-4 h-4 text-muted-foreground shrink-0" />
       <h1 className="text-sm font-semibold text-foreground">Agents</h1>
 
+      {/* On a phone the drift door folds into the shell's one ⋮. */}
+      <HeaderActionsSlot className="ml-auto flex shrink-0 items-center">
       <Button
         asChild
         variant="ghost"
         size="sm"
+        aria-label={worstSev ? `Agent drift report — ${totals[worstSev]} ${worstSev.replace("_", " ")}` : "Agent drift report"}
         className={cn(
-          "ml-auto h-7 gap-1.5 px-2 text-xs",
+          "h-7 gap-1.5 px-2 text-xs",
           meta
             ? cn(
                 meta.textClass,
@@ -75,6 +79,7 @@ export function AgentsListHeader() {
           <span className="hidden sm:inline">Drift</span>
         </Link>
       </Button>
+      </HeaderActionsSlot>
     </div>
   );
 }
