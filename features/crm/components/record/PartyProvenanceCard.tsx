@@ -321,7 +321,7 @@ export function PartyProvenanceCard({
                     target="_blank"
                     rel="noopener noreferrer"
                     title={party.source_detail}
-                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                    className="inline-flex min-h-11 items-center gap-1 text-primary hover:underline sm:min-h-0"
                   >
                     {`Open on ${platformWord(party.source) ?? "the web"}`}
                     <ExternalLink className="h-3 w-3" />
