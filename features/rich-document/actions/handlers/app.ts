@@ -22,4 +22,4 @@ registerAction({
 
 // Announcements and Preferences are app navigation, not actions on content
 // (they read no value here). They live in the user menu only (ALC-15, CONTRACT
-// A3; contentActionRegistry and this registry both dropped them).
+// A3), never in a content menu.

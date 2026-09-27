@@ -17,7 +17,7 @@ vision: [features/context-menu-v3/FEATURE.md]
 ## Resources
 
 - Contract + architecture: `features/context-menu-v3/FEATURE.md` (load tiers, inline-editing section, consolidation inventory).
-- The engine: `features/context-menu-v3/hooks/useContextMenuActions.ts` — ALL behavior; renderers (`components/MenuContent.tsx`, `components/MobileMenuContent.tsx`) are presentation only.
+- The engine: `features/context-menu-v3/hooks/useContextMenuActions.ts` — ALL behavior. There are no v3 renderers any more (ALC-15, 2026-09-26): `features/context-menu-v3/alchemy-provider.ts` turns the model into Alchemy actions and `components/AlchemyMenuContent.tsx` renders the `@ai-matrx/alchemy` layouts (right-click, phone sheet, palette).
 - Inline edit wire: `features/context-menu-v3/utils/widget-handle.ts` (+ shell registration in `ContextMenuV3.tsx`), `features/agents/hooks/useWidgetHandle.ts`, per-turn assembly in `features/agents/redux/execution-system/utils/build-tool-injection.ts`, channel docs `features/agents/components/tools-management/CLIENT_SIDE_TOOLS.md`, working reference `features/code-editor/agent-code-editor/hooks/useCodeEditorWidgetHandle.ts`.
 - Skills: `context-menu-v3` (surface rollout recipe), `agent-execution-redux` (launch/runtime contract), `agent-review-queue`.
 - Test: log in at `/login` (admin@admin.com / <see AI_ADMIN_PASSWORD in .env>), demos at `/demos/context-menu` (hub = core-vs-per-surface guide), `/demos/context-menu/inline-edit`, `/demos/context-menu/surface-mappings`, `/demos/context-menu/launch-inspector`.

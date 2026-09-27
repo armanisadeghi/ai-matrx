@@ -22,8 +22,9 @@ none of the work below may re-implement either.
 **What Arman asked for:** "notes that should be able to sync with Google Docs
 with a markdown conversion possibly in both directions."
 
-One-way already works: any note can be sent to a new Google Doc through
-`components/content-actions/contentActionRegistry.ts`. What does not exist:
+One-way already works: any note can be sent to a new Google Doc through the
+rich-document action `send-google-doc`
+(`features/rich-document/actions/handlers/share.ts`, in every note's menu). What does not exist:
 
 - **Docs → note.** Google Docs are not markdown. Pulling one back means
   converting Docs' structural JSON (headings, lists, tables, links, bold) into

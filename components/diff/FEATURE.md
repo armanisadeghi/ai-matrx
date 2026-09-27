@@ -112,9 +112,10 @@ viewer at `/react`. Its own contract doc is
   registers `compare-with-clipboard`, `set-compare-base`, `compare-with-base`
   under the **Compare** submenu (`variants/shared/menuStructure.ts`). These
   appear on every RichDocument content surface (notes, agent messages,
-  prompt results, tool overlays, …). The context menus carry the same actions:
-  `features/context-menu-v3/components/{MenuContent,MobileMenuContent}.tsx` and
-  legacy `features/context-menu-v2/UnifiedAgentContextMenu.tsx`.
+  prompt results, tool overlays, …). The right-click, phone sheet and palette
+  carry the same actions from the one Alchemy registry (the rich-document
+  provider, `features/rich-document/actions/provider.ts`, rendered by
+  `features/context-menu-v3/components/AlchemyMenuContent.tsx`).
 - **Clipboard compare direction (invariant):** current content is the
   **original** (baseline the user has now); the clipboard is the **modified**
   (incoming version about to be pasted). So clipboard-only text reads as an
