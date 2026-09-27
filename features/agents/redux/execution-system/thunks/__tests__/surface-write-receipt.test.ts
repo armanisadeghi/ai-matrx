@@ -222,9 +222,12 @@ it("the resumed request labels the re-read page values as coming AFTER this conv
   const ambient = { organization: { id: "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f" } };
   const context = composeResumeContext(state, "c1", ambient, undefined, "2026-09-27T11:54:42.326Z");
   expect(context?.organization).toEqual(ambient.organization);
-  const note = context?.[SURFACE_WRITES_NOTE_KEY];
+  const envelope = context?.[SURFACE_WRITES_NOTE_KEY] as Record<string, unknown>;
   expect(SURFACE_WRITES_NOTE_KEY).toBe("page_values_read_after_your_writes");
-  expect(typeof note).toBe("string");
+  // Sent INLINE: a bare string was listed as a deferred key the model never read.
+  expect(envelope).toMatchObject({ type: "text", max_inline_chars: 4000 });
+  const note = envelope.content as string;
+  expect(note.length).toBeLessThan(4000);
   expect(note).toContain("re-read at 2026-09-27T11:54:42.326Z, AFTER these writes you made");
   expect(note).toContain("create_establishments");
   expect(note).toContain(AUSTIN.id);

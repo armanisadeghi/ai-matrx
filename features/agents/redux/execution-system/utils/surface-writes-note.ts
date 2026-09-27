@@ -24,6 +24,8 @@ export const SURFACE_WRITES_NOTE_KEY = "page_values_read_after_your_writes";
 /** At most this many writes are listed (newest kept). */
 const MAX_LISTED_WRITES = 10;
 const MAX_MESSAGE_CHARS = 300;
+/** Ten listed writes at 300 chars each plus the framing fit under this. */
+const NOTE_INLINE_CEILING = 4000;
 
 interface ListedWrite {
   target: string;
@@ -111,6 +113,21 @@ export function composeResumeContext(
   return {
     ...(ambient ?? {}),
     ...(chipContext ?? {}),
-    ...(writesNote ? { [SURFACE_WRITES_NOTE_KEY]: writesNote } : {}),
+    ...(writesNote ? { [SURFACE_WRITES_NOTE_KEY]: surfaceWritesNoteEnvelope(writesNote) } : {}),
+  };
+}
+
+/**
+ * The note as a wire envelope with an inline ceiling. A bare string was listed
+ * by the server as a DEFERRED key (name only, "fetch on demand"), so the model
+ * never read it unless it chose to look (found live 2026-09-27); the note only
+ * works when it is in front of the model.
+ */
+export function surfaceWritesNoteEnvelope(note: string): Record<string, unknown> {
+  return {
+    content: note,
+    type: "text",
+    label: "Page values read after your writes",
+    max_inline_chars: NOTE_INLINE_CEILING,
   };
 }
