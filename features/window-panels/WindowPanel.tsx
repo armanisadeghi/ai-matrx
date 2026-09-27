@@ -555,11 +555,14 @@ export function WindowPanel({
   // behind it — so an agent window opened from the Agents menu over Table
   // settings is usable (register ai-reachable-everywhere, ARE-010). The
   // manager raises `zIndex` exactly when this window becomes the top one.
+  // Keyed on the MANAGER's z, never the lifted one: a modal opening or
+  // closing lifts every window, and must not make each of them announce
+  // itself front-most (which would bury every windowed Dialog behind them).
   useEffect(() => {
     announceLayerFront(
       document.querySelector(`[data-window-id="${CSS.escape(id)}"]`),
     );
-  }, [id, zIndex]);
+  }, [id, managerZIndex]);
 
   // On mobile, only the topmost non-minimized window is rendered visible.
   const allWindows = useAppSelector(selectAllWindows);
