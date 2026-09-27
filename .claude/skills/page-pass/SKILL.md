@@ -310,6 +310,10 @@ surface). Say which parts you judged as authored content.
   oversized headings, no cards holding one label and an icon, no tiles that
   show one small number, no box inside a box, no narrow centered column
   unless it is long reading text.
+- **The floating assistant never covers content.** The element that actually
+  scrolls the page's last content reserves bottom space for the fixed chat
+  composer / assist dock, so the final item scrolls fully above it at desktop
+  and phone widths (check each content mode).
 - `(core)` routes: header via `<PageHeader>`; body `h-full overflow-hidden`;
   never `h-screen`, `100vh`, `h-page`; no fake title bar in the body.
 - Density: **sharp** by default — clean, compact, generous only where it helps
