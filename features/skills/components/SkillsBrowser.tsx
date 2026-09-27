@@ -10,7 +10,6 @@ import {
   Settings,
   Upload,
   Globe2,
-  ShieldCheck,
   UserRound,
 } from "lucide-react";
 
@@ -24,6 +23,8 @@ import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorC
 import { useSkills } from "../hooks/useSkills";
 import { useSkillCategories } from "../hooks/useSkillCategories";
 import type { SkillRow } from "../types";
+import { getSkillProvenance } from "../skill-provenance";
+import { SkillAttributionLine, SkillOriginBadges } from "./SkillOriginBadges";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type ScopeFilter = "all" | "system" | "public" | "personal";
@@ -243,6 +244,7 @@ export function SkillsBrowser({
                       <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
                         {s.description}
                       </div>
+                      <SkillAttributionLine skill={s} className="mt-0.5" />
                     </div>
                     <span className="text-xs text-muted-foreground/70 font-mono pt-0.5 truncate max-w-[160px]">
                       {s.skillId}
@@ -335,35 +337,32 @@ function CategoryDropdown({
 }
 
 function ScopeBadge({ skill }: { skill: SkillRow }) {
-  if (skill.isSystem) {
-    return (
-      <Badge
-        variant="secondary"
-        className="gap-1 px-1.5 h-4 text-[10px] font-normal"
-      >
-        <ShieldCheck className="h-2.5 w-2.5" />
-        System
-      </Badge>
-    );
-  }
-  if (skill.isPublic) {
-    return (
-      <Badge
-        variant="outline"
-        className="gap-1 px-1.5 h-4 text-[10px] font-normal"
-      >
-        <Globe2 className="h-2.5 w-2.5" />
-        Public
-      </Badge>
-    );
+  // System and imported rows get their origin from the ONE shared badge, so an
+  // outside expert's skill never reads as "System" (written by AI Matrx).
+  if (skill.isSystem || getSkillProvenance(skill).imported) {
+    return <SkillOriginBadges skill={skill} size="sm" />;
   }
   return (
-    <Badge
-      variant="outline"
-      className="gap-1 px-1.5 h-4 text-[10px] font-normal text-muted-foreground"
-    >
-      <UserRound className="h-2.5 w-2.5" />
-      Personal
-    </Badge>
+    <>
+      {skill.isPublic ? (
+        <Badge
+          variant="outline"
+          className="gap-1 px-1.5 h-4 text-[10px] font-normal"
+        >
+          <Globe2 className="h-2.5 w-2.5" />
+          Public
+        </Badge>
+      ) : (
+        <Badge
+          variant="outline"
+          className="gap-1 px-1.5 h-4 text-[10px] font-normal text-muted-foreground"
+        >
+          <UserRound className="h-2.5 w-2.5" />
+          Personal
+        </Badge>
+      )}
+      {/* Not-runnable warning only (no origin badge for a plain row). */}
+      <SkillOriginBadges skill={skill} size="sm" />
+    </>
   );
 }

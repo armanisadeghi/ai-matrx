@@ -9,7 +9,6 @@ import {
   FileText,
   Folder,
   Search,
-  ShieldCheck,
   X,
 } from "lucide-react";
 
@@ -27,6 +26,7 @@ import { useSkillCategories } from "../hooks/useSkillCategories";
 import { useSkills } from "../hooks/useSkills";
 import type { CategoryRow, SkillConfig, SkillRow } from "../types";
 import { SkillDetailView } from "./SkillDetailView";
+import { SkillAttributionLine, SkillOriginBadges } from "./SkillOriginBadges";
 import {
   SKILL_TIER_META,
   SKILL_TIER_ORDER,
@@ -486,15 +486,7 @@ function SkillCatalogueRow({
             <h4 className="truncate text-sm font-medium text-foreground group-hover:underline">
               {skill.label}
             </h4>
-            {skill.isSystem && (
-              <Badge
-                variant="outline"
-                className="h-5 gap-1 px-1.5 text-[10px] font-normal text-muted-foreground"
-              >
-                <ShieldCheck className="h-3 w-3" />
-                System
-              </Badge>
-            )}
+            <SkillOriginBadges skill={skill} />
             <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-primary">
               <FileText className="h-3 w-3" />
               View
@@ -504,6 +496,7 @@ function SkillCatalogueRow({
           <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
             {skill.description || "No description provided."}
           </p>
+          <SkillAttributionLine skill={skill} className="mt-1" />
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground/80">
             {categoryLabel && <span>{categoryLabel}</span>}
             {categoryLabel && <span aria-hidden="true">·</span>}

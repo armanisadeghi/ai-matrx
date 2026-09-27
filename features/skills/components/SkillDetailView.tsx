@@ -20,7 +20,6 @@ import {
   ArrowLeft,
   Check,
   Shapes,
-  ShieldCheck,
   Wrench,
   Zap,
 } from "lucide-react";
@@ -32,6 +31,7 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { cn } from "@/lib/utils";
 
 import type { SkillRow } from "../types";
+import { SkillAttributionLine, SkillOriginBadges } from "./SkillOriginBadges";
 import { SKILL_TIER_META, SKILL_TIER_ORDER, type SkillTierKey } from "./skill-tiers";
 
 interface SkillDetailViewProps {
@@ -72,15 +72,7 @@ export function SkillDetailView({
               <h3 className="truncate text-sm font-semibold text-foreground">
                 {skill.label}
               </h3>
-              {skill.isSystem && (
-                <Badge
-                  variant="outline"
-                  className="h-5 gap-1 px-1.5 text-[10px] font-normal text-muted-foreground"
-                >
-                  <ShieldCheck className="h-3 w-3" />
-                  System
-                </Badge>
-              )}
+              <SkillOriginBadges skill={skill} />
               {!skill.isActive && (
                 <Badge
                   variant="outline"
@@ -93,6 +85,7 @@ export function SkillDetailView({
             <p className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground/80">
               {skill.skillId}
             </p>
+            <SkillAttributionLine skill={skill} className="mt-0.5" />
           </div>
         </div>
 
