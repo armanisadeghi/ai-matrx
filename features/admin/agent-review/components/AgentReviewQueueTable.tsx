@@ -1,5 +1,7 @@
 "use client";
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { useEffect, useMemo, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
@@ -648,6 +650,23 @@ export default function AgentReviewQueueTable() {
               MatrxDataTable forwards neither — wrapping it directly produced
               a menu that never opened (measured live 2026-08-26). */}
             <div className="flex h-full min-h-0 flex-col">
+              {loadError && rows.length > 0 && (
+                <StaleDataNotice
+                  hasData
+                  what="the review queue"
+                  onRetry={() => void refresh()}
+                  retrying={loading}
+                  detail={loadError}
+                  className="m-2"
+                />
+              )}
+              {loadError && rows.length === 0 ? (
+                <ReadFailure
+                  error={loadError}
+                  what="the review queue"
+                  onRetry={() => void refresh()}
+                />
+              ) : (
               <MatrxDataTable
                 data={visibleRows}
                 columns={columns}
@@ -689,6 +708,7 @@ export default function AgentReviewQueueTable() {
                       : "Clear a search or column filter to see more items.",
                 }}
               />
+              )}
             </div>
           </NonEditableContextMenu>
         </div>

@@ -517,6 +517,7 @@ export default function ErrorInspectorWindow({
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-muted-foreground">
           <Bug className="h-8 w-8 mb-2 opacity-40" />
+          {/* read-gate-exempt: lists errors captured in this browser session's memory; there is no read that can fail */}
           <p className="text-sm font-medium">No errors captured</p>
           <p className="text-xs mt-1 max-w-xs">
             Every runtime error in this session — Supabase, uncaught exceptions,

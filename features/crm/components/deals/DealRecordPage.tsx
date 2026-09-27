@@ -400,6 +400,7 @@ export function DealRecordPage({ dealId }: Props) {
                   count={detail.stageEvents.length}
                 >
                   {detail.stageEvents.length === 0 ? (
+                    // read-gate-exempt: section of the deal detail that rendered only after its read succeeded; AccessGate and the refresh notice above own the failure
                     <SectionEmpty>No stage changes recorded</SectionEmpty>
                   ) : (
                     <ol className="space-y-1">
@@ -449,6 +450,7 @@ export function DealRecordPage({ dealId }: Props) {
                   />
                 ) : (
                   <SectionCard title="Activity" Icon={History}>
+                    {/* read-gate-exempt: guidance for a deal with no party (a field of the loaded deal); AccessGate and the refresh notice above own the read's failure */}
                     <SectionEmpty>
                       Attach a person or company to log activity — an
                       interaction always belongs to someone.

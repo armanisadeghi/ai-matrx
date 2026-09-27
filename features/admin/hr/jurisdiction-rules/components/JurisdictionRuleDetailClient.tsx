@@ -311,6 +311,7 @@ export function JurisdictionRuleDetailClient({ ruleId }: { ruleId: string }) {
           ))}
           {transitions.length === 0 ? (
             <span className="text-xs text-muted-foreground">
+              {/* read-gate-exempt: reached only after the rules read succeeded; the early return on load.state !== ok renders RuleLoadGate with the failure */}
               No status change is available from {rule.status}.
             </span>
           ) : null}
@@ -435,6 +436,7 @@ export function JurisdictionRuleDetailClient({ ruleId }: { ruleId: string }) {
         >
           {rule.fixtures.length === 0 ? (
             <p className="text-muted-foreground">
+              {/* read-gate-exempt: reached only after the rules read succeeded; the early return on load.state !== ok renders RuleLoadGate with the failure */}
               No fixtures cover this rule.
             </p>
           ) : (

@@ -58,6 +58,7 @@ export default function ErrorInspectorTrayChip() {
       icon={Bug}
       tone={tone}
       count={total > 0 ? total : undefined}
+      // read-gate-exempt: tallies of errors captured in this browser session's memory; there is no read that can fail
       caption={total > 0 ? undefined : "No errors"}
       segments={segments}
       pulse={pulse}

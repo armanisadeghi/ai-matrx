@@ -8,6 +8,8 @@
 // useListViewPrefs("crm-deals"). Smart views ride the same `crm.saved_view`
 // table as the party list, discriminated by `list_key='deals'`.
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -491,11 +493,20 @@ export function DealsPage() {
         />
       )}
 
-      {(list.error || pipelinesError) && (
+      {pipelinesError && (
         <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
-          {list.error ?? pipelinesError}
-          <ErrorAlchemyMenu error={list.error} />
+          {pipelinesError}
+          <ErrorAlchemyMenu error={pipelinesError} />
         </div>
+      )}
+      {list.error && list.rows.length > 0 && (
+        <StaleDataNotice
+          hasData
+          what="your deals"
+          onRetry={() => void list.refresh()}
+          detail={list.error}
+          className="mt-2"
+        />
       )}
 
       <div className="mt-2 flex min-h-0 flex-1 flex-col">
@@ -538,6 +549,12 @@ export function DealsPage() {
               <ErrorAlchemyMenu />
             </div>
           )
+        ) : list.error && list.rows.length === 0 ? (
+          <ReadFailure
+            error={list.error}
+            what="your deals"
+            onRetry={() => void list.refresh()}
+          />
         ) : (
           // No `surfaceName`: no surface manifest is registered for /crm/deals
           // today (only `matrx-user/crm`, `matrx-user/crm-outreach-lists`, and
