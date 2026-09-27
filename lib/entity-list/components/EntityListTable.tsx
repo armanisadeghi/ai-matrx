@@ -44,6 +44,8 @@ import {
 import { itemMenuConfigToExtraSections } from "@/components/official/item/itemMenuToV3";
 import { resolveItemMenuConfig } from "@/components/official/item/types";
 import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import { fitColumnWidths } from "../columnWidths";
+import type { SavedListView } from "@/lib/redux/preferences/userPreferencesSlice";
 
 /**
  * The row's own menu merged into the table's ONE primary "Row" section (an
@@ -135,6 +137,11 @@ interface Props<TRow> {
    * mounting: the table draws nothing rather than flash a row of its own.
    */
   pageToolbarSlot?: HTMLElement | null;
+  /** Where the table's "+" views are kept — this surface's view preferences. */
+  viewTabsStore?: {
+    views: readonly SavedListView[];
+    onChange: (views: SavedListView[]) => void;
+  };
   emptyAction?: React.ReactNode;
   /** The outcome of the list read (RC-B12 r13) — the table shows `emptyState` only after it succeeded. */
   read?: ReadOutcome;
@@ -212,6 +219,7 @@ export function EntityListTable<TRow>({
   selection,
   tableToolbar,
   pageToolbarSlot,
+  viewTabsStore,
 }: Props<TRow>) {
   const { favorite } = config;
 
@@ -305,7 +313,7 @@ export function EntityListTable<TRow>({
       );
     };
 
-  const columns: MatrxColumnDef<TRow>[] = config.columns
+  const declaredColumns: MatrxColumnDef<TRow>[] = config.columns
     .filter(
       (spec) =>
         (showSharedColumns || !spec.scopedToShared) &&
@@ -353,6 +361,10 @@ export function EntityListTable<TRow>({
             : undefined,
       };
     });
+
+  // Widths follow the data: mostly-empty columns yield, the name is pinned
+  // (../columnWidths.ts).
+  const columns = fitColumnWidths(declaredColumns, rows, nameColumnId);
 
   return (
     <MatrxDataTable<TRow>
@@ -425,12 +437,12 @@ export function EntityListTable<TRow>({
             },
           }
         : {})}
-      // NO WORKING VIEW TABS on a list page (page-pass 2026-09-27). The
-      // table's tab strip keeps its tabs in memory only: "+" made an unnamed
-      // "View 2" that was gone after a reload, so it looked like saved views
-      // and saved nothing — and it cost the page a third chrome row. A list
-      // page's view is its persisted view preferences (useListViewPrefs).
-      viewTabs={false}
+      // THE "+" VIEWS ARE KEPT (page-pass 2026-09-27): the table's view tabs
+      // lived in memory, so a "View 2" was gone after a reload. They are stored
+      // in this surface's view preferences — named on creation, synced like
+      // every other list preference. `viewTabsStore` ships in
+      // @ai-matrx/design-system after 0.48.1 (spread so this compiles before).
+      {...(viewTabsStore ? { viewTabsStore } : {})}
       // Row click fires the surface's opener. Side panel / row-window stay off —
       // the kebab menu already carries Quick look and every other record action.
       detail={{ enabled: false }}

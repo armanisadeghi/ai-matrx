@@ -55,3 +55,11 @@ describe("resolveListViewPrefs", () => {
     expect(out).toEqual(LIST_VIEW_DEFAULTS);
   });
 });
+
+describe("named views survive a shape bump (page-pass 2026-09-27)", () => {
+  it("keeps savedViews when the stored blob is an older shape", () => {
+    const snapshot = { __kind: "matrx-table-view", version: 1, query: { pageSize: 25, search: "x", anyOf: "", columnFilters: {}, sort: null }, columns: { order: [], hidden: [] } } as never;
+    const out = resolveListViewPrefs({ version: 2 }, { version: 1, savedViews: [{ id: "v", label: "Mine", snapshot }] });
+    expect(out.savedViews?.map((v) => v.label)).toEqual(["Mine"]);
+  });
+});

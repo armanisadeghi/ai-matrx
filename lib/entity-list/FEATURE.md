@@ -440,6 +440,17 @@ how that savior page gets built.
 
 ## Change log
 
+- 2026-09-27 (round 2, coordinator rulings) — The table's "+" views are RESTORED and now kept:
+  named on creation (the name field opens at once; Escape discards), stored in the surface's
+  view preferences (`ListViewPrefs.savedViews`, survives a shape bump and "Reset view"), and a
+  reload reopens them (`viewTabsStore` → design-system `TableViewWorkspace` `store`, after
+  0.48.1). Column widths follow the data (`columnWidths.ts`): a column empty in ≥70% of the
+  loaded rows yields to 120px; the name column (and a leading marker) is pinned left with an
+  explicit width capped at 360px. Phone: scope tabs keep their labels and scroll sideways; the
+  search placeholder is the short `Search <plural>…`; card fields sit in one two-column grid so
+  every card aligns. Guards: `column-widths-follow-the-data.test.ts`, the search-miss case in
+  `all-archived-empty-state.test.tsx`, `list-views/__tests__/defaults.test.ts`.
+
 - 2026-09-27 — List chrome, shared page-pass defects (/education/flashcards, /research/topics,
   /connected-sources). Filters & Sort: filters lead and Sort sits last; the "Recently updated /
   created" presets exist only over a real sortable timestamp column and REPLACE that column's

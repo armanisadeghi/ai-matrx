@@ -332,3 +332,48 @@ describe("countActiveFilters", () => {
     expect(countActiveFilters(untouched("all"))).toBe(1);
   });
 });
+
+/**
+ * A SEARCH THAT FOUND NOTHING KEEPS THE PAGE'S OFFER (page-pass 2026-09-27,
+ * /research/topics: `New topic "<search>"` never showed). The narrowed empty
+ * state printed only "Clear search and filters", dropping the page's
+ * `emptyAction` — the very render-prop that reads the search to offer it.
+ * Red against a237639e22^: "New map "kling"" is absent.
+ */
+describe("an entity list whose search found nothing", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("offers the page's own create-from-search action beside the widen door", async () => {
+    window.history.replaceState(null, "", "/?q=kling");
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <Provider store={makeStore()}>
+          <TooltipProvider>
+            <EntityListPage
+              config={mapsLikeConfig({ live: [], archived: [] })}
+              emptyAction={(list) => (
+                <button type="button">{`New map "${list.query.search}"`}</button>
+              )}
+            />
+          </TooltipProvider>
+        </Provider>,
+      );
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(screenText()).toContain("No maps match");
+    expect(findButton('New map "kling"')).toBeDefined();
+  });
+});

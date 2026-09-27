@@ -184,10 +184,14 @@ export function useListViewPrefs(
       setPreference({
         module: "listViews",
         preference: surfaceKey,
-        value: resolveListViewPrefs(surfaceDefaults, undefined),
+        // "Reset view" resets the layout, never the views the person named.
+        value: {
+          ...resolveListViewPrefs(surfaceDefaults, undefined),
+          ...(prefs.savedViews ? { savedViews: prefs.savedViews } : {}),
+        },
       }),
     );
-  }, [dispatch, surfaceDefaults, surfaceKey]);
+  }, [dispatch, surfaceDefaults, surfaceKey, prefs.savedViews]);
 
   return { prefs, setPrefs, setView, setDensity, reset };
 }

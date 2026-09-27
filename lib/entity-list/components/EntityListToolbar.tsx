@@ -39,6 +39,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import type { EntityColumnSpec } from "../columns";
 import type { EntityFacetSection, EntityScopeFacetSection } from "../config";
@@ -73,6 +74,12 @@ interface Props<TRow> {
   hasArchived: boolean;
   /** "Search agents…" */
   searchPlaceholder: string;
+  /**
+   * The phone's placeholder — "Search decks…". A long desktop placeholder
+   * ("Search decks by name, topic, lesson or description…") is cut to a
+   * fragment in a 375px box (page-pass 2026-09-27).
+   */
+  shortSearchPlaceholder?: string;
   /** Label for the deep-search toggle. Absent → no toggle offered. */
   deepSearchLabel?: string;
   /** Which alternate views this surface provides. Table is always offered. */
@@ -141,6 +148,7 @@ export function EntityListToolbar<TRow>({
   hasFavorites,
   hasArchived,
   searchPlaceholder,
+  shortSearchPlaceholder,
   deepSearchLabel,
   hasCards,
   hasRows,
@@ -152,6 +160,9 @@ export function EntityListToolbar<TRow>({
   tableControlsRef,
 }: Props<TRow>) {
   const hasAltViews = hasCards || hasRows;
+  const isMobile = useIsMobile();
+  const placeholder =
+    isMobile && shortSearchPlaceholder ? shortSearchPlaceholder : searchPlaceholder;
   return (
     <div className="flex min-w-0 items-center gap-1.5 sm:flex-wrap sm:gap-2">
       <div className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-2.5 lg:h-9 lg:min-w-56">
@@ -168,7 +179,8 @@ export function EntityListToolbar<TRow>({
           type="search"
           value={query.search}
           onChange={(e) => onSearch(e.target.value)}
-          placeholder={searchPlaceholder}
+          placeholder={placeholder}
+          aria-label={searchPlaceholder}
           // ProInput intentionally does not fit this integrated compact search:
           // its mic/menu chrome would duplicate this surface's own controls.
           // The query is still exposed as a surface value/write target, and

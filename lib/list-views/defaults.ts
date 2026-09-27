@@ -71,6 +71,8 @@ export function resolveListViewPrefs(
           ? base.direction
           : (stored.direction ?? base.direction),
         favoritesFirst: stored.favoritesFirst ?? base.favoritesFirst,
+        // Views the person NAMED are theirs, not the shape's: they survive.
+        ...(stored.savedViews ? { savedViews: stored.savedViews } : {}),
       };
     }
     return base;

@@ -721,6 +721,7 @@ export function EntityListPage<TRow>({
           searchPlaceholder={
             config.searchPlaceholder ?? `Search ${config.entityLabel.plural}…`
           }
+          shortSearchPlaceholder={`Search ${config.entityLabel.plural}…`}
           deepSearchLabel={config.deepSearch?.label}
           hasCards={Boolean(cardsView)}
           hasRows={Boolean(rowsView)}
@@ -859,6 +860,10 @@ export function EntityListPage<TRow>({
             {...(config.tableToolbar
               ? {}
               : { pageToolbarSlot: tableControlsSlot })}
+            viewTabsStore={{
+              views: prefs.savedViews ?? [],
+              onChange: (savedViews) => setPrefs({ savedViews }),
+            }}
             {...(tableSelection ? { selection: tableSelection } : {})}
             {...(config.tableToolbar
               ? {
