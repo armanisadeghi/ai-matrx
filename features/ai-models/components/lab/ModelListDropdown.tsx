@@ -36,6 +36,7 @@
  */
 
 import { useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import {
   ChevronDown,
   ChevronRight,
@@ -1531,6 +1532,11 @@ export function ModelListDropdown({
   // everyone else, and the DB enforces the same gate (admin_model_catalog
   // raises 42501 for non-admins) — the UI gate is convenience, not security.
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  // Models the person switched off in Settings › Models. The user variant
+  // leaves them out of every picker (the current value always stays listed).
+  const hiddenModelIds = useAppSelector(
+    (state) => state.userPreferences?.aiModels?.inactiveModels,
+  );
   const [adminMode, setAdminMode] = useState(false);
   const variant: ModelCatalogVariant =
     catalogVariant ?? (adminMode && isSuperAdmin ? "admin" : "user");
@@ -1683,6 +1689,12 @@ export function ModelListDropdown({
         )
       )
         return false;
+      if (
+        variant === "user" &&
+        m.id !== value &&
+        hiddenModelIds?.includes(m.id)
+      )
+        return false;
       // User variant: deprecated is hidden by DEFAULT — not removed. The
       // toggle reveals it, and the currently selected model always stays
       // listed so a persisted choice never silently disappears from its own
@@ -1801,6 +1813,8 @@ export function ModelListDropdown({
     variant,
     priorityModelSet,
     effectiveSelectionPurpose,
+    hiddenModelIds,
+    value,
   ]);
 
   const activeFilterCount =
@@ -2112,11 +2126,23 @@ export function ModelListDropdown({
       <div className="flex items-center justify-between gap-2 border-t border-border px-2 py-1 text-[10px] text-muted-foreground">
         <span>
           {error ? (
-            "Models couldn't be loaded"
+            <>
+              Models couldn&apos;t be loaded
+              <ErrorAlchemyMenu error={String(error)} />
+            </>
           ) : (
             <>
-              {filtered.length} of {eligibleModels.length} model
-              {eligibleModels.length === 1 ? "" : "s"}
+              {/* Only what this picker can offer is counted — never the
+                  whole catalog with retired models in it. */}
+              {filtered.length} model{filtered.length === 1 ? "" : "s"}
+              {variant === "user" && (hiddenModelIds?.length ?? 0) > 0 ? (
+                <>
+                  {" · "}
+                  <Link href="/user-settings/ai/models" className="underline hover:text-foreground">
+                    {hiddenModelIds?.length} hidden by you
+                  </Link>
+                </>
+              ) : null}
             </>
           )}
         </span>

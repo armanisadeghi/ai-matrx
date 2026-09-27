@@ -61,8 +61,9 @@ export function SettingsModelPicker({
   const generatedId = useId().replace(/:/g, "");
   const id = rowProps.id ?? `settings-${generatedId}`;
   const { models } = useModels();
-  const activeIds = useSelector(
-    (state: RootState) => state.userPreferences.aiModels.activeModels,
+  // "Active" = not switched off in Settings › Models (the person's hidden list).
+  const hiddenIds = useSelector(
+    (state: RootState) => state.userPreferences.aiModels.inactiveModels,
   );
   // Catalog-resolved platform default (is_primary), for the null-option label.
   const platformDefaultName = useSelector(
@@ -70,11 +71,11 @@ export function SettingsModelPicker({
       ? selectPlatformDefaultImageModelName
       : selectPlatformDefaultTextModelName,
   );
-  const activeSet = new Set(activeIds);
+  const hiddenSet = new Set(hiddenIds);
 
   const filtered = models.filter((m) => {
-    if (scope === "active") return activeSet.has(m.id);
-    if (scope === "inactive") return !activeSet.has(m.id);
+    if (scope === "active") return !hiddenSet.has(m.id);
+    if (scope === "inactive") return hiddenSet.has(m.id);
     return true;
   });
 
