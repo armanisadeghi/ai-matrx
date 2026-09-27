@@ -1385,10 +1385,13 @@ const UserTableViewer = ({
 
   // AN EDIT KEEPS THE VIEW TRUE (lane DATA-V2-BASICS): an edit to the column that orders or filters
   // the view is collected here and settled below (`settleTheView`), once the edits stop.
-  const [viewEdits, setViewEdits] = useState<Array<EditedCell & { mine: boolean }>>([]);
+  const [viewEdits, setViewEdits] = useState<Array<EditedCell & { mine: boolean; label: string }>>([]);
   const keepTheViewTrue = (rowId: string, fieldName: string, whose: "mine" | "theirs") => {
     if (!editMovesTheView(fieldName, sortField, columnFilters)) return;
-    setViewEdits((prev) => [...prev, { rowId, fieldName, mine: whose === "mine" }]);
+    // The row's name is read NOW, while it is still on screen: a filtered view hides it at once.
+    const row = rowsNow().find((r) => r.id === rowId) ?? fullDatasetCache?.find((r) => r.id === rowId);
+    const label = row ? rowLabelText(row, fields, effectiveRowLabel(tableInfo?.metadata, fields), relationWords).text : "";
+    setViewEdits((prev) => [...prev, { rowId, fieldName, mine: whose === "mine", label }]);
   };
 
   const handleRealtime = (event: TableRealtimeEvent) => {
@@ -2597,6 +2600,7 @@ const UserTableViewer = ({
 
   const settleTheView = useEffectEvent(async () => {
     const edited: EditedCell[] = viewEdits.map(({ rowId, fieldName }) => ({ rowId, fieldName }));
+    const labelOf = new Map(viewEdits.map((cell) => [cell.rowId, cell.label] as const));
     const mine = viewEdits.some((cell) => cell.mine);
     setViewEdits([]);
     if (edited.length === 0) return;
@@ -2627,7 +2631,7 @@ const UserTableViewer = ({
         const row = before.get(cell.rowId);
         const effect = editMovesTheView(cell.fieldName, sortField, columnFilters) ?? "order";
         return {
-          label: row ? rowLabelText(row, fields, effectiveRowLabel(tableInfo?.metadata, fields), relationWords).text : "",
+          label: labelOf.get(cell.rowId) || (row ? rowLabelText(row, fields, effectiveRowLabel(tableInfo?.metadata, fields), relationWords).text : ""),
           effect,
           columnName: fields.find((f) => f.field_name === cell.fieldName)?.display_name || cell.fieldName,
         };
