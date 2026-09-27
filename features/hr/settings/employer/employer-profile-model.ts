@@ -577,9 +577,6 @@ export function employerBundle(input: HrEmployerScopeInput): string {
             { maxRows: 25 },
           )
         : null,
-      xmlElement("tax_registrations", {
-        status: "not readable from the browser yet",
-      }),
     ],
   );
 }
@@ -652,10 +649,6 @@ export function buildHrEmployerScope(input: HrEmployerScopeInput): Record<string
       jurisdiction:
         input.jurisdictions?.find((j) => j.id === e.input.jurisdiction_id)?.name ?? null,
     };
-  }
-  if (input.loadStatus === "loaded") {
-    scope.tax_registrations_status =
-      "Tax registrations cannot be read from the browser yet; this page shows none rather than an empty list.";
   }
   return scope;
 }

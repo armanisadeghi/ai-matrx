@@ -4,7 +4,7 @@
  *
  * One employer's profile of record: legal identity and address, the employment laws
  * that apply to it (each with how that was established), the establishments it
- * reports on, and the (not yet readable) tax registrations. Its own surface rather
+ * reports on. (Tax registrations have no browser read door and are not on the page.) Its own surface rather
  * than a shared "HR settings" one: every `/hr/settings/*` tab holds a different record
  * type with different rules, and no HR surface existed to hang it under (2026-09-27).
  *
@@ -52,7 +52,7 @@ const groups: SurfaceValueGroup[] = [
     key: "establishments",
     label: "Establishments",
     sortOrder: 300,
-    description: "The sites this employer reports on, and the tax registration status.",
+    description: "The sites this employer reports on for EEO-1 and OSHA.",
   },
 ];
 
@@ -82,7 +82,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "employer_overview",
     label: "Employer overview",
     description:
-      "Everything on the page in one XML bundle: identity (legal name, DBA, entity form, formation state; the EIN only as \"on file\"), the primary address, every applicability flag with its value and basis or declaration reason, the establishments (first 25) and the tax registration status.",
+      "Everything on the page in one XML bundle: identity (legal name, DBA, entity form, formation state; the EIN only as \"on file\"), the primary address, every applicability flag with its value and basis or declaration reason, and the establishments (first 25).",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 1800,
@@ -185,17 +185,6 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 350,
     sortOrder: 216,
-    group: "establishments",
-  },
-  {
-    name: "tax_registrations_status",
-    label: "Tax registrations",
-    description:
-      "Why no tax registrations are listed: they cannot be read from a browser yet. Never read this as \"the employer has none\".",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 110,
-    sortOrder: 220,
     group: "establishments",
   },
 ];
