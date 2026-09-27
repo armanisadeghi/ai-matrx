@@ -81,6 +81,7 @@ export function ApprovalsWorkspace({
           Sign in to see what is waiting on you
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
+          {/* read-gate-exempt: the signed-out state (no user in the auth session), not a read's answer; the queue is never read without a user */}
           Approvals are addressed to a person — there is nothing to show without
           knowing who you are.
         </p>
