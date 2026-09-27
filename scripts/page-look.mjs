@@ -252,7 +252,28 @@ function measure(isPhone) {
     for (const el of document.querySelectorAll("button, a[href], [role=button], input:not([type=hidden]), select")) {
       if (!visible(el) || el.closest("[data-touch-exempt]")) continue;
       const r = el.getBoundingClientRect();
-      if ((r.height < 44 || r.width < 44) && smallTargets.length < 15) smallTargets.push(`${describe(el)} ${Math.round(r.width)}x${Math.round(r.height)}`);
+      // What a finger can hit is the control's HIT AREA, not its painted box:
+      // a small switch/checkbox inside (or bound to) a <label> carrying the
+      // matrx-tap-area ring is hit through the label's ::before (44x44) and
+      // the label's own box. Measuring the painted control reported every
+      // ringed switch as a false "small target".
+      const hitLabels = [
+        el.closest("label"),
+        ...(el.id ? document.querySelectorAll(`label[for="${CSS.escape(el.id)}"]`) : []),
+      ].filter(Boolean);
+      let w = r.width;
+      let h = r.height;
+      for (const hitLabel of hitLabels) {
+        const lr = hitLabel.getBoundingClientRect();
+        w = Math.max(w, lr.width);
+        h = Math.max(h, lr.height);
+        const ring = getComputedStyle(hitLabel, "::before");
+        if (ring.content && ring.content !== "none" && ring.position === "absolute") {
+          w = Math.max(w, parseFloat(ring.width) || 0);
+          h = Math.max(h, parseFloat(ring.height) || 0);
+        }
+      }
+      if ((h < 44 || w < 44) && smallTargets.length < 15) smallTargets.push(`${describe(el)} ${Math.round(w)}x${Math.round(h)}`);
     }
   }
   // Graphics that draw nothing: an svg/canvas/img that has content but no
