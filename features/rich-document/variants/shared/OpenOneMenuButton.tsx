@@ -56,7 +56,7 @@ export function OpenOneMenuButton({
       ref={buttonRef}
       variant="ghost"
       size="icon"
-      className={cn("h-8 w-8 p-0", className)}
+      className={cn("h-8 w-8 p-0 pointer-coarse:h-11 pointer-coarse:w-11", className)}
       aria-label={ariaLabel}
       aria-haspopup="menu"
       onClick={() => {
