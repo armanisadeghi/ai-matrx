@@ -109,6 +109,7 @@ export function FastFireScoreboard({
               Session complete
             </h1>
             <p className="mt-0.5 text-sm text-muted-foreground">
+              {/* read-gate-exempt: cards played in the session this browser just ran, not a fetched count */}
               {config.setName ?? "FastFire"} · {board.total} cards
             </p>
           </div>

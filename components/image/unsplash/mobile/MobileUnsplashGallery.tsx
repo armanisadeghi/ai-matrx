@@ -77,6 +77,7 @@ export function MobileUnsplashGallery({ initialSearchTerm }: MobileUnsplashGalle
     const {
         photos,
         loading,
+        photoError,
         hasMore,
         selectedPhoto,
         favorites,
@@ -167,7 +168,11 @@ export function MobileUnsplashGallery({ initialSearchTerm }: MobileUnsplashGalle
                         {searchQuery.trim() ? `Results for "${searchQuery.trim()}"` : 'Search Unsplash'}
                     </h3>
                     <p className="text-xs text-muted-foreground" aria-live="polite">
-                        {loading ? 'Searching...' : `${photos.length} images loaded`}
+                        {loading
+                            ? 'Searching...'
+                            : photoError
+                              ? `Search failed: ${photoError}`
+                              : `${photos.length} images loaded`}
                     </p>
                 </div>
             </div>

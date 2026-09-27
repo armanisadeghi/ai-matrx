@@ -126,6 +126,7 @@ export function UnplacedQueue({
         <p className="border-b border-border px-3 py-1.5 text-[11px] text-muted-foreground">
           Assigner placed {assigner.result.keywords_assigned} of{" "}
           {assigner.result.eligible} keywords
+          {/* read-gate-exempt: result of the assigner run the person just started, shown only once that run returned */}
           {assigner.result.topics_created.length > 0
             ? `, creating ${assigner.result.topics_created.length} topic${assigner.result.topics_created.length === 1 ? "" : "s"}`
             : ""}

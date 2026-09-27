@@ -763,10 +763,12 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
               <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground">
                   <span className="font-medium text-foreground">
+                    {/* read-gate-exempt: files the person dropped into this studio, held in memory, not a fetched list */}
                     {studio.files.length}
                   </span>{" "}
                   {studio.files.length === 1 ? "file" : "files"} ·
                   <span className="font-medium text-foreground ml-1">
+                    {/* read-gate-exempt: presets the person selected in this studio, not a fetched list */}
                     {studio.selectedPresetIds.length}
                   </span>{" "}
                   selected presets
@@ -791,6 +793,7 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                      {/* read-gate-exempt: files the person dropped into this studio, held in memory, not a fetched list */}
                       {autoNamedFileIds.length === 1
                         ? "1 file still has an auto-generated name"
                         : `${autoNamedFileIds.length} files still have auto-generated names`}

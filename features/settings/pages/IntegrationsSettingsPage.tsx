@@ -1,5 +1,7 @@
 "use client";
 
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -297,6 +299,12 @@ export default function IntegrationsPage({
     connectedCount + githubConnectedCount + googleConnectedCount;
   const connectionsStillLoading =
     status === "loading" || github.loading || googleInventory.isLoading;
+  // The total adds three reads; if any failed it is not an answer ("0 ready").
+  const connectionsRead = readOf({
+    isLoading: connectionsStillLoading,
+    isError: status === "failed" || github.readError != null || googleInventory.isError,
+    error: error ?? github.readError ?? googleInventory.error,
+  });
 
   useSurfaceScopeContribution(
     "matrx-user/settings",
@@ -491,7 +499,11 @@ export default function IntegrationsPage({
           <div className="flex shrink-0 items-center gap-2">
             <div className="rounded-lg border border-border bg-card px-3 py-2 text-right">
               <p className="text-lg font-semibold leading-none text-foreground">
-                {totalConnectedCount}
+                <UntrustedCount
+                  read={connectionsRead}
+                  value={totalConnectedCount}
+                  label="Connections ready to use"
+                />
               </p>
               <p className="mt-1 text-[11px] text-muted-foreground">ready to use</p>
             </div>

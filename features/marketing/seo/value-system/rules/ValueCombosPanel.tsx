@@ -31,6 +31,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layers2, ListFilter, Loader2, Plus, Trash2 } from "lucide-react";
@@ -284,9 +286,12 @@ export function ValueCombosPanel({
       <Layers2 className="h-4 w-4 shrink-0 text-primary" />
       <h2 className="text-sm font-semibold text-foreground">Combinations</h2>
       {rows.length > 0 ? (
-        <span className="text-[11px] tabular-nums text-muted-foreground">
-          {rows.length}
-        </span>
+        <UntrustedCount
+          className="text-[11px] tabular-nums text-muted-foreground"
+          read={readOf(combos)}
+          value={rows.length}
+          label="Combinations"
+        />
       ) : null}
       <p className="min-w-0 text-[11px] text-muted-foreground">
         Two strikes — what a set of answers is worth together

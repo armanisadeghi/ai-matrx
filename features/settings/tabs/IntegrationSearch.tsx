@@ -201,6 +201,7 @@ export function IntegrationSearch({
           {results.length ? (
             <>
               <p className="px-1 py-1 text-xs text-muted-foreground">
+                {/* read-gate-exempt: shown only when some results matched; a partial or failed read is named right after it */}
                 {results.length} {results.length === 1 ? "result" : "results"}{" "}
                 across connections and capabilities
                 {stillLoading

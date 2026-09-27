@@ -866,6 +866,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>
+                    {/* read-gate-exempt: images the person selected for deletion, not a fetched count */}
                     Delete {visibleBulkSelectedIds.length}{" "}
                     {visibleBulkSelectedIds.length === 1 ? "image" : "images"}?
                   </AlertDialogTitle>

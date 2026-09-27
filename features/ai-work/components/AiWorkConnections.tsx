@@ -306,6 +306,7 @@ export function AiWorkConnections() {
                           : "Not detected"}
                     </ConnectionFact>
                     <ConnectionFact label="Session delivery">
+                      {/* read-gate-exempt: drawn only when the read returned a delivered session, so it counts rows that exist */}
                       {latest
                         ? `${providerSessions.length} recent binding${providerSessions.length === 1 ? "" : "s"}; ${formatSessionTimestamp(latest.last_seen_at)}`
                         : error
@@ -315,6 +316,7 @@ export function AiWorkConnections() {
                             : "No session delivered"}
                     </ConnectionFact>
                     <ConnectionFact
+                      // read-gate-exempt: drawn only when the read returned more than one account, never a 0 from a failure
                       label={
                         accounts.length > 1
                           ? `Accounts (${accounts.length})`
@@ -350,6 +352,7 @@ export function AiWorkConnections() {
                     </ConnectionFact>
                     {workspaces.length > 0 ? (
                       <ConnectionFact
+                        // read-gate-exempt: drawn only when the read returned workspaces, never a 0 from a failure
                         label={`Workspaces (${workspaces.length})`}
                       >
                         <ul className="space-y-1">
@@ -392,6 +395,7 @@ export function AiWorkConnections() {
                   : "Load older sessions"}
               </Button>
               <p className="text-xs text-muted-foreground">
+                {/* read-gate-exempt: shown only when the read returned a page with more after it, counting rows it returned */}
                 Detection and account facts above cover the {sessions.length}{" "}
                 most recent delivered sessions; older sessions exist.
               </p>

@@ -183,6 +183,7 @@ export function FastFireLiveCard({
         <div className="flex items-center justify-between">
           <span className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
             <span className="shrink-0">
+              {/* read-gate-exempt: position within the deck of the session being played in this browser, not a fetched count */}
               Card {index + 1} / {cards.length}
             </span>
             {/* Collapse receipt (26a) — folding must never read as data loss:
@@ -191,6 +192,7 @@ export function FastFireLiveCard({
               <span className="inline-flex min-w-0 items-center gap-1 rounded-full border border-green-600/40 bg-green-500/10 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:text-green-400">
                 <CheckCircle2 className="h-2.5 w-2.5 shrink-0" />
                 <span className="truncate">
+                  {/* read-gate-exempt: cards folded during the session being played in this browser, not a fetched count */}
                   {foldedCount} mastered sub-card{foldedCount === 1 ? "" : "s"}{" "}
                   folded in
                 </span>

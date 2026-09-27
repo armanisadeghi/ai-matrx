@@ -263,6 +263,7 @@ export function ImagePreviewRow({
         
         {showCount && selectedImages.length > 0 && (
           <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            {/* read-gate-exempt: images the person selected, shown only when there are some, not a fetched count */}
             {selectedImages.length}
           </div>
         )}

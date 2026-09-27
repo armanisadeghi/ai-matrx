@@ -175,6 +175,7 @@ or just paste the raw base64 payload — we'll detect the format from the bytes.
         {/* Char counter + decode status */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="text-xs text-muted-foreground tabular-nums">
+            {/* read-gate-exempt: length of the text the person pasted, computed in this browser, not a read */}
             {inputCharCount > 0
               ? `${inputCharCount.toLocaleString()} characters`
               : "—"}

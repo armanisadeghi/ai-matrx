@@ -820,6 +820,7 @@ function ComposerBody({
           </dd>
           <dt className="text-muted-foreground">Added skills</dt>
           <dd className="text-foreground">
+            {/* read-gate-exempt: skills the person added in this composer, not a fetched list */}
             {skillIds.length > 0 ? `${skillIds.length}` : "None"}
           </dd>
           <dt className="text-muted-foreground">Filed under</dt>

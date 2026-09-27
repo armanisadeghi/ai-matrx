@@ -1,5 +1,7 @@
 "use client";
 
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import React, { useState } from "react";
 import {
   ArrowLeft,
@@ -78,6 +80,8 @@ export function PluginsSection({
     loadingMore,
     loadOlder,
   } = useCodingSessions();
+  // Session counts are this read's answer: "—" when it failed, never "0 shown".
+  const sessionsRead = readOf({ isLoading: loading, error });
 
   const selectedSession = selectedSessionId
     ? (sessions.find((session) => session.id === selectedSessionId) ?? null)
@@ -229,7 +233,7 @@ export function PluginsSection({
                     </span>
                   </span>
                   <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                    {count} shown
+                    <UntrustedCount read={sessionsRead} value={count} label={`${meta.label} sessions`} /> shown
                   </span>
                 </button>
               );
@@ -256,7 +260,7 @@ export function PluginsSection({
               </p>
             </div>
             <span className="text-xs tabular-nums text-muted-foreground">
-              {filteredSessions.length} shown
+              <UntrustedCount read={sessionsRead} value={filteredSessions.length} label="Sessions" /> shown
             </span>
           </div>
 
@@ -303,6 +307,7 @@ export function PluginsSection({
                 {loadingMore ? "Loading older sessions…" : "Load older sessions"}
               </Button>
               <p className="text-xs text-muted-foreground">
+                {/* read-gate-exempt: shown only when the read returned a page with more after it, counting rows it returned */}
                 Showing the {sessions.length} most recent sessions; older
                 sessions exist and are not in the displayed counts yet.
               </p>

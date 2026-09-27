@@ -19,6 +19,12 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { readOf } from "@/components/read-state/ReadGate";
+import {
+  UntrustedCount,
+  countReadState,
+  type CountRead,
+} from "@/components/official/stale-data/UntrustedCount";
 import Link from "next/link";
 import {
   BookOpenCheck,
@@ -76,11 +82,14 @@ function SectionHeader({
   icon: Icon,
   title,
   count,
+  read,
   hint,
 }: {
   icon: typeof TreePine;
   title: string;
   count?: number | null;
+  /** The read behind `count` — "—" when it failed, "…" while in flight. */
+  read?: CountRead;
   hint: string;
 }) {
   return (
@@ -88,7 +97,11 @@ function SectionHeader({
       <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
         <Icon className="h-3.5 w-3.5 text-primary" />
         {title}
-        {typeof count === "number" ? (
+        {read && countReadState({ read }) !== "ready" ? (
+          <span className="font-normal text-muted-foreground">
+            (<UntrustedCount read={read} value={count ?? 0} label={title} />)
+          </span>
+        ) : typeof count === "number" ? (
           <span className="font-normal text-muted-foreground">({count})</span>
         ) : null}
       </p>
@@ -410,6 +423,7 @@ export function MeaningPanel({
               icon={ListChecks}
               title="Value rules"
               count={rules.data?.length ?? null}
+              read={readOf(rules)}
               hint="Multipliers you ratified — a matched word or detected fact scales the score up or down. Every fired rule shows up in a keyword's why chain."
             />
             <span className="flex shrink-0 items-center gap-1.5">
@@ -507,6 +521,7 @@ export function MeaningPanel({
               icon={MapPinned}
               title="Geo bands & areas"
               count={geoAreas.data?.length ?? null}
+              read={readOf(geoAreas)}
               hint="Where a searcher is looking from decides the geo gate: your ideal radius, acceptable region, expansion targets — and excluded places, which force Negative."
             />
             <span className="flex shrink-0 items-center gap-1.5">
@@ -626,6 +641,7 @@ export function MeaningPanel({
             icon={TreePine}
             title="Offering worth"
             count={topicValues.data?.values.length ?? null}
+            read={readOf(topicValues)}
             hint="The starting number: a keyword inherits the nearest offering or branch you weighted (0–100). Set worth high on the tree and it cascades down."
           />
           {topicValues.isLoading ? <SectionSkeleton /> : null}

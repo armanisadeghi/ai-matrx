@@ -154,6 +154,8 @@ export default function SandboxStoragePage() {
                 size="xs"
                 message="Loading sandbox storage totals…"
               />
+            ) : persistence.error ? (
+              "Storage total unavailable — the volumes could not be read."
             ) : persistence.info?.partial ? (
               "Storage total unavailable until every tier reports a byte count."
             ) : (
