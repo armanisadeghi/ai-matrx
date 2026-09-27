@@ -21,6 +21,7 @@ import {
 import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   Popover,
   PopoverContent,
@@ -66,6 +67,7 @@ export function RunsPopover({
   const [open, setOpen] = useState(false);
   const [runs, setRuns] = useState<PageExtractionRun[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [pageRuns, setPageRuns] = useState<PageExtractionPageRun[]>([]);
@@ -74,7 +76,9 @@ export function RunsPopover({
     setLoading(true);
     try {
       setRuns(await listRunsForJob(jobId));
+      setLoadError(null);
     } catch (e) {
+      setLoadError(e ?? true);
       toast.error("Could not load runs", {
         description: e instanceof Error ? e.message : undefined,
       });
@@ -211,6 +215,13 @@ export function RunsPopover({
             <div className="flex items-center justify-center py-6 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
             </div>
+          ) : loadError != null && runs.length === 0 ? (
+            <ReadFailure
+              error={loadError}
+              what="this template's runs"
+              className="m-1"
+              onRetry={() => void load()}
+            />
           ) : runs.length === 0 ? (
             <div className="px-2 py-4 text-center text-xs text-muted-foreground">
               No runs yet.

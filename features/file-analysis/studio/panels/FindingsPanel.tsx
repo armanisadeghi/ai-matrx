@@ -6,6 +6,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useKeyFindings } from "@/features/file-analysis/hooks/useKeyFindings";
 import { useLabelCatalog } from "@/features/file-analysis/hooks/useLabelCatalog";
 
@@ -30,7 +31,7 @@ function valueText(v: unknown): string {
 }
 
 export function FindingsPanel({ fileId, onJumpToPage }: Props) {
-  const { data, loading } = useKeyFindings(fileId);
+  const { data, loading, error, refetch } = useKeyFindings(fileId);
   const { byId } = useLabelCatalog();
 
   if (loading && !data) {
@@ -41,6 +42,9 @@ export function FindingsPanel({ fileId, onJumpToPage }: Props) {
     );
   }
   const entries = Object.entries(data?.findings ?? {});
+  if (error && !entries.length) {
+    return <ReadFailure error={error} what="this file's key findings" onRetry={refetch} />;
+  }
   if (!entries.length) {
     return (
       <div className="px-3 py-6 text-center text-xs text-muted-foreground">

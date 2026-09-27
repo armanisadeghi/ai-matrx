@@ -903,6 +903,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
               hasPageRows={pages.length > 0}
               pages={pages}
               pagesLoading={pagesLoading}
+              pagesError={pagesError}
+              onRetryPages={refreshPages}
               activePage={activePage}
               onSelectPage={jumpToPage}
             />

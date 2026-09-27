@@ -18,6 +18,7 @@
 import { useState } from "react";
 import { Loader2, Play, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useToastManager } from "@/hooks/useToastManager";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -40,7 +41,7 @@ import type { PageExtractionJob } from "@/features/page-extraction/types";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 export function SavedJobsList({ fileId }: { fileId: string }) {
-  const { jobs, archivedJobs, loading, refetch } = useExtractionJobs(fileId);
+  const { jobs, archivedJobs, loading, error, refetch } = useExtractionJobs(fileId);
   const dispatch = useAppDispatch();
   const toast = useToastManager("page-extraction");
   const selectedJobId = useAppSelector((s) =>
@@ -57,6 +58,16 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
 
   if (!fileId) return null;
   if (loading && jobs.length === 0 && archivedJobs.length === 0) return null;
+  if (error && jobs.length === 0 && archivedJobs.length === 0) {
+    return (
+      <ReadFailure
+        error={error}
+        what="your saved templates"
+        className="m-0"
+        onRetry={refetch}
+      />
+    );
+  }
   if (jobs.length === 0 && archivedJobs.length === 0) {
     return (
       <p className="text-[10px] text-muted-foreground/70 leading-snug px-1">

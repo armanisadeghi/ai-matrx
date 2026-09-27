@@ -3,6 +3,7 @@
 import React, { useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { toTitleCase } from "@/utils/dataUtils";
 import { PdfStudioPagesMeta } from "./PdfStudioPagesMeta";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
@@ -15,6 +16,9 @@ interface PdfStudioPagesNavProps {
   pages: PdfPageRow[];
   activePage: number | null;
   loading: boolean;
+  /** The page-rows read's failure, if it failed (RC-B12). */
+  error?: unknown;
+  onRetry?: () => void;
   onSelectPage: (pageNumber: number) => void;
 }
 
@@ -25,6 +29,8 @@ export function PdfStudioPagesNav({
   pages,
   activePage,
   loading,
+  error,
+  onRetry,
   onSelectPage,
 }: PdfStudioPagesNavProps) {
   const sorted = useMemo(
@@ -52,6 +58,8 @@ export function PdfStudioPagesNav({
               />
             ))}
           </div>
+        ) : error && sorted.length === 0 ? (
+          <ReadFailure error={error} what="this document's pages" onRetry={onRetry} />
         ) : sorted.length === 0 ? (
           <p className="px-3 py-6 text-center text-[11px] text-muted-foreground">
             No pages yet. Run the pipeline to extract pages.

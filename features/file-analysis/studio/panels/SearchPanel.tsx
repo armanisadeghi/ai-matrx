@@ -120,7 +120,7 @@ export function SearchPanel({ fileId, onJumpToPage }: Props) {
         {error ? <div className="text-[10px] text-destructive">{error} <ErrorAlchemyMenu error={error} /></div> : null}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
-        {hits.length === 0 && !loading ? (
+        {hits.length === 0 && !loading && !error ? (
           <div className="px-3 py-6 text-center text-muted-foreground">
             {query ? "No matches." : "Type a query above to search."}
           </div>

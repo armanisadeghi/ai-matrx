@@ -7,6 +7,7 @@
 import { Braces, Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useAnnotations } from "@/features/file-analysis/hooks/useAnnotations";
 import { useLabelCatalog } from "@/features/file-analysis/hooks/useLabelCatalog";
 import { colorsFor } from "@/features/pdf/components/viewer/annotation-layer/colors";
@@ -26,7 +27,7 @@ export function AnnotationsPanel({
   onSelectAnnotation,
   onJumpToPage,
 }: Props) {
-  const { annotations, loading, remove, byCategory } = useAnnotations(fileId);
+  const { annotations, loading, error, refetch, remove, byCategory } = useAnnotations(fileId);
   const { byId: labelById, categories } = useLabelCatalog();
 
   if (loading && annotations.length === 0) {
@@ -35,6 +36,9 @@ export function AnnotationsPanel({
         <Loader2 className="h-3 w-3 animate-spin" /> Loading annotations…
       </div>
     );
+  }
+  if (error && annotations.length === 0) {
+    return <ReadFailure error={error} what="this file's annotations" onRetry={refetch} />;
   }
   if (annotations.length === 0) {
     return (

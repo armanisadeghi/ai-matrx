@@ -11,6 +11,7 @@ import { Check, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useFileAnalysis } from "@/features/file-analysis/hooks/useFileAnalysis";
 import * as Api from "@/features/file-analysis/api/file-analysis";
 import type { FileAnalysisResultRow } from "@/features/file-analysis/api/file-analysis";
@@ -29,7 +30,7 @@ const TIER_AWARE = new Set([
 ]);
 
 export function DetectorsPanel({ fileId, onJumpToPage }: Props) {
-  const { data, loading } = useFileAnalysis(fileId);
+  const { data, loading, error, refetch } = useFileAnalysis(fileId);
   const [tier, setTier] = useState<"low" | "medium" | "high">("medium");
   const [busy, setBusy] = useState(false);
 
@@ -49,6 +50,9 @@ export function DetectorsPanel({ fileId, onJumpToPage }: Props) {
         <Loader2 className="h-3 w-3 animate-spin" /> Loading detectors…
       </div>
     );
+  }
+  if (error && !data) {
+    return <ReadFailure error={error} what="this file's detector results" onRetry={refetch} />;
   }
   if (!data || Object.keys(byKind).length === 0) {
     return (

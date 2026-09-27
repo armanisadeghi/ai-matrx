@@ -77,9 +77,11 @@ export function SyncedPdfTextView({
             ? "loading pages…"
             : hasPages
               ? `${pages.length.toLocaleString()} pages`
-              : "no per-page data"}
+              : error
+                ? null /* the failed read is said in the error box below */
+                : "no per-page data"}
         </span>
-        {!hasPages && !loading && onReprocess && (
+        {!hasPages && !loading && !error && onReprocess && (
           <button
             type="button"
             onClick={onReprocess}

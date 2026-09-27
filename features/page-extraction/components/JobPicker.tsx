@@ -24,6 +24,7 @@
 "use client";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   Select,
   SelectContent,
@@ -41,7 +42,7 @@ import { selectViewedJobForFile } from "@/features/page-extraction/redux/selecto
 
 export function JobPicker({ fileId }: { fileId: string | null }) {
   const dispatch = useAppDispatch();
-  const { jobs, loading } = useExtractionJobs(fileId);
+  const { jobs, loading, error, refetch } = useExtractionJobs(fileId);
   const viewedJobId = useAppSelector((s) => selectViewedJobForFile(s, fileId));
 
   if (!fileId) return null;
@@ -52,6 +53,10 @@ export function JobPicker({ fileId }: { fileId: string | null }) {
         Loading extractions…
       </div>
     );
+  }
+
+  if (error && jobs.length === 0) {
+    return <ReadFailure error={error} what="this file's extraction jobs" onRetry={refetch} />;
   }
 
   if (jobs.length === 0) {

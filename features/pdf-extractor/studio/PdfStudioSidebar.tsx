@@ -50,6 +50,7 @@ import { StudioDocRenameDialog } from "./StudioDocRenameDialog";
 import { FileContextDialog } from "@/features/files/components/FileContextSection";
 import { PdfStudioSidebarToggle } from "./PdfStudioSidebarToggle";
 import { PdfStudioPagesNav } from "./PdfStudioPagesNav";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import type { SidebarView } from "../state/types";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
@@ -78,6 +79,9 @@ interface PdfStudioSidebarProps {
   hasPageRows: boolean;
   pages: PdfPageRow[];
   pagesLoading: boolean;
+  /** The active doc's page-rows read failure, if any. */
+  pagesError?: unknown;
+  onRetryPages?: () => void;
   activePage: number | null;
   onSelectPage: (pageNumber: number) => void;
 }
@@ -96,6 +100,8 @@ export function PdfStudioSidebar({
   hasPageRows,
   pages,
   pagesLoading,
+  pagesError,
+  onRetryPages,
   activePage,
   onSelectPage,
 }: PdfStudioSidebarProps) {
@@ -106,6 +112,7 @@ export function PdfStudioSidebar({
     docs,
     kinds,
     loading,
+    error: docsError,
     refresh,
     search,
     setSearch,
@@ -149,6 +156,8 @@ export function PdfStudioSidebar({
           pages={pages}
           activePage={activePage}
           loading={pagesLoading}
+          error={pagesError}
+          onRetry={onRetryPages}
           onSelectPage={onSelectPage}
         />
       ) : inPagesView ? null : (
@@ -236,6 +245,8 @@ export function PdfStudioSidebar({
           >
             {loading && docs.length === 0 ? (
               <SidebarSkeleton />
+            ) : docsError && docs.length === 0 ? (
+              <ReadFailure error={docsError} what="your documents" onRetry={refresh} />
             ) : visible.length === 0 && visibleArchived.length === 0 ? (
               <div className="px-3 py-6 text-center">
                 <p className="text-[11px] text-muted-foreground">

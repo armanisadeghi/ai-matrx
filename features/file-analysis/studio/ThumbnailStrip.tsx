@@ -23,7 +23,7 @@ import {
 import { usePageThumbnail } from "@/features/file-analysis/hooks/usePageThumbnail";
 import * as Api from "@/features/file-analysis/api/file-analysis";
 import type { FilePageOut } from "@/features/file-analysis/api/file-analysis";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface Props {
   fileId: string;
@@ -50,23 +50,19 @@ export function ThumbnailStrip({
       </div>
     );
   }
+  // A failed pages read must never masquerade as "no pages yet" — that
+  // empty-state copy asserts an absence this component did not verify.
+  if (error && !pages.length) {
+    return (
+      <ReadFailure
+        error={error}
+        what="this file's pages"
+        className="m-2"
+        onRetry={refetch}
+      />
+    );
+  }
   if (!pages.length) {
-    // A failed pages read must never masquerade as "no pages yet" — that
-    // empty-state copy asserts an absence this component did not verify.
-    if (error) {
-      return (
-        <div className="space-y-2 px-2 py-4 text-center text-[11px] text-muted-foreground">
-          <p>The page list could not be loaded. <ErrorAlchemyMenu /></p>
-          <button
-            type="button"
-            onClick={refetch}
-            className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-foreground hover:bg-muted"
-          >
-            <RotateCw className="h-3 w-3" /> Retry
-          </button>
-        </div>
-      );
-    }
     return (
       <div className="px-2 py-4 text-center text-[11px] text-muted-foreground">
         No pages yet — analysis runs at upload.
