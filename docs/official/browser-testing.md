@@ -6,6 +6,8 @@ Every rule here was verified live on 2026-08-09 against production and localhost
 
 **One Next dev server, machine-wide** — shared by you, Arman, and Codex. A second one is a reliable hard crash.
 
+**Before calling localhost blocked:** work in the shared main checkout, run `pnpm preview:status` there, and open the session hostname it prints. A working preview from that checkout hot-reloads its source edits; `pnpm preview:start` reuses the same PID. A worktree contains different files, so its own `preview:status` reports a checkout mismatch even when the shared preview is serving routes. Bring the scoped change into main and test it on the existing server. Never create a second server to solve that mismatch; check the route before reporting a server failure.
+
 **This server is HUGE by nature — measured 2026-08-15: 90.7 GB after compiling `/marketing`, 138.3 GB after adding Chat and the Administration entry.** The host has **256 GB**, so the 192 GB watchdog is a runaway guard with 64 GB reserved for the host, not a working-memory budget. (This line previously claimed the machine had 16 GB — false, and it is why the watchdog was set to 8 GB, which killed the server on EVERY start and made browser verification impossible for every agent. If you change the cap in `scripts/agent-dev-server.sh`, measure first.)
 
 - **Start or reuse it only with `pnpm preview:start`** → port **3001**, distdir `.next-preview`. The command is provider-neutral, detached, and tracked. **It prints YOUR hostname — open that, never `localhost`** (see the next rule).

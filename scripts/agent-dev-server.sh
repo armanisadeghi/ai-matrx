@@ -232,7 +232,7 @@ reuse_managed_meta() {
   owner="$(meta_value ROOT)"
   [[ -n "$owner" ]] || owner="$(server_cwd "$pid")"
   if [[ "$owner" != "$REPO_ROOT" ]]; then
-    fail "preview lease is owned by the session '$(meta_value OWNER_SESSION)' in checkout '$owner' (pid $pid, port $port); a per-session hostname cannot fix this — that server is compiling ANOTHER checkout's code, so certifying your diff against it would certify code you did not write. Stop it from that checkout or wait for its explicit release."
+    fail "preview lease is owned by the session '$(meta_value OWNER_SESSION)' in checkout '$owner' (pid $pid, port $port). A process is running from that checkout, not yours. This repo uses the shared main checkout: put your scoped change there and use its existing preview. A checkout mismatch alone does not prove localhost unavailable; check the route before reporting a server failure. Never start a second server."
   fi
   log "reusing the managed preview (pid $pid, port $port)"
   announce_session_url "$port"
@@ -275,10 +275,11 @@ slot_occupied() {
     log "the machine-wide dev-server slot is held by $label pid $pid on port $port,"
     log "started by $owner_session from THIS checkout ($cwd)."
     log "That is your code, so you do not need a second server — you need your own host."
+    log "Edits in this checkout hot-reload in the existing server; no restart or private preview is needed."
     announce_session_url "$port"
     return 0
   fi
-  fail "machine-wide dev-server slot is held by $label pid $pid on port $port, owned by $owner_session at '${cwd:-unknown cwd}'. That is a DIFFERENT checkout, so its compiled code is not your diff and a per-session hostname would not make it yours. Wait for its explicit release, or stop it from its own checkout. Your hostname once the slot frees: http://$SESSION_HOST:$PORT"
+  fail "machine-wide dev-server slot is held by $label pid $pid on port $port, owned by $owner_session at '${cwd:-unknown cwd}'. That is a DIFFERENT checkout, so its compiled code is not your diff. Put your scoped change in the shared main checkout and use its existing preview. A checkout mismatch alone does not prove localhost unavailable; check the route before reporting a server failure. Never start a second server."
 }
 
 # A private worktree (`git worktree add`) has no node_modules of its own —
@@ -668,8 +669,12 @@ cmd_status() {
     log "RUNNING pid=$pid port=$port rss=$(awk -v kb="$rss_kb" 'BEGIN { printf "%.1f", kb / 1048576 }')GB owner=$owner session=$(meta_value OWNER_SESSION)"
     if [[ "$owner" == "$REPO_ROOT" ]]; then
       announce_session_url "$port"
+      log "this server hot-reloads edits in THIS checkout; you do not need another server"
     else
-      log "LEASE OCCUPIED — this checkout does not own that preview"
+      log "this server serves '$owner', not this checkout; it cannot show changes left only here"
+      log "put your scoped change in the shared main checkout and use the running preview there"
+      log "a checkout mismatch alone does not prove localhost unavailable; check the route"
+      log "never start another server to solve a checkout mismatch"
     fi
     local changed
     changed="$(meta_value NODE_MODULES_CHANGED)"

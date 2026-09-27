@@ -154,6 +154,25 @@ await check("the slot rule NAMES the owner and offers this session's URL", () =>
   assert.match(out, /peer-session-7/, "the refusal never named the owner session");
   assert.match(out, /pid 4242/);
   assert.match(out, /http:\/\/mysess\.localhost:3001/, "it never offered this session's URL");
+  assert.match(out, /hot.reload/i, "it did not explain that the existing server picks up edits");
+});
+
+await check("a managed preview from THIS checkout is reused without a new PID", () => {
+  const script = `
+    set -uo pipefail
+    source ${JSON.stringify(DEV_SERVER)}
+    META="$REPO_ROOT/scripts/agent-dev-server.sh"
+    alive() { [[ "$1" == 4242 ]]; }
+    meta_value() { case "$1" in PID) echo 4242;; PORT) echo 3001;; ROOT) echo "$REPO_ROOT";; esac; }
+    reuse_managed_meta
+  `;
+  const out = execFileSync("bash", ["-c", script], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+    env: { ...process.env, MATRX_PREVIEW_SESSION: "mysess" },
+  });
+  assert.match(out, /reusing the managed preview \(pid 4242, port 3001\)/);
+  assert.match(out, /http:\/\/mysess\.localhost:3001/);
 });
 
 await check("a FOREIGN checkout still holds the slot — a hostname cannot fix that", () => {
@@ -175,6 +194,9 @@ await check("a FOREIGN checkout still holds the slot — a hostname cannot fix t
   assert.ok(failed, "it adopted another checkout's server — that certifies the wrong diff");
   assert.match(output, /DIFFERENT checkout/);
   assert.match(output, /unmanaged/, "an occupant with no lease was not named as unmanaged");
+  assert.match(output, /shared main checkout/i, "it did not explain the checkout remedy");
+  assert.match(output, /mismatch alone does not prove localhost unavailable/i);
+  assert.doesNotMatch(output, /server is healthy/i, "a live PID alone cannot prove route health");
 });
 
 // ---------------------------------------------------------------------------
