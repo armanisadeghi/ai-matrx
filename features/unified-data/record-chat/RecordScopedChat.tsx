@@ -40,6 +40,7 @@ import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/
 import { createClient } from "@/utils/supabase/client";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
+import { askAsMember } from "@/features/organizations/organizationsIAmIn";
 import { cn } from "@/lib/utils";
 
 /** The one door this file calls, exactly as the portals and forms services call theirs. */
@@ -78,7 +79,9 @@ export function RecordScopedChat({ ctx, organizationId, className }: RecordScope
   // question its host page asks, and `pnpm check:campaign-entry-points` can see it ask.
   const campaign = useUnifiedDataCampaign({
     organizationId,
-    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.enabled(organization),
+    // Member-only door, keyed by the RECORD's organization: not a member → OFF, no request.
+    storeSwitch: (organization) =>
+      askAsMember(organization, () => UNIFIED_DATA_CAMPAIGN.enabled(organization), false),
   });
   const campaignOn = campaign.on === true;
   /**

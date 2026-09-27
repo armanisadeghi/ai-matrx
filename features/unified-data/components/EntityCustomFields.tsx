@@ -35,6 +35,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
+import { askAsMember } from "@/features/organizations/organizationsIAmIn";
 
 export interface EntityCustomFieldsProps {
   /** The standard table's registry token (REC-33) — `party`, `crm_deal`, `crm_interaction`. */
@@ -61,7 +62,10 @@ export function EntityCustomFields({
   // once, for everybody, on the unified data ramp screen (lane NAV-FIX).
   const campaign = useUnifiedDataCampaign({
     organizationId,
-    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.enabled(organization),
+    // Member-only door: a record shared from an organization she is not in is
+    // treated as OFF without a request (it was a 403 on every load).
+    storeSwitch: (organization) =>
+      askAsMember(organization, () => UNIFIED_DATA_CAMPAIGN.enabled(organization), false),
   });
   if (!campaign.on || !organizationId) return null;
   return (

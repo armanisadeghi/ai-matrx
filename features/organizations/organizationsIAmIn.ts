@@ -28,6 +28,22 @@ export async function mayReadAsMember(organizationId: string): Promise<boolean> 
   return set === null || set.has(organizationId);
 }
 
+/**
+ * Ask a member-only door ONLY when she is a member of `organizationId`; otherwise
+ * answer `otherwise` without a request. Used for reads keyed by a RECORD's
+ * organization (a record page's custom fields, its record chat): a record shared
+ * with her from an organization she is not in asked `platform.unified_data_store_on`
+ * and drew a 403 on every load (page-pass 2026-09-27, /crm/<id>).
+ */
+export async function askAsMember<T>(
+  organizationId: string | null | undefined,
+  ask: () => Promise<T>,
+  otherwise: T,
+): Promise<T> {
+  if (organizationId && !(await mayReadAsMember(organizationId))) return otherwise;
+  return ask();
+}
+
 /** Test seam. */
 export function __resetOrganizationsIAmInForTest(): void {
   mine = null;
