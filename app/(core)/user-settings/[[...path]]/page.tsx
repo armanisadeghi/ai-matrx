@@ -4,6 +4,8 @@ import {
   urlToTabId,
 } from "@/features/settings/route-shell/routing";
 import { SettingsPresentationProvider } from "@/features/settings/components/SettingsPresentationContext";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { SettingsPhoneTitle } from "@/features/settings/route-shell/SettingsPhoneTitle";
 
 /**
  * Catch-all settings tab route. Resolves `params.path` (e.g.
@@ -28,6 +30,8 @@ export default async function SettingsTabPage({
       presentation="route"
       focusControlId={focusControlId}
     >
+      {/* Below lg there is no settings sidebar, so the header names the page. */}
+      <PageHeader mobile={<SettingsPhoneTitle />} />
       <SettingsTabContent tabId={tabId || null} basePath={SETTINGS_BASE} />
     </SettingsPresentationProvider>
   );
