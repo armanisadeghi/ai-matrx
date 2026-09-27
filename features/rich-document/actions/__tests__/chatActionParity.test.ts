@@ -107,7 +107,7 @@ describe("RC-B6: every former chat action lives in the ONE registry", () => {
 
   it.each(Object.entries(FORMER_CHAT_ACTIONS))(
     "%s → the chat menu row runs the registry handler",
-    (_formerKey, { id, role }) => {
+    async (_formerKey, { id, role }) => {
       const action = getAction(id);
       expect(action).toBeDefined();
       const row = chatMenu(role).find((item) => item.key === id);
@@ -115,6 +115,9 @@ describe("RC-B6: every former chat action lives in the ONE registry", () => {
       const run = jest.spyOn(action!, "run").mockImplementation(() => {});
       try {
         void row!.action();
+        // runAction hands the work to holdDeliberateIntent, which starts it
+        // on the next microtask (organization-gate.ts) — let it start.
+        await new Promise((resolve) => setTimeout(resolve, 0));
         expect(run).toHaveBeenCalledTimes(1);
         const ctx = run.mock.calls[0][0];
         expect(ctx.source).toEqual(

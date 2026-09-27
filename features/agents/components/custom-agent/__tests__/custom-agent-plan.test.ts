@@ -25,6 +25,14 @@ describe("buildValueSources", () => {
     ]);
   });
 
+  it("one row per value when a surface sends two spellings of the same key", () => {
+    const sources = buildValueSources({ conversation_id: "c1", conversationId: "c1", message_id: "m1" });
+    expect(sources.map((s) => [s.id, s.label])).toEqual([
+      ["conversationId", "Conversation ID"],
+      ["message_id", "Message ID"],
+    ]);
+  });
+
   it("falls back to the document content when the scope has none (a bar, not the menu)", () => {
     expect(buildValueSources(undefined, "doc text")).toEqual([
       { id: "content", label: "Whole content", value: "doc text" },

@@ -17,6 +17,7 @@
  * bundle so the scroll sentinel knows whether older history exists.
  */
 
+import { ensureAgentIdentity } from "@/features/agents/redux/agent-definition/thunks";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
@@ -484,6 +485,9 @@ export const loadConversation = createAsyncThunk<
     // opens with the default input settings, and says so.
     let baseInputCapabilities: UiGates = {};
     if (conv.initial_agent_id) {
+      // A restored or resumed window titles itself and its hero from the
+      // agent's NAME, which no conversation read carries. Non-blocking.
+      void dispatch(ensureAgentIdentity(conv.initial_agent_id));
       try {
         baseInputCapabilities = await fetchInputCapabilitiesSnapshot({
           agentId: conv.initial_agent_id,

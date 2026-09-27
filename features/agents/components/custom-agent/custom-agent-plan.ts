@@ -63,11 +63,17 @@ export function buildValueSources(
     ...ORDER.filter((k) => entries.has(k)),
     ...[...entries.keys()].filter((k) => !ORDER.includes(k)).sort(),
   ];
-  return keys.map((key) => ({
-    id: key,
-    label: KNOWN_LABELS[key] ?? humanizeName(key),
-    value: entries.get(key) ?? "",
-  }));
+  // A surface often emits one value under two spellings (`conversation_id`
+  // and `conversationId`): one row per label, first spelling wins.
+  const seen = new Set<string>();
+  const sources: CustomAgentValueSource[] = [];
+  for (const key of keys) {
+    const label = KNOWN_LABELS[key] ?? humanizeName(key).replace(/\bId\b|\bid\b/g, "ID");
+    if (seen.has(label)) continue;
+    seen.add(label);
+    sources.push({ id: key, label, value: entries.get(key) ?? "" });
+  }
+  return sources;
 }
 
 export const USER_INPUT_ROW_ID = "user-input";
