@@ -38,34 +38,122 @@ export interface Measured<R = CensusRow> {
   readonly unmeasured: string | null;
 }
 
+/** Who holds a single-flight census lock right now, as the server sees it. */
+export interface LockHolder {
+  readonly pid: number;
+  readonly application_name: string;
+  readonly held_s: number;
+}
+
+/**
+ * WHO HOLDS IT (lane DOORS-GUARD-CONNECTION, 2026-09-27). Three lanes in one morning read
+ * "SKIPPED - another run is computing this census" with no way to tell whose run, how long it
+ * had been going, or whether it was still alive. The server knows: the advisory lock is a row
+ * in `pg_locks`, and the backend holding it carries the `application_name` the holder stamped
+ * on its census transaction (`<label>#<os pid>@<host>`). Exported for the unit test.
+ */
+export async function lockHolder(
+  client: { query: (sql: string, values?: unknown[]) => Promise<{ rows: unknown[] }> },
+  key: string,
+): Promise<LockHolder | null> {
+  const { rows } = await client.query(
+    `select a.pid, coalesce(a.application_name, '') as application_name,
+            coalesce(extract(epoch from now() - a.xact_start), 0)::int as held_s
+       from pg_catalog.pg_locks l
+       join pg_catalog.pg_stat_activity a on a.pid = l.pid
+      where l.locktype = 'advisory' and l.granted
+        and ((l.classid::bigint << 32) | l.objid::bigint) = hashtextextended($1, 0)
+      limit 1`,
+    [`matrx-gate:${key}`],
+  );
+  return (rows[0] as LockHolder | undefined) ?? null;
+}
+
+export function describeHolder(h: LockHolder | null): string {
+  if (!h) return "a run that had already let go by the time it was asked who it was";
+  return `backend pid ${h.pid} (${h.application_name || "no application_name"}), holding it for ${formatDurationMs(h.held_s * 1000, { style: "compact" })}`;
+}
+
+export interface SingleFlightOptions {
+  /**
+   * How long a second caller WAITS for the holder before it gives up, in ms. The lock is
+   * transaction-scoped and every census transaction dies at the role's 10-minute
+   * `transaction_timeout` (GATE_DB_LIMITS.transactionTimeoutMs), so no holder can keep it past
+   * that: waiting one ceiling plus a margin means the lock blocks a second run for at most the
+   * ONE census it holds, and never turns into a skipped verdict while the database is merely busy.
+   */
+  readonly lockWaitMs?: number;
+  /** Poll interval while waiting. Only a test passes anything else. */
+  readonly pollMs?: number;
+  /** Stamped on the census transaction so the NEXT caller can name this run. */
+  readonly whoAmI?: string;
+}
+
+export const LOCK_WAIT_MS = 630_000;
+export const LOCK_POLL_MS = 5_000;
+
 export async function censusWithPatience<R = CensusRow>(
   client: { query: (sql: string, values?: unknown[]) => Promise<{ rows: unknown[] }> },
   label: string,
   sql: string,
-  timeout = "900s",
+  timeout = "540s",
   /** The waits between attempts. Only a test passes anything else. */
   waits: readonly number[] = CONTENTION_BACKOFF,
   /**
    * ONE RUN AT A TIME (2026-09-25, the live database freeze). A census that costs minutes of
    * database time is taken under a transaction-scoped advisory lock on this key; a second
    * caller — another lane, another machine — does NOT pile a second copy onto the server. It
-   * skips at once and reports the census UNMEASURED by name, which is never a pass.
+   * names the holder and WAITS for it (at most one census long), then runs its own. Only when
+   * the lock is still held after that does it report the census UNMEASURED — by name, holder
+   * included — which is never a pass.
    */
   singleFlightKey?: string,
+  flight: SingleFlightOptions = {},
 ): Promise<Measured<R>> {
-  for (let attempt = 0; ; attempt++) {
+  const lockWaitMs = flight.lockWaitMs ?? LOCK_WAIT_MS;
+  const pollMs = flight.pollMs ?? LOCK_POLL_MS;
+  let waitingSince: number | null = null;
+  let lastHolder: LockHolder | null = null;
+  for (let attempt = 0; ; ) {
     await client.query("begin");
     try {
       await client.query(`set local statement_timeout = '${timeout}'`);
+      if (flight.whoAmI) {
+        await client.query("select set_config('application_name', $1, true)", [flight.whoAmI.slice(0, 63)]);
+      }
       if (singleFlightKey && !(await tryGateLock(client, singleFlightKey))) {
+        const holder = await lockHolder(client, singleFlightKey).catch(() => null);
         await client.query("rollback").catch(() => undefined);
-        const skipped =
-          `${label}: SKIPPED - another run is computing this census right now (advisory lock ` +
-          `"matrx-gate:${singleFlightKey}"). Two copies at once is what froze the live database ` +
-          "on 2026-09-25, so the second caller does not start one. Read the other run's verdict, " +
-          "or re-run when it has finished.";
-        console.log(`[LOUD] ${skipped}`);
-        return { rows: [], unmeasured: skipped };
+        const now = Date.now();
+        if (waitingSince === null) {
+          waitingSince = now;
+          console.log(
+            `[WAIT] ${label}: another run is computing this census right now - ${describeHolder(holder)} ` +
+              `(advisory lock "matrx-gate:${singleFlightKey}"). Two copies at once is what froze the live ` +
+              `database on 2026-09-25, so this run waits for it (at most ${formatDurationMs(lockWaitMs, { style: "compact" })}) ` +
+              "and then runs its own.",
+          );
+        } else if (holder && lastHolder && holder.pid !== lastHolder.pid) {
+          console.log(`[WAIT] ${label}: the lock passed to ${describeHolder(holder)}; still waiting.`);
+        }
+        if (holder) lastHolder = holder;
+        if (now - waitingSince >= lockWaitMs) {
+          const skipped =
+            `${label}: SKIPPED - the single-flight lock "matrx-gate:${singleFlightKey}" was still held after ` +
+            `${formatDurationMs(now - waitingSince, { style: "compact" })} of waiting, by ${describeHolder(lastHolder)}. ` +
+            "No census transaction can outlive the 10-minute transaction ceiling, so a holder this long is " +
+            "a queue of runs, not one. Read that run's verdict, or re-run when it has finished.";
+          console.log(`[LOUD] ${skipped}`);
+          return { rows: [], unmeasured: skipped };
+        }
+        await new Promise((resolve) => setTimeout(resolve, pollMs));
+        continue;
+      }
+      if (waitingSince !== null) {
+        console.log(
+          `[INFO] ${label}: the lock was free after ${formatDurationMs(Date.now() - waitingSince, { style: "compact" })} of waiting; running it now.`,
+        );
+        waitingSince = null;
       }
       const rows = (await client.query(sql)).rows as R[];
       await client.query("rollback").catch(() => undefined);
@@ -89,8 +177,8 @@ export async function censusWithPatience<R = CensusRow>(
       console.log(
         `[INFO] ${label} hit 55P03 (lock timeout) on attempt ${attempt + 1}; waiting ${formatDurationMs(wait, { style: "compact" })} and asking again.`,
       );
+      attempt++;
       await new Promise((resolve) => setTimeout(resolve, wait));
     }
   }
 }
-

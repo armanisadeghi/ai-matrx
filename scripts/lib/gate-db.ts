@@ -41,6 +41,16 @@ export const GATE_DB_LIMITS = {
   statementTimeoutMs: 60_000,
   lockTimeoutMs: 3_000,
   idleInTransactionMs: 60_000,
+  /**
+   * The `transaction_timeout` production's login roles carry (aidream migration 1171, 10 min).
+   * It is not ours to raise, and it does not cancel a statement: it TERMINATES THE CONNECTION
+   * (FATAL 25P04), which the client reads as "Connection terminated unexpectedly" with no
+   * verdict. So a statement ceiling at or above it is a lie - the transaction clock always
+   * fires first. Measured 2026-09-27: `check:store-doors-decide` asked for 900 s and died this
+   * way five times in one day (postgres log, application_name gate:check:store-doors-decide).
+   * A gate's statement ceiling must leave room under it.
+   */
+  transactionTimeoutMs: 600_000,
 } as const;
 
 export interface GateDbOptions {
@@ -295,6 +305,14 @@ export function governTransactions<T extends { query: QueryFn; end: () => Promis
 function resolveCeiling(opts: GateDbOptions): number {
   const ms = opts.statementTimeoutMs ?? GATE_DB_LIMITS.statementTimeoutMs;
   if (!(ms > 0)) throw new GateDbRefusal(`${opts.gate}: statementTimeoutMs must be positive.`);
+  if (ms >= GATE_DB_LIMITS.transactionTimeoutMs) {
+    throw new GateDbRefusal(
+      `${opts.gate}: statementTimeoutMs ${ms} is at or above the database's ${GATE_DB_LIMITS.transactionTimeoutMs} ms ` +
+        "transaction_timeout. That clock terminates the CONNECTION (FATAL 25P04) before this statement " +
+        "clock ever fires, so the gate would crash with 'Connection terminated unexpectedly' instead of " +
+        "timing out with a verdict. Ask for less, or split the work into shorter transactions.",
+    );
+  }
   if (ms > GATE_DB_LIMITS.statementTimeoutMs && !opts.statementTimeoutReason?.trim()) {
     throw new GateDbRefusal(
       `${opts.gate}: statementTimeoutMs ${ms} is above the ${GATE_DB_LIMITS.statementTimeoutMs} ms ` +
@@ -334,6 +352,16 @@ export async function openGateDb(
     ssl: { rejectUnauthorized: false },
     application_name: `gate:${opts.gate}`.slice(0, 63),
     connectionTimeoutMillis: 15_000,
+    // A census can sit silent on the wire for minutes; keepalives stop a NAT or the pooler
+    // from dropping an idle-looking socket under it.
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 30_000,
+  });
+  // A server that ends the connection (FATAL 25P04, a restart, the pooler) emits 'error' on
+  // the client. With no listener that is an uncaught exception that kills the gate before it
+  // prints a verdict; with one, the in-flight query rejects and the gate says what died.
+  client.on("error", (err: Error) => {
+    console.error(`[INFO] ${opts.gate}: the database connection reported: ${err.message}`);
   });
   // Count the slot back if the connection never opens.
   const governed = governClient(client as unknown as { query: QueryFn; end: () => Promise<void> }, opts);
