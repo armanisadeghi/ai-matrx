@@ -34,8 +34,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 /** Long enough that it survives a reload; short enough that it is not a store. */
 export const DRAFT_TTL_MS = 24 * 60 * 60 * 1000;
 const WRITE_DEBOUNCE_MS = 400;
-/** Below this, a lost value costs the user nothing worth a restore notice. */
-export const DRAFT_MIN_CHARS = 40;
+/**
+ * Any non-blank draft is kept. It used to be 40 characters ("a lost scrap costs
+ * nothing") — but a short bug report IS the whole message, and typed input is
+ * never lost (page-pass 2026-09-27, Feedback window).
+ */
+export const DRAFT_MIN_CHARS = 1;
 const PREFIX = "matrx.draft.";
 
 type StoredDraft = { value: string; at: number };
@@ -76,7 +80,7 @@ export function writeDraft(key: string, value: string): boolean {
   const s = storage();
   if (!s) return false;
   try {
-    if (value.length < DRAFT_MIN_CHARS) {
+    if (value.trim().length < DRAFT_MIN_CHARS) {
       s.removeItem(PREFIX + key);
       return true;
     }
@@ -144,7 +148,7 @@ export function useTextDraft(
     setAvailable(storage() !== null);
     const saved = readDraft(key);
     // Never overwrite something the user can already see.
-    if (saved && saved.length >= DRAFT_MIN_CHARS && value.length === 0) {
+    if (saved && saved.trim().length >= DRAFT_MIN_CHARS && value.length === 0) {
       setValue(saved);
       setRestored(true);
     }

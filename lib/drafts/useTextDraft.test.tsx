@@ -160,9 +160,11 @@ describe("useTextDraft — a dialog never loses typed text", () => {
     }
   });
 
-  it("does not keep a scrap too short to be worth restoring", () => {
-    const short = "x".repeat(DRAFT_MIN_CHARS - 1);
-    writeDraft(KEY, short);
+  it("keeps any non-blank draft, however short, and never a blank one", () => {
+    expect(DRAFT_MIN_CHARS).toBe(1);
+    writeDraft(KEY, "Bug");
+    expect(readDraft(KEY)).toBe("Bug");
+    writeDraft(KEY, "   ");
     expect(readDraft(KEY)).toBeNull();
     clearDraft(KEY);
   });
