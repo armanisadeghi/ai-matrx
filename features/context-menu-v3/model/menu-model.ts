@@ -178,6 +178,7 @@ export type MenuGroup =
   | "clipboard"
   | "tools"
   | "history"
+  | "share"
   | "document"
   | "surface"
   | "ai"
@@ -1001,20 +1002,21 @@ export function buildMenuModel(
   if (registry) sections.push({ id: "registry", group: "document", nodes: registry });
   sections.push(...extras["after-clipboard"]);
   sections.push({ id: "tools", group: "tools", nodes: [chat] });
+  // THE SECTION IS ITS TITLE (page-pass 2026-09-27, /agent-apps/[id]/run):
+  // "History" held Compare, Export, Convert, Attach To and Share. History keeps
+  // what is history; the rest sit in sections of their own kind.
   sections.push({
     id: "history",
     group: "history",
-    nodes: compactNodes([
-      undo,
-      redo,
-      viewHistory,
-      compare,
-      exportMenu,
-      convert,
-      attach,
-      share,
-    ]),
+    nodes: compactNodes([undo, redo, viewHistory]),
   });
+  if (compare) sections.push({ id: "compare", group: "tools", nodes: [compare] });
+  if (exportMenu || convert) {
+    sections.push({ id: "document-out", group: "document", nodes: compactNodes([exportMenu, convert]) });
+  }
+  if (attach || share) {
+    sections.push({ id: "share", group: "share", nodes: compactNodes([attach, share]) });
+  }
   sections.push(...extras["after-compare"]);
   if (placements.length > 0) sections.push({ id: "placements", group: "ai", nodes: placements });
   sections.push(...extras["after-placements"]);

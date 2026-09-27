@@ -95,11 +95,12 @@ export default function HeaderChooseOrgButton() {
   // nameless case says what the control now DOES rather than falling back to
   // the sentence that is no longer true.
   const chosen = organizationId != null;
-  const label = chosen ? (organizationName ?? "Change workspace") : "Choose org";
+  // One word everywhere: "organization", never "org" or "workspace" (page-pass, 2026-09-27).
+  const label = chosen ? (organizationName ?? "Change organization") : "Choose organization";
   const description = chosen
     ? organizationName
-      ? `Workspace: ${organizationName}. Change workspace`
-      : "Change workspace"
+      ? `Organization: ${organizationName}. Change organization`
+      : "Change organization"
     : "Choose an organization";
 
   const trigger = (
