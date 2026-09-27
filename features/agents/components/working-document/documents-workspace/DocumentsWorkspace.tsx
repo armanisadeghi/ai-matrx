@@ -14,6 +14,8 @@
  * shell, not a new editor.
  */
 
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { toast } from "@/lib/toast";
 import { useCallback, useEffect, useState } from "react";
 import {
   FileText,
@@ -122,7 +124,10 @@ export function DocumentsWorkspace({
   );
   useEffect(() => {
     let cancelled = false;
+    // `.unwrap()`: a FAILED read must not fall through to "none yet → create
+    // one" (RC-B12 r13) — that minted a new scratchpad beside existing ones.
     void dispatch(hydrateActiveScratchpadThunk())
+      .unwrap()
       .then(() => {
         if (cancelled) return;
         if (!selectActiveScratchpadId(store.getState())) {
@@ -131,6 +136,7 @@ export function DocumentsWorkspace({
       })
       .catch((err: unknown) => {
         console.error("[documents-workspace] scratchpad resolve failed", err);
+        toast.error("Couldn't load your scratchpad — nothing was created in its place. Try reopening it.");
       });
     return () => {
       cancelled = true;
@@ -174,8 +180,13 @@ export function DocumentsWorkspace({
   // Restore this conversation's ATTACHED documents (persisted association
   // edges) as tabs on mount — the thunk also loads each one's content into its
   // origin slice entry so the tab renders.
+  // A failed restore is said above the tabs (RC-B12 r13) — the attached
+  // documents are missing because the read failed, not because there are none.
+  const [restoreError, setRestoreError] = useState<unknown>(null);
+  const [restoreAttempt, setRestoreAttempt] = useState(0);
   useEffect(() => {
     let cancelled = false;
+    setRestoreError(null);
     void dispatch(listAttachedDocumentTabsThunk({ conversationId }))
       .unwrap()
       .then((restored) => {
@@ -199,11 +210,12 @@ export function DocumentsWorkspace({
           conversationId,
           err,
         });
+        if (!cancelled) setRestoreError(err ?? new Error("The attached documents read failed"));
       });
     return () => {
       cancelled = true;
     };
-  }, [dispatch, conversationId]);
+  }, [dispatch, conversationId, restoreAttempt]);
 
   // The working base tab's current binding — a rail doc that IS the
   // conversation's primary (linked/adopted) doc activates its base tab instead
@@ -237,12 +249,21 @@ export function DocumentsWorkspace({
         // into its scope's slice entry and persist the attach edge so the tab
         // (and its context publication, for scratch) restores on next mount.
         if (sel.conversationId !== conversationId) {
+          // A failed load closes the tab it opened and says so (RC-B12 r13) —
+          // never an empty editor that looks like an empty document.
           void dispatch(
             openWorkspaceDocumentThunk({
               documentId: sel.documentId,
               attachTo: conversationId,
             }),
-          );
+          )
+            .unwrap()
+            .catch((err: unknown) => {
+              setAttachedTabs((prev) => prev.filter((t) => tabKey(t) !== key));
+              toast.error(
+                `Couldn't open ${sel.title?.trim() || kindLabel(sel.kind)}: ${err instanceof Error ? err.message : "the read failed"}`,
+              );
+            });
         }
         setAttachedTabs((prev) =>
           prev.some((t) => tabKey(t) === key)
@@ -448,6 +469,15 @@ export function DocumentsWorkspace({
 
         {(!isMobile || !railOpen) && (
           <div className="flex min-w-0 flex-1 flex-col">
+            {restoreError != null && (
+              <StaleDataNotice
+                hasData
+                partial
+                what="the documents attached to this conversation"
+                onRetry={() => setRestoreAttempt((n) => n + 1)}
+                className="m-2"
+              />
+            )}
             {/* Tab strip — the shell pane that mounts its own context menu. */}
             <NonEditableContextMenu
               sourceFeature="working-document"

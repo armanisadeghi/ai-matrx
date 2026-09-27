@@ -384,11 +384,13 @@ export const hydrateConversationDocumentsThunk = createAsyncThunk<
     try {
       links = await listConversationDocuments(conversationId);
     } catch (err) {
+      // A failed read REJECTS (RC-B12 r13): the bridge says the documents did
+      // not restore, instead of the conversation silently running without them.
       console.error("[working-document] hydrate: list links failed", {
         conversationId,
         err,
       });
-      return;
+      throw err;
     }
     // Restore the per-conversation scratch GATE (pure opt-in flag at the
     // deterministic gate id — never loads a doc; scratch content is user-global
@@ -1363,11 +1365,13 @@ export const openWorkspaceDocumentThunk = createAsyncThunk<
     try {
       doc = await getCxWorkingDocumentById(documentId);
     } catch (err) {
+      // A failed read REJECTS (RC-B12 r13) — `null` means "no such document",
+      // and the caller says the open failed instead of showing an empty tab.
       console.error("[working-document] openWorkspaceDoc: load failed", {
         documentId,
         err,
       });
-      return null;
+      throw err;
     }
     if (!doc) return null;
     // Scratchpads are user-global: their workspace scope is sp:<docId>, never
@@ -1499,11 +1503,12 @@ export const listAttachedDocumentTabsThunk = createAsyncThunk<
     try {
       links = await listConversationDocuments(conversationId);
     } catch (err) {
+      // A failed read REJECTS (RC-B12 r13) — never "no attached documents".
       console.error("[working-document] listAttachedTabs failed", {
         conversationId,
         err,
       });
-      return [];
+      throw err;
     }
     // A linked doc the hydrate path already ADOPTED as this conversation's
     // primary working slot — or the user's ACTIVE scratchpad (already a base

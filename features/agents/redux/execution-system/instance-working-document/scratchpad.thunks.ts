@@ -157,7 +157,10 @@ export const hydrateActiveScratchpadThunk = createAsyncThunk<
             return;
           }
         } catch (err) {
+          // A failed read REJECTS (RC-B12 r13): answering "none yet" made the
+          // panels create a NEW scratchpad beside the person's existing ones.
           console.error("[scratchpad] hydrate: list failed", err);
+          throw err;
         }
         return; // none yet — created lazily on first open/type
       }
@@ -171,7 +174,10 @@ export const hydrateActiveScratchpadThunk = createAsyncThunk<
           reserveScratchpadEntry(dispatch, activeId);
         }
       } catch (err) {
+        // A failed read REJECTS (RC-B12 r13) — never an empty scratchpad that
+        // the next keystroke would write over.
         console.error("[scratchpad] hydrate: load failed", { activeId, err });
+        throw err;
       }
     })();
     activeHydrateInFlight = run.finally(() => {
@@ -239,7 +245,9 @@ export const setActiveScratchpadThunk = createAsyncThunk<
     if (doc) applyScratchpadDoc(dispatch, doc);
     else reserveScratchpadEntry(dispatch, documentId);
   } catch (err) {
+    // A failed read REJECTS (RC-B12 r13) — the picker says the switch failed.
     console.error("[scratchpad] setActive: load failed", { documentId, err });
+    throw err;
   }
 });
 
@@ -364,11 +372,12 @@ export const hydrateAttachedScratchpadsThunk = createAsyncThunk<
     try {
       links = await listConversationDocuments(conversationId);
     } catch (err) {
+      // A failed read REJECTS (RC-B12 r13) — never "no attached scratchpads".
       console.error("[scratchpad] hydrateAttached: list failed", {
         conversationId,
         err,
       });
-      return;
+      throw err;
     }
     const activeId = selectActiveScratchpadId(getState());
     // Skip the per-conversation GATE edge (deterministic id, no backing row —
@@ -384,6 +393,7 @@ export const hydrateAttachedScratchpadsThunk = createAsyncThunk<
       )
       .map((l) => l.documentId);
     const resolved: string[] = [];
+    let failed = 0;
     await Promise.all(
       ids.map(async (id) => {
         try {
@@ -393,6 +403,7 @@ export const hydrateAttachedScratchpadsThunk = createAsyncThunk<
             resolved.push(id);
           }
         } catch (err) {
+          failed += 1;
           console.error("[scratchpad] hydrateAttached: load failed", {
             id,
             err,
@@ -401,5 +412,9 @@ export const hydrateAttachedScratchpadsThunk = createAsyncThunk<
       }),
     );
     dispatch(setAttachedScratchpads({ conversationId, documentIds: resolved }));
+    // The ones that did read are attached; the rest are SAID (RC-B12 r13).
+    if (failed > 0) {
+      throw new Error(`${failed} attached scratchpad${failed === 1 ? "" : "s"} could not be read`);
+    }
   },
 );
