@@ -17,6 +17,12 @@ import { NewChatLandingInput } from "./NewChatLandingInput";
 import { ChatConnectorStrip } from "@/features/connectors/ChatConnectorStrip";
 import { ConnectorPromptHost } from "@/features/connectors/ConnectorPromptHost";
 import { cn } from "@/lib/utils";
+import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
+import {
+  ComposerGreeting,
+  ComposerQuickActions,
+} from "@/features/agents/components/inputs/smart-input/composer/ComposerSplash";
+import type { ComposerPresentation } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 interface NewChatGreetingProps {
@@ -26,6 +32,13 @@ interface NewChatGreetingProps {
   sourceConversationId: string | null;
   /** Surface key forwarded to the landing input's smartExecute dispatch. */
   surfaceKey: string;
+  /**
+   * The three-mode composer (composer/FEATURE.md). Present = the design's
+   * splash: greeting · the ONE composer at `splash` size · one scrolling row
+   * of quick actions (their labels are the `agents.chat_composer.quick_actions`
+   * knob). Absent = the classic landing below.
+   */
+  composer?: ComposerPresentation;
 }
 
 /**
@@ -59,13 +72,17 @@ const OPTIONAL_QUICK_ACTION_KEYS: readonly MandateKey[] = [
 export function NewChatGreeting({
   sourceConversationId,
   surfaceKey,
+  composer,
 }: NewChatGreetingProps) {
   const router = useRouter();
   const store = useAppStore();
   const userName = useAppSelector(selectActiveUserName);
   const firstName = (userName ?? "").trim().split(/\s+/)[0] || "";
+  // The composer splash has its own row (ComposerQuickActions); the classic
+  // chips' lookup only runs for the classic landing.
   const mandates = useMandateSet(ALL_QUICK_ACTION_KEYS, {
     optionalKeys: OPTIONAL_QUICK_ACTION_KEYS,
+    enabled: !composer,
   });
 
   const chipState = (action: ChatQuickAction) => {
@@ -92,6 +109,40 @@ export function NewChatGreeting({
       sourceConversationId,
     });
   };
+
+  if (composer) {
+    return (
+      <div className="flex min-h-full flex-col items-center justify-center px-4 py-10">
+        <div className="flex w-full max-w-[760px] flex-col items-center gap-4">
+          <ComposerGreeting className="mb-4" />
+          {/* The first Google moment (PLAN §2): a dismissible card above the
+              composer; it removes itself once anything is connected. */}
+          <div className="w-full">
+            <ConnectorPromptHost />
+          </div>
+          {sourceConversationId ? (
+            <SmartAgentInput
+              conversationId={sourceConversationId}
+              surfaceKey={surfaceKey}
+              sendButtonVariant="blue"
+              showSubmitOnEnterToggle={false}
+              composer={{ ...composer, size: "splash", placeholder: "How can I help you today?" }}
+            />
+          ) : (
+            <div
+              data-chat-new-input-shell="true"
+              aria-hidden
+              className="h-[132px] w-full max-w-[760px] animate-pulse rounded-[22px] border border-border bg-card"
+            />
+          )}
+          <ComposerQuickActions
+            className="w-full max-w-[720px]"
+            onLaunchAgent={handleChipClick}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full flex flex-col items-center justify-center px-4 py-10">

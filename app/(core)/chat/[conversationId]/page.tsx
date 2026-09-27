@@ -5,6 +5,7 @@ import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";
 import { ChatRunHeader } from "@/features/agents/components/chat/ChatRunHeader";
+import { readComposerModeCookie } from "@/features/agents/components/inputs/smart-input/composer/composer-mode.server";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import {
   conversationSandboxBindingFromRow,
@@ -141,7 +142,10 @@ export default async function ChatConversationPage({
   }
 
   const ownedByMandate = seed.agentId === null;
-  const display = ownedByMandate ? await resolveMandateAgent() : seed;
+  const [display, initialMode] = await Promise.all([
+    ownedByMandate ? resolveMandateAgent() : Promise.resolve(seed),
+    readComposerModeCookie(),
+  ]);
 
   return (
     <>
@@ -150,6 +154,7 @@ export default async function ChatConversationPage({
           activeAgentId={display?.agentId ?? undefined}
           initialAgentName={display?.agentName ?? undefined}
           conversationId={conversationId}
+          composerMode={{ initialMode }}
         />
       </PageHeader>
       <ChatConversationRoom
@@ -157,6 +162,7 @@ export default async function ChatConversationPage({
         agentId={display?.agentId ?? null}
         ownedByMandate={ownedByMandate}
         sandboxBinding={seed.sandboxBinding}
+        composer={{ initialMode }}
       />
     </>
   );

@@ -6,6 +6,7 @@ import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 import { useMandate } from "@/features/mandates/useMandate";
 import type { ConversationSandboxBinding } from "@/lib/sandbox/conversation-binding-row";
 import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
+import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
 
 /**
  * `/chat/[conversationId]` — the room for an EXISTING conversation.
@@ -31,6 +32,7 @@ export function ChatConversationRoom({
   agentId,
   ownedByMandate,
   sandboxBinding = null,
+  composer,
 }: {
   conversationId: string;
   /** The conversation's own agent, or the SSR-resolved mandate agent, or null. */
@@ -43,6 +45,8 @@ export function ChatConversationRoom({
    * than after the bundle RPC.
    */
   sandboxBinding?: ConversationSandboxBinding | null;
+  /** The three-mode composer (server-read "last mode used" cookie). */
+  composer?: { initialMode: ComposerMode | null };
 }) {
   if (agentId && !ownedByMandate) {
     return (
@@ -50,6 +54,7 @@ export function ChatConversationRoom({
         agentId={agentId}
         conversationId={conversationId}
         sandboxBinding={sandboxBinding}
+        composer={composer}
       />
     );
   }
@@ -60,6 +65,7 @@ export function ChatConversationRoom({
         conversationId={conversationId}
         mandateKey={DEFAULT_NEW_CHAT_MANDATE_KEY}
         sandboxBinding={sandboxBinding}
+        composer={composer}
       />
     );
   }
@@ -67,6 +73,7 @@ export function ChatConversationRoom({
     <ChatConversationRoomResolved
       conversationId={conversationId}
       sandboxBinding={sandboxBinding}
+      composer={composer}
     />
   );
 }
@@ -75,9 +82,11 @@ export function ChatConversationRoom({
 function ChatConversationRoomResolved({
   conversationId,
   sandboxBinding,
+  composer,
 }: {
   conversationId: string;
   sandboxBinding: ConversationSandboxBinding | null;
+  composer?: { initialMode: ComposerMode | null };
 }) {
   const { mandate, loading, error, organizationPending } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
   if (loading) return <ChatNewLandingSkeleton />;
@@ -96,6 +105,7 @@ function ChatConversationRoomResolved({
       conversationId={conversationId}
       mandateKey={DEFAULT_NEW_CHAT_MANDATE_KEY}
       sandboxBinding={sandboxBinding}
+      composer={composer}
     />
   );
 }

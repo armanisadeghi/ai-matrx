@@ -80,7 +80,7 @@ describe("AgentTextarea auto-resize", () => {
     expect(skipIndex).toBeGreaterThan(snapIndex);
     expect(source).not.toContain("leading-7 transition-[height]");
     expect(source).toContain(
-      'isCollapsing\n              ? "transition-[height] motion-reduce:transition-none duration-300',
+      'isCollapsing\n                ? "transition-[height] motion-reduce:transition-none duration-300',
     );
     // Any code path that measures with `height: 0` must put the scroll offset
     // back, or the caret-reveal clamp leaks into the painted frame.

@@ -253,6 +253,7 @@ export function SmartAgentInputStacked({
         showExpandToggle={!compact}
         placeholder={composer.placeholder}
         maxHeightPx={composer.maxInputHeightPx}
+        textMenu={composer.textMenu}
       />
     );
     const toolbar = (

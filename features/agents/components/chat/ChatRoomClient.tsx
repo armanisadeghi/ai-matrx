@@ -21,7 +21,13 @@ import {
   clearFocus,
 } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { consumeChatDraftTransfer } from "./chat-draft-transfer";
-import { chatRouteSurfaceKey } from "./begin-fresh-chat";
+import { chatRouteSurfaceKey, stageChatAgentSwitch } from "./begin-fresh-chat";
+import { buildChatComposerTextMenu } from "./agent-context/chatComposerTextMenu";
+import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
+import type {
+  ComposerMode,
+  ComposerPresentation,
+} from "@/features/agents/components/inputs/smart-input/composer/composer-types";
 import { selectChatIncognitoActive } from "@/features/agents/redux/chat/chat-incognito.slice";
 import { selectChatFreshSessionNonce } from "@/features/agents/redux/chat/chat-route.slice";
 import {
@@ -142,7 +148,8 @@ interface ChatRoomClientProps {
    * quick-action chips before the user submits their first message.
    */
   landingContent?:
-    React.ReactNode | ((conversationId: string) => React.ReactNode);
+    | React.ReactNode
+    | ((conversationId: string, composer?: ComposerPresentation) => React.ReactNode);
   /**
    * Optional control pinned directly ABOVE the composer, receiving this
    * room's own conversation id. The voice route mounts its panel here so the
@@ -211,6 +218,13 @@ interface ChatRoomClientProps {
    * one is registered there first and only then passed here.
    */
   sourceFeature?: SourceFeature;
+  /**
+   * The three-mode composer (composer/FEATURE.md). Present = the conversation
+   * composer (and a splash `landingContent`, which receives it) render the
+   * composer, and the agent is switched from the composer's agent pill.
+   * Absent = the classic composer (StaffRoom, voice, vision-interview rooms).
+   */
+  composer?: { initialMode: ComposerMode | null };
 }
 
 const defaultConversationHref = (conversationId: string) =>
@@ -247,10 +261,12 @@ export function ChatRoomClient({
   sandboxBinding = null,
   conversationMaterialization = "existing",
   sourceFeature = SOURCE_FEATURE,
+  composer: composerOptions,
 }: ChatRoomClientProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const router = useRouter();
+  const { mode: composerMode } = useComposerMode(composerOptions?.initialMode);
 
   // ONE helper owns this string (see `chatRouteSurfaceKey`). This client is the
   // surface that REGISTERS the focus entry, so every reader — the header's
@@ -1242,6 +1258,35 @@ export function ChatRoomClient({
     },
   });
 
+  // The composer's agent pill switches agents exactly like the header picker
+  // did: the SAME draft-carrying door (`stageChatAgentSwitch`). Custom is the
+  // default-chat JOB, so it lands on /chat/new, where that job answers with
+  // the person's own default model.
+  const composerPresentation: ComposerPresentation | undefined = composerOptions
+    ? {
+        size: "page",
+        mode: composerMode,
+        placeholder: "Reply",
+        agent: {
+          onSelectAgent: (targetAgentId, via) => {
+            if (targetAgentId === agentId && !via) return;
+            stageChatAgentSwitch({
+              dispatch: store.dispatch,
+              router,
+              getState: store.getState,
+              targetAgentId,
+              sourceAgentId: agentId,
+              sourceConversationId: conversationId,
+              href: via?.mandateKey
+                ? "/chat/new"
+                : `/chat/a/${encodeURIComponent(targetAgentId)}`,
+            });
+          },
+        },
+        textMenu: buildChatComposerTextMenu({ store, conversationId, agentId }),
+      }
+    : undefined;
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={CHAT_CONTEXT_MENU_PROPS.surfaceName}
@@ -1278,10 +1323,11 @@ export function ChatRoomClient({
                 // Lives in the Chat Options (+) → Preferences tab now.
                 showSubmitOnEnterToggle: false,
                 variablesPanelStyle,
+                composer: composerPresentation,
               }}
               landingContent={
                 typeof landingContent === "function"
-                  ? landingContent(conversationId)
+                  ? landingContent(conversationId, composerPresentation)
                   : landingContent
               }
               aboveInput={

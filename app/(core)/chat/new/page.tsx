@@ -5,6 +5,7 @@ import {
   ChatNewLandingSkeleton,
 } from "@/features/agents/components/chat/ChatNewClient";
 import { ChatNewHeader } from "@/features/agents/components/chat/ChatNewHeader";
+import { readComposerModeCookie } from "@/features/agents/components/inputs/smart-input/composer/composer-mode.server";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";
@@ -42,7 +43,10 @@ async function resolveAgentName(agentId: string): Promise<string | null> {
 }
 
 export default async function NewChatPage() {
-  const agentId = await resolveDefaultChatAgentId();
+  const [agentId, initialMode] = await Promise.all([
+    resolveDefaultChatAgentId(),
+    readComposerModeCookie(),
+  ]);
   const defaultAgentName = agentId ? await resolveAgentName(agentId) : null;
   return (
     <>
@@ -50,10 +54,11 @@ export default async function NewChatPage() {
         <ChatNewHeader
           agentId={agentId}
           initialAgentName={defaultAgentName ?? undefined}
+          composerMode={{ initialMode }}
         />
       </PageHeader>
       <Suspense fallback={<ChatNewLandingSkeleton />}>
-        <ChatNewClient agentId={agentId} />
+        <ChatNewClient agentId={agentId} composer={{ initialMode }} />
       </Suspense>
       {/* No conversion nudge here: the send gate is gone (guests send for
           real), so gate-attempt-driven nudges can never fire on this page. */}
