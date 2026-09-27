@@ -4,7 +4,8 @@ import { RichContent } from "@/components/rich-content/RichContent";
 import Link from "next/link";
 import { initialOutlineExpansion, studyGuideOutlineDisplayTitle, studyGuideOutlineItems, studyGuideOutlineTree, toggleOutlineSection, type StudyGuideOutlineNode } from "../outline";
 import { OutlineHeader } from "./OutlineHeader";
-import { StudyFlashcardLinks } from "./StudyFlashcardLinks";
+import { StudyGuideResources } from "./StudyGuideResources";
+import { RenderedFindBar } from "@/features/rich-document/search/RenderedFindBar";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Panel, type Layout } from "react-resizable-panels";
@@ -72,7 +73,7 @@ import { noteBodyStore, spliceSaveBody } from "@/features/rich-document/annotati
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-type InspectorTab = "notes" | "terms";
+type InspectorTab = "notes" | "terms" | "resources";
 
 interface StudyGuideReaderProps {
   initialGuideId?: string;
@@ -171,13 +172,14 @@ function Inspector({ guide, tab, onTabChange, terms, loading, error, onRetry }: 
     <div className="flex border-b border-border pr-8" role="tablist" aria-label="Study guide details">
       <button type="button" role="tab" aria-selected={tab === "notes"} onClick={() => onTabChange("notes")} className={cn("flex-1 border-b-2 px-1 py-2 text-xs font-medium", tab === "notes" ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>Notes &amp; comments</button>
       <button type="button" role="tab" aria-selected={tab === "terms"} onClick={() => onTabChange("terms")} className={cn("flex-1 border-b-2 px-1 py-2 text-xs font-medium", tab === "terms" ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>Key Terms</button>
+      <button type="button" role="tab" aria-selected={tab === "resources"} onClick={() => onTabChange("resources")} className={cn("flex-1 border-b-2 px-1 py-2 text-xs font-medium", tab === "resources" ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>Resources</button>
     </div>
-    {tab === "notes" ? (guide ? <AnnotationPanel className="min-h-0 flex-1" /> : <p className="px-3 py-8 text-sm text-muted-foreground">Choose a guide to see its notes and comments.</p>) : <div role="tabpanel" aria-label="Key Terms" className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto p-1.5">
+    {tab === "notes" ? (guide ? <AnnotationPanel className="min-h-0 flex-1" /> : <p className="px-3 py-8 text-sm text-muted-foreground">Choose a guide to see its notes and comments.</p>) : tab === "resources" ? (guide ? <StudyGuideResources guide={guide} onChanged={onRetry} /> : <p className="px-3 py-8 text-sm text-muted-foreground">Choose a guide to see its resources.</p>) : <div role="tabpanel" aria-label="Key Terms" className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto p-1.5">
       {loading ? <div className="space-y-3" aria-label="Loading study details">{[0,1,2].map((item) => <div key={item} className="h-24 animate-pulse rounded border border-border bg-muted" />)}</div> : error ? <div role="alert" className="rounded border border-destructive/30 p-3 text-sm"><p>{error}</p><Button className="mt-3" variant="outline" size="sm" onClick={onRetry}>Try again</Button> <ErrorAlchemyMenu className="ml-auto" /></div> : <div className="grid gap-3">
         <Input aria-label="Search key terms" placeholder="Search terms…" value={query} onChange={(event) => setQuery(event.target.value)} className="h-8 text-sm" />
         {visibleTerms.map((term) => <button key={term.id} type="button" onClick={() => openCard({ front: term.term, back: term.definition, title: term.term })} className="rounded border border-border bg-card p-1.5 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-accent/30"><p className="text-xs font-semibold text-primary"><RichContent level="inline" source={term.term} /></p><p className="mt-1.5 text-xs leading-5 text-muted-foreground">{term.definition ? <RichContent level="inline" source={term.definition} /> : "Open card"}</p></button>)}
         {!visibleTerms.length && <p className="py-5 text-sm text-muted-foreground">{terms.length ? "No terms match that search." : "Link a flashcard deck to see its key terms here."}</p>}
-        {guide && <StudyFlashcardLinks guide={guide} onChanged={onRetry} />}
+        {guide && <button type="button" className="text-left text-xs font-medium text-primary hover:underline" onClick={() => onTabChange("resources")}>View linked flashcards and resources</button>}
       </div>}
     </div>}
   </aside>;
@@ -216,7 +218,21 @@ function useStudyPassageActions(guide: Note): { actions: Action[]; tutor: React.
 
 function ReaderContent({ guide, onRetry, onEdit, getScope, surfaceName, jumpRequest }: { guide: Note; onRetry: () => void; onEdit: () => void; getScope: () => SurfaceScopePayload; surfaceName: string; jumpRequest: { index: number; nonce: number } | null }) {
   const readerRef = useRef<HTMLDivElement>(null);
+  const [findOpen, setFindOpen] = useState(false);
+  const [findFocusRequest, setFindFocusRequest] = useState(0);
+  const openFind = () => { setFindOpen(true); setFindFocusRequest((value) => value + 1); };
   const passage = useStudyPassageActions(guide);
+  useEffect(() => {
+    const onFindShortcut = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        setFindOpen(true);
+        setFindFocusRequest((value) => value + 1);
+      }
+    };
+    window.addEventListener("keydown", onFindShortcut, true);
+    return () => window.removeEventListener("keydown", onFindShortcut, true);
+  }, []);
   useEffect(() => {
     if (jumpRequest === null) return;
     const headings = readerRef.current?.querySelector(".study-guide-reader-content")?.querySelectorAll("h1,h2,h3,h4,h5,h6");
@@ -224,7 +240,11 @@ function ReaderContent({ guide, onRetry, onEdit, getScope, surfaceName, jumpRequ
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [jumpRequest]);
   return <main className="relative flex h-full min-h-0 flex-col bg-background">
-    <Button size="icon" variant="outline" className="absolute right-3 top-2 z-20 h-8 w-8 bg-background" aria-label="Edit study guide" title="Edit study guide" onClick={onEdit}><Pencil className="h-4 w-4" aria-hidden /></Button>
+    <div className="absolute right-3 top-2 z-20 flex gap-1">
+      <Button size="icon" variant="outline" className="h-8 w-8 bg-background" aria-label="Search this guide" title="Search this guide" onClick={openFind}><Search className="h-4 w-4" aria-hidden /></Button>
+      <Button size="icon" variant="outline" className="h-8 w-8 bg-background" aria-label="Edit study guide" title="Edit study guide" onClick={onEdit}><Pencil className="h-4 w-4" aria-hidden /></Button>
+    </div>
+    {findOpen && <div className="absolute right-3 top-11 z-30 w-[min(96%,520px)]"><RenderedFindBar rootRef={readerRef} onClose={() => setFindOpen(false)} label="Find in this guide" focusRequest={findFocusRequest} /></div>}
     <div className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto">
       <div ref={readerRef} className="w-full px-3 py-3">
         {!/^\s*#\s/.test(guide.content ?? "") && <div className="mb-7 border-b border-border pb-5"><p className="text-xs font-medium uppercase tracking-wide text-primary">Study guide</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{guide.label || "Untitled guide"}</h1></div>}
@@ -425,7 +445,7 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
 
   const withSidecar = (node: React.ReactNode) => guide ? <AnnotationSidecarProvider source={guideSource(guide, () => { void loadStudyGuide(guide.id).then((next) => { if (next) setGuide(next); }); })}>{node}</AnnotationSidecarProvider> : node;
 
-  if (isMobile) return withSidecar(<SurfaceRuntimeProvider surfaceName={surfaceName} getScope={getScope} getWriteHandlers={getWriteHandlers}>{agentBridge}<PanelControlProvider initialLayouts={[defaultLayout]}><div className="matrx-touch-targets flex h-full min-h-0 flex-col"><div className="flex items-center justify-between border-b border-border bg-background px-3 py-2"><Button size="sm" variant="ghost" onClick={() => setMobilePanel("guides")}>Study guides</Button><Button size="sm" variant="ghost" onClick={() => setMobilePanel("details")}>Notes & terms</Button></div><div className="min-h-0 flex-1">{reader}</div><Drawer open={mobilePanel === "guides"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study guides</DrawerTitle></DrawerHeader><DrawerBody><GuideList guides={guides} activeLabel={guide?.label} activeId={guide?.id ?? initialGuideId} content={guide?.content ?? ""} onJump={(index) => { setOutlineJump((current) => ({ index, nonce: (current?.nonce ?? 0) + 1 })); setMobilePanel(null); }} loading={guidesLoading} error={guidesError} onRetry={retryIndex} /></DrawerBody></DrawerContent></Drawer><Drawer open={mobilePanel === "details"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study details</DrawerTitle></DrawerHeader><DrawerBody><Inspector guide={guide} mobile tab={tab} onTabChange={setTab} terms={terms} loading={detailsLoading[tab]} error={detailsError[tab]} onRetry={retryDetails} /></DrawerBody></DrawerContent></Drawer></div></PanelControlProvider></SurfaceRuntimeProvider>);
+  if (isMobile) return withSidecar(<SurfaceRuntimeProvider surfaceName={surfaceName} getScope={getScope} getWriteHandlers={getWriteHandlers}>{agentBridge}<PanelControlProvider initialLayouts={[defaultLayout]}><div className="matrx-touch-targets flex h-full min-h-0 flex-col"><div className="flex items-center justify-between border-b border-border bg-background px-3 py-2"><Button size="sm" variant="ghost" onClick={() => setMobilePanel("guides")}>Study guides</Button><Button size="sm" variant="ghost" onClick={() => setMobilePanel("details")}>Study details</Button></div><div className="min-h-0 flex-1">{reader}</div><Drawer open={mobilePanel === "guides"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study guides</DrawerTitle></DrawerHeader><DrawerBody><GuideList guides={guides} activeLabel={guide?.label} activeId={guide?.id ?? initialGuideId} content={guide?.content ?? ""} onJump={(index) => { setOutlineJump((current) => ({ index, nonce: (current?.nonce ?? 0) + 1 })); setMobilePanel(null); }} loading={guidesLoading} error={guidesError} onRetry={retryIndex} /></DrawerBody></DrawerContent></Drawer><Drawer open={mobilePanel === "details"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study details</DrawerTitle></DrawerHeader><DrawerBody><Inspector guide={guide} mobile tab={tab} onTabChange={setTab} terms={terms} loading={tab === "terms" ? detailsLoading.terms : false} error={tab === "terms" ? detailsError.terms : null} onRetry={retryDetails} /></DrawerBody></DrawerContent></Drawer></div></PanelControlProvider></SurfaceRuntimeProvider>);
 
   return withSidecar(<SurfaceRuntimeProvider surfaceName={surfaceName} getScope={getScope} getWriteHandlers={getWriteHandlers}>{agentBridge}<PanelControlProvider initialLayouts={[defaultLayout]}>
     <div className="relative h-full min-h-0 overflow-hidden">
@@ -440,7 +460,7 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
         </Panel>
         <Handle hideWhenCollapsed={["inspector"]} />
         <RegisteredPanel registerAs="inspector" groupKey="study-guide-reader" id="inspector" collapsible collapsedSize="0%" defaultSize="290px" minSize="220px">
-          <Inspector guide={guide} tab={tab} onTabChange={setTab} terms={terms} loading={detailsLoading[tab]} error={detailsError[tab]} onRetry={retryDetails} />
+          <Inspector guide={guide} tab={tab} onTabChange={setTab} terms={terms} loading={tab === "terms" ? detailsLoading.terms : false} error={tab === "terms" ? detailsError.terms : null} onRetry={retryDetails} />
         </RegisteredPanel>
       </ClientGroup>
     </div>

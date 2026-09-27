@@ -95,7 +95,7 @@ const surfaceSpecific: SurfaceValue[] = [
   { name: "load_error", label: "Load error", description: "Why the guide, the guide list, or the last save failed; absent on a normal load. A failed read is not an empty guide.", valueType: "string", alwaysAvailable: false, typicalCharCount: 160, group: "guide", sortOrder: 160 },
   { name: "available_guides", label: "My study guides", description: "The person's study guides in the picker, newest first, as { id, title }. Empty when they have none; absent while loading or on error.", valueType: "array", alwaysAvailable: false, typicalCharCount: 1600, group: "navigation", sortOrder: 200 },
   { name: "outline", label: "Outline", description: "Headings of the guide in reading order, as { index, level, text }.", valueType: "array", alwaysAvailable: false, typicalCharCount: 2000, group: "navigation", sortOrder: 210 },
-  { name: "active_details_tab", label: "Details tab", description: '"notes" when the right pane shows Notes & comments, "terms" when it shows Key Terms.', valueType: "string", alwaysAvailable: true, typicalCharCount: 5, group: "navigation", sortOrder: 220 },
+  { name: "active_details_tab", label: "Details tab", description: '"notes" for Notes & comments, "terms" for Key Terms, or "resources" for linked flashcards and related study material.', valueType: "string", alwaysAvailable: true, typicalCharCount: 10, group: "navigation", sortOrder: 220 },
   {
     name: "personal_annotations",
     label: "My highlights and notes",
@@ -279,7 +279,7 @@ export interface GuideCommentScope {
 export function createEducationStudyGuideScope(values: {
   guide_loaded: boolean;
   reader_mode: "read" | "edit";
-  active_details_tab: "notes" | "terms";
+  active_details_tab: "notes" | "terms" | "resources";
   study_guide?: StudyGuideRecordScope;
   guide_id?: string;
   guide_title?: string;
