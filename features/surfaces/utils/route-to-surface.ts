@@ -765,6 +765,17 @@ export function surfaceFromPathname(
     return "matrx-user/research-topics";
   }
 
+  // The Quizzes and Practice Tests LISTS are exactly `/education/quizzes` and
+  // `/education/practice-tests`, each its own list surface. One assessment's
+  // detail / take / edit / results and `/new` keep the shared
+  // `matrx-user/education-assessment` via the prefix table.
+  if (/^\/education\/quizzes\/?$/.test(stripped)) {
+    return "matrx-user/education-quizzes";
+  }
+  if (/^\/education\/practice-tests\/?$/.test(stripped)) {
+    return "matrx-user/education-practice-tests";
+  }
+
   // My Classes is exactly `/education/classes`. A class HUB
   // (`/education/classes/[id]`) is a different page with no surface of its
   // own yet, so it keeps falling through to the education hub mapping.

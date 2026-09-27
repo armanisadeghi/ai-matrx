@@ -80,7 +80,7 @@ export const EDU_TOOL_NAV: EduToolNavEntry[] = [
   },
   {
     slug: "quizzes",
-    label: "Quiz Builder",
+    label: "Quizzes",
     iconName: "ListChecks",
     group: "Study",
     description: "Auto-generate quizzes from any material",
