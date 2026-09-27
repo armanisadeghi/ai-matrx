@@ -1383,6 +1383,14 @@ const UserTableViewer = ({
   /** The rows on screen NOW, read when a notice lands (never during render). */
   const rowsNow = useLatest(data);
 
+  // AN EDIT KEEPS THE VIEW TRUE (lane DATA-V2-BASICS): an edit to the column that orders or filters
+  // the view is collected here and settled below (`settleTheView`), once the edits stop.
+  const [viewEdits, setViewEdits] = useState<Array<EditedCell & { mine: boolean }>>([]);
+  const keepTheViewTrue = (rowId: string, fieldName: string, whose: "mine" | "theirs") => {
+    if (!editMovesTheView(fieldName, sortField, columnFilters)) return;
+    setViewEdits((prev) => [...prev, { rowId, fieldName, mine: whose === "mine" }]);
+  };
+
   const handleRealtime = (event: TableRealtimeEvent) => {
       // A row appeared or vanished: the page contents, the total and the
       // pagination all genuinely moved, and only a refetch can say what the
@@ -2560,26 +2568,37 @@ const UserTableViewer = ({
    * back into sight. A row the edit took OUT of the view — to another page by the sort, or out of a
    * filter — is named in a notice, with Undo for your own edit, never silently gone.
    */
-  const viewSettle = useRef<{ timer: ReturnType<typeof setTimeout> | null; edited: EditedCell[]; mine: boolean }>({
-    timer: null,
-    edited: [],
-    mine: false,
-  });
-  const keepTheViewTrue = (rowId: string, fieldName: string, whose: "mine" | "theirs") => {
-    if (!editMovesTheView(fieldName, sortField, columnFilters)) return;
-    const pending = viewSettle.current;
-    pending.edited.push({ rowId, fieldName });
-    if (whose === "mine") pending.mine = true;
-    if (pending.timer) clearTimeout(pending.timer);
-    pending.timer = setTimeout(() => void settleTheView(), 250);
+
+  /**
+   * A write changed which ROWS exist (insert, delete) — only then is a refetch
+   * the honest answer, because the page's contents genuinely changed and the
+   * total and pagination move with it.
+   */
+  const refreshAfterWrite = () => {
+    setAllSortedData(null);
+    setFullDatasetCache(null);
+    void loadTableData(
+      currentPage,
+      limit,
+      sortField,
+      sortDirection,
+      searchTerm,
+    );
   };
+
+  const cellUndo = useCellUndo({
+    // Undo restores ONE cell; patch it rather than reloading the table. A
+    // reload here would be doubly wrong — undo exists to put things back, and
+    // a flashing, scroll-jumping grid is not "back".
+    onApplied: (edit, appliedValue) =>
+      patchLocalCell(edit.rowId, edit.fieldName, appliedValue),
+    readOnly: isReadOnly,
+  });
+
   const settleTheView = useEffectEvent(async () => {
-    const pending = viewSettle.current;
-    const edited = pending.edited;
-    const mine = pending.mine;
-    pending.edited = [];
-    pending.mine = false;
-    pending.timer = null;
+    const edited: EditedCell[] = viewEdits.map(({ rowId, fieldName }) => ({ rowId, fieldName }));
+    const mine = viewEdits.some((cell) => cell.mine);
+    setViewEdits([]);
     if (edited.length === 0) return;
     const before = new Map(shownNow().map((row) => [row.id, row] as const));
     const reorders = edited.some((cell) => editMovesTheView(cell.fieldName, sortField, columnFilters) === "order");
@@ -2622,32 +2641,12 @@ const UserTableViewer = ({
       }
     });
   });
-
-  /**
-   * A write changed which ROWS exist (insert, delete) — only then is a refetch
-   * the honest answer, because the page's contents genuinely changed and the
-   * total and pagination move with it.
-   */
-  const refreshAfterWrite = () => {
-    setAllSortedData(null);
-    setFullDatasetCache(null);
-    void loadTableData(
-      currentPage,
-      limit,
-      sortField,
-      sortDirection,
-      searchTerm,
-    );
-  };
-
-  const cellUndo = useCellUndo({
-    // Undo restores ONE cell; patch it rather than reloading the table. A
-    // reload here would be doubly wrong — undo exists to put things back, and
-    // a flashing, scroll-jumping grid is not "back".
-    onApplied: (edit, appliedValue) =>
-      patchLocalCell(edit.rowId, edit.fieldName, appliedValue),
-    readOnly: isReadOnly,
-  });
+  // The edits settle once they stop for a quarter second (a paste of forty cells settles once).
+  useEffect(() => {
+    if (viewEdits.length === 0) return;
+    const timer = setTimeout(() => void settleTheView(), 250);
+    return () => clearTimeout(timer);
+  }, [viewEdits]);
 
   // ─── Row actions (row-actions.ts): the table's own one-click buttons ─────
   const rowActions = readRowActions(tableInfo?.metadata);
