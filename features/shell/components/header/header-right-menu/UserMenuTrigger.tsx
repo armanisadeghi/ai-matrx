@@ -17,11 +17,12 @@ export default function UserMenuTrigger({
   userData,
   menuCheckboxId = "shell-user-menu",
 }: UserMenuTriggerProps) {
-  // Soft org enforcement: ring the avatar red when no org is selected, nudging
+  // Soft org enforcement: ring the avatar (primary, never alarm red — no org is a
+  // routine state, page-pass core 5) when no org is selected, nudging
   // the user to choose one (alongside the in-header HeaderChooseOrgButton). Gated on
   // the bootstrap-resolved flag so it never flashes red during boot before the
   // default/personal org has resolved.
-  // The red ring is the header warning's twin: silent on an object page whose object names its
+  // The ring is the header nudge's twin: silent on an object page whose object names its
   // organization (GATES-TAIL, VERIFIER-21 #7).
   const objectOrganization = usePageObjectOrganization();
   const promptForOrg =
@@ -37,7 +38,7 @@ export default function UserMenuTrigger({
         className={[
           "relative flex h-8 w-8 items-center justify-center rounded-full transition-colors overflow-hidden",
           promptForOrg
-            ? "ring-2 ring-red-500 ring-offset-1 ring-offset-[var(--shell-header-bg,transparent)]"
+            ? "ring-2 ring-primary ring-offset-1 ring-offset-[var(--shell-header-bg,transparent)]"
             : "matrx-glass-thin-border",
         ].join(" ")}
       >

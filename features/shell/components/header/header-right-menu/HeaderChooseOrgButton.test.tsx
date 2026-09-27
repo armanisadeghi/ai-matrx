@@ -137,11 +137,16 @@ describe("HeaderChooseOrgButton — the trigger tells the truth about itself", (
     document.body.innerHTML = "";
   });
 
-  it("asks for a workspace, in warning red, while none is chosen", () => {
+  it("asks for a workspace while none is chosen — actionable, never alarm red", () => {
+    // Page-pass core 5 (2026-09-27): "Choose org" sat in warning red on every
+    // routine page. No organization chosen is a normal state, and red is only
+    // for a real alarm; the control keeps the primary call-to-action tint.
     mount();
 
     expect(trigger().textContent).toContain("Choose org");
-    expect(trigger().className).toContain("text-red-600");
+    expect(trigger().className).toContain("text-primary");
+    expect(trigger().className).toContain("bg-primary/10");
+    expect(trigger().className).not.toMatch(/\b(text|bg|ring|border)-(red|destructive)/);
     expect(trigger().getAttribute("aria-label")).toBe("Choose an organization");
   });
 
@@ -156,7 +161,8 @@ describe("HeaderChooseOrgButton — the trigger tells the truth about itself", (
 
     expect(trigger().textContent).toContain("AI Matrx");
     expect(trigger().textContent).not.toContain("Choose org");
-    expect(trigger().className).not.toContain("text-red-600");
+    // The ask's call-to-action tint goes with the ask.
+    expect(trigger().className).not.toContain("bg-primary/10");
     expect(trigger().getAttribute("aria-label")).toBe(
       "Workspace: AI Matrx. Change workspace",
     );

@@ -35,8 +35,9 @@ Rules: a control is never unmounted on state — that is what shifted the row
 (owner, 2026-09-16: *"causes a shift in the top header buttons"*). A control
 with nothing to do is `disabled` **with a tooltip naming the reason and the
 way out**; a control a guest cannot use opens the auth gate naming the
-feature. The one conditional element is the red "Choose org" nudge, a warning
-that exists only while no organization is chosen. Guards:
+feature. The one conditional element is the "Choose org" nudge, which exists
+only while no organization is chosen — tinted primary as a call to action,
+never alarm red (no organization is a routine state; page-pass core 5). Guards:
 `features/shell/__tests__/header-right-set.test.ts` (source),
 `features/canvas/__tests__/canvas-header-slot-reserved.test.tsx` (rendered),
 `features/shell/layout-gate/canvas-one-presentation.spec.ts` (laid out).
@@ -69,6 +70,8 @@ moved to the Inbox — the menu is identity, org, quick access, settings, admin,
 sign out.
 
 ## Change log
+
+- `2026-09-27` — **"Choose org" is a call to action, not an alarm** (page-pass shared defects): the header nudge, the avatar ring and the account menu's Organization icon move from red to primary. Guards: `HeaderChooseOrgButton.test.tsx`, `UserMenuOrgSection.test.tsx`.
 
 - `2026-09-27` — **Menu items close the menu** (page-pass, Feedback window): `MenuItemCloseLabel` replaces the bare `<label htmlFor>` wrapper in every item; button items (Submit Feedback, Announcements, Approvals, Error Inspector, Copy short link…) used to leave the user menu open.
 - `2026-09-27` — **Canvas chrome**: `ShellChromeMode` / `ShellChromeRouteSync`, `CANVAS_CHROME_ROUTES`, `shell.css` §13c, and `features/shell/canvas-chrome/` (the canvas nav + user row) for the chat-beside-a-canvas layout (`../canvas/workspace/FEATURE.md`).

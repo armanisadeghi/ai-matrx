@@ -11,8 +11,8 @@
 // anything, so this version cannot repeat that.
 //
 // Renders ONLY while the active-org bootstrap has resolved with no org chosen —
-// otherwise it takes zero header space. The matching persistent cue is the red
-// ring on the avatar (UserMenuTrigger). Clicking opens the canonical
+// otherwise it takes zero header space. The matching persistent cue is the
+// primary ring on the avatar (UserMenuTrigger). Clicking opens the canonical
 // OrganizationPickerPanel (org list + "Set as default" switch): a real popover
 // anchored to this button on desktop, a Drawer on mobile.
 
@@ -102,7 +102,7 @@ export default function HeaderChooseOrgButton() {
   // with the chosen organization ticked in its own open panel (Acquisition
   // Console walk, 2026-09-20, `console-1440-light.png`). A control that
   // contradicts its own panel is the same defect as a dead-looking one, so the
-  // label follows the selection and the warning colour goes with the warning.
+  // label follows the selection and the call-to-action tint goes with the ask.
   // The name can lag the id by a beat (it is written by the same switcher
   // action, but a cookie/bootstrap restore can land the id first), so the
   // nameless case says what the control now DOES rather than falling back to
@@ -123,7 +123,12 @@ export default function HeaderChooseOrgButton() {
       className={`inline-flex h-11 items-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors sm:h-8 ${
         chosen
           ? "text-muted-foreground hover:bg-accent hover:text-foreground"
-          : "text-red-600 hover:bg-red-500/10 dark:text-red-400"
+          : // 🚨 COLOUR MEANS SOMETHING (page-pass core 5, 2026-09-27). No
+            // organization chosen is a routine state on every page, not an
+            // alarm: red is for a real failure. The control stays and stays
+            // plainly actionable — the same tinted primary chip as the
+            // "switch to the page's organization" offer above.
+            "bg-primary/10 text-primary hover:bg-primary/15"
       }`}
     >
       <Building2 size={14} strokeWidth={2} aria-hidden="true" />

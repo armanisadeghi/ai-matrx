@@ -24,8 +24,8 @@ interface HeaderProps {
  * nothing in it); a control a guest cannot use opens the auth gate (Agents,
  * Inbox). Nothing here unmounts on state, so the row never shifts.
  *
- * The one conditional element is the red "Choose org" nudge: a warning, not a
- * control, that exists only while no organization is chosen.
+ * The one conditional element is the "Choose org" nudge, which exists only
+ * while no organization is chosen (primary call-to-action tint, never alarm red).
  *
  * The profile/avatar menu is NOT here any more — it lives bottom-left
  * (`ShellUserBlock`), where the sidebar ends. Guard:

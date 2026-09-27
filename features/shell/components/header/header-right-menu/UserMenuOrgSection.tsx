@@ -25,7 +25,7 @@ export default function UserMenuOrgSection() {
       id="organization"
       icon="Building2"
       label="Organization"
-      iconClassName={promptForOrg ? "[&_svg]:text-red-500" : undefined}
+      iconClassName={promptForOrg ? "[&_svg]:text-primary" : undefined}
     >
       {!isMounted ? (
         <div className="space-y-1 px-3 py-1">

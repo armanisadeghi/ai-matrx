@@ -28,7 +28,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
-  // No organization chosen ⇒ the red prompt state.
+  // No organization chosen ⇒ the prompt state.
   selectShouldPromptForOrganization: () => true,
 }));
 
@@ -106,7 +106,10 @@ describe("the account menu's Organization section with no workspace chosen", () 
     expect(markup).toContain('class="min-h-0 min-w-0"');
   });
 
-  it("flags the section in red while nothing is chosen", () => {
-    expect(markup).toContain("text-red-500");
+  it("marks the section as the thing to do while nothing is chosen — primary, never alarm red", () => {
+    // Page-pass core 5 (2026-09-27): no organization chosen is a routine
+    // state, so the cue is the call-to-action colour, not an alarm.
+    expect(markup).toMatch(/\[&(amp;)?_svg\]:text-primary/);
+    expect(markup).not.toContain("text-red-500");
   });
 });
