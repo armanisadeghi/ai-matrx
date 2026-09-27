@@ -58,6 +58,11 @@ Judge by who is looking at it and why.
   `archived_at` (the entity type's `user_artifact_kind` puts it in Trash).
   When the table only soft-deletes, `delete_<plural>` archives and its
   description says so.
+- **One `collectionWriteHandlers` builder per module, or distinct local names**
+  — the handler check resolves a local name once per file, so two builders sharing
+  `inner` both read as the first.
+- **A column empty for every row the person owns starts hidden** (still
+  available in the column picker), never a column of dashes.
 - **The agent can change the view.** Targets that act on rows on screen need a
   `list_view` target (`ui` mode, applies without asking: scope, archived,
   search) so an agent can reach rows that are not showing (worked:
