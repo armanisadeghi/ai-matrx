@@ -139,13 +139,10 @@ test rows you created so the person can remove them.
 
 ## Step 4 — what the agent sees up front, the guide, and feedback
 
-- **Show the basics in full.** A value over 200 characters reaches the model
-  only as a "look it up" item unless the value declares `inlineUpTo: N`
-  (mirrored to `ui_surface_value.max_inline_chars`). Set it on every list the
-  agent needs to act on at the size a normal account fills (classes list:
-  12000). Leave it off large or rarely-needed values. (The live server must
-  honour the column — handoff "The server must honour a surface value's
-  max_inline_chars"; until it does, agents fetch.)
+- **What the agent sees in full up front is NOT a worker's call.** Do not set
+  `inlineUpTo` (or any other "how much the agent sees" knob). The policy for it
+  is pending Arman's ruling; until then leave every value at the platform
+  default and report "agent had to look up <value>" as a finding instead.
 - **A guide for any page with more than one record type or any rule the
   descriptions can't hold.** Write `features/surfaces/guides/<surface-slug>.md`
   (80-150 lines: what the page is, each value, each target with a worked

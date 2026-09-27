@@ -142,22 +142,17 @@ names the page and lists its live values. His review inbox gets one row per fini
       2026-09-26 21:39 UTC) and the three type-level context items are test debris. The person
       decides whether to delete them.
 
-12. **The server must honour a surface value's max_inline_chars.**
-    - **Where:** aidream, where a surface's values are expanded into context items
-      (`<surface>::<value>`), and the same expansion for every level of `surface_chain`.
-    - **Problem (seen live 2026-09-27 on /education/classes):** only values of 200 characters or
-      less are shown inline. `owned_classes` (~1,500 chars, 8 classes) became a look-up item, and
-      the agent called the `context` tool four times to read it.
-    - **What the frontend did:** a surface value may now declare `inlineUpTo`, mirrored to the
-      nullable column `ui.ui_surface_value.max_inline_chars` (NULL = platform default). My Classes
-      sets `owned_classes` and `archived_classes` to 12000 and `joined_classes` to 4000.
-    - **What the server must do:** when expanding `<surface>::<value>`, read
-      `ui_surface_value.max_inline_chars` for that `(surface_name, item_type, name)` and use it as
-      that item's inline ceiling (`max_inline_chars` on the context item), capped by the platform
-      hard cap. NULL keeps today's default (200). Apply it to the `surface_chain` levels too, so a
-      value from another open screen gets the same ceiling.
-    - **Done when:** an agent on /education/classes answers "how many classes do I have and what
-      are they" with zero `context` tool calls.
+12. **UNVERIFIED — how the server decides which surface values an agent sees in full.**
+    - **Seen (2026-09-27, /education/classes):** an agent fetched `owned_classes` (~1,500 chars)
+      with the `context` tool four times instead of seeing it up front.
+    - **Not known:** how the live server decides inline vs lookup for SURFACE values, and whether
+      an existing mechanism already covers this. Nobody in this session has read that server code;
+      an earlier version of this item called it a server bug without evidence.
+    - **Parked, pending Arman's inline policy:** the `inlineUpTo` manifest field / column
+      `ui.ui_surface_value.max_inline_chars` added 2026-09-27, and its values on the classes
+      manifest. Do not set it on other surfaces. First step for whoever owns the server: say how
+      surface values are inlined today, so the policy builds on the existing mechanism instead of
+      a second one.
 
 ## Resources
 

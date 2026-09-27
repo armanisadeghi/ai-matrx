@@ -122,9 +122,9 @@ returning name;
      `collectionWriteHandlers`. The rules, the `{ validate, apply }` handler shape and the live
      test are in `.claude/skills/surface-write-targets/SKILL.md` Steps 0-4 — read it before
      declaring any target.
-   - **What the agent sees up front:** set `inlineUpTo` on each list an agent acts on (else it
-     arrives as a lookup), and write a guide (`features/surfaces/guides/<slug>.md` + manifest
-     `guide`) for any page with more than one record type or rules the descriptions can't hold.
+   - **Never set `inlineUpTo`** (how much an agent sees up front) — pending Arman's policy. Do
+     write a guide (`features/surfaces/guides/<slug>.md` + manifest `guide`) for any page with more
+     than one record type or rules the descriptions can't hold.
    - **Every write handler** calls the page's OWN save/create function (never a parallel path),
      validates the WHOLE value before changing anything, and throws a sentence the agent can act
      on. A list target also refuses names repeated in the list or already present, and on a
