@@ -23,7 +23,7 @@
 
 "use client";
 
-import { useState, useTransition, type ReactNode } from "react";
+import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2, type LucideIcon } from "lucide-react";
@@ -98,6 +98,43 @@ export function HrSubShell({
     startTransition(() => router.push(tab.href));
   };
 
+  // The tab strip scrolls sideways when it does not fit (a phone shows ~3 of 10):
+  // the active tab is scrolled into view, and while more tabs sit past an edge
+  // that edge fades, so the strip says it scrolls.
+  const navRef = useRef<HTMLElement>(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+  const readEdges = () => {
+    const el = navRef.current;
+    if (!el) return;
+    const left = el.scrollLeft > 4;
+    const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+    setEdges((prev) => (prev.left === left && prev.right === right ? prev : { left, right }));
+  };
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return undefined;
+    el.querySelector<HTMLElement>('[aria-current="page"]')?.scrollIntoView({
+      block: "nearest",
+      inline: "nearest",
+    });
+    const frame = requestAnimationFrame(readEdges);
+    const ro = new ResizeObserver(readEdges);
+    ro.observe(el);
+    return () => {
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+    };
+  }, [activeKey, visible.length]);
+
+  const fade =
+    edges.left && edges.right
+      ? "[mask-image:linear-gradient(to_right,transparent,black_2rem,black_calc(100%-2rem),transparent)]"
+      : edges.right
+        ? "[mask-image:linear-gradient(to_right,black_calc(100%-2rem),transparent)]"
+        : edges.left
+          ? "[mask-image:linear-gradient(to_right,transparent,black_2rem)]"
+          : null;
+
   return (
     <HrShell
       title={title}
@@ -106,8 +143,13 @@ export function HrSubShell({
       subNav={
         visible.length > 0 ? (
           <nav
+            ref={navRef}
             aria-label="Section"
-            className="flex h-11 min-w-0 items-center gap-1 overflow-x-auto px-2 sm:h-12 sm:px-4"
+            onScroll={readEdges}
+            className={cn(
+              "flex h-11 min-w-0 items-center gap-1 overflow-x-auto px-2 sm:h-12 sm:px-4",
+              fade,
+            )}
           >
             {visible.map((tab) => {
               const active = tab.key === activeKey;
