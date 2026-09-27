@@ -83,7 +83,7 @@ it("46 diagrams: only the ones near the viewport draw on mount; a print draws al
       await Promise.resolve();
     });
   }
-  expect(await done).toEqual({ pending: 0 });
+  expect(await done).toMatchObject({ pending: 0 });
   expect(new Set(drawn).size).toBe(DIAGRAMS);
   await act(async () => root.unmount());
   jest.useRealTimers();

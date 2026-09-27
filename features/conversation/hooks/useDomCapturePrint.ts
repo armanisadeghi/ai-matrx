@@ -43,10 +43,12 @@ export function useDomCapturePrint(): UseDomCapturePrintReturn {
         setProgress(0);
         setError(null);
 
+        // The render-all pass lasts exactly as long as the capture.
+        let releaseRenderAll: (() => void) | null = null;
         try {
             // Diagrams draw only near the viewport; a capture needs every one.
             const { renderAllDiagrams } = await import('@/components/mermaid/lazy-draw');
-            await renderAllDiagrams();
+            releaseRenderAll = (await renderAllDiagrams()).release;
             // Lazy import the heavy capture utility
             const { captureToPDF } = await import('@ai-matrx/print/pdf');
             await captureToPDF(el, {
@@ -62,6 +64,7 @@ export function useDomCapturePrint(): UseDomCapturePrintReturn {
             const msg = err instanceof Error ? err.message : 'PDF export failed';
             setError(msg);
         } finally {
+            releaseRenderAll?.();
             setIsCapturing(false);
             setProgress(0);
         }

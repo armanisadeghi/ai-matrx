@@ -24,6 +24,14 @@ import { useEffect, useState, useSyncExternalStore, type RefObject } from "react
 /** How far outside the viewport a diagram starts drawing. */
 export const DRAW_MARGIN = "1200px 0px";
 
+/**
+ * Open render-all passes (a print, a page capture). Render-all lasts only as
+ * long as a pass is open: a flag that stayed on after one Cmd+P disabled every
+ * lazy-render protection for the rest of the session — a 5 MB paste then
+ * mounted all 8,269 blocks, stalled 31.5 s and grew the heap to 2.6 GB
+ * (verifier round 2, 2026-09-26).
+ */
+let renderAllPasses = 0;
 let renderAll = false;
 const listeners = new Set<() => void>();
 /** Diagrams mounted but not yet drawn. */
@@ -80,22 +88,59 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
+function setRenderAll() {
+  const next = renderAllPasses > 0;
+  if (next === renderAll) return;
+  renderAll = next;
+  emit();
+}
+
+/**
+ * Open a render-all pass; call the returned function when the print or
+ * capture is over (idempotent). Diagrams drawn during the pass stay drawn.
+ */
+export function beginRenderAllPass(): () => void {
+  renderAllPasses++;
+  setRenderAll();
+  let open = true;
+  return () => {
+    if (!open) return;
+    open = false;
+    renderAllPasses = Math.max(0, renderAllPasses - 1);
+    setRenderAll();
+  };
+}
+
 if (typeof window !== "undefined") {
+  // The browser's own print (menu, Cmd+P): one pass from beforeprint to afterprint.
+  let browserPrint: (() => void) | null = null;
   window.addEventListener("beforeprint", () => {
-    if (!renderAll) {
-      renderAll = true;
-      emit();
-    }
+    browserPrint ??= beginRenderAllPass();
   });
+  window.addEventListener("afterprint", () => {
+    browserPrint?.();
+    browserPrint = null;
+  });
+}
+
+/** Test seam: whether a render-all pass is open. */
+export function isRenderAllActive(): boolean {
+  return renderAll;
 }
 
 /**
  * Draw every diagram now. Resolves when all mounted diagrams have drawn, or
  * after `timeoutMs` with the number still pending (never silently).
  */
-export async function renderAllDiagrams(timeoutMs = 20_000): Promise<{ pending: number }> {
-  renderAll = true;
-  emit();
+export async function renderAllDiagrams(
+  timeoutMs = 20_000,
+): Promise<{ pending: number; release: () => void }> {
+  const release = beginRenderAllPass();
+  const result = await waitForAllDrawn(timeoutMs);
+  return { ...result, release };
+}
+
+async function waitForAllDrawn(timeoutMs: number): Promise<{ pending: number }> {
   // Render-all also mounts every block a long list was still holding back
   // (progressive mount follows the same switch). That commit — and the
   // diagrams in it registering themselves — lands after this task, so count
@@ -119,7 +164,14 @@ export async function renderAllDiagrams(timeoutMs = 20_000): Promise<{ pending: 
 
 /** Print the live page with every diagram drawn. */
 export async function printLivePage(): Promise<void> {
-  const { pending: missing } = await renderAllDiagrams();
+  const { pending: missing, release } = await renderAllDiagrams();
+  // The pass closes when the print does (afterprint); a browser whose print()
+  // returns at once still gets its afterprint.
+  const close = () => {
+    window.removeEventListener("afterprint", close);
+    release();
+  };
+  window.addEventListener("afterprint", close);
   if (missing > 0) {
     const { toast } = await import("@/lib/toast");
     toast.warning(
@@ -187,6 +239,8 @@ export function useDrawWhenNear(ref: RefObject<HTMLElement | null>): {
   }, [near, all, ref]);
 
   const markDrawn = () => {
+    // Drawn stays drawn when a render-all pass closes.
+    setNear(true);
     drawing.delete(token);
     sleepers.delete(token);
     if (!pending.delete(token)) return;
