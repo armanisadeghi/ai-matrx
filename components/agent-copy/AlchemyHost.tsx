@@ -2,11 +2,13 @@
 
 import { alchemyReferencePort } from "./alchemy-references";
 import { sendAlchemyEmail } from "./alchemy-email";
+import { alchemyPlainTextFormat } from "./alchemy-plain-text-format";
 import {
   createContext,
   startTransition,
   useContext,
   useLayoutEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -353,7 +355,15 @@ function AlchemyCapabilitiesGate({
   ) {
     setGuardedCapability(createGuardedCapability());
   }
-  const { ai: _inheritedAi, ...nonAiCapabilities } = capabilities;
+  // "Plain text" everywhere is built by the one engine per format (a Markdown
+  // draft becomes real text); it supersedes the workspace's echoing built-in.
+  const inheritedFormats = capabilities.formats;
+  const formats = useMemo(
+    () => [...(inheritedFormats ?? []), alchemyPlainTextFormat],
+    [inheritedFormats],
+  );
+  const { ai: _inheritedAi, ...inheritedRest } = capabilities;
+  const nonAiCapabilities = { ...inheritedRest, formats };
   return (
     <ContentTransferCapabilitiesProvider
       value={
