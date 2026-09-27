@@ -26,6 +26,8 @@ export interface UpdatePlan {
   name?: string;
   description?: string | null;
   autonomy_level?: Autonomy;
+  /** true archives the topic, false restores it. Only sent when it changes. */
+  archived?: boolean;
   changed: string[];
 }
 
@@ -106,9 +108,18 @@ export function parseUpdateTopics(value: unknown, rows: ResearchTopicListRow[]):
       plan.autonomy_level = autonomy;
       plan.changed.push("autonomy_level");
     }
+    const archived = obj.archived;
+    if (archived !== undefined) {
+      if (typeof archived !== "boolean")
+        throw new Error(`${target}: item ${i + 1} archived must be true or false.`);
+      if (archived !== Boolean(row.archived_at)) {
+        plan.archived = archived;
+        plan.changed.push(archived ? "archived" : "restored");
+      }
+    }
     if (plan.changed.length === 0)
       throw new Error(
-        `${target}: item ${i + 1} changes nothing — send name, description or autonomy_level.`,
+        `${target}: item ${i + 1} changes nothing — send name, description, autonomy_level or a different archived.`,
       );
     return plan;
   });

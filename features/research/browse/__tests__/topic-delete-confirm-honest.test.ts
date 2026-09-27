@@ -62,6 +62,6 @@ describe("research topic delete confirm is honest about a soft delete", () => {
       "utf8",
     );
     expect(source).toMatch(/This archives /);
-    expect(source).toMatch(/It leaves your topic list; an admin can restore it\./);
+    expect(source).toMatch(/Restore in the Archived/);
   });
 });

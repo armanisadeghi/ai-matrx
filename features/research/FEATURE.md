@@ -133,6 +133,12 @@ via `<CostValue>`/`useCostDisplay`; never `toFixed(2)` a dollar figure in a rese
   direct-read version showed a platform admin every topic on the platform under "My orgs"
   (row security is not a view) and counted in the browser; both fixed. Organization column +
   filter added; project cell no longer overprints the Updated column.
+  Iteration (same day): topics archive and restore (Archive / Restore in the row menu, the list's
+  Archived filter; `rs_topic.deleted_at` is the archive and clearing it brings the edges back);
+  `delete_topics` archives and `update_topics { archived }` restores. The agent's `topic_list`
+  bundle carries every row on screen with organization names and the true total
+  (`browse/topicListBundle.ts`, 7,000-char share of the page budget); `load_error` on a failed
+  read; the tab title is "Research topics".
 
 - 2026-09-26 — Removed the old direct "Google managed agents" card
   (`GoogleBackgroundAgentCard.tsx` + `service/google-background.ts`) and its mount in

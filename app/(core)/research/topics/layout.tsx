@@ -1,8 +1,8 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/research", {
-  titlePrefix: "Topics",
-  title: "Research",
+  // One name: the header says "Research topics", so the tab does too.
+  title: "Research topics",
   description: "Browse and manage your research topics.",
   letter: "TP",
 });

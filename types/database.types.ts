@@ -16451,6 +16451,65 @@ export type Database = {
         }
         Relationships: []
       }
+      meet_chat_messages: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          meeting_id: string
+          metadata: Json
+          organization_id: string
+          sender_identity: string
+          sender_name: string
+          sender_user_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          meeting_id: string
+          metadata?: Json
+          organization_id: string
+          sender_identity: string
+          sender_name: string
+          sender_user_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          meeting_id?: string
+          metadata?: Json
+          organization_id?: string
+          sender_identity?: string
+          sender_name?: string
+          sender_user_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meet_chat_messages_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meet_meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meet_invitees: {
         Row: {
           created_at: string
@@ -28884,6 +28943,91 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assessment_list_counts: {
+        Args: {
+          p_archived?: string
+          p_filters?: Json
+          p_kind?: string
+          p_search?: string
+        }
+        Returns: {
+          scope: string
+          total: number
+        }[]
+      }
+      assessment_list_facets: {
+        Args: {
+          p_archived?: string
+          p_filters?: Json
+          p_kind?: string
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+        }
+        Returns: {
+          facet: string
+          total: number
+          value: string
+        }[]
+      }
+      assessment_list_match: {
+        Args: {
+          p_archived: string
+          p_created_by: string
+          p_deleted_at: string
+          p_depth: string
+          p_description: string
+          p_exam_type: string
+          p_filters: Json
+          p_id: string
+          p_kind: string
+          p_kind_row: string
+          p_org_id: string
+          p_organization_id: string
+          p_scope: string
+          p_search: string
+          p_skip?: string
+          p_status: string
+          p_title: string
+          p_topic: string
+          p_visibility: string
+        }
+        Returns: boolean
+      }
+      assessment_list_scoped: {
+        Args: {
+          p_archived?: string
+          p_ascending?: boolean
+          p_filters?: Json
+          p_kind?: string
+          p_limit?: number
+          p_offset?: number
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: {
+          assessment_kind: string
+          created_at: string
+          created_by: string
+          deleted_at: string
+          depth: string
+          description: string
+          exam_type: string
+          id: string
+          organization_id: string
+          question_count: number
+          source_title: string
+          status: string
+          time_limit_seconds: number
+          title: string
+          topic: string
+          total_count: number
+          updated_at: string
+          visibility: string
+        }[]
+      }
       edu_purge_expired_study_data: {
         Args: { p_max_users?: number; p_retention_days?: number }
         Returns: Json
@@ -70912,6 +71056,27 @@ export type Database = {
         }
         Relationships: []
       }
+      reachability_pending: {
+        Row: {
+          container_id: string
+          container_type: string
+          deferred_at: string
+          deferred_by: string | null
+        }
+        Insert: {
+          container_id: string
+          container_type: string
+          deferred_at?: string
+          deferred_by?: string | null
+        }
+        Update: {
+          container_id?: string
+          container_type?: string
+          deferred_at?: string
+          deferred_by?: string | null
+        }
+        Relationships: []
+      }
       reachability_rebuild_pending: {
         Row: {
           noted_at: string
@@ -73712,6 +73877,32 @@ export type Database = {
         Args: { p_org: string; p_user: string }
         Returns: Json
       }
+      count_items: {
+        Args: {
+          p_captured_by?: string[]
+          p_date_from?: string
+          p_date_to?: string
+          p_org_ids?: string[]
+          p_origins?: string[]
+          p_query?: string
+          p_source_kinds?: string[]
+          p_types?: string[]
+          p_within?: string[]
+        }
+        Returns: {
+          count: number
+          entity_token: string
+        }[]
+      }
+      count_messages: {
+        Args: {
+          p_date_from?: string
+          p_date_to?: string
+          p_org_ids?: string[]
+          p_query: string
+        }
+        Returns: number
+      }
       create_entity_table: {
         Args: {
           p_category: boolean
@@ -74258,6 +74449,7 @@ export type Database = {
       kernel_equivalence_answers: { Args: never; Returns: Json }
       kernel_equivalence_check: { Args: never; Returns: Json }
       kernel_equivalence_expected: { Args: never; Returns: Json }
+      kernel_fixture_tokens: { Args: never; Returns: string[] }
       knob_archive: {
         Args: {
           p_feature: string
@@ -74721,6 +74913,10 @@ export type Database = {
           reason: string
         }[]
       }
+      my_favorite: {
+        Args: { p_entity_id: string; p_entity_type: string }
+        Returns: boolean
+      }
       normalize_decision_label: {
         Args: { p_answer: string; p_metadata: Json }
         Returns: string
@@ -74978,6 +75174,18 @@ export type Database = {
           container_type: string
         }[]
       }
+      reachability_defer: {
+        Args: {
+          p_label: string
+          p_source_id: string
+          p_source_type: string
+          p_target_id: string
+          p_target_type: string
+        }
+        Returns: undefined
+      }
+      reachability_defer_begin: { Args: never; Returns: undefined }
+      reachability_deferring: { Args: never; Returns: boolean }
       reachability_definition_parity: {
         Args: never
         Returns: {
@@ -74998,6 +75206,7 @@ export type Database = {
           item_type: string
         }[]
       }
+      reachability_flush: { Args: { p_limit?: number }; Returns: number }
       reachability_touch: {
         Args: {
           p_label: string
@@ -83392,6 +83601,10 @@ export type Database = {
         Returns: Json
       }
       hr_engagement_upsert: { Args: { p_payload: Json }; Returns: Json }
+      hr_establishment_set_archived: {
+        Args: { p_archived: boolean; p_id: string }
+        Returns: Json
+      }
       hr_establishment_upsert: { Args: { p_payload: Json }; Returns: Json }
       hr_export_claim: {
         Args: {
@@ -85988,7 +86201,12 @@ export type Database = {
         Returns: Json
       }
       rsx_list_facets: {
-        Args: { p_org_id?: string; p_scope?: string; p_search?: string }
+        Args: {
+          p_archived?: string
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+        }
         Returns: {
           kind: string
           label: string
@@ -85997,7 +86215,7 @@ export type Database = {
         }[]
       }
       rsx_list_scope_counts: {
-        Args: { p_filters?: Json; p_search?: string }
+        Args: { p_archived?: string; p_filters?: Json; p_search?: string }
         Returns: {
           label: string
           narrow_id: string
@@ -86007,6 +86225,7 @@ export type Database = {
       }
       rsx_list_scoped: {
         Args: {
+          p_archived?: string
           p_dir?: string
           p_filters?: Json
           p_limit?: number
@@ -86017,6 +86236,7 @@ export type Database = {
           p_sort?: string
         }
         Returns: {
+          archived_at: string
           autonomy_level: string
           created_at: string
           created_by: string
@@ -89901,20 +90121,7 @@ export type Database = {
       }
     }
     Functions: {
-      chunk_passes_recall_filters: {
-        Args: {
-          c: Database["rag"]["Tables"]["kg_chunks"]["Row"]
-          p_filters: Json
-        }
-        Returns: boolean
-      }
-      chunk_visible_beyond_readable: {
-        Args: {
-          c: Database["rag"]["Tables"]["kg_chunks"]["Row"]
-          p_user: string
-        }
-        Returns: boolean
-      }
+      _recall_predicate_sql: { Args: { p_filters: Json }; Returns: string }
       fn_bulk_delete_library_documents: {
         Args: { p_ids?: string[]; p_status?: string }
         Returns: Json

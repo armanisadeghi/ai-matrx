@@ -49,18 +49,18 @@ const groups: SurfaceValueGroup[] = [
 ];
 
 const TOPIC_SHAPE =
-  "{ id, name, description, status, autonomy_level, project_id, project_name, organization_id, created_at, updated_at }";
+  "{ id, name, description, status, autonomy_level, project_id, project_name, organization_id, organization_name, archived_at, created_at, updated_at }";
 
 const surfaceSpecific: SurfaceValue[] = [
   {
     name: "topic_list",
     label: "Topic list",
     description:
-      'The page of topics on screen, in the person\'s order, as one XML bundle: <topics scope total shown?> with one <topic id status project updated> per row whose text is the topic name, and a <question> child holding its description (the research question), clipped to 240 chars with clipped="true" when cut. Use the ids with update_topics / delete_topics and to open a topic at /research/topics/<id>. Absent while the list loads; an empty <topics total="0"/> when nothing matches.',
+      'EVERY topic on screen, in the person\'s order, as one XML bundle: <topics scope total on_page shown? search? archived?> — total is every matching topic across all pages, on_page the rows on screen, and shown appears only when the budget forced rows off the end. One <topic id status org project updated archived?> per row; its text is the topic name and its <question> child the description (the research question), shortened to fit the budget and marked clipped="true" total_chars="N" when cut (the full text is in topics). Use the ids with update_topics / delete_topics and to open a topic at /research/topics/<id>. Absent while the list loads or when load_error is set; an empty <topics total="0" on_page="0"/> when nothing matches.',
     valueType: "string",
     alwaysAvailable: false,
-    typicalCharCount: 2500,
-    inlineUpTo: 4000,
+    typicalCharCount: 5000,
+    inlineUpTo: 7000,
     sortOrder: 100,
     group: "topics",
   },
@@ -73,6 +73,28 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 4000,
     sortOrder: 110,
     group: "topics",
+  },
+  {
+    name: "load_error",
+    label: "Load error",
+    description:
+      "Why the list could not be read, in the page's own words. Present only when the read failed — then topic_list, topics, total_count and scope_counts are absent, never stale.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    sortOrder: 190,
+    group: "list_query",
+  },
+  {
+    name: "list_archived",
+    label: "Archive filter",
+    description:
+      '"active" (archived topics hidden, the default), "archived" (only archived topics) or "all". Archived topics can be restored with update_topics { id, archived: false }.',
+    valueType: "string",
+    alwaysAvailable: true,
+    typicalCharCount: 8,
+    sortOrder: 225,
+    group: "list_query",
   },
   {
     name: "total_count",
@@ -171,7 +193,7 @@ const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "update_topics",
     label: "Update topics",
-    description: `Changes one or more topics by id, saved immediately. Value is a JSON ARRAY (not a string) of 1-25 objects, each { id: string (from topics / topic_list), name?, description?, autonomy_level? } with the fields read as in create_topics. Only the fields you send change. description REPLACES the whole research question; send "" to clear it. name may not be empty. An unknown or repeated id, or no field to change, refuses the whole list with nothing changed. Changing a topic never starts or re-runs research.`,
+    description: `Changes one or more topics by id, saved immediately. Value is a JSON ARRAY (not a string) of 1-25 objects, each { id: string (from topics / topic_list), name?, description?, autonomy_level?, archived?: boolean } with the fields read as in create_topics. Only the fields you send change. description REPLACES the whole research question; send "" to clear it. name may not be empty. archived: true archives the topic (same as delete_topics); archived: false RESTORES an archived one (it must be on screen — the list shows archived topics when list_archived is "archived" or "all"). An unknown or repeated id, or no field to change, refuses the whole list with nothing changed. Changing a topic never starts or re-runs research.`,
     valueType: "array",
     updatesValue: "topics",
     mode: "entity",
@@ -183,7 +205,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "delete_topics",
     label: "Delete topics",
     description:
-      'Removes one or more topics from the list. Value is a JSON ARRAY (not a string) of topic ids, or of { id } objects, from topics / topic_list, e.g. ["…"]. What happens: the topic and its sources, analyses, reports and documents disappear from the person\'s list and every screen for everyone in the organization; the data stays in the database and only an admin can restore it — nothing on this page undoes it. Use it only when the person asks to delete (a duplicate, a topic made by mistake). Unknown or repeated ids refuse the whole list, with nothing deleted.',
+      'ARCHIVES one or more topics — a person\'s records are never destroyed from this page. Value is a JSON ARRAY (not a string) of topic ids, or of { id } objects, from topics / topic_list, e.g. ["…"]. What happens: the topic with its sources, analyses, reports and documents leaves the list for everyone in its organization; nothing is lost, and update_topics { id, archived: false } (or Restore in the Archived view) brings all of it back, project link included. Use it when the person asks to delete or archive (a duplicate, a topic made by mistake). Unknown or repeated ids refuse the whole list, with nothing archived.',
     valueType: "array",
     updatesValue: "topics",
     mode: "entity",
@@ -209,8 +231,8 @@ You are on the Research topics list at /research/topics. A research topic is a q
 
 Changes go through three targets, each a JSON array the person approves once:
 - create_topics — start new topics (name + the research question as description). Creating never starts research or spends anything.
-- update_topics — rename, rewrite the research question, or change autonomy, by id.
-- delete_topics — remove topics by id; only an admin can restore them, so use it only when asked.
+- update_topics — rename, rewrite the research question, change autonomy, or archive / restore, by id.
+- delete_topics — archive topics by id (nothing is destroyed); update_topics with archived: false restores one.
 Starting, re-running or stopping research is not possible from this list: tell the person to open the topic.
 </surface_intro>`,
   groups,
@@ -228,6 +250,8 @@ export interface ResearchTopicScopeEntry {
   project_id: string | null;
   project_name: string | null;
   organization_id: string;
+  organization_name: string | null;
+  archived_at: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -235,12 +259,14 @@ export interface ResearchTopicScopeEntry {
 /** Type-safe payload helper; required keys mirror `alwaysAvailable: true`. */
 export function createResearchTopicsScope(values: {
   list_scope: string;
+  list_archived: string;
   search_query: string;
   active_filters: Record<string, unknown>;
   sort: string;
   selection?: string;
   context?: Record<string, unknown>;
   topic_list?: string;
+  load_error?: string;
   topics?: ResearchTopicScopeEntry[];
   total_count?: number;
   list_scope_organization_id?: string;

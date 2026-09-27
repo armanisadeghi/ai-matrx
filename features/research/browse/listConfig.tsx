@@ -7,8 +7,9 @@
 // view preferences, one row menu for kebab / right-click / long-press, and a
 // door on every topic name.
 //
-// No archive axis: `research.rs_topic` has no archive column; removing a topic
-// is the soft delete the row menu names.
+// Archive axis: `research.rs_topic` archives by stamping `deleted_at`
+// (restorable, edges included), so the shell's Archived filter maps onto it
+// through `rsx_list_scoped(p_archived)`; the row menu offers Archive / Restore.
 
 import type { EntityListConfig } from "@/lib/entity-list/config";
 import { RESEARCH_TOPIC_COLUMNS, formatAutonomy, formatTopicStatus } from "./columns";
@@ -32,7 +33,7 @@ export const RESEARCH_TOPIC_LIST_CONFIG: EntityListConfig<ResearchTopicListRow> 
   registryToken: "research_topic",
   service: researchTopicListService,
   columns: RESEARCH_TOPIC_COLUMNS,
-  prefsVersion: 2,
+  prefsVersion: 3,
   prefsDefaults: { sort: "updated_at", direction: "desc", pageSize: 50 },
   getRowId: (row) => row.id,
   getRowName: (row) => row.name,
@@ -43,7 +44,7 @@ export const RESEARCH_TOPIC_LIST_CONFIG: EntityListConfig<ResearchTopicListRow> 
     title: row.name,
   }),
   useRowActions: useTopicRowActions,
-  supportsArchived: false,
+  supportsArchived: true,
   searchPlaceholder: "Search topics and research questions",
   facetSections: [
     {

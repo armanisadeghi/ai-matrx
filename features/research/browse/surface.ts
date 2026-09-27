@@ -11,7 +11,6 @@ import type {
 } from "@/lib/entity-list/components/EntityListPage";
 import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
-import { xmlElement, xmlList, xmlText } from "@/features/surfaces/runtime/context-bundle";
 import {
   RESEARCH_TOPICS_SURFACE_NAME,
   createResearchTopicsScope,
@@ -19,8 +18,9 @@ import {
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { createTopic, updateTopic, updateTopicMeta } from "../service";
-import { softDeleteTopic } from "./actions";
+import { archiveTopic, restoreTopic } from "./actions";
 import type { ResearchTopicListRow } from "./types";
+import { buildTopicListXml } from "./topicListBundle";
 import {
   parseCreateTopics,
   parseDeleteTopics,
@@ -33,38 +33,12 @@ type List = EntityListSurfaceController<ResearchTopicListRow>;
 
 // ── Read half ────────────────────────────────────────────────────────────────
 
-function buildTopicListXml(list: List): string {
-  const scope = list.query.scope;
-  return (
-    xmlList(
-      "topics",
-      list.rows,
-      (row) =>
-        xmlElement(
-          "topic",
-          {
-            id: row.id,
-            status: row.status,
-            project: row.project_name,
-            updated: row.updated_at?.slice(0, 10),
-          },
-          [row.name, xmlText("question", row.description, { max: 240 })],
-        ),
-      {
-        maxRows: 25,
-        attrs: {
-          scope: scope.kind,
-          search: list.query.search.trim() || null,
-          matching: list.total,
-        },
-      },
-    ) || `<topics scope="${scope.kind}" total="0"/>`
-  );
-}
-
 export function createResearchTopicsSurfaceScope(list: List) {
   const scope = list.query.scope;
-  const loaded = !list.isLoading;
+  // A failed read reports its status and nothing else: no rows, no counts that
+  // would contradict the error the person is looking at.
+  const failed = list.error != null;
+  const loaded = !list.isLoading && !failed;
   return createResearchTopicsScope({
     list_scope: scope.kind,
     search_query: list.query.search,
@@ -73,9 +47,17 @@ export function createResearchTopicsSurfaceScope(list: List) {
     ...(scope.kind === "orgs" && scope.organizationId
       ? { list_scope_organization_id: scope.organizationId }
       : {}),
+    ...(failed ? { load_error: list.error?.message ?? "The topics could not be read." } : {}),
+    list_archived: list.query.archived,
     ...(loaded
       ? {
-          topic_list: buildTopicListXml(list),
+          topic_list: buildTopicListXml({
+            rows: list.rows,
+            total: list.total,
+            scope: scope.kind,
+            search: list.query.search,
+            archived: list.query.archived,
+          }),
           topics: list.rows.map((row) => ({
             id: row.id,
             name: row.name,
@@ -85,13 +67,15 @@ export function createResearchTopicsSurfaceScope(list: List) {
             project_id: row.project_id,
             project_name: row.project_name,
             organization_id: row.organization_id,
+            organization_name: row.organization_name,
+            archived_at: row.archived_at,
             created_at: row.created_at,
             updated_at: row.updated_at,
           })),
           total_count: list.total,
         }
       : {}),
-    ...(!list.countsLoading && !list.countsError
+    ...(!failed && !list.countsLoading && !list.countsError
       ? {
           scope_counts: {
             mine: list.counts.byKind.mine,
@@ -138,6 +122,8 @@ export function createResearchTopicsWriteHandlers(list: List) {
             });
           if (plan.autonomy_level !== undefined)
             await updateTopic(plan.id, { autonomy_level: plan.autonomy_level });
+          if (plan.archived === true) await archiveTopic(plan.id);
+          if (plan.archived === false) await restoreTopic(plan.id);
           list.refresh();
           return { id: plan.id, name: plan.name ?? plan.previousName };
         },
@@ -147,7 +133,9 @@ export function createResearchTopicsWriteHandlers(list: List) {
       delete: {
         parse: (value: unknown) => parseDeleteTopics(value, list.rows),
         run: async (row: ResearchTopicListRow) => {
-          await softDeleteTopic(row.id);
+          // A person's records are archived, never destroyed: delete_topics
+          // ARCHIVES (restorable with update_topics archived:false).
+          await archiveTopic(row.id);
           list.removeRow(row.id);
           return { id: row.id, name: row.name };
         },

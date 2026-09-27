@@ -65,6 +65,7 @@ export const researchTopicListService: EntityListService<ResearchTopicListRow> =
       p_filters: query.filters,
       p_limit: sort.pageSize,
       p_offset: (query.page - 1) * sort.pageSize,
+      p_archived: query.archived,
     });
     if (error) throw pgError(error);
     const rows = data ?? [];
@@ -75,6 +76,7 @@ export const researchTopicListService: EntityListService<ResearchTopicListRow> =
     const { data, error } = await supabase.rpc("rsx_list_scope_counts", {
       p_search: query.search.trim() || undefined,
       p_filters: query.filters,
+      p_archived: query.archived,
     });
     if (error) throw pgError(error);
     const counts: EntityScopeCounts = { byKind: {}, narrow: {} };
@@ -100,6 +102,7 @@ export const researchTopicListService: EntityListService<ResearchTopicListRow> =
       p_scope: query.scope.kind,
       p_org_id: scopeOrgId(query.scope) ?? undefined,
       p_search: query.search.trim() || undefined,
+      p_archived: query.archived,
     });
     if (error) throw pgError(error);
     const byKind: EntityFacets["byKind"] = {};

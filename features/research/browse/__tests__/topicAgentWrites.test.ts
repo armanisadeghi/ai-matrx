@@ -25,6 +25,7 @@ const row = (id: string, name: string): ResearchTopicListRow => ({
   template_id: "",
   project_id: "",
   project_name: "",
+  archived_at: "",
   total_count: 2,
 });
 
@@ -81,6 +82,19 @@ describe("update_topics", () => {
     expect(() => parseUpdateTopics([{ id: "nope", name: "X" }], ROWS)).toThrow(/no topic with id/);
     expect(() => parseUpdateTopics([{ id: "t-1", name: "  " }], ROWS)).toThrow(/may not be empty/);
     expect(() => parseUpdateTopics([{ id: "t-1" }], ROWS)).toThrow(/changes nothing/);
+  });
+});
+
+describe("update_topics archive / restore", () => {
+  it("archives an active topic and restores an archived one", () => {
+    const archived = { ...row("t-3", "Old grid study"), archived_at: "2026-09-20T00:00:00Z" };
+    expect(parseUpdateTopics([{ id: "t-1", archived: true }], ROWS)[0]).toMatchObject({ archived: true, changed: ["archived"] });
+    expect(parseUpdateTopics([{ id: "t-3", archived: false }], [...ROWS, archived])[0]).toMatchObject({ archived: false, changed: ["restored"] });
+  });
+
+  it("refuses an archive flag that changes nothing", () => {
+    expect(() => parseUpdateTopics([{ id: "t-1", archived: false }], ROWS)).toThrow(/changes nothing/);
+    expect(() => parseUpdateTopics([{ id: "t-1", archived: "yes" }], ROWS)).toThrow(/true or false/);
   });
 });
 

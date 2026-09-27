@@ -7,7 +7,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ExternalLink, Link2, Settings, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowRight, ExternalLink, Link2, Settings } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { WriteDidNotLandError } from "@/utils/supabase/writeOne";
@@ -16,7 +16,7 @@ import type {
   EntityListController,
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
-import { softDeleteTopic } from "./actions";
+import { archiveTopic, restoreTopic } from "./actions";
 import { topicHref, type ResearchTopicListRow } from "./types";
 
 export function useTopicRowActions(
@@ -24,8 +24,8 @@ export function useTopicRowActions(
 ): EntityRowActionsResult<ResearchTopicListRow> {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const [deleteTarget, setDeleteTarget] = useState<ResearchTopicListRow | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const [archiveTarget, setArchiveTarget] = useState<ResearchTopicListRow | null>(null);
+  const [archiving, setArchiving] = useState(false);
 
   const open = (row: ResearchTopicListRow) =>
     startTransition(() => router.push(topicHref(row.id)));
@@ -75,34 +75,53 @@ export function useTopicRowActions(
         ],
       },
       {
-        id: "danger",
+        id: "archive",
         items: [
-          {
-            id: "delete",
-            label: "Delete",
-            icon: Trash2,
-            tone: "destructive",
-            onSelect: () => setDeleteTarget(row),
-          },
+          row.archived_at
+            ? {
+                id: "restore",
+                label: "Restore",
+                icon: ArchiveRestore,
+                onSelect: () => void handleRestore(row),
+              }
+            : {
+                id: "archive",
+                label: "Archive",
+                icon: Archive,
+                tone: "destructive",
+                onSelect: () => setArchiveTarget(row),
+              },
         ],
       },
     ],
   });
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    setDeleting(true);
+  const handleArchive = async () => {
+    if (!archiveTarget) return;
+    setArchiving(true);
     try {
-      await softDeleteTopic(deleteTarget.id);
-      toast.success("Topic deleted.");
+      await archiveTopic(archiveTarget.id);
+      toast.success("Topic archived.");
       list.refresh();
     } catch (err) {
       toast.error(
-        err instanceof WriteDidNotLandError ? err.message : "Failed to delete topic.",
+        err instanceof WriteDidNotLandError ? err.message : "Failed to archive topic.",
       );
     } finally {
-      setDeleting(false);
-      setDeleteTarget(null);
+      setArchiving(false);
+      setArchiveTarget(null);
+    }
+  };
+
+  const handleRestore = async (row: ResearchTopicListRow) => {
+    try {
+      await restoreTopic(row.id);
+      toast.success("Topic restored.");
+      list.refresh();
+    } catch (err) {
+      toast.error(
+        err instanceof WriteDidNotLandError ? err.message : "Failed to restore topic.",
+      );
     }
   };
 
@@ -110,21 +129,23 @@ export function useTopicRowActions(
     actions: { menuFor, onOpenRow: open },
     modals: (
       <ConfirmDialog
-        open={!!deleteTarget}
+        open={!!archiveTarget}
         onOpenChange={(next) => {
-          if (!next && !deleting) setDeleteTarget(null);
+          if (!next && !archiving) setArchiveTarget(null);
         }}
-        title="Delete topic"
+        title="Archive topic"
         description={
           <>
-            This archives <b>{deleteTarget?.name}</b> and its sources,
-            analyses, and documents. It leaves your topic list; an admin can restore it.
+            This archives <b>{archiveTarget?.name}</b> with its sources,
+            analyses, reports and documents, for everyone in its organization.
+            Nothing is lost: it leaves the list, and Restore in the Archived
+            view brings all of it back.
           </>
         }
-        confirmLabel="Delete topic"
+        confirmLabel="Archive topic"
         variant="destructive"
-        busy={deleting}
-        onConfirm={handleDelete}
+        busy={archiving}
+        onConfirm={handleArchive}
       />
     ),
   };
