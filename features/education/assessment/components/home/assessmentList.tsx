@@ -157,8 +157,8 @@ export function buildAssessmentColumns(
       phone: "title",
       column: {
         id: "title",
-        width: 380,
-        className: "max-w-[24rem] overflow-hidden",
+        width: 340,
+        className: "max-w-[21rem] overflow-hidden",
         accessorKey: "title",
         header: "Title",
         filter: "text",
@@ -176,8 +176,8 @@ export function buildAssessmentColumns(
       column: {
         id: "topic",
         // Topics are often a source's opening sentence: give them the room.
-        width: 340,
-        className: "max-w-[22rem] overflow-hidden",
+        width: 280,
+        className: "max-w-[18rem] overflow-hidden",
         accessorKey: "topic",
         header: "Topic",
         filter: "text",
@@ -317,6 +317,21 @@ export function buildAssessmentColumns(
       },
     },
     {
+      id: "take",
+      label: "Take",
+      locked: true,
+      phone: "primary",
+      column: {
+        id: "take",
+        header: "Take",
+        // A value, so the phone card (which omits empty fields) keeps it.
+        accessorFn: (row) => (row.archived || row.question_count === 0 ? "" : "take"),
+        filter: false,
+        sortable: false,
+        cell: (row) => <TakeCell row={row} config={config} />,
+      },
+    },
+    {
       id: "updated",
       label: "Last edited",
       phone: "meta",
@@ -338,19 +353,6 @@ export function buildAssessmentColumns(
         header: "Created",
         filter: false,
         cell: (row) => timeCell(row.created_at),
-      },
-    },
-    {
-      id: "take",
-      label: "Take",
-      locked: true,
-      phone: "primary",
-      column: {
-        id: "take",
-        header: "Take",
-        filter: false,
-        sortable: false,
-        cell: (row) => <TakeCell row={row} config={config} />,
       },
     },
   ];
