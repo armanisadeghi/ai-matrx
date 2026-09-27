@@ -12,8 +12,9 @@
 // `ops.agent_walks.activity_window_minutes` is an active walk. A signed-in
 // request from a host that is NOT already an active walk, while the active
 // walks already number `ops.agent_walks.production_concurrent_cap`, gets an
-// honest 503 page naming the walks in progress and sending the agent to the
-// clone preview (`pnpm preview:start --clone`). Already-admitted hosts keep
+// honest 503 page naming the walks in progress and telling the agent to wait
+// (the clone preview, `pnpm preview:start --clone`, is not built yet — it
+// needs a second development server, which the one-server rule forbids). Already-admitted hosts keep
 // walking; signed-out requests (the login page, assets) always pass.
 //
 // WHERE IT RUNS. Only in `next dev` (NODE_ENV === "development") AND only when
@@ -187,8 +188,7 @@ function ago(ms: number): string {
 function refusalPage(host: string, active: ActiveWalk[], knobs: WalkKnobs): string {
   const list = active.length
     ? active.map((w) => `<li><code>${escapeHtml(w.host)}</code> — last signed-in request ${ago(w.idleMs)}</li>`).join("")
-    : "<li>(none — the cap is 0, so every walk goes to the clone)</li>";
-  const cloneHost = host.replace(/:\d+$/, `:${CLONE_PORT}`);
+    : "<li>(none — the cap is 0, so no agent walk may sign in against production)</li>";
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Live-database walk cap</title>
@@ -200,8 +200,8 @@ code{background:#f1f1f1;padding:1px 5px;border-radius:4px}
 <h1>This preview is over the live-database walk cap</h1>
 <p>${active.length} agent sessions are already signed in against production (the cap is ${knobs.cap}):</p>
 <ul>${list}</ul>
-<p>Start your walk against the clone instead: <code>pnpm preview:start --clone</code> (port ${CLONE_PORT}), then open <code>http://${escapeHtml(cloneHost)}</code> and sign in with <code>pnpm dev-login --clone</code>.</p>
-<p>Or wait until one of them goes idle for ${knobs.windowMinutes} minutes, then reload this page.</p>
+<p>Wait until one of them goes idle for ${knobs.windowMinutes} minutes, then reload this page.</p>
+<p>The clone preview (<code>pnpm preview:start --clone</code>, port ${CLONE_PORT}, a copy of production for walks) is not built yet: it needs a second development server, and this machine allows exactly one. Until it exists, waiting is the only path.</p>
 <p><small>Host refused: <code>${escapeHtml(host)}</code>. Knobs: <code>${WALK_CAP_FEATURE}.${CAP_KEY}</code> and <code>${WALK_CAP_FEATURE}.${WINDOW_KEY}</code>. This check runs only in local development against the live database.</small></p>
 </body></html>`;
 }

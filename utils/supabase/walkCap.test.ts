@@ -165,7 +165,8 @@ describe("walkCapGate — development against production only", () => {
     expect(html).toContain("over the live-database walk cap");
     expect(html).toContain("4 agent sessions");
     expect(html).toContain("a.localhost:3001");
-    expect(html).toContain("pnpm preview:start --clone");
+    expect(html).toContain("goes idle for 10 minutes");
+    expect(html).toMatch(/--clone<\/code>, port 3002, a copy of production for walks\) is not built yet/);
     expect(String(log.mock.calls[0][0])).toMatch(/REFUSED e\.localhost:3001/);
   });
 

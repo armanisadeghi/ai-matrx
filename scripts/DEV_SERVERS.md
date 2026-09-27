@@ -68,6 +68,31 @@ blocks both and names `pnpm preview:start` as the repair. The shared server is
 not tied to one agent session; ending one task must not kill a server another
 task is using.
 
+## The live-database walk cap
+
+Every signed-in page this preview serves reads and writes the LIVE database
+(`db.matrxserver.com`). On 2026-09-26 that database ran out of memory, 70% of
+its time coming from agent walks: 15–26 preview hosts, 40–69 signed-in
+sessions per 30 minutes. So the preview caps how many hosts may be signed in
+against production at once (Arman: "default 4").
+
+- **Rule** (`utils/supabase/walkCap.ts`, called from the proxy's session pass):
+  a `<label>.localhost:3001` host that made a signed-in request within the
+  activity window is an active walk. A signed-in request from a NEW host while
+  the active walks already number the cap gets a plain 503 page (header
+  `x-matrx-walk-cap: refused`) listing the active hosts and how long ago each
+  was seen. Already-admitted hosts keep working; signed-out requests (login,
+  assets, `/api/*`) always pass. Every admission and refusal is a `[walk-cap]`
+  line in the preview log.
+- **Knobs:** `ops.agent_walks.production_concurrent_cap` (4) and
+  `ops.agent_walks.activity_window_minutes` (10), read once per 60 s. A missing
+  knob screams in the log and the gate fails OPEN.
+- **Scope:** development server only, and only when `NEXT_PUBLIC_SUPABASE_URL`
+  is production. A production build drops the code.
+- **Refused?** Wait for a walk to go idle, then reload. The clone preview
+  (`pnpm preview:start --clone` on port 3002) is not built: it needs a second
+  development server, which the one-server rule above forbids.
+
 ## Process discovery and cleanup
 
 `scripts/dev-cleanup.sh` finds `next-server` processes whose cwd is inside
@@ -109,6 +134,9 @@ Codex skips a new or changed non-managed hook until a human reviews its hash.
 Open `/hooks` once after installation and trust the Matrx dev-server guard.
 
 ## Change Log
+
+- 2026-09-26: Added the live-database walk cap (`ops.agent_walks` knobs,
+  development-only proxy gate).
 
 - 2026-09-20: Corrected the false claim that Codex can always open bare
   `localhost:3001` in its in-app browser. Browser transport can block local
