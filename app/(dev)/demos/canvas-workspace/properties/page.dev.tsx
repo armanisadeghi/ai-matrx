@@ -3,6 +3,7 @@
 // fade and hover scrollbar are provable. The spatial host is one level up.
 
 import type { Metadata } from "next";
+import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/server";
 import { readCanvasNavCookie } from "@/features/shell/canvas-chrome/canvas-nav.server";
 import { readCanvasChatCookie } from "@/features/canvas/workspace/workspace-cookies.server";
@@ -19,15 +20,20 @@ export const metadata: Metadata = {
 async function loadKinds(): Promise<{ kinds: DemoKindRow[]; error: string | null }> {
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase
-      .schema("content_ir")
-      .from("kind_definition")
-      .select("id,kind,label,version,is_active")
-      .is("deleted_at", null)
-      .order("label")
-      .limit(500);
-    if (error) throw new Error(error.message);
-    return { kinds: data ?? [], error: null };
+    // The whole list, never a silently capped page (PostgREST stops at 1000).
+    const kinds = await readAllRows(
+      ({ from, to }) =>
+        supabase
+          .schema("content_ir")
+          .from("kind_definition")
+          .select("id,kind,label,version,is_active", { count: "exact" })
+          .is("deleted_at", null)
+          .order("label")
+          .order("id")
+          .range(from, to),
+      { label: "content_ir.kind_definition (canvas workspace demo)" },
+    );
+    return { kinds, error: null };
   } catch (err) {
     return { kinds: [], error: err instanceof Error ? err.message : String(err) };
   }

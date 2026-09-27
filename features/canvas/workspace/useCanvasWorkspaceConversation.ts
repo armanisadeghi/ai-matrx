@@ -15,17 +15,31 @@
  *     canonical `loadConversation` thunk (the path the agent-app shell and
  *     the tutor use), never a navigation.
  * A failure carries its real reason and a retry — nothing fails silently.
+ *
+ * A NEW chat waits for an active organization instead of racing its
+ * hydration (a launch sent before it lands is refused with
+ * `organization_context_required`). When the boot has settled with none, the
+ * state says so and `choose()` opens the ONE organization gate
+ * (`ensureOrganizationContext`) — the person picks, the launch proceeds. It
+ * never picks an organization on the person's behalf.
  */
 
 import { useEffect, useRef, useState } from "react";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectOrganizationId,
+  selectShouldPromptForOrganization,
+} from "@/lib/redux/slices/appContextSlice";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { describeLaunchError } from "./describe-launch-error";
 
 export type CanvasWorkspaceConversation =
   | { state: "opening"; purpose: "new" | "open" }
+  | { state: "needs-organization"; choose: () => void }
   | { state: "ready"; conversationId: string }
   | { state: "failed"; purpose: "new" | "open"; reason: string; retry: () => void };
 
@@ -46,8 +60,12 @@ export function useCanvasWorkspaceConversation(surfaceKey: string): CanvasWorksp
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const handled = useRef<string | null>(null);
+  const organizationId = useAppSelector(selectOrganizationId);
+  const promptForOrganization = useAppSelector(selectShouldPromptForOrganization);
+  const waitingForOrganization = request.kind === "new" && !organizationId;
 
   useEffect(() => {
+    if (waitingForOrganization) return;
     const key = `${surfaceKey}#${request.kind}#${request.nonce}`;
     // Once per request: a re-run of this effect for any other reason never
     // launches twice. A result lands only if its request is still the latest.
@@ -83,7 +101,7 @@ export function useCanvasWorkspaceConversation(surfaceKey: string): CanvasWorksp
           },
         );
     }
-  }, [surfaceKey, request, launchMandate, dispatch]);
+  }, [surfaceKey, request, launchMandate, dispatch, waitingForOrganization]);
 
   const startNew = () => {
     setConversationId(null);
@@ -107,6 +125,17 @@ export function useCanvasWorkspaceConversation(surfaceKey: string): CanvasWorksp
       retry: () => {
         setFailure(null);
         setRequest((current) => ({ ...current, nonce: current.nonce + 1 }));
+      },
+    };
+  } else if (waitingForOrganization && promptForOrganization) {
+    conversation = {
+      state: "needs-organization",
+      choose: () => {
+        ensureOrganizationContext().catch((error: unknown) => {
+          if (isOrganizationSelectionCancelled(error)) return;
+          console.error("[canvas-workspace] the organization gate could not open", error);
+          setFailure(describeLaunchError(error));
+        });
       },
     };
   } else conversation = { state: "opening", purpose: request.kind };

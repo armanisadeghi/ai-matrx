@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { RotateCcw } from "lucide-react";
+import { Building2, RotateCcw } from "lucide-react";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import type { AttachedContextRailItem } from "@/features/agents/components/inputs/smart-input/ConversationContextRail";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
@@ -91,6 +91,21 @@ export function CanvasChatColumn({
   if (conversation.state === "opening") {
     // Keyed: a fresh "slow" clock for every opening.
     return <OpeningState key={conversation.purpose} purpose={conversation.purpose} className={className} />;
+  }
+
+  if (conversation.state === "needs-organization") {
+    return (
+      <div className={cn("flex h-full min-h-0 flex-col items-start gap-3 p-4", className)}>
+        <p className="text-sm text-foreground">Choose the organization this chat belongs to.</p>
+        <p className="text-xs text-muted-foreground">
+          Every chat is kept in an organization, and none is active yet. The canvas works meanwhile.
+        </p>
+        <Button size="sm" variant="outline" onClick={conversation.choose}>
+          <Building2 className="mr-1.5 h-3.5 w-3.5" />
+          Choose organization
+        </Button>
+      </div>
+    );
   }
 
   if (conversation.state === "failed") {

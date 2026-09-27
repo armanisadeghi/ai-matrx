@@ -65,6 +65,7 @@ import { SurfaceAgentsHeaderButton } from "@/features/surfaces/components/chrome
 import { InboxHeaderButton } from "@/features/notifications/components/InboxHeaderButton";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectConversationListItemById } from "@/features/agents/redux/conversation-list/conversation-list.selectors";
 import { conversationRenameOpener } from "@/features/agents/components/conversation-actions/rename/conversationRenameOpener";
 import { ComposerModeSwitch } from "@/features/agents/components/inputs/smart-input/composer/ComposerModeSwitch";
 import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
@@ -78,10 +79,17 @@ import {
   useCanvasNavState,
 } from "@/features/shell/canvas-chrome/CanvasNav";
 import type { CanvasNavPersisted } from "@/features/shell/canvas-chrome/canvas-nav-cookie";
+import { aMenuOrPopoverIsOpen } from "@/features/shell/canvas-chrome/open-layer";
 import { CanvasChatColumn, type CanvasContextEntry } from "./CanvasChatColumn";
-import { CanvasPropertiesPanel, type CanvasPropertiesTab } from "./CanvasPropertiesPanel";
+import {
+  CanvasPropertiesPanel,
+  type CanvasPropertiesTab,
+} from "./CanvasPropertiesPanel";
 import { useCanvasWorkspaceConversation } from "./useCanvasWorkspaceConversation";
-import { writeCanvasChatCookie, type CanvasChatPlacement } from "./workspace-cookies";
+import {
+  writeCanvasChatCookie,
+  type CanvasChatPlacement,
+} from "./workspace-cookies";
 
 export const CANVAS_CHAT_PANEL_WIDTH_PX = 440;
 const FLOATING_FALLBACK = { width: 340, height: 400 };
@@ -135,7 +143,12 @@ function readFloatingSize(value: unknown): { width: number; height: number } {
     const record = value as Record<string, unknown>;
     const width = record.width ?? record.w;
     const height = record.height ?? record.h;
-    if (typeof width === "number" && typeof height === "number" && width >= 240 && height >= 200) {
+    if (
+      typeof width === "number" &&
+      typeof height === "number" &&
+      width >= 240 &&
+      height >= 200
+    ) {
       return { width, height };
     }
   }
@@ -166,19 +179,25 @@ export function ChatCanvasWorkspace({
   const chat = useCanvasWorkspaceConversation(surfaceKey);
   const nav = useCanvasNavState(initialNav);
 
-  const [placement, setPlacementState] = useState<CanvasChatPlacement>(initialChat);
+  const [placement, setPlacementState] =
+    useState<CanvasChatPlacement>(initialChat);
   const [floatOpen, setFloatOpen] = useState(true);
   const [fullScreen, setFullScreen] = useState(false);
   const [canvasEl, setCanvasEl] = useState<HTMLDivElement | null>(null);
-  const [mobileSheet, setMobileSheet] = useState<"chat" | "nav" | "properties" | null>(null);
-  const floatingSize = readFloatingSize(useSessionKnob(COMPOSER_KNOBS.floatingPanelSize));
+  const [mobileSheet, setMobileSheet] = useState<
+    "chat" | "nav" | "properties" | null
+  >(null);
+  const floatingSize = readFloatingSize(
+    useSessionKnob(COMPOSER_KNOBS.floatingPanelSize),
+  );
 
   const setPlacement = (next: CanvasChatPlacement) => {
     setPlacementState(next);
     setFloatOpen(true);
     writeCanvasChatCookie(id, next);
   };
-  const togglePlacement = () => setPlacement(placement === "side" ? "floating" : "side");
+  const togglePlacement = () =>
+    setPlacement(placement === "side" ? "floating" : "side");
 
   // ⌘\ docks / undocks the chat (the global canvas sheet stands down here).
   const onShortcut = useEffectEvent(() => {
@@ -196,22 +215,32 @@ export function ChatCanvasWorkspace({
   }, []);
 
   // Esc leaves full screen (unless a menu / popover is holding the key).
+  // Capture phase: a canvas that uses Escape itself (the spatial board clears
+  // its selection and prevents the default) must not swallow the way out.
   useEffect(() => {
     if (!fullScreen) return undefined;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || e.defaultPrevented) return;
-      if (document.querySelector("[data-radix-popper-content-wrapper]")) return;
+      if (e.key !== "Escape") return;
+      if (aMenuOrPopoverIsOpen()) return;
       setFullScreen(false);
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, [fullScreen]);
 
   const conversationId = chat.conversationId;
   const conversationTitle = useAppSelector((state) =>
     conversationId ? selectConversationTitle(conversationId)(state) : null,
   );
-  const chatTitle = conversationTitle?.trim() || "New chat";
+  // The server names a chat after its first turn; that name lands on the
+  // conversation LIST row before the open conversation record hears of it.
+  const listTitle = useAppSelector((state) =>
+    conversationId
+      ? (selectConversationListItemById(conversationId)(state)?.title ?? null)
+      : null,
+  );
+  const chatTitle =
+    conversationTitle?.trim() || listTitle?.trim() || "New chat";
 
   const chatColumn = (
     <CanvasChatColumn
@@ -231,8 +260,13 @@ export function ChatCanvasWorkspace({
   const navCollapsed = nav.state !== "open";
   const showNav = !compact && !fullScreen && nav.state !== "collapsed";
   const showDockedChat = !compact && !fullScreen && placement === "side";
-  const showFloatingChat = !compact && !fullScreen && placement === "floating" && floatOpen;
-  const showProperties = !compact && !fullScreen && properties !== undefined && properties.tabs.length > 0;
+  const showFloatingChat =
+    !compact && !fullScreen && placement === "floating" && floatOpen;
+  const showProperties =
+    !compact &&
+    !fullScreen &&
+    properties !== undefined &&
+    properties.tabs.length > 0;
   const navToggleInCanvasHeader = !compact && navCollapsed && !showDockedChat;
 
   const chatTitleMenu = (
@@ -243,7 +277,10 @@ export function ChatCanvasWorkspace({
           className="flex h-7 min-w-0 items-center gap-1 rounded-md px-1.5 text-sm font-medium text-foreground hover:bg-accent"
         >
           <span className="min-w-0 truncate">{chatTitle}</span>
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <ChevronDown
+            className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
@@ -254,7 +291,12 @@ export function ChatCanvasWorkspace({
         {conversationId ? (
           <>
             <DropdownMenuItem
-              onSelect={() => void conversationRenameOpener.open({ conversationId, title: conversationTitle })}
+              onSelect={() =>
+                void conversationRenameOpener.open({
+                  conversationId,
+                  title: conversationTitle ?? listTitle,
+                })
+              }
             >
               <PencilLine className="mr-2 h-4 w-4" />
               Rename
@@ -280,7 +322,10 @@ export function ChatCanvasWorkspace({
           className="flex h-7 min-w-0 items-center gap-1 rounded-md px-1.5 text-sm font-medium text-foreground hover:bg-accent"
         >
           <span className="min-w-0 truncate">{title}</span>
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <ChevronDown
+            className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
@@ -288,7 +333,9 @@ export function ChatCanvasWorkspace({
       </DropdownMenuContent>
     </DropdownMenu>
   ) : (
-    <h1 className="min-w-0 truncate px-1.5 text-sm font-medium text-foreground">{title}</h1>
+    <h1 className="min-w-0 truncate px-1.5 text-sm font-medium text-foreground">
+      {title}
+    </h1>
   );
 
   return (
@@ -303,6 +350,7 @@ export function ChatCanvasWorkspace({
           activeConversationId={conversationId}
           onOpenConversation={openFromHistory}
           onNewChat={chat.startNew}
+          className="max-lg:hidden"
         />
       ) : null}
 
@@ -311,7 +359,7 @@ export function ChatCanvasWorkspace({
         <section
           aria-label="Chat"
           style={{ width: CANVAS_CHAT_PANEL_WIDTH_PX }}
-          className="flex h-full min-h-0 shrink-0 flex-col border-r border-border bg-card"
+          className="flex h-full min-h-0 shrink-0 flex-col border-r border-border bg-card max-lg:hidden"
         >
           <div className="flex h-11 shrink-0 items-center gap-1 border-b border-border px-2">
             {navCollapsed ? <CanvasNavToggle nav={nav} /> : null}
@@ -334,74 +382,85 @@ export function ChatCanvasWorkspace({
       {/* ── Canvas area ── */}
       <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
         <header className="flex h-11 shrink-0 items-center gap-1.5 border-b border-border px-3">
-          {compact ? (
-            <button
-              type="button"
-              aria-label="Open navigation"
-              onClick={() => setMobileSheet("nav")}
-              className={cn(ICON_BUTTON, "h-11 w-11")}
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-          ) : navToggleInCanvasHeader ? (
-            <CanvasNavToggle nav={nav} />
+          {/* Compact (< 1024px) and wide controls are BOTH rendered and chosen by
+              CSS, so a phone's first paint is right before JavaScript measures. */}
+          <button
+            type="button"
+            aria-label="Open navigation"
+            onClick={() => setMobileSheet("nav")}
+            className={cn(ICON_BUTTON, "h-11 w-11 lg:hidden")}
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          {navToggleInCanvasHeader ? (
+            <CanvasNavToggle nav={nav} className="max-lg:hidden" />
           ) : null}
           <div className="flex min-w-0 flex-1 items-center">{canvasTitle}</div>
-          {byline && !compact ? (
-            <span className="shrink-0 text-xs text-muted-foreground">{byline}</span>
+          {byline ? (
+            <span className="shrink-0 text-xs text-muted-foreground max-lg:hidden">
+              {byline}
+            </span>
           ) : null}
 
-          {compact ? (
-            <>
+          <div className="flex shrink-0 items-center lg:hidden">
+            <button
+              type="button"
+              aria-label="Chat"
+              onClick={() => setMobileSheet("chat")}
+              className={cn(ICON_BUTTON, "h-11 w-11")}
+            >
+              <MessageSquare className="h-5 w-5" />
+            </button>
+            {properties && properties.tabs.length > 0 ? (
               <button
                 type="button"
-                aria-label="Chat"
-                onClick={() => setMobileSheet("chat")}
+                aria-label="Properties"
+                onClick={() => setMobileSheet("properties")}
                 className={cn(ICON_BUTTON, "h-11 w-11")}
               >
-                <MessageSquare className="h-5 w-5" />
+                <PanelRightOpen className="h-5 w-5" />
               </button>
-              {properties && properties.tabs.length > 0 ? (
-                <button
-                  type="button"
-                  aria-label="Properties"
-                  onClick={() => setMobileSheet("properties")}
-                  className={cn(ICON_BUTTON, "h-11 w-11")}
-                >
-                  <PanelRightOpen className="h-5 w-5" />
-                </button>
-              ) : null}
-            </>
-          ) : (
-            <>
-              {placement === "floating" && !fullScreen ? (
-                <button
-                  type="button"
-                  onClick={() => setPlacement("side")}
-                  title="Dock the chat (Ctrl/Cmd + \)"
-                  className="flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-sm font-medium text-foreground hover:bg-accent"
-                >
-                  <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  Chat
-                </button>
-              ) : null}
+            ) : null}
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5 max-lg:hidden">
+            {placement === "floating" && !fullScreen ? (
               <button
                 type="button"
-                aria-label={placement === "side" ? "Float the chat" : "Dock the chat"}
-                aria-pressed={placement === "side"}
-                title={`${placement === "side" ? "Float" : "Dock"} the chat (Ctrl/Cmd + \\)`}
-                onClick={togglePlacement}
-                className={cn(ICON_BUTTON, placement === "side" && !fullScreen && "bg-primary/10 text-primary")}
+                onClick={() => setPlacement("side")}
+                title="Dock the chat (Ctrl/Cmd + \)"
+                className="flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-sm font-medium text-foreground hover:bg-accent"
               >
-                <PanelRight className="h-4 w-4" />
+                <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
+                Chat
               </button>
-            </>
-          )}
+            ) : null}
+            <button
+              type="button"
+              aria-label={
+                placement === "side" ? "Float the chat" : "Dock the chat"
+              }
+              aria-pressed={placement === "side"}
+              title={`${placement === "side" ? "Float" : "Dock"} the chat (Ctrl/Cmd + \\)`}
+              onClick={togglePlacement}
+              className={cn(
+                ICON_BUTTON,
+                placement === "side" &&
+                  !fullScreen &&
+                  "bg-primary/10 text-primary",
+              )}
+            >
+              <PanelRight className="h-4 w-4" />
+            </button>
+          </div>
 
           <SurfaceAgentsHeaderButton isAuthenticated={isAuthenticated} />
           <InboxHeaderButton isAuthenticated={isAuthenticated} />
           {record?.commentToken ? (
-            <EntityCommentPopover token={record.commentToken} id={record.resourceId} className="h-7" />
+            <EntityCommentPopover
+              token={record.commentToken}
+              id={record.resourceId}
+              className="h-7"
+            />
           ) : null}
           {record ? (
             <ShareButton
@@ -412,23 +471,25 @@ export function ChatCanvasWorkspace({
               className="h-7 bg-foreground px-2.5 text-background hover:bg-foreground/90"
             />
           ) : null}
-          {!compact ? (
-            <button
-              type="button"
-              aria-label={fullScreen ? "Exit full screen" : "Full screen"}
-              title={fullScreen ? "Exit full screen (Esc)" : "Full screen"}
-              onClick={() => setFullScreen((on) => !on)}
-              className={ICON_BUTTON}
-            >
-              {fullScreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-            </button>
-          ) : null}
+          <button
+            type="button"
+            aria-label={fullScreen ? "Exit full screen" : "Full screen"}
+            title={fullScreen ? "Exit full screen (Esc)" : "Full screen"}
+            onClick={() => setFullScreen((on) => !on)}
+            className={cn(ICON_BUTTON, "max-lg:hidden")}
+          >
+            {fullScreen ? (
+              <Minimize className="h-4 w-4" />
+            ) : (
+              <Maximize className="h-4 w-4" />
+            )}
+          </button>
           {onClose ? (
             <button
               type="button"
               aria-label="Close"
               onClick={onClose}
-              className={cn(ICON_BUTTON, compact && "h-11 w-11")}
+              className={cn(ICON_BUTTON, "max-lg:h-11 max-lg:w-11")}
             >
               <X className="h-4 w-4" />
             </button>
@@ -437,7 +498,10 @@ export function ChatCanvasWorkspace({
 
         <div className="flex min-h-0 flex-1">
           {/* The canvas slot — `isolate` keeps the floating chat's z-order inside it. */}
-          <div ref={setCanvasEl} className="relative isolate min-h-0 min-w-0 flex-1 overflow-hidden">
+          <div
+            ref={setCanvasEl}
+            className="relative isolate min-h-0 min-w-0 flex-1 overflow-hidden"
+          >
             {canvas}
             {showFloatingChat ? (
               <MatrxFloatingFrame
@@ -453,6 +517,7 @@ export function ChatCanvasWorkspace({
                 initialFocus={false}
                 onClose={() => setFloatOpen(false)}
                 contentClassName="flex flex-col overflow-hidden p-0"
+                className="max-lg:hidden"
                 headerActions={
                   <button
                     type="button"
@@ -470,17 +535,29 @@ export function ChatCanvasWorkspace({
             ) : null}
           </div>
 
-          {showProperties && properties ? <CanvasPropertiesPanel tabs={properties.tabs} /> : null}
+          {showProperties && properties ? (
+            <CanvasPropertiesPanel
+              tabs={properties.tabs}
+              className="max-lg:hidden"
+            />
+          ) : null}
         </div>
       </div>
 
       {/* ── Compact (< 1024px): one pane; chat, nav and properties in bottom sheets ── */}
       {compact ? (
-        <Drawer open={mobileSheet !== null} onOpenChange={(open) => !open && setMobileSheet(null)}>
+        <Drawer
+          open={mobileSheet !== null}
+          onOpenChange={(open) => !open && setMobileSheet(null)}
+        >
           <DrawerContent className="flex h-[85dvh] flex-col pb-safe">
             <DrawerHeader className="py-2">
-              <DrawerTitle className="text-sm">
-                {mobileSheet === "nav" ? "AI Matrx" : mobileSheet === "properties" ? "Properties" : chatTitle}
+              <DrawerTitle className={cn("text-sm", mobileSheet === "nav" && "sr-only")}>
+                {mobileSheet === "nav"
+                  ? "AI Matrx"
+                  : mobileSheet === "properties"
+                    ? "Properties"
+                    : chatTitle}
               </DrawerTitle>
               <DrawerDescription className="sr-only">
                 {mobileSheet === "chat"
@@ -494,7 +571,10 @@ export function ChatCanvasWorkspace({
               {mobileSheet === "chat" ? (
                 <>
                   <div className="flex shrink-0 justify-center px-3 pb-2">
-                    <ComposerModeSwitch size="panel" initialMode={initialMode} />
+                    <ComposerModeSwitch
+                      size="panel"
+                      initialMode={initialMode}
+                    />
                   </div>
                   {chatColumn}
                 </>

@@ -1987,6 +1987,11 @@ body:has(.shell-root[data-pathname^="/administration"]) {
    --------------------------------------------------------------------------- */
 .shell-root[data-shell-chrome="canvas"],
 .shell-root[data-shell-chrome="canvas"]:has(> #shell-sidebar-toggle:checked) {
+  /* No shell header here, so nothing below may clear one: every consumer that
+     offsets by the header height (the demos content box, scroll padding,
+     panels) reads this variable and gets 0 — one fix for the whole class. */
+  --shell-header-h: 0px;
+  --shell-header-clearance: 0px;
   grid-template-columns: 1fr;
   grid-template-rows: 0 1fr;
   grid-template-areas:

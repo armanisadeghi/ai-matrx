@@ -37,6 +37,7 @@ import {
 import { shellIconComponents, type ShellIconName } from "@/features/shell/shellIconMap";
 import { useNavPanelActions } from "@/features/shell/navigation/navPanelActions";
 import { CanvasUserRow } from "./CanvasUserRow";
+import { aMenuOrPopoverIsOpen } from "./open-layer";
 import {
   writeCanvasNavCookie,
   type CanvasNavPersisted,
@@ -48,10 +49,6 @@ export const CANVAS_NAV_WIDTH_PX = 240;
 /** How long the pointer may be away from icon + overlay before the overlay closes. */
 const HOVER_CLOSE_DELAY_MS = 160;
 
-/** True while a popper (org drop-up, More flyout, a row menu) is open — it owns the pointer. */
-function aPopperIsOpen(): boolean {
-  return document.querySelector("[data-radix-popper-content-wrapper]") !== null;
-}
 
 // ── State ───────────────────────────────────────────────────────────────────
 
@@ -95,7 +92,8 @@ export function useCanvasNavState(initial: CanvasNavPersisted): CanvasNavControl
     hoverLeave: () => {
       cancelClose();
       closeTimer.current = window.setTimeout(() => {
-        if (aPopperIsOpen()) return;
+        // The org drop-up, the More flyout or a row menu owns the pointer.
+        if (aMenuOrPopoverIsOpen()) return;
         setState((current) => (current === "hover" ? "collapsed" : current));
       }, HOVER_CLOSE_DELAY_MS);
     },
