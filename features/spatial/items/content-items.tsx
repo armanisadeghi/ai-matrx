@@ -9,7 +9,7 @@
 import { useState } from "react";
 import { FileText, Globe, Image as ImageIcon, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import type { NodeSource } from "../board/document";
 import { HtmlTileBody, ImageTileBody } from "../tiles/MediaTileBodies";
 import { MarkdownTileBody } from "../tiles/MarkdownTileBody";

@@ -284,6 +284,7 @@ describe("saved board document", () => {
     const out = toJsonCanvas(
       {
         camera: { x: 0, y: 0, z: 1 },
+        shapes: [],
         groups: [{ id: "g", rect: { x: 0, y: 0, w: 10, h: 10 }, title: "G" }],
         nodes: [
           { id: "t", rect: { x: 1.4, y: 2, w: 3, h: 4 }, title: "T", source: { kind: "text", markdown: "# hi" } },
