@@ -1,6 +1,6 @@
 # THE UI SURFACE CHECKLIST — one list, every law, per surface
 
-This is the centralized checklist the `surface-check` skill drives. A surface
+This is the centralized checklist the `surface-check` skill drives. A worker doing ONE pass per page (agent surface + UI/UX cleanup) reads the trimmed version, [`../page-pass/SKILL.md`](../page-pass/SKILL.md), instead. A surface
 **passes** only when every section below is ✅ (or explicitly N/A with a one-line
 reason). Each section names the **owning skill / doc** (invoke it — this file
 never restates a rule body), the **check command** when one exists, and the
