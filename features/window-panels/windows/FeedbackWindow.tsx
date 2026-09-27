@@ -1084,9 +1084,11 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
   // A new tile is scrolled into view — it used to land under the footer.
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tilesRef = useRef<HTMLDivElement>(null);
+  // (Only matters once the window has reached its maximum height — below
+  // that the window grows to show it, see the fit effect.)
   useEffect(() => {
     if (attachments.length > 0)
-      tilesRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      tilesRef.current?.scrollIntoView({ block: "nearest" });
   }, [attachments.length]);
 
   // The window FITS its form (capped at the viewport, body scrolls beyond):
@@ -1110,7 +1112,14 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
       const chrome = root.offsetHeight - scroller.clientHeight;
       const TOP_CLEAR = 56;
       const maxHeight = window.innerHeight - TOP_CLEAR - 16;
-      const height = Math.min(maxHeight, Math.ceil(chrome + content.offsetHeight + pad));
+      const wanted = Math.ceil(chrome + content.offsetHeight + pad);
+      const height = Math.min(maxHeight, wanted);
+      // Everything fits: nothing may stay scrolled out of view (a new tile's
+      // scrollIntoView ran before the window grew and hid the type choice).
+      if (wanted <= maxHeight)
+        requestAnimationFrame(() => {
+          scroller.scrollTop = 0;
+        });
       const rect = root.getBoundingClientRect();
       if (Math.abs(rect.height - height) < 2) return;
       const bottom = rect.top + rect.height;
