@@ -479,7 +479,10 @@ function InputPanel({
     { id: "link", label: "Link", icon: Link2 },
   ];
   return (
-    <div className="rounded-xl border border-border bg-card">
+    <div
+      className="rounded-xl border border-border bg-card"
+      data-surface-value="kit_request_draft"
+    >
       <div className="flex gap-1 border-b border-border p-1.5">
         {modes.map((m) => (
           <button
@@ -738,7 +741,7 @@ function KitPicker(props: {
   onToggle: (k: TargetKind) => void;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-surface-value="output_options">
       <label className="text-xs font-medium text-muted-foreground">
         What should we make?
       </label>
