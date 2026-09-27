@@ -664,7 +664,7 @@ export function EntityListPage<TRow>({
           cap, so nothing about them changes.
         */}
         {notice && (
-          <div className="max-h-[42vh] overflow-y-auto">
+          <div className="max-h-[42dvh] overflow-y-auto">
             {typeof notice === "function" ? notice(list) : notice}
           </div>
         )}
