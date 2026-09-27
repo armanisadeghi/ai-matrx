@@ -275,9 +275,13 @@ function CustomComponentRenderer({
     requestStatus === "error"
       ? {
           type: APP_RUN_ERROR_TITLE,
+          // The server's refusal is `request.error` (ErrorPayload); requests
+          // carry no `errorMessage` (a tool-call field), so this used to show
+          // only the fallback (page-pass /p/[slug], 2026-09-27).
           message:
-            (request as unknown as { errorMessage?: string })?.errorMessage ??
-            "Agent execution failed",
+            request?.error?.user_message?.trim() ||
+            request?.error?.message?.trim() ||
+            "This run could not finish. Try again in a moment.",
         }
       : null;
   const error = localError ?? requestError;
