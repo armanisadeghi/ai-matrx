@@ -15,6 +15,7 @@
 
 import { formatDurationMinutes } from "@ai-matrx/kit/format";
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -37,6 +38,7 @@ import type { LearningGainReport } from "../../learning-gain/types";
 import type { ItemMasteryRow } from "../../types";
 import type { StudyAnalytics } from "../computeAnalytics";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { topicLabel } from "../../utils/topicLabel";
 
 export interface StudyAnalyticsViewProps {
   analytics: StudyAnalytics | null;
@@ -68,7 +70,7 @@ export function StudyAnalyticsView({
   loading,
   error,
   heading = "Your progress",
-  backHref = "/education",
+  backHref,
   readOnly = false,
   narrative,
   learningGainHref,
@@ -87,19 +89,21 @@ export function StudyAnalyticsView({
     : 1;
 
   return (
-    <div className="min-h-full w-full bg-textured">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-8">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mb-4 h-8 px-2 text-xs text-muted-foreground"
-          onClick={() => (backHref ? router.push(backHref) : router.back())}
-        >
-          <ArrowLeft className="mr-1 h-4 w-4" />
-          Back
-        </Button>
+    <div className="matrx-touch-targets min-h-full w-full bg-textured">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-4 sm:py-6">
+        {backHref && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mb-3 h-8 px-2 text-xs text-muted-foreground"
+            onClick={() => router.push(backHref)}
+          >
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Back
+          </Button>
+        )}
 
-        <div className="mb-5 flex items-center justify-between gap-2">
+        <div className="mb-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-primary" />
             <h1 className="text-lg font-semibold text-foreground">{heading}</h1>
@@ -178,20 +182,25 @@ export function StudyAnalyticsView({
                 label="Due now"
                 value={`${analytics.overall.dueNow}`}
                 accent={analytics.overall.dueNow > 0 ? "amber" : undefined}
+                href={readOnly ? undefined : "/education/flashcards/review"}
               />
               <Stat
                 icon={Flame}
-                label="Day streak"
-                value={`${analytics.currentStreak}`}
+                label="Streak"
+                value={`${analytics.currentStreak} ${analytics.currentStreak === 1 ? "day" : "days"}`}
                 accent={analytics.currentStreak > 0 ? "amber" : undefined}
+                href={readOnly ? undefined : "/education/flashcards/sessions"}
               />
               <Stat
                 icon={Clock}
-                label="Time"
+                label="Time studied"
                 value={formatMinutes(analytics.totalMinutes)}
+                href={readOnly ? undefined : "/education/flashcards/sessions"}
               />
             </div>
 
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="flex min-w-0 flex-col gap-4">
             {/* Mastery distribution */}
             <section className="rounded-xl border border-border bg-card p-4">
               <h2 className="mb-3 text-sm font-medium text-foreground">Mastery</h2>
@@ -226,15 +235,15 @@ export function StudyAnalyticsView({
                   {analytics.byMode.map((mode) => (
                     <li
                       key={mode.itemType}
-                      className="flex items-center justify-between gap-3 text-sm"
+                      className="flex flex-col gap-0.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3"
                     >
                       <span className="text-foreground">{mode.label}</span>
-                      <span className="flex items-center gap-3 text-xs tabular-nums text-muted-foreground">
+                      <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs tabular-nums text-muted-foreground">
                         <span>{mode.studied} studied</span>
                         <span>
                           {mode.accuracyPct == null
-                            ? "—"
-                            : `${mode.accuracyPct}% acc`}
+                            ? "No graded answers"
+                            : `${mode.accuracyPct}% accuracy`}
                         </span>
                         <span className="text-green-600 dark:text-green-400">
                           {mode.mastered} mastered
@@ -246,19 +255,20 @@ export function StudyAnalyticsView({
               </section>
             )}
 
+            </div>
+            <div className="flex min-w-0 flex-col gap-4">
             {/* Weak areas — the smallest subset causing the most errors */}
             {analytics.weakTopics.filter((t) => t.struggling > 0).length > 0 && (
               <section className="rounded-xl border border-border bg-card p-4">
-                <div className="mb-1 flex items-center gap-2">
+                <div
+                  className="mb-3 flex items-center gap-2"
+                  title="The smallest set of material causing the most errors — clear these first."
+                >
                   <Flame className="h-4 w-4 text-red-500" />
                   <h2 className="text-sm font-medium text-foreground">
                     Highest-leverage fixes
                   </h2>
                 </div>
-                <p className="mb-3 text-xs text-muted-foreground">
-                  The smallest set of material causing the most errors — clear
-                  these first.
-                </p>
                 <ul className="flex flex-col gap-2">
                   {analytics.weakTopics
                     .filter((t) => t.struggling > 0)
@@ -266,10 +276,10 @@ export function StudyAnalyticsView({
                     .map((t) => (
                       <li key={t.topic} className="flex items-center gap-3">
                         <span
-                          className="w-32 shrink-0 truncate text-xs text-foreground"
+                          className="w-40 shrink-0 truncate text-xs text-foreground"
                           title={t.topic}
                         >
-                          {t.topic}
+                          {topicLabel(t.topic)}
                         </span>
                         <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                           <div
@@ -313,6 +323,9 @@ export function StudyAnalyticsView({
                   : undefined
               }
             />
+
+            </div>
+            </div>
 
             {/* Trends (accuracy-over-time, weekly time, by-topic) — reuse. */}
             <StudyTrends
@@ -391,17 +404,23 @@ function Stat({
   label,
   value,
   accent,
+  href,
 }: {
   icon: typeof Target;
   label: string;
   value: string;
   accent?: "amber" | "green";
+  /** Where the records behind this number open — a count is never a dead end. */
+  href?: string;
 }) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-3">
+  const body = (
+    <>
       <div className="mb-1 flex items-center gap-1.5 text-muted-foreground">
-        <Icon className="h-3.5 w-3.5" />
-        <span className="text-[11px] uppercase tracking-wider">{label}</span>
+        <Icon className="h-3.5 w-3.5 shrink-0" />
+        <span className="truncate text-[11px] uppercase tracking-wider">
+          {label}
+        </span>
+        {href && <ChevronRight className="ml-auto h-3.5 w-3.5 shrink-0" />}
       </div>
       <div
         className={cn(
@@ -415,8 +434,19 @@ function Stat({
       >
         {value}
       </div>
-    </div>
+    </>
   );
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="rounded-xl border border-border bg-card p-3 transition-colors hover:border-primary/40"
+      >
+        {body}
+      </Link>
+    );
+  }
+  return <div className="rounded-xl border border-border bg-card p-3">{body}</div>;
 }
 
 function Legend({

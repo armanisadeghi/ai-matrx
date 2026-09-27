@@ -48,6 +48,7 @@ import type {
   StudySessionRow,
 } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { topicLabel } from "../utils/topicLabel";
 
 /** The only mode wired to a topic join today — see the header note above. */
 type TopicSource = "fc_card";
@@ -403,10 +404,10 @@ export function StudyTrends({
               {topicStats.map((t) => (
                 <li key={t.topic} className="flex items-center gap-3">
                   <span
-                    className="w-28 shrink-0 truncate text-xs text-foreground"
+                    className="w-40 shrink-0 truncate text-xs text-foreground sm:w-56"
                     title={t.topic}
                   >
-                    {t.topic}
+                    {topicLabel(t.topic)}
                   </span>
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                     <div
@@ -424,7 +425,7 @@ export function StudyTrends({
                   <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
                     {t.avgMasteryPct}%
                   </span>
-                  <span className="w-14 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
+                  <span className="w-16 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
                     {t.count} card{t.count === 1 ? "" : "s"}
                   </span>
                 </li>

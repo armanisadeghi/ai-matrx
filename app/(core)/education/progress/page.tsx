@@ -6,8 +6,8 @@ import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import { StudyAnalyticsDashboard } from "@/features/education/study/analytics/components/StudyAnalyticsDashboard";
 
 export const metadata: Metadata = createDynamicRouteMetadata("/education", {
-  titlePrefix: "Study",
-  title: "Your Progress",
+  titlePrefix: "Progress",
+  title: "Study",
   description:
     "Your cross-mode study analytics: mastery, accuracy, weak areas, trends, and what to study next.",
   letter: "Pr",
@@ -15,5 +15,5 @@ export const metadata: Metadata = createDynamicRouteMetadata("/education", {
 });
 
 export default function EducationProgressPage() {
-  return <StudyAnalyticsDashboard backHref="/education" />;
+  return <StudyAnalyticsDashboard />;
 }

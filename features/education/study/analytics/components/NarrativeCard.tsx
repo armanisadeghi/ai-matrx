@@ -26,6 +26,8 @@ import type { PlanBlockKind } from "../../planner/types";
 import type { NarrativeReport } from "../narrative";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 
 const STUDY_ANALYTICS_NARRATIVE_KIND = "study_analytics_narrative" as const;
 
@@ -111,6 +113,12 @@ export interface NarrativeCardProps {
   onRegenerate: () => void;
   /** The narrator's live run — streamed here instead of a waiting line. */
   conversationId?: string | null;
+  /**
+   * The session's organization reading. The narrator is filed under one
+   * organization, so with none selected it cannot run: the card says so and
+   * offers the picker instead of a generic "couldn't generate" line.
+   */
+  organizationState?: OrganizationState;
 }
 
 export function NarrativeCard({
@@ -119,8 +127,12 @@ export function NarrativeCard({
   error,
   onRegenerate,
   conversationId,
+  organizationState = "ready",
 }: NarrativeCardProps) {
   const router = useRouter();
+  const needsOrganization =
+    !report && !loading && organizationState !== "ready" &&
+    organizationState !== "resolving";
 
   return (
     <section className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-transparent p-4">
@@ -135,7 +147,7 @@ export function NarrativeCard({
           size="sm"
           variant="ghost"
           className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
-          disabled={loading}
+          disabled={loading || organizationState !== "ready"}
           onClick={onRegenerate}
         >
           {loading ? (
@@ -147,7 +159,13 @@ export function NarrativeCard({
         </Button>
       </div>
 
-      {loading && !report ? (
+      {needsOrganization ? (
+        <OrganizationRequiredNotice
+          compact
+          what="Your insights"
+          description="Insights are written by an agent, and every agent run is filed under one organization. Pick the one you are working in and they will appear here."
+        />
+      ) : loading && !report ? (
         <LiveRunDisplay
           conversationId={conversationId}
           label="Reading your progress"
@@ -158,7 +176,7 @@ export function NarrativeCard({
         <p className="py-2 text-xs text-muted-foreground">
           Couldn&apos;t generate insights right now — your numbers below are
           still live.
-          <ErrorAlchemyMenu />
+          <ErrorAlchemyMenu error={error} />
         </p>
       ) : report ? (
         <>

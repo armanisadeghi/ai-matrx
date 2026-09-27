@@ -25,17 +25,23 @@ import { StudyAnalyticsView } from "./StudyAnalyticsView";
 import type { StudyAnalytics } from "../computeAnalytics";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationProgressScope } from "@/features/surfaces/manifests/education-progress.manifest";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 
 const SURFACE_NAME = "matrx-user/education-progress";
 
 export function StudyAnalyticsDashboard({
-  backHref = "/education",
+  backHref,
 }: {
   backHref?: string;
 }) {
   const { analytics, mastery, latestSession, loading, error } =
     useStudyAnalytics();
   const narrator = useAnalyticsNarrative();
+  // The narrator is filed under one organization; with none selected the run
+  // is refused before it starts. Wait for one instead of auto-firing a run
+  // that can only fail (and toast "Choose a workspace") on every visit.
+  const { organizationState } = useOrganizationRequired();
+  const orgReady = organizationState === "ready";
   const [report, setReport] = useState<NarrativeReport | null>(null);
   const [gain, setGain] = useState<LearningGainReport | null>(null);
   const narratedRef = useRef(false);
@@ -100,13 +106,14 @@ export function StudyAnalyticsDashboard({
       analytics &&
       analytics.hasData &&
       analytics.overall.studied >= 3 &&
+      orgReady &&
       !narratedRef.current &&
       !storedIsCurrent
     ) {
       narratedRef.current = true;
       void runNarration(analytics);
     }
-  }, [analytics, storedIsCurrent]);
+  }, [analytics, storedIsCurrent, orgReady]);
 
   useEffect(() => {
     let cancelled = false;
@@ -136,6 +143,7 @@ export function StudyAnalyticsDashboard({
               conversationId={narrator.conversationId}
               loading={narrator.isNarrating}
               error={narrator.error}
+              organizationState={organizationState}
               onRegenerate={() => {
                 narratedRef.current = true;
                 void runNarration(analytics);
