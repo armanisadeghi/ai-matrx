@@ -17,21 +17,29 @@ export function studyGuideOutlineDisplayTitle(outline: readonly NoteOutlineItem[
   };
 }
 
-/** Some generated notes contain source-page artifacts written as ATX headings.
- * Only structural extraction markers are excluded; uncertain headings remain. */
-function isExtractionArtifact(item: NoteOutlineItem): boolean {
-  const text = item.text;
-  return /<page\s+number\s*=/i.test(text)
-    || /^\|.+\|/.test(text)
-    || /={4,}/.test(text)
-    || /(^|\s-\s)[•▪]/.test(text)
-    || /\(\d+\s+of\s+\d+\)\s*-/i.test(text)
-    || /\.\.\.\s*-\s*Example\b.*\(\d+\s+of\s+\d+\)$/i.test(text);
+/** A source caption with no body before a peer heading cannot own a section. */
+function isEmptyCaption(item: NoteOutlineItem, next: NoteOutlineItem | undefined, content: string): boolean {
+  if (!next || next.level !== item.level || !content) return false;
+  const lineEnd = content.indexOf("\n", item.charOffset);
+  return lineEnd >= 0 && content.slice(lineEnd + 1, next.charOffset).trim() === "";
 }
 
-export function studyGuideOutlineItems(outline: readonly NoteOutlineItem[]): NoteOutlineItem[] {
+/** Some generated notes contain source-page artifacts written as ATX headings.
+ * Page-number metadata is unambiguous. Other extraction signatures require an
+ * empty caption immediately replaced by a same-level section heading. */
+function isExtractionArtifact(item: NoteOutlineItem, next: NoteOutlineItem | undefined, content: string): boolean {
+  const text = item.text;
+  if (/<page\s+number\s*=/i.test(text)) return true;
+  if (!isEmptyCaption(item, next, content)) return false;
+  return /\.\.\.\s*-\s*[•▪]/.test(text)
+    || /^Example\s+\d+(?:\.\d+)?\s*\([a-z]\)\s*\(\d+\s+of\s+\d+\)\s*-/i.test(text)
+    || /\.\.\.\s*-\s*Example\b.*\(\d+\s+of\s+\d+\)$/i.test(text)
+    || /\s-\s[•▪]/.test(text);
+}
+
+export function studyGuideOutlineItems(outline: readonly NoteOutlineItem[], content = ""): NoteOutlineItem[] {
   const title = studyGuideOutlineTitle(outline);
-  return outline.filter((item) => item !== title && !isExtractionArtifact(item));
+  return outline.filter((item, index) => item !== title && !isExtractionArtifact(item, outline[index + 1], content));
 }
 
 /** Three visual tiers beneath the document title. No heading is orphaned. */
