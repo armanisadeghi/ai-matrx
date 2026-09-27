@@ -711,6 +711,10 @@ export function BingConnectionsWorkspace() {
                           : `Connect ${selectedSite.domain}`}
                       </Button>
                     </div>
+                  ) : inventory.isError ? (
+                    // The inventory read failed — its failure (with the menu
+                    // and a retry) is already said above; claim no emptiness.
+                    null
                   ) : (
                     <div className="rounded-lg border border-border bg-muted/30 p-3">
                       <p className="text-xs font-medium">

@@ -397,9 +397,11 @@ export function PageLinksCard({ page }: { page: MarketingPage }) {
       [
         "Inbound acceptable",
         inboundReport.summary.acceptablePercent === null
-          ? savedAcceptedAnchors.length > 0
-            ? "No inbound links to evaluate"
-            : "Not configured"
+          ? inbound.isError
+            ? "Unknown — the inbound links could not be read"
+            : savedAcceptedAnchors.length > 0
+              ? "No inbound links to evaluate"
+              : "Not configured"
           : `${inboundReport.summary.acceptablePercent.toFixed(1)}%`,
       ],
       ["Inbound links needing fixes", inboundReport.summary.unacceptableLinks],

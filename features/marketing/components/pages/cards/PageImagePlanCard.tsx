@@ -277,6 +277,7 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
     >
       {entries.length === 0 ? (
         <div className="grid gap-2 p-3">
+          {/* read-gate-exempt: an editor draft (useDesiredValueSlice) seeded from the page row the parent already loaded — no read of its own can fail here */}
           <p className="text-xs text-muted-foreground">
             No images planned yet. Describe the images this page should have —
             then generate them in one click or hand them off as tasks.

@@ -930,6 +930,7 @@ export function NodePanel({
                   (node.brief?.length ?? 0) === 0
                     ? "No brief yet — draft one on the Research tab first."
                     : keywordGap
+                      // read-gate-exempt: a step's blocked-reason sentence about this node's own fields, not an empty view over a read
                       ? "No target keyword yet — set one on the Keywords tab first."
                       : null
                 }
@@ -1023,6 +1024,7 @@ export function NodePanel({
                     }
                     title={
                       (node.brief?.length ?? 0) === 0
+                        // read-gate-exempt: a step's blocked-reason sentence about this node's own fields, not an empty view over a read
                         ? "No brief yet — draft one on the Research tab first."
                         : keywordGap
                           ? "No target keyword yet — set one on the Keywords tab first."
@@ -1051,6 +1053,7 @@ export function NodePanel({
                       ? cmsPage
                         ? null
                         : "Not on the website yet — create it on the Build tab first."
+                      // read-gate-exempt: a step's blocked-reason sentence about this node's own fields, not an empty view over a read
                       : "No website linked yet — link one in Setup first."
                   }
                 />

@@ -422,6 +422,7 @@ export function PlanTree({
         >
           {rows.length === 0 ? (
             <div className="px-4 py-8 text-center">
+              {/* read-gate-exempt: `nodes` is a prop from ContentPlanWorkbench's usePlanNodes read, which shows its failure instead of mounting this tree; "no pages match" filters those rows */}
               <p className="text-sm font-medium text-foreground">
                 {nodes.length === 0 ? "No nodes planned yet" : "No pages match"}
               </p>

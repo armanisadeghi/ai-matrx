@@ -203,7 +203,7 @@ function BrandPortalsPanel({
         </div>
       ) : null}
 
-      {portals.length === 0 && !adding ? (
+      {portals.length === 0 && !adding && assetsQuery.isSuccess ? (
         <p className="text-[10px] text-muted-foreground">
           No portals yet — add the brand&apos;s press kit, asset portal, or
           partner media library.

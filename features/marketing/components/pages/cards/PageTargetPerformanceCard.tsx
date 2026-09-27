@@ -277,13 +277,17 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
         "Page GSC",
         data?.pageStat
           ? `${data.pageStat.clicks} clicks · ${data.pageStat.impressions} impressions · pos ${data.pageStat.position?.toFixed(1) ?? "—"}`
-          : "no impressions recorded",
+          : evidence.isError
+            ? "unknown — the read failed"
+            : "no impressions recorded",
       ],
       [
         "AI answer",
         data?.aiAnswer
           ? `${engineLabel(data.aiAnswer.engine)} · ${data.aiAnswer.citationCount ?? data.aiAnswer.citations.length} citations · site cited: ${siteCitations.length > 0 ? "yes" : "no"}`
-          : "no AI-answer run stored",
+          : evidence.isError
+            ? "unknown — the read failed"
+            : "no AI-answer run stored",
       ],
     ],
     attributes: { page_id: page.id, site_id: page.site_id },

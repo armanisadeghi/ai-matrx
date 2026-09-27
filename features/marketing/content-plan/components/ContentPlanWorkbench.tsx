@@ -408,6 +408,7 @@ export function ContentPlanWorkbench({
    * page led with.
    */
   const getGroomerConfig = useCallback((): AgentCopyGroomerConfig => {
+    // read-gate-exempt: the copy payload's title when no site is selected — a label, not a claim that a list is empty
     const siteLabel = site ? (site.domain ?? site.name) : "no site";
     const entityRows = entities.data ?? [];
     const partyRows = siteParties.data ?? [];

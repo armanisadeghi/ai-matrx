@@ -526,6 +526,7 @@ export function SiteAnalyticsPanel({
                           {delta}
                         </span>
                       ) : (
+                        // read-gate-exempt: "no change" is the delta between two loaded windows, not an empty list; the window read's failure is shown by InlineQueryError above
                         <span>no change</span>
                       )}
                       {` vs ${integer(previous)} in the previous ${range} days`}

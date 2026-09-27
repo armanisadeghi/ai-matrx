@@ -1162,7 +1162,7 @@ function ListingsMatrix({
  * the canonical profile.
  */
 function OnSiteSchemaCard({ location }: { location: BusinessLocation }) {
-  // access-errors: ok — resolves which site to read evidence from; the evidence read below surfaces its own InlineQueryError
+  // Which site to read evidence from — its own failure is said in the card (never "no website").
   const sitesQuery = useBrandSites(location.brand_id);
   const site = (sitesQuery.data ?? [])[0] ?? null;
   const evidenceQuery = useSiteRootStructuredData(site?.id ?? "");
@@ -1196,7 +1196,17 @@ function OnSiteSchemaCard({ location }: { location: BusinessLocation }) {
       title="On-site structured data (crawled evidence)"
       anchor="local-onsite-schema"
     >
-      {!site ? (
+      {sitesQuery.isError ? (
+        <InlineQueryError
+          what="this brand's websites"
+          error={sitesQuery.error}
+          onRetry={() => void sitesQuery.refetch()}
+        />
+      ) : sitesQuery.isPending ? (
+        <p className="text-sm text-muted-foreground">
+          Finding this brand&apos;s website…
+        </p>
+      ) : !site ? (
         <p className="text-sm text-muted-foreground">
           This brand has no website in the platform yet, so there is nothing to
           check. Add one under{" "}

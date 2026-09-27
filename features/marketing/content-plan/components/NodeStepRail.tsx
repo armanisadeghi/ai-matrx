@@ -541,12 +541,11 @@ export function NodeStepRail({
           // `hasKeywordAssignment` documents for a null plan index. Only a
           // SETTLED read may block; while it is in flight the arrow stays
           // live and the server (which never guesses) is the backstop.
-          const draftsLoaded = artifacts.isSuccess;
           const blockedReason =
             runnable === "p4_write"
               ? writeBlockedReason
               : runnable === "p5_review" &&
-                  draftsLoaded &&
+                  artifacts.isSuccess &&
                   !artifactsByStep
                     .get("p4_write")
                     ?.some((a) => a.valid_to === null)
@@ -741,9 +740,18 @@ export function NodeStepRail({
         <p className="text-[11px] text-destructive">{stepRun.run.error} <ErrorAlchemyMenu error={stepRun.run.error} /></p>
       ) : null}
       {!anyRun && !tabMode ? (
-        <p className="text-[11px] text-muted-foreground">
-          No pipeline steps yet.
-        </p>
+        artifacts.isError ? (
+          <ReadFailure
+            error={artifacts.error}
+            what="this page's pipeline steps"
+            onRetry={() => void artifacts.refetch()}
+            className="m-0"
+          />
+        ) : artifacts.isSuccess ? (
+          <p className="text-[11px] text-muted-foreground">
+            No pipeline steps yet.
+          </p>
+        ) : null
       ) : null}
       {/* Live model output renders in a FLOATING window, never as a block in
         this rail — a block would shift every field below it the moment a run

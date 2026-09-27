@@ -449,6 +449,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
                   <li key={event.event_id} className="rounded border p-3">
                     <div className="font-medium">{event.title}</div>
                     <div className="text-xs text-muted-foreground">
+                      {/* read-gate-exempt: an all-day/undated event's field label inside a loaded agenda, not an empty view */}
                       {event.starts_at
                         ? new Date(event.starts_at).toLocaleString()
                         : "No start time"}

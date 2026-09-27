@@ -1233,6 +1233,7 @@ export default function CompetitorAutopsyWorkspace({
                 <p className="text-sm font-medium">
                   {proposed.length} {proposed.length === 1 ? "call is" : "calls are"} waiting on you
                 </p>
+                {/* read-gate-exempt: explanatory copy under a non-empty proposal count ("nothing here drives spend"), not an empty view */}
                 <p className="text-xs text-muted-foreground">
                   Nothing here drives spend until you say it is right.
                 </p>
