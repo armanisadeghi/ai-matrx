@@ -23,10 +23,8 @@ import { ClassFormDialog, type ClassFormValue } from "./ClassFormDialog";
 import { AccessModeBadge } from "./AccessModeBadge";
 import { daysUntil, nextExamDate } from "../settings";
 import type { ClassSettings, StudyClass } from "../types";
-import {
-  SurfaceRuntimeProvider,
-  type SurfaceWriteOutcome,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
 import {
   EDUCATION_CLASSES_SURFACE_NAME,
@@ -40,51 +38,6 @@ import {
 } from "../classAgentWrites";
 import { setAccessMode } from "../service";
 import { buildEducationClassesScope } from "../classesSurfaceScope";
-
-/** What a class write hands back to the agent. */
-interface ClassWriteOutcome {
-  summary: string;
-  data: { classes: { id: string; slug: string | null; name: string }[] };
-}
-
-function describe(cls: { id: string; slug: string | null; name: string }): string {
-  return `"${cls.name}" (id ${cls.id}${cls.slug ? `, slug ${cls.slug}` : ""})`;
-}
-
-function outcome(
-  verb: "Created" | "Updated" | "Deleted",
-  done: StudyClass[],
-  changed?: string[][],
-): ClassWriteOutcome {
-  const list = done.map(
-    (c, i) =>
-      `${describe(c)}${changed?.[i]?.length ? ` [${changed[i].join(", ")}]` : ""}`,
-  );
-  return {
-    summary: `${verb} ${done.length} class${done.length === 1 ? "" : "es"}: ${list.join("; ")}.`,
-    data: {
-      classes: done.map((c) => ({ id: c.id, slug: c.slug, name: c.name })),
-    },
-  };
-}
-
-/** A write that failed part-way: say exactly what was and was not done. */
-function partialFailure(
-  verb: "Created" | "Updated" | "Deleted",
-  done: StudyClass[],
-  total: number,
-  failedName: string,
-  error: unknown,
-  notAttempted: string[],
-): never {
-  throw new Error(
-    `${verb} ${done.length} of ${total} classes${
-      done.length ? ` (${done.map(describe).join(", ")})` : ""
-    }. "${failedName}" failed: ${
-      error instanceof Error && error.message ? error.message : "unknown error"
-    }.${notAttempted.length ? ` Not attempted: ${notAttempted.join(", ")}.` : ""}`,
-  );
-}
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -199,84 +152,56 @@ export function ClassesHome() {
   // Every class the agent may name by id: active AND archived.
   const allOwned = [...classes, ...archived];
 
-  // Write half. Each target is a pure `validate` (the whole list is checked
-  // against the person's current classes before anything is written) and an
-  // `apply` that writes through this page's own canonical path and returns
-  // what happened, with ids and slugs, for the agent. If one write fails
-  // part-way, the error says exactly which classes were already done, so a
-  // retry never duplicates.
-  const classWriteTargets = {
-    create_classes: {
-      validate: (value: unknown) => {
-        parseCreateClassesValue(
-          value,
-          allOwned.map((c) => c.name),
-        );
+  // Write half — create / update / delete a LIST of classes, through the
+  // shared collection helper: the whole list is checked before the person's
+  // approval card, saved item by item through this page's own functions, a
+  // part-way failure names what was done, and the agent gets back what landed.
+  const toRef = (c: { id: string; slug: string | null; name: string }) => ({
+    id: c.id,
+    slug: c.slug,
+    name: c.name,
+  });
+  const classWriteTargets = collectionWriteHandlers(
+    {
+      plural: "classes",
+      singular: "class",
+      create: {
+        parse: (value) =>
+          parseCreateClassesValue(
+            value,
+            allOwned.map((c) => c.name),
+          ),
+        run: async (input) => toRef(await createClass(input)),
+        nameOf: (input) => input.name,
+        refusalFor: (e) =>
+          isOrganizationSelectionCancelled(e)
+            ? "The person closed the workspace picker, so no classes were created. Ask which workspace the classes belong in."
+            : undefined,
       },
-      apply: async (value: unknown): Promise<SurfaceWriteOutcome> => {
-        const inputs = parseCreateClassesValue(
-          value,
-          allOwned.map((c) => c.name),
-        );
-        const done: StudyClass[] = [];
-        for (const [i, input] of inputs.entries()) {
-          try {
-            done.push(await createClass(input));
-          } catch (e) {
-            if (isOrganizationSelectionCancelled(e) && done.length === 0)
-              refuseSurfaceWrite(
-                "The person closed the workspace picker, so no classes were created. Ask which workspace the classes belong in.",
-              );
-            partialFailure("Created", done, inputs.length, input.name, e,
-              inputs.slice(i + 1).map((c) => c.name));
-          }
-        }
-        return outcome("Created", done);
+      update: {
+        parse: (value) => parseUpdateClassesValue(value, allOwned),
+        run: async (plan) => {
+          const updated = await updateClass(plan.id, plan.patch);
+          // Same as the hub's Edit dialog: an access change is also
+          // registered server-side (+ the owner membership row).
+          if (plan.accessModeChanged)
+            await setAccessMode(plan.id, plan.patch.settings.accessMode);
+          return toRef(updated);
+        },
+        nameOf: (plan) => plan.previousName,
+        changedOf: (plan) => plan.changed,
       },
-    },
-    update_classes: {
-      validate: (value: unknown) => {
-        parseUpdateClassesValue(value, allOwned);
-      },
-      apply: async (value: unknown): Promise<SurfaceWriteOutcome> => {
-        const plans = parseUpdateClassesValue(value, allOwned);
-        const done: StudyClass[] = [];
-        for (const [i, plan] of plans.entries()) {
-          try {
-            const updated = await updateClass(plan.id, plan.patch);
-            // Same as the hub's Edit dialog: an access change is also
-            // registered server-side (+ the owner membership row).
-            if (plan.accessModeChanged)
-              await setAccessMode(plan.id, plan.patch.settings.accessMode);
-            done.push(updated);
-          } catch (e) {
-            partialFailure("Updated", done, plans.length, plan.previousName, e,
-              plans.slice(i + 1).map((p) => p.previousName));
-          }
-        }
-        return outcome("Updated", done, plans.map((p) => p.changed));
+      delete: {
+        parse: (value) => parseDeleteClassesValue(value, allOwned),
+        run: async (cls) => {
+          await deleteClass(cls.id);
+          return toRef(cls);
+        },
+        nameOf: (cls) => cls.name,
       },
     },
-    delete_classes: {
-      validate: (value: unknown) => {
-        parseDeleteClassesValue(value, allOwned);
-      },
-      apply: async (value: unknown): Promise<SurfaceWriteOutcome> => {
-        const targets = parseDeleteClassesValue(value, allOwned);
-        const done: StudyClass[] = [];
-        for (const [i, cls] of targets.entries()) {
-          try {
-            await deleteClass(cls.id);
-            done.push(cls as StudyClass);
-          } catch (e) {
-            partialFailure("Deleted", done, targets.length, cls.name, e,
-              targets.slice(i + 1).map((c) => c.name));
-          }
-        }
-        return outcome("Deleted", done);
-      },
-    },
-  };
+    refuseSurfaceWrite,
+  );
 
   // Two-phase registration: `validate` runs before the person's approval
   // card (a bad list is refused and no card is shown), `apply` after approval;
