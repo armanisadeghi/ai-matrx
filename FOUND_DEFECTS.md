@@ -15,6 +15,17 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D356 — OPEN 2026-09-27 — Stop ends the stream on screen, but the server keeps generating the answer
+
+**Seen live (2026-09-27, composer build review, as admin@admin.com on /chat/new, org Titanium):** clicking Stop
+mid-stream stopped the visible stream and the Stop button went away, but reloading the conversation showed the
+full, completed answer — the server ran the turn to the end after the person asked it to stop. Evidence:
+`scratchpad/review/08-after-stop.png` vs `10-existing-conv.png` of that session (not kept). The Stop control's
+JSX and `handleStop` (`InputActionButtons.tsx` → `cancelExecution(executingConversationId ?? conversationId)`)
+were unchanged by that work, so the gap is between `cancelExecution` and the server's run (client abort only,
+or a server that does not honour the cancel). Owner: whoever owns execution-runtime cancel
+(`common-docs/systems/agents/execution-runtime/`). A Stop that does not stop is a screen that lies (law 4).
+
 ### D355 — FIXED 2026-09-27 — Any signed-in person could grant themselves Premium: `billing.user_plan` was client-writable
 
 **Fixed live (2026-09-27, page-pass coordinator):** `platform.entity_types.client_read_only = true` for
