@@ -51,6 +51,15 @@ describe("the Conversation section", () => {
     expect(shareExport.filter((id) => id.startsWith("export-conversation-"))).toEqual([]);
   });
 
+  it("holds ONLY whole-conversation verbs — a message-scoped verb never sits inside it", () => {
+    // Chair ruling 2026-09-26: "Ask a follow-up" / "Quote into chat" act on THIS
+    // message, so they live with the message verbs, never in Conversation.
+    const ids = section(CONVERSATION_SUBMENU_LABEL)?.actionIds ?? [];
+    expect(ids.filter((id) => !/^(conversation-|export-conversation-)/.test(id))).toEqual([]);
+    const top = MENU_STRUCTURE[0].actionIds;
+    for (const id of ["send-to-agent", "ask-followup", "quote-into-chat"]) expect(top).toContain(id);
+  });
+
   it("renders as ONE submenu row holding the verbs, for a chat message", () => {
     const tree = buildMenuTree(registryMenuActions(resolveActions(chatContext("assistant"))));
     const conv = tree.submenus.find((s) => s.label === CONVERSATION_SUBMENU_LABEL);

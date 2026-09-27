@@ -68,15 +68,17 @@ export const MENU_STRUCTURE: MenuSection[] = [
       "thumbs-down",
       "tts-play",
       "continue-in-chat",
+      // Send THIS message onward — one family, adjacent, no heading (no
+      // approved name fits; "Ask in chat" was coined 2026-09-25).
       "send-to-agent",
+      "ask-followup",
+      "quote-into-chat",
       "add-to-rulebook",
       "save-to-task",
-      "copy",
       "pin-message",
       "save-to-notes",
       "summarize-and-listen",
       "summarize-for-listening",
-      "convert-to-study",
     ],
   },
   {
@@ -91,10 +93,6 @@ export const MENU_STRUCTURE: MenuSection[] = [
     actionIds: [
       "conversation-find",
       "conversation-pinned-only",
-      // Ask in chat — continues THIS conversation from the message (folded
-      // here 2026-09-26 so the menu stays within the 17-row D6 bound).
-      "ask-followup",
-      "quote-into-chat",
       "conversation-share",
       "conversation-copy-link",
       "conversation-rename",
@@ -118,6 +116,9 @@ export const MENU_STRUCTURE: MenuSection[] = [
     actionIds: [
       "save-as-message-template",
       "save-as-flashcard",
+      // Flashcards / quiz from this message — the same family as the row
+      // above (folded 2026-09-26 to keep the menu within the 17-row D6 bound).
+      "convert-to-study",
       "save-table-as-data",
       "save-to-scratch",
       "add-to-docs",
@@ -135,6 +136,9 @@ export const MENU_STRUCTURE: MenuSection[] = [
     submenu: "Copy as",
     icon: Copy,
     actionIds: [
+      // The plain copy leads its own family (it sat as a loose top-level row
+      // beside "Copy as › plain text"; folded 2026-09-26 for the D6 bound).
+      "copy",
       "copy-markdown",
       "copy-plain-text",
       "copy-rich-text",
