@@ -25,6 +25,12 @@ export async function confirmGmailReadDisclosure(
           account you choose. This permission cannot send, change, or delete
           email.
         </p>
+        <p>
+          It lets you search that account by phrase and open a selected
+          message body. Sending permission cannot read mail, and metadata-only
+          access cannot search by phrase or return an opened message body, so
+          Gmail reading permission is needed for these actions.
+        </p>
         <div>
           <p className="font-medium text-foreground">How we use Gmail data</p>
           <ul className="mt-1 list-disc space-y-1 pl-5">
