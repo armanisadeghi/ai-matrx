@@ -56,11 +56,11 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
   // that changes what the menu draws, instead of vanishing (ALC-15 round 2).
   const waitersRef = React.useRef<((next: typeof model) => void)[]>([]);
   const nextModel = () => new Promise<typeof model>((resolve) => waitersRef.current.push(resolve));
-  const actionsRef = React.useRef(contextMenuActionsFromModel(model, instanceId, { nextModel }));
+  const actionsRef = React.useRef(contextMenuActionsFromModel(model, instanceId, { nextModel, editable: Boolean(menuProps.isEditable) }));
   const drawnRef = React.useRef("");
   const drawn = modelRevision(model);
   React.useLayoutEffect(() => {
-    actionsRef.current = contextMenuActionsFromModel(model, instanceId, { nextModel });
+    actionsRef.current = contextMenuActionsFromModel(model, instanceId, { nextModel, editable: Boolean(menuProps.isEditable) });
     if (drawnRef.current !== drawn) {
       drawnRef.current = drawn;
       const waiters = waitersRef.current;

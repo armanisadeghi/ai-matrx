@@ -73,11 +73,16 @@ function engine(over: Partial<ContextMenuActions> = {}): ContextMenuActions {
 
 const baseProps = { selectedText: "", canUndo: false, canRedo: false, hasHistory: false, selectionRange: null };
 
-async function resolvedIds(m: ContextMenuActions, isEditable: boolean, extra: Record<string, unknown> = {}) {
+async function resolvedIds(
+  m: ContextMenuActions,
+  isEditable: boolean,
+  extra: Record<string, unknown> = {},
+  targetReadOnly: boolean = !isEditable,
+) {
   const model = buildMenuModel(m, { ...baseProps, isEditable, ...extra });
   const registry = createActionRegistry({ ports: { diagnostics: { capture: jest.fn() } } });
-  registry.register({ id: "context-menu:m1", tier: "T1", actions: () => contextMenuActionsFromModel(model, "m1") });
-  const target = createClickTarget({ readOnly: !isEditable, host: { contextMenu: { kind: "context-menu", instanceId: "m1" } } });
+  registry.register({ id: "context-menu:m1", tier: "T1", actions: () => contextMenuActionsFromModel(model, "m1", { editable: isEditable }) });
+  const target = createClickTarget({ readOnly: targetReadOnly, host: { contextMenu: { kind: "context-menu", instanceId: "m1" } } });
   const resolved = await registry.resolve(target);
   return { model, target, resolved, byId: Object.fromEntries(resolved.map((r) => [r.action.id, r])) };
 }
@@ -87,6 +92,11 @@ describe("a read-only right-click", () => {
     const { byId } = await resolvedIds(engine(), false);
     for (const id of ["cm:cut", "cm:paste", "cm:undo", "cm:redo"]) expect(byId[id]).toBeUndefined();
     expect(byId["cm:copy"]?.eligibility).toEqual({ status: "available" });
+  });
+
+  it("edit-only: absent on a read-only MENU even when rich content makes the target writable (live 2026-09-27, table row)", async () => {
+    const { byId } = await resolvedIds(engine(), false, {}, false);
+    for (const id of ["cm:cut", "cm:paste", "cm:undo", "cm:redo"]) expect(byId[id]).toBeUndefined();
   });
 
   it("editable: the same verbs still grey with their sentence in a field", async () => {

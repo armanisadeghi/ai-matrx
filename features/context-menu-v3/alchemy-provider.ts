@@ -92,6 +92,14 @@ export interface ProviderOptions {
    * loading (the first agent fetch) waits on it instead of vanishing.
    */
   nextModel?: () => Promise<MenuModel>;
+  /**
+   * Whether THIS menu instance edits its surface (`isEditable`). A read-only
+   * wrapper over rich content still gets a writable rich-document target
+   * (actions may write back to the SOURCE), so `target.readOnly` alone cannot
+   * say "the person cannot type here" — this can (live 2026-09-27: a table
+   * row's menu still drew Cut / Paste / Undo / Redo).
+   */
+  editable?: boolean;
 }
 
 /** Rows that INSERT content into the surface: absent on a read-only source. */
@@ -145,7 +153,7 @@ function toAction(node: MenuNode, place: Placement, instanceId: string, opts: Pr
       pending: () => Boolean(node.loading),
       eligible: (t) => {
         if (!own(t)) return absent;
-        if (inserts && t.readOnly) return absent;
+        if (inserts && (t.readOnly || opts.editable === false)) return absent;
         // Still loading: SHOWN (as loading), never silently absent (round 2).
         if (node.loading) return available;
         return !node.disabled && hasRows(node.children) ? available : absent;
@@ -192,7 +200,7 @@ function toAction(node: MenuNode, place: Placement, instanceId: string, opts: Pr
     eligible: (t) => {
       if (!own(t)) return absent;
       if (!node.disabled) return available;
-      if (verb && t.readOnly && EDIT_ONLY_VERBS.has(verb.verb)) return absent;
+      if (verb && (t.readOnly || opts.editable === false) && EDIT_ONLY_VERBS.has(verb.verb)) return absent;
       // R1 (c): only a universal verb greys, and it says why.
       return verb ? { status: "unavailable-verb", verb: verb.verb, sentence: verb.sentence } : absent;
     },
