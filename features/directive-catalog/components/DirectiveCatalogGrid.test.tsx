@@ -101,6 +101,9 @@ describe("DirectiveCatalogGrid", () => {
     });
     expect(tableProps.pageSize).toBe(0);
     expect(tableProps.hidePagination).toBeUndefined();
+    expect(tableProps.paginationLabelFormat?.(1, 2, 2)).toBe("1–2 of 2 nouns");
+    expect(tableProps.paginationLabelFormat?.(1, 1, 1)).toBe("1–1 of 1 matching · 2 nouns");
+    expect(tableProps.paginationLabelFormat?.(0, 0, 0)).toBe("0 matching · 2 nouns");
     expect(tableProps.toolbar?.search).toBe(false);
 
     const columns = tableProps.columns as MatrxColumnDef<NounDirectives>[];

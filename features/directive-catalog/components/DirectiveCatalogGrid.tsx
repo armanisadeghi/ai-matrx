@@ -140,6 +140,15 @@ export function DirectiveCatalogGrid({
         getRowId={(noun) => noun.noun}
         defaultSort={{ id: "noun", direction: "asc" }}
         pageSize={0}
+        // Keep the catalog-wide count that the old toolbar exposed, inside the
+        // one canonical footer. Decision: table owner applying Arman's footer rule.
+        paginationLabelFormat={(start, end, total) =>
+          total === 0
+            ? `0 matching · ${catalog.nouns.length} nouns`
+            : total === catalog.nouns.length
+            ? `${start}–${end} of ${total} nouns`
+            : `${start}–${end} of ${total} matching · ${catalog.nouns.length} nouns`
+        }
         detail={{ enabled: false }}
         grouping={{
           columnId: "family",
