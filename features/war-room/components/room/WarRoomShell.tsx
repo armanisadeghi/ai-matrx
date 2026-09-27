@@ -72,6 +72,7 @@ const RoomAgentWindow = dynamic(() => import("./RoomAgentWindow"), {
 // closed. Reused as-is from the master surface (the slice is shared; the layer
 // is just a renderer).
 import { MasterWatchLayerDoor as MasterWatchLayer } from "@/features/war-room/components/master/MasterWatchLayerDoor";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export function WarRoomShell({ sessionId }: { sessionId: string }) {
   return (
@@ -194,6 +195,14 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
         ) : notFound ? (
           <NotFoundState
             sessionId={sessionId}
+            onRetry={() => dispatch(loadWarRoomSession(sessionId))}
+          />
+        ) : tilesStatus === "error" ? (
+          // The room loaded but its threads read failed: say it — the body used
+          // to render nothing at all here (RC-B12).
+          <ReadFailure
+            error={true}
+            what="this room's threads"
             onRetry={() => dispatch(loadWarRoomSession(sessionId))}
           />
         ) : ready ? (

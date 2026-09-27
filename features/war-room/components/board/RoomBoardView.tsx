@@ -484,6 +484,7 @@ export function RoomBoardView({ sessionId }: { sessionId: string }) {
                   data-spatial-chrome
                   className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card/95 px-4 py-3 text-sm text-muted-foreground shadow-md"
                 >
+                  {/* read-gate-exempt: WarRoomShell renders this board only when the room's thread read is "ready"; a failed read shows ReadFailure there instead */}
                   {hiddenThreads.length > 0
                     ? "Every thread is parked — restore one from the shelf."
                     : "No threads yet — add one from Stage or Grid."}
