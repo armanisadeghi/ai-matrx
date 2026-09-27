@@ -1,5 +1,6 @@
 -- Inverse of databasics_c_the_same_name_rule_on_the_choice_lanes_bodies.sql: both bodies it replaced, byte for byte.
--- based-on: (filled after the clone up)
+-- based-on: custom.field_declare(uuid, uuid, jsonb) a7a09462691cd92565751aac433933823e94c2c16b181859e42d536577dd7943
+-- based-on: custom.field_update(uuid, uuid, jsonb) b88e82cb4d9c5d377cef867afa86b28211320f61a885f1a294b0f996d463a367
 
 CREATE OR REPLACE FUNCTION custom.field_declare(p_organization_id uuid, p_table_id uuid, p_spec jsonb)
  RETURNS uuid
