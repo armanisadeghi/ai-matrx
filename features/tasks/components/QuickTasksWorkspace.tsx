@@ -427,6 +427,7 @@ export function QuickTasksMain({ surfaceDraftRef }: QuickTasksMainProps = {}) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center h-full text-center p-6 bg-card/50">
         <FolderKanban className="h-12 w-12 text-muted-foreground/20 mb-4" />
+        {/* read-gate-exempt: a selection prompt ("no task selected") with a create input, not an empty list; the sidebar's ReadFailure covers a failed task read */}
         <h3 className="text-sm font-medium mb-1">No Task Selected</h3>
         <p className="text-xs text-muted-foreground mb-4">
           Select a task from the sidebar, or create a new one.

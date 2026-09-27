@@ -1,5 +1,7 @@
 "use client";
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 import React from "react";
 import {
   CheckCircle2,
@@ -360,6 +362,7 @@ function ColumnHead({
 export default function TasksTableView() {
   const dispatch = useAppDispatch();
   const tasks = useAppSelector(selectFilteredTasks);
+  const tasksRead = useTasksRead();
   const selectedTaskId = useAppSelector(selectSelectedTaskId);
   const copySourceId = React.useId();
 
@@ -719,13 +722,32 @@ export default function TasksTableView() {
             </TableRow>
           </TableHeader>
           <TableBody className="[&_tr:nth-child(even)]:bg-muted/30">
-            {sorted.length === 0 ? (
+            {sorted.length === 0 && tasksRead.status === "ready" ? (
               <TableRow className="hover:bg-transparent">
                 <TableCell
                   colSpan={6}
                   className="py-10 text-center text-sm text-muted-foreground"
                 >
                   No tasks match these filters.
+                </TableCell>
+              </TableRow>
+            ) : sorted.length === 0 ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={6} className="p-0">
+                  {tasksRead.status === "error" ? (
+                    <ReadFailure
+                      error={tasksRead.error ?? true}
+                      what="your tasks"
+                      onRetry={tasksRead.retry}
+                    />
+                  ) : (
+                    <p
+                      className="py-10 text-center text-sm text-muted-foreground"
+                      role="status"
+                    >
+                      Reading your tasks…
+                    </p>
+                  )}
                 </TableCell>
               </TableRow>
             ) : (

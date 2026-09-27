@@ -533,29 +533,36 @@ const ToolCallWindowPanelBody: React.FC<{
     return getOverlayTabs(selectedEntry.toolName);
   }, [entries.length, selectedEntry]);
 
+  const conversationReadFailed =
+    scope === "conversation" && conversationLoadError != null;
   const tabs: ToolTab[] = useMemo(() => {
+    // With no entry to show: a failed conversation read is said (with a
+    // retry) — never "No tool data available" over a read that did not answer.
+    const noEntryView = conversationReadFailed ? (
+      <ReadFailure
+        error={conversationLoadError}
+        what="this conversation's tool calls"
+        onRetry={retryConversationEntries}
+      />
+    ) : (
+      <div className="p-8 text-center text-muted-foreground">
+        <p className="text-sm">No tool data available</p>
+      </div>
+    );
     const adminTabs: ToolTab[] = [
       {
         id: "input",
         label: "Input",
         content: selectedEntry ? (
           <InputView entry={selectedEntry} />
-        ) : (
-          <div className="p-8 text-center text-muted-foreground">
-            <p className="text-sm">No tool data available</p>
-          </div>
-        ),
+        ) : noEntryView,
       },
       {
         id: "raw",
         label: "Raw",
         content: selectedEntry ? (
           <RawDataView entry={selectedEntry} />
-        ) : (
-          <div className="p-8 text-center text-muted-foreground">
-            <p className="text-sm">No tool data available</p>
-          </div>
-        ),
+        ) : noEntryView,
       },
     ];
 
@@ -578,7 +585,13 @@ const ToolCallWindowPanelBody: React.FC<{
       },
       ...adminTabs,
     ];
-  }, [customOverlayTabs, selectedEntry]);
+  }, [
+    customOverlayTabs,
+    selectedEntry,
+    conversationReadFailed,
+    conversationLoadError,
+    retryConversationEntries,
+  ]);
 
   const [userTabId, setUserTabId] = useState<string | null>(initialTab);
   const activeTabId = useMemo(() => {

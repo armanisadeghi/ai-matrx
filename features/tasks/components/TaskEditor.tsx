@@ -99,6 +99,7 @@ export default function TaskEditor({
         <div className="w-16 h-16 rounded-2xl bg-muted/40 flex items-center justify-center mb-3">
           <CheckSquare className="w-7 h-7 text-muted-foreground/60" />
         </div>
+        {/* read-gate-exempt: a selection prompt — no task id is chosen yet, so nothing was read; not an empty list */}
         <p className="text-sm font-medium text-foreground">No task selected</p>
         <p className="text-xs mt-1 text-muted-foreground">
           Select a task from the list to view and edit.

@@ -388,6 +388,7 @@ export const ScrapeInline: React.FC<ToolRendererProps> = ({
         return (
             <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
                 <FileText className="h-4 w-4 flex-shrink-0" />
+                {/* read-gate-exempt: a completed, successful scrape that returned no page text; the failed call returns its own error above (complete && !ok) */}
                 <span>No page content captured.</span>
             </div>
         );

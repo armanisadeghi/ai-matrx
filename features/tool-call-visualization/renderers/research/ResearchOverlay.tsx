@@ -77,6 +77,7 @@ function useParsed(entry: ToolRendererProps["entry"]): ParsedSearch {
 export const ResearchReportTab: React.FC<ToolRendererProps> = ({ entry }) => {
     const parsed = useParsed(entry);
     if (!parsed.report) {
+        // read-gate-exempt: useParsed is a pure parse of this tool call's own result already in memory — no read happens here that could fail
         return <EmptyState icon={<FileText className="h-12 w-12" />} message="No curated report available" />;
     }
     return (
@@ -213,6 +214,7 @@ export const ResearchSourcesTab: React.FC<ToolRendererProps> = ({ entry }) => {
     };
 
     if (parsed.reads.length === 0 && parsed.sources.length === 0) {
+        // read-gate-exempt: useParsed is a pure parse of this tool call's own result already in memory — no read happens here that could fail
         return <EmptyState icon={<Link2 className="h-12 w-12" />} message="No sources available" />;
     }
 
@@ -295,6 +297,7 @@ export const ResearchFullTextTab: React.FC<ToolRendererProps> = ({ entry }) => {
     };
 
     if (!fullText.trim()) {
+        // read-gate-exempt: useParsed is a pure parse of this tool call's own result already in memory — no read happens here that could fail
         return <EmptyState icon={<BookOpen className="h-12 w-12" />} message="No research data available" />;
     }
 
