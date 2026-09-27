@@ -203,7 +203,9 @@ export type RunActivityKind =
   | "delivered"
   | "child"
   /** A step's change is waiting for a person (lane HELD-WRITE-RESUME) — never a failure. */
-  | "held";
+  | "held"
+  /** The held change was refused, so the run ended at that step (lane RUN-PAGE-TAILS). */
+  | "refused";
 
 export interface RunActivityEntry {
   /** Monotonic per run — a stable React key that survives the ring shifting. */
@@ -729,6 +731,18 @@ function applyEvent(
       // of "You stopped this run" (lane HELD-WRITE-RESUME).
       const error = asRecord(readField(event, "error"));
       if (error) run.error = error;
+      // THE HELD STEP SAYS SO TOO (lane RUN-PAGE-TAILS, 2026-09-27). The step
+      // list read the step's freshest line — "Waiting for your approval" — long
+      // after the refusal ended the run. The refusal lands on that step.
+      if (append && error?.["cause"] === "refused" && run.interrupt?.nodeId) {
+        pushActivity(run, {
+          nodeId: run.interrupt.nodeId,
+          kind: "refused",
+          text: null,
+          detail: null,
+          ts: event.ts,
+        });
+      }
       // An ended run is waiting on nobody: the question (or the held card) goes.
       run.interrupt = null;
       break;

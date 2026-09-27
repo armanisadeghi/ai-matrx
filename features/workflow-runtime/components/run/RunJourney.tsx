@@ -206,6 +206,7 @@ function JourneyRow({
   step,
   phase,
   latest,
+  refused = false,
   syntheticLabels,
   isLast,
 }: {
@@ -215,10 +216,13 @@ function JourneyRow({
   phase: NodeAggregatePhase | undefined;
   /** The step's freshest REAL signal, already in the reader's language. */
   latest: string | null;
+  /** The step's held change was refused and the run ended here (RUN-PAGE-TAILS). */
+  refused?: boolean;
   syntheticLabels?: string[];
   isLast: boolean;
 }) {
-  const running = phase === "running" || phase === "retrying";
+  // A refused step never finished and never will: it is not "now" any more.
+  const running = !refused && (phase === "running" || phase === "retrying");
   const settled = phase === "settled";
   const failed = phase === "failed";
   const skipped = phase === "skipped";
@@ -269,6 +273,8 @@ function JourneyRow({
               <Check className={cn("h-3.5 w-3.5", style.text)} />
             ) : running ? (
               "now"
+            ) : refused ? (
+              "ended"
             ) : (
               "next"
             )}
@@ -281,6 +287,15 @@ function JourneyRow({
             {step.outputKind
               ? `Will make your ${humanizeKind(step.outputKind).toLowerCase()}`
               : familyNoun(step.family)}
+          </p>
+        ) : null}
+
+        {refused && latest ? (
+          <p
+            data-step-refused=""
+            className="truncate text-[11px] text-amber-700 dark:text-amber-300"
+          >
+            {latest}
           </p>
         ) : null}
 
@@ -347,9 +362,11 @@ export function RunJourney({
   // Freshest real signal per node — scan backwards so the newest wins, and
   // skip pure lifecycle entries (the row already shows that state).
   const latestByNode: Record<string, string> = {};
+  const refusedNodes = new Set<string>();
   for (let i = activity.length - 1; i >= 0; i -= 1) {
     const entry = activity[i];
     if (!entry.nodeId || latestByNode[entry.nodeId]) continue;
+    if (entry.kind === "refused") refusedNodes.add(entry.nodeId);
     if (
       entry.kind === "started" ||
       entry.kind === "completed" ||
@@ -372,6 +389,7 @@ export function RunJourney({
           step={step}
           phase={phases[step.nodeId]}
           latest={latestByNode[step.nodeId] ?? null}
+          refused={refusedNodes.has(step.nodeId)}
           syntheticLabels={syntheticSteps?.[step.nodeId]}
           isLast={index === steps.length - 1}
         />

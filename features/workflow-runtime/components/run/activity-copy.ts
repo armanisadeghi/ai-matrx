@@ -172,6 +172,10 @@ export function activityLine(
         detail,
         tone: "warn",
       };
+    case "refused":
+      // The held change was refused (lane RUN-PAGE-TAILS) — the run ended at
+      // this step on a person's decision, which is not a failure.
+      return { text: "Refused; the run ended here", stepLabel, detail, tone: "warn" };
     case "retry":
       return { text: "Trying again", stepLabel, detail, tone: "warn" };
     case "progress":
