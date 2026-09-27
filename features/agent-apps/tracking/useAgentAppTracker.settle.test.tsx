@@ -5,6 +5,8 @@
  */
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
+jest.mock("@/hooks/useApiAuth", () => ({ useApiAuth: () => ({ fingerprintId: "fp-1" }) }));
+
 import { useAgentAppTracker, type RunTracker } from "./useAgentAppTracker";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
