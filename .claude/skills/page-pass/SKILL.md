@@ -41,7 +41,11 @@ procedure — open it only when you are doing that job or the check fails.
 4. **Fix what you found** — the cause, not the symptom. Never remove, rename or
    hide a feature to make a rule pass. Database changes are part of the job
    (functions, grants, `client_callable_door` rows through the Supabase MCP, per
-   CLAUDE.md; new tables only via `platform.create_entity_table`). If the fix belongs in a shared component
+   CLAUDE.md; new tables only via `platform.create_entity_table`). A
+   DROP/CREATE of a function loses its grants and its `client_callable_door` row:
+   restore both in the same transaction. A shared-link fix often reaches past the
+   page into the shared execution stack (org gate, bindings, the server's guest
+   path) — follow it there. If the fix belongs in a shared component
    or package, fix it there — and then prove it live on a SECOND page that
    uses it (a shared change reaches every consumer at once), and run that
    component's tests (`npx jest <its dir>`; menus: `npx jest features/context-menu-v3`,
