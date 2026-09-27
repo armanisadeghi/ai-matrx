@@ -208,6 +208,77 @@ describe("the scraper's page HTML + structured half → the scraper result scree
   });
 });
 
+/** A synthetic scraper-stored envelope (aidream `scraper_page_envelope`). */
+const SCRAPER_ENVELOPE = {
+  __kind: "scraper_fetch_results.v1",
+  type: "fetch_results",
+  metadata: { shape: "scraper_fetch_results.v1", raw_html_kept: true, raw_html: PAGE_HTML },
+  results: [
+    {
+      success: true,
+      url: "https://garden.example.test/tomatoes",
+      engine: "http",
+      markdown_renderable: "# Growing Tomatoes\n\n**Tomatoes** like [sun](https://sun.example.test).",
+      text_data: "Growing Tomatoes. Tomatoes like sun.",
+      organized_data: {
+        sections: [
+          { type: "header", level: 1, content: "Growing Tomatoes" },
+          { type: "text", content: "Tomatoes like sun." },
+        ],
+      },
+      structured_data: { "Ordered Lists": [["Water", "Feed"]] },
+      overview: {
+        page_title: "Tomatoes | Example Garden",
+        url: "https://garden.example.test/tomatoes",
+        website: "garden.example.test",
+        char_count: 36,
+        outline: { "H1: Growing Tomatoes": [] },
+        table_count: 0,
+        list_count: 1,
+        code_block_count: 0,
+      },
+      links: SCRAPER_STRUCTURED.links,
+      main_image: "https://garden.example.test/og.png",
+      scraped_at: "2026-09-03T00:00:00Z",
+    },
+  ],
+};
+
+describe("the scraper's stored fetch_results envelope → shown exactly as the live scraper result", () => {
+  const view = webSourceToScrape({
+    name: "Fallback name",
+    url: "https://garden.example.test/tomatoes",
+    capturedAt: null,
+    original: JSON.stringify(SCRAPER_ENVELOPE),
+    structured: { ...SCRAPER_STRUCTURED, original_shape: "scraper_fetch_results.v1" },
+    sections: SECTIONS,
+  });
+  const r = firstResult(view);
+
+  it("is preferred over everything else the Source holds", () => {
+    expect(detectStoredShape(JSON.stringify(SCRAPER_ENVELOPE))).toBe("scraper_envelope");
+    expect(view.shape).toBe("scraper_envelope");
+    expect(view.engine).toBe("http");
+  });
+
+  it("keeps the scraper's own rich markdown, organized data and overview", () => {
+    expect(r.markdown_renderable).toContain("**Tomatoes** like [sun]");
+    expect(r.markdown_renderable).not.toContain("Use loose, rich soil");
+    expect(r.overview.page_title).toBe("Tomatoes | Example Garden");
+    expect(r.organized_data).toEqual(SCRAPER_ENVELOPE.results[0].organized_data);
+    expect(r.structured_data).toEqual([["Water", "Feed"]]);
+    expect(r.scraped_at).toBe("2026-09-03T00:00:00Z");
+  });
+
+  it("drops the raw page HTML from the envelope the JSON tabs show", () => {
+    expect(JSON.stringify(view.envelope)).not.toContain("<html>");
+    expect(view.envelope.metadata).toEqual({
+      shape: "scraper_fetch_results.v1",
+      raw_html_kept: true,
+    });
+  });
+});
+
 describe("a web Source with no stored original", () => {
   it("still opens in the result screen from its sections alone", () => {
     const view = webSourceToScrape({
