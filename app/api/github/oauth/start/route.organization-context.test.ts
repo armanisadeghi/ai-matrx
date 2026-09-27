@@ -38,8 +38,11 @@ function requestWithParams(params: Record<string, string>): NextRequest {
 }
 
 describe("GitHub OAuth start — organization admission (sender-side, fail-closed)", () => {
+  let consoleError: jest.SpiedFunction<typeof console.error>;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
     process.env.GITHUB_CLIENT_ID = "test-client-id";
     createClientMock.mockResolvedValue({
       auth: withClaims({
@@ -77,5 +80,58 @@ describe("GitHub OAuth start — organization admission (sender-side, fail-close
     expect(response.status).toBe(307);
     const location = response.headers.get("location");
     expect(location).toContain("github.com/login/oauth/authorize");
+  });
+
+  it("REGRESSION: backend refusal completes the popup with a safe error instead of raw JSON", async () => {
+    jest.spyOn(global, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ detail: "vault audit missing organization_id; token=never-expose" }),
+        { status: 422 },
+      ),
+    );
+
+    const response = await GET(
+      requestWithParams({
+        return_url: "/settings/integrations",
+        organization_id: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
+      }),
+    );
+
+    expect(response.status).toBe(307);
+    const redirect = new URL(response.headers.get("location") ?? "");
+    expect(redirect.pathname).toBe("/api/github/oauth/complete");
+    expect(redirect.searchParams.get("return_url")).toBe("/settings/integrations");
+    expect(redirect.searchParams.get("github_error")).toBe(
+      "We couldn't start your GitHub connection.",
+    );
+    expect(redirect.href).not.toContain("vault");
+    expect(redirect.href).not.toContain("token");
+    expect(consoleError).toHaveBeenCalledWith(
+      "[github-oauth:start]",
+      expect.objectContaining({ stage: "authorize_response", status: 422 }),
+    );
+  });
+
+  it("REGRESSION: transport failure completes the popup through the same safe channel", async () => {
+    jest.spyOn(global, "fetch").mockRejectedValueOnce(new Error("connection reset"));
+
+    const response = await GET(
+      requestWithParams({
+        return_url: "//attacker.invalid",
+        organization_id: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
+      }),
+    );
+
+    expect(response.status).toBe(307);
+    const redirect = new URL(response.headers.get("location") ?? "");
+    expect(redirect.pathname).toBe("/api/github/oauth/complete");
+    expect(redirect.searchParams.get("return_url")).toBe("/code");
+    expect(redirect.searchParams.get("github_error")).toBe(
+      "We couldn't start your GitHub connection.",
+    );
+    expect(consoleError).toHaveBeenCalledWith(
+      "[github-oauth:start]",
+      expect.objectContaining({ stage: "authorize_request", status: 503 }),
+    );
   });
 });

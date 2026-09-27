@@ -15,6 +15,31 @@ import {
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { operationFailed } from "@/utils/errors";
+
+/**
+ * An OAuth popup only observes same-origin completion messages. A raw route
+ * response leaves it open without delivering a usable outcome to its opener.
+ * Keep diagnostics deliberately narrow: provider bodies can carry sensitive
+ * details, while the popup needs only a human-safe failure sentence.
+ */
+function startFailureRedirect(
+  request: NextRequest,
+  returnUrl: string,
+  stage: "authorize_request" | "authorize_response" | "authorization_url",
+  status: number,
+): NextResponse {
+  const failure = operationFailed("start your GitHub connection");
+  console.error("[github-oauth:start]", {
+    stage,
+    status,
+    message: failure.message,
+  });
+  const url = new URL("/api/github/oauth/complete", requestBaseUrl(request));
+  url.searchParams.set("return_url", returnUrl);
+  url.searchParams.set("github_error", failure.message);
+  return NextResponse.redirect(url);
+}
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const supabase = await createClient();
@@ -65,19 +90,39 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     });
     started = await backend.json().catch(() => null);
   } catch {
-    return NextResponse.json({ error: "GitHub connection could not be started. Please try again." }, { status: 503 });
+    return startFailureRedirect(
+      request,
+      returnUrl,
+      "authorize_request",
+      503,
+    );
   }
   if (!backend.ok || !started || typeof started !== "object" || !("authorization_url" in started) || !("state" in started) || typeof started.authorization_url !== "string" || typeof started.state !== "string") {
-    return NextResponse.json({ error: "GitHub connection could not be started. Please try again." }, { status: backend.ok ? 502 : backend.status });
+    return startFailureRedirect(
+      request,
+      returnUrl,
+      "authorize_response",
+      backend.ok ? 502 : backend.status,
+    );
   }
   let authorizationUrl: URL;
   try {
     authorizationUrl = new URL(started.authorization_url);
   } catch {
-    return NextResponse.json({ error: "GitHub connection could not be started. Please try again." }, { status: 502 });
+    return startFailureRedirect(
+      request,
+      returnUrl,
+      "authorization_url",
+      502,
+    );
   }
   if (authorizationUrl.protocol !== "https:" || authorizationUrl.hostname !== "github.com") {
-    return NextResponse.json({ error: "GitHub connection could not be started. Please try again." }, { status: 502 });
+    return startFailureRedirect(
+      request,
+      returnUrl,
+      "authorization_url",
+      502,
+    );
   }
   const session: GitHubOAuthSession = {
     state: started.state,

@@ -1,21 +1,12 @@
 // app/(public)/app_callback/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
-// This is just a general idea of how this could be set up.
-
-
 // Configuration for each provider (could be in a separate config file)
 const providerConfig = {
   notion: {
     clientId: process.env.NOTION_CLIENT_ID,
     clientSecret: process.env.NOTION_CLIENT_SECRET,
     tokenEndpoint: "https://api.notion.com/v1/oauth/token",
-    redirectUri: `${process.env.NEXT_PUBLIC_BASE_URL}/app_callback`,
-  },
-  github: {
-    clientId: process.env.GITHUB_CLIENT_ID,
-    clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    tokenEndpoint: "https://github.com/login/oauth/access_token",
     redirectUri: `${process.env.NEXT_PUBLIC_BASE_URL}/app_callback`,
   },
   slack: {
@@ -27,12 +18,28 @@ const providerConfig = {
   // Add more providers here
 } satisfies Record<string, { clientId: string | undefined; clientSecret: string | undefined; tokenEndpoint: string; redirectUri: string }>;
 
+/**
+ * GitHub is a first-party App integration, not a generic OAuth callback. The
+ * state-bound `/api/github/oauth/start` → callback flow owns its exchange and
+ * vault persistence; this legacy route must never receive or redirect a token.
+ */
+function githubConnectionRedirect(request: NextRequest): NextResponse {
+  const url = new URL("/api/github/oauth/complete", request.url);
+  url.searchParams.set("return_url", "/settings/integrations");
+  url.searchParams.set(
+    "github_error",
+    "Connect GitHub from AI Matrx Settings.",
+  );
+  return NextResponse.redirect(url);
+}
+
 // Generic handler for GET requests
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
-  const state = searchParams.get("state"); // Optional, for CSRF protection
   const provider = searchParams.get("provider"); // Custom param to identify the provider
+
+  if (provider === "github") return githubConnectionRedirect(request);
 
   // Validate required params
   if (!code || !provider || !providerConfig[provider as keyof typeof providerConfig]) {
