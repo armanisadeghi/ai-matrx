@@ -34,6 +34,7 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { useConversationRoutePromotion } from "@/features/agents/hooks/useConversationRoutePromotion";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { reconnectServerOperation } from "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk";
 
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 
@@ -537,6 +538,16 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
             agentBehindApp: true,
           }),
         ).unwrap();
+        // A refresh MID-RUN: the server kept working (streams detach on
+        // disconnect). Rejoin it — retained text replays, live output
+        // continues, and on the terminal frame the conversation reloads with
+        // the finished answer. Without this the reopened run stayed blank.
+        void dispatch(
+          reconnectServerOperation({
+            conversationId: urlConversationId,
+            source: "cold-load",
+          }),
+        );
       } catch (err) {
         // Loud, and the address stops pointing at a run we cannot show.
         const reason = err instanceof Error ? err.message : String(err);
