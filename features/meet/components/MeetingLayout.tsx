@@ -18,7 +18,7 @@
 // The choice is per viewer, kept in this browser (a convenience, not shared
 // state); blocked storage just means the default — the package's room.
 
-import { useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   MeetingRoom,
   useMeetSnapshot,
@@ -34,13 +34,16 @@ import {
 const LAYOUT_KEY = "matrx.meet.layout";
 
 function useMeetingLayoutPreference(): [MeetingLayoutChoice, (next: MeetingLayoutChoice) => void] {
-  const [layout, setLayout] = useState<MeetingLayoutChoice>(() => {
+  // Server-render the stable Room default. Reading storage during render makes
+  // a saved Board preference disagree with the server markup during hydration.
+  const [layout, setLayout] = useState<MeetingLayoutChoice>("room");
+  useEffect(() => {
     try {
-      return window.localStorage.getItem(LAYOUT_KEY) === "board" ? "board" : "room";
+      if (window.localStorage.getItem(LAYOUT_KEY) === "board") setLayout("board");
     } catch {
-      return "room";
+      // Storage blocked (private window): retain the server-safe default.
     }
-  });
+  }, []);
   const update = (next: MeetingLayoutChoice) => {
     setLayout(next);
     try {
@@ -57,11 +60,13 @@ export function MeetingLayout({
   meetingId,
   slug,
   meeting,
+  headerControls,
 }: {
   roomName: RoomName;
   meetingId: string;
   slug: string;
   meeting: MeetingRecord;
+  headerControls?: ReactNode;
 }) {
   const snapshot = useMeetSnapshot();
   const [layout, setLayout] = useMeetingLayoutPreference();
@@ -73,13 +78,20 @@ export function MeetingLayout({
       <MeetingBoard
         meeting={snapshot?.meeting ?? meeting}
         onLayout={setLayout}
+        headerControls={headerControls}
       />
     );
   }
 
   return (
     <div className="relative h-full w-full">
-      <MeetingRoom roomName={roomName} meetingId={meetingId} slug={slug} meeting={meeting} />
+      <MeetingRoom
+        roomName={roomName}
+        meetingId={meetingId}
+        slug={slug}
+        meeting={meeting}
+        headerControls={headerControls}
+      />
       {inRoom && (
         <LayoutSwitch
           value="room"

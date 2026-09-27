@@ -25,6 +25,7 @@ import {
 } from "./camera";
 import { type DetailTier, detailTierForZoom } from "./lod";
 import { type WheelMode, WheelInterpreter } from "./wheel-input";
+import type { SpatialTool } from "./tools";
 
 type Listener = () => void;
 
@@ -54,6 +55,9 @@ export class SpatialStore {
   /** The camera to return to when focus mode exits. */
   private focusReturn: Camera | null = null;
   readonly wheel = new WheelInterpreter();
+  private tool: SpatialTool = "select";
+  private guides = true;
+  private uiListeners = new Set<Listener>();
 
   private tier: DetailTier;
   private visible = new Set<string>();
@@ -217,6 +221,30 @@ export class SpatialStore {
   };
 
   // ── focus mode: one tile fills the board area; Esc returns ───────────────
+
+  // ── tool bar state: the active tool, layout guides ───────────────────────
+
+  getTool = (): SpatialTool => this.tool;
+
+  setTool(tool: SpatialTool): void {
+    if (this.tool === tool) return;
+    this.tool = tool;
+    for (const l of this.uiListeners) l();
+  }
+
+  getGuides = (): boolean => this.guides;
+
+  setGuides(on: boolean): void {
+    if (this.guides === on) return;
+    this.guides = on;
+    for (const l of this.uiListeners) l();
+    for (const l of this.frameListeners) l();
+  }
+
+  subscribeUi = (l: Listener): (() => void) => {
+    this.uiListeners.add(l);
+    return () => this.uiListeners.delete(l);
+  };
 
   setWheelMode(mode: WheelMode): void {
     this.wheel.mode = mode;
