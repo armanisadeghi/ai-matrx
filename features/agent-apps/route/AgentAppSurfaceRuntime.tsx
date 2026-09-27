@@ -35,6 +35,8 @@ import {
 import { buildAgentAppEntityWriteHandlers } from "./agent-app-entity-writes";
 import { buildAgentAppBundle } from "./agent-app-context";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { RootState } from "@/lib/redux/store";
 
 type ActiveView =
   | "overview"
@@ -72,6 +74,67 @@ function asObjectArray(
     : undefined;
 }
 
+/**
+ * The workspace scope from live state — one pure builder shared by the
+ * provider and the run page's right-click menu, so both say the same thing.
+ */
+export function buildAgentAppsWorkspaceScope(
+  state: RootState,
+  pathname: string | null,
+): SurfaceScopePayload {
+  const app = selectActiveApp(state);
+  const active_view = viewFromPathname(pathname);
+  if (!app) {
+    return createAgentAppsScope({ active_view });
+  }
+  return createAgentAppsScope({
+    app_bundle: buildAgentAppBundle(app, active_view),
+    app_id: app.id,
+    app_slug: app.slug,
+    app_name: app.name,
+    app_tagline: app.tagline ?? undefined,
+    app_description: app.description ?? undefined,
+    app_status: app.status,
+    app_category: app.category ?? undefined,
+    app_tags: app.tags,
+    app_visibility: app.visibility,
+    agent_id: app.agent_id,
+    app_version: app.version,
+    pinned_version: app.pinned_version ?? undefined,
+    use_latest: app.use_latest,
+    app_summary: {
+      id: app.id,
+      slug: app.slug,
+      name: app.name,
+      tagline: app.tagline,
+      status: app.status,
+      category: app.category,
+      tags: app.tags,
+      visibility: app.visibility,
+      agent_id: app.agent_id,
+      version: app.version,
+      pinned_version: app.pinned_version,
+      use_latest: app.use_latest,
+    },
+    shell_kind: app.shell_kind,
+    component_language: app.component_language,
+    component_code: app.component_code || undefined,
+    variable_schema: asObjectArray(app.variable_schema),
+    shell_config: asObject(app.shell_config),
+    slot_overrides: asObject(app.slot_overrides),
+    active_view,
+    usage_stats: {
+      total_executions: app.total_executions,
+      total_tokens_used: app.total_tokens_used,
+      total_cost: app.total_cost,
+      unique_users_count: app.unique_users_count,
+      success_rate: app.success_rate,
+      avg_execution_time_ms: app.avg_execution_time_ms,
+      last_execution_at: app.last_execution_at,
+    },
+  });
+}
+
 export function AgentAppSurfaceRuntime({ children }: { children: ReactNode }) {
   const store = useAppStore();
   const dispatch = useAppDispatch();
@@ -99,59 +162,8 @@ export function AgentAppSurfaceRuntime({ children }: { children: ReactNode }) {
       },
     });
 
-  const getScope = () => {
-    const app = selectActiveApp(store.getState());
-    const active_view = viewFromPathname(pathnameRef.current);
-    if (!app) {
-      return createAgentAppsScope({ active_view });
-    }
-    return createAgentAppsScope({
-      app_bundle: buildAgentAppBundle(app, active_view),
-      app_id: app.id,
-      app_slug: app.slug,
-      app_name: app.name,
-      app_tagline: app.tagline ?? undefined,
-      app_description: app.description ?? undefined,
-      app_status: app.status,
-      app_category: app.category ?? undefined,
-      app_tags: app.tags,
-      app_visibility: app.visibility,
-      agent_id: app.agent_id,
-      app_version: app.version,
-      pinned_version: app.pinned_version ?? undefined,
-      use_latest: app.use_latest,
-      app_summary: {
-        id: app.id,
-        slug: app.slug,
-        name: app.name,
-        tagline: app.tagline,
-        status: app.status,
-        category: app.category,
-        tags: app.tags,
-        visibility: app.visibility,
-        agent_id: app.agent_id,
-        version: app.version,
-        pinned_version: app.pinned_version,
-        use_latest: app.use_latest,
-      },
-      shell_kind: app.shell_kind,
-      component_language: app.component_language,
-      component_code: app.component_code || undefined,
-      variable_schema: asObjectArray(app.variable_schema),
-      shell_config: asObject(app.shell_config),
-      slot_overrides: asObject(app.slot_overrides),
-      active_view,
-      usage_stats: {
-        total_executions: app.total_executions,
-        total_tokens_used: app.total_tokens_used,
-        total_cost: app.total_cost,
-        unique_users_count: app.unique_users_count,
-        success_rate: app.success_rate,
-        avg_execution_time_ms: app.avg_execution_time_ms,
-        last_execution_at: app.last_execution_at,
-      },
-    });
-  };
+  const getScope = () =>
+    buildAgentAppsWorkspaceScope(store.getState(), pathnameRef.current);
 
   // THE APP'S OWN RUN IS THIS PAGE. On /run (and every preview of the app in
   // this family) the app's agent runs through `useAgentApp` under surface key
