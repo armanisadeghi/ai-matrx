@@ -24,7 +24,7 @@ procedure — open it only when you are doing that job or the check fails.
    (non-admin) person, `--fresh` for a first visit (no remembered organization or
    view prefs), `--org "<name>"` to pick the workspace first, `--views desktop-light,phone-light` to go faster, and
    `--click '[right:]SELECTOR=>TEXT'` (repeatable; chain steps on one load with
-   ` >> `) to open each menu, dialog and tab and capture it. A slow page needs
+   ` >> `) — TEXT matches the START of the text or aria-label ("About Theme" needs `=>About`) to open each menu, dialog and tab and capture it. A slow page needs
    `--settle 12000`. Read every
    screenshot yourself; the numbers are places to look, not verdicts. The dark
    views force the dark class, so a theme control reading "Light" there is the
@@ -317,7 +317,8 @@ surface). Say which parts you judged as authored content.
 - Every desktop action exists on a phone (header actions → bottom sheet);
   functionality is gated with `useIsMobile()`, never just hidden with CSS.
 - Finger-sized: the page's section roots and every `DialogContent` carry
-  `matrx-touch-targets` (44px on touch, desktop stays compact); a checkbox,
+  `matrx-touch-targets` (44px on touch, desktop stays compact — but a control's
+  own `h-*`/`min-h-*` class overrides the floor, so check the rendered size); a checkbox,
   radio or switch gets `matrx-tap-area` on its label.
 - Nothing hover-only: a control revealed with `opacity-0 group-hover:opacity-100`
   also carries `pointer-coarse:opacity-100`.
@@ -431,6 +432,8 @@ My first look (step 1): <every problem I wrote down> → each: fixed / covered b
 Core 1-7 and type additions: <n> <verdict> — <what>
 Proof: <lane, URL, screenshots / probe file>
 Test rows created: <table, ids>
+PERSON→AGENT MAP: <each create/edit/archive control → its write target, or why none>
+SHARED: <shared-component defects seen: file, symptom, evidence>
 Left open: <exact remaining work, or none>
 ```
 
