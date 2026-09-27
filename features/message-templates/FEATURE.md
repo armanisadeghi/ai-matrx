@@ -57,6 +57,7 @@ no table or parallel writer was added.
 
 ## Change log
 
+- **2026-09-27** — page-pass 2026-09-27: type single-record, posture ui-sharp after Linear's issue page, fixed `/chat/message-templates/[id]`: own agent surface `matrx-user/message-template` (record XML bundle + `template_draft` draft target, `lib/message-template-scope.ts`), right-click menu with the record entity, `EntityModeHeader` naming the record (View/Edit modes, Save, Delete), save shows the saved row (was stale) and writes only changed fields (no longer trims the body or turns an unset role into "user"), email subject shown and editable, ProInput/ProTextarea, canonical Copy/Copy-for-AI, unsaved-change guard, record name as tab title, access gate in place of a 404, delete confirm names the platform job a managed template feeds.
 - **2026-08-24** — Added assistant-message quick save to message templates: shared refinement,
   new/existing targets, append/overwrite comparison, template-native fields, typed window
   overlay, post-save door, and explicit selected-organization create writes.

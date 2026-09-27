@@ -11,6 +11,8 @@ import {
 
 const SURFACE_SLUG_TO_FEATURE: Record<string, SourceFeature> = {
   chat: "chat",
+  // Message templates live under /chat and feed the chat composer.
+  "message-template": "chat",
   "chat-voice": "voice-agent",
   notes: "notes",
   messages: "messages",

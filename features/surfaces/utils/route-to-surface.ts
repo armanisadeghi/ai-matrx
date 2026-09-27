@@ -740,6 +740,17 @@ export function surfaceFromPathname(
     return "matrx-user/education-library-suggestions";
   }
 
+  // One saved message template (`/chat/message-templates/<id>`) is its own
+  // record surface; without this the `/chat` prefix handed it the chat
+  // room's vocabulary. The list, `/new` and `/edit/<id>` are other pages.
+  if (
+    /^\/chat\/message-templates\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/?$/i.test(
+      stripped,
+    )
+  ) {
+    return "matrx-user/message-template";
+  }
+
   // One study guide (`/education/study-guides/<id>`) is its own surface: the
   // record, its notes and comments, and write targets. The library route
   // `/education/study-guides` keeps the list surface via the prefix table.

@@ -1,16 +1,25 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+// One saved message template (/chat/message-templates/[id]) — view and edit.
+//
+// The page is its own agent surface (`matrx-user/message-template`): the
+// scope comes from `lib/message-template-scope.ts` over the state rendered
+// here, and the ONE write target (`template_draft`) stages into this edit
+// form through the same setters the inputs use. The person still saves.
+
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Eye, Pencil, Save, Trash2 } from "lucide-react";
 import { isPubliclyVisible } from "@/lib/visibility/labels";
-import { useRouter } from "next/navigation";
 import {
-  MessageTemplateDB,
-  MessageRole,
+  type MessageRole,
+  type MessageTemplateDB,
+  readMessageTemplateMetadata,
 } from "@/features/message-templates/types/message-templates-db";
-import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
-import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -20,33 +29,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  ArrowLeft,
-  Save,
-  Loader2,
-  Pencil,
-  Eye,
-  Copy,
-  Trash2,
-  Globe,
-  Lock,
-} from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "@/lib/toast";
 import {
   updateTemplate,
   deleteTemplate,
   clearTemplateCache,
 } from "@/features/message-templates/services/message-templates-service";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  MESSAGE_TEMPLATE_SURFACE_NAME,
+  type MessageTemplateDraftScope,
+} from "@/features/surfaces/manifests/message-template.manifest";
+import {
+  buildMessageTemplateScope,
+  parseTemplateDraftValue,
+  templateManagedBy,
+  templateSubject,
+} from "@/features/message-templates/lib/message-template-scope";
+import type { JsonObject } from "@/types/json";
+
+const LIST_HREF = "/chat/message-templates";
 
 const MESSAGE_ROLES: { value: MessageRole; label: string }[] = [
   { value: "system", label: "System" },
@@ -55,422 +60,368 @@ const MESSAGE_ROLES: { value: MessageRole; label: string }[] = [
   { value: "tool", label: "Tool" },
 ];
 
-const ROLE_COLORS: Record<string, string> = {
-  system:
-    "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
-  user: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-  assistant:
-    "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
-  tool: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
-};
-
 interface TemplateViewPageProps {
   template: MessageTemplateDB;
   canEdit: boolean;
-  defaultMode?: "view" | "edit";
 }
 
-function TemplatePageHeader({
-  mode,
-  canEdit,
-  isSaving,
-  isDirty,
-  canSave,
-  onBack,
-  onModeChange,
-  onSave,
-  onCopy,
-  onDelete,
-}: {
-  mode: "view" | "edit";
-  canEdit: boolean;
-  isSaving: boolean;
-  isDirty: boolean;
-  canSave: boolean;
-  onBack: () => void;
-  onModeChange: (m: "view" | "edit") => void;
-  onSave: () => void;
-  onCopy: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <RouteHeader
-      left={
-        <div className="flex items-center gap-1.5 w-full px-1">
-          {/* Back */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 flex-shrink-0"
-            onClick={onBack}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-
-          {/* View / Edit toggle pill */}
-          {canEdit && (
-            <div className="flex items-center gap-0.5 rounded-full bg-muted p-0.5 flex-shrink-0">
-              <button
-                onClick={() => onModeChange("view")}
-                className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-colors ${
-                  mode === "view"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Eye className="h-3 w-3" />
-                View
-              </button>
-              <button
-                onClick={() => onModeChange("edit")}
-                className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-colors ${
-                  mode === "edit"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Pencil className="h-3 w-3" />
-                Edit
-              </button>
-            </div>
-          )}
-
-          <div className="flex-1" />
-
-          {/* Right actions */}
-          <div className="flex items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={onCopy}
-              title="Copy content"
-            >
-              <Copy className="h-3.5 w-3.5" />
-            </Button>
-
-            {canEdit && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={onDelete}
-                  title="Delete"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-
-                {mode === "edit" && (
-                  <Button
-                    size="icon"
-                    onClick={onSave}
-                    disabled={isSaving || !isDirty || !canSave}
-                    className="h-8 w-8"
-                    title="Save"
-                  >
-                    {isSaving ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Save className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      }
-    />
-  );
+function draftFrom(template: MessageTemplateDB): MessageTemplateDraftScope {
+  return {
+    label: template.label ?? "",
+    content: template.content ?? "",
+    subject_template: templateSubject(template),
+    role: template.role ?? null,
+    tags: template.tags ?? [],
+    visibility: isPubliclyVisible(template.visibility) ? "public" : "private",
+  };
 }
 
-/** Auto-growing textarea — expands with content, no inner scroll */
-function AutoTextarea({
-  value,
-  onChange,
-  placeholder,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-}) {
-  const ref = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.style.height = "auto";
-      ref.current.style.height = `${ref.current.scrollHeight}px`;
-    }
-  }, [value]);
-
-  return (
-    <textarea
-      ref={ref}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={6}
-      style={{ fontSize: "16px" }}
-      className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none overflow-hidden"
-    />
-  );
+function parseTags(input: string): string[] {
+  const out: string[] = [];
+  for (const raw of input.split(",")) {
+    const tag = raw.trim();
+    if (tag && !out.includes(tag)) out.push(tag);
+  }
+  return out;
 }
 
-export function TemplateViewPage({
-  template,
-  canEdit,
-  defaultMode = "view",
-}: TemplateViewPageProps) {
+function sameDraft(a: MessageTemplateDraftScope, b: MessageTemplateDraftScope) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
   const router = useRouter();
-  const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const pageHref = `${LIST_HREF}/${template.id}`;
+  const editHref = `${pageHref}?mode=edit`;
+  const mode: "view" | "edit" =
+    canEdit && searchParams.get("mode") === "edit" ? "edit" : "view";
 
-  const [mode, setMode] = useState<"view" | "edit">(
-    canEdit ? defaultMode : "view",
-  );
+  // `saved` is the row as last saved — the server prop until this page saves.
+  const [saved, setSaved] = useState<MessageTemplateDB>(template);
+  const [label, setLabel] = useState(saved.label ?? "");
+  const [content, setContent] = useState(saved.content ?? "");
+  const [subject, setSubject] = useState(templateSubject(saved));
+  const [role, setRole] = useState<MessageRole | null>(saved.role ?? null);
+  const [isPublic, setIsPublic] = useState(isPubliclyVisible(saved.visibility));
+  const [tagsInput, setTagsInput] = useState((saved.tags ?? []).join(", "));
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Edit state
-  const [label, setLabel] = useState(template.label ?? "");
-  const [content, setContent] = useState(template.content ?? "");
-  const [role, setRole] = useState<MessageRole>(template.role ?? "user");
-  const [isPublic, setIsPublic] = useState(
-    isPubliclyVisible(template.visibility),
-  );
-  const [tagsInput, setTagsInput] = useState((template.tags ?? []).join(", "));
+  const draft: MessageTemplateDraftScope = {
+    label: label.trim(),
+    content,
+    subject_template: subject.trim(),
+    role,
+    tags: parseTags(tagsInput),
+    visibility: isPublic ? "public" : "private",
+  };
+  const savedDraft = draftFrom(saved);
+  const isDirty = !sameDraft(draft, savedDraft);
+  const canSave = draft.label.length > 0 && content.trim().length > 0;
+  const managedBy = templateManagedBy(saved);
+  const savedSubject = templateSubject(saved);
+  const displayLabel = saved.label || "Untitled template";
 
-  const isDirty =
-    label !== (template.label ?? "") ||
-    content !== (template.content ?? "") ||
-    role !== (template.role ?? "user") ||
-    isPublic !== isPubliclyVisible(template.visibility) ||
-    tagsInput !== (template.tags ?? []).join(", ");
+  // Unsaved edits are never lost to a refresh or a closed tab.
+  useEffect(() => {
+    if (!isDirty) return undefined;
+    const handler = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
 
-  const canSave = label.trim().length > 0 && content.trim().length > 0;
-
-  const handleBack = useCallback(
-    () => router.push("/chat/message-templates"),
-    [router],
-  );
-
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(template.content ?? "").then(() => {
-      toast({ title: "Copied to clipboard" });
+  const getScope = () =>
+    buildMessageTemplateScope({
+      template: saved,
+      canEdit,
+      mode,
+      draft,
+      isDirty,
+      saveError,
     });
-  }, [template.content, toast]);
 
-  const handleSave = useCallback(async () => {
-    if (isSaving || !canSave) return;
-    const tags = tagsInput
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
+  const getWriteHandlers = () => ({
+    template_draft: {
+      validate: (value: unknown) => {
+        parseTemplateDraftValue(value, draft, canEdit);
+      },
+      apply: (value: unknown) => {
+        const next = parseTemplateDraftValue(value, draft, canEdit);
+        if (next.label !== undefined) setLabel(next.label);
+        if (next.content !== undefined) setContent(next.content);
+        if (next.subject_template !== undefined) setSubject(next.subject_template);
+        if (next.role !== undefined) setRole(next.role);
+        if (next.tags !== undefined) setTagsInput(next.tags.join(", "));
+        if (next.visibility !== undefined) setIsPublic(next.visibility === "public");
+        if (mode !== "edit") router.replace(editHref, { scroll: false });
+        return {
+          summary: `Staged ${Object.keys(next).join(", ")} in the edit form; the person presses Save to keep it.`,
+          data: { staged: Object.keys(next) },
+        };
+      },
+    },
+  });
+
+  const handleSave = async () => {
+    if (isSaving || !canSave || !isDirty) return;
+    // Only what changed is written — an untouched body keeps its exact bytes
+    // and an unset role stays unset.
+    const patch: Parameters<typeof updateTemplate>[0] = { id: saved.id };
+    if (draft.label !== savedDraft.label) patch.label = draft.label;
+    if (content !== savedDraft.content) patch.content = content;
+    if (role !== savedDraft.role && role) patch.role = role;
+    if (draft.visibility !== savedDraft.visibility)
+      patch.visibility = isPublic ? "public" : "internal";
+    if (JSON.stringify(draft.tags) !== JSON.stringify(savedDraft.tags))
+      patch.tags = draft.tags;
+    if (draft.subject_template !== savedDraft.subject_template) {
+      const metadata: JsonObject = { ...readMessageTemplateMetadata(saved.metadata) };
+      if (draft.subject_template) metadata.subject_template = draft.subject_template;
+      else delete metadata.subject_template;
+      patch.metadata = metadata;
+    }
     setIsSaving(true);
+    setSaveError(null);
     try {
-      await updateTemplate({
-        id: template.id,
-        label: label.trim(),
-        content: content.trim(),
-        role,
-        visibility: isPublic ? "public" : "internal",
-        tags,
-      });
+      const row = await updateTemplate(patch);
       clearTemplateCache();
-      toast({ title: "Template saved" });
-      setMode("view");
+      setSaved(row);
+      setLabel(row.label ?? "");
+      setContent(row.content ?? "");
+      setSubject(templateSubject(row));
+      setRole(row.role ?? null);
+      setIsPublic(isPubliclyVisible(row.visibility));
+      setTagsInput((row.tags ?? []).join(", "));
+      toast.success("Template saved");
+      router.replace(pageHref, { scroll: false });
     } catch (err) {
-      console.error("Error saving template:", err);
-      toast({ title: "Failed to save template", variant: "destructive" });
+      const message = err instanceof Error ? err.message : String(err);
+      setSaveError(message);
+      toast.error(`Could not save the template: ${message}`);
     } finally {
       setIsSaving(false);
     }
-  }, [
-    isSaving,
-    canSave,
-    tagsInput,
-    template.id,
-    label,
-    content,
-    role,
-    isPublic,
-    toast,
-  ]);
+  };
 
-  const handleDeleteConfirm = useCallback(async () => {
-    setIsDeleting(true);
+  const handleDelete = async () => {
+    const ok = await confirm({
+      title: `Delete “${displayLabel}”?`,
+      description: managedBy
+        ? `This permanently removes the template. The platform job "${managedBy}" uses it, and that job will stop working until a replacement exists. This cannot be undone.`
+        : "This permanently removes the template for everyone it was shared with. This cannot be undone.",
+      confirmLabel: "Delete template",
+      variant: "destructive",
+    });
+    if (!ok) return;
     try {
-      await deleteTemplate(template.id);
+      await deleteTemplate(saved.id);
       clearTemplateCache();
-      toast({ title: "Template deleted" });
-      router.push("/chat/message-templates");
+      toast.success("Template deleted");
+      router.push(LIST_HREF);
     } catch (err) {
-      console.error("Error deleting template:", err);
-      toast({ title: "Failed to delete template", variant: "destructive" });
-    } finally {
-      setIsDeleting(false);
-      setIsDeleteOpen(false);
+      const message = err instanceof Error ? err.message : String(err);
+      setSaveError(message);
+      toast.error(`Could not delete the template: ${message}`);
     }
-  }, [template.id, toast, router]);
+  };
+
+  const copyText = () =>
+    [savedSubject ? `Subject: ${savedSubject}` : null, saved.content ?? ""]
+      .filter((part): part is string => part !== null)
+      .join("\n\n");
 
   return (
-    <>
-      <TemplatePageHeader
-        mode={mode}
-        canEdit={canEdit}
-        isSaving={isSaving}
-        isDirty={isDirty}
-        canSave={canSave}
-        onBack={handleBack}
-        onModeChange={setMode}
-        onSave={handleSave}
-        onCopy={handleCopy}
-        onDelete={() => setIsDeleteOpen(true)}
+    <SurfaceRuntimeProvider
+      surfaceName={MESSAGE_TEMPLATE_SURFACE_NAME}
+      getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
+      isEditable={canEdit}
+    >
+      <EntityModeHeader
+        backHref={LIST_HREF}
+        entityLabel={displayLabel}
+        modes={
+          canEdit
+            ? [
+                { name: "View", href: pageHref, icon: Eye },
+                { name: "Edit", href: editHref, icon: Pencil },
+              ]
+            : undefined
+        }
+        activeModeHref={mode === "edit" ? editHref : pageHref}
+        actions={
+          canEdit
+            ? [
+                ...(mode === "edit"
+                  ? [
+                      {
+                        label: isSaving ? "Saving" : isDirty ? "Save" : "Saved",
+                        icon: Save,
+                        primary: true,
+                        disabled: isSaving || !isDirty || !canSave,
+                        onPress: handleSave,
+                      },
+                    ]
+                  : []),
+                {
+                  label: "Delete",
+                  icon: Trash2,
+                  onPress: handleDelete,
+                },
+              ]
+            : undefined
+        }
       />
-
-      {/* Single scroll area — the page itself scrolls, nothing nested */}
-      <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
-        <div className="max-w-2xl mx-auto px-4 pt-4 pb-16">
-          {mode === "view" ? (
-            /* ── View Mode ── */
-            <div className="space-y-3">
-              <div>
-                <h1 className="text-base font-bold leading-snug">
-                  {template.label || "Untitled"}
-                </h1>
-                <div className="flex items-center gap-2 flex-wrap mt-1">
-                  <span
-                    className={`inline-flex items-center px-1.5 py-0 text-[11px] font-medium rounded border ${ROLE_COLORS[template.role ?? "user"] ?? ROLE_COLORS.user}`}
-                  >
-                    {template.role}
-                  </span>
-                  {isPubliclyVisible(template.visibility) ? (
-                    <span className="inline-flex items-center gap-0.5 text-[11px] text-green-600 dark:text-green-400">
-                      <Globe className="w-2.5 h-2.5" />
-                      Public
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground">
-                      <Lock className="w-2.5 h-2.5" />
-                      Private
+      <NonEditableContextMenu
+        sourceFeature="chat"
+        surfaceName={MESSAGE_TEMPLATE_SURFACE_NAME}
+        menuVersion={1}
+        getApplicationScope={getScope}
+        contentSource={{ type: "raw" }}
+        contextData={{ content: saved.content ?? "" }}
+        entity={{
+          type: "message_template",
+          id: saved.id,
+          title: displayLabel,
+          resourceType: "message_template",
+        }}
+      >
+        <div className="matrx-touch-targets h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
+          <div className="mx-auto max-w-4xl px-4 pb-16 pt-3">
+            {mode === "view" ? (
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  {saved.role && (
+                    <Badge variant="outline" className="text-xs capitalize">
+                      {saved.role}
+                    </Badge>
+                  )}
+                  <Badge variant="secondary" className="text-xs">
+                    {isPubliclyVisible(saved.visibility) ? "Public" : "Private"}
+                  </Badge>
+                  {(saved.tags ?? []).map((tag) => (
+                    <Badge key={tag} variant="outline" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                  {managedBy && (
+                    <span className="text-xs text-muted-foreground">
+                      Used by the {managedBy} job
                     </span>
                   )}
-                  {template.tags &&
-                    template.tags.length > 0 &&
-                    template.tags.map((tag) => (
-                      <Badge
-                        key={tag}
-                        variant="secondary"
-                        className="text-[10px] px-1.5 py-0 h-4"
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
+                  <div className="ml-auto">
+                    <CopyButtons
+                      size="sm"
+                      unified
+                      label={`Message template ${displayLabel}`}
+                      human={copyText}
+                      json={() => saved}
+                      agent={() => buildMessageTemplateScope({
+                        template: saved,
+                        canEdit: false,
+                        mode: "view",
+                        draft: savedDraft,
+                        isDirty: false,
+                        saveError: null,
+                      }).message_template as string}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="rounded-lg border border-border bg-card">
-                <pre className="p-3 text-sm font-mono leading-relaxed whitespace-pre-wrap break-words text-foreground">
-                  {template.content || ""}
-                </pre>
-              </div>
+                <div className="overflow-hidden rounded-lg border border-border bg-card">
+                  {savedSubject && (
+                    <div className="border-b border-border px-3 py-2 text-sm">
+                      <span className="text-muted-foreground">Subject </span>
+                      <span className="font-mono">{savedSubject}</span>
+                    </div>
+                  )}
+                  <pre className="whitespace-pre-wrap break-words p-3 font-mono text-sm leading-relaxed text-foreground">
+                    {saved.content || ""}
+                  </pre>
+                </div>
 
-              <EntityCustomFields
-                entityToken="message_template"
-                recordId={template.id}
-                organizationId={template.organization_id}
-              />
-            </div>
-          ) : (
-            /* ── Edit Mode ── compact fields, auto-grow textarea */
-            <div className="space-y-3">
-              {/* Label + Type in one row */}
-              <div className="grid grid-cols-[1fr_auto] gap-2">
-                <input
-                  value={label}
-                  onChange={(e) => setLabel(e.target.value)}
-                  placeholder="Template name"
-                  style={{ fontSize: "16px" }}
-                  className="w-full rounded-md border border-input bg-background px-3 h-9 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                <EntityCustomFields
+                  entityToken="message_template"
+                  recordId={saved.id}
+                  organizationId={saved.organization_id}
                 />
-                <Select
-                  value={role}
-                  onValueChange={(v) => setRole(v as MessageRole)}
-                >
-                  <SelectTrigger
-                    className="h-9 w-32 text-sm"
-                    style={{ fontSize: "16px" }}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MESSAGE_ROLES.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>
-                        {r.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
-
-              {/* Tags + Visibility in one row */}
-              <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
-                <input
-                  value={tagsInput}
-                  onChange={(e) => setTagsInput(e.target.value)}
-                  placeholder="Tags (comma-separated)"
-                  style={{ fontSize: "16px" }}
-                  className="w-full rounded-md border border-input bg-background px-3 h-9 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-                <div className="flex items-center gap-2 h-9 px-2 rounded-md border border-input bg-background flex-shrink-0">
-                  <Switch
-                    id="visibility"
-                    checked={isPublic}
-                    onCheckedChange={setIsPublic}
-                    className="scale-90"
+            ) : (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_10rem]">
+                  <ProInput
+                    aria-label="Template name"
+                    value={label}
+                    onChange={(e) => setLabel(e.target.value)}
+                    placeholder="Template name"
+                    className="text-base sm:text-sm"
                   />
-                  <label
-                    htmlFor="visibility"
-                    className="text-xs cursor-pointer select-none text-muted-foreground whitespace-nowrap"
+                  <Select
+                    value={role ?? undefined}
+                    onValueChange={(v) => setRole(v as MessageRole)}
                   >
+                    <SelectTrigger aria-label="Role" className="text-base sm:text-sm">
+                      <SelectValue placeholder="Role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MESSAGE_ROLES.map((r) => (
+                        <SelectItem key={r.value} value={r.value}>
+                          {r.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <ProInput
+                  aria-label="Email subject"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Email subject (optional) — merge fields work here too"
+                  className="text-base sm:text-sm"
+                />
+
+                <div className="grid grid-cols-1 items-center gap-2 sm:grid-cols-[1fr_auto]">
+                  <ProInput
+                    aria-label="Tags"
+                    value={tagsInput}
+                    onChange={(e) => setTagsInput(e.target.value)}
+                    placeholder="Tags, separated by commas"
+                    className="text-base sm:text-sm"
+                  />
+                  <label className="matrx-tap-area flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+                    <Switch checked={isPublic} onCheckedChange={setIsPublic} />
                     {isPublic ? "Public" : "Private"}
                   </label>
                 </div>
+
+                <ProTextarea
+                  aria-label="Template body"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Write the message. Use {{name}} for a value filled in when the template is used."
+                  autoGrow
+                  minHeight={160}
+                  surfaceName={MESSAGE_TEMPLATE_SURFACE_NAME}
+                  sourceFeature="chat"
+                  getApplicationScope={getScope}
+                  className="font-mono text-base leading-relaxed sm:text-sm"
+                />
+
+                {!canSave && (
+                  <p className="text-xs text-destructive">
+                    A template needs a name and a body before it can be saved.
+                  </p>
+                )}
+                {saveError && (
+                  <p className="text-xs text-destructive">{saveError}</p>
+                )}
               </div>
-
-              {/* Content — auto-grow, no height cap */}
-              <AutoTextarea
-                value={content}
-                onChange={setContent}
-                placeholder="Write your template content here..."
-              />
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* Delete confirmation */}
-      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Template</AlertDialogTitle>
-            <AlertDialogDescription>
-              Delete &ldquo;{template.label}&rdquo;? This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              disabled={isDeleting}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+      </NonEditableContextMenu>
+    </SurfaceRuntimeProvider>
   );
 }

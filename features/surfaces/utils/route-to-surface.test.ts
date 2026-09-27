@@ -634,3 +634,17 @@ describe("HR employer route", () => {
     expect(surfaceFromPathname("/hr/settings")).toBeNull();
   });
 });
+
+describe("message template record page", () => {
+  it("maps one template to its own surface and leaves the list, new and edit alone", () => {
+    const id = "d78ea321-a3c2-4a33-9545-0e87f4d90601";
+    expect(surfaceFromPathname(`/chat/message-templates/${id}`)).toBe(
+      "matrx-user/message-template",
+    );
+    expect(surfaceFromPathname("/chat/message-templates")).toBe("matrx-user/chat");
+    expect(surfaceFromPathname("/chat/message-templates/new")).toBe("matrx-user/chat");
+    expect(surfaceFromPathname(`/chat/message-templates/edit/${id}`)).toBe(
+      "matrx-user/chat",
+    );
+  });
+});
