@@ -3,6 +3,7 @@
  */
 import {
   CHIP_ATTR,
+  chipContaining,
   hasUnrenderedField,
   needsTrailingLine,
   pointAtStoredOffset,
@@ -87,5 +88,21 @@ describe("merge-field DOM", () => {
     root.appendChild(document.createTextNode("\n"));
     expect(needsTrailingLine(root)).toBe(true);
     expect(needsTrailingLine(drawn("a\n"))).toBe(false);
+  });
+
+  it("gives a trailing chip an editable place after it, serialized as nothing", () => {
+    const root = drawn("Hi {{reply.body}}");
+    expect(root.lastChild?.nodeName).toBe("BR");
+    expect(serializeFrom(root)).toBe("Hi {{reply.body}}");
+    const end = pointAtStoredOffset(root, "Hi {{reply.body}}".length);
+    expect(end.node).toBe(root);
+    expect(root.childNodes[end.offset]?.nodeName).toBe("BR");
+  });
+
+  it("finds the chip around a caret that landed inside it", () => {
+    const root = drawn("{{reply.body}}");
+    const chip = root.querySelector(`[${CHIP_ATTR}]`) as HTMLElement;
+    expect(chipContaining(root, chip.firstChild)).toBe(chip);
+    expect(chipContaining(root, root)).toBeNull();
   });
 });

@@ -20,6 +20,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { cn } from "@/lib/utils";
 import {
+  chipContaining,
   hasUnrenderedField,
   needsTrailingLine,
   pointAtStoredOffset,
@@ -123,7 +124,28 @@ export const MergeFieldInput = forwardRef<MergeFieldInputHandle, MergeFieldInput
       onChange(text);
     };
 
+    /**
+     * A caret must never sit inside a chip: the browser would put typed text
+     * into the non-editable chip (lost on save) or ignore it. Move it just
+     * after the chip.
+     */
+    const keepCaretOutOfChips = () => {
+      const root = rootRef.current;
+      const sel = window.getSelection();
+      if (!root || !sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      const chip =
+        chipContaining(root, range.startContainer) ?? chipContaining(root, range.endContainer);
+      if (!chip) return;
+      const after = document.createRange();
+      after.setStartAfter(chip);
+      after.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(after);
+    };
+
     const insertText = (text: string) => {
+      keepCaretOutOfChips();
       const sel = window.getSelection();
       if (!sel || sel.rangeCount === 0) return;
       const range = sel.getRangeAt(0);
@@ -165,9 +187,16 @@ export const MergeFieldInput = forwardRef<MergeFieldInputHandle, MergeFieldInput
         data-placeholder={placeholder}
         onFocus={onFocus}
         onInput={emit}
-        onKeyUp={() => (caretRef.current = currentCaret())}
-        onMouseUp={() => (caretRef.current = currentCaret())}
+        onKeyUp={() => {
+          keepCaretOutOfChips();
+          caretRef.current = currentCaret();
+        }}
+        onMouseUp={() => {
+          keepCaretOutOfChips();
+          caretRef.current = currentCaret();
+        }}
         onKeyDown={(e) => {
+          keepCaretOutOfChips();
           if (e.key === "Enter") {
             e.preventDefault();
             if (multiline) {

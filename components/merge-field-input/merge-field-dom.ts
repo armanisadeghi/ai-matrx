@@ -68,8 +68,11 @@ export function renderInto(
       root.appendChild(chip);
     }
   }
-  // pre-wrap draws a final "\n" only when something follows it.
-  if (text.endsWith("\n") || text === "") {
+  // pre-wrap draws a final "\n" only when something follows it, and a caret
+  // after a trailing chip needs an editable place to sit: both get a <br>.
+  const segs = tokenizeMergeText(text);
+  const endsWithChip = segs.length > 0 && segs[segs.length - 1].kind === "field";
+  if (text.endsWith("\n") || text === "" || endsWithChip) {
     const br = document.createElement("br");
     br.setAttribute(SENTINEL_ATTR, "");
     root.appendChild(br);
@@ -168,4 +171,14 @@ export function pointAtStoredOffset(
     return { node: root, offset: lastIndex - 1 };
   }
   return { node: root, offset: lastIndex };
+}
+
+/** The chip element containing `node`, if the node is inside one. */
+export function chipContaining(root: HTMLElement, node: Node | null): HTMLElement | null {
+  let cur: Node | null = node;
+  while (cur && cur !== root) {
+    if (cur instanceof HTMLElement && cur.hasAttribute(CHIP_ATTR)) return cur;
+    cur = cur.parentNode;
+  }
+  return null;
 }
