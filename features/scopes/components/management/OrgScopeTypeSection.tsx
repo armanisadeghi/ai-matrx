@@ -10,6 +10,7 @@
 // scopes via makeSelectScopesForType, item catalog via ensureScopeTypeItems,
 // per-scope values via ensureContextValues + the contextValues sidecar.
 
+import { withArticle } from "@/lib/text/withArticle";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -283,7 +284,7 @@ export function ContextItemsReadyPreview({
         <span className="font-medium text-foreground">
           {items.length} context {items.length === 1 ? "item" : "items"}
         </span>{" "}
-        configured — add a {singular} to start filling them in.
+        configured — add {withArticle(singular)} to start filling them in.
       </p>
 
       <div className="overflow-x-auto -mx-2 rounded-lg border border-dashed border-border/80 bg-muted/20">
