@@ -16,6 +16,7 @@ jest.mock("@/components/errors/ErrorNotice", () => ({
 
 import { ReadEmpty, ReadGate, ReadStaleNotice, readOf, readStatusOf } from "@/components/read-state/ReadGate";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { UntrustedCount, countReadState, countIsStale } from "@/components/official/stale-data/UntrustedCount";
 
 const empty = <p>Your vault is empty</p>;
 const list = <ul><li>row</li></ul>;
@@ -104,5 +105,27 @@ describe("ReadFailure always offers a way forward (page-pass 2026-09-27)", () =>
     const html = renderToStaticMarkup((element.props as { actions: React.ReactElement }).actions);
     expect(html).toContain("Try again");
     expect(html).not.toContain("Reload page");
+  });
+});
+
+describe("counts keep their last known value (RC-B12 r13 stale-while-error ruling)", () => {
+  it("first load with nothing known is loading; a failure with nothing known is failed", () => {
+    expect(countReadState({ read: readOf({ isLoading: true, data: undefined }) })).toBe("loading");
+    expect(countReadState({ read: readOf({ isError: true, error: new Error("x"), data: [] }) })).toBe("failed");
+  });
+  it("a refetch in flight keeps the last value — no flicker to …", () => {
+    expect(countReadState({ read: readOf({ status: "loading", hasData: true }) })).toBe("ready");
+    expect(countReadState({ read: readOf({ isLoading: true, data: [{ id: 1 }] }) })).toBe("ready");
+  });
+  it("a failed refresh keeps the last value and marks it stale — never —", () => {
+    const read = readOf({ isError: true, error: new Error("down"), dataUpdatedAt: 1700000000000 });
+    expect(countReadState({ read })).toBe("ready");
+    expect(countIsStale(read)).toBe(true);
+    const html = renderToStaticMarkup(<UntrustedCount read={read} value={12} label="Assists" />);
+    expect(html).toContain(">12<");
+    expect(html).toContain("last known value");
+  });
+  it("an empty array is a placeholder, not a known answer", () => {
+    expect(countReadState({ read: readOf({ status: "loading", data: [] }) })).toBe("loading");
   });
 });

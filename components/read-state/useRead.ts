@@ -29,6 +29,8 @@ export interface ReadResult<T> {
   error: unknown;
   isLoading: boolean;
   isError: boolean;
+  /** A read has succeeded at least once — its value is known (stale-while-error for counts and rows). */
+  hasData: boolean;
   retry: () => void;
   setData: (next: T | ((prev: T | undefined) => T)) => void;
 }
@@ -46,6 +48,7 @@ export function useRead<T>(
   // forbids setting state synchronously inside the effect): a read is in
   // flight exactly while the latest settled key is not the current key.
   const [settled, setSettled] = useState<{ key: string; ok: boolean; error: unknown } | null>(null);
+  const [everSucceeded, setEverSucceeded] = useState(false);
   const runRead = useEffectEvent(() => read());
   const fetchKey = JSON.stringify([attempt, ...deps]);
 
@@ -62,6 +65,7 @@ export function useRead<T>(
       (result) => {
         if (superseded) return;
         setDataState(result);
+        setEverSucceeded(true);
         setSettled({ key: fetchKey, ok: true, error: null });
       },
       (err: unknown) => {
@@ -89,5 +93,5 @@ export function useRead<T>(
     setDataState((prev) => (typeof next === "function" ? (next as (p: T | undefined) => T)(prev) : next));
   };
 
-  return { data, status, error, isLoading: status === "loading", isError: status === "error", retry, setData };
+  return { data, status, error, isLoading: status === "loading", isError: status === "error", hasData: everSucceeded, retry, setData };
 }

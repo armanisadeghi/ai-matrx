@@ -53,12 +53,35 @@ export interface ReadOutcome {
   onRetry?: (() => void) | undefined;
   /** What was read, in the reader's words: "your tasks". */
   what?: string | undefined;
+  /**
+   * A successful read has already produced a value (rows, a count). Then a
+   * refetch in flight is not "loading" and a failed refresh is not "no value":
+   * counts keep their last known value (with the stale mark) — the same
+   * stale-while-error rule as rows (RC-B12 r13 ruling).
+   */
+  hasData?: boolean | undefined;
 }
 
 type ReadLike = Parameters<typeof readStatusOf>[0] & {
   refetch?: () => unknown;
   retry?: () => unknown;
+  /** The read's value (react-query `data`, a hook's rows) — present means a read already landed. */
+  data?: unknown;
+  /** react-query: when the data last arrived (0 = never). */
+  dataUpdatedAt?: number;
+  /** A hook that tracks it directly. */
+  hasData?: boolean;
 };
+
+/** Has a successful read already produced a value? */
+function readHasData(read: ReadLike): boolean {
+  if (typeof read.hasData === "boolean") return read.hasData;
+  if (typeof read.dataUpdatedAt === "number" && read.dataUpdatedAt > 0) return true;
+  // An empty array is often a hook's initial placeholder, not an answer — it
+  // proves nothing was read; only a hook's own `hasData`/`dataUpdatedAt` can.
+  if (Array.isArray(read.data)) return read.data.length > 0;
+  return read.data !== undefined && read.data !== null;
+}
 
 /**
  * Fold a query/hook result into a `ReadOutcome`:
@@ -72,6 +95,7 @@ export function readOf(read: ReadLike, options: { what?: string; onRetry?: () =>
     error: read.error ?? (read.isError ? true : undefined),
     ...(again ? { onRetry: () => void again() } : {}),
     ...(options.what ? { what: options.what } : {}),
+    hasData: readHasData(read),
   };
 }
 

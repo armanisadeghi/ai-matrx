@@ -40,14 +40,19 @@ import React from "react";
 import type { ReadOutcome } from "@/components/read-state/ReadGate";
 
 /** The read outcome a count primitive is told: a `ReadOutcome` (or a `MatrxDataTableRead`). */
-export type CountRead = Pick<ReadOutcome, "status" | "error">;
+export type CountRead = Pick<ReadOutcome, "status" | "error" | "hasData">;
 
 /** What a count may honestly show for its read: the number, a failure dash, or a loading mark. */
 export type CountReadState = "ready" | "loading" | "failed";
 
 /**
- * Fold a count's read input into what it may show. A failure wins over
- * loading — a retry in flight after a failure is still a failed number.
+ * Fold a count's read input into what it may show.
+ * - First load (nothing known yet): "loading" → "…".
+ * - A read that failed with nothing known: "failed" → "—".
+ * - STALE-WHILE-ERROR (RC-B12 r13 ruling): once a read has produced a value
+ *   (`read.hasData`), a refetch in flight or a failed refresh keeps showing the
+ *   last known value ("ready") — the surface's stale notice says it may be out
+ *   of date; `countIsStale` lets a count mark itself. No flicker to "…" or "—".
  * With neither input the number is shown (nothing was said about a read).
  */
 export function countReadState(input: {
@@ -57,10 +62,18 @@ export function countReadState(input: {
   const { read, trustworthy } = input;
   if (trustworthy === false) return "failed";
   if (read) {
-    if (read.status === "error" || (read.error != null && read.error !== false && read.error !== "")) return "failed";
+    const failed = read.status === "error" || (read.error != null && read.error !== false && read.error !== "");
+    if (read.hasData) return "ready";
+    if (failed) return "failed";
     if (read.status === "loading") return "loading";
   }
   return "ready";
+}
+
+/** A last-known value shown over a failed refresh (see `countReadState`). */
+export function countIsStale(read: CountRead | null | undefined): boolean {
+  if (!read?.hasData) return false;
+  return read.status === "error" || (read.error != null && read.error !== false && read.error !== "");
 }
 
 /** The screen-reader sentence for a count that could not be read. */
@@ -104,6 +117,17 @@ export function UntrustedCount({
 }: UntrustedCountProps) {
   const state = countReadState({ read, trustworthy });
   if (state === "ready") {
+    if (countIsStale(read)) {
+      return (
+        <span
+          className={className}
+          aria-label={`${label} ${value} — last known value, couldn't refresh`}
+          title="Couldn't refresh — last known value"
+        >
+          {value}
+        </span>
+      );
+    }
     return <span className={className}>{value}</span>;
   }
   if (state === "loading") {
