@@ -33,10 +33,14 @@ import path from "node:path";
 
 const HERE = path.join(__dirname, "..");
 
-/** Components mounted under a composer by `SmartAgentInput`. */
+/**
+ * The composer and the files that host this conversation's connections line
+ * (`SmartAgentInput`; since 2026-09-27 the line lives in the + menu).
+ */
 const COMPOSER_RAILS = [
   "ChatConnectionsStrip.tsx",
   "SmartAgentInput.tsx",
+  "PlusAttachMenu.tsx",
 ] as const;
 
 /**

@@ -220,7 +220,7 @@ function NewChatLandingInputShell() {
     <div
       data-chat-new-input-shell="true"
       className={cn(
-        "w-full rounded-[28px] border border-border bg-card",
+        "w-full rounded-[20px] border border-border bg-card",
         "shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
         "p-2.5 flex flex-col",
       )}

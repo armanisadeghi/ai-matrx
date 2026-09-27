@@ -19,6 +19,10 @@ const connectionsStripSource = readFileSync(
   join(__dirname, "../ChatConnectionsStrip.tsx"),
   "utf8",
 );
+const plusMenuSource = readFileSync(
+  join(__dirname, "../PlusAttachMenu.tsx"),
+  "utf8",
+);
 const windowPanelSource = readFileSync(
   join(__dirname, "../../../../../window-panels/WindowPanel.tsx"),
   "utf8",
@@ -94,8 +98,9 @@ describe("AgentTextarea auto-resize", () => {
   it("keeps the connector line dense without shrinking mobile hit areas", () => {
     // The composer's line is now THIS chat's real connections (the suggestion
     // bag is its fallback) — Arman, 2026-09-14: "I don't see an MCP chip."
-    expect(smartInputSource).toContain("<ChatConnectionsStrip");
-    expect(smartInputSource).toContain('className="mt-0.5 pl-5"');
+    // Since 2026-09-27 the line lives in the + menu, not under the composer.
+    expect(smartInputSource).not.toContain("<ChatConnectionsStrip");
+    expect(plusMenuSource).toContain("<ChatConnectionsStrip");
     expect(smartInputSource).not.toContain("<ChatConnectorStrip");
     expect(connectionsStripSource).toContain("flex h-4 w-full");
     expect(connectionsStripSource).toContain("before:-inset-y-3");
@@ -115,7 +120,7 @@ describe("AgentTextarea auto-resize", () => {
 
   it("paints the window body guard ring with the canonical background", () => {
     expect(windowPanelSource).toContain(
-      "overflow-hidden bg-background p-1.5 pointer-events-none",
+      "overflow-hidden bg-background p-0.5 pointer-events-none",
     );
     expect(windowPanelSource).toContain("data-window-panel-body-shell");
   });

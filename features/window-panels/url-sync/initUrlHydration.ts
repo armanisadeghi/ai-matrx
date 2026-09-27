@@ -1,4 +1,5 @@
 import { getHydrator, registerPanelHydrator } from "./UrlPanelRegistry";
+import { restoreUnsentLaunch } from "@/features/agents/redux/execution-system/instance-user-input/restore-unsent-launch.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { DISPLAY_MODE_TO_OVERLAY_ID } from "@/features/agents/redux/execution-system/display-mode-overlay";
 import {
@@ -107,6 +108,12 @@ export function initUrlHydration() {
       );
       return;
     }
+
+    // An UNSENT window has no server row to load: rebuild it from the recipe
+    // it left in this tab (agent, window, variables, context) under the same
+    // id. The launch opens the window itself, and the composer restores the
+    // typed text. Only a sent conversation is read from the server.
+    if (restoreUnsentLaunch(dispatch, conversationId)) return;
 
     dispatch(
       openOverlay({

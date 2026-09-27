@@ -169,6 +169,11 @@ test rows you created so the person can remove them.
   page context and no surface tools on any turn, while every other agent on
   the screen (a window, a sidebar) gets both. Its launcher also passes
   `runtime: { surfaceName: null }`. (Arman, 2026-09-27; `isPageOwnConversation`.)
+- **Universal hosts** (`agentRosterMode: "universal"`, e.g. Chat, where any
+  agent may be the page's main one) have no bound roster; the Agents menu
+  offers "Run an agent on this page" (any agent, launched with the page's
+  live scope in a window) instead. Verify it the same way —
+  `surface:probe --agent` falls back to that picker.
 - **A rejected value reports EVERY problem at once**, per item then list-level
   (duplicates, unknown ids), ending "Nothing was changed." — never just the
   first (Arman, 2026-09-27; `collectProblems` in

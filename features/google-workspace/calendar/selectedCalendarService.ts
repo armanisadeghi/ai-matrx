@@ -1,7 +1,6 @@
 /**
- * The internal selected-calendar read is a separate provider contract from the
- * owned agenda. It never saves rows or writes events: it discovers calendars
- * for one explicitly chosen account, then reads one explicitly chosen window.
+ * Internal selected-calendar operations use one explicitly chosen account and
+ * calendar. Reconcile performs a fresh read before updating the AI Matrx mirror.
  */
 
 import type { components } from "@/types/python-generated/api-types";
@@ -26,9 +25,12 @@ export type SelectedEventWindow = Omit<
 > & {
   events: SelectedEvent[];
 };
+export type SelectedCalendarReconcileResult =
+  components["schemas"]["SelectedCalendarReconcileResponse"];
 
 const DISCOVER_PATH = "/google-sync/calendar/discover";
 const SELECTED_EVENTS_PATH = "/google-sync/calendar/selected-events";
+const SELECTED_RECONCILE_PATH = "/google-sync/calendar/selected-reconcile";
 
 function recordOrNull(value: unknown): Record<string, unknown> | null {
   if (typeof value !== "object" || value === null || Array.isArray(value))
@@ -140,6 +142,27 @@ function selectedEventWindow(value: unknown): SelectedEventWindow {
   };
 }
 
+function nonNegativeInteger(value: unknown, field: string): number {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
+    throw new Error(`Google returned an invalid ${field}.`);
+  }
+  return value;
+}
+
+function reconcileResult(value: unknown): SelectedCalendarReconcileResult {
+  const record = recordOrNull(value);
+  if (!record) throw new Error("The calendar save returned an invalid result.");
+  return {
+    generation: nonNegativeInteger(record.generation, "save generation"),
+    created: nonNegativeInteger(record.created, "created count"),
+    updated: nonNegativeInteger(record.updated, "updated count"),
+    scrubbed: nonNegativeInteger(record.scrubbed, "scrubbed count"),
+    attendees_linked: nonNegativeInteger(record.attendees_linked, "linked attendee count"),
+    attendees_unlinked: nonNegativeInteger(record.attendees_unlinked, "unlinked attendee count"),
+    detached_preserved: nonNegativeInteger(record.detached_preserved, "preserved detached count"),
+  };
+}
+
 export async function discoverSelectedCalendars(input: {
   organizationId: string;
   connectionId: string;
@@ -176,5 +199,28 @@ export async function readSelectedCalendarEvents(input: {
     "Unable to read the selected calendar.",
     input.organizationId,
   );
-  return selectedEventWindow(await response.json());
+  const window = selectedEventWindow(await response.json());
+  if (window.connection_id !== input.connectionId || window.calendar.id !== input.calendarId) {
+    throw new Error("The calendar response did not match the selected source.");
+  }
+  return window;
+}
+
+export async function reconcileSelectedCalendar(input: {
+  organizationId: string;
+  connectionId: string;
+  calendarId: string;
+}): Promise<SelectedCalendarReconcileResult> {
+  const response = await postGoogleBackend(
+    SELECTED_RECONCILE_PATH,
+    {
+      organization_id: input.organizationId,
+      connection_id: input.connectionId,
+      calendar_id: input.calendarId,
+      days: 7,
+    },
+    "Unable to save the selected calendar.",
+    input.organizationId,
+  );
+  return reconcileResult(await response.json());
 }

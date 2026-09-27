@@ -21,6 +21,7 @@
  * and sub-picker navigation never resize the popover.
  */
 
+import { ChatConnectionsStrip } from "./ChatConnectionsStrip";
 import { useState, type ReactNode } from "react";
 import { AppWindow, Cpu, FileText, RefreshCcw } from "lucide-react";
 import {
@@ -379,6 +380,13 @@ export function PlusAttachMenu({
                     </button>
                   </div>
                   <DocumentSwitchesRow conversationId={conversationId} />
+
+                  {/* What this chat can reach, each service's real state, one
+                      click from the Tools picker. Lives here, not under every
+                      composer (Arman, 2026-09-27). */}
+                  <div className="border-t border-border px-3 py-1.5">
+                    <ChatConnectionsStrip conversationId={conversationId} />
+                  </div>
 
                   <ContextLensMenuRow conversationId={conversationId} />
 

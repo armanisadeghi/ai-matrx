@@ -20,7 +20,6 @@ import React from "react";
 import { SmartAgentInputStacked } from "./SmartAgentInputStacked";
 import { SmartAgentInputSingleRow } from "./SmartAgentInputSingleRow";
 import { InboxQueueStrip } from "./InboxQueueStrip";
-import { ChatConnectionsStrip } from "./ChatConnectionsStrip";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
 import type { AttachedContextRailItem } from "./ConversationContextRail";
 
@@ -56,12 +55,6 @@ interface SmartAgentInputProps {
   contextRailPresentation?: "default" | "overflow-only";
   contextRailAttachedItems?: readonly AttachedContextRailItem[];
   extraRightControls?: React.ReactNode;
-  /**
-   * Show the connector reminder line under the composer. Default true — a
-   * surface opts OUT only when it genuinely has no room (an embedded runner,
-   * a single-purpose form), never to tidy the UI.
-   */
-  showConnectors?: boolean;
   /** Optional Locate anchors supplied by an owning surface. */
   surfaceValueAnchors?: SmartAgentInputSurfaceValueAnchors;
 }
@@ -85,7 +78,6 @@ export function SmartAgentInput({
   contextRailPresentation = "default",
   contextRailAttachedItems,
   extraRightControls,
-  showConnectors = true,
   surfaceValueAnchors,
 }: SmartAgentInputProps) {
   const isAmbient = presentation === "ambient";
@@ -95,19 +87,6 @@ export function SmartAgentInput({
   const queueStrip =
     conversationId && !isAmbient ? (
       <InboxQueueStrip conversationId={conversationId} />
-    ) : null;
-
-  // One quiet line under EVERY composer variation: what this conversation is
-  // actually wired to, with each service's real state, one click from the
-  // Tools picker that changes it. Falls back to the "you could connect these"
-  // reminder only when this chat is wired to nothing. Mounted here rather than
-  // in each host so a new composer surface cannot forget it.
-  const connectorStrip =
-    showConnectors && !isAmbient ? (
-      <ChatConnectionsStrip
-        conversationId={conversationId}
-        className="mt-0.5 pl-5"
-      />
     ) : null;
 
   if (singleRowTextarea || (isAmbient && ambientLayout === "single-line")) {
@@ -131,7 +110,6 @@ export function SmartAgentInput({
           surfaceValueAnchors={surfaceValueAnchors}
           presentation={presentation}
         />
-        {connectorStrip}
       </>
     );
   }
@@ -158,7 +136,6 @@ export function SmartAgentInput({
         extraRightControls={extraRightControls}
         surfaceValueAnchors={surfaceValueAnchors}
       />
-      {connectorStrip}
     </>
   );
 }

@@ -267,7 +267,10 @@ ONE component with three mounts.
 - `SelectedCalendarReview.tsx` + `selectedCalendarService.ts` — the internal-review tab in that
   same Calendar window. It requires an explicit connected account and calendar before either
   provider call, sends the selected organization/account/calendar to the generated
-  `/google-sync/calendar/discover` and `/selected-events` contracts, and persists nothing. A
+  `/google-sync/calendar/discover` and `/selected-events` contracts. After a complete seven-day
+  read, an opt-in internal action calls `/selected-reconcile` for the same exact source; the
+  server reads Google again and returns AI Matrx mirror change counts. A truncated preview
+  offers no save action. Changing the account, calendar, or organization clears its result. A
   private event (`detail_visible: false`) renders only **Busy** and its time; source account,
   calendar, organizer, attendees/RSVP, meeting link, and timezone render only when Google made
   them visible. A server refusal remains visible with the existing account-specific Reconnect

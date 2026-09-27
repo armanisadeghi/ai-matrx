@@ -1,6 +1,7 @@
 import {
   discoverSelectedCalendars,
   readSelectedCalendarEvents,
+  reconcileSelectedCalendar,
 } from "./selectedCalendarService";
 
 const postGoogleBackend = jest.fn();
@@ -103,5 +104,31 @@ describe("selected calendar provider contract", () => {
         connectionId: "account-1",
       }),
     ).rejects.toThrow("Google returned a calendar this screen cannot read.");
+  });
+
+  it("saves only the exact selected account and calendar for seven days and parses server counts", async () => {
+    const counts = {
+      generation: 2, created: 3, updated: 4, scrubbed: 1,
+      attendees_linked: 5, attendees_unlinked: 2, detached_preserved: 1,
+    };
+    postGoogleBackend.mockResolvedValue({ json: async () => counts });
+    await expect(reconcileSelectedCalendar({
+      organizationId: "org-1", connectionId: "account-1", calendarId: "team-calendar",
+    })).resolves.toEqual(counts);
+    expect(postGoogleBackend).toHaveBeenCalledWith(
+      "/google-sync/calendar/selected-reconcile",
+      { organization_id: "org-1", connection_id: "account-1", calendar_id: "team-calendar", days: 7 },
+      "Unable to save the selected calendar.", "org-1",
+    );
+  });
+
+  it("rejects malformed save counts instead of showing a false success", async () => {
+    postGoogleBackend.mockResolvedValue({ json: async () => ({
+      generation: 1, created: -1, updated: 0, scrubbed: 0,
+      attendees_linked: 0, attendees_unlinked: 0, detached_preserved: 0,
+    }) });
+    await expect(reconcileSelectedCalendar({
+      organizationId: "org-1", connectionId: "account-1", calendarId: "team-calendar",
+    })).rejects.toThrow("invalid created count");
   });
 });
