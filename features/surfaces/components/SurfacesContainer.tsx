@@ -471,26 +471,15 @@ export function SurfacesContainer() {
         data-matrx-table-page
         className="shrink-0 py-1.5 border-b border-border flex items-center gap-1.5 flex-wrap"
       >
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Badge variant="outline" className="text-xs font-normal">
-            {surfaces.length} total
-          </Badge>
-          <Badge variant="outline" className="text-xs font-normal">
-            {totalActive} active
-          </Badge>
-          <Badge variant="outline" className="text-xs font-normal">
-            {manifestedSurfaceNames.size} manifests
-          </Badge>
-          {totalUnused > 0 && (
-            <Badge
-              variant="outline"
-              className="text-xs font-normal"
-              title="Surfaces with no agents and no tools"
-            >
-              {totalUnused} unused
-            </Badge>
-          )}
-        </div>
+        {/* One line of counts, never four wrapping chips (phone). */}
+        <span
+          className="whitespace-nowrap text-xs tabular-nums text-muted-foreground"
+          title="Surfaces with no agents and no tools count as unused"
+        >
+          {surfaces.length} total · {totalActive} active ·{" "}
+          {manifestedSurfaceNames.size} manifests
+          {totalUnused > 0 && <> · {totalUnused} unused</>}
+        </span>
         {loading && (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
         )}
