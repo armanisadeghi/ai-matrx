@@ -139,7 +139,7 @@ try {
     const pick = page.getByRole("button", { name: "Pick for Plan Type" }).first();
     let opened = await until("the record form's Plan Type combobox", async () => (await pick.count()) > 0, 20000);
     if (!opened.v) {
-      const edit = page.getByRole("button", { name: /^Edit/ }).first();
+      const edit = page.getByRole("button", { name: "Edit", exact: true }).first();
       if (await edit.count()) await edit.click();
       opened = await until("the record form's Plan Type combobox", async () => (await pick.count()) > 0, 20000);
     }
