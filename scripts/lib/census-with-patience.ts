@@ -9,6 +9,10 @@
  * One census row. The callers name their own row shape; this module only carries rows from
  * the query to the caller, so it is generic rather than a second definition of `Row`.
  */
+import { createHash } from "node:crypto";
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { tryGateLock } from "./gate-db";
 export type CensusRow = Record<string, unknown>;
@@ -87,7 +91,58 @@ export interface SingleFlightOptions {
   readonly pollMs?: number;
   /** Stamped on the census transaction so the NEXT caller can name this run. */
   readonly whoAmI?: string;
+  /**
+   * Where a finished single-flight census leaves its outcome for the runs that waited on it
+   * (same machine). `null` turns sharing off. Only a test passes anything else.
+   */
+  readonly shareDir?: string | null;
 }
+
+/**
+ * ONE ANSWER PER WAVE (2026-09-27). Four lanes on this Mac queued on census 12 inside one hour,
+ * and each, on getting the lock, ran its own nine-minute copy of the same census against the
+ * same database — serial, so nothing froze, but four times the load for one answer. So the
+ * holder leaves its outcome in a file keyed by the lock and the SQL text, and a run that was
+ * WAITING when that outcome landed adopts it instead of starting another copy: the answer
+ * finished after the waiter asked, over the same SQL, on the same database. A run on another
+ * machine, or one that started after the outcome landed, runs its own. Exported for the test.
+ */
+export interface SharedOutcome<R = CensusRow> {
+  readonly sqlHash: string;
+  readonly finishedAt: number;
+  readonly by: string;
+  readonly rows: R[] | null;
+  readonly unmeasured: string | null;
+}
+
+function outcomePath(dir: string, key: string): string {
+  return join(dir, `${key.replace(/[^A-Za-z0-9_.-]/g, "_")}.json`);
+}
+function sqlHashOf(sql: string): string {
+  return createHash("sha256").update(sql).digest("hex").slice(0, 16);
+}
+function publishOutcome<R>(dir: string | null, key: string | undefined, outcome: SharedOutcome<R>): void {
+  if (!dir || !key) return;
+  try {
+    mkdirSync(dir, { recursive: true });
+    const path = outcomePath(dir, key);
+    const tmp = `${path}.${process.pid}.tmp`;
+    writeFileSync(tmp, JSON.stringify(outcome));
+    renameSync(tmp, path);
+  } catch {
+    // Sharing is an optimisation; a waiter that finds nothing simply runs its own census.
+  }
+}
+function adoptableOutcome<R>(dir: string | null, key: string | undefined, sqlHash: string, since: number | null): SharedOutcome<R> | null {
+  if (!dir || !key || since === null) return null;
+  try {
+    const o = JSON.parse(readFileSync(outcomePath(dir, key), "utf8")) as SharedOutcome<R>;
+    return o.sqlHash === sqlHash && o.finishedAt >= since ? o : null;
+  } catch {
+    return null;
+  }
+}
+export const DEFAULT_SHARE_DIR = join(tmpdir(), "matrx-gate-census");
 
 export const LOCK_WAIT_MS = 630_000;
 export const LOCK_POLL_MS = 5_000;
@@ -111,6 +166,9 @@ export async function censusWithPatience<R = CensusRow>(
   flight: SingleFlightOptions = {},
 ): Promise<Measured<R>> {
   const lockWaitMs = flight.lockWaitMs ?? LOCK_WAIT_MS;
+  const shareDir = flight.shareDir === undefined ? DEFAULT_SHARE_DIR : flight.shareDir;
+  const sqlHash = sqlHashOf(sql);
+  const me = flight.whoAmI ?? `${label}#${process.pid}`;
   const pollMs = flight.pollMs ?? LOCK_POLL_MS;
   let waitingSince: number | null = null;
   let lastHolder: LockHolder | null = null;
@@ -150,13 +208,40 @@ export async function censusWithPatience<R = CensusRow>(
         continue;
       }
       if (waitingSince !== null) {
+        const shared = adoptableOutcome<R>(shareDir, singleFlightKey, sqlHash, waitingSince);
+        if (shared) {
+          await client.query("rollback").catch(() => undefined);
+          const when = new Date(shared.finishedAt).toISOString();
+          console.log(
+            `[INFO] ${label}: the run this one waited on (${shared.by}) finished at ${when}, after this run ` +
+              "asked, over the same SQL - its outcome is adopted rather than a second copy started.",
+          );
+          return shared.unmeasured
+            ? { rows: [], unmeasured: `${shared.unmeasured} [outcome of ${shared.by}, adopted]` }
+            : { rows: shared.rows ?? [], unmeasured: null };
+        }
         console.log(
           `[INFO] ${label}: the lock was free after ${formatDurationMs(Date.now() - waitingSince, { style: "compact" })} of waiting; running it now.`,
         );
         waitingSince = null;
       }
-      const rows = (await client.query(sql)).rows as R[];
+      let rows: R[];
+      try {
+        rows = (await client.query(sql)).rows as R[];
+      } catch (err) {
+        if ((err as { code?: string }).code === "57014") {
+          publishOutcome<R>(shareDir, singleFlightKey, {
+            sqlHash,
+            finishedAt: Date.now(),
+            by: me,
+            rows: null,
+            unmeasured: `${label}: ran past its ${timeout} statement budget and was cancelled (57014)`,
+          });
+        }
+        throw err;
+      }
       await client.query("rollback").catch(() => undefined);
+      publishOutcome<R>(shareDir, singleFlightKey, { sqlHash, finishedAt: Date.now(), by: me, rows, unmeasured: null });
       if (attempt > 0) {
         console.log(`[INFO] ${label} completed on attempt ${attempt + 1} after lock contention.`);
       }

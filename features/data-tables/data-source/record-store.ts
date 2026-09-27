@@ -32,7 +32,7 @@
 // cell write patches it from the write's own answer, and nothing is re-read.
 
 import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
-import { actionRefusals } from "@ai-matrx/records";
+import { actionRefusals, mintOpId } from "@ai-matrx/records";
 import type {
   DecorationPath,
   Field,
@@ -67,11 +67,15 @@ import {
   migrateRetype,
   readRecordsInViewOrder,
   viewRecordOrderSet,
+  choiceNudgeDoor,
+  recordUpdateAddingChoices,
+  type ChoiceNudge,
 } from "./record-store-grid";
 import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import {
   choiceFromOption,
   jsonbText,
+  liveOptionsInOrder,
   olderColumnFromField,
   olderRowData,
   olderRowOrdering,
@@ -80,6 +84,7 @@ import {
   storeRulesFromOlder,
   storeValue,
   withHandOrder,
+  type StoreChoice,
   type StoreHandOrder,
 } from "./record-store-shape";
 
@@ -210,8 +215,8 @@ async function choicesFor(client: RecordsClient, field: Field): Promise<FieldCho
   if (String(field.type) !== "list") return null;
   const options = await client.fieldOptions({ field_id: field.id });
   if (!options.ok) return null;
-  return options.data
-    .map((option) => choiceFromOption(option as { data?: Record<string, unknown> | null }))
+  return liveOptionsInOrder(options.data)
+    .map((option) => choiceFromOption(option as { id?: unknown; data?: Record<string, unknown> | null }))
     .filter((c): c is FieldChoice => c !== null);
 }
 
@@ -726,6 +731,40 @@ export async function upsertCell(
   return { success: true, data: asDatasetRow(args.tableId, home, args.rowId, { [args.fieldName]: args.value }) };
 }
 
+/**
+ * A CELL SAVED WITH A WORD THAT BECOMES ONE OF ITS COLUMN'S CHOICES, IN ONE SAVE (lane
+ * CHOICE-COLUMN-EDIT): the person answered Add to "Add "<words>" to the choices for <column>?".
+ * `custom.record_update_adding_choices` adds the words to the column's choices and saves the cell
+ * in one transaction, so the choice is then offered everywhere and the cell holds it.
+ */
+export async function upsertCellAddingChoice(
+  home: RecordStoreHome,
+  args: { tableId: string; rowId: string; fieldName: string; value: unknown; add: string[] },
+): Promise<ServiceResult<DatasetRow>> {
+  const columns = await columnsOf(home, args.tableId);
+  if (!columns.success) return columns;
+  const patch = toStoreDocument(columns.data, { [args.fieldName]: args.value });
+  // The grid's column name IS the store's key (the mover kept it), so the choices are named by it.
+  const written = await recordUpdateAddingChoices(home, args.rowId, { ...patch, _op_id: mintOpId() }, { [args.fieldName]: args.add });
+  invalidateRecordStoreTable(args.tableId);
+  if (!written.ok) return refused(written.error);
+  return { success: true, data: asDatasetRow(args.tableId, home, args.rowId, { [args.fieldName]: args.value }) };
+}
+
+/** What a choice cell does with a typed word that is none of its choices (`custom/choice_nudge`). */
+export async function choiceNudgeOf(home: RecordStoreHome): Promise<ChoiceNudge> {
+  const cached = nudges.get(home.organizationId);
+  if (cached) return cached;
+  const answer = await choiceNudgeDoor(home);
+  // A door this page cannot reach yet answers the platform default, and says so in the console.
+  const value: ChoiceNudge =
+    answer.ok && (answer.data === "always_add" || answer.data === "never_add" || answer.data === "ask") ? answer.data : "ask";
+  if (!answer.ok) console.warn(`[data-tables] custom.choice_nudge did not answer (${answer.error.message}); asking, the platform default.`);
+  nudges.set(home.organizationId, value);
+  return value;
+}
+const nudges = new Map<string, ChoiceNudge>();
+
 /** Every declared column absent from `data` goes out as null, so an update REPLACES as the older door did. */
 function replacing(columns: DatasetField[], data: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...data };
@@ -1151,16 +1190,15 @@ export async function setFieldFormat(
   const client = clientFor(home);
   // SEAM HONESTY: every option of the format is carried through `custom.field_update` or the
   // whole save is refused before anything is written (record-store-shape.ts `storeFormatWrite`).
-  let current: { choices: FieldChoice[] | null; optionsKeyedByName: boolean } = { choices: null, optionsKeyedByName: false };
+  let current: { choices: StoreChoice[] | null } = { choices: null };
   if (String(field.data.type) === "list") {
     const options = await client.fieldOptions({ field_id: args.fieldId });
     if (!options.ok) return refused(options.error);
-    const docs = options.data.map((o) => ((o as { data?: Record<string, unknown> | null }).data ?? {}));
     current = {
-      choices: options.data
-        .map((option) => choiceFromOption(option as { data?: Record<string, unknown> | null }))
-        .filter((c): c is FieldChoice => c !== null),
-      optionsKeyedByName: docs.some((d) => typeof d.name === "string" && typeof d.title !== "string"),
+      // The LIVE options, in the store's declared order — what the editor was showing.
+      choices: liveOptionsInOrder(options.data)
+        .map((option) => choiceFromOption(option as { id?: unknown; data?: Record<string, unknown> | null }))
+        .filter((c): c is StoreChoice => c !== null),
     };
   }
   const write = storeFormatWrite(field.data, args.format, current);

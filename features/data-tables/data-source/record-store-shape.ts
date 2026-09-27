@@ -320,13 +320,27 @@ function hasKeys(o: object | null | undefined): boolean {
 export type StoreFormatWrite = { ok: true; patches: Array<Record<string, unknown>> } | { ok: false; says: string };
 
 /**
+ * A choice as the column editor holds it on a store table: the grid's `FieldChoice` plus the id
+ * of the option record it IS. The editor spreads a choice when a person edits it, so the id rides
+ * along; a re-worded choice is therefore sent as {id, words} and the store re-words THAT option
+ * in place (same key, every cell keeps meaning it) instead of retiring it and making another.
+ */
+export type StoreChoice = FieldChoice & { id?: string };
+
+/** The id a choice carries, when it is one of the store's options. */
+export function storeChoiceId(choice: FieldChoice | null | undefined): string | undefined {
+  const id = (choice as StoreChoice | null | undefined)?.id;
+  return typeof id === "string" && id !== "" ? id : undefined;
+}
+
+/**
  * A column's display format, as the patches `custom.field_update` takes — in order — or the
  * sentence that refuses it. `current` is what the column's option Table holds now.
  */
 export function storeFormatWrite(
   field: FieldForWrite,
   format: FieldFormatConfig | null,
-  current: { choices: FieldChoice[] | null; optionsKeyedByName: boolean },
+  current: { choices: StoreChoice[] | null },
 ): StoreFormatWrite {
   const name = field.label || field.key;
   const nothing = `Nothing about "${name}" was changed.`;
@@ -376,26 +390,35 @@ export function storeFormatWrite(
         }. The record store keeps a column's choices as the column's own list; it cannot take them from a pick list or narrow them by another column yet. Type the choices into the column instead. ${nothing}`,
       };
     }
-    const choices = (Array.isArray(options.choices) ? options.choices : []) as FieldChoice[];
+    const choices = (Array.isArray(options.choices) ? options.choices : []) as StoreChoice[];
     const words: string[] = [];
+    // THE CHOICES AS THE STORE SAVES THEM (lane CHOICE-COLUMN-EDIT): in order, each one the option
+    // it already is ({id, words}) or a new word. Re-worded, added, removed and reordered in ONE
+    // `custom.field_update` — on a moved column exactly as on a native one.
+    const entries: Array<string | { id: string; words: string }> = [];
+    const heldIds = new Set((current.choices ?? []).map(storeChoiceId).filter((id): id is string => !!id));
     for (const c of choices) {
       const w = typeof c?.value === "string" ? c.value.trim() : "";
-      if (w && !words.includes(w)) words.push(w);
+      if (!w || words.includes(w)) continue;
+      words.push(w);
+      const id = storeChoiceId(c);
+      entries.push(id && heldIds.has(id) ? { id, words: w } : w);
     }
     const held = current.choices?.map((c) => c.value) ?? null;
-    const wordsChanged = held === null || held.length !== words.length || held.some((w, i) => w !== words[i]);
+    const heldOrder = current.choices?.map((c) => storeChoiceId(c) ?? c.value) ?? null;
+    const sentOrder = entries.map((e) => (typeof e === "string" ? e : e.id));
+    const wordsChanged =
+      held === null ||
+      held.length !== words.length ||
+      held.some((w, i) => w !== words[i]) ||
+      heldOrder === null ||
+      heldOrder.some((k, i) => k !== sentOrder[i]);
     const wasAList = kindNow === "select" || kindNow === "multi_select";
-    if (wasAList && wordsChanged && current.optionsKeyedByName) {
-      return {
-        ok: false,
-        says: `"${name}" keeps the choices it was moved across with, and the record store cannot re-word or add to them from here yet (their colours and the other settings can still be changed). ${nothing}`,
-      };
-    }
     // An existing list's words are edited through the SETTINGS arm; the behaviour arm (a `type`
     // word) reads words only for a list it is making. So a list that stays a list never sends a
     // type for its words, and one → several sends its words first, then the type.
     const settings: Record<string, unknown> = {};
-    if (wasAList && wordsChanged) settings.options = words;
+    if (wasAList && wordsChanged) settings.options = entries;
     if (!wasAList && words.length) main.options = words;
     // The older grid's default is "other values allowed"; the store's is "off" — so it is said.
     (wasAList ? settings : main).allow_other = options.allowOther !== false;
@@ -490,11 +513,29 @@ export function storeRulesFromOlder(
 }
 
 /**
+ * A list's live options in the order the store declared them (`metadata.option_position`, which
+ * `custom.field_update` writes for every option it saves); options with no position keep the order
+ * the door answered them in, after the positioned ones. `custom.field_options` answers in no order.
+ */
+export function liveOptionsInOrder<T extends { deleted_at?: unknown; metadata?: unknown }>(options: readonly T[]): T[] {
+  const position = (o: T): number => {
+    const meta = (o.metadata ?? {}) as Record<string, unknown>;
+    const n = Number(meta.option_position);
+    return Number.isFinite(n) && meta.option_position !== null && meta.option_position !== undefined ? n : Number.POSITIVE_INFINITY;
+  };
+  return options
+    .map((o, i) => ({ o, i }))
+    .filter(({ o }) => o.deleted_at === null || o.deleted_at === undefined)
+    .sort((a, b) => position(a.o) - position(b.o) || a.i - b.i)
+    .map(({ o }) => o);
+}
+
+/**
  * One option record of a list's option Table → one grid choice. `value` is what
  * the cell holds, and the store's read door answers a list cell with the option's
  * LABEL (its `_choices` side-map carries the id), so the label is the value.
  */
-export function choiceFromOption(option: { data?: Record<string, unknown> | null }): FieldChoice | null {
+export function choiceFromOption(option: { id?: unknown; data?: Record<string, unknown> | null }): StoreChoice | null {
   const data = option.data ?? {};
   // An option Table the MOVER made keys its words `name`; one the store makes itself for a
   // `select` column (custom._options_table_for) keys them `title`. Both are the option's words.
@@ -502,7 +543,8 @@ export function choiceFromOption(option: { data?: Record<string, unknown> | null
   const name = typeof words === "string" ? words : null;
   if (!name) return null;
   const color = typeof data.color === "string" && data.color.trim() !== "" ? data.color : undefined;
-  return color ? { value: name, color } : { value: name };
+  const id = typeof option.id === "string" && option.id !== "" ? { id: option.id } : {};
+  return color ? { value: name, color, ...id } : { value: name, ...id };
 }
 
 /**

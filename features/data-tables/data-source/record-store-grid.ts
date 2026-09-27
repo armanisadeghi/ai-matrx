@@ -60,6 +60,26 @@ export async function callGridDoor<T>(
   return { ok: true, data: answer.data as T };
 }
 
+// ─── a choice cell's typed word (lane CHOICE-COLUMN-EDIT) ─────────────────────
+
+/** `custom/choice_nudge`: what a choice cell does with a typed word that is none of its choices. */
+export type ChoiceNudge = "ask" | "always_add" | "never_add";
+
+/** The knob, resolved for the signed-in person in the table's organization. */
+export function choiceNudgeDoor(home: RecordStoreHome) {
+  return callGridDoor<string>(home, "choice_nudge", {});
+}
+
+/** Add the words to the named columns' choices and save the cell, in one transaction. */
+export function recordUpdateAddingChoices(
+  home: RecordStoreHome,
+  recordId: string,
+  patch: Record<string, unknown>,
+  add: Record<string, string[]>,
+) {
+  return callGridDoor<number>(home, "record_update_adding_choices", { p_record_id: recordId, p_patch: patch, p_add: add });
+}
+
 // ─── G8: a row change can start an agent ─────────────────────────────────────
 
 export type RecordChangeActions = {

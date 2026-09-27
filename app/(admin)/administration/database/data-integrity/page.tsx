@@ -667,6 +667,7 @@ export default function DataIntegrityPage() {
             isLoading={!checks && !error}
             isFetching={runningAll}
             pageSize={50}
+            localPagination={{ mode: "numbered", reason: "Each listed page-size choice must render exactly that many integrity checks and expose stable page navigation.", approvedBy: "Arman, September 27 2026" }}
             // The checks read, not a run's failure (runs share `error`): once the list is in, it stands.
             read={{ status: checks ? "ready" : error ? "error" : "loading", error, onRetry: () => void loadChecks(), what: "integrity checks" }}
             emptyState={{

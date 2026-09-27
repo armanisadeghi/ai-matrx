@@ -152,7 +152,30 @@ function fieldUpdate({ field_id, patch }: { field_id: string; patch: Record<stri
       next.config.allow_other = patch.allow_other;
     }
     if (Array.isArray(patch.options) && old.type === "list") {
-      store.options.set(old.config.options_table_id as string, (patch.options as string[]).map((title) => ({ data: { title } })));
+      // custom._field_choices_save (lane CHOICE-COLUMN-EDIT): an {id, words} entry re-words THAT
+      // option in its table's own title field (`name` on a mover's copy); a word is the live option
+      // with those words, else a new one; what the list no longer names is retired (archived).
+      const table = old.config.options_table_id as string;
+      const held = store.options.get(table) ?? [];
+      const titleField = held.some((o) => typeof (o.data as Record<string, unknown>)?.name === "string") ? "name" : "title";
+      const kept: Array<Record<string, unknown>> = [];
+      (patch.options as Array<string | { id: string; words: string }>).forEach((e, i) => {
+        const words = typeof e === "string" ? e : e.words;
+        const hit =
+          (typeof e !== "string" && held.find((o) => o.id === e.id)) ||
+          held.find((o) => !o.deleted_at && String((o.data as Record<string, unknown>)[titleField]).toLowerCase() === words.toLowerCase());
+        if (hit) {
+          hit.data = { ...(hit.data as object), [titleField]: words };
+          hit.metadata = { ...((hit.metadata as object) ?? {}), option_position: i + 1 };
+          kept.push(hit);
+        } else {
+          const born = { id: `opt-new-${i}`, data: { [titleField]: words }, metadata: { option_position: i + 1 } };
+          held.push(born);
+          kept.push(born);
+        }
+      });
+      for (const o of held) if (!kept.includes(o)) o.deleted_at = "2026-09-27T00:00:00Z";
+      store.options.set(table, held);
     }
     if ("display_format" in patch) {
       if (patch.display_format === null) delete next.display_format;
@@ -170,7 +193,8 @@ const client = {
   myLevels: jest.fn(async () => ok([{ id: TABLE, level: "admin" }])),
   fieldOptions: jest.fn(async ({ field_id }: { field_id: string }) => {
     const table = store.fields.get(field_id)?.config.options_table_id as string | undefined;
-    return ok(table ? JSON.parse(JSON.stringify(store.options.get(table) ?? [])) : []);
+    // custom.field_options answers the LIVE options, in no particular order.
+    return ok(table ? JSON.parse(JSON.stringify((store.options.get(table) ?? []).filter((o) => !o.deleted_at))) : []);
   }),
   list: jest.fn(async () => ok({ rows: [] })),
   tableCapacity: jest.fn(async () => ok({ records: 0, visible: 0 })),
@@ -294,21 +318,50 @@ describe("September service board · choice colours and allow-other", () => {
     expect(client.fieldUpdate).not.toHaveBeenCalled();
   });
 
-  it("REFUSES rewriting the words of a list the mover carried across (its options are keyed `name`), before writing", async () => {
+  it("re-words, adds, removes and reorders the choices of a list the mover carried across, in ONE save (lane CHOICE-COLUMN-EDIT)", async () => {
+    // The live defect: "Stage" keeps its choices keyed `name`, and the Sheet refused any word
+    // change with "keeps the choices it was moved across with … Nothing about "Stage" was changed."
+    store.options.set("opt-stage", [
+      // Answered out of order, as custom.field_options does; each carries its declared position.
+      { id: "o-won", data: { name: "Won", color: "green" }, metadata: { option_position: 3 } },
+      { id: "o-lead", data: { name: "Lead", color: "slate" }, metadata: { option_position: 1 } },
+      { id: "o-lost", data: { name: "Lost" }, metadata: { option_position: 4 } },
+      { id: "o-quali", data: { name: "Qualifed" }, metadata: { option_position: 2 } },
+    ]);
     const rs = await load();
+    const back = (await formatOf(rs, F.movedStage)) as { options: { choices: Array<{ value: string; id?: string }> } };
+    // The editor reads the options in the store's declared order, each carrying the option it is.
+    expect(back.options.choices.map((c) => c.value)).toEqual(["Lead", "Qualifed", "Won", "Lost"]);
+    // What the column editor does: fix the typo in place, drop Lost, add Proposal, move Won last.
+    const [lead, quali, won] = back.options.choices;
+    const edited = [lead, { ...quali, value: "Qualified" }, { value: "Proposal" }, won];
     const saved = await rs.setFieldFormat(HOME, {
       tableId: TABLE,
       fieldId: F.movedStage,
-      format: { id: "choice", options: { choices: [{ value: "Lead" }, { value: "Won" }, { value: "Lost" }] } },
+      format: { id: "choice", options: { ...back.options, choices: edited } } as never,
     });
-    expect(saved.success).toBe(false);
-    expect(client.fieldUpdate).not.toHaveBeenCalled();
+    expect(saved.success).toBe(true);
+    expect(client.fieldUpdate).toHaveBeenCalledTimes(1);
+    expect(store.writes[0]!.patch.options).toEqual([
+      { id: "o-lead", words: "Lead" },
+      { id: "o-quali", words: "Qualified" },
+      "Proposal",
+      { id: "o-won", words: "Won" },
+    ]);
+    const opts = store.options.get("opt-stage")!;
+    expect(opts.find((o) => o.id === "o-quali")!.data).toEqual({ name: "Qualified" });
+    expect(opts.find((o) => o.id === "o-lost")!.deleted_at).toBeTruthy();
+    const after = (await formatOf(rs, F.movedStage)) as { options: { choices: Array<{ value: string }> } };
+    expect(after.options.choices.map((c) => c.value)).toEqual(["Lead", "Qualified", "Proposal", "Won"]);
   });
 
   it("a moved list's colours are read from its options, and saving them again rewrites no word", async () => {
     const rs = await load();
     const back = (await formatOf(rs, F.movedStage)) as { options: { choices: unknown[] } };
-    expect(back.options.choices).toEqual([{ value: "Lead", color: "slate" }, { value: "Won", color: "green" }]);
+    expect(back.options.choices.map((c) => ({ ...(c as object), id: undefined }))).toEqual([
+      { value: "Lead", color: "slate", id: undefined },
+      { value: "Won", color: "green", id: undefined },
+    ]);
     const saved = await rs.setFieldFormat(HOME, { tableId: TABLE, fieldId: F.movedStage, format: { id: "choice", options: { ...back.options, allowOther: true } } as never });
     expect(saved.success).toBe(true);
     expect(store.writes.every((w) => !("options" in w.patch))).toBe(true);

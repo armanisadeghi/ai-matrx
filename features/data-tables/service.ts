@@ -29,13 +29,14 @@ import { supabase } from "@/utils/supabase/client";
 import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 
 import { rewriteFormulaReferences } from "@ai-matrx/design-system/formulas";
+import { inlineChoices } from "@/lib/field-formats/choices";
 import * as recordStore from "./data-source/record-store";
 import { placeTableInRecordStore, recordStoreHomeOf } from "./data-source/table-home";
 import { recordChangeActions } from "./data-source/record-store-grid";
 import { toRecordSourceKey } from "@/features/scheduling/utils/recordSourceKey";
 
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import { parseTableMetadata } from "./types";
+import { isServiceFailure, parseTableMetadata } from "./types";
 import { operationFailed } from "@/utils/errors";
 import { unwrapUserTableMutation } from "@/utils/user-tables-rpc";
 import {
@@ -412,6 +413,48 @@ export async function upsertCell(
   });
   if (error) return refused(error);
   return { success: true, data: data as unknown as DatasetRow };
+}
+
+// ─── a choice cell's typed word (lane CHOICE-COLUMN-EDIT) ─────────────────────
+
+export type ChoiceNudge = "ask" | "always_add" | "never_add";
+
+/**
+ * What a choice cell does with a typed word that is none of its choices — the Feature Knob
+ * `custom/choice_nudge` (ask | always_add | never_add), resolved for the signed-in person in
+ * the table's organization. An older table answers the platform default, ask.
+ */
+export async function readChoiceNudge(tableId: string): Promise<ChoiceNudge> {
+  const home = recordStoreHomeOf(tableId);
+  if (home) return recordStore.choiceNudgeOf(home);
+  return "ask";
+}
+
+/**
+ * Save a choice cell with words that become one of its column's choices, in one save: on a
+ * record-store table one transaction adds the choice and saves the cell; on an older table the
+ * word joins the column's inline choices (the one format writer) and then the cell is saved.
+ */
+export async function upsertCellAddingChoice(
+  args: UpsertCellArgs & { add: string[]; format: FieldFormatConfig },
+): Promise<ServiceResult<DatasetRow>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.upsertCellAddingChoice(home, args);
+  const meta = await getTableMetadata({ tableId: args.tableId });
+  if (isServiceFailure(meta)) return meta;
+  const column = meta.data.columns.find((c) => c.field_name === args.fieldName);
+  if (!column) return { success: false, error: `This table no longer has the column "${args.fieldName}". Nothing was changed.` };
+  const existing = inlineChoices(args.format.options);
+  const added = await setFieldFormat({
+    tableId: args.tableId,
+    fieldId: column.id,
+    format: {
+      ...args.format,
+      options: { ...(args.format.options ?? {}), choices: [...existing, ...args.add.map((value) => ({ value }))] },
+    },
+  });
+  if (isServiceFailure(added)) return added;
+  return upsertCell(args);
 }
 
 // ─── udt_bulk_write ──────────────────────────────────────────────────────────

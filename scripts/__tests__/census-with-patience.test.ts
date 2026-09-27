@@ -11,6 +11,9 @@
 // untouched, and what these cases exercise is the one thing that is pure control flow —
 // how many times we ask, how long we wait, and what we say when contention wins.
 
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { censusWithPatience, CONTENTION_BACKOFF, describeHolder } from "../lib/census-with-patience";
 
 type Script = Array<{ throwCode?: string; rows?: unknown[] }>;
@@ -118,7 +121,7 @@ describe("single flight (2026-09-25, the live database freeze; 2026-09-27, name 
       },
     };
   }
-  const NO_PAUSE = { pollMs: 0 } as const;
+  const NO_PAUSE = { pollMs: 0, shareDir: null } as const;
 
   it("a second caller never starts a second copy: while the lock is held it does not run the census", async () => {
     const c = lockClient(Number.POSITIVE_INFINITY);
@@ -166,6 +169,7 @@ describe("single flight (2026-09-25, the live database freeze; 2026-09-27, name 
     const c = lockClient(0);
     const out = await censusWithPatience(c, "census 12", "select census", "540s", [], "census:x", {
       whoAmI: "census 12#1@here",
+      shareDir: null,
     });
     expect(out.unmeasured).toBeNull();
     expect(out.rows).toEqual([{ n: 1 }]);
@@ -174,5 +178,61 @@ describe("single flight (2026-09-25, the live database freeze; 2026-09-27, name 
     expect(stampAt).toBeGreaterThan(c.statements.indexOf("begin"));
     expect(stampAt).toBeLessThan(lockAt);
     expect(lockAt).toBeLessThan(c.statements.indexOf("select census"));
+  });
+
+  describe("one answer per wave", () => {
+    /** The holder: runs the census for real and leaves its outcome in `dir`. */
+    async function holderRuns(dir: string, sql = "select census") {
+      const c = lockClient(0);
+      return censusWithPatience(c, "census 12", sql, "540s", [], "census:x", { whoAmI: "holder#1", shareDir: dir, pollMs: 0 });
+    }
+
+    it("a run that WAITED adopts the outcome its holder left, instead of running a second copy", async () => {
+      const dir = mkdtempSync(join(tmpdir(), "census-share-"));
+      const waiter = lockClient(2);
+      let heldOnce = false;
+      const original = waiter.query;
+      // the holder finishes while the waiter is polling
+      waiter.query = async (sql: string) => {
+        if (sql.includes("pg_try_advisory_xact_lock") && !heldOnce) {
+          heldOnce = true;
+          await holderRuns(dir);
+        }
+        return original(sql);
+      };
+      const out = await censusWithPatience(waiter, "census 12", "select census", "540s", [], "census:x", {
+        lockWaitMs: 60_000,
+        pollMs: 0,
+        shareDir: dir,
+      });
+      expect(out).toEqual({ rows: [{ n: 1 }], unmeasured: null });
+      expect(waiter.statements).not.toContain("select census");
+    });
+
+    it("never adopts an outcome over DIFFERENT SQL, or one that landed before the run asked", async () => {
+      const dir = mkdtempSync(join(tmpdir(), "census-share-"));
+      await holderRuns(dir, "select an older census");
+      const waiter = lockClient(1);
+      const out = await censusWithPatience(waiter, "census 12", "select census", "540s", [], "census:x", {
+        lockWaitMs: 60_000,
+        pollMs: 0,
+        shareDir: dir,
+      });
+      expect(out.rows).toEqual([{ n: 1 }]);
+      expect(waiter.statements).toContain("select census");
+
+      const stale = mkdtempSync(join(tmpdir(), "census-share-"));
+      writeFileSync(
+        join(stale, "census_x.json"),
+        JSON.stringify({ sqlHash: "whatever", finishedAt: 0, by: "old", rows: [], unmeasured: null }),
+      );
+      const w2 = lockClient(1);
+      await censusWithPatience(w2, "census 12", "select census", "540s", [], "census:x", {
+        lockWaitMs: 60_000,
+        pollMs: 0,
+        shareDir: stale,
+      });
+      expect(w2.statements).toContain("select census");
+    });
   });
 });

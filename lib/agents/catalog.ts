@@ -43,6 +43,7 @@ import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast } from "@/lib/toast";
+import { favoritesService } from "@/features/scopes/service/favoritesService";
 import type { RootState } from "@/lib/redux/store";
 
 /**
@@ -109,6 +110,13 @@ export function getAgentCatalog(options?: {
     // deliberately generic seam (it types over `unknown` on purpose).
     client: supabase as unknown as AgentCatalogClient,
     identity: { requireUserId },
+    // Stars are per-person state in `platform.user_entity_state`, read/written
+    // through the app's ONE `ues_*` chokepoint (`favoritesService`, bound in
+    // `features/scopes/service/favoritesService.ts`). Passing it here means
+    // the picker's star and the classic grid's star, Pinned Agents, and the
+    // hub's Favorites all read/write through the same instance — never a
+    // second one the package would otherwise default-construct for itself.
+    favorites: favoritesService,
     transport: createMatrxTransport(store.getState as () => RootState, {
       source: "agentCatalog",
     }),

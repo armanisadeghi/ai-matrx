@@ -176,7 +176,6 @@ import {
   setTableStyle,
   upsertCell,
 } from "@/features/data-tables/service";
-import { offerToAddChoiceOption } from "@/features/data-tables/choice-option-nudge";
 import {
   CELL_TINT_CLASS,
   ROW_TINT_CLASS,
@@ -250,6 +249,7 @@ import {
   type ColumnFilterMap,
 } from "@/features/data-tables/column-filters";
 import { TableSkeleton } from "./TableSkeleton";
+import { editMovesTheView, leftTheViewSentence, rowsThatLeft, type EditedCell } from "@/features/data-tables/edit-keeps-the-view";
 import { CellCleanupButton } from "@/components/content-cleanup/CellCleanupButton";
 import { cleanValue } from "@/lib/content-cleanup/clean-cells";
 import { DEFAULT_ENABLED_VALUE_OPERATIONS } from "@/lib/content-cleanup/value-operations";
@@ -1430,6 +1430,10 @@ const UserTableViewer = ({
 
       // A genuine remote change. Patch the row rather than refetching, so a
       // collaborator's edit appears without the grid flashing under the user.
+      // …and when it changed the column that orders or filters the view, the view follows it.
+      for (const key of Object.keys(incomingData)) {
+        if (incomingData[key] !== local.data[key]) keepTheViewTrue(event.rowId, key, "theirs");
+      }
       setData((prev) =>
         prev.map((row) =>
           row.id === event.rowId
@@ -2449,6 +2453,9 @@ const UserTableViewer = ({
   // division by zero renders #ERROR with the reason.
   const computedPage = computeColumns(displayRows, fields, displayValueOf);
   displayRows = computedPage.rows;
+  // The rows on screen NOW (after filters, sort and the page), read when an edit settles (lane
+  // DATA-V2-BASICS: an edit keeps the view true).
+  const shownNow = useLatest(displayRows);
   const formulaErrors = computedPage.errors;
   // Formula AND system columns (Created / Last modified time): everything the
   // table fills in itself, which every write path below must skip.
@@ -2540,7 +2547,81 @@ const UserTableViewer = ({
       setData((prev) => patch(prev) ?? prev);
       setFullDatasetCache((prev) => patch(prev));
       setAllSortedData((prev) => patch(prev));
+      keepTheViewTrue(rowId, fieldName, "mine");
     };
+
+  /*
+   * ─── AN EDIT KEEPS THE VIEW TRUE (lane DATA-V2-BASICS, 2026-09-27) ───────────────────────────
+   *
+   * Arman: with a sort set, editing a cell in the sorted column did not re-apply the sort — the row
+   * stayed where it was under a header that said the table was sorted. Now an edit (yours, or a
+   * collaborator's arriving live) to the column that ORDERS the view re-reads the page in the
+   * store's order, and the edited cell stays selected (the selection is by row id) and is scrolled
+   * back into sight. A row the edit took OUT of the view — to another page by the sort, or out of a
+   * filter — is named in a notice, with Undo for your own edit, never silently gone.
+   */
+  const viewSettle = useRef<{ timer: ReturnType<typeof setTimeout> | null; edited: EditedCell[]; mine: boolean }>({
+    timer: null,
+    edited: [],
+    mine: false,
+  });
+  const keepTheViewTrue = (rowId: string, fieldName: string, whose: "mine" | "theirs") => {
+    if (!editMovesTheView(fieldName, sortField, columnFilters)) return;
+    const pending = viewSettle.current;
+    pending.edited.push({ rowId, fieldName });
+    if (whose === "mine") pending.mine = true;
+    if (pending.timer) clearTimeout(pending.timer);
+    pending.timer = setTimeout(() => void settleTheView(), 250);
+  };
+  const settleTheView = useEffectEvent(async () => {
+    const pending = viewSettle.current;
+    const edited = pending.edited;
+    const mine = pending.mine;
+    pending.edited = [];
+    pending.mine = false;
+    pending.timer = null;
+    if (edited.length === 0) return;
+    const before = new Map(shownNow().map((row) => [row.id, row] as const));
+    const reorders = edited.some((cell) => editMovesTheView(cell.fieldName, sortField, columnFilters) === "order");
+    // A filtered view is filtered AND sorted here, on every render, so it is already true. A page
+    // the store sorted is re-read in the store's order; a cached whole-table sort is re-sorted.
+    if (reorders && !hasColumnFilters && sortField) {
+      if (allSortedData && allSortedData.length > 0) {
+        const all = smartSort(allSortedData, sortField, sortDirection, getFieldDataType(sortField));
+        setAllSortedData(all);
+        const start = (currentPage - 1) * limit;
+        setData((prev) => shareUnchangedRows(prev, all.slice(start, start + limit)));
+      } else {
+        await loadTableData(currentPage, limit, sortField, sortDirection, searchTerm);
+      }
+    }
+    // The next frame holds the settled rows: bring the edited cell back into sight, and say what left.
+    requestAnimationFrame(() => {
+      const shownIds = shownNow().map((row) => row.id);
+      const last = edited[edited.length - 1]!;
+      if (shownIds.includes(last.rowId)) {
+        document
+          .querySelector(`[data-cell="${CSS.escape(`${last.rowId}::${last.fieldName}`)}"]`)
+          ?.scrollIntoView({ block: "nearest", inline: "nearest" });
+      }
+      const left = rowsThatLeft(edited, shownIds).map((cell) => {
+        const row = before.get(cell.rowId);
+        const effect = editMovesTheView(cell.fieldName, sortField, columnFilters) ?? "order";
+        return {
+          label: row ? rowLabelText(row, fields, effectiveRowLabel(tableInfo?.metadata, fields), relationWords).text : "",
+          effect,
+          columnName: fields.find((f) => f.field_name === cell.fieldName)?.display_name || cell.fieldName,
+        };
+      });
+      const sentence = leftTheViewSentence(left);
+      if (!sentence) return;
+      if (mine && !isReadOnly) {
+        notify.info(sentence, { action: { label: "Undo", onClick: () => void cellUndo.undo() } });
+      } else {
+        notify.info(sentence);
+      }
+    });
+  });
 
   /**
    * A write changed which ROWS exist (insert, delete) — only then is a refetch
@@ -4441,16 +4522,11 @@ const UserTableViewer = ({
                       newValue,
                       serverUpdatedAt,
                     );
-                    // An off-list value on a choice column: offer to
-                    // make it an option, one click, never blocking.
-                    offerToAddChoiceOption({
-                      tableId: S().tableId,
-                      field,
-                      saved: newValue,
-                      onAdded: () =>
-                        void S().reloadCurrentPage(),
-                    });
+                    // An off-list word on a choice column is asked about in
+                    // the cell BEFORE it is saved (the enum nudge,
+                    // EditableCell); a choice it added is re-read here.
                   }}
+                  onChoicesAdded={() => void S().reloadCurrentPage()}
                 />
               </div>
               {cellData && (

@@ -62,6 +62,48 @@ export function decideChoiceNudge(field: NudgeField, saved: unknown): NudgeDecis
   return { kind: "offer", values: missing, format };
 }
 
+/**
+ * THE ENUM NUDGE, DECIDED BEFORE A CELL IS SAVED (lane CHOICE-COLUMN-EDIT, Arman 2026-09-27:
+ * "when I'm editing cells, it's supposed to allow me to add any value and if the value is not in
+ * the defined list of enums, it needs to ask me if I want to add it or not and if I want to add
+ * it, then it needs to do it").
+ *
+ * `nudge` is the organization's Feature Knob `custom/choice_nudge`:
+ *  - ask (the default): the cell asks "Add "<words>" to the choices for <column>?" — Add, Keep as
+ *    typed (only when the column takes other values), Cancel;
+ *  - always_add: the words become choices without asking;
+ *  - never_add: kept as typed where the column takes other values, otherwise not saved.
+ * A column bound to a shared pick list is not asked here: its list is edited where the list lives.
+ */
+export type TypedChoiceDecision =
+  | { kind: "none" }
+  | { kind: "ask"; words: string[]; canKeep: boolean }
+  | { kind: "add"; words: string[] }
+  | { kind: "keep" }
+  | { kind: "not_a_choice"; words: string[] };
+
+export function decideTypedChoice(
+  format: FieldFormatConfig | null | undefined,
+  saved: unknown,
+  nudge: "ask" | "always_add" | "never_add",
+): TypedChoiceDecision {
+  if (!format || !isChoiceFormat(format.id) || format.id === "person") return { kind: "none" };
+  if (format.options?.structuredList?.listId) return { kind: "none" };
+  const declared = new Set(inlineChoices(format.options).flatMap((c) => [c.value.toLowerCase(), (c.label ?? c.value).toLowerCase()]));
+  const words = [
+    ...new Set(
+      (Array.isArray(saved) ? saved : [saved])
+        .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+        .filter((v) => v !== "" && !declared.has(v.toLowerCase())),
+    ),
+  ];
+  if (words.length === 0) return { kind: "none" };
+  const canKeep = format.options?.allowOther !== false;
+  if (nudge === "always_add") return { kind: "add", words };
+  if (nudge === "never_add") return canKeep ? { kind: "keep" } : { kind: "not_a_choice", words };
+  return { kind: "ask", words, canKeep };
+}
+
 /** Values already offered this session, per column — never nag twice. */
 const offered = new Set<string>();
 

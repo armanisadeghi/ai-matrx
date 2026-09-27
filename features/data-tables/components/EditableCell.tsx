@@ -58,7 +58,9 @@ import { RatingInput } from "./RatingInput";
 import { AttachmentInput } from "./AttachmentInput";
 import { DateCellEditor } from "./DateCellEditor";
 import { isDirectClickEditor, type GridMove } from "@ai-matrx/design-system/data-table/grid-selection";
-import { upsertCell } from "../service";
+import { readChoiceNudge, upsertCell, upsertCellAddingChoice } from "../service";
+import { decideTypedChoice } from "../choice-option-nudge";
+import { ChoiceNudgeAsk, type PendingChoiceAsk } from "./ChoiceNudgeAsk";
 import { validateCellValue, type ValidationRules } from "../validation";
 import { columnRuleRefusal, type ColumnRuleRefusal } from "../validation-refusal";
 import { FieldRuleRefusal } from "./FieldRuleRefusal";
@@ -107,6 +109,11 @@ type Props = {
    * write is recognized and dropped instead of refetching the table.
    */
   onSaved?: (newValue: unknown, serverUpdatedAt?: string) => void;
+  /**
+   * The cell's save also added words to its column's choices (the person answered Add to the
+   * enum nudge). The parent re-reads the columns so the new choice is offered everywhere.
+   */
+  onChoicesAdded?: () => void;
 
   // ─── grid-owned state ────────────────────────────────────────────────────
   /** This cell is the current one. Renders the ring; nothing has changed. */
@@ -139,6 +146,7 @@ export function EditableCell({
   display,
   editable = true,
   onSaved,
+  onChoicesAdded,
   selected = false,
   editing = false,
   seed = null,
@@ -179,6 +187,8 @@ export function EditableCell({
    * notice, not a clock, that decides how long the typed text is kept.
    */
   const [ruleRefusal, setRuleRefusal] = useState<ColumnRuleRefusal | null>(null);
+  /** The enum nudge's question, while the person answers it (nothing is saved until they do). */
+  const [choiceAsk, setChoiceAsk] = useState<PendingChoiceAsk | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
   // Sync draft with prop when value changes from upstream (e.g. realtime).
@@ -212,6 +222,7 @@ export function EditableCell({
     setDraft(value);
     setRefusal(null);
     setRuleRefusal(null);
+    setChoiceAsk(null);
     onEndEdit?.();
   }, [onEndEdit, value]);
 
@@ -222,7 +233,7 @@ export function EditableCell({
    * user just replaced. Typed inputs commit on blur a tick later and pass
    * nothing.
    */
-  const commitEdit = useCallback(async (opts?: { value?: unknown; move?: GridMove }) => {
+  const commitEdit = useCallback(async (opts?: { value?: unknown; move?: GridMove; add?: string[]; answered?: boolean }) => {
     if (saving) return;
 
     const source = opts && "value" in opts ? opts.value : draft;
@@ -242,6 +253,27 @@ export function EditableCell({
       onEndEdit?.(opts?.move);
       return;
     }
+
+    // THE ENUM NUDGE (lane CHOICE-COLUMN-EDIT): a word that is none of the column's choices is
+    // asked about BEFORE anything is saved — Add (it becomes a choice everywhere and the cell takes
+    // it, in one save), Keep as typed (only where the column takes other values), Cancel. The
+    // organization's knob custom/choice_nudge may answer for the person (always_add / never_add).
+    let add = opts?.add;
+    if (!opts?.answered && !add) {
+      const decision = decideTypedChoice(format, normalized, await readChoiceNudge(tableId));
+      if (decision.kind === "ask" || decision.kind === "not_a_choice") {
+        setChoiceAsk({
+          words: decision.words,
+          canKeep: decision.kind === "ask" && decision.canKeep,
+          canAdd: decision.kind === "ask",
+          value: source,
+          ...(opts?.move ? { move: opts.move } : {}),
+        });
+        return;
+      }
+      if (decision.kind === "add") add = decision.words;
+    }
+    setChoiceAsk(null);
 
     // The column's own rules, refused in the browser with the reason. Same
     // treatment as a server refusal: a toast that says what is wrong, and the
@@ -275,12 +307,15 @@ export function EditableCell({
     }
 
     setSaving(true);
-    const result = await upsertCell({
-      tableId,
-      rowId,
-      fieldName,
-      value: normalized,
-    });
+    const result =
+      add && add.length > 0 && format
+        ? await upsertCellAddingChoice({ tableId, rowId, fieldName, value: normalized, add, format })
+        : await upsertCell({
+            tableId,
+            rowId,
+            fieldName,
+            value: normalized,
+          });
     setSaving(false);
 
     if (isServiceFailure(result)) {
@@ -309,7 +344,9 @@ export function EditableCell({
     onEndEdit?.(opts?.move);
     const storedAt = (result.data as { updated_at?: unknown } | null)?.updated_at;
     onSaved?.(normalized, typeof storedAt === "string" ? storedAt : undefined);
+    if (add && add.length > 0) onChoicesAdded?.();
   }, [
+    onChoicesAdded,
     dataType,
     existingValues,
     format,
@@ -349,6 +386,21 @@ export function EditableCell({
       e.stopPropagation();
       void commitEdit({ move: e.shiftKey ? "prevCell" : "nextCell" });
     }
+  };
+
+  /** The person's answer to the enum nudge. */
+  const answerChoiceAsk = (answer: "add" | "keep" | "cancel") => {
+    const pending = choiceAsk;
+    setChoiceAsk(null);
+    if (!pending || answer === "cancel") {
+      cancelEdit();
+      return;
+    }
+    void commitEdit({
+      value: pending.value,
+      ...(pending.move ? { move: pending.move } : {}),
+      ...(answer === "add" ? { add: pending.words } : { answered: true }),
+    });
   };
 
   const editorKindForRead = format ? getFieldFormat(format.id)?.editor : undefined;
@@ -456,6 +508,9 @@ export function EditableCell({
         <CellRefusalPopover
           refusal={refusal}
           ruleRefusal={ruleRefusal}
+          choiceAsk={choiceAsk}
+          columnName={fieldDisplayName}
+          onAnswer={answerChoiceAsk}
           onDismiss={() => {
             setRefusal(null);
             setRuleRefusal(null);
@@ -734,6 +789,9 @@ export function EditableCell({
       <CellRefusalPopover
         refusal={refusal}
         ruleRefusal={ruleRefusal}
+        choiceAsk={choiceAsk}
+        columnName={fieldDisplayName}
+        onAnswer={answerChoiceAsk}
         onDismiss={() => {
           setRefusal(null);
           setRuleRefusal(null);
@@ -755,20 +813,29 @@ export function EditableCell({
 function CellRefusalPopover({
   refusal,
   ruleRefusal,
+  choiceAsk = null,
+  columnName,
+  onAnswer,
   onDismiss,
   onDiscard,
 }: {
   refusal: RecordsError | null;
   ruleRefusal: ColumnRuleRefusal | null;
+  choiceAsk?: PendingChoiceAsk | null;
+  columnName?: string;
+  onAnswer?: (answer: "add" | "keep" | "cancel") => void;
   onDismiss: () => void;
   onDiscard?: () => void;
 }) {
-  const open = refusal !== null || ruleRefusal !== null;
+  const open = refusal !== null || ruleRefusal !== null || choiceAsk !== null;
   return (
     <Popover
       open={open}
       onOpenChange={(next) => {
-        if (!next) onDismiss();
+        if (!next) {
+          if (choiceAsk) onAnswer?.("cancel");
+          else onDismiss();
+        }
       }}
     >
       <PopoverAnchor asChild>
@@ -783,13 +850,15 @@ function CellRefusalPopover({
           className="p-2"
           // A notice about text that is still in an open editor must never take the
           // focus away from that editor — the person is mid-sentence.
-          {...(ruleRefusal ? { onOpenAutoFocus: (e: Event) => e.preventDefault() } : {})}
+          {...(ruleRefusal || choiceAsk ? { onOpenAutoFocus: (e: Event) => e.preventDefault() } : {})}
           // The person is answering the refusal by editing the cell again, so a
           // press inside the notice must never reach the grid underneath it.
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e) => e.stopPropagation()}
         >
-          {ruleRefusal ? (
+          {choiceAsk ? (
+            <ChoiceNudgeAsk ask={choiceAsk} columnName={columnName ?? ""} onAnswer={(a) => onAnswer?.(a)} />
+          ) : ruleRefusal ? (
             <FieldRuleRefusal
               refusal={ruleRefusal}
               className="border-0 p-0"
