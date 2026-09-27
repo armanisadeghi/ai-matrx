@@ -50,7 +50,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
   await context.addInitScript({
-    content: `window.__rcRegions = ${JSON.stringify(REGIONS)}; window.__rcTrack = new RegExp(${JSON.stringify(TRACK)});\n${COUNTER}`,
+    content: `window.__rcRegions = ${JSON.stringify(REGIONS)}; window.__rcTrack = new RegExp(${JSON.stringify(TRACK)}); window.__rcDumpSource = ${process.env.RA_DUMP_SOURCE ? "true" : "false"};\n${COUNTER}`,
   });
   const page = await context.newPage();
   page.on("pageerror", (e) => (report.pageErrors ??= []).push(String(e).slice(0, 300)));
@@ -103,6 +103,7 @@ try {
   await page.waitForSelector("table tbody tr td", { timeout: 180000 }).catch(() => undefined);
   await settle(30000);
   await take("load");
+  if (process.env.RA_DUMP_SOURCE) writeFileSync(`${OUT}/${LABEL}-sources.json`, JSON.stringify(await page.evaluate(() => window.__rcSrc ?? {}), null, 1));
   await page.screenshot({ path: `${OUT}/${LABEL}-load.png` });
   await mark("idle");
   await sleep(3000);

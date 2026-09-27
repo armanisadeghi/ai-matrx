@@ -930,11 +930,17 @@ function SearchTab({
   // search — everything" hand-off) auto-runs the search once, so the user
   // lands on results rather than a pre-filled box they must re-submit.
   const autoRanRef = useRef(false);
+  // The ref flips INSIDE the timer: flipping it before scheduling meant a
+  // re-render (runSearch's identity changes as the working context hydrates)
+  // cleared the timer and the guard then refused to schedule again — a `?q=`
+  // link landed on a filled box with no results.
   useEffect(() => {
     if (autoRanRef.current) return;
     if (!initialQuery.trim()) return;
-    autoRanRef.current = true;
-    const timer = window.setTimeout(() => runSearch(), 0);
+    const timer = window.setTimeout(() => {
+      autoRanRef.current = true;
+      void runSearch();
+    }, 0);
     return () => window.clearTimeout(timer);
   }, [initialQuery, runSearch]);
 
@@ -2854,7 +2860,7 @@ export function RagSearchExperience() {
               <ActiveScopeChips className="min-w-0" />
             </div>
             <div className="hidden md:block ml-auto text-[11px] text-muted-foreground shrink-0">
-              Knowledge Search Lab · hybrid retrieval + Claude agent
+              Knowledge search
             </div>
           </div>
 

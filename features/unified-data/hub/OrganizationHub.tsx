@@ -34,7 +34,8 @@ import {
 } from "@ai-matrx/records-ui";
 import { useRecordsClient, useTables } from "@ai-matrx/records/react";
 import type { RecordsDataSource, Table } from "@ai-matrx/records";
-import { Button, cn } from "@ai-matrx/design-system";
+import { cn } from "@ai-matrx/design-system";
+import { KeptByTheAppLine } from "./KeptByTheAppLine";
 
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
@@ -453,26 +454,14 @@ export function OrganizationHub({
         />
       ))}
 
-      {(() => {
-        const kept = states["kept-by-the-app"];
-        const keptCount = kept?.phase === "read" ? kept.items.length : 0;
-        if (keptCount === 0) return null;
-        return (
-          <div
-            data-hub-show-everything={showEverything ? "on" : "off"}
-            className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"
-          >
-            <span>
-              {showEverything
-                ? `Showing everything, including the ${keptCount} ${keptCount === 1 ? "table" : "tables"} the app keeps for itself.`
-                : `${keptCount} ${keptCount === 1 ? "table" : "tables"} the app keeps for itself ${keptCount === 1 ? "is" : "are"} not listed here.`}
-            </span>
-            <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setShowEverything((on) => !on)}>
-              {showEverything ? "Hide what the app keeps" : "Show everything"}
-            </Button>
-          </div>
-        );
-      })()}
+      <KeptByTheAppLine
+        keptCount={(() => {
+          const kept = states["kept-by-the-app"];
+          return kept?.phase === "read" ? kept.items.length : 0;
+        })()}
+        showEverything={showEverything}
+        onToggle={() => setShowEverything((on) => !on)}
+      />
 
       {/* THE QUEUE, UNDER THE FRONT DOOR RATHER THAN OVER IT. See `inbox` above. */}
       {inbox}
