@@ -78,7 +78,7 @@ export function buildAssessmentListManifest(w: AssessmentListWords): SurfaceMani
     {
       name: "assessment_list",
       label: `${w.label} list`,
-      description: `The page of ${w.plural} on screen as one XML bundle: <assessments lane matching sort search archive> with one <assessment id title topic questions my_attempts my_best depth exam status visibility updated archived/> per row (first 25). The ids are the ones update_${w.targetPlural} / delete_${w.targetPlural} take for the person's own ${w.plural}. Absent until the list has loaded.`,
+      description: `The page of ${w.plural} on screen as one XML bundle: <assessments lane matching sort search archive> with one <assessment id title topic questions completed my_best depth exam status visibility updated archived/> per row (first 25). The ids are the ones update_${w.targetPlural} / delete_${w.targetPlural} take for the person's own ${w.plural}. Absent until the list has loaded.`,
       valueType: "string",
       alwaysAvailable: false,
       typicalCharCount: 2500,
@@ -99,7 +99,7 @@ export function buildAssessmentListManifest(w: AssessmentListWords): SurfaceMani
     {
       name: "visible_assessments",
       label: `${w.label} on screen`,
-      description: `The rows on the current page in render order as { id, title, topic, question_count, my_attempts, my_best_score (0-1 or null), depth, exam_type, status, visibility, updated_at, archived }. Empty array when nothing matches. Absent until the list loads. \`assessment_list\` is the same page condensed.`,
+      description: `The rows on the current page in render order as { id, title, topic, question_count, my_attempts (the person's COMPLETED attempts — unfinished ones are not counted, same as the quiz page), my_best_score (0-1 or null), my_can_edit (false = they may take it but not edit or archive it), depth, exam_type, status, visibility, updated_at, archived }. Empty array when nothing matches. Absent until the list loads. \`assessment_list\` is the same page condensed.`,
       valueType: "array",
       alwaysAvailable: false,
       typicalCharCount: 3000,
@@ -279,6 +279,7 @@ export interface AssessmentListSummaryRow {
   question_count: number;
   my_attempts: number;
   my_best_score: number | null;
+  my_can_edit: boolean;
   depth: string | null;
   exam_type: string | null;
   status: string;
