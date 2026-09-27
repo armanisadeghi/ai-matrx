@@ -143,7 +143,11 @@ export function HrShell({
             activeOrganizationId={active?.organization_id ?? null}
           />
         }
-        center={navItems.length > 0 ? <RouteModeNav items={navItems} /> : null}
+        center={
+          // With no employer open there is nothing to navigate within, and a
+          // persona-less nav would differ from the same route once one is chosen.
+          active && navItems.length > 0 ? <RouteModeNav items={navItems} /> : null
+        }
         right={actions}
       />
       <div
@@ -186,12 +190,18 @@ export function HrShell({
                           ) : (
                             // The page's one-line purpose rides the title as a tooltip —
                             // never a line under it (page-pass core 3: the title stands alone).
-                            <span
-                              className="truncate text-foreground"
-                              title={index === crumbs.length - 1 ? description : undefined}
-                            >
-                              {crumb.label}
-                            </span>
+                            index === crumbs.length - 1 ? (
+                              // The page's title IS the breadcrumb leaf: one h1, never a
+                              // second heading in the body.
+                              <h1
+                                className="truncate text-sm font-semibold text-foreground"
+                                title={description}
+                              >
+                                {crumb.label}
+                              </h1>
+                            ) : (
+                              <span className="truncate text-foreground">{crumb.label}</span>
+                            )
                           )}
                         </li>
                       ))}
@@ -295,6 +305,16 @@ function stripQuery(href: string): string {
   return index === -1 ? href : href.slice(0, index);
 }
 
+/** Section names for breadcrumbs when no persona nav item matches the path. */
+const HR_SECTION_LABELS: Record<string, string> = {
+  settings: "Settings",
+  people: "People",
+  time: "Time",
+  leave: "Leave",
+  compliance: "Compliance",
+  reports: "Reports",
+};
+
 function buildCrumbs({
   pathname,
   orgRef,
@@ -316,6 +336,12 @@ function buildCrumbs({
       label: navLabel.label,
       href: title ? navLabel.href : null,
     });
+  } else if (!navLabel && title) {
+    // No nav item matched (e.g. no employer open yet, so no persona nav): name the
+    // section from the path so the same route always shows the same breadcrumb.
+    const section = pathname.split("/")[2];
+    const label = section ? HR_SECTION_LABELS[section] : undefined;
+    if (label) crumbs.push({ label, href: `/hr/${section}${orgRef ? `?org=${encodeURIComponent(orgRef)}` : ""}` });
   }
 
   if (title) crumbs.push({ label: title, href: null });
