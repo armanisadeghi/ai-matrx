@@ -406,7 +406,6 @@ export function PodcastsTable({
           window={{ enabled: false }}
           selectedId={selectedId}
           onRowOpen={onSelectShow}
-          hidePagination
           pageSize={0}
           coverage={{ noun: "show", answeredBy: "client" }}
           emptyState={{
@@ -468,7 +467,6 @@ export function PodcastsTable({
           window={{ enabled: false }}
           selectedId={selectedId}
           onRowOpen={onSelectEpisode}
-          hidePagination
           pageSize={0}
           coverage={{ noun: "episode", answeredBy: "client" }}
           emptyState={{

@@ -2571,6 +2571,18 @@ body:has(.shell-root[data-pathname^="/administration"]) {
   display: none;
 }
 
+/* A ROUTE NAV THAT LEFT THE TRUE CENTER (2026-09-27).
+   RouteHeader insets its center cell's content to the symmetric slot around
+   the header's center (inline margins). When not even RouteModeNav's collapsed
+   trigger fits that slot, the nav marks itself `data-route-nav-inflow` and
+   takes the whole cell beside the title instead of vanishing — at 768px the
+   agent-app header's slot was 0px and its mode nav disappeared. `!important`
+   beats the inline margins. */
+[data-route-header-center]:has([data-route-nav-inflow]) > [data-route-header-inset] {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
 /* THE RIGHT SET ON A PHONE (page-pass shared defects, 2026-09-27).
    Search / Agents / Canvas / Inbox sit in `.shell-header-secondary`; below
    768px (`useIsMobile`) they fold into ONE control, `.shell-header-overflow`

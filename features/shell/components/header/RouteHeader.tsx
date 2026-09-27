@@ -348,13 +348,15 @@ export default function RouteHeader({
             data-route-header-center
             // In flow and clipping, so it can never overdraw the flanks: its
             // width is its grid track, whatever its content asks for.
-            className="flex min-w-0 items-center overflow-hidden [&:has([data-route-nav-inflow])>div]:!ml-0 [&:has([data-route-nav-inflow])>div]:!mr-0"
+            className="flex min-w-0 items-center overflow-hidden"
           >
             <div
               // The margins narrow this box to the symmetric slot around the
               // header's true center. Margins, not padding: padding cannot
               // shrink, and a stale measurement pushed the whole cell over
               // the actions (768px, 2026-09-27). A too-wide margin is clipped.
+              // An in-flow nav drops them (styles/shell.css).
+              data-route-header-inset
               className="min-w-0 flex-1"
               style={{
                 marginLeft: centerPad?.left ?? 0,

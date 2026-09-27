@@ -219,7 +219,7 @@ export function ShowsClient() {
           density="condensed"
           copy={false}
           detail={{ enabled: false }}
-          hidePagination
+          pageSize={0}
           coverage={{ noun: "show", answeredBy: "client" }}
           onRowOpen={(show) =>
             startTransition(() =>

@@ -506,7 +506,6 @@ export function CmsArtifactList() {
           isLoading={isLoading}
           density="condensed"
           pageSize={0}
-          hidePagination
           coverage={{ noun: "artifact", answeredBy: "client" }}
           copy={false}
           toolbar={{ search: false }}

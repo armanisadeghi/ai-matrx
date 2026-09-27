@@ -1020,7 +1020,6 @@ function ComparisonTable({
         density="condensed"
         defaultSort={{ id: "released", direction: "desc" }}
         pageSize={0}
-        hidePagination
         coverage={{ noun: "provider model", answeredBy: "client" }}
         copy={false}
         detail={{ enabled: false }}
