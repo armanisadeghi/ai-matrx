@@ -73,6 +73,11 @@ procedure — open it only when you are doing that job or the check fails.
    commit (`page-pass <date>: type <x>, posture <x> after <product>, fixed …`),
    then the report below.
 
+**If the live site or database is down** (504s on several pages, `db.matrxserver.com`
+reads timing out), stop the live steps, write `INCIDENT: <time, what failed>` in
+your report, keep doing static work, and resume the live steps when it answers —
+an outage is never a page finding and never yours to chase.
+
 **You decide; you never interview.** Product questions only — does a feature
 exist, should a surface move in the hierarchy, a size or policy outside what
 this file allows — go to Arman through `ask-arman`; keep working on everything
@@ -112,7 +117,7 @@ session, never you.
   repo root — `{"extends":"./tsconfig.json","compilerOptions":{"noEmit":true,"incremental":false},"include":["global.d.ts","cartesia.d.ts","types/typecheck-env.d.ts", <your files>]}`
   — run `node --max-old-space-size=11000 node_modules/typescript/bin/tsc6 -p <it>`,
   delete it. Errors in files you didn't touch are not yours; list them.
-- **Commit right after each coherent edit** — a sync sweeps the shared
+- **Commit right after each coherent edit, before running checks** — a sync sweeps the shared
   checkout every ~30 minutes and commits any dirty file under its own message,
   so a file left uncommitted loses your authorship and message.
 - zsh does not split a variable holding several paths: use an array
@@ -218,6 +223,9 @@ surface). Say which parts you judged as authored content.
   a page's server render (and `generateMetadata`) makes has a timeout and a
   fallback — metadata falls back to the generic title, the page to an honest
   error — so a slow database is never a platform 504.
+- **An error affordance appears only in an error state** — an error menu, red
+  icon or retry never renders beside a healthy "Saved" (`ErrorAlchemyMenu` goes
+  inside the error branch; it reads the error box it sits in).
 - **A vague error has a real cause — find it.** "Couldn't load …" is a symptom:
   read the recorded failure (`errors` MCP tool, or `ops.system_error` via the
   Supabase MCP) and fix the cause.

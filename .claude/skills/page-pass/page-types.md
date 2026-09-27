@@ -60,8 +60,8 @@ Judge by who is looking at it and why.
   description says so.
 - **Date columns** filter with `filter: "select"` over the shared date buckets,
   and the service honors them; an id-valued facet (a project) shows names.
-- **Duplicates are distinguishable:** two rows with the same name show what
-  differs (owner, date, source, count).
+- **Duplicates are distinguishable:** two rows — or two folder/group headers —
+  with the same name show what differs (owner, organization, date, source, count).
 
 ## Single-record page
 - **Recognize it:** one thing, viewed or edited — a note, an agent, a class, a
