@@ -219,13 +219,11 @@ export default function NotificationsTab() {
                     <SettingsSwitch
                       key={key}
                       label={label}
-                      description={
-                        showScopePicker && event.inherited[key]
-                          ? "Not set here — following your choice elsewhere or the event default."
-                          : event.defaults[key]
-                            ? "On by default for this event."
-                            : "Off by default for this event."
-                      }
+                      // The default, once per row. Where an untouched row's value
+                      // comes from is said once, on "Applies to" above — not
+                      // repeated under every switch.
+                      description={event.defaults[key] ? "On by default" : "Off by default"}
+                      modified={Boolean(event.channels[key]) !== Boolean(event.defaults[key])}
                       checked={Boolean(event.channels[key])}
                       onCheckedChange={(enabled: boolean) =>
                         handleToggle(event.eventKey, key, enabled)
