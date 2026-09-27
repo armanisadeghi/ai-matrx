@@ -14,6 +14,9 @@ export type SettingsTreeNode = {
   description?: string;
   /** When provided, the node is a category with sub-nodes. */
   children?: SettingsTreeNode[];
+  /** The folder itself has a page in addition to its children. */
+  navigable?: boolean;
+  navigationLabel?: string;
   /** Inline badge: built-in variants from SettingsBadge, or the special "unsaved" string for a dot indicator. */
   badge?: SettingsBadge | "unsaved";
   /** Disabled leaves/categories can't be activated/expanded. */
@@ -22,13 +25,13 @@ export type SettingsTreeNode = {
   searchKeywords?: string[];
 };
 
-/** Flatten the tree into an array of every leaf node. */
+/** Flatten the tree into every destination, including folders with their own page. */
 export function flattenLeaves(nodes: SettingsTreeNode[]): SettingsTreeNode[] {
   const out: SettingsTreeNode[] = [];
   const walk = (arr: SettingsTreeNode[]) => {
     for (const n of arr) {
-      if (n.children && n.children.length > 0) walk(n.children);
-      else out.push(n);
+      if (n.navigable || !n.children?.length) out.push(n);
+      if (n.children?.length) walk(n.children);
     }
   };
   walk(nodes);
