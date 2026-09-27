@@ -1,3 +1,5 @@
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+
 /**
  * The Composer presentation contract — the optional `composer` prop on
  * SmartAgentInput.
@@ -42,7 +44,14 @@ export type ComposerSize = "splash" | "page" | "compact";
  * the model, never "Change" or presets.
  */
 export interface ComposerAgentControl {
-  onSelectAgent?: (agentId: string) => void;
+  /**
+   * `via.mandateKey` is set when the pick is a JOB, not just an agent — Custom
+   * is the `chat.default_new_chat` job, and only a launch through that job
+   * applies the person's own default chat model. A host launches through the
+   * mandate when it is given (the chat route: `/chat/new`; a canvas panel:
+   * `launchMandate`).
+   */
+  onSelectAgent?: (agentId: string, via?: { mandateKey: AnyMandateKey }) => void;
 }
 
 export interface ComposerPresentation {

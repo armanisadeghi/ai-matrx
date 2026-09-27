@@ -19,11 +19,13 @@
 import { useState } from "react";
 import { AppWindow, ChevronDown, Cpu, Star } from "lucide-react";
 import Link from "next/link";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { QuickRunModelSelect } from "@/features/agents/components/run-controls/RunModelPicker";
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
 import { RunInputCapabilities } from "@/features/agents/components/run-controls/RunInputCapabilities";
@@ -159,6 +161,15 @@ function ChatPresetsPanel({
     close();
     if (agentId !== info.agentId) onSelectAgent(agentId);
   };
+  // Custom is the default-chat JOB: launching through it is what applies the
+  // person's own default model (preferredChatModel.ts).
+  const chooseCustom = () => {
+    if (!info.customAgentId) return;
+    close();
+    if (!info.isCustom) {
+      onSelectAgent(info.customAgentId, { mandateKey: MANDATE_KEYS.chat__default_new_chat });
+    }
+  };
 
   const setPersonalModel = async (modelId: string) => {
     if (!organizationId || !userId) {
@@ -181,8 +192,8 @@ function ChatPresetsPanel({
     if (info.isCustom) {
       // The saved default seeds NEW conversations; this one changes now too.
       dispatch(setOverrides({ conversationId, changes: { model: modelId } }));
-    } else if (info.customAgentId) {
-      choose(info.customAgentId);
+    } else {
+      chooseCustom();
     }
   };
 
@@ -211,7 +222,7 @@ function ChatPresetsPanel({
         description="Your own default chat, on the model you pick"
         checked={info.isCustom}
         disabled={!info.customAgentId}
-        onClick={() => info.customAgentId && choose(info.customAgentId)}
+        onClick={chooseCustom}
       />
       <div className="px-1.5 pb-1">
         <ModelListDropdown
@@ -296,7 +307,13 @@ function AgentPanel({
               <div className="h-4 w-32 animate-pulse rounded bg-muted" />
             </div>
           ) : recent.status === "error" ? (
-            <ComposerMenuHelp>Your recent agents could not be read: {recent.message}</ComposerMenuHelp>
+            <ErrorNotice
+              size="inline"
+              className="px-2.5 py-1.5"
+              message={`Your recent agents could not be read: ${recent.message}`}
+              operation="Read recent agents"
+              calls={["chat.conversation"]}
+            />
           ) : recent.agents.length === 0 ? (
             <ComposerMenuHelp>Agents you start conversations with will appear here.</ComposerMenuHelp>
           ) : (
