@@ -103,12 +103,16 @@ export function centerSlotWidth(
 
 /** The left region's natural (unclipped) width, read without a paint. */
 function naturalWidth(el: HTMLElement): number {
-  const { width, flexShrink } = el.style;
+  // `maxWidth` too: the global `* { max-width: 100% }` would cap the probe at
+  // the (grid-track) box it is trying to see past.
+  const { width, flexShrink, maxWidth } = el.style;
   el.style.width = "max-content";
   el.style.flexShrink = "0";
+  el.style.maxWidth = "none";
   const w = el.offsetWidth;
   el.style.width = width;
   el.style.flexShrink = flexShrink;
+  el.style.maxWidth = maxWidth;
   return w;
 }
 

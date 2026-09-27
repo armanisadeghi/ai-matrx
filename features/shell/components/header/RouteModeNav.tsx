@@ -252,7 +252,18 @@ export function RouteModeNav({
     if (routeHeaderLeft) ro.observe(routeHeaderLeft);
     if (routeHeaderRight) ro.observe(routeHeaderRight);
     if (routeHeaderCenter) ro.observe(routeHeaderCenter);
-    return () => ro.disconnect();
+    // RouteHeader writes its geometry (the title cap, the centering inset) as
+    // inline styles AFTER this effect first runs. ResizeObservers deliver only
+    // when a frame renders — never in a hidden tab — so the nav also follows
+    // those writes directly; otherwise its first guess stands until a frame.
+    const mo = new MutationObserver(compute);
+    if (routeHeader) mo.observe(routeHeader, { attributes: true, attributeFilter: ["style"] });
+    const inset = cell.closest<HTMLElement>("[data-route-header-inset]");
+    if (inset) mo.observe(inset, { attributes: true, attributeFilter: ["style"] });
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
     // Keyed on WHAT the items are, not on the array's identity. Callers build
     // this list inline, so a parent that re-renders often — a live agent run, a
     // marketing site receiving crawl heartbeats — handed a fresh array every
@@ -318,21 +329,25 @@ export function RouteModeNav({
           stretch to the widest sibling and the compact measurer reports the
           FULL width. That made `iconsW <= avail` unreachable whenever
           `fullW > avail`, so the "icons" stage was dead code and every nav
-          jumped full → menu. (Fixed 2026-07-20; do not regress.) */}
+          jumped full → menu. (Fixed 2026-07-20; do not regress.)
+          `max-w-none` is load-bearing too: the global base rule
+          `* { max-width: 100% }` capped each measurer at the nav's own box,
+          so a narrow nav measured its FULL pill at 143px instead of 408px
+          and believed it fit (2026-09-27). */}
       <div
         aria-hidden
         className="pointer-events-none invisible absolute left-0 top-0"
       >
-        <div ref={fullRef} className={cn(PILL, "w-max")}>
+        <div ref={fullRef} className={cn(PILL, "w-max max-w-none")}>
           {items.map((i) => renderItem(i, true))}
         </div>
         {canIcons && (
-          <div ref={compactRef} className={cn(PILL, "w-max")}>
+          <div ref={compactRef} className={cn(PILL, "w-max max-w-none")}>
             {items.map((i) => renderItem(i, i.href === current?.href))}
           </div>
         )}
         {/* The collapsed trigger, as the visible menu variant draws it. */}
-        <span ref={menuRef} className={cn(PILL, "w-max px-1")}>
+        <span ref={menuRef} className={cn(PILL, "w-max max-w-none px-1")}>
           <span className={cn(ITEM, NAV_ITEM_SELECTED)}>
             {ActiveIcon && <ActiveIcon />}
             {!(isMobile && ActiveIcon) && (
@@ -346,7 +361,7 @@ export function RouteModeNav({
         <span
           ref={menuIconRef}
           data-route-nav-min
-          className={cn(PILL, "w-max px-1")}
+          className={cn(PILL, "w-max max-w-none px-1")}
         >
           <span className={cn(ITEM, NAV_ITEM_SELECTED)}>
             {ActiveIcon ? <ActiveIcon /> : <span>{current?.name ?? fallbackLabel}</span>}

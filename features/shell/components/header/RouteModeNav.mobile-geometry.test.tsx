@@ -46,6 +46,30 @@ class ResizeObserverMock {
   disconnect() {}
 }
 
+// jsdom lays nothing out, and a nav whose collapsed trigger does not fit draws
+// nothing (the title wins) — so give it a 100px slot the full and icon pills
+// overflow and the trigger fits.
+const savedWidths = (["clientWidth", "scrollWidth"] as const).map(
+  (key) => [key, Object.getOwnPropertyDescriptor(HTMLElement.prototype, key)] as const,
+);
+beforeAll(() => {
+  Object.defineProperty(HTMLElement.prototype, "clientWidth", {
+    configurable: true,
+    get: () => 100,
+  });
+  Object.defineProperty(HTMLElement.prototype, "scrollWidth", {
+    configurable: true,
+    get(this: HTMLElement) {
+      return this.tagName === "SPAN" ? 60 : 300;
+    },
+  });
+});
+afterAll(() => {
+  for (const [key, descriptor] of savedWidths) {
+    if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
+  }
+});
+
 describe("RouteModeNav mobile menu geometry", () => {
   let container: HTMLDivElement;
   let root: Root;
