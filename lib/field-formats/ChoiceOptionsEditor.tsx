@@ -337,6 +337,13 @@ export function ChoiceOptionsEditor({
             </div>
           )}
 
+          {/* A choice column may start with no choices (lane CHOICE-COLUMN-EDIT b). */}
+          {choices.length === 0 && (
+            <p className="text-xs text-muted-foreground" data-choice-options-empty="">
+              No choices yet. Add the first one below, or type it into a cell and answer Add.
+            </p>
+          )}
+
           {/* The declared options. */}
           {choices.length > 0 && (
             <div className="flex flex-col gap-1">

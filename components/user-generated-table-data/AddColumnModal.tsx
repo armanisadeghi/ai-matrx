@@ -32,6 +32,7 @@ import {
 import { defaultFormatForBase } from '@ai-matrx/design-system/field-formats';
 import type { FieldFormatConfig } from '@ai-matrx/design-system/field-formats';
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { toast } from "@/lib/toast";
 
 interface AddColumnModalProps {
   tableId: string;
@@ -133,7 +134,12 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
           format,
         });
         if (isServiceFailure(formatResult)) {
-          console.warn('Column created, but its format was not saved:', formatResult.error);
+          // NEVER SILENT (lane CHOICE-COLUMN-EDIT b, BREAKER-1): a Choice column whose format was
+          // refused used to stay plain Text with only this console line. The column exists; say so,
+          // with what it is instead and where to finish it.
+          toast.error(
+            `"${displayName}" was added, but not as ${format.id.replace(/_/g, ' ')}: ${formatResult.error} Open its column settings to try again.`,
+          );
         }
       }
 
