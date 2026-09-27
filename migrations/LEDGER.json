@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-27T17:52:59.415Z",
+  "generated_at": "2026-09-27T18:31:48.434Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -469,6 +469,12 @@
       "filename": "choicecolumnedit_b_a_choice_column_with_no_choices_yet_stays_a_choice_column.sql",
       "checksum": "1bbe07807ad607e549317cc25a4340445d03674dbb5507f88cf566ff6e0a7cb6",
       "applied_at": "2026-09-27 17:12:53.873634+00"
+    },
+    "migrations/campaign/choicetails_a_removing_a_choice_cells_still_use_asks_where_they_go.sql": {
+      "source": "matrx-frontend",
+      "filename": "choicetails_a_removing_a_choice_cells_still_use_asks_where_they_go.sql",
+      "checksum": "bafaa0a5a95f4d87bfde06c977d0aeb85a61f0ea9e4e61bc1700f7261b5e35f2",
+      "applied_at": "2026-09-27 18:31:44.05668+00"
     },
     "migrations/campaign/choiceval_a_choice_is_its_own_word.sql": {
       "source": "matrx-frontend",
