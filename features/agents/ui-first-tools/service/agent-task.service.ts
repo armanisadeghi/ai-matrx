@@ -1,5 +1,10 @@
 /**
  * cx_agent_task — service layer for the agent's tasklist.
+ *
+ * ARCHIVE, NEVER DESTROY (Arman's law: soft-delete everything important).
+ * `chat.agent_task` has `deleted_at`: remove / clear stamp it, and every read
+ * here filters `deleted_at is null` — as does aidream's server-side `tasks`
+ * tool (`aidream/tools/agent_tasks_tool.py`), which archives the same way.
  */
 
 import { db } from "./supabase-typed";
@@ -29,6 +34,7 @@ export async function listTasks(
     .schema("chat").from("agent_task")
     .select("*")
     .eq("conversation_id", conversationId)
+    .is("deleted_at", null)
     .order("position", { ascending: true });
   if (error) throw error;
   return (data ?? []) as CxAgentTaskRow[];
@@ -92,9 +98,19 @@ export async function updateTask(
   return (data as CxAgentTaskRow) ?? null;
 }
 
+/** The one archive stamp every remove / clear writes. */
+function archivedNow(): { deleted_at: string } {
+  return { deleted_at: new Date().toISOString() };
+}
+
 export async function removeTask(id: string): Promise<void> {
   await writeOne(
-    db.schema("chat").from("agent_task").delete().eq("id", id).select("id"),
+    db
+      .schema("chat").from("agent_task")
+      .update(archivedNow())
+      .eq("id", id)
+      .is("deleted_at", null)
+      .select("id"),
     { action: "delete", noun: "task" },
   );
 }
@@ -124,9 +140,10 @@ export async function clearCompletedTasks(
 ): Promise<string[]> {
   const { data, error } = await db
     .schema("chat").from("agent_task")
-    .delete()
+    .update(archivedNow())
     .eq("conversation_id", conversationId)
     .eq("status", "done")
+    .is("deleted_at", null)
     .select("id");
   if (error) throw error;
   return (data ?? []).map((r) => r.id as string);
@@ -135,7 +152,8 @@ export async function clearCompletedTasks(
 export async function clearAllTasks(conversationId: string): Promise<void> {
   const { error } = await db
     .schema("chat").from("agent_task")
-    .delete()
-    .eq("conversation_id", conversationId);
+    .update(archivedNow())
+    .eq("conversation_id", conversationId)
+    .is("deleted_at", null);
   if (error) throw error;
 }

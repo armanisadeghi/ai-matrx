@@ -131,13 +131,18 @@ export function subscribeAgentLists(
           table: "agent_task",
           filter: scoped,
           rowId,
-          fingerprint: (row) => JSON.stringify([row.status ?? null, row.title ?? null]),
+          fingerprint: (row) =>
+            JSON.stringify([row.status ?? null, row.title ?? null, row.deleted_at ?? null]),
           onChange: ({ payload, row }) => {
             if (payload.eventType === "DELETE") {
               const old = payload.old as Partial<CxAgentTaskRow> | undefined;
               if (old?.id) {
                 dispatch(removeTask({ conversationId, id: old.id }));
               }
+            } else if (row && (row as { deleted_at?: string | null }).deleted_at) {
+              // ARCHIVED (remove / clear stamp deleted_at, from here or from
+              // aidream's `tasks` tool) — gone from the list, never shown again.
+              dispatch(removeTask({ conversationId, id: String(row.id) }));
             } else if (row) {
               dispatch(upsertTask(row as unknown as CxAgentTaskRow));
             }
