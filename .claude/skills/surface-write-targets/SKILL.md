@@ -139,10 +139,32 @@ test rows you created so the person can remove them.
 
 ## Step 4 — what the agent sees up front, the guide, and feedback
 
-- **What the agent sees in full up front is NOT a worker's call.** Do not set
-  `inlineUpTo` (or any other "how much the agent sees" knob). The policy for it
-  is pending Arman's ruling; until then leave every value at the platform
-  default and report "agent had to look up <value>" as a finding instead.
+- **What the agent sees in full up front — the inline policy (Arman,
+  2026-09-27).** The platform default (200 chars; anything bigger becomes a
+  "look it up" item) stays for almost every value. A page lifts it ONLY for
+  what an agent cannot work without, using exactly these tiers
+  (`INLINE_TIER`, `features/surfaces/types.ts`; the declaration check refuses
+  any other number):
+  - `record` — the ONE record the page is about (a note, a class, a study
+    guide, an agent definition, an article): one structured object, passed
+    whole. Long text fields in it are also `patchable` write targets.
+  - `list` — a list page's CONDENSED list: only the fields a person scans
+    (id, name, 3-6 key fields), in the person's current sort and filter, the
+    first 25 rows; the total count and the active sort/filter are their own
+    small values. Full rows stay a separate default (lookup) value.
+  - `recent` — a sidebar's recent items (up to 5) or open tabs (up to 10),
+    each `{ id, title }`.
+  Anything else — a bigger number, more rows, another kind of value — needs
+  Arman's approval: leave the default, file the question (skill `ask-arman`)
+  with the evidence, and only after he approves set `inlineApproval: "Arman
+  <date>: <why>"` beside the number.
+- **Judge it by what agents do first.** A surface is failing when most agent
+  runs on it open with `context` lookups for the same value. Measure it with
+  `pnpm surface:openers --surface <client/name> [--days 14]` (prints read-only
+  SQL for the Supabase MCP; an estimate until conversations record their
+  surface). Record the share before and after your change in your report. The live agent
+  test (Step 3) must show the agent answering "what is on this page" with no
+  lookups; report any lookup it made.
 - **A guide for any page with more than one record type or any rule the
   descriptions can't hold.** Write `features/surfaces/guides/<surface-slug>.md`
   (80-150 lines: what the page is, each value, each target with a worked
@@ -151,6 +173,13 @@ test rows you created so the person can remove them.
   publishes it as the platform skill `surface-guide-<slug>` and adds a pointer
   to the intro. Worked example: `features/surfaces/guides/education-classes.md`.
   The intro stays short: the basics and which target does which job.
+- **Very complex pages** (dozens to hundreds of values, e.g. the search-console
+  and SEO pages): the guide is mandatory; every value sits in a named group;
+  the intro names the few values that matter for the common jobs; only the
+  record being worked on and the condensed list the person is looking at use
+  an inline tier — everything else stays a lookup the guide explains; and
+  write targets follow the same per-record-type sets, never one target per
+  field.
 - **Read the page's agent feedback before changing a surface.** Every page
   offers agents the platform target `surface_feedback` (saved to the central
   feedback system, tagged with the surface). Before editing, run

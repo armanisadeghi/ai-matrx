@@ -723,11 +723,41 @@ export function surfaceFromPathname(
     return "matrx-user/education-flashcard-set";
   }
 
+  // The Education Library is three pages, each its own surface: the scoped
+  // list (`/education/library`), the public-deck browser (`/community`) and
+  // the deck owner's suggestion inbox (`/suggestions`). Exact matches — no
+  // other `/education/library/*` route exists.
+  if (/^\/education\/library\/?$/.test(stripped)) {
+    return "matrx-user/education-library";
+  }
+  if (/^\/education\/library\/community\/?$/.test(stripped)) {
+    return "matrx-user/education-library-community";
+  }
+  if (/^\/education\/library\/suggestions\/?$/.test(stripped)) {
+    return "matrx-user/education-library-suggestions";
+  }
+
+  // One study guide (`/education/study-guides/<id>`) is its own surface: the
+  // record, its notes and comments, and write targets. The library route
+  // `/education/study-guides` keeps the list surface via the prefix table.
+  if (/^\/education\/study-guides\/[^/]+\/?$/.test(stripped)) {
+    return "matrx-user/education-study-guide";
+  }
+
   // My Classes is exactly `/education/classes`. A class HUB
   // (`/education/classes/[id]`) is a different page with no surface of its
   // own yet, so it keeps falling through to the education hub mapping.
   if (/^\/education\/classes\/?$/.test(stripped)) {
     return "matrx-user/education-classes";
+  }
+
+  // The signed-in Study Hub home and the Create a study kit form are their
+  // own pages with their own vocabulary (dashboard; kit request + build).
+  if (/^\/education\/overview\/?$/.test(stripped)) {
+    return "matrx-user/education-overview";
+  }
+  if (/^\/education\/start\/?$/.test(stripped)) {
+    return "matrx-user/education-start";
   }
 
   // Study-guide AUTHORING is `/education/learn/admin`, which sits under the

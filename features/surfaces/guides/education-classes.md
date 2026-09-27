@@ -18,6 +18,10 @@ Access modes: `closed` (the default, a private class), `open` (publicly listed; 
 
 - `organization_state`: `"ready"` when a workspace is selected. Anything else is the reason the
   list cannot load (e.g. `"required"`). A create will then ask the person which workspace to use.
+- `class_list` (shown to you in full, no lookup needed): what the page lists — the active classes
+  by name, first 25, each `{ id, name, teacher, term, period, access_mode, next_exam }`. Start
+  here; its ids work with every target. Look up `owned_classes` only when you need a class's
+  description, all its exam dates or its price.
 - `owned_classes`: the person's **active** classes, name-ordered, each
   `{ id, slug, name, description, teacher, term, period, access_mode, price_cents, exam_dates: [{ title, date }] }`.
   `price_cents` is set only for paid classes. It is absent while loading or with no workspace, and

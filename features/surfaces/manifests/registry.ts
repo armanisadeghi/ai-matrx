@@ -127,6 +127,7 @@ import { organizationPerformanceReviewsManifest } from "./organization-performan
 import { dashboardManifest } from "./dashboard.manifest";
 import { educationManifest } from "./education.manifest";
 import { educationStudyGuidesManifest } from "./education-study-guides.manifest";
+import { educationStudyGuideManifest } from "./education-study-guide.manifest";
 import { educationTutorManifest } from "./education-tutor.manifest";
 import { educationFlashcardsManifest } from "./education-flashcards.manifest";
 import { educationFlashcardSetManifest } from "./education-flashcard-set.manifest";
@@ -136,6 +137,8 @@ import { educationAssessmentManifest } from "./education-assessment.manifest";
 import { educationGradeWorkManifest } from "./education-grade-work.manifest";
 import { educationPlannerManifest } from "./education-planner.manifest";
 import { educationClassesManifest } from "./education-classes.manifest";
+import { educationOverviewManifest } from "./education-overview.manifest";
+import { educationStartManifest } from "./education-start.manifest";
 import { educationMindMapsManifest } from "./education-mind-maps.manifest";
 import { educationMemoryManifest } from "./education-memory.manifest";
 import { educationPracticeOralManifest } from "./education-practice-oral.manifest";
@@ -144,6 +147,9 @@ import { educationAudioStudyManifest } from "./education-audio-study.manifest";
 import { educationGameManifest } from "./education-game.manifest";
 import { educationLearnManifest } from "./education-learn.manifest";
 import { educationProgressManifest } from "./education-progress.manifest";
+import { educationLibraryManifest } from "./education-library.manifest";
+import { educationLibraryCommunityManifest } from "./education-library-community.manifest";
+import { educationLibrarySuggestionsManifest } from "./education-library-suggestions.manifest";
 import { settingsManifest } from "./settings.manifest";
 import { agentAppsManifest } from "./agent-apps.manifest";
 import { publicAgentAppManifest } from "./public-agent-app.manifest";
@@ -368,6 +374,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   dashboardManifest,
   educationManifest,
   educationStudyGuidesManifest,
+  educationStudyGuideManifest,
   educationTutorManifest,
   educationFlashcardsManifest,
   educationFlashcardSetManifest,
@@ -377,6 +384,8 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationGradeWorkManifest,
   educationPlannerManifest,
   educationClassesManifest,
+  educationOverviewManifest,
+  educationStartManifest,
   educationMindMapsManifest,
   educationMemoryManifest,
   educationPracticeOralManifest,
@@ -385,6 +394,9 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationGameManifest,
   educationLearnManifest,
   educationProgressManifest,
+  educationLibraryManifest,
+  educationLibraryCommunityManifest,
+  educationLibrarySuggestionsManifest,
   settingsManifest,
   agentAppsManifest,
   publicAgentAppManifest,

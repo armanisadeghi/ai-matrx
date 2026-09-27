@@ -154,6 +154,16 @@ names the page and lists its live values. His review inbox gets one row per fini
       surface values are inlined today, so the policy builds on the existing mechanism instead of
       a second one.
 
+13. **Conversations should record the surface they ran on.**
+    - **Why:** `pnpm surface:openers` (how often agents open a run with lookups, Arman's surface
+      scorecard) can only estimate by matching value names; `chat.conversation` has only
+      `source_feature` (e.g. "ai-results"), which does not name the page.
+    - **What to add:** the launch request's surface name stored on the conversation
+      (`metadata.last_request_context.surface_name`, written wherever `source_feature` is), then
+      switch `scripts/surface-openers.ts` to filter by it.
+    - **Done when:** the openers query for `matrx-user/education-classes` counts runs by surface,
+      not by value names.
+
 ## Resources
 
 - Worker brief: `.claude/skills/surface-authoring/references/campaign-worker.md`

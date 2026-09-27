@@ -292,6 +292,7 @@ with the stated vision.
 
 ## Change log
 
+- **2026-09-27** — `/education/start` has its own surface, `matrx-user/education-start`: the kit request, output options, and the live build (`startSurfaceScope.ts`). One `ask` draft target, `kit_request_draft`, fills the form (pasted text, link, an owned file by id, outputs, depth, count, focus) through the form's own setters and never builds; validation in `startAgentWrites.ts` (unit-tested).
 - **2026-09-26** — **Study what you already have.** New **My files** input on `/education/start`:
   the canonical file picker → `useIngest` `stored` branch → the kit anchors on the existing file
   (no upload), reusing the file's Knowledge Source text when one exists. The per-kind readers were

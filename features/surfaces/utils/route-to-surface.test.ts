@@ -463,6 +463,13 @@ describe("Education tool-family resolution", () => {
     expect(surfaceFromPathname("/education/learn/admin-guide/intro")).toBe(
       "matrx-user/education-learn",
     );
+    // One study guide is its own surface; the library keeps the list surface.
+    expect(surfaceFromPathname("/education/study-guides")).toBe(
+      "matrx-user/education-study-guides",
+    );
+    expect(
+      surfaceFromPathname("/education/study-guides/63ac076a-3cf9-48f8-9af6-e974a6789883"),
+    ).toBe("matrx-user/education-study-guide");
     // My Classes is the exact list route; a class hub is not that surface.
     expect(surfaceFromPathname("/education/classes")).toBe(
       "matrx-user/education-classes",
@@ -470,6 +477,29 @@ describe("Education tool-family resolution", () => {
     expect(surfaceFromPathname("/education/classes/ap-biology")).toBe(
       "matrx-user/education",
     );
+    expect(surfaceFromPathname("/education/overview")).toBe(
+      "matrx-user/education-overview",
+    );
+    expect(surfaceFromPathname("/education/start")).toBe(
+      "matrx-user/education-start",
+    );
+    // The library's three pages are three surfaces, matched exactly.
+    expect(surfaceFromPathname("/education/library")).toBe(
+      "matrx-user/education-library",
+    );
+    expect(surfaceFromPathname("/education/library/")).toBe(
+      "matrx-user/education-library",
+    );
+    expect(surfaceFromPathname("/education/library/community")).toBe(
+      "matrx-user/education-library-community",
+    );
+    expect(surfaceFromPathname("/education/library/suggestions")).toBe(
+      "matrx-user/education-library-suggestions",
+    );
+    expect(surfaceFromPathname("/education/library/unknown")).toBe(
+      "matrx-user/education",
+    );
+    expect(surfaceFromPathname("/education")).toBe("matrx-user/education");
   });
 
   it("keeps the pre-existing education surfaces and the hub fallback", () => {

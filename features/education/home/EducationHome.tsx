@@ -41,7 +41,10 @@ import {
 import { EDU_TOOL_NAV } from "../lib/education-nav";
 import { EDU_TOOLS } from "../data/tools";
 import { eduHref } from "../constants";
-import { EducationHubSurface } from "../components/landing/EducationHubSurface";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { EDUCATION_OVERVIEW_SURFACE_NAME } from "@/features/surfaces/manifests/education-overview.manifest";
+import { buildEducationOverviewScope } from "./overviewSurfaceScope";
 import { setStudyTodaySnapshot } from "../study/dashboard/studyTodaySnapshot";
 import { DueByModeBlock } from "./blocks/DueByModeBlock";
 import { KitsBlock } from "./blocks/KitsBlock";
@@ -339,20 +342,47 @@ export function EducationHome() {
       block.id !== "kits",
   );
 
+  const tools = snapshot ? toolNavigation(snapshot) : [];
+  // What an agent sees: the blocks in the order they render below.
+  const visibleBlocks = [
+    ...(recent ? [recent] : []),
+    ...study,
+    ...otherBlocks,
+    ...kits,
+  ].map(({ block }) => block.id);
+  const getScope = () =>
+    buildEducationOverviewScope({
+      snapshot,
+      visibleBlocks,
+      tools: tools.map((t) => ({
+        key: t.key,
+        label: t.label,
+        href: t.href,
+        value: t.value,
+        state: t.state,
+        availability: t.availability,
+      })),
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={EDUCATION_OVERVIEW_SURFACE_NAME}
+      getScope={getScope}
+    >
+    <NonEditableContextMenu
+      sourceFeature="education-analytics"
+      surfaceName={EDUCATION_OVERVIEW_SURFACE_NAME}
+      menuVersion={1}
+      getApplicationScope={getScope}
+      contentSource={{ type: "raw" }}
+    >
     <main className="h-full overflow-y-auto bg-textured pb-safe">
-      {/* Render-free: registers this route's live surface scope for the
-          AppShell Agents chrome (matrx-user/education). */}
-      <EducationHubSurface />
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-5 sm:px-6">
         {!snapshot ? (
           <HomeSkeleton />
         ) : (
           <>
-            <MetricNavigation
-              label="Education tools"
-              items={toolNavigation(snapshot)}
-            />
+            <MetricNavigation label="Education tools" items={tools} />
             <AvailabilityNotice
               snapshot={snapshot}
               onRetry={() => setReloadKey((key) => key + 1)}
@@ -371,5 +401,7 @@ export function EducationHome() {
         )}
       </div>
     </main>
+    </NonEditableContextMenu>
+    </SurfaceRuntimeProvider>
   );
 }

@@ -18,6 +18,12 @@ Focused tests cover missing organization, partial-save retry, annotation ownersh
 
 ## Changelog
 
+- 2026-09-27: `/education/study-guides/[id]` is its own agent surface, `matrx-user/education-study-guide`
+  (the library route keeps `matrx-user/education-study-guides`). The guide is one record value at the
+  `record` inline tier; private highlights/notes and comment threads are read from the sidecar through
+  `components/StudyGuideAgentBridge.tsx`; write targets `guide_content` (patchable, the reader's
+  splice-save) and create/update/delete for personal notes and comments, validated by
+  `studyGuideAgentWrites.ts` (+ test). Agent guide: `features/surfaces/guides/education-study-guide.md`.
 - 2026-09-26: Local browser acceptance pass done (education fleet). `StudyFlashcardLinks`'s
   "Manage linked flashcards" hosted its `UniversalAssociationPicker` in a blocking
   `@ai-matrx/design-system` `Sheet` (default `modal=true`) — the same untypeable-picker class as

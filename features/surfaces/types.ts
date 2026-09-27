@@ -129,16 +129,29 @@ export interface SurfaceValue extends DeclaredValue {
   group?: string;
 
   /**
-   * Show this value in full to the agent when its serialized size is ≤ N
-   * chars (the server's hard cap still applies); omit for the platform
-   * default (200). Above the ceiling the value becomes a "look it up" item the
-   * agent must fetch with the `context` tool — so a list the agent almost
-   * always needs (e.g. "my classes", when there aren't a crazy number) should
-   * set a ceiling that fits a normal list. Positive integer. Mirrored to
-   * `ui_surface_value.max_inline_chars` by manifest sync.
+   * Show this value in full to the agent up front, up to N chars, instead of
+   * as a "look it up" item. Sent on the rich context envelope's
+   * `max_inline_chars` (the server's existing ceiling). Omit = the platform
+   * default (200), which is right for almost every value.
+   *
+   * THE INLINE POLICY (Arman, 2026-09-27) — only these, as `INLINE_TIER.*`:
+   *  - `record` (10000): the ONE record the page is about (a note, a class, an
+   *    agent definition, an article), passed whole as one structured object.
+   *  - `list` (4000): a list page's CONDENSED list — the fields a person scans,
+   *    in the person's current sort/filter, first 25 rows — with the total
+   *    count and the active sort/filter as their own small values.
+   *  - `recent` (1500): a sidebar's recent items (≤5) or open tabs (≤10), each
+   *    `{ id, title }`.
+   * Any other number needs `inlineApproval` (who, date, why); the declaration
+   * check refuses it otherwise.
    */
   inlineUpTo?: number;
+  /** Required when `inlineUpTo` is not an `INLINE_TIER` value: "Arman 2026-09-27: <why>". */
+  inlineApproval?: string;
 }
+
+/** The only `inlineUpTo` values allowed without `inlineApproval` (see SurfaceValue.inlineUpTo). */
+export const INLINE_TIER = { record: 10000, list: 4000, recent: 1500 } as const;
 
 // ---------------------------------------------------------------------------
 // Resolved manifest types — what the registry exports after inheritance +

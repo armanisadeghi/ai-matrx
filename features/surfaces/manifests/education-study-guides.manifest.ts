@@ -1,4 +1,10 @@
-/** The Notes-backed study-guide library and focused reader. */
+/**
+ * The Notes-backed study-guide LIBRARY (/education/study-guides): the reader
+ * with no guide open — the guide picker and the "Choose a study guide" state.
+ * One open guide (/education/study-guides/[id]) is its own surface,
+ * `matrx-user/education-study-guide` (education-study-guide.manifest.ts); the
+ * guide_* values here stay declared for stored bindings but are absent on this route.
+ */
 import type { SurfaceManifest, SurfaceScopePayload, SurfaceValue, SurfaceValueGroup } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -28,9 +34,9 @@ export const educationStudyGuidesManifest: SurfaceManifest = {
   client: "matrx-user",
   executionMode: "python-stream",
   description:
-    "Read or edit a study guide, navigate its outline, and review your own notes and linked flashcard terms (/education/study-guides).",
+    "The study-guide library: the person's guides in the picker, before one is opened (/education/study-guides). One open guide is matrx-user/education-study-guide.",
   label: "Study guides",
-  urlPattern: "/education/study-guides/[id]",
+  urlPattern: "/education/study-guides",
   readiness: "partial",
   readinessNote: "Reader and route context are declared; annotation persistence and independent full surface certification are pending.",
   intro: "The learner reads or edits a study guide, navigates its outline, and reviews their own notes and linked flashcard terms. A failed read is not an empty guide.",

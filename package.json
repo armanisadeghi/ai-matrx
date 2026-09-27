@@ -126,6 +126,7 @@
     "surface:probe": "node scripts/surface-probe.mjs",
     "surface:census": "tsx scripts/surface-census.ts",
     "surface:feedback": "tsx scripts/surface-feedback.ts",
+    "surface:openers": "tsx scripts/surface-openers.ts",
     "check:surface-drift": "tsx scripts/check-surface-drift.ts",
     "check:surface-approval-render": "tsx scripts/check-surface-approval-render.ts",
     "check:surface-approval-render:census": "tsx scripts/check-surface-approval-render.ts --census",

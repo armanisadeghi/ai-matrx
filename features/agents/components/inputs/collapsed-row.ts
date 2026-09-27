@@ -1,16 +1,26 @@
 /**
- * What the COLLAPSED variable row draws for a variable — the one decision every
- * run surface that uses `AgentVariablesInline` inherits.
+ * What the COLLAPSED variable row draws for a variable in `AgentVariablesInline`
+ * (the "inline" variables style used above the smart agent input).
  *
- * The collapsed row used to draw a bare `<input type="text">` for every
- * variable that was not picklist-bound, so a `select` with four options showed
- * up as a free-text box on the run page (the feedback-triage agents,
- * 2026-09-23): the person could type "urgent-ish" into a field whose only legal
- * answers are low / medium / high / critical. The collapsed form now draws the
- * SAME component the expanded editor draws (`VariableInputComponent`, compact)
- * for anything that is not free text; only genuinely free-text variables keep
- * the one-line text box, and variables that cannot fit in a row (media) open
- * the full editor instead of pretending to be text.
+ * 🚨 THE COLLAPSED ROW IS A ONE-LINE TEXT BOX FOR EVERY TYPED VARIABLE — BY
+ * DESIGN. DO NOT "FIX" IT (Arman, 2026-09-27).
+ *
+ * This view exists so a person can just TYPE any value — even for a select,
+ * radio, checkbox or slider — and click the chevron when they want the real
+ * component (the expanded editor). A select showing as a text box here is the
+ * feature, not a bug: free text is always allowed. Other variable styles
+ * (form, cards, guided, wizard, compact) draw the real components; pick one of
+ * those if a surface needs the structured controls up front.
+ *
+ * On 2026-09-22 this row was changed to draw each variable's full component
+ * inline ("a select must never be a free-text box"). That put a vertical radio
+ * list, checkbox lists and button walls inside the composer and removed free
+ * typing. It was reverted on 2026-09-27. Never reintroduce it.
+ *
+ * The only exceptions are values that genuinely cannot be typed:
+ *   - media (image / audio / video / document / youtube) — a MediaRef, not text
+ *   - picklist-bound variables — the value is a reference fence, not text
+ * Those draw a button that opens the full editor.
  */
 
 import {
@@ -19,43 +29,18 @@ import {
 } from "@/features/agents/types/agent-definition.types";
 
 export type CollapsedRowKind =
-  /** One-line text box; the full editor is behind the chevron. */
+  /** One-line text box; the full component is behind the chevron. */
   | "text-line"
-  /** The variable's real component, compact, inline in the row. */
-  | "component"
   /** A button that opens the full editor — the value cannot be typed. */
   | "open-editor";
-
-/** Free-text types: a one-line box IS the compact form of their editor. */
-const TEXT_LINE_TYPES = new Set([
-  "textarea",
-  "markdown",
-  "email",
-  "url",
-  "phone",
-]);
-
-/** Choice types whose component needs options to be anything but a text box. */
-const OPTION_TYPES = new Set([
-  "radio",
-  "pill-toggle",
-  "selection-list",
-  "buttons",
-  "checkbox",
-  "select",
-]);
 
 export function collapsedRowKind(
   customComponent: VariableCustomComponent | undefined | null,
   { picklistBound = false }: { picklistBound?: boolean } = {},
 ): CollapsedRowKind {
   if (picklistBound) return "open-editor";
-  const type = customComponent?.type ?? "textarea";
-  if (isMediaVariableType(type)) return "open-editor";
-  if (TEXT_LINE_TYPES.has(type)) return "text-line";
-  if (OPTION_TYPES.has(type) && !(customComponent?.options?.length ?? 0)) {
-    // No options: the expanded editor falls back to a text area too.
-    return "text-line";
+  if (isMediaVariableType(customComponent?.type ?? "textarea")) {
+    return "open-editor";
   }
-  return "component";
+  return "text-line";
 }

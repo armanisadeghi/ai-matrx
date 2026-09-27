@@ -7,12 +7,14 @@
 
 import {
   createEducationClassesScope,
+  type ClassListRow,
   type ClassScopeEntry,
   type JoinedClassScopeEntry,
   type NewClassDraftScope,
 } from "@/features/surfaces/manifests/education-classes.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type { MyClass, StudyClass } from "./types";
+import { nextExamDate } from "./settings";
 
 export function toClassScopeEntry(cls: StudyClass): ClassScopeEntry {
   return {
@@ -29,6 +31,21 @@ export function toClassScopeEntry(cls: StudyClass): ClassScopeEntry {
       title: e.title,
       date: e.date,
     })),
+  };
+}
+
+const todayIso = () => new Date().toISOString().slice(0, 10);
+
+export function toClassListRow(cls: StudyClass): ClassListRow {
+  const next = nextExamDate(cls.settings, todayIso());
+  return {
+    id: cls.id,
+    name: cls.name,
+    teacher: cls.settings.teacher ?? null,
+    term: cls.settings.term ?? null,
+    period: cls.settings.period ?? null,
+    access_mode: cls.settings.accessMode,
+    next_exam: next ? { title: next.title, date: next.date } : null,
   };
 }
 
@@ -59,6 +76,7 @@ export function buildEducationClassesScope(input: {
     class_dialog_open: input.dialogOpen,
     ...(ownedLoaded
       ? {
+          class_list: input.classes.slice(0, 25).map(toClassListRow),
           owned_classes: input.classes.map(toClassScopeEntry),
           archived_classes: input.archived.map(toClassScopeEntry),
           owned_class_count: input.classes.length,

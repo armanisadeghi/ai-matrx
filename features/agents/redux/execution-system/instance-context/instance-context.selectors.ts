@@ -1,6 +1,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
+import { getManifest } from "@/features/surfaces/manifests/registry";
 
 const EMPTY_CONTEXT_ENTRIES: InstanceContextEntry[] = [];
 
@@ -73,6 +74,45 @@ export function toWireContextValue(entry: InstanceContextEntry): unknown {
 }
 
 /**
+ * A surface value's declared inline ceiling (`SurfaceValue.inlineUpTo`), sent
+ * the way the server already reads a ceiling: the rich envelope's
+ * `max_inline_chars` (aidream `ContextManifest.build`). Without it every value
+ * over the 200-char system default arrives as a lookup, and agents open every
+ * run by calling `context` for the thing they were asked about.
+ *
+ * Only for entries NO agent slot claimed (`slotMatched`): a slot's own ceiling
+ * wins, and an explicit value here would clobber it via the server's
+ * `min(agent, surface)` rule. An already-rich envelope is left untouched.
+ */
+export function withSurfaceInlineCeiling(
+  entry: InstanceContextEntry,
+  wire: unknown,
+  surfaceName: string | null | undefined,
+): unknown {
+  if (!surfaceName || entry.slotMatched) return wire;
+  const declared = getManifest(surfaceName)?.values.find(
+    (v) => v.name === entry.key,
+  );
+  const ceiling = declared?.inlineUpTo;
+  if (!ceiling || wire == null) return wire;
+  if (
+    typeof wire === "object" &&
+    !Array.isArray(wire) &&
+    "content" in (wire as Record<string, unknown>)
+  ) {
+    const env = wire as Record<string, unknown>;
+    return "max_inline_chars" in env ? env : { ...env, max_inline_chars: ceiling };
+  }
+  return {
+    content: wire,
+    type: entry.type,
+    label: entry.label,
+    ...(declared?.description ? { description: declared.description } : {}),
+    max_inline_chars: ceiling,
+  };
+}
+
+/**
  * Build the context dict for the API payload.
  * Returns Record<string, ContextValue> ready for the request.
  */
@@ -85,9 +125,16 @@ export const selectContextPayload =
     const entries = Object.values(context);
     if (entries.length === 0) return undefined;
 
+    const surfaceName =
+      state.conversations?.byConversationId?.[conversationId]?.surfaceName ??
+      null;
     const payload: Record<string, unknown> = {};
     for (const entry of entries) {
-      payload[entry.key] = toWireContextValue(entry);
+      payload[entry.key] = withSurfaceInlineCeiling(
+        entry,
+        toWireContextValue(entry),
+        surfaceName,
+      );
     }
     return payload;
   };

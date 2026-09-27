@@ -1,66 +1,40 @@
 /**
- * The collapsed run form must draw the same component as the expanded one.
- *
- * Fixtures are the live variable definitions of the "Feedback triage" agents
- * (44d3b270…, 143f5d37…) read from `agent.definition.variable_definitions`
- * on 2026-09-23: `filed_type` and `filed_priority` are selects and were drawn
- * as free-text boxes in the collapsed row.
+ * The inline (collapsed) variable row is a one-line text box for every typed
+ * variable — free typing is the point of this view; the real component lives
+ * behind the chevron. See the header of collapsed-row.ts (Arman, 2026-09-27).
  */
 
 import { collapsedRowKind } from "../collapsed-row";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 
-const triage: Record<string, VariableCustomComponent> = {
-  description: { type: "textarea" },
-  route: { type: "url" },
-  filed_type: {
-    type: "select",
-    options: ["bug", "feature", "suggestion", "other"],
-  },
-  filed_priority: {
-    type: "select",
-    options: ["low", "medium", "high", "critical"],
-  },
-  comments: { type: "textarea" },
-};
-
 describe("collapsedRowKind", () => {
-  it("draws a select as its component, never a text box", () => {
-    expect(collapsedRowKind(triage.filed_type)).toBe("component");
-    expect(collapsedRowKind(triage.filed_priority)).toBe("component");
-  });
-
-  it("keeps free text as a one-line box", () => {
-    expect(collapsedRowKind(triage.description)).toBe("text-line");
-    expect(collapsedRowKind(triage.route)).toBe("text-line");
-    expect(collapsedRowKind(undefined)).toBe("text-line");
-  });
-
-  it("draws every other structured input as its component", () => {
-    for (const type of [
-      "toggle",
-      "light-switch",
-      "number",
-      "slider",
-      "datetime",
-      "color",
-    ] as const) {
-      expect(collapsedRowKind({ type })).toBe("component");
+  it("every typed variable is a one-line text box, choice types included", () => {
+    const cases: (VariableCustomComponent | undefined)[] = [
+      undefined,
+      { type: "textarea" },
+      { type: "url" },
+      { type: "select", options: ["low", "medium", "high", "critical"] },
+      { type: "radio", options: ["a very detailed", "a well-structured table"] },
+      { type: "checkbox", options: ["a", "b"] },
+      { type: "buttons", options: ["a", "b"] },
+      { type: "selection-list", options: ["a", "b"] },
+      { type: "pill-toggle", options: ["a", "b"] },
+      { type: "toggle" },
+      { type: "number" },
+      { type: "slider" },
+      { type: "datetime" },
+      { type: "color" },
+    ];
+    for (const customComponent of cases) {
+      expect(collapsedRowKind(customComponent)).toBe("text-line");
     }
-    expect(collapsedRowKind({ type: "radio", options: ["a", "b"] })).toBe(
-      "component",
-    );
   });
 
-  it("a choice with no options falls back to text, exactly as the expanded editor does", () => {
-    expect(collapsedRowKind({ type: "select", options: [] })).toBe("text-line");
-  });
-
-  it("media and picklist-bound variables open the editor instead of posing as text", () => {
+  it("values that cannot be typed open the editor", () => {
     expect(collapsedRowKind({ type: "image" })).toBe("open-editor");
     expect(collapsedRowKind({ type: "document" })).toBe("open-editor");
-    expect(collapsedRowKind(triage.filed_type, { picklistBound: true })).toBe(
-      "open-editor",
-    );
+    expect(
+      collapsedRowKind({ type: "select", options: ["a"] }, { picklistBound: true }),
+    ).toBe("open-editor");
   });
 });
