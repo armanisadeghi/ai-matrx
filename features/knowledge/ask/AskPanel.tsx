@@ -122,10 +122,20 @@ export function AskPanel({
     return () => ctl.abort();
   }, [filterKey, sources, runSearch]);
 
-  useEffect(() => () => abortRef.current?.abort(), []);
+  // No abort-on-unmount: a route kept alive in <Activity> runs effect cleanups
+  // while its state survives, and aborting there left the panel reading
+  // "Answering" forever over a cancelled stream (seen live, 2026-09-27). A
+  // running answer is only replaced by the next question.
 
   const state = given ?? loaded;
-  const items = state.status === "ready" ? state.items : [];
+  // The filter's Sources, plus any Source the last answer drew a passage from
+  // that the filter's first page did not list — so every Source the answer
+  // used has its own checkbox for the next question.
+  const listed = state.status === "ready" ? state.items : [];
+  const extra: KnowledgeHit[] = (used ?? [])
+    .filter((u) => u.segments > 0 && !listed.some((s) => s.id === u.source_id))
+    .map((u) => ({ entity: "processed_document", id: u.source_id, title: u.title }));
+  const items = [...extra, ...listed];
   const onCount = items.filter((s) => toggles[s.id] !== false).length;
   const noSources = state.status === "ready" && items.length === 0;
 
@@ -180,7 +190,7 @@ export function AskPanel({
       },
       ctl.signal,
     );
-    if (!settled && !ctl.signal.aborted) {
+    if (!settled && abortRef.current === ctl) {
       setPhase({ kind: "error", message: "The answer stopped before it finished. Ask again to retry." });
     }
   };

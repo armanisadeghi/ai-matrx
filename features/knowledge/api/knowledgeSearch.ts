@@ -91,6 +91,7 @@ export const KNOWLEDGE_SECTION_KEYS = [
   "files",
   "records",
   "agents_workflows",
+  "messages",
 ] as const;
 
 export type KnowledgeSectionKey = (typeof KNOWLEDGE_SECTION_KEYS)[number];
@@ -105,6 +106,7 @@ export const KNOWLEDGE_SECTION_LABEL: Record<KnowledgeSectionKey, string> = {
   files: "Files",
   records: "Records",
   agents_workflows: "Agents & workflows",
+  messages: "Messages",
 };
 
 /** Where a hit is filed (a container reached through associations). */
@@ -233,8 +235,9 @@ export type AdaptedSearchEvent =
 /**
  * One wire event → one client event, or null for heartbeats and anything no
  * surface renders. Accepts the section payload as `type: "section"` or
- * `"knowledge_section"`, and a lane failure as `"section_error"`, until the
- * generated contract fixes the names.
+ * `"knowledge_section"`, a replacement of an already-sent section as
+ * `"section_update"` (Segments: the fused order first, the reranked order
+ * after), and a lane failure as `"section_error"`.
  */
 export function adaptServerSearchEvent(
   evt: TypedStreamEvent,
@@ -254,7 +257,10 @@ export function adaptServerSearchEvent(
   if (!isRecord(data)) return null;
   const kind = str(data.type);
   const key = data.key ?? data.section;
-  if ((kind === "section" || kind === "knowledge_section") && isSectionKey(key)) {
+  if (
+    (kind === "section" || kind === "knowledge_section" || kind === "section_update") &&
+    isSectionKey(key)
+  ) {
     const items = Array.isArray(data.items)
       ? data.items.map(adaptHit).filter((h): h is KnowledgeHit => h !== null)
       : [];
@@ -369,8 +375,15 @@ export const searchKnowledgeServer: KnowledgeSearchRunner = async (
       if (adapted.type === "started") {
         started = true;
       } else if (adapted.type === "section") {
-        received.set(adapted.section.key, adapted.section);
-        options.onSection?.(adapted.section);
+        // A later event for a key replaces the earlier one (section_update). An
+        // error after results keeps the results shown and carries the error.
+        const prior = received.get(adapted.section.key);
+        const next =
+          adapted.section.error && prior && prior.items.length > 0
+            ? { ...prior, error: adapted.section.error }
+            : adapted.section;
+        received.set(next.key, next);
+        options.onSection?.(next);
       } else if (adapted.type === "stream_error") {
         // An in-band error is the envelope speaking: show it, never fall back.
         started = true;

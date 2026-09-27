@@ -879,9 +879,11 @@ export type AssembledAgentStartRequest = Partial<
 > & {
   /**
    * Hard client boundary: every new AI conversation names the explicitly
-   * selected organization. The server independently requires the same field.
+   * selected organization. The server independently requires the same field —
+   * except for a fingerprint guest, who must OMIT it (the server's AI funnel
+   * resolves the guest's own organization); `executionOrganizationForRequest`.
    */
-  organization_id: string;
+  organization_id?: string;
   /**
    * Additive aidream field for instance-targeted desktop tool delegation.
    * Omitted for Auto/default routing.

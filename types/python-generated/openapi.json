@@ -10945,6 +10945,146 @@
         }
       }
     },
+    "/v1/meet/meetings/{meeting_id}/announce": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Meeting Announce",
+        "description": "BRING EVERYONE UP TO DATE (Meet wave 1). Call after any write through the\n`communication.meet_*` doors — schedule, edit, reschedule, cancel, archive,\noccurrence change, invitees added. Sends each invitee exactly what they have\nnot been told (invitation, update or cancellation, each with its `.ics`) and\nre-queues reminders. Idempotent; the host, a co-host or an editor only.",
+        "operationId": "meeting_announce_v1_meet_meetings__meeting_id__announce_post",
+        "parameters": [
+          {
+            "name": "meeting_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Meeting Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeetingAnnounceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meet/rsvp": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Rsvp By Link",
+        "description": "THE ANSWER FROM AN EMAILED INVITATION (Meet wave 1). No authentication: the\nperson may have no account, and the secret — in the body, never the URL — IS the\ncapability. The write is the database door `communication.meet_respond_by_token`;\nthis route adds the one thing a database cannot do, telling the host.",
+        "operationId": "rsvp_by_link_v1_meet_rsvp_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RsvpLinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RsvpLinkResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meet/meetings/{meeting_id}/google-calendar": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Meeting Google Calendar",
+        "description": "Put a one-off meeting on the caller's own Google Calendar through the\nexisting write service — GATED to its internal-test reviewers while the\nCalendar scope is in Google's review (see `meet/calendar_push.py`).",
+        "operationId": "meeting_google_calendar_v1_meet_meetings__meeting_id__google_calendar_post",
+        "parameters": [
+          {
+            "name": "meeting_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Meeting Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeetingGoogleCalendarRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Meeting Google Calendar V1 Meet Meetings  Meeting Id  Google Calendar Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/meet/webhooks/livekit": {
       "post": {
         "tags": [
@@ -19008,6 +19148,219 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GoogleAdsReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/calendar/create/preview": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Calendar Create Preview",
+        "description": "Persist one reviewer's short-lived Calendar create preview.",
+        "operationId": "calendar_create_preview_google_integrations_calendar_create_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalendarEventCreateIntentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEventCreateIntentPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/calendar/create/confirm/{intent_id}": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Calendar Create Confirm",
+        "description": "Consume only the opaque, already-previewed Calendar intent ID once.",
+        "operationId": "calendar_create_confirm_google_integrations_calendar_create_confirm__intent_id__post",
+        "parameters": [
+          {
+            "name": "intent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Intent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEventCreateIntentResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/calendar/reschedule/preview": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Calendar Reschedule Preview",
+        "description": "Internal-review-only read of an organizer reschedule preflight; it never patches Google.",
+        "operationId": "calendar_reschedule_preview_google_integrations_calendar_reschedule_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalendarEventRescheduleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarReschedulePreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/calendar/cancel/preview": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Calendar Cancel Preview",
+        "description": "Internal-review-only read of an organizer cancellation preflight; it never deletes Google data.",
+        "operationId": "calendar_cancel_preview_google_integrations_calendar_cancel_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalendarEventCancelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarCancelPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/calendar/rsvp/preview": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Calendar Rsvp Preview",
+        "description": "Internal-review-only read of an attendee RSVP preflight; it never updates Google.",
+        "operationId": "calendar_rsvp_preview_google_integrations_calendar_rsvp_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalendarEventRsvpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarRsvpPreview"
                 }
               }
             }
@@ -68118,13 +68471,13 @@
           "Knowledge Hub"
         ],
         "summary": "Knowledge Search",
-        "description": "The one Knowledge search: top hit, items, Segments and your messages, in typed sections.",
+        "description": "The one Knowledge search: typed sections (mode 'find'), or a cited answer over the\nsame filter (mode 'ask').",
         "operationId": "knowledge_search_knowledge_search_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/KnowledgeSearchRequest"
+                "$ref": "#/components/schemas/KnowledgeAskRequest"
               }
             }
           },
@@ -68132,12 +68485,20 @@
         },
         "responses": {
           "200": {
-            "description": "NDJSON stream. Each line is {'event': 'data', 'data': <event>}: search_started, then one 'section' or 'section_error' per section as its lane completes, then done.",
+            "description": "NDJSON stream. Each line is {'event': 'data', 'data': <event>}. mode 'find': search_started, then one 'section' or 'section_error' per section as its lane completes, then done. mode 'ask': ask_started, answer_delta…, citations, sources_used, ask_done — or ask_refused.",
             "content": {
               "application/x-ndjson": {},
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/KnowledgeSearchStreamEvent"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/KnowledgeSearchStreamEvent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/KnowledgeAskStreamEvent"
+                    }
+                  ],
+                  "title": "Response 200 Knowledge Search Knowledge Search Post"
                 }
               }
             }
@@ -107702,6 +108063,341 @@
         "title": "AshbyServiceStatus",
         "description": "Safe aggregate status projection for Ashby's fixed status page."
       },
+      "AskAnswerDelta": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "answer_delta",
+            "title": "Type",
+            "default": "answer_delta"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "AskAnswerDelta"
+      },
+      "AskAnswerReset": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "answer_reset",
+            "title": "Type",
+            "default": "answer_reset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "AskAnswerReset",
+        "description": "The model run restarted after a partial answer: discard what was shown."
+      },
+      "AskCitation": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "title": "Number",
+            "description": "The [n] the answer uses."
+          },
+          "segment_id": {
+            "type": "string",
+            "title": "Segment Id"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "source_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Title"
+          },
+          "source_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kind"
+          },
+          "locator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locator"
+          },
+          "page_numbers": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Page Numbers"
+          },
+          "quote": {
+            "type": "string",
+            "title": "Quote"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "number",
+          "segment_id",
+          "source_id",
+          "quote"
+        ],
+        "title": "AskCitation"
+      },
+      "AskCitations": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "citations",
+            "title": "Type",
+            "default": "citations"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/AskCitation"
+            },
+            "type": "array",
+            "title": "Citations"
+          },
+          "uncited_sentences": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Uncited Sentences",
+            "description": "Sentences of the answer that carry no citation."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "AskCitations"
+      },
+      "AskDone": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "ask_done",
+            "title": "Type",
+            "default": "ask_done"
+          },
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          },
+          "found": {
+            "type": "boolean",
+            "title": "Found"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "spent_usd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spent Usd",
+            "description": "This organization's Ask spend this month, before this answer."
+          },
+          "cap_usd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cap Usd"
+          },
+          "took_ms": {
+            "type": "integer",
+            "title": "Took Ms",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "answer",
+          "found"
+        ],
+        "title": "AskDone"
+      },
+      "AskRefused": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "ask_refused",
+            "title": "Type",
+            "default": "ask_refused"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "cap_reached",
+              "no_organization"
+            ],
+            "title": "Reason"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason",
+          "message"
+        ],
+        "title": "AskRefused"
+      },
+      "AskSourceUsed": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "source_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kind"
+          },
+          "on": {
+            "type": "boolean",
+            "title": "On",
+            "default": true
+          },
+          "segments": {
+            "type": "integer",
+            "title": "Segments",
+            "description": "Segments of this Source offered to the answer.",
+            "default": 0
+          },
+          "cited": {
+            "type": "boolean",
+            "title": "Cited",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_id",
+          "title"
+        ],
+        "title": "AskSourceUsed"
+      },
+      "AskSourcesUsed": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "sources_used",
+            "title": "Type",
+            "default": "sources_used"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AskSourceUsed"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "AskSourcesUsed"
+      },
+      "AskStarted": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "ask_started",
+            "title": "Type",
+            "default": "ask_started"
+          },
+          "query": {
+            "$ref": "#/components/schemas/KnowledgeQuery"
+          },
+          "chips": {
+            "items": {
+              "$ref": "#/components/schemas/QueryChip"
+            },
+            "type": "array",
+            "title": "Chips"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "AskStarted"
+      },
       "Asset": {
         "properties": {
           "file_id": {
@@ -123359,6 +124055,332 @@
         ],
         "title": "CalendarAgendaRequest"
       },
+      "CalendarCancelPreview": {
+        "properties": {
+          "account_email": {
+            "type": "string",
+            "title": "Account Email"
+          },
+          "calendar_id": {
+            "type": "string",
+            "title": "Calendar Id"
+          },
+          "calendar_summary": {
+            "type": "string",
+            "title": "Calendar Summary"
+          },
+          "access_role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "writer",
+              "writerWithoutPrivateAccess"
+            ],
+            "title": "Access Role"
+          },
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "occurrence": {
+            "type": "string",
+            "enum": [
+              "instance",
+              "series",
+              "single"
+            ],
+            "title": "Occurrence"
+          },
+          "event_summary": {
+            "type": "string",
+            "title": "Event Summary"
+          },
+          "etag": {
+            "type": "string",
+            "title": "Etag"
+          },
+          "starts_at": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Ends At"
+          },
+          "attendees": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Attendees"
+          },
+          "send_updates": {
+            "type": "string",
+            "enum": [
+              "all",
+              "externalOnly",
+              "none"
+            ],
+            "title": "Send Updates"
+          },
+          "guest_notification_behavior": {
+            "type": "string",
+            "title": "Guest Notification Behavior"
+          },
+          "action_notice": {
+            "type": "string",
+            "title": "Action Notice",
+            "default": "Cancel this organizer event for its guests. Removing an attendee copy only removes it from that attendee's calendar and is a different action."
+          },
+          "recovery_notice": {
+            "type": "string",
+            "title": "Recovery Notice",
+            "default": "Google may already have sent guest notifications. Cancellation and delivered notifications cannot be promised as undoable."
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_email",
+          "calendar_id",
+          "calendar_summary",
+          "access_role",
+          "event_id",
+          "occurrence",
+          "event_summary",
+          "etag",
+          "starts_at",
+          "ends_at",
+          "attendees",
+          "send_updates",
+          "guest_notification_behavior"
+        ],
+        "title": "CalendarCancelPreview"
+      },
+      "CalendarCreatePreview": {
+        "properties": {
+          "account_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Email"
+          },
+          "calendar_id": {
+            "type": "string",
+            "title": "Calendar Id"
+          },
+          "calendar_summary": {
+            "type": "string",
+            "title": "Calendar Summary"
+          },
+          "access_role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "writer",
+              "writerWithoutPrivateAccess"
+            ],
+            "title": "Access Role"
+          },
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ends At"
+          },
+          "attendees": {
+            "items": {
+              "$ref": "#/components/schemas/CalendarEventAttendee"
+            },
+            "type": "array",
+            "title": "Attendees"
+          },
+          "send_updates": {
+            "type": "string",
+            "enum": [
+              "all",
+              "externalOnly",
+              "none"
+            ],
+            "title": "Send Updates"
+          },
+          "guest_notification_behavior": {
+            "type": "string",
+            "title": "Guest Notification Behavior"
+          },
+          "undo_notice": {
+            "type": "string",
+            "title": "Undo Notice",
+            "default": "Creating this event can send guest notifications. Removing it later cannot undo a notification Google already delivered."
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_email",
+          "calendar_id",
+          "calendar_summary",
+          "access_role",
+          "event_id",
+          "summary",
+          "starts_at",
+          "ends_at",
+          "attendees",
+          "send_updates",
+          "guest_notification_behavior"
+        ],
+        "title": "CalendarCreatePreview"
+      },
+      "CalendarCreateResult": {
+        "properties": {
+          "account_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Email"
+          },
+          "calendar_id": {
+            "type": "string",
+            "title": "Calendar Id"
+          },
+          "calendar_summary": {
+            "type": "string",
+            "title": "Calendar Summary"
+          },
+          "access_role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "writer",
+              "writerWithoutPrivateAccess"
+            ],
+            "title": "Access Role"
+          },
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ends At"
+          },
+          "attendees": {
+            "items": {
+              "$ref": "#/components/schemas/CalendarEventAttendee"
+            },
+            "type": "array",
+            "title": "Attendees"
+          },
+          "send_updates": {
+            "type": "string",
+            "enum": [
+              "all",
+              "externalOnly",
+              "none"
+            ],
+            "title": "Send Updates"
+          },
+          "guest_notification_behavior": {
+            "type": "string",
+            "title": "Guest Notification Behavior"
+          },
+          "undo_notice": {
+            "type": "string",
+            "title": "Undo Notice",
+            "default": "Creating this event can send guest notifications. Removing it later cannot undo a notification Google already delivered."
+          },
+          "reconciled_after_uncertain_insert": {
+            "type": "boolean",
+            "title": "Reconciled After Uncertain Insert",
+            "default": false
+          },
+          "provider_event_id": {
+            "type": "string",
+            "title": "Provider Event Id"
+          },
+          "provider_etag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Etag"
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_email",
+          "calendar_id",
+          "calendar_summary",
+          "access_role",
+          "event_id",
+          "summary",
+          "starts_at",
+          "ends_at",
+          "attendees",
+          "send_updates",
+          "guest_notification_behavior",
+          "provider_event_id"
+        ],
+        "title": "CalendarCreateResult"
+      },
       "CalendarDiscoveryRequest": {
         "properties": {
           "organization_id": {
@@ -123379,6 +124401,362 @@
           "connection_id"
         ],
         "title": "CalendarDiscoveryRequest"
+      },
+      "CalendarEventAttendee": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "Email"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "CalendarEventAttendee"
+      },
+      "CalendarEventCancelRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "calendar_id": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Calendar Id"
+          },
+          "event_id": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Event Id"
+          },
+          "occurrence": {
+            "type": "string",
+            "enum": [
+              "instance",
+              "series",
+              "single"
+            ],
+            "title": "Occurrence"
+          },
+          "expected_etag": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Expected Etag"
+          },
+          "send_updates": {
+            "type": "string",
+            "enum": [
+              "all",
+              "externalOnly",
+              "none"
+            ],
+            "title": "Send Updates"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "connection_id",
+          "calendar_id",
+          "event_id",
+          "occurrence",
+          "expected_etag",
+          "send_updates"
+        ],
+        "title": "CalendarEventCancelRequest",
+        "description": "Explicit organizer cancellation of one source event version."
+      },
+      "CalendarEventCreateIntentPreview": {
+        "properties": {
+          "intent_id": {
+            "type": "string",
+            "title": "Intent Id"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "preview": {
+            "$ref": "#/components/schemas/CalendarCreatePreview"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "intent_id",
+          "expires_at",
+          "preview"
+        ],
+        "title": "CalendarEventCreateIntentPreview"
+      },
+      "CalendarEventCreateIntentRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "calendar_id": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Calendar Id"
+          },
+          "event_id": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 5,
+            "pattern": "^[a-v0-9]{5,1024}$",
+            "title": "Event Id"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Summary"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ends At"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 8192
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "attendees": {
+            "items": {
+              "$ref": "#/components/schemas/CalendarEventAttendee"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Attendees",
+            "default": []
+          },
+          "send_updates": {
+            "type": "string",
+            "enum": [
+              "all",
+              "externalOnly",
+              "none"
+            ],
+            "title": "Send Updates"
+          },
+          "organization_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Organization Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "connection_id",
+          "calendar_id",
+          "event_id",
+          "summary",
+          "starts_at",
+          "ends_at",
+          "send_updates",
+          "organization_id"
+        ],
+        "title": "CalendarEventCreateIntentRequest",
+        "description": "A Calendar request bound to the currently selected organization."
+      },
+      "CalendarEventCreateIntentResult": {
+        "properties": {
+          "intent_id": {
+            "type": "string",
+            "title": "Intent Id"
+          },
+          "result": {
+            "$ref": "#/components/schemas/CalendarCreateResult"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "intent_id",
+          "result"
+        ],
+        "title": "CalendarEventCreateIntentResult"
+      },
+      "CalendarEventRescheduleRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "calendar_id": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Calendar Id"
+          },
+          "event_id": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Event Id"
+          },
+          "occurrence": {
+            "type": "string",
+            "enum": [
+              "instance",
+              "series",
+              "single"
+            ],
+            "title": "Occurrence"
+          },
+          "expected_etag": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Expected Etag"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ends At"
+          },
+          "send_updates": {
+            "type": "string",
+            "enum": [
+              "all",
+              "externalOnly",
+              "none"
+            ],
+            "title": "Send Updates"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "connection_id",
+          "calendar_id",
+          "event_id",
+          "occurrence",
+          "expected_etag",
+          "starts_at",
+          "ends_at",
+          "send_updates"
+        ],
+        "title": "CalendarEventRescheduleRequest",
+        "description": "A caller-selected organizer event and version, captured from its preview."
+      },
+      "CalendarEventRsvpRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "calendar_id": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Calendar Id"
+          },
+          "event_id": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Event Id"
+          },
+          "occurrence": {
+            "type": "string",
+            "enum": [
+              "instance",
+              "series",
+              "single"
+            ],
+            "title": "Occurrence"
+          },
+          "expected_etag": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Expected Etag"
+          },
+          "response_status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "declined",
+              "needsAction",
+              "tentative"
+            ],
+            "title": "Response Status"
+          },
+          "send_updates": {
+            "type": "string",
+            "enum": [
+              "all",
+              "externalOnly",
+              "none"
+            ],
+            "title": "Send Updates"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "connection_id",
+          "calendar_id",
+          "event_id",
+          "occurrence",
+          "expected_etag",
+          "response_status",
+          "send_updates"
+        ],
+        "title": "CalendarEventRsvpRequest",
+        "description": "One authenticated attendee's response on their selected event copy."
       },
       "CalendarRefreshRequest": {
         "properties": {
@@ -123460,6 +124838,230 @@
           "unmatched_attendee_emails"
         ],
         "title": "CalendarRefreshResponse"
+      },
+      "CalendarReschedulePreview": {
+        "properties": {
+          "account_email": {
+            "type": "string",
+            "title": "Account Email"
+          },
+          "calendar_id": {
+            "type": "string",
+            "title": "Calendar Id"
+          },
+          "calendar_summary": {
+            "type": "string",
+            "title": "Calendar Summary"
+          },
+          "access_role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "writer",
+              "writerWithoutPrivateAccess"
+            ],
+            "title": "Access Role"
+          },
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "occurrence": {
+            "type": "string",
+            "enum": [
+              "instance",
+              "series",
+              "single"
+            ],
+            "title": "Occurrence"
+          },
+          "event_summary": {
+            "type": "string",
+            "title": "Event Summary"
+          },
+          "etag": {
+            "type": "string",
+            "title": "Etag"
+          },
+          "old_start": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Old Start"
+          },
+          "old_end": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Old End"
+          },
+          "new_start": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "New Start"
+          },
+          "new_end": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "New End"
+          },
+          "attendees": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Attendees"
+          },
+          "send_updates": {
+            "type": "string",
+            "enum": [
+              "all",
+              "externalOnly",
+              "none"
+            ],
+            "title": "Send Updates"
+          },
+          "guest_notification_behavior": {
+            "type": "string",
+            "title": "Guest Notification Behavior"
+          },
+          "recovery_notice": {
+            "type": "string",
+            "title": "Recovery Notice",
+            "default": "A later time change can be offered only if Google's event still matches this action's ETag. Guest notifications already sent cannot be undone."
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_email",
+          "calendar_id",
+          "calendar_summary",
+          "access_role",
+          "event_id",
+          "occurrence",
+          "event_summary",
+          "etag",
+          "old_start",
+          "old_end",
+          "new_start",
+          "new_end",
+          "attendees",
+          "send_updates",
+          "guest_notification_behavior"
+        ],
+        "title": "CalendarReschedulePreview"
+      },
+      "CalendarRsvpPreview": {
+        "properties": {
+          "account_email": {
+            "type": "string",
+            "title": "Account Email"
+          },
+          "calendar_id": {
+            "type": "string",
+            "title": "Calendar Id"
+          },
+          "calendar_summary": {
+            "type": "string",
+            "title": "Calendar Summary"
+          },
+          "access_role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "writer",
+              "writerWithoutPrivateAccess"
+            ],
+            "title": "Access Role"
+          },
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "occurrence": {
+            "type": "string",
+            "enum": [
+              "instance",
+              "series",
+              "single"
+            ],
+            "title": "Occurrence"
+          },
+          "event_summary": {
+            "type": "string",
+            "title": "Event Summary"
+          },
+          "organizer_email": {
+            "type": "string",
+            "title": "Organizer Email"
+          },
+          "etag": {
+            "type": "string",
+            "title": "Etag"
+          },
+          "old_response_status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "declined",
+              "needsAction",
+              "tentative"
+            ],
+            "title": "Old Response Status"
+          },
+          "new_response_status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "declined",
+              "needsAction",
+              "tentative"
+            ],
+            "title": "New Response Status"
+          },
+          "send_updates": {
+            "type": "string",
+            "enum": [
+              "all",
+              "externalOnly",
+              "none"
+            ],
+            "title": "Send Updates"
+          },
+          "guest_notification_behavior": {
+            "type": "string",
+            "title": "Guest Notification Behavior"
+          },
+          "action_notice": {
+            "type": "string",
+            "title": "Action Notice",
+            "default": "Only this connected account's attendee response will be updated."
+          },
+          "recovery_notice": {
+            "type": "string",
+            "title": "Recovery Notice",
+            "default": "A later response change requires a fresh event version. Any notification Google already sent cannot be undone."
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_email",
+          "calendar_id",
+          "calendar_summary",
+          "access_role",
+          "event_id",
+          "occurrence",
+          "event_summary",
+          "organizer_email",
+          "etag",
+          "old_response_status",
+          "new_response_status",
+          "send_updates",
+          "guest_notification_behavior"
+        ],
+        "title": "CalendarRsvpPreview"
       },
       "CalendlyServiceStatus": {
         "properties": {
@@ -194357,6 +195959,273 @@
         ],
         "title": "KnockServiceStatus"
       },
+      "KnowledgeAskRequest": {
+        "properties": {
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "What was typed, minus any parsed operators."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "ask",
+              "find"
+            ],
+            "title": "Mode",
+            "default": "find"
+          },
+          "types": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Types",
+            "description": "Entity tokens: processed_document, conversation, note, task, project, file, scope, agent…"
+          },
+          "source_kinds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kinds",
+            "description": "Sources only: web_page, scrape_parsed_page, cld_file, transcript, inline…"
+          },
+          "within": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/EntityRef"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Within",
+            "description": "Containers via associations."
+          },
+          "entities": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entities",
+            "description": "Extracted people / places / organizations."
+          },
+          "captured_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "anyone",
+                  "me"
+                ]
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Captured By"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin",
+            "description": "Origin client: web, extension, local, agent, research, crawl, upload, youtube…"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateFilter"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "archived",
+                    "inbox",
+                    "kept"
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "organizations": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organizations",
+            "description": "Organization ids to search. Null = every organization you belong to."
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "recent",
+              "relevance",
+              "title"
+            ],
+            "title": "Sort",
+            "default": "relevance"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 20
+          },
+          "cursors": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursors",
+            "description": "Per-section page cursors ('show all' pages one section on its own)."
+          },
+          "parse_operators": {
+            "type": "boolean",
+            "title": "Parse Operators",
+            "description": "Parse @name, type:, #tag and dates out of text.",
+            "default": true
+          },
+          "as_you_type": {
+            "type": "boolean",
+            "title": "As You Type",
+            "description": "True while the person is still typing: instant lanes only, no Segments.",
+            "default": false
+          },
+          "sources_used": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sources Used",
+            "description": "Ask only: per-Source on/off keyed by Source id (the `sources` section's ids). A Source set to false is not used; a Source absent from the map is used."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "KnowledgeAskRequest",
+        "description": "The ``POST /knowledge/search`` body. A search request plus Ask's one extra filter:\nper-Source on/off. ``mode: \"find\"`` requests are handed to the search unchanged."
+      },
+      "KnowledgeAskStreamEvent": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AskStarted"
+          },
+          {
+            "$ref": "#/components/schemas/AskAnswerDelta"
+          },
+          {
+            "$ref": "#/components/schemas/AskAnswerReset"
+          },
+          {
+            "$ref": "#/components/schemas/AskCitations"
+          },
+          {
+            "$ref": "#/components/schemas/AskSourcesUsed"
+          },
+          {
+            "$ref": "#/components/schemas/AskDone"
+          },
+          {
+            "$ref": "#/components/schemas/AskRefused"
+          }
+        ],
+        "title": "KnowledgeAskStreamEvent",
+        "description": "The ``data`` of one NDJSON line of ``POST /knowledge/search`` with ``mode: \"ask\"``.",
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "answer_delta": "#/components/schemas/AskAnswerDelta",
+            "answer_reset": "#/components/schemas/AskAnswerReset",
+            "ask_done": "#/components/schemas/AskDone",
+            "ask_refused": "#/components/schemas/AskRefused",
+            "ask_started": "#/components/schemas/AskStarted",
+            "citations": "#/components/schemas/AskCitations",
+            "sources_used": "#/components/schemas/AskSourcesUsed"
+          }
+        }
+      },
       "KnowledgeHit": {
         "properties": {
           "entity": {
@@ -194780,219 +196649,6 @@
         ],
         "title": "KnowledgeSearchDone"
       },
-      "KnowledgeSearchRequest": {
-        "properties": {
-          "text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Text",
-            "description": "What was typed, minus any parsed operators."
-          },
-          "mode": {
-            "type": "string",
-            "enum": [
-              "ask",
-              "find"
-            ],
-            "title": "Mode",
-            "default": "find"
-          },
-          "types": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Types",
-            "description": "Entity tokens: processed_document, conversation, note, task, project, file, scope, agent…"
-          },
-          "source_kinds": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Kinds",
-            "description": "Sources only: web_page, scrape_parsed_page, cld_file, transcript, inline…"
-          },
-          "within": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/EntityRef"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Within",
-            "description": "Containers via associations."
-          },
-          "entities": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Entities",
-            "description": "Extracted people / places / organizations."
-          },
-          "captured_by": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "anyone",
-                  "me"
-                ]
-              },
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Captured By"
-          },
-          "origin": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Origin",
-            "description": "Origin client: web, extension, local, agent, research, crawl, upload, youtube…"
-          },
-          "date": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/DateFilter"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "state": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string",
-                  "enum": [
-                    "archived",
-                    "inbox",
-                    "kept"
-                  ]
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "State"
-          },
-          "organizations": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organizations",
-            "description": "Organization ids to search. Null = every organization you belong to."
-          },
-          "sort": {
-            "type": "string",
-            "enum": [
-              "recent",
-              "relevance",
-              "title"
-            ],
-            "title": "Sort",
-            "default": "relevance"
-          },
-          "limit": {
-            "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
-            "title": "Limit",
-            "default": 20
-          },
-          "cursors": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "type": "string"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cursors",
-            "description": "Per-section page cursors ('show all' pages one section on its own)."
-          },
-          "parse_operators": {
-            "type": "boolean",
-            "title": "Parse Operators",
-            "description": "Parse @name, type:, #tag and dates out of text.",
-            "default": true
-          },
-          "as_you_type": {
-            "type": "boolean",
-            "title": "As You Type",
-            "description": "True while the person is still typing: instant lanes only, no Segments.",
-            "default": false
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "KnowledgeSearchRequest",
-        "description": "``POST /knowledge/search`` body: the query object itself, plus how to run it."
-      },
       "KnowledgeSearchStarted": {
         "properties": {
           "type": {
@@ -195055,6 +196711,9 @@
             "$ref": "#/components/schemas/KnowledgeSection"
           },
           {
+            "$ref": "#/components/schemas/KnowledgeSectionUpdate"
+          },
+          {
             "$ref": "#/components/schemas/KnowledgeSectionError"
           },
           {
@@ -195069,7 +196728,8 @@
             "done": "#/components/schemas/KnowledgeSearchDone",
             "search_started": "#/components/schemas/KnowledgeSearchStarted",
             "section": "#/components/schemas/KnowledgeSection",
-            "section_error": "#/components/schemas/KnowledgeSectionError"
+            "section_error": "#/components/schemas/KnowledgeSectionError",
+            "section_update": "#/components/schemas/KnowledgeSectionUpdate"
           }
         }
       },
@@ -195205,6 +196865,97 @@
           "message"
         ],
         "title": "KnowledgeSectionError"
+      },
+      "KnowledgeSectionUpdate": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "section_update",
+            "title": "Type",
+            "default": "section_update"
+          },
+          "section": {
+            "type": "string",
+            "enum": [
+              "agents_workflows",
+              "chats",
+              "files",
+              "messages",
+              "notes",
+              "projects_tasks",
+              "records",
+              "segments",
+              "sources",
+              "top_hit"
+            ],
+            "title": "Section"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 0
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeHit"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "default": false
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor",
+            "description": "Pass as cursors[section] to page this section on its own."
+          },
+          "withheld": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withheld",
+            "description": "Set when the section was withheld (Private class): why, in words."
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note",
+            "description": "What narrowed or changed this section, in words."
+          },
+          "took_ms": {
+            "type": "integer",
+            "title": "Took Ms",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "section"
+        ],
+        "title": "KnowledgeSectionUpdate",
+        "description": "A section that was already sent, replaced whole — today the Segments section, whose\nfused order arrives first and whose reranked order follows."
       },
       "KontentAIServiceStatus": {
         "properties": {
@@ -208534,6 +210285,45 @@
         "title": "MeetRecordResponse",
         "description": "What `GET /v1/meet/record` returns. De-identified by construction.\n\nThe row shapes are deliberately the SAME snake_case shapes\n`@ai-matrx/meet`'s `core/repository.ts` already projects out of Supabase, so\nthe package's `projectNote` / `projectSegment` / `projectAttendee` /\n`projectRecording` are reused verbatim and the guest's record and a member's\nrecord cannot drift into two different screens."
       },
+      "MeetingAnnounceResponse": {
+        "properties": {
+          "invitations": {
+            "type": "integer",
+            "title": "Invitations"
+          },
+          "updates": {
+            "type": "integer",
+            "title": "Updates"
+          },
+          "cancellations": {
+            "type": "integer",
+            "title": "Cancellations"
+          },
+          "already_current": {
+            "type": "integer",
+            "title": "Already Current"
+          },
+          "reminders_queued": {
+            "type": "integer",
+            "title": "Reminders Queued"
+          },
+          "reminders_cancelled": {
+            "type": "integer",
+            "title": "Reminders Cancelled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "invitations",
+          "updates",
+          "cancellations",
+          "already_current",
+          "reminders_queued",
+          "reminders_cancelled"
+        ],
+        "title": "MeetingAnnounceResponse",
+        "description": "`POST /v1/meet/meetings/{meeting_id}/announce` — what bringing everyone up to date did.\n\nIdempotent: a second call right after the first reports everyone as\n`already_current` and queues no reminder twice."
+      },
       "MeetingEndRequest": {
         "properties": {
           "meeting_id": {
@@ -208566,6 +210356,25 @@
         ],
         "title": "MeetingEndResponse",
         "description": "What `endForEveryone` reads back.\n\n`ended_at` is not optional and is never null: the package patches its store\nwith this exact string, and a null would make the room render as live after\nthe host ended it. A repeat call returns the ORIGINAL timestamp — ending an\nended meeting must not move the clock."
+      },
+      "MeetingGoogleCalendarRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          },
+          "calendar_id": {
+            "type": "string",
+            "title": "Calendar Id",
+            "default": "primary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "MeetingGoogleCalendarRequest",
+        "description": "`POST /v1/meet/meetings/{meeting_id}/google-calendar` — the host's OWN\nconnected Google account and calendar (gated; see `calendar_push.py`)."
       },
       "MeetingPreviewItem": {
         "properties": {
@@ -254319,6 +256128,98 @@
           "data"
         ],
         "title": "RowUpdate"
+      },
+      "RsvpLinkRequest": {
+        "properties": {
+          "secret": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 16,
+            "title": "Secret"
+          },
+          "answer": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "declined",
+              "tentative"
+            ],
+            "title": "Answer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "secret",
+          "answer"
+        ],
+        "title": "RsvpLinkRequest",
+        "description": "`POST /v1/meet/rsvp` — the answer given on the page an emailed Yes / No /\nMaybe link opens. The secret travels in the BODY, never the path: a bearer\ncapability in a URL lands in access logs and referrers."
+      },
+      "RsvpLinkResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "meeting": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meeting"
+          },
+          "invitee": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invitee"
+          },
+          "host_notified": {
+            "type": "boolean",
+            "title": "Host Notified",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "title": "RsvpLinkResponse",
+        "description": "What the RSVP page draws after the answer: the database door's own payload\n(`ok`, and `meeting` + `invitee` or a `message`), plus whether the host was told."
       },
       "RubyGemsPublicGem": {
         "properties": {

@@ -4717,6 +4717,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/meet/meetings/{meeting_id}/announce": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Meeting Announce
+         * @description BRING EVERYONE UP TO DATE (Meet wave 1). Call after any write through the
+         *     `communication.meet_*` doors — schedule, edit, reschedule, cancel, archive,
+         *     occurrence change, invitees added. Sends each invitee exactly what they have
+         *     not been told (invitation, update or cancellation, each with its `.ics`) and
+         *     re-queues reminders. Idempotent; the host, a co-host or an editor only.
+         */
+        post: operations["meeting_announce_v1_meet_meetings__meeting_id__announce_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/meet/rsvp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rsvp By Link
+         * @description THE ANSWER FROM AN EMAILED INVITATION (Meet wave 1). No authentication: the
+         *     person may have no account, and the secret — in the body, never the URL — IS the
+         *     capability. The write is the database door `communication.meet_respond_by_token`;
+         *     this route adds the one thing a database cannot do, telling the host.
+         */
+        post: operations["rsvp_by_link_v1_meet_rsvp_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/meet/meetings/{meeting_id}/google-calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Meeting Google Calendar
+         * @description Put a one-off meeting on the caller's own Google Calendar through the
+         *     existing write service — GATED to its internal-test reviewers while the
+         *     Calendar scope is in Google's review (see `meet/calendar_push.py`).
+         */
+        post: operations["meeting_google_calendar_v1_meet_meetings__meeting_id__google_calendar_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/meet/webhooks/livekit": {
         parameters: {
             query?: never;
@@ -7408,6 +7477,106 @@ export interface paths {
         put?: never;
         /** Google Ads Report */
         post: operations["google_ads_report_google_integrations_ads_report_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/calendar/create/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Calendar Create Preview
+         * @description Persist one reviewer's short-lived Calendar create preview.
+         */
+        post: operations["calendar_create_preview_google_integrations_calendar_create_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/calendar/create/confirm/{intent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Calendar Create Confirm
+         * @description Consume only the opaque, already-previewed Calendar intent ID once.
+         */
+        post: operations["calendar_create_confirm_google_integrations_calendar_create_confirm__intent_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/calendar/reschedule/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Calendar Reschedule Preview
+         * @description Internal-review-only read of an organizer reschedule preflight; it never patches Google.
+         */
+        post: operations["calendar_reschedule_preview_google_integrations_calendar_reschedule_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/calendar/cancel/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Calendar Cancel Preview
+         * @description Internal-review-only read of an organizer cancellation preflight; it never deletes Google data.
+         */
+        post: operations["calendar_cancel_preview_google_integrations_calendar_cancel_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/calendar/rsvp/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Calendar Rsvp Preview
+         * @description Internal-review-only read of an attendee RSVP preflight; it never updates Google.
+         */
+        post: operations["calendar_rsvp_preview_google_integrations_calendar_rsvp_preview_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -31957,7 +32126,8 @@ export interface paths {
         put?: never;
         /**
          * Knowledge Search
-         * @description The one Knowledge search: top hit, items, Segments and your messages, in typed sections.
+         * @description The one Knowledge search: typed sections (mode 'find'), or a cited answer over the
+         *     same filter (mode 'ask').
          */
         post: operations["knowledge_search_knowledge_search_post"];
         delete?: never;
@@ -47187,6 +47357,155 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** AskAnswerDelta */
+        AskAnswerDelta: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "answer_delta";
+            /** Text */
+            text: string;
+        };
+        /**
+         * AskAnswerReset
+         * @description The model run restarted after a partial answer: discard what was shown.
+         */
+        AskAnswerReset: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "answer_reset";
+        };
+        /** AskCitation */
+        AskCitation: {
+            /**
+             * Number
+             * @description The [n] the answer uses.
+             */
+            number: number;
+            /** Segment Id */
+            segment_id: string;
+            /** Source Id */
+            source_id: string;
+            /** Source Title */
+            source_title?: string | null;
+            /** Source Kind */
+            source_kind?: string | null;
+            /** Locator */
+            locator?: string | null;
+            /** Page Numbers */
+            page_numbers?: number[];
+            /** Quote */
+            quote: string;
+        };
+        /** AskCitations */
+        AskCitations: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "citations";
+            /** Citations */
+            citations?: components["schemas"]["AskCitation"][];
+            /**
+             * Uncited Sentences
+             * @description Sentences of the answer that carry no citation.
+             */
+            uncited_sentences?: string[];
+        };
+        /** AskDone */
+        AskDone: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "ask_done";
+            /** Answer */
+            answer: string;
+            /** Found */
+            found: boolean;
+            /** Model */
+            model?: string | null;
+            /**
+             * Spent Usd
+             * @description This organization's Ask spend this month, before this answer.
+             */
+            spent_usd?: string | null;
+            /** Cap Usd */
+            cap_usd?: string | null;
+            /**
+             * Took Ms
+             * @default 0
+             */
+            took_ms?: number;
+        };
+        /** AskRefused */
+        AskRefused: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "ask_refused";
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "cap_reached" | "no_organization";
+            /** Message */
+            message: string;
+        };
+        /** AskSourceUsed */
+        AskSourceUsed: {
+            /** Source Id */
+            source_id: string;
+            /** Title */
+            title: string;
+            /** Source Kind */
+            source_kind?: string | null;
+            /**
+             * On
+             * @default true
+             */
+            on?: boolean;
+            /**
+             * Segments
+             * @description Segments of this Source offered to the answer.
+             * @default 0
+             */
+            segments?: number;
+            /**
+             * Cited
+             * @default false
+             */
+            cited?: boolean;
+        };
+        /** AskSourcesUsed */
+        AskSourcesUsed: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "sources_used";
+            /** Items */
+            items?: components["schemas"]["AskSourceUsed"][];
+            /** Note */
+            note?: string | null;
+        };
+        /** AskStarted */
+        AskStarted: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "ask_started";
+            query: components["schemas"]["KnowledgeQuery"];
+            /** Chips */
+            chips?: components["schemas"]["QueryChip"][];
+            /** Notes */
+            notes?: string[];
+        };
         /** Asset */
         Asset: {
             /**
@@ -54522,6 +54841,155 @@ export interface components {
              */
             days?: number;
         };
+        /** CalendarCancelPreview */
+        CalendarCancelPreview: {
+            /** Account Email */
+            account_email: string;
+            /** Calendar Id */
+            calendar_id: string;
+            /** Calendar Summary */
+            calendar_summary: string;
+            /**
+             * Access Role
+             * @enum {string}
+             */
+            access_role: "owner" | "writer" | "writerWithoutPrivateAccess";
+            /** Event Id */
+            event_id: string;
+            /**
+             * Occurrence
+             * @enum {string}
+             */
+            occurrence: "instance" | "series" | "single";
+            /** Event Summary */
+            event_summary: string;
+            /** Etag */
+            etag: string;
+            /** Starts At */
+            starts_at: {
+                [key: string]: unknown;
+            };
+            /** Ends At */
+            ends_at: {
+                [key: string]: unknown;
+            };
+            /** Attendees */
+            attendees: string[];
+            /**
+             * Send Updates
+             * @enum {string}
+             */
+            send_updates: "all" | "externalOnly" | "none";
+            /** Guest Notification Behavior */
+            guest_notification_behavior: string;
+            /**
+             * Action Notice
+             * @default Cancel this organizer event for its guests. Removing an attendee copy only removes it from that attendee's calendar and is a different action.
+             */
+            action_notice?: string;
+            /**
+             * Recovery Notice
+             * @default Google may already have sent guest notifications. Cancellation and delivered notifications cannot be promised as undoable.
+             */
+            recovery_notice?: string;
+        };
+        /** CalendarCreatePreview */
+        CalendarCreatePreview: {
+            /** Account Email */
+            account_email: string | null;
+            /** Calendar Id */
+            calendar_id: string;
+            /** Calendar Summary */
+            calendar_summary: string;
+            /**
+             * Access Role
+             * @enum {string}
+             */
+            access_role: "owner" | "writer" | "writerWithoutPrivateAccess";
+            /** Event Id */
+            event_id: string;
+            /** Summary */
+            summary: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Attendees */
+            attendees: components["schemas"]["CalendarEventAttendee"][];
+            /**
+             * Send Updates
+             * @enum {string}
+             */
+            send_updates: "all" | "externalOnly" | "none";
+            /** Guest Notification Behavior */
+            guest_notification_behavior: string;
+            /**
+             * Undo Notice
+             * @default Creating this event can send guest notifications. Removing it later cannot undo a notification Google already delivered.
+             */
+            undo_notice?: string;
+        };
+        /** CalendarCreateResult */
+        CalendarCreateResult: {
+            /** Account Email */
+            account_email: string | null;
+            /** Calendar Id */
+            calendar_id: string;
+            /** Calendar Summary */
+            calendar_summary: string;
+            /**
+             * Access Role
+             * @enum {string}
+             */
+            access_role: "owner" | "writer" | "writerWithoutPrivateAccess";
+            /** Event Id */
+            event_id: string;
+            /** Summary */
+            summary: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Attendees */
+            attendees: components["schemas"]["CalendarEventAttendee"][];
+            /**
+             * Send Updates
+             * @enum {string}
+             */
+            send_updates: "all" | "externalOnly" | "none";
+            /** Guest Notification Behavior */
+            guest_notification_behavior: string;
+            /**
+             * Undo Notice
+             * @default Creating this event can send guest notifications. Removing it later cannot undo a notification Google already delivered.
+             */
+            undo_notice?: string;
+            /**
+             * Reconciled After Uncertain Insert
+             * @default false
+             */
+            reconciled_after_uncertain_insert?: boolean;
+            /** Provider Event Id */
+            provider_event_id: string;
+            /** Provider Etag */
+            provider_etag?: string | null;
+        };
         /** CalendarDiscoveryRequest */
         CalendarDiscoveryRequest: {
             /**
@@ -54531,6 +54999,155 @@ export interface components {
             organization_id: string;
             /** Connection Id */
             connection_id: string;
+        };
+        /** CalendarEventAttendee */
+        CalendarEventAttendee: {
+            /** Email */
+            email: string;
+            /** Display Name */
+            display_name?: string | null;
+        };
+        /**
+         * CalendarEventCancelRequest
+         * @description Explicit organizer cancellation of one source event version.
+         */
+        CalendarEventCancelRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Calendar Id */
+            calendar_id: string;
+            /** Event Id */
+            event_id: string;
+            /**
+             * Occurrence
+             * @enum {string}
+             */
+            occurrence: "instance" | "series" | "single";
+            /** Expected Etag */
+            expected_etag: string;
+            /**
+             * Send Updates
+             * @enum {string}
+             */
+            send_updates: "all" | "externalOnly" | "none";
+        };
+        /** CalendarEventCreateIntentPreview */
+        CalendarEventCreateIntentPreview: {
+            /** Intent Id */
+            intent_id: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            preview: components["schemas"]["CalendarCreatePreview"];
+        };
+        /**
+         * CalendarEventCreateIntentRequest
+         * @description A Calendar request bound to the currently selected organization.
+         */
+        CalendarEventCreateIntentRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Calendar Id */
+            calendar_id: string;
+            /** Event Id */
+            event_id: string;
+            /** Summary */
+            summary: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Attendees
+             * @default []
+             */
+            attendees?: components["schemas"]["CalendarEventAttendee"][];
+            /**
+             * Send Updates
+             * @enum {string}
+             */
+            send_updates: "all" | "externalOnly" | "none";
+            /** Organization Id */
+            organization_id: string;
+        };
+        /** CalendarEventCreateIntentResult */
+        CalendarEventCreateIntentResult: {
+            /** Intent Id */
+            intent_id: string;
+            result: components["schemas"]["CalendarCreateResult"];
+        };
+        /**
+         * CalendarEventRescheduleRequest
+         * @description A caller-selected organizer event and version, captured from its preview.
+         */
+        CalendarEventRescheduleRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Calendar Id */
+            calendar_id: string;
+            /** Event Id */
+            event_id: string;
+            /**
+             * Occurrence
+             * @enum {string}
+             */
+            occurrence: "instance" | "series" | "single";
+            /** Expected Etag */
+            expected_etag: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Send Updates
+             * @enum {string}
+             */
+            send_updates: "all" | "externalOnly" | "none";
+        };
+        /**
+         * CalendarEventRsvpRequest
+         * @description One authenticated attendee's response on their selected event copy.
+         */
+        CalendarEventRsvpRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Calendar Id */
+            calendar_id: string;
+            /** Event Id */
+            event_id: string;
+            /**
+             * Occurrence
+             * @enum {string}
+             */
+            occurrence: "instance" | "series" | "single";
+            /** Expected Etag */
+            expected_etag: string;
+            /**
+             * Response Status
+             * @enum {string}
+             */
+            response_status: "accepted" | "declined" | "needsAction" | "tentative";
+            /**
+             * Send Updates
+             * @enum {string}
+             */
+            send_updates: "all" | "externalOnly" | "none";
         };
         /** CalendarRefreshRequest */
         CalendarRefreshRequest: {
@@ -54572,6 +55189,115 @@ export interface components {
             detached_left_alone: number;
             /** Unmatched Attendee Emails */
             unmatched_attendee_emails: string[];
+        };
+        /** CalendarReschedulePreview */
+        CalendarReschedulePreview: {
+            /** Account Email */
+            account_email: string;
+            /** Calendar Id */
+            calendar_id: string;
+            /** Calendar Summary */
+            calendar_summary: string;
+            /**
+             * Access Role
+             * @enum {string}
+             */
+            access_role: "owner" | "writer" | "writerWithoutPrivateAccess";
+            /** Event Id */
+            event_id: string;
+            /**
+             * Occurrence
+             * @enum {string}
+             */
+            occurrence: "instance" | "series" | "single";
+            /** Event Summary */
+            event_summary: string;
+            /** Etag */
+            etag: string;
+            /** Old Start */
+            old_start: {
+                [key: string]: unknown;
+            };
+            /** Old End */
+            old_end: {
+                [key: string]: unknown;
+            };
+            /** New Start */
+            new_start: {
+                [key: string]: string;
+            };
+            /** New End */
+            new_end: {
+                [key: string]: string;
+            };
+            /** Attendees */
+            attendees: string[];
+            /**
+             * Send Updates
+             * @enum {string}
+             */
+            send_updates: "all" | "externalOnly" | "none";
+            /** Guest Notification Behavior */
+            guest_notification_behavior: string;
+            /**
+             * Recovery Notice
+             * @default A later time change can be offered only if Google's event still matches this action's ETag. Guest notifications already sent cannot be undone.
+             */
+            recovery_notice?: string;
+        };
+        /** CalendarRsvpPreview */
+        CalendarRsvpPreview: {
+            /** Account Email */
+            account_email: string;
+            /** Calendar Id */
+            calendar_id: string;
+            /** Calendar Summary */
+            calendar_summary: string;
+            /**
+             * Access Role
+             * @enum {string}
+             */
+            access_role: "owner" | "writer" | "writerWithoutPrivateAccess";
+            /** Event Id */
+            event_id: string;
+            /**
+             * Occurrence
+             * @enum {string}
+             */
+            occurrence: "instance" | "series" | "single";
+            /** Event Summary */
+            event_summary: string;
+            /** Organizer Email */
+            organizer_email: string;
+            /** Etag */
+            etag: string;
+            /**
+             * Old Response Status
+             * @enum {string}
+             */
+            old_response_status: "accepted" | "declined" | "needsAction" | "tentative";
+            /**
+             * New Response Status
+             * @enum {string}
+             */
+            new_response_status: "accepted" | "declined" | "needsAction" | "tentative";
+            /**
+             * Send Updates
+             * @enum {string}
+             */
+            send_updates: "all" | "externalOnly" | "none";
+            /** Guest Notification Behavior */
+            guest_notification_behavior: string;
+            /**
+             * Action Notice
+             * @default Only this connected account's attendee response will be updated.
+             */
+            action_notice?: string;
+            /**
+             * Recovery Notice
+             * @default A later response change requires a fresh event version. Any notification Google already sent cannot be undone.
+             */
+            recovery_notice?: string;
         };
         /** CalendlyServiceStatus */
         CalendlyServiceStatus: {
@@ -85253,6 +85979,101 @@ export interface components {
             status_page?: "https://status.knock.app/";
         };
         /**
+         * KnowledgeAskRequest
+         * @description The ``POST /knowledge/search`` body. A search request plus Ask's one extra filter:
+         *     per-Source on/off. ``mode: "find"`` requests are handed to the search unchanged.
+         */
+        KnowledgeAskRequest: {
+            /**
+             * Text
+             * @description What was typed, minus any parsed operators.
+             */
+            text?: string | null;
+            /**
+             * Mode
+             * @default find
+             * @enum {string}
+             */
+            mode?: "ask" | "find";
+            /**
+             * Types
+             * @description Entity tokens: processed_document, conversation, note, task, project, file, scope, agent…
+             */
+            types?: string[] | null;
+            /**
+             * Source Kinds
+             * @description Sources only: web_page, scrape_parsed_page, cld_file, transcript, inline…
+             */
+            source_kinds?: string[] | null;
+            /**
+             * Within
+             * @description Containers via associations.
+             */
+            within?: components["schemas"]["EntityRef"][] | null;
+            /**
+             * Entities
+             * @description Extracted people / places / organizations.
+             */
+            entities?: string[] | null;
+            /** Captured By */
+            captured_by?: ("anyone" | "me") | string[] | null;
+            /**
+             * Origin
+             * @description Origin client: web, extension, local, agent, research, crawl, upload, youtube…
+             */
+            origin?: string[] | null;
+            date?: components["schemas"]["DateFilter"] | null;
+            /** State */
+            state?: ("archived" | "inbox" | "kept")[] | null;
+            /**
+             * Organizations
+             * @description Organization ids to search. Null = every organization you belong to.
+             */
+            organizations?: string[] | null;
+            /**
+             * Sort
+             * @default relevance
+             * @enum {string}
+             */
+            sort?: "recent" | "relevance" | "title";
+            /**
+             * Limit
+             * @default 20
+             */
+            limit?: number;
+            /**
+             * Cursors
+             * @description Per-section page cursors ('show all' pages one section on its own).
+             */
+            cursors?: {
+                [key: string]: string;
+            } | null;
+            /**
+             * Parse Operators
+             * @description Parse @name, type:, #tag and dates out of text.
+             * @default true
+             */
+            parse_operators?: boolean;
+            /**
+             * As You Type
+             * @description True while the person is still typing: instant lanes only, no Segments.
+             * @default false
+             */
+            as_you_type?: boolean;
+            /**
+             * Sources Used
+             * @description Ask only: per-Source on/off keyed by Source id (the `sources` section's ids). A Source set to false is not used; a Source absent from the map is used.
+             */
+            sources_used?: {
+                [key: string]: boolean;
+            } | null;
+        };
+        /**
+         * KnowledgeAskStreamEvent
+         * @description The ``data`` of one NDJSON line of ``POST /knowledge/search`` with ``mode: "ask"``.
+         */
+        KnowledgeAskStreamEvent: components["schemas"]["AskStarted"] | components["schemas"]["AskAnswerDelta"] | components["schemas"]["AskAnswerReset"] | components["schemas"]["AskCitations"] | components["schemas"]["AskSourcesUsed"] | components["schemas"]["AskDone"] | components["schemas"]["AskRefused"];
+        /**
          * KnowledgeHit
          * @description One result, whatever lane found it. ``entity`` is the registry token (``segment``
          *     for a passage); the lane-specific parts ride in ``segment`` / ``matches``.
@@ -85378,88 +86199,6 @@ export interface components {
             /** Sections Failed */
             sections_failed: ("agents_workflows" | "chats" | "files" | "messages" | "notes" | "projects_tasks" | "records" | "segments" | "sources" | "top_hit")[];
         };
-        /**
-         * KnowledgeSearchRequest
-         * @description ``POST /knowledge/search`` body: the query object itself, plus how to run it.
-         */
-        KnowledgeSearchRequest: {
-            /**
-             * Text
-             * @description What was typed, minus any parsed operators.
-             */
-            text?: string | null;
-            /**
-             * Mode
-             * @default find
-             * @enum {string}
-             */
-            mode?: "ask" | "find";
-            /**
-             * Types
-             * @description Entity tokens: processed_document, conversation, note, task, project, file, scope, agent…
-             */
-            types?: string[] | null;
-            /**
-             * Source Kinds
-             * @description Sources only: web_page, scrape_parsed_page, cld_file, transcript, inline…
-             */
-            source_kinds?: string[] | null;
-            /**
-             * Within
-             * @description Containers via associations.
-             */
-            within?: components["schemas"]["EntityRef"][] | null;
-            /**
-             * Entities
-             * @description Extracted people / places / organizations.
-             */
-            entities?: string[] | null;
-            /** Captured By */
-            captured_by?: ("anyone" | "me") | string[] | null;
-            /**
-             * Origin
-             * @description Origin client: web, extension, local, agent, research, crawl, upload, youtube…
-             */
-            origin?: string[] | null;
-            date?: components["schemas"]["DateFilter"] | null;
-            /** State */
-            state?: ("archived" | "inbox" | "kept")[] | null;
-            /**
-             * Organizations
-             * @description Organization ids to search. Null = every organization you belong to.
-             */
-            organizations?: string[] | null;
-            /**
-             * Sort
-             * @default relevance
-             * @enum {string}
-             */
-            sort?: "recent" | "relevance" | "title";
-            /**
-             * Limit
-             * @default 20
-             */
-            limit?: number;
-            /**
-             * Cursors
-             * @description Per-section page cursors ('show all' pages one section on its own).
-             */
-            cursors?: {
-                [key: string]: string;
-            } | null;
-            /**
-             * Parse Operators
-             * @description Parse @name, type:, #tag and dates out of text.
-             * @default true
-             */
-            parse_operators?: boolean;
-            /**
-             * As You Type
-             * @description True while the person is still typing: instant lanes only, no Segments.
-             * @default false
-             */
-            as_you_type?: boolean;
-        };
         /** KnowledgeSearchStarted */
         KnowledgeSearchStarted: {
             /**
@@ -85479,7 +86218,7 @@ export interface components {
          * KnowledgeSearchStreamEvent
          * @description The ``data`` of one NDJSON line of ``POST /knowledge/search``.
          */
-        KnowledgeSearchStreamEvent: components["schemas"]["KnowledgeSearchStarted"] | components["schemas"]["KnowledgeSection"] | components["schemas"]["KnowledgeSectionError"] | components["schemas"]["KnowledgeSearchDone"];
+        KnowledgeSearchStreamEvent: components["schemas"]["KnowledgeSearchStarted"] | components["schemas"]["KnowledgeSection"] | components["schemas"]["KnowledgeSectionUpdate"] | components["schemas"]["KnowledgeSectionError"] | components["schemas"]["KnowledgeSearchDone"];
         /**
          * KnowledgeSection
          * @description One typed section — the unit the stream emits and the agent receives.
@@ -85547,6 +86286,55 @@ export interface components {
              * @default true
              */
             retryable?: boolean;
+        };
+        /**
+         * KnowledgeSectionUpdate
+         * @description A section that was already sent, replaced whole — today the Segments section, whose
+         *     fused order arrives first and whose reranked order follows.
+         */
+        KnowledgeSectionUpdate: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "section_update";
+            /**
+             * Section
+             * @enum {string}
+             */
+            section: "agents_workflows" | "chats" | "files" | "messages" | "notes" | "projects_tasks" | "records" | "segments" | "sources" | "top_hit";
+            /**
+             * Count
+             * @default 0
+             */
+            count?: number;
+            /** Items */
+            items?: components["schemas"]["KnowledgeHit"][];
+            /**
+             * Has More
+             * @default false
+             */
+            has_more?: boolean;
+            /**
+             * Next Cursor
+             * @description Pass as cursors[section] to page this section on its own.
+             */
+            next_cursor?: string | null;
+            /**
+             * Withheld
+             * @description Set when the section was withheld (Private class): why, in words.
+             */
+            withheld?: string | null;
+            /**
+             * Note
+             * @description What narrowed or changed this section, in words.
+             */
+            note?: string | null;
+            /**
+             * Took Ms
+             * @default 0
+             */
+            took_ms?: number;
         };
         /** KontentAIServiceStatus */
         KontentAIServiceStatus: {
@@ -91177,6 +91965,27 @@ export interface components {
             recording_notice?: string;
         };
         /**
+         * MeetingAnnounceResponse
+         * @description `POST /v1/meet/meetings/{meeting_id}/announce` — what bringing everyone up to date did.
+         *
+         *     Idempotent: a second call right after the first reports everyone as
+         *     `already_current` and queues no reminder twice.
+         */
+        MeetingAnnounceResponse: {
+            /** Invitations */
+            invitations: number;
+            /** Updates */
+            updates: number;
+            /** Cancellations */
+            cancellations: number;
+            /** Already Current */
+            already_current: number;
+            /** Reminders Queued */
+            reminders_queued: number;
+            /** Reminders Cancelled */
+            reminders_cancelled: number;
+        };
+        /**
          * MeetingEndRequest
          * @description `POST /api/v1/meet/end` — see `endForEveryone` in the package.
          *
@@ -91202,6 +92011,20 @@ export interface components {
         MeetingEndResponse: {
             /** Ended At */
             ended_at: string;
+        };
+        /**
+         * MeetingGoogleCalendarRequest
+         * @description `POST /v1/meet/meetings/{meeting_id}/google-calendar` — the host's OWN
+         *     connected Google account and calendar (gated; see `calendar_push.py`).
+         */
+        MeetingGoogleCalendarRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /**
+             * Calendar Id
+             * @default primary
+             */
+            calendar_id?: string;
         };
         /** MeetingPreviewItem */
         MeetingPreviewItem: {
@@ -111698,6 +112521,47 @@ export interface components {
             data: {
                 [key: string]: unknown;
             };
+        };
+        /**
+         * RsvpLinkRequest
+         * @description `POST /v1/meet/rsvp` — the answer given on the page an emailed Yes / No /
+         *     Maybe link opens. The secret travels in the BODY, never the path: a bearer
+         *     capability in a URL lands in access logs and referrers.
+         */
+        RsvpLinkRequest: {
+            /** Secret */
+            secret: string;
+            /**
+             * Answer
+             * @enum {string}
+             */
+            answer: "accepted" | "declined" | "tentative";
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * RsvpLinkResponse
+         * @description What the RSVP page draws after the answer: the database door's own payload
+         *     (`ok`, and `meeting` + `invitee` or a `message`), plus whether the host was told.
+         */
+        RsvpLinkResponse: {
+            /** Ok */
+            ok: boolean;
+            /** Message */
+            message?: string | null;
+            /** Meeting */
+            meeting?: {
+                [key: string]: unknown;
+            } | null;
+            /** Invitee */
+            invitee?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Host Notified
+             * @default false
+             */
+            host_notified?: boolean;
         };
         /**
          * RubyGemsPublicGem
@@ -145632,6 +146496,107 @@ export interface operations {
             };
         };
     };
+    meeting_announce_v1_meet_meetings__meeting_id__announce_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                meeting_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeetingAnnounceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rsvp_by_link_v1_meet_rsvp_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RsvpLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RsvpLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    meeting_google_calendar_v1_meet_meetings__meeting_id__google_calendar_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                meeting_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeetingGoogleCalendarRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     livekit_webhook_v1_meet_webhooks_livekit_post: {
         parameters: {
             query?: never;
@@ -150725,6 +151690,169 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GoogleAdsReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    calendar_create_preview_google_integrations_calendar_create_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalendarEventCreateIntentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarEventCreateIntentPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    calendar_create_confirm_google_integrations_calendar_create_confirm__intent_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                intent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarEventCreateIntentResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    calendar_reschedule_preview_google_integrations_calendar_reschedule_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalendarEventRescheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarReschedulePreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    calendar_cancel_preview_google_integrations_calendar_cancel_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalendarEventCancelRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarCancelPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    calendar_rsvp_preview_google_integrations_calendar_rsvp_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalendarEventRsvpRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarRsvpPreview"];
                 };
             };
             /** @description Validation Error */
@@ -187162,18 +188290,18 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["KnowledgeSearchRequest"];
+                "application/json": components["schemas"]["KnowledgeAskRequest"];
             };
         };
         responses: {
-            /** @description NDJSON stream. Each line is {'event': 'data', 'data': <event>}: search_started, then one 'section' or 'section_error' per section as its lane completes, then done. */
+            /** @description NDJSON stream. Each line is {'event': 'data', 'data': <event>}. mode 'find': search_started, then one 'section' or 'section_error' per section as its lane completes, then done. mode 'ask': ask_started, answer_delta…, citations, sources_used, ask_done — or ask_refused. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/x-ndjson": unknown;
-                    "application/json": components["schemas"]["KnowledgeSearchStreamEvent"];
+                    "application/json": components["schemas"]["KnowledgeSearchStreamEvent"] | components["schemas"]["KnowledgeAskStreamEvent"];
                 };
             };
             /** @description Validation Error */
