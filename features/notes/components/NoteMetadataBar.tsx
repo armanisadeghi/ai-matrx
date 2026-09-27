@@ -39,6 +39,7 @@ import {
 import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsDisplay";
 import TaskChipRow from "@/features/tasks/widgets/TaskChipRow";
 import { cn } from "@/lib/utils";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { NoteContextSection } from "./NoteContextSection";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -73,6 +74,9 @@ export function NoteMetadataBar({
 
   const ctxOrgId = useAppSelector(selectOrganizationId);
   const ctxOrgName = useAppSelector(selectOrganizationName);
+  // The chip names the note's organization even when it is not the active one
+  // (it read a bare "Org" whenever no organization was selected).
+  const { organizations: memberOrgs } = useUserOrganizations();
   const ctxProjId = useAppSelector(selectProjectId);
   const ctxProjName = useAppSelector(selectProjectName);
   const ctxTaskId = useAppSelector(selectTaskId);
@@ -245,7 +249,8 @@ export function NoteMetadataBar({
               : noteOrgId
                 ? ctxOrgName && noteOrgId === ctxOrgId
                   ? ctxOrgName
-                  : "Org"
+                  : (memberOrgs.find((o) => o.id === noteOrgId)?.name ??
+                    "Organization")
                 : "Context"}
         </button>
         <ScopeTagsDisplay
