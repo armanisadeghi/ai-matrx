@@ -88,21 +88,33 @@ const AiModelsPreferences = () => {
           model_catalog_count: models.length,
         },
   );
-  const validateHidden = (value: unknown) => {
-    if (!Array.isArray(value) || value.some((id) => typeof id !== "string"))
-      throw new Error("hidden_models expects the full list of model ids to hide ([] shows every model).");
-    const known = new Set(models.map((m) => m.id));
-    const unknown = (value as string[]).filter((id) => !known.has(id));
-    if (unknown.length > 0) throw new Error(`Not current catalog models: ${unknown.join(", ")}.`);
+  // An agent names models the way a person does ("ALLaM 2 7B") or by id; both
+  // resolve here, and anything unknown or ambiguous is refused before the card.
+  const resolveModelRefs = (value: unknown): string[] => {
+    if (!Array.isArray(value) || value.some((ref) => typeof ref !== "string"))
+      throw new Error("hidden_models expects the full list of models to hide, by id or exact name ([] shows every model).");
+    return (value as string[]).map((ref) => {
+      if (models.some((m) => m.id === ref)) return ref;
+      const needle = ref.trim().toLowerCase();
+      const byName = models.filter(
+        (m) => (m.common_name ?? "").toLowerCase() === needle || m.name.toLowerCase() === needle,
+      );
+      if (byName.length === 1) return byName[0].id;
+      if (byName.length > 1)
+        throw new Error(`"${ref}" matches ${byName.length} models: ${byName.map((m) => `${m.name} (${m.id})`).join(", ")}. Send the id.`);
+      throw new Error(`"${ref}" is not a current catalog model (by id or exact name).`);
+    });
   };
   useSurfaceWriteHandlers("matrx-user/settings", {
     hidden_models: {
-      validate: validateHidden,
+      validate: (value: unknown) => void resolveModelRefs(value),
       apply: (value: unknown) => {
-        validateHidden(value);
-        const next = [...new Set(value as string[])];
+        const next = [...new Set(resolveModelRefs(value))];
         setHidden(next);
-        return { summary: `${next.length} model${next.length === 1 ? "" : "s"} hidden from your pickers.`, data: { hidden: next } };
+        return {
+          summary: `${next.length} model${next.length === 1 ? "" : "s"} hidden from your pickers.`,
+          data: { hidden: next.map((id) => ({ id, name: models.find((m) => m.id === id)?.common_name ?? id })) },
+        };
       },
     },
   });
