@@ -146,7 +146,11 @@ session, never you.
   carries its one-click fix.
 - Reads and writes go straight to the database through the feature's service;
   a list treated as complete uses `readAllRows`.
-- Checks: `pnpm check:dead-ends` · `check:unwired` · `check:static-loader`.
+- A browser component never imports a value from server-only code (a loader
+  using the server database client, `next/headers`, `"server-only"`) — share
+  constants from a plain module. The type check cannot see this; the build breaks.
+- Checks: `pnpm check:dead-ends` · `check:unwired` · `check:static-loader` ·
+  `check:client-server-only`.
 - Procedures: `real-loading-states` · `no-dead-ends`.
 
 ### 3 · The first screen is right
