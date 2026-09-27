@@ -27,9 +27,13 @@ export const GOOGLE_SCOPE = {
   // Internal-only reviewed Contact edits; excluded from consent bundles until provider approval.
   contactsWrite: "https://www.googleapis.com/auth/contacts",
   // Future internal-test source preview only; excluded from all consent bundles until reviewed feature/provider approval.
-  contactsOtherReadonly: "https://www.googleapis.com/auth/contacts.other.readonly",
+  contactsOtherReadonly:
+    "https://www.googleapis.com/auth/contacts.other.readonly",
+  // Unexposed Workspace directory preview only; never included in a consent request or bundle.
+  directoryReadonly: "https://www.googleapis.com/auth/directory.readonly",
   // Future internal-test Meet source preview only; excluded from every consent bundle.
-  meetingsSpaceReadonly: "https://www.googleapis.com/auth/meetings.space.readonly",
+  meetingsSpaceReadonly:
+    "https://www.googleapis.com/auth/meetings.space.readonly",
   calendarEventsOwnedReadonly:
     "https://www.googleapis.com/auth/calendar.events.owned.readonly",
   // Pending selected shared-calendar read grants. No consent flow requests these yet.

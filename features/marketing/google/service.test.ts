@@ -399,6 +399,22 @@ describe("Google OAuth connection resources", () => {
       GOOGLE_SCOPE.gmailReadonly,
     );
     expect(GOOGLE_READ_ONLY_SWEEP_SCOPES).not.toContain(GOOGLE_SCOPE.driveFile);
+    expect(GOOGLE_SCOPE.directoryReadonly).toBe(
+      "https://www.googleapis.com/auth/directory.readonly",
+    );
+    for (const consentBundle of [
+      GOOGLE_CONNECTION_SCOPES,
+      GOOGLE_ANALYTICS_SCOPES,
+      GOOGLE_ADS_REPORTING_SCOPES,
+      GOOGLE_CONTACTS_IMPORT_SCOPES,
+      GOOGLE_CALENDAR_AGENDA_SCOPES,
+      GOOGLE_TASKS_IMPORT_SCOPES,
+      GOOGLE_YOUTUBE_ANALYTICS_SCOPES,
+      GOOGLE_TAG_MANAGER_SCOPES,
+      GOOGLE_READ_ONLY_SWEEP_SCOPES,
+    ]) {
+      expect(consentBundle).not.toContain(GOOGLE_SCOPE.directoryReadonly);
+    }
     expect(new Set(GOOGLE_READ_ONLY_SWEEP_SCOPES).size).toBe(
       GOOGLE_READ_ONLY_SWEEP_SCOPES.length,
     );
