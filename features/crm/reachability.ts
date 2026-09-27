@@ -185,12 +185,21 @@ export interface MediumDisplay {
   href: string | null;
 }
 
+/**
+ * A platform or source slug as the word a person reads ("youtube" → "YouTube",
+ * "csv_import" → "Csv import"). The ONE place a source slug becomes a word.
+ */
+export function platformWord(slug: string | null | undefined): string | null {
+  const clean = slug?.trim();
+  if (!clean) return null;
+  return (
+    PLATFORM_WORDS[clean.toLowerCase()] ??
+    clean.charAt(0).toUpperCase() + clean.slice(1).replaceAll("_", " ")
+  );
+}
+
 export function mediumDisplay(medium: ContactMediumRow): MediumDisplay {
-  const slug = medium.platform_slug?.trim() || null;
-  const platform = slug
-    ? (PLATFORM_WORDS[slug.toLowerCase()] ??
-      slug.charAt(0).toUpperCase() + slug.slice(1).replaceAll("_", " "))
-    : null;
+  const platform = platformWord(medium.platform_slug);
   const caseMatters = medium.channel !== "email" && medium.channel !== "phone";
   const text =
     (caseMatters

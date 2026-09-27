@@ -24,6 +24,7 @@ import Link from "next/link";
 import {
   ArrowUpRight,
   Compass,
+  ExternalLink,
   Loader2,
   RefreshCw,
   UserPlus,
@@ -36,6 +37,7 @@ import { associationsService } from "@/features/scopes/service/associationsServi
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
 import { updateParty } from "../../service";
+import { platformWord } from "../../reachability";
 import type { PartyRow } from "../../types";
 import { SectionCard } from "./SectionCard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -268,7 +270,7 @@ export function PartyProvenanceCard({
     >
       <div className="space-y-2">
         {discovered && (
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/30 p-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
               The platform found this record — it is not in your contact list
               yet, so it stays out of pickers and searches.
@@ -295,7 +297,7 @@ export function PartyProvenanceCard({
           <p className="text-xs text-muted-foreground">
             Origin:{" "}
             <span className="text-foreground">
-              {party.source.replaceAll("_", " ")}
+              {platformWord(party.source)}
             </span>
             {party.source_detail ? (
               <>
@@ -306,13 +308,17 @@ export function PartyProvenanceCard({
                     (D228) — anything that is not an absolute URL is a label,
                     not a door. */}
                 {/^https?:\/\//i.test(party.source_detail) ? (
+                  // A URL is a door, not a name: short words, the address in
+                  // the tooltip, never a raw link wrapping across the card.
                   <a
                     href={party.source_detail}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-primary"
+                    title={party.source_detail}
+                    className="inline-flex items-center gap-1 text-primary hover:underline"
                   >
-                    {party.source_detail}
+                    {`Open on ${platformWord(party.source) ?? "the web"}`}
+                    <ExternalLink className="h-3 w-3" />
                   </a>
                 ) : (
                   <span className="text-foreground">{party.source_detail}</span>
@@ -349,7 +355,7 @@ export function PartyProvenanceCard({
             already explaining the record, so the line was pure noise. */}
 
         {(items ?? []).map((item) => (
-          <div key={item.key} className="rounded-md border bg-muted/20 p-2.5">
+          <div key={item.key} className="border-t border-border pt-2 first:border-t-0 first:pt-0">
             <div className="flex flex-wrap items-center gap-1.5">
               <Badge variant="secondary" className="gap-1">
                 <Compass className="h-3 w-3" /> {item.kindLabel}

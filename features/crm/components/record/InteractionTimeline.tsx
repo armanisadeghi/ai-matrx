@@ -102,6 +102,11 @@ interface Props {
    * who it is writing to.
    */
   partyLabel?: string | null;
+  /**
+   * Show this card's own "Send email". Off where the host already puts that
+   * door in its header (the CRM record page) — one door per action.
+   */
+  showSendEmail?: boolean;
   /** The deal this timeline belongs to, when it is a deal's timeline. */
   dealLabel?: string | null;
   /**
@@ -128,6 +133,7 @@ export function InteractionTimeline({
   writeSurfaceName,
   copyParent,
   partyLabel,
+  showSendEmail = true,
   dealLabel,
   partyOrganizationId,
 }: Props) {
@@ -270,7 +276,7 @@ export function InteractionTimeline({
               something that already happened, so it stays its own control — it
               opens the compose window OVER the record, which stays readable
               while the message is written about it. */}
-          {partyLabel && (
+          {partyLabel && showSendEmail && (
             <Button
               variant="outline"
               size="sm"
@@ -305,7 +311,9 @@ export function InteractionTimeline({
       }
     >
       {/* Composer — one tight strip: type, direction, subject, minutes, log. */}
-      <div className="mb-2 space-y-1.5 rounded border border-border bg-muted/30 p-1.5">
+      {/* Flat inside the card — no box inside the box; a rule separates it
+          from the history below. */}
+      <div className="mb-2 space-y-1.5 border-b border-border pb-2">
         <div className="flex flex-wrap items-center gap-1">
           <SegmentedControl
             size="sm"
@@ -358,14 +366,16 @@ export function InteractionTimeline({
             ]}
           />
           {channel === "call" && (
-            <Input
-              value={minutes}
-              onChange={(e) => setMinutes(e.target.value)}
-              placeholder="min"
-              inputMode="numeric"
-              className="h-11 w-16 text-base sm:h-6 sm:w-14 sm:text-xs"
-              aria-label="Duration in minutes"
-            />
+            <label className="flex items-center gap-1 text-xs text-muted-foreground">
+              Minutes
+              <Input
+                value={minutes}
+                onChange={(e) => setMinutes(e.target.value)}
+                placeholder="0"
+                inputMode="numeric"
+                className="h-11 w-16 text-base sm:h-6 sm:w-14 sm:text-xs"
+              />
+            </label>
           )}
         </div>
         <div className="grid gap-1.5 sm:grid-cols-[minmax(10rem,13rem)_1fr]">
