@@ -147,7 +147,10 @@ export interface FieldProps {
    *
    * When `required` is set and this value is blank, `Field` dashes the input's
    * border, fades and italicises its placeholder, and says so underneath — so
-   * no placeholder, however value-shaped, can pass for a filled field.
+   * no placeholder, however value-shaped, can pass for a filled field. The
+   * sentence shows only while the control actually shows placeholder text
+   * (`:placeholder-shown`): under a box with no example, or a select, it would
+   * be false (2026-09-27, /hr/settings/employer).
    *
    * Leave it `undefined` on fields you do not track; the honesty chrome then
    * never renders (it cannot know). `""` means empty and IS tracked.
@@ -191,7 +194,7 @@ export function Field({
     !overLimit;
 
   return (
-    <div className={cn("space-y-1.5", className)}>
+    <div className={cn("group/field space-y-1.5", className)}>
       <div className="flex items-center gap-1.5">
         <Label
           htmlFor={htmlFor}
@@ -254,7 +257,16 @@ export function Field({
       </div>
 
       {(error || hasCounter || requiredEmpty) && (
-        <div className="flex items-start justify-between gap-2 min-h-[1rem]">
+        <div
+          className={cn(
+            "flex items-start justify-between gap-2 min-h-[1rem]",
+            // The notice alone is only true while the control is SHOWING an
+            // example (a visible placeholder). An empty box with no example text,
+            // or a select, has nothing to be mistaken for an answer — so the row
+            // stays hidden until `:placeholder-shown` matches inside this field.
+            !error && !hasCounter && "hidden group-has-[:placeholder-shown]/field:flex",
+          )}
+        >
           {error ? (
             <p className="text-xs text-destructive flex items-center gap-1">
               <AlertCircle className="h-3 w-3 flex-shrink-0" />
@@ -264,7 +276,7 @@ export function Field({
           ) : requiredEmpty ? (
             <p
               data-slot="field-empty-notice"
-              className="text-xs text-muted-foreground flex items-center gap-1"
+              className="hidden text-xs text-muted-foreground items-center gap-1 group-has-[:placeholder-shown]/field:flex"
             >
               <AlertCircle className="h-3 w-3 flex-shrink-0" />
               <span>Empty — the grey text is an example, not your answer.</span>
