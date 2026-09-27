@@ -1173,7 +1173,7 @@ export const ProTextarea = React.forwardRef<
               id={inputId}
               placeholder={floatingLabel ? undefined : placeholder}
               className={cn(
-                "flex w-full border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-neutral-500 dark:placeholder:text-neutral-400",
+                "flex w-full border border-border bg-card px-3 py-2 text-sm shadow-sm placeholder:text-neutral-500 dark:placeholder:text-neutral-400",
                 // The pinned stats bar is desktop-only (see its render below),
                 // so the flat bottom edge that pairs with it is sm+ only too.
                 showPinnedTextStatsBar
