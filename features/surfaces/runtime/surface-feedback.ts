@@ -18,6 +18,7 @@
  * feedback window uses), filed in the organization the person is acting in.
  */
 
+import { submitFeedback } from "@/actions/feedback.actions";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import type { CreateFeedbackInput, FeedbackType } from "@/types/feedback.types";
 import type { SurfaceWriteTarget } from "@/features/surfaces/types";
@@ -170,8 +171,6 @@ export async function saveSurfaceFeedback(
   value: SurfaceFeedbackValue,
   ctx: SurfaceFeedbackContext,
 ): Promise<SurfaceWriteOutcome> {
-  // Loaded on use: the seam module stays free of the server-action graph.
-  const { submitFeedback } = await import("@/actions/feedback.actions");
   const result = await submitFeedback(buildSurfaceFeedbackInput(value, ctx));
   if (!result.success || !result.data) {
     throw new Error(
