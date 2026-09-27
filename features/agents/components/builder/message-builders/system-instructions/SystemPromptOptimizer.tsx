@@ -189,7 +189,15 @@ export function SystemPromptOptimizer({
     } catch (error) {
       console.error("Optimization error:", error);
       toast.error("Failed to optimize", {
-        description: error instanceof Error ? error.message : "Unknown error",
+        // A rejected launch thunk rejects with a plain { message } object,
+        // not an Error — read its message rather than printing "Unknown error".
+        description:
+          typeof error === "object" &&
+          error !== null &&
+          "message" in error &&
+          typeof error.message === "string"
+            ? error.message
+            : "Unknown error",
       });
       setConversationId(null);
     }
