@@ -485,6 +485,8 @@ export function NoteEditorCore({
             onChange={handleTuiChange}
             isActive={true}
             editMode="wysiwyg"
+            // The Notes header is the one view switch (Write / Read / Markdown).
+            hideModeSwitch
             className="w-full h-full"
           />
         </div>

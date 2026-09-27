@@ -34,6 +34,11 @@ interface TuiEditorContentProps {
     isActive?: boolean;
     className?: string;
     editMode?: "markdown" | "wysiwyg";
+    /**
+     * Hide the editor's own "Markdown | WYSIWYG" tabs. Defaults to hidden only
+     * in markdown mode; a host with its own view switch (Notes) hides it always.
+     */
+    hideModeSwitch?: boolean;
 }
 
 interface TuiEditorContentRef {
@@ -47,7 +52,8 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
     onChange,
     isActive = true,
     className = "w-full h-full tui-editor-wrapper",
-    editMode = "wysiwyg"
+    editMode = "wysiwyg",
+    hideModeSwitch,
  }, ref) => {
     const editorRef = useRef<TuiEditorReactComp>(null);
     const mode = useThemeMode();
@@ -310,7 +316,7 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
                     addImageBlobHook: handleImageUpload,
                 }}
                 onChange={handleTuiChange}
-                hideModeSwitch={editMode === "markdown"}
+                hideModeSwitch={hideModeSwitch ?? editMode === "markdown"}
             />
         </div>
     );

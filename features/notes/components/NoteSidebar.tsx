@@ -1008,20 +1008,20 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
 
       {activeOrgId && homelessCount > 0 && (
         <div className="shrink-0 flex items-center gap-1.5 border-b border-border/20 px-2.5 py-1">
-          <span className="flex min-w-0 items-center gap-1.5 text-[10px] text-amber-600/80 dark:text-amber-400/80">
+          <span className="flex min-w-0 items-center gap-1.5 text-xs text-amber-600/80 dark:text-amber-400/80">
             <TriangleAlert className="h-2.5 w-2.5 shrink-0" />
             <span className="truncate">
               {homelessCount} note{homelessCount === 1 ? "" : "s"} without an
               organization
             </span>
           </span>
-          <span className="ml-auto text-[10px] text-amber-700 dark:text-amber-300">
+          <span className="ml-auto text-xs text-amber-700 dark:text-amber-300">
             Open the note to review its destination.
           </span>
           <button
             type="button"
             onClick={() => setIncludeHomeless((v) => !v)}
-            className="shrink-0 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            className="shrink-0 rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             title={
               includeHomeless
                 ? "Hide these notes"
@@ -1044,7 +1044,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
           <SimpleTooltip text="Group notes by">
             <button
               onClick={() => setGroupByDropdown((v) => !v)}
-              className="flex items-center gap-1 h-6 px-1.5 rounded-md text-[0.625rem] font-medium text-muted-foreground bg-muted/40 hover:bg-muted hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3 [&_svg]:h-3"
+              className="flex items-center gap-1 h-6 px-1.5 rounded-md text-xs font-medium text-muted-foreground bg-muted/40 hover:bg-muted hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3 [&_svg]:h-3"
             >
               <Layers />
               <span>
@@ -1066,7 +1066,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                     <button
                       key={m.mode}
                       className={cn(
-                        "flex items-center gap-2 w-full px-3 py-1.5 text-[0.625rem] cursor-pointer transition-colors",
+                        "flex items-center gap-2 w-full px-3 py-1.5 text-xs cursor-pointer transition-colors",
                         groupBy === m.mode
                           ? "bg-primary/10 text-primary font-medium"
                           : "text-foreground hover:bg-accent",
@@ -1089,7 +1089,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
         <SimpleTooltip text={`Sorted by ${sortLabel} \u2014 click to change`}>
           <button
             onClick={cycleSortField}
-            className="flex items-center gap-1 h-6 px-1.5 rounded-md text-[0.625rem] font-medium text-muted-foreground bg-muted/40 hover:bg-muted hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3 [&_svg]:h-3"
+            className="flex items-center gap-1 h-6 px-1.5 rounded-md text-xs font-medium text-muted-foreground bg-muted/40 hover:bg-muted hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3 [&_svg]:h-3"
           >
             <ArrowUpDown />
             <span>{sortLabel}</span>
@@ -1327,7 +1327,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
               )}
               <Clock className="text-amber-500 dark:text-amber-400" />
               <span className="flex-1 text-left truncate">Recent</span>
-              <span className="text-[0.625rem] font-normal opacity-50 tabular-nums">
+              <span className="text-xs font-normal opacity-50 tabular-nums">
                 {recentSorted.length}
               </span>
             </button>
@@ -1365,7 +1365,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                         onClick={() =>
                           setRecentVisibleCount((c) => c + RECENT_PAGE_SIZE)
                         }
-                        className="text-[0.625rem] font-medium text-primary/80 hover:text-primary cursor-pointer transition-colors"
+                        className="text-xs font-medium text-primary/80 hover:text-primary cursor-pointer transition-colors"
                       >
                         Show{" "}
                         {Math.min(
@@ -1379,7 +1379,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                       <button
                         type="button"
                         onClick={() => setRecentVisibleCount(RECENT_PAGE_SIZE)}
-                        className="text-[0.625rem] text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                        className="text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
                       >
                         Show less
                       </button>
@@ -1406,7 +1406,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
               )}
               <Users className="text-indigo-500 dark:text-indigo-400" />
               <span className="flex-1 text-left truncate">Shared with me</span>
-              <span className="text-[0.625rem] font-normal opacity-50 tabular-nums">
+              <span className="text-xs font-normal opacity-50 tabular-nums">
                 {sharedNotes.length}
               </span>
             </button>
@@ -1440,7 +1440,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                       <span className="flex-1 text-xs truncate leading-tight">
                         {note.label}
                       </span>
-                      <span className="text-[0.5625rem] opacity-40 shrink-0 truncate max-w-[80px]">
+                      <span className="text-xs opacity-40 shrink-0 truncate max-w-[80px]">
                         {note._sharedMeta?.ownerEmail?.split("@")[0] ?? ""}
                       </span>
                       {canEdit ? (
@@ -1462,7 +1462,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground/60 px-6 py-8">
             <StickyNote className="w-10 h-10 mb-3 opacity-40" />
             <p className="text-xs font-medium">No notes yet</p>
-            <p className="text-[0.625rem] mt-1 text-center">
+            <p className="text-xs mt-1 text-center">
               Click "New Note" below to get started
             </p>
           </div>
@@ -1557,7 +1557,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                         </span>
                       )}
                     </span>
-                    <span className="text-[0.625rem] font-normal opacity-50 tabular-nums">
+                    <span className="text-xs font-normal opacity-50 tabular-nums">
                       {count}
                     </span>
                   </button>
@@ -1609,7 +1609,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                   {isExpanded && (
                     <div className="ml-2">
                       {groupNotes.length === 0 ? (
-                        <div className="px-5 py-2 text-[0.625rem] text-muted-foreground/50 italic">
+                        <div className="px-5 py-2 text-xs text-muted-foreground/50 italic">
                           Empty
                         </div>
                       ) : (
@@ -1677,7 +1677,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
             <Trash2 className="text-rose-500 dark:text-rose-400" />
             <span className="flex-1 text-left truncate">Trash</span>
             {deletedNotes.length > 0 && (
-              <span className="text-[0.625rem] font-normal opacity-50 tabular-nums">
+              <span className="text-xs font-normal opacity-50 tabular-nums">
                 {deletedNotes.length}
               </span>
             )}
@@ -1692,11 +1692,11 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                   className="m-1"
                 />
               ) : deletedNotes.length === 0 && trashStatus !== "loaded" ? (
-                <p className="px-3 py-2 text-[0.5625rem] text-muted-foreground/50">
+                <p className="px-3 py-2 text-xs text-muted-foreground/50">
                   Loading trash…
                 </p>
               ) : deletedNotes.length === 0 ? (
-                <p className="px-3 py-2 text-[0.5625rem] text-muted-foreground/50">
+                <p className="px-3 py-2 text-xs text-muted-foreground/50">
                   Trash is empty
                 </p>
               ) : (
@@ -1704,7 +1704,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                   <div className="mb-0.5 flex items-center justify-end px-2">
                     <button
                       type="button"
-                      className="cursor-pointer text-[0.5625rem] text-destructive/80 transition-colors hover:text-destructive"
+                      className="cursor-pointer text-xs text-destructive/80 transition-colors hover:text-destructive"
                       onClick={async () => {
                         const ok = await confirm({
                           title: "Empty trash",
@@ -1744,7 +1744,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                       >
                         <FileText className="h-3 w-3 shrink-0 text-muted-foreground/40" />
                         <div className="min-w-0 flex-1">
-                          <span className="block truncate text-[0.625rem] text-muted-foreground">
+                          <span className="block truncate text-xs text-muted-foreground">
                             {noteDisplayLabel(note)}
                           </span>
                           {deletedLabel && (
