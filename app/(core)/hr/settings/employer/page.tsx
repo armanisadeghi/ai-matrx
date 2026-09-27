@@ -11,7 +11,7 @@ import { HrEmployerPanel } from "@/features/hr/settings/employer/HrEmployerPanel
  * with it. The layout also owns the tab bar, the activation gate and the HR-admin
  * gate, so this file is only the panel.
  */
-export const metadata = { title: "Employer of record" };
+export const metadata = { title: "Employer" };
 
 export default function Page() {
   return (
