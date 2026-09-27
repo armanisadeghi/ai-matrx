@@ -190,6 +190,9 @@ await page.close();
 await open();
 await paste("ai-answer-60-code-blocks");
 const heaps = [];
+// A step that cannot run is a FAILURE with its reason — never a crash that
+// loses the report of the steps before it.
+try {
 for (let r = 0; r < 3; r++) {
   await page.locator('button[aria-label="Replay this content as a stream"]').first().click();
   await page.getByRole("button", { name: /Replay as stream/ }).first().click();
@@ -203,8 +206,12 @@ for (let r = 0; r < 3; r++) {
   await page.waitForTimeout(1000);
   heaps.push(await heapMB(true));
 }
+} catch (err) {
+  failures.push(`stream replay could not run: ${String(err).split("\n")[0]}`);
+  await page.screenshot({ path: `${dir}/replay-step-failure.png` }).catch(() => {});
+}
 report.replayHeapsMB = heaps;
-if (crashed || heaps[2] - heaps[0] > BUDGETS.REPLAY_HEAP_GROWTH_MB)
+if (heaps.length === 3 && (crashed || heaps[2] - heaps[0] > BUDGETS.REPLAY_HEAP_GROWTH_MB))
   failures.push(`stream replay: heap ${heaps.join(" → ")} MB (budget +${BUDGETS.REPLAY_HEAP_GROWTH_MB} MB after the first)`);
 
 await browser.close();
