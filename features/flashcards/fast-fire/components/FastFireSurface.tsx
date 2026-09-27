@@ -36,7 +36,6 @@ import { FastFireLiveCard } from "./FastFireLiveCard";
 import { FastFireScoreboard } from "./FastFireScoreboard";
 import { FastFireTimesUp } from "./FastFireTimesUp";
 import { useFastFireLocalQaAudioFixture } from "../qa/useFastFireLocalQaAudioFixture";
-import { StudyOrganizationGate } from "@/features/education/study/components/StudyOrganizationGate";
 
 const FLASHCARDS_HOME = "/education/flashcards";
 
@@ -134,11 +133,7 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
       );
       break;
     case "setup":
-      body = (
-        <StudyOrganizationGate what="FastFire">
-          <FastFireSetup />
-        </StudyOrganizationGate>
-      );
+      body = <FastFireSetup />;
       break;
     case "countdown":
       body = <FastFireCountdown count={countdown} />;

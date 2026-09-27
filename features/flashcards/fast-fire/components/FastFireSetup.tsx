@@ -48,7 +48,11 @@ import {
 } from "../drill-config";
 import { selectFastFireConfig } from "../redux/fastFire.selectors";
 import { useFastFireLauncher } from "../hooks/useFastFireLauncher";
-import { useStudyOrganizationReady } from "@/features/education/study/components/StudyOrganizationGate";
+import {
+  StudyOrganizationHoldNotice,
+  useHeldStudyStart,
+  useStudyOrganizationReady,
+} from "@/features/education/study/components/StudyOrganizationGate";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import {
@@ -72,10 +76,9 @@ export function FastFireSetup() {
   // through a whole drill whose every grade is refused server-side.
   const coppa = useAiComplianceGate();
   const config = useAppSelector(selectFastFireConfig);
-  // A drill writes a study session, filed under one organization; the surface
-  // shows the organization notice in place until one is chosen.
+  const orgReady = useStudyOrganizationReady();
   const { start, starting, startError } = useFastFireLauncher({
-    enabled: useStudyOrganizationReady(),
+    enabled: orgReady,
   });
   // FastFire grades every spoken answer with AI — meter the live_grade
   // capability once at session start (a per-card check would stall the timed
@@ -252,6 +255,22 @@ export function FastFireSetup() {
 
   const selectedSet = sets?.find((s) => s.id === config.setId) ?? null;
 
+
+  // The setup stays visible with no organization chosen; only Start holds. A
+  // drill writes a study session filed under one organization, so Start with
+  // none shows the organization notice at the button and the drill starts on
+  // its own once one is picked — nothing is written before.
+  const launch = async (): Promise<void> => {
+    if (!(await coppa.ensureAllowed())) return;
+    await liveGrade.guard(async () => {
+      // Metered ONCE at session start (never per card — a per-card
+      // check would stall the timed loop). Commit only on a real
+      // start; a failed/aborted start never burns quota.
+      const started = await start();
+      if (started) await liveGrade.commit();
+    });
+  };
+  const heldStart = useHeldStudyStart(launch);
   return (
     <div className="min-h-full w-full bg-textured">
       <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8 pb-safe">
@@ -631,6 +650,9 @@ export function FastFireSetup() {
           </div>
         )}
 
+        {heldStart.held && (
+          <StudyOrganizationHoldNotice what="Starting FastFire" className="mb-3 rounded-lg border border-border bg-card" />
+        )}
         <div className="mb-2 flex justify-center">
           <coppa.Gate />
           <EntitlementMeter capability="education.live_grade" />
@@ -639,18 +661,7 @@ export function FastFireSetup() {
           size="lg"
           className="w-full gap-2 bg-orange-600 hover:bg-orange-700"
           disabled={!selectedSet || starting || liveGrade.isChecking}
-          onClick={() =>
-            void (async () => {
-              if (!(await coppa.ensureAllowed())) return;
-              await liveGrade.guard(async () => {
-                // Metered ONCE at session start (never per card — a per-card
-                // check would stall the timed loop). Commit only on a real
-                // start; a failed/aborted start never burns quota.
-                const started = await start();
-                if (started) await liveGrade.commit();
-              });
-            })()
-          }
+          onClick={() => heldStart.start()}
         >
           {starting ? (
             <>

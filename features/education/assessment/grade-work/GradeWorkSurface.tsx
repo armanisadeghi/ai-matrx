@@ -35,7 +35,8 @@ import { StepBreakdown } from "../components/StepBreakdown";
 import { GradedAnswerBlock } from "../components/GradedAnswerBlock";
 import { useGradeWork } from "./useGradeWork";
 import {
-  StudyOrganizationGate,
+  StudyOrganizationHoldNotice,
+  useHeldStudyStart,
   useStudyOrganizationReady,
 } from "@/features/education/study/components/StudyOrganizationGate";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -45,8 +46,9 @@ export function GradeWorkSurface() {
   const [problem, setProblem] = useState("");
   const [expected, setExpected] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
-  // A grade writes a study session, filed under one organization: the notice
-  // shows in place until one is chosen (never the blocking workspace prompt).
+  // A grade writes a study session, filed under one organization. The form
+  // stays usable with none chosen; only Grade holds — it shows the
+  // organization notice at the button and grades once one is picked.
   const grader = useGradeWork({ enabled: useStudyOrganizationReady() });
   const guard = useEntitlementGuard("education.image_grade");
   // School-safe COPPA gate: an under-13 account with no active guardian link is
@@ -74,6 +76,8 @@ export function GradeWorkSurface() {
       await guard.commit();
     });
   };
+
+  const heldGrade = useHeldStudyStart(onGrade);
 
   const onReset = () => {
     grader.reset();
@@ -162,7 +166,6 @@ export function GradeWorkSurface() {
       getScope={getScope}
       getWriteHandlers={getSurfaceWriteHandlers}
     >
-    <StudyOrganizationGate what="Grading your work">
     <div className="mx-auto max-w-2xl px-3 pb-16 pt-6 sm:px-6">
       {/* Header */}
       <div className="mb-5">
@@ -229,8 +232,11 @@ export function GradeWorkSurface() {
             disabled={busy}
           />
 
+          {heldGrade.held && (
+            <StudyOrganizationHoldNotice what="Grading your work" />
+          )}
           <Button
-            onClick={() => void onGrade()}
+            onClick={() => heldGrade.start()}
             disabled={!canGrade}
             className="h-11"
           >
@@ -266,7 +272,6 @@ export function GradeWorkSurface() {
       <guard.Paywall />
       <coppa.Gate />
     </div>
-    </StudyOrganizationGate>
     </SurfaceRuntimeProvider>
   );
 }

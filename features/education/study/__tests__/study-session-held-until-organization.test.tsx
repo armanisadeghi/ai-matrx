@@ -59,6 +59,25 @@ jest.mock("@/features/education/study/service/studyService", () => ({
     recordAttempt: async () => ({ data: null, error: null }),
   },
 }));
+// The organization the person has chosen (or not), for the shared gate hooks.
+const mockOrganization = { ready: false, listeners: new Set<() => void>() };
+jest.mock("@/features/organizations/useOrganizationRequired", () => {
+  const { useSyncExternalStore } = jest.requireActual("react");
+  return {
+    useOrganizationRequired: () => ({
+      organizationState: useSyncExternalStore(
+        (cb: () => void) => {
+          mockOrganization.listeners.add(cb);
+          return () => mockOrganization.listeners.delete(cb);
+        },
+        () => (mockOrganization.ready ? "ready" : "none"),
+      ),
+    }),
+  };
+});
+jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () => ({
+  OrganizationRequiredNotice: () => null,
+}));
 jest.mock("@/features/education/assessment/data/assessmentService", () => ({
   assessmentService: {
     createResult: async () => ({ data: { id: "result-1" }, error: null }),
@@ -75,6 +94,10 @@ import { useFlashcardStudy } from "@/features/flashcards/data/useFlashcardStudy"
 import { useQuizStudy } from "@/features/flashcards/data/useQuizStudy";
 import { useMatchGame } from "@/features/flashcards/data/useMatchGame";
 import { useTakeAssessment } from "@/features/education/assessment/components/take/useTakeAssessment";
+import {
+  useHeldStudyStart,
+  useStudyOrganizationReady,
+} from "@/features/education/study/components/StudyOrganizationGate";
 import type {
   AssessmentItemRow,
   AssessmentRow,
@@ -163,6 +186,51 @@ describe("a study session waits for an organization", () => {
     await hook.act(async () => hook.current.start());
     expect(createSession).toHaveBeenCalledTimes(1);
     expect(hook.current.sessionId).toBe(SESSION);
+    await hook.unmount();
+  });
+});
+
+/**
+ * The click-started modes (FastFire, spoken practice, audio review, Grade My
+ * Work) keep their setup visible; only Start holds. Pressed with no
+ * organization, the start is held — nothing runs, nothing is written — and it
+ * runs by itself, once, with the LATEST handler (the one whose hook is now
+ * enabled), as soon as an organization is chosen.
+ */
+describe("a click-started study mode holds its Start for an organization", () => {
+  beforeEach(() => {
+    mockOrganization.ready = false;
+  });
+
+  it("holds Start with no organization, then starts once when one is picked", async () => {
+    const calls: Array<{ arg: string; readyWhenRun: boolean }> = [];
+    const hook = await renderHook(() => {
+      const ready = useStudyOrganizationReady();
+      return useHeldStudyStart((arg: string) => {
+        calls.push({ arg, readyWhenRun: ready });
+      });
+    });
+    expect(hook.current.ready).toBe(false);
+
+    await hook.act(async () => hook.current.start("drill"));
+    expect(calls).toEqual([]);
+    expect(hook.current.held).toBe(true);
+
+    await hook.act(async () => {
+      mockOrganization.ready = true;
+      for (const l of mockOrganization.listeners) l();
+    });
+    await drain(hook);
+    // Ran exactly once, through the handler of the render where it was ready.
+    expect(calls).toEqual([{ arg: "drill", readyWhenRun: true }]);
+    expect(hook.current.held).toBe(false);
+
+    // With an organization, Start runs at once (inside the click gesture).
+    await hook.act(async () => hook.current.start("again"));
+    expect(calls).toEqual([
+      { arg: "drill", readyWhenRun: true },
+      { arg: "again", readyWhenRun: true },
+    ]);
     await hook.unmount();
   });
 });

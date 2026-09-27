@@ -16,6 +16,10 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
+import {
+  StudyOrganizationHoldNotice,
+  useHeldStudyStart,
+} from "@/features/education/study/components/StudyOrganizationGate";
 import type { FcSetRow } from "@/features/flashcards/data/types";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -175,6 +179,10 @@ export function PracticeSetup({
       setBusy(false);
     }
   }
+  // The setup stays usable with no organization chosen; only Start holds. A
+  // session is filed under one organization, so Start with none shows the
+  // organization notice here and the session starts once one is picked.
+  const heldStart = useHeldStudyStart(handleStart);
 
   return (
     <div className="matrx-touch-targets mx-auto w-full max-w-md space-y-5 px-4 pb-4 sm:px-6 sm:pb-6">
@@ -275,9 +283,12 @@ export function PracticeSetup({
       </div>
 
       <div className="space-y-2">
+        {heldStart.held && (
+          <StudyOrganizationHoldNotice what="Starting this practice session" />
+        )}
         <Button
           className="w-full gap-2"
-          onClick={handleStart}
+          onClick={() => heldStart.start()}
           disabled={busy || guard.isChecking}
         >
           {busy || guard.isChecking ? (

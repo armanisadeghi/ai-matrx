@@ -55,7 +55,7 @@ export function useGradeWork(
 
   async function grade(input: GradeWorkInput): Promise<GradedAnswer | null> {
     if (!enabled) {
-      setError("Choose an organization above to grade your work.");
+      setError("Choose an organization to grade your work.");
       setStatus("error");
       return null;
     }

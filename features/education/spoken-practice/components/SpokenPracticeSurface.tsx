@@ -39,10 +39,7 @@ import {
 } from "../types";
 import { SpokenPracticeHome } from "./SpokenPracticeHome";
 import { PracticeSetup } from "./PracticeSetup";
-import {
-  StudyOrganizationGate,
-  useStudyOrganizationReady,
-} from "@/features/education/study/components/StudyOrganizationGate";
+import { useStudyOrganizationReady } from "@/features/education/study/components/StudyOrganizationGate";
 import { PracticeRunner } from "./PracticeRunner";
 import { PracticeSummary } from "./PracticeSummary";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -57,8 +54,8 @@ export function SpokenPracticeSurface({
   /** Deep-linked deck to pre-select in setup (deck-grounded modes only). */
   initialDeckId?: string | null;
 }) {
-  // A practice session is filed under one organization: setup shows the
-  // organization notice in place until one is chosen, and nothing is written.
+  // A practice session is filed under one organization: setup's Start holds
+  // (PracticeSetup shows the notice) and nothing is written until one is chosen.
   const practice = useSpokenPractice({ enabled: useStudyOrganizationReady() });
   const [selectedMode, setSelectedMode] = useState<SpokenPracticeMode | null>(
     initialMode && isSpokenPracticeMode(initialMode) ? initialMode : null,
@@ -128,14 +125,12 @@ export function SpokenPracticeSurface({
     body = <SpokenPracticeHome onPick={setSelectedMode} />;
   } else {
     body = (
-      <StudyOrganizationGate what="This practice session">
-        <PracticeSetup
-          mode={selectedMode}
-          initialDeckId={initialDeckId}
-          onBack={() => setSelectedMode(null)}
-          start={practice.start}
-        />
-      </StudyOrganizationGate>
+      <PracticeSetup
+        mode={selectedMode}
+        initialDeckId={initialDeckId}
+        onBack={() => setSelectedMode(null)}
+        start={practice.start}
+      />
     );
   }
 

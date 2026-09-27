@@ -60,7 +60,8 @@ import { AnswerGradeBlock } from "@/features/flashcards/fast-fire/components/Ans
 import { fcService } from "@/features/flashcards/data/fcService";
 import { studyService } from "@/features/education/study/service/studyService";
 import {
-  StudyOrganizationGate,
+  StudyOrganizationHoldNotice,
+  useHeldStudyStart,
   useStudyOrganizationReady,
 } from "@/features/education/study/components/StudyOrganizationGate";
 import type {
@@ -87,8 +88,9 @@ export function AudioReviewSession({
 }) {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  // A review writes a study session, filed under one organization. With none
-  // chosen, setup shows the organization notice in place (never the blocking
+  // A review writes a study session, filed under one organization. Setup stays
+  // usable with none chosen; only Start holds — it shows the organization
+  // notice at the button and starts once one is picked (never the blocking
   // "Which workspace?" prompt after the mic is already warm).
   const orgReady = useStudyOrganizationReady();
   const liveRun = useLiveRunHandle();
@@ -137,10 +139,7 @@ export function AudioReviewSession({
   const card = cards[index];
 
   async function handleStart() {
-    if (!orgReady) {
-      toast.error("Choose an organization above to start the review");
-      return;
-    }
+    if (!orgReady) return; // held by heldStart below — never written early
     if (!deckId) {
       toast.error("Pick a deck to review");
       return;
@@ -193,6 +192,7 @@ export function AudioReviewSession({
     setResults([]);
     setPhase("asking");
   }
+  const heldStart = useHeldStudyStart(handleStart);
 
   // Ask: narrate the front, then open the answer window.
   useEffect(() => {
@@ -356,7 +356,6 @@ export function AudioReviewSession({
   // ─── Render ─────────────────────────────────────────────────────────────
   if (phase === "setup") {
     return (
-      <StudyOrganizationGate what="Audio review">
       <div className="mx-auto w-full max-w-md space-y-5 p-4">
         <div className="flex items-center gap-3">
           <Button
@@ -401,12 +400,14 @@ export function AudioReviewSession({
             </span>
           </span>
         </label>
-        <Button className="w-full gap-2" onClick={handleStart}>
+        {heldStart.held && (
+          <StudyOrganizationHoldNotice what="Starting the review" />
+        )}
+        <Button className="w-full gap-2" onClick={() => heldStart.start()}>
           <Mic className="h-4 w-4" />
           Start review
         </Button>
       </div>
-      </StudyOrganizationGate>
     );
   }
 

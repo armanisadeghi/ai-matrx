@@ -65,7 +65,7 @@ export function useFastFireLauncher(
 
   const start = async (): Promise<boolean> => {
     if (!enabled) {
-      setStartError("Choose an organization above to start the drill.");
+      setStartError("Choose an organization to start the drill.");
       return false;
     }
     if (!config.setId) {
