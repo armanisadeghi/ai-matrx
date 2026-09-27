@@ -17,7 +17,8 @@
  * the whole markdown body, version and the counts of what the right-hand
  * tabs hold. `personal_annotations` (private highlights and notes) and
  * `guide_comments` (shared comment threads, suggestions included) are the
- * two sub-item lists, read from the page's own annotation sidecar through a
+ * two sub-item lists — part of the record, so also INLINE_TIER.record
+ * (Arman 2026-09-27) — read from the page's own annotation sidecar through a
  * child that publishes into a ref (`StudyGuideAgentBridge`).
  *
  * Write half — all `ask`, all saved through the page's own functions:
@@ -99,20 +100,24 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "personal_annotations",
     label: "My highlights and notes",
-    description: `The person's PRIVATE highlights (a marked passage, optional note) and whole-guide notes on this guide, oldest first, as ${PERSONAL_NOTE_SHAPE}. quote is the marked passage (null for a whole-guide note); attached is false when the guide's text changed and the passage can no longer be found. Only saved items. The ids work with update_personal_notes and delete_personal_notes. Absent while loading or on error; an empty array when there are none.`,
+    description: `The person's PRIVATE highlights (a marked passage, optional note) and whole-guide notes on this guide, oldest first, as ${PERSONAL_NOTE_SHAPE}. quote is the marked passage (null for a whole-guide note); attached is false when the guide's text changed and the passage can no longer be found. Only saved items. The ids work with update_personal_notes and delete_personal_notes. Part of the guide's record, so it is shown to you in full (no lookup needed). Absent while loading or on error; an empty array when there are none.`,
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 1500,
+    // The record's own sub-list counts as part of the record (Arman 2026-09-27).
+    inlineUpTo: INLINE_TIER.record,
     group: "personal_notes",
     sortOrder: 300,
   },
   {
     name: "guide_comments",
     label: "Comments",
-    description: `Comment threads on this guide, oldest first, as ${COMMENT_SHAPE}. quote is the passage a comment is pinned to (null = on the whole guide); suggested_text is set when the comment proposes replacing that passage; resolved threads are included. Everyone who can read the guide sees these. The ids (threads and replies) work with update_guide_comments and delete_guide_comments. Absent while loading or on error; an empty array when there are none.`,
+    description: `Comment threads on this guide, oldest first, as ${COMMENT_SHAPE}. quote is the passage a comment is pinned to (null = on the whole guide); suggested_text is set when the comment proposes replacing that passage; resolved threads are included. Everyone who can read the guide sees these. The ids (threads and replies) work with update_guide_comments and delete_guide_comments. Part of the guide's record, so it is shown to you in full (no lookup needed). Absent while loading or on error; an empty array when there are none.`,
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 1500,
+    // The record's own sub-list counts as part of the record (Arman 2026-09-27).
+    inlineUpTo: INLINE_TIER.record,
     group: "comments",
     sortOrder: 400,
   },

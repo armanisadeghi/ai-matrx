@@ -23,6 +23,7 @@ import {
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
 import { withLiveSurfaceContext } from "@/features/surfaces/runtime/surface-chain";
+import { isPageOwnConversation } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { withSurfaceDocumentEvidence } from "@/features/surfaces/utils/document-evidence";
 import { replaceSurfaceVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import {
@@ -40,7 +41,12 @@ export interface RefreshSurfaceScopeResult {
   surfaceName?: string;
   variableCount?: number;
   contextCount?: number;
-  reason?: "no_conversation" | "no_agent" | "no_surface" | "no_provider";
+  reason?:
+    | "no_conversation"
+    | "no_agent"
+    | "no_surface"
+    | "no_provider"
+    | "own_page_conversation";
 }
 
 export const refreshSurfaceScope = createAsyncThunk<
@@ -59,6 +65,11 @@ export const refreshSurfaceScope = createAsyncThunk<
 
     const surfaceName = conversation.surfaceName ?? undefined;
     if (!surfaceName) return { refreshed: false, reason: "no_surface" };
+    // A page's OWN conversation (the main chat, builder, runner, battle lane)
+    // never receives the page as context — even when an older launch stamped
+    // a surface on it. See `isPageOwnConversation`.
+    if (isPageOwnConversation(conversationId))
+      return { refreshed: false, reason: "own_page_conversation" };
 
     const runtime = getSurfaceRuntimeForName(surfaceName);
     if (!runtime) {

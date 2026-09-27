@@ -35,3 +35,4 @@ Focused tests cover missing organization, partial-save retry, annotation ownersh
 
 - 2026-09-20: Added the Education study reader alongside Notes, using existing content and association primitives.
 - 2026-09-25: The guide library lists only study-folder notes (it listed every draft and chat save); guard in `service.test.ts` (RC-B1 verify D1).
+- 2026-09-27: Note and comment write refusals list EVERY problem at once (`collectProblems`); `personal_annotations` and `guide_comments` moved to `INLINE_TIER.record` (a record's own sub-lists are part of the record, Arman 2026-09-27).

@@ -146,8 +146,12 @@ test rows you created so the person can remove them.
   (`INLINE_TIER`, `features/surfaces/types.ts`; the declaration check refuses
   any other number):
   - `record` — the ONE record the page is about (a note, a class, a study
-    guide, an agent definition, an article): one structured object, passed
-    whole. Long text fields in it are also `patchable` write targets.
+    guide, an agent definition, an article, the open conversation): one
+    structured object. The agent sees the first 10,000 characters; the rest
+    is one paged lookup away, which is fine (Arman, 2026-09-27). The record's
+    OWN sub-lists (a guide's notes and comments, a conversation's messages
+    and tool calls) are part of the record and use this tier too. Long text
+    fields in it are also `patchable` write targets.
   - `list` — a list page's CONDENSED list: only the fields a person scans
     (id, name, 3-6 key fields), in the person's current sort and filter, the
     first 25 rows; the total count and the active sort/filter are their own
@@ -158,6 +162,17 @@ test rows you created so the person can remove them.
   Arman's approval: leave the default, file the question (skill `ask-arman`)
   with the evidence, and only after he approves set `inlineApproval: "Arman
   <date>: <why>"` beside the number.
+- **A page's own conversation never sees the page.** Where the page itself
+  runs an agent (the main chat, the builder's test run, the runner, each
+  battle lane), declare it on the provider — `ownConversationId={id}`, or
+  `isOwnConversation={(id) => …}` for several — so that conversation gets no
+  page context and no surface tools on any turn, while every other agent on
+  the screen (a window, a sidebar) gets both. Its launcher also passes
+  `runtime: { surfaceName: null }`. (Arman, 2026-09-27; `isPageOwnConversation`.)
+- **A rejected value reports EVERY problem at once**, per item then list-level
+  (duplicates, unknown ids), ending "Nothing was changed." — never just the
+  first (Arman, 2026-09-27; `collectProblems` in
+  `collection-write-targets.ts`).
 - **Judge it by what agents do first.** A surface is failing when most agent
   runs on it open with `context` lookups for the same value. Measure it with
   `pnpm surface:openers --surface <client/name> [--days 14]` (prints read-only
@@ -188,6 +203,26 @@ test rows you created so the person can remove them.
   rows resolved.
 - **Document:** one Change Log line in the touched feature's `FEATURE.md`;
   file an `agent.review_queue` row (skill `agent-review-queue`).
+
+## The approval system — defaults, named exceptions, Arman's sign-off
+
+Approved by Arman 2026-09-27. Every judgment call on a surface has a DEFAULT,
+a short list of NAMED EXCEPTIONS a worker may use when their condition holds,
+and everything else needs Arman's approval recorded on the manifest (who,
+date, why). A worker never picks a number or a policy of their own.
+
+| Call | Default | Named exceptions (no approval needed) | Anything else |
+|---|---|---|---|
+| How much of a value the agent sees up front | platform default (200 chars) | `INLINE_TIER.record` / `.list` / `.recent`, under the inline policy above | `inlineApproval` on the value — enforced by the declaration check |
+| Whether a write asks the person first | `applyPolicy: "ask"` | `"auto"` on a `ui` target (view state only) | `approval` on the target — enforced by the declaration check |
+| Delete targets | allowed, `ask` | — (always allowed when the description states exactly what is lost and steers to archive where it exists) | — |
+| Read-only (no targets) for a record type | not allowed when the page itself can create/edit/delete it | the page has no such action (say so in the manifest header) | — |
+| `readiness: "verified"` | `partial` with an exact note | — | only after the live agent test, the DB completeness check and an independent reviewer pass |
+| A guide | not required | required for more than one record type, or rules the descriptions can't hold, or a very complex page | — |
+
+To ask for an approval: leave the default, file the question with the
+evidence (skill `ask-arman`), and report it. When he approves, record it on
+the manifest exactly as `"Arman <YYYY-MM-DD>: <why>"`.
 
 ## Traps
 

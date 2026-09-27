@@ -402,6 +402,13 @@ export interface SurfaceWriteTarget {
    *   written in `description`.
    */
   applyPolicy?: "manual" | "ask" | "auto";
+  /**
+   * Arman's recorded approval for a judgment call the rules don't allow on
+   * their own — today: `applyPolicy: "auto"` on a target whose mode is not
+   * `ui`. Format: "Arman <YYYY-MM-DD>: <why>". The declaration check refuses
+   * the call without it. (The approval system, Arman 2026-09-27.)
+   */
+  approval?: string;
   /** Key of a declared SurfaceValueGroup (same rules as SurfaceValue.group). */
   group?: string;
   sortOrder?: number;

@@ -57,3 +57,18 @@ describe("kit_request_draft value", () => {
     ).toThrow(/only one/);
   });
 });
+
+describe("kit_request_draft: every problem at once (owner ruling 2026-09-27)", () => {
+  it("reports every bad field in one refusal", () => {
+    let message = "";
+    try {
+      parse({ title: "x", url: "ftp://a.com", outputs: ["poster", "practice_test"], depth: "deep", count: 0 });
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    expect(message).toMatch(/^kit_request_draft was refused: 6 problems\./);
+    for (const bit of [/Unknown field title/, /http/, /Unknown output "poster"/, /cannot be made yet/, /depth/, /1 to 150/])
+      expect(message).toMatch(bit);
+    expect(message.endsWith("Nothing was changed.")).toBe(true);
+  });
+});

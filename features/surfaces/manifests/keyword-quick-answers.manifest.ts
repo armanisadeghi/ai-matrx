@@ -332,7 +332,10 @@ const writeTargets: SurfaceWriteTarget[] = [
     valueType: "string",
     updatesValue: "reason_draft",
     mode: "draft",
-    applyPolicy: "auto",
+    // Was "auto". Under the approval system (Arman, 2026-09-27) only `ui`
+    // targets may apply without asking; anything else needs his recorded
+    // approval. Back to the default until he gives one.
+    applyPolicy: "ask",
     group: "session",
     sortOrder: 100,
   },

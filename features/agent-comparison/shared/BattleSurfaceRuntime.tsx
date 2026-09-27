@@ -20,6 +20,7 @@ import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type { RootState } from "@/lib/redux/store";
 import { battleMarkdown, buildBattleSnapshot } from "./battleSnapshot";
 import { RESPONSE_FEEDBACK_METRICS } from "./feedbackMetrics";
+import { selectActiveBattleColumns } from "./activeBattleColumns";
 
 export const AGENT_BATTLE_SURFACE_NAME = "matrx-user/agent-battle";
 
@@ -61,6 +62,13 @@ export function BattleSurfaceRuntime({ children }: { children: ReactNode }) {
     <SurfaceRuntimeProvider
       surfaceName={AGENT_BATTLE_SURFACE_NAME}
       getScope={getScope}
+      // Every battle lane IS this page: no lane may be offered the battle's
+      // own context or tools (see isPageOwnConversation). Outside agents may.
+      isOwnConversation={(id) =>
+        selectActiveBattleColumns(store.getState()).some(
+          (col) => col.conversationId === id,
+        )
+      }
     >
       <NonEditableContextMenu
         sourceFeature="agent-comparison"

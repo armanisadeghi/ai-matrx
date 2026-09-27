@@ -62,6 +62,7 @@ import {
   listAgentWritableTargets,
   SURFACE_WRITE_TOOL_NAME,
 } from "@/features/surfaces/runtime/surface-writeback";
+import { isPageOwnConversation } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { kindValidator } from "@/features/content-ir/registry/kind-schema-source";
 import {
   announceWithheldSurfaceWriteTools,
@@ -404,7 +405,14 @@ export async function buildToolInjection(
   // `common-docs/systems/intelligence/mandates/STATE.md`). The verdict is resolved ONLY
   // when this surface actually has page-write tools to withhold, so the
   // by-id output-schema read never touches a run that was never at risk.
-  if (!disableInjection) {
+  // 🚨 A PAGE'S OWN CONVERSATION GETS NO SURFACE TOOLS. The main chat, the
+  // builder's test run, the runner, each battle lane: that conversation IS the
+  // page (`ownConversationId` on its provider), so offering it the page's
+  // write targets / client tools / feedback would give it awareness of itself
+  // — e.g. the main chat writing its own composer. Other agents on the same
+  // screen (a window, a sidebar) are unaffected. Arman, 2026-09-27.
+  const isOwnPageConversation = isPageOwnConversation(conversationId);
+  if (!disableInjection && !isOwnPageConversation) {
     const liveSurfaceTools = listLiveSurfaceClientTools();
     const writableTargets = listAgentWritableTargets();
     const outputContract =

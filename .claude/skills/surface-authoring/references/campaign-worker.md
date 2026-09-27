@@ -129,6 +129,12 @@ returning name;
      exactly (`record` / `list` / `recent` tiers; anything else needs Arman's approval). Write a
      guide (`features/surfaces/guides/<slug>.md` + manifest `guide`) for any page with more than
      one record type or rules the descriptions can't hold.
+   - **Judgment calls follow the approval system** (`surface-write-targets` → "The approval
+     system"): the default, a named exception whose condition holds, or Arman's recorded
+     approval. Never your own choice.
+   - **A page that runs its own agent** (chat, builder, runner, battle) declares it with
+     `ownConversationId` / `isOwnConversation` on its provider: that conversation never sees the
+     page; every other agent does.
    - **Every write handler** calls the page's OWN save/create function (never a parallel path),
      validates the WHOLE value before changing anything, and throws a sentence the agent can act
      on. A list target also refuses names repeated in the list or already present, and on a
