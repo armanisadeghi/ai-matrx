@@ -211,7 +211,9 @@ export function parseUpdateAssessmentsValue(
         ...Object.keys(patch),
         ...(typeof archived === "boolean" ? ["archived"] : []),
       ];
-      if (changed.length === 0)
+      // "Changes nothing" only when nothing was sent — a field that failed its
+      // own check has already said why, and repeating it as "nothing" misleads.
+      if (changed.length === 0 && Object.keys(rest).length === 0)
         problems.add(
           `${where} changes nothing: send at least one of ${[...ASSESSMENT_WRITE_KEYS, "archived"].join(", ")} with the id.`,
         );
