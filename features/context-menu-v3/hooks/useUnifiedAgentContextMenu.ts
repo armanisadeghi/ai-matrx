@@ -3,6 +3,7 @@
 import { useMemo, useState, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fetchUnifiedMenu } from "@/features/agents/redux/agent-shortcuts/thunks";
+import { withMenuDeadline } from "../utils/menu-deadline";
 import { selectAllShortcutsArray } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { selectAllCategoriesArray } from "@/features/agents/redux/agent-shortcut-categories/selectors";
 import { selectAllContentBlocksArray } from "@/features/agent-connections/redux/skl/content-block-compat";
@@ -304,7 +305,10 @@ export function useUnifiedAgentContextMenu(
     try {
       setLoading(true);
       setError(null);
-      await dispatch(fetchUnifiedMenu({ scope, scopeId })).unwrap();
+      await withMenuDeadline(
+        dispatch(fetchUnifiedMenu({ scope, scopeId })).unwrap(),
+        "Loading the menu's AI actions",
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load menu");
     } finally {

@@ -56,6 +56,15 @@ const VERBS: Record<string, { verb: "copy" | "cut" | "paste" | "undo" | "redo" |
   find: { verb: "find", sentence: "Find works where there is text." },
 };
 
+/**
+ * Verbs that only mean something where the person can edit: on a read-only
+ * target (a table row, rendered content) an unavailable one is ABSENT rather
+ * than greyed — Cut / Paste / Undo on a row is noise, and it pushes the row's
+ * own section down (page-pass 2026-09-27). Where the target is editable they
+ * grey with their sentence as before (R1 c).
+ */
+const EDIT_ONLY_VERBS = new Set(["cut", "paste", "undo", "redo"]);
+
 /** v3 section group → the action category that lands in the same package group. */
 const CATEGORY_OF: Record<MenuSection["group"], ActionCategory> = {
   clipboard: "clipboard",
@@ -182,6 +191,7 @@ function toAction(node: MenuNode, place: Placement, instanceId: string, opts: Pr
     eligible: (t) => {
       if (!own(t)) return absent;
       if (!node.disabled) return available;
+      if (verb && t.readOnly && EDIT_ONLY_VERBS.has(verb.verb)) return absent;
       // R1 (c): only a universal verb greys, and it says why.
       return verb ? { status: "unavailable-verb", verb: verb.verb, sentence: verb.sentence } : absent;
     },

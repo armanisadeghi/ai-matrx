@@ -23,6 +23,7 @@
 
 import { useEffect, useEffectEvent, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
@@ -50,6 +51,16 @@ export interface ConversationRoutePromotionArgs {
   buildHref: (conversationId: string) => string;
   /** When false, the hook is inert (embedded/panel mounts that never route). */
   enabled?: boolean;
+  /**
+   * How the promotion lands. `"route"` (default) is a `router.replace` — right
+   * when the new URL is a different route (`/chat/new` → `/chat/[id]`).
+   * `"address"` rewrites the address only (`history.replaceState`, which Next
+   * syncs into `useSearchParams`) — for a promotion that only adds a search
+   * param to the SAME page: Next keys a page by its search params, so a
+   * `router.replace` there REMOUNTS the page and wipes every piece of local
+   * state mid-run (an agent app lost its claim and its "Checking" view).
+   */
+  promoteWith?: "route" | "address";
 }
 
 export function useConversationRoutePromotion({
@@ -61,6 +72,7 @@ export function useConversationRoutePromotion({
   basePath,
   buildHref,
   enabled = true,
+  promoteWith = "route",
 }: ConversationRoutePromotionArgs): void {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -125,7 +137,11 @@ export function useConversationRoutePromotion({
         null;
       if (focusNow !== target) return;
       promotedRef.current = target;
-      router.replace(buildCurrentHref(target));
+      if (promoteWith === "address") {
+        replaceAddressWithoutNavigating(buildCurrentHref(target));
+      } else {
+        router.replace(buildCurrentHref(target));
+      }
     })();
 
     return () => {
@@ -139,5 +155,6 @@ export function useConversationRoutePromotion({
     router,
     store,
     surfaceKey,
+    promoteWith,
   ]);
 }

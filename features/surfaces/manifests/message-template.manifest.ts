@@ -23,10 +23,16 @@
  * saved until the person presses Save. A composite target on purpose: the
  * fields are edited in one form and saved by one Save.
  *
- * Deliberately NOT targets: saving, archiving (the person's call, behind a
- * confirmation), ownership and organization, `metadata` keys other than the
+ * `archive_template` (entity, ask) is the twin of the header's Archive: it
+ * moves the template to Trash through the page's own archive function — the
+ * approval card is the confirmation.
+ *
+ * Deliberately NOT targets: saving (the person presses Save), ownership and
+ * organization, `metadata` keys other than the
  * subject (for example `managed_by`, which ties a template to a platform job),
- * and custom fields (the Custom fields section carries its own editor).
+ * and custom fields — the Custom fields section is `@ai-matrx/records-ui`'s
+ * `CustomFieldsSection`, which owns its add/edit writes; its agent twin belongs
+ * in that shared section (reported as SHARED), never a parallel path here.
  * No child lists: a template has no sub-records on this page.
  */
 
@@ -124,6 +130,17 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 130,
   },
   {
+    name: "template_fields",
+    label: "Merge fields",
+    description:
+      'The merge fields the saved subject and body use, in order, as { path, label } — path is what goes inside {{ }} (for example "party.first_name"), label is how the page names it ("Recipient first name"). The sender fills them when the template is used; an empty array when the template has none.',
+    valueType: "array",
+    alwaysAvailable: true,
+    typicalCharCount: 200,
+    group: "template",
+    sortOrder: 140,
+  },
+  {
     name: "can_edit",
     label: "Can edit",
     description:
@@ -196,6 +213,17 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "editing",
     sortOrder: 200,
   },
+  {
+    name: "archive_template",
+    label: "Archive template",
+    description:
+      "Moves this template to Trash (restorable there), exactly like the page's Archive button. Value is true. What happens: it disappears from template lists and pickers, and anything that sends it (a sequence step, a single send, a managed job named by managed_by) stops until it is restored or replaced. Refused when can_edit is false or the value is not true. The page returns to the template list afterwards.",
+    valueType: "boolean",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "template",
+    sortOrder: 150,
+  },
 ];
 
 export const messageTemplateManifest: SurfaceManifest = {
@@ -208,10 +236,10 @@ export const messageTemplateManifest: SurfaceManifest = {
   urlPattern: "/chat/message-templates/[id]",
   readiness: "partial",
   readinessNote:
-    "Record, mode and edit form emitted from TemplateViewPage; template_draft validates through a unit-tested parser. Not yet verified: no live agent write test recorded, no outside-helper binding test.",
+    "Record, merge fields, mode and edit form emitted from TemplateViewPage; template_draft and archive_template validate through unit-tested parsers; template_draft live-tested with a real agent 2026-09-27. Not yet verified: archive_template live agent run, no outside-helper binding test; custom fields have no agent twin (shared section).",
   intro: `<surface_intro>
 You are on one saved message template at /chat/message-templates/[id]. message_template is the template itself (name, role, visibility, tags, email subject and the whole body, which may hold {{variable}} merge fields filled in when the template is used). If it names managed_by, a platform job uses this template, and a change alters what that job sends.
-To rewrite, rename, retag, change the subject, or otherwise edit the template, use template_draft: it fills the page's edit form and the person presses Save. Send only the fields you change; content replaces the whole body. Do not use generic tools to update agent.message_template rows for this page — they skip the person's review.
+To rewrite, rename, retag, change the subject, or otherwise edit the template, use template_draft: it fills the page's edit form and the person presses Save. To archive it (move it to Trash), use archive_template. Send only the fields you change; content replaces the whole body. Do not use generic tools to update agent.message_template rows for this page — they skip the person's review.
 If can_edit is false, the template belongs to someone else; say so instead of drafting.
 </surface_intro>`,
   groups,
@@ -237,6 +265,7 @@ export function createMessageTemplateScope(values: {
   template_id: string;
   template_label: string;
   template_content: string;
+  template_fields: { path: string; label: string }[];
   can_edit: boolean;
   template_mode: "view" | "edit";
   has_unsaved_changes: boolean;
