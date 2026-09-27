@@ -126,6 +126,7 @@
     "check:surface-impact": "tsx scripts/check-surface-impact.ts",
     "check:surface-impact:strict": "tsx scripts/check-surface-impact.ts --strict",
     "surface:probe": "node scripts/surface-probe.mjs",
+    "page:look": "node scripts/page-look.mjs",
     "surface:census": "tsx scripts/surface-census.ts",
     "surface:feedback": "tsx scripts/surface-feedback.ts",
     "surface:openers": "tsx scripts/surface-openers.ts",

@@ -13,8 +13,13 @@ procedure — open it only when you are doing that job or the check fails.
 
 ## What you do with a page — six steps, in order
 
-1. **Look first.** Open the real page with real data at desktop 1280×800 and
-   phone 375×812, in light and dark. Use it the way a person would: click every
+1. **Look first.** Run `pnpm page:look --route <route>` (every route the page
+   has, with a real record id): it signs in as the test admin and writes
+   desktop 1280×800 and phone 375×812 screenshots in light and dark, plus
+   `look.json` — console errors, failed requests, anything under the header,
+   how much of the first screen holds content, headings, text under 12px,
+   emoji, small phone targets. Read every screenshot yourself; the numbers are
+   places to look, not verdicts. Use it the way a person would: click every
    control, open every menu, dialog and tab. **Before you read any rule, write
    down everything that looks wrong or wasteful.** This list is yours; the rules
    must end up covering every line of it.
@@ -45,10 +50,10 @@ session, never you.
 
 | | **Local lane** (a Mac session) | **Cloud lane** (a cloud container) |
 |---|---|---|
-| Server | `pnpm preview:start`, the ONE shared server; open the `http://<session>.localhost:3001` host it prints | **None** — a container cannot run a dev server and a type check together |
-| Sign in | `pnpm dev-login /<route>` (test admin, pre-authorized) | the probe signs in itself |
-| See it | in-app browser | push, wait for the ~30-minute release, then `TMPDIR=/tmp/pp-<you> pnpm surface:probe --surface <name> --route <route> --commit <sha> --shots <dir>` against `https://aimatrx.com` (exit 3 = not deployed yet: work on the next page) |
-| A view you cannot see | — | `deferred-visual` with the exact step |
+| Server | none needed to look; `pnpm preview:start` (the ONE shared server, `http://<session>.localhost:3001`) only when you must see an unreleased change | **none** — a container cannot run a dev server and a type check together |
+| Look and prove | `TMPDIR=/tmp/pl-<you> pnpm page:look --route <route> --commit <sha>` against `https://aimatrx.com` after the release carrying your commit (about hourly; exit 3 = not live yet — work on something else) | same |
+| Agent surface proof | `TMPDIR=/tmp/pp-<you> pnpm surface:probe --surface <name> --route <route> --commit <sha>` (+ `--agent '<request>'` for write targets) | same |
+| A view you cannot see | `deferred-visual` with the exact step | same |
 
 **Both lanes:**
 - Type check only your files: write `tsconfig.focused.<you>.tmp.json` at the
