@@ -57,11 +57,16 @@ import { setScratchpadGateThunk } from "@/features/agents/redux/execution-system
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectIsMemoryEnabledForConversation } from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
 import {
+  selectBuilderAdvancedSettings,
   selectIsMemoryToggleRequested,
   selectMemoryToggleTarget,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { requestMemoryToggle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import {
+  requestMemoryToggle,
+  setBuilderAdvancedSettings,
+} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { prependTemplateToDraft } from "@/features/message-templates/utils/prepend-template-to-draft";
 import { SmartInputMessageTemplatePicker } from "@/features/message-templates/components/SmartInputMessageTemplatePicker";
@@ -117,6 +122,8 @@ export function ComposerPlusMenu({
   const openCloudBrowser = useOpenCloudBrowserCanvas();
   const sandboxBlocked = useSandboxBindingBlocked(conversationId);
 
+  const advancedSettings =
+    useAppSelector(selectBuilderAdvancedSettings(conversationId)) ?? DEFAULT_BUILDER_ADVANCED_SETTINGS;
   const workingDocEnabled = useAppSelector(selectWorkingDocEnabled(conversationId));
   const scratchEnabled = useAppSelector(selectWorkingDocEnabled(conversationId, "scratch"));
   const memoryEnabled = useAppSelector(selectIsMemoryEnabledForConversation(conversationId));
@@ -205,7 +212,30 @@ export function ComposerPlusMenu({
         ) : null}
         {shows("plus.tools") ? (
           <ComposerSubmenu row={{ icon: Wrench, label: "Tools", badge: counts.tools }} panelClassName={PICKER_PANEL}>
-            {(closeCascade) => picker("tools", closeCascade)}
+            {(closeCascade) => (
+              <div className="flex h-full min-h-0 flex-col">
+                {/* Brief §4: the server may hand the agent tools the chat
+                    needs (a RAG tool for a large document). The same
+                    per-conversation switch Advanced Settings carries, worded
+                    as what it does. */}
+                <div className="shrink-0 border-b border-border p-1">
+                  <ComposerMenuSwitchRow
+                    label="Let the server add tools"
+                    description="e.g. a search tool when you attach a large document"
+                    checked={!(advancedSettings.disableToolInjection ?? false)}
+                    onCheckedChange={(allow) =>
+                      dispatch(
+                        setBuilderAdvancedSettings({
+                          conversationId,
+                          changes: { disableToolInjection: !allow },
+                        }),
+                      )
+                    }
+                  />
+                </div>
+                <div className="min-h-0 flex-1">{picker("tools", closeCascade)}</div>
+              </div>
+            )}
           </ComposerSubmenu>
         ) : null}
         {shows("plus.connectors") ? (

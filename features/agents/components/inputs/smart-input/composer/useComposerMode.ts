@@ -28,10 +28,11 @@ import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import {
   COMPOSER_KNOBS,
   clearComposerModeCookie,
+  modeAfterKnobs,
   readComposerModeCookieClient,
   writeComposerModeCookie,
 } from "./composer-mode-cookie";
-import { isComposerMode, type ComposerMode } from "./composer-types";
+import type { ComposerMode } from "./composer-types";
 
 /**
  * The knobs are applied once per TAB, not once per host: a second composer
@@ -66,15 +67,13 @@ export function useComposerMode(initialMode?: ComposerMode | null): UseComposerM
     if (knobsAppliedThisTab) return;
     if (defaultModeKnob === undefined || rememberKnob === undefined) return;
     knobsAppliedThisTab = true;
-    const remember = rememberKnob !== false;
-    const knobDefault: ComposerMode = isComposerMode(defaultModeKnob) ? defaultModeKnob : "chat";
-    const cookieMode = readComposerModeCookieClient();
-    if (!remember) {
-      clearComposerModeCookie();
-      dispatch(setComposerMode(knobDefault));
-      return;
-    }
-    if (!cookieMode) dispatch(setComposerMode(knobDefault));
+    const decision = modeAfterKnobs({
+      cookieMode: readComposerModeCookieClient(),
+      rememberKnob,
+      defaultModeKnob,
+    });
+    if (decision.clearCookie) clearComposerModeCookie();
+    if (decision.apply) dispatch(setComposerMode(decision.apply));
   }, [defaultModeKnob, rememberKnob, dispatch]);
 
   const setMode = (next: ComposerMode) => {

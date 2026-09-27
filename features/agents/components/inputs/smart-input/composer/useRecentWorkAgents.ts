@@ -79,7 +79,7 @@ export function useRecentWorkAgents(
   if (error) return { status: "error", message: error };
   if (!agentIds) return { status: "loading" };
   const excluded = new Set(excludeIds.filter((id): id is string => Boolean(id)));
-  const byId = new Map(rows.map((row) => [row.id, row]));
+  const byId = new Map(rows.map((row) => [String(row.id), row]));
   const agents: RecentWorkAgent[] = [];
   for (const id of agentIds) {
     if (excluded.has(id)) continue;

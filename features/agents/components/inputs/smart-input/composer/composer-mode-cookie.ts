@@ -46,3 +46,22 @@ export const COMPOSER_KNOBS = {
   quickActions: { feature: "agents.chat_composer", key: "quick_actions" },
   floatingPanelSize: { feature: "agents.chat_composer", key: "floating_panel_size" },
 } as const;
+
+/**
+ * PURE — what the knobs decide once they answer (Amendment 1, A1/A7):
+ * remembering + a cookie → keep the cookie's mode (apply nothing);
+ * remembering + no cookie → the default-mode knob;
+ * not remembering → the default-mode knob, and the cookie is cleared.
+ * A default the register does not recognise falls back to Chat.
+ */
+export function modeAfterKnobs(args: {
+  cookieMode: ComposerMode | null;
+  rememberKnob: unknown;
+  defaultModeKnob: unknown;
+}): { apply: ComposerMode | null; clearCookie: boolean } {
+  const remember = args.rememberKnob !== false;
+  const knobDefault: ComposerMode = isComposerMode(args.defaultModeKnob) ? args.defaultModeKnob : "chat";
+  if (!remember) return { apply: knobDefault, clearCookie: true };
+  if (!args.cookieMode) return { apply: knobDefault, clearCookie: false };
+  return { apply: null, clearCookie: false };
+}

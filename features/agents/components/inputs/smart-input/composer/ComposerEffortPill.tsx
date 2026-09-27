@@ -22,6 +22,14 @@ import { resolveModelControls } from "@/features/agents/hooks/useModelControls";
 import { ComposerMenuDivider, ComposerMenuLabel, ComposerMenuRow } from "./ComposerMenu";
 import { composerPillClass } from "./ComposerAgentPill";
 import type { ComposerSize } from "./composer-types";
+import { REASONING_EFFORT_OPTIONS } from "@/types/python-generated/llm-enums";
+
+type ReasoningEffort = (typeof REASONING_EFFORT_OPTIONS)[number];
+
+/** The model's control lists plain strings; only the canonical tiers reach the wire. */
+function isReasoningEffort(value: string): value is ReasoningEffort {
+  return (REASONING_EFFORT_OPTIONS as readonly string[]).includes(value);
+}
 
 function effortWord(value: string): string {
   if (value === "xhigh") return "Extra high";
@@ -46,14 +54,14 @@ export function ComposerEffortPill({
 
   if (!model || !modelId) return null;
   const control = resolveModelControls([model], modelId).normalizedControls?.reasoning_effort;
-  const values = control?.enum ?? [];
+  const values = (control?.enum ?? []).filter(isReasoningEffort);
   if (values.length === 0) return null;
 
   const overridden = overrideState?.overrides?.reasoning_effort;
   const base = overrideState?.baseSettings?.reasoning_effort ?? control?.default;
   const current = typeof overridden === "string" ? overridden : typeof base === "string" ? base : null;
 
-  const choose = (value: string | null) => {
+  const choose = (value: ReasoningEffort | null) => {
     setOpen(false);
     if (value === null) {
       dispatch(resetOverride({ conversationId, key: "reasoning_effort" }));

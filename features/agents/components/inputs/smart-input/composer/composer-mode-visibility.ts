@@ -8,6 +8,7 @@
  */
 
 import type { ComposerMode, ComposerSize } from "./composer-types";
+import type { RunControlsTab } from "../RunControlsTabPanel";
 
 export type ComposerControl =
   // Agent pill
@@ -73,4 +74,32 @@ export function composerShows(mode: ComposerMode, control: ComposerControl): boo
  */
 export function metaRowHoldsScopeAndOutput(size: ComposerSize): boolean {
   return size !== "compact";
+}
+
+/**
+ * Phones: the `+` opens the run-controls bottom sheet (tabs), not the cascade.
+ * The same table decides which tabs a mode shows there — Chat is attach-level,
+ * Work adds the working tools, Advanced shows every tab (overrides, settings,
+ * sandbox, creator). Templates is always offered by the sheet itself.
+ */
+const MOBILE_SHEET_TABS: Record<ComposerMode, ReadonlySet<RunControlsTab>> = {
+  chat: new Set<RunControlsTab>(["attach", "memory"]),
+  work: new Set<RunControlsTab>(["attach", "memory", "context", "document", "tools", "skills"]),
+  advanced: new Set<RunControlsTab>([
+    "quickset",
+    "attach",
+    "context",
+    "document",
+    "model",
+    "tools",
+    "skills",
+    "sandbox",
+    "memory",
+    "settings",
+    "creator",
+  ]),
+};
+
+export function mobileSheetShowsTab(mode: ComposerMode, tab: RunControlsTab): boolean {
+  return MOBILE_SHEET_TABS[mode].has(tab);
 }

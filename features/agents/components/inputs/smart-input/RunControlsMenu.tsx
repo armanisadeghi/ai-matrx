@@ -49,6 +49,7 @@ import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControl
 import { PlusAttachMenu } from "./PlusAttachMenu";
 import { ComposerPlusMenu } from "./composer/ComposerPlusMenu";
 import type { ComposerMode, ComposerSize } from "./composer/composer-types";
+import { mobileSheetShowsTab } from "./composer/composer-mode-visibility";
 import {
   useAttachResource,
   useDetachResource,
@@ -242,7 +243,11 @@ export function RunControlsMenu({
                   },
                 ]
               : []),
-            ...rc.tabs.map((t) => ({
+            ...rc.tabs
+              .filter(
+                (t) => !composer || mobileSheetShowsTab(composer.mode, t.id),
+              )
+              .map((t) => ({
               id: t.id,
               label: t.label,
               icon: t.icon,
