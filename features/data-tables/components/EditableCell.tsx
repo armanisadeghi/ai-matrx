@@ -266,7 +266,10 @@ export function EditableCell({
     // organization's knob custom/choice_nudge may answer for the person (always_add / never_add).
     let add = opts?.add;
     if (!opts?.answered && !add) {
-      const decision = decideTypedChoice(format, normalized, await readChoiceNudge(tableId));
+      // The knob is read only when there is something to ask about: every other commit stays a
+      // single save with no extra round trip.
+      const offList = decideTypedChoice(format, normalized, "ask");
+      const decision = offList.kind === "none" ? offList : decideTypedChoice(format, normalized, await readChoiceNudge(tableId));
       if (decision.kind === "ask" || decision.kind === "not_a_choice") {
         setChoiceAsk({
           words: decision.words,
