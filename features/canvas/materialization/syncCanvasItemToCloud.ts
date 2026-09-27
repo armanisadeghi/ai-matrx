@@ -60,7 +60,17 @@ export async function syncCanvasItemToCloud(
 
   // Pointer-only item (already materialized): the body lives in the row.
   if (!rawContent && !structured && isMaterializedArtifactId(existingArtifactId)) {
-    const row = await canvasArtifactService.getById(existingArtifactId!);
+    let row: Awaited<ReturnType<typeof canvasArtifactService.getById>>;
+    try {
+      row = await canvasArtifactService.getById(existingArtifactId!);
+    } catch (err) {
+      // A failed read is said, never "nothing to persist" (RC-B12 r13).
+      return {
+        ok: false,
+        error: `Could not read the saved artifact: ${err instanceof Error ? err.message : String(err)}`,
+        result: null,
+      };
+    }
     if (row?.content && typeof row.content === "object" && "data" in row.content) {
       const d = (row.content as { data?: unknown }).data;
       if (typeof d === "string") rawContent = d;

@@ -18,6 +18,7 @@
  *     information (it is exactly what a gap analysis is looking for).
  */
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useMemo, useState } from "react";
 import { ChevronRight, Info, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -162,6 +163,14 @@ export function ResourcePicker({
             client is behind the backend.
           </span>
         </div>
+      )}
+
+      {manifest.unreadResources && manifest.unreadResources.length > 0 && (
+        <ReadFailure
+          error={true}
+          what={`the ${manifest.unreadResources.join(" and ")} resources — their lists below are empty because the read failed`}
+          className="m-0"
+        />
       )}
 
       {GROUP_ORDER.map((group) => {

@@ -55,11 +55,17 @@ export async function getResourceManifest(
   // and the manifest RPC is a research-schema function. It is two small reads
   // (edges + parties) and only for what a topic actually promoted, so the
   // manifest keeps its "one payload, no bodies" character.
-  const [manifest, experts, entities] = await Promise.all([
+  const [manifest, expertsRead, entitiesRead] = await Promise.all([
     supabase.rpc("research_topic_resource_manifest", { p_topic_id: topicId }),
     loadTopicExperts(topicId),
     loadTopicPageEntities(topicId),
   ]);
+  const experts = expertsRead ?? [];
+  const entities = entitiesRead ?? [];
+  const unreadResources = [
+    ...(expertsRead === null ? ["Experts"] : []),
+    ...(entitiesRead === null ? ["Named offerings"] : []),
+  ];
   if (manifest.error) {
     // P0002 is the RPC's honest "this topic is not available to you" — RLS hid
     // the row from a SECURITY INVOKER read. Same class as `appendTopicOutput`
@@ -75,7 +81,8 @@ export async function getResourceManifest(
     }
     throw manifest.error;
   }
-  return parseManifest(manifest.data, topicId, experts, entities);
+  const parsed = parseManifest(manifest.data, topicId, experts, entities);
+  return unreadResources.length > 0 ? { ...parsed, unreadResources } : parsed;
 }
 
 /**
@@ -86,7 +93,7 @@ export async function getResourceManifest(
  */
 async function loadTopicPageEntities(
   topicId: string,
-): Promise<ManifestPageEntities[]> {
+): Promise<ManifestPageEntities[] | null> {
   const strings = (value: unknown): string[] => {
     if (!Array.isArray(value)) return [];
     const seen = new Set<string>();
@@ -139,21 +146,22 @@ async function loadTopicPageEntities(
     return rows;
   } catch (e) {
     console.error(
-      "[research] could not load the pages' named entities for the resource manifest — the Named offerings resource will render empty:",
+      "[research] could not load the pages' named entities for the resource manifest — the Named offerings resource is marked unread:",
       e,
     );
-    return [];
+    // null = the read FAILED (the picker says so), never "no entities".
+    return null;
   }
 }
 
 /**
  * The topic's promoted experts, flattened for the `topic.experts` resource.
  *
- * A failure here must NOT take the whole Context Builder down — the experts
- * resource simply renders empty and every other kind still resolves. It is
- * reported loudly rather than swallowed silently.
+ * A failure here must NOT take the whole Context Builder down — every other
+ * kind still resolves, and the manifest names the Experts resource as UNREAD
+ * (`unreadResources`) so the picker says its empty list is a failed read.
  */
-async function loadTopicExperts(topicId: string): Promise<ManifestExpert[]> {
+async function loadTopicExperts(topicId: string): Promise<ManifestExpert[] | null> {
   try {
     const links = await fetchTopicExperts(topicId);
     return links.map(({ party }) => {
@@ -181,10 +189,11 @@ async function loadTopicExperts(topicId: string): Promise<ManifestExpert[]> {
     });
   } catch (e) {
     console.error(
-      "[research] could not load this topic's experts for the resource manifest — the Experts resource will render empty:",
+      "[research] could not load this topic's experts for the resource manifest — the Experts resource is marked unread:",
       e,
     );
-    return [];
+    // null = the read FAILED (the picker says so), never "no experts".
+    return null;
   }
 }
 

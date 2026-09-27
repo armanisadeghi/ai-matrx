@@ -156,6 +156,16 @@ export interface CanvasArtifactRow {
 // Service
 // ---------------------------------------------------------------------------
 
+/** A PostgREST error object (not an Error) as a thrown Error with its message. */
+function asError(err: unknown, fallback: string): Error {
+  if (err instanceof Error) return err;
+  if (err && typeof err === "object" && "message" in err) {
+    const message = (err as { message?: unknown }).message;
+    if (typeof message === "string" && message) return new Error(message);
+  }
+  return new Error(fallback);
+}
+
 export const canvasArtifactService = {
   /**
    * Upsert an artifact from model output.
@@ -338,14 +348,13 @@ export const canvasArtifactService = {
         .is("deleted_at", null)
         .order("artifact_index", { ascending: true });
 
-      if (error) {
-        console.error("[canvasArtifactService.getBySource] error:", error);
-        return [];
-      }
+      if (error) throw error;
       return (data ?? []) as CanvasArtifactRow[];
     } catch (err) {
+      // A failed read is not "no artifacts" (RC-B12 r13) — answering [] made
+      // materialization create a DUPLICATE row for a source that had one.
       console.error("[canvasArtifactService.getBySource] Error:", err);
-      return [];
+      throw asError(err, "Could not read this source's canvas items");
     }
   },
 
@@ -358,15 +367,13 @@ export const canvasArtifactService = {
         p_message_id: messageId,
       });
 
-      if (error) {
-        console.error("[canvasArtifactService.getByMessage] RPC error:", error);
-        return [];
-      }
+      if (error) throw error;
 
       return (data ?? []) as CanvasArtifactRow[];
     } catch (err) {
+      // A failed read is not "no artifacts" (RC-B12 r13).
       console.error("[canvasArtifactService.getByMessage] Error:", err);
-      return [];
+      throw asError(err, "Could not read this message's canvas items");
     }
   },
 
@@ -385,21 +392,16 @@ export const canvasArtifactService = {
         },
       );
 
-      if (error) {
-        console.error(
-          "[canvasArtifactService.getConversationLatest] RPC error:",
-          error,
-        );
-        return [];
-      }
+      if (error) throw error;
 
       return (data ?? []) as CanvasArtifactRow[];
     } catch (err) {
+      // A failed read is not "no artifacts" (RC-B12 r13).
       console.error(
         "[canvasArtifactService.getConversationLatest] Error:",
         err,
       );
-      return [];
+      throw asError(err, "Could not read this conversation's canvas items");
     }
   },
 
@@ -449,15 +451,14 @@ export const canvasArtifactService = {
         .eq("id", canvasId)
         .maybeSingle();
 
-      if (error) {
-        console.error("[canvasArtifactService.getById] error:", error);
-        return null;
-      }
+      if (error) throw error;
 
+      // null = no row this person can read; a FAILED read throws (RC-B12 r13)
+      // — answering null made ensureArtifactPersisted upsert a duplicate.
       return (data as CanvasArtifactRow | null) ?? null;
     } catch (err) {
       console.error("[canvasArtifactService.getById] Error:", err);
-      return null;
+      throw asError(err, "Could not read this canvas item");
     }
   },
 
@@ -808,8 +809,9 @@ export const canvasArtifactService = {
     try {
       return await canvasArtifactService.readVersionHistory(canvasId);
     } catch (err) {
+      // A failed read is not "no versions" (RC-B12 r13).
       console.error("[canvasArtifactService.getVersionHistory] Error:", err);
-      return [];
+      throw asError(err, "Could not read this canvas item's versions");
     }
   },
 };

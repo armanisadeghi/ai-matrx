@@ -179,6 +179,12 @@ export interface ResourceManifest {
   /** Unrecognized kinds returned by the RPC — loud, never silently dropped. */
   unknownKinds: string[];
   /**
+   * Resources whose side read FAILED (RC-B12 r13), by their reader-facing
+   * name ("Experts", "Named offerings"). Their lists are empty because the
+   * read failed, not because the topic has none — the picker says so.
+   */
+  unreadResources?: string[];
+  /**
    * The experts this topic promoted into the CRM (`party -> research_topic`
    * `expert_for` edges, hydrated to real rows).
    *
