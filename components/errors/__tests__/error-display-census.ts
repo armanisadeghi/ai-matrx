@@ -949,6 +949,83 @@ function enclosingFunction(node: ts.Node): ts.FunctionLikeDeclaration | null {
 /** A condition about the read being in flight — the component knows this view hangs off a read. */
 const LOADING_GATE = /\b(?:is)?[lL]oading\b|isFetching|isPending|["'`]loading["'`]|\.loading\b|[lL]oading[A-Z]\w*/;
 
+/**
+ * Hooks that never read data — UI state, routing, refs, environment. Anything
+ * else named `use*` (a data hook, `useAppSelector`, `useQuery`, a service hook)
+ * is treated as a read (RC-B12 round 12: the census used to need a loading
+ * check above the empty view, so a component with none — the Projects window
+ * reading `useNavTree()` — slipped through while saying "No projects found"
+ * over a failed read).
+ */
+const NON_READ_HOOK =
+  /^(?:useState|useReducer|useRef|useMemo|useCallback|useEffect|useLayoutEffect|useInsertionEffect|useEffectEvent|useId|useTransition|useDeferredValue|useSyncExternalStore|useContext|useImperativeHandle|useDebugValue|useOptimistic|useActionState|useFormStatus|use|useRouter|usePathname|useSearchParams|useParams|useSelectedLayoutSegments?|useIsMobile|useMediaQuery|useTheme|useAppDispatch|useDispatch|useStore|useAppStore|useToast|useForm|useFormContext|useController|useFieldArray|useWatch|useDebounce|useDebouncedValue|useDebouncedCallback|useThrottle|useHover|useFocus|useClickOutside|useOnClickOutside|useKeyboardShortcut|useHotkeys|useLocalStorage|useSessionStorage|usePrevious|useInterval|useTimeout|useMounted|useIsMounted|useIsClient|useWindowSize|useElementSize|useResizeObserver|useIntersectionObserver|useInView|useScroll|useClipboard|useCopyToClipboard|useToggle|useBoolean|useDisclosure|useControllableState|useSensors?|useDroppable|useDraggable|useSortable|useDndMonitor|useReactTable|useVirtualizer|useFormField|useCarousel|useSidebar|useChart|useComboboxAnchor|useListViewPrefs|useSurfaceRuntime|useOpen\w*|useClose\w*|useCreate\w*|useUpdate\w*|useDelete\w*|useSave\w*|useSet\w*|useToggle\w*|useReset\w*)$/;
+
+/** Identifiers in `fn` that hold (or are derived from) the result of a read hook. */
+function readDerivedNames(fn: ts.FunctionLikeDeclaration): Set<string> {
+  const names = new Set<string>();
+  const body = fn.body;
+  if (!body) return names;
+  const decls: ts.VariableDeclaration[] = [];
+  const collect = (n: ts.Node) => {
+    if (ts.isVariableDeclaration(n) && n.initializer) decls.push(n);
+    // Nested components are their own scope.
+    if (n !== body && (ts.isFunctionDeclaration(n) || ts.isArrowFunction(n) || ts.isFunctionExpression(n)) && !ts.isCallExpression(n.parent)) return;
+    n.forEachChild(collect);
+  };
+  collect(body);
+  const bind = (name: ts.BindingName) => {
+    if (ts.isIdentifier(name)) names.add(name.text);
+    else for (const el of name.elements) if (!ts.isOmittedExpression(el)) bind(el.name);
+  };
+  const isReadCall = (init: ts.Expression): boolean => {
+    let e: ts.Expression = init;
+    while (ts.isAwaitExpression(e) || ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isNonNullExpression(e)) e = (e as ts.AwaitExpression).expression;
+    if (!ts.isCallExpression(e)) return false;
+    const callee = e.expression.getText().split(".").pop() ?? "";
+    return /^use[A-Z]/.test(callee) && !NON_READ_HOOK.test(callee);
+  };
+  for (const d of decls) if (isReadCall(d.initializer!)) bind(d.name);
+  // Derived values (const visible = items.filter(…)), to a fixpoint.
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const d of decls) {
+      const before = names.size;
+      const ids = new Set<string>();
+      const walk = (n: ts.Node) => { if (ts.isIdentifier(n)) ids.add(n.text); n.forEachChild(walk); };
+      walk(d.initializer!);
+      if ([...ids].some((id) => names.has(id))) bind(d.name);
+      if (names.size !== before) changed = true;
+    }
+  }
+  return names;
+}
+
+/** Does a condition above the empty view test data a read hook produced? */
+function hangsOffReadData(node: ts.Node, fn: ts.FunctionLikeDeclaration, readNames: Set<string>): boolean {
+  if (readNames.size === 0) return false;
+  const mentions = (e: ts.Node): boolean => {
+    let hit = false;
+    const walk = (n: ts.Node) => { if (hit) return; if (ts.isIdentifier(n) && readNames.has(n.text)) hit = true; n.forEachChild(walk); };
+    walk(e);
+    return hit;
+  };
+  let child: ts.Node = node;
+  let cur: ts.Node | undefined = node.parent;
+  while (cur && cur !== fn) {
+    if (ts.isConditionalExpression(cur) && child !== cur.condition && mentions(cur.condition)) return true;
+    if (ts.isBinaryExpression(cur) && child === cur.right && mentions(cur.left)) return true;
+    if (ts.isIfStatement(cur) && child !== cur.expression && mentions(cur.expression)) return true;
+    child = cur;
+    cur = cur.parent;
+  }
+  const body = fn.body;
+  if (!body || !ts.isBlock(body)) return false;
+  const at = node.getStart();
+  return body.statements.some(
+    (st) => st.getEnd() <= at && ts.isIfStatement(st) && mentions(st.expression) && /\breturn\b/.test(st.thenStatement.getText()),
+  );
+}
+
 /** Does a condition above the empty view (or an early return before it) know about the read? */
 function knowsItIsARead(node: ts.Node, fn: ts.FunctionLikeDeclaration): boolean {
   let child: ts.Node = node;
@@ -1017,14 +1094,23 @@ export function findUngatedEmptyStates(source: string, fileName = "file.tsx"): n
   const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const sourceLines = source.split("\n");
   const lines = new Set<number>();
+  const readNameCache = new Map<ts.Node, Set<string>>();
+  const readNamesOf = (f: ts.FunctionLikeDeclaration) => {
+    let v = readNameCache.get(f);
+    if (!v) { v = readDerivedNames(f); readNameCache.set(f, v); }
+    return v;
+  };
   const consider = (node: ts.Node) => {
     const fn = enclosingFunction(node);
     if (!fn || !fn.body) return;
-    if (!HAS_READ.test(fn.body.getText())) return;
     // Only a view that hangs off a read: something above it waits for the
-    // read ("loading ? … : items.length === 0 ? <Empty/>") — and then must also
-    // know whether that read failed.
-    if (!knowsItIsARead(node, fn as ts.FunctionLikeDeclaration)) return;
+    // read ("loading ? … : items.length === 0 ? <Empty/>"), OR its deciding
+    // condition tests data a read hook produced ("projects.length === 0" where
+    // projects came from useNavTree()) — and then must also know whether that
+    // read failed.
+    const f = fn as ts.FunctionLikeDeclaration;
+    const waits = HAS_READ.test(fn.body.getText()) && knowsItIsARead(node, f);
+    if (!waits && !hangsOffReadData(node, f, readNamesOf(f))) return;
     if (gatedByAncestors(node, fn) || gatedByEarlyReturn(node, fn as ts.FunctionLikeDeclaration)) return;
     const line = sf.getLineAndCharacterOfPosition(node.getStart()).line + 1;
     if (isExempt(sourceLines, line)) return;

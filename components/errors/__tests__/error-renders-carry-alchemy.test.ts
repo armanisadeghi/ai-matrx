@@ -362,6 +362,19 @@ describe("an empty view is an answer only after a read that succeeded (RC-B12 ro
     expect(ungated("return p.matches.length === 0 ? <p>No matches found</p> : <List />;")).toBe(0);
   });
 
+  it("self-test: a view that reads data but never checks loading is still a candidate (the Projects window)", () => {
+    // The shape the old census missed: rows from a read hook, no loading check,
+    // "No projects found" over a failed read.
+    const projectsShaped = (gate: string) =>
+      ungated(
+        `const { flatProjects, isError, error } = useNavTree();\n  const active = flatProjects.filter((x) => x.org_id === p.org);\n  return (<div>{p.org ? (${gate}active.length > 0 ? active.map((x) => <Row key={x.id} />) : <p>No projects found</p>) : <p>Pick one</p>}</div>);`,
+      );
+    expect(projectsShaped("")).toBe(1);
+    expect(projectsShaped("isError && active.length === 0 ? <ReadFailure error={error} /> : ")).toBe(0);
+    // Local UI state is not a read: its empty copy is not a candidate.
+    expect(ungated("const [draft, setDraft] = useState<string[]>([]);\n  return draft.length === 0 ? <p>No tags yet</p> : <List />;")).toBe(0);
+  });
+
   it("self-test: stale-while-error (rows kept + StaleDataNotice) is gated; hiding rows is not required", () => {
     expect(
       ungated(
