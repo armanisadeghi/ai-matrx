@@ -94,6 +94,16 @@ begin
    where not exists (select 1 from platform.knob_override k
                       where k.feature = 'custom' and k.key = 'system_enabled'
                         and k.scope_kind = 'organization' and k.scope_id = o);
+  -- SCOPES-WRITE-THROUGH: an organization made after the scopes switch was installed writes its scopes in
+  -- the record store; this fixture is copied by the follow (the old tables are the writer), so it says so.
+  if exists (select 1 from platform.feature_knob where feature = 'custom' and key = 'scopes_written_in_the_store') then
+    insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+    select 'custom', 'scopes_written_in_the_store', 'organization', o, o, 'false'::jsonb, 'SC-3 compare fixture: the old tables are the writer'
+      from unnest(array[o_harbor, o_cedar, o_bright]) o
+     where not exists (select 1 from platform.knob_override k
+                        where k.feature = 'custom' and k.key = 'scopes_written_in_the_store'
+                          and k.scope_kind = 'organization' and k.scope_id = o);
+  end if;
 
   -- ── Harborline: Apps and Known Problems, in AI Matrx's own shape ─────────────────────────
   insert into context.scope_types (id, organization_id, label_singular, label_plural, icon, description, sort_order, slug, created_by) values

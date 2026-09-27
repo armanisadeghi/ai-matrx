@@ -53,6 +53,13 @@ begin
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner', 'active'),
     (v_val, 'organization', v_val, c_admin, 'owner', 'active');
+  -- SCOPES-WRITE-THROUGH: an organization made after the scopes switch was installed writes its scopes in
+  -- the record store; this suite proves the old tables as the writer, so its organizations say so.
+  if exists (select 1 from platform.feature_knob where feature = 'custom' and key = 'scopes_written_in_the_store') then
+    insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note) values
+      ('custom', 'scopes_written_in_the_store', 'organization', v_org, v_org, 'false'::jsonb, 'sc1p fence suite: the old tables are the writer'),
+      ('custom', 'scopes_written_in_the_store', 'organization', v_val, v_val, 'false'::jsonb, 'sc1p fence suite: the old tables are the writer');
+  end if;
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note) values
     ('custom', 'system_enabled', 'organization', v_org, v_org, 'true'::jsonb, 'sc1p fence suite'),
     ('custom', 'system_enabled', 'organization', v_val, v_val, 'true'::jsonb, 'sc1p fence suite');
