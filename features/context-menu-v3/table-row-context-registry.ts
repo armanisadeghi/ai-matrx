@@ -130,14 +130,34 @@ export function resolveTableRowMenuDescriptor(target: HTMLElement | null): Table
   return shown ? { ...descriptor, context: { ...descriptor.context, content: shown } } : descriptor;
 }
 
-/** The words an element shows, without its controls (buttons, hidden marks). */
-function shownWords(element: HTMLElement | null | undefined): string {
-  if (!element) return "";
+/** Elements that start a new LINE of what a cell shows (name, then its subtitle). */
+const LINE_BREAKING = "div, p, li, br, tr, h1, h2, h3, h4, h5, h6, section, article, header, footer, dd, dt";
+
+/**
+ * The PRIMARY line an element shows — its first line, without its controls.
+ * `textContent` glues a cell's stacked lines together with no space
+ * ("Data Destruction, Inc.Company re…", "Notesmatrx-user/notes"; page-pass
+ * 2026-09-27), so each line-starting element is marked with a newline first and
+ * only the first non-empty line is kept. Inline markup inside a line
+ * (<b>, <a>, <span>) is untouched, so words are never split.
+ */
+function primaryLine(element: Element): string {
   const copy = element.cloneNode(true) as HTMLElement;
   copy.querySelectorAll("button, [aria-hidden='true'], input, textarea, select").forEach((node) => node.remove());
-  const cells = copy.querySelectorAll("td, [role='gridcell']");
+  copy.querySelectorAll(LINE_BREAKING).forEach((node) => node.before("\n"));
+  const lines = (copy.textContent ?? "")
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter((line) => line && line !== "—");
+  return lines[0] ?? "";
+}
+
+/** The words an element shows: one cell's primary line, or each cell's, joined with " · ". */
+function shownWords(element: HTMLElement | null | undefined): string {
+  if (!element) return "";
+  const cells = element.querySelectorAll("td, [role='gridcell']");
   const text = cells.length > 1
-    ? Array.from(cells).map((c) => (c.textContent ?? "").replace(/\s+/g, " ").trim()).filter((t) => t && t !== "—").join(" · ")
-    : (copy.textContent ?? "").replace(/\s+/g, " ").trim();
+    ? Array.from(cells).map(primaryLine).filter(Boolean).join(" · ")
+    : primaryLine(element);
   return text.length > 200 ? `${text.slice(0, 199)}…` : text;
 }

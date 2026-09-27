@@ -89,4 +89,26 @@ describe("table row context registry", () => {
     unregister();
     table.remove();
   });
+
+  it("the header names the clicked cell's PRIMARY line — stacked lines are never glued together (page-pass 2026-09-27)", () => {
+    const table = document.createElement("table");
+    table.dataset.matrxTableId = "table-instance-lines";
+    table.innerHTML =
+      '<tbody><tr data-row-id="r1">' +
+      '<td id="name"><div><a>Data Destruction, <b>Inc.</b></a></div><div>Company record</div></td>' +
+      '<td id="surface"><span>Notes</span><div>matrx-user/notes</div><button>Open</button></td>' +
+      "</tr></tbody>";
+    document.body.append(table);
+    const descriptor = createTableRowMenuDescriptor({ context: { content: "{}" }, extraSections: [] });
+    const unregister = registerTableRowContextResolver("table-instance-lines", () => descriptor);
+    const content = (id: string) =>
+      resolveTableRowMenuDescriptor(table.querySelector<HTMLElement>(`#${id}`))?.context.content;
+    expect(content("name")).toBe("Data Destruction, Inc.");
+    expect(content("surface")).toBe("Notes");
+    expect(resolveTableRowMenuDescriptor(table.querySelector<HTMLElement>("tr"))?.context.content).toBe(
+      "Data Destruction, Inc. · Notes",
+    );
+    unregister();
+    table.remove();
+  });
 });
