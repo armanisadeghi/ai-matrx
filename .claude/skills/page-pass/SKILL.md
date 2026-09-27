@@ -259,6 +259,9 @@ surface). Say which parts you judged as authored content.
 - **What a person typed is never lost** — on every page, window and dialog:
   closing, navigating or a refresh keeps the draft (or asks first). Any
   non-empty text counts — a minimum length before saving a draft loses short reports.
+  Unsaved edits in a form are guarded against in-app navigation too (header
+  Back, links, browser Back): use `lib/navigation/useUnsavedChangesGuard.ts`,
+  never a page-local `beforeunload`, and give edit mode a Discard.
 - **A custom editing field keeps everything a plain field gives** — replacing a
   textarea/input with a rich or chip editor must keep: undo/redo for every
   change (inserts and auto-formatting included), plain-text paste, the caret
