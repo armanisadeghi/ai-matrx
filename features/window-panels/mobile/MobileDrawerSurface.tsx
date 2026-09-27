@@ -39,6 +39,8 @@ interface MobileDrawerSurfaceProps {
   actionsRight?: ReactNode;
   /** Optional className applied to the body scroll container. */
   bodyClassName?: string;
+  /** Marks the root `data-surface-layer` (see WindowPanel `surfaceLayer`). */
+  surfaceLayer?: string;
   /**
    * Whether the sidebar should collapse into a nested drawer when the user
    * taps the sidebar toggle. When "inline", the sidebar pushes the body
@@ -57,6 +59,7 @@ export default function MobileDrawerSurface({
   actionsLeft,
   actionsRight,
   bodyClassName,
+  surfaceLayer,
   sidebarAs = "drawer",
 }: MobileDrawerSurfaceProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -69,7 +72,10 @@ export default function MobileDrawerSurface({
         if (!next) onClose();
       }}
     >
-      <DrawerContent className="h-[85dvh] max-h-[85dvh] px-0 pb-safe flex flex-col">
+      <DrawerContent
+        data-surface-layer={surfaceLayer}
+        className="h-[85dvh] max-h-[85dvh] px-0 pb-safe flex flex-col"
+      >
         {/* Accessible title — rendered visually as our header */}
         <div className="flex items-center gap-1 px-3 py-2 border-b border-border/50 shrink-0">
           <div className="flex items-center gap-1 shrink-0">{actionsLeft}</div>

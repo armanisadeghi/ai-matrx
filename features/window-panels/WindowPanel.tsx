@@ -238,6 +238,13 @@ interface WindowPanelBaseProps extends UseWindowPanelOptions {
    */
   mobilePresentationOverride?: MobilePresentation;
   /**
+   * The surface this window REGISTERS (its own `SurfaceRuntimeProvider`).
+   * Marks every root with `data-surface-layer`, so the unregistered-window
+   * reader (`features/surfaces/runtime/window-forms.ts`) leaves it alone —
+   * one way for an agent to write a field, never two.
+   */
+  surfaceLayer?: string;
+  /**
    * Keep the full body mounted offscreen while the window is minimized.
    * Opt in for live/stateful surfaces whose hooks, drafts, streams, or local
    * component state must survive minimize/restore. The default remains false
@@ -401,6 +408,7 @@ export function WindowPanel({
   bodyClassName,
   className,
   mobilePresentationOverride,
+  surfaceLayer,
   minWidth,
   minHeight,
   urlSyncKey,
@@ -450,6 +458,11 @@ export function WindowPanel({
   const id = hookOpts.id ?? reactId;
   const trayRegistryKey = overlayId ?? id;
   const isMobile = useIsMobile();
+  // `data-surface-layer` (literal: importing window-forms would pull the
+  // surface writeback into every window's chunk).
+  const surfaceLayerAttrs = surfaceLayer
+    ? { "data-surface-layer": surfaceLayer }
+    : undefined;
   const isMounted = useIsMounted();
   const registryEntry = overlayId
     ? getStaticEntryByOverlayId(overlayId)
@@ -1390,6 +1403,7 @@ export function WindowPanel({
           actionsLeft={actionsLeft}
           actionsRight={resolvedActionsRight}
           bodyClassName={bodyClassName}
+          surfaceLayer={surfaceLayer}
         >
           <WindowSelectionSurface>{children}</WindowSelectionSurface>
         </MobileDrawerSurface>
@@ -1405,6 +1419,7 @@ export function WindowPanel({
           footer={footerBar}
           actionsRight={resolvedActionsRight}
           bodyClassName={bodyClassName}
+          surfaceLayer={surfaceLayer}
         >
           <WindowSelectionSurface>{children}</WindowSelectionSurface>
         </MobileCardSurface>
@@ -1423,6 +1438,7 @@ export function WindowPanel({
 
     const mobileEl = (
       <div
+        {...surfaceLayerAttrs}
         className={cn(
           "fixed inset-0 flex flex-col",
           "bg-card/98 backdrop-blur-md",
@@ -1474,7 +1490,10 @@ export function WindowPanel({
   if (popoutMode !== null) {
     return (
       <PopoutPortal windowId={id}>
-        <div className="h-full w-full flex flex-col bg-card text-foreground">
+        <div
+          {...surfaceLayerAttrs}
+          className="h-full w-full flex flex-col bg-card text-foreground"
+        >
           <PopoutTopBar
             title={titleNode ?? title}
             actionsRight={resolvedActionsRight}
@@ -1495,6 +1514,7 @@ export function WindowPanel({
       <div
         data-window-panel=""
         data-window-id={id}
+        {...surfaceLayerAttrs}
         className={cn(
           "fixed inset-0 flex flex-col",
           "bg-card/98 backdrop-blur-md border border-border shadow-2xl",
@@ -1528,6 +1548,7 @@ export function WindowPanel({
       ref={fitContent ? fitContentRef : undefined}
       data-window-panel=""
         data-window-id={id}
+      {...surfaceLayerAttrs}
       className={cn(
         "fixed overflow-visible",
         motionStyles.enter,

@@ -5,14 +5,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
 import {
-  AlertCircle,
   Component,
   Bug,
   Camera,
   Check,
   CheckCheck,
   Clipboard,
-  ExternalLink,
+  List,
   HelpCircle,
   Lightbulb,
   Loader2,
@@ -25,7 +24,6 @@ import {
   X,
     KeyRound,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUser } from "@/lib/redux/slices/userSlice";
@@ -63,7 +61,10 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
 import { useScreenCapture } from "@/hooks/useScreenCapture";
-import { VoiceTextarea } from "@/components/official/VoiceTextarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { useOpenImageAnnotationWindow } from "@/features/overlays/openers/imageAnnotationWindow";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
@@ -105,19 +106,6 @@ const FEEDBACK_TYPE_CHIPS: Record<
   suggestion: { label: "Suggestion", icon: MessageSquare },
   other: { label: "Other", icon: HelpCircle },
   request: { label: "Access", icon: KeyRound },
-};
-
-/** Active-state chip colors (inactive chips stay neutral). */
-const FEEDBACK_TYPE_ACTIVE_CLASSES: Record<FeedbackType, string> = {
-  bug: "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 [&_svg]:text-red-600 dark:[&_svg]:text-red-400",
-  feature:
-    "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 [&_svg]:text-blue-600 dark:[&_svg]:text-blue-400",
-  suggestion:
-    "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400 [&_svg]:text-green-600 dark:[&_svg]:text-green-400",
-  other:
-    "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 [&_svg]:text-amber-600 dark:[&_svg]:text-amber-400",
-  request:
-    "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400 [&_svg]:text-sky-600 dark:[&_svg]:text-sky-400",
 };
 
 // ─── Agent prompt builder ─────────────────────────────────────────────────────
@@ -207,11 +195,12 @@ export function FeedbackWindow({
         minWidth={380}
         minHeight={320}
         width={480}
-        height={580}
+        height={500}
         urlSyncKey="feedback"
         urlSyncId="default"
         className="feedback-window-panel"
         overlayId="feedbackDialog"
+        surfaceLayer={FEEDBACK_SURFACE_NAME}
         bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
         // Footer only exists for the form view — the success view replaces the
         // whole body and carries its own action tiles.
@@ -244,29 +233,24 @@ function FeedbackFooterRight({ form }: { form: FeedbackFormState }) {
   const { isSubmitting, description, cancelSubmit, onClose, handleSubmit } =
     form;
   return (
-    <div className="flex items-center gap-1.5">
-      <button
+    <div className="matrx-touch-targets flex items-center gap-1.5">
+      <Button
         type="button"
-        className="px-2 text-xs font-medium rounded-md border border-border text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        variant="outline"
+        size="sm"
         onClick={isSubmitting ? cancelSubmit : onClose}
       >
         Cancel
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
-        className={cn(
-          "flex items-center gap-1.5 px-2.5 text-xs font-medium rounded-md transition-colors",
-          "[&_svg]:w-3.5 [&_svg]:h-3.5",
-          description.trim() && !isSubmitting
-            ? "bg-primary text-primary-foreground hover:bg-primary/90"
-            : "bg-muted text-muted-foreground cursor-not-allowed",
-        )}
+        size="sm"
         onClick={handleSubmit}
         disabled={!description.trim() || isSubmitting}
       >
         {isSubmitting ? <Loader2 className="animate-spin" /> : <Send />}
-        {isSubmitting ? "Submitting..." : "Submit"}
-      </button>
+        {isSubmitting ? "Submitting…" : "Submit"}
+      </Button>
     </div>
   );
 }
@@ -284,11 +268,6 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
   // The organization the report is filed in — a Server Action carries no
   // `X-Organization-Id` header, so the selection travels as an argument.
   const selectedOrganizationId = useAppSelector(selectOrganizationId);
-
-  const username =
-    reduxUser?.userMetadata?.name ||
-    reduxUser?.email?.split("@")[0] ||
-    "Anonymous";
 
   const [feedbackType, setFeedbackType] = useState<FeedbackType>("bug");
   const [description, setDescription] = useState("");
@@ -740,6 +719,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     () =>
       createFeedbackScope({
         feedback_type: feedbackType,
+        route: pathname,
         content: description,
         attachment_count: attachments.length,
         submitted,
@@ -752,6 +732,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
       }),
     [
       feedbackType,
+      pathname,
       description,
       attachments.length,
       submitted,
@@ -762,6 +743,9 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
       assigneeId,
     ],
   );
+
+  // The same live values, for the menus and the field's agent actions.
+  const getApplicationScope = () => getScope() as ApplicationScope;
 
   // Write half: ONE composite draft target. Validation happens in the pure
   // `parseFeedbackDraft` BEFORE any setter runs, so a bad shape throws
@@ -774,7 +758,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
       feedback_draft: (value: unknown) => {
         if (submittedRef.current)
           throw new Error(
-            "This feedback has already been submitted — the form is gone and there is nothing left to stage. Use Submit Another to start a fresh report.",
+            "This feedback has already been submitted — the form is gone and there is nothing left to stage. Use New report to start a fresh one.",
           );
         if (isSubmittingRef.current)
           throw new Error(
@@ -837,7 +821,6 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     pathname,
     reduxUser,
     isAdmin,
-    username,
     onClose,
     // core form state
     feedbackType,
@@ -868,6 +851,7 @@ function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: 
     isCapturing,
     // surface seam
     getScope,
+    getApplicationScope,
     getWriteHandlers,
     // handlers
     handlePasteButton,
@@ -893,7 +877,6 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
     pathname,
     reduxUser,
     isAdmin,
-    username,
     onClose,
     feedbackType,
     setFeedbackType,
@@ -917,6 +900,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
     isLoadingAdminOptions,
     textareaRef,
     isCapturing,
+    getApplicationScope,
     handlePasteButton,
     handleTabCapture,
     handleScreenCapture,
@@ -932,90 +916,52 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
   // ── Submitted state ───────────────────────────────────────────────────────
   if (submitted) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-5">
-        {/* Success icon */}
-        <div className="flex items-center justify-center w-14 h-14 rounded-full bg-green-500/10 ring-4 ring-green-500/20">
-          <Check className="w-7 h-7 text-green-500" />
+      <div className="matrx-touch-targets flex flex-col items-center justify-center h-full p-6 text-center gap-4">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-success/10">
+          <Check className="w-6 h-6 text-success" />
         </div>
+        <h3 className="text-base font-semibold text-foreground">
+          Feedback submitted
+        </h3>
 
-        <div className="space-y-1">
-          <h3 className="text-base font-semibold text-foreground">
-            Feedback Submitted!
-          </h3>
-          <p className="text-xs text-muted-foreground max-w-[280px]">
-            Thank you — we&apos;ll review your report and get on it.
-          </p>
-        </div>
-
-        {/* Stats */}
+        {/* Your reports — each count opens the list behind it. */}
         {stats && (
-          <div className="flex items-center gap-6 rounded-xl border border-border bg-muted/30 px-6 py-3">
+          <div className="flex items-center gap-6 rounded-lg border border-border px-6 py-2">
             <StatPill label="Submitted" value={stats.total} />
-            <div className="w-px h-8 bg-border" />
-            <StatPill
-              label="Pending"
-              value={stats.pending}
-              valueClassName="text-amber-500"
-            />
-            <div className="w-px h-8 bg-border" />
-            <StatPill
-              label="Resolved"
-              value={stats.resolved}
-              valueClassName="text-green-500"
-            />
+            <StatPill label="Pending" value={stats.pending} />
+            <StatPill label="Resolved" value={stats.resolved} />
           </div>
         )}
 
-        {/* Copy for Agent — prominent single button */}
         {submittedItem && (
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={handleCopyForAgent}
-            className={cn(
-              "flex items-center justify-center gap-2 w-full max-w-[340px] px-4 py-2.5 rounded-xl border text-xs font-medium transition-all",
-              copied
-                ? "border-green-500/40 bg-green-500/10 text-green-600 dark:text-green-400"
-                : "border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground",
-            )}
+            className="w-full max-w-[340px]"
           >
-            {copied ? (
-              <>
-                <CheckCheck className="w-3.5 h-3.5" />
-                Copied — paste into your agent chat
-              </>
-            ) : (
-              <>
-                <Component className="w-3.5 h-3.5" />
-                Copy for Coding Agent
-              </>
-            )}
-          </button>
+            {copied ? <CheckCheck /> : <Component />}
+            {copied
+              ? "Copied — paste into your agent chat"
+              : "Copy for Coding Agent"}
+          </Button>
         )}
 
-        {/* Action tiles */}
         <div className="grid grid-cols-3 gap-2 w-full max-w-[340px]">
-          <ActionTile
-            icon={<Plus className="w-4 h-4" />}
-            label="Submit Another"
-            onClick={handleReset}
-          />
-          <Link
-            href="/settings/feedback"
-            onClick={onClose}
-            className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card hover:bg-accent transition-colors p-3 text-center cursor-pointer group"
-             target="_blank"
-             rel="noopener noreferrer"
-           >
-            <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-            <span className="text-[11px] font-medium text-muted-foreground group-hover:text-foreground transition-colors leading-tight">
-              View All
-            </span>
-          </Link>
-          <ActionTile
-            icon={<X className="w-4 h-4" />}
-            label="Close"
-            onClick={onClose}
-          />
+          <Button type="button" variant="outline" onClick={handleReset}>
+            <Plus />
+            New report
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/settings/feedback" onClick={onClose}>
+              <List />
+              View all
+            </Link>
+          </Button>
+          <Button type="button" variant="outline" onClick={onClose}>
+            <X />
+            Close
+          </Button>
         </div>
       </div>
     );
@@ -1025,40 +971,41 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
   // Content only — the Cancel/Submit bar and slow-connection hint are footer
   // slots owned by the WindowPanel root (see FeedbackFooterLeft/Right).
   return (
-    <div className="flex-1 overflow-auto min-h-0 px-4 py-3 space-y-3">
-      {/* Type selector */}
-      <div className="flex gap-1.5 flex-wrap">
+    <div className="matrx-touch-targets flex-1 overflow-auto min-h-0 px-4 py-3 space-y-3">
+      {/* Type selector — one standard single-choice group. */}
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        size="sm"
+        value={feedbackType}
+        onValueChange={(value) => {
+          // A single-choice group reports "" when the active item is pressed
+          // again; a report always has a type, so that press changes nothing.
+          if (value) setFeedbackType(value as FeedbackType);
+        }}
+        className="flex-wrap justify-start"
+        aria-label="Feedback type"
+      >
         {FEEDBACK_TYPES.map((value) => {
           const { label, icon: Icon } = FEEDBACK_TYPE_CHIPS[value];
           return (
-            <button
+            <ToggleGroupItem
               key={value}
-              type="button"
-              className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg cursor-pointer transition-colors border",
-                "[&_svg]:w-3.5 [&_svg]:h-3.5",
-                feedbackType === value
-                  ? FEEDBACK_TYPE_ACTIVE_CLASSES[value]
-                  : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
-              )}
-              onClick={() => setFeedbackType(value)}
+              value={value}
+              aria-label={label}
+              className="gap-1.5 px-2.5 text-xs [&_svg]:h-3.5 [&_svg]:w-3.5"
             >
               <Icon />
               {label}
-            </button>
+            </ToggleGroupItem>
           );
         })}
-      </div>
+      </ToggleGroup>
 
-      {/* Route + User info */}
-      <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground font-mono">
-        <span>
-          Route: <span className="text-foreground/70">{pathname}</span>
-        </span>
-        <span>
-          User: <span className="text-foreground/70">{username}</span>
-        </span>
-      </div>
+      {/* Where the report is filed from — sent with it. */}
+      <p className="text-xs text-muted-foreground">
+        Filed from <span className="text-foreground">{pathname}</span>
+      </p>
 
       {form.subject ? (
         <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs" data-feedback-subject="">
@@ -1066,7 +1013,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
           <blockquote className="mt-1 line-clamp-4 border-l-2 border-primary/50 pl-2 text-muted-foreground">
             {form.subject.quote}
           </blockquote>
-          <p className="mt-1 text-[10px] text-muted-foreground">The passage and its exact position are sent with your report.</p>
+          <p className="mt-1 text-xs text-muted-foreground">The passage and its exact position are sent with your report.</p>
         </div>
       ) : null}
 
@@ -1079,24 +1026,27 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             WidgetHandle too). */}
         <EditableContextMenu
           sourceFeature="system"
+          surfaceName={FEEDBACK_SURFACE_NAME}
+          getApplicationScope={getApplicationScope}
           contentSource={{ type: "raw" }}
           getTextarea={() => textareaRef.current}
           onTextReplace={setDescription}
           onTextInsertBefore={(text) => setDescription(text + description)}
           onTextInsertAfter={(text) => setDescription(description + text)}
         >
-          <VoiceTextarea
+          <ProTextarea
             ref={textareaRef}
-            className="w-full h-28 px-3 py-2 text-xs leading-relaxed text-foreground bg-muted/40 border border-border rounded-lg outline-none resize-none transition-colors placeholder:text-xs placeholder:text-muted-foreground/50 focus:border-ring focus:bg-background"
-            style={{ fontSize: "16px" }}
-            placeholder="Describe the issue, feature request, or suggestion..."
+            surfaceName={FEEDBACK_SURFACE_NAME}
+            getApplicationScope={getApplicationScope}
+            className="w-full h-28 px-3 py-2 text-base leading-relaxed text-foreground bg-muted/40 border border-border rounded-lg outline-none resize-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:bg-background"
+            placeholder="Describe the issue, feature request, or suggestion…"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isSubmitting}
           />
         </EditableContextMenu>
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-[10px] text-muted-foreground pointer-coarse:hidden">
           Ctrl+Enter to submit · Ctrl+V to paste screenshots
         </p>
       </div>
@@ -1114,13 +1064,13 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             <Settings2 className="w-3.5 h-3.5" />
             <span>Admin Options</span>
             {(categoryId !== "none" || assigneeId !== "none") && (
-              <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-medium">
+              <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-medium">
                 {(categoryId !== "none" ? 1 : 0) +
                   (assigneeId !== "none" ? 1 : 0)}{" "}
                 set
               </span>
             )}
-            <span className="ml-auto text-[10px] opacity-60">
+            <span className="ml-auto text-xs opacity-60">
               {adminOptionsOpen ? "Hide" : "Show"}
             </span>
           </button>
@@ -1177,7 +1127,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
                   </SelectContent>
                 </Select>
                 {assigneeId !== "none" && reduxUser?.id !== assigneeId && (
-                  <p className="text-[10px] text-muted-foreground leading-snug">
+                  <p className="text-xs text-muted-foreground leading-snug">
                     The assignee will get an in-app message and an email.
                   </p>
                 )}
@@ -1192,9 +1142,6 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
         <p className="text-xs font-medium text-muted-foreground">
           Screenshots <span className="font-normal opacity-60">(optional)</span>
         </p>
-        <p className="text-[10px] text-muted-foreground">
-          Click any thumbnail to draw, circle, or write on it.
-        </p>
 
         <FileUploadWithStorage
           folderRoot="userContent"
@@ -1207,38 +1154,46 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
         />
 
         <div className="flex items-center gap-2 flex-wrap">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={handlePasteButton}
             disabled={isSubmitting}
-            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-border bg-background hover:bg-accent text-foreground transition-colors disabled:opacity-50"
           >
-            <Clipboard className="w-3 h-3" />
+            <Clipboard />
             Paste Image
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={handleTabCapture}
             disabled={isSubmitting || isCapturing}
             title="Capture this tab's content instantly (no picker)"
-            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-border bg-background hover:bg-accent text-foreground transition-colors disabled:opacity-50"
           >
-            <Camera className="w-3 h-3" />
+            <Camera />
             Tab Capture
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={handleScreenCapture}
             disabled={isSubmitting || isCapturing}
             title="Select any window or screen to capture (browser picker)"
-            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-border bg-background hover:bg-accent text-foreground transition-colors disabled:opacity-50"
           >
-            <Monitor className="w-3 h-3" />
+            <Monitor />
             Screen Capture
-          </button>
+          </Button>
         </div>
 
         {/* Attachment thumbnails — pending / error / ready */}
+        {attachments.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            Click a thumbnail to draw, circle, or write on it.
+          </p>
+        )}
         {attachments.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-1">
             {attachments.map((slot) => (
@@ -1270,7 +1225,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
       </div>
 
       {error && (
-        <p className="text-[11px] text-destructive leading-snug">{error} <ErrorAlchemyMenu error={error} /></p>
+        <p className="text-xs text-destructive leading-snug">{error} <ErrorAlchemyMenu error={error} /></p>
       )}
     </div>
   );
@@ -1278,51 +1233,16 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function StatPill({
-  label,
-  value,
-  valueClassName,
-}: {
-  label: string;
-  value: number;
-  valueClassName?: string;
-}) {
+function StatPill({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex flex-col items-center gap-0.5">
-      <span
-        className={cn(
-          "text-xl font-bold tabular-nums",
-          valueClassName ?? "text-foreground",
-        )}
-      >
+    <Link
+      href="/settings/feedback"
+      className="flex flex-col items-center gap-0.5 rounded-md px-2 py-1 hover:bg-accent transition-colors"
+    >
+      <span className="text-xl font-semibold tabular-nums text-foreground">
         {value}
       </span>
-      <span className="text-[10px] text-muted-foreground">{label}</span>
-    </div>
-  );
-}
-
-function ActionTile({
-  icon,
-  label,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card hover:bg-accent transition-colors p-3 text-center cursor-pointer group"
-    >
-      <span className="text-muted-foreground group-hover:text-foreground transition-colors">
-        {icon}
-      </span>
-      <span className="text-[11px] font-medium text-muted-foreground group-hover:text-foreground transition-colors leading-tight">
-        {label}
-      </span>
-    </button>
+      <span className="text-xs text-muted-foreground">{label}</span>
+    </Link>
   );
 }

@@ -61,6 +61,17 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "feedback_form",
   },
   {
+    name: "route",
+    label: "Filed from",
+    description:
+      "The app path the window was opened on (\"Filed from …\" in the window); it is sent with the report. Always populated while the window is mounted.",
+    valueType: "string",
+    alwaysAvailable: true,
+    typicalCharCount: 40,
+    sortOrder: 310,
+    group: "feedback_form",
+  },
+  {
     // Baseline override: `content` IS the feedback description draft.
     ...BASELINE_VALUES.content,
     description:
@@ -233,11 +244,11 @@ export const feedbackManifest: SurfaceManifest = {
     "Feedback / bug report submission",
   readiness: "partial",
   readinessNote:
-    "Emitter wired on FeedbackWindow (type, description, attachment count, submission state and admin routing all live) and the write half (feedback_draft) is registered and live-verified against a real agent run; the window's route and username lines are shown to the user but not yet declared as values",
+    "Emitter wired on FeedbackWindow (type, route, description, attachment count, submission state and admin routing all live) and the write half (feedback_draft) is registered; page-pass 2026-09-27 re-proof of the write with a live agent is still owed",
   overlayId: "feedbackDialog",
   label: "Feedback",
   intro: `<surface_intro>
-You are in the Feedback window — the user is filing a bug report, feature request, or suggestion into the platform feedback tracker. Feedback form carries the chosen type, the description draft (the baseline content), and any attachments; Submission state tells you whether it has been sent, the created item id, and any admin routing choices. Helping here usually means sharpening the description into a clear, actionable report.
+You are in the Feedback window — the user is filing a bug report, feature request, or suggestion into the platform feedback tracker. Feedback form carries the chosen type, the route the report is filed from, the description draft (the baseline content), and any attachments; Submission state tells you whether it has been sent, the created item id, and any admin routing choices. Helping here usually means sharpening the description into a clear, actionable report.
 You can also WRITE to this surface through the single feedback_draft target: the report body and the type chip that classifies it. This is exactly the moment those are worth writing — you have just watched what happened, and you can describe the route, the steps, and the expected-versus-actual far better than the user is about to type. Read the current content first and send back the complete text you want, since it replaces the whole textarea. Everything is STAGED into the open form; the user reads it and presses Submit.
 You cannot submit the feedback, attach screenshots, or set the admin category and assignee — filing the report and deciding who is handed the ticket stay with the user.
 </surface_intro>`,
@@ -252,6 +263,7 @@ You cannot submit the feedback, attach screenshots, or set the admin category an
  */
 export function createFeedbackScope(values: {
   feedback_type: (typeof FEEDBACK_TYPES)[number];
+  route: string;
   content: string;
   attachment_count: number;
   submitted: boolean;

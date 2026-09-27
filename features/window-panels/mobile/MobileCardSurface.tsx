@@ -29,6 +29,8 @@ interface MobileCardSurfaceProps {
   isOpen: boolean;
   actionsRight?: ReactNode;
   bodyClassName?: string;
+  /** Marks the root `data-surface-layer` (see WindowPanel `surfaceLayer`). */
+  surfaceLayer?: string;
   /** Override the default max-height (60dvh). Accepts any CSS length. */
   maxHeight?: string;
 }
@@ -41,6 +43,7 @@ export default function MobileCardSurface({
   isOpen,
   actionsRight,
   bodyClassName,
+  surfaceLayer,
   maxHeight = "60dvh",
 }: MobileCardSurfaceProps) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -66,6 +69,7 @@ export default function MobileCardSurface({
     <FloatingLayer>
     <div
       ref={cardRef}
+      data-surface-layer={surfaceLayer}
       role="dialog"
       aria-modal="false"
       className={cn(
