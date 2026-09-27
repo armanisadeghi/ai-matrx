@@ -94,7 +94,17 @@ export interface UseSpokenPractice {
   reset: () => void;
 }
 
-export function useSpokenPractice(): UseSpokenPractice {
+export function useSpokenPractice(
+  options: {
+    /**
+     * False until an organization is chosen — see StudyOrganizationGate. A
+     * start while false writes nothing: no AI design run, no mic, no
+     * `study_session` (the setup screen shows the organization notice instead).
+     */
+    enabled?: boolean;
+  } = {},
+): UseSpokenPractice {
+  const enabled = options.enabled ?? true;
   const dispatch = useAppDispatch();
   const liveRun = useLiveRunHandle();
   const { speak, stop: speakStop } = useCartesiaSpeaker({
@@ -145,6 +155,7 @@ export function useSpokenPractice(): UseSpokenPractice {
   // failed start never burns quota.
   const start = useCallback(
     async (config: PracticeConfig): Promise<boolean> => {
+      if (!enabled) return false;
       configRef.current = config;
       setError(null);
       setResults([]);
@@ -221,7 +232,7 @@ export function useSpokenPractice(): UseSpokenPractice {
       setPhase("asking");
       return true;
     },
-    [dispatch],
+    [dispatch, enabled],
   );
 
   const beginAnswer = useCallback(() => {
