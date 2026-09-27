@@ -3,6 +3,7 @@
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSettingsDesign } from "../SettingsDesignProvider";
+import { CompactHelpPopover } from "../SettingsRow";
 
 export type SettingsSubHeaderProps = {
   title: string;
@@ -13,7 +14,8 @@ export type SettingsSubHeaderProps = {
 };
 
 /**
- * Page-level header for a settings tab.
+ * Page-level header for a settings tab. The `description` opens from a help
+ * icon beside the title rather than sitting under it.
  * Render once at the top of each tab component — above any SettingsSection.
  */
 export function SettingsSubHeader({
@@ -36,12 +38,10 @@ export function SettingsSubHeader({
         <h2 className={cn("font-semibold text-foreground leading-tight", variant === "compact" ? "text-base" : "text-lg")}>
           {title}
         </h2>
+        {/* The title stands alone (page-pass core 3): what the tab is for is
+            one tap away, never a sentence parked under every heading. */}
+        {description && <CompactHelpPopover label={title} description={description} />}
       </div>
-      {description && (
-        <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-          {description}
-        </p>
-      )}
     </div>
   );
 }

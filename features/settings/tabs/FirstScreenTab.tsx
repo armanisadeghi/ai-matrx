@@ -24,7 +24,6 @@ import { Building2, Palette, SlidersHorizontal } from "lucide-react";
 import type { SettingsTabDef } from "../types";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
-import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import type { ScopedKnob } from "@/lib/scoped-config/types";
@@ -38,6 +37,9 @@ import {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 /** The registry keys the first screen shows, in order (USD-12). */
 export const FIRST_SCREEN_MODEL_KEY = "agents.model_prefs.chat_default_model";
@@ -54,6 +56,11 @@ export default function FirstScreenTab() {
     "userPreferences.organization.defaultOrganizationId",
   );
   const settings = useUniversalSettings();
+  // The AI and voice rows live on the organization's ladder, so with no
+  // organization selected they are HELD: the person's memberships are shown
+  // inline through the one org-state component, and the rows appear once one
+  // is chosen (organization-gate rule). Never a hand-spelled callout.
+  const { organizationState } = useOrganizationRequired();
 
   const present = (keys: readonly string[]): ScopedKnob[] =>
     keys.map((key) => settings.knobByKey(key)).filter((knob): knob is ScopedKnob => Boolean(knob));
@@ -80,17 +87,35 @@ export default function FirstScreenTab() {
   const missingKeys = registerConsulted
     ? absent([FIRST_SCREEN_MODEL_KEY, FIRST_SCREEN_VOICE_KEY, ...FIRST_SCREEN_MORE_KEYS])
     : [];
-  const noOrganizationYet =
-    !settings.isLoading && !settings.error && !settings.organizationId;
+  const defaultOrganization = defaultOrganizationId
+    ? settings.organizations.find((org) => org.id === defaultOrganizationId) ?? null
+    : null;
+
+  // What this screen shows, as values an agent on the page can read
+  // (`first_screen` group of matrx-user/settings). Read from state already
+  // rendered here; nothing is fetched for the agent.
+  useSurfaceScopeContribution("matrx-user/settings", "first-screen", () => ({
+    default_organization: defaultOrganizationId
+      ? { id: defaultOrganizationId, name: defaultOrganization?.name ?? null }
+      : null,
+    organization_state: organizationState,
+    ...(settings.isLoading
+      ? {}
+      : {
+          ai_voice_defaults: settings.error
+            ? { load_error: settings.error }
+            : ladderKnobs.map((knob) => ({
+                key: knob.full_key,
+                label: knob.label,
+                value: knob.effective_value,
+                origin: knob.origin,
+                set_here: knob.is_overridden,
+              })),
+        }),
+  }));
 
   return (
     <>
-      <SettingsSubHeader
-        title="Settings"
-        description="The basics, then everything else on the left."
-        icon={SlidersHorizontal}
-      />
-
       {settings.editingContext === "system" && <RegistryCoverage />}
 
       {settings.editingContext === "user" && <SettingsSection title="Appearance" icon={Palette}>
@@ -146,17 +171,24 @@ export default function FirstScreenTab() {
           <ErrorAlchemyMenu error={settings.error} />
         </SettingsCallout>
       )}
-      {noOrganizationYet && (
-        <SettingsCallout tone="info" title="Choose an organization to see your AI and voice defaults">
-          These settings live on your organization&apos;s ladder. Pick one from the header, or set a
-          default organization above, and they appear here.
-        </SettingsCallout>
+      {settings.editingContext === "user" && organizationState !== "ready" && (
+        <OrganizationContextNotice
+          state={organizationState}
+          what="Your AI and voice defaults"
+          description="Your AI model and voice defaults are kept per organization. Choose the one you are working in."
+          compact
+          className="rounded-lg border border-border bg-card"
+        />
       )}
       {missingKeys.length > 0 && (
-        <SettingsCallout tone="error" title="A default is missing from the register">
-          These settings are not registered for this organization yet, so they cannot be shown:{" "}
-          {missingKeys.join(", ")}. The platform register (platform.feature_knob) is missing
-          the rows — nothing is hidden on purpose.
+        <SettingsCallout
+          tone="error"
+          title={`${missingKeys.length === 1 ? "One default is" : `${missingKeys.length} defaults are`} not set up for this organization yet`}
+        >
+          They will appear here as soon as they are added — nothing is hidden on purpose.
+          <ErrorAlchemyMenu
+            error={`First-screen settings missing from the knob register: ${missingKeys.join(", ")}`}
+          />
         </SettingsCallout>
       )}
 
@@ -175,7 +207,7 @@ export const FIRST_SCREEN_TAB: SettingsTabDef = {
   id: "firstScreen",
   label: "Settings",
   icon: SlidersHorizontal,
-  description: "The basics, then everything else on the left.",
+  description: "Theme, default organization, and your default AI model and voice.",
   component: FirstScreenTab,
   persistence: "server",
 };

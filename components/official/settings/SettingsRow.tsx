@@ -278,7 +278,7 @@ export function SettingsRow({
   );
 }
 
-function CompactHelpPopover({
+export function CompactHelpPopover({
   label,
   description,
   helpText,

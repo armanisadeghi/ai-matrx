@@ -121,6 +121,13 @@ const groups: SurfaceValueGroup[] = [
       "Sanitized MCP, GitHub, and Google connection state shown only while the Integrations tab is mounted. Credentials and private endpoints are never emitted.",
   },
   {
+    key: "first_screen",
+    label: "First screen",
+    sortOrder: 380,
+    description:
+      "What the Settings landing page (/user-settings) shows: the default organization, whether an organization is selected, and the AI model and voice defaults. Present only while the landing page is open.",
+  },
+  {
     key: "preferences",
     label: "Agent-writable preferences",
     sortOrder: 400,
@@ -282,6 +289,41 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "integrations",
   },
 
+  // ── First screen (descendant-owned: FirstScreenTab) ───────────────────
+  {
+    name: "default_organization",
+    label: "Default organization",
+    description:
+      "The organization the user chose to land in when they sign in, as { id, name }, or null when none is chosen. Read-only to you. Absent outside the Settings landing page.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 90,
+    sortOrder: 590,
+    group: "first_screen",
+  },
+  {
+    name: "organization_state",
+    label: "Organization state",
+    description:
+      "Whether an organization is selected for this session: ready, resolving, required (none chosen — the page shows the user's organizations to pick from), unavailable (the organization read failed), or signed_out. The AI and voice defaults appear only when ready. Absent outside the Settings landing page.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 10,
+    sortOrder: 592,
+    group: "first_screen",
+  },
+  {
+    name: "ai_voice_defaults",
+    label: "AI and voice defaults",
+    description:
+      "The default AI models (everyday chat, building agents, decisions) and default voice shown on the landing page, as [{ key, label, value, origin, set_here }] where origin says which level set the value (platform, organization, user…) and set_here is true when the user set it themselves. [] when no organization is selected; { load_error } when the read failed. Read-only to you. Absent outside the landing page and while loading.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 700,
+    sortOrder: 594,
+    group: "first_screen",
+  },
+
   // ── Agent-writable preferences (read twins of the write targets) ──────
   // Each of these is the READ half of a `writeTargets` entry below — the
   // evidence loop: the agent sees the current value, changes it, and sees
@@ -426,9 +468,9 @@ export const settingsManifest: SurfaceManifest = {
   urlPattern: "/user-settings",
   intro: `<surface_intro>
 You are on Settings: the user's preference center, organized as a tree of sections (appearance, AI, voice, profile, integrations, …) with one tab open at a time.
-The Active section group tells you WHERE the user is: which tab is open, what it configures, and its persistence tier ("synced" settings follow the account across devices; "local-only"/"session" reset). All active-tab values are absent on the /user-settings landing page before a section is chosen.
+The Active section group tells you WHERE the user is: which tab is open, what it configures, and its persistence tier ("synced" settings follow the account across devices; "local-only"/"session" reset). On the /user-settings landing page the active tab is "firstScreen", and the First screen group shows what it holds: theme, default organization, organization state, and the AI model and voice defaults.
 settings_sections is the full map of every section this user can see (each with its URL) — use it to point the user at the right place.
-The Agent-writable preferences group is the subset you can both READ and CHANGE: color mode, accent theme, shell layout, text-generation style, per-feature language defaults, the assistant's name, and the voice persona. These are readable and writable from ANY settings tab — you never have to navigate the user to a tab first. Every other setting on this page is read-only to you: identity, security, billing, organization roles, integrations, model governance, and the privacy/background-capture toggles are deliberately not writable, so decline rather than improvise if asked to change one.
+The Agent-writable preferences group is the subset you can both READ and CHANGE: color mode, text-generation style, per-feature language defaults, the assistant's name, and the voice persona. These are readable and writable from ANY settings tab — you never have to navigate the user to a tab first. Every other setting on this page is read-only to you: identity, security, billing, organization roles, integrations, model governance, and the privacy/background-capture toggles are deliberately not writable, so decline rather than improvise if asked to change one.
 Changes here are DURABLE — they save to the user's account and follow them to other devices — so every write asks the user first, and declining is a normal answer. Everything auto-saves; is_saving reflects a flush in flight, and writes are refused while one is in progress.
 </surface_intro>`,
   groups,

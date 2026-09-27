@@ -9,6 +9,7 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { toast } from "@/lib/toast";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import {
   NOTIFICATION_CHANNELS,
   clearNotificationPreference,
@@ -19,6 +20,8 @@ import {
   type NotificationScope,
 } from "../notification-preferences";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 // The canonical Notification System preferences tab: every event the platform
 // can tell you about, with your per-channel choice. Absence of a choice means
@@ -36,12 +39,19 @@ export default function NotificationsTab() {
   const [settings, setSettings] = useState<NotificationEventSetting[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  // The screen opens on the organization the person is working in. With none
+  // selected the read is HELD — their organizations are shown inline and the
+  // screen loads once one is chosen — never an error box carrying the
+  // transport's "Select an organization before sending this request."
+  const { organizationId, organizationState } = useOrganizationRequired();
 
   useEffect(() => {
+    if (!organizationId) return;
     let cancelled = false;
     loadNotificationScopes()
       .then(({ scopes: rows, initialOrganizationId }) => {
         if (cancelled) return;
+        setLoadError(null);
         setScopes(rows);
         setScopeId(initialOrganizationId);
       })
@@ -55,12 +65,11 @@ export default function NotificationsTab() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [organizationId]);
 
   useEffect(() => {
     if (!scopeId) return;
     let cancelled = false;
-    setSettings(null);
     loadNotificationSettings(scopeId)
       .then((rows) => {
         if (!cancelled) setSettings(rows);
@@ -148,7 +157,15 @@ export default function NotificationsTab() {
         description="Choose how the platform reaches you, per event. Each event has a sensible default until you change it."
         icon={Bell}
       />
-      {loadError ? (
+      {organizationState !== "ready" ? (
+        <OrganizationContextNotice
+          state={organizationState}
+          what="Your notification settings"
+          description="Notification choices are kept per organization. Choose the one you are working in."
+          compact
+          className="rounded-lg border border-border bg-card"
+        />
+      ) : loadError ? (
         <SettingsCallout tone="error" title="Notification settings unavailable">
           {loadError}
           <ErrorAlchemyMenu error={loadError} />
@@ -161,7 +178,12 @@ export default function NotificationsTab() {
                 label="Applies to"
                 description={`Only ${activeScope?.label ?? "this organization"}. Anything you leave untouched follows your most recent choice in another organization, or the event's default.`}
                 value={scopeId}
-                onValueChange={setScopeId}
+                onValueChange={(nextScopeId: string) => {
+                  // Clear the previous organization's rows so the loader
+                  // shows instead of the old switches under the new name.
+                  setSettings(null);
+                  setScopeId(nextScopeId);
+                }}
                 options={scopes.map((scope) => ({
                   value: scope.organizationId,
                   label: scope.label,
@@ -172,9 +194,9 @@ export default function NotificationsTab() {
             </SettingsSection>
           ) : null}
           {settings === null ? (
-            <SettingsSection title="Loading your notification events">
-              <SettingsSwitch label="Loading…" checked={false} onCheckedChange={() => {}} disabled last />
-            </SettingsSection>
+            <div className="flex items-center justify-center py-8">
+              <SuspenseLoader size="sm" message="Loading your notification events…" />
+            </div>
           ) : settings.length === 0 ? (
             <SettingsCallout tone="info" title="No notification events yet">
               Features register their events here as they come online.
