@@ -46,9 +46,13 @@ context rail); only the chrome is arranged differently.
   Recent · Model. Advanced: + Overrides · Advanced.
 - `ComposerPlusMenu` — the 300px cascading + menu; `ComposerEnvironmentPanel` (also the Cloud chip's menu).
 - `ComposerMetaRow` / `ComposerPills` — Scope · Output | Agent · Effort · Auto (compact: Agent · Auto only).
-- `ComposerChipsRow` — Work+: Cloud chip + this chat's connections.
+- `ComposerChipsRow` — Work+: Cloud chip + this chat's connections (`ChatConnectionsStrip variant="chips"`, the
+  same data and doors as the + menu's rail at the composer's 28px chip size, `composer-chip.ts`). **Advanced**
+  (`chips.repos`) adds a chip per resource chosen from an attachable connection (`name · default branch`) and a
+  `+ Choose …` chip when none is chosen; Work shows only a count on the connection. Chosen items are spoken only
+  after the attachments read succeeded — a failed read is its own retry chip, never "nothing chosen".
 - `ComposerOutput` — Output pill/panel (Shapes + Let the agent decide).
-- `ComposerEffortPill`, `ComposerAutoPill`, `ComposerMenu` (the row primitives), `ComposerSplash`
+- `ComposerEffortPill` (the model's own value; `auto` reads "Auto effort" beside the approval pill's "Auto"), `ComposerAutoPill`, `ComposerMenu` (the row primitives), `ComposerSplash`
   (`ComposerGreeting`, `ComposerQuickActions` with a `trailing(mandateKeys)` slot for the host's intelligence
   icon, `ComposerQuickActionsSkeleton`). The quick-action row is absent with no active organization.
 
@@ -104,6 +108,10 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 - **Hidden, never faked** (brief Q5). Not shown because no capability exists yet: Manual (no approval
   gate client or server), per-chat Vault, team sandbox, Files/Media/Artifacts/The Matrx output families,
   Meta Ads accounts, a server token count on Preview context.
+- **Every mode's + menu says what Enter does** (`plus.enterSends`: the per-conversation `submitOnEnter` switch with
+  the rule in force as its description) — the composer hides the classic toolbar toggle, never the rule.
+- **`useComposerMode(initialMode, { enabled })`** — a host that renders no composer this time (a `ChatRoomClient`
+  shared with voice, staff, interview rooms) passes `enabled: false`: no knob read, no seeding, no cookie write.
 - **Memory is a per-conversation one-shot signal** (`requestMemoryToggle({conversationId, enabled})` rides
   THAT conversation's next send, then clears); the row shows the pending state ("Turns on with your next message").
 - Every composer `PopoverContent` with a width class carries the `/* sizing: fixed — … */` comment
@@ -113,6 +121,9 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 
 ## Change Log
 
+- **2026-09-27** — Independent review fixes: "Enter sends" row in every mode; `useComposerMode` `enabled`; chips row
+  at composer size with Advanced resource chips; "Auto effort"; `/chat` placeholder "How can I help you today?"
+  until the conversation has messages.
 - **2026-09-27** — Plugged into every `/chat` route (splash on `/chat/new`, page size in conversations, header mode
   switch); `textMenu` added (the retired `/chat/new` hero's right-click menu, now on every chat composer);
   phone top bar = one mode button; `ComposerQuickActions.trailing` + `ComposerQuickActionsSkeleton`.

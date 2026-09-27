@@ -36,6 +36,11 @@ function effortWord(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+/** The pill sits beside the approval pill, which reads "Auto" — a bare "Auto" here would say the same word twice. */
+function effortPillWord(value: string): string {
+  return value === "auto" ? "Auto effort" : effortWord(value);
+}
+
 export function ComposerEffortPill({
   conversationId,
   modelId,
@@ -74,7 +79,7 @@ export function ComposerEffortPill({
     <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
         <button type="button" className={composerPillClass(size, open)} aria-label="Effort" title="How hard the model thinks">
-          <span className="truncate">{current ? effortWord(current) : "Effort"}</span>
+          <span className="truncate">{current ? effortPillWord(current) : "Effort"}</span>
           <ChevronDown className="h-3.5 w-3.5 shrink-0" />
         </button>
       </PopoverTrigger>
