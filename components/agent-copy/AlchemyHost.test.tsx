@@ -95,7 +95,14 @@ jest.mock("next/navigation", () =>
     pathname: "/chat",
   }),
 );
-jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
+// The host's tree reads knobs from the one snapshot (SelectionToolbarRoot's highlight knob); the
+// register answers empty so every knob falls to its consumer's default.
+jest.mock("@/utils/supabase/client", () => ({
+  supabase: {},
+  createClient: () => ({
+    schema: () => ({ rpc: async () => ({ data: { resolved: {}, stamp: null }, error: null }) }),
+  }),
+}));
 jest.mock(
   "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream",
   () => ({

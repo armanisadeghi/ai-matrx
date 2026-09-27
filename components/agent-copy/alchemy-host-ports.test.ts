@@ -233,7 +233,7 @@ describe("identity port (IdentityPort)", () => {
 });
 
 describe("absent ports", () => {
-  it("leaves persistence unbound — per-person settings are absent, never stubbed", () => {
-    expect(ports().persistence).toBeUndefined();
+  it("leaves the window port unbound unless the host hands it a window system — the workspace window is absent, never stubbed", () => {
+    expect(ports().window).toBeUndefined();
   });
 });

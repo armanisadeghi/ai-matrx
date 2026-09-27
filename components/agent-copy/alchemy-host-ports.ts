@@ -12,9 +12,16 @@
  *   icons        ALC-15  keys → components (`alchemy-icon-keys.ts`: registered
  *                        app components first, else `@ai-matrx/icons` names)
  *   notify       ALC-15  the app toast; every failure carries its remedy
- *   persistence  ALC-14  NOT BOUND. No per-person Alchemy setting exists yet
- *                        (the menu layout/density setting arrives with ALC-15),
- *                        so per-person settings are ABSENT — never stubbed.
+ *   persistence  PP-13a  the person's own settings: their USER-rung row of the
+ *                        Feature Knob register (`platform.knob_override`,
+ *                        org-qualified), written through `knob_override_set`.
+ *                        A setting key is the knob's dotted address.
+ *   transferKnobs PP-13a the organization default recipe: the
+ *                        `alchemy.transfer.default_recipe` knob resolved WITHOUT
+ *                        the person (organization → platform), from the one
+ *                        knob snapshot
+ *   window       PP-01a  `AlchemyWindowHost.tsx` — real WindowPanels, several
+ *                        at once, each holding a live preparation session
  */
 
 import type {
@@ -22,9 +29,19 @@ import type {
   DiagnosticsPort,
   IconResolverPort,
   IdentityPort,
+  Json,
   KindValidatorPort,
   NotifyPort,
+  PersistencePort,
+  TransferKnobsPort,
+  WindowPort,
 } from "@ai-matrx/alchemy/ports";
+import { ensureEffectiveKnob, knobAddress } from "@/lib/scoped-config/effectiveKnobs";
+import {
+  fetchKnobRungOverrides,
+  knobRefusalSentence,
+  setKnobOverride,
+} from "@/lib/scoped-config/service";
 import { toast } from "@/lib/toast";
 import { resolveAlchemyIcon } from "./alchemy-icon-keys";
 import type { KindValidator } from "@ai-matrx/content-ir/registry";
@@ -138,16 +155,68 @@ export function createNotifyPort(): NotifyPort {
   };
 }
 
+/** The signed-in person in their active organization, or a sentence saying what is missing. */
+function knobPrincipal(store: AlchemyIdentityStore): { userId: string; organizationId: string } {
+  const identity = readIdentity(store.getState());
+  if (!identity?.organizationId) {
+    throw new Error("Your own settings are saved per organization. Choose an organization, then try again.");
+  }
+  return { userId: identity.userId, organizationId: identity.organizationId };
+}
+
+/** The person's own settings: their user-rung knob row (never the effective ladder). */
+export function createPersistencePort(store: AlchemyIdentityStore): PersistencePort {
+  return {
+    async readSetting<T extends Json>(setting: string) {
+      const { feature, key } = knobAddress(setting);
+      const { userId, organizationId } = knobPrincipal(store);
+      const rows = await fetchKnobRungOverrides({ feature, key, organizationId, kinds: ["user"] });
+      return (rows.find((row) => row.scope_id === userId)?.value ?? null) as T | null;
+    },
+    async writeSetting(setting, value) {
+      const { feature, key } = knobAddress(setting);
+      const { userId, organizationId } = knobPrincipal(store);
+      const result = await setKnobOverride({ feature, key, scopeKind: "user", scopeId: userId, organizationId, value });
+      if (!result.ok) throw new Error(`Your ${setting} setting was not saved: ${knobRefusalSentence(result)}`);
+    },
+  };
+}
+
+export const TRANSFER_DEFAULT_RECIPE_KNOB = { feature: "alchemy.transfer", key: "default_recipe" } as const;
+
+/** Organization default recipes: the knob resolved for the organization alone (organization → platform). */
+export function createTransferKnobsPort(): TransferKnobsPort {
+  return {
+    async defaultRecipe(sourceKind, organizationId) {
+      if (!organizationId) {
+        throw new Error("Organization default recipes need an organization. Choose one, then reopen the workspace.");
+      }
+      const map = await ensureEffectiveKnob(organizationId, null, TRANSFER_DEFAULT_RECIPE_KNOB);
+      if (map === null || map === undefined) return null;
+      if (typeof map !== "object" || Array.isArray(map)) {
+        throw new Error("The organization's default recipes are not a map of source kinds to recipes.");
+      }
+      return (map as Record<string, Json>)[sourceKind] ?? null;
+    },
+  };
+}
+
 export function createAlchemyHostPorts({
   store,
+  window,
 }: {
   store: AlchemyIdentityStore;
+  /** The host's window system (PP-01a); absent = the workspace window is absent. */
+  window?: WindowPort;
 }): AlchemyHostPorts {
   return {
     kinds: createKindValidatorPort(),
     diagnostics: createDiagnosticsPort(),
     identity: createIdentityPort(store),
+    persistence: createPersistencePort(store),
+    transferKnobs: createTransferKnobsPort(),
     icons: createIconResolverPort(),
     notify: createNotifyPort(),
+    ...(window ? { window } : {}),
   };
 }
