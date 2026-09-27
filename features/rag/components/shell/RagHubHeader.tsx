@@ -6,6 +6,7 @@
 // callers pass their contextual action tap-buttons via `right`. No title
 // text — the nav IS the identity. Pattern mirrors CmsHubHeader.
 
+import { usePathname } from "next/navigation";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
 import {
@@ -25,10 +26,25 @@ const HUB_NAV_ITEMS = [
   { name: "Repositories", href: "/knowledge/repositories", icon: Code2 },
 ];
 
+/**
+ * The Data Stores and Catalog tabs open the hub's container groups (H6b), so a
+ * pathname match would light "Hub" on their record pages; the record page's
+ * own route names its tab.
+ */
+function activeTabFor(pathname: string | null): string | undefined {
+  if (!pathname) return undefined;
+  if (pathname.startsWith("/knowledge/data-stores")) return HUB_DATA_STORES_HREF;
+  if (pathname.startsWith("/knowledge/library-catalog") || pathname.startsWith("/knowledge/library-curate"))
+    return HUB_LIBRARY_CATALOG_HREF;
+  if (pathname.startsWith("/knowledge/repositories")) return "/knowledge/repositories";
+  return undefined;
+}
+
 export function RagHubHeader({ right }: { right?: React.ReactNode }) {
+  const pathname = usePathname();
   return (
     <RouteHeader
-      center={<RouteModeNav items={HUB_NAV_ITEMS} />}
+      center={<RouteModeNav items={HUB_NAV_ITEMS} activeHref={activeTabFor(pathname)} />}
       right={right}
     />
   );

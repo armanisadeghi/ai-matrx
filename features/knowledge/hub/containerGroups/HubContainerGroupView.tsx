@@ -36,7 +36,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrgBootstrapResolved, selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useDataStores } from "@/features/rag/hooks/useDataStores";
 import {
@@ -251,6 +251,7 @@ interface LibrariesRead {
 function LibrariesGroup({ group, set }: { group: Group; set: (k: string, v: string | null, replace?: boolean) => void }) {
   const dispatch = useAppDispatch();
   const organizationId = useAppSelector(selectOrganizationId);
+  const orgResolved = useAppSelector(selectOrgBootstrapResolved);
   const lane = libraryLane(group);
   const adapters = libraryAdapters(group);
   const words = groupWords(group);
@@ -354,7 +355,16 @@ function LibrariesGroup({ group, set }: { group: Group; set: (k: string, v: stri
         </Link>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto" role="list" aria-label="Libraries">
-        {!organizationId || read.status === "loading" ? <Notice>Reading your Libraries…</Notice> : null}
+        {!organizationId && !orgResolved ? (
+          <Notice>Opening your workspace…</Notice>
+        ) : !organizationId ? (
+          <Notice>
+            Libraries are listed for the organization you are working in, and none is chosen yet. Choose one with the
+            organization button in the header and they appear here.
+          </Notice>
+        ) : read.status === "loading" ? (
+          <Notice>Reading your Libraries…</Notice>
+        ) : null}
         {read.status === "error" ? (
           <Notice tone="error">
             {read.error} Nothing is listed because the read failed.{" "}
