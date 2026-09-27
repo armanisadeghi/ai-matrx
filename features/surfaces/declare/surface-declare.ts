@@ -228,6 +228,10 @@ export const agentHintsExtension: DeclarationExtension<Manifest> = {
       )
         out.push(issue(s, `values/${v.name}/inlineUpTo`, `Surface "${s}" value "${v.name}" has inlineUpTo ${n}, which is not one of the inline tiers (record ${INLINE_TIER.record}, list ${INLINE_TIER.list}, recent ${INLINE_TIER.recent}) and carries no inlineApproval.`, "Use INLINE_TIER.record / .list / .recent under the policy on SurfaceValue.inlineUpTo, or omit it. Any other size needs Arman's approval recorded in inlineApproval."));
     }
+    for (const t of m.writeTargets ?? []) {
+      if (t.applyPolicy === "auto" && t.mode !== "ui" && !(t as { approval?: unknown }).approval)
+        out.push(issue(s, `writeTargets/${t.name}/applyPolicy`, `Surface "${s}" target "${t.name}" applies automatically (applyPolicy "auto") in mode "${t.mode}". Only "ui" targets may skip the person's approval on their own.`, `Use applyPolicy "ask", or record Arman's approval on the target: approval: "Arman <date>: <why>".`));
+    }
     if (m.guide !== undefined) {
       const expected = surfaceGuidePath(s);
       if (m.guide !== expected)
