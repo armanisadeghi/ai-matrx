@@ -172,7 +172,7 @@ function ClassHubBody({
   onUpdate: (
     id: string,
     patch: { name?: string; description?: string; settings?: ClassFormValue["settings"] },
-  ) => Promise<void>;
+  ) => Promise<unknown>;
   onDelete: (id: string) => Promise<void>;
 }) {
   const router = useRouter();

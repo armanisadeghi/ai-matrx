@@ -85,7 +85,15 @@ async function applySurfaceWriteHandler(
     origin,
     actorLabel,
   });
-  if (result.ok) return { ok: true, result: { surfaceName: result.surfaceName } };
+  if (result.ok) {
+    return {
+      ok: true,
+      result: {
+        surfaceName: result.surfaceName,
+        ...(result.outcome ? { outcome: result.outcome } : {}),
+      },
+    };
+  }
   // A decline is reported honestly as not-applied, but it is NOT a defect —
   // `applySurfaceWrite` already kept it quiet, and the runner must not toast
   // over the user's own choice.

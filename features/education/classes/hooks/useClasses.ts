@@ -77,7 +77,7 @@ export interface UseClassesReturn {
   updateClass: (
     id: string,
     patch: { name?: string; description?: string; settings?: ClassSettings },
-  ) => Promise<void>;
+  ) => Promise<StudyClass>;
   deleteClass: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -198,8 +198,9 @@ export function useClasses(): UseClassesReturn {
     async (
       id: string,
       patch: { name?: string; description?: string; settings?: ClassSettings },
-    ): Promise<void> => {
-      await dispatch(
+    ): Promise<StudyClass> => {
+      // `settings` REPLACES the stored JSON — pass the class's full settings.
+      const scope = (await dispatch(
         updateScope({
           scope_id: id,
           name: patch.name,
@@ -208,7 +209,8 @@ export function useClasses(): UseClassesReturn {
             ? serializeClassSettings(patch.settings)
             : undefined,
         }),
-      ).then(unwrapScopesRpc);
+      ).then(unwrapScopesRpc)) as Scope;
+      return scopeToClass(scope);
     },
     [dispatch],
   );

@@ -23,15 +23,68 @@ import { ClassFormDialog, type ClassFormValue } from "./ClassFormDialog";
 import { AccessModeBadge } from "./AccessModeBadge";
 import { daysUntil, nextExamDate } from "../settings";
 import type { ClassSettings, StudyClass } from "../types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteOutcome,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
 import {
   EDUCATION_CLASSES_SURFACE_NAME,
   type NewClassDraftScope,
 } from "@/features/surfaces/manifests/education-classes.manifest";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
-import { parseCreateClassesValue } from "../classAgentWrites";
+import {
+  parseCreateClassesValue,
+  parseDeleteClassesValue,
+  parseUpdateClassesValue,
+} from "../classAgentWrites";
+import { setAccessMode } from "../service";
 import { buildEducationClassesScope } from "../classesSurfaceScope";
+
+/** What a class write hands back to the agent. */
+interface ClassWriteOutcome {
+  summary: string;
+  data: { classes: { id: string; slug: string | null; name: string }[] };
+}
+
+function describe(cls: { id: string; slug: string | null; name: string }): string {
+  return `"${cls.name}" (id ${cls.id}${cls.slug ? `, slug ${cls.slug}` : ""})`;
+}
+
+function outcome(
+  verb: "Created" | "Updated" | "Deleted",
+  done: StudyClass[],
+  changed?: string[][],
+): ClassWriteOutcome {
+  const list = done.map(
+    (c, i) =>
+      `${describe(c)}${changed?.[i]?.length ? ` [${changed[i].join(", ")}]` : ""}`,
+  );
+  return {
+    summary: `${verb} ${done.length} class${done.length === 1 ? "" : "es"}: ${list.join("; ")}.`,
+    data: {
+      classes: done.map((c) => ({ id: c.id, slug: c.slug, name: c.name })),
+    },
+  };
+}
+
+/** A write that failed part-way: say exactly what was and was not done. */
+function partialFailure(
+  verb: "Created" | "Updated" | "Deleted",
+  done: StudyClass[],
+  total: number,
+  failedName: string,
+  error: unknown,
+  notAttempted: string[],
+): never {
+  throw new Error(
+    `${verb} ${done.length} of ${total} classes${
+      done.length ? ` (${done.map(describe).join(", ")})` : ""
+    }. "${failedName}" failed: ${
+      error instanceof Error && error.message ? error.message : "unknown error"
+    }.${notAttempted.length ? ` Not attempted: ${notAttempted.join(", ")}.` : ""}`,
+  );
+}
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -106,7 +159,16 @@ const JOINED_STATUS_LABEL: Record<string, string> = {
 
 export function ClassesHome() {
   const router = useRouter();
-  const { classes, archived, loading, error: classesError, refresh, createClass } = useClasses();
+  const {
+    classes,
+    archived,
+    loading,
+    error: classesError,
+    refresh,
+    createClass,
+    updateClass,
+    deleteClass,
+  } = useClasses();
   const {
     joined,
     loading: joinedLoading,
@@ -119,8 +181,9 @@ export function ClassesHome() {
   const draftRef = useRef<NewClassDraftScope | null>(null);
 
   // Surface `matrx-user/education-classes`: what this page shows, plus the
-  // agent's two ways in — `new_class_draft` (registered by the dialog, which
-  // owns those fields) and `create_classes` (here).
+  // agent's ways in — `new_class_draft` (registered by the dialog, which owns
+  // those fields) and `create_classes` / `update_classes` / `delete_classes`
+  // (here).
   const getScope = () =>
     buildEducationClassesScope({
       organizationState,
@@ -133,38 +196,92 @@ export function ClassesHome() {
       draft: draftRef.current,
     });
 
-  const getWriteHandlers = () => ({
-    // A LIST of classes through the same createClass the Create button calls.
-    // The whole list is validated (and checked against the person's existing
-    // class names) before the first is created; if one fails part-way, the
-    // error says exactly which were created, so a retry never duplicates.
-    create_classes: async (value: unknown) => {
-      const inputs = parseCreateClassesValue(
-        value,
-        [...classes, ...archived].map((c) => c.name),
-      );
-      const created: string[] = [];
-      for (const [i, input] of inputs.entries()) {
-        try {
-          const cls = await createClass(input);
-          created.push(cls.name);
-        } catch (e) {
-          if (isOrganizationSelectionCancelled(e) && created.length === 0)
-            refuseSurfaceWrite(
-              "The person closed the workspace picker, so no classes were created. Ask which workspace the classes belong in.",
-            );
-          const rest = inputs.slice(i + 1).map((c) => c.name);
-          throw new Error(
-            `Created ${created.length} of ${inputs.length} classes${
-              created.length ? ` (${created.join(", ")})` : ""
-            }. "${input.name}" failed: ${
-              e instanceof Error && e.message ? e.message : "unknown error"
-            }.${rest.length ? ` Not attempted: ${rest.join(", ")}.` : ""}`,
-          );
+  // Every class the agent may name by id: active AND archived.
+  const allOwned = [...classes, ...archived];
+
+  // Write half. Each target is a pure `validate` (the whole list is checked
+  // against the person's current classes before anything is written) and an
+  // `apply` that writes through this page's own canonical path and returns
+  // what happened, with ids and slugs, for the agent. If one write fails
+  // part-way, the error says exactly which classes were already done, so a
+  // retry never duplicates.
+  const classWriteTargets = {
+    create_classes: {
+      validate: (value: unknown) => {
+        parseCreateClassesValue(
+          value,
+          allOwned.map((c) => c.name),
+        );
+      },
+      apply: async (value: unknown): Promise<SurfaceWriteOutcome> => {
+        const inputs = parseCreateClassesValue(
+          value,
+          allOwned.map((c) => c.name),
+        );
+        const done: StudyClass[] = [];
+        for (const [i, input] of inputs.entries()) {
+          try {
+            done.push(await createClass(input));
+          } catch (e) {
+            if (isOrganizationSelectionCancelled(e) && done.length === 0)
+              refuseSurfaceWrite(
+                "The person closed the workspace picker, so no classes were created. Ask which workspace the classes belong in.",
+              );
+            partialFailure("Created", done, inputs.length, input.name, e,
+              inputs.slice(i + 1).map((c) => c.name));
+          }
         }
-      }
+        return outcome("Created", done);
+      },
     },
-  });
+    update_classes: {
+      validate: (value: unknown) => {
+        parseUpdateClassesValue(value, allOwned);
+      },
+      apply: async (value: unknown): Promise<SurfaceWriteOutcome> => {
+        const plans = parseUpdateClassesValue(value, allOwned);
+        const done: StudyClass[] = [];
+        for (const [i, plan] of plans.entries()) {
+          try {
+            const updated = await updateClass(plan.id, plan.patch);
+            // Same as the hub's Edit dialog: an access change is also
+            // registered server-side (+ the owner membership row).
+            if (plan.accessModeChanged)
+              await setAccessMode(plan.id, plan.patch.settings.accessMode);
+            done.push(updated);
+          } catch (e) {
+            partialFailure("Updated", done, plans.length, plan.previousName, e,
+              plans.slice(i + 1).map((p) => p.previousName));
+          }
+        }
+        return outcome("Updated", done, plans.map((p) => p.changed));
+      },
+    },
+    delete_classes: {
+      validate: (value: unknown) => {
+        parseDeleteClassesValue(value, allOwned);
+      },
+      apply: async (value: unknown): Promise<SurfaceWriteOutcome> => {
+        const targets = parseDeleteClassesValue(value, allOwned);
+        const done: StudyClass[] = [];
+        for (const [i, cls] of targets.entries()) {
+          try {
+            await deleteClass(cls.id);
+            done.push(cls as StudyClass);
+          } catch (e) {
+            partialFailure("Deleted", done, targets.length, cls.name, e,
+              targets.slice(i + 1).map((c) => c.name));
+          }
+        }
+        return outcome("Deleted", done);
+      },
+    },
+  };
+
+  // Two-phase registration: `validate` runs before the person's approval
+  // card (a bad list is refused and no card is shown), `apply` after approval;
+  // its outcome goes back to the agent in the tool result.
+  const getWriteHandlers = () => classWriteTargets;
 
   async function handleCreate(value: ClassFormValue) {
     const created = await createClass(value);
