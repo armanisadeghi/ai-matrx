@@ -6,6 +6,8 @@ Every rule here was verified live on 2026-08-09 against production and localhost
 
 **One Next dev server, machine-wide** — shared by you, Arman, and Codex. A second one is a reliable hard crash.
 
+**Before calling localhost blocked:** work in the shared main checkout, run `pnpm preview:status` there, and open the session hostname it prints. A working preview from that checkout hot-reloads its source edits; `pnpm preview:start` reuses the same PID. A worktree contains different files, so its own `preview:status` reports a checkout mismatch even when the shared preview is serving routes. Bring the scoped change into main and test it on the existing server. Never create a second server to solve that mismatch; check the route before reporting a server failure.
+
 **This server is HUGE by nature — measured 2026-08-15: 90.7 GB after compiling `/marketing`, 138.3 GB after adding Chat and the Administration entry.** The host has **256 GB**, so the 192 GB watchdog is a runaway guard with 64 GB reserved for the host, not a working-memory budget. (This line previously claimed the machine had 16 GB — false, and it is why the watchdog was set to 8 GB, which killed the server on EVERY start and made browser verification impossible for every agent. If you change the cap in `scripts/agent-dev-server.sh`, measure first.)
 
 - **Start or reuse it only with `pnpm preview:start`** → port **3001**, distdir `.next-preview`. The command is provider-neutral, detached, and tracked. **It prints YOUR hostname — open that, never `localhost`** (see the next rule).
@@ -23,6 +25,8 @@ Every rule here was verified live on 2026-08-09 against production and localhost
 - `pnpm setup:agent-harness` installs Claude/Codex guards. Codex requires one trust review for a new or changed hook via `/hooks`; this trusts the guard, not each server launch.
 
 ### From a private worktree
+
+**Historical recovery notes, not the workflow for this repo.** Current UI work belongs in the shared main checkout, where the existing preview hot-reloads it. Do not create a worktree to get an isolated localhost server. If a prior task left work in one, bring its scoped change into main and use the running preview there.
 
 Verifying a diff you did not check out into `/home/user/ai-matrx` itself (a `git worktree add` in `/tmp` or your scratchpad) needs three things beyond the ordinary flow above — all three cost V-22 an hour (NEW-15) before they were fixed into the launcher and documented here:
 
