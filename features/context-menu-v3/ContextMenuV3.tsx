@@ -570,8 +570,10 @@ export function ContextMenuV3({
   };
 
   const selectionHost: ContextMenuSelectionHost = { kind: "context-menu-selection", open: openFromSelection };
+  // No `editable` flag: an editable menu often wraps a read-only preview too
+  // (a note's split view), so the toolbar reads editing from the DOM (a text
+  // field or contenteditable under the selection), never from the wrapper.
   useSelectionZone(selectionOwner, {
-    editable: Boolean(isEditable),
     // `enableFloatingIcon={false}` (a chat answer with its own action bar) and a
     // suppressed menu (streaming) keep the selection toolbar away from this text.
     suppress: !enableFloatingIcon || suppressed,
