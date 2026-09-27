@@ -60,6 +60,12 @@ export async function readAgendaEvents(args: {
   days: number;
   /** `now` is passed so the caller's clock is the only clock. */
   now: Date;
+  /**
+   * A locally selected display window. This is deliberately a mirror READ, not
+   * a Google refresh: changing from Day to Week (or visiting a past day) must
+   * never spend provider access.
+   */
+  windowStart?: Date;
   signal?: AbortSignal;
 }): Promise<CalendarEventRow[]> {
   const organizationId = requireOrganizationContext(args.organizationId);
@@ -68,8 +74,9 @@ export async function readAgendaEvents(args: {
   // decided in the VIEWER's zone by `groupAgenda`, so this read must not clip a
   // day early or late. One day of slack on each side costs nothing and is the
   // difference between "tonight" showing and not.
-  const from = new Date(args.now.getTime() - 36 * 3_600_000).toISOString();
-  const to = new Date(args.now.getTime() + (span + 1) * 24 * 3_600_000).toISOString();
+  const windowStart = args.windowStart ?? args.now;
+  const from = new Date(windowStart.getTime() - 36 * 3_600_000).toISOString();
+  const to = new Date(windowStart.getTime() + (span + 1) * 24 * 3_600_000).toISOString();
 
   return readAllRows<CalendarEventRow>(
     ({ from: rangeFrom, to: rangeTo }) => {
@@ -84,8 +91,15 @@ export async function readAgendaEvents(args: {
         .eq("created_by", args.userId)
         .eq("organization_id", organizationId)
         .is("deleted_at", null)
-        .gte("starts_at", from)
+        // An event that started yesterday and ends today belongs on today's
+        // calendar too. The old start-only predicate silently hid every
+        // multi-day event after its first day.
         .lte("starts_at", to)
+        // A missing end means the event can only intersect this bounded display
+        // window when it starts inside it. Rows with a real end can have begun
+        // much earlier (a conference or an all-day trip), so their end is the
+        // overlap boundary instead.
+        .or(`ends_at.gte.${from},and(ends_at.is.null,starts_at.gte.${from})`)
         .order("starts_at", { ascending: true })
         .order("id", { ascending: true })
         .range(rangeFrom, rangeTo);

@@ -52,6 +52,8 @@ import { readAgendaEvents, readAttendeePeople, refreshCalendarWindow } from "./s
 import type { AgendaGroup, AttendeePerson, CalendarEventRow } from "./types";
 
 export interface AgendaValue {
+  /** The scoped owned-event mirror rows before agenda grouping. */
+  events: CalendarEventRow[];
   /** Today, tomorrow, then each later day inside the window. */
   groups: AgendaGroup[];
   /** Events in the window that carry no start time. Shown, never dropped. */
@@ -115,6 +117,10 @@ export function useAgenda(options?: {
   partyEmailKeys?: readonly string[] | null;
   /** Skip the refresh-on-open call (a panel that is not the primary surface). */
   refreshOnOpen?: boolean;
+  /** A local mirror window used by Day/Week calendar views. */
+  windowStart?: Date;
+  /** Number of local days in that mirror window; never changes the refresh window. */
+  windowDays?: number;
 }): AgendaValue {
   // All FOUR states, from the one hook that reads them: loadable, settled with
   // none (the honest terminal notice), still resolving (the skeleton), and the
@@ -180,8 +186,9 @@ export function useAgenda(options?: {
         rows = await readAgendaEvents({
           organizationId,
           userId,
-          days,
+          days: options?.windowDays ?? days,
           now: new Date(),
+          windowStart: options?.windowStart,
           signal: controller.signal,
         });
       } catch (error: unknown) {
@@ -213,7 +220,7 @@ export function useAgenda(options?: {
       cancelled = true;
       controller.abort();
     };
-  }, [organizationId, userId, days, generation]);
+  }, [organizationId, userId, days, generation, options?.windowStart?.getTime(), options?.windowDays]);
 
   // ── Refresh ───────────────────────────────────────────────────────────────
   const refresh = useCallback(async () => {
@@ -270,6 +277,7 @@ export function useAgenda(options?: {
   const filtered = filterByAttendeeEmails(events ?? [], options?.partyEmailKeys ?? null);
 
   return {
+    events: filtered,
     groups: groupAgenda(filtered, days, now, timeZone),
     undated: undatedEvents(filtered),
     peopleByEvent,

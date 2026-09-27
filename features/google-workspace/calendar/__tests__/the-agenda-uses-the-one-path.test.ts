@@ -57,7 +57,7 @@ function builder(table: string, schema: string) {
       filters[`${name}:${String(args[0])}`] = args.length > 1 ? args[1] : true;
       return chain;
     };
-  for (const method of ["select", "eq", "is", "gte", "lte", "order", "range", "in", "abortSignal"]) {
+  for (const method of ["select", "eq", "is", "gte", "lte", "or", "order", "range", "in", "abortSignal"]) {
     chain[method] = record(method);
   }
   chain.returns = () => {

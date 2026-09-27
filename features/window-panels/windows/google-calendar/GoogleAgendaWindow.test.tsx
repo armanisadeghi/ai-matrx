@@ -23,6 +23,9 @@ jest.mock("@/features/window-panels/WindowPanel", () => ({
 jest.mock("@/features/google-workspace/calendar/AgendaPanel", () => ({
   AgendaPanel: () => <div>Agenda body</div>,
 }));
+jest.mock("@/features/google-workspace/calendar/CalendarView", () => ({
+  CalendarView: () => <div>Calendar body</div>,
+}));
 jest.mock("@/features/google-workspace/calendar/SelectedCalendarReview", () => ({
   SelectedCalendarReview: () => <div>Selected review body</div>,
 }));

@@ -14,6 +14,7 @@
 import { useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgendaPanel } from "@/features/google-workspace/calendar/AgendaPanel";
+import { CalendarView } from "@/features/google-workspace/calendar/CalendarView";
 import { SelectedCalendarReview } from "@/features/google-workspace/calendar/SelectedCalendarReview";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -40,7 +41,7 @@ export function GoogleAgendaWindow({
     isSuperAdmin,
     email,
   );
-  const [view, setView] = useState("agenda");
+  const [view, setView] = useState("calendar");
   if (!isOpen) return null;
   return (
     <WindowPanel
@@ -60,8 +61,9 @@ export function GoogleAgendaWindow({
         className="flex min-h-0 flex-1 flex-col"
       >
         <TabsList
-          className={`mx-2 mt-2 grid h-auto ${canReviewSelectedCalendar ? "grid-cols-2" : "grid-cols-1"}`}
+          className={`mx-2 mt-2 grid h-auto ${canReviewSelectedCalendar ? "grid-cols-3" : "grid-cols-2"}`}
         >
+          <TabsTrigger value="calendar" className="min-h-9 text-xs">Calendar</TabsTrigger>
           <TabsTrigger value="agenda" className="min-h-9 text-xs">
             Agenda
           </TabsTrigger>
@@ -71,6 +73,9 @@ export function GoogleAgendaWindow({
             </TabsTrigger>
           ) : null}
         </TabsList>
+        <TabsContent value="calendar" className="min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
+          <CalendarView />
+        </TabsContent>
         <TabsContent
           value="agenda"
           className="min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
