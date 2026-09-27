@@ -120,7 +120,9 @@ test("the measured sentence is handed to the screen, not swallowed", async () =>
   const service = createConnectedSourceListService(
     dispatch,
     { adapter: "onedrive_drive", connectionId: "conn" },
-    (report) => reports.push(report.summary),
+    (status) => {
+      if (status.state === "done") reports.push(status.report.summary);
+    },
   );
 
   await service.fetchPage(query, sort);
@@ -137,4 +139,34 @@ test("a tab total is declared unknown rather than zero", async () => {
 
   expect(counts.byKind).toEqual({});
   expect(counts.narrowUnavailable?.mine).toContain("walked live");
+});
+
+test("every read ends: a failure says failed, never 'still reading'", async () => {
+  mockBrowse.mockRejectedValue(new Error("The provider refused."));
+  const states: string[] = [];
+  const service = createConnectedSourceListService(
+    dispatch,
+    { adapter: "onedrive_drive", connectionId: "conn" },
+    (status) => states.push(status.state),
+  );
+
+  await expect(service.fetchPage(query, sort)).rejects.toThrow("The provider refused.");
+  expect(states).toEqual(["failed"]);
+});
+
+test("an organization hold is a hold, not a failure", async () => {
+  mockBrowse.mockRejectedValue(
+    Object.assign(new Error("Choose the organization you're working in."), {
+      code: "organization_required",
+    }),
+  );
+  const states: string[] = [];
+  const service = createConnectedSourceListService(
+    dispatch,
+    { adapter: "onedrive_drive", connectionId: "conn" },
+    (status) => states.push(status.state),
+  );
+
+  await expect(service.fetchPage(query, sort)).rejects.toThrow();
+  expect(states).toEqual(["held"]);
 });

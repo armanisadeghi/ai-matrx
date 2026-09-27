@@ -3,8 +3,9 @@
 // The `matrx-user/connected-sources` runtime: ONE pure state → scope mapper.
 // It reads what the page already rendered (the adapter list, the chosen
 // account, the list controller, the server's last sentence) and never fetches.
-// No write half: every row lives in someone else's account and this page only
-// reads it (see the manifest header).
+// No RECORD writes: every row lives in someone else's account. The targets are
+// the three reads a person has (see the manifest header), run through the SAME
+// `runSourceRead` the bulk bar and the row menus use.
 
 import type {
   EntityListSurface,
@@ -16,7 +17,14 @@ import {
   createConnectedSourcesScope,
 } from "@/features/surfaces/manifests/connected-sources.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { AppDispatch } from "@/lib/redux/store";
 import type { ConnectedAdapterRow, ConnectedSourceRow } from "../types";
+import {
+  readResultText,
+  type ConnectedReadResult,
+} from "../components/ReadResultsDialog";
+import { runSourceRead, sourceReadSpec, type SourceReadKind } from "./reads";
 
 type List = EntityListSurfaceController<ConnectedSourceRow>;
 
@@ -110,6 +118,7 @@ export function buildConnectedSourcesScope(
             size_bytes: row.size_bytes,
             url: row.url,
           })),
+          selected_ids: list.selectedIds,
         }
       : {}),
     ...(state.summary && list ? { browse_summary: state.summary } : {}),
@@ -117,11 +126,96 @@ export function buildConnectedSourcesScope(
   });
 }
 
+const MAX_READ_IDS = 25;
+/** What an agent gets back from one read — enough to work from, never a flood. */
+const MAX_READ_RETURN_CHARS = 20_000;
+
+/** The ids an agent named, resolved against the rows ON SCREEN — or a refusal. */
+export function resolveReadRows(
+  value: unknown,
+  rows: readonly ConnectedSourceRow[],
+): ConnectedSourceRow[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error(
+      `Send a JSON array of 1-${MAX_READ_IDS} source ids from sources, source_list or selected_ids.`,
+    );
+  }
+  if (value.length > MAX_READ_IDS) {
+    throw new Error(`At most ${MAX_READ_IDS} sources per read; ${value.length} were sent.`);
+  }
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const picked: ConnectedSourceRow[] = [];
+  const unknown: string[] = [];
+  for (const entry of value) {
+    const id =
+      typeof entry === "string"
+        ? entry
+        : typeof entry === "object" && entry !== null && "id" in entry
+          ? String((entry as { id: unknown }).id)
+          : "";
+    const row = byId.get(id);
+    if (row) picked.push(row);
+    else unknown.push(id || JSON.stringify(entry));
+  }
+  if (unknown.length) {
+    throw new Error(
+      `Not on screen: ${unknown.join(", ")}. Use ids from sources, source_list or selected_ids; nothing was read.`,
+    );
+  }
+  return picked;
+}
+
+function readTarget(
+  kind: SourceReadKind,
+  list: List,
+  dispatch: AppDispatch,
+  onRead: (result: ConnectedReadResult) => void,
+) {
+  const spec = sourceReadSpec(kind);
+  return {
+    validate: (value: unknown) => {
+      const rows = resolveReadRows(value, list.rows);
+      if (!rows.some(spec.eligible)) throw new Error(spec.refusal);
+    },
+    apply: async (value: unknown) => {
+      const rows = resolveReadRows(value, list.rows);
+      const outcome = await runSourceRead(dispatch, kind, rows);
+      if (!outcome.ok) throw new Error(outcome.refusal);
+      onRead(outcome.result);
+      const text = readResultText(outcome.result);
+      return {
+        summary: `${spec.label}: ${outcome.result.files.length} read${
+          outcome.skipped ? `, ${outcome.skipped} skipped (not a picked Google file of that kind)` : ""
+        }. The person sees it in a dialog.`,
+        data:
+          text.length > MAX_READ_RETURN_CHARS
+            ? `${text.slice(0, MAX_READ_RETURN_CHARS)}\n[…cut at ${MAX_READ_RETURN_CHARS} characters; read fewer files for the rest]`
+            : text,
+      };
+    },
+  };
+}
+
+export function createConnectedSourcesWriteHandlers(
+  list: List,
+  dispatch: AppDispatch,
+  onRead: (result: ConnectedReadResult) => void,
+): SurfaceWriteHandlers {
+  return {
+    read_comments: readTarget("comments", list, dispatch, onRead),
+    read_history: readTarget("revisions", list, dispatch, onRead),
+    read_speaker_notes: readTarget("slides", list, dispatch, onRead),
+  };
+}
+
 export function createConnectedSourcesListSurface(
   getState: () => ConnectedSourcesPageState,
+  dispatch: AppDispatch,
+  onRead: (result: ConnectedReadResult) => void,
 ): EntityListSurface<ConnectedSourceRow> {
   return {
     surfaceName: CONNECTED_SOURCES_SURFACE_NAME,
     getScope: (list) => buildConnectedSourcesScope(getState(), list),
+    getWriteHandlers: (list) => createConnectedSourcesWriteHandlers(list, dispatch, onRead),
   };
 }

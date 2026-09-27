@@ -28,6 +28,12 @@ export interface ConnectedAdapterRow {
   connections: ConnectedConnectionSummary[];
   /** A sentence when `connected` is false. Never a bare flag. */
   unavailable_reason: string | null;
+  /**
+   * Browsing this source files a tenant row (Microsoft's credential audit), so
+   * it asks for an organization; a picked Google file never does. Optional
+   * until every server answering carries the field.
+   */
+  needs_organization?: boolean;
 }
 
 export type ConnectedSourceRow = components["schemas"]["SourceRow"];

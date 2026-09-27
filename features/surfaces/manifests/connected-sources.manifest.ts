@@ -14,10 +14,15 @@
  * sentence (how much it read and whether there is more); `load_error` reports a
  * failed read instead of an empty list.
  *
- * Write half: none, on purpose. Every row belongs to someone else's account and
- * this page only reads it — there is nothing of ours to create, rename or
- * archive, and connecting or disconnecting an account is a Settings →
- * Integrations action a person takes.
+ * `selected_ids` is what the person ticked.
+ *
+ * Targets: no record writes, on purpose. Every row belongs to someone else's
+ * account and this page only reads it — there is nothing of ours to create,
+ * rename or archive, and connecting or disconnecting an account is a Settings →
+ * Integrations action a person takes. What an agent CAN do is what a person can:
+ * the three reads (`read_comments`, `read_history`, `read_speaker_notes`), each a
+ * `ui` target that changes nothing, opens the same dialog the person sees and
+ * returns what it read.
  *
  * Emitter: `features/connected-sources/browse/surface.ts`, mounted by
  * `BrowseEverything` (outer provider) and `EntityListPage surface=…` (list).
@@ -28,6 +33,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -97,6 +103,17 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "sources",
   },
   {
+    name: "selected_ids",
+    label: "Selected sources",
+    description:
+      "The ids (from sources / source_list) of the rows the person ticked, in tick order. [] when nothing is ticked. When the person says \"these\" or \"the selected ones\", act on these ids.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 200,
+    sortOrder: 215,
+    group: "sources",
+  },
+  {
     name: "browse_summary",
     label: "Browse summary",
     description:
@@ -131,6 +148,42 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+const READ_VALUE =
+  'Value is a JSON ARRAY (not a string) of 1-25 source ids from sources / source_list (or selected_ids), e.g. ["google_picked_files:…"].';
+
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "read_comments",
+    label: "Read comments",
+    description: `Reads every comment on the chosen picked Google Docs, Sheets and Slides — the quoted passage, the comment, every reply, resolved or not — exactly as the person's Read comments does, and shows it to them in a dialog. Changes nothing anywhere. ${READ_VALUE} Only rows whose kind is document, spreadsheet or presentation (a picked Google file) can be read; others are skipped and counted. None readable, or an id not on screen, refuses with nothing read. Returns the comments as text.`,
+    valueType: "array",
+    mode: "ui",
+    applyPolicy: "auto",
+    group: "sources",
+    sortOrder: 300,
+  },
+  {
+    name: "read_history",
+    label: "Read history",
+    description: `Reads the kept revision history (who changed the file, and when) of the chosen picked Google Docs, Sheets and Slides, exactly as the person's Read history does, and shows it to them in a dialog. Changes nothing anywhere. ${READ_VALUE} Only picked Google files can be read; others are skipped and counted. None readable, or an id not on screen, refuses with nothing read. Returns the revisions as text.`,
+    valueType: "array",
+    mode: "ui",
+    applyPolicy: "auto",
+    group: "sources",
+    sortOrder: 310,
+  },
+  {
+    name: "read_speaker_notes",
+    label: "Read speaker notes",
+    description: `Reads every slide's text and speaker notes on the chosen picked Google Slides decks, exactly as the person's Read speaker notes does, and shows it to them in a dialog. Changes nothing anywhere. ${READ_VALUE} Only rows whose kind is presentation can be read; others are skipped and counted. None readable, or an id not on screen, refuses with nothing read. Returns the slides as text.`,
+    valueType: "array",
+    mode: "ui",
+    applyPolicy: "auto",
+    group: "sources",
+    sortOrder: 320,
+  },
+];
+
 export const connectedSourcesManifest: SurfaceManifest = {
   surfaceName: CONNECTED_SOURCES_SURFACE_NAME,
   client: "matrx-user",
@@ -139,17 +192,19 @@ export const connectedSourcesManifest: SurfaceManifest = {
     "Connected sources (/connected-sources): the accounts the person connected and the items inside the one on screen, read live from the provider.",
   readiness: "partial",
   readinessNote:
-    "Built 2026-09-27 (page-pass). surface:probe on 79d017fb6e: pass, nothing undeclared, load_error supplied while the server still refused a no-organization read (fix aidream d508e223e1 awaiting deploy). Not yet proven: the accounts/rows values through the probe's own profile. Read-only by design (no write targets).",
+    "Built 2026-09-27 (page-pass). Round 4: selected_ids and the three read targets (read_comments, read_history, read_speaker_notes) added; browse made organization-optional server-side (aidream b159670da8). Not yet proven live: the read targets through a real agent run, and the rows values through the probe after that server release.",
   label: "Connected sources",
   urlPattern: "/connected-sources",
   intro: `<surface_intro>
 You are on Connected sources at /connected-sources. It shows what is inside the accounts the person connected — Google files they picked, and Microsoft drive, mail, calendar and Teams chats once Microsoft is connected — read live from the provider, never copied into AI Matrx.
 connected_accounts lists every source and what it cannot reach; browsing is the account on screen; source_list is the visible page (condensed) and sources the same rows in full; browse_summary says how much the server read and whether more exists; load_error, when present, is why nothing could be read.
-This page is read-only: you cannot connect, disconnect, rename or delete anything here. To connect an account, send the person to /settings/integrations. To open an item, give the person its url.
+selected_ids is what the person ticked.
+You can do the three reads a person can, on picked Google files: read_comments (comments and replies), read_history (who changed it, when) and read_speaker_notes (a Slides deck's notes). Each takes source ids, changes nothing, shows the person what it read and returns it to you.
+Nothing here can be connected, disconnected, renamed or deleted. To connect an account, send the person to /settings/integrations. To open an item, give the person its url.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
-  writeTargets: [],
+  writeTargets,
 };
 
 /** One entry of `connected_accounts`. */
@@ -190,6 +245,7 @@ export function createConnectedSourcesScope(values: {
   };
   source_list?: string;
   sources?: ConnectedSourceScopeEntry[];
+  selected_ids?: string[];
   browse_summary?: string;
   load_error?: string;
 }): SurfaceScopePayload {

@@ -75,7 +75,11 @@ function detailOf(error: ApiCallError): Record<string, unknown> | null {
 
 function toError(error: ApiCallError): ConnectedSourcesError {
   const detail = detailOf(error);
+  // A person reads `user_message` when the server wrote one; `message` is the
+  // developer/agent sentence ("…send the X-Organization-Id header…") and never
+  // reaches a screen while a plain-English one exists.
   const message =
+    (detail && typeof detail.user_message === "string" && detail.user_message) ||
     (detail && typeof detail.message === "string" && detail.message) ||
     (typeof error.serverDetail === "string" ? error.serverDetail : "") ||
     (error.status === 404
@@ -199,11 +203,15 @@ export async function browseConnectedSources(
     callApi({
       path: "/connected-sources/browse",
       method: "POST",
-      // A read of the person's OWN account; the server declares it
-      // organization-free, so it never waits on an organization.
+      // A read of the person's OWN account. The server declares the route
+      // organization-OPTIONAL: it keeps an organization that is selected and
+      // admits the read without one. Only a source that files a tenant row
+      // (Microsoft's credential audit; `needs_organization`) is HELD for one.
       organizationFreeRead: true,
       body: request,
-      expectedErrorStatuses: [401, 403, 404, 409, 422],
+      // 400 is the organization HOLD for a source that needs one (Microsoft):
+      // the page shows the organization picker, it is not an incident.
+      expectedErrorStatuses: [400, 401, 403, 404, 409, 422],
       // Walking a provider is slow work by nature; the default client timeout
       // is tuned for our own database, not someone else's mailbox.
       connectTimeoutMs: 120_000,

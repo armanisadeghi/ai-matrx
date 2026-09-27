@@ -10,8 +10,12 @@
  * beside that choice, never as a wall of sentences in front of the rows.
  *
  * A person's own accounts need no organization: the server declares these
- * reads organization-free, so the page loads with none selected and re-reads
- * when the header organization changes. Rows are never ours — nothing here
+ * reads organization-free (the account list, comments, history, speaker notes)
+ * or organization-optional (browse), so the page loads with none selected and
+ * re-reads when the header organization changes. The one exception is a
+ * source whose browse files a tenant row (Microsoft's credential audit, the
+ * adapter's `needs_organization`): with no organization it shows the platform's
+ * organization picker in place of the list — never an error. Rows are never ours — nothing here
  * writes anything, so the agent surface is read-only.
  */
 
@@ -44,7 +48,10 @@ import { extractErrorMessage } from "@/utils/errors";
 import { listConnectedAdapters } from "../api";
 import type { ConnectedAdapterRow } from "../types";
 import { createConnectedSourceListConfig } from "../browse/listConfig";
-import type { ConnectedBrowseReport } from "../browse/service";
+import type {
+  ConnectedBrowseReport,
+  ConnectedBrowseStatus,
+} from "../browse/service";
 import { ReadResultsDialog, type ConnectedReadResult } from "./ReadResultsDialog";
 import {
   buildConnectedSourcesScope,
@@ -100,6 +107,14 @@ function plural(count: number, one: string, many: string): string {
   return `${count.toLocaleString()} ${count === 1 ? one : many}`;
 }
 
+/** Every read ends in a line: reading, what it found, couldn't read, or waiting on an organization. */
+function statusLine(status: ConnectedBrowseStatus | null): string {
+  if (!status) return "Reading the account…";
+  if (status.state === "done") return reportLine(status.report);
+  if (status.state === "held") return "Waiting for an organization";
+  return "Couldn't read this account";
+}
+
 /** The server's measured sentence, said in one short line; the full sentence is its tooltip. */
 function reportLine(report: ConnectedBrowseReport): string {
   if (report.hasMore) {
@@ -120,7 +135,12 @@ export function BrowseEverything() {
   const [loadError, setLoadError] = useState<unknown>(null);
   const [attempt, setAttempt] = useState(0);
   const [picked, setPicked] = useState<ChosenTarget | null>(null);
-  const [report, setReport] = useState<ConnectedBrowseReport | null>(null);
+  // How the last read of the list ended, tagged with the account + organization
+  // it was for — a status from another account is no status for this one.
+  const [status, setStatus] = useState<{
+    key: string;
+    status: ConnectedBrowseStatus;
+  } | null>(null);
   const [readResult, setReadResult] = useState<ConnectedReadResult | null>(null);
 
   // Re-asked when the header organization changes and on Try again.
@@ -153,6 +173,16 @@ export function BrowseEverything() {
   const chosenAdapter = adapters?.find((a) => a.adapter === chosen?.adapter);
   const loadErrorText = loadError ? extractErrorMessage(loadError) : null;
 
+  const listKey = chosen ? `${organizationId ?? "none"}:${targetKey(chosen)}` : "";
+  const currentStatus = status && status.key === listKey ? status.status : null;
+  const report = currentStatus?.state === "done" ? currentStatus.report : null;
+  // Held: this source needs an organization and none is chosen — known up
+  // front from the adapter list, or learned from the server's hold.
+  const held =
+    Boolean(chosen) &&
+    !organizationId &&
+    (chosenAdapter?.needs_organization === true || currentStatus?.state === "held");
+
   const pageState: ConnectedSourcesPageState = {
     adapters,
     loadError: loadErrorText,
@@ -167,7 +197,7 @@ export function BrowseEverything() {
           dispatch,
           { adapter: chosen.adapter, connectionId: chosen.connectionId },
           organizationId,
-          setReport,
+          (next) => setStatus({ key: listKey, status: next }),
           setReadResult,
         )
       : null;
@@ -188,7 +218,7 @@ export function BrowseEverything() {
   );
 
   const connectLinks = missingProviders.map((provider) => (
-    <Button key={provider} asChild size="sm" variant="ghost">
+    <Button key={provider} asChild size="sm" variant="ghost" className="h-11 sm:h-8">
       <Link href={INTEGRATIONS_HREF}>
         <Plug className="mr-1.5 h-3.5 w-3.5" />
         Connect {providerName(provider)}
@@ -254,23 +284,23 @@ export function BrowseEverything() {
         value={targetKey(chosen)}
         onValueChange={(value) => {
           const next = parseTargetKey(value);
-          if (next) {
-            setReport(null);
-            setPicked(next);
-          }
+          if (next) setPicked(next);
         }}
       >
         <SelectTrigger
           aria-label="Account to browse"
-          className="h-9 w-full min-w-0 sm:w-auto sm:max-w-md"
+          className="h-auto min-h-11 w-full min-w-0 py-1 sm:h-9 sm:min-h-0 sm:w-auto sm:max-w-md sm:py-0"
         >
-          {/* The account first — it is what tells two choices apart. */}
-          <span className="truncate">
-            {chosenAdapter?.connections.find(
-              (c) => c.connection_id === chosen.connectionId,
-            )?.account_email ?? "This account"}
-            <span className="text-muted-foreground">
-              {" · "}
+          {/* The account first — it is what tells two choices apart. On a
+              phone the source sits on its own line so neither is cut off. */}
+          <span className="flex min-w-0 flex-col text-left sm:flex-row sm:items-baseline sm:gap-1">
+            <span className="truncate">
+              {chosenAdapter?.connections.find(
+                (c) => c.connection_id === chosen.connectionId,
+              )?.account_email ?? "This account"}
+            </span>
+            <span className="truncate text-xs text-muted-foreground sm:text-sm">
+              <span className="hidden sm:inline">· </span>
               {chosenAdapter?.title}
             </span>
           </span>
@@ -301,7 +331,7 @@ export function BrowseEverything() {
             <Button
               size="icon"
               variant="ghost"
-              className="h-9 w-9 shrink-0"
+              className="h-11 w-11 shrink-0 sm:h-9 sm:w-9"
               aria-label={`What ${chosenAdapter.title} can and cannot reach`}
             >
               <Info className="h-4 w-4" />
@@ -316,23 +346,42 @@ export function BrowseEverything() {
         </Popover>
       ) : null}
       <span
-        className="min-w-0 flex-1 truncate text-xs text-muted-foreground"
+        role="status"
+        className="min-w-0 flex-1 text-xs text-muted-foreground sm:truncate"
         title={report?.summary}
       >
-        {report ? reportLine(report) : "Reading the account…"}
+        {statusLine(currentStatus)}
       </span>
       {connectLinks.length ? <div className="flex shrink-0 gap-1">{connectLinks}</div> : null}
     </div>
   );
 
+  if (held) {
+    return (
+      <SurfaceRuntimeProvider
+        surfaceName={CONNECTED_SOURCES_SURFACE_NAME}
+        getScope={() => buildConnectedSourcesScope(getPageState())}
+      >
+        {header}
+        <div className="matrx-touch-targets h-full space-y-4 overflow-y-auto px-4 pb-4 pt-[calc(var(--shell-header-h)+0.5rem)]">
+          {accountBar}
+          <OrganizationRequiredNotice
+            what={chosenAdapter?.title ?? "This source"}
+            onRetry={() => setStatus(null)}
+          />
+        </div>
+      </SurfaceRuntimeProvider>
+    );
+  }
+
   return (
     <>
       {header}
       <EntityListPage
-        key={`${organizationId ?? "none"}:${targetKey(chosen)}`}
+        key={listKey}
         config={config}
         scopeTabs={false}
-        surface={createConnectedSourcesListSurface(getPageState)}
+        surface={createConnectedSourcesListSurface(getPageState, dispatch, setReadResult)}
         notice={accountBar}
       />
       <ReadResultsDialog result={readResult} onClose={() => setReadResult(null)} />

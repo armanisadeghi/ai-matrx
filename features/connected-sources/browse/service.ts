@@ -26,6 +26,7 @@ import type {
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { ConnectedSourcesError, browseConnectedSources } from "../api";
 import type { ConnectedSourceRow } from "../types";
 
@@ -50,6 +51,16 @@ export interface ConnectedBrowseReport {
   totalKnown: boolean;
 }
 
+/**
+ * How the last read ended — EVERY read ends: with a report, a failure the list
+ * prints, or a hold (this source needs an organization and none is chosen, so
+ * the page shows the organization picker instead of an error).
+ */
+export type ConnectedBrowseStatus =
+  | { state: "done"; report: ConnectedBrowseReport }
+  | { state: "failed" }
+  | { state: "held" };
+
 function rethrowForList(error: unknown): never {
   if (error instanceof ConnectedSourcesError) {
     throw Object.assign(new Error(error.message), {
@@ -67,7 +78,7 @@ function rethrowForList(error: unknown): never {
 export function createConnectedSourceListService(
   dispatch: AppDispatch,
   target: ConnectedBrowseTarget,
-  onReport?: (report: ConnectedBrowseReport) => void,
+  onStatus?: (status: ConnectedBrowseStatus) => void,
   pageSizeFallback = 50,
 ): EntityListService<ConnectedSourceRow> {
   return {
@@ -86,14 +97,17 @@ export function createConnectedSourceListService(
           limit,
           offset,
         });
-        onReport?.({
-          summary: response.summary,
-          scanned: response.scanned,
-          matched: response.matched,
-          elapsedSeconds: response.elapsed_seconds,
-          sourcesPerSecond: response.sources_per_second,
-          hasMore: response.has_more,
-          totalKnown: response.total !== null,
+        onStatus?.({
+          state: "done",
+          report: {
+            summary: response.summary,
+            scanned: response.scanned,
+            matched: response.matched,
+            elapsedSeconds: response.elapsed_seconds,
+            sourcesPerSecond: response.sources_per_second,
+            hasMore: response.has_more,
+            totalKnown: response.total !== null,
+          },
         });
         return {
           rows: response.sources,
@@ -105,6 +119,7 @@ export function createConnectedSourceListService(
             offset + response.sources.length + (response.has_more ? 1 : 0),
         };
       } catch (error) {
+        onStatus?.({ state: isOrganizationRequiredError(error) ? "held" : "failed" });
         return rethrowForList(error);
       }
     },
