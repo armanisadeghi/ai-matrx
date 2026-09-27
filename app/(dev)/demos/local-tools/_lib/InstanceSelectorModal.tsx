@@ -681,6 +681,7 @@ export function InstanceSelectorModal({
           {instances.length > 0 && (
             <div className="space-y-2">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {/* read-gate-exempt: shown only when instances is non-empty, so a failed read hides it rather than saying 0 */}
                 Registered Instances ({instances.length})
               </p>
               {instances.map((inst) => {

@@ -67,6 +67,7 @@
  * first time you engage the menu (right-click or icon).
  */
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import {
   useCallback,
   useEffect,
@@ -1211,7 +1212,12 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
                   <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                 ) : (
                   <span className="text-[10px] font-mono text-muted-foreground">
-                    {hookOutput.categoryGroups.length} root cats
+                    <UntrustedCount
+                      value={hookOutput.categoryGroups.length}
+                      trustworthy={!hookOutput.error}
+                      label="Root categories"
+                    />{" "}
+                    root cats
                   </span>
                 )
               }
@@ -1227,6 +1233,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
               subtitle="state.agentShortcut.shortcuts (with resolved scope)"
               badge={
                 <span className="text-[10px] font-mono text-muted-foreground">
+                  {/* read-gate-exempt: dev lab dump of rows already in the Redux store, shown raw as JSON beside the count */}
                   {shortcutsWithScope.length} rows
                 </span>
               }
@@ -1238,6 +1245,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
               subtitle="with resolved scope"
               badge={
                 <span className="text-[10px] font-mono text-muted-foreground">
+                  {/* read-gate-exempt: dev lab dump of rows already in the Redux store, shown raw as JSON beside the count */}
                   {categoriesWithScope.length} rows
                 </span>
               }
@@ -1249,6 +1257,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
               subtitle="with resolved scope"
               badge={
                 <span className="text-[10px] font-mono text-muted-foreground">
+                  {/* read-gate-exempt: dev lab dump of rows already in the Redux store, shown raw as JSON beside the count */}
                   {blocksWithScope.length} rows
                 </span>
               }

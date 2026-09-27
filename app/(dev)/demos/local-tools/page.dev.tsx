@@ -215,6 +215,7 @@ export default function LocalToolsDemo() {
             {local.useWebSocket ? "WebSocket" : "REST"}
           </span>
           <span className="shrink-0">·</span>
+          {/* read-gate-exempt: in-memory message log of this browser session, not a read */}
           <span className="shrink-0">{logs.length} msgs</span>
         </div>
       }

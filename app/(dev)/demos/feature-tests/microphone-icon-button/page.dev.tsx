@@ -156,6 +156,7 @@ function RawHookDemo() {
           <span className="text-muted-foreground">Level:</span> {Math.round(audioLevel)}%
         </div>
         <div className="bg-muted/40 rounded px-2.5 py-1.5">
+          {/* read-gate-exempt: local recording counter held by the recorder hook in memory, not a read */}
           <span className="text-muted-foreground">Failed:</span> {failedChunkCount}
         </div>
       </div>

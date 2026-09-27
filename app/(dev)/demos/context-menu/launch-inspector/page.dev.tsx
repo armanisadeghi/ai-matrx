@@ -683,6 +683,7 @@ export default function LaunchInspectorDemoPage() {
               <section className={`${PANEL} p-2.5 space-y-1.5`}>
                 <h2 className={PANEL_TITLE}>
                   Resolved variable values (
+                  {/* read-gate-exempt: dev inspector of in-memory Redux instance state, not a server read */}
                   {Object.keys(resolvedVariables).length})
                 </h2>
                 {Object.keys(resolvedVariables).length === 0 ? (
@@ -715,7 +716,9 @@ export default function LaunchInspectorDemoPage() {
               {/* Context entries */}
               <section className={`${PANEL} p-2.5 space-y-1.5`}>
                 <h2 className={PANEL_TITLE}>
+                  {/* read-gate-exempt: dev inspector of in-memory Redux instance state, not a server read */}
                   Context entries ({contextEntries.length}) · Resources (
+                  {/* read-gate-exempt: dev inspector of in-memory Redux instance state, not a server read */}
                   {resources.length})
                 </h2>
                 {contextEntries.length === 0 ? (
@@ -771,6 +774,7 @@ export default function LaunchInspectorDemoPage() {
             {/* Active requests */}
             <section className={`${PANEL} p-2.5 space-y-1.5`}>
               <h2 className={PANEL_TITLE}>
+                {/* read-gate-exempt: dev inspector of in-memory Redux instance state, not a server read */}
                 Active requests ({requests.length})
               </h2>
               {requests.length === 0 ? (

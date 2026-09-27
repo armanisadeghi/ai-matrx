@@ -1,5 +1,7 @@
 "use client";
 
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import { useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -520,7 +522,12 @@ function CardGridDemo() {
       {cardGrid}
       <div className="flex items-center px-1">
         <span className="text-[10px] text-muted-foreground tabular-nums">
-          {agents.length} agent{agents.length !== 1 ? "s" : ""}
+          <UntrustedCount
+            value={agents.length}
+            read={readOf({ isLoading, error: catalogError })}
+            label="Agents"
+          />{" "}
+          agent{agents.length !== 1 ? "s" : ""}
         </span>
       </div>
     </div>

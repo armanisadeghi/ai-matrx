@@ -340,6 +340,7 @@ export default function TokenBrokerDemoPage() {
       <section className={sectionCls}>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-medium text-foreground">
+            {/* read-gate-exempt: in-memory broker cache snapshot in this browser, not a server read */}
             Cache inspector ({snapshot.length} entr{snapshot.length === 1 ? "y" : "ies"})
           </h2>
           <button className={btnCls} onClick={clearBrokerCache}>
