@@ -186,7 +186,9 @@ export function IntelligenceIndicator({
               data-intelligence-scope={scope}
               className={cn(
                 "group/intel inline-flex shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                "pointer-coarse:h-11 pointer-coarse:w-11",
+                // Phone width too: a narrow window is a finger's screen even
+                // where the browser reports a fine pointer.
+                "pointer-coarse:h-11 pointer-coarse:w-11 max-sm:h-11 max-sm:w-11",
                 size === "sm" ? "h-5 w-5" : "h-6 w-6",
                 className,
               )}

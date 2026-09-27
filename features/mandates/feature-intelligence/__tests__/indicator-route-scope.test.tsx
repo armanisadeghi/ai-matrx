@@ -94,6 +94,7 @@ describe("IntelligenceIndicator scope=route", () => {
     expect(button).not.toBeNull();
     expect(button?.className).toContain("pointer-coarse:h-11");
     expect(button?.className).toContain("pointer-coarse:w-11");
+    expect(button?.className).toContain("max-sm:h-11");
   });
 
   it("the default scope keeps the feature fallback for a door beside one control", () => {
