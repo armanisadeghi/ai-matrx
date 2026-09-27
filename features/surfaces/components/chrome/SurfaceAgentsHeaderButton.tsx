@@ -18,7 +18,7 @@
  * Context alone cannot bridge).
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 
@@ -75,6 +75,16 @@ function GuestAgentsButton() {
 function SignedInAgentsButton() {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
+  // An item that launched something else (Surface Context, a run window) closes
+  // the popover; returning focus to the trigger then re-opened its "Agents"
+  // tooltip, which stuck over the page's toolbar (page-pass 2026-09-27). Focus
+  // returns to the trigger only when the person dismissed the popover itself
+  // (Escape, click away) — never after an item handed off to another layer.
+  const launchedRef = useRef(false);
+  const closeAfterLaunch = () => {
+    launchedRef.current = true;
+    setOpen(false);
+  };
 
   const trigger = (
     <TapTargetButton
@@ -115,10 +125,14 @@ function SignedInAgentsButton() {
         align="end"
         side="bottom"
         className="p-0 bg-textured"
+        onCloseAutoFocus={(event) => {
+          if (launchedRef.current) {
+            launchedRef.current = false;
+            event.preventDefault();
+          }
+        }}
       >
-        {open && (
-          <SurfaceAgentsPanelImpl onRequestClose={() => setOpen(false)} />
-        )}
+        {open && <SurfaceAgentsPanelImpl onRequestClose={closeAfterLaunch} />}
       </PopoverContent>
     </Popover>
   );
