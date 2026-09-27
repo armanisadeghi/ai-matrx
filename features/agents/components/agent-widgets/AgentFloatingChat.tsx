@@ -39,6 +39,7 @@ export function AgentFloatingChat({
       overlayId="agentFloatingChat"
       title={displayTitle}
       onClose={onClose}
+      position="center"
       width={800}
       height="60dvh"
       minWidth={320}

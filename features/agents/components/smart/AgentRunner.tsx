@@ -142,7 +142,7 @@ export function AgentRunner({
   // container — they scroll internally instead.
   return (
     <div
-      className={`relative h-full max-w-[800px] overflow-hidden bg-background ${className}`}
+      className={`relative mx-auto h-full w-full max-w-[800px] overflow-hidden bg-background ${className}`}
     >
       {showTitle && title && (
         <div className="absolute top-0 left-0 right-0 z-10 px-4 py-2 border-b border-border bg-background">

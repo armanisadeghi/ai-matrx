@@ -38,6 +38,7 @@ export function AgentFlexiblePanel({
       overlayId="agentFlexiblePanel"
       title={title}
       onClose={onClose}
+      position="center"
       width={AGENT_FLEXIBLE_PANEL_WIDTH}
       height={AGENT_FLEXIBLE_PANEL_HEIGHT}
       minWidth={480}
