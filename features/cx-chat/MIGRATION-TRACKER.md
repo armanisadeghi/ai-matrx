@@ -86,7 +86,7 @@ AgentPage / ChatPage (server)
 
 **What is now dead (not imported by any active path):**
 - `useInstanceBootstrap.ts` — split into `useChatCatalogueInit` + `ChatInstanceManager`.
-- `ConversationShell.tsx` — old shell wrapper.
+- `ConversationShell.tsx` — old shell wrapper. **Deleted 2026-09-26** with `components/messages/MessageList.tsx` (RC-B12 r12, lane w4): the list read stub selectors from `_legacy-stubs.ts` and could only ever say "No messages yet".
 - `useConversationSession.ts` — old lifecycle hook.
 - `useAgentBootstrap.ts` — replaced by Phase 1 thunks.
 
