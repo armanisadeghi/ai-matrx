@@ -24,12 +24,15 @@ import {
   selectAssociations,
   selectAssociationCount,
   selectAssociationsLoading,
+  selectAssociationsError,
 } from "@/features/tasks/redux/taskAssociationsSlice";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { folderForTask } from "@/features/files/utils/folder-conventions";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { Button } from "@/components/ui/button";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { toast } from "@/lib/toast";
 import { cn } from "@/utils/cn";
 
@@ -62,6 +65,7 @@ export default function TaskAttachmentsPanel({
   const bundle = useAppSelector(selectAssociations(taskId));
   const count = useAppSelector(selectAssociationCount(taskId));
   const isLoading = useAppSelector(selectAssociationsLoading(taskId));
+  const loadError = useAppSelector(selectAssociationsError(taskId));
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isAttaching, setIsAttaching] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -198,7 +202,9 @@ export default function TaskAttachmentsPanel({
       <div className="flex items-center gap-1.5 pl-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         <Paperclip className="w-3 h-3" />
         <span>Attachments</span>
-        <span className="tabular-nums text-muted-foreground/60">({count})</span>
+        <span className="tabular-nums text-muted-foreground/60">
+          (<UntrustedCount value={count} trustworthy={!loadError} label="Attachments" />)
+        </span>
         {isLoading && (
           <Loader2 className="w-3 h-3 animate-spin text-muted-foreground/60" />
         )}
@@ -236,7 +242,14 @@ export default function TaskAttachmentsPanel({
         </div>
       </div>
 
-      {count === 0 && !isLoading ? (
+      {loadError ? (
+        <ReadFailure
+          error={loadError}
+          what="this task's attachments"
+          onRetry={() => dispatch(fetchTaskAssociations(taskId))}
+          className="m-0"
+        />
+      ) : count === 0 && !isLoading ? (
         <div className="rounded-lg border border-dashed border-border/60 px-3 py-4 text-center">
           <p className="text-xs text-muted-foreground">Nothing attached yet.</p>
           <p className="text-[10px] text-muted-foreground/70 mt-0.5">

@@ -89,6 +89,8 @@ export interface TaskAssociationsState {
   byEntityKey: Record<string, TaskForEntityRef[]>; // key = `${entity_type}:${entity_id}`
   loadingByTaskId: Record<string, boolean>;
   loadingByEntityKey: Record<string, boolean>;
+  /** The last failed read per task (cleared when a read starts) — a failed read is never "nothing attached". */
+  errorByTaskId: Record<string, string | null>;
   /** The last failed read per entity (cleared when a read starts) — a failed read is never "no tasks". */
   errorByEntityKey: Record<string, string | null>;
   error: string | null;
@@ -99,6 +101,7 @@ const initialState: TaskAssociationsState = {
   byEntityKey: {},
   loadingByTaskId: {},
   loadingByEntityKey: {},
+  errorByTaskId: {},
   errorByEntityKey: {},
   error: null,
 };
@@ -483,14 +486,18 @@ const slice = createSlice({
     builder
       .addCase(fetchTaskAssociations.pending, (state, action) => {
         state.loadingByTaskId[action.meta.arg] = true;
+        state.errorByTaskId[action.meta.arg] = null;
       })
       .addCase(fetchTaskAssociations.fulfilled, (state, action) => {
         state.byTaskId[action.payload.task_id] = action.payload;
         state.loadingByTaskId[action.payload.task_id] = false;
+        state.errorByTaskId[action.payload.task_id] = null;
       })
       .addCase(fetchTaskAssociations.rejected, (state, action) => {
+        const message = action.error.message ?? "Failed to load associations";
         state.loadingByTaskId[action.meta.arg] = false;
-        state.error = action.error.message ?? "Failed to load associations";
+        state.errorByTaskId[action.meta.arg] = message;
+        state.error = message;
       })
       .addCase(fetchTasksForEntity.pending, (state, action) => {
         const key = entityKey(action.meta.arg.entityType, action.meta.arg.entityId);
@@ -562,6 +569,12 @@ export const selectAssociationsLoading =
   (taskId: string) =>
   (s: StateWithAssoc): boolean =>
     !!s.taskAssociations.loadingByTaskId[taskId];
+
+/** The task's last association read failed (its message), or null. */
+export const selectAssociationsError =
+  (taskId: string) =>
+  (s: StateWithAssoc): string | null =>
+    s.taskAssociations.errorByTaskId?.[taskId] ?? null;
 
 export const selectTasksForEntity =
   (entityType: string, entityId: string) =>
