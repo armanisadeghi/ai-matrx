@@ -99,6 +99,8 @@ import {
 } from "./boardLayout";
 
 const SAVE_DEBOUNCE_MS = 800;
+/** Flying to a frame leaves room for its title, which sits above it. */
+const FRAME_FIT_PADDING = 120;
 /** How long a thread delete can be undone before it is committed. */
 const DELETE_UNDO_MS = 6000;
 
@@ -258,7 +260,7 @@ export function RoomBoardView({ sessionId }: { sessionId: string }) {
       if (isPartKey(id)) {
         store.select(id);
         store.fitItem(id);
-      } else store.fitItem(`frame:${id}`);
+      } else store.fitItem(`frame:${id}`, FRAME_FIT_PADDING);
     });
     return () => cancelAnimationFrame(raf);
   }, [flyReady, store, pendingFly]);
@@ -268,7 +270,7 @@ export function RoomBoardView({ sessionId }: { sessionId: string }) {
   const bestMatch = threadQuery.trim() ? (matches[0] ?? null) : null;
   useEffect(() => {
     if (!store || !bestMatch) return;
-    store.fitItem(`frame:${bestMatch}`);
+    store.fitItem(`frame:${bestMatch}`, FRAME_FIT_PADDING);
   }, [store, bestMatch]);
 
   // ── actions ────────────────────────────────────────────────────────────
@@ -603,6 +605,10 @@ function BoardPartTile({
 // ── the frame header: the thread's own controls, once per thread ─────────
 
 const HEADER_INSET = 20;
+/** Below this zoom the header counter-scales to stay readable… */
+const HEADER_READ_Z = 0.9;
+/** …up to this factor: 20 + 48 × 2.2 < the 128px band above the parts. */
+const HEADER_MAX_SCALE = 2.2;
 
 function BoardFrameHeader({
   threadId,
@@ -678,6 +684,10 @@ function BoardFrameHeader({
         left: frame.x + HEADER_INSET,
         top: frame.y + HEADER_INSET,
         height: FRAME_HEADER_H - 8,
+        // Readable when zoomed out: grows as the board shrinks, capped so it
+        // never reaches the parts below the header band.
+        transform: `scale(clamp(1, calc(${HEADER_READ_Z} / var(--spatial-z, 1)), ${HEADER_MAX_SCALE}))`,
+        transformOrigin: "top left",
       }}
     >
       <GripVertical className="size-4 shrink-0 text-muted-foreground" />
