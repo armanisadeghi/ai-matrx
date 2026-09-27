@@ -473,12 +473,24 @@ export const searchKnowledgeTitles: KnowledgeSearchRunner = async (
       next_cursor: null,
     });
   }
-  // A section the `types` filter rules out answered — with nothing. Leaving it
-  // unsent reads as "this section did not answer" (felt in the H5 walk: a
-  // Notes-only view showed six red section errors).
-  for (const key of Object.keys(SECTION_TOKENS) as KnowledgeSectionKey[]) {
-    if (plan.some((p) => p.key === key)) continue;
-    emit({ key, label: KNOWLEDGE_SECTION_LABEL[key], count: 0, items: [], next_cursor: null });
+  // A section the `types` filter rules out answered — with nothing, and a
+  // section the title search cannot serve at all (no registry token — e.g.
+  // message text) says so. Leaving either unsent reads as "this section did
+  // not answer" (felt in the H5 walk: a Notes-only view showed six red errors).
+  for (const key of KNOWLEDGE_SECTION_KEYS) {
+    if (key === "top_hit" || key === "segments" || plan.some((p) => p.key === key)) continue;
+    const served = SECTION_TOKENS[key];
+    if (served || (wanted && !wanted.has("conversation"))) {
+      emit({ key, label: KNOWLEDGE_SECTION_LABEL[key], count: 0, items: [], next_cursor: null });
+    } else {
+      emit(
+        erroredSection(
+          key,
+          `Searching ${KNOWLEDGE_SECTION_LABEL[key].toLowerCase()} needs the knowledge search service, which is not on this server yet.`,
+          false,
+        ),
+      );
+    }
   }
   if (!wanted || wanted.has("processed_document") || wanted.has("segment")) {
     emit(

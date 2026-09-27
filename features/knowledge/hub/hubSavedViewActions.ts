@@ -116,6 +116,9 @@ export async function duplicateView(
 
 export async function deleteView(view: HubSavedView): Promise<void> {
   await archiveSurfaceView({ surfaceKey, id: view.id, expectedVersion: view.version });
+  // My pin on a deleted view is dead state; clear it (the view is already gone,
+  // so a refused unpin changes nothing a person can see — it is not re-thrown).
+  if (view.pinned) await setViewPinned(view.id, false).catch(() => undefined);
 }
 
 /**
