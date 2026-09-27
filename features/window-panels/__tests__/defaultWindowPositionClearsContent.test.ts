@@ -96,8 +96,9 @@ describe("a window that asked to be centred", () => {
   });
 
   it("still honours every explicit corner", () => {
-    expect(resolvePosition("top-left", 480, 360)).toEqual({ x: 40, y: 40 });
-    expect(resolvePosition("top-right", 480, 360)).toEqual({ x: 920, y: 40 });
+    // Top corners clear the shell header (44px, jsdom fallback) + 12px.
+    expect(resolvePosition("top-left", 480, 360)).toEqual({ x: 40, y: 56 });
+    expect(resolvePosition("top-right", 480, 360)).toEqual({ x: 920, y: 56 });
     expect(resolvePosition("bottom-left", 480, 360)).toEqual({ x: 40, y: 500 });
     expect(resolvePosition("bottom-right", 480, 360)).toEqual({ x: 920, y: 500 });
   });

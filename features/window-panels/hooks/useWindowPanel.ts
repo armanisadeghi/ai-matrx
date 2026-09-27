@@ -130,6 +130,17 @@ function nextCascadeStep(): number {
  */
 const NARROW_VIEWPORT = 768;
 
+/** The shell header's height (`--shell-header-h`) plus a gap; 44px fallback. */
+function shellHeaderClearance(): number {
+  const GAP = 12;
+  if (typeof document === "undefined") return 44 + GAP;
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(
+    "--shell-header-h",
+  );
+  const h = parseFloat(raw);
+  return (Number.isFinite(h) && h > 0 ? h : 44) + GAP;
+}
+
 export function resolvePosition(
   pos: WindowPosition | undefined,
   w: number,
@@ -137,11 +148,15 @@ export function resolvePosition(
 ): { x: number; y: number } {
   const { vw, vh } = safeViewportDims();
   const pad = 40;
+  // A window opening at the top CLEARS the shell header — the same way every
+  // time (page-pass 2026-09-27: the Feedback window opened at y=40 under a
+  // 44px header, then at y=68 on the next open).
+  const top = shellHeaderClearance();
   switch (pos) {
     case "top-left":
-      return { x: pad, y: pad };
+      return { x: pad, y: top };
     case "top-right":
-      return { x: Math.max(0, vw - w - pad), y: pad };
+      return { x: Math.max(0, vw - w - pad), y: top };
     case "bottom-left":
       return { x: pad, y: Math.max(0, vh - h - pad) };
     case "bottom-right":
@@ -156,12 +171,12 @@ export function resolvePosition(
       if (vw < NARROW_VIEWPORT) {
         return {
           x: Math.max(0, Math.min(vw - w, (vw - w) / 2)),
-          y: Math.max(0, Math.min(vh - h, pad + cascade)),
+          y: Math.max(0, Math.min(vh - h, top + cascade)),
         };
       }
       return {
         x: Math.max(0, vw - w - pad - cascade),
-        y: Math.max(0, Math.min(vh - h, pad + cascade)),
+        y: Math.max(0, Math.min(vh - h, top + cascade)),
       };
     }
   }

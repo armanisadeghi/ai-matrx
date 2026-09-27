@@ -244,6 +244,8 @@ interface WindowPanelBaseProps extends UseWindowPanelOptions {
    * one way for an agent to write a field, never two.
    */
   surfaceLayer?: string;
+  /** Phone drawer presentation: size the sheet to the content (max 85dvh). */
+  mobileSizeToContent?: boolean;
   /**
    * Keep the full body mounted offscreen while the window is minimized.
    * Opt in for live/stateful surfaces whose hooks, drafts, streams, or local
@@ -409,6 +411,7 @@ export function WindowPanel({
   className,
   mobilePresentationOverride,
   surfaceLayer,
+  mobileSizeToContent,
   minWidth,
   minHeight,
   urlSyncKey,
@@ -1404,6 +1407,7 @@ export function WindowPanel({
           actionsRight={resolvedActionsRight}
           bodyClassName={bodyClassName}
           surfaceLayer={surfaceLayer}
+          sizeToContent={mobileSizeToContent}
         >
           <WindowSelectionSurface>{children}</WindowSelectionSurface>
         </MobileDrawerSurface>

@@ -42,6 +42,11 @@ interface MobileDrawerSurfaceProps {
   /** Marks the root `data-surface-layer` (see WindowPanel `surfaceLayer`). */
   surfaceLayer?: string;
   /**
+   * Size the sheet to its content (capped at 85dvh) instead of a fixed 85dvh:
+   * a short form no longer sits on a band of empty sheet.
+   */
+  sizeToContent?: boolean;
+  /**
    * Whether the sidebar should collapse into a nested drawer when the user
    * taps the sidebar toggle. When "inline", the sidebar pushes the body
    * instead. Default: "drawer".
@@ -60,6 +65,7 @@ export default function MobileDrawerSurface({
   actionsRight,
   bodyClassName,
   surfaceLayer,
+  sizeToContent = false,
   sidebarAs = "drawer",
 }: MobileDrawerSurfaceProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -74,10 +80,16 @@ export default function MobileDrawerSurface({
     >
       <DrawerContent
         data-surface-layer={surfaceLayer}
-        className="h-[85dvh] max-h-[85dvh] px-0 pb-safe flex flex-col"
+        className={cn(
+          "max-h-[85dvh] px-0 pb-safe flex flex-col",
+          sizeToContent ? "h-auto" : "h-[85dvh]",
+        )}
       >
         {/* Accessible title — rendered visually as our header */}
-        <div className="flex items-center gap-1 px-3 py-2 border-b border-border/50 shrink-0">
+        {/* The handle row above is a 44px drag area with the bar at its
+            centre; the header tucks into its lower half (no second padded
+            band — the title sat 40px under the handle). */}
+        <div className="-mt-3 flex items-center gap-1 px-3 py-0 border-b border-border/50 shrink-0">
           <div className="flex items-center gap-1 shrink-0">{actionsLeft}</div>
           <DrawerTitle className="flex-1 text-sm font-medium truncate mx-2">
             {title}
