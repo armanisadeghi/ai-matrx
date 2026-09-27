@@ -1953,6 +1953,18 @@
   letter-spacing: normal;
 }
 
+/* Recharts 3 lays its chart out inside a 0×0 measuring div
+   (ResponsiveContainer → `width:0;height:0;overflow:visible` → .recharts-wrapper
+   with an explicit pixel width). The phone `* { max-width: 100% }` default
+   below resolves 100% of that 0px parent, so on every screen ≤768px the
+   wrapper collapsed to width 0 and EVERY chart in the app rendered as an empty
+   card (found 2026-09-27 on /education/progress: the SVG held its paths at
+   309×160 while its box measured 0×160). The wrapper's pixel width is the
+   container's own measurement — it never overflows, so the clamp is lifted. */
+.recharts-wrapper {
+  max-width: none;
+}
+
 /* The blanket element defaults below live in @layer base ON PURPOSE.
    They used to sit unlayered, and unlayered CSS beats EVERY layered rule
    regardless of specificity — so on any screen ≤768px they silently defeated
