@@ -1,10 +1,10 @@
 // Zero-authorship verifier harness for RC-B4 round 4 — hostile tables through the two table edit paths.
 import { Editor, getSchema } from "@tiptap/core";
 import { marked } from "marked";
-import { createRichEditorExtensions } from "/Users/armanisadeghi/code/matrx-frontend/components/rich-editor/core/extensions";
-import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "/Users/armanisadeghi/code/matrx-frontend/components/rich-editor/core/visual-document";
-import { rewriteTableSource } from "/Users/armanisadeghi/code/matrx-frontend/components/rich-editor/core/table-source";
-import { parseMarkdownTable } from "/Users/armanisadeghi/code/matrx-frontend/components/mardown-display/blocks/table/parseMarkdownTable";
+import { createRichEditorExtensions } from "@/components/rich-editor/core/extensions";
+import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "@/components/rich-editor/core/visual-document";
+import { rewriteTableSource } from "@/components/rich-editor/core/table-source";
+import { parseMarkdownTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
 
 const extensions = createRichEditorExtensions();
 const schema = getSchema(extensions);
