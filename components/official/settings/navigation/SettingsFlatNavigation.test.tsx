@@ -6,6 +6,28 @@ import {
 } from "./SettingsFlatNavigation";
 
 describe("settingsNavigationSections", () => {
+  it("keeps a folder's own page reachable beside its child pages", () => {
+    const sections = settingsNavigationSections([
+      {
+        id: "integrations",
+        label: "Connectors",
+        navigable: true,
+        navigationLabel: "All connectors",
+        children: [
+          { id: "integrations.microsoft", label: "Microsoft" },
+          { id: "integrations.googleWorkspace", label: "Google Workspace" },
+        ],
+      },
+    ]);
+
+    expect(sections[0]?.items.map(({ id }) => id)).toEqual([
+      "integrations",
+      "integrations.microsoft",
+      "integrations.googleWorkspace",
+    ]);
+    expect(sections[0]?.items[0]?.label).toBe("All connectors");
+  });
+
   it("keeps root links together and maps configuration folders to their Overview leaf", () => {
     const sections = settingsNavigationSections([
       { id: "camera", label: "Camera" },

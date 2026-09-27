@@ -113,6 +113,7 @@ function SettingsMobileMenu({
         <Link href={SETTINGS_BASE} className={ROUTE_MENU_NAV_ITEM_CLASS} title="Settings"><span className="shell-nav-icon"><Settings /></span><span className="shell-nav-label settings-route-menu-label">Settings</span></Link>
       )}
       <SettingsNavigationSearch value={query} onValueChange={setQuery} />
+      {!query && parent?.navigable ? <SettingsMenuLink node={parent} label={parent.navigationLabel ?? parent.label} active={parent.id === activeTabId} /> : null}
       {query ? (
         hasSettingsSearchResults(query, controlResults, categoryResults) ? <>
           {controlResults.length > 0 ? <SettingsControlSearchResults results={controlResults} /> : null}

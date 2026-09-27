@@ -58,22 +58,31 @@ export function SettingsDrawerNav({
   const [path, setPath] = useState<string[]>(() =>
     getDrawerPathForActiveId(nodes, activeId),
   );
+  const [folderTabId, setFolderTabId] = useState<string | null>(() =>
+    activeId && findNodeById(nodes, activeId)?.navigable ? activeId : null,
+  );
   const [query, setQuery] = useState("");
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
       setPath([]);
+      setFolderTabId(null);
       setQuery("");
     }
     onOpenChange(next);
   };
 
   const pushId = (id: string) => setPath((p) => [...p, id]);
-  const popOne = () => setPath((p) => p.slice(0, -1));
+  const popOne = () => {
+    if (folderTabId) setFolderTabId(null);
+    else setPath((p) => p.slice(0, -1));
+  };
 
   const currentId = path[path.length - 1] ?? null;
   const currentNode = currentId ? findNodeById(nodes, currentId) : null;
-  const isLeaf = Boolean(currentNode && !currentNode.children);
+  const isLeaf = Boolean(
+    currentNode && (!currentNode.children?.length || folderTabId === currentId),
+  );
 
   // The list-of-nodes shown in the current screen (root or category)
   const listNodes = useMemo<SettingsTreeNode[]>(() => {
@@ -105,8 +114,9 @@ export function SettingsDrawerNav({
     : currentNode
       ? currentNode.label
       : title;
-  const backLabel =
-    path.length > 1
+  const backLabel = folderTabId
+    ? (currentNode?.label ?? title)
+    : path.length > 1
       ? (findNodeById(nodes, path[path.length - 2])?.label ?? title)
       : title;
 
@@ -208,6 +218,23 @@ export function SettingsDrawerNav({
                   </div>
                 ) : (
                   <div className="pb-safe">
+                    {currentNode?.navigable ? (
+                      <DrawerRow
+                        node={{
+                          ...currentNode,
+                          label:
+                            currentNode.navigationLabel ?? currentNode.label,
+                          children: undefined,
+                        }}
+                        activeId={activeId}
+                        hasChevron
+                        onTap={() => {
+                          onActivate(currentNode.id);
+                          setFolderTabId(currentNode.id);
+                        }}
+                        unsavedIds={unsavedIds}
+                      />
+                    ) : null}
                     {listNodes.map((n) => (
                       <DrawerRow
                         key={n.id}
