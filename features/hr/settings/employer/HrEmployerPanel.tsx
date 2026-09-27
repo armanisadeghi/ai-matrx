@@ -27,7 +27,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Factory, Loader2, RotateCcw, Save } from "lucide-react";
+import { AlertTriangle, Factory, Loader2, Pencil, Plus, RotateCcw, Save } from "lucide-react";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
@@ -41,6 +41,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Field } from "@/components/official/Field";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -52,12 +61,14 @@ import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
+import { SURFACE_LAYER_ATTRIBUTE } from "@/features/surfaces/runtime/window-forms";
 import {
   HR_EMPLOYER_SURFACE_NAME,
   createHrEmployerScope,
 } from "@/features/surfaces/manifests/hr-employer.manifest";
 
-import { updateHrEmployerProfile } from "../../service";
+import { updateHrEmployerProfile, upsertHrEstablishment } from "../../service";
 import type { HrDenied, HrFailed } from "../../types";
 import { hrSettingsHref } from "../../routes";
 import { useHrContext } from "../../shared/useHrContext";
@@ -71,7 +82,15 @@ import type {
   HrEstablishment,
 } from "../types";
 import {
+  EMPTY_ESTABLISHMENT,
   HR_ENTITY_FORMS,
+  establishmentPayload,
+  establishmentProblems,
+  establishmentToInput,
+  mergeEstablishmentDraft,
+  parseCreateEstablishments,
+  parseUpdateEstablishments,
+  type HrEstablishmentInput,
   applicabilityFlags,
   buildHrEmployerScope,
   declarationPayload,
@@ -89,6 +108,13 @@ import {
   type HrEmployerAddress,
   type HrEmployerIdentityForm,
 } from "./employer-profile-model";
+
+/** The Add / Edit establishment dialog, when open. */
+type EstablishmentEditor = {
+  mode: "create" | "edit";
+  id: string | null;
+  input: HrEstablishmentInput;
+};
 
 /** Radix Select cannot hold "" as an item value; this stands for "not set". */
 const NOT_SET = "__not_set__";
@@ -175,6 +201,23 @@ export function HrEmployerPanel() {
       .filter((id): id is string => Boolean(id)),
   );
 
+  const jurisdictions = structure.structure?.jurisdictions ?? null;
+  const [editor, setEditor] = useState<EstablishmentEditor | null>(null);
+
+  /** The ONE establishment save — the dialog's Save and both agent targets. */
+  const saveEstablishment = async (input: HrEstablishmentInput, id: string | null) => {
+    if (!organizationId) throw new Error("No employer is open.");
+    const result = await upsertHrEstablishment({
+      organization_id: organizationId,
+      ...(id ? { id } : {}),
+      ...establishmentPayload(input),
+    });
+    if (!result.ok) throw new Error(refusalText(result));
+    const savedId = String(result.data.establishment_id ?? id ?? "");
+    structure.refresh();
+    return { id: savedId, name: input.name.trim() };
+  };
+
   const getScope = () =>
     createHrEmployerScope(
       buildHrEmployerScope({
@@ -183,6 +226,8 @@ export function HrEmployerPanel() {
         profile: loadStatus === "loaded" ? profile : null,
         form: loadStatus === "loaded" ? form : null,
         establishments: structure.isLoading ? null : establishments,
+        jurisdictions: structure.isLoading ? null : jurisdictions,
+        establishmentEditor: editor,
       }),
     );
 
@@ -199,6 +244,52 @@ export function HrEmployerPanel() {
   };
 
   const getWriteHandlers = () => ({
+    ...collectionWriteHandlers(
+      {
+        plural: "establishments",
+        singular: "establishment",
+        create: {
+          parse: (value) =>
+            parseCreateEstablishments(value, establishments ?? [], jurisdictions ?? []),
+          run: (input: HrEstablishmentInput) => saveEstablishment(input, null),
+          nameOf: (input: HrEstablishmentInput) => input.name,
+        },
+        update: {
+          parse: (value) =>
+            parseUpdateEstablishments(value, establishments ?? [], jurisdictions ?? []),
+          run: (plan: ReturnType<typeof parseUpdateEstablishments>[number]) =>
+            saveEstablishment(plan.input, plan.id),
+          nameOf: (plan: ReturnType<typeof parseUpdateEstablishments>[number]) =>
+            plan.previousName,
+          changedOf: (plan: ReturnType<typeof parseUpdateEstablishments>[number]) =>
+            plan.changed,
+        },
+      },
+      refuseSurfaceWrite,
+    ),
+    establishment_draft: {
+      validate: (value: unknown) => {
+        if (!jurisdictions) refuseSurfaceWrite("The establishment list has not loaded yet.");
+        mergeEstablishmentDraft(
+          editor?.mode === "create" ? editor.input : EMPTY_ESTABLISHMENT,
+          value,
+          jurisdictions ?? [],
+        );
+      },
+      apply: (value: unknown) => {
+        const input = mergeEstablishmentDraft(
+          editor?.mode === "create" ? editor.input : EMPTY_ESTABLISHMENT,
+          value,
+          jurisdictions ?? [],
+        );
+        setEditor({ mode: "create", id: null, input });
+        return {
+          summary:
+            "The New establishment dialog is open and filled in. Nothing is saved until the person presses Save.",
+          data: establishmentPayload(input),
+        };
+      },
+    },
     employer_identity_draft: {
       validate: (value: unknown) => {
         if (!form) refuseSurfaceWrite("The employer profile has not loaded yet.");
@@ -252,6 +343,9 @@ export function HrEmployerPanel() {
           establishments={establishments ?? []}
           orgRef={orgRef}
           getScope={getScope}
+          onEdit={(row) =>
+            setEditor({ mode: "edit", id: row.id, input: establishmentToInput(row) })
+          }
           locationEstablishmentIds={usedEstablishmentIds}
         >
           <div className="matrx-touch-targets divide-y divide-border px-4 pb-8 sm:px-6">
@@ -299,6 +393,28 @@ export function HrEmployerPanel() {
                   establishments={establishments ?? []}
                   locationEstablishmentIds={usedEstablishmentIds}
                   orgRef={orgRef}
+                  onAdd={() =>
+                    setEditor({ mode: "create", id: null, input: { ...EMPTY_ESTABLISHMENT } })
+                  }
+                  onEdit={(row) =>
+                    setEditor({ mode: "edit", id: row.id, input: establishmentToInput(row) })
+                  }
+                />
+                <EstablishmentDialog
+                  editor={editor}
+                  jurisdictions={jurisdictions ?? []}
+                  others={(establishments ?? []).filter((e) => e.id !== editor?.id)}
+                  onChange={(input) => setEditor((current) => (current ? { ...current, input } : current))}
+                  onClose={() => setEditor(null)}
+                  onSave={async (current) => {
+                    await saveEstablishment(current.input, current.id);
+                    toast.success(
+                      current.mode === "create"
+                        ? `${current.input.name.trim()} added.`
+                        : `${current.input.name.trim()} saved.`,
+                    );
+                    setEditor(null);
+                  }}
                 />
                 <section aria-labelledby="hr-employer-tax" className="py-6">
                   <h2 id="hr-employer-tax" className="text-sm font-semibold text-foreground">
@@ -326,8 +442,10 @@ function EmployerContextMenu({
   locationEstablishmentIds,
   orgRef,
   getScope,
+  onEdit,
   children,
 }: {
+  onEdit: (row: HrEstablishment) => void;
   profile: HrEmployerProfileRead | null;
   establishments: HrEstablishment[];
   locationEstablishmentIds: Set<string>;
@@ -383,6 +501,13 @@ function EmployerContextMenu({
                 label: "This establishment",
                 anchor: "after-compare",
                 items: [
+                  {
+                    kind: "item",
+                    id: "hr-establishment-edit",
+                    label: "Edit",
+                    icon: Pencil,
+                    onSelect: () => onEdit(clickedRow),
+                  },
                   {
                     kind: "item",
                     id: "hr-establishment-see-locations",
@@ -784,7 +909,11 @@ function EstablishmentsSection({
   establishments,
   locationEstablishmentIds,
   orgRef,
+  onAdd,
+  onEdit,
 }: {
+  onAdd: () => void;
+  onEdit: (row: HrEstablishment) => void;
   establishments: HrEstablishment[];
   /** Establishment ids a location points at. */
   locationEstablishmentIds: Set<string>;
@@ -844,9 +973,20 @@ function EstablishmentsSection({
 
   return (
     <section aria-labelledby="hr-employer-establishments" className="py-6">
-      <h2 id="hr-employer-establishments" className="text-sm font-semibold text-foreground">
-        Establishments
-      </h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 id="hr-employer-establishments" className="text-sm font-semibold text-foreground">
+          Establishments
+        </h2>
+        <Button type="button" size="sm" variant="outline" onClick={onAdd}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add establishment
+        </Button>
+      </div>
+      {establishments.length === 0 ? (
+        <p className="mt-2 text-sm text-muted-foreground">
+          None. An employer that reports as one site does not need any.
+        </p>
+      ) : (
       <div className="mt-3">
         <MatrxDataTable
           data={establishments}
@@ -855,12 +995,188 @@ function EstablishmentsSection({
           pageSize={10}
           urlState={{ id: "hr-establishments" }}
           toolbar={{ search: true, searchPlaceholder: "Search establishments" }}
-          emptyState={{
-            title: "No establishments",
-            description: "An employer that reports as one site does not need any.",
-          }}
+          onRowOpen={(row) => onEdit(row)}
         />
       </div>
+      )}
     </section>
+  );
+}
+
+// ── The Add / Edit establishment dialog ─────────────────────────────────────
+
+function EstablishmentDialog({
+  editor,
+  jurisdictions,
+  others,
+  onChange,
+  onClose,
+  onSave,
+}: {
+  editor: EstablishmentEditor | null;
+  jurisdictions: ReadonlyArray<{ id: string; name: string; jurisdiction_key: string; level: string }>;
+  others: ReadonlyArray<{ name: string }>;
+  onChange: (input: HrEstablishmentInput) => void;
+  onClose: () => void;
+  onSave: (editor: EstablishmentEditor) => Promise<void>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [why, setWhy] = useState<string | null>(null);
+  const input = editor?.input ?? EMPTY_ESTABLISHMENT;
+  const set = <K extends keyof HrEstablishmentInput>(key: K, value: HrEstablishmentInput[K]) =>
+    onChange({ ...input, [key]: value });
+  const setAddress = (key: keyof HrEmployerAddress, value: string) =>
+    onChange({ ...input, address: { ...input.address, [key]: value } });
+
+  const save = async () => {
+    if (!editor) return;
+    const problems = establishmentProblems(editor.input, others, jurisdictions);
+    if (problems.length > 0) {
+      setWhy(problems.join(" "));
+      return;
+    }
+    setBusy(true);
+    setWhy(null);
+    try {
+      await onSave(editor);
+    } catch (err) {
+      setWhy(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open={editor !== null}
+      onOpenChange={(open) => {
+        if (!open && !busy) {
+          setWhy(null);
+          onClose();
+        }
+      }}
+    >
+      <DialogContent
+        className="matrx-touch-targets max-h-[90dvh] overflow-y-auto sm:max-w-2xl"
+        {...{ [SURFACE_LAYER_ATTRIBUTE]: HR_EMPLOYER_SURFACE_NAME }}
+      >
+        <DialogHeader>
+          <DialogTitle>
+            {editor?.mode === "edit" ? `Edit ${input.name || "establishment"}` : "New establishment"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Name" htmlFor="est-name" required value={input.name}>
+            <ProInput
+              id="est-name"
+              value={input.name}
+              onChange={(event) => set("name", event.target.value)}
+            />
+          </Field>
+          <Field label="Jurisdiction" htmlFor="est-jurisdiction" required value={input.jurisdiction_id}>
+            <Select
+              value={input.jurisdiction_id || undefined}
+              onValueChange={(value) => set("jurisdiction_id", value)}
+            >
+              <SelectTrigger id="est-jurisdiction" className="text-base sm:text-sm">
+                <SelectValue placeholder="Choose one" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                {jurisdictions.map((j) => (
+                  <SelectItem key={j.id} value={j.id}>
+                    {j.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="NAICS code" htmlFor="est-naics" optional>
+            <ProInput
+              id="est-naics"
+              value={input.naics_code}
+              inputMode="numeric"
+              onChange={(event) => set("naics_code", event.target.value)}
+            />
+          </Field>
+          <Field label="EEO-1 establishment id" htmlFor="est-eeo1" optional>
+            <ProInput
+              id="est-eeo1"
+              value={input.eeo1_establishment_id}
+              onChange={(event) => set("eeo1_establishment_id", event.target.value)}
+            />
+          </Field>
+          <Field label="OSHA establishment name" htmlFor="est-osha" optional>
+            <ProInput
+              id="est-osha"
+              value={input.osha_establishment_name}
+              onChange={(event) => set("osha_establishment_name", event.target.value)}
+            />
+          </Field>
+          <Field label="Annual average employees" htmlFor="est-avg" optional>
+            <ProInput
+              id="est-avg"
+              value={input.annual_average_employees}
+              inputMode="numeric"
+              onChange={(event) => set("annual_average_employees", event.target.value)}
+            />
+          </Field>
+          <Field label="Street" htmlFor="est-line1" optional className="sm:col-span-2">
+            <ProInput
+              id="est-line1"
+              value={input.address.line1}
+              onChange={(event) => setAddress("line1", event.target.value)}
+            />
+          </Field>
+          <Field label="City" htmlFor="est-city" optional>
+            <ProInput
+              id="est-city"
+              value={input.address.city}
+              onChange={(event) => setAddress("city", event.target.value)}
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="State" htmlFor="est-region" optional>
+              <ProInput
+                id="est-region"
+                value={input.address.region}
+                maxLength={2}
+                onChange={(event) => setAddress("region", event.target.value.toUpperCase())}
+              />
+            </Field>
+            <Field label="ZIP" htmlFor="est-postal" optional>
+              <ProInput
+                id="est-postal"
+                value={input.address.postal_code}
+                inputMode="numeric"
+                onChange={(event) => setAddress("postal_code", event.target.value)}
+              />
+            </Field>
+          </div>
+          <div className="matrx-tap-area flex items-center gap-3 sm:col-span-2">
+            <Switch
+              id="est-hq"
+              checked={input.is_headquarters}
+              onCheckedChange={(checked) => set("is_headquarters", checked)}
+            />
+            <Label htmlFor="est-hq" className="text-sm">
+              Headquarters
+            </Label>
+          </div>
+        </div>
+
+        {why ? <ErrorNotice size="inline" className="text-sm" message={why} /> : null}
+
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={save} disabled={busy}>
+            {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
