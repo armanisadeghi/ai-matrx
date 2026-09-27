@@ -367,6 +367,15 @@ export interface RequestOptions {
    */
   organizationId?: string;
   /**
+   * This POST is a READ whose query rides in the body (a search). It is
+   * admitted like a GET: with no organization selected it is sent naming none
+   * instead of refused, and the server's named search door reads every
+   * organization the person belongs to (aidream `read_by_access.py`
+   * `BODY_CARRIED_READS`). With an organization selected it still names it.
+   * Only for routes the server lists there — any other POST stays fail-closed.
+   */
+  bodyCarriedRead?: boolean;
+  /**
    * Sent as `X-Cloud-Files-Bypass`. Must equal the backend's
    * `CLOUD_FILES_BYPASS_SECRET`. Use ONLY for trusted internal callers
    * (importers, bulk-loaders) that legitimately need to write past the
@@ -525,7 +534,7 @@ export async function buildHeaders(
   if (token) {
     const organizationId = await resolveRequestOrganizationIdAfterAdmission(
       opts,
-      method,
+      opts.bodyCarriedRead ? "GET" : method,
     );
     if (organizationId) {
       headers = applyOrganizationContextHeader(headers, organizationId);
