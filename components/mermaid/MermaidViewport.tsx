@@ -318,8 +318,13 @@ export function MermaidViewport({
       <div
         ref={frameRef}
         className={cn(
-          "overflow-auto overscroll-contain",
-          fillHeight ? "h-full" : undefined,
+          // 🚨 The page scrolls over a diagram. `overscroll-contain` plus a
+          // vertical scroller here swallowed the mouse wheel wherever a
+          // diagram rendered (verifier round 2). Vertically the diagram is
+          // fitted, so it needs no wheel scroll: a zoomed diagram pans by drag
+          // (which sets scrollTop directly) and zooms with ctrl/cmd-wheel.
+          // Only a full-height viewer (full screen) owns vertical scrolling.
+          fillHeight ? "h-full overflow-auto" : "overflow-x-auto overflow-y-hidden",
           canPan ? "cursor-grab active:cursor-grabbing" : "cursor-default",
         )}
         style={maxFrameHeight ? { maxHeight: maxFrameHeight } : undefined}
