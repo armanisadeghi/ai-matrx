@@ -312,24 +312,6 @@ function isRouteMissing(err: unknown): boolean {
   );
 }
 
-/**
- * The OLDER RAG route still deployed at this path refuses the hub's body with
- * a 422 that a request built by `toServerRequest` can never earn from the
- * hub's own service: it demands `body.query`, a field the hub's request does
- * not have (the query object IS the body, §2). That is "not the hub's
- * service", exactly like a 404 — any other 422 is a real validation refusal.
- */
-function isOlderRouteRefusal(err: unknown): boolean {
-  if (!(err instanceof BackendApiError) || err.status !== 422) return false;
-  let said = `${err.detail ?? ""} ${err.userMessage ?? ""}`;
-  try {
-    said += ` ${JSON.stringify(err.details ?? "")}`;
-  } catch {
-    /* details not serializable — the sentence alone decides */
-  }
-  return /body\.query|"body",\s*"query"/.test(said) && /field required|missing/i.test(said);
-}
-
 /** A refusal in the server's own words (a 4xx names what was wrong). */
 function refusalSentence(err: unknown): string {
   if (err instanceof BackendApiError && err.status !== null && err.status >= 400 && err.status < 500) {
@@ -397,7 +379,7 @@ export const searchKnowledgeServer: KnowledgeSearchRunner = async (
     }
   } catch (err) {
     if (options.signal?.aborted) throw err;
-    if (isRouteMissing(err) || isOlderRouteRefusal(err)) throw new KnowledgeSearchUnavailableError();
+    if (isRouteMissing(err)) throw new KnowledgeSearchUnavailableError();
     failRest(refusalSentence(err));
     started = true;
   }

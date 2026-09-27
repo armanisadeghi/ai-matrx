@@ -237,3 +237,23 @@ describe("view link", () => {
     expect(isViewLinkOnly({ ...base, layout: "board" })).toBe(false);
   });
 });
+
+describe("any-library preset", () => {
+  it("expands `library:*` into every library the person can see", async () => {
+    const { expandAnyContainers } = await import("@/features/knowledge/hub/hubSavedViews");
+    const q = { mode: "find" as const, within: [{ type: "media_source_library", id: "*" }] };
+    expect(expandAnyContainers(q, { media_source_library: ["l1", "l2"] })).toEqual({
+      status: "ready",
+      query: { mode: "find", within: [{ type: "media_source_library", id: "l1" }, { type: "media_source_library", id: "l2" }] },
+    });
+    expect(expandAnyContainers(q, {}).status).toBe("pending");
+    expect(expandAnyContainers(q, { media_source_library: [] }).status).toBe("empty");
+    const plain = { mode: "find" as const, types: ["file"] };
+    expect(expandAnyContainers(plain, {})).toEqual({ status: "ready", query: plain });
+  });
+  it("counts the expanded query like any other", async () => {
+    const runner = jest.fn().mockResolvedValue([section("sources", 3)]);
+    const c = await countViewQuery({ mode: "find", within: [{ type: "media_source_library", id: "l1" }] }, runner);
+    expect(countLabel(c)).toBe("3");
+  });
+});

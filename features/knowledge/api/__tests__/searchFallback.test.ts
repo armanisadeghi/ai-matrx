@@ -58,13 +58,10 @@ it("search_started then sections is the live service", async () => {
   expect(sections.find((s) => s.key === "notes")?.items[0].title).toBe("N");
 });
 
-it("the older RAG route's 422 (`body.query` required — a field the hub's request never has) falls back", async () => {
-  // Felt in the H5 walk (2026-09-27): the deployed server still carried the
-  // older route at this path; every section and every saved-view count read
-  // "Request validation failed … `body.query`: Field required" instead of the
-  // announced title stand-in.
+it("a 422 naming `body.query` is a real refusal from the deployed service — its sentence shows, never the stand-in", async () => {
   postNdjson.mockReturnValue(refuse(422, "Request validation failed with 1 issue: `body.query`: Field required"));
-  await expect(searchKnowledgeServer({ text: "x" })).rejects.toBeInstanceOf(KnowledgeSearchUnavailableError);
+  const sections = await searchKnowledgeServer({ text: "x" });
+  for (const s of sections) expect(s.error?.message).toBe("Request validation failed with 1 issue: `body.query`: Field required");
 });
 
 it("the title stand-in answers a section the types filter rules out with nothing, never with silence", async () => {
