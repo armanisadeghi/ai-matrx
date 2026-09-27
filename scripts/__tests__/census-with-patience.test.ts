@@ -190,12 +190,11 @@ describe("single flight (2026-09-25, the live database freeze; 2026-09-27, name 
     it("a run that WAITED adopts the outcome its holder left, instead of running a second copy", async () => {
       const dir = mkdtempSync(join(tmpdir(), "census-share-"));
       const waiter = lockClient(2);
-      let heldOnce = false;
+      let lockAsks = 0;
       const original = waiter.query;
-      // the holder finishes while the waiter is polling
+      // the holder finishes while the waiter is polling (after its first refused ask)
       waiter.query = async (sql: string) => {
-        if (sql.includes("pg_try_advisory_xact_lock") && !heldOnce) {
-          heldOnce = true;
+        if (sql.includes("pg_try_advisory_xact_lock") && ++lockAsks === 2) {
           await holderRuns(dir);
         }
         return original(sql);
