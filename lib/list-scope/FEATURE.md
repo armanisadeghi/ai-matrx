@@ -124,8 +124,9 @@ rendered for anyone. A tab bar must be self-sufficient from its own query.
 - `components/official/ListScopeSwitcher.tsx` — controlled segmented
   control (Mine / Shared* / org chips). Loads orgs through
   `useUserOrganizations` and still excludes `is_personal` organizations from
-  the chips, as the `*_list_scope_counts` RPCs still do for My Orgs — a live
-  defect against the law (organizations are equal); it goes with the flag.
+  the chips — a live defect against the law (organizations are equal); it
+  goes with the flag. (The live `*_list_scope_counts` RPCs no longer do; checked
+  2026-09-27.)
 
 ## Consumer rules
 
@@ -147,6 +148,14 @@ rendered for anyone. A tab bar must be self-sufficient from its own query.
 ## Scoped-list RPCs — hand-written from a template, not generated
 
 A list surface that pages server-side gets its own `<feature>_list_scoped` RPC.
+
+> **Copy from the LIVE function, not the migration file (2026-09-27).** The
+> reference migration files predate the equal-organizations ruling and still
+> exclude `is_personal` organizations, which a database guard now refuses
+> ("An organization type was reintroduced"). Read the current body with
+> `select pg_get_functiondef('public.rsx_list_scoped'::regproc)` (research
+> topics — the newest, with scope counts and facets beside it) or
+> `public.agx_list_scoped`; neither references `is_personal`.
 These are **hand-written per feature from a documented template**, deliberately
 not generated: a generator would have to model every feature's access semantics
 and would become its own language to debug, whereas ~150 lines of explicit SQL
