@@ -10,8 +10,8 @@ import type {
 } from "../types";
 
 const sizeClass: Record<SettingsControlSize, string> = {
-  sm: "h-7 text-xs",
-  md: "h-8 text-sm",
+  sm: "h-11 sm:h-7 text-xs",
+  md: "h-11 sm:h-8 text-sm",
   lg: "h-10 text-base",
 };
 

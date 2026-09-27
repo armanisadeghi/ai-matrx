@@ -6,7 +6,7 @@ import type { SettingsCommonProps, SettingsControlSize } from "../types";
 
 const sizeClass: Record<SettingsControlSize, string> = {
   sm: "h-7 text-xs px-2",
-  md: "h-8 text-sm px-2.5",
+  md: "h-11 sm:h-8 text-sm px-2.5",
   lg: "h-10 text-base px-3",
 };
 
