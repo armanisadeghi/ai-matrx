@@ -1,6 +1,7 @@
 "use client";
 
 import { ErrorBoundaryView } from "@/components/errors/ErrorBoundaryView";
+import { HUB_LIBRARIES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 export default function LibrariesError({
   error,
@@ -14,7 +15,7 @@ export default function LibrariesError({
       error={error}
       reset={reset}
       context="Libraries"
-      homePath="/libraries"
+      homePath={HUB_LIBRARIES_HREF}
     />
   );
 }

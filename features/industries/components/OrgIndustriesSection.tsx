@@ -45,6 +45,7 @@ import { useIndustries, useOrgIndustries } from "@/features/industries/hooks";
 import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
 import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { HUB_LIBRARY_CATALOG_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 export function OrgIndustriesSection({ orgId }: { orgId: string }) {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
@@ -212,7 +213,7 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
           <Library className="h-4 w-4 text-muted-foreground" />
           <h4 className="text-xs font-semibold">Shared knowledge libraries</h4>
           <Link
-            href="/knowledge/library-catalog"
+            href={HUB_LIBRARY_CATALOG_HREF}
             className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
           >
             Full catalog

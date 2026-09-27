@@ -13,7 +13,7 @@
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { studyService } from "@/features/education/study/service/studyService";
 import { buildGradeScore } from "@/features/education/study/utils/gradeScore";
@@ -82,9 +82,32 @@ export function useTakeAssessment(
 
   const pointsPossible = items.reduce((s, it) => s + Number(it.points ?? 1), 0);
 
-  /** Open the session + result row. Idempotent-ish: returns early if started. */
+  /**
+   * Begin the taking — writes NOTHING. The clock starts; the study session and
+   * the result row open on the first recorded answer (or on finish), so
+   * opening a quiz and leaving leaves no empty session in history.
+   */
   async function start(): Promise<void> {
-    if (sessionId || starting || opts.enabled === false) return;
+    if (startedAt !== null || opts.enabled === false) return;
+    setError(null);
+    setStartedAt(Date.now());
+  }
+
+  /** The session + result ids, opened once on the first answer. */
+  const recordRef = useRef<Promise<{ sessionId: string; resultId: string } | null> | null>(null);
+  function openRecord(): Promise<{ sessionId: string; resultId: string } | null> {
+    if (opts.enabled === false) return Promise.resolve(null);
+    if (!recordRef.current) {
+      recordRef.current = openRecordOnce().then((ids) => {
+        // A failed open may be retried by the next answer.
+        if (!ids) recordRef.current = null;
+        return ids;
+      });
+    }
+    return recordRef.current;
+  }
+
+  async function openRecordOnce(): Promise<{ sessionId: string; resultId: string } | null> {
     setStarting(true);
     setError(null);
     try {
@@ -96,7 +119,7 @@ export function useTakeAssessment(
       });
       if (sess.error || !sess.data) {
         setError(sess.error ?? "Could not open a study session");
-        return;
+        return null;
       }
       const res = await assessmentService.createResult({
         assessmentId: assessment.id,
@@ -111,11 +134,11 @@ export function useTakeAssessment(
       });
       if (res.error || !res.data) {
         setError(res.error ?? "Could not start the assessment");
-        return;
+        return null;
       }
       setSessionId(sess.data.id);
       setResultId(res.data.id);
-      setStartedAt(Date.now());
+      return { sessionId: sess.data.id, resultId: res.data.id };
     } finally {
       setStarting(false);
     }
@@ -133,6 +156,8 @@ export function useTakeAssessment(
   ): Promise<GradedAnswer> {
     setGrading(true);
     try {
+      // The first answer opens the session + result row (once).
+      const ids = await openRecord();
       const type = item.question_type as QuestionType;
       const expected =
         type === "written_response"
@@ -200,7 +225,7 @@ export function useTakeAssessment(
         // study plan, and weak-area drilling can read them back without
         // re-grading. Losing them was a real defect.
         ...(gradeScore ? { score: gradeScore } : {}),
-        ...(sessionId ? { sessionId } : {}),
+        ...(ids ? { sessionId: ids.sessionId } : {}),
       });
 
       setRecords((prev) => [
@@ -235,7 +260,11 @@ export function useTakeAssessment(
 
   /** Finalize: aggregate the records, write the scored result + close the session. */
   async function finish(): Promise<string | null> {
-    if (!resultId) return null;
+    // Finishing is an action: a taking finished with no answer still records
+    // its (empty) result. Opening alone never does.
+    const ids = await openRecord();
+    if (!ids) return null;
+    const { resultId, sessionId } = ids;
     const correctCount = records.filter((r) => r.graded.result === "correct").length;
     const partialCount = records.filter((r) => r.graded.result === "partial").length;
     const pointsEarned = records.reduce(
@@ -297,6 +326,8 @@ export function useTakeAssessment(
     finish,
     sessionId,
     resultId,
+    /** True once the taking began (the clock runs) — nothing is written yet. */
+    started: startedAt !== null,
     starting,
     grading,
     records,

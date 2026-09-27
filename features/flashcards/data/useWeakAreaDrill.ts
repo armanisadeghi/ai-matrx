@@ -33,8 +33,8 @@ import { needsWork } from "@/features/education/study/analytics/computeAnalytics
 import type { CardWithDetails } from "./types";
 import type {
   ItemMasteryRow,
-  StudySessionRow,
 } from "@/features/education/study/types";
+import { useLazyStudySession } from "@/features/education/study/hooks/useLazyStudySession";
 import type { ReviewResult } from "../types";
 import type {
   FlashcardStudyProgress,
@@ -94,7 +94,10 @@ export function useWeakAreaDrill(
   // Whose queue an offline answer joins. Empty only when signed out, and a
   // signed-out learner cannot open a study session at all.
   const userId = useAppSelector(selectUserId) ?? "";
-  const [session, setSession] = useState<StudySessionRow | null>(null);
+  // The session is written on the FIRST ANSWER, never on open — opening and
+  // leaving writes nothing (see useLazyStudySession).
+  const lazySession = useLazyStudySession("useWeakAreaDrill");
+  const session = lazySession.session;
   const [masteryByCard, setMasteryByCard] = useState<
     Record<string, ItemMasteryRow | undefined>
   >({});
@@ -106,6 +109,7 @@ export function useWeakAreaDrill(
     void (async () => {
       setLoading(true);
       setError(null);
+      lazySession.arm(null);
       setCurrentIndex(0);
       setIsFlipped(false);
       setMasteryByCard({});
@@ -181,17 +185,16 @@ export function useWeakAreaDrill(
       setCards(cardsRes.data ?? []);
       setResultsByCard({});
 
-      // 4. Open a weak_area session tagging every attempt.
-      const sessionRes = await studyService.createSession({
-        mode: STUDY_MODE,
-        sourceKind: "weak_area",
-        ...(topic ? { sourceQuery: { topic } } : {}),
-      });
+      // 4. Arm (never write) the weak_area session tagging every attempt —
+      //    the first answer opens it, so opening and leaving writes nothing.
       if (!cancelled) {
-        if (sessionRes.error) {
-          console.error("[useWeakAreaDrill] createSession:", sessionRes.error);
-        }
-        setSession(sessionRes.data);
+        lazySession.arm(() =>
+          studyService.createSession({
+            mode: STUDY_MODE,
+            sourceKind: "weak_area",
+            ...(topic ? { sourceQuery: { topic } } : {}),
+          }),
+        );
         setLoading(false);
       }
     })();
@@ -248,6 +251,8 @@ export function useWeakAreaDrill(
     if (!card) return null;
     setGrading(true);
     try {
+      // The first answer opens the session (once); later answers share it.
+      const openSession = await lazySession.ensure();
       // Offline-aware: with no connection the OBSERVATION is queued and
       // replayed idempotently on reconnect (IC-8), instead of the answer being
       // lost. Online this is exactly `studyService.recordAttempt`.
@@ -259,7 +264,7 @@ export function useWeakAreaDrill(
         result,
         responseKind: "selected",
         ...(extra?.confidence != null ? { confidence: extra.confidence } : {}),
-        ...(session ? { sessionId: session.id } : {}),
+        ...(openSession ? { sessionId: openSession.id } : {}),
       });
       if (res.error) {
         console.error("[useWeakAreaDrill] recordAttempt:", res.error);

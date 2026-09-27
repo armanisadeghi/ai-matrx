@@ -31,7 +31,20 @@ export type HubView =
   | { kind: "trash" }
   | { kind: "saved"; id: string }
   | { kind: "container"; type: string; id: string }
-  | { kind: "kind"; key: string };
+  | { kind: "kind"; key: string }
+  /**
+   * Every container of one type, as a list (Data stores, Libraries, the
+   * Library catalog) — the retired list pages' job (H6b). Each row opens the
+   * container's own record page; its filters live in `group`.
+   */
+  | { kind: "group"; token: HubGroupToken };
+
+/** The container groups the hub lists as a whole (containerGroups/). */
+export const HUB_GROUP_TOKENS = ["data_store", "media_source_library", "library_catalog"] as const;
+export type HubGroupToken = (typeof HUB_GROUP_TOKENS)[number];
+export function isHubGroupToken(v: string): v is HubGroupToken {
+  return (HUB_GROUP_TOKENS as readonly string[]).includes(v);
+}
 
 export interface HubPeek {
   entity: string;
@@ -48,6 +61,12 @@ export interface HubState {
    * know stages, so it narrows the loaded items (hubStage.ts).
    */
   stage: HubStage[];
+  /**
+   * A container group's own filters (`view=group:…` only), each carried as
+   * `g.<key>=<value>` — the words, the lane, the adapter, the type… Keys and
+   * values are the group's; the codec only round-trips them.
+   */
+  group: Record<string, string>;
   /** "sample" = the fixture answers (announced on screen). */
   data: "live" | "sample";
 }
@@ -58,6 +77,7 @@ export const DEFAULT_HUB_STATE: HubState = {
   layout: "list",
   peek: null,
   stage: [],
+  group: {},
   data: "live",
 };
 
@@ -147,6 +167,7 @@ export function selectionQuery(
     case "everything":
     case "favorites":
     case "trash":
+    case "group":
       return { query: { mode: "find" } };
     case "container":
       return { query: { mode: "find", within: [{ type: view.type, id: view.id }] } };
@@ -184,6 +205,8 @@ function viewToParam(v: HubView): string {
       return `in:${v.type}:${v.id}`;
     case "kind":
       return `kind:${v.key}`;
+    case "group":
+      return `group:${v.token}`;
   }
 }
 
@@ -193,6 +216,7 @@ function viewFromParam(p: string | null): HubView {
     return { kind: p };
   if (p.startsWith("saved:") && p.length > 6) return { kind: "saved", id: p.slice(6) };
   if (p.startsWith("kind:") && p.length > 5) return { kind: "kind", key: p.slice(5) };
+  if (p.startsWith("group:") && isHubGroupToken(p.slice(6))) return { kind: "group", token: p.slice(6) as HubGroupToken };
   if (p.startsWith("in:")) {
     const rest = p.slice(3);
     const i = rest.indexOf(":");
@@ -290,9 +314,17 @@ export function hubStateToParams(s: HubState): URLSearchParams {
   if (s.peek) p.set("peek", `${s.peek.entity}:${s.peek.id}`);
   const stages = HUB_STAGES.filter((x) => (s.stage ?? []).includes(x));
   if (stages.length) p.set("stage", stages.join(","));
+  if (s.view.kind === "group")
+    for (const k of Object.keys(s.group ?? {}).sort()) {
+      const v = s.group[k];
+      if (k && typeof v === "string" && v) p.set(`${GROUP_PARAM_PREFIX}${k}`, v);
+    }
   if (s.data === "sample") p.set("data", "sample");
   return p;
 }
+
+/** `g.lane=orgs` → group filter `lane`. */
+export const GROUP_PARAM_PREFIX = "g.";
 
 export function hubStateFromParams(p: URLSearchParams | ReadonlyURLSearchParamsLike): HubState {
   const get = (k: string) => p.get(k);
@@ -328,12 +360,20 @@ export function hubStateFromParams(p: URLSearchParams | ReadonlyURLSearchParamsL
     const i = peekParam.indexOf(":");
     if (i > 0 && i < peekParam.length - 1) peek = { entity: peekParam.slice(0, i), id: peekParam.slice(i + 1) };
   }
+  const view = viewFromParam(get("view"));
+  const group: Record<string, string> = {};
+  if (view.kind === "group" && p.forEach)
+    p.forEach((value, key) => {
+      if (key.startsWith(GROUP_PARAM_PREFIX) && key.length > GROUP_PARAM_PREFIX.length && value)
+        group[key.slice(GROUP_PARAM_PREFIX.length)] = value;
+    });
   return {
-    view: viewFromParam(get("view")),
+    view,
     query,
     layout,
     peek,
     stage: HUB_STAGES.filter((x) => parseStages(get("stage")).includes(x)),
+    group,
     data: get("data") === "sample" ? "sample" : "live",
   };
 }
@@ -341,6 +381,8 @@ export function hubStateFromParams(p: URLSearchParams | ReadonlyURLSearchParamsL
 /** The subset of URLSearchParams Next's ReadonlyURLSearchParams offers. */
 export interface ReadonlyURLSearchParamsLike {
   get(name: string): string | null;
+  /** Present on URLSearchParams and Next's ReadonlyURLSearchParams; reads the group's `g.*` filters. */
+  forEach?(cb: (value: string, key: string) => void): void;
 }
 
 export function hubHref(s: HubState): string {

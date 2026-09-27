@@ -19,11 +19,9 @@ import { useEffect, useRef, useState } from "react";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { studyService } from "@/features/education/study/service/studyService";
 import { gameService } from "./gameService";
+import { useLazyStudySession } from "@/features/education/study/hooks/useLazyStudySession";
 import { currentRetrievability } from "@/features/education/study/utils/masteryFsrs";
-import type {
-  ItemMasteryRow,
-  StudySessionRow,
-} from "@/features/education/study/types";
+import type { ItemMasteryRow } from "@/features/education/study/types";
 import type { CardWithDetails } from "@/features/flashcards/data/types";
 import { buildGameQueue } from "../engine/queue";
 import { scoreAnswer } from "../engine/scoring";
@@ -136,7 +134,10 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     correct: boolean;
     chosenIndex: number;
   } | null>(null);
-  const [session, setSession] = useState<StudySessionRow | null>(null);
+  // The session is written on the FIRST ANSWER, never on load — opening a
+  // game and leaving writes nothing (see useLazyStudySession).
+  const lazySession = useLazyStudySession("useGamePlay");
+  const session = lazySession.session;
 
   const masteryRef = useRef<Record<string, ItemMasteryRow | undefined>>({});
   const questionShownAt = useRef<number>(0);
@@ -228,24 +229,21 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
       }
       setQuestions(queue);
 
-      const sessRes =
+      if (cancelled) return;
+      // Armed, never written: the first answer opens it. Multiplayer opens
+      // through the room door (filed under the ROOM's organization).
+      lazySession.arm(() =>
         roomId && joinCode
-          ? await gameService.startGameSession(roomId, joinCode)
-          : await studyService.createSession({
+          ? gameService.startGameSession(roomId, joinCode)
+          : studyService.createSession({
               mode: GAME_METHOD,
               sourceKind: effectiveSourceSetId ? "set" : "due",
               ...(effectiveSourceSetId
                 ? { sourceSetId: effectiveSourceSetId }
                 : {}),
               metadata: { engage: true, mode, roomId },
-            });
-      if (cancelled) return;
-      if (sessRes.error || !sessRes.data) {
-        setError(sessRes.error ?? "Failed to open the game session");
-        setStatus("error");
-        return;
-      }
-      setSession(sessRes.data);
+            }),
+      );
       setStatus("ready");
     })();
     return () => {
@@ -346,17 +344,19 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     // answer's gain (→ league standing + badges) is lost to the async race.
     const prior = masteryRef.current[q.card.id];
     const priorR = currentRetrievability(prior) ?? 0;
-    if (!session) {
-      setError("The game session is unavailable. Start a new round.");
-      setStatus("error");
-      return;
-    }
-    const attemptPromise = studyService
-      .recordGameAnswer({
-        sessionId: session.id,
-        itemId: q.card.id,
-        selectedAnswer: q.choices[choiceIndex] ?? "",
-        localResult: correct ? "correct" : "incorrect",
+    // The first answer opens the session (once); later answers share it.
+    const attemptPromise = lazySession
+      .ensure()
+      .then((openSession) => {
+        if (!openSession) {
+          throw new Error("The game session could not be opened. Start a new round.");
+        }
+        return studyService.recordGameAnswer({
+          sessionId: openSession.id,
+          itemId: q.card.id,
+          selectedAnswer: q.choices[choiceIndex] ?? "",
+          localResult: correct ? "correct" : "incorrect",
+        });
       })
       .then((res) => {
         if (res.error || !res.data) {
@@ -436,7 +436,6 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     finishReportedRef.current = true;
     const outcomeBase = {
       roomId,
-      sessionId: session?.id ?? null,
       mode,
       score,
       correctCount,
@@ -463,12 +462,16 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
           setStatus("error");
           return;
         }
-        if (!session) {
+        // Read the shared session (the render's `session` may predate it). A
+        // round that ended with no answer at all opens one here: a finished
+        // round is a real sitting, and finalizing needs its session.
+        const openSession = await lazySession.ensure();
+        if (!openSession) {
           setError("The game session is unavailable. Start a new round.");
           setStatus("error");
           return;
         }
-        const close = await studyService.updateSession(session.id, {
+        const close = await studyService.updateSession(openSession.id, {
           status: "completed",
           ended_at: new Date().toISOString(),
         });
@@ -477,7 +480,11 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
           setStatus("error");
           return;
         }
-        onFinish?.({ ...outcomeBase, masteryGain: masteryGainRef.current });
+        onFinish?.({
+          ...outcomeBase,
+          sessionId: openSession.id,
+          masteryGain: masteryGainRef.current,
+        });
       },
     );
   }, [status]);

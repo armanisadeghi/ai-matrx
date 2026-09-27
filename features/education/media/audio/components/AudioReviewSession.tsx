@@ -59,6 +59,7 @@ import { verdictResult, type GradeResult } from "@/features/education/trust/type
 import { AnswerGradeBlock } from "@/features/flashcards/fast-fire/components/AnswerGradeBlock";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { studyService } from "@/features/education/study/service/studyService";
+import { useLazyStudySession } from "@/features/education/study/hooks/useLazyStudySession";
 import {
   StudyOrganizationHoldNotice,
   useHeldStudyStart,
@@ -106,7 +107,10 @@ export function AudioReviewSession({
   const [phase, setPhase] = useState<Phase>("setup");
   const [cards, setCards] = useState<CardWithDetails[]>([]);
   const [index, setIndex] = useState(0);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  // The session is written on the FIRST ANSWER, never on Start — starting a
+  // review and leaving writes nothing (see useLazyStudySession).
+  const lazySession = useLazyStudySession("audio-review");
+  const sessionId = lazySession.session?.id ?? null;
   const [results, setResults] = useState<CardResult[]>([]);
   const [grade, setGrade] = useState<SpokenGrade | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -171,22 +175,18 @@ export function AudioReviewSession({
       return;
     }
 
-    const session = await studyService.createSession({
-      // The source is an fc_set (a "deck" in UI terms) — the study_session
-      // check constraint accepts 'set', never 'deck'. Passing 'deck' silently
-      // failed session creation (attempts still recorded, but orphaned from any
-      // session); use the canonical token FastFire uses.
-      mode: AUDIO_REVIEW_METHOD,
-      sourceKind: "set",
-      sourceSetId: deckId,
-    });
-    if (session.error || !session.data) {
-      toast.error(session.error ?? "Couldn't start the review session");
-      hardStopCapture();
-      capturingRef.current = false;
-      return;
-    }
-    setSessionId(session.data.id);
+    // Armed, never written: the first graded answer opens it.
+    lazySession.arm(() =>
+      studyService.createSession({
+        // The source is an fc_set (a "deck" in UI terms) — the study_session
+        // check constraint accepts 'set', never 'deck'. Passing 'deck' silently
+        // failed session creation (attempts still recorded, but orphaned from
+        // any session); use the canonical token FastFire uses.
+        mode: AUDIO_REVIEW_METHOD,
+        sourceKind: "set",
+        sourceSetId: deckId,
+      }),
+    );
     setCards(ordered);
     setIndex(0);
     setResults([]);
@@ -242,6 +242,8 @@ export function AudioReviewSession({
     setError(null);
     try {
       const clip = await stopCardClip(card.id);
+      // The first answer opens the session (once); later answers share it.
+      const openSession = await lazySession.ensure();
       const res = await dispatch(
         gradeSpokenAnswer({
           front: card.front,
@@ -251,7 +253,7 @@ export function AudioReviewSession({
           itemType: "fc_card",
           itemId: card.id,
           method: AUDIO_REVIEW_METHOD,
-          sessionId,
+          sessionId: openSession?.id ?? null,
           surface: "audio-review",
           onConversationCreated: liveRun.claim,
         }),

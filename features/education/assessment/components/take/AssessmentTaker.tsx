@@ -71,7 +71,8 @@ export function AssessmentTaker({
   const [finishing, startFinishing] = useState(false);
   const [, startTransition] = useTransition();
 
-  // Open the session + result on mount — or once an organization is chosen.
+  // Begin on mount — or once an organization is chosen. Nothing is written
+  // until the first answer (see useTakeAssessment.start).
   useEffect(() => {
     if (orgReady) void take.start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,13 +84,13 @@ export function AssessmentTaker({
     config.timed && limit > 0 ? limit : null,
   );
   useEffect(() => {
-    if (remaining === null || !take.sessionId) return;
+    if (remaining === null || !take.started) return;
     if (remaining <= 0) return;
     const id = setInterval(() => {
       setRemaining((r) => (r === null ? null : r - 1));
     }, 1000);
     return () => clearInterval(id);
-  }, [remaining, take.sessionId]);
+  }, [remaining, take.started]);
 
   const current = items[index];
   const record = take.records.find((r) => r.item.id === current?.id) ?? null;
@@ -176,7 +177,7 @@ export function AssessmentTaker({
       <StudyOrganizationGate what={`This ${config.noun}`}>
       <div className="h-full overflow-y-auto overscroll-contain bg-background">
         <div className="mx-auto max-w-2xl px-2 pb-safe pt-14 sm:px-6">
-          {(take.starting || !orgReady) && !take.sessionId ? (
+          {!orgReady || !take.started ? (
             <div className="flex h-64 items-center justify-center">
               <MatrxMiniLoader />
             </div>

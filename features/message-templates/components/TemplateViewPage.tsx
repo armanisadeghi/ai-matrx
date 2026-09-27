@@ -31,7 +31,6 @@ import {
 } from "@/components/merge-field-input/MergeFieldInput";
 import { AgentAppTagsInput } from "@/features/agent-apps/components/inputs/AgentAppTagsInput";
 import { Switch } from "@/components/ui/switch";
-import { SegmentedControl } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -149,7 +148,7 @@ function FilledText({ text, show }: { text: string; show: "names" | "example" })
 
 type FieldShow = "names" | "example";
 
-/** Field names vs example values — one compact control. */
+/** Field names vs example values — one small toggle, never its own row. */
 function ShowToggle({
   value,
   onChange,
@@ -158,16 +157,17 @@ function ShowToggle({
   onChange: (v: FieldShow) => void;
 }) {
   return (
-    <SegmentedControl
+    <Button
+      type="button"
+      variant="ghost"
       size="sm"
-      className="shrink-0"
-      value={value}
-      onValueChange={(v) => onChange(v === "example" ? "example" : "names")}
-      data={[
-        { value: "names", label: "Fields" },
-        { value: "example", label: "Example" },
-      ]}
-    />
+      aria-pressed={value === "example"}
+      onClick={() => onChange(value === "example" ? "names" : "example")}
+      className="h-7 shrink-0 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+    >
+      <Eye className="h-3.5 w-3.5" />
+      {value === "example" ? "Show fields" : "Show example"}
+    </Button>
   );
 }
 

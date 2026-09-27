@@ -36,6 +36,7 @@ import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
 import type { Database as DB, Json } from "@/types/database.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { HUB_DATA_STORES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 export type FeedType = DB["public"]["Enums"]["context_feed_type"];
 export type FeedConfig = Record<string, unknown>;
@@ -162,7 +163,7 @@ export function feedSourceLink(
 export function feedCreateLink(feedType: FeedType): FeedLink | null {
   switch (feedType) {
     case "dataset":
-      return { href: "/knowledge/data-stores", label: "Manage / create datasets" };
+      return { href: HUB_DATA_STORES_HREF, label: "Manage / create datasets" };
     case "agent":
       return { href: "/agents", label: "Browse / create agents" };
     default:

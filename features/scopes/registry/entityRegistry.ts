@@ -368,6 +368,9 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: Database,
     labelPlural: "Data Stores",
     listCandidates: listDataStoreCandidates,
+    // The store's record page (members, publish, access, edit, delete) — what
+    // the Knowledge hub's Data stores group opens (KNOWLEDGE-HUB §6, H6b).
+    hrefFor: (id) => `/knowledge/data-stores?store_id=${encodeURIComponent(id)}`,
   },
   studio_session: {
     Icon: Mic,

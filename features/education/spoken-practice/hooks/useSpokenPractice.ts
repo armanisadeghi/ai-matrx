@@ -115,7 +115,11 @@ export function useSpokenPractice(
   const [phase, setPhase] = useState<RunnerPhase>("idle");
   const [plan, setPlan] = useState<PracticePlan | null>(null);
   const [index, setIndex] = useState(0);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  // The session is written on the FIRST ANSWER, never on Start — starting and
+  // leaving writes nothing (see useLazyStudySession). The designed prompts
+  // still ride on it: the opener carries them.
+  const lazySession = useLazyStudySession("spoken-practice");
+  const sessionId = lazySession.session?.id ?? null;
   const [results, setResults] = useState<PromptResult[]>([]);
   const [grade, setGrade] = useState<SpokenGrade | null>(null);
   const [review, setReview] = useState<ReviewSessionResult | null>(null);
@@ -204,35 +208,29 @@ export function useSpokenPractice(
         return false;
       }
 
-      // 3) Open the study-spine session (mode carries the practice type).
-      const session = await studyService.createSession({
-        mode: config.mode,
-        sourceKind: config.source?.kind ?? "topic",
-        sourceSetId: config.source?.setId ?? null,
-        settings: {
-          focus: config.focus,
-          difficulty: config.difficulty,
-          count: config.count,
-          sourceTitle: config.source?.title ?? null,
-          sessionTitle: designed.sessionTitle,
-          intro: designed.intro,
-          prompts: designed.prompts,
-        },
-      });
-      if (session.error || !session.data) {
-        hardStopCapture();
-        capturingRef.current = false;
-        setError(session.error ?? "Couldn't start the session");
-        setPhase("error");
-        return false;
-      }
-
-      setSessionId(session.data.id);
+      // 3) Arm (never write) the study-spine session — mode carries the
+      //    practice type. The first graded answer opens it.
+      lazySession.arm(() =>
+        studyService.createSession({
+          mode: config.mode,
+          sourceKind: config.source?.kind ?? "topic",
+          sourceSetId: config.source?.setId ?? null,
+          settings: {
+            focus: config.focus,
+            difficulty: config.difficulty,
+            count: config.count,
+            sourceTitle: config.source?.title ?? null,
+            sessionTitle: designed.sessionTitle,
+            intro: designed.intro,
+            prompts: designed.prompts,
+          },
+        }),
+      );
       setPlan(designed);
       setPhase("asking");
       return true;
     },
-    [dispatch, enabled],
+    [dispatch, enabled, lazySession.arm],
   );
 
   const beginAnswer = useCallback(() => {
@@ -289,6 +287,8 @@ export function useSpokenPractice(
     );
     try {
       const clip = await stopCardClip(current.id);
+      // The first answer opens the session (once); later answers share it.
+      const openSession = await lazySession.ensure();
       const res = await dispatch(
         gradePracticeAnswer({
           mode: config.mode,
@@ -298,7 +298,7 @@ export function useSpokenPractice(
           secondsAllowed: elapsed,
           clip,
           itemId: current.id,
-          sessionId,
+          sessionId: openSession?.id ?? null,
           onConversationCreated: liveRun.claim,
         }),
       );
@@ -329,7 +329,7 @@ export function useSpokenPractice(
     } finally {
       setPhase("result");
     }
-  }, [current, dispatch, sessionId]);
+  }, [current, dispatch, sessionId, lazySession.ensure]);
 
   // Runaway guard: auto-submit a never-ending answer. There is no short timer —
   // spoken-practice answers are long-form and end on the learner's "Done".
@@ -471,8 +471,8 @@ export function useSpokenPractice(
     }
     setPhase("idle");
     setPlan(null);
-    setSessionId(null);
-  }, [sessionId, speakStop]);
+    lazySession.arm(null);
+  }, [sessionId, speakStop, lazySession.arm]);
 
   const reset = useCallback(() => {
     if (capturingRef.current) {
@@ -481,9 +481,9 @@ export function useSpokenPractice(
     }
     setError(null);
     setPlan(null);
-    setSessionId(null);
+    lazySession.arm(null);
     setPhase("idle");
-  }, []);
+  }, [lazySession.arm]);
 
   return {
     phase,

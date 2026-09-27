@@ -7,6 +7,7 @@
  */
 
 import Link from "next/link";
+import { HUB_LIBRARY_CATALOG_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 export function HubGettingStarted() {
   return (
@@ -33,7 +34,7 @@ export function HubGettingStarted() {
         </li>
         <li>
           <strong className="text-foreground">Shared knowledge:</strong> browse and subscribe to shared libraries in the{" "}
-          <Link href="/knowledge/library-catalog" className="underline">
+          <Link href={HUB_LIBRARY_CATALOG_HREF} className="underline">
             Library catalog
           </Link>
           .

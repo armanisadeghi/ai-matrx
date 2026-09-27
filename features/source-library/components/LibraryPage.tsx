@@ -61,6 +61,7 @@ import {
 } from "../catalog/sourceState";
 import { listsCataloguedSources } from "../catalog/cataloguedSources";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { HUB_LIBRARIES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 export function LibraryPage({ libraryId }: { libraryId: string }) {
     const dispatch = useAppDispatch();
@@ -443,7 +444,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                     id={libraryId}
                     error={rowReadError ?? undefined}
                     onRetry={() => void loadLibraryRow()}
-                    fallbackHref="/libraries"
+                    fallbackHref={HUB_LIBRARIES_HREF}
                     fallbackLabel="Your libraries"
                 />
             </div>

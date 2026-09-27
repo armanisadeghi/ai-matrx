@@ -9,6 +9,7 @@
 
 import FeatureAdminPage from "@/features/admin/components/FeatureAdminPage";
 import type { FeatureAdminMap } from "@/features/admin/types/featureAdminMap";
+import { HUB_DATA_STORES_HREF, HUB_LIBRARY_CATALOG_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 const RAG_ADMIN_MAP: FeatureAdminMap = {
   name: "Knowledge",
@@ -34,7 +35,7 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/knowledge/data-stores",
+      url: HUB_DATA_STORES_HREF,
       label: "Data stores",
       description:
         "Create/manage rag.data_stores collections, members, bindings; super-admins publish library stores from here.",
@@ -87,7 +88,7 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/knowledge/library-catalog",
+      url: HUB_LIBRARY_CATALOG_HREF,
       label: "Library catalog",
       description:
         "Tenant-facing Shared Knowledge catalog: discoverable library stores with per-caller entitlement/provenance chips and org opt-in (P3).",

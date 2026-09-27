@@ -15,13 +15,13 @@ import {
   Code2,
   Library,
 } from "lucide-react";
-import { HUB_SOURCES_HREF } from "@/features/knowledge/hub/legacyRoutes";
+import { HUB_DATA_STORES_HREF, HUB_LIBRARY_CATALOG_HREF, HUB_SOURCES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 const HUB_NAV_ITEMS = [
   { name: "Hub", href: "/knowledge", icon: Home },
-  { name: "Data Stores", href: "/knowledge/data-stores", icon: Database },
+  { name: "Data Stores", href: HUB_DATA_STORES_HREF, icon: Database },
   { name: "Sources", href: HUB_SOURCES_HREF, icon: FileText },
-  { name: "Catalog", href: "/knowledge/library-catalog", icon: Library },
+  { name: "Catalog", href: HUB_LIBRARY_CATALOG_HREF, icon: Library },
   { name: "Repositories", href: "/knowledge/repositories", icon: Code2 },
 ];
 

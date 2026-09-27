@@ -30,8 +30,8 @@ import { planService } from "@/features/education/study/service/planService";
 import type { CardWithDetails } from "./types";
 import type {
   ItemMasteryRow,
-  StudySessionRow,
 } from "@/features/education/study/types";
+import { useLazyStudySession } from "@/features/education/study/hooks/useLazyStudySession";
 import type { ReviewResult } from "../types";
 import type {
   FlashcardStudyProgress,
@@ -88,7 +88,10 @@ export function useDueReview(
   // Whose queue an offline answer joins. Empty only when signed out, and a
   // signed-out learner cannot open a study session at all.
   const userId = useAppSelector(selectUserId) ?? "";
-  const [session, setSession] = useState<StudySessionRow | null>(null);
+  // The session is written on the FIRST ANSWER, never on open — opening and
+  // leaving writes nothing (see useLazyStudySession).
+  const lazySession = useLazyStudySession("useDueReview");
+  const session = lazySession.session;
   const [masteryByCard, setMasteryByCard] = useState<
     Record<string, ItemMasteryRow | undefined>
   >({});
@@ -100,6 +103,7 @@ export function useDueReview(
     void (async () => {
       setLoading(true);
       setError(null);
+      lazySession.arm(null);
       setCurrentIndex(0);
       setIsFlipped(false);
       setMasteryByCard({});
@@ -149,16 +153,15 @@ export function useDueReview(
       // resultsByCard holds ONLY this session's grades.
       setResultsByCard({});
 
-      // 3. Open an adaptive session tagging every attempt.
-      const sessionRes = await studyService.createSession({
-        mode: STUDY_MODE,
-        sourceKind: "adaptive",
-      });
+      // 3. Arm (never write) the adaptive session tagging every attempt —
+      //    the first answer opens it, so opening and leaving writes nothing.
       if (!cancelled) {
-        if (sessionRes.error) {
-          console.error("[useDueReview] createSession:", sessionRes.error);
-        }
-        setSession(sessionRes.data);
+        lazySession.arm(() =>
+          studyService.createSession({
+            mode: STUDY_MODE,
+            sourceKind: "adaptive",
+          }),
+        );
         setLoading(false);
       }
     })();
@@ -234,6 +237,8 @@ export function useDueReview(
     if (!card) return null;
     setGrading(true);
     try {
+      // The first answer opens the session (once); later answers share it.
+      const openSession = await lazySession.ensure();
       // Offline-aware: with no connection the OBSERVATION is queued and
       // replayed idempotently on reconnect (IC-8), instead of the answer being
       // lost. Online this is exactly `studyService.recordAttempt`.
@@ -245,7 +250,7 @@ export function useDueReview(
         result,
         responseKind: "selected",
         ...(extra?.confidence != null ? { confidence: extra.confidence } : {}),
-        ...(session ? { sessionId: session.id } : {}),
+        ...(openSession ? { sessionId: openSession.id } : {}),
       });
       if (res.error) {
         console.error("[useDueReview] recordAttempt:", res.error);

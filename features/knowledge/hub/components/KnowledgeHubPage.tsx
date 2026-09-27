@@ -164,6 +164,10 @@ import {
 } from "@/features/knowledge/hub/hubStage";
 import { HUB_LIBRARY_SURFACE, buildHubWriteHandlers, hubSourceSummaries } from "@/features/knowledge/hub/hubAgentSurface";
 import { HubGettingStarted } from "@/features/knowledge/hub/components/HubGettingStarted";
+import { HubContainerGroupView } from "@/features/knowledge/hub/containerGroups/HubContainerGroupView";
+import { HUB_GROUP_LABEL, catalogFiltersToGroup } from "@/features/knowledge/hub/containerGroups/groupFilters";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import Link from "next/link";
 
 const GROUP_ID = "knowledge-hub";
 const GROUP_KEY = "knowledge-hub";
@@ -202,6 +206,8 @@ function viewTitle(view: HubView, sidebar: HubSidebarData): string {
       return sidebar.savedViews.items.find((v) => v.id === view.id)?.name ?? "Saved view";
     case "kind":
       return HUB_KINDS.find((k) => k.key === view.key)?.label ?? view.key;
+    case "group":
+      return HUB_GROUP_LABEL[view.token];
     case "container": {
       const token = view.type as (typeof HUB_CONTAINER_TOKENS)[number];
       const rows = sidebar.containers[token]?.items ?? [];
@@ -229,6 +235,8 @@ function emptySentence(view: HubView, title: string, filtered: boolean): string 
       return `No ${title.toLowerCase()} yet.`;
     case "saved":
       return "Nothing matches this saved view right now.";
+    case "group":
+      return "";
     case "everything":
       return "Nothing here yet. Add a Source, capture a page or start a chat and it shows up here.";
   }
@@ -407,7 +415,7 @@ export function KnowledgeHubPage({
     setSelected(new Set());
     setFocusedKey(null);
     setMobilePane("main");
-    write({ view, query, layout: layout ?? state.layout, peek: null });
+    write({ view, query, layout: layout ?? state.layout, peek: null, group: {} });
     if (view.kind === "saved") {
       const sv = sidebar.savedViews.items.find((v) => v.id === view.id);
       if (sv?.mine && !sample)
@@ -863,6 +871,12 @@ export function KnowledgeHubPage({
         }),
       listedSourceIds: () => new Set(loadedSourceIds),
       openSource: (id) => write({ peek: { entity: "processed_document", id } }, { replace: true }),
+      setCatalogFilters: (value) => {
+        // The catalog's filters (the retired catalog list's write target) shape the Library catalog group.
+        const current = state.view.kind === "group" && state.view.token === "library_catalog" ? state.group : {};
+        const group = catalogFiltersToGroup(current, value);
+        write({ view: { kind: "group", token: "library_catalog" }, query: { mode: "find" }, peek: null, group });
+      },
     });
 
   // ─── keyboard (Linear) ────────────────────────────────────────────────────
@@ -880,6 +894,8 @@ export function KnowledgeHubPage({
 
   const onKey = (e: KeyboardEvent) => {
     if (fileUnderFor || filtersOpen || saveDialog || tagFor || helpOpen) return;
+    // A container group lists links, not results: the result keys do not apply there.
+    if (state.view.kind === "group") return;
     if (document.querySelector("[role=dialog][data-state=open], [role=alertdialog][data-state=open]")) return;
     const focused = focusedKey ? byKey.get(focusedKey) : undefined;
     if (e.key === "Escape") {
@@ -1076,7 +1092,24 @@ export function KnowledgeHubPage({
     </ToggleGroup>
   );
 
-  const main = (
+  // A container group (Data stores, Libraries, the Library catalog): every container of one type,
+  // each row opening its record page (the retired list pages' job, H6b).
+  const groupView = state.view.kind === "group" ? state.view : null;
+  const groupMain = groupView ? (
+    <div className="flex h-full min-h-0 flex-col gap-2 px-4 pb-2 pt-3 md:px-4">
+      <HubContainerGroupView
+        key={groupView.token}
+        token={groupView.token}
+        group={state.group}
+        onGroupChange={(group, opts) => write({ group }, opts)}
+      />
+    </div>
+  ) : null;
+  // A container's own record page (the store's members and access, a library's resync, a topic's triage).
+  const containerRecordHref =
+    state.view.kind === "container" ? (tryGetEntityInfo(state.view.type)?.hrefFor?.(state.view.id) ?? null) : null;
+
+  const resultsMain = (
     <div className="flex h-full min-h-0 flex-col gap-2 px-4 pb-2 pt-3 md:px-4">
       {engineBanner}
       <div className="flex min-w-0 items-start gap-2">
@@ -1280,6 +1313,8 @@ export function KnowledgeHubPage({
     </div>
   );
 
+  const main = groupMain ?? resultsMain;
+
   const sidebarNode = (
     <HubSidebar
       view={state.view}
@@ -1381,6 +1416,15 @@ export function KnowledgeHubPage({
             )
           ) : null}
           <span className="truncate text-sm font-medium">{title}</span>
+          {containerRecordHref && state.view.kind === "container" ? (
+            <Link
+              href={containerRecordHref}
+              className="ml-2 shrink-0 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              title={`Open this ${tokenLabel(state.view.type).toLowerCase()}'s own page`}
+            >
+              Open {tokenLabel(state.view.type).toLowerCase()} page
+            </Link>
+          ) : null}
         </div>
       }
       right={

@@ -34,6 +34,7 @@ import { loadConsole, type ConsoleData } from "./service";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
+import { HUB_LIBRARIES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 const EMPTY: ConsoleData = {
   have: [],
@@ -231,7 +232,7 @@ export function AcquisitionConsolePage() {
               </span>
             ) : (
               <Link
-                href="/libraries"
+                href={HUB_LIBRARIES_HREF}
                 className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
               >
                 Libraries

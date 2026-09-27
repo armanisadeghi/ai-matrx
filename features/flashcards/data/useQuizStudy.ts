@@ -30,7 +30,7 @@ import {
 } from "./quiz/buildQuizQuestions";
 import { makeQuizItems } from "./quiz/makeQuizItems";
 import type { FcSetRow } from "./types";
-import type { StudySessionRow } from "@/features/education/study/types";
+import { useLazyStudySession } from "@/features/education/study/hooks/useLazyStudySession";
 
 const FC_CARD_ITEM_TYPE = "fc_card";
 const QUIZ_MODE = "test";
@@ -107,7 +107,10 @@ export function useQuizStudy(
     {},
   );
   const [grading, setGrading] = useState(false);
-  const [session, setSession] = useState<StudySessionRow | null>(null);
+  // The session is written on the FIRST ANSWER, never on open — opening and
+  // leaving writes nothing (see useLazyStudySession).
+  const lazySession = useLazyStudySession("useQuizStudy");
+  const session = lazySession.session;
   const [fallbackAttempted, setFallbackAttempted] = useState<Set<string>>(
     new Set(),
   );
@@ -122,7 +125,7 @@ export function useQuizStudy(
         setQuestions([]);
         setSelectedByIndex({});
         setCorrectByIndex({});
-        setSession(null);
+        lazySession.arm(null);
         setLoading(false);
         setError(null);
         setCurrentIndex(0);
@@ -151,18 +154,18 @@ export function useQuizStudy(
       setSet(loadedSet);
       setQuestions(buildQuizQuestions(loadedCards));
 
-      if (withSession) {
-        const sessionRes = await studyService.createSession({
-          mode: QUIZ_MODE,
-          sourceKind: "set",
-          sourceSetId: loadedSet.id,
-        });
-        if (!cancelled) {
-          if (sessionRes.error) {
-            console.error("[useQuizStudy] createSession:", sessionRes.error);
-          }
-          setSession(sessionRes.data);
-        }
+      // Armed, never written: the first answer opens it.
+      if (!cancelled) {
+        lazySession.arm(
+          withSession
+            ? () =>
+                studyService.createSession({
+                  mode: QUIZ_MODE,
+                  sourceKind: "set",
+                  sourceSetId: loadedSet.id,
+                })
+            : null,
+        );
       }
 
       if (!cancelled) setLoading(false);
@@ -243,6 +246,7 @@ export function useQuizStudy(
 
     setGrading(true);
     try {
+      const openSession = await lazySession.ensure();
       const res = await recordAttemptOfflineAware({
         userId,
         itemType: FC_CARD_ITEM_TYPE,
@@ -250,7 +254,7 @@ export function useQuizStudy(
         method: QUIZ_MODE,
         result: isCorrect ? "correct" : "incorrect",
         responseKind: "selected",
-        ...(session ? { sessionId: session.id } : {}),
+        ...(openSession ? { sessionId: openSession.id } : {}),
       });
       if (res.error) {
         // Loud recovery: the UI has already flipped the option to

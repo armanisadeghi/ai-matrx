@@ -84,6 +84,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { HUB_DATA_STORES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 /** Canonical `ui_surface.name` this page emits. */
 const RAG_DATA_STORES_SURFACE = "matrx-user/knowledge-data-stores";
@@ -103,6 +104,9 @@ export function DataStoresPage() {
   const router = useRouter();
   const search = useSearchParams();
   const storeId = search?.get("store_id") ?? null;
+  // `?new=1` — the Knowledge hub's "New data store" (the store list is the hub's
+  // Data stores group now, KNOWLEDGE-HUB §6 H6b): the create form owns the page.
+  const creating = !storeId && search?.get("new") === "1";
 
   const list = useDataStores();
   const detail = useDataStoreDetail(storeId);
@@ -151,6 +155,7 @@ export function DataStoresPage() {
       const params = new URLSearchParams(search?.toString() ?? "");
       if (id) params.set("store_id", id);
       else params.delete("store_id");
+      params.delete("new");
       const qs = params.toString();
       // Discrete selection — Back closes the store the user just opened.
       pushAddressOrNavigate(router, `/knowledge/data-stores${qs ? `?${qs}` : ""}`);
@@ -164,7 +169,7 @@ export function DataStoresPage() {
       <div className="border-b px-3 py-1.5">
         <ActiveContextButton size="sm" triggerClassName="max-w-full" />
       </div>
-      <CreateStoreInline onCreated={(id) => select(id)} />
+      {creating ? null : <CreateStoreInline onCreated={(id) => select(id)} />}
       <div className="flex-1 overflow-auto">
         {list.loading && list.stores.length === 0 && (
           <div className="px-3 py-2 flex items-center gap-2 text-xs text-muted-foreground">
@@ -203,7 +208,11 @@ export function DataStoresPage() {
     </>
   );
 
-  const detailContent = !storeId ? (
+  const detailContent = creating ? (
+    <div className="m-6 max-w-md overflow-hidden rounded-md border bg-card">
+      <CreateStoreInline initialOpen onCreated={(id) => select(id)} />
+    </div>
+  ) : !storeId ? (
     <div className="m-6 rounded-md border bg-muted/20 p-6 text-sm text-muted-foreground max-w-2xl">
       <p className="font-medium text-foreground mb-2">What is a data store?</p>
       <p className="mb-2">
@@ -331,10 +340,16 @@ function StoreListRow({
   );
 }
 
-function CreateStoreInline({ onCreated }: { onCreated: (id: string) => void }) {
+function CreateStoreInline({
+  onCreated,
+  initialOpen = false,
+}: {
+  onCreated: (id: string) => void;
+  initialOpen?: boolean;
+}) {
   const list = useDataStores();
   const closeMobilePanel = useMobilePanelClose();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   const [name, setName] = useState("");
   const [kind, setKind] =
     useState<(typeof DATA_STORE_KINDS)[number]>("general");
@@ -768,7 +783,7 @@ function StoreDetailPanel({
         id={storeId}
         error={detail.readError}
         onRetry={detail.refresh}
-        fallbackHref="/knowledge/data-stores"
+        fallbackHref={HUB_DATA_STORES_HREF}
         fallbackLabel="All data stores"
       />
     );

@@ -17,6 +17,7 @@
 // failure took the whole running-jobs panel down on 2026-09-18. A row that
 // cannot be read is DROPPED AND NAMED, and the page prints the names.
 
+import { librariesToHubHref } from "@/features/knowledge/hub/legacyRoutes";
 import {
   ContractError,
   createReaders,
@@ -273,8 +274,10 @@ export function parseHandoffs(items: unknown[]): NarrowedList<BlockedRow> {
  * Both vocabularies are already on the platform and neither is invented here:
  * the console's lane IS `media.source_library.visibility`, and the destination's
  * four tabs are the four list scopes `lib/list-scope/types.ts` defines, mapped
- * to those same lanes by `features/source-library/browse/service.ts`. This is
- * that one mapping read backwards.
+ * to those same lanes by the Knowledge hub's Libraries group
+ * (`features/knowledge/hub/containerGroups/groupFilters.ts`, which replaced the
+ * retired `/libraries` list, KNOWLEDGE-HUB §6 H6b). This is that one mapping
+ * read backwards.
  *
  * `shared-with-you` is the console's OWN refinement — someone else's `personal`
  * Library reaching this seat through a share — and the destination has no tab
@@ -301,10 +304,9 @@ const LANE_TO_LIST_SCOPE: Record<string, string> = {
  * identical query. Inventing `?kind=` or `?adapter=` here would have been a
  * third spelling of a vocabulary the platform already has twice.
  *
- * THE SCOPE IS ALWAYS WRITTEN, never left to the default. The destination's
- * default scope can be decided late (the entity-type registry answers after the
- * first render, `lib/entity-list/useEntityList.ts`), so a link that omits it is
- * a link whose landing tab depends on a race.
+ * The lane lands as the hub group's `g.lane`; only `mine` is left out, because
+ * the group's default lane is a constant (`libraryLane`), not a value decided
+ * late by a registry read — so an omitted lane is never a race.
  *
  * Until 2026-09-20 this was a bare `/libraries` and deliberately so (D343): the
  * server declared none of the three filters API-CONTRACT.md §3 published, so a
@@ -312,10 +314,13 @@ const LANE_TO_LIST_SCOPE: Record<string, string> = {
  * no parameter. aidream `d7093434f6` closed that; the link is now exact.
  */
 export function librariesHref(adapter: string, lane: string): string {
-  const params = new URLSearchParams();
-  params.set("scope", LANE_TO_LIST_SCOPE[lane] ?? "mine");
-  params.set("filters", JSON.stringify({ adapter: { kind: "select", values: [adapter] } }));
-  return `/libraries?${params.toString()}`;
+  // The Libraries list retired into the Knowledge hub's Libraries group (H6b);
+  // the same scope + adapter bag, translated by the ONE mapper the old
+  // address's redirect uses, so the link and a typed `/libraries?…` agree.
+  return librariesToHubHref({
+    scope: LANE_TO_LIST_SCOPE[lane] ?? "mine",
+    filters: JSON.stringify({ adapter: { kind: "select", values: [adapter] } }),
+  });
 }
 
 /**

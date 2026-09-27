@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "next-env.d.ts", "global.d.ts", "cartesia.d.ts",
+    "features/knowledge/**/*.ts", "features/knowledge/**/*.tsx",
+    "app/(core)/knowledge/**/*.tsx", "app/(core)/libraries/**/*.tsx",
+    "features/rag/components/**/*.tsx",
+    "features/acquisition-console/**/*.ts", "features/acquisition-console/**/*.tsx",
+    "features/source-library/**/*.ts", "features/source-library/**/*.tsx",
+    "features/transcripts/components/TranscriptsListPage.tsx",
+    "features/auth/components/module-landing/landings/KnowledgeLanding.tsx",
+    "features/shell/constants/nav-data.ts", "features/block-ledger/BlockLedgerPage.tsx",
+    "features/admin/system-context/FeedConfigEditor.tsx", "features/industries/components/OrgIndustriesSection.tsx",
+    "features/agents/components/samples/LoadFromLibraryDialog.tsx",
+    "features/masterwork/intake/NewRulebookFlow.tsx", "features/masterwork/components/detail/RulebookSourcesPanel.tsx",
+    "features/scopes/registry/entityRegistry.ts"
+  ]
+}

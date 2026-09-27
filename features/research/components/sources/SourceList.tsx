@@ -112,6 +112,7 @@ import { setSourceNavOrder } from "../../utils/sourceNavOrder";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { researchTopicHubHref } from "@/features/knowledge/hub/legacyRoutes";
 
 function formatPageAge(pageAge: string | null): {
   display: string;
@@ -1348,6 +1349,15 @@ export default function SourceList() {
         onSearchChange={setSearch}
         trailing={
           <div className="flex items-center gap-2">
+            {/* Finding this topic's captured pages across everything else you know is the
+                Knowledge hub's job (KNOWLEDGE-HUB §6, H6b); triage, ranking and export stay here. */}
+            <Link
+              href={researchTopicHubHref(topicId)}
+              className="hidden whitespace-nowrap text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline sm:inline"
+              title="This topic's captured pages in the Knowledge hub, beside everything else you know"
+            >
+              Find in Knowledge
+            </Link>
             <AuthorityRankButton topicId={topicId} onRanked={refetchSources} />
             <AuthorityExportButton
               topicId={topicId}

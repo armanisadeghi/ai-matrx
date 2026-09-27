@@ -8,7 +8,6 @@
  */
 
 import { useState } from "react";
-import Link from "next/link";
 import {
   ChevronDown,
   ChevronRight,
@@ -40,6 +39,7 @@ import { cn } from "@/utils/cn";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import {
   HUB_KINDS,
+  isHubGroupToken,
   sameView,
   type HubView,
 } from "@/features/knowledge/hub/hubState";
@@ -261,6 +261,13 @@ function SavedViewRow({
 
 const CONTAINER_PREVIEW = 8;
 
+const CATALOG_GROUP: HubView = { kind: "group", token: "library_catalog" };
+
+/** Containers whose whole list is a hub group (`view=group:<token>`, H6b). */
+function groupViewFor(token: string): HubView | null {
+  return isHubGroupToken(token) ? { kind: "group", token } : null;
+}
+
 function ContainerGroup({
   token,
   loadable,
@@ -317,6 +324,18 @@ function ContainerGroup({
               />
             );
           })}
+          {groupViewFor(token) ? (
+            <button
+              type="button"
+              className={cn(
+                "px-2 py-1 pl-7 text-xs text-muted-foreground hover:text-foreground",
+                sameView(view, groupViewFor(token) as HubView) && "font-medium text-foreground",
+              )}
+              onClick={() => onSelect(groupViewFor(token) as HubView)}
+            >
+              All {label.toLowerCase()} as a list
+            </button>
+          ) : null}
           {!all && loadable.items.length > CONTAINER_PREVIEW ? (
             <button
               type="button"
@@ -477,10 +496,16 @@ export function HubSidebar({
         })}
 
         <GroupHeading>Shared libraries</GroupHeading>
-        <Link href="/knowledge/library-catalog" className={ROW} title="Browse, subscribe to and unsubscribe from shared knowledge libraries">
+        <button
+          type="button"
+          className={cn(ROW, sameView(view, CATALOG_GROUP) && "bg-accent font-medium")}
+          aria-current={sameView(view, CATALOG_GROUP) ? "page" : undefined}
+          onClick={() => onSelect(CATALOG_GROUP)}
+          title="Browse, subscribe to and unsubscribe from shared knowledge libraries"
+        >
           <Library className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="min-w-0 flex-1 truncate">Library catalog</span>
-        </Link>
+          <span className="min-w-0 flex-1 truncate text-left">Library catalog</span>
+        </button>
       </div>
     </nav>
   );

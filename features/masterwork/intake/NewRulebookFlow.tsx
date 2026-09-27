@@ -88,6 +88,7 @@ import { ApproachCard, ACCENT } from "../browse/ApproachCard";
 import { relevantApproachKeys } from "./approachRelevance";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { librariesToHubHref } from "@/features/knowledge/hub/legacyRoutes";
 
 const WIZARD_ID = "masterwork-new";
 
@@ -1038,7 +1039,7 @@ export function NewRulebookFlow() {
               saved; come straight back.
             </p>
             <Button asChild variant="outline" className="mt-3 min-h-[44px] gap-2">
-              <Link href="/libraries?from=rulebook">
+              <Link href={librariesToHubHref({ from: "rulebook" })}>
                 <Library className="h-4 w-4" />
                 Bring a whole YouTube channel
               </Link>

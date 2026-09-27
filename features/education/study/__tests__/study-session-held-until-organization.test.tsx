@@ -49,14 +49,29 @@ jest.mock("@/features/flashcards/data/fcService", () => ({
       data: { set: { id: SET, name: "Greek" }, cards: CARDS },
       error: null,
     }),
+    getCardsByIds: async () => ({ data: CARDS, error: null }),
   },
+}));
+jest.mock("@/features/education/study/service/planService", () => ({
+  planService: { getActiveDailyItemCap: async () => null },
 }));
 jest.mock("@/features/education/study/service/studyService", () => ({
   studyService: {
     createSession: () => createSession(),
     updateSession: async () => ({ data: null, error: null }),
     getMasteryBulk: async () => ({ data: [], error: null }),
-    recordAttempt: async () => ({ data: null, error: null }),
+    listDue: async () => ({
+      data: CARDS.map((c) => ({ item_id: c.id })),
+      error: null,
+    }),
+    recordAttempt: async () => ({
+      data: { attemptId: "attempt-1", mastery: null },
+      error: null,
+    }),
+    recordGameAnswer: async (input: { localResult: string }) => ({
+      data: { result: input.localResult, mastery: { retrievability: 0.5 } },
+      error: null,
+    }),
   },
 }));
 // The organization the person has chosen (or not), for the shared gate hooks.
@@ -101,6 +116,7 @@ jest.mock("@/features/education/assessment/data/grading", () => ({
 }));
 
 import { useFlashcardStudy } from "@/features/flashcards/data/useFlashcardStudy";
+import { useDueReview } from "@/features/flashcards/data/useDueReview";
 import { useQuizStudy } from "@/features/flashcards/data/useQuizStudy";
 import { useMatchGame } from "@/features/flashcards/data/useMatchGame";
 import { useGamePlay } from "@/features/education/engage/data/useGamePlay";
@@ -143,41 +159,90 @@ async function drain<T>(hook: HookHandle<T>): Promise<void> {
   }
 }
 
-describe("a study session waits for an organization", () => {
+/**
+ * A study session is written on the FIRST RECORDED ANSWER — never by opening a
+ * mode. Opening a review and leaving used to write an empty "Unknown set ·
+ * Adaptive" session that polluted history and fed the paid progress narrator.
+ * Each mode below: held with no organization (nothing), organization chosen
+ * and deck open (still nothing), first answer (exactly one), second answer
+ * (still one).
+ */
+type Answerable = { sessionId: string | null };
+const modes: Array<{
+  label: string;
+  use: (enabled: boolean) => Answerable;
+  answer: (h: HookHandle<Answerable>, n: number) => Promise<void>;
+}> = [
+  {
+    label: "set study (useFlashcardStudy)",
+    use: (enabled) => useFlashcardStudy({ setId: SET, withSession: true, enabled }),
+    answer: (h) =>
+      h.act(async () => {
+        await (h.current as ReturnType<typeof useFlashcardStudy>).grade("correct");
+      }),
+  },
+  {
+    label: "due review (useDueReview)",
+    use: (enabled) => useDueReview({ enabled }),
+    answer: (h) =>
+      h.act(async () => {
+        await (h.current as ReturnType<typeof useDueReview>).grade("correct");
+      }),
+  },
+  {
+    label: "test mode (useQuizStudy)",
+    use: (enabled) => useQuizStudy({ setId: SET, withSession: true, enabled }),
+    answer: async (h) => {
+      const quiz = h.current as ReturnType<typeof useQuizStudy>;
+      await h.act(async () => {
+        await quiz.answer(quiz.current?.options[0] ?? "");
+      });
+      await h.act(async () => (h.current as ReturnType<typeof useQuizStudy>).next());
+    },
+  },
+  {
+    label: "match (useMatchGame)",
+    use: (enabled) => useMatchGame({ setId: SET, withSession: true, enabled }),
+    answer: async (h, n) => {
+      const game = h.current as ReturnType<typeof useMatchGame>;
+      const cardId = game.tiles.filter((t) => t.side === "front")[n]!.cardId;
+      await h.act(async () => game.selectTile(`${cardId}-front`));
+      await h.act(async () =>
+        (h.current as ReturnType<typeof useMatchGame>).selectTile(`${cardId}-back`),
+      );
+    },
+  },
+];
+
+describe("a study session is written on the first answer, never on open", () => {
   beforeEach(() => createSession.mockClear());
 
-  const loaders: Array<[string, (enabled: boolean) => { sessionId: string | null }]> = [
-    [
-      "set study (useFlashcardStudy)",
-      (enabled) => useFlashcardStudy({ setId: SET, withSession: true, enabled }),
-    ],
-    [
-      "test mode (useQuizStudy)",
-      (enabled) => useQuizStudy({ setId: SET, withSession: true, enabled }),
-    ],
-    [
-      "match (useMatchGame)",
-      (enabled) => useMatchGame({ setId: SET, withSession: true, enabled }),
-    ],
-  ];
-
-  it.each(loaders)(
-    "%s writes no session until an organization is chosen, then opens one",
-    async (_label, useLoader) => {
+  it.each(modes.map((m) => [m.label, m] as const))(
+    "%s: opening writes zero sessions; the first answer writes exactly one",
+    async (_label, mode) => {
       const org = organizationSwitch();
-      const hook = await renderHook(() => useLoader(org.useReady()));
+      const hook = await renderHook<Answerable>(() => mode.use(org.useReady()));
       await drain(hook);
-      expect(createSession).not.toHaveBeenCalled();
-      expect(hook.current.sessionId).toBeNull();
+      expect(createSession).not.toHaveBeenCalled(); // held: no organization
 
       await hook.act(async () => org.choose());
-      await settle(hook, (h) => h.sessionId === SESSION, "session");
-      expect(createSession).toHaveBeenCalledTimes(1);
+      await drain(hook);
+      expect(createSession).not.toHaveBeenCalled(); // open, no answer yet
+      expect(hook.current.sessionId).toBeNull();
+
+      await mode.answer(hook, 0);
+      await drain(hook);
+      expect(createSession).toHaveBeenCalledTimes(1); // first answer
+      expect(hook.current.sessionId).toBe(SESSION);
+
+      await mode.answer(hook, 1);
+      await drain(hook);
+      expect(createSession).toHaveBeenCalledTimes(1); // shared, never a second
       await hook.unmount();
     },
   );
 
-  it("a quiz / practice test start writes nothing without an organization", async () => {
+  it("a quiz / practice test: opening and starting write nothing; the first answer opens it", async () => {
     const assessment = {
       id: "assessment-1",
       assessment_kind: "quiz",
@@ -185,19 +250,32 @@ describe("a study session waits for an organization", () => {
       source_kind: null,
       source_id: null,
     } as unknown as AssessmentRow;
-    const items = [{ id: "item-1", points: 1 }] as unknown as AssessmentItemRow[];
+    const items = [
+      { id: "item-1", points: 1, question_type: "multiple_choice", correct_answer: "a" },
+      { id: "item-2", points: 1, question_type: "multiple_choice", correct_answer: "b" },
+    ] as unknown as AssessmentItemRow[];
     const org = organizationSwitch();
     const hook = await renderHook(() =>
       useTakeAssessment(assessment, items, { enabled: org.useReady() }),
     );
     await hook.act(async () => hook.current.start());
-    expect(createSession).not.toHaveBeenCalled();
-    expect(hook.current.sessionId).toBeNull();
+    expect(createSession).not.toHaveBeenCalled(); // held
 
     await hook.act(async () => org.choose());
     await hook.act(async () => hook.current.start());
+    await drain(hook);
+    expect(hook.current.started).toBe(true);
+    expect(createSession).not.toHaveBeenCalled(); // started, no answer
+
+    await hook.act(async () => {
+      await hook.current.submit(items[0]!, "a");
+    });
     expect(createSession).toHaveBeenCalledTimes(1);
     expect(hook.current.sessionId).toBe(SESSION);
+    await hook.act(async () => {
+      await hook.current.submit(items[1]!, "b");
+    });
+    expect(createSession).toHaveBeenCalledTimes(1);
     await hook.unmount();
   });
 });
@@ -205,7 +283,8 @@ describe("a study session waits for an organization", () => {
 /**
  * A multiplayer player never chooses an organization: joining the room by its
  * code IS the permission, and the session opens through `start_game_session`,
- * filed under the ROOM's organization — never the player's own selection.
+ * filed under the ROOM's organization — and, like every mode, only on the
+ * first answer.
  */
 describe("a multiplayer game session belongs to the room", () => {
   beforeEach(() => {
@@ -213,7 +292,7 @@ describe("a multiplayer game session belongs to the room", () => {
     startGameSession.mockClear();
   });
 
-  it("opens through the room door with the join code, never a direct insert", async () => {
+  it("opens through the room door on the first answer, never a direct insert", async () => {
     const hook = await renderHook(() =>
       useGamePlay({
         sourceKind: "set",
@@ -225,7 +304,14 @@ describe("a multiplayer game session belongs to the room", () => {
         autoStart: false,
       }),
     );
-    await settle(hook, (h) => h.sessionId === SESSION, "room session");
+    await settle(hook, (h) => h.status === "ready", "queue ready");
+    await drain(hook);
+    expect(startGameSession).not.toHaveBeenCalled(); // open, no answer
+
+    await hook.act(async () => hook.current.start());
+    await hook.act(async () => hook.current.answer(0));
+    await drain(hook);
+    expect(startGameSession).toHaveBeenCalledTimes(1);
     expect(startGameSession).toHaveBeenCalledWith("room-1", "AB12C");
     expect(createSession).not.toHaveBeenCalled();
     await hook.unmount();

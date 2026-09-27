@@ -55,6 +55,7 @@ import {
 import type { LibraryRow, VideoRow } from "@/features/source-library/types";
 import { fetchAgentSamples } from "@/features/agents/samples/service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { HUB_LIBRARIES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 /**
  * The action reads transcripts (`requires_transcripts: true` in its server
@@ -309,7 +310,7 @@ export function LoadFromLibraryDialog({
               <p className="text-xs text-muted-foreground">
                 You have no media Libraries yet.{" "}
                 <Link
-                  href="/libraries"
+                  href={HUB_LIBRARIES_HREF}
                   target="_blank"
                   className="underline underline-offset-2"
                 >

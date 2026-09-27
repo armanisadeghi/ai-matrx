@@ -7,6 +7,9 @@
  *   library_filters      {search_query?, status_filter?: "all"} → the hub's
  *                        search words; "all" shows every Source.
  *   selected_document_id "<source id>" → opens that Source in the peek.
+ *   catalog_filters      {search_query?, entitled_only?, type_filter?} → the
+ *                        Library catalog group's filters (the retired catalog
+ *                        list's target, H6b); it shapes the view only.
  *
  * Pure over injected callbacks; unknown keys and ids are refused by name with
  * nothing changed.
@@ -28,6 +31,8 @@ export interface HubAgentCallbacks {
   listedSourceIds: () => ReadonlySet<string>;
   /** Open one Source in the peek. */
   openSource: (id: string) => void;
+  /** Validate and apply `catalog_filters` to the Library catalog group (throws with the reason). */
+  setCatalogFilters?: (value: unknown) => void;
 }
 
 export function buildHubWriteHandlers(cb: HubAgentCallbacks): Record<string, (value: unknown) => void> {
@@ -56,6 +61,7 @@ export function buildHubWriteHandlers(cb: HubAgentCallbacks): Record<string, (va
         throw new Error(`"${id}" is not a Source listed in the Knowledge hub right now, so nothing was opened.`);
       cb.openSource(id);
     },
+    ...(cb.setCatalogFilters ? { catalog_filters: cb.setCatalogFilters } : {}),
   };
 }
 

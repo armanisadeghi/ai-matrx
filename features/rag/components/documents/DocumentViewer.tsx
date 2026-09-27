@@ -63,6 +63,7 @@ import {
   useDocumentPage,
 } from "@/features/rag/hooks/useDocument";
 import type { ChunkRow } from "@/features/rag/types/documents";
+import { HUB_DATA_STORES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 export interface DocumentViewerProps {
   documentId: string;
@@ -311,7 +312,7 @@ function BindButton({
           <span>
             Manage all stores at{" "}
             <a
-              href="/knowledge/data-stores"
+              href={HUB_DATA_STORES_HREF}
               target="_blank"
               rel="noreferrer"
               className="underline inline-flex items-center gap-0.5 hover:text-foreground"

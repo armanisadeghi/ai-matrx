@@ -30,7 +30,7 @@ import { studyService } from "@/features/education/study/service/studyService";
 import { recordAttemptOfflineAware } from "@/features/education/study/offline/recordAttemptOffline";
 import { toast } from "@/lib/toast";
 import type { FcSetRow, CardWithDetails } from "./types";
-import type { StudySessionRow } from "@/features/education/study/types";
+import { useLazyStudySession } from "@/features/education/study/hooks/useLazyStudySession";
 
 const FC_CARD_ITEM_TYPE = "fc_card";
 const MATCH_MODE = "match";
@@ -102,7 +102,10 @@ export function useMatchGame(
   // Whose queue an offline answer joins. Empty only when signed out, and a
   // signed-out learner cannot open a study session at all.
   const userId = useAppSelector(selectUserId) ?? "";
-  const [session, setSession] = useState<StudySessionRow | null>(null);
+  // The session is written on the FIRST ANSWER, never on open — opening and
+  // leaving writes nothing (see useLazyStudySession).
+  const lazySession = useLazyStudySession("useMatchGame");
+  const session = lazySession.session;
   /** One "saved offline" notice per round — see the grade write below. */
   const offlineNoticeShown = useRef(false);
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
@@ -141,7 +144,7 @@ export function useMatchGame(
         setSet(null);
         setRoundCards([]);
         setTiles([]);
-        setSession(null);
+        lazySession.arm(null);
         setLoading(false);
         setError(null);
         return;
@@ -174,18 +177,18 @@ export function useMatchGame(
       setRoundCards(round);
       setTiles(buildBoard(round));
 
-      if (withSession) {
-        const sessionRes = await studyService.createSession({
-          mode: MATCH_MODE,
-          sourceKind: "set",
-          sourceSetId: loadedSet.id,
-        });
-        if (!cancelled) {
-          if (sessionRes.error) {
-            console.error("[useMatchGame] createSession:", sessionRes.error);
-          }
-          setSession(sessionRes.data);
-        }
+      // Armed, never written: the first match opens it.
+      if (!cancelled) {
+        lazySession.arm(
+          withSession
+            ? () =>
+                studyService.createSession({
+                  mode: MATCH_MODE,
+                  sourceKind: "set",
+                  sourceSetId: loadedSet.id,
+                })
+            : null,
+        );
       }
 
       if (!cancelled) setLoading(false);
@@ -238,15 +241,20 @@ export function useMatchGame(
       const cardId = tile.cardId;
       setMatchedCardIds((prev) => new Set(prev).add(cardId));
       setSelectedTileId(null);
-      void recordAttemptOfflineAware({
-        userId,
-        itemType: FC_CARD_ITEM_TYPE,
-        itemId: cardId,
-        method: MATCH_MODE,
-        result: "correct",
-        responseKind: "selected",
-        ...(session ? { sessionId: session.id } : {}),
-      }).then((res) => {
+      void lazySession
+        .ensure()
+        .then((openSession) =>
+          recordAttemptOfflineAware({
+            userId,
+            itemType: FC_CARD_ITEM_TYPE,
+            itemId: cardId,
+            method: MATCH_MODE,
+            result: "correct",
+            responseKind: "selected",
+            ...(openSession ? { sessionId: openSession.id } : {}),
+          }),
+        )
+        .then((res) => {
         if (res.error) {
           console.error("[useMatchGame] recordAttempt:", res.error);
           toast.error("Couldn't record that match — it wasn't saved.");

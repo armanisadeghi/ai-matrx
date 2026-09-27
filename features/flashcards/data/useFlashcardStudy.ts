@@ -22,6 +22,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
+import { useLazyStudySession } from "@/features/education/study/hooks/useLazyStudySession";
 import { recordAttemptOfflineAware } from "@/features/education/study/offline/recordAttemptOffline";
 import { readOfflineDeck } from "./offlineDeck";
 import { isNetworkFailure } from "@/features/education/study/offline/recordAttemptOffline";
@@ -30,7 +31,6 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { FcSetRow, CardWithDetails } from "./types";
 import type {
   ItemMasteryRow,
-  StudySessionRow,
   RecordAttemptInput,
 } from "@/features/education/study/types";
 import type { ReviewResult } from "../types";
@@ -183,7 +183,10 @@ export function useFlashcardStudy(
   // a SECOND study_session for one sitting and abandons the first — exactly
   // the session-truth defect the close path below exists to remove.
   const userIdRef = useRef(userId);
-  const [session, setSession] = useState<StudySessionRow | null>(null);
+  // The session is written on the FIRST ANSWER, never on open — opening a
+  // deck and leaving writes nothing (see useLazyStudySession).
+  const lazySession = useLazyStudySession("useFlashcardStudy");
+  const session = lazySession.session;
   const [masteryByCard, setMasteryByCard] = useState<
     Record<string, ItemMasteryRow | undefined>
   >({});
@@ -229,7 +232,7 @@ export function useFlashcardStudy(
         setCards([]);
         setResultsByCard({});
         setMasteryByCard({});
-        setSession(null);
+        lazySession.arm(null);
         setLoading(false);
         setError(null);
         setCurrentIndex(0);
@@ -338,26 +341,21 @@ export function useFlashcardStudy(
         setMasteryByCard({});
       }
 
-      // Optionally open a session this study tags its attempts with. Never
-      // offline: `createSession` is a network insert, and its own transient
-      // retry would burn three round trips against a connection that is gone.
-      // Attempts are valid session-less, and every one of them still queues in
-      // the outbox — so an offline sitting loses grouping, never answers.
-      if (withSession && !loadedFromCache) {
-        const sessionRes = await studyService.createSession({
-          mode,
-          sourceKind: "set", //  study_session.source_kind CHECK = set|dynamic_batch|adaptive
-          sourceSetId: loadedSet.id,
-        });
-        if (!cancelled) {
-          if (sessionRes.error) {
-            console.error(
-              "[useFlashcardStudy] createSession:",
-              sessionRes.error,
-            );
-          }
-          setSession(sessionRes.data);
-        }
+      // Arm (never write) the session this study tags its attempts with: it
+      // opens on the first recorded answer. Never from an offline read — the
+      // attempts are valid session-less and still queue in the outbox, so an
+      // offline sitting loses grouping, never answers.
+      if (!cancelled) {
+        lazySession.arm(
+          withSession && !loadedFromCache
+            ? () =>
+                studyService.createSession({
+                  mode,
+                  sourceKind: "set", //  study_session.source_kind CHECK = set|dynamic_batch|adaptive
+                  sourceSetId: loadedSet.id,
+                })
+            : null,
+        );
       }
 
       if (!cancelled) setLoading(false);
@@ -457,6 +455,8 @@ export function useFlashcardStudy(
 
     setGrading(true);
     try {
+      // The first answer opens the session (once); later answers share it.
+      const openSession = await lazySession.ensure();
       // Offline-aware: with no connection the OBSERVATION is queued and
       // replayed idempotently on reconnect (IC-8), instead of the answer being
       // lost. Online this is exactly `studyService.recordAttempt`.
@@ -471,7 +471,7 @@ export function useFlashcardStudy(
         ...(extra?.responseTranscript
           ? { responseTranscript: extra.responseTranscript }
           : {}),
-        ...(session ? { sessionId: session.id } : {}),
+        ...(openSession ? { sessionId: openSession.id } : {}),
       });
       if (res.error) {
         // Loud recovery: a silently dropped grade leaves the card looking

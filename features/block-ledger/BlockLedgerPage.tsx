@@ -8,6 +8,7 @@ import Link from "next/link";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { BLOCK_LEDGER_LIST_CONFIG } from "./listConfig";
+import { HUB_LIBRARIES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 export function BlockLedgerPage() {
   return (
@@ -27,7 +28,7 @@ export function BlockLedgerPage() {
             Read a list of pages
           </Link>
           <Link
-            href="/libraries"
+            href={HUB_LIBRARIES_HREF}
             className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
           >
             Libraries

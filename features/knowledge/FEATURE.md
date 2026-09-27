@@ -110,6 +110,14 @@ Plan: `common-docs/projects/knowledge-system/KNOWLEDGE-HUB.md` §5.1.
 
 ## Change log
 
+- **2026-09-27** — H6b lists: container groups (`view=group:<token>`, filters as `g.*`; `containerGroups/`) —
+  Data stores (member counts, New data store), Libraries (paste box, four lanes with counts, adapter filter,
+  Rulebook handoff, Blocked, Bring up to date), Library catalog (type chips, show-everything, Curate, and the
+  `catalog_filters` agent target). A container view links its own record page (registry `hrefFor`; `data_store`
+  gained one). `/knowledge/data-stores`, `/knowledge/library-catalog` and `/libraries` redirect to their group
+  keeping filters when no record is named (`legacyRoutes.ts`); record pages stay. Transcripts and Research
+  sources lists are NOT retired (HUB-PARITY-CHECKLISTS).
+
 - **2026-09-27** — H6a: the hub absorbed the Sources page — Trash view (restore / delete forever), Stage facet
   (`hubStage.ts`, `stage=` in the URL, narrows loaded items), Name/Kind/Captured by/Stage/When columns that sort,
   bulk Attach… and Process now, the processing-jobs sheet, the Add menu (`features/sources/components/SourceCapture.tsx`),
