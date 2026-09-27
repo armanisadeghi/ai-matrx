@@ -1180,19 +1180,13 @@ export const ProTextarea = React.forwardRef<
       // the user can never reach. While growing (height === scrollHeight)
       // no scrollbar shows; it only appears once capped at maxHeight.
       autoGrow && "resize-none overflow-y-auto",
-      // Coarse pointers keep the controls visible in a dedicated
-      // 44px bottom row, preserving the full width of every line and
-      // the natural top inset. When a submit control already owns
-      // the bottom-right, reserve the controls at the top instead.
-      // Fine pointers: a field WITHOUT its own submit button reserves
-      // a shallow bottom row too — the cluster used to float over
-      // the first line of text (page-pass 2026-09-27, Feedback
-      // window: the mic pill sat on the words being typed).
+      // The controls sit in a RESERVED bottom row on every pointer,
+      // never over text (proTextareaControlPlacement.ts). Without a
+      // submit button the field reserves that row here; with one, the
+      // cluster shares the submit button's 44px row (pb-14 below), to
+      // its left — the top reserve it used to take is gone.
       "pr-3",
-      hasCoarseControls &&
-        (onSubmit
-          ? "pointer-coarse:pt-12"
-          : "pb-10 pointer-coarse:pb-12"),
+      hasCoarseControls && !onSubmit && "pb-10 pointer-coarse:pb-12",
       // Bottom padding for the submit button — TapTargetButtonSolid is
       // 44px tall (h-11), so reserve enough vertical clearance.
       onSubmit && "pb-14",
