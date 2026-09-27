@@ -28,7 +28,7 @@
  * responsibility is rendering and binding to UI.
  */
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
@@ -340,11 +340,43 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   );
   const isReady = executionPayload.isReady;
 
+  // A payload that cannot be read is a refusal, never a quiet wait: without
+  // it the launcher never creates the instance and every Run click does
+  // nothing (live on /p/<slug> for a signed-out visitor, 2026-09-27 — the
+  // reader is a signed-in door and answers a guest 401). The failure is kept
+  // and surfaced through `error`, and `submit` refuses by the same sentence.
+  const [payloadError, setPayloadError] = useState<{
+    agentId: string;
+    message: string;
+  } | null>(null);
   useEffect(() => {
     if (!agentId) return;
     if (isReady) return;
-    void dispatch(fetchAgentExecutionMinimal(agentId));
+    let cancelled = false;
+    dispatch(fetchAgentExecutionMinimal(agentId))
+      .unwrap()
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        const reason = err instanceof Error ? err.message : String(err);
+        console.error(
+          `[useAgentApp] agent ${agentId} setup could not be read:`,
+          reason,
+        );
+        setPayloadError({
+          agentId,
+          message:
+            "This app could not load its setup, so it can't run right now. " +
+            "Reload the page to try again.",
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [agentId, isReady, dispatch]);
+  const payloadRefusal =
+    payloadError && payloadError.agentId === agentId && !isReady
+      ? payloadError.message
+      : null;
 
   // Use the same managed launcher /agents/[id]/run uses. It owns the
   // conversationId lifecycle, instance creation, focus tracking, etc.
@@ -515,6 +547,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   // error path it already renders, instead of sitting on a dead submit button.
   const error =
     holder.error ??
+    payloadRefusal ??
     (request && (request as unknown as { errorMessage?: string }).errorMessage
       ? ((request as unknown as { errorMessage?: string }).errorMessage ?? null)
       : null);
@@ -646,6 +679,12 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
 
   const submit = useCallback(
     async (submitArgs?: SubmitArgs) => {
+      // Refuse loudly rather than return: every shell shows a thrown submit
+      // as its run error, and a silent return read as "clicked, nothing".
+      if (payloadRefusal) throw new Error(payloadRefusal);
+      if (!isReady) {
+        throw new Error("This app is still loading — try again in a moment.");
+      }
       if (!conversationId) return;
       const submittedVariables = {
         ...(variables as Record<string, unknown>),
@@ -682,7 +721,15 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       }
       await dispatch(smartExecute({ conversationId, surfaceKey }));
     },
-    [conversationId, dispatch, surfaceKey, text, variables],
+    [
+      conversationId,
+      dispatch,
+      isReady,
+      payloadRefusal,
+      surfaceKey,
+      text,
+      variables,
+    ],
   );
 
   const loadConversationCb = useCallback(
