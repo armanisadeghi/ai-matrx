@@ -27,10 +27,14 @@
 // clamps); seeding from the session row (useActiveThreadRestore) is the fallback
 // when no `thread` param is present.
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { commitUrlParams } from "@ai-matrx/kit/url-state";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrderedGalleryThreadIds } from "@/features/war-room/redux/selectors";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectConversationIdsForThread,
+  selectOrderedGalleryThreadIds,
+} from "@/features/war-room/redux/selectors";
+import { setThreadActiveTab } from "@/features/war-room/redux/slice";
 import { useRoomView, type Density, type RoomMode } from "./roomViewContext";
 
 function isMode(v: string | null): v is RoomMode {
@@ -56,6 +60,16 @@ export function useRoomUrlSync(sessionId: string) {
   // async). Two refs so each fires exactly once.
   const hydratedViewRef = useRef(false);
   const hydratedThreadRef = useRef(false);
+  // The deep-linked thread, read ONCE before anything writes the URL. The push
+  // effect below used to run first with no stage chosen and erase `?thread=`,
+  // so a link only "worked" when the session row happened to name the same
+  // thread — and even then it only highlighted it in the list.
+  const wantedThreadRef = useRef<string | null | undefined>(undefined);
+  // A link to a thread OPENS it (chair ruling 2026-09-26, as Slack and Linear
+  // do) — in its Chat view when the thread has chat, otherwise its own view.
+  const [openedFromLink, setOpenedFromLink] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const linkedConversations = useAppSelector(selectConversationIdsForThread(openedFromLink));
 
   // ── HYDRATE (URL → view state) ──────────────────────────────────────────
   // View + density: once, on mount. A shared link's mode/density wins over the
@@ -64,6 +78,7 @@ export function useRoomUrlSync(sessionId: string) {
     if (hydratedViewRef.current) return;
     hydratedViewRef.current = true;
     const params = new URLSearchParams(window.location.search);
+    wantedThreadRef.current ??= params.get("thread");
     const view = params.get("view");
     if (isMode(view) && view !== mode) setMode(view);
     const d = params.get("density");
@@ -76,7 +91,8 @@ export function useRoomUrlSync(sessionId: string) {
   useEffect(() => {
     if (hydratedThreadRef.current) return;
     if (visibleIds.length === 0) return; // wait for tiles
-    const wanted = new URLSearchParams(window.location.search).get("thread");
+    wantedThreadRef.current ??= new URLSearchParams(window.location.search).get("thread");
+    const wanted = wantedThreadRef.current;
     if (!wanted) {
       hydratedThreadRef.current = true;
       return;
@@ -87,13 +103,25 @@ export function useRoomUrlSync(sessionId: string) {
     if (!visibleIds.includes(wanted)) return;
     hydratedThreadRef.current = true;
     stageThread(wanted);
+    setOpenedFromLink(wanted);
   }, [visibleIds, chosenStageId, stageThread]);
+
+  // Chat first: once the linked thread's attachments are known and it has a
+  // conversation, show its Chat view (view state only — the thread's saved
+  // tab is not rewritten). One shot per link.
+  useEffect(() => {
+    if (!openedFromLink || linkedConversations.length === 0) return;
+    dispatch(setThreadActiveTab({ id: openedFromLink, tab: "agent" }));
+    setOpenedFromLink(null);
+  }, [openedFromLink, linkedConversations.length, dispatch]);
 
   // ── PUSH (view state → URL) ─────────────────────────────────────────────
   // Only after the view hydrate pass, so we never overwrite the value we just
   // read. Omit each param at its default to keep a fresh room's URL clean.
   useEffect(() => {
     if (!hydratedViewRef.current) return;
+    // A deep-linked thread still waiting for its tile: never erase it.
+    if (!hydratedThreadRef.current && wantedThreadRef.current) return;
     // A null value means "omit", so a room at its defaults keeps a clean URL.
     // `commitUrlParams` no-ops when nothing would change, which is why this
     // effect needs no "last written URL" bookkeeping of its own.
