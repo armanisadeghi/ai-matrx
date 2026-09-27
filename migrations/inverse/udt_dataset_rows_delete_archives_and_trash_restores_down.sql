@@ -1,4 +1,24 @@
 -- chair-step: INVERSE of udt_dataset_rows_delete_archives_and_trash_restores.sql — puts back the hard row deletes, the readers that count archived rows, the writers that edit them, drops workbench.udt_archive_rows (refused if anything else calls it) and takes dataset rows off /trash. Rows archived while the up was live STAY archived (deleted_at is kept, nothing is destroyed) — the restored readers simply show them again.
+-- based-on: public.delete_data_row_from_user_table(uuid) 486e086f38498b659bf669c97e3dad4802dd83d50d6e87369e9dc733af35b2d4
+-- based-on: public.udt_bulk_write(uuid, jsonb) e4c952709a58d424e64d328b89f5c1c666d33577713a60c0e330a9e4568772a0
+-- based-on: public.udt_upsert_row(uuid, uuid, jsonb) 0898cf6049b7d3ee3bf3d754c09b201f95de322ddccc29ee94cf96143e2ba848
+-- based-on: public.udt_upsert_cell(uuid, uuid, text, jsonb) ce905f67761a2ecf6a207300025caebfd6a1f51de0894b897bc886d17a1e9a62
+-- based-on: public.update_data_row_in_user_table(uuid, jsonb) 3afc5ec42fdaaf7d43df205d8e8787c71ee5baec9573eac03567bc8f53b5d0e7
+-- based-on: public._d31_impl_get_user_table_complete(uuid, text, text) 9f178fbcd6b71a06684582685feadd6a5902a4b3e637c5dc40b47be618df1941
+-- based-on: public.get_full_table(jsonb) c09e3e4a5fcd0de12d785782f352394a56439d03c472bbd785d58c0689a1eb8f
+-- based-on: public.get_table_row(jsonb) fe65337744a9b492e062940526310c018eeee08aa62dd347beee3057d140e54f
+-- based-on: public.get_table_cell(jsonb) ef8b21076e74f6e48cf11dca517ab025c81276661e8fc0a8dbe2d2c5e07ab4dc
+-- based-on: public.list_table_rows(jsonb, integer, integer, text, text) 91f464ccc8d49052d2ab8a156ac37972ecbbb1687b27c70378c044ac67dd936b
+-- based-on: public.get_user_table_data_paginated(uuid, integer, integer, text, text, text) 1fe21a7751147303c32be2ff7c29e3491b72772c30956ac6bc67e81d62333ec0
+-- based-on: public.get_user_table_data_paginated_v2(uuid, integer, integer, text, text, text) ef9f4a3966154ead4b5fa28e74ebdb9097cfa54551fff958c7522f6b13fc0fa9
+-- based-on: public.export_user_table_as_csv(uuid, text, text) ddd0d481b36e7e73434d522480dc1eba1a2ad43e6da2b29bf8c1885ddd495c89
+-- based-on: public.export_user_table_as_csv(uuid) 87bf1712df3a13fdd9cc1903700ab82282748b86ea3bb7da6dca5b420ee9f2fb
+-- based-on: public.udt_column_facets(uuid, text, integer, text) fcf3a845b7f6e00833b6a33e347f85c00a19ffc77c96dbd63f45c082ed3a95b0
+-- based-on: public.udt_table_profile(uuid, integer) adea63bc7dde0939202b14223a6fd627f6b6f826617ba33b4722a41c42cb8b92
+-- based-on: public.get_user_tables() e8969eab6d7bfb6c7069b15d83f096335db9f4426baf6d0dec20e7c3bf24f590
+-- based-on: public.udt_list_example_tables() de1e467a55ed834a27dba443f079f44b3db007e87a2b2c9a2a574ccb633d9d48
+-- based-on: custom.table_list_everywhere(uuid) 356426d568f7a27d20617f654370bb98c573a12c54b30fb625a4d494298a5d75
+-- based-on: public._trash_kind_rows(uuid, uuid, uuid, text[], integer, integer) 8034eb4778a9ca31c450be31c0b7077aea501e568fe8c8291600ec901c5edb00
 --
 -- Every body below is the pg_get_functiondef read before the up file, byte for byte.
 -- Order matters: the two delete doors stop calling workbench.udt_archive_rows BEFORE it is dropped

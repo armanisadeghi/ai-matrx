@@ -1,5 +1,4 @@
 -- draft: udt-rows-soft-delete lane — Data table row deletes archive through deleted_at, every reader skips archived rows, and archived rows are listed and restored in /trash (needs rehearsal on the clone + an inverse before the draft line comes off)
--- chair-step: REVOKEs execute on the NEW invoker writer workbench.udt_archive_rows from public/anon (DD-197: a SECURITY INVOKER function that writes is never an anonymous door); nothing live loses a grant. Replaces 16 live bodies (based-on below) and sets user_artifact_kind on ONE existing registry row.
 -- based-on: public.delete_data_row_from_user_table(uuid) 5a83e81dd7b2615b121fef2b0ae5879d138a0a243af67376a2f4d3d8bb78bd49
 -- based-on: public.udt_bulk_write(uuid, jsonb) 9474e71d1bf1c548e413fe5b453109d56ea03d9ffd5e453967bd577ffb4bf1c5
 -- based-on: public.udt_upsert_row(uuid, uuid, jsonb) d46c5f7365bd65793002b2969302ff4182bea96e02155d8c2aca68ac57dbbd23
@@ -35,6 +34,8 @@
 --    function; udt_bulk_write is a definer that checks editor itself). It stamps deleted_at and
 --    updated_by (platform._stamp_actor stamps it too; this keeps the service lane honest) and
 --    returns the ids it archived. Already-archived rows are left alone.
+--    The DDL guard closes PUBLIC/anon EXECUTE at birth (anon_function_execute_closed_at_birth);
+--    this file grants authenticated + service_role.
 -- 2. Both grid delete doors route through it. Their envelopes are unchanged; the single-row
 --    message now says "Row moved to Trash".
 -- 3. Every DB reader of the rows skips archived ones: census of pg_proc.prosrc for
@@ -79,7 +80,6 @@ AS $function$
   RETURNING r.id;
 $function$;
 
-REVOKE ALL ON FUNCTION workbench.udt_archive_rows(uuid, uuid[]) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION workbench.udt_archive_rows(uuid, uuid[]) TO authenticated, service_role;
 COMMENT ON FUNCTION workbench.udt_archive_rows(uuid, uuid[]) IS
   'THE archive door for workbench.udt_dataset_rows: stamps deleted_at (restorable from /trash via entity_undelete). Invoker: the caller''s row access decides.';
@@ -436,6 +436,22 @@ begin
     );
 end;
 $function$;
+
+-- A SECURITY DEFINER replace: the provisioning shape guard (platform._provision_shape_settled)
+-- refuses COMMIT until its access decision is declared IN DATA (it had none; found by the clone
+-- rehearsal). It is reached only through public.get_user_table_complete, which gates viewer.
+INSERT INTO platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
+   non_client_lane, signed_in_callers, anonymous_callers)
+SELECT 'public', '_d31_impl_get_user_table_complete',
+       'p_table_id uuid, p_sort_field text, p_sort_direction text',
+       ARRAY['uuid'::regtype, 'text'::regtype, 'text'::regtype]::oid[],
+       'p_table_id: public.get_user_table_complete checks workbench.udt_dataset_access(p_table_id, viewer) before calling this body; a NULL or unknown table id returns success=false. p_sort_field / p_sort_direction are matched against the table''s own fields and asc|desc.',
+       'udt_dataset_rows_delete_archives_and_trash_restores.sql',
+       'server_only: called only inside public.get_user_table_complete after its viewer gate; EXECUTE stays postgres-only and no client or server lane calls it directly.',
+       false, false
+ WHERE NOT EXISTS (SELECT 1 FROM platform.client_callable_door d
+                    WHERE d.schema_name = 'public' AND d.function_name = '_d31_impl_get_user_table_complete');
 
 -- ── public.get_full_table — reader: row_count skips archived rows
 CREATE OR REPLACE FUNCTION public.get_full_table(ref jsonb)
