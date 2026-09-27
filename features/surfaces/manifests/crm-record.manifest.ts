@@ -724,7 +724,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "add_employment",
     label: "Add employment",
     description:
-      "Adds an employment stint for a person through crm.affiliation, the same path as the Employment card. Value: { employer_party_id: company UUID, title?: string, department?: string, start_date?: YYYY-MM-DD, is_current?: boolean, is_primary?: boolean }; the employer must be a visible company in the same organization.",
+      "Adds an employment stint through crm.affiliation, the same path as the Employment card (person record) or the People card (company record). On a PERSON record, value: { employer_party_id: company UUID, title?, department?, start_date?: YYYY-MM-DD, is_current?: boolean, is_primary?: boolean }. On a COMPANY record, value: { person_party_id: person UUID, title?, department?, start_date?, is_current? } — the person joins this company and their primary employer is left alone. The other party must be visible and in the same organization; exactly one of the two ids.",
     valueType: "object",
     mode: "entity",
     applyPolicy: "ask",
@@ -735,7 +735,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "end_employment",
     label: "End employment",
     description:
-      "Ends one current employment stint today while preserving its history, exactly like the Employment card action. Value is an id from affiliations; an id not on this record or already ended is refused.",
+      "Ends one current stint today while preserving its history, exactly like the card's end control. Value is an id from affiliations (person record) or members (company record); an id not on this record or already ended is refused.",
     valueType: "string",
     updatesValue: "affiliations",
     mode: "entity",

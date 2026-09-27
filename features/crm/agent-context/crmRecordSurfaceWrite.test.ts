@@ -54,6 +54,14 @@ describe("CRM record surface write validation", () => {
     ).toThrow(/two-letter code/);
   });
 
+  it("takes exactly one side of the stint", () => {
+    expect(() => parseEmployment({ title: "CTO" })).toThrow(/exactly one/);
+    expect(
+      parseEmployment({ person_party_id: "3f8a3b52-2b8e-4b7a-9d3a-1f0c2d4e5a6b" })
+        .personPartyId,
+    ).toBe("3f8a3b52-2b8e-4b7a-9d3a-1f0c2d4e5a6b");
+  });
+
   it("requires a real employer id and a date-only start date", () => {
     expect(() =>
       parseEmployment({ employer_party_id: "Acme", start_date: "August" }),

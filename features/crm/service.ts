@@ -1382,13 +1382,15 @@ export async function searchEmployerCandidates(args: {
   orgId: string;
   search: string;
   excludeId?: string;
+  /** Companies (an employer) by default; `person` for the people at a company. */
+  kind?: "organization" | "person";
 }): Promise<PartyRef[]> {
   let q = supabase
     .schema("crm")
     .from("party")
     .select("id,display_name,party_kind")
     .eq("organization_id", args.orgId)
-    .eq("party_kind", "organization")
+    .eq("party_kind", args.kind ?? "organization")
     .is("deleted_at", null)
     .is("canonical_id", null)
     .eq("record_class", CRM_PRIMARY_RECORD_CLASS)

@@ -211,7 +211,10 @@ export function parseAddress(value: unknown): ParsedAddress {
 }
 
 export interface ParsedEmployment {
-  employerPartyId: string;
+  /** The company the person works at (a person record names this). */
+  employerPartyId?: string;
+  /** The person who works here (a company record names this). */
+  personPartyId?: string;
   title?: string;
   department?: string;
   startDate?: string | null;
@@ -219,22 +222,39 @@ export interface ParsedEmployment {
   isPrimary?: boolean;
 }
 
+/**
+ * `add_employment` from either side of the stint: a person record names the
+ * `employer_party_id`, a company record names the `person_party_id`. Exactly
+ * one of the two — the other side is the record on the page.
+ */
 export function parseEmployment(value: unknown): ParsedEmployment {
   const target = "add_employment";
   const input = objectValue(target, value);
   rejectUnknownKeys(target, input, [
     "employer_party_id",
+    "person_party_id",
     "title",
     "department",
     "start_date",
     "is_current",
     "is_primary",
   ]);
-  if (!isUuidShape(input.employer_party_id)) {
+  const hasEmployer = input.employer_party_id !== undefined;
+  const hasPerson = input.person_party_id !== undefined;
+  if (hasEmployer === hasPerson) {
+    throw new Error(
+      "add_employment expects exactly one of employer_party_id (on a person record) or person_party_id (on a company record).",
+    );
+  }
+  if (hasEmployer && !isUuidShape(input.employer_party_id)) {
     throw new Error("add_employment.employer_party_id expects a UUID.");
   }
+  if (hasPerson && !isUuidShape(input.person_party_id)) {
+    throw new Error("add_employment.person_party_id expects a UUID.");
+  }
   return {
-    employerPartyId: input.employer_party_id,
+    employerPartyId: hasEmployer ? (input.employer_party_id as string) : undefined,
+    personPartyId: hasPerson ? (input.person_party_id as string) : undefined,
     title: optionalText(target, "title", input.title) ?? undefined,
     department:
       optionalText(target, "department", input.department) ?? undefined,

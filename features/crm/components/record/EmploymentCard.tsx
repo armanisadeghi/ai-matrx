@@ -20,6 +20,7 @@ import {
   Briefcase,
   Building2,
   Check,
+  User,
   ChevronsUpDown,
   LogOut,
   Plus,
@@ -105,12 +106,17 @@ function EmployerPicker({
   excludeId,
   selected,
   onSelect,
+  kind = "organization",
 }: {
   orgId: string;
   excludeId: string;
   selected: PartyRef | null;
   onSelect: (party: PartyRef | null) => void;
+  /** `organization` picks an employer; `person` picks someone who works here. */
+  kind?: "organization" | "person";
 }) {
+  const isPeople = kind === "person";
+  const KindIcon = isPeople ? User : Building2;
   const [search, setSearch] = useState("");
   const [options, setOptions] = useState<PartyRef[]>([]);
   // A failed search is said under the box — never a silent "no matches"
@@ -133,6 +139,7 @@ function EmployerPicker({
             orgId,
             search,
             excludeId,
+            kind,
           });
           if (generationRef.current === gen) {
             setOptions(rows);
@@ -148,7 +155,7 @@ function EmployerPicker({
       })();
     }, 200);
     return () => clearTimeout(timer);
-  }, [open, search, orgId, excludeId, searchAttempt]);
+  }, [open, search, orgId, excludeId, searchAttempt, kind]);
 
   const typed = search.trim();
   const exact = options.some(
@@ -160,19 +167,21 @@ function EmployerPicker({
     setCreating(true);
     try {
       const resolved = await resolveParty({
-        kind: "organization",
+        kind,
         displayName: typed,
         orgId,
         source: "manual",
-        sourceDetail: "employment card",
+        sourceDetail: isPeople ? "people card" : "employment card",
       });
       if (!resolved.created) {
-        toast.success(`Matched the existing company ${resolved.displayName}`);
+        toast.success(
+          `Matched the existing ${isPeople ? "person" : "company"} ${resolved.displayName}`,
+        );
       }
       onSelect({
         id: resolved.partyId,
         display_name: resolved.displayName,
-        party_kind: "organization",
+        party_kind: kind,
       });
       setOpen(false);
       setSearch("");
@@ -194,13 +203,17 @@ function EmployerPicker({
           className="h-11 min-w-[11rem] flex-1 justify-between gap-1.5 px-2 text-sm font-normal sm:h-7 sm:text-xs"
         >
           <span className="flex min-w-0 items-center gap-1.5">
-            <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <KindIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <span
               className={
                 selected ? "truncate" : "truncate text-muted-foreground"
               }
             >
-              {selected ? selected.display_name : "Employer company"}
+              {selected
+                ? selected.display_name
+                : isPeople
+                  ? "Person"
+                  : "Employer company"}
             </span>
           </span>
           <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -211,19 +224,22 @@ function EmployerPicker({
           <CommandInput
             value={search}
             onValueChange={setSearch}
-            placeholder="Search companies…"
+            placeholder={isPeople ? "Search people…" : "Search companies…"}
           />
           <CommandList>
             {searchError != null ? (
               <ReadFailure
                 error={searchError}
-                what="matching companies"
+                what={isPeople ? "matching people" : "matching companies"}
                 onRetry={() => setSearchAttempt((n) => n + 1)}
                 className="m-2"
               />
             ) : null}
             {!searching && searchError == null && options.length === 0 && !typed ? (
-              <CommandEmpty>No companies yet — type a name to add one.</CommandEmpty>
+              <CommandEmpty>
+                {isPeople ? "No people yet" : "No companies yet"} — type a name
+                to add one.
+              </CommandEmpty>
             ) : null}
             {options.length > 0 && (
               <CommandGroup>
@@ -236,7 +252,7 @@ function EmployerPicker({
                       setOpen(false);
                     }}
                   >
-                    <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <KindIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                     <span className="truncate">{option.display_name}</span>
                     {selected?.id === option.id && (
                       <Check className="ml-auto h-3.5 w-3.5" />
@@ -286,26 +302,28 @@ export function EmploymentCard(props: Props) {
   );
 
   const submit = async () => {
-    if (!isPerson) return;
     if (!employer) {
-      toast.error("Pick an employer company");
+      toast.error(isPerson ? "Pick an employer company" : "Pick a person");
       return;
     }
     setSaving(true);
     try {
-      const hasCurrentPrimary = props.affiliations.some(
-        (a) => a.is_current && a.is_primary,
-      );
+      // On a company record the picked party is the PERSON and this record is
+      // the employer — the same crm.affiliation row, seen from the other side.
+      const hasCurrentPrimary = isPerson
+        ? props.affiliations.some((a) => a.is_current && a.is_primary)
+        : false;
       await addAffiliation({
-        partyId: props.partyId,
-        employerPartyId: employer.id,
+        partyId: isPerson ? props.partyId : employer.id,
+        employerPartyId: isPerson ? employer.id : props.partyId,
         orgId: props.orgId,
         title: title || undefined,
         startDate: startDate || null,
         isCurrent,
         // First current stint becomes the primary employer (grids/sort read
         // party.primary_employer_party_id, maintained by crm._affiliation_edge).
-        isPrimary: isCurrent && !hasCurrentPrimary,
+        // A company-side add never steals the person's primary employer.
+        isPrimary: isPerson && isCurrent && !hasCurrentPrimary,
       });
       setEmployer(null);
       setTitle("");
@@ -322,7 +340,7 @@ export function EmploymentCard(props: Props) {
 
   const end = async (id: string, name: string) => {
     const ok = await confirm({
-      title: `End the stint at ${name}?`,
+      title: isPerson ? `End the stint at ${name}?` : `End ${name}'s stint here?`,
       description: "The history stays — nothing is erased.",
       confirmLabel: "End stint",
     });
@@ -335,49 +353,54 @@ export function EmploymentCard(props: Props) {
     }
   };
 
-  useSurfaceWriteHandlers(isPerson ? CRM_RECORD_SURFACE_NAME : null, {
+  // BOTH SIDES OF ONE ROW. A person record adds an employer; a company record
+  // adds a person who works here. Same crm.affiliation write, same targets.
+  useSurfaceWriteHandlers(CRM_RECORD_SURFACE_NAME, {
     add_employment: async (raw: unknown) => {
-      if (!isPerson) {
-        throw new Error("add_employment is available only on a person record.");
-      }
       const parsed = parseEmployment(raw);
-      const [candidate] = await fetchPartiesByIds([parsed.employerPartyId]);
+      const otherId = isPerson ? parsed.employerPartyId : parsed.personPartyId;
+      if (!otherId) {
+        throw new Error(
+          isPerson
+            ? "add_employment on a person record expects employer_party_id."
+            : "add_employment on a company record expects person_party_id.",
+        );
+      }
+      const [candidate] = await fetchPartiesByIds([otherId]);
+      const wantedKind = isPerson ? "organization" : "person";
       if (
         !candidate ||
-        candidate.party_kind !== "organization" ||
+        candidate.party_kind !== wantedKind ||
         candidate.organization_id !== props.orgId
       ) {
         throw new Error(
-          "add_employment.employer_party_id must name a visible company in this record's organization.",
+          isPerson
+            ? "add_employment.employer_party_id must name a visible company in this record's organization."
+            : "add_employment.person_party_id must name a visible person in this record's organization.",
         );
       }
       await addAffiliation({
-        partyId: props.partyId,
-        employerPartyId: parsed.employerPartyId,
+        partyId: isPerson ? props.partyId : otherId,
+        employerPartyId: isPerson ? otherId : props.partyId,
         orgId: props.orgId,
         title: parsed.title,
         department: parsed.department,
         startDate: parsed.startDate,
         isCurrent: parsed.isCurrent,
-        isPrimary: parsed.isPrimary,
+        isPrimary: isPerson ? parsed.isPrimary : false,
       });
       await props.onChanged();
     },
     end_employment: async (raw: unknown) => {
-      if (!isPerson || typeof raw !== "string") {
-        throw new Error(
-          "end_employment expects a current affiliation id from this person record.",
-        );
-      }
-      const affiliation = props.affiliations.find(
+      const current = (isPerson ? props.affiliations : props.members).find(
         (candidate) => candidate.id === raw && candidate.is_current,
       );
-      if (!affiliation) {
+      if (typeof raw !== "string" || !current) {
         throw new Error(
-          "end_employment expects a current affiliation id from affiliations on this record.",
+          `end_employment expects a current stint id from ${isPerson ? "affiliations" : "members"} on this record.`,
         );
       }
-      await endAffiliation(affiliation.id);
+      await endAffiliation(current.id);
       await props.onChanged();
     },
   });
@@ -411,17 +434,18 @@ export function EmploymentCard(props: Props) {
               json={() => employmentCopyViews}
             />
           )}
-          {isPerson && (
-            adding ? (
-              <XTapButton ariaLabel="Cancel add" onClick={() => setAdding(false)} />
-            ) : (
-              <PlusTapButton ariaLabel="Add employment" onClick={() => setAdding(true)} />
-            )
+          {adding ? (
+            <XTapButton ariaLabel="Cancel add" onClick={() => setAdding(false)} />
+          ) : (
+            <PlusTapButton
+              ariaLabel={isPerson ? "Add employment" : "Add a person"}
+              onClick={() => setAdding(true)}
+            />
           )}
         </div>
       }
     >
-      {isPerson && adding && (
+      {adding && (
         <div className="mb-2 space-y-1.5 rounded border border-border bg-muted/30 p-1.5">
           <div className="flex flex-wrap items-center gap-1.5">
             <EmployerPicker
@@ -429,6 +453,7 @@ export function EmploymentCard(props: Props) {
               excludeId={props.partyId}
               selected={employer}
               onSelect={setEmployer}
+              kind={isPerson ? "organization" : "person"}
             />
             <Input
               value={title}
@@ -531,7 +556,7 @@ export function EmploymentCard(props: Props) {
             : props.members.map((a) => (
                 <li
                   key={a.id}
-                  className="flex items-center gap-2 rounded px-1.5 py-1 hover:bg-accent/50"
+                  className="group flex items-center gap-2 rounded px-1.5 py-1 hover:bg-accent/50"
                 >
                   {a.person ? (
                     <EntityRef
@@ -559,7 +584,18 @@ export function EmploymentCard(props: Props) {
                   <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground">
                     {stintDates(a.start_date, a.end_date)}
                   </span>
-                  {!a.is_current && (
+                  {a.is_current ? (
+                    <span className="inline-flex shrink-0 opacity-100 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
+                      <TapTargetButtonTransparent
+                        ariaLabel="End this stint"
+                        onClick={() =>
+                          void end(a.id, a.person?.display_name ?? "this person")
+                        }
+                        className="text-muted-foreground/60 hover:text-destructive"
+                        icon={<LogOut className="h-3.5 w-3.5" />}
+                      />
+                    </span>
+                  ) : (
                     <span className="shrink-0 rounded-full border border-border bg-muted px-1.5 py-0.5 text-xs leading-none text-muted-foreground">
                       Past
                     </span>
