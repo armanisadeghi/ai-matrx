@@ -258,7 +258,10 @@ export default function NotificationsTab() {
         for (const w of writes) {
           await setNotificationPreference(w.event_key, w.channel, w.enabled, scopeId);
         }
-        reload();
+        // Re-read before answering, so the agent's next look at the page
+        // shows what landed rather than the pre-write copy.
+        if (scopeId) setSettings(await loadNotificationSettings(scopeId));
+        await new Promise((r) => setTimeout(r, 100));
         return {
           summary: `Saved ${writes.length} notification choice${writes.length === 1 ? "" : "s"} for ${activeScope?.label ?? "this organization"}.`,
           data: { saved: writes, organization_id: scopeId },

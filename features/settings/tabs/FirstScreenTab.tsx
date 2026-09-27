@@ -20,6 +20,7 @@
 // ("Set here" / "Inherited from your organization"), clear-to-inherit, blast
 // radius, and a locked key explained with its request door.
 
+import { useEffect, useRef } from "react";
 import { Building2, Palette, SlidersHorizontal } from "lucide-react";
 import type { SettingsTabDef } from "../types";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
@@ -58,6 +59,12 @@ export default function FirstScreenTab() {
     "userPreferences.organization.defaultOrganizationId",
   );
   const settings = useUniversalSettings();
+  // The write handler outlives this render; it reads the freshest settings
+  // through this ref when it waits for its own write to show on the page.
+  const latestSettings = useRef(settings);
+  useEffect(() => {
+    latestSettings.current = settings;
+  });
   // The AI and voice rows live on the organization's ladder, so with no
   // organization selected they are HELD: the person's memberships are shown
   // inline through the one org-state component, and the rows appear once one
@@ -158,7 +165,22 @@ export default function FirstScreenTab() {
           saved.push(knob.label);
         }
         settings.refresh();
-        return { summary: `Saved ${saved.join(", ")}.`, data: { saved: value } };
+        // Wait for the re-read so the agent's next look at the page shows what
+        // landed — not the pre-write copy (seen live 2026-09-27: the agent read
+        // the old value right after a successful write and doubted it).
+        const expected = value as Record<string, string | null>;
+        const landed = () =>
+          Object.entries(expected).every(([key, next]) => {
+            const knob = latestSettings.current.knobByKey(key);
+            return next === null ? knob?.is_overridden === false : knob?.effective_value === next;
+          });
+        for (let i = 0; i < 40 && !landed(); i++) await new Promise((r) => setTimeout(r, 250));
+        return {
+          summary: landed()
+            ? `Saved ${saved.join(", ")}; the page now shows the new value.`
+            : `Saved ${saved.join(", ")}; the page has not re-read it yet — the saved values are in data.`,
+          data: { saved: value },
+        };
       },
     },
   });
