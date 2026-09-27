@@ -37,6 +37,7 @@ import {
   defaultDestination,
   type SendToAgentDestinationOption,
 } from "./send-to-agent-plan";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface SendToAgentWindowProps {
   isOpen: boolean;
@@ -207,7 +208,10 @@ function DestinationStep({
           </div>
         ) : load.status === "error" ? (
           <div className="flex items-center gap-3 py-4 text-sm">
-            <span className="text-destructive">{load.message}</span>
+            <span className="text-destructive">
+              {load.message}
+              <ErrorAlchemyMenu error={load.message} />
+            </span>
             <Button
               size="sm"
               variant="outline"

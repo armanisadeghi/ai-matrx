@@ -52,6 +52,7 @@ import {
   fmtUsd,
 } from "./presentation";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const ANY = "__any__";
 
@@ -408,27 +409,21 @@ export function WorkItemsPanel({
         )
       }
       coverage={rows && !loading && !error ? workItemsCoverage(rows.length, matched) : undefined}
-      emptyState={
-        error
-          ? {
-              title: "The work items could not be read.",
-              description: error,
-            }
-          : {
-              icon: <Inbox className="h-6 w-6 text-muted-foreground" />,
-              title: filtersActive
-                ? "No work item matches these filters"
-                : "The queue is empty",
-              description: filtersActive
-                ? "The queue holds items — none of them look like this."
-                : "Nothing has been enqueued for batch processing. Items appear here when a background job is submitted at batch pricing.",
-              action: filtersActive ? (
-                <Button variant="outline" size="sm" onClick={clearAll}>
-                  Clear filters
-                </Button>
-              ) : undefined,
-            }
-      }
+      read={readOf({ loading, error }, { what: "the work items" })}
+      emptyState={{
+        icon: <Inbox className="h-6 w-6 text-muted-foreground" />,
+        title: filtersActive
+          ? "No work item matches these filters"
+          : "The queue is empty",
+        description: filtersActive
+          ? "The queue holds items — none of them look like this."
+          : "Nothing has been enqueued for batch processing. Items appear here when a background job is submitted at batch pricing.",
+        action: filtersActive ? (
+          <Button variant="outline" size="sm" onClick={clearAll}>
+            Clear filters
+          </Button>
+        ) : undefined,
+      }}
       toolbar={{
         title: "Work items",
         customSearch: (

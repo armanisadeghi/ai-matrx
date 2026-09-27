@@ -32,6 +32,7 @@ import {
 } from "@/features/sources/sourceRows";
 import { CATALOGUED_SOURCE_LABEL, cataloguedSourceIds } from "../catalog/cataloguedSources";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 export function CataloguedSourcesList({
     libraryId,
@@ -194,6 +195,7 @@ export function CataloguedSourcesList({
                     onRowOpen={(r) => router.push(sourceHref(r.id))}
                     detail={{ enabled: false }}
                     copy={false}
+                    read={readOf({ loading, error }, { what: "this Library's Sources", onRetry: () => setNonce((n) => n + 1) })}
                     emptyState={{
                         title: "No Sources filed here yet",
                         description:

@@ -252,6 +252,7 @@ function UserSearchWindowInner({
             searchValue: search,
             onSearchChange: setSearch,
           }}
+          // read-gate-exempt: error swaps this for the failed-read state and the message above names the failure once
           emptyState={{
             icon: loading ? (
               <Loader2 className="h-5 w-5 animate-spin" />

@@ -82,6 +82,7 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_PROOF_RUNS_SURFACE_NAME, createAdminProofRunsScope } from "@/features/surfaces/manifests/admin-proof-runs.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
 
 const MODES: { value: ProofRunMode; label: string; hint: string }[] = [
   {
@@ -648,6 +649,7 @@ export default function ProofRunsClient() {
               if (!id) setOpenRun(null);
             }}
             onRowOpen={(row) => void openRunDetail(row.id)}
+            read={readOf({ loading, error: loadError }, { what: "proof runs", onRetry: () => void refresh() })}
             emptyState={{ title: "No runs yet." }}
             toolbar={{
               title: "Recent runs",
