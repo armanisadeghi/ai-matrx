@@ -9,7 +9,8 @@
  *   trackpad two-finger swipe ..... pan              drag empty space ......... pan
  *   space + drag, middle drag ..... pan anywhere     shift+1 / shift+2 ........ fit all / selection
  *   shift+0 ....................... 100%             + / - .................... zoom
- *   enter or f .................... focus selected   esc ...................... leave focus, then deselect
+ *   enter ......................... focus selected   esc ...................... leave focus / tool, then deselect
+ *   V H T F N P R O L ⇧L .......... tools (engine/tools.ts)   ⇧G ........... layout guides
  *   arrows ........................ nudge the view (in focus: previous / next tile)
  * The one exception to "scroll moves the board": the SELECTED tile, under the
  * pointer, with room to scroll that way, scrolls itself.
@@ -31,6 +32,7 @@ import {
 } from "../engine/camera";
 import { type Insets, SpatialStore } from "../engine/spatial-store";
 import type { WheelMode } from "../engine/wheel-input";
+import { isCreationTool, toolForKey } from "../engine/tools";
 import { FocusHostContext, SpatialStoreContext } from "../engine/react";
 import { FocusLayer } from "./FocusLayer";
 
@@ -107,7 +109,7 @@ export function SpatialViewport({
       // moves it by TRANSFORM within one cell (compositor only); changing
       // background-position instead repaints the whole viewport every frame.
       const step = GRID_WORLD_PX * z;
-      const shown = step >= 7;
+      const shown = step >= 7 && store.getGuides();
       grid.style.opacity = shown ? String(Math.min(1, (step - 7) / 10)) : "0";
       const size = `${step}px ${step}px`;
       if (grid.style.backgroundSize !== size) grid.style.backgroundSize = size;
@@ -212,7 +214,7 @@ export function SpatialViewport({
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code === "Space") {
         spaceDown = false;
-        root.style.cursor = "";
+        root.style.cursor = toolCursor(store.getTool());
       }
     };
 
@@ -230,11 +232,21 @@ export function SpatialViewport({
         return;
       }
       const onChrome = !!(e.target as HTMLElement).closest("[data-spatial-chrome]");
-      if (!onChrome && (e.button === 1 || spaceDown || (e.button === 0 && onBackground))) {
+      const handTool = store.getTool() === "hand";
+      // A creation tool owns a left-press on the board (the capture layer).
+      const creating = isCreationTool(store.getTool()) && e.button === 0 && !spaceDown;
+      if (
+        !onChrome &&
+        !creating &&
+        (e.button === 1 || spaceDown || (e.button === 0 && (onBackground || handTool)))
+      ) {
         panning = true;
         root.setPointerCapture(e.pointerId);
         root.style.cursor = "grabbing";
-        if (onBackground && e.button === 0 && !spaceDown) store.select(null);
+        if (onBackground && e.button === 0 && !spaceDown && !handTool) store.select(null);
+        // Hand / space / middle pan wins over whatever is underneath (a tile
+        // header would otherwise start dragging the tile).
+        if (!onBackground) e.stopPropagation();
         e.preventDefault();
       }
     };
@@ -261,24 +273,35 @@ export function SpatialViewport({
       if (pointers.size < 2) pinchDist = 0;
       if (panning && pointers.size === 0) {
         panning = false;
-        root.style.cursor = spaceDown ? "grab" : "";
+        root.style.cursor = spaceDown ? "grab" : toolCursor(store.getTool());
       }
     };
 
-    root.addEventListener("pointerdown", onDown);
+    root.addEventListener("pointerdown", onDown, true);
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onUp);
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
     return () => {
-      root.removeEventListener("pointerdown", onDown);
+      root.removeEventListener("pointerdown", onDown, true);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
+  }, [store]);
+
+  // ── cursor follows the tool ──────────────────────────────────────────────
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const apply = () => {
+      root.style.cursor = toolCursor(store.getTool());
+    };
+    apply();
+    return store.subscribeUi(apply);
   }, [store]);
 
   // ── keyboard navigation ──────────────────────────────────────────────────
@@ -297,18 +320,25 @@ export function SpatialViewport({
         e.preventDefault();
         return;
       }
-      if ((e.key === "Enter" || e.key === "f") && !e.shiftKey) {
+      const tool = e.shiftKey && e.code !== "KeyL" ? null : toolForKey(e);
+      if (tool) {
+        store.setTool(tool);
+      } else if (e.key === "Enter" && !e.shiftKey) {
         const sel = store.getSelected();
         if (!sel) return;
         store.focus(sel);
-      } else if (e.shiftKey && e.code === "Digit1") store.fitAll();
+      } else if (e.shiftKey && e.code === "KeyG") store.setGuides(!store.getGuides());
+      else if (e.shiftKey && e.code === "Digit1") store.fitAll();
       else if (e.shiftKey && e.code === "Digit2") {
         const sel = store.getSelected();
         if (sel) store.fitItem(sel);
       } else if (e.shiftKey && e.code === "Digit0") centre(1);
       else if (e.key === "+" || e.key === "=") centre(cam.z * 1.25);
       else if (e.key === "-" || e.key === "_") centre(cam.z / 1.25);
-      else if (e.key === "Escape") store.select(null);
+      else if (e.key === "Escape") {
+        if (store.getTool() !== "select") store.setTool("select");
+        else store.select(null);
+      }
       else if (e.key.startsWith("Arrow")) {
         const step = e.shiftKey ? 320 : 80;
         const d = { ArrowLeft: [step, 0], ArrowRight: [-step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }[
@@ -354,6 +384,13 @@ export function SpatialViewport({
       </FocusHostContext.Provider>
     </SpatialStoreContext.Provider>
   );
+}
+
+function toolCursor(tool: string): string {
+  if (tool === "hand") return "grab";
+  if (tool === "select") return "";
+  if (tool === "text") return "text";
+  return "crosshair";
 }
 
 function isTyping(target: EventTarget | null): boolean {

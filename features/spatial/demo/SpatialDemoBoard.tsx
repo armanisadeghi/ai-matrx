@@ -16,10 +16,11 @@
  * the `RequestStream` source (features/spatial/streams/stream-source.ts).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AudioLines,
   BookOpenCheck,
+  ChevronDown,
   Code2,
   FileText,
   Gauge,
@@ -27,11 +28,22 @@ import {
   Layers,
   ListChecks,
   Mic,
+  PanelRight,
   RotateCcw,
+  StickyNote,
+  Type,
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -50,6 +62,12 @@ import type { SpatialStore } from "../engine/spatial-store";
 import { DEFAULT_THROW_ACTIONS, type ThrowDirection } from "../engine/throw";
 import { useBoard } from "../board/useBoard";
 import { SpatialBoardMenu } from "../components/SpatialBoardMenu";
+import { CreationLayer, type Creation } from "../components/CreationLayer";
+import { ShapesLayer } from "../components/ShapesLayer";
+import { ToolBar } from "../components/ToolBar";
+import { ZoomMenu } from "../components/ZoomMenu";
+import { LayersPanel } from "../components/LayersPanel";
+import { NoteTileBody, TextTileBody } from "../tiles/NoteTileBody";
 import { ParkedShelf } from "../components/ParkedShelf";
 import { SpatialViewport } from "../components/SpatialViewport";
 import { SpatialTile } from "../components/SpatialTile";
@@ -80,7 +98,11 @@ type TileContent =
   | { type: "stream"; stream: ReplayStream }
   | { type: "html"; src: string }
   | { type: "image"; src: string; waitFor?: ReplayStream }
-  | { type: "pending"; message: string };
+  | { type: "pending"; message: string }
+  /** A quick note: a real Note once its first words are typed. */
+  | { type: "note"; noteId: string | null }
+  /** A text label placed with the Text tool (board-only). */
+  | { type: "text"; text: string };
 
 interface TileSpec {
   id: string;
@@ -287,7 +309,8 @@ export function SpatialDemoBoard({
           { kind: "quiz_set", label: "Quiz", example: QUIZ_FALLBACK },
         ];
   const [board] = useState(() => buildBoard(effectiveKinds));
-  const tiles = useBoard<TileSpec>(() => board.tiles);
+  const tiles = useBoard<TileSpec>(() => ({ tiles: board.tiles, frames: board.frames }));
+  const [layersOpen, setLayersOpen] = useState(false);
   const activeOrgId = useAppSelector(selectOrganizationId);
   const [stress, setStress] = useState<ReturnType<typeof buildStress> | null>(null);
   const [store, setStore] = useState<SpatialStore | null>(null);
@@ -358,6 +381,13 @@ export function SpatialDemoBoard({
   const saveAndClose = async (id: string) => {
     const spec = specOf(id);
     if (!spec) return;
+    if (spec.content.type === "note" && spec.content.noteId) {
+      const undo = tiles.removeTile(id);
+      toast.success(`"${spec.title}" is already in Notes (Board notes) — closed it here`, {
+        action: { label: "Put back", onClick: undo },
+      });
+      return;
+    }
     const markdown = tileMarkdown(spec);
     if (!markdown.trim()) {
       toast.error(`"${spec.title}" has nothing to save yet — it is still waiting for content.`);
@@ -407,6 +437,60 @@ export function SpatialDemoBoard({
     else if (action === "delete") void remove(id);
   };
 
+  // ── the tool bar's creations ────────────────────────────────────────────
+  const onCreate = (c: Creation) => {
+    const id = `${c.tool}:${crypto.randomUUID().slice(0, 8)}`;
+    switch (c.tool) {
+      case "note":
+        tiles.addTile({
+          id,
+          title: "Note",
+          subtitle: "Quick note",
+          icon: StickyNote,
+          rect: { x: c.at.x - 180, y: c.at.y - 20, w: 360, h: 280 },
+          content: { type: "note", noteId: null },
+        });
+        break;
+      case "text":
+        tiles.addTile({
+          id,
+          title: "Text",
+          subtitle: "Label",
+          icon: Type,
+          rect: { x: c.at.x - 20, y: c.at.y - 20, w: 420, h: 120 },
+          content: { type: "text", text: "" },
+        });
+        break;
+      case "frame":
+        tiles.addFrame({ id, rect: c.rect, title: "Frame", note: "" });
+        break;
+      case "rect":
+      case "oval":
+        tiles.addShape({ id, kind: c.tool, points: [{ x: c.rect.x, y: c.rect.y }, { x: c.rect.x + c.rect.w, y: c.rect.y + c.rect.h }] });
+        break;
+      case "arrow":
+      case "line":
+        tiles.addShape({ id, kind: c.tool, points: [c.from, c.to] });
+        break;
+      case "pen":
+        tiles.addShape({ id, kind: "pen", points: c.points });
+        break;
+    }
+    requestAnimationFrame(() => store?.select(id));
+  };
+
+  const deleteSelected = () => {
+    const id = store?.getSelected();
+    if (!id) return;
+    if (tiles.shapes.some((sh) => sh.id === id)) tiles.removeShape(id);
+    else if (tiles.frames.some((f) => f.id === id)) tiles.removeFrame(id);
+    else if (specOf(id)) void remove(id);
+    else return;
+    toast("Deleted", { action: { label: "Undo", onClick: tiles.undo } });
+  };
+
+  useBoardKeys({ undo: tiles.undo, redo: tiles.redo, deleteSelected });
+
   const allTiles = tiles.tiles;
   const byId = new Map(allTiles.map((t) => [t.id, t]));
 
@@ -425,15 +509,60 @@ export function SpatialDemoBoard({
         onStore={setStore}
         overlay={
           <>
-            <BoardToolbar
-              tileCount={allTiles.length}
-              examplesNote={examplesNote}
-              stressOn={!!stress}
-              onRestart={() => restart(false)}
-              onInstant={() => restart(true)}
-              onToggleStress={toggleStress}
+            <CreationLayer onCreate={onCreate} />
+            <ToolBar
+              leading={
+                <DemoMenu
+                  tileCount={allTiles.length}
+                  stressOn={!!stress}
+                  onRestart={() => restart(false)}
+                  onInstant={() => restart(true)}
+                  onToggleStress={toggleStress}
+                />
+              }
             />
+            {examplesNote && (
+              <p
+                data-spatial-chrome
+                className="absolute left-4 top-16 z-30 max-w-md rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-foreground"
+              >
+                {examplesNote}
+              </p>
+            )}
+            <div
+              data-spatial-chrome
+              className="absolute right-4 top-4 z-30 flex items-center gap-0.5 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur"
+            >
+              <button
+                type="button"
+                onClick={() => setLayersOpen((o) => !o)}
+                aria-pressed={layersOpen}
+                title="Layers"
+                aria-label="Layers"
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                  layersOpen && "bg-primary/15 text-primary",
+                )}
+              >
+                <PanelRight className="h-4 w-4" />
+              </button>
+              <span className="mx-0.5 h-5 w-px bg-border" />
+              <ZoomMenu history={tiles} />
+            </div>
+            {layersOpen && (
+              <LayersPanel
+                frames={tiles.frames.map((f) => ({ id: f.id, title: f.title, rect: f.rect }))}
+                tiles={allTiles.map((t) => ({ id: t.id, title: t.title, rect: t.rect, icon: t.icon }))}
+                shapeCount={tiles.shapes.length}
+                onRename={(id, title) => {
+                  if (tiles.frames.some((f) => f.id === id)) tiles.updateFrame(id, { title });
+                  else tiles.updateTile(id, { title });
+                }}
+                onClose={() => setLayersOpen(false)}
+              />
+            )}
             <ParkedShelf
+              className={layersOpen ? "right-72 top-16" : "top-16"}
               parked={tiles.parked.map((t) => ({ id: t.id, title: t.title, icon: t.icon }))}
               onRestore={unpark}
             />
@@ -442,9 +571,10 @@ export function SpatialDemoBoard({
           </>
         }
       >
-        {board.frames.map((f) => (
+        {tiles.frames.map((f) => (
           <SpatialFrame key={f.id} {...f} />
         ))}
+        <ShapesLayer shapes={tiles.shapes} />
         {stress && <SpatialFrame key={stress.frame.id} {...stress.frame} />}
         {board.pipeline.map(([a, b]) => {
           const from = byId.get(a);
@@ -453,7 +583,16 @@ export function SpatialDemoBoard({
           return <SpatialEdge key={`${a}->${b}`} from={from.rect} to={to.rect} />;
         })}
         {allTiles.map((t) => (
-          <BoardTile key={t.id} spec={t} rect={t.rect} onMove={tiles.moveTile} onThrow={onThrow} />
+          <BoardTile
+            key={t.id}
+            spec={t}
+            rect={t.rect}
+            onMove={tiles.moveTile}
+            onThrow={onThrow}
+            onContent={(content, title) =>
+              tiles.updateTile(t.id, title ? { content, title } : { content }, { history: false })
+            }
+          />
         ))}
       </SpatialViewport>
     </SpatialBoardMenu>
@@ -474,7 +613,10 @@ function tileMarkdown(spec: TileSpec): string {
     case "image":
       return `# ${spec.title}\n\n![${spec.title}](${new URL(c.src, window.location.origin).href})`;
     case "pending":
+    case "note":
       return "";
+    case "text":
+      return c.text;
   }
 }
 
@@ -486,11 +628,13 @@ function BoardTile({
   rect,
   onMove,
   onThrow,
+  onContent,
 }: {
   spec: TileSpec;
   rect: Rect;
   onMove: (id: string, x: number, y: number) => void;
   onThrow: (id: string, direction: ThrowDirection) => void;
+  onContent: (content: TileContent, title?: string) => void;
 }) {
   const c = spec.content;
   const selected = useSelectedTile() === spec.id;
@@ -499,7 +643,7 @@ function BoardTile({
       ? { kind: "self", source: c.stream }
       : c.type === "image" && c.waitFor
         ? { kind: "upstream", source: c.waitFor }
-        : { kind: "static", value: c.type === "pending" ? QUEUED : DONE };
+        : { kind: "static", value: c.type === "pending" ? QUEUED : c.type === "note" && !c.noteId ? IDLE : DONE };
 
   return (
     <SpatialTile
@@ -522,6 +666,15 @@ function BoardTile({
             return <GatedImage src={c.src} alt={spec.title} waitFor={c.waitFor ?? null} />;
           case "pending":
             return <p className="p-4 text-sm leading-relaxed text-muted-foreground">{c.message}</p>;
+          case "note":
+            return (
+              <NoteTileBody
+                noteId={c.noteId}
+                onCreated={(noteId, label) => onContent({ type: "note", noteId }, label)}
+              />
+            );
+          case "text":
+            return <TextTileBody text={c.text} onChange={(text) => onContent({ type: "text", text })} />;
         }
       }}
     </SpatialTile>
@@ -529,6 +682,7 @@ function BoardTile({
 }
 
 const QUEUED = { status: "queued", progress: null } as const;
+const IDLE = { status: "idle", progress: null } as const;
 const DONE = { status: "complete", progress: null } as const;
 
 /** An image stage that appears once the stage it waits on has finished. */
@@ -543,50 +697,86 @@ function GatedImage({ src, alt, waitFor }: { src: string; alt: string; waitFor: 
   );
 }
 
-// ── toolbar ──────────────────────────────────────────────────────────────────
+// ── demo menu (the proof's own controls, inside the tool bar) ───────────────
 
-function BoardToolbar({
+function DemoMenu({
   tileCount,
-  examplesNote,
   stressOn,
   onRestart,
   onInstant,
   onToggleStress,
 }: {
   tileCount: number;
-  examplesNote: string | null;
   stressOn: boolean;
   onRestart: () => void;
   onInstant: () => void;
   onToggleStress: () => void;
 }) {
   return (
-    <div data-spatial-chrome className="absolute left-4 top-4 flex max-w-[calc(100%-2rem)] flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card/95 p-2 shadow-md backdrop-blur">
-        <div className="px-1">
-          <p className="text-sm font-semibold text-foreground">Spatial view</p>
-          <p className="text-[11px] text-muted-foreground">
-            {tileCount} tiles · every stream is a replay
-          </p>
-        </div>
-        <Button size="sm" variant="outline" onClick={onRestart}>
-          <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex h-8 items-center gap-1 rounded-md px-2 text-xs font-semibold text-foreground hover:bg-accent"
+        >
+          Spatial view
+          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-60" data-spatial-chrome>
+        <DropdownMenuLabel className="font-normal text-muted-foreground">
+          {`${tileCount} tiles · every stream is a replay`}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={onRestart}>
+          <RotateCcw className="mr-2 h-4 w-4" />
           Replay all
-        </Button>
-        <Button size="sm" variant="outline" onClick={onInstant} title="Skip streaming — render every result complete">
-          <Zap className="mr-1.5 h-3.5 w-3.5" />
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onInstant}>
+          <Zap className="mr-2 h-4 w-4" />
           Show finished
-        </Button>
-        <Button size="sm" variant={stressOn ? "secondary" : "outline"} onClick={onToggleStress}>
-          <Gauge className="mr-1.5 h-3.5 w-3.5" />
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onToggleStress}>
+          <Gauge className="mr-2 h-4 w-4" />
           {stressOn ? "Remove 100 streams" : "Add 100 live streams"}
-        </Button>
-      </div>
-      {examplesNote && (
-        <p className="max-w-md rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-foreground">
-          {examplesNote}
-        </p>
-      )}
-    </div>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
+}
+
+/** ⌘Z / ⇧⌘Z (and Ctrl on Windows) and Delete / Backspace on the board. */
+function useBoardKeys({
+  undo,
+  redo,
+  deleteSelected,
+}: {
+  undo: () => void;
+  redo: () => void;
+  deleteSelected: () => void;
+}) {
+  const handlers = useRef({ undo, redo, deleteSelected });
+  useEffect(() => {
+    handlers.current = { undo, redo, deleteSelected };
+  });
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))) return;
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        if (e.shiftKey) handlers.current.redo();
+        else handlers.current.undo();
+      } else if (mod && e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        handlers.current.redo();
+      } else if (!mod && (e.key === "Delete" || e.key === "Backspace")) {
+        e.preventDefault();
+        handlers.current.deleteSelected();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 }

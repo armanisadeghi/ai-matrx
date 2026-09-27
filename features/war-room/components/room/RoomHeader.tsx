@@ -11,7 +11,7 @@
 //
 // Secondary room controls (instrument projector, density dial, room details,
 // resources, project, delete) collapse into the ONE "⋯" overflow menu; the
-// primaries stay inline (Stage⇄Grid, Room Agent, working-context chip). The
+// primaries stay inline (Stage⇄Grid⇄Board, Room Agent, working-context chip). The
 // row is its own `@container`, so the label-hiding behavior the old in-body
 // header used (@max-xl labels, @2xl meter) keys off the real injected width.
 //
@@ -26,13 +26,14 @@
 // Every control here acts on the WHOLE room (cockpit rule) — the one
 // deliberate exception is ActiveContextLensChip, which is global by design.
 
-import { useState, useTransition } from "react";
+import { createElement, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Check,
   Circle,
   EyeOff,
   FolderKanban,
+  Frame,
   Layers,
   LayoutGrid,
   LayoutPanelLeft,
@@ -148,7 +149,9 @@ export function RoomHeader({
 
   const [deletePending, startDeleteTransition] = useTransition();
 
-  const RoomIcon = roomIconOf(session?.icon);
+  const roomIcon = createElement(roomIconOf(session?.icon), {
+    className: "size-4",
+  });
   const roomColor = roomColorOf(session?.color);
 
   async function handleDeleteRoom() {
@@ -194,7 +197,7 @@ export function RoomHeader({
               roomColor.text,
             )}
           >
-            <RoomIcon className="size-4" />
+            {roomIcon}
           </span>
 
           {session ? (
@@ -459,6 +462,15 @@ export function RoomHeader({
               }}
             />
             <SheetRow
+              Icon={Frame}
+              label="Board view"
+              active={mode === "board"}
+              onPress={() => {
+                setMode("board" satisfies RoomMode);
+                setSheetOpen(false);
+              }}
+            />
+            <SheetRow
               Icon={density === "compact" ? Minimize2 : Maximize2}
               label="Compact tiles"
               active={density === "compact"}
@@ -604,12 +616,13 @@ function LiveMeter({ sessionId }: { sessionId: string }) {
   );
 }
 
-// ── Stage ⇄ Grid switch (reimagine) — the room's ONE primary mode control ───
+// ── Stage ⇄ Grid ⇄ Board switch (reimagine) — the room's ONE primary mode control ───
 function ModeSwitch() {
   const { mode, setMode } = useRoomView();
   const items: { id: RoomMode; label: string; Icon: typeof LayoutGrid }[] = [
     { id: "stage", label: "Stage", Icon: LayoutPanelLeft },
     { id: "grid", label: "Grid", Icon: LayoutGrid },
+    { id: "board", label: "Board", Icon: Frame },
   ];
   return (
     <div className="inline-flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
