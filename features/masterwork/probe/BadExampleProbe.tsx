@@ -391,6 +391,7 @@ export function BadExampleProbe({
               to the organization's round knob. A confirm() per round would be
               intolerable on a lane whose whole point is momentum, so the price
               is stated plainly here, once, before anything is spent. */}
+          {/* read-gate-exempt: roundCount is the round-cap knob (or the run's own cap); a failed knob read falls back to the declared default and knobs.problem announces it above */}
           <p className="text-xs text-muted-foreground">
             Up to {roundCount} rounds, and you can stop after any one of them.
             Each round takes about a minute: we write the example, you say what
@@ -521,6 +522,7 @@ export function BadExampleProbe({
               <Label htmlFor="probe-critique" className="text-sm font-medium">
                 What&apos;s wrong with this, and what would you do?
               </Label>
+              {/* read-gate-exempt: round position of this live probe session and its round-cap knob, not a count of rows from a read */}
               <span className="shrink-0 text-xs text-muted-foreground">
                 Round {roundNumber} of {roundCount}
               </span>
