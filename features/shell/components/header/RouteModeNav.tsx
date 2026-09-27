@@ -81,6 +81,12 @@ interface RouteModeNavProps {
   items: RouteNavItem[];
   /** Optional explicit active href. Defaults to matching the current pathname. */
   activeHref?: string;
+  /**
+   * The densest variant allowed. `"menu"` keeps the nav as ONE labeled dropdown
+   * trigger at every width — for a page whose own labeled tab bar is the primary
+   * nav, so the header never becomes a second row of unlabeled icons.
+   */
+  maxVariant?: "full" | "menu";
 }
 
 const PILL =
@@ -98,10 +104,10 @@ const ITEM =
 // on /marketing at ~700px: 365px of content into a 368px slot).
 const FLANK_GUTTER = 32;
 
-export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
+export function RouteModeNav({ items, activeHref, maxVariant = "full" }: RouteModeNavProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [variant, setVariant] = useState<Variant>("full");
+  const [variant, setVariant] = useState<Variant>(maxVariant === "menu" ? "menu" : "full");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -132,6 +138,10 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
     );
 
     const compute = () => {
+      if (maxVariant === "menu") {
+        setVariant("menu");
+        return;
+      }
       // RouteHeader normally writes this bound onto the absolute center. Read
       // the same geometry here as well so portal-mount timing can never make
       // the nav mistake its own compact intrinsic width for all available
@@ -167,7 +177,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
     // time and tore down and rebuilt six ResizeObserver targets on each one.
     // The measurement only depends on the hrefs present and whether they all
     // have icons.
-  }, [itemsKey, canIcons, current?.href]);
+  }, [itemsKey, canIcons, current?.href, maxVariant]);
 
   // `withTooltip` is true only in the VISIBLE pill — the hidden measurers
   // render plain items so Radix triggers never join the measurement DOM.

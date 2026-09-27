@@ -146,7 +146,11 @@ export function HrShell({
         center={
           // With no employer open there is nothing to navigate within, and a
           // persona-less nav would differ from the same route once one is chosen.
-          active && navItems.length > 0 ? <RouteModeNav items={navItems} /> : null
+          active && navItems.length > 0 ? (
+            // A page with its own labeled tab bar (`subNav`) keeps the HR section
+            // switch as ONE labeled dropdown — never a second row of icons.
+            <RouteModeNav items={navItems} maxVariant={subNav ? "menu" : "full"} />
+          ) : null
         }
         right={actions}
       />
