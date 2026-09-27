@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "77b5556133ab";
+export const KIND_REGISTRY_FINGERPRINT = "5850c2cafdcd";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -16463,9 +16463,14 @@ export interface SeoKeywordVolumeRefreshResult {
 }
 
 /**
- * Output of ``seo.competitors.landscape_brief.generate`` and ``.rule``.
+ * Current strategy payload, while accepting pre-strategy brief rows.
+ *
+ * ``scope`` and ``brand_id`` were introduced after the original site-scoped
+ * registry row.  They stay optional in this boundary contract so that an
+ * already-persisted brief remains readable; the strategy service itself still
+ * requires and writes both fields for every new payload.
  *  *
- *  * Kind `seo_landscape_brief` (registry v4).
+ *  * Kind `seo_landscape_brief` (registry v5).
  */
 export interface SeoLandscapeBrief {
   id: string;
@@ -16476,13 +16481,23 @@ export interface SeoLandscapeBrief {
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
   };
+  scope?: string | null;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_landscape_brief";
+  __kind?: "seo_landscape_brief";
+  inputs?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: JsonValue | string | undefined;
+  };
   status: string;
-  site_id: string;
+  site_id?: string | null;
+  brand_id?: string | null;
   guidance?: string;
+  version_no?: number;
   reviewed_at?: string | null;
   generated_at?: string | null;
   service_lines?: SeoServiceLine_SeoLandscapeBrief[];
