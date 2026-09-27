@@ -1,51 +1,51 @@
 {
-  "date": "2026-09-27T09:17:50Z",
+  "date": "2026-09-27T17:40:18Z",
   "clone_ref": "hykobnqyuxspbcijrodb",
-  "summary": "Rerun on the clone after today's production code (the scope and context screens switch landed 08:50Z; clone bodies level with production): Copy again as its own step, the press for every organization (scope screens pressed for 13 through their own door; 7 ownerless pick lists archived with no owner organization), an Undo that carried a new-system edit back and restored everything, Copy again, the press again, and the Undo again. Every number on this card is the clone's.",
+  "summary": "Rehearsed on the clone's copy of production: Step 1 (Copy again and the context copy, one organization at a time) finished green, then pressed for every organization, undone with a new-system edit carried back, Step 1 again, pressed again, and undone again. Step 1 covered 13 organizations' context copies across rehearsals 12 and 13 (12 in rehearsal 12; Alex Hart's Workspace, the largest, only on the batched tag copy).",
   "steps": [
     {
-      "step": "Readiness on the clone before Copy again",
-      "result": "The clone said: Ready: pressing switches 25 organizations at once.",
+      "step": "Readiness on the clone before Step 1",
+      "result": "The clone said: Ready once Step 1 has run: the context copy for 1 organization. Run it first; the press stays off until it finishes green.",
       "ms": null
     },
     {
-      "step": "Copy again (its own step, before the press)",
-      "result": "No older pick list with no organization had a maker in exactly one organization. Copy again finished green: 0 organizations copied, nothing left to copy.",
-      "ms": 10568
+      "step": "Step 1 \u2014 Copy again and the context copy (its own step, before the press)",
+      "result": "No older pick list with no organization had a maker in exactly one organization. Step 1 finished green: 1 organizations copied (0 tables again, 1 context), nothing left to copy.",
+      "ms": 2508154
     },
     {
       "step": "Press",
-      "result": "Switched everything to the new system: 25 organizations switched (Data tables 17, agent context 13, scope screens 13), 159 older tables and 24 pick lists archived with their pointers, 1 automations re-keyed, 23 older write doors closed to clients. Pick lists with no organization given their maker's one organization: Untitled list. Archived with no owner organization (restorable by Undo): Agent Write Sandbox (its maker belongs to 46 organizations); Onboarding Checklist (its maker belongs to 46 organizations); scene options (its maker belongs to 5 organizations); Weekly Client Reporting Ritual (its maker belongs to 46 organizations); Weekly Client Status Report (its maker belongs to 46 organizations); ZZ Reverify D \u2014 renamed by agent (its maker belongs to 46 organizations); ZZ Throwaway \u2014 mapped-route verify (its maker belongs to 46 organizations).",
-      "ms": 5602
+      "result": "Switched everything to the new system: 25 organizations switched (Data tables 17, agent context 14, scope screens 14), 159 older tables and 24 pick lists archived with their pointers, 1 automations re-keyed, 23 older write doors closed to clients. Pick lists with no organization given their maker's one organization: Untitled list. Archived with no owner organization (restorable by Undo): Agent Write Sandbox (its maker belongs to 46 organizations); Onboarding Checklist (its maker belongs to 46 organizations); scene options (its maker belongs to 5 organizations); Weekly Client Reporting Ritual (its maker belongs to 46 organizations); Weekly Client Status Report (its maker belongs to 46 organizations); ZZ Reverify D \u2014 renamed by agent (its maker belongs to 46 organizations); ZZ Throwaway \u2014 mapped-route verify (its maker belongs to 46 organizations).",
+      "ms": 9814
     },
     {
       "step": "A person edits a copy, then Undo",
-      "result": "Undid the final switch: 17 organizations back on their older tables (159 tables and 24 pick lists restored), agent context back for 13, 23 older write doors open again, the Data page and the scope screens back. 7 pick lists with no owner organization restored. Carried back from the new system: admin's Workspace: Rincon Plumbing \u2014 Service Calls: 1 edited row is carried back into the older table. 16 organizations had nothing written in the new system to carry back. The older row now reads 'WO-5707' (the copy's edit).",
-      "ms": 3757
+      "result": "Undid the final switch: 17 organizations back on their older tables (159 tables and 24 pick lists restored), agent context back for 14, 23 older write doors open again, the Data page and the scope screens back. 7 pick lists with no owner organization restored. Carried back from the new system: admin's Workspace: Rincon Plumbing \u2014 Service Calls: 1 edited row is carried back into the older table. 16 organizations had nothing written in the new system to carry back. The older row now reads 'WO-6363' (the copy's edit).",
+      "ms": 6086
     },
     {
       "step": "Press again",
-      "result": "Switched everything to the new system: 25 organizations switched (Data tables 17, agent context 13, scope screens 13), 159 older tables and 24 pick lists archived with their pointers, 1 automations re-keyed, 23 older write doors closed to clients. Pick lists with no organization given their maker's one organization: Untitled list. Archived with no owner organization (restorable by Undo): Agent Write Sandbox (its maker belongs to 46 organizations); Onboarding Checklist (its maker belongs to 46 organizations); scene options (its maker belongs to 5 organizations); Weekly Client Reporting Ritual (its maker belongs to 46 organizations); Weekly Client Status Report (its maker belongs to 46 organizations); ZZ Reverify D \u2014 renamed by agent (its maker belongs to 46 organizations); ZZ Throwaway \u2014 mapped-route verify (its maker belongs to 46 organizations). No Copy again was needed.",
-      "ms": 5599
+      "result": "Switched everything to the new system: 25 organizations switched (Data tables 17, agent context 14, scope screens 14), 159 older tables and 24 pick lists archived with their pointers, 1 automations re-keyed, 23 older write doors closed to clients. Pick lists with no organization given their maker's one organization: Untitled list. Archived with no owner organization (restorable by Undo): Agent Write Sandbox (its maker belongs to 46 organizations); Onboarding Checklist (its maker belongs to 46 organizations); scene options (its maker belongs to 5 organizations); Weekly Client Reporting Ritual (its maker belongs to 46 organizations); Weekly Client Status Report (its maker belongs to 46 organizations); ZZ Reverify D \u2014 renamed by agent (its maker belongs to 46 organizations); ZZ Throwaway \u2014 mapped-route verify (its maker belongs to 46 organizations). No Copy again was needed.",
+      "ms": 9534
     },
     {
       "step": "Undo again (the clone left as found)",
-      "result": "Undid the final switch: 17 organizations back on their older tables (159 tables and 24 pick lists restored), agent context back for 13, 23 older write doors open again, the Data page and the scope screens back. 7 pick lists with no owner organization restored. 17 organizations had nothing written in the new system to carry back.",
-      "ms": 3870
+      "result": "Undid the final switch: 17 organizations back on their older tables (159 tables and 24 pick lists restored), agent context back for 14, 23 older write doors open again, the Data page and the scope screens back. 7 pick lists with no owner organization restored. 17 organizations had nothing written in the new system to carry back.",
+      "ms": 6402
     }
   ],
   "measured": [
     {
-      "label": "The first Copy again (every organization it cleared something for)",
-      "value": "27.2 min \u2014 Arman's Org 24.4 min, admin's Workspace 2.2 min, AI Matrx 0.4 min, Bayside Orthodontics 339acd 0.3 min"
+      "label": "Step 1 on the clone, per organization",
+      "value": "41.8 min \u2014 Alex Hart's Workspace 41.6 min (context copy: 3362 tag batches)"
     },
     {
-      "label": "Copy again that gave an ownerless pick list its organization (rehearsal 7, clone)",
-      "value": "3.9 min \u2014 Gave 1 older pick list its maker's organization: Untitled list \u2192 Developer111's Org."
+      "label": "Step 1 earlier the same day (rehearsal 12, the tag copy before TAG-COPY-PERF)",
+      "value": "15.7 min \u2014 the context copy for 12 of 13 organizations green (Arman's Org 0.6 min, Arman's Org 0.2 min, Titanium 0.5 min, admin's Workspace 0.8 min, AI Matrx 0.5 min, Castellano & Reyes, LLP 0.8 min, Pearlman Brown, and Wax, LLP 0.5 min, Other People 0.2 min, Matrx System 0.2 min, All Green Recycling 0.3 min, Developer111's Org 0.3 min, Coastal Pool Service 0.2 min); Alex Hart's Workspace (17,641 waiting edits, 16,801 tags) stopped at the 600 s tag-copy ceiling with the connection closed mid-statement, and Step 1 finished not green, so the press refused by name. Rehearsal 13 ran it on the batched tag copy (aidream 9ef6b4b162): green."
     },
     {
       "label": "Organizations the press switched on the clone",
-      "value": "25 of the 31 it looked at (scope screens 13)"
+      "value": "25 of the 33 it looked at (scope screens 14)"
     },
     {
       "label": "Older tables archived on the clone",
@@ -65,7 +65,7 @@
     },
     {
       "label": "Press, in the database",
-      "value": "4342 ms"
+      "value": "8343 ms"
     },
     {
       "label": "Strongest locks held (press again)",
@@ -78,8 +78,17 @@
     {
       "label": "Live older tables on the clone before \u2192 after",
       "value": "159 \u2192 0"
+    },
+    {
+      "label": "Strong locks seen while Step 1 ran (every session on the clone)",
+      "value": "held only by: select 'census 12 (old bodies)', pg_temp.census12('old'); \u2014 another session on the shared clone, not Step 1; most sessions waiting at once: 1"
     }
   ],
-  "refusals": [],
-  "run_log": "common-docs/operations/for-arman/2026-09-26/final-switch/rehearsal-11/run.log (first Copy again: rehearsal-1; ownerless lists: rehearsal-7)"
+  "refusals": [
+    {
+      "what": "The last Step 1 (Copy again and the context copy) finished green: The last Step 1 finished with refusals: Alex Hart's Workspace \u2014 Alex Hart's Workspace: the context copy stopped after 190 s \u2014 UniqueViolationError: duplicate key value violates unique constraint \"associations_unique\"\nDETAIL:  Key (source_type, source_id, target_type, target_id, role)=(note, 06b6eada-d485-47d1-9a79-b869e5cb72d1, record, a2ba0e9a-374b-415b-8fc5-6a2504a86134, context_tag) already exists.. Nothing of it was kept and its waiting edits were released; Step 1 again retries them.. Run Step 1 again.",
+      "owner": "the chair"
+    }
+  ],
+  "run_log": "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-26/final-switch/rehearsal-13"
 }
