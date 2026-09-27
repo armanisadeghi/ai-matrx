@@ -40,6 +40,7 @@ import {
 } from "@/features/context-menu-v3/table-row-context-registry";
 import {
   CONTEXT_MENU_ENTITY_KEY,
+  CONTEXT_MENU_HEADING_KEY,
   type ContextMenuExtraSection,
 } from "@/features/context-menu-v3/types";
 import { itemMenuConfigToExtraSections } from "@/components/official/item/itemMenuToV3";
@@ -193,6 +194,8 @@ function fromTableFilters(state: ColumnFiltersState): EntityFilters {
   }
   return out;
 }
+
+const capitalize = (word: string) => (word ? word[0]!.toUpperCase() + word.slice(1) : word);
 
 const PAGE_OWNS_COLUMN_PICKER = { columns: false } as const;
 
@@ -594,6 +597,12 @@ export function EntityListTable<TRow>({
               content: config.getRowAgentContext?.(row) ?? config.getRowName(row),
               context: { id: config.getRowId(row) },
               [CONTEXT_MENU_ENTITY_KEY]: config.getRowEntity?.(row) ?? null,
+              // The header names the record ("Quiz: Unit 2 review"), never
+              // "Content: <agent context>" (page-pass 2026-09-27).
+              [CONTEXT_MENU_HEADING_KEY]: {
+                label: capitalize(config.entityLabel.singular),
+                text: config.getRowName(row),
+              },
             },
           });
         },

@@ -28,7 +28,7 @@ import {
 } from "@/features/rich-document/actions/provider";
 import { useContextMenuActions } from "../hooks/useContextMenuActions";
 import { buildMenuModel } from "../model/menu-model";
-import { contextMenuActionsFromModel, menuHeader, modelRevision } from "../alchemy-provider";
+import { namedHeader, contextMenuActionsFromModel, menuHeader, modelRevision } from "../alchemy-provider";
 import type { MenuContentProps } from "../types";
 
 export type AlchemyMenuMode = "context" | "sheet" | "palette";
@@ -134,7 +134,11 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
     const role = record?.role ?? (m.richDocCtx.extensions?.type === "chat-message" ? m.richDocCtx.extensions.role : null);
     return role ? { role: String(role), createdAt: record?.createdAt ?? null } : null;
   })();
-  const { content, contentLabel } = menuHeader(m.actionText, m.fieldLabel, chatMessage);
+  // A row (or any target) that NAMES itself wins over the generic header —
+  // "Quiz: Unit 2 review", never "Content: <agent context>". A selection
+  // still shows itself.
+  const { content, contentLabel } =
+    namedHeader(menuProps.heading, m.actionText) ?? menuHeader(m.actionText, m.fieldLabel, chatMessage);
   const engine = { revision, content, contentLabel };
 
   if (mode === "sheet") {

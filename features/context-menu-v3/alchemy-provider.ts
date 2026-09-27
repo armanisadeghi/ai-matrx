@@ -352,3 +352,17 @@ export function headerPreview(text: string): string {
     .replace(/^\s{0,3}(?:[-*+]|\d+[.)])\s+(?:\[[ xX]\]\s+)?/gm, "");
   return markdownToPlainText(blocks).replace(/\s*\n+\s*/g, " ").trim();
 }
+
+/**
+ * A target that NAMES itself (`CONTEXT_MENU_HEADING_KEY`: a list row's record)
+ * heads the menu with that name — "Quiz: Unit 2 review" — instead of the
+ * generic "Content: <agent context>" (page-pass 2026-09-27). A selection still
+ * shows itself.
+ */
+export function namedHeader(
+  heading: { label: string; text: string } | null | undefined,
+  actionText: { source: string },
+): { content: string; contentLabel: string } | null {
+  if (!heading || actionText.source === "selection") return null;
+  return { content: heading.text, contentLabel: heading.label };
+}

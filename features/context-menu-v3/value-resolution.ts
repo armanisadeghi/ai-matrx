@@ -31,7 +31,7 @@ import {
   getSurfaceRuntimeForName,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SelectionRange } from "./utils/selection-tracking";
-import { CONTEXT_MENU_ENTITY_KEY } from "./types";
+import { CONTEXT_MENU_ENTITY_KEY, CONTEXT_MENU_HEADING_KEY } from "./types";
 
 /**
  * Keys the menu manages internally and must not leak into the scope as values.
@@ -39,7 +39,7 @@ import { CONTEXT_MENU_ENTITY_KEY } from "./types";
  * shell already strips it; this is the belt for a surface that puts it in
  * static `contextData`.
  */
-const SKIP_MERGE_KEYS = new Set([CONTEXT_MENU_ENTITY_KEY]);
+const SKIP_MERGE_KEYS = new Set<string>([CONTEXT_MENU_ENTITY_KEY, CONTEXT_MENU_HEADING_KEY]);
 
 const isDev = process.env.NODE_ENV !== "production";
 

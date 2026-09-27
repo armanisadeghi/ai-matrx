@@ -244,11 +244,27 @@ export interface ContextMenuEntityRef {
 export const CONTEXT_MENU_ENTITY_KEY = "__entity";
 
 /**
+ * Reserved key a `resolveContextOnOpen` answer may carry to NAME the thing
+ * right-clicked in the menu header — a row names its record ("Quiz: Unit 2
+ * review"), never "Content: <the row's agent context>" (page-pass 2026-09-27).
+ * Like `__entity`, it is not a value and never reaches the ApplicationScope.
+ */
+export const CONTEXT_MENU_HEADING_KEY = "__heading";
+
+export interface ContextMenuHeading {
+  /** What the thing is ("Quiz"). */
+  label: string;
+  /** Its name ("Unit 2 review"). */
+  text: string;
+}
+
+/**
  * What `resolveContextOnOpen` returns: the target's values, plus the optional
  * reserved per-row `__entity`.
  */
 export interface ResolvedContextMenuContext {
   [CONTEXT_MENU_ENTITY_KEY]?: ContextMenuEntityRef | null;
+  [CONTEXT_MENU_HEADING_KEY]?: ContextMenuHeading | null;
   [key: string]: unknown;
 }
 
@@ -464,6 +480,8 @@ export type MenuVariant = "context" | "dropdown";
  */
 export interface MenuContentProps {
   variant: MenuVariant;
+  /** The clicked target's own name for the header (`CONTEXT_MENU_HEADING_KEY`). */
+  heading?: ContextMenuHeading | null;
 
   // identity + value sources
   sourceFeature: SourceFeature;

@@ -13,6 +13,7 @@
  * RED against the pre-fix shell: `contextMenu` is undefined for a config with
  * no `getRowAgentContext`, and when present its sections hold no row action.
  */
+import { namedHeader } from "@/features/context-menu-v3/alchemy-provider";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
@@ -169,6 +170,14 @@ describe("right-clicking a table row", () => {
     // with no heading throws in the menu's heading check (live, 2026-09-27).
     expect(descriptor?.extraSections[0]).toMatchObject({ label: "Row", primary: true });
     expect(descriptor?.extraSections.filter((s) => s.primary)).toHaveLength(1);
+    // The header names the record, never "Content: <agent context>" (page-pass 2026-09-27).
+    const heading = (descriptor?.context as Record<string, unknown> | undefined)?.__heading as
+      | { label: string; text: string }
+      | undefined;
+    expect(heading?.text).toBe("E-waste Manual Sort Decider");
+    expect(heading?.label).toMatch(/^[A-Z]/);
+    expect(namedHeader(heading, { source: "content" })).toEqual({ content: heading?.text, contentLabel: heading?.label });
+    expect(namedHeader(heading, { source: "selection" })).toBeNull();
   });
 
   it("passes the menu's approved-heading check; the unlabelled primary section it replaced does not", async () => {
