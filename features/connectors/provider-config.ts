@@ -191,6 +191,10 @@ const GOOGLE_SCOPE_LANGUAGE: Record<string, string> = {
   [GOOGLE_SCOPE.contactsReadonly]: "Read your Google Contacts",
   [GOOGLE_SCOPE.calendarEventsOwnedReadonly]:
     "Read events on calendars you own. No changes to your calendar",
+  [GOOGLE_SCOPE.calendarListReadonly]:
+    "See the calendars Google makes available to this account. No changes to any calendar",
+  [GOOGLE_SCOPE.calendarEventsReadonly]:
+    "Read events on a calendar you explicitly select. No changes to any calendar",
   [GOOGLE_SCOPE.tasksReadonly]: "Read your Google Tasks lists",
   [GOOGLE_SCOPE.tagManagerReadonly]:
     "Read your Tag Manager accounts, containers and tags",
@@ -355,6 +359,30 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       firstAction: {
         kind: "overlay",
         label: "Open your agenda",
+        overlayId: "googleAgendaWindow",
+      },
+    },
+    {
+      key: "calendar_shared",
+      name: "Selected Google calendars",
+      promise:
+        "See the calendars Google makes available to this account and review one you select. We never change Google events.",
+      group: WORKSPACE_GROUP,
+      icon: CalendarDays,
+      capabilityKeys: ["calendar_shared"],
+      scopes: [
+        ...GOOGLE_IDENTITY_SCOPES,
+        GOOGLE_SCOPE.calendarListReadonly,
+        GOOGLE_SCOPE.calendarEventsReadonly,
+      ],
+      attachableResourceTypes: [],
+      stopsOnRevoke: "selected Google calendars from being reviewed or saved here",
+      // The same internal reviewer tab lives in the canonical Calendar window.
+      // The server catalog keeps this row pending for everyone except registered
+      // OAuth reviewers and super admins, so ordinary accounts cannot enable it.
+      firstAction: {
+        kind: "overlay",
+        label: "Open Calendar to review a selected calendar",
         overlayId: "googleAgendaWindow",
       },
     },

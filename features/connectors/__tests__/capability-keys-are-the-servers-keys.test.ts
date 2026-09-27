@@ -104,15 +104,27 @@ const clientResourceTypes = new Set(
  * are ready; every other catalog key needs a product row.
  */
 const NOT_SURFACED: Record<string, { reason: string; internalFilesRoute?: boolean }> = {
-  calendar_shared: {
-    reason: "Selected-calendar reads have no public consent or account UI yet.",
-  },
   calendar_write: {
     reason: "Calendar writes have no reviewed product actions or Google consent yet.",
+  },
+  contacts_write: {
+    reason: "Google Contact edits remain an internal source path with no consent row.",
+  },
+  directory: {
+    reason: "Workspace directory preview remains internal and has no consent row.",
   },
   drive_browse: {
     reason: "Whole-Drive browsing has an internal Files route, not a public consent row.",
     internalFilesRoute: true,
+  },
+  meet: {
+    reason: "Google Meet preview remains internal and has no consent row.",
+  },
+  other_contacts: {
+    reason: "Google Other Contacts preview remains internal and has no consent row.",
+  },
+  tasks_write: {
+    reason: "Google Task changes remain internal and have no consent row.",
   },
 };
 

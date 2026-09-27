@@ -13,11 +13,11 @@
  * guide's comments at all; an agent asked to "add a note on this paragraph"
  * had no way to do it through the page.
  *
- * Read half: `study_guide` is THE record (INLINE_TIER.record): id, title,
+ * Read half: `study_guide` is THE record (10_000): id, title,
  * the whole markdown body, version and the counts of what the right-hand
  * tabs hold. `personal_annotations` (private highlights and notes) and
  * `guide_comments` (shared comment threads, suggestions included) are the
- * two sub-item lists — part of the record, so also INLINE_TIER.record
+ * two sub-item lists — part of the record, so also 10_000
  * (Arman 2026-09-27) — read from the page's own annotation sidecar through a
  * child that publishes into a ref (`StudyGuideAgentBridge`).
  *
@@ -57,7 +57,6 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
-import { INLINE_TIER } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const EDUCATION_STUDY_GUIDE_SURFACE_NAME = "matrx-user/education-study-guide";
@@ -84,7 +83,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 8000,
-    inlineUpTo: INLINE_TIER.record,
+    inlineUpTo: 7000,
     group: "guide",
     sortOrder: 100,
   },
@@ -105,7 +104,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 1500,
     // The record's own sub-list counts as part of the record (Arman 2026-09-27).
-    inlineUpTo: INLINE_TIER.record,
+    inlineUpTo: 1500,
     group: "personal_notes",
     sortOrder: 300,
   },
@@ -117,7 +116,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 1500,
     // The record's own sub-list counts as part of the record (Arman 2026-09-27).
-    inlineUpTo: INLINE_TIER.record,
+    inlineUpTo: 1500,
     group: "comments",
     sortOrder: 400,
   },

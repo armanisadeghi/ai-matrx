@@ -27,7 +27,7 @@ import {
   type SyncSchema,
 } from "@ai-matrx/alchemy/checks";
 import {
-  INLINE_TIER,
+  PAGE_CONTEXT_BUDGET,
   type ResolvedSurfaceManifest,
   type SurfaceManifest,
 } from "@/features/surfaces/types";
@@ -214,20 +214,27 @@ export const clientToolsExtension: DeclarationExtension<Manifest> = {
 export const agentHintsExtension: DeclarationExtension<Manifest> = {
   key: "agentHints",
   owner: "matrx-frontend agents (features/surfaces/declare)",
-  validate(m) {
+  validate(m, context) {
     const s = m.surfaceName;
     const out: DeclarationIssue[] = [];
+    let inlineTotal = 0;
     for (const v of m.values) {
       const n = (v as { inlineUpTo?: unknown }).inlineUpTo;
       if (n === undefined) continue;
       if (typeof n !== "number" || !Number.isInteger(n) || n < 1)
         out.push(issue(s, `values/${v.name}/inlineUpTo`, `Surface "${s}" value "${v.name}" has inlineUpTo ${JSON.stringify(n)} — it must be a positive integer (chars).`, "Use a positive integer, or omit it for the platform default (200)."));
-      else if (
-        !(Object.values(INLINE_TIER) as number[]).includes(n) &&
-        !(v as { inlineApproval?: unknown }).inlineApproval
-      )
-        out.push(issue(s, `values/${v.name}/inlineUpTo`, `Surface "${s}" value "${v.name}" has inlineUpTo ${n}, which is not one of the inline tiers (record ${INLINE_TIER.record}, list ${INLINE_TIER.list}, recent ${INLINE_TIER.recent}) and carries no inlineApproval.`, "Use INLINE_TIER.record / .list / .recent under the policy on SurfaceValue.inlineUpTo, or omit it. Any other size needs Arman's approval recorded in inlineApproval."));
+      else inlineTotal += n;
     }
+    // Inherited values reach the agent too: count the resolved surface when the
+    // registry supplies it, never less than the surface's own values.
+    const resolved = context?.all.find((d) => d.surfaceName === s);
+    const resolvedTotal = (resolved?.values ?? []).reduce((sum, v) => {
+      const n = (v as { inlineUpTo?: unknown }).inlineUpTo;
+      return typeof n === "number" && Number.isInteger(n) && n > 0 ? sum + n : sum;
+    }, 0);
+    inlineTotal = Math.max(inlineTotal, resolvedTotal);
+    if (inlineTotal > PAGE_CONTEXT_BUDGET && !(m as { contextBudgetApproval?: unknown }).contextBudgetApproval)
+      out.push(issue(s, "values/inlineUpTo", `Surface "${s}" shows agents ${inlineTotal} chars up front (the sum of its values' inlineUpTo), over the page context budget of ${PAGE_CONTEXT_BUDGET}.`, "Rebalance: the record the page is about gets the most, companions share the rest, and a broad page sends only an overview bundle. Going over needs Arman's approval recorded as contextBudgetApproval on the manifest."));
     for (const t of m.writeTargets ?? []) {
       if (t.applyPolicy === "auto" && t.mode !== "ui" && !(t as { approval?: unknown }).approval)
         out.push(issue(s, `writeTargets/${t.name}/applyPolicy`, `Surface "${s}" target "${t.name}" applies automatically (applyPolicy "auto") in mode "${t.mode}". Only "ui" targets may skip the person's approval on their own.`, `Use applyPolicy "ask", or record Arman's approval on the target: approval: "Arman <date>: <why>".`));

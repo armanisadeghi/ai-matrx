@@ -18,7 +18,6 @@
  * scope + parser in `features/education/library/suggestionsSurface.ts`.
  */
 
-import { INLINE_TIER } from "@/features/surfaces/types";
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
@@ -70,7 +69,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 2500,
-    inlineUpTo: INLINE_TIER.list,
+    inlineUpTo: 4000,
     sortOrder: 110,
     group: "suggestions",
   },

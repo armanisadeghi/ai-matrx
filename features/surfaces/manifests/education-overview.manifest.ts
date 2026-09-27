@@ -28,7 +28,6 @@
  * `features/education/home/overviewSurfaceScope.ts`.
  */
 
-import { INLINE_TIER } from "@/features/surfaces/types";
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
@@ -204,7 +203,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 250,
-    inlineUpTo: INLINE_TIER.recent,
+    inlineUpTo: 1500,
     sortOrder: 270,
     group: "study_today",
   },
@@ -273,7 +272,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 350,
-    inlineUpTo: INLINE_TIER.recent,
+    inlineUpTo: 1500,
     sortOrder: 320,
     group: "material",
   },
@@ -307,7 +306,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 300,
-    inlineUpTo: INLINE_TIER.recent,
+    inlineUpTo: 1500,
     sortOrder: 340,
     group: "material",
   },

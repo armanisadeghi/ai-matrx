@@ -139,29 +139,40 @@ test rows you created so the person can remove them.
 
 ## Step 4 — what the agent sees up front, the guide, and feedback
 
-- **What the agent sees in full up front — the inline policy (Arman,
-  2026-09-27).** The platform default (200 chars; anything bigger becomes a
-  "look it up" item) stays for almost every value. A page lifts it ONLY for
-  what an agent cannot work without, using exactly these tiers
-  (`INLINE_TIER`, `features/surfaces/types.ts`; the declaration check refuses
-  any other number):
-  - `record` — the ONE record the page is about (a note, a class, a study
-    guide, an agent definition, an article, the open conversation): one
-    structured object. The agent sees the first 10,000 characters; the rest
-    is one paged lookup away, which is fine (Arman, 2026-09-27). The record's
-    OWN sub-lists (a guide's notes and comments, a conversation's messages
-    and tool calls) are part of the record and use this tier too. Long text
-    fields in it are also `patchable` write targets.
-  - `list` — a list page's CONDENSED list: only the fields a person scans
-    (id, name, 3-6 key fields), in the person's current sort and filter, the
-    first 25 rows; the total count and the active sort/filter are their own
-    small values. Full rows stay a separate default (lookup) value.
-  - `recent` — a sidebar's recent items (up to 5) or open tabs (up to 10),
-    each `{ id, title }`.
-  Anything else — a bigger number, more rows, another kind of value — needs
-  Arman's approval: leave the default, file the question (skill `ask-arman`)
-  with the evidence, and only after he approves set `inlineApproval: "Arman
-  <date>: <why>"` beside the number.
+- **What the agent sees up front — THE CONTEXT BUDGET (Arman, 2026-09-27).**
+  Protect the model's context, but never starve it: an agent missing what it
+  needs either fails or spends MORE tokens looking the same data up. So:
+  - **Send what the page's likely jobs need, up to a page budget.** The sum of
+    a surface's `inlineUpTo` (inherited values included) may not exceed
+    `PAGE_CONTEXT_BUDGET` (10,000 chars, `features/surfaces/types.ts`); the
+    declaration check refuses more without Arman's `contextBudgetApproval` on
+    the manifest. Within it, every number is your judgment. Everything not
+    inlined stays at the 200-char default and is one lookup away.
+  - **Spend it by the page's shape:**
+    - *Focused page* — one record and little else (a note, a study guide, an
+      agent definition): the record gets up to ~10,000.
+    - *Record with companions* — the record plus its folders, comments,
+      notes: the record ~7,000, companions share the rest (worked example:
+      `education-study-guide` — guide 7,000, annotations 1,500, comments 1,500).
+    - *List page* — the CONDENSED visible list (id, name, 3-6 key fields, the
+      person's sort and filter, first ~25 rows) ~4,000; count and active
+      sort/filter as their own small values; full rows a separate lookup value.
+    - *Broad page* — covers many unrelated things (SEO, search console,
+      dashboards): you can't know the task, so send a compact OVERVIEW bundle
+      (~2,000-3,000: what is here, the headline numbers, what needs attention)
+      and nothing else inline; the guide tells the agent how to discover the rest.
+    - Small drafts, recents and tabs: ~1,000-2,000 each.
+  - **Bundle it.** Inlined content goes out as ONE well-prepared XML bundle
+    per job, built with `features/surfaces/runtime/context-bundle.ts`
+    (`xmlElement`, `xmlText` with `max`, `xmlList` with `maxRows`): attributes
+    for scalars, empty parts omitted, clipped text marked
+    `clipped="true" total_chars="N"`, dropped rows counted. Never raw JSON
+    rows with every column. Worked example: `features/marketing/lib/surface-context.ts`.
+  - The record's OWN sub-lists (a guide's notes and comments, a conversation's
+    messages) are part of the record's bundle. Long text fields in it are also
+    `patchable` write targets.
+  - **Measure it:** the live agent test must answer "what is on this page" with
+    no lookups, and `pnpm surface:openers` should fall after your change.
 - **A page's own conversation never sees the page.** Where the page itself
   runs an agent (the main chat, the builder's test run, the runner, each
   battle lane), declare it on the provider — `ownConversationId={id}`, or
@@ -196,8 +207,8 @@ test rows you created so the person can remove them.
 - **Very complex pages** (dozens to hundreds of values, e.g. the search-console
   and SEO pages): the guide is mandatory; every value sits in a named group;
   the intro names the few values that matter for the common jobs; only the
-  record being worked on and the condensed list the person is looking at use
-  an inline tier — everything else stays a lookup the guide explains; and
+  overview bundle (and the record being worked on, if one is open) is
+  inlined — everything else stays a lookup the guide explains; and
   write targets follow the same per-record-type sets, never one target per
   field.
 - **Read the page's agent feedback before changing a surface.** Every page
@@ -218,7 +229,7 @@ date, why). A worker never picks a number or a policy of their own.
 
 | Call | Default | Named exceptions (no approval needed) | Anything else |
 |---|---|---|---|
-| How much of a value the agent sees up front | platform default (200 chars) | `INLINE_TIER.record` / `.list` / `.recent`, under the inline policy above | `inlineApproval` on the value — enforced by the declaration check |
+| How much the agent sees up front | platform default (200 chars) per value | any `inlineUpTo` you judge right while the surface's total stays within `PAGE_CONTEXT_BUDGET` (the context budget above) | `contextBudgetApproval` on the manifest — enforced by the declaration check |
 | Whether a write asks the person first | `applyPolicy: "ask"` | `"auto"` on a `ui` target (view state only) | `approval` on the target — enforced by the declaration check |
 | Delete targets | allowed, `ask` | — (always allowed when the description states exactly what is lost and steers to archive where it exists) | — |
 | Read-only (no targets) for a record type | not allowed when the page itself can create/edit/delete it | the page has no such action (say so in the manifest header) | — |

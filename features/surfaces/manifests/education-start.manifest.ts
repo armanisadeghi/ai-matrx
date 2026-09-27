@@ -27,7 +27,6 @@
  * pure builder `features/education/onboard/startSurfaceScope.ts`.
  */
 
-import { INLINE_TIER } from "@/features/surfaces/types";
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
@@ -66,7 +65,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 600,
-    inlineUpTo: INLINE_TIER.record,
+    inlineUpTo: 2000,
     sortOrder: 100,
     group: "request",
   },

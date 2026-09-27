@@ -25,7 +25,6 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
-import { INLINE_TIER } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import type {
   ChatConversationRecord,
@@ -142,7 +141,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 300,
-    inlineUpTo: INLINE_TIER.record,
+    inlineUpTo: 1000,
     sortOrder: 290,
     group: "conversation",
   },
@@ -153,7 +152,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 6000,
-    inlineUpTo: INLINE_TIER.record,
+    inlineUpTo: 8000,
     sortOrder: 295,
     group: "thread",
   },
@@ -307,7 +306,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 500,
-    inlineUpTo: INLINE_TIER.record,
+    inlineUpTo: 1000,
     sortOrder: 400,
     group: "composer",
   },

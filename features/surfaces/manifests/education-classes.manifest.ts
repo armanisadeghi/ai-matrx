@@ -45,7 +45,6 @@
  * a ref, so `getScope` stays synchronous (it is polled every 400ms).
  */
 
-import { INLINE_TIER } from "@/features/surfaces/types";
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
@@ -96,7 +95,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 900,
-    inlineUpTo: INLINE_TIER.list,
+    inlineUpTo: 4000,
     sortOrder: 105,
     group: "classes",
   },
@@ -171,7 +170,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 300,
-    inlineUpTo: INLINE_TIER.record,
+    inlineUpTo: 2000,
     sortOrder: 210,
     group: "new_class",
   },

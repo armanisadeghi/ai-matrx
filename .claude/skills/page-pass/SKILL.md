@@ -71,11 +71,14 @@ session, never you.
   page already rendered (`getScope` never fetches). Not loaded yet → omit the
   key; loaded and empty → `[]`/`0`/`""`; a failed load reports only its status.
   Keep existing value names (stored bindings use them).
-- **Sees the important things up front:** default stays 200 chars. Only three
-  bigger tiers exist: `record` 10,000 (the one record the page is about),
-  `list` 4,000 (condensed list: 3-6 key fields, the person's sort and filter,
-  first 25 rows), `recent` 1,500 (≤5 recents / ≤10 tabs). Anything else needs
-  Arman's recorded approval.
+- **Sees what its jobs need up front — the context budget.** An agent that
+  lacks what it needs fails or spends more tokens looking it up, so send it —
+  up to 10,000 chars per page in total, spent by the page's shape: a focused
+  record ~10,000; a record with its comments/folders ~7,000 + the rest shared;
+  a list page's condensed visible list ~4,000; a broad page (SEO, dashboards)
+  only a ~2,000-3,000 overview and a guide for discovery. Pack it as ONE XML
+  bundle with the shared bundle helpers — never raw JSON rows. Over budget
+  needs Arman's approval. Procedure: `surface-write-targets` Step 4.
 - **Can change what makes sense:** every record type the page lists gets
   `create_/update_/delete_<plural>` over lists (one set per type, built with
   `collectionWriteHandlers`), plus `<record>_draft` when the page has a

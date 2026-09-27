@@ -26,7 +26,6 @@
  * `features/education/library/communitySurface.ts`.
  */
 
-import { INLINE_TIER } from "@/features/surfaces/types";
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
@@ -64,7 +63,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 2500,
-    inlineUpTo: INLINE_TIER.list,
+    inlineUpTo: 4000,
     sortOrder: 100,
     group: "decks",
   },

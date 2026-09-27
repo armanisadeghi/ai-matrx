@@ -32,7 +32,7 @@ import {
 
 type LibraryList = EntityListSurfaceController<EducationLibraryRow>;
 
-/** The first N rows go inline (INLINE_TIER.list). */
+/** The first N rows go inline (the manifest's inlineUpTo, 4000). */
 export const LIBRARY_LIST_INLINE_ROWS = 25;
 
 const KINDS = ["fc_set", "assessment", "study_media", "note"] as const;
@@ -47,7 +47,7 @@ function text(value: string | null | undefined): string | null {
 }
 
 /**
- * One condensed row. Sized so 25 rows fit INLINE_TIER.list (4000 chars): the
+ * One condensed row. Sized so 25 rows fit the list value's inlineUpTo (4000 chars): the
  * kind is implied by the format, and a field with nothing to say is OMITTED
  * (no card count, never studied, owned by the person) rather than sent null.
  */
@@ -70,7 +70,7 @@ export function toLibraryListRow(
   };
 }
 
-/** Stay under INLINE_TIER.list with room for the envelope's own framing. */
+/** Stay under the list value's inlineUpTo with room for the envelope's own framing. */
 const LIBRARY_LIST_CHAR_BUDGET = 3900;
 
 /**

@@ -711,7 +711,13 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   },
 
   // ─── Container display metadata ───────────────────────────────────────────
-  scope: { Icon: Tag, labelPlural: "Scopes" },
+  scope: {
+    Icon: Tag,
+    labelPlural: "Scopes",
+    // The id-only short-link resolver (app/(core)/scopes/s/[scopeId]) redirects
+    // to the canonical org/type/slug route, so a scope named anywhere opens.
+    hrefFor: (id) => `/scopes/s/${encodeURIComponent(id)}`,
+  },
   scope_type: {
     Icon: Layers3,
     labelPlural: "Scope Types",

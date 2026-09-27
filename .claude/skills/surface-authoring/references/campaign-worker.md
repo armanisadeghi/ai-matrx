@@ -125,8 +125,9 @@ returning name;
      `collectionWriteHandlers`. The rules, the `{ validate, apply }` handler shape and the live
      test are in `.claude/skills/surface-write-targets/SKILL.md` Steps 0-4 — read it before
      declaring any target.
-   - **What the agent sees up front:** follow the inline policy in `surface-write-targets` Step 4
-     exactly (`record` / `list` / `recent` tiers; anything else needs Arman's approval). Write a
+   - **What the agent sees up front:** follow THE CONTEXT BUDGET in `surface-write-targets` Step 4
+     (spend up to 10,000 chars per page by its shape, as one XML bundle; more needs Arman's
+     approval). Write a
      guide (`features/surfaces/guides/<slug>.md` + manifest `guide`) for any page with more than
      one record type or rules the descriptions can't hold.
    - **Judgment calls follow the approval system** (`surface-write-targets` → "The approval

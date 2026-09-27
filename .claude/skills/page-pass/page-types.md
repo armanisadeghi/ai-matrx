@@ -37,8 +37,8 @@ Judge by who is looking at it and why.
   search, sort, filter, saved view preferences, and the archive control;
   empty state says what the list is for and offers the create action; every
   row opens its record; the right-click menu is delegated per row (right-click
-  a row → that row's actions). Core 1: the `list` inline tier for the
-  condensed visible list, the full rows as a lookup value, and full
+  a row → that row's actions). Core 1: the condensed visible list as an XML
+  bundle (~4,000 of the page budget), the full rows as a lookup value, and full
   create/update/delete targets for the record type.
 
 ## Single-record page
@@ -49,7 +49,8 @@ Judge by who is looking at it and why.
   (autosave or a clear save state, and a guard on leaving); the page's
   `contentSource` and `entity` are the record's own, so Copy, Export, Attach
   and Share work on it; a missing or forbidden id shows the access gate, never
-  a blank or a raw error. Core 1: the `record` inline tier for the record,
+  a blank or a raw error. Core 1: the record as an XML bundle (up to ~10,000,
+  ~7,000 when its comments/folders ride along),
   `draft` targets for the fields a person authors, and the record's own
   child lists get their own create/update/delete sets.
 
@@ -68,7 +69,8 @@ Judge by who is looking at it and why.
   our records is never a dead end); every chart and table can be copied and
   copied for AI; time range and filters are visible and are values the agent
   sees; no decorative tiles — a number earns a tile only if a person acts on
-  it. Core 1: usually read-only values; write targets only for the filters.
+  it. Core 1: a broad page — a compact overview bundle (~2,000-3,000) plus a
+  guide for discovery; write targets only for the filters.
 
 ## Settings page
 - **Recognize it:** choices that change how something behaves — preferences,

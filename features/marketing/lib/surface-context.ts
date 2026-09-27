@@ -23,15 +23,7 @@ import type {
 } from "@/features/marketing/types";
 import { isJsonRecord, parseBrandProfile } from "@/features/marketing/types";
 import type { SiteConnectionStatus } from "@/features/marketing/lib/site-status";
-
-function escapeXml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
+import { escapeXml } from "@/features/surfaces/runtime/context-bundle";
 
 function attr(name: string, value: string | number | boolean): string {
   return `${name}="${escapeXml(String(value))}"`;

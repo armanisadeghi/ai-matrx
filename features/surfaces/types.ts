@@ -129,29 +129,36 @@ export interface SurfaceValue extends DeclaredValue {
   group?: string;
 
   /**
-   * Show this value in full to the agent up front, up to N chars, instead of
-   * as a "look it up" item. Sent on the rich context envelope's
-   * `max_inline_chars` (the server's existing ceiling). Omit = the platform
-   * default (200), which is right for almost every value.
+   * Show this value to the agent up front, up to N chars, instead of as a
+   * "look it up" item. Sent on the rich context envelope's `max_inline_chars`
+   * (the server shows the first N chars; the rest is one paged lookup away).
+   * Omit = the platform default (200), right for almost every value.
    *
-   * THE INLINE POLICY (Arman, 2026-09-27) — only these, as `INLINE_TIER.*`:
-   *  - `record` (10000): the ONE record the page is about (a note, a class, an
-   *    agent definition, an article), passed whole as one structured object.
-   *  - `list` (4000): a list page's CONDENSED list — the fields a person scans,
-   *    in the person's current sort/filter, first 25 rows — with the total
-   *    count and the active sort/filter as their own small values.
-   *  - `recent` (1500): a sidebar's recent items (≤5) or open tabs (≤10), each
-   *    `{ id, title }`.
-   * Any other number needs `inlineApproval` (who, date, why); the declaration
-   * check refuses it otherwise.
+   * THE CONTEXT BUDGET (Arman, 2026-09-27): give the agent what the page's
+   * likely jobs need up front — a lookup for data we could have sent costs
+   * more than sending it — and nothing it can't use. The worker judges each
+   * number; the sum over the surface's values may not exceed
+   * `PAGE_CONTEXT_BUDGET` (the declaration check refuses it without the
+   * manifest's `contextBudgetApproval`):
+   *  - a focused page (one record, little else): the record up to ~10,000;
+   *  - a record with companions (its comments, folders, notes): the record
+   *    ~7,000 and the companions share the rest;
+   *  - a list page: the condensed visible list (3-6 key fields, the person's
+   *    sort/filter, first ~25 rows) ~4,000;
+   *  - a broad page covering many unrelated things (SEO, dashboards): a
+   *    compact overview bundle (~2,000-3,000) and nothing else inline; the
+   *    agent discovers the rest with lookups and the page's guide.
+   * Put the inlined content in one well-prepared bundle (see
+   * `runtime/context-bundle.ts`) so the core costs the fewest tokens.
    */
   inlineUpTo?: number;
-  /** Required when `inlineUpTo` is not an `INLINE_TIER` value: "Arman 2026-09-27: <why>". */
-  inlineApproval?: string;
 }
 
-/** The only `inlineUpTo` values allowed without `inlineApproval` (see SurfaceValue.inlineUpTo). */
-export const INLINE_TIER = { record: 10000, list: 4000, recent: 1500 } as const;
+/**
+ * The most a surface may show an agent up front, summed over its values'
+ * `inlineUpTo` (chars). See `SurfaceValue.inlineUpTo`.
+ */
+export const PAGE_CONTEXT_BUDGET = 10_000;
 
 // ---------------------------------------------------------------------------
 // Resolved manifest types — what the registry exports after inheritance +
@@ -578,6 +585,12 @@ export interface SurfaceManifest extends SurfaceDeclaration {
    * authored `intro` stays clean. See `utils/surface-guide.ts`.
    */
   guide?: string;
+  /**
+   * Arman's recorded approval for a surface whose values' `inlineUpTo` sum
+   * above `PAGE_CONTEXT_BUDGET`: "Arman <YYYY-MM-DD>: <why>". The declaration
+   * check refuses the excess without it.
+   */
+  contextBudgetApproval?: string;
   /** Flat list of SurfaceValues this surface declares. */
   values: readonly SurfaceValue[];
   /**

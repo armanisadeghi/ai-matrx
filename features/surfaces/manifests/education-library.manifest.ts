@@ -28,7 +28,6 @@
  * `EntityListPage` as `surface` from `EducationLibraryPage.tsx`.
  */
 
-import { INLINE_TIER } from "@/features/surfaces/types";
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
@@ -105,7 +104,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 3000,
-    inlineUpTo: INLINE_TIER.list,
+    inlineUpTo: 4000,
     sortOrder: 110,
     group: "library",
   },
