@@ -136,17 +136,12 @@ function TakeCell({ row, config }: { row: AssessmentListItem; config: KindConfig
     // The row itself opens the assessment; Take is its own labelled door —
     // one tap on the phone card, where it is the card's primary action.
     <span className="flex items-center" onClick={(e) => e.stopPropagation()}>
-      {/* Labelled on the phone card; icon-only in the narrow desktop column
-          (the accessible name stays), where the word wrapped letter by letter. */}
-      <Button
-        asChild
-        size="sm"
-        variant="outline"
-        className="h-11 gap-1.5 whitespace-nowrap px-3 sm:h-7 sm:w-7 sm:px-0"
-      >
+      {/* Take is the row's main action: always labelled. The column reserves
+          the button's width (min-w on the column), so the word never wraps. */}
+      <Button asChild size="sm" variant="outline" className="h-11 shrink-0 gap-1.5 whitespace-nowrap px-3 sm:h-7">
         <Link href={assessmentTakeHref(config, row)} aria-label={`Take ${row.title}`}>
           <Play className="h-3.5 w-3.5" />
-          <span className="sm:sr-only">Take</span>
+          Take
         </Link>
       </Button>
     </span>
@@ -183,8 +178,8 @@ export function buildAssessmentColumns(
       column: {
         id: "topic",
         // Topics are often a source's opening sentence: give them the room.
-        width: 280,
-        className: "max-w-[18rem] overflow-hidden",
+        width: 240,
+        className: "max-w-[15rem] overflow-hidden",
         accessorKey: "topic",
         header: "Topic",
         filter: "text",
@@ -331,6 +326,11 @@ export function buildAssessmentColumns(
       column: {
         id: "take",
         header: "Take",
+        // Fits the labelled button; the room comes from Topic's truncation.
+        width: 96,
+        minWidth: 96,
+        className: "min-w-24 whitespace-nowrap",
+        headerClassName: "min-w-24",
         // A value, so the phone card (which omits empty fields) keeps it.
         accessorFn: (row) => (row.archived || row.question_count === 0 ? "" : "take"),
         filter: false,
