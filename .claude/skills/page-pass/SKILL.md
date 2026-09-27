@@ -17,6 +17,7 @@ procedure — open it only when you are doing that job or the check fails.
    has, with a real record id): it signs in as the test admin and writes
    desktop 1280×800 and phone 375×812 screenshots in light and dark, plus
    `look.json` — console errors, failed requests, anything under the header,
+   charts/images drawn at zero size,
    how much of the first screen holds content, headings, text under 12px,
    emoji, small phone targets. Add `--full` to see below the fold,
    `--signed-out` for what a visitor sees, `--as member` for an ordinary
@@ -75,7 +76,7 @@ session, never you.
 |---|---|---|
 | Server | none needed to look; `pnpm preview:start` (the ONE shared server, `http://<session>.localhost:3001`) only when you must see an unreleased change | **none** — a container cannot run a dev server and a type check together |
 | Look and prove | `TMPDIR=/tmp/pl-<you> pnpm page:look --route <route> --commit <sha>` against `https://aimatrx.com` after the release carrying your commit (about hourly; exit 3 = not live yet — work on something else) | same |
-| Agent surface proof | `TMPDIR=/tmp/pp-<you> pnpm surface:probe --surface <name> --route <route> --commit <sha>` (+ `--agent '<request>'` for write targets) | same |
+| Agent surface proof | `TMPDIR=/tmp/pp-<you> pnpm surface:probe --surface <name> --route <route> --commit <sha> --out <file>` (+ `--agent '<request>'` for write targets) | same |
 | A view you cannot see | `deferred-visual` with the exact step | same |
 
 **Both lanes:**

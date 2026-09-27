@@ -236,7 +236,21 @@ function measure(isPhone) {
       if ((r.height < 44 || r.width < 44) && smallTargets.length < 15) smallTargets.push(`${describe(el)} ${Math.round(r.width)}x${Math.round(r.height)}`);
     }
   }
+  // Graphics that draw nothing: an svg/canvas/img that has content but no
+  // rendered width (a chart squeezed to 0 by a parent). Invisible in the
+  // numbers above, so it is its own finding.
+  const zeroSizeGraphics = [];
+  for (const el of document.querySelectorAll("svg, canvas, img")) {
+    if (el.closest("header") || el.closest("[aria-hidden='true']")) continue;
+    const r = el.getBoundingClientRect();
+    const intrinsic =
+      el.tagName === "IMG" ? el.naturalWidth : Number(el.getAttribute("width")) || (el.tagName === "CANVAS" ? el.width : 0);
+    const parent = el.parentElement?.getBoundingClientRect();
+    if (intrinsic > 20 && (r.width < 2 || (parent && parent.width < 2)) && zeroSizeGraphics.length < 10)
+      zeroSizeGraphics.push(`${el.tagName.toLowerCase()} intrinsic ${intrinsic}px drawn ${Math.round(r.width)}px (parent ${parent ? Math.round(parent.width) : "?"}px)`);
+  }
   return {
+    zeroSizeGraphics,
     headerBottom: Math.round(headerBottom),
     underHeader,
     firstScreen: { usedPct: Math.round((used / available) * 100), largestEmptyBandPx: largestEmptyBand },
@@ -325,7 +339,12 @@ try {
         const clickResults = [];
         if (theme === "light") {
           for (const [n, spec] of opts.clicks.entries()) {
-            await page.goto(`${opts.base}${route}`, { timeout: 600000 });
+            try {
+              await page.goto(`${opts.base}${route}`, { timeout: 120000 });
+            } catch (error) {
+              clickResults.push({ click: spec, found: false, error: `reload failed: ${String(error?.message ?? error).slice(0, 160)}` });
+              continue;
+            }
             await page.waitForTimeout(opts.settle);
             consoleErrors.length = 0;
             // A spec may chain steps with " >> " (right-click a row, then pick
@@ -386,7 +405,7 @@ for (const r of report.routes) {
   for (const [key, v] of Object.entries(r.views)) {
     const phone = key.startsWith("phone");
     console.log(
-      `${r.route} [${key}]: used ${v.firstScreen.usedPct}% (largest empty band ${v.firstScreen.largestEmptyBandPx}px), under-header ${v.underHeader.length}, small text ${v.smallText.length}, emoji ${v.emoji.length}, console errors ${v.consoleErrors.length}, failed requests ${v.failedRequests.length}${phone ? `, small targets ${v.smallTargets.length}, sideways scroll ${v.horizontalOverflow}` : ""}`,
+      `${r.route} [${key}]: used ${v.firstScreen.usedPct}% (largest empty band ${v.firstScreen.largestEmptyBandPx}px), under-header ${v.underHeader.length}, small text ${v.smallText.length}, emoji ${v.emoji.length}, console errors ${v.consoleErrors.length}, failed requests ${v.failedRequests.length}, zero-size graphics ${v.zeroSizeGraphics.length}${phone ? `, small targets ${v.smallTargets.length}, sideways scroll ${v.horizontalOverflow}` : ""}`,
     );
   }
 }
