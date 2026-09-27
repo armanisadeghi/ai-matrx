@@ -58,7 +58,7 @@ import {
 } from "@/features/surfaces/manifests/hr-employer.manifest";
 
 import { updateHrEmployerProfile } from "../../service";
-import { isHrDenied } from "../../types";
+import type { HrDenied, HrFailed } from "../../types";
 import { hrSettingsHref } from "../../routes";
 import { useHrContext } from "../../shared/useHrContext";
 import { checkEin, einLastFour, formatEinInput } from "../activation/ein";
@@ -93,12 +93,10 @@ import {
 /** Radix Select cannot hold "" as an item value; this stands for "not set". */
 const NOT_SET = "__not_set__";
 
-function refusalText(result: { ok: false } & Record<string, unknown>): string {
-  if (isHrDenied(result as never)) {
-    const denied = result as unknown as { detail?: string; reason?: string };
-    return denied.detail || `The server refused this change (${denied.reason ?? "refused"}).`;
-  }
-  return String((result as { message?: unknown }).message ?? "The save failed.");
+function refusalText(result: HrDenied | HrFailed): string {
+  return result.kind === "denied"
+    ? result.detail || `The server refused this change (${result.reason}).`
+    : result.message;
 }
 
 // ── The panel ───────────────────────────────────────────────────────────────
@@ -195,7 +193,7 @@ export function HrEmployerPanel() {
       organization_id: profile.organization_id,
       ...declarationPayload(profile, requests, new Date().toISOString()),
     });
-    if (!result.ok) throw new Error(refusalText(result as never));
+    if (!result.ok) throw new Error(refusalText(result));
     setReload((n) => n + 1);
     return result.data;
   };
@@ -465,7 +463,7 @@ function IdentitySection({
     });
     setBusy(false);
     if (!result.ok) {
-      setWhy(refusalText(result as never));
+      setWhy(refusalText(result));
       return;
     }
     toast.success("Employer profile saved.");
