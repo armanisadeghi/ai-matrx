@@ -57,6 +57,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@/features/surfaces/types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -105,6 +106,17 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 
   // ── Analytics summary (dashboard view) ─────────────────────────────────
+  {
+    name: "progress_overview",
+    label: "Progress overview",
+    description:
+      "READ THIS FIRST on the dashboard view: one compact XML bundle of everything the page shows — <overall> totals (studied, mastered, learning, needs_work, due_now, accuracy_pct, day_streak, minutes_studied, sessions), <accuracy_trend>, <modes>, the <weakest_topics> by display name (key= carries the raw topic when it differs), the narrator's <insights> headline and <recommendations> when a reading exists, and <learning_gain>. A list that was cut carries total= and shown=. Absent while loading and on the learning_gain view.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 2500,
+    sortOrder: 290,
+    group: "analytics_summary",
+  },
   {
     name: "analytics_loading",
     label: "Analytics loading",
@@ -175,7 +187,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "total_minutes",
     label: "Total study minutes",
     description:
-      "Total minutes studied across all sessions and modes. Absent while loading and on the learning_gain view.",
+      "Minutes actually studied across all sessions and modes — a finished session counts start to end, an abandoned one only up to its last answer (its closing time is when it was swept, not when the learner stopped). Absent while loading and on the learning_gain view.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 4,
@@ -361,13 +373,13 @@ export const educationProgressManifest: SurfaceManifest = {
     "Study analytics dashboard + narrated progress reports (/education/progress).",
   readiness: "partial",
   readinessNote:
-    "Manifest + both emitters (dashboard, learning_gain) shipped, targeting a live DB row that previously had no manifest at all. NOT yet: DB sync has not been run; no write targets are declared (every value here is derived evidence — correctly so, nothing on either view is editable); no agent roles or config namespaces are declared; no data-surface-value Locate anchors are tagged; no live-agent-run verification or Matrx-vs-matrix test has been performed; the guardian/family progress view (StudentProgressView, a different data path over a linked student's spine) is explicitly OUT of scope for this manifest — see header.",
+    "page-pass 2026-09-27: both emitters live; dashboard emits a progress_overview XML bundle; right-click menu mounted on the dashboard; the auto-running narrator is declared as the narrator role (education.analytics_narrate). No write targets — every value is derived evidence and nothing on either view is editable. UNPROVEN until the page-pass live probe runs: surface:probe read of every visible value, and a real agent answering from progress_overview. The learning_gain view has no right-click menu yet. The guardian/family progress view (StudentProgressView, a linked student's spine) is out of scope — see header.",
   label: "Progress",
   urlPattern: "/education/progress",
   intro: `<surface_intro>
 You are on the Progress surface at /education/progress — the learner's own cross-mode study analytics: mastery, accuracy, weak areas, trends, and a pre/post learning-gain report. Everything here is READ-ONLY derived evidence computed from the learner's real attempt history; there is nothing to author on either view.
 Read \`view\` first — it is "dashboard" or "learning_gain".
-On "dashboard": \`overall_stats\` and \`mode_stats\` are the folded totals; \`weak_topics\` names what needs work; \`accuracy_trend\` says whether things are improving; \`current_streak\` and \`total_minutes\`/\`session_count\` round out the picture. \`analytics_has_data\` is false for a brand-new learner — don't describe an empty spine as "struggling". Once there's enough data, an AI narrator runs automatically: \`narrative_headline\`, \`narrative_insights\`, and especially \`narrative_recommendations\` are the surface's own best answer to "what should I study next" — read them before improvising a suggestion, and prefer them over re-deriving your own from the raw stats.
+On "dashboard": start with \`progress_overview\` — one XML bundle of the whole page, enough for "how am I doing" and "what should I study next" without another lookup. The individual values below hold the full rows: \`overall_stats\` and \`mode_stats\` are the folded totals; \`weak_topics\` names what needs work; \`accuracy_trend\` says whether things are improving; \`current_streak\` and \`total_minutes\`/\`session_count\` round out the picture. \`analytics_has_data\` is false for a brand-new learner — don't describe an empty spine as "struggling". Once there's enough data, an AI narrator runs automatically: \`narrative_headline\`, \`narrative_insights\`, and especially \`narrative_recommendations\` are the surface's own best answer to "what should I study next" — read them before improvising a suggestion, and prefer them over re-deriving your own from the raw stats.
 On "learning_gain": \`gain_pairs\` holds each subject's baseline→post measurement; \`gain_overall_delta\` and \`gain_overall_normalized\` are the headline numbers ("prove it makes you smarter"). Check \`gain_is_seed\` FIRST — while the underlying assessment-engine table isn't live, this report shows labeled SAMPLE data, and you must describe it as illustrative, never as the learner's actual results.
 </surface_intro>`,
   groups,
@@ -375,6 +387,22 @@ On "learning_gain": \`gain_pairs\` holds each subject's baseline→post measurem
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  // The page's ONE fixed AI job: the narrator that writes "What your data
+  // says" (auto-runs once per new set of numbers, Refresh re-runs it).
+  agentRoles: [
+    {
+      name: "narrator",
+      label: "Progress Narrator",
+      description:
+        "Reads the learner's folded study analytics and writes the headline, grounded insights and prioritized recommendations shown in the dashboard's \"What your data says\" card. Runs automatically once per new set of numbers; Refresh re-runs it.",
+      kind: "single",
+      defaultAgentId: null,
+      mandateKey: MANDATE_KEYS.education__analytics_narrate,
+      allowCustom: false,
+      autoRun: "always",
+      sortOrder: 100,
+    },
+  ],
 };
 
 /** `overall_stats`, and each entry of `mode_stats` shares this shape plus itemType/label. */
@@ -451,6 +479,7 @@ export function createEducationProgressScope(values: {
   selection?: string;
   context?: Record<string, unknown>;
   // dashboard — analytics summary
+  progress_overview?: string;
   analytics_loading?: boolean;
   analytics_error?: string;
   analytics_has_data?: boolean;

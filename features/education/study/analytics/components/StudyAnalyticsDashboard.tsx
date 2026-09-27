@@ -26,6 +26,8 @@ import type { StudyAnalytics } from "../computeAnalytics";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationProgressScope } from "@/features/surfaces/manifests/education-progress.manifest";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { buildProgressOverviewXml } from "../progressContextBundle";
 
 const SURFACE_NAME = "matrx-user/education-progress";
 
@@ -68,6 +70,11 @@ export function StudyAnalyticsDashboard({
       ...(loading || !analytics
         ? {}
         : {
+            progress_overview: buildProgressOverviewXml({
+              analytics,
+              narrative: shownReport,
+              gain,
+            }),
             analytics_has_data: analytics.hasData,
             overall_stats: analytics.overall,
             mode_stats: analytics.byMode,
@@ -127,6 +134,13 @@ export function StudyAnalyticsDashboard({
 
   return (
     <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
+      <NonEditableContextMenu
+        sourceFeature="education-analytics"
+        surfaceName={SURFACE_NAME}
+        menuVersion={1}
+        getApplicationScope={buildScope}
+        contentSource={{ type: "raw", title: "Your progress", readOnly: true }}
+      >
       <StudyAnalyticsView
         analytics={analytics}
         mastery={mastery}
@@ -152,6 +166,7 @@ export function StudyAnalyticsDashboard({
           ) : null
         }
       />
+      </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }
