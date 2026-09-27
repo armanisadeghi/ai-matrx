@@ -13,24 +13,35 @@
 import { ChatRunHeader } from "./ChatRunHeader";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 import { useMandate } from "@/features/mandates/useMandate";
+import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
 
 export function ChatNewHeader({
   agentId,
   initialAgentName,
+  composerMode,
 }: {
   agentId: string | null;
   initialAgentName?: string;
+  composerMode?: { initialMode: ComposerMode | null };
 }) {
   return agentId ? (
-    <ChatRunHeader activeAgentId={agentId} initialAgentName={initialAgentName} />
+    <ChatRunHeader
+      activeAgentId={agentId}
+      initialAgentName={initialAgentName}
+      composerMode={composerMode}
+    />
   ) : (
-    <ChatNewHeaderResolved />
+    <ChatNewHeaderResolved composerMode={composerMode} />
   );
 }
 
-function ChatNewHeaderResolved() {
+function ChatNewHeaderResolved({
+  composerMode,
+}: {
+  composerMode?: { initialMode: ComposerMode | null };
+}) {
   const { mandate } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
   // While resolving (or unresolvable) the picker shows its generic
   // placeholder — the body shows the loud error state for the same failure.
-  return <ChatRunHeader activeAgentId={mandate?.agentId} />;
+  return <ChatRunHeader activeAgentId={mandate?.agentId} composerMode={composerMode} />;
 }

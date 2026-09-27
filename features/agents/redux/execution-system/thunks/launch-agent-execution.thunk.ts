@@ -106,6 +106,12 @@ import {
   type MergedValueMappings,
 } from "./surface-scope-mapping";
 
+
+/** A real session (a JWT) — not a fingerprint guest and not an unbooted store. */
+function hasSignedInSession(state: RootState): boolean {
+  return Boolean((state as Partial<RootState>).userAuth?.accessToken);
+}
+
 export interface LaunchResult {
   /** The conversation id — client-generated, honored by the server end-to-end. */
   conversationId: string;
@@ -503,7 +509,12 @@ export const launchAgentExecution = createAsyncThunk<
   if (agentId && !shortcutId) {
     // The execution payload carries no NAME; the window title and the empty
     // hero read it from the registry. Non-blocking — the title fills in.
-    void dispatch(ensureAgentIdentity(agentId));
+    // The agent catalog is a signed-in door: a sessionless visitor (a guest
+    // on a public app) would only collect a 401 for a name the page never
+    // shows, so it is not asked (page-pass /p/[slug], 2026-09-27).
+    if (hasSignedInSession(getState() as RootState)) {
+      void dispatch(ensureAgentIdentity(agentId));
+    }
     const preState = getState() as RootState;
     const payload = selectAgentCustomExecutionPayload(preState, agentId);
     const debugProjectCreate = isProjectCreateFlow(sourceFeature, agentId);
@@ -831,17 +842,22 @@ export const launchAgentExecution = createAsyncThunk<
         let surfaceValueMappings: ValueMappingMap | null = null;
         if (surfaceName) {
           let resolvedLayers: MergedValueMappings | null = null;
-          try {
-            resolvedLayers = await resolveLaunchMappingLayers(
-              agentId,
-              surfaceName,
-              null,
-            );
-          } catch (err) {
-            console.warn(
-              "[launchAgentExecution] surface binding lookup failed; falling back to legacy resolver",
-              err,
-            );
+          // Surface bindings live behind a signed-in view (`menu_surface`);
+          // a sessionless visitor has none it could read, so the lookup is
+          // skipped rather than answered with a 401 on every public run.
+          if (hasSignedInSession(getState() as RootState)) {
+            try {
+              resolvedLayers = await resolveLaunchMappingLayers(
+                agentId,
+                surfaceName,
+                null,
+              );
+            } catch (err) {
+              console.warn(
+                "[launchAgentExecution] surface binding lookup failed; falling back to legacy resolver",
+                err,
+              );
+            }
           }
           applyLaunchWritePolicies(resolvedLayers, agentId, surfaceName);
           bindingAutoRun = resolvedLayers?.autoRun ?? null;

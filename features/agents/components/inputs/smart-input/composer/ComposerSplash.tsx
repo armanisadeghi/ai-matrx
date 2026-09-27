@@ -84,8 +84,15 @@ export function ComposerQuickActions({
   className?: string;
 }) {
   const knob = useSessionKnob(COMPOSER_KNOBS.quickActions);
+  // The list and every job it names resolve PER ORGANIZATION. With none active
+  // yet there is nothing that could answer, so the row is absent (the org
+  // chooser appears the moment the person acts) — never a pulse forever.
+  const organizationId = useAppSelector((state) => state.appContext?.organization_id ?? null);
   const actions = parseQuickActions(knob);
-  const mandates = useMandateSet(actions.map((a) => a.mandateKey));
+  const mandates = useMandateSet(
+    actions.map((a) => a.mandateKey),
+    { enabled: Boolean(organizationId) },
+  );
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [canScroll, setCanScroll] = useState(false);
 
@@ -103,6 +110,7 @@ export function ComposerQuickActions({
     };
   }, [actions.length]);
 
+  if (!organizationId) return null;
   if (knob === undefined) {
     return (
       <div className={cn("flex h-[34px] gap-2 overflow-hidden", className)} aria-busy="true" aria-label="Loading quick actions">

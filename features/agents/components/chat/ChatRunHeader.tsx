@@ -11,6 +11,8 @@ import { selectAgentName } from "@/features/agents/redux/agent-definition/select
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { ChatCanvasButton } from "./ChatCanvasButton";
+import { ComposerModeSwitch } from "@/features/agents/components/inputs/smart-input/composer/ComposerModeSwitch";
+import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
 import { ConversationRecordsChip } from "./ConversationRecordsChip";
 import { ConversationAttachmentsChip } from "./ConversationAttachmentsChip";
 import { ConversationRoomNotice } from "./ConversationRoomNotice";
@@ -40,6 +42,13 @@ interface ChatRunHeaderProps {
    * picker silently drops them back into text mid-conversation.
    */
   buildAgentHref?: (agentId: string) => string;
+  /**
+   * The three-mode composer is on this route (composer/FEATURE.md): the top bar
+   * carries Chat · Work · Advanced, centered (a PAGE mode), and the agent
+   * picker + scope chip move into the composer's pills. Absent = today's
+   * picker + lens chip (voice, talk and other routes without the composer).
+   */
+  composerMode?: { initialMode: ComposerMode | null };
 }
 
 const defaultAgentHref = (agentId: string) =>
@@ -50,6 +59,7 @@ export function ChatRunHeader({
   initialAgentName,
   conversationId,
   buildAgentHref = defaultAgentHref,
+  composerMode,
 }: ChatRunHeaderProps) {
   const router = useRouter();
   const store = useAppStore();
@@ -90,6 +100,13 @@ export function ChatRunHeader({
         })
       }
     >
+      {composerMode ? (
+        <>
+          {/* Left third stays empty so the switch sits in the true center. */}
+          <div className="min-w-0 flex-1" />
+          <ComposerModeSwitch initialMode={composerMode.initialMode} />
+        </>
+      ) : (
       <div className="flex min-w-0 items-center gap-1 overflow-hidden">
         <div
           data-chat-agent-picker-trigger
@@ -110,7 +127,14 @@ export function ChatRunHeader({
           className="min-w-0"
         />
       </div>
-      <div className="flex shrink-0 items-center gap-1">
+      )}
+      <div
+        className={
+          composerMode
+            ? "flex min-w-0 flex-1 items-center justify-end gap-1"
+            : "flex shrink-0 items-center gap-1"
+        }
+      >
         {/* "Personal — only you can see this, even inside a shared room"
             (DD-171, 2026-09-12; it read the opposite until that day). A
             `personal` conversation dropped into a war room or a thread USED to

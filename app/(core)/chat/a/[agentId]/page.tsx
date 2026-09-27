@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { ChatRoomClient } from "@/features/agents/components/chat/ChatRoomClient";
 import { ChatRunHeader } from "@/features/agents/components/chat/ChatRunHeader";
+import { readComposerModeCookie } from "@/features/agents/components/inputs/smart-input/composer/composer-mode.server";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 
 interface DirectAgentChatPageProps {
@@ -37,19 +38,23 @@ export default async function DirectAgentChatPage({
   params,
 }: DirectAgentChatPageProps) {
   const { agentId } = await params;
-  const agentName = await resolveAgentName(agentId);
+  const [agentName, initialMode] = await Promise.all([
+    resolveAgentName(agentId),
+    readComposerModeCookie(),
+  ]);
   return (
     <>
       <PageHeader>
         <ChatRunHeader
           activeAgentId={agentId}
           initialAgentName={agentName ?? undefined}
+          composerMode={{ initialMode }}
         />
       </PageHeader>
       {/* The agent's own organization has nothing to do with where the chat
           lands — the conversation belongs to the person's working
           organization, so no switch-organization offer (Arman, 2026-09-26). */}
-      <ChatRoomClient agentId={agentId} />
+      <ChatRoomClient agentId={agentId} composer={{ initialMode }} />
     </>
   );
 }

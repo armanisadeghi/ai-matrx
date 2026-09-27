@@ -1,4 +1,6 @@
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { EditableContextMenuProps } from "@/features/context-menu-v3/types";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 
 /**
  * The Composer presentation contract — the optional `composer` prop on
@@ -54,6 +56,25 @@ export interface ComposerAgentControl {
   onSelectAgent?: (agentId: string, via?: { mandateKey: AnyMandateKey }) => void;
 }
 
+/**
+ * The canonical right-click (v3) menu on the composer's textarea. The host
+ * names its surface and supplies the live scope; the textarea wires the draft
+ * edits (replace / insert before / insert after) itself, through the SAME
+ * Redux draft it is bound to.
+ */
+export type ComposerTextMenu = Omit<
+  EditableContextMenuProps,
+  | "children"
+  | "getTextarea"
+  | "getApplicationScope"
+  | "onTextReplace"
+  | "onTextInsertBefore"
+  | "onTextInsertAfter"
+> & {
+  /** Live scope at click time, read off the textarea (selection, draft). */
+  getApplicationScope: (textarea: HTMLTextAreaElement | null) => ApplicationScope;
+};
+
 export interface ComposerPresentation {
   size: ComposerSize;
   mode: ComposerMode;
@@ -65,4 +86,6 @@ export interface ComposerPresentation {
    * computes `panelHeight × knob%`). Absent = the classic 200px cap.
    */
   maxInputHeightPx?: number;
+  /** The right-click agent menu on the textarea. Absent = no menu. */
+  textMenu?: ComposerTextMenu;
 }

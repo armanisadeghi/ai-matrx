@@ -13,6 +13,7 @@ import { useMandate } from "@/features/mandates/useMandate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@/lib/text/asClause";
 import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
+import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
 
 /**
  * `/chat/new` — landing surface.
@@ -33,16 +34,27 @@ import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate
  *
  * Chip agent IDs and labels live in `chat-quick-actions.config.ts`.
  */
-export function ChatNewClient({ agentId }: { agentId: string | null }) {
+export function ChatNewClient({
+  agentId,
+  composer,
+}: {
+  agentId: string | null;
+  /** The three-mode composer (server-read "last mode used" cookie). */
+  composer?: { initialMode: ComposerMode | null };
+}) {
   return agentId ? (
-    <ChatNewBody agentId={agentId} />
+    <ChatNewBody agentId={agentId} composer={composer} />
   ) : (
-    <ChatNewClientResolved />
+    <ChatNewClientResolved composer={composer} />
   );
 }
 
 /** SSR resolution failed — re-resolve client-side, loud on failure. */
-function ChatNewClientResolved() {
+function ChatNewClientResolved({
+  composer,
+}: {
+  composer?: { initialMode: ComposerMode | null };
+}) {
   const { mandate, loading, error, organizationPending } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
   if (loading) return <ChatNewLandingSkeleton />;
   // No workspace chosen is a question, never "chat is unavailable".
@@ -54,7 +66,7 @@ function ChatNewClientResolved() {
     );
   }
   if (error || !mandate) return <ChatMandateUnavailable error={error} />;
-  return <ChatNewBody agentId={mandate.agentId} />;
+  return <ChatNewBody agentId={mandate.agentId} composer={composer} />;
 }
 
 /**
@@ -83,7 +95,13 @@ export function ChatMandateUnavailable({ error }: { error?: string | null }) {
   );
 }
 
-function ChatNewBody({ agentId }: { agentId: string }) {
+function ChatNewBody({
+  agentId,
+  composer,
+}: {
+  agentId: string;
+  composer?: { initialMode: ComposerMode | null };
+}) {
   // No eager agent-list fetch here. Chip labels are hardcoded in
   // chat-quick-actions.config.ts (no agent registry lookup) and the default
   // agent's execution payload is fetched on-demand by ChatRoomClient via
@@ -106,10 +124,12 @@ function ChatNewBody({ agentId }: { agentId: string }) {
       // answers immediately — no client deploy, and no second resolver that
       // could disagree with the server about whose binding wins.
       mandateKey={DEFAULT_NEW_CHAT_MANDATE_KEY}
-      landingContent={(conversationId) => (
+      composer={composer}
+      landingContent={(conversationId, composerPresentation) => (
         <NewChatGreeting
           sourceConversationId={conversationId}
           surfaceKey={surfaceKey}
+          composer={composerPresentation}
         />
       )}
     />

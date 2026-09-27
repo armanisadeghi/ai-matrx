@@ -44,6 +44,9 @@ import { readVerticalChrome, snapToLineGrid } from "./textarea-line-grid";
 import { usePasteImageResource } from "@/features/agents/components/inputs/resources/usePasteImageResource";
 import { useInstanceInputUndoRedo } from "@/features/agents/hooks/useInstanceInputUndoRedo";
 import { ComposerDraftNotice } from "./ComposerDraftNotice";
+// Lightweight shell (static); the menu body lazy-loads on first open.
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import type { ComposerTextMenu } from "./composer/composer-types";
 import {
   smartExecute,
   interruptAndSend,
@@ -78,6 +81,8 @@ interface AgentTextareaProps {
    * half the panel, then scrolls inside).
    */
   maxHeightPx?: number;
+  /** The canonical right-click agent menu on this textarea (composer `textMenu`). */
+  textMenu?: ComposerTextMenu;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -101,6 +106,7 @@ export function AgentTextarea({
   showExpandToggle = true,
   placeholder,
   maxHeightPx,
+  textMenu,
 }: AgentTextareaProps) {
   const unexpandedCapPx = maxHeightPx ?? 200;
   const dispatch = useAppDispatch();
@@ -333,6 +339,26 @@ export function AgentTextarea({
     return () => clearTimeout(t);
   }, [autoFocus, conversationId]);
 
+  // The right-click menu's draft edits route through the SAME Redux draft the
+  // textarea is bound to — never a parallel local value.
+  const replaceDraft = (next: string) => {
+    dispatch(setUserInputText({ conversationId, text: next }));
+  };
+  const insertAtCursor = (insert: string, position: "before" | "after") => {
+    const el = textareaRef.current;
+    const base = el?.value ?? visibleText;
+    if (!el) {
+      replaceDraft(position === "before" ? `${insert}\n\n${base}` : `${base}\n\n${insert}`);
+      return;
+    }
+    const at = position === "before" ? el.selectionStart : el.selectionEnd;
+    replaceDraft(
+      position === "before"
+        ? `${base.slice(0, at)}${insert}\n\n${base.slice(at)}`
+        : `${base.slice(0, at)}\n\n${insert}${base.slice(at)}`,
+    );
+  };
+
   const placeholderText =
     placeholder ??
     reduxPlaceholder ??
@@ -374,30 +400,37 @@ export function AgentTextarea({
         {/* The layout effect owns the exact content height. The CSS cap is a
             second line of defence: if a host reflows between measurement and
             paint, an unexpanded composer still cannot absorb the flex column. */}
-        <textarea
-          ref={textareaRef}
-          value={visibleText}
-          onChange={(e) => handleTextChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholderText}
-          className={`w-full bg-transparent border-none outline-none text-base text-foreground placeholder:text-muted-foreground/60 resize-none overflow-y-auto scrollbar-hide leading-7 ${
-            // The height transition belongs to the expand/collapse toggles
-            // ONLY. While typing there is no transition class at all: a
-            // line-count change snaps instantly, and an unchanged line count
-            // writes nothing (see the auto-resize effect).
-            isCollapsing
-              ? "transition-[height] motion-reduce:transition-none duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              : isExpanded
-                ? "transition-[height] motion-reduce:transition-none duration-150 ease-out"
-                : ""
-          }`}
-          style={{
-            minHeight: compact ? 28 : 40,
-            maxHeight: isExpanded ? undefined : unexpandedCapPx,
-          }}
-          rows={1}
-          data-agent-main-input
-        />
+        <ComposerTextMenuFrame
+          textMenu={textMenu}
+          textareaRef={textareaRef}
+          onReplace={replaceDraft}
+          onInsert={insertAtCursor}
+        >
+          <textarea
+            ref={textareaRef}
+            value={visibleText}
+            onChange={(e) => handleTextChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholderText}
+            className={`w-full bg-transparent border-none outline-none text-base text-foreground placeholder:text-muted-foreground/60 resize-none overflow-y-auto scrollbar-hide leading-7 ${
+              // The height transition belongs to the expand/collapse toggles
+              // ONLY. While typing there is no transition class at all: a
+              // line-count change snaps instantly, and an unchanged line count
+              // writes nothing (see the auto-resize effect).
+              isCollapsing
+                ? "transition-[height] motion-reduce:transition-none duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                : isExpanded
+                  ? "transition-[height] motion-reduce:transition-none duration-150 ease-out"
+                  : ""
+            }`}
+            style={{
+              minHeight: compact ? 28 : 40,
+              maxHeight: isExpanded ? undefined : unexpandedCapPx,
+            }}
+            rows={1}
+            data-agent-main-input
+          />
+        </ComposerTextMenuFrame>
         {showExpand && (
           <button
             type="button"
@@ -414,5 +447,38 @@ export function AgentTextarea({
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Wraps the ONE composer textarea in the canonical v3 editable menu when the
+ * host asked for it (`composer.textMenu`); otherwise renders it untouched.
+ * The menu attaches to the textarea itself — no wrapping DOM node.
+ */
+function ComposerTextMenuFrame({
+  textMenu,
+  textareaRef,
+  onReplace,
+  onInsert,
+  children,
+}: {
+  textMenu?: ComposerTextMenu;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  onReplace: (next: string) => void;
+  onInsert: (insert: string, position: "before" | "after") => void;
+  children: React.ReactElement;
+}) {
+  if (!textMenu) return children;
+  return (
+    <EditableContextMenu
+      {...textMenu}
+      getTextarea={() => textareaRef.current}
+      getApplicationScope={() => textMenu.getApplicationScope(textareaRef.current)}
+      onTextReplace={onReplace}
+      onTextInsertBefore={(text) => onInsert(text, "before")}
+      onTextInsertAfter={(text) => onInsert(text, "after")}
+    >
+      {children}
+    </EditableContextMenu>
   );
 }
