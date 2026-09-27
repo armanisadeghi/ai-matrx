@@ -151,6 +151,7 @@ import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 
 // ── Sort field labels ───────────────────────────────────────────────────────
 const SORT_FIELDS: { field: NoteSortField; label: string }[] = [
@@ -203,6 +204,10 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   const orgName = useAppSelector(selectOrganizationName);
   const projName = useAppSelector(selectProjectName);
   const taskName = useAppSelector(selectTaskName);
+  // Folders are per organization, so one person can hold several "Draft"
+  // folders. Same-name folder headers name their organization.
+  const { organizations: memberOrgs } = useUserOrganizations();
+  const orgNameById = new Map(memberOrgs.map((o) => [o.id, o.name]));
 
   // ── Scope-filtered note IDs (fetched when scopes change) ──────────
   const activeScopeIds = useMemo(
@@ -553,6 +558,16 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
     if (groupBy === "project" && projName) return projName;
     if (groupBy === "task" && taskName) return taskName;
     return key.slice(0, 8) + "...";
+  }
+
+  // Which folder labels appear more than once (folder + default modes).
+  function folderOrgSuffix(key: string): string | null {
+    if (groupBy !== "folder" && groupBy !== "default") return null;
+    const label = getGroupLabel(key);
+    const same = folders.filter((k) => getGroupLabel(k) === label);
+    if (same.length < 2) return null;
+    const orgId = groupedNotes.get(key)?.[0]?.organization_id;
+    return (orgId && orgNameById.get(orgId)) || null;
   }
 
   // Ordered group keys
@@ -1484,6 +1499,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
               const groupNotes = groupedNotes.get(groupKey) ?? [];
               const isExpanded = expandedFolders.has(groupKey);
               const label = getGroupLabel(groupKey);
+              const orgSuffix = folderOrgSuffix(groupKey);
               const count = groupNotes.length;
 
               // Folder + Default modes both render folder icons/colors and DnD
@@ -1526,7 +1542,14 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                     ) : (
                       <FolderIcon className={cn("opacity-70", iconColor)} />
                     )}
-                    <span className="flex-1 truncate">{label}</span>
+                    <span className="flex-1 truncate">
+                      {label}
+                      {orgSuffix && (
+                        <span className="ml-1 font-normal normal-case tracking-normal opacity-60">
+                          · {orgSuffix}
+                        </span>
+                      )}
+                    </span>
                     <span className="text-[0.625rem] font-normal opacity-50 tabular-nums">
                       {count}
                     </span>
@@ -1536,7 +1559,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                       type="button"
                       aria-label={`New Note in ${label}`}
                       disabled={draftControl.pending}
-                      className="flex h-4 w-4 items-center justify-center opacity-0 transition-opacity hover:!opacity-100 focus-visible:opacity-100 group-hover:opacity-60 disabled:pointer-events-none disabled:opacity-30"
+                      className="flex h-4 w-4 items-center justify-center opacity-0 transition-opacity hover:!opacity-100 focus-visible:opacity-100 group-hover:opacity-60 pointer-coarse:opacity-60 disabled:pointer-events-none disabled:opacity-30"
                       onClick={(e) => {
                         e.stopPropagation();
                         void handleNewNote(groupKey).catch(() => undefined);

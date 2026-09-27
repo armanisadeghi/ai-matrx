@@ -30,7 +30,7 @@ async function readSidebarLayout(): Promise<Layout | undefined> {
 
 export const metadata = createRouteMetadata("/notes", {
   title: "Notes",
-  description: "SSR test route for the 6-layer notes architecture",
+  description: "Write, organize and search your notes, with AI that can read and edit them.",
   letter: "N",
 });
 

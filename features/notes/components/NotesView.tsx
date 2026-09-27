@@ -114,6 +114,7 @@ import { NoteTabBar } from "./NoteTabBar";
 import { NoteSidebar } from "./NoteSidebar";
 import { FolderQuickPick } from "./FolderQuickPick";
 import { cn } from "@/lib/utils";
+import { useRecordTitle } from "@/lib/record-title/record-title";
 import {
   NAV_ITEM_SELECTED,
   NAV_ITEM_UNSELECTED,
@@ -380,6 +381,13 @@ export function NotesView({
 
   const activeTabId = useAppSelector(selectInstanceActiveTab(instanceId));
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
+  // The browser tab leads with the open note's name on the /notes route
+  // (syncUrl); an embedded NotesView (Quick Notes, education) never retitles
+  // the page it sits in.
+  const activeNoteLabel = useAppSelector(
+    syncUrl && activeTabId ? selectNoteLabel(activeTabId) : () => undefined,
+  );
+  useRecordTitle(activeNoteLabel);
 
   // A note door followed while /notes is ALREADY open (⌘K, an EntityRef link)
   // changes only `?active=`; the restore above runs once on mount and never
