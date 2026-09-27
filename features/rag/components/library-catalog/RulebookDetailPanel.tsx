@@ -17,6 +17,7 @@
  * lane, and the copy is found by its `source_rulebook_id` provenance column.
  */
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -125,6 +126,9 @@ export function RulebookDetailPanel({
   const [rules, setRules] = useState<RulebookRule[] | null>(null);
   const [rulesError, setRulesError] = useState<string | null>(null);
   const [copy, setCopy] = useState<AdoptedCopy | null>(null);
+  // A failed read of "do we already have it?" is NOT "no" (RC-B12 r13): the
+  // Add button would mint a second copy. Say it and hold the button.
+  const [copyError, setCopyError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
 
   const refreshCopy = useCallback(async () => {
@@ -134,9 +138,11 @@ export function RulebookDetailPanel({
     }
     try {
       setCopy(await fetchAdoptedCopy(item.id, organizationId));
+      setCopyError(null);
     } catch (e) {
       console.error("[RulebookDetailPanel] could not read the adopted copy:", e);
       setCopy(null);
+      setCopyError(e ?? new Error("The adopted-copy read failed"));
     }
   }, [item.id, organizationId]);
 
@@ -233,7 +239,7 @@ export function RulebookDetailPanel({
                 Open your copy
               </Link>
             ) : null}
-            {!copy || behind ? (
+            {copyError == null && (!copy || behind) ? (
               <Button size="sm" className="h-8" disabled={busy} onClick={add}>
                 {busy ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -245,6 +251,14 @@ export function RulebookDetailPanel({
             ) : null}
           </div>
         </div>
+        {copyError != null ? (
+          <ReadFailure
+            error={copyError}
+            what="whether your organization already has this Rulebook"
+            onRetry={() => void refreshCopy()}
+            className="m-0"
+          />
+        ) : null}
         {item.description ? (
           <p className="text-xs text-muted-foreground">{item.description}</p>
         ) : null}

@@ -26,6 +26,7 @@
  *   unsupported-codec, storage-quota, and lock-takeover for recordings.
  */
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
@@ -318,6 +319,8 @@ export function CaptureStudio({
 
   // ── Recovery (interrupted journals) ──────────────────────────────────────
   const [recoverables, setRecoverables] = useState<RecoverableJournal[]>([]);
+  // A failed recovery listing is said (RC-B12 r13).
+  const [recoveryListError, setRecoveryListError] = useState<unknown>(null);
   const [recovering, setRecovering] = useState<string | null>(null);
 
   const leaseRef = useRef<CameraLease | null>(null);
@@ -432,9 +435,13 @@ export function CaptureStudio({
       try {
         await purgeExpired();
         const found = await listRecoverable();
-        if (!cancelled) setRecoverables(found);
+        if (!cancelled) {
+          setRecoverables(found);
+          setRecoveryListError(null);
+        }
       } catch (err) {
         console.error("[CaptureStudio] recovery listing failed:", err);
+        if (!cancelled) setRecoveryListError(err ?? new Error("The recovery listing failed"));
       }
     })();
     return () => {
@@ -933,6 +940,13 @@ export function CaptureStudio({
 
   return (
     <div className={`flex h-full min-h-0 flex-col ${className ?? ""}`}>
+      {recoveryListError != null && recoverables.length === 0 && phase !== "review" && (
+        <ReadFailure
+          error={recoveryListError}
+          what="your interrupted recordings"
+          className="mb-2 shrink-0"
+        />
+      )}
       {recoverables.length > 0 && phase !== "review" && (
         <div className="mb-2 shrink-0 rounded-md border border-border bg-card px-3 py-2">
           {recoverables.map((entry) => (

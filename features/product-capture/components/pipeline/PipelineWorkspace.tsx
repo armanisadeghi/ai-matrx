@@ -7,6 +7,7 @@
  * first, workspace with a back control once an item is picked.
  */
 
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft } from "lucide-react";
 
@@ -43,6 +44,8 @@ export function PipelineWorkspace({
 
   const [stage, setStage] = useState<PipelineStage>("intake");
   const [counts, setCounts] = useState<Record<string, number>>({});
+  // Counts from a failed read are unknown, never 0 (RC-B12 r13).
+  const [countsError, setCountsError] = useState<unknown>(null);
   const [entries, setEntries] = useState<StageListEntry[] | null>(null);
   // The stage-list read's failure — the list says it instead of "No items".
   const [listError, setListError] = useState<unknown>(null);
@@ -68,8 +71,10 @@ export function PipelineWorkspace({
     if (!organizationId) return;
     try {
       setCounts(await countItemsByStage(organizationId));
+      setCountsError(null);
     } catch (err) {
       console.error("[product-pipeline] counts failed", err);
+      setCountsError(err ?? new Error("The stage counts read failed"));
     }
   }, [organizationId]);
 
@@ -181,9 +186,17 @@ export function PipelineWorkspace({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
+      {countsError != null && (
+        <ReadFailure
+          error={countsError}
+          what="the stage counts"
+          onRetry={() => void refreshCounts()}
+          className="m-0"
+        />
+      )}
       <StageStepper
         active={stage}
-        counts={counts}
+        counts={countsError != null ? null : counts}
         onSelect={(s) => {
           setStage(s);
           setSelectedId(null);

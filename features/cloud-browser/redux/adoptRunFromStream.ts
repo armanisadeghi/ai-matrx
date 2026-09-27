@@ -20,6 +20,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import { toast } from "@/lib/toast";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import * as service from "../service";
 import { hydrateSnapshot } from "./cloudBrowserSlice";
@@ -45,10 +46,15 @@ export const adoptCloudBrowserRunFromStream = createAsyncThunk<
       const snapshot = await service.loadSnapshotForRun(signal);
       if (snapshot) dispatch(hydrateSnapshot(snapshot));
     } catch (error) {
-      // Never break the chat stream over the browser panel. Scream, don't throw.
+      // Never break the chat stream over the browser panel. Scream, don't throw
+      // — and SAY it (RC-B12 r13): the agent is waiting on this person, and the
+      // panel they need did not open.
       console.error(
         "[cloud-browser] could not adopt the run named by a human_required tool result",
         { signal, error },
+      );
+      toast.error(
+        "The agent needs you in its browser, but the browser panel couldn't be loaded. Open Cloud Browser to continue.",
       );
     }
   },
