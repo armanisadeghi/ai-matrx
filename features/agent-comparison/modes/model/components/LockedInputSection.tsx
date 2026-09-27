@@ -184,6 +184,7 @@ export function LockedInputSection() {
           </span>
         </button>
         <span className="text-xs text-muted-foreground truncate flex-1">
+          {/* read-gate-exempt: model columns the person added to this comparison, not a fetched count */}
           {`${columns.length} model${columns.length === 1 ? "" : "s"}`}
         </span>
       </div>

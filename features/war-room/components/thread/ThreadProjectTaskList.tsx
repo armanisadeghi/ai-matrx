@@ -24,6 +24,8 @@
  * `selectEffectiveThreadProjectId` (the tile's own project_id ?? the room's).
  */
 
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useEffect, useState } from "react";
 import { isOpenStatus } from "@/features/tasks/constants/status";
 import {
@@ -186,9 +188,12 @@ function ProjectTaskBody({
               {hideProjectHeader ? "Tasks" : (projectName ?? "Project tasks")}
             </span>
             {tasks.length > 0 && (
-              <span className="shrink-0 tabular-nums text-muted-foreground/60">
-                {completed}/{tasks.length}
-              </span>
+              <UntrustedCount
+                className="shrink-0 tabular-nums text-muted-foreground/60"
+                read={readOf({ loading, error: loadError })}
+                value={`${completed}/${tasks.length}`}
+                label="Tasks done"
+              />
             )}
             {tasks.length > 0 && completed > 0 && (
               <button

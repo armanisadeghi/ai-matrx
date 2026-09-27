@@ -19,6 +19,7 @@
  */
 
 import { useSubtasksRead } from "@/features/tasks/hooks/useSubtasksRead";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useEffect, useState } from "react";
 import { isOpenStatus } from "@/features/tasks/constants/status";
@@ -111,9 +112,12 @@ export function SubtaskRail({
         <CheckSquare className="size-3.5 text-primary" />
         <span>Subtasks</span>
         {subtasks.length > 0 && (
-          <span className="tabular-nums text-muted-foreground/60">
-            {completed}/{subtasks.length}
-          </span>
+          <UntrustedCount
+            className="tabular-nums text-muted-foreground/60"
+            read={subtasksRead}
+            value={`${completed}/${subtasks.length}`}
+            label="Subtasks done"
+          />
         )}
         {subtasks.length > 0 && completed > 0 && (
           <button

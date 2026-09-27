@@ -341,6 +341,7 @@ export default function TranscriptionCleanup({
             <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               Transcript{" "}
               <span className="text-muted-foreground/60">
+                {/* read-gate-exempt: transcript entries recorded in this tab's memory, not rows fetched from a read */}
                 ({entries.length})
               </span>
             </span>

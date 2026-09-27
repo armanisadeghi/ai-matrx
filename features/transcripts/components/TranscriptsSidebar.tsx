@@ -1,6 +1,8 @@
 // features/transcripts/components/TranscriptsSidebar.tsx
 "use client";
 
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import React, { useState, useMemo } from "react";
@@ -193,7 +195,11 @@ export function TranscriptsSidebar({
                 All Transcripts
               </span>
               <Badge variant="secondary" className="text-xs">
-                {transcripts.length}
+                <UntrustedCount
+                  read={readOf({ isLoading: isLoading && !hasLoaded, error: loadError })}
+                  value={transcripts.length}
+                  label="Transcripts"
+                />
               </Badge>
             </button>
 

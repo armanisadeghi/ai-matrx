@@ -99,6 +99,7 @@ export function OrgHrPeopleSection({
         {summary.prehire_count > 0 ? (
           <SummaryTile
             label="Starting soon"
+            // read-gate-exempt: a field of the summary this read returned; with no answer the section returns nothing above
             value={summary.prehire_count}
             href={hrPeopleHref({ org: orgSlugOrId, status: ["prehire"] })}
           />

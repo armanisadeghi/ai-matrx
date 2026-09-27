@@ -211,6 +211,7 @@ export function AICodeEditor({
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-semibold">Review Changes</span>
                   <span className="text-xs text-muted-foreground">
+                    {/* read-gate-exempt: edits parsed from the reply in this browser, not rows fetched from a read */}
                     {parsedEdits.edits.length} edit
                     {parsedEdits.edits.length !== 1 ? "s" : ""}
                   </span>

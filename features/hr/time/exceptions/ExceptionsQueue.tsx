@@ -187,6 +187,7 @@ export function ExceptionsQueue({
         <>
           {!readOnly && selected.length > 0 ? (
             <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
+              {/* read-gate-exempt: rows the person ticked in this queue, shown only when some are selected */}
               <span className="text-sm">{pluralize(selected.length, "exception")} selected</span>
               <Button type="button" size="sm" onClick={() => setBulkOpen(true)}>
                 <CheckCheck className="mr-1.5 h-4 w-4" aria-hidden />

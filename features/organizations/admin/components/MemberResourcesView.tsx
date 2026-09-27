@@ -19,6 +19,8 @@ import type { OrgMemberResource } from "../types";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { useOrgMemberDetail } from "../hooks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 interface Props {
   orgId: string;
@@ -82,6 +84,8 @@ export function MemberResourcesView({ orgId, organization, userId }: Props) {
       </div>
     );
 
+  // The resource counts are this read's answer; a failed refresh is "—", not a stale 0.
+  const membersRead = readOf({ loading, error }, { what: "this member's resources", onRetry: refresh });
   const label = member.displayName || member.email || "this member";
   const total = member.resources.reduce(
     (sum, resource) => sum + resource.count,
@@ -118,7 +122,8 @@ export function MemberResourcesView({ orgId, organization, userId }: Props) {
           {label}
         </Link>
         <p className="shrink-0 text-sm text-muted-foreground">
-          {total} resource{total === 1 ? "" : "s"} owned by {label} within{" "}
+          <UntrustedCount read={membersRead} value={total} label="Resources" /> resource
+          {total === 1 ? "" : "s"} owned by {label} within{" "}
           {organization.name}. Personal-org resources are not shown and are
           never affected.
         </p>
@@ -142,6 +147,7 @@ export function MemberResourcesView({ orgId, organization, userId }: Props) {
             getRowId={(resource) => resource.resourceType}
             isLoading={loading && !member}
             isFetching={loading && Boolean(member)}
+            read={membersRead}
             coverage={{
               noun: "org-scoped resource type",
               answeredBy: "client",

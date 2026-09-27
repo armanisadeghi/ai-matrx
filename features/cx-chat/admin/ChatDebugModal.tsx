@@ -260,10 +260,12 @@ export function ChatDebugModal({
                   </div>
                   <div>
                     <span className="text-foreground">messages:</span>{" "}
+                    {/* read-gate-exempt: debug readout of the chat session held in this tab's memory, not a fetched count */}
                     {messages.length}
                   </div>
                   <div>
                     <span className="text-foreground">resources:</span>{" "}
+                    {/* read-gate-exempt: debug readout of the chat session held in this tab's memory, not a fetched count */}
                     {resources.length}
                   </div>
                   <div>

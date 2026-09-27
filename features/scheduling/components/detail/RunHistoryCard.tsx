@@ -2,6 +2,8 @@
 
 "use client";
 
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { History } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -47,9 +49,12 @@ export function RunHistoryCard({ taskId, task = null }: Props) {
           <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             <History className="h-3 w-3" /> Run history
             {runs.length > 0 ? (
-              <span className="ml-1 tabular-nums font-medium normal-case tracking-normal">
-                {runs.length}
-              </span>
+              <UntrustedCount
+                className="ml-1 tabular-nums font-medium normal-case tracking-normal"
+                read={readOf({ status, error })}
+                value={runs.length}
+                label="Runs"
+              />
             ) : null}
           </div>
           {runs.length > 0 ? (

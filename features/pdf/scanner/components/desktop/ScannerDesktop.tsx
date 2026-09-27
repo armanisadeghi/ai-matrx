@@ -361,6 +361,7 @@ export default function ScannerDesktop() {
                 <ImageIcon className="h-4 w-4" />
                 Current scan
                 <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 font-mono text-[10px] font-bold text-primary">
+                  {/* read-gate-exempt: pages captured in the scan running in this browser, held in memory, not a fetched count */}
                   {itemCount}
                 </span>
               </button>
@@ -416,6 +417,7 @@ export default function ScannerDesktop() {
                   <div className="mb-6 flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
                     <History className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <p className="min-w-0 flex-1 text-sm text-muted-foreground">
+                      {/* read-gate-exempt: pages of an unsaved scan this device kept locally, shown only when one exists */}
                       Unsaved scan with {session.resumable.items.length} item
                       {session.resumable.items.length === 1 ? "" : "s"}
                       {session.resumable.label

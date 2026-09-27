@@ -361,6 +361,7 @@ function StageActionPanel({
           <div className="flex justify-between text-[10px] text-muted-foreground">
             <span>
               {action.progress?.current.toLocaleString() ?? 0} /{" "}
+              {/* read-gate-exempt: live progress of the action the person started, pushed by its own stream, not a fetched count */}
               {action.progress?.total.toLocaleString() ?? 0}
             </span>
             <span>
