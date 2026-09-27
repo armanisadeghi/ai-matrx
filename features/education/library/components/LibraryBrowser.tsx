@@ -7,7 +7,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DeckCard } from "./DeckCard";
-import { listPublicDecks } from "../service";
+import { listPublicDecks, suggestDeckEdit } from "../service";
 import type { PublicDeck } from "../types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
@@ -18,7 +18,6 @@ import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writebac
 import { EDUCATION_LIBRARY_COMMUNITY_SURFACE_NAME } from "@/features/surfaces/manifests/education-library-community.manifest";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { forkSharedResource } from "@/utils/permissions/shareLinks";
-import { suggestEditAction } from "../actions";
 import {
   buildCommunityLibraryScope,
   parseCopyDecksValue,
@@ -128,7 +127,7 @@ export function LibraryBrowser({
             parseCreateDeckSuggestionsValue(value, decks, isSignedIn),
           ),
         run: async (plan: { deck: PublicDeck; body: string }) => {
-          await suggestEditAction(plan.deck.id, plan.body);
+          await suggestDeckEdit(plan.deck.id, plan.body);
           return { id: plan.deck.id, name: `Suggestion on ${plan.deck.name}` };
         },
         nameOf: (plan: { deck: PublicDeck }) => `suggestion on ${plan.deck.name}`,

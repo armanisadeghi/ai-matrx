@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
-import { suggestEditAction } from "../actions";
+import { suggestDeckEdit } from "../service";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { guardedSave } from "@/lib/save/guardedSave";
 
@@ -52,7 +52,7 @@ export function SuggestEditDialog({
     startTransition(async () => {
       try {
         // A new suggestion is not safe to repeat: no Retry, only the honest wait.
-        await guardedSave(() => suggestEditAction(deckId, body.trim()), {
+        await guardedSave(() => suggestDeckEdit(deckId, body.trim()), {
           what: "your suggestion",
         });
         toast.success("Sent to the deck owner");

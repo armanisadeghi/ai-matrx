@@ -13,7 +13,7 @@
  *    `forkSharedResource("fc_set", …)` the button calls (it asks which
  *    workspace when none is selected).
  *  - `create_deck_suggestions` — "Suggest edit" for a list of decks, through
- *    the dialog's own `suggestEditAction`.
+ *    the dialog's own `suggestDeckEdit` (service.ts).
  * Nobody else's deck is ever changed from here. Certify is NOT a target: it is
  * a super-admin editorial grant, not the person's own work.
  *

@@ -110,3 +110,36 @@ export async function listPublicDecks({
   }
   return ((data ?? []) as PublicDeckRow[]).map(mapPublicDeck);
 }
+
+// ─── Suggest-edit flywheel — direct RPCs (the RPCs enforce author/owner) ──────
+//
+// These were server actions until 2026-09-27. A server action's error message
+// is REDACTED in production builds ("React error #441"), so a person — and an
+// agent on the page — saw "internal error" instead of the RPC's own reason
+// ("cannot suggest an edit to your own deck"). Direct React → Supabase is the
+// canonical path anyway (CLAUDE.md, data flow).
+
+/** Send a suggestion to a community deck's owner. Throws the RPC's reason. */
+export async function suggestDeckEdit(
+  resourceId: string,
+  body: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("edu_suggest_edit", {
+    p_resource_id: resourceId,
+    p_body: body,
+    p_resource_type: "fc_set",
+  });
+  if (error) throw pgError(error);
+}
+
+/** Accept / decline (or reopen) a suggestion on one of the caller's decks. */
+export async function resolveDeckSuggestion(
+  id: string,
+  status: "accepted" | "declined" | "open",
+): Promise<void> {
+  const { error } = await supabase.rpc("edu_resolve_suggestion", {
+    p_id: id,
+    p_status: status,
+  });
+  if (error) throw pgError(error);
+}

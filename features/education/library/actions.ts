@@ -38,19 +38,10 @@ export async function uncertifyDeckAction(resourceId: string): Promise<void> {
   if (error) throw operationFailed("remove this deck's certification", error);
 }
 
-// ─── Suggest-edit flywheel (any authenticated user → the deck owner) ──────────
-export async function suggestEditAction(
-  resourceId: string,
-  body: string,
-): Promise<void> {
-  const sb = await createClient();
-  const { error } = await sb.rpc("edu_suggest_edit", {
-    p_resource_id: resourceId,
-    p_body: body,
-    p_resource_type: "fc_set",
-  });
-  if (error) throw operationFailed("send your suggestion", error);
-}
+// ─── Suggest-edit flywheel ────────────────────────────────────────────────────
+// Sending and answering suggestions are direct client RPCs (service.ts
+// `suggestDeckEdit` / `resolveDeckSuggestion`): a server action's error is
+// redacted in production, which hid the RPC's reason from the person.
 
 /** Suggestions on the caller's own decks (the owner inbox). */
 export async function listOwnerSuggestionsAction(): Promise<DeckSuggestionRow[]> {
@@ -72,16 +63,4 @@ export async function listOwnerSuggestionsAction(): Promise<DeckSuggestionRow[]>
     .order("created_at", { ascending: false });
   if (error) throw operationFailed("load suggestions on your decks", error);
   return (data ?? []) as DeckSuggestionRow[];
-}
-
-export async function resolveSuggestionAction(
-  id: string,
-  status: "accepted" | "declined" | "open",
-): Promise<void> {
-  const sb = await createClient();
-  const { error } = await sb.rpc("edu_resolve_suggestion", {
-    p_id: id,
-    p_status: status,
-  });
-  if (error) throw operationFailed("update this suggestion", error);
 }

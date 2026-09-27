@@ -6,10 +6,8 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import {
-  listOwnerSuggestionsAction,
-  resolveSuggestionAction,
-} from "../actions";
+import { listOwnerSuggestionsAction } from "../actions";
+import { resolveDeckSuggestion } from "../service";
 import type { DeckSuggestionRow } from "../types";
 import { guardedSave } from "@/lib/save/guardedSave";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -49,7 +47,7 @@ export function OwnerSuggestionInbox() {
     setPendingId(id);
     startTransition(async () => {
       try {
-        await guardedSave(() => resolveSuggestionAction(id, status), {
+        await guardedSave(() => resolveDeckSuggestion(id, status), {
           what: "your answer to the suggestion",
           onRetry: () => resolve(id, status),
         });
@@ -79,7 +77,7 @@ export function OwnerSuggestionInbox() {
           }
         },
         run: async (plan: SuggestionAnswerPlan) => {
-          await resolveSuggestionAction(plan.row.id, plan.status);
+          await resolveDeckSuggestion(plan.row.id, plan.status);
           return {
             id: plan.row.id,
             name: `suggestion on deck ${plan.row.resource_id}`,
