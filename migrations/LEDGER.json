@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-27T17:12:56.234Z",
+  "generated_at": "2026-09-27T17:14:35.624Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2467,6 +2467,12 @@
       "filename": "handover_all_my_organizations_answers_in_one_query.sql",
       "checksum": "ae787fe296eeef2f0c7a172b9e54cf180f4d130b0eae9bbb162f289ce4ba09f8",
       "applied_at": "2026-09-27 17:00:48.966879+00"
+    },
+    "migrations/campaign/handover_the_data_card_speaks_plain_words.sql": {
+      "source": "matrx-frontend",
+      "filename": "handover_the_data_card_speaks_plain_words.sql",
+      "checksum": "f63c1ef47513487fcfd0050cd158875e0649be5d00a1d979ffe111636d16b04f",
+      "applied_at": "2026-09-27 17:14:34.57023+00"
     },
     "migrations/campaign/heldtails_the_approval_setting_is_named_where_it_lives.sql": {
       "source": "matrx-frontend",
