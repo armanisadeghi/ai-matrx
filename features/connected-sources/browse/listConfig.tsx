@@ -95,11 +95,12 @@ const SOURCE_COLUMNS: EntityColumnSpec<ConnectedSourceRow>[] = [
     column: {
       id: "kind",
       accessorKey: "kind",
+      width: 110,
       header: "Kind",
       sortable: false,
       filter: false,
       cell: (row) => (
-        <Badge variant="secondary">{KIND_WORDS[row.kind] ?? row.kind}</Badge>
+        <Badge variant="secondary" className="text-xs">{KIND_WORDS[row.kind] ?? row.kind}</Badge>
       ),
     },
   },
@@ -110,6 +111,7 @@ const SOURCE_COLUMNS: EntityColumnSpec<ConnectedSourceRow>[] = [
     column: {
       id: "author",
       accessorKey: "author",
+      width: 240,
       header: "From",
       sortable: false,
       filter: false,
@@ -128,6 +130,7 @@ const SOURCE_COLUMNS: EntityColumnSpec<ConnectedSourceRow>[] = [
     column: {
       id: "modified_at",
       accessorKey: "modified_at",
+      width: 140,
       header: "When",
       sortable: false,
       filter: false,
@@ -141,6 +144,7 @@ const SOURCE_COLUMNS: EntityColumnSpec<ConnectedSourceRow>[] = [
     column: {
       id: "size_bytes",
       accessorKey: "size_bytes",
+      width: 110,
       header: "Size",
       sortable: false,
       filter: false,

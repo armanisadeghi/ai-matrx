@@ -253,7 +253,7 @@ export function BrowseEverything() {
   }
 
   const accountBar = (
-    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+    <div className="matrx-touch-targets flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
       <Select
         value={targetKey(chosen)}
         onValueChange={(value) => {
@@ -268,13 +268,14 @@ export function BrowseEverything() {
           aria-label="Account to browse"
           className="h-9 w-full min-w-0 sm:w-auto sm:max-w-md"
         >
+          {/* The account first — it is what tells two choices apart. */}
           <span className="truncate">
-            {chosenAdapter?.title}
+            {chosenAdapter?.connections.find(
+              (c) => c.connection_id === chosen.connectionId,
+            )?.account_email ?? "This account"}
             <span className="text-muted-foreground">
               {" · "}
-              {chosenAdapter?.connections.find(
-                (c) => c.connection_id === chosen.connectionId,
-              )?.account_email ?? "this account"}
+              {chosenAdapter?.title}
             </span>
           </span>
         </SelectTrigger>
