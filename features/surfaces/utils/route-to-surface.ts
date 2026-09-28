@@ -764,6 +764,18 @@ export function surfaceFromPathname(
     return "matrx-user/education-study-guide";
   }
 
+  // One workflow run's permalink (`/workflows/runs/<id>`) is its own surface —
+  // the run's state, plan, outputs and controls. The runs list is another page.
+  if (/^\/workflows\/runs\/[^/]+\/?$/.test(stripped)) {
+    return "matrx-user/workflow-run";
+  }
+
+  // One meeting's home (`/meetings/<id>`) is its own record surface. The
+  // meetings list (`/meetings`) is another page.
+  if (/^\/meetings\/[^/]+\/?$/.test(stripped)) {
+    return "matrx-user/meeting";
+  }
+
   // The research topics LIST is exactly `/research/topics`. One topic's
   // workspace (`/research/topics/[id]/…`), the wizard and the landing keep the
   // `/research` prefix mapping — they describe one topic, not a list.

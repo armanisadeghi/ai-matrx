@@ -222,9 +222,26 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
   text from a paste or `board_add_tile` becomes a note at once through `NotesAPI.create`. The demo
   board and the workflow run board render the same body inside `SurfaceActivity`. The board's Text
   tool label is `tiles/TextTileBody.tsx`.
+- **Feature tiles are the feature's page body, with its surface** (`items/feature-items.tsx`). Each body
+  mounts its surface through the SAME host the feature's page uses, so no feature item declares a
+  `Host`: Task → `TaskEditor` (`TaskEditorBody` mounts `matrx-user/tasks`); War Room → the room's
+  `StageView` under `RoomViewProvider` + `WarRoomSurfaceHost` (`matrx-user/war-room`; the tile
+  HYDRATES the room — `hydrateWarRoomSession` — and never changes the active room); Research →
+  `DocumentViewer` under `TopicProvider` + `ResearchTopicSurfaceHost`; Project →
+  `ProjectRecordWorkspace chrome="embedded"` (the whole project workspace + `matrx-user/projects`);
+  Meeting → `MeetingDetail chrome="embedded"` (sections and actions in a strip; it mounts
+  `MeetingSurfaceHost`, `matrx-user/meeting`); Workflow run → `RunStage` under
+  `WorkflowRunSurfaceHost` (`matrx-user/workflow-run`).
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
 ## Change Log
+
+- 2026-09-28 — Feature tiles carry their feature's full surface: Task (`matrx-user/tasks`, already in
+  `TaskEditorBody`), War Room (`WarRoomSurfaceHost`, body now the room's `StageView`; the tile hydrates
+  without taking the active room), Research (`ResearchTopicSurfaceHost`), Project
+  (`ProjectRecordWorkspace` — the whole workspace, not just its task list), Meeting (NEW
+  `matrx-user/meeting`, body now `MeetingDetail` embedded) and Workflow run (NEW
+  `matrx-user/workflow-run`). Each host is shared with the feature's own page.
 
 - 2026-09-28 — The bridge: every tile registers its surface into a per-tile capture (live or dormant);
   `board_items` replaces `board_tiles` (every item + a dormant item's basics); `board_open_item` /

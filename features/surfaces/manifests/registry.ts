@@ -178,6 +178,8 @@ import { fileManifest } from "./file.manifest";
 import { imageViewerManifest } from "./image-viewer.manifest";
 import { tableSettingsManifest } from "./table-settings.manifest";
 import { workflowEmitManifest } from "./workflow-emit.manifest";
+import { workflowRunManifest } from "./workflow-run.manifest";
+import { meetingManifest } from "./meeting.manifest";
 import { imageUploaderManifest } from "./image-uploader.manifest";
 import { imagesManifest } from "./images.manifest";
 import { imageStudioManifest } from "./image-studio.manifest";
@@ -435,6 +437,8 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   imageViewerManifest,
   tableSettingsManifest,
   workflowEmitManifest,
+  workflowRunManifest,
+  meetingManifest,
   imageUploaderManifest,
   imagesManifest,
   imageStudioManifest,
