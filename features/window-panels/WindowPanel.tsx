@@ -779,12 +779,19 @@ export function WindowPanel({
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || e.defaultPrevented) return;
       // A menu, popover, select, dialog or the workspace picker owns Escape.
-      if (
-        document.querySelector(
+      // Only a VISIBLE one: the header keeps a hidden "Organizations" listbox
+      // mounted, which swallowed every Escape (found live, 2026-09-27).
+      const layered = Array.from(
+        document.querySelectorAll<HTMLElement>(
           '[data-radix-popper-content-wrapper], [role="menu"], [role="listbox"], [role="dialog"][data-state="open"], [role="alertdialog"], [data-organization-gate]',
-        )
-      )
-        return;
+        ),
+      ).some(
+        (el) =>
+          el.getClientRects().length > 0 &&
+          getComputedStyle(el).visibility !== "hidden" &&
+          !el.closest(`[data-window-id="${CSS.escape(id)}"]`),
+      );
+      if (layered) return;
       const mine = document.querySelector<HTMLElement>(
         `[data-window-panel][data-window-id="${CSS.escape(id)}"]`,
       );
