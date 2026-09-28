@@ -72,6 +72,9 @@ export const GENERIC_VALUE_KINDS: ReadonlySet<string> = new Set([
   ...MEDIA_VALUE_KINDS,
   "string_list",
   "json",
+  // The one Source payload (`@ai-matrx/agents/sources` SourceSet), resolved
+  // server-side before substitution. Mirror of aidream `GENERIC_VALUE_SCHEMAS["sources"]`.
+  "sources",
 ]);
 
 /** Code-owned levers a mandate may PIN — mirror of aidream

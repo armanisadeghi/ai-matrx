@@ -71,22 +71,23 @@ describe("resourceToSourceRef — outcomes", () => {
   });
 
   it("sends inline material through intake, never as a blob", () => {
-    const inline: Resource[] = [
-      { type: "webpage", data: { url: "https://example.com" } as never },
-      { type: "youtube", data: { url: "https://youtu.be/x", videoId: "x" } },
-      { type: "image_url", data: { url: "https://example.com/a.png" } },
-      { type: "file_url", data: { url: "https://example.com/a.pdf" } },
-      { type: "audio", data: { url: "blob:x" } },
-      { type: "text", data: { id: "t", label: "Dictation", text: "hello" } },
-      { type: "file", data: { content: "only content, no stored id" } },
+    const inline: Array<[Resource, string]> = [
+      [{ type: "webpage", data: { url: "https://example.com" } as never }, "scraper"],
+      [{ type: "youtube", data: { url: "https://youtu.be/x", videoId: "x" } }, "transcription"],
+      [{ type: "image_url", data: { url: "https://example.com/a.png" } }, "scraper"],
+      [{ type: "file_url", data: { url: "https://example.com/a.pdf" } }, "scraper"],
+      [{ type: "audio", data: { url: "blob:x" } }, "transcription"],
+      [{ type: "text", data: { id: "t", label: "Dictation", text: "hello" } }, "sources_land"],
+      [{ type: "file", data: { content: "only content, no stored id" } }, "file_upload"],
     ];
-    for (const resource of inline) {
+    for (const [resource, door] of inline) {
       const outcome = resourceToSourceRef(resource);
       expect(isNeedsIntake(outcome)).toBe(true);
       if (isNeedsIntake(outcome)) {
         expect(outcome.kind).toBe(resource.type);
         expect(outcome.payload).toBe(resource.data);
         expect(outcome.reason).toBeTruthy();
+        expect(outcome.door).toBe(door);
       }
     }
   });
@@ -97,6 +98,7 @@ describe("resourceToSourceRef — outcomes", () => {
       data: { type: "table_row", table_id: "t", row_id: "r" } as never,
     });
     expect(isNeedsIntake(slice) && slice.reason).toMatch(/whole table/);
+    expect(isNeedsIntake(slice) && slice.door).toBeNull();
     const cell = resourceToSourceRef({
       type: "context_value",
       data: {
@@ -108,5 +110,6 @@ describe("resourceToSourceRef — outcomes", () => {
       },
     });
     expect(isNeedsIntake(cell) && cell.reason).toMatch(/context/);
+    expect(isNeedsIntake(cell) && cell.door).toBeNull();
   });
 });
