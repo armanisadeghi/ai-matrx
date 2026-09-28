@@ -7,8 +7,11 @@
 // design doors (`POST /ai-visibility/panels/design`, `GET …/{id}/design`,
 // `POST …/{id}/design/gates/{gate}`, `GET …/{id}/design/artifacts/{name}`).
 //
-// These routes are not in `types/python-generated/api-types.ts` yet (the
-// backend lanes are landing them concurrently). When `pnpm sync-types` picks
+// Verified 2026-09-27 against aidream 1f0b31f8ce (PanelMetrics, from
+// matrx_seo.ai_visibility_design) and 305bae704e (DesignRunView, GateCard and
+// the gate payloads built in services/seo/ai_visibility_design_service.py).
+// Agent-written payload fields are nullable there, so they are nullable here.
+// The routes are not in `types/python-generated/api-types.ts` yet. When `pnpm sync-types` picks
 // them up, replace these hand-written shapes with the generated
 // `components["schemas"][...]` types in THIS file only — every consumer
 // imports from here.
@@ -148,18 +151,18 @@ export interface DesignNotice {
 export interface Gate1Payload {
   sources: Array<{
     id: string;
-    title: string;
+    title: string | null;
     url: string | null;
-    source_class: string;
-    grade: string;
+    source_class: string | null;
+    grade: string | null;
   }>;
   icps: Array<{
     id: string;
-    context: string;
-    confidence: string | number;
-    status: string;
+    context: string | null;
+    confidence: string | number | null;
+    status: string | null;
   }>;
-  register_terms: Array<{ term: string; term_class: string }>;
+  register_terms: Array<{ term: string; term_class: string | null }>;
   open_questions: string[];
   perimeter: Array<{
     area: string;
@@ -171,9 +174,9 @@ export interface Gate1Payload {
 export interface Gate2Payload {
   jobs: Array<{
     id: string;
-    statement: string;
-    grade: string;
-    confidence: string | number;
+    statement: string | null;
+    grade: string | null;
+    confidence: string | number | null;
     roles: string[];
     language_samples: Array<{ text: string; source_id: string | null }>;
   }>;
@@ -187,7 +190,7 @@ export interface Gate3Question {
   band: string | null;
   aided_status: string | null;
   partition: string | null;
-  qa_decision: QaDecision | string;
+  qa_decision: QaDecision | string | null;
   qa_reason: string | null;
 }
 
@@ -199,7 +202,7 @@ export interface Gate3Payload {
 }
 
 export interface Gate4Payload {
-  version: string;
+  version: string | null;
   weights: { exposure: unknown; priority: unknown };
   limitations: string[];
   cadence_days: number;
@@ -214,6 +217,7 @@ export interface GateCard {
   gate: GateNumber;
   title: string;
   blind: boolean;
+  /** Always sent by the server (now + the org's gate_wait_hours knob). */
   wait_until: string | null;
   summary: string;
   payload: Record<string, unknown>;

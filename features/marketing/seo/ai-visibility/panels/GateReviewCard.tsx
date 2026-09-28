@@ -53,6 +53,12 @@ function arr<T>(value: unknown): T[] {
   return Array.isArray(value) ? (value as T[]) : [];
 }
 
+/** Agent-written payload fields may be null: never crash, never print "null". */
+function words(value: unknown, whenMissing = "not stated"): string {
+  if (value === null || value === undefined || value === "") return whenMissing;
+  return String(value).replaceAll("_", " ");
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="border-t border-border/60 px-3 py-2">
@@ -175,8 +181,8 @@ function Gate1Body({
     <>
       <Section title="Facts and their sources">
         <ul className="space-y-1 text-xs">
-          {arr<Gate1Payload["sources"][number]>(payload.sources).map((source) => (
-            <li key={source.id}>
+          {arr<Gate1Payload["sources"][number]>(payload.sources).map((source, index) => (
+            <li key={source.id ?? `source-${index}`}>
               {source.url ? (
                 <a
                   href={source.url}
@@ -187,11 +193,11 @@ function Gate1Body({
                   {source.title || source.url}
                 </a>
               ) : (
-                <span>{source.title}</span>
+                <span>{source.title || "Untitled source"}</span>
               )}
               <span className="text-muted-foreground">
                 {" "}
-                · {source.source_class.replaceAll("_", " ")} · grade {source.grade}
+                · {words(source.source_class, "unclassified source")} · grade {words(source.grade, "not graded")}
               </span>
             </li>
           ))}
@@ -202,10 +208,10 @@ function Gate1Body({
           {arr<Gate1Payload["icps"][number]>(payload.icps).map((icp) => (
             <li key={icp.id} className="flex items-start justify-between gap-2">
               <span className={cn(excluded.includes(icp.id) && "line-through opacity-60")}>
-                {icp.context}
+                {icp.context || "Unnamed profile"}
                 <span className="text-muted-foreground">
                   {" "}
-                  · confidence {String(icp.confidence)} · {icp.status.replaceAll("_", " ")}
+                  · confidence {words(icp.confidence)} · {words(icp.status, "no status")}
                 </span>
               </span>
               {editing ? (
@@ -238,7 +244,7 @@ function Gate1Body({
               <span
                 key={`${term.term}-${term.term_class}`}
                 className="rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[11px]"
-                title={term.term_class.replaceAll("_", " ")}
+                title={words(term.term_class, "")}
               >
                 {term.term}
               </span>
@@ -300,7 +306,7 @@ function Gate2Body({
           <li key={job.id}>
             <div className="flex items-start justify-between gap-2">
               <span className={cn("font-medium", excluded.includes(job.id) && "line-through opacity-60")}>
-                {job.statement}
+                {job.statement || "Unstated job"}
               </span>
               {editing ? (
                 <LeaveOutToggle
@@ -317,7 +323,7 @@ function Gate2Body({
               ) : null}
             </div>
             <div className="text-[11px] text-muted-foreground">
-              evidence grade {job.grade} · confidence {String(job.confidence)}
+              evidence grade {words(job.grade, "not graded")} · confidence {words(job.confidence)}
               {arr<string>(job.roles).length ? ` · ${arr<string>(job.roles).join(", ")}` : ""}
             </div>
             {arr<Gate2Payload["jobs"][number]["language_samples"][number]>(job.language_samples).map(
@@ -399,7 +405,7 @@ function Gate3Body({
                           question.qa_decision === "reject" && "text-destructive",
                         )}
                       >
-                        {qaDecisionName(question.qa_decision)}
+                        {question.qa_decision ? qaDecisionName(question.qa_decision) : "Not checked"}
                       </span>
                       {question.qa_reason ? ` — ${question.qa_reason}` : ""}
                     </div>
@@ -473,7 +479,7 @@ function Gate4Body({
       <Section title="Plan">
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
           <dt className="text-muted-foreground">Version</dt>
-          <dd>{payload.version}</dd>
+          <dd>{words(payload.version, "not numbered yet")}</dd>
           <dt className="text-muted-foreground">Asked every</dt>
           <dd>
             {editing ? (
