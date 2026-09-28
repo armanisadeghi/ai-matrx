@@ -204,6 +204,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     surface: "matrx-user/education-practice-oral",
   },
   { prefix: "/education/progress", surface: "matrx-user/education-progress" },
+  { prefix: "/education/sessions", surface: "matrx-user/education-sessions" },
   { prefix: "/education/learn", surface: "matrx-user/education-learn" },
   {
     prefix: "/education/audio-study",
@@ -704,6 +705,9 @@ export function surfaceFromPathname(
   if (/^\/education\/flashcards\/[^/]+\/edit(?:\/|$)/.test(stripped)) {
     return "matrx-user/education-flashcard-editor";
   }
+  if (/^\/education\/flashcards\/[^/]+\/sessions(?:\/|$)/.test(stripped)) {
+    return "matrx-user/education-sessions";
+  }
   if (
     /^\/education\/flashcards\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/?$/i.test(
       stripped,
@@ -760,6 +764,14 @@ export function surfaceFromPathname(
   }
   if (/^\/education\/practice-tests\/?$/.test(stripped)) {
     return "matrx-user/education-practice-tests";
+  }
+
+  // The Solo Arcade live round (`/education/game/solo`) is its own surface —
+  // current question, choices, score, streak and recent mistakes — resolved
+  // before the `/education/game` prefix table entry so it doesn't fall
+  // through to the generic Study Games hub vocabulary.
+  if (/^\/education\/game\/solo\/?$/.test(stripped)) {
+    return "matrx-user/education-game-solo";
   }
 
   // My Classes is exactly `/education/classes`. One class's HUB

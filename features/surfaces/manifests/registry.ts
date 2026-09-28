@@ -155,8 +155,10 @@ import { educationPracticeOralManifest } from "./education-practice-oral.manifes
 import { educationLearnAuthoringManifest } from "./education-learn-authoring.manifest";
 import { educationAudioStudyManifest } from "./education-audio-study.manifest";
 import { educationGameManifest } from "./education-game.manifest";
+import { educationGameSoloManifest } from "./education-game-solo.manifest";
 import { educationLearnManifest } from "./education-learn.manifest";
 import { educationProgressManifest } from "./education-progress.manifest";
+import { educationSessionsManifest } from "./education-sessions.manifest";
 import { educationLibraryManifest } from "./education-library.manifest";
 import { educationLibraryCommunityManifest } from "./education-library-community.manifest";
 import { educationLibrarySuggestionsManifest } from "./education-library-suggestions.manifest";
@@ -414,8 +416,10 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationLearnAuthoringManifest,
   educationAudioStudyManifest,
   educationGameManifest,
+  educationGameSoloManifest,
   educationLearnManifest,
   educationProgressManifest,
+  educationSessionsManifest,
   educationLibraryManifest,
   educationLibraryCommunityManifest,
   educationLibrarySuggestionsManifest,

@@ -37,7 +37,8 @@ import type {
   ConvertResult,
   ConvertSource,
 } from "@/features/education/convert/types";
-import { fetchDocument } from "@/features/rag/api/document";
+import { supabase } from "@/utils/supabase/client";
+import { docprocDb } from "@/utils/supabase/docprocDb";
 import { peekHref } from "@/features/organizations/peek/peekHref";
 import { coerceCards, setTitleOf } from "./coerce-card";
 import { foldDepthIntoRequest } from "./enhanceCard";
@@ -87,10 +88,10 @@ function documentIdOf(source: ResolvedSource): string {
   return source.processed_document_id ?? source.file_id ?? source.ref.resource_id;
 }
 
-/** The in-app page of a Source that has no file behind it (a note, a record). */
+/** The in-app page of a Source that has no file behind it (a note, pasted text, a record). */
 function openHrefOf(source: ResolvedSource): string | null {
   const type = source.ref.resource_type;
-  if (type === "processed_document" || type === "file" || type === "cld_file") return null;
+  if (type === "file" || type === "cld_file") return null;
   return peekHref(type, source.ref.resource_id) ?? null;
 }
 
@@ -103,28 +104,38 @@ function openHrefOf(source: ResolvedSource): string | null {
 export async function backfillFileIds(
   resolved: ResolvedSourceSet,
 ): Promise<ResolvedSourceSet> {
-  const sources = await Promise.all(
-    resolved.sources.map(async (s) => {
+  const docIds = resolved.sources
+    .filter((s) => !s.file_id && s.processed_document_id)
+    .map((s) => s.processed_document_id as string);
+  if (docIds.length === 0) return resolved;
+  // A direct read (RLS decides): the document row names the file it came from.
+  const { data, error } = await docprocDb(supabase)
+    .from("processed_documents")
+    .select("id, source_kind, source_id")
+    .in("id", docIds);
+  const fileOf = new Map<string, string>();
+  for (const row of data ?? []) {
+    if (row.source_kind === "cld_file" && row.source_id) {
+      fileOf.set(row.id as string, row.source_id as string);
+    }
+  }
+  return {
+    ...resolved,
+    sources: resolved.sources.map((s) => {
       if (s.file_id || !s.processed_document_id) return s;
-      try {
-        const doc = await fetchDocument(s.processed_document_id);
-        return doc.source_kind === "cld_file" && doc.source_id
-          ? { ...s, file_id: doc.source_id }
-          : s;
-      } catch (e) {
-        return {
-          ...s,
-          notes: [
-            ...s.notes,
-            `Its citations show the passage but cannot open the file (${
-              e instanceof Error ? e.message : "the document could not be read"
-            }).`,
-          ],
-        };
-      }
+      const fileId = fileOf.get(s.processed_document_id);
+      if (fileId) return { ...s, file_id: fileId };
+      return error
+        ? {
+            ...s,
+            notes: [
+              ...s.notes,
+              `Its citations show the passage but cannot open the file (${error.message}).`,
+            ],
+          }
+        : s;
     }),
-  );
-  return { ...resolved, sources };
+  };
 }
 
 /** Backfill every citation with the durable ids of ITS OWN Source. */

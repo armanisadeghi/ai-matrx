@@ -18,26 +18,22 @@
  * failure class as `education-memory`: agents were bindable here and blind
  * here (empty scope, silent fallback toast).
  *
- * THREE EMITTERS, TWO DOCUMENTED GAPS. `EngageHome`, `HostSetupImpl`, and
- * `JoinRoomImpl` are straightforward client leaves with plain `useState` —
- * emitters mount cleanly. `SoloArcade` and `MultiplayerGame` are BOTH thin
- * `next/dynamic({ ssr: false })` wrappers around `SoloArcadeImpl` /
- * `MultiplayerGameImpl` — a real-time game engine with per-answer timers, a
- * Supabase Broadcast channel, presence, and live score state (CLAUDE.md's
- * heavy-client-code-split rule is exactly why they're wrapped this way). This
- * manifest declares `solo_*` and `room_*` values so the vocabulary exists and
- * agents can be bound against it, but does NOT mount a
- * `SurfaceRuntimeProvider` inside either Impl in this pass — wiring a
- * synchronous `getScope` into a live-scoring realtime engine deserves its own
- * review pass, not a bolt-on here. Until then those values are declared but
- * NEVER actually emitted at runtime.
+ * SOLO HAS ITS OWN SURFACE NOW. `/education/game/solo` used to fall through
+ * to this manifest with declared-but-never-emitted `solo_*` values (wave 4
+ * gap). It is resolved to its own `matrx-user/education-game-solo` before the
+ * `/education/game` prefix table entry (see `route-to-surface.ts`) and has a
+ * real `SurfaceRuntimeProvider` emitter — see `education-game-solo.manifest.ts`.
+ * `MultiplayerGame` (`/education/game/play/[roomId]`) is the one remaining
+ * gap: `room_*` values are declared below but nothing mounts a
+ * `SurfaceRuntimeProvider` inside `MultiplayerGameImpl` yet — wiring a
+ * synchronous `getScope` into the realtime Broadcast/presence engine deserves
+ * its own review pass, not a bolt-on here.
  *
  * Curated groups (band 0-899):
  *
- *   tool_view       Which of the five routes the learner is on — read first
+ *   tool_view       Which of the routes the learner is on — read first
  *   host_setup      The host composer: source pick + room size
  *   join_room       The join composer: room code entry
- *   solo_session     Read-only state of a live solo-arcade run (not yet emitted)
  *   room_session     Read-only state of a live multiplayer room (not yet emitted)
  *
  * NO WRITE TARGETS. `host`'s source picker and `join`'s code field are each
@@ -82,13 +78,6 @@ const groups: SurfaceValueGroup[] = [
       "The join composer on /education/game/join — the code the learner is typing.",
   },
   {
-    key: "solo_session",
-    label: "Solo session",
-    sortOrder: 400,
-    description:
-      "Read-only state of a live solo-arcade run on /education/game/solo. No emitter is mounted here yet — see the manifest header.",
-  },
-  {
     key: "room_session",
     label: "Multiplayer room",
     sortOrder: 500,
@@ -103,7 +92,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "view",
     label: "Current view",
     description:
-      'Which Study Games route the learner is on: "home" (the hub — streak, league, badges, and the three primary actions), "host" (the room-creation composer), "join" (the room-code entry), "solo" (a live single-player run), or "play" (a live multiplayer room). Always present when the surface emits at all — "solo" and "play" currently never emit (see manifest header).',
+      'Which Study Games route the learner is on: "home" (the hub — streak, league, badges, and the three primary actions), "host" (the room-creation composer), "join" (the room-code entry), or "play" (a live multiplayer room). Solo Arcade (/education/game/solo) has its own surface — see education-game-solo.manifest.ts. Always present when the surface emits at all — "play" currently never emits (see manifest header).',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 4,
@@ -214,30 +203,6 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "join_room",
   },
 
-  // ── Solo session (declared, no emitter yet) ────────────────────────────
-  {
-    name: "solo_source_set_id",
-    label: "Solo deck",
-    description:
-      "UUID of the deck the solo-arcade run is drawing questions from, when launched with a ?set= deep link. Not currently emitted — see manifest header.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 36,
-    sortOrder: 300,
-    group: "solo_session",
-  },
-  {
-    name: "solo_score",
-    label: "Solo score",
-    description:
-      "The learner's running score in the live solo-arcade session. Not currently emitted — see manifest header.",
-    valueType: "number",
-    alwaysAvailable: false,
-    typicalCharCount: 4,
-    sortOrder: 310,
-    group: "solo_session",
-  },
-
   // ── Multiplayer room (declared, no emitter yet) ────────────────────────
   {
     name: "room_id",
@@ -279,18 +244,18 @@ export const educationGameManifest: SurfaceManifest = {
   client: "matrx-user",
   executionMode: "python-stream",
   description:
-    "Study game arcade: solo + multiplayer deck play (/education/game).",
+    "Study game arcade hub + multiplayer host/join (/education/game). Solo Arcade has its own surface, matrx-user/education-game-solo.",
   readiness: "partial",
   readinessNote:
-    "Manifest + three emitters (home, host, join) shipped, targeting a live DB row that previously had no manifest at all. NOT yet: DB sync has not been run; the solo-arcade and live-multiplayer views (SoloArcadeImpl / MultiplayerGameImpl, both dynamic({ssr:false}) real-time game engines) declare solo_*/room_* values but have no SurfaceRuntimeProvider mount (deliberately deferred, see manifest header); no write targets, agent roles, or config namespaces are declared; no data-surface-value Locate anchors are tagged; no live-agent-run verification or Matrx-vs-matrix test has been performed.",
+    "Manifest + three emitters (home, host, join) shipped, targeting a live DB row that previously had no manifest at all. Solo Arcade moved to its own surface (matrx-user/education-game-solo). NOT yet: DB sync has not been run; the live-multiplayer view (MultiplayerGameImpl, a dynamic({ssr:false}) real-time game engine) declares room_* values but has no SurfaceRuntimeProvider mount (deliberately deferred, see manifest header); no write targets, agent roles, or config namespaces are declared; no data-surface-value Locate anchors are tagged; no live-agent-run verification or Matrx-vs-matrix test has been performed.",
   label: "Study Games",
   urlPattern: "/education/game",
   intro: `<surface_intro>
-You are in Study Games at /education/game — play-as-review: every question in every mode is scheduled by the same spaced-repetition engine as the rest of the app. Read \`view\` FIRST — it is "home", "host", "join", "solo", or "play", and it decides which other values are even present.
+You are in Study Games at /education/game — play-as-review: every question in every mode is scheduled by the same spaced-repetition engine as the rest of the app. Read \`view\` FIRST — it is "home", "host", "join", or "play", and it decides which other values are even present. A live Solo Arcade round (/education/game/solo) is a separate surface — see matrx-user/education-game-solo.
 On "home" the learner sees their streak, weekly league standing, badges, and three entry points: Solo Arcade, Host a game, Join a game. Nothing here is editable.
 On "host" they are composing a room: \`host_source_kind\` is "due" (their cross-deck due queue, the adaptive default) or "set" (one specific deck, from \`host_available_sets\`); a private deck can't be used for a cross-account room, which the picker itself flags. \`host_max_players\` is the entitlement-capped room size, shown before creating. The learner still presses Create room.
 On "join" they are typing a 5-character room code (\`join_code\`); \`join_error\` explains a bad or unknown code.
-"solo" and "play" are live game engines (timers, live scoring, and for "play" a realtime multiplayer room) that this surface currently emits NOTHING from — treat any solo_*/room_* value you see as stale/absent until told otherwise.
+"play" is a live multiplayer game engine (timers, live scoring, a realtime multiplayer room) that this surface currently emits NOTHING from — treat any room_* value you see as stale/absent until told otherwise.
 You cannot WRITE anything here — no write targets are declared, and creating/joining a room is a real side effect the learner triggers themselves.
 </surface_intro>`,
   groups,
@@ -312,11 +277,11 @@ export interface GameDeckOption {
  * `alwaysAvailable: true`; optional keys mirror `alwaysAvailable: false`.
  *
  * Only `view` is guaranteed: the emitted views each supply only their own
- * group. `solo` and `play` currently emit nothing at all (no mount).
+ * group. `play` currently emits nothing at all (no mount).
  */
 export function createEducationGameScope(values: {
   // alwaysAvailable: true → required
-  view: "home" | "host" | "join" | "solo" | "play";
+  view: "home" | "host" | "join" | "play";
   // alwaysAvailable: false → optional
   selection?: string;
   context?: Record<string, unknown>;
@@ -331,9 +296,6 @@ export function createEducationGameScope(values: {
   join_code?: string;
   join_error?: string;
   join_joining?: boolean;
-  // solo (declared, not emitted — see manifest header)
-  solo_source_set_id?: string;
-  solo_score?: number;
   // play (declared, not emitted — see manifest header)
   room_id?: string;
   room_phase?: string;

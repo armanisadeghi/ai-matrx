@@ -1627,17 +1627,50 @@ const DiagramFlow: React.FC<{
     if (lastFitKey.current === key) return undefined;
     lastFitKey.current = key;
     const frame = requestAnimationFrame(() => {
-      setViewport(
-        getViewportForBounds(
-          bounds,
-          measuredWidth,
-          measuredHeight,
-          fitMinZoom,
-          2,
-          fitPadding,
-        ),
-        { duration: 300 },
+      const contained = getViewportForBounds(
+        bounds,
+        measuredWidth,
+        measuredHeight,
+        fitMinZoom,
+        2,
+        fitPadding,
       );
+      let viewport = contained;
+
+      // A phone viewport is narrow and tall; most diagrams are wide and
+      // short. Fitting the WHOLE thing (the `contained` viewport above,
+      // unchanged and still what every other width uses) leaves a huge
+      // empty band above and below a diagram that only needed the width to
+      // shrink — measured on the "Photosynthesis" mind map: an 8-node,
+      // 2080x560 layout fit into a 375x768 canvas landed at zoom 0.16 with
+      // the graph occupying under half the screen's height. Bias narrow
+      // viewports toward filling the available HEIGHT instead: the diagram
+      // reads at a legible size and any width overflow is reached with an
+      // ordinary pinch/drag, exactly how Figma and Miro's mobile canvases
+      // handle the same aspect mismatch. A diagram that is genuinely huge in
+      // BOTH dimensions is unaffected — its height-based zoom is just as
+      // small as its width-based one, so this never re-clips the large
+      // diagrams the width/height floor above was built to keep whole.
+      const isNarrowPhoneViewport = measuredWidth > 0 && measuredWidth < 640;
+      if (isNarrowPhoneViewport) {
+        const heightZoom = Math.min(
+          2,
+          Math.max(
+            fitMinZoom,
+            (measuredHeight * (1 - fitPadding * 2)) / bounds.height,
+          ),
+        );
+        if (heightZoom > contained.zoom) {
+          const zoom = Math.min(heightZoom, contained.zoom * 4, 2);
+          viewport = {
+            zoom,
+            x: measuredWidth / 2 - (bounds.x + bounds.width / 2) * zoom,
+            y: measuredHeight / 2 - (bounds.y + bounds.height / 2) * zoom,
+          };
+        }
+      }
+
+      setViewport(viewport, { duration: 300 });
     });
     return () => cancelAnimationFrame(frame);
   }, [
@@ -1645,11 +1678,11 @@ const DiagramFlow: React.FC<{
     nodesInitialized,
     measuredWidth,
     measuredHeight,
+    fitMinZoom,
+    fitPadding,
     nodes,
     getNodes,
     setViewport,
-    fitMinZoom,
-    fitPadding,
   ]);
 
   // ── Layout helpers ──
@@ -2986,9 +3019,15 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
 
       <div
         className={
+          // matrx-touch-targets floors every button/menu-item under it to a
+          // 44px hit area on touch/narrow viewports only (app/globals.css) —
+          // desktop density is untouched. Needed here because React Flow's
+          // own <Controls/> (Zoom in/out, Fit view) and the hand-rolled
+          // Arrange-map/Restore-layout/background/minimap/export buttons
+          // below all render at 26-34px, well under the iOS floor.
           isWorkspace
-            ? "relative h-full min-h-0 w-full overflow-hidden bg-background"
-            : `w-full rounded-xl border border-border ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-2" : "py-2"}`
+            ? "relative h-full min-h-0 w-full overflow-hidden bg-background matrx-touch-targets"
+            : `w-full rounded-xl border border-border matrx-touch-targets ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-2" : "py-2"}`
         }
       >
         <div

@@ -6,6 +6,7 @@
 // Kept as a named seam because the converter contract wants a THROWING
 // `{ value, requestId, conversationId }` result with a live-UI handle.
 
+import { claimConversationForSurface } from "@/features/canvas/materialization/surfaceOwnedConversations";
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
@@ -87,6 +88,11 @@ export async function runAgentExtraction(
     keepInstance: opts.live !== false,
     timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     pollIntervalMs: opts.pollIntervalMs ?? DEFAULT_POLL_MS,
+    // A background (segment) run's reply is merged by the caller into ONE
+    // artifact; claim its conversation before the stream commits so the
+    // commit step never materializes a per-section twin.
+    onConversationCreated:
+      opts.live === false ? claimConversationForSurface : undefined,
     onRequestId: opts.onRequestId,
     failureMessages: {
       streamError: "The generation agent failed before returning a result",
