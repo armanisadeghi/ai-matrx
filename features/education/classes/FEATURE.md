@@ -150,6 +150,35 @@ These filled genuine open product questions. **Flagged for Arman** — reasonabl
 
 ## Change log
 
+- **2026-09-28 (cross-org assignment: card-membership edges now honor the assignment grant)** —
+  Fixed the narrow gap flagged in the entry just below ("a deck attached from a DIFFERENT
+  organization... showed 'No cards to study' for the student"). Root cause was NOT the student's
+  active organization (that entry's own diagnosis was wrong — corrected here): the study session
+  reads cards through the card-MEMBERSHIP EDGES (`platform.associations_live`, `fc_card`→`fc_set`,
+  `role='member'`) via `public.assoc_members_visible`, and DD-205 (2026-09-14) requires
+  `iam.org_readable(a.organization_id, ...)` on the edge itself in addition to both ends being
+  independently readable. `_edu_can_read_via_assignment` already made the `fc_set` and every
+  `fc_card` readable to an active class member regardless of organization (proven live: `fc_set`
+  1/1, `fc_card` 4/4, `fc_detail` 2/2, rolled-back JWT impersonation) — but the edge's own org
+  tenancy check still required org MEMBERSHIP, so `assoc_members_visible` returned 0 edges and
+  `getSetWithCards` returned `cards: []`, regardless of which organization the student had active.
+  This is exactly the access-ladder violation the law forbids ("access NEVER depends on the active
+  org"; "locking people out is a bug", `common-docs/policies/access-ladder.md`). Fix
+  (`migrations/edu_assignment_confers_read_association_edges.sql`, applied live + ledgered):
+  `assoc_members_visible` now admits an edge when `iam.org_readable(...)` OR the edge's target is
+  covered by an active assignment grant (`public._edu_can_read_via_assignment`) — additive, narrow
+  (a plain org member with no assignment is unaffected; DD-195's per-edge `assoc_side_readable`
+  check on the revealed row is untouched). Also checked: quizzes/practice tests never route through
+  association edges for item reads (`assessment_item` is read directly by `assessment_id`, gated by
+  `iam.accessible_entity_ids` → `has_access_for_base` → the same `_edu_can_read_via_assignment`
+  branch), so they never had this class of bug. **Verified live end to end**, two real accounts,
+  disposable "Agent Test Cross-Org Class" (open) in admin's Workspace: a deck and a quiz owned by
+  Meridian Payroll (an organization test@test.com does not belong to) were assigned to the class;
+  test@test.com (active org: Alex Hart's Workspace — neither the class's nor the deck's org) joined
+  by code, studied the deck (cards loaded and graded, no "No cards to study"), and took the quiz
+  (2/2 answered, both graded correct). Teacher's Class progress grid showed 100% completion on both
+  assignments. Cleanup: membership removed (`edu_class_remove`), class archived
+  (`settings.archived=true`).
 - **2026-09-28 (teacher↔student journey adversarial test)** — Full two-account journey run live
   (admin@admin.com teacher, test@test.com student, two isolated browser sessions): create class
   (open) → attach deck → assign with due date → invite via join code → student joins → studies →
