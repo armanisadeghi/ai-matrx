@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  Pencil,
   Headphones,
   Loader2,
   RefreshCw,
@@ -42,6 +43,9 @@ import { useAudioStudyRunPersistence } from "../useAudioStudyRunPersistence";
 import { AudioPlayback } from "./AudioPlayback";
 import type { StudyMediaRow } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AudioStudyEditor } from "./AudioStudyEditor";
+import { audioWriteHandlers } from "../audioWrites";
+import { canEditAccess } from "@/utils/permissions/access-core";
 import { distinctSourceTitle } from "@/features/education/components/EducationCollectionSearch";
 
 const SURFACE_NAME = "matrx-user/education-audio-study";
@@ -62,7 +66,7 @@ function regenerateHref(media: StudyMediaRow): string {
   return `/education/audio-study/new?source=deck&deck=${media.source_id ?? ""}&format=${format}`;
 }
 
-export function AudioStudyDetail({ mediaId }: { mediaId: string }) {
+export function AudioStudyDetail({ mediaId, edit = false }: { mediaId: string; edit?: boolean }) {
   const router = useRouter();
   const [media, setMedia] = useState<StudyMediaRow | null>(null);
   const [loadedMediaId, setLoadedMediaId] = useState<string | null>(null);
@@ -85,7 +89,7 @@ export function AudioStudyDetail({ mediaId }: { mediaId: string }) {
       view: "detail",
       record_loaded: true,
       audio_id: media.id,
-      audio_title: media.title,
+      audio_title: media.title, audio_version: media.version,
       audio_format: media.audio_format ?? undefined,
       audio_status: media.status,
       audio_is_ready:
@@ -140,13 +144,15 @@ export function AudioStudyDetail({ mediaId }: { mediaId: string }) {
     );
   }
 
+  if (edit) return <AudioStudyEditor key={media.id} media={media} />;
+
   const isReady =
     media.status === "ready" &&
     Boolean(media.audio_file_id || media.episode_id);
 
   return (
-    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
-    <div className="mx-auto w-full max-w-3xl space-y-5 p-4">
+    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope} getWriteHandlers={() => audioWriteHandlers([media], (row) => { if (row.id === media.id) setMedia(row); }, () => router.push("/education/audio-study"))}>
+    <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-5 p-4">
       <Header
         media={media}
         onBack={() => router.push("/education/audio-study")}
@@ -174,7 +180,9 @@ function Header({
   onBack: () => void;
   onDeleted: () => void;
 }) {
-  const { isOwner } = useAccess("study_media", media.id);
+  const access = useAccess("study_media", media.id);
+  const { isOwner } = access;
+  const router = useRouter();
 
   async function handleDelete() {
     const ok = await confirm({
@@ -207,7 +215,7 @@ function Header({
       </Button>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+          <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
             {FORMAT_LABEL[media.audio_format ?? "overview"] ?? "Audio"}
           </span>
           {distinctSourceTitle(media.title, media.source_title) && (
@@ -220,6 +228,7 @@ function Header({
           {media.title}
         </h1>
       </div>
+      {!access.loading && canEditAccess(access.level) && <Button size="sm" variant="outline" onClick={() => router.push(`/education/audio-study/${media.id}/edit`)}><Pencil className="mr-1 h-4 w-4" />Edit</Button>}
       {isOwner && (
         <div className="flex shrink-0 items-center gap-1">
           <ShareButton

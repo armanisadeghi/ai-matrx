@@ -73,7 +73,7 @@ export function GeneratedFromChips({
 
   return (
     <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
-      <span className="text-[11px] font-medium text-muted-foreground">
+      <span className="text-xs font-medium text-muted-foreground">
         Generated from this:
       </span>
       {items.map((a) => {
@@ -84,7 +84,7 @@ export function GeneratedFromChips({
             type="button"
             onClick={() => router.push(a.href)}
             title={a.detail ? `${a.title} · ${a.detail}` : a.title}
-            className="inline-flex max-w-[220px] items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-accent/40"
+            className="inline-flex max-w-[220px] items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-0.5 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-accent/40"
           >
             <Icon className="h-3 w-3 shrink-0 text-primary" />
             <span className="truncate">{a.title}</span>

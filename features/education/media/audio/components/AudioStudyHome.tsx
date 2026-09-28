@@ -41,6 +41,7 @@ import {
 } from "@/features/surfaces/manifests/education-audio-study.manifest";
 import { authenticatedStudyMediaLoadKey } from "../../authLoad";
 import { useStudyMediaLibrary } from "../../useStudyMediaLibrary";
+import { audioWriteHandlers } from "../audioWrites";
 import type { StudyMediaRow } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
@@ -102,7 +103,7 @@ export function AudioStudyHome() {
                 title: r.title,
                 format: r.audio_format,
                 source_title: r.source_title,
-                status: r.status,
+                status: r.status, version: r.version,
               }),
             ),
           }),
@@ -110,7 +111,7 @@ export function AudioStudyHome() {
 
   if (authReady && !loadKey) {
     return (
-      <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
+      <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope} getWriteHandlers={() => audioWriteHandlers(rows, () => library.retry(), library.retry)}>
         <EducationToolHeader title="Audio Study" />
         <div className="mx-auto w-full max-w-3xl px-4 pb-4">
           <div className="rounded-xl border border-dashed border-border p-10 text-center">
@@ -127,9 +128,9 @@ export function AudioStudyHome() {
   }
 
   return (
-    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
+    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope} getWriteHandlers={() => audioWriteHandlers(rows, () => library.retry(), library.retry)}>
     <EducationToolHeader title="Audio Study" />
-    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4">
+    <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-5 px-4 pb-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <EducationCollectionSearch
           value={search}
@@ -137,6 +138,7 @@ export function AudioStudyHome() {
           label="audio studies"
         />
         <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => router.push("/education/audio-study/new/manual")}>Add audio file</Button>
           <Button
             variant="outline"
             size="sm"
@@ -213,7 +215,7 @@ function AudioRow({ row, href }: { row: StudyMediaRow; href: string }) {
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium text-foreground">{row.title}</div>
           {distinctSourceTitle(row.title, row.source_title) && (
-            <div className="truncate text-[11px] text-muted-foreground">
+            <div className="truncate text-xs text-muted-foreground">
               from {distinctSourceTitle(row.title, row.source_title)}
             </div>
           )}
@@ -227,21 +229,21 @@ function AudioRow({ row, href }: { row: StudyMediaRow; href: string }) {
 function StatusChip({ status }: { status: string }) {
   if (status === "ready") {
     return (
-      <span className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+      <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
         <CheckCircle2 className="h-3.5 w-3.5" /> Ready
       </span>
     );
   }
   if (status === "error") {
     return (
-      <span className="flex items-center gap-1 text-[11px] text-destructive">
+      <span className="flex items-center gap-1 text-xs text-destructive">
         <AlertCircle className="h-3.5 w-3.5" /> Failed
         <ErrorAlchemyMenu />
       </span>
     );
   }
   return (
-    <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+    <span className="flex items-center gap-1 text-xs text-muted-foreground">
       <Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating
     </span>
   );
