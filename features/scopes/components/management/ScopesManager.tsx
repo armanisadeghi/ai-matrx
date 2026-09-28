@@ -320,6 +320,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
       )}
 
       <ArchivedDisclosure
+        // read-gate-exempt: 0 hides this control and a failed first read is said by the toast in loadArchived; a failed refresh keeps the count marked stale
         // A failed archive read with nothing known renders no control (count 0) and is
         // said by the toast; a failed refresh keeps the last count (stale-while-error).
         count={archivedTypes.length}
