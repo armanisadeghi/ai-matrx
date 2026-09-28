@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-28T20:44:37.854Z",
+  "generated_at": "2026-09-28T20:49:23.450Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -781,6 +781,12 @@
       "filename": "datahome2_d_the_data_home_doors_decide_in_their_own_name.sql",
       "checksum": "5599c20514984ed26e750e1da0afff47f83f394cac936c4e0ac618ee930e51dc",
       "applied_at": "2026-09-28 20:34:17.935389+00"
+    },
+    "migrations/campaign/datahome2_e_every_listing_on_the_data_home_follows_the_organization.sql": {
+      "source": "matrx-frontend",
+      "filename": "datahome2_e_every_listing_on_the_data_home_follows_the_organization.sql",
+      "checksum": "6aa7a1ef50f28d2ff85a6d37654e7d473e14823043d143f0bd841a5d7bcaaea6",
+      "applied_at": "2026-09-28 20:45:58.152796+00"
     },
     "migrations/campaign/datav2face2_a_copied_table_opens_as_the_sheet_it_was.sql": {
       "source": "campaign",
@@ -2653,6 +2659,12 @@
       "filename": "handover_a_refusal_never_prints_an_id_or_a_clock_d.sql",
       "checksum": "65c76e6705d3c338da4110ded019e865dd78d64ada15b121122431e524668423",
       "applied_at": "2026-09-28 19:25:04.727573+00"
+    },
+    "migrations/campaign/handover_a_summary_says_since_in_its_owners_clock.sql": {
+      "source": "matrx-frontend",
+      "filename": "handover_a_summary_says_since_in_its_owners_clock.sql",
+      "checksum": "573718c4e5652142a872b24116b24717835671db7b9b9bbc826e29006f2632d3",
+      "applied_at": "2026-09-28 20:49:22.332978+00"
     },
     "migrations/campaign/handover_all_my_organizations_answers_in_one_query.sql": {
       "source": "matrx-frontend",
