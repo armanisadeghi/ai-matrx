@@ -158,17 +158,23 @@ export function useTranscriptList({ enabled, text, selection, orgId, sort, initi
       setStatus("ready");
     })();
     void (async () => {
+      // Facet values over the whole view. While a text search runs, the values stay (every
+      // filter stays usable) but carry no numbers: a count over the search inside every
+      // transcript's text outruns the server's time budget, and a count of the unsearched
+      // view beside searched rows would be the wrong number.
       const { data, error: e } = await supabase.rpc("trx_list_facets", {
         p_scope: scope,
         p_org_id: scope === "orgs" && orgId ? orgId : undefined,
-        p_search: search || undefined,
-        p_deep: Boolean(search),
+        p_search: undefined,
+        p_deep: false,
       });
-      const counts = await supabase.rpc("trx_list_scope_counts", {
-        p_search: search || undefined,
-        p_deep: Boolean(search),
-        p_filters: filters,
-      });
+      const counts = search
+        ? { data: null, error: { message: "not counted while searching" } }
+        : await supabase.rpc("trx_list_scope_counts", {
+            p_search: undefined,
+            p_deep: false,
+            p_filters: filters,
+          });
       if (cancelled) return;
       if (e) {
         setFacets(null);
@@ -180,7 +186,7 @@ export function useTranscriptList({ enabled, text, selection, orgId, sort, initi
       for (const row of (data ?? []) as { kind: string; value: string; total: number }[]) {
         const facet = back.find(([, k]) => k.facet === row.kind)?.[0];
         if (!facet) continue;
-        (out[facet] ??= []).push({ value: row.value, count: Number(row.total ?? 0) });
+        (out[facet] ??= []).push({ value: row.value, count: search ? -1 : Number(row.total ?? 0) });
       }
       // Scope: its counts when the server answered them (a deep text search can outrun the
       // count's time budget) — otherwise the three scopes without a number, never a wrong one.
