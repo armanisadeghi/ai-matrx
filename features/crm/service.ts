@@ -13,6 +13,7 @@
 //      A direct `is_primary = true` update 23505s by design (partial unique
 //      indexes cannot be DEFERRABLE).
 
+import { teamReachOrFilter } from "@/lib/list-scope/teamReach";
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { apiPost } from "@/lib/api/typed-client";
@@ -155,6 +156,13 @@ export function applyPartyListPredicates<Q extends PartyPredicateBuilder<Q>>(
     q = scope.organizationId
       ? q.eq("organization_id", scope.organizationId)
       : q.in("organization_id", ctx.orgIds);
+  } else if (scope.kind === "team") {
+    // MY TEAM: parties I and the people I share a team with created, per organization.
+    const reach = (ctx.teamReach ?? []).filter(
+      (p) => !scope.organizationId || p.organizationId === scope.organizationId,
+    );
+    const filter = teamReachOrFilter(reach, ctx.userId);
+    q = filter === null ? q.in("organization_id", []) : q.or(filter);
   } else if (scope.kind === "public") {
     q = q.eq("visibility", "public");
   } else {
@@ -296,7 +304,7 @@ export async function fetchPartyScopeCounts(
   for (const row of data ?? []) {
     const total = Number(row.total ?? 0);
     const kind = row.scope;
-    if (kind !== "mine" && kind !== "orgs" && kind !== "public") continue;
+    if (kind !== "mine" && kind !== "team" && kind !== "orgs" && kind !== "public") continue;
     // A narrow_id means "one org inside this scope"; no id is the scope's own
     // blended total. Zero-count orgs stay out of the dropdown, as before.
     if (row.narrow_id) {

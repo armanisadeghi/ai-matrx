@@ -7,6 +7,7 @@
 // review, assists producer) shares the same resolution instead of re-rolling
 // the org fetch.
 
+import { fetchMyTeamReach } from "@/lib/list-scope/teamReach";
 import { useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -23,11 +24,18 @@ export function useCrmContext(): CrmQueryContext | null {
     let cancelled = false;
     void (async () => {
       try {
-        const orgs = await getUserOrganizations();
+        const [orgs, teamReach] = await Promise.all([
+          getUserOrganizations(),
+          // A failed team read leaves My team empty rather than breaking the list.
+          fetchMyTeamReach(null).catch((e: unknown) => {
+            console.error("[crm] failed to read the My team reach:", e);
+            return [];
+          }),
+        ]);
         if (cancelled) return;
         const orgNames: Record<string, string> = {};
         for (const org of orgs) orgNames[org.id] = org.name;
-        setCtx({ userId, orgIds: orgs.map((o) => o.id), orgNames });
+        setCtx({ userId, orgIds: orgs.map((o) => o.id), orgNames, teamReach });
       } catch (e) {
         if (!cancelled) {
           console.error("[crm] failed to load org memberships:", e);

@@ -465,6 +465,11 @@ export const DATE_BUCKET_ENUM_TEXT = DATE_BUCKETS.map(
 /** The caller's identity + org membership, resolved once by the hook. */
 export interface CrmQueryContext {
   userId: string;
+  /**
+   * The "My team" reach: (organization, person) pairs where the person shares a
+   * live team with the caller there, the caller included. Absent = not read yet.
+   */
+  teamReach?: { organizationId: string; userId: string }[];
   /** Every org the user belongs to (personal + companies), for "orgs". */
   orgIds: string[];
   /** Org names for the My Orgs narrowing dropdown, from getUserOrganizations. */
