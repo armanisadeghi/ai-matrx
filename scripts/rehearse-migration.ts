@@ -100,6 +100,7 @@ import { functionsTouched, openProductionReadOnly, parityCompare } from "./lib/c
 import { onceAsync, withBuildLockCleanup } from "./lib/build-lock-cleanup";
 import { sqlStatements, stripComments } from "./lib/sql-split";
 import { legDidNothing, rule27Legs } from "./lib/rule27-legs";
+import { parseChairStepConfirmations } from "./lib/chair-step";
 import { takeBuildLock, releaseBuildLock, startLockHeartbeat, type LockQuery } from "./lib/build-lock";
 import {
   cloneRefOverride,
@@ -143,7 +144,7 @@ const TAG = {
 function usage(): void {
   console.error(
     `${C.bold}pnpm db:rehearse <migrations/file.sql> --target clone [--inverse <file.sql>] ` +
-      `[--source campaign --lane <lane>] [--statement-timeout=10min]${C.reset}\n` +
+      `[--source campaign --lane <lane>] [--statement-timeout=10min] [--confirm-chair-step <file.sql>]${C.reset}\n` +
       `  Runs rule 27 - up, inverse, up again - on the nightly dev clone, in one command,\n` +
       `  timing every leg and sampling pg_locks after every statement of the up and of the\n` +
       `  inverse. Prints the lock mode each statement took and flags any ACCESS EXCLUSIVE on a\n` +
@@ -693,6 +694,7 @@ async function main(): Promise<number> {
   const lane = valueOf(argv, "--lane");
   const source = valueOf(argv, "--source");
   const inverseArg = valueOf(argv, "--inverse");
+  const chairConfirmations = parseChairStepConfirmations(argv);
 
   const valueIdxs = new Set<number>();
   for (const flag of [
@@ -706,6 +708,7 @@ async function main(): Promise<number> {
     const i = argv.indexOf(flag);
     if (i >= 0 && argv[i + 1] && !argv[i + 1]!.startsWith("--")) valueIdxs.add(i + 1);
   }
+  for (const index of chairConfirmations.valueIndexes) valueIdxs.add(index);
   const positional = argv.filter((a, i) => !a.startsWith("--") && !valueIdxs.has(i));
   if (positional.length !== 1) {
     usage();
@@ -796,7 +799,15 @@ async function main(): Promise<number> {
       `${TAG.info}rule 27 - the up and its inverse, each executed (never skipped), on the clone, every apply through pnpm db:apply`,
   );
 
-  const common = ["--target", "clone", `--statement-timeout=${statementTimeout}`];
+  // Repeated explicit confirmations are forwarded to EVERY `db:apply` leg.
+  // Each leg still checks its own exact basename, so naming an up never
+  // authorizes its inverse and no confirmation is inferred.
+  const common = [
+    "--target",
+    "clone",
+    `--statement-timeout=${statementTimeout}`,
+    ...chairConfirmations.forwardedArgs,
+  ];
   const inCampaign = !relative(resolve(MIGRATIONS_DIR, CAMPAIGN_DIRNAME), upPath).startsWith("..");
   const campaignFlags =
     source === CAMPAIGN_SOURCE || inCampaign

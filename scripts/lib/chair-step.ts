@@ -1,3 +1,5 @@
+import { basename } from "node:path";
+
 /**
  * THE CHAIR-STEP CONFIRMATION — a chair step runs only when the command NAMES it.
  *
@@ -47,4 +49,32 @@ export async function confirmChairStep(
   confirmedNames: readonly string[],
 ): Promise<string | null> {
   return confirmedNames.includes(filename) ? null : chairStepRefusal(filename, why);
+}
+
+/**
+ * Parse repeatable chair-step confirmations for a parent CLI that delegates to
+ * `db:apply`. The value positions stay out of positional-file parsing, while
+ * forwarding keeps every named basename explicit for every delegated leg.
+ */
+export function parseChairStepConfirmations(argv: readonly string[]): {
+  names: string[];
+  valueIndexes: Set<number>;
+  forwardedArgs: string[];
+} {
+  const names: string[] = [];
+  const valueIndexes = new Set<number>();
+  argv.forEach((token, index) => {
+    if (token === "--confirm-chair-step" && argv[index + 1] && !argv[index + 1]!.startsWith("--")) {
+      valueIndexes.add(index + 1);
+      names.push(basename(argv[index + 1]!.trim()));
+    } else if (token.startsWith("--confirm-chair-step=")) {
+      const name = token.slice("--confirm-chair-step=".length).trim();
+      if (name) names.push(basename(name));
+    }
+  });
+  return {
+    names,
+    valueIndexes,
+    forwardedArgs: names.flatMap((name) => ["--confirm-chair-step", name]),
+  };
 }
