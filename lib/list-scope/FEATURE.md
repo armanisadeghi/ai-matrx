@@ -25,7 +25,8 @@ learns on one page must mean the same thing on every other page.
 | Scope              | The question it answers          | Reach                                                                                                 |
 | ------------------ | -------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | **Mine**           | What did I make?                 | `created_by = auth.uid()` (some tables use `user_id` — check)                                         |
-| **My Orgs**        | What does my team have?          | created by someone else, in an org I belong to, at a visibility that admits org-mates                 |
+| **My team**        | What did my team make?           | the My Orgs rows whose (organization, creator) is in `iam.my_team_reach` — me and everyone sharing a live team with me there |
+| **My Orgs**        | What does my organization have?  | created by someone else, in an org I belong to, at a visibility that admits org-mates                 |
 | **Shared with me** | What did someone hand me?        | an explicit `iam.permissions` grant (to me, or to one of my orgs)                                     |
 | **Industry**       | What does my field publish?      | see below                                                                                             |
 | **Public**         | What has a tenant published?     | `visibility = 'public'`, not mine                                                                     |
@@ -83,10 +84,19 @@ see `common-docs/systems/platform/access/FEATURE.md` §2.4).
 `practice_area`): `legal` → `workers-comp` → `ca-workers-comp`. Reach should
 respect `parent_id`, so attaching `workers-comp` sees `ca-workers-comp` content.
 
+### My team — added by one helper, never per page
+
+`withTeamScope(scopes)` puts My team after Mine on every tab bar that offers My Orgs, and
+`EntityScopeTabs` applies it, so a surface never declares it. Its RPC answers `p_scope = 'team'`
+(the orgs arm plus one `iam.my_team_reach` clause) and its counts RPC returns a `team` row plus a
+narrow row per organization where the caller shares a team with someone. A list that reads a table
+directly uses `teamReach.ts`. Canonical doc: common-docs `/systems/platform/teams/FEATURE.md`.
+Counts rows are read only through `scopeCountsFromRows` (`lib/entity-list/types.ts`).
+
 ### UI shape
 
-`Mine · My Orgs · Shared · Industry · Public` as fixed tabs, each showing a TRUE
-server count. **My Orgs and Industry each render as ONE tab with a dropdown to
+`Mine · My team · My Orgs · Shared · Industry · Public` as fixed tabs, each showing a TRUE
+server count. **My team, My Orgs and Industry each render as ONE tab with a dropdown to
 narrow**, never one chip per org/industry — a person belongs to many organizations
 and may attach several industries, so a chip-per-entity tab bar has
 unbounded width and offers no blended view.
