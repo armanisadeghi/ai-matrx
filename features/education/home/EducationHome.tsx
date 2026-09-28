@@ -200,6 +200,17 @@ function toolNavigation(snapshot: EducationSnapshot): MetricNavigationItem[] {
           description: "Study notes you own",
         },
       ],
+      [
+        // Study guides ride on the same Study Notes folder as Smart Notes —
+        // there is no separate library subtype for them — so the tile shows
+        // the same count rather than no count at all (every sibling tile
+        // shows a number; this one silently didn't, RC page-pass 2026-09-28).
+        "study-guides",
+        {
+          value: snapshot.library.bySubtype.notes ?? 0,
+          description: "Study guides you own",
+        },
+      ],
     ],
   );
   return EDU_TOOL_NAV.map((entry) => {
