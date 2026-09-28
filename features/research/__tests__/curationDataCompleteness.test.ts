@@ -12,6 +12,7 @@ type QueryResult<T = unknown> = {
 type QueryBuilder = {
   select: (columns: string, options?: { count?: "exact" }) => QueryBuilder;
   eq: (column: string, value: string) => QueryBuilder;
+  is: (column: string, value: null) => QueryBuilder;
   order: (column: string, options: { ascending: boolean }) => QueryBuilder;
   range: (from: number, to: number) => Promise<QueryResult>;
 };
@@ -76,6 +77,7 @@ const sourceRows: Database["research"]["Tables"]["rs_source"]["Row"][] =
   }));
 
 const ranges: Record<string, Array<{ from: number; to: number }>> = {};
+const liveFilters: Record<string, string[]> = {};
 
 function rowsFor(table: string): unknown[] {
   return table === "rs_source" ? sourceRows : [];
@@ -85,6 +87,10 @@ function makeBuilder(table: string): QueryBuilder {
   const builder: QueryBuilder = {
     select: () => builder,
     eq: () => builder,
+    is: (column) => {
+      (liveFilters[table] ??= []).push(column);
+      return builder;
+    },
     order: () => builder,
     range: async (from, to) => {
       ranges[table] ??= [];
@@ -131,6 +137,7 @@ import { getCurationData } from "../service";
 
 beforeEach(() => {
   for (const table of Object.keys(ranges)) delete ranges[table];
+  for (const table of Object.keys(liveFilters)) delete liveFilters[table];
 });
 
 it("reads all 1,001 sources for curation instead of accepting a capped page", async () => {
@@ -142,4 +149,11 @@ it("reads all 1,001 sources for curation instead of accepting a capped page", as
     { from: 0, to: 999 },
     { from: 1000, to: 1999 },
   ]);
+});
+
+it("offers only live keywords and tags for curation (Trash is excluded)", async () => {
+  await getCurationData(TOPIC_ID);
+
+  expect(liveFilters.rs_keyword).toContain("deleted_at");
+  expect(liveFilters.rs_tag).toContain("deleted_at");
 });
