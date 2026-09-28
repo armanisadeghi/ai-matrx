@@ -711,6 +711,9 @@ export async function setRoleSelection(args: {
     .eq("kind", "selection")
     .eq("position", position);
   q = matchScope(q, scope, await tierOrganizationFor(scope));
+  // The slot's partial unique index does not include deleted_at, so a choice
+  // moved to Trash still holds (surface, role, position) at this tier: the
+  // lookup finds it either way and the update revives it.
   const { data: existing, error: findErr } = await q.maybeSingle();
   if (findErr) throw findErr;
 
@@ -718,7 +721,11 @@ export async function setRoleSelection(args: {
     await writeOne(
       client
         .schema("ui").from("ui_surface_agent_pref")
-        .update({ agent_id: agentId, ...(settings ? { settings } : {}) })
+        .update({
+          agent_id: agentId,
+          deleted_at: null,
+          ...(settings ? { settings } : {}),
+        })
         .eq("id", existing.id)
         .select("id"),
       { action: "save", noun: "agent choice" },
@@ -737,14 +744,16 @@ export async function setRoleSelection(args: {
   if (error) throw error;
 }
 
+/** Move one agent choice / roster item to Trash (restorable; re-selecting revives it). */
 export async function deleteRolePref(prefId: string): Promise<void> {
   await writeOne(
     sb()
       .schema("ui").from("ui_surface_agent_pref")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", prefId)
+      .is("deleted_at", null)
       .select("id"),
-    { action: "delete", noun: "agent choice" },
+    { action: "remove", noun: "agent choice" },
   );
 }
 
@@ -755,7 +764,35 @@ export async function addRosterItem(args: {
   settings?: Record<string, unknown>;
   scope: PrefScopeInput;
 }): Promise<void> {
-  const { error } = await sb()
+  const client = sb();
+  // The roster partial unique indexes do not include deleted_at: an item moved
+  // to Trash still holds (surface, role, agent) at this tier, so re-adding it
+  // revives that row instead of inserting a duplicate.
+  let q = client
+    .schema("ui").from("ui_surface_agent_pref")
+    .select("id")
+    .eq("surface_name", args.surfaceName)
+    .eq("role_name", args.roleName)
+    .eq("agent_id", args.agentId)
+    .eq("kind", "roster_item");
+  q = matchScope(q, args.scope, await tierOrganizationFor(args.scope));
+  const { data: existing, error: findErr } = await q.maybeSingle();
+  if (findErr) throw findErr;
+  if (existing) {
+    await writeOne(
+      client
+        .schema("ui").from("ui_surface_agent_pref")
+        .update({
+          deleted_at: null,
+          ...(args.settings ? { settings: args.settings } : {}),
+        })
+        .eq("id", existing.id)
+        .select("id"),
+      { action: "save", noun: "roster item" },
+    );
+    return;
+  }
+  const { error } = await client
     .schema("ui").from("ui_surface_agent_pref")
     .insert({
       surface_name: args.surfaceName,
@@ -805,7 +842,8 @@ export async function setNamespaceConfig(args: {
     await writeOne(
       client
         .schema("ui").from("ui_surface_config")
-        .update({ config })
+        // A setting in Trash still holds its scope's unique slot: saving revives it.
+        .update({ config, deleted_at: null })
         .eq("id", existing.id)
         .select("id"),
       { action: "save", noun: "surface setting" },

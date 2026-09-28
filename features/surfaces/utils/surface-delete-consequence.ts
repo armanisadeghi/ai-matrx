@@ -1,13 +1,12 @@
 /**
- * What deleting a `ui.ui_surface` row destroys, in one sentence — the ONE
- * source for every delete confirmation of a surface (list row, peek panel).
+ * What moving a `ui.ui_surface` row to Trash does, in one sentence — the ONE
+ * source for every Move-to-Trash confirmation of a surface (list row, peek
+ * panel).
  *
- * Checked against the live foreign keys 2026-09-27: the delete CASCADES to
- * the surface's synced values, write targets, item types, agent roles, client
- * tools, config and tool defaults; child surfaces and agent shortcuts lose
- * their link (SET NULL). There is no archive column — deactivating is the
- * reversible alternative. A surface with a code manifest is re-created by the
- * next Sync manifests, so deleting it only destroys its bindings.
+ * Delete means archive (Arman, 2026-09-27): the row gets deleted_at and stays
+ * restorable from Trash. Its config, item types and tool defaults follow it to
+ * Trash through the platform soft-delete cascade and come back on restore; its
+ * synced values, agent roles and bindings stay attached to the archived row.
  */
 
 export interface SurfaceDeleteSubject {
@@ -30,9 +29,9 @@ export function surfaceDeleteConsequence(
     plural(surface.agentCount, "agent binding"),
     plural(surface.toolCount, "tool default"),
   ];
-  const lost = `Permanently removes this surface with its ${parts.join(", ")}, plus its write targets, agent roles and config. Child surfaces lose their parent. There is no undo.`;
+  const moved = `Moves this surface to Trash with its ${parts.join(", ")}, plus its write targets, agent roles and config. Agents stop seeing it. You can restore it from Trash with everything intact.`;
   const alt = hasManifest
-    ? " Its code manifest re-creates the row on the next Sync manifests, so this only destroys the bindings — remove the manifest in code instead."
-    : " Deactivate it instead to hide it and keep everything.";
-  return lost + alt;
+    ? " It has a code manifest, so remove the manifest in code too, or deactivate it instead."
+    : " Deactivate it instead if you only want to hide it.";
+  return moved + alt;
 }

@@ -23,15 +23,11 @@
  *  - A surface WITH a code manifest is owned by code: the next Sync manifests
  *    rewrites its label, description, parent, url pattern and active flag, so
  *    `update_surfaces` refuses those fields on it (only sort_order and
- *    executor_name stick), and `delete_surfaces` refuses it outright (sync
- *    re-creates it, and the delete would only destroy its agent roles and tool
- *    defaults).
- *  - What delete destroys (checked against the live FKs 2026-09-27): its
- *    synced values, write targets, item types, agent roles, client tools,
- *    config and tool defaults (CASCADE); child surfaces lose their parent and
- *    agent shortcuts lose their surface (SET NULL). There is no archive column;
- *    `is_active: false` is the reversible alternative, so the description
- *    steers there.
+ *    executor_name stick), and `delete_surfaces` refuses it outright (code owns
+ *    it; remove the manifest in code instead).
+ *  - Delete means archive (Arman, 2026-09-27): `delete_surfaces` moves the row
+ *    to Trash (deleted_at). Config, item types and tool defaults follow via the
+ *    platform soft-delete cascade; everything comes back on restore from Trash.
  *
  * NOT writable: UI clients (not listed on this page — they appear only as
  * filter options; the New client dialog stays a human action), readiness and
@@ -216,9 +212,9 @@ const writeTargets: SurfaceWriteTarget[] = [
   },
   {
     name: "delete_surfaces",
-    label: "Delete surfaces",
+    label: "Move surfaces to Trash",
     description:
-      'PERMANENTLY DELETES one or more surfaces. Value is a JSON ARRAY (not a string) of surface names, or { name } objects, from surfaces. What is lost, with no undo: the surface row and everything hanging off it — its synced values, write targets, item types, agent roles, client tools, config and tool defaults; child surfaces lose their parent and agent shortcuts lose their surface. PREFER update_surfaces with { "name": "…", "is_active": false }, which hides it and keeps everything. A surface with has_manifest true is REFUSED (the next Sync manifests re-creates it, so a delete would only destroy its bindings). Unknown or repeated names refuse the whole list, with nothing deleted.',
+      'Moves one or more surfaces to Trash (archives them; restorable from Trash with everything intact). Value is a JSON ARRAY (not a string) of surface names, or { name } objects, from surfaces. The surface disappears from the registry and agents stop seeing it; its config, item types and tool defaults move to Trash with it. To only hide a surface, prefer update_surfaces with { "name": "…", "is_active": false }. A surface with has_manifest true is REFUSED (its code manifest owns it — remove the manifest in code). Unknown or repeated names refuse the whole list, with nothing moved.',
     valueType: "array",
     updatesValue: "surfaces",
     mode: "entity",
@@ -233,7 +229,7 @@ export const adminUiSurfacesManifest: SurfaceManifest = {
   client: "matrx-admin",
   executionMode: "python-stream",
   description:
-    "UI Surfaces registry admin: every ui_surface row with readiness, check ledger, value/agent/tool counts and filters; create, update, deactivate and delete surfaces (/administration/ui/surfaces).",
+    "UI Surfaces registry admin: every ui_surface row with readiness, check ledger, value/agent/tool counts and filters; create, update, deactivate and move surfaces to Trash (/administration/ui/surfaces).",
   readiness: "partial",
   readinessNote:
     "Emitter and write targets built 2026-09-27 (page-pass). Not yet proven: live surface:probe on the deployed commit, the live agent write test (create two / update one / deactivate one / one refusal) with a DB completeness check, and an outside-helper binding test. surface_list reflects the page's own filters, not the table's search box or column sort (MatrxDataTable does not report its visible rows).",
@@ -246,7 +242,7 @@ Changes go through these targets, each a JSON array (never a string), and each r
 - create_surfaces — add registry rows (saved at once). A row alone does not make a page agent-readable; that needs a code manifest.
 - update_surfaces — change sort order, executor, and (only on surfaces WITHOUT a code manifest) description, parent, url pattern and active flag. is_active: false deactivates reversibly.
 - new_surface_draft — fill the New surface dialog for the person to review and save themselves.
-- delete_surfaces — permanent, cascades to the surface's values, roles and tool defaults; refused for manifested surfaces. Prefer is_active: false.
+- delete_surfaces — moves surfaces to Trash (restorable); refused for manifested surfaces. To only hide one, use is_active: false.
 Never change the registry with generic database or context tools: they skip these checks.
 </surface_intro>`,
   groups,

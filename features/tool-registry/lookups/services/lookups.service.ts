@@ -51,6 +51,7 @@ export async function listUiSurfaces(): Promise<UiSurfaceRow[]> {
   const { data, error } = await sb()
     .schema("ui").from("ui_surface")
     .select("*")
+    .is("deleted_at", null)
     .order("client_name", { ascending: true })
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
@@ -103,7 +104,9 @@ export async function upsertUiSurface(
 ): Promise<UiSurfaceRow> {
   const { data, error } = await sb()
     .schema("ui").from("ui_surface")
-    .upsert(row, { onConflict: "name" })
+    // name is the primary key and covers surfaces in Trash: saving a name an
+    // archived surface holds revives it.
+    .upsert({ ...row, deleted_at: null }, { onConflict: "name" })
     .select()
     .single();
   if (error) throw error;

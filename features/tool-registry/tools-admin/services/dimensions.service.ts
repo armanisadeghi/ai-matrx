@@ -120,6 +120,7 @@ export async function listSurfacesIncludingTool(
   const directRes = await sb()
     .schema("tool").from("surface_defaults")
     .select("surface_name")
+    .is("deleted_at", null)
     .contains("always_include_tools", [toolName]);
   if (directRes.error) throw directRes.error;
 
@@ -148,6 +149,7 @@ export async function listSurfacesIncludingTool(
     const surfacesViaBundle = await sb()
       .schema("tool").from("surface_defaults")
       .select("surface_name, always_include_bundles")
+      .is("deleted_at", null)
       .overlaps("always_include_bundles", bundleNames);
     if (surfacesViaBundle.error) throw surfacesViaBundle.error;
     for (const row of surfacesViaBundle.data ?? []) {
@@ -320,6 +322,7 @@ export async function listAllUiSurfaceNames(): Promise<string[]> {
   const { data, error } = await sb()
     .schema("ui").from("ui_surface")
     .select("name")
+    .is("deleted_at", null)
     .eq("is_active", true)
     .order("name", { ascending: true });
   if (error) throw error;

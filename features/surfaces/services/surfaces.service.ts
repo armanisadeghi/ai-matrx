@@ -81,6 +81,7 @@ export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
             .schema("ui")
             .from("ui_surface")
             .select("*", { count: "exact" })
+            .is("deleted_at", null)
             .order("sort_order", { ascending: true })
             .order("name", { ascending: true })
             .range(from, to),
@@ -94,6 +95,7 @@ export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
             .select("surface_name, always_include_tools, always_include_bundles", {
               count: "exact",
             })
+            .is("deleted_at", null)
             .order("surface_name", { ascending: true })
             .range(from, to),
         { label: "tool.surface_defaults" },
@@ -209,7 +211,8 @@ export async function listSurfaceOptions(options?: {
     .from("ui_surface")
     .select(
       "name, client_name, description, executor_name, parent_surface_name",
-    );
+    )
+    .is("deleted_at", null);
   if (!options?.includeInactive) {
     q = q.eq("is_active", true);
   }
@@ -234,15 +237,36 @@ export async function getSurfaceByName(
   return data;
 }
 
-export async function createSurface(
-  row: UiSurfaceUpsert,
-): Promise<UiSurfaceRow> {
+/**
+ * `name` is ui.ui_surface's primary key and covers surfaces in Trash. Names
+ * among `names` that belong to an archived surface — creating one of those
+ * revives the archived row instead of colliding with it.
+ */
+async function archivedSurfaceNames(names: string[]): Promise<Set<string>> {
+  if (names.length === 0) return new Set();
   const { data, error } = await sb()
     .schema("ui")
     .from("ui_surface")
-    .insert(row)
-    .select()
-    .single();
+    .select("name")
+    .in("name", names)
+    .not("deleted_at", "is", null);
+  if (error) throw error;
+  return new Set((data ?? []).map((r) => r.name));
+}
+
+export async function createSurface(
+  row: UiSurfaceUpsert,
+): Promise<UiSurfaceRow> {
+  const revive = (await archivedSurfaceNames([row.name])).has(row.name);
+  const { data, error } = revive
+    ? await sb()
+        .schema("ui")
+        .from("ui_surface")
+        .update({ ...row, deleted_at: null })
+        .eq("name", row.name)
+        .select()
+        .single()
+    : await sb().schema("ui").from("ui_surface").insert(row).select().single();
   if (error) throw error;
   return data;
 }
@@ -287,13 +311,13 @@ export async function bulkSetSurfacesActive(
   if (error) throw error;
 }
 
+/**
+ * Move a surface to Trash. Its config, item types and tool surface defaults
+ * follow via the platform soft-delete cascade; restoring from Trash brings
+ * them back.
+ */
 export async function deleteSurface(name: string): Promise<void> {
-  const { error } = await sb()
-    .schema("ui")
-    .from("ui_surface")
-    .delete()
-    .eq("name", name);
-  if (error) throw error;
+  await bulkDeleteSurfaces([name]);
 }
 
 export async function listClientNames(): Promise<
@@ -336,18 +360,40 @@ export async function bulkCreateSurfaces(
   rows: UiSurfaceUpsert[],
 ): Promise<void> {
   if (rows.length === 0) return;
-  const { error } = await sb().schema("ui").from("ui_surface").insert(rows);
+  const archived = await archivedSurfaceNames(rows.map((r) => r.name));
+  const fresh = rows.filter((r) => !archived.has(r.name));
+  const revived = rows.filter((r) => archived.has(r.name));
+  if (revived.length > 0) {
+    const { error } = await sb()
+      .schema("ui")
+      .from("ui_surface")
+      .upsert(
+        revived.map((r) => ({ ...r, deleted_at: null })),
+        { onConflict: "name" },
+      );
+    if (error) throw error;
+  }
+  if (fresh.length === 0) return;
+  const { error } = await sb().schema("ui").from("ui_surface").insert(fresh);
   if (error) throw error;
 }
 
 export async function bulkDeleteSurfaces(names: string[]): Promise<void> {
   if (names.length === 0) return;
-  const { error } = await sb()
+  const { data, error } = await sb()
     .schema("ui")
     .from("ui_surface")
-    .delete()
-    .in("name", names);
+    .update({ deleted_at: new Date().toISOString() })
+    .in("name", names)
+    .is("deleted_at", null)
+    .select("name");
   if (error) throw error;
+  // RLS answers a refused update with zero rows and no error — that is not a move.
+  if ((data ?? []).length === 0) {
+    throw new Error(
+      "No surface was moved to Trash — it may already be in Trash, or you lack permission. Reload and try again.",
+    );
+  }
 }
 
 /**

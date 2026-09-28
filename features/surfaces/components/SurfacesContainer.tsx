@@ -281,23 +281,23 @@ export function SurfacesContainer() {
 
   const onDelete = async (row: SurfaceWithStats) => {
     const ok = await confirm({
-      title: `Delete ${row.label ?? row.name}?`,
+      title: `Move ${row.label ?? row.name} to Trash?`,
       description: surfaceDeleteConsequence(
         row,
         manifestedSurfaceNames.has(row.name),
       ),
-      confirmLabel: "Delete",
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (!ok) return;
     try {
       await deleteSurface(row.name);
       dismissRecordToasts({ type: "ui_surface", id: row.name });
-      toast.success(`${row.name} deleted`);
+      toast.success(`${row.name} moved to Trash`);
       if (selectedName === row.name) setSelectedName(null);
       await load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Delete failed");
+      toast.error(e instanceof Error ? e.message : "Move to Trash failed");
     }
   };
 

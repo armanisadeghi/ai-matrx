@@ -153,12 +153,12 @@ export function SurfaceDetailPanel({
 
   const onDelete = async () => {
     const ok = await confirm({
-      title: `Delete ${surface.name}?`,
+      title: `Move ${surface.name} to Trash?`,
       description: surfaceDeleteConsequence(
         surface,
         getRegisteredSurfaceNames().includes(surface.name),
       ),
-      confirmLabel: "Delete",
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (!ok) return;
@@ -166,10 +166,10 @@ export function SurfaceDetailPanel({
     try {
       await deleteSurface(surface.name);
       dismissRecordToasts({ type: "ui_surface", id: surface.name });
-      toast.success(`${surface.name} deleted`);
+      toast.success(`${surface.name} moved to Trash`);
       onDeleted(surface.name);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Delete failed");
+      toast.error(e instanceof Error ? e.message : "Move to Trash failed");
     } finally {
       setBusy(false);
     }
@@ -408,7 +408,7 @@ export function SurfaceDetailPanel({
               className="text-xs gap-1.5 text-muted-foreground hover:text-destructive"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Delete surface
+              Move to Trash
             </Button>
           </div>
         </TabsContent>

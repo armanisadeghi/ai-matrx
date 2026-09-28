@@ -334,27 +334,22 @@ export function SurfaceAdminDetailPage({
   };
 
   const onDelete = async () => {
-    const refsTotal =
-      (usage?.tools.length ?? 0) +
-      (usage?.agents.length ?? 0) +
-      (usage?.uiComponents.length ?? 0);
+    const tools = usage?.tools.length ?? 0;
+    const agents = usage?.agents.length ?? 0;
     const ok = await confirm({
-      title: `Delete ${surface.name}?`,
-      description:
-        refsTotal > 0
-          ? `This surface has ${usage?.tools.length ?? 0} tool ref${usage?.tools.length === 1 ? "" : "s"}, ${usage?.agents.length ?? 0} agent ref${usage?.agents.length === 1 ? "" : "s"}, and ${usage?.uiComponents.length ?? 0} tool_ui row${usage?.uiComponents.length === 1 ? "" : "s"}. Delete will fail unless those are removed first (FKs do not cascade on delete). Deactivate instead?`
-          : "No dependents — safe to delete.",
-      confirmLabel: refsTotal > 0 ? "Try delete" : "Delete",
+      title: `Move ${surface.name} to Trash?`,
+      description: `Agents stop seeing this surface${tools + agents > 0 ? ` (it has ${tools} tool ref${tools === 1 ? "" : "s"} and ${agents} agent ref${agents === 1 ? "" : "s"})` : ""}. Its config and tool defaults move to Trash with it. You can restore it from Trash with everything intact.`,
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (!ok) return;
     setBusy(true);
     try {
       await deleteSurface(surface.name);
-      toast.success(`${surface.name} deleted`);
+      toast.success(`${surface.name} moved to Trash`);
       startTransition(() => replaceAppHref(router, "/administration/ui/surfaces"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Delete failed");
+      toast.error(e instanceof Error ? e.message : "Move to Trash failed");
       setBusy(false);
     }
   };
@@ -515,7 +510,7 @@ export function SurfaceAdminDetailPage({
               className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-destructive"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Delete
+              Move to Trash
             </Button>
           </div>
         </div>

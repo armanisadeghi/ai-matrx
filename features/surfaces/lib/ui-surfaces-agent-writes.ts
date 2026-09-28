@@ -296,7 +296,7 @@ export function parseDeleteSurfacesValue(
         );
       if (current.has_manifest)
         throw new Error(
-          `"${name}" has a code manifest: the next Sync manifests re-creates it, so deleting it would only destroy its agent roles and tool defaults. Remove the manifest in code, or deactivate instead.`,
+          `"${name}" has a code manifest, so code owns it: remove the manifest in code, or deactivate it instead.`,
         );
       return current;
     },
