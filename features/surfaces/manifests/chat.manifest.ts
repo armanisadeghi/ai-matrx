@@ -1,13 +1,15 @@
 /**
  * Surface manifest — Chat / conversation (`matrx-user/chat`).
  *
- * The live chat route (/chat/new, /chat/a/[agentId], /chat/[conversationId]):
- * a threaded conversation between the person and an agent, with a composer
- * for the person's next message. ONE provider — `ChatRoomClient`.
+ * The live chat route (/chat/new, /chat/a/[agentId], /chat/[conversationId])
+ * and a chat tile on a Board: a threaded conversation between the person and
+ * an agent, with a composer for the person's next message. ONE provider —
+ * `ChatConversationSurface`, mounted by `ChatRoomClient` and by the board's
+ * chat tile (only the LIVE tile registers, `SurfaceActivity`).
  *
  * WHO THIS SURFACE SERVES: OUTSIDE agents only — an agent the person runs
  * from the header Agents menu into a window panel, sidebar or overlay while
- * the chat page is open. The page's OWN conversation never receives this
+ * the chat page is open, or the chat beside a board holding a chat tile. The page's OWN conversation never receives this
  * surface as context (its launcher passes `runtime: { surfaceName: null }`)
  * and is never offered its tools. So every value here describes SOMEONE
  * ELSE's conversation to the agent reading it, and every target changes it.
@@ -34,7 +36,7 @@ import type {
 // ---------------------------------------------------------------------------
 // Write-contract vocabulary — ONE definition, imported by both the manifest
 // descriptions below (what an agent is told) and the handlers in
-// `ChatRoomClient.tsx` (what is actually accepted), so the advertised
+// `ChatConversationSurface.tsx` (what is actually accepted), so the advertised
 // contract and the enforced contract can never drift apart.
 // ---------------------------------------------------------------------------
 

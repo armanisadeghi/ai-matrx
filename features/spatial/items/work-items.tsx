@@ -4,7 +4,9 @@
  * Work items on a board: Chat, Note, File. Each Body is the feature's
  * canonical component (see ./types.ts) — the platform's one chat column, the
  * real Note editor, the real single-file workspace — never a board copy. The chat tile
- * reuses the canvas workspace's conversation hook and chat column.
+ * reuses the canvas workspace's conversation hook and chat column, and mounts
+ * the chat's own agent surface (`ChatConversationSurface`, the one `/chat`
+ * mounts) for its conversation.
  *
  * Saved sources (board/document.ts `NodeSource`):
  *   chat  `{ kind: "entity", entity: "chat", id: conversationId | null, meta?: { agentId } }`
@@ -23,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
+import { ChatConversationSurface } from "@/features/agents/components/chat/ChatConversationSurface";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import {
   selectAgentIdFromInstance,
@@ -54,9 +57,19 @@ import {
 /**
  * A chat tile is the canvas workspace's own chat: its conversation hook
  * (`useCanvasWorkspaceConversation` — launch under the default chat mandate or
- * the chosen agent, open a saved one in place, wait on the organization gate)
- * and its column (`CanvasChatColumn` — the platform's one chat column, compact
- * composer, agent switch). Keyed per tile by `surfaceKey`.
+ * the chosen agent, reopen a saved one IN PLACE through the canonical resume
+ * sequence so a turn that was mid-run at reload reattaches, wait on the
+ * organization gate) and its column (`CanvasChatColumn` — the platform's one
+ * chat column, `AgentConversationColumn`, in its compact composer size, with
+ * the agent switch). Keyed per tile by `surfaceKey`.
+ *
+ * Its agent surface is `/chat`'s own (`ChatConversationSurface`,
+ * `matrx-user/chat`) for THIS conversation: an agent beside the board reads the
+ * conversation, its transcript and its composer, and writes through the same
+ * targets the chat page offers (send a message, edit, regenerate, fork, stop,
+ * rename). The tile's own conversation is the surface's `ownConversationId`,
+ * so it never sees itself as context — and its launch opts out of adopting a
+ * mounted surface, exactly as /chat's own launcher does.
  */
 function ChatBody({ tileId, source, title, onSource }: ItemBodyProps) {
   const store = useAppStore();
@@ -64,15 +77,16 @@ function ChatBody({ tileId, source, title, onSource }: ItemBodyProps) {
   const savedId = entityId(source);
   const chosenAgentId = chatAgentId(source);
   // Read once, at mount: reopen THIS conversation, or start one.
-  const chat = useCanvasWorkspaceConversation(
-    surfaceKey,
-    savedId
-      ? { kind: "open", conversationId: savedId }
+  const chat = useCanvasWorkspaceConversation(surfaceKey, {
+    start: savedId
+      ? { kind: "open", conversationId: savedId, agentId: chosenAgentId }
       : chosenAgentId
         ? { kind: "agent", agentId: chosenAgentId }
         : { kind: "new" },
-  );
+    surfaceName: null,
+  });
   const conversationId = chat.conversationId;
+  const agentId = useAppSelector((s) => (conversationId ? selectAgentIdFromInstance(conversationId)(s) : null));
 
   // A viewer of the conversation's run holds it (LIVE-RUN-RETENTION.md), so a
   // launcher reap never blanks the tile mid-stream.
@@ -95,7 +109,7 @@ function ChatBody({ tileId, source, title, onSource }: ItemBodyProps) {
   }, [conversationId, conversationTitle]);
 
   if (!isEntity(source, "chat")) return null;
-  return (
+  const column = (
     <CanvasChatColumn
       conversation={chat.conversation}
       surfaceKey={surfaceKey}
@@ -103,68 +117,62 @@ function ChatBody({ tileId, source, title, onSource }: ItemBodyProps) {
       className="bg-card"
     />
   );
+  // The surface exists once there is a conversation to describe.
+  if (!conversationId) return column;
+  return (
+    <ChatConversationSurface conversationId={conversationId} agentId={agentId ?? chosenAgentId ?? ""} surfaceKey={surfaceKey}>
+      {column}
+    </ChatConversationSurface>
+  );
 }
 
 /** Stable empty list: `agentIds: []` = every conversation the person can open. */
 const ALL_AGENTS: string[] = [];
 
+/** Bring in: one of the person's conversations, reopened in the tile. */
 function ChatPicker({ onPick, onCancel }: PickerProps) {
-  const [mode, setMode] = useState<"conversations" | "agent">("conversations");
   return (
     <div className="flex h-[520px] min-h-0 flex-col gap-2">
-      <div className="flex shrink-0 gap-1 rounded-lg bg-muted p-1" role="tablist" aria-label="Chat source">
-        {(
-          [
-            { id: "conversations", label: "Your conversations", Icon: MessagesSquare },
-            { id: "agent", label: "New chat with an agent", Icon: AGENT_ICON },
-          ] as const
-        ).map(({ id, label, Icon }) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={mode === id}
-            onClick={() => setMode(id)}
-            className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
-              mode === id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Icon className="size-3.5" />
-            {label}
-          </button>
-        ))}
-      </div>
       <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
-        {mode === "conversations" ? (
-          <ConversationHistorySidebar
-            variant="dense"
-            scopeId="spatial-board-chat-picker"
-            agentIds={ALL_AGENTS}
-            surfaceId="conversation-picker"
-            onOpenConversation={(conv) =>
-              onPick([
-                {
-                  title: conv.title?.trim() || "Chat",
-                  source: chatSource(conv.conversationId, conv.agentId ?? null),
-                },
-              ])
-            }
-            openInPlace
-            historyLabel="Conversations"
-            initialSearchOpen
-            className="h-full bg-transparent"
-          />
-        ) : (
-          <AgentListInlinePicker
-            consumerId="spatial-board-chat-agent"
-            defaultMandateKey={DEFAULT_NEW_CHAT_MANDATE_KEY}
-            className="h-full"
-            onSelect={(agentId) =>
-              onPick([{ title: "Chat", source: { kind: "entity", entity: "chat", id: null, meta: { agentId } } }])
-            }
-          />
-        )}
+        <ConversationHistorySidebar
+          variant="dense"
+          scopeId="spatial-board-chat-picker"
+          agentIds={ALL_AGENTS}
+          surfaceId="conversation-picker"
+          onOpenConversation={(conv) =>
+            onPick([
+              {
+                title: conv.title?.trim() || "Chat",
+                source: chatSource(conv.conversationId, conv.agentId ?? null),
+              },
+            ])
+          }
+          openInPlace
+          historyLabel="Conversations"
+          initialSearchOpen
+          className="h-full bg-transparent"
+        />
+      </div>
+      <div className="flex shrink-0 justify-end">
+        <Button type="button" variant="ghost" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** Start new: a chat with the agent the person picks — the ONE agent picker. */
+function AgentChatPicker({ onPick, onCancel }: PickerProps) {
+  return (
+    <div className="flex h-[520px] min-h-0 flex-col gap-2">
+      <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
+        <AgentListInlinePicker
+          consumerId="spatial-board-chat-agent"
+          defaultMandateKey={DEFAULT_NEW_CHAT_MANDATE_KEY}
+          className="h-full"
+          onSelect={(agentId) => onPick([{ title: "Chat", source: chatSource(null, agentId) }])}
+        />
       </div>
       <div className="flex shrink-0 justify-end">
         <Button type="button" variant="ghost" onClick={onCancel}>
@@ -302,11 +310,16 @@ export const WORK_ITEMS: BoardItemType[] = [
     defaultSize: { w: 520, h: 760 },
     matches: (s) => isEntity(s, "chat"),
     Body: ChatBody,
-    startNew: {
-      label: "Chat",
-      create: (): PlacedItem => ({ title: "Chat", source: chatSource(null, null) }),
-    },
-    bringIn: { label: "Chat or agent", Picker: ChatPicker },
+    // Two ways to start: the default chat (the `chat.default_new_chat` job,
+    // exactly /chat/new) or a chat with an agent the person picks.
+    startNew: [
+      {
+        label: "Chat",
+        create: (): PlacedItem => ({ title: "Chat", source: chatSource(null, null) }),
+      },
+      { label: "Chat with an agent", icon: AGENT_ICON, Picker: AgentChatPicker },
+    ],
+    bringIn: { label: "Conversation", Picker: ChatPicker },
     href: (s) => {
       const id = entityId(s);
       return id ? `/chat/${id}` : null;

@@ -212,6 +212,13 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 
 - **The chat beside the board** is `ChatCanvasWorkspace`'s; the board publishes its own surface
   (`matrx-user/spatial-board`: values + `board_*` tools), so no page-level snapshot is passed.
+- **A chat tile is /chat's conversation**: `CanvasChatColumn` (the one chat column, compact composer, agent
+  switch) under `ChatConversationSurface` — the `matrx-user/chat` surface `/chat` mounts, scoped to the
+  tile's conversation, so the chat beside the board reads what the tile's agent said (through the surface
+  chain) and can send into it. A saved tile reopens through the canonical resume sequence, so a turn that
+  was mid-run at reload reattaches. Add menu: "Chat" and "Chat with an agent" (the one agent picker).
+- **`startNew` takes one entry or several** (`StartNewEntry`: `create` for an instant start, or `Picker` for
+  a start that needs one choice first); `startNewEntries(type)` lists them for the Add menu and Start panel.
 - **A note tile is the notes core**: `items/NoteItemBody.tsx` → `NoteWorkspace` (features/notes) in
   its own notes instance `board-note:<tileId>` — the /notes modes, outline / versions / clean-up, the
   note chip (rename, mic, "…" menu), `NoteContentEditor` (which mounts `matrx-user/notes` itself, so
@@ -235,6 +242,11 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
 ## Change Log
+
+- 2026-09-28 — Chat tile: mounts `matrx-user/chat` for its conversation (`ChatConversationSurface`, shared
+  with `/chat`); reopening resumes through `resumeConversation` (reattaches a mid-run turn); its launch opts
+  out of surface adoption like /chat's own. `startNew` may list several entries; chat adds "Chat with an
+  agent". Bring-in is "Conversation".
 
 - 2026-09-28 — Feature tiles carry their feature's full surface: Task (`matrx-user/tasks`, already in
   `TaskEditorBody`), War Room (`WarRoomSurfaceHost`, body now the room's `StageView`; the tile hydrates

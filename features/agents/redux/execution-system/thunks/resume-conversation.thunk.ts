@@ -37,8 +37,13 @@ import { patchConversation } from "../conversations/conversations.slice";
 
 export interface ResumeConversationArgs {
   conversationId: string;
-  /** The agent that owns it — needed to build the instance when it is cold. */
-  agentId: string;
+  /**
+   * The agent that owns it — builds the instance when it is cold (step 2).
+   * `null` when the caller does not know it (a board tile saved before it
+   * recorded its agent): step 2 is skipped and `loadConversation` builds the
+   * record from the row's own `initial_agent_id` — steps 3–5 run unchanged.
+   */
+  agentId: string | null;
   /** Surface (focus) key that should end up pointed at this conversation. */
   surfaceKey: string;
   /** See the file header. `undefined` = leave the existing stamp alone. */
@@ -94,8 +99,8 @@ export const resumeConversation = createAsyncThunk<
       return { conversationId, hydrated: false, aborted: false };
     }
 
-    // (2) Cold — build the instance under the SAME id.
-    if (!exists) {
+    // (2) Cold — build the instance under the SAME id (see `agentId`).
+    if (!exists && agentId) {
       await dispatch(
         createManualInstance({
           agentId,

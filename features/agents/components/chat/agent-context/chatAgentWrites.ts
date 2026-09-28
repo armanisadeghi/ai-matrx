@@ -1,7 +1,7 @@
 /**
  * chatAgentWrites — the pure checks behind the `matrx-user/chat` write targets
  * (declared in `features/surfaces/manifests/chat.manifest.ts`, registered in
- * `ChatRoomClient.tsx`). No React, no store, no network: every rule is
+ * `ChatConversationSurface.tsx`). No React, no store, no network: every rule is
  * unit-tested here (`__tests__/chatAgentWrites.test.ts`).
  *
  * The agents these serve are OUTSIDE agents — run from the header Agents menu

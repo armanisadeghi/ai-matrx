@@ -36,8 +36,11 @@ such layout in the app.
   own header).
 - **`CanvasChatColumn`** — the platform's ONE chat column (`AgentConversationColumn`) with the COMPACT
   composer; `buildCanvasSmartInputProps` is the single place its composer props are built.
-- **`useCanvasWorkspaceConversation(surfaceKey, { enabled })`** — the surface-owned conversation: `startNew`,
-  `openExisting` (in place, `loadConversation`), `startWith(agentId, via?)`. Waits for an active
+- **`useCanvasWorkspaceConversation(surfaceKey, { enabled, start, surfaceName })`** — the surface-owned
+  conversation: `startNew`, `openExisting(id, agentId?)` (in place, through the canonical resume sequence
+  `resumeConversation` — hydrate, re-surface an unanswered client tool prompt, reattach to a turn the server
+  is still running; never `loadConversation` alone), `startWith(agentId, via?)`. `surfaceName: null` = the
+  conversation IS its host's own chat (a board chat tile): launches adopt no mounted surface, like /chat's. Waits for an active
   organization and offers the ONE org gate (`ensureOrganizationContext`) — never picks one. With
   `enabled: false` nothing launches: a chat that starts closed launches when it is first opened.
 - **`ChatPanelTitleMenu` / `useChatPanelTitle`** — the chat's name ▾ (New chat · Rename · Open in full chat),
@@ -115,6 +118,10 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
 ---
 
 ## Change Log
+
+- **2026-09-28** — Reopening a conversation (history row, a saved board chat tile) runs `resumeConversation`
+  instead of `loadConversation` alone, so a turn that was mid-run at reload reattaches and an unanswered
+  client tool prompt comes back. `openExisting` takes the row's agent; options gain `surfaceName: null`.
 
 - **2026-09-27** — `PageContextRow` and its cookie removed: the page on/off lives in the composer's page chip
   (`PageContextChip`, turning it back on re-reads the page). Every panel/header border line removed.

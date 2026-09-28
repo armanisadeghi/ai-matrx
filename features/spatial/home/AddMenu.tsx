@@ -17,16 +17,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { BoardItemType } from "../items/types";
+import { startNewEntries, type BoardItemType, type StartNewEntry } from "../items/types";
 
 interface AddProps {
   types: readonly BoardItemType[];
-  onStartNew: (type: BoardItemType) => void;
+  onStartNew: (type: BoardItemType, entry: StartNewEntry) => void;
   onBringIn: (type: BoardItemType) => void;
 }
 
 export function AddMenu({ types, onStartNew, onBringIn }: AddProps) {
-  const news = types.filter((t) => t.startNew);
+  const news = types.flatMap((t) => startNewEntries(t).map((entry, i) => ({ t, entry, key: `new:${t.key}:${i}` })));
   const ins = types.filter((t) => t.bringIn);
   return (
     <DropdownMenu>
@@ -42,12 +42,15 @@ export function AddMenu({ types, onStartNew, onBringIn }: AddProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64" data-spatial-chrome>
         {news.length > 0 && <DropdownMenuLabel className="text-xs text-muted-foreground">Start new</DropdownMenuLabel>}
-        {news.map((t) => (
-          <DropdownMenuItem key={`new:${t.key}`} onSelect={() => onStartNew(t)}>
-            <t.icon className="mr-2 h-4 w-4" />
-            {t.startNew?.label}
-          </DropdownMenuItem>
-        ))}
+        {news.map(({ t, entry, key }) => {
+          const Icon = entry.icon ?? t.icon;
+          return (
+            <DropdownMenuItem key={key} onSelect={() => onStartNew(t, entry)}>
+              <Icon className="mr-2 h-4 w-4" />
+              {entry.label}
+            </DropdownMenuItem>
+          );
+        })}
         {news.length > 0 && ins.length > 0 && <DropdownMenuSeparator />}
         {ins.length > 0 && (
           <DropdownMenuLabel className="text-xs text-muted-foreground">Bring in what you have</DropdownMenuLabel>
@@ -64,7 +67,7 @@ export function AddMenu({ types, onStartNew, onBringIn }: AddProps) {
 }
 
 export function StartPanel({ types, onStartNew, onBringIn }: AddProps) {
-  const news = types.filter((t) => t.startNew);
+  const news = types.flatMap((t) => startNewEntries(t).map((entry, i) => ({ t, entry, key: `new:${t.key}:${i}` })));
   const ins = types.filter((t) => t.bringIn);
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-4">
@@ -81,17 +84,20 @@ export function StartPanel({ types, onStartNew, onBringIn }: AddProps) {
           <>
             <h3 className="mt-5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Start new</h3>
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {news.map((t) => (
-                <button
-                  key={`new:${t.key}`}
-                  type="button"
-                  onClick={() => onStartNew(t)}
-                  className="flex flex-col items-start gap-2 rounded-xl border border-border bg-background p-3 text-left text-sm font-medium text-foreground transition-colors hover:border-primary/60 hover:bg-primary/5"
-                >
-                  <t.icon className="h-5 w-5 text-primary" />
-                  {t.startNew?.label}
-                </button>
-              ))}
+              {news.map(({ t, entry, key }) => {
+                const Icon = entry.icon ?? t.icon;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => onStartNew(t, entry)}
+                    className="flex flex-col items-start gap-2 rounded-xl border border-border bg-background p-3 text-left text-sm font-medium text-foreground transition-colors hover:border-primary/60 hover:bg-primary/5"
+                  >
+                    <Icon className="h-5 w-5 text-primary" />
+                    {entry.label}
+                  </button>
+                );
+              })}
             </div>
           </>
         )}

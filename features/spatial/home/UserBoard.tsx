@@ -18,7 +18,7 @@
  * reported through `onChange` as a `BoardDocument` (the saved form).
  */
 
-import { type DragEvent, useEffect, useRef, useState } from "react";
+import { type ComponentType, type DragEvent, useEffect, useRef, useState } from "react";
 import { ExternalLink, PanelRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -49,7 +49,7 @@ import { Minimap, ZoomHud } from "../components/SpatialChrome";
 import type { AddTileInput, BoardToolHost, EditTileInput } from "../tools/useBoardAgentTools";
 import { createItemSurfaceIndex, type ItemSurfaceIndex } from "../tools/item-surfaces";
 import { BOARD_ITEM_TYPES, itemTypeFor } from "../items/catalog";
-import type { BoardItemType, PlacedItem } from "../items/types";
+import type { BoardItemType, PickerProps, PlacedItem, StartNewEntry } from "../items/types";
 import { filesToBoardItems } from "../items/file-drop";
 import { noteSeedEdit } from "../items/work-sources";
 import { intakeText } from "./board-intake";
@@ -91,7 +91,8 @@ export function UserBoard({
   // Every tile's own surface capture, live or dormant: how an agent reaches
   // any item on the board (board_items, board_open_item, board_item_act).
   const [itemSurfaces] = useState(createItemSurfaceIndex);
-  const [picking, setPicking] = useState<BoardItemType | null>(null);
+  // The open picker: a bring-in, or a start-new that needs one choice first.
+  const [picking, setPicking] = useState<{ title: string; Picker: ComponentType<PickerProps> } | null>(null);
   const [dropping, setDropping] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -176,11 +177,12 @@ export function UserBoard({
     );
   };
 
-  const startNew = (type: BoardItemType) => {
-    if (type.startNew) place([type.startNew.create()]);
+  const startNew = (_type: BoardItemType, entry: StartNewEntry) => {
+    if ("create" in entry) place([entry.create()]);
+    else setPicking({ title: entry.label, Picker: entry.Picker });
   };
   const bringIn = (type: BoardItemType) => {
-    if (type.bringIn) setPicking(type);
+    if (type.bringIn) setPicking({ title: `Bring in: ${type.bringIn.label}`, Picker: type.bringIn.Picker });
   };
 
   const onCreate = (c: Creation) => {
@@ -453,10 +455,10 @@ export function UserBoard({
       <Dialog open={picking !== null} onOpenChange={(open) => !open && setPicking(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{picking?.bringIn ? `Bring in: ${picking.bringIn.label}` : "Bring in"}</DialogTitle>
+            <DialogTitle>{picking?.title ?? "Bring in"}</DialogTitle>
           </DialogHeader>
-          {picking?.bringIn && (
-            <picking.bringIn.Picker
+          {picking && (
+            <picking.Picker
               onPick={(items) => {
                 setPicking(null);
                 place(items);

@@ -304,8 +304,8 @@ export function ChatCanvasWorkspace({
     />
   );
 
-  const openFromHistory = (conversation: { conversationId: string }) => {
-    chat.openExisting(conversation.conversationId);
+  const openFromHistory = (conversation: { conversationId: string; agentId?: string | null }) => {
+    chat.openExisting(conversation.conversationId, conversation.agentId);
     if (compact) setMobileSheet("chat");
     else if (!chatState.open || fullScreen) openChat();
   };
