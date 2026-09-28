@@ -1,0 +1,4 @@
+{
+  "note": "check:hidden-primary-actions allowlist. A page's primary action is never reachable only through a drawer, collapsible sidebar, or menu. An entry here says a finding is deliberate. Every entry needs a non-empty `reason` naming where the main-pane door is or why this action is not the page's job. key = \"<rule> <file> :: <normalized label>\" (printed by the check). ONLY SHRINKS: stale entries are printed; delete them.",
+  "entries": []
+}

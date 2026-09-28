@@ -117,6 +117,13 @@ if $STRICT; then
         "Sign-out scope (a bare signOut() logs the account out of every device)|pnpm check:signout-scope"
         "Service-role writes to provenance-governed tables (the DB refuses them with 23514)|pnpm check:admin-client-governed-writes"
         "Hidden failure announcements (an error only a screen reader can perceive is a dead button)|pnpm check:hidden-alerts"
+        # HIDDEN PRIMARY ACTIONS (2026-09-27). A page's primary action (Run, Generate, Clean, Review,
+        # Create, Submit, Start, Process, Analyze, Publish, Send) is never reachable only through a
+        # drawer, collapsible sidebar, or menu — /transcripts/cleanup's Clean lived only in the phone's
+        # Controls drawer (29f224b48d) and the cleanup window's only in its sidebar (212847765a).
+        # ADVISORY in BOTH lanes: findings print and it exits 0 (1 only when UNMEASURED or an allowlist
+        # entry lacks a reason). `pnpm check:hidden-primary-actions:self-test` proves each rule RED/GREEN.
+        "Hidden primary actions (a page's main job only behind a drawer, sidebar, or menu)|pnpm check:hidden-primary-actions"
         # 🚨 CRITICAL-1 (VERIFIER-8, 2026-09-21). `iam.api_keys` granted INSERT to
         # `authenticated` over PostgREST with an RLS policy that pinned `created_by`
         # and `organization_id` and said NOTHING about `service_user_id` — the column
@@ -849,6 +856,13 @@ else
         # `pnpm check:compiler-skips:self-test` proves it can still fail.
         "No new component the React Compiler silently skips (shrink-only baseline)|pnpm check:compiler-skips"
         "Hidden failure announcements (an error only a screen reader can perceive is a dead button)|pnpm check:hidden-alerts"
+        # HIDDEN PRIMARY ACTIONS (2026-09-27). A page's primary action (Run, Generate, Clean, Review,
+        # Create, Submit, Start, Process, Analyze, Publish, Send) is never reachable only through a
+        # drawer, collapsible sidebar, or menu — /transcripts/cleanup's Clean lived only in the phone's
+        # Controls drawer (29f224b48d) and the cleanup window's only in its sidebar (212847765a).
+        # ADVISORY in BOTH lanes: findings print and it exits 0 (1 only when UNMEASURED or an allowlist
+        # entry lacks a reason). `pnpm check:hidden-primary-actions:self-test` proves each rule RED/GREEN.
+        "Hidden primary actions (a page's main job only behind a drawer, sidebar, or menu)|pnpm check:hidden-primary-actions"
         # 🚨 CRITICAL-1 (VERIFIER-8, 2026-09-21). `iam.api_keys` granted INSERT to
         # `authenticated` over PostgREST with an RLS policy that pinned `created_by`
         # and `organization_id` and said NOTHING about `service_user_id` — the column

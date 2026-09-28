@@ -84,6 +84,9 @@ export interface SourceHost {
   read(rel: string): string | null;
 }
 
+/** `--explain`: print every hidden-region candidate and whether the main region covers it. */
+const EXPLAIN = process.argv.includes("--explain");
+
 const PRIMARY_VERBS = new Set([
   "run", "generate", "clean", "review", "create", "submit", "start", "process",
   "analyze", "analyse", "publish", "send",
@@ -93,6 +96,14 @@ const PRIMARY_VERBS = new Set([
 const GENERIC_CALLS = new Set([
   "preventDefault", "stopPropagation", "then", "catch", "finally", "mutate", "mutateAsync",
   "close", "closeMobilePanel", "push", "set", "toggle", "log", "warn", "error", "confirm",
+]);
+
+/** Calls that never identify a handler: builtins and state setters. Skipped when picking an arrow's handler. */
+const NOT_A_HANDLER = new Set([
+  "trim", "map", "filter", "forEach", "includes", "join", "split", "slice", "toString", "toLowerCase",
+  "toUpperCase", "find", "some", "every", "reduce", "concat", "keys", "values", "entries", "from",
+  "isArray", "parse", "stringify", "now", "resolve", "all", "String", "Number", "Boolean", "focus",
+  "blur", "scrollIntoView", "requestAnimationFrame", "setTimeout", "clearTimeout",
 ]);
 
 const BUTTON_LIKE = /^(button)$|(Button|Btn|MenuItem|CommandItem)$/;
@@ -266,9 +277,21 @@ export function handlerKeys(expr: ts.Node | undefined): Set<string> {
   else if (ts.isPropertyAccessExpression(expr)) calleeKey(expr);
   else if (ts.isCallExpression(expr)) calleeKey(expr.expression);
   else if (ts.isArrowFunction(expr) || ts.isFunctionExpression(expr)) {
+    // An inline handler is identified by the FIRST call that does real work — `list.createStore`
+    // in a submit handler, not the `setPending`/`trim` around it (every one of those would match
+    // some unrelated line in the main pane and hide the finding).
+    let picked = false;
     const visit = (n: ts.Node) => {
-      if (ts.isCallExpression(n)) calleeKey(n.expression);
+      if (picked) return;
       ts.forEachChild(n, visit);
+      if (picked || !ts.isCallExpression(n)) return;
+      const callee = n.expression;
+      const name = ts.isIdentifier(callee) ? callee.text : ts.isPropertyAccessExpression(callee) ? callee.name.text : "";
+      if (!name || NOT_A_HANDLER.has(name) || /^set[A-Z]/.test(name)) return;
+      // `archive.mutate()` identifies its mutation; `e.preventDefault()` / `x.then()` identify nothing.
+      if (GENERIC_CALLS.has(name) && !(/^mutate/.test(name) && ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.expression))) return;
+      calleeKey(callee);
+      picked = keys.size > 0;
     };
     visit(expr.body);
   }
@@ -295,17 +318,29 @@ function actionsOf(el: ts.JsxOpeningLikeElement, full: ts.Node, file: string): A
   };
   if (BUTTON_LIKE.test(tag.split(".").pop() ?? tag)) {
     const handlerName = attrs.has("onClick") ? "onClick" : attrs.has("onSelect") ? "onSelect" : [...attrs.keys()].find((k) => /^on[A-Z]/.test(k));
-    if (!handlerName) return out;
+    let handler: ts.Node | undefined = handlerName ? attrs.get(handlerName) : undefined;
+    if (!handler) {
+      // A submit button's handler is its form's onSubmit.
+      const type = attrs.get("type");
+      if (!type || !ts.isStringLiteral(type) || type.text !== "submit") return out;
+      for (let p: ts.Node | undefined = full.parent; p; p = p.parent) {
+        if (ts.isJsxElement(p) && p.openingElement.tagName.getText() === "form") { handler = attrMap(p.openingElement).get("onSubmit"); break; }
+        if (isFunctionLike(p)) break;
+      }
+      if (!handler) return out;
+    }
     const pieces = [...elementLabels(el, full), camelWords(tag.split(".").pop() ?? tag)];
     const hit = pieces.find(isPrimary);
-    if (hit) push(hit, attrs.get(handlerName));
+    if (hit) push(hit, handler);
     return out;
   }
   // Any other element: a handler prop NAMED for a primary verb (`onRunReview`, `onProcess`).
   for (const [name, value] of attrs) {
     if (!/^on[A-Z]/.test(name)) continue;
     const words = camelWords(name);
-    if (isPrimary(words)) push(words, value);
+    // `onCreateFolder={(noteId) => …}` on a row is a per-ITEM action, not the page's job.
+    const perItem = (ts.isArrowFunction(value) || ts.isFunctionExpression(value)) && value.parameters.length > 0;
+    if (isPrimary(words[0].toUpperCase() + words.slice(1)) && !perItem) push(words, value);
   }
   return out;
 }
@@ -446,7 +481,8 @@ export function scanFile(project: Project, rel: string): Finding[] {
   const emit = (rule: Rule, at: ts.Node, hidden: Action[], main: Region) => {
     const done = new Set<string>();
     for (const a of hidden) {
-      const id = a.keys.size ? `${a.file}:${[...a.keys].sort().join(",")}` : `${a.file}:${a.line}:${a.labelNorm}`;
+      const id = a.keys.size ? `${a.file}:${[...a.keys].sort().join(",")}` : `${a.file}:${a.labelNorm}`;
+      if (EXPLAIN) console.log(`  [explain] ${rule} ${rel}:${lineOf(at)} candidate ${a.file}:${a.line} "${a.label}" keys=[${[...a.keys].join(",")}] covered=${covered(a, main)}`);
       if (done.has(id) || covered(a, main)) continue;
       done.add(id);
       findings.push({ rule, file: rel, line: lineOf(at), actionFile: a.file, actionLine: a.line, label: a.label, handler: describe(a) });
@@ -620,16 +656,35 @@ const CASES: Case[] = [
   { name: "[mobile-panel-only] GREEN: main chat runs the same confirmAndRunReview", files: { "features/hindsight/workspace/EnrollmentSidebar.tsx": enrollmentSidebar, "features/hindsight/workspace/ImprovementWorkspace.tsx": improvementWorkspace(` onRunReview={() => void actions.confirmAndRunReview()}`) }, scan: "features/hindsight/workspace/ImprovementWorkspace.tsx", expect: { "mobile-panel-only": 0 } },
   { name: "[mobile-panel-only] RED: imported column's prop handler mapped through the host (marketing setup shape)", files: { "features/marketing/content-plan/setup/components/SetupPreviewColumn.tsx": previewColumn, "features/marketing/content-plan/setup/components/SetupView.tsx": setupView("") }, scan: "features/marketing/content-plan/setup/components/SetupView.tsx", expect: { "mobile-panel-only": 1 } },
   { name: "[mobile-panel-only] GREEN: main carries a commit bar calling handleCommit", files: { "features/marketing/content-plan/setup/components/SetupPreviewColumn.tsx": previewColumn, "features/marketing/content-plan/setup/components/SetupView.tsx": setupView(`<CommitBar onCommit={() => void handleCommit()} />`) }, scan: "features/marketing/content-plan/setup/components/SetupView.tsx", expect: { "mobile-panel-only": 0 } },
+  { name: "[mobile-panel-only] GREEN: a per-item callback (`onCreateFolder={(noteId) => …}` on a row) is not the page's job", files: { "features/notes/NotesPage.tsx": `${SHELL_IMPORT}export function NotesPage() {
+  const tree = <div>{notes.map((n) => <NoteRow key={n.id} onCreateFolder={(noteId) => createFolderFor(noteId)} />)}</div>;
+  return <MobilePanelShell desktop={tree} main={<div>Editor</div>} panels={[{ id: "tree", label: "Notes", content: tree }]} />;
+}
+` }, scan: "features/notes/NotesPage.tsx", expect: { "mobile-panel-only": 0 } },
+  { name: "[mobile-panel-only] RED: the same row-less handler prop (`onCreateFolder={createFolder}`) IS the page's action", files: { "features/notes/NotesPage.tsx": `${SHELL_IMPORT}export function NotesPage() {
+  const tree = <div><FolderToolbar onCreateFolder={createFolder} /></div>;
+  return <MobilePanelShell desktop={tree} main={<div>Editor</div>} panels={[{ id: "tree", label: "Notes", content: tree }]} />;
+}
+` }, scan: "features/notes/NotesPage.tsx", expect: { "mobile-panel-only": 1 } },
+  { name: "[mobile-panel-only] GREEN: a review-history ROW whose prose says \"run\" is not a Run button (EnrollmentSidebar:48 shape)", files: { "features/hindsight/workspace/ReviewHistory.tsx": `${SHELL_IMPORT}export function ReviewHistory({ reviews }: { reviews: Array<{ id: string; runs: number }> }) {
+  const list = <div>{reviews.map((r) => <button key={r.id} type="button" onClick={() => openReview(r.id)}><span>{r.runs}</span> {r.runs === 1 ? "run" : "runs"} reviewed</button>)}</div>;
+  return <MobilePanelShell desktop={list} main={<div>Reviewer conversation</div>} panels={[{ id: "history", label: "History", content: list }]} />;
+}
+` }, scan: "features/hindsight/workspace/ReviewHistory.tsx", expect: { "mobile-panel-only": 0 } },
   { name: "[rich-action-no-slot] RED: a RichDocumentAction with no renderSlot", files: { "features/rich-document/actions/handlers/publish.ts": richAction("") }, scan: "features/rich-document/actions/handlers/publish.ts", expect: { "rich-action-no-slot": 1 } },
   { name: "[rich-action-no-slot] GREEN: renderSlot stated", files: { "features/rich-document/actions/handlers/publish.ts": richAction(`\n  renderSlot: "primary",`) }, scan: "features/rich-document/actions/handlers/publish.ts", expect: { "rich-action-no-slot": 0 } },
 ];
 
-/** Real bytes from history: each pre-fix file must be flagged for its Clean action, each fixed file must not. */
-const HISTORY: Array<{ name: string; rev: string; path: string; rule: Rule; expectFlagged: boolean }> = [
-  { name: "CleanupPad before 29f224b48d", rev: "29f224b48d^", path: "features/transcription-cleanup/components/CleanupPad.tsx", rule: "mobile-panel-only", expectFlagged: true },
-  { name: "CleanupPad at 29f224b48d", rev: "29f224b48d", path: "features/transcription-cleanup/components/CleanupPad.tsx", rule: "mobile-panel-only", expectFlagged: false },
-  { name: "TranscriptionCleanup window before 212847765a", rev: "212847765a^", path: "components/official-candidate/transcription-cleanup/components/TranscriptionCleanup.tsx", rule: "window-sidebar-only", expectFlagged: true },
-  { name: "TranscriptionCleanup window at 212847765a", rev: "212847765a", path: "components/official-candidate/transcription-cleanup/components/TranscriptionCleanup.tsx", rule: "window-sidebar-only", expectFlagged: false },
+/**
+ * Real bytes from history, single-file shapes only (imports would be read from today's tree): each
+ * pre-fix file must be flagged for its action, each fixed file must not.
+ */
+const HISTORY: Array<{ name: string; rev: string; path: string; rule: Rule; label: RegExp; expectFlagged: boolean }> = [
+  { name: "CleanupPad before 29f224b48d", rev: "29f224b48d^", path: "features/transcription-cleanup/components/CleanupPad.tsx", rule: "mobile-panel-only", label: /^clean/, expectFlagged: true },
+  { name: "CleanupPad at 29f224b48d", rev: "29f224b48d", path: "features/transcription-cleanup/components/CleanupPad.tsx", rule: "mobile-panel-only", label: /^clean/, expectFlagged: false },
+  { name: "TranscriptionCleanup window before 212847765a", rev: "212847765a^", path: "components/official-candidate/transcription-cleanup/components/TranscriptionCleanup.tsx", rule: "window-sidebar-only", label: /^clean/, expectFlagged: true },
+  { name: "TranscriptionCleanup window at 212847765a", rev: "212847765a", path: "components/official-candidate/transcription-cleanup/components/TranscriptionCleanup.tsx", rule: "window-sidebar-only", label: /^clean/, expectFlagged: false },
+  { name: "DataStoresPage at aea8a72a83 (create-store form only in the Stores drawer; a submit button's handler is its form's onSubmit)", rev: "aea8a72a83", path: "features/rag/components/data-stores/DataStoresPage.tsx", rule: "mobile-panel-only", label: /^(create|submit)/, expectFlagged: true },
 ];
 
 function selfTest(): number {
@@ -655,10 +710,10 @@ function selfTest(): number {
       continue;
     }
     const project = new Project(new MemoryHost({ [h.path]: text }, diskHost));
-    const hits = scanFile(project, h.path).filter((f) => f.rule === h.rule && /^clean/.test(norm(f.label)));
+    const hits = scanFile(project, h.path).filter((f) => f.rule === h.rule && h.label.test(norm(f.label)));
     const ok = hits.length > 0 === h.expectFlagged;
     if (!ok) failed++;
-    console.log(`${ok ? "ok  " : "FAIL"} [history] ${h.name} — ${h.expectFlagged ? "must" : "must NOT"} flag its Clean action; flagged ${hits.length}${hits.length ? ` (${hits.map((f) => `${f.actionFile}:${f.actionLine} "${f.label}"`).join(", ")})` : ""}`);
+    console.log(`${ok ? "ok  " : "FAIL"} [history] ${h.name} — ${h.expectFlagged ? "must" : "must NOT"} flag ${h.label}; flagged ${hits.length}${hits.length ? ` (${hits.map((f) => `${f.actionFile}:${f.actionLine} "${f.label}"`).join(", ")})` : ""}`);
   }
   console.log(failed ? `\ncheck:hidden-primary-actions self-test FAILED (${failed})` : "\ncheck:hidden-primary-actions self-test passed");
   return failed ? 1 : 0;

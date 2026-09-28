@@ -475,6 +475,8 @@
     "check:annotation-trash:self-test": "tsx scripts/check-annotation-trash.ts --self-test",
     "check:hidden-alerts": "tsx scripts/check-hidden-alerts.ts",
     "check:hidden-alerts:self-test": "tsx scripts/check-hidden-alerts.ts --self-test",
+    "check:hidden-primary-actions": "tsx scripts/check-hidden-primary-actions.ts",
+    "check:hidden-primary-actions:self-test": "tsx scripts/check-hidden-primary-actions.ts --self-test",
     "check:soft-delete-unique": "tsx scripts/check-soft-delete-unique.ts",
     "check:soft-delete-unique:strict": "tsx scripts/check-soft-delete-unique.ts --strict",
     "check:soft-delete-cascade:strict": "tsx scripts/check-soft-delete-cascade.ts --strict",
