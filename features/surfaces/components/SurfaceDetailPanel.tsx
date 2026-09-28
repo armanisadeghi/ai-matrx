@@ -465,7 +465,7 @@ export function SurfaceDetailPanel({
                 return (
                   <div
                     key={b.id}
-                    className="px-2 py-1.5 flex items-center gap-2"
+                    className="px-2 py-1.5 space-y-1"
                   >
                     {b.agent_id ? (
                       <EntityRef
@@ -473,8 +473,9 @@ export function SurfaceDetailPanel({
                         id={b.agent_id}
                         name={b.agent_name}
                         fill
-                        className="min-w-0 flex-1"
-                        nameClassName="text-xs"
+                        alwaysShowActions
+                        className="w-full"
+                        nameClassName="text-sm"
                       />
                     ) : (
                       <span className="min-w-0 flex-1 text-xs text-muted-foreground">
@@ -482,15 +483,10 @@ export function SurfaceDetailPanel({
                         No agent assigned
                       </span>
                     )}
-                    <Badge variant="outline" className="text-xs">
-                      {scopeLabel}
-                    </Badge>
-                    <Badge
-                      variant={mappingCount > 0 ? "default" : "outline"}
-                      className="text-xs tabular-nums"
-                    >
-                      {mappingCount} mapping{mappingCount === 1 ? "" : "s"}
-                    </Badge>
+                    <div className="text-xs text-muted-foreground">
+                      {scopeLabel} · {mappingCount} value mapping
+                      {mappingCount === 1 ? "" : "s"}
+                    </div>
                   </div>
                 );
               })}
