@@ -43,6 +43,8 @@ import { MediaPager } from "./MediaPager";
 import { useLongPress } from "../hooks/useLongPress";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const NOTES_AUTOSAVE_MS = 800;
 
@@ -61,6 +63,10 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
   // is the exact lie `features/access-gate/` exists to kill.
   const [reloadNonce, setReloadNonce] = useState(0);
   const [files, setFiles] = useState<CaptureFile[]>([]);
+  // A thrown item read is not "not found", and a failed files read is not
+  // "no photos" — each says its own failure.
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [filesError, setFilesError] = useState<unknown>(null);
   const [pending, setPending] = useState<PendingUpload[]>([]);
   const [notes, setNotes] = useState("");
   const [notesSaving, setNotesSaving] = useState(false);
@@ -90,14 +96,21 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
             setNotFound(true);
             return;
           }
+          setLoadError(null);
           adoptItem(loaded);
           notesRef.current = loaded.notes;
           setNotes(loaded.notes);
-          setFiles(await listItemFiles(itemId));
         } catch (err) {
           console.error("[product-capture] item load failed", err);
-          toast.error("Could not load the item.");
-          setNotFound(true);
+          setLoadError(err);
+          return;
+        }
+        try {
+          setFiles(await listItemFiles(itemId));
+          setFilesError(null);
+        } catch (err) {
+          console.error("[product-capture] item files load failed", err);
+          setFilesError(err);
         }
       })();
     }, 0);
@@ -234,7 +247,7 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
   const audioNotes = files.filter((f) => f.kind === "audio");
   const title = item?.code ?? "Capture item";
 
-  if (notFound) {
+  if (notFound || loadError != null) {
     return (
       <>
         {/* ProductCaptureHeader injects itself (RouteHeader owns the
@@ -250,8 +263,10 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
           <AccessGate
             token="product_capture_item"
             id={itemId}
+            error={loadError}
             onRetry={() => {
               setNotFound(false);
+              setLoadError(null);
               setReloadNonce((n) => n + 1);
             }}
             fallbackHref="/tools/product-capture/all"
@@ -354,7 +369,7 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
                 <h2 className="text-sm font-semibold">
                   Photos &amp; videos
                   <span className="ml-2 font-normal text-muted-foreground">
-                    {media.length}
+                    <UntrustedCount value={media.length} trustworthy={filesError == null} label="Photos and videos" />
                   </span>
                 </h2>
                 <Button
@@ -368,7 +383,13 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
                 </Button>
               </div>
 
-              {media.length === 0 && pending.length === 0 ? (
+              {filesError != null && media.length === 0 && pending.length === 0 ? (
+                <ReadFailure
+                  error={filesError}
+                  what="this item's photos and voice notes"
+                  onRetry={() => setReloadNonce((n) => n + 1)}
+                />
+              ) : media.length === 0 && pending.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
                   No photos yet — add some from your device or continue
                   capturing.
@@ -416,7 +437,7 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
                 <h2 className="text-sm font-semibold">
                   Voice notes
                   <span className="ml-2 font-normal text-muted-foreground">
-                    {audioNotes.length}
+                    <UntrustedCount value={audioNotes.length} trustworthy={filesError == null} label="Voice notes" />
                   </span>
                 </h2>
                 <ul className="space-y-1.5">

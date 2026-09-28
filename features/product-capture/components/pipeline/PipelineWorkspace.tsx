@@ -30,6 +30,7 @@ import { listFilesForItems } from "../../service";
 import { StageStepper } from "./StageStepper";
 import { StageItemList, type StageListEntry } from "./StageItemList";
 import { ItemWorkspace } from "./ItemWorkspace";
+import { toast } from "@/lib/toast";
 
 export function PipelineWorkspace({
   initialItemId,
@@ -141,6 +142,9 @@ export function PipelineWorkspace({
         })
         .catch((err: unknown) => {
           console.error("[product-pipeline] deep link failed", err);
+          toast.error("Couldn't open the linked item", {
+            description: err instanceof Error ? err.message : String(err),
+          });
         });
     }, 0);
     return () => clearTimeout(timer);
