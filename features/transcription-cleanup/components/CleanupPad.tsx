@@ -55,8 +55,10 @@ import {
   Plus,
   Radio,
   SlidersHorizontal,
-  Stars,
+  Brush,
   Blocks,
+  RotateCcw,
+  Wand2,
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -311,7 +313,7 @@ function CleanUpActionButton({
         </>
       ) : (
         <>
-          <Stars className="h-4 w-4" /> Clean Up
+          <Brush className="h-4 w-4" /> Clean Up
         </>
       )}
     </button>
@@ -2099,7 +2101,7 @@ export default function CleanupPad({
     cleanAi.phase === "connecting";
   const responsePlaceholder =
     cleanAi.phase === "idle"
-      ? "Your cleaned transcript will appear here after recording..."
+      ? "Press Clean to clean the transcript above. Recording cleans automatically when you stop."
       : (cleanBusyEarly || cleanThinking) && responseValue.length === 0
         ? "Analyzing your transcript..."
         : cleanAi.phase === "error"
@@ -2457,7 +2459,7 @@ export default function CleanupPad({
         )}
 
         <SidebarSectionLabel
-          icon={Stars}
+          icon={Brush}
           label="Cleaning Agent"
           accent="primary"
         />
@@ -2602,7 +2604,7 @@ export default function CleanupPad({
   const cleanPane = (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <div className={paneHeaderClass}>
-        <SectionHeading icon={Stars} label="Clean" accent="primary">
+        <SectionHeading icon={Brush} label="Clean" accent="primary">
           {cleanThinking && (
             <StatusPill tone="primary">
               Thinking
@@ -2619,6 +2621,30 @@ export default function CleanupPad({
         </SectionHeading>
         <div className="flex items-center gap-1">
           <LivePhaseBadge phase={cleanAi.phase} thinking={cleanThinking} />
+          {/* The pane's own primary action. The sidebar's Clean Up is the same
+              handler, but the sidebar is a collapsible column on desktop and a
+              header-menu drawer on a phone — the page's main job must never
+              live only behind a menu. Absent while a pass runs (the phase
+              badge beside it says what the pass is doing). */}
+          {!cleanAi.isBusy && (
+            <button
+              type="button"
+              onClick={() => void handleProcess()}
+              title={
+                responseValue.trim().length > 0
+                  ? "Run the cleaning agent again on the current transcript (replaces the cleaned text)"
+                  : "Run the cleaning agent on the current transcript"
+              }
+              className="inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              {responseValue.trim().length > 0 ? (
+                <RotateCcw className="h-3.5 w-3.5" />
+              ) : (
+                <Play className="h-3.5 w-3.5" />
+              )}
+              {responseValue.trim().length > 0 ? "Re-clean" : "Clean"}
+            </button>
+          )}
           {responseValue.trim().length > 0 &&
             baseTextRef.current.trim().length > 0 && (
               <button
@@ -2999,7 +3025,7 @@ export default function CleanupPad({
               <RevealChip
                 active={showCustom}
                 onClick={() => toggleReveal("custom")}
-                icon={Stars}
+                icon={Wand2}
                 label="Custom"
                 title="Custom refine agents (raw or clean → output)"
                 iconOnly
@@ -3034,7 +3060,7 @@ export default function CleanupPad({
                 <RevealChip
                   active={showCustom}
                   onClick={() => toggleReveal("custom")}
-                  icon={Stars}
+                  icon={Wand2}
                   label="Custom"
                   title="Custom refine agents (raw or clean → output)"
                 />
