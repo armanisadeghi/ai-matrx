@@ -546,7 +546,12 @@ export function IntegrationsWorkspace({
           </div>
         )}
 
-        {workspaceView === "yours" && <section className="space-y-3" id="integration-connections" role="tabpanel">
+        {workspaceView === "yours" && (
+          <section
+            className="space-y-3"
+            id="integration-connections"
+            role="tabpanel"
+          >
           <div className="flex items-end justify-between gap-3">
             <div>
               <h2 className="text-base font-semibold text-foreground">Your connections</h2>
@@ -570,7 +575,8 @@ export function IntegrationsWorkspace({
             <Suspense fallback={null}><MicrosoftConnectPanel /></Suspense>
             <Suspense fallback={null}><StorageConnectionsPanel /></Suspense>
           </div>
-        </section>
+          </section>
+        )}
 
         {workspaceView === "discover" && <section id="integration-catalog" className="scroll-mt-20 space-y-4" role="tabpanel">
           <div className="flex items-start justify-between gap-3">
