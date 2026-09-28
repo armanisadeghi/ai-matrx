@@ -2,6 +2,7 @@
 
 /** The sidebar's Tags group: every tag with how many things are filed under it. */
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Hash, RotateCw } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -48,7 +49,10 @@ export function TagsSidebarGroup({
             </div>
           ) : tags.status === "error" ? (
             <div className="px-2 py-1 pl-7 text-xs text-destructive">
-              <p>{tags.error}</p>
+              <p>
+                {tags.error}
+                <ErrorAlchemyMenu error={tags.error} size="xs" />
+              </p>
               <button
                 type="button"
                 className="mt-1 inline-flex items-center gap-1 text-foreground underline-offset-2 hover:underline"

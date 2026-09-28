@@ -19,6 +19,7 @@
  * a sentence with no citation → marked "no citation" in place.
  */
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useRef, useState } from "react";
 import { ExternalLink, MessageSquareQuote, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -288,6 +289,7 @@ export function AskPanel({
           {state.status === "error" && (
             <p role="alert" className="text-xs text-destructive">
               {state.message}
+              <ErrorAlchemyMenu error={state.message} size="xs" />
             </p>
           )}
           {noSources && (
@@ -333,11 +335,13 @@ export function AskPanel({
           {phase.kind === "refused" && (
             <p role="alert" data-testid="ask-refused" className="rounded-md bg-muted p-2 text-sm">
               {phase.message}
+              <ErrorAlchemyMenu error={phase.message} size="xs" />
             </p>
           )}
           {phase.kind === "error" && (
             <p role="alert" className="text-sm text-destructive">
               {phase.message}
+              <ErrorAlchemyMenu error={phase.message} size="xs" />
             </p>
           )}
           {answer && (

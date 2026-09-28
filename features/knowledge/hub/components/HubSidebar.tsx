@@ -7,6 +7,7 @@
  * loading, empty and failed condition in words.
  */
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useState } from "react";
 import {
   ChevronDown,
@@ -142,7 +143,10 @@ function LoadState<T>({
   if (loadable.status === "error")
     return (
       <div className={cn("px-2 py-1 text-xs text-destructive", indent && "pl-7")}>
-        <p>{loadable.error ?? `Could not read ${what}.`}</p>
+        <p>
+          {loadable.error ?? `Could not read ${what}.`}
+          <ErrorAlchemyMenu error={loadable.error ?? `Could not read ${what}.`} size="xs" />
+        </p>
         <button
           type="button"
           className="mt-1 inline-flex items-center gap-1 text-foreground underline-offset-2 hover:underline"

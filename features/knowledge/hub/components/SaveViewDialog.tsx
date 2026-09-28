@@ -7,6 +7,7 @@
  * says plainly that the notifications themselves are coming soon.
  */
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState } from "react";
 import { BellRing } from "lucide-react";
 import { Input, Switch } from "@ai-matrx/design-system";
@@ -147,6 +148,7 @@ export function SaveViewDialog({
           {error ? (
             <p className="text-sm text-destructive" role="alert">
               {error}
+              <ErrorAlchemyMenu error={error} size="xs" />
             </p>
           ) : null}
           <DialogFooter>

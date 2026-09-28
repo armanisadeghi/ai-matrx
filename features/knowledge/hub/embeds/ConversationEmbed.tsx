@@ -8,6 +8,7 @@
  * hold it, scrolls it to the middle, and marks it for a moment.
  */
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
@@ -129,6 +130,7 @@ export function ConversationEmbed({
         <p className="text-destructive">
           This chat could not be opened here:{" "}
           {asClause(phase.error instanceof Error ? phase.error.message : "the read failed")}.
+          <ErrorAlchemyMenu error={phase.error} size="xs" />
         </p>
         <Button
           size="sm"

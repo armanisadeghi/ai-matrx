@@ -14,6 +14,7 @@
  * nothing, rather than disappearing.
  */
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useState } from "react";
 import { ExternalLink, FolderInput, Lightbulb, Star, X } from "lucide-react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
@@ -91,7 +92,13 @@ function LiveFiledUnder({ entity, id }: { entity: string; id: string }) {
   );
   if (status === "loading" || status === "idle")
     return <p className="text-xs text-muted-foreground">Reading where it is filed…</p>;
-  if (status === "error") return <p className="text-xs text-destructive">{error ?? "Could not read where it is filed."}</p>;
+  if (status === "error")
+    return (
+      <p className="text-xs text-destructive">
+        {error ?? "Could not read where it is filed."}
+        <ErrorAlchemyMenu error={error ?? "Could not read where it is filed."} size="xs" />
+      </p>
+    );
   if (!outgoing.length) return <p className="text-xs text-muted-foreground">Not filed anywhere yet.</p>;
   return (
     <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">

@@ -5,6 +5,7 @@
  * `embedFor(hit)` found one — the condition is the whole point of the edge.
  */
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { ErrorBoundaryWithCapture } from "@/lib/error-boundary/ErrorBoundaryWithCapture";
@@ -28,7 +29,10 @@ export function HubDetailEmbed({ embed }: { embed: HubEmbed }) {
       resetKeys={[key]}
       fallback={(error, reset) => (
         <div className="space-y-2 p-4 text-sm" role="alert">
-          <p className="text-destructive">This screen failed to draw here: {error.message}</p>
+          <p className="text-destructive">
+            This screen failed to draw here: {error.message}
+            <ErrorAlchemyMenu error={error} size="xs" />
+          </p>
           <p className="text-muted-foreground">Details still has everything the hub knows; Open full opens its own page.</p>
           <button type="button" className="text-primary underline-offset-2 hover:underline" onClick={reset}>
             Try again

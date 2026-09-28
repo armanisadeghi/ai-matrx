@@ -14,6 +14,7 @@
  * KgInspectorColumnHeader) rather than reimplementing sort/filter logic.
  */
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Copy, Download, Search, X } from "lucide-react";
@@ -573,7 +574,12 @@ export function AdminAuditTable<T>({
         {loading
           ? "Loading…"
           : error
-            ? "Couldn't load — counts unavailable"
+            ? (
+                <>
+                  Couldn&apos;t load — counts unavailable
+                  <ErrorAlchemyMenu error={error} size="xs" />
+                </>
+              )
             : `${processed.length} shown / ${rows.length} loaded`}
       </div>
     </div>

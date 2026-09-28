@@ -596,6 +596,7 @@ export function FinalSwitchScreen() {
                       {board.blocking.length > 0
                         ? `Off until the ${board.blocking.length === 1 ? "thing" : `${board.blocking.length} things`} below ${board.blocking.length === 1 ? "is" : "are"} fixed.`
                         : pressDisabledWhy}
+                      <ErrorAlchemyMenu error={pressDisabledWhy} size="xs" />
                     </span>
                   )}
                 </div>
@@ -808,6 +809,7 @@ export function FinalSwitchScreen() {
                   <li key={r.what}>
                     {r.what}{" "}
                     <span className="text-muted-foreground">— {r.owner}</span>
+                    <ErrorAlchemyMenu error={r.what} size="xs" />
                   </li>
                 ))}
               </ul>

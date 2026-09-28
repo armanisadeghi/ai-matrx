@@ -14,6 +14,7 @@
  * loading / error / empty state, and a failed read never reads as "none".
  */
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -121,7 +122,9 @@ function Notice({ tone = "muted", children }: { tone?: "muted" | "error"; childr
       )}
     >
       {tone === "error" ? <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> : null}
-      <span className="min-w-0 flex-1">{children}</span>
+      <span className="min-w-0 flex-1">
+        {children}
+      </span>
     </div>
   );
 }
@@ -133,6 +136,7 @@ function RowLink({
   meta,
   count,
   description,
+  descriptionIsError = false,
   trailing,
 }: {
   href: string;
@@ -141,6 +145,8 @@ function RowLink({
   meta: string;
   count?: string | null;
   description?: string | null;
+  /** The description is the record's failure sentence (a failed sync): it carries the Alchemy Menu. */
+  descriptionIsError?: boolean;
   trailing?: React.ReactNode;
 }) {
   return (
@@ -151,7 +157,14 @@ function RowLink({
           <span className="truncate font-medium text-foreground">{title}</span>
           {count ? <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{count}</span> : null}
         </div>
-        {description ? <div className="line-clamp-1 text-xs text-muted-foreground">{description}</div> : null}
+        {description && descriptionIsError ? (
+          <div className="flex min-w-0 items-start gap-1 text-xs text-destructive">
+            <span className="line-clamp-1 min-w-0">{description}</span>
+            <ErrorAlchemyMenu error={description} size="xs" />
+          </div>
+        ) : description ? (
+          <div className="line-clamp-1 text-xs text-muted-foreground">{description}</div>
+        ) : null}
         <div className="truncate text-[11px] text-muted-foreground/90">{meta}</div>
       </Link>
       {trailing ? <div className="flex shrink-0 items-center gap-1">{trailing}</div> : null}
@@ -201,7 +214,8 @@ function DataStoresGroup({ group }: { group: Group }) {
         {loading && !list.stores.length ? <Notice>Reading your data stores…</Notice> : null}
         {list.error ? (
           <Notice tone="error">
-            {list.error} — nothing is listed because the read failed, not because you have none.{" "}
+            {list.error} — nothing is listed because the read failed, not because you have none.
+            <ErrorAlchemyMenu error={list.error} size="xs" />{" "}
             <button type="button" className="underline underline-offset-2" onClick={list.refresh}>
               Retry
             </button>
@@ -367,7 +381,8 @@ function LibrariesGroup({ group, set }: { group: Group; set: (k: string, v: stri
         ) : null}
         {read.status === "error" ? (
           <Notice tone="error">
-            {read.error} Nothing is listed because the read failed.{" "}
+            {read.error} Nothing is listed because the read failed.
+            <ErrorAlchemyMenu error={read.error} size="xs" />{" "}
             <button type="button" className="underline underline-offset-2" onClick={() => setAttempt((n) => n + 1)}>
               Retry
             </button>
@@ -383,6 +398,7 @@ function LibrariesGroup({ group, set }: { group: Group; set: (k: string, v: stri
         {read.problems.length ? (
           <Notice tone="error">
             {plural(read.problems.length, "Library", "Libraries")} could not be read and {read.problems.length === 1 ? "is" : "are"} left out: {read.problems[0]}
+            <ErrorAlchemyMenu error={read.problems[0]} size="xs" />
           </Notice>
         ) : null}
         {read.rows.map((r) => (
@@ -393,6 +409,7 @@ function LibrariesGroup({ group, set }: { group: Group; set: (k: string, v: stri
             title={r.name}
             count={r.item_count == null ? null : plural(r.item_count, "Source")}
             description={r.sync_status === "failed" ? r.sync_error : r.description}
+            descriptionIsError={r.sync_status === "failed" && Boolean(r.sync_error)}
             meta={[
               ADAPTER_WORDS[r.adapter] ?? r.adapter,
               SYNC_WORDS[r.sync_status],
@@ -430,7 +447,12 @@ function LibrariesGroup({ group, set }: { group: Group; set: (k: string, v: stri
               {more.loading ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
               Load more ({read.rows.length} of {read.total})
             </Button>
-            {more.error ? <span className="ml-2 text-destructive">{more.error}</span> : null}
+            {more.error ? (
+              <span className="ml-2 text-destructive">
+                {more.error}
+                <ErrorAlchemyMenu error={more.error} size="xs" />
+              </span>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -506,7 +528,8 @@ function CatalogGroup({ group, set }: { group: Group; set: (k: string, v: string
         {loading && !catalog.items.length ? <Notice>Reading the Library…</Notice> : null}
         {catalog.error ? (
           <Notice tone="error">
-            {catalog.error} Nothing is listed because the read failed.{" "}
+            {catalog.error} Nothing is listed because the read failed.
+            <ErrorAlchemyMenu error={catalog.error} size="xs" />{" "}
             <button type="button" className="underline underline-offset-2" onClick={catalog.refresh}>
               Retry
             </button>

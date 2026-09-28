@@ -6,6 +6,7 @@
  * added shows at once instead of "No tags yet".
  */
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState } from "react";
 import type { KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import { actionTarget } from "@/features/knowledge/hub/hubActions";
@@ -45,7 +46,10 @@ export function PeekTags({
     <section>
       <h3 className="pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Tags</h3>
       {live && state.status === "error" ? (
-        <p className="text-xs text-destructive">{state.error}</p>
+        <p className="text-xs text-destructive">
+          {state.error}
+          <ErrorAlchemyMenu error={state.error} size="xs" />
+        </p>
       ) : live && state.status === "loading" && !tags.length ? (
         <p className="text-xs text-muted-foreground">Reading its tags…</p>
       ) : tags.length ? (

@@ -18,6 +18,7 @@
  * writes refuse).
  */
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Panel, type Layout } from "react-resizable-panels";
@@ -1462,7 +1463,10 @@ export function KnowledgeHubPage({
       ) : null}
       {transcriptFacts.status === "error" && transcriptFacts.error ? (
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs" role="status">
-          <span className="min-w-0 flex-1">{transcriptFacts.error} Other rows are unaffected.</span>
+          <span className="min-w-0 flex-1">
+            {transcriptFacts.error} Other rows are unaffected.
+            <ErrorAlchemyMenu error={transcriptFacts.error} size="xs" />
+          </span>
           <button type="button" className="font-medium underline-offset-2 hover:underline" onClick={transcriptFacts.retry}>
             Retry
           </button>
@@ -1489,6 +1493,7 @@ export function KnowledgeHubPage({
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs" role="status">
           <span className="min-w-0 flex-1">
             The status of {stages.failedIds.size === 1 ? "1 Source" : `${stages.failedIds.size} Sources`} could not be read. Other rows are unaffected.
+            <ErrorAlchemyMenu size="xs" />
           </span>
           <button type="button" className="font-medium underline-offset-2 hover:underline" onClick={() => stages.retry([...stages.failedIds])}>
             Retry all
@@ -1523,7 +1528,10 @@ export function KnowledgeHubPage({
           <LibraryTrashList filterText={state.query.text} onMutated={() => results.refresh()} />
         ) : state.view.kind === "favorites" && sidebar.favorites.status !== "ready" ? (
           sidebar.favorites.status === "error" ? (
-            <p className="px-2 py-4 text-sm text-destructive">{sidebar.favorites.error}</p>
+            <p className="px-2 py-4 text-sm text-destructive">
+              {sidebar.favorites.error}
+              <ErrorAlchemyMenu error={sidebar.favorites.error} size="xs" />
+            </p>
           ) : (
             <p className="px-2 py-4 text-sm text-muted-foreground" role="status">Reading your favorites…</p>
           )

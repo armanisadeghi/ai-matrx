@@ -12,6 +12,7 @@
  *     column facets) · board (by kind) · gallery.
  */
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useRef, useState } from "react";
 import { Loader2, RotateCw } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -77,7 +78,10 @@ function SectionError({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-2 text-xs">
-      <span className="min-w-0 flex-1 text-destructive">{message}</span>
+      <span className="min-w-0 flex-1 text-destructive">
+        {message}
+        <ErrorAlchemyMenu error={message} size="xs" />
+      </span>
       {retryable ? (
         <button
           type="button"
