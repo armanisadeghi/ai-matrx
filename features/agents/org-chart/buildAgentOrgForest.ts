@@ -41,6 +41,8 @@ export interface AgentOrgNodeData {
   mode?: OrchestraMode;
   /** Its own Orchestra has members that have not loaded yet. */
   pending: boolean;
+  /** Its own Orchestra could not be loaded (no access, or it no longer exists). */
+  unavailable: boolean;
   /** How many OTHER parents this agent also sits under. */
   otherPlacements: number;
   /** The link back to an ancestor closed a loop; the tree stops here. */
@@ -52,6 +54,8 @@ export interface BuildAgentOrgForestInput {
   orchestras: ReadonlyMap<string, OrchestraShape>;
   /** Every agent known to lead an Orchestra (loaded or not). */
   conductorIds: ReadonlySet<string>;
+  /** Conductors whose Orchestra failed to load. */
+  failedIds?: ReadonlySet<string>;
   manualEdges: readonly ManualOrgEdge[];
   /** Build only from these roots (e.g. one Orchestra). Omit for the whole chart. */
   rootIds?: readonly string[];
@@ -67,6 +71,7 @@ interface ChildLink {
 
 export function buildAgentOrgForest(input: BuildAgentOrgForestInput): OrgChartTreeNode<AgentOrgNodeData>[] {
   const { orchestras, conductorIds, manualEdges, rootIds } = input;
+  const failedIds = input.failedIds ?? new Set<string>();
   const nameOf = input.nameOf ?? ((id: string) => id);
 
   // children + parent counts over BOTH kinds
@@ -122,7 +127,8 @@ export function buildAgentOrgForest(input: BuildAgentOrgForestInput): OrgChartTr
       isConductor,
       accent: o?.accent,
       mode: o?.mode,
-      pending: isConductor && !o,
+      pending: isConductor && !o && !failedIds.has(agentId),
+      unavailable: !o && failedIds.has(agentId),
       otherPlacements: Math.max(0, parentCount - (parent ? 1 : 0)),
       loop,
     };
@@ -138,10 +144,23 @@ export function buildAgentOrgForest(input: BuildAgentOrgForestInput): OrgChartTr
     return rootIds.map((id) => build(id, id, null, new Set()));
   }
 
-  const size = (id: string, seen = new Set<string>()): number => {
-    if (seen.has(id)) return 0;
-    seen.add(id);
-    return (childrenOf.get(id) ?? []).reduce((n, c) => n + 1 + size(c.agentId, seen), 0);
+  const sizes = new Map<string, number>();
+  const size = (id: string): number => {
+    const known = sizes.get(id);
+    if (known !== undefined) return known;
+    const seen = new Set<string>();
+    const stack = [id];
+    while (stack.length) {
+      const cur = stack.pop() as string;
+      for (const c of childrenOf.get(cur) ?? []) {
+        if (!seen.has(c.agentId) && c.agentId !== id) {
+          seen.add(c.agentId);
+          stack.push(c.agentId);
+        }
+      }
+    }
+    sizes.set(id, seen.size);
+    return seen.size;
   };
   const byWeight = (a: string, b: string) =>
     size(b) - size(a) || nameOf(a).localeCompare(nameOf(b));
@@ -155,30 +174,4 @@ export function buildAgentOrgForest(input: BuildAgentOrgForestInput): OrgChartTr
     if (!visited.has(id)) forest.push(build(id, id, null, new Set()));
   }
   return forest;
-}
-
-/**
- * True when making `managerId` the manager of `reportId` would close a loop —
- * `managerId` already sits somewhere under `reportId` (by either kind of link).
- */
-export function wouldCreateLoop(
-  input: Pick<BuildAgentOrgForestInput, "orchestras" | "manualEdges">,
-  managerId: string,
-  reportId: string,
-): boolean {
-  if (managerId === reportId) return true;
-  const kids = new Map<string, string[]>();
-  const add = (p: string, c: string) => kids.set(p, [...(kids.get(p) ?? []), c]);
-  for (const [cid, o] of input.orchestras) o.members.forEach((m) => add(cid, m.agentId));
-  for (const e of input.manualEdges) add(e.managerId, e.reportId);
-  const stack = [reportId];
-  const seen = new Set<string>();
-  while (stack.length) {
-    const id = stack.pop() as string;
-    if (id === managerId) return true;
-    if (seen.has(id)) continue;
-    seen.add(id);
-    stack.push(...(kids.get(id) ?? []));
-  }
-  return false;
 }

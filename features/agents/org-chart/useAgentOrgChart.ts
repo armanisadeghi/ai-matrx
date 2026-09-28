@@ -44,6 +44,12 @@ export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
   const conductorIds = new Set(list.map((o) => o.conductorId));
   for (const [id, e] of Object.entries(entries)) if (e.exists) conductorIds.add(id);
 
+  const failedIds = new Set(
+    Object.entries(entries)
+      .filter(([, e]) => e.status === "error")
+      .map(([id]) => id),
+  );
+
   const orchestras = new Map<string, OrchestraShape>();
   for (const [id, e] of Object.entries(entries)) {
     if (e.status === "ready" && e.exists) {
@@ -92,6 +98,7 @@ export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
   const forest = buildAgentOrgForest({
     orchestras,
     conductorIds,
+    failedIds,
     manualEdges,
     rootIds: opts.rootIds,
     nameOf,
@@ -108,6 +115,11 @@ export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
     conductorIds,
     manualEdges,
     loading,
-    error: listError ?? manualError ?? null,
+    error:
+      listError ??
+      manualError ??
+      (failedIds.size
+        ? `${failedIds.size} Orchestra${failedIds.size === 1 ? "" : "s"} could not be loaded; ${failedIds.size === 1 ? "its" : "their"} team${failedIds.size === 1 ? " is" : "s are"} not shown.`
+        : null),
   };
 }

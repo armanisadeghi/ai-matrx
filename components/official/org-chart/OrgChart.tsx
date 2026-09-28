@@ -219,7 +219,10 @@ export function OrgChart<T>({
     });
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.target as HTMLElement).closest("input")) return;
+    // Keys from a card's portaled menu or dialog bubble here through React;
+    // only keys pressed on the chart itself steer it.
+    if (!e.currentTarget.contains(e.target as Node)) return;
+    if ((e.target as HTMLElement).closest("input, [role=menu], [role=dialog]")) return;
     const step = 80;
     switch (e.key) {
       case "+":

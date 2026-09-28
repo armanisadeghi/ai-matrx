@@ -221,6 +221,7 @@ function NestedNode({ data }: NodeProps) {
         node={d.placed}
         state={{ selected: false, matched: false, select: () => {} }}
         memberCount={d.memberCount}
+        readOnly
       />
       <Handle type="source" position={Position.Bottom} className="!h-2 !w-2 !border-0 !bg-transparent" />
     </div>
@@ -243,6 +244,8 @@ interface NestedGraph {
   edges: Edge[];
   /** Width each member's expanded team needs (Hierarchy arrange reserves it). */
   widths: Record<string, number>;
+  /** Height below the member card each expanded team takes (rows are spaced for it). */
+  heights: Record<string, number>;
   teamSize: Record<string, number>;
   sig: string;
 }
@@ -260,7 +263,7 @@ function buildNestedGraph(
   memberCounts: Map<string, number>,
   rootAccent: OrchestraAccent,
 ): NestedGraph {
-  const out: NestedGraph = { nodes: [], edges: [], widths: {}, teamSize: {}, sig: "" };
+  const out: NestedGraph = { nodes: [], edges: [], widths: {}, heights: {}, teamSize: {}, sig: "" };
   if (!root) return out;
   const sig: string[] = [];
   const accentOf = new Map<string, OrchestraAccent>();
@@ -276,6 +279,7 @@ function buildNestedGraph(
       collapsed: new Set(),
     });
     out.widths[memberId] = layout.width;
+    out.heights[memberId] = NEST_DROP + layout.height;
     const offsetX = MEM_W / 2 - layout.width / 2;
     const offsetY = MEM_H + NEST_DROP;
     const idOf = (key: string) => `nested:${key}`;
@@ -291,7 +295,10 @@ function buildNestedGraph(
         selectable: false,
         data: { placed: n, memberCount: memberCounts.get(n.node.data.agentId) } as unknown as Record<string, unknown>,
       });
-      sig.push(n.key);
+      const nd = n.node.data;
+      sig.push(
+        [n.key, nd.pending, nd.unavailable, nd.accent, nd.mode, nd.edgeKind, nd.otherPlacements, nd.loop, nd.roleTitle, memberCounts.get(nd.agentId)].join(":"),
+      );
     }
     for (const n of layout.nodes) {
       const parentKey = n.parentKey ?? member.key;
@@ -317,13 +324,20 @@ function buildNestedGraph(
 
 // ─── layout ─────────────────────────────────────────────────────────────
 
-function defaultMemberPos(index: number, total: number): { x: number; y: number } {
+function defaultMemberPos(
+  index: number,
+  total: number,
+  /** Tallest expanded team below any member; rows are spaced to clear it. */
+  teamDrop = 0,
+  /** Widest expanded team; columns are spaced to clear it. */
+  teamSpan = 0,
+): { x: number; y: number } {
   const cols = Math.min(Math.max(total, 1), 4);
   const col = index % cols;
   const row = Math.floor(index / cols);
-  const spanX = 300;
+  const spanX = Math.max(300, teamSpan + 40);
   const startX = -((cols - 1) * spanX) / 2;
-  return { x: startX + col * spanX, y: 260 + row * 230 };
+  return { x: startX + col * spanX, y: 260 + row * (230 + teamDrop) };
 }
 
 type LayoutKind = "hierarchy" | "radial" | "grid";
@@ -343,18 +357,22 @@ function computeLayout(
   kind: LayoutKind,
   memberIds: string[],
   teamWidths: Record<string, number> = {},
+  teamHeights: Record<string, number> = {},
 ): LayoutResult {
   const n = memberIds.length;
+  const teamDrop = Math.max(0, ...Object.values(teamHeights));
+  const teamSpan = Math.max(0, ...Object.values(teamWidths));
 
   if (kind === "grid") {
     const members: Record<string, XY> = {};
-    memberIds.forEach((id, i) => (members[id] = defaultMemberPos(i, n)));
+    memberIds.forEach((id, i) => (members[id] = defaultMemberPos(i, n, teamDrop, teamSpan)));
     return { orch: { x: -ORCH_W / 2, y: -40 }, members };
   }
 
   if (kind === "radial") {
     const members: Record<string, XY> = {};
-    const R = Math.max(340, n * 48);
+    // Teams hang below their member, so the ring is widened to clear them.
+    const R = Math.max(340, n * 48, teamSpan * 0.75 + teamDrop * 0.5);
     memberIds.forEach((id, i) => {
       const ang = (2 * Math.PI * i) / Math.max(n, 1) - Math.PI / 2;
       members[id] = { x: Math.cos(ang) * R - MEM_W / 2, y: Math.sin(ang) * R - MEM_H / 2 };
@@ -406,14 +424,13 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
   // under it by hand) shows that whole tree beneath it, read-only.
   const { forest, orchestras } = useAgentOrgChart({ rootIds: [conductorId] });
   const [collapsedTeams, setCollapsedTeams] = useState<Set<string>>(() => new Set());
-  const toggleTeam = useCallback((agentId: string) => {
+  const toggleTeam = (agentId: string) =>
     setCollapsedTeams((prev) => {
       const next = new Set(prev);
       if (next.has(agentId)) next.delete(agentId);
       else next.add(agentId);
       return next;
     });
-  }, []);
   const memberCounts = new Map([...orchestras].map(([id, o]) => [id, o.members.length]));
   const nested = buildNestedGraph(
     forest[0],
@@ -446,7 +463,15 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
         return {
           id: m.agentId,
           type: "member",
-          position: p?.position ?? m.pos ?? defaultMemberPos(i, members.length),
+          position:
+            p?.position ??
+            m.pos ??
+            defaultMemberPos(
+              i,
+              members.length,
+              Math.max(0, ...Object.values(nested.heights)),
+              Math.max(0, ...Object.values(nested.widths)),
+            ),
           zIndex: p?.zIndex,
           data: {
             conductorId,
@@ -561,7 +586,7 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
   // persist (per-member pos + conductor pos), then frame the graph.
   const applyLayout = useCallback(
     (kind: LayoutKind) => {
-      const layout = computeLayout(kind, members.map((m) => m.agentId), nested.widths);
+      const layout = computeLayout(kind, members.map((m) => m.agentId), nested.widths, nested.heights);
       setNodes((nds) =>
         nds.map((n) =>
           n.id === ORCH_ID
@@ -582,7 +607,7 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
         requestAnimationFrame(() => fitView({ padding: 0.25, maxZoom: 1, duration: 400 })),
       );
     },
-    [members, dispatch, conductorId, config, fitView, setNodes, nested.widths],
+    [members, dispatch, conductorId, config, fitView, setNodes, nested.widths, nested.heights],
   );
 
   return (

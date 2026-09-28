@@ -9,7 +9,6 @@ import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { orgChartService } from "@/features/agents/org-chart/orgChartService";
-import { wouldCreateLoop, type OrchestraShape } from "@/features/agents/org-chart/buildAgentOrgForest";
 import { orchestrasActions } from "./slice";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
@@ -44,13 +43,32 @@ export function loadManualOrgEdges(
   };
 }
 
-function hierarchyOf(state: RootState) {
-  const orchestras = new Map<string, OrchestraShape>();
-  for (const [id, entry] of Object.entries(state.orchestras.byId)) {
-    if (entry.status === "ready" && entry.exists) orchestras.set(id, { members: entry.members });
+/**
+ * Does `managerId` already sit somewhere under `reportId`? Read FRESH from the
+ * server, level by level, so the answer never depends on how much of the chart
+ * this screen happened to load.
+ */
+async function sitsUnder(managerId: string, reportId: string): Promise<boolean | string> {
+  if (managerId === reportId) return true;
+  const seen = new Set<string>([reportId]);
+  let frontier = [reportId];
+  while (frontier.length) {
+    const res = await orgChartService.listChildren(frontier);
+    if (isScopesRpcErr(res)) return res.error.message;
+    const next: string[] = [];
+    for (const { childId } of res.data) {
+      if (childId === managerId) return true;
+      if (!seen.has(childId)) {
+        seen.add(childId);
+        next.push(childId);
+      }
+    }
+    frontier = next;
   }
-  return { orchestras, manualEdges: state.orchestras.manualOrgChart.edges };
+  return false;
 }
+
+const placing = new Set<string>();
 
 /**
  * Place `reportId` under `managerId` by hand. An agent has at most ONE manual
@@ -58,38 +76,51 @@ function hierarchyOf(state: RootState) {
  * that would put an agent under its own team — a loop has no top to draw.
  */
 export function setManualManager(managerId: string, reportId: string): AppThunk<Promise<OrgChartWriteResult>> {
-  return async (dispatch, getState) => {
-    if (wouldCreateLoop(hierarchyOf(getState()), managerId, reportId)) {
-      return {
-        ok: false,
-        error:
-          managerId === reportId
-            ? "An agent can't sit under itself."
-            : "That agent already sits under this one, so this would make a loop. Move it first.",
-      };
-    }
-    const current = await orgChartService.listManagersOf(reportId);
-    if (isScopesRpcErr(current)) return { ok: false, error: current.error.message };
-    if (current.data.some((e) => e.managerId === managerId)) return { ok: true };
-
-    for (const e of current.data) {
-      dispatch(orchestrasActions.manualOrgEdgeRemoved({ managerId: e.managerId, reportId }));
-      const rm = await orgChartService.remove(e.managerId, reportId);
-      if (isScopesRpcErr(rm)) {
-        dispatch(orchestrasActions.manualOrgEdgeAdded(e));
-        return { ok: false, error: rm.error.message };
+  return async (dispatch) => {
+    // One placement per agent at a time: a double click or a second tab must
+    // not read "no manager" twice and leave the agent with two.
+    if (placing.has(reportId)) return { ok: false, error: "That agent is already being moved. Try again in a moment." };
+    placing.add(reportId);
+    try {
+      const loop = await sitsUnder(managerId, reportId);
+      if (typeof loop === "string") return { ok: false, error: loop };
+      if (loop) {
+        return {
+          ok: false,
+          error:
+            managerId === reportId
+              ? "An agent can't sit under itself."
+              : "That agent already sits under this one, so this would make a loop. Move it first.",
+        };
       }
-    }
-    const temp = { edgeId: `pending:${managerId}:${reportId}`, managerId, reportId };
-    dispatch(orchestrasActions.manualOrgEdgeAdded(temp));
-    const res = await orgChartService.add(managerId, reportId);
-    if (isScopesRpcErr(res)) {
+      const current = await orgChartService.listManagersOf(reportId);
+      if (isScopesRpcErr(current)) return { ok: false, error: current.error.message };
+      if (current.data.some((e) => e.managerId === managerId)) return { ok: true };
+
+      // Add the new link FIRST, then drop the old ones: a failure part-way
+      // never leaves the agent with no manager at all.
+      const temp = { edgeId: `pending:${managerId}:${reportId}`, managerId, reportId };
+      dispatch(orchestrasActions.manualOrgEdgeAdded(temp));
+      const res = await orgChartService.add(managerId, reportId);
       dispatch(orchestrasActions.manualOrgEdgeRemoved({ managerId, reportId }));
-      return { ok: false, error: res.error.message };
+      if (isScopesRpcErr(res)) return { ok: false, error: res.error.message };
+      dispatch(orchestrasActions.manualOrgEdgeAdded({ edgeId: res.data.id, managerId, reportId }));
+
+      for (const e of current.data) {
+        dispatch(orchestrasActions.manualOrgEdgeRemoved({ managerId: e.managerId, reportId }));
+        const rm = await orgChartService.remove(e.managerId, reportId);
+        if (isScopesRpcErr(rm)) {
+          dispatch(orchestrasActions.manualOrgEdgeAdded(e));
+          return {
+            ok: false,
+            error: `Placed it under the new agent, but could not take it out from under the old one: ${rm.error.message}`,
+          };
+        }
+      }
+      return { ok: true };
+    } finally {
+      placing.delete(reportId);
     }
-    dispatch(orchestrasActions.manualOrgEdgeRemoved({ managerId, reportId }));
-    dispatch(orchestrasActions.manualOrgEdgeAdded({ edgeId: res.data.id, managerId, reportId }));
-    return { ok: true };
   };
 }
 

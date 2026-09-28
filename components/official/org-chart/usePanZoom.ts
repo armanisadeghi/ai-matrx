@@ -113,6 +113,8 @@ export function usePanZoom(
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 && e.pointerType === "mouse") return;
     const target = e.target as HTMLElement;
+    // A card's portaled menu/dialog bubbles here through React — never pan from it.
+    if (!e.currentTarget.contains(target)) return;
     // Controls keep their own clicks; everything else (cards included) can pan.
     if (target.closest("button, a, input, textarea, select, [data-no-pan]")) return;
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });

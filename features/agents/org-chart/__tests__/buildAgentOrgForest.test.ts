@@ -1,8 +1,4 @@
-import {
-  buildAgentOrgForest,
-  wouldCreateLoop,
-  type OrchestraShape,
-} from "../buildAgentOrgForest";
+import { buildAgentOrgForest, type OrchestraShape } from "../buildAgentOrgForest";
 
 const orch = (...members: string[]): OrchestraShape => ({
   members: members.map((agentId) => ({ agentId, roleTitle: `${agentId}-role` })),
@@ -94,6 +90,18 @@ describe("buildAgentOrgForest", () => {
     expect(forest[0].children[0].data.pending).toBe(true);
   });
 
+  it("an Orchestra that failed to load says so instead of loading forever", () => {
+    const forest = buildAgentOrgForest({
+      orchestras: new Map([["top", orch("sub")]]),
+      conductorIds: new Set(["top", "sub"]),
+      failedIds: new Set(["sub"]),
+      manualEdges: [],
+    });
+    const sub = forest[0].children[0].data;
+    expect(sub.pending).toBe(false);
+    expect(sub.unavailable).toBe(true);
+  });
+
   it("builds only under the given roots", () => {
     const forest = buildAgentOrgForest({
       orchestras: new Map([
@@ -105,19 +113,5 @@ describe("buildAgentOrgForest", () => {
       rootIds: ["b"],
     });
     expect(forest.map((r) => r.data.agentId)).toEqual(["b"]);
-  });
-});
-
-describe("wouldCreateLoop", () => {
-  const input = {
-    orchestras: new Map([["top", orch("mid")]]),
-    manualEdges: [{ edgeId: "m", managerId: "mid", reportId: "low" }],
-  };
-  it("refuses placing an agent under someone already beneath it", () => {
-    expect(wouldCreateLoop(input, "low", "top")).toBe(true);
-    expect(wouldCreateLoop(input, "top", "top")).toBe(true);
-  });
-  it("allows an ordinary placement", () => {
-    expect(wouldCreateLoop(input, "top", "low")).toBe(false);
   });
 });
