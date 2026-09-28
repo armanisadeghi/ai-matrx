@@ -1305,6 +1305,7 @@ function SearchTab({
               className="p-4 space-y-3"
             >
               <div className="text-xs text-muted-foreground tabular-nums">
+                {/* read-gate-exempt: figures of the search that just returned; response is null until a search succeeds */}
                 {response.hits.length} hits · {response.total_candidates}{" "}
                 candidates · {response.latency_ms} ms
                 {response.reranker_model &&
@@ -1332,6 +1333,7 @@ function SearchTab({
               <QueryTermCoverage query={response.query} hits={response.hits} />
               {response.hits.length === 0 ? (
                 <div className="text-sm text-muted-foreground">
+                  {/* read-gate-exempt: a finished search's real answer; response is cleared when a search starts and set only when it returned */}
                   No hits for{" "}
                   <strong className="text-foreground">
                     "{response.query}"
@@ -2590,7 +2592,8 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
             </div>
           )}
 
-          {inv && (
+          {/* A failed refresh hides the last inventory: the error above is the one message. */}
+          {inv && !error && (
             <>
               <div className="rounded-md border bg-card overflow-hidden">
                 <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs">

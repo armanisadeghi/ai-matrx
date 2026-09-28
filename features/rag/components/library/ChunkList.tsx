@@ -454,7 +454,7 @@ export function ChunksOnPage({
               highlighted={highlightChunkId != null && c.id === highlightChunkId}
             />
           ))}
-        {total > chunks.length && (
+        {!error && total > chunks.length && (
           <div className="flex items-center gap-2">
             <p className="text-xs text-muted-foreground italic">
               Showing first {chunks.length} of {total}.

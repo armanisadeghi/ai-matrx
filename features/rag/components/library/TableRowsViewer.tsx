@@ -201,7 +201,10 @@ export function TableRowsViewer({
           />
         </div>
         <span className="ml-auto whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
-          {loading
+          {/* A failed read shows no counts (the body says why). */}
+          {error
+            ? "—"
+            : loading
             ? `Loading ${loaded.toLocaleString()}${total ? ` / ${total.toLocaleString()}` : ""} rows…`
             : `${tables.length.toLocaleString()} tables · ${shownRows.toLocaleString()}${
                 query ? ` of ${rows.length.toLocaleString()}` : ""
