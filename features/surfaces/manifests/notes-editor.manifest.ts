@@ -334,7 +334,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "editor_mode",
     label: "Editor mode",
     description:
-      'Current Notes editor mode: "write" (the formatted editor), "plain" (quick unformatted text, never auto-formatted), "source" (Markdown source with a live preview), or "preview" (read-only render). Lets actions adapt or refuse when the mode is unsuitable (e.g. inserting at cursor is meaningless in preview).',
+      'The view the open note is shown in — the header's four views. Values: "write" (Write: the formatted editor), "plain" (Plain: quick unformatted text, never auto-formatted), "split" (Split: plain text on the left, the formatted note live on the right), "preview" (Read: read-only). Lets actions adapt or refuse when the view is unsuitable (e.g. inserting at the cursor is meaningless in "preview"). Not the same thing as is_split_pane_visible (a SECOND note open beside this one).',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 14,
@@ -354,9 +354,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "is_split_pane_visible",
-    label: "Split pane visible",
+    label: "Second note open beside",
     description:
-      "True when the Notes view is showing the right-hand split pane (a second note alongside the active one). Always populated. Pairs with `split_note_id`.",
+      "True when a SECOND note is open beside the active one (two notes side by side). Nothing to do with the Split view (editor_mode \"split\"), which is one note shown as plain text plus its formatted result. Always populated. Pairs with `split_note_id`.",
     valueType: "boolean",
     alwaysAvailable: true,
     typicalCharCount: 5,
@@ -365,7 +365,7 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "split_note_id",
-    label: "Split pane note ID",
+    label: "Second note's ID",
     description:
       'UUID of the note currently shown in the right-hand split pane. Empty when the split pane is closed. Lets "compare these two", "merge into left", and similar dual-note actions target the secondary note.',
     valueType: "string",
@@ -596,7 +596,7 @@ export function createNotesScope(values: {
   open_notes_summary: NotesOpenTabSummaryEntry[];
   all_folder_names: string[];
   note_scope_assignments: NotesScopeAssignmentEntry[];
-  editor_mode: "write" | "plain" | "source" | "preview" | "split";
+  editor_mode: "write" | "plain" | "split" | "preview";
   is_split_pane_visible: boolean;
   history_pane_open: boolean;
   // alwaysAvailable: false → optional
