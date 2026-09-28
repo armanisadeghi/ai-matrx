@@ -56,7 +56,7 @@ export function PeekTags({
         <TagChips tags={tags} onFilter={onFilter} max={20} />
       ) : (
         <p className="text-xs text-muted-foreground">
-          No tags yet. Press t to tag it; typing #name in the search box finds everything with that tag.
+          No tags
         </p>
       )}
     </section>

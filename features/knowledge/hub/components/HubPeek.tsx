@@ -100,7 +100,7 @@ function LiveFiledUnder({ entity, id }: { entity: string; id: string }) {
         <ErrorAlchemyMenu error={error ?? "Could not read where it is filed."} size="xs" />
       </p>
     );
-  if (!outgoing.length) return <p className="text-xs text-muted-foreground">Not filed anywhere yet.</p>;
+  if (!outgoing.length) return <p className="text-xs text-muted-foreground">Not filed</p>;
   return (
     <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
       {outgoing.map((e) => (
@@ -178,44 +178,37 @@ export function HubPeek({
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground">Not filed anywhere yet.</p>
+              <p className="text-xs text-muted-foreground">Not filed</p>
             )
           ) : (
             <LiveFiledUnder entity={target.entity} id={target.id} />
           )}
         </section>
 
-        <section>
-          <Heading>{readFromSource ? "First segments" : "Top segments"}</Heading>
-          {readFromSource ? (
-            <PeekSourceSegments sourceId={target.id} />
-          ) : segments.length ? (
-            <ul className="space-y-2">
-              {segments.map((g) => (
-                <li key={g.id} className="rounded-md border-l-2 border-primary/40 bg-muted/30 px-3 py-2 text-sm">
-                  <p className="leading-relaxed">{g.text}</p>
-                  {g.locator ? <p className="pt-1 text-[11px] text-muted-foreground">{g.locator}</p> : null}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              {target.entity === "processed_document"
-                ? "The search service did not send passages for this Source."
-                : "Passages belong to Sources; this item has none."}
-            </p>
-          )}
-        </section>
+        {/* Passages belong to Sources: other kinds have no such section. */}
+        {readFromSource || segments.length || target.entity === "processed_document" ? (
+          <section>
+            <Heading>{readFromSource ? "First segments" : "Top segments"}</Heading>
+            {readFromSource ? (
+              <PeekSourceSegments sourceId={target.id} />
+            ) : segments.length ? (
+              <ul className="space-y-2">
+                {segments.map((g) => (
+                  <li key={g.id} className="rounded-md border-l-2 border-primary/40 bg-muted/30 px-3 py-2 text-sm">
+                    <p className="leading-relaxed">{g.text}</p>
+                    {g.locator ? <p className="pt-1 text-[11px] text-muted-foreground">{g.locator}</p> : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-muted-foreground">No passages</p>
+            )}
+          </section>
+        ) : null}
 
-        <section>
-          <Heading>Suggestions</Heading>
-          {hit.suggestions === undefined ? (
-            <p className="text-xs text-muted-foreground">
-              None yet — filing suggestions appear here once the enrich stage proposes them for this item.
-            </p>
-          ) : hit.suggestions.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No suggestions for this item.</p>
-          ) : (
+        {hit.suggestions?.length ? (
+          <section>
+            <Heading>Suggestions</Heading>
             <ul className="space-y-1.5">
               {hit.suggestions.map((s, i) => (
                 <li
@@ -237,8 +230,8 @@ export function HubPeek({
                 </li>
               ))}
             </ul>
-          )}
-        </section>
+          </section>
+        ) : null}
 
         <section>
           <Heading>Details</Heading>
