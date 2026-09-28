@@ -28,19 +28,21 @@
 
 "use client";
 
-import { useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { setActiveFileId } from "@/features/files/redux/slice";
 import { attachVirtualRoots } from "@/features/files/redux/virtual-thunks";
 import { selectFileById } from "@/features/files/redux/selectors";
+import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
+import { getPreviewCapability } from "@/features/files/utils/preview-capabilities";
 import { rememberFileOrganization } from "@/features/files/api/fileOrganization";
 import { useDeclarePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { MobileStack } from "../MobileStack";
-import { isFileTab } from "../FileTabsBody";
+import { FileTabsBody, type FileTab } from "../FileTabsBody";
+import { FileViewerControlsProvider } from "../FileViewerControlsContext";
 import { SidebarModeProvider } from "../desktop/SidebarModeToggle";
 import { SingleFileTopBar } from "./SingleFileTopBar";
 import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
@@ -56,8 +58,7 @@ function fileFacts(file: unknown): Record<string, unknown> | string {
   }
   return out;
 }
-import { SingleFileSurfaceHost } from "./SingleFileSurfaceHost";
-import { SingleFileWorkspace } from "./SingleFileWorkspace";
+import { FileViewerControlRail } from "./FileViewerControlRail";
 
 export interface SingleFileShellProps {
   fileId: string;
@@ -112,16 +113,22 @@ export function SingleFileShell({ fileId, organizationId, className }: SingleFil
   }
   return (
     <SidebarModeProvider>
-      <SingleFileShellDesktop fileId={fileId} className={className} />
+      <FileViewerControlsProvider>
+        <SingleFileShellDesktop fileId={fileId} className={className} />
+      </FileViewerControlsProvider>
     </SidebarModeProvider>
   );
 }
 
 function SingleFileShellDesktop({ fileId, className }: SingleFileShellProps) {
   const dispatch = useAppDispatch();
-  // `?tab=` deep link (citations route to `?tab=document&page=…&chunk=…`).
-  const tabParam = useSearchParams()?.get("tab") ?? null;
-  const initialTab = isFileTab(tabParam) ? tabParam : undefined;
+  const file = useAppSelector((s) => selectFileById(s, fileId));
+  const [activeTab, setActiveTab] = useState<FileTab>("preview");
+
+  // Off-tree / deep-link hydration — same canonical hook as FilePreview /
+  // PreviewPane. Crawl artifacts and extractor uploads are viewable by UUID
+  // but never land in the Files tree (is_discoverable_for = false).
+  useEnsureCloudFile(fileId);
 
   // Bootstrap exactly like PageShell does — set the active file id once so
   // every consumer that reads it (lineage chip, debug panel, share links,
@@ -137,19 +144,40 @@ function SingleFileShellDesktop({ fileId, className }: SingleFileShellProps) {
     };
   }, [dispatch, fileId]);
 
-  // The file's surface (`matrx-user/file`) and its view state come from the
-  // SAME host a File tile on a Board mounts — see SingleFileSurfaceHost.
+  const previewKind = useMemo(() => {
+    if (!file) return null;
+    return getPreviewCapability(file.fileName, file.mimeType, file.fileSize)
+      .previewKind;
+  }, [file]);
+
+  const rail = (
+    <FileViewerControlRail activeTab={activeTab} previewKind={previewKind} />
+  );
+
   return (
-    <SingleFileSurfaceHost key={fileId} fileId={fileId} initialTab={initialTab}>
-      <div
-        className={cn(
-          "flex h-full min-h-0 flex-col overflow-hidden bg-card pt-[var(--shell-header-h)]",
-          className,
-        )}
-      >
-        <SingleFileTopBar fileId={fileId} />
-        <SingleFileWorkspace density="comfortable" className="flex-1" />
+    <div
+      className={cn(
+        "flex h-full min-h-0 flex-col overflow-hidden bg-card pt-[var(--shell-header-h)]",
+        className,
+      )}
+    >
+      <SingleFileTopBar fileId={fileId} />
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        {/* Rail: only renders a column when there are controls for the
+         * current tab+kind. The dispatcher returns `null` for tabs/kinds
+         * with no useful controls, and we collapse the column entirely
+         * so the body claims the full width. */}
+        {rail}
+        <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
+          <FileTabsBody
+            fileId={fileId}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            density="comfortable"
+            className="flex-1 min-h-0"
+          />
+        </div>
       </div>
-    </SingleFileSurfaceHost>
+    </div>
   );
 }

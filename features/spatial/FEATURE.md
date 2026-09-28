@@ -153,7 +153,8 @@ and `read().removed` lists tiles off the board that `board_park parked:false` re
 `board_focus` on a parked/removed tile restores it and moves the camera once it has rendered.
 Markdown written by an agent renders through the stream pipeline (`tiles/MarkdownTileBody.tsx`,
 an instant `ReplayStream` → `StreamTileBody`), never a second renderer; an agent's note is a real
-Note (`NoteTileBody` `text` prop creates/saves it). Wired: the demo; the meeting board
+Note in the notes core (`items/NoteItemBody.tsx`; its `text` is the note's seed while no note exists
+yet, and a real note's text changes through `note_content`). Wired: the demo; the meeting board
 (`features/meet/components/board/MeetingBoard.tsx` — markdown / html page or `srcDoc` / image; a
 "note" is the board's own scratchpad and "text" becomes markdown; the live meeting sections refuse
 content edits); the workflow run board (`features/workflow-runtime/components/spatial/WorkflowRunSpatialView.tsx`
@@ -192,13 +193,24 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 
 - **The chat beside the board** is `ChatCanvasWorkspace`'s; the board publishes its own surface
   (`matrx-user/spatial-board`: values + `board_*` tools), so no page-level snapshot is passed.
+- **A note tile is the notes core**: `items/NoteItemBody.tsx` → `NoteWorkspace` (features/notes) in
+  its own notes instance `board-note:<tileId>` — the /notes modes, outline / versions / clean-up, the
+  note chip (rename, mic, "…" menu), `NoteContentEditor` (which mounts `matrx-user/notes` itself, so
+  the item declares `surface: { name }` with no `Host`), metadata bar, save strip, version history.
+  Lifecycle (`noteTilePlan`, `items/work-sources.ts`): a new tile starts a client-only draft exactly
+  as /notes "New note" (Draft folder, organization via `useNewNoteOrganization`, no row until the
+  first words; the tile saves `meta.draft` and restarts the draft under the same id after a reload);
+  text from a paste or `board_add_tile` becomes a note at once through `NotesAPI.create`. The demo
+  board and the workflow run board render the same body inside `SurfaceActivity`. The board's Text
+  tool label is `tiles/TextTileBody.tsx`.
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
 ## Change Log
 
-- 2026-09-28 — File tile: the body is the single-file page's own working area (`SingleFileWorkspace`: name menu,
-  Copy link / Download / More, per-tab rail, all seven tabs) and its surface is `matrx-user/file` through the
-  page's own host (`SingleFileSurfaceHost` as `surface.Host`). Default size 800×600.
+- 2026-09-28 — Note tile is the real notes core (`NoteWorkspace`) instead of a plain-text `NoteEditorCore`;
+  `tiles/NoteTileBody.tsx` deleted (label body moved to `tiles/TextTileBody.tsx`); "Note" starts a note
+  the /notes way; agent and pasted text become real notes; agent `text` on a real note refuses with the
+  `note_content` remedy. Note tiles default to 560×620.
 
 - 2026-09-27 — Frame fly-to includes its title band in the fit target; War Room’s board-only down throw uses the reversible 'remove' action, distinct from destructive 'delete'.
 

@@ -80,12 +80,19 @@ import { noteIdentityContentSource } from "../richDocumentSource";
 interface NoteTabItemProps {
   noteId: string;
   instanceId: string;
+  /**
+   * The note is shown ALONE — no tab strip around it (a Board tile,
+   * `NoteWorkspace`). The chip still carries the note's title, mic and "…"
+   * menu, but there is no other tab to go to, so the close button and the
+   * close-tab rows are left out.
+   */
+  standalone?: boolean;
 }
 
 const actionBtnClass =
   "flex items-center justify-center w-6 h-6 rounded cursor-pointer transition-colors text-muted-foreground hover:bg-accent hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5";
 
-export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
+export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabItemProps) {
   const dispatch = useAppDispatch();
 
   // ── Redux state ────────────────────────────────────────────────────
@@ -455,25 +462,29 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       label: "Export as Markdown",
       fn: handleExport,
     },
-    null,
-    {
-      id: "close-tab",
-      icon: X,
-      label: "Close tab",
-      fn: () => dispatch(removeInstanceTab({ instanceId, noteId })),
-    },
-    {
-      id: "close-others",
-      icon: X,
-      label: "Close other tabs",
-      fn: handleCloseOtherTabs,
-    },
-    {
-      id: "close-all",
-      icon: X,
-      label: "Close all tabs",
-      fn: handleCloseAllTabs,
-    },
+    ...(standalone
+      ? []
+      : [
+          null,
+          {
+            id: "close-tab",
+            icon: X,
+            label: "Close tab",
+            fn: () => dispatch(removeInstanceTab({ instanceId, noteId })),
+          },
+          {
+            id: "close-others",
+            icon: X,
+            label: "Close other tabs",
+            fn: handleCloseOtherTabs,
+          },
+          {
+            id: "close-all",
+            icon: X,
+            label: "Close all tabs",
+            fn: handleCloseAllTabs,
+          },
+        ]),
     null,
     {
       id: "delete",
@@ -658,7 +669,8 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
             </div>
           )}
 
-          {/* Close button */}
+          {/* Close button — a note shown alone has no tab to close. */}
+          {!standalone && (
           <span
             className="notes-tab-close-btn flex items-center justify-center w-4 h-4 rounded-sm text-muted-foreground shrink-0 hover:bg-accent hover:text-foreground ml-1"
             role="button"
@@ -667,6 +679,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
           >
             <X className="w-2.5 h-2.5" />
           </span>
+          )}
         </div>
       </NonEditableContextMenu>
 

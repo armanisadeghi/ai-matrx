@@ -707,14 +707,9 @@ export function surfaceFromPathname(
   const stripped = pathname.replace(/^\/?\(authenticated\)/, "");
 
   // Analysis Studio is `/files/f/[id]/studio` — must not steal plain file viewer
-  // (which resolves to `matrx-user/file` just below).
+  // (which correctly resolves to `matrx-user/files` via the `/files` prefix).
   if (/^\/files\/f\/[^/]+\/studio(?:\/|$)/.test(stripped)) {
     return "matrx-user/analysis-studio";
-  }
-  // The single-file page `/files/f/[id]` is one file, worked on — its own
-  // surface (the browser's `matrx-user/files` covers `/files/*` otherwise).
-  if (/^\/files\/f\/[^/]+\/?$/.test(stripped)) {
-    return "matrx-user/file";
   }
 
   // Flashcard set detail and editor pages sit beneath the library prefix but

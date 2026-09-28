@@ -103,7 +103,7 @@ export interface BoardToolHost<T extends BoardTileBase & { title: string }> {
 }
 
 const DEFAULT_SIZE: Record<BoardTileKindInput, { w: number; h: number }> = {
-  note: { w: 380, h: 300 },
+  note: { w: 560, h: 620 }, // the notes core (modes, tools, editor, metadata)
   markdown: { w: 640, h: 720 },
   text: { w: 520, h: 120 },
   html: { w: 800, h: 560 },

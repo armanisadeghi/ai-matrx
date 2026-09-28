@@ -21,9 +21,13 @@ import {
   entityId,
   fileIdOf,
   fileItem,
+  isNoteDraft,
   noteDraftFromText,
+  noteDraftSource,
   noteSeed,
+  noteSeedEdit,
   noteSource,
+  noteTilePlan,
 } from "../items/work-sources";
 import { BOARD_UPLOAD_FOLDER, filesToBoardItems } from "../items/file-drop";
 import { UploadCancelledError } from "@/features/files/handler/errors";
@@ -70,6 +74,45 @@ describe("note source", () => {
 
   it("a blank seed is no seed", () => {
     expect(noteSeed({ kind: "entity", entity: "note", id: null, meta: { seed: "   " } })).toBeNull();
+  });
+});
+
+describe("note tile lifecycle (the notes feature's own paths)", () => {
+  const fresh: NodeSource = { kind: "entity", entity: "note", id: null };
+
+  it("a new tile starts a draft the way /notes 'New note' does; the draft is reopened by id", () => {
+    expect(noteTilePlan(fresh)).toEqual({ step: "start-draft" });
+    const draft = noteDraftSource(fresh, "n1");
+    expect(draft).toEqual({ kind: "entity", entity: "note", id: "n1", meta: { draft: "1" } });
+    expect(isNoteDraft(draft)).toBe(true);
+    expect(noteTilePlan(draft)).toEqual({ step: "draft", noteId: "n1" });
+  });
+
+  it("once the draft has a row the tile refers to a real note and opens it", () => {
+    const saved = noteSource(noteDraftSource(fresh, "n1"), "n1");
+    expect(saved).toEqual({ kind: "entity", entity: "note", id: "n1" });
+    expect(isNoteDraft(saved)).toBe(false);
+    expect(noteTilePlan(saved)).toEqual({ step: "open", noteId: "n1" });
+  });
+
+  it("text (a paste, an agent) is created with that content — before or instead of an untouched draft", () => {
+    expect(noteTilePlan(noteDraftFromText("Plan\nstep one").source)).toEqual({
+      step: "create-from-seed",
+      seed: "Plan\nstep one",
+    });
+    const onDraft = noteSeedEdit(noteDraftSource(fresh, "n1"), "agent text");
+    expect(onDraft).not.toBeNull();
+    expect(noteTilePlan(onDraft as NodeSource)).toEqual({ step: "create-from-seed", seed: "agent text" });
+  });
+
+  it("an agent's text never replaces a real note from the board — it goes through the note's surface", () => {
+    expect(noteSeedEdit({ kind: "entity", entity: "note", id: "n9" }, "overwrite")).toBeNull();
+    expect(noteSeed({ kind: "entity", entity: "note", id: "n9", meta: { seed: "stale" } })).toBeNull();
+  });
+
+  it("is not a note plan for any other source", () => {
+    expect(noteTilePlan({ kind: "entity", entity: "chat", id: null })).toBeNull();
+    expect(noteSeedEdit({ kind: "label", text: "x" }, "y")).toBeNull();
   });
 });
 

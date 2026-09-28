@@ -20,12 +20,27 @@
 "use client";
 
 import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, FolderTree, Home } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  Copy,
+  Download,
+  ExternalLink,
+  FolderTree,
+  Home,
+  Loader2,
+  MoreHorizontal,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -33,7 +48,11 @@ import {
   selectAllFoldersMap,
 } from "@/features/files/redux/selectors";
 import { getFolderAncestors } from "@/features/files/redux/tree-utils";
-import { SingleFileActionButtons, SingleFileNameLabel } from "./SingleFileActions";
+import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
+import { FileIcon } from "@ai-matrx/media/react";
+import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
+import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
+import { FileLineageChip } from "../FileLineageChip";
 import { encodeFolderPathSegments } from "@/features/files/utils/url-state";
 import { NavSidebar } from "../desktop/NavSidebar";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -49,6 +68,11 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
   const router = useRouter();
   const file = useAppSelector((s) => selectFileById(s, fileId));
   const foldersById = useAppSelector(selectAllFoldersMap);
+  const actions = useFileActions(fileId);
+
+  const [downloading, setDownloading] = useState(false);
+  const [copying, setCopying] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [showFiles, setShowFiles] = useState(false);
 
   // Breadcrumb segments — Home → ancestors → (no leaf, the file name lives
@@ -73,6 +97,30 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
       return encoded.length > 0 ? `/files/all/${encoded}` : "/files/all";
     });
   }, [ancestors]);
+
+  const handleDownload = useCallback(async () => {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      await actions.download();
+    } finally {
+      setDownloading(false);
+    }
+  }, [actions, downloading]);
+
+  const handleCopyLink = useCallback(async () => {
+    if (copying) return;
+    setCopying(true);
+    try {
+      const url = await actions.copyShareUrl();
+      if (url) {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1600);
+      }
+    } finally {
+      setCopying(false);
+    }
+  }, [actions, copying]);
 
   return (
     <RouteHeader
@@ -125,7 +173,22 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
            * (VERIFIER-23 #4). In flow, a long name truncates and nothing overlaps. The
            * right-click menu wraps it so a right-click here gives the full action set. */}
           <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <SingleFileNameLabel fileId={fileId} />
+          <FileRightClickMenu fileId={fileId}>
+            <div className="flex min-w-0 items-center gap-2 px-1">
+              {file ? (
+                <FileIcon fileName={file.fileName} size={16} className="shrink-0" />
+              ) : null}
+              <span
+                className="truncate text-sm font-medium text-foreground"
+                title={file?.fileName ?? ""}
+              >
+                {file?.fileName ?? "Loading…"}
+              </span>
+              {file?.source.kind === "real" ? (
+                <FileLineageChip fileId={fileId} className="shrink-0" />
+              ) : null}
+            </div>
+          </FileRightClickMenu>
         </>
       }
       right={
@@ -161,7 +224,55 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
             </div>
           </MatrxDynamicPanelHost>
 
-          <SingleFileActionButtons fileId={fileId} showOpenInNewTab />
+          <TapTargetButton
+            icon={
+              copying ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : copied ? (
+                <Check className="h-4 w-4 text-success" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )
+            }
+            ariaLabel="Copy share link"
+            onClick={handleCopyLink}
+            disabled={!file || copying}
+          />
+          <TapTargetButton
+            icon={
+              downloading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )
+            }
+            ariaLabel="Download"
+            onClick={handleDownload}
+            disabled={!file || downloading}
+          />
+          <TapTargetButton
+            icon={<ExternalLink className="h-4 w-4" />}
+            ariaLabel="Open in new tab"
+            href={`/files/f/${fileId}`}
+            target="_blank"
+          />
+          <Tooltip>
+            <FileContextMenu fileId={fileId}>
+              <TooltipTrigger asChild>
+                <span>
+                  <TapTargetButton
+                    icon={<MoreHorizontal className="h-4 w-4" />}
+                    ariaLabel="More actions"
+                    disabled={!file}
+                    tooltip={false}
+                  />
+                </span>
+              </TooltipTrigger>
+            </FileContextMenu>
+            <TooltipContent side="bottom" sideOffset={6}>
+              More actions
+            </TooltipContent>
+          </Tooltip>
         </div>
       }
     />

@@ -50,6 +50,7 @@ import type { AddTileInput, BoardToolHost, EditTileInput } from "../tools/useBoa
 import { BOARD_ITEM_TYPES, itemTypeFor } from "../items/catalog";
 import type { BoardItemType, PlacedItem } from "../items/types";
 import { filesToBoardItems } from "../items/file-drop";
+import { noteSeedEdit } from "../items/work-sources";
 import { intakeText } from "./board-intake";
 import { AddMenu, StartPanel } from "./AddMenu";
 import { UnavailableItemBody } from "./UnavailableItemBody";
@@ -186,7 +187,7 @@ export function UserBoard({
           id,
           title: "Note",
           source: { kind: "entity", entity: "note", id: null },
-          rect: { x: c.at.x - 190, y: c.at.y - 20, w: 380, h: 300 },
+          rect: { x: c.at.x - 280, y: c.at.y - 20, w: 560, h: 620 },
         });
         break;
       case "text":
@@ -564,8 +565,15 @@ function agentEdit(tile: UserBoardTile, input: EditTileInput): Partial<UserBoard
   if (s.kind === "text" && input.text !== undefined) return { source: { kind: "text", markdown: input.text } };
   if (s.kind === "label" && input.text !== undefined) return { source: { kind: "label", text: input.text } };
   if (s.kind === "html" && input.html !== undefined) return { source: { kind: "html", html: input.html } };
-  if (s.kind === "entity" && s.entity === "note" && s.id === null && input.text !== undefined) {
-    return { source: { ...s, meta: { ...s.meta, seed: input.text } } };
+  if (s.kind === "entity" && s.entity === "note" && input.text !== undefined) {
+    // Text for a note that does not exist yet becomes its content; a real
+    // note's text changes through the notes surface (`note_content`).
+    const seeded = noteSeedEdit(s, input.text);
+    if (seeded) return { source: seeded };
+    return {
+      ok: false,
+      error: `"${tile.title}" is a real note in Notes. Change its text through the note itself: make the tile live (board_focus) and use its note_content write target.`,
+    };
   }
   return {
     ok: false,
