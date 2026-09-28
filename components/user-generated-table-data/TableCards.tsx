@@ -249,14 +249,19 @@ export default function TableCards() {
   // deliberately withholds. Found on independent review 2026-09-15: removing
   // the controls from one of the two cards is not removing them.
   const [systemOrgId, setSystemOrgId] = useState<string | null>(null);
+  // Unresolved, examples cannot be told apart from your own tables — said below.
+  const [systemOrgFailed, setSystemOrgFailed] = useState(false);
   useEffect(() => {
     let cancelled = false;
     resolveSystemOrgId()
       .then((id) => {
-        if (!cancelled) setSystemOrgId(id);
+        if (cancelled) return;
+        setSystemOrgId(id);
+        setSystemOrgFailed(false);
       })
       .catch((err) => {
         console.error("Could not resolve the system organization:", err);
+        if (!cancelled) setSystemOrgFailed(true);
       });
     return () => {
       cancelled = true;
@@ -796,6 +801,13 @@ export default function TableCards() {
             </Badge>
           </div>
         )}
+        {systemOrgFailed ? (
+          <p className="mb-3 text-xs text-muted-foreground">
+            Couldn&apos;t tell which tables are shared examples, so some
+            examples may be listed here as yours.
+            <ErrorAlchemyMenu operation="Resolve the example tables' owner" />
+          </p>
+        ) : null}
 
         {ownedTables.length === 0 && searchTerm ? (
           <div className="text-center py-8 text-muted-foreground">

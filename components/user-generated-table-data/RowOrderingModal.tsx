@@ -6,6 +6,8 @@ import {
   type RowLabelConfig,
 } from "@/features/data-tables/row-label";
 import React, { useState, useEffect, useCallback } from "react";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@/components/read-state/ReadGate";
 import {
   Dialog,
   DialogContent,
@@ -493,7 +495,12 @@ export default function RowOrderingModal({
 
         <DialogFooter className="flex-shrink-0 flex justify-between items-center">
           <div className="text-sm text-muted-foreground">
-            {rows.length} rows • Drag to reorder or use arrow buttons
+            <UntrustedCount
+              read={readOf({ loading, error: loadError, hasData: rows.length > 0 })}
+              label="Rows"
+              value={rows.length}
+            />{" "}
+            rows • Drag to reorder or use arrow buttons
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleClose} disabled={saving}>

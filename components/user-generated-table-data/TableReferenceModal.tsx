@@ -2,6 +2,7 @@
 
 import { effectiveRowLabel, rowLabelText } from "@/features/data-tables/row-label";
 import React, { useState } from "react";
+import { toast } from "@/lib/toast";
 import {
   Dialog,
   DialogContent,
@@ -59,6 +60,7 @@ export default function TableReferenceModal({
       setTimeout(() => setCopiedReference(null), 2000); // Reset after 2 seconds
     } catch (err) {
       console.error("Failed to copy to clipboard:", err);
+      toast.error("Couldn't copy to the clipboard — select the text and copy it by hand.");
     }
   };
 

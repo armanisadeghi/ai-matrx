@@ -349,7 +349,7 @@ const ColumnHeaderMenu = ({
           <p className="truncate text-sm font-semibold text-foreground" title={displayName}>
             {displayName}
           </p>
-          {effectiveFacets && (
+          {!facetError && effectiveFacets && (
             <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
               {effectiveFacets.distinct_count} distinct
             </span>
@@ -432,7 +432,7 @@ const ColumnHeaderMenu = ({
             </p>
           )}
 
-          {mode === "values" && effectiveFacets && (
+          {mode === "values" && !facetError && effectiveFacets && (
             <div className="flex flex-col gap-1.5">
               {effectiveFacets.truncated && (
                 <p className="text-[11px] leading-snug text-muted-foreground">
