@@ -60,6 +60,7 @@ import {
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { MenuPresenceProvider } from "@/features/context-menu-v3/menu-presence";
+import { CONTEXT_MENU_HEADING_KEY } from "@/features/context-menu-v3/types";
 import type { RichDocumentAction } from "@/features/rich-document/types";
 import { useUnsavedChangesGuard } from "@/lib/navigation/useUnsavedChangesGuard";
 import {
@@ -644,6 +645,11 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
         getApplicationScope={getScope}
         contentSource={{ type: "raw" }}
         contextData={{ content: readableText }}
+        // The header NAMES the record and shows it as a person reads it —
+        // never the raw {{…}} the agent scope (content) carries.
+        resolveContextOnOpen={() => ({
+          [CONTEXT_MENU_HEADING_KEY]: { label: "Message template", text: readableText },
+        })}
         extraRichActions={mode === "view" ? pageMenuActions : undefined}
         entity={{
           type: "message_template",
