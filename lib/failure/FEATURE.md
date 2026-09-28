@@ -31,7 +31,7 @@ prose written for operators, and a retry is its honest remedy.
   word, non-transient, because a retry there would be a lie. `retrySafe` is the caller's promise that the write is
   idempotent — it changes the remedy from "reload to confirm which way it
   landed" to "doing it twice changes nothing", so say it only when it is true.
-  Offline is its own sentence, because then nothing was changed and we know it.
+  Offline is its own sentence, because then nothing was changed and we know it. `read: true` marks a request that only READS: a dropped read changed nothing, so it says so and never carries the write's "may or may not have gone through".
 - **`toastFailure.ts`** — the toast that failure is allowed to make: the
   sentence, the remedy as its description, and a **Try again** button when the
   failure is transient and the caller supplied a retry. Returns the sentence so
@@ -41,7 +41,7 @@ prose written for operators, and a retry is its honest remedy.
 **Consumers:** `features/bindings/OneBindingWorkspace.tsx` (the save the walker
 broke, and its remove) · `features/mandates/workspace/TriadSections.tsx` (the
 four goal/input saves and drafts) · `features/masterwork/browse/useApproachRegistry.ts`
-(every Approach surface — the W2 wall) · `components/admin/CredentialExpiryNotifier.tsx`.
+(every Approach surface — the W2 wall) · `components/admin/CredentialExpiryNotifier.tsx` · `features/mandates/dashboard/MandateDashboard.tsx` (every KPI section names its read and retries it alone, 2026-09-28) · `features/mandates/door-error.ts` (a transport failure keeps supabase-js's stack out of the sentence).
 
 **Still to adopt:** ~100 call sites repo-wide still print
 `error instanceof Error ? error.message : String(error)` at a person. Boy-scout
@@ -51,4 +51,4 @@ rule — convert the ones you touch; each is one line.
 `__tests__/database-refusal.test.ts` (the W2 engine prose), both proven
 failing-then-passing.
 
-**Verified:** 2026-09-15.
+**Verified:** 2026-09-28 (`read` option + mandate dashboard; guard `features/mandates/dashboard/__tests__/a-failed-read-says-which-and-retries-alone.test.tsx`, red on the prior dashboard).
