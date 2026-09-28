@@ -37,6 +37,7 @@ import {
 } from "@/features/surfaces/utils/surface-check-ledger";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import {
   SurfacesFilterBar,
   type SurfacesFilterState,
@@ -69,6 +70,8 @@ interface Props {
   parentNames: string[];
   onRefresh: () => void | Promise<void>;
   onAdd: () => void | Promise<void>;
+  /** Peek side panel is open (desktop): keep only the columns that fit whole. */
+  peeking?: boolean;
   /** The surfaces read these rows answer (the container owns it). */
   read?: ReadOutcome | undefined;
 }
@@ -193,14 +196,36 @@ function ActiveBadge({ active }: { active: boolean }) {
 // check age, active) first; where it lives (client, parent, tier) after.
 // Executor is folded into Client (it only differs on a few rows) and starts
 // hidden as its own column.
+/**
+ * While Peek is open the table gets what is left of the width, so it keeps
+ * only the triage columns that fit whole beside the pinned Actions column
+ * (a column half under Actions read as "4 in DI"). `wide` = the viewport
+ * has room for Values and Checked too.
+ */
+const PEEK_COLUMNS = {
+  wide: new Set(["name", "readiness", "agentCount", "toolCount", "surfaceValueCount", "lastChecked"]),
+  narrow: new Set(["name", "readiness", "agentCount", "toolCount"]),
+};
+
 function surfaceColumns(
   navigatingName: string | null,
+  peek: "off" | "wide" | "narrow" = "off",
+): MatrxColumnDef<SurfaceWithStats>[] {
+  const all = allSurfaceColumns(navigatingName, peek !== "off");
+  if (peek === "off") return all;
+  const keep = PEEK_COLUMNS[peek];
+  return all.filter((c) => keep.has(c.id ?? String(c.accessorKey)));
+}
+
+function allSurfaceColumns(
+  navigatingName: string | null,
+  peeking: boolean,
 ): MatrxColumnDef<SurfaceWithStats>[] {
   return [
     {
       accessorKey: "name",
       header: "Name",
-      width: 260,
+      width: peeking ? 200 : 260,
       filterValue: (row) => `${surfaceRowTitle(row)} ${row.name}`,
       sortValue: (row) => surfaceRowTitle(row).toLowerCase(),
       cell: (row) => (
@@ -346,8 +371,10 @@ export function SurfacesTable({
   onRefresh,
   onAdd,
   read,
+  peeking = false,
 }: Props) {
   const isMobile = useIsMobile();
+  const roomForValues = useMediaQuery("(min-width: 1200px)");
   const hasSpecializedFilters =
     filters.client !== "__all__" ||
     filters.status !== "all" ||
@@ -359,7 +386,10 @@ export function SurfacesTable({
   return (
     <MatrxDataTable<SurfaceWithStats>
       data={rows}
-      columns={surfaceColumns(navigatingName)}
+      columns={surfaceColumns(
+        navigatingName,
+        !peeking || isMobile ? "off" : roomForValues ? "wide" : "narrow",
+      )}
       tableId="administration/ui/surfaces"
       // One view control: the saved-views menu. The working-view tab strip
       // repeated its name ("Default view" twice).

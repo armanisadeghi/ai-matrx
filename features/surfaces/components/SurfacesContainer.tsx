@@ -607,13 +607,14 @@ export function SurfacesContainer() {
             parentNames={parentNames}
             onRefresh={load}
             onAdd={() => setCreating(true)}
+            peeking={selected !== null && !isMobile}
           />
         </div>
 
         {/* Peek — a side panel on desktop (narrow enough that the triage
             columns stay in view), a bottom sheet on a phone. */}
         {selected && !isMobile && (
-          <div className="w-[380px] shrink-0 border-l border-border min-w-0">
+          <div className="w-[340px] xl:w-[380px] shrink-0 border-l border-border min-w-0">
             {peekPanel(selected)}
           </div>
         )}
