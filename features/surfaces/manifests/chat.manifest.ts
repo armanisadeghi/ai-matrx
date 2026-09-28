@@ -595,6 +595,8 @@ Every write asks the person first. Do not use generic context or scope tools for
     pickBaseline("selection", "text_before", "text_after", "content", "context"),
     surfaceSpecific,
   ),
+  // Which record, at a glance.
+  briefValues: ["conversation_title", "conversation_agent_name", "conversation_message_count", "conversation_status"],
   writeTargets,
 };
 

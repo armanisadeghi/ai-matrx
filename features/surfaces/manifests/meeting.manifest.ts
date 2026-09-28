@@ -420,6 +420,8 @@ meeting_title, meeting_agenda and ai_note_taker change the meeting exactly like 
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
+  // Which record, at a glance.
+  briefValues: ["meeting_title", "meeting_status", "scheduled_for", "participant_count"],
   writeTargets,
 };
 

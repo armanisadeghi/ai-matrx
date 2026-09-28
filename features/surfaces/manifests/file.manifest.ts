@@ -479,6 +479,8 @@ immediately and change nothing about the file.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
+  // Which record, at a glance.
+  briefValues: ["file_name", "file_mime_type", "file_size_bytes", "file_updated_at"],
   writeTargets,
   clientTools,
 };

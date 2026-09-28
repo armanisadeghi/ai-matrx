@@ -659,6 +659,8 @@ current_synthesis_text is the report the user is reading when a synthesis mount 
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  // Which record, at a glance.
+  briefValues: ["topic_name", "topic_status", "pipeline_progress", "source_count"],
   writeTargets,
 };
 

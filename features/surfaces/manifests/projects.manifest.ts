@@ -452,6 +452,8 @@ On the list mount, project_list carries the visible rows and project_list_filter
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  // Which record, at a glance.
+  briefValues: ["active_project_name", "active_project_status", "active_project_priority", "active_project_target_date"],
   writeTargets,
 };
 
