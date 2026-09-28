@@ -6,7 +6,7 @@
  *
  *   1. MERGE     /trash shows the archived site page beside their archived note, in one list and
  *                one kind picker, newest first.
- *   2. PRE-0041  before the CMS archive column exists the CMS source is "not live": no Site kind,
+ *   2. PRE-0041  before the CMS archive column exists the CMS source is "not live": no CMS kind,
  *                no row, no error toast, and no second request for rows it cannot have.
  *   3. NOTICE    Restore goes to the CMS door, and the door's notice sentence ("…restored at
  *                /services-restored because a live page now uses /services.") is in the toast.
@@ -37,7 +37,7 @@ const NOTE = {
 const PAGE = {
   artifact_kind: "cms_page",
   entity_token: "cms_page",
-  label: "Site page",
+  label: "CMS page",
   id: "22222222-2222-4222-8222-222222222222",
   title: "Services",
   deleted_at: "2026-09-26T09:30:00Z",
@@ -73,7 +73,7 @@ function fetchAnswer(url: string, init?: RequestInit) {
   const limit = Number(new URL(url, "http://x").searchParams.get("limit"));
   return json({
     live: true,
-    counts: [{ artifact_kind: "cms_page", label: "Site page", n: 1 }],
+    counts: [{ artifact_kind: "cms_page", label: "CMS page", n: 1 }],
     items: limit === 0 ? [] : [PAGE],
   });
 }
@@ -128,11 +128,11 @@ test("the archived site page and the archived note are one list and one kind pic
   await flush();
 
   expect(rowIds()).toEqual([PAGE.id, NOTE.id]);
-  expect(chipTexts().some((t) => t.startsWith("Site page"))).toBe(true);
+  expect(chipTexts().some((t) => t.startsWith("CMS page"))).toBe(true);
   expect(chipTexts().some((t) => t.startsWith("Note"))).toBe(true);
 
-  // Picking the Site page kind asks only the CMS source.
-  const chip = Array.from(container.querySelectorAll("button")).find((b) => b.textContent?.startsWith("Site page"))!;
+  // Picking the CMS page kind asks only the CMS source.
+  const chip = Array.from(container.querySelectorAll("button")).find((b) => b.textContent?.startsWith("CMS page"))!;
   rpc.mockClear();
   await act(async () => {
     chip.click();
@@ -150,7 +150,7 @@ test("before the CMS archive column exists, the CMS source contributes nothing a
   await flush();
 
   expect(rowIds()).toEqual([NOTE.id]);
-  expect(chipTexts().some((t) => t.startsWith("Site"))).toBe(false);
+  expect(chipTexts().some((t) => t.startsWith("CMS"))).toBe(false);
   expect(toast).not.toHaveBeenCalled();
   // The CMS route was asked once (its counts said "not live") and never again for rows.
   const cmsCalls = fetchMock.mock.calls.filter(([url]) => String(url).startsWith("/api/cms/trash"));
@@ -176,7 +176,7 @@ test("restoring the site page goes through the CMS door and the toast carries it
   expect(rpc).not.toHaveBeenCalledWith("entity_undelete", expect.anything());
 
   const restored = toast.mock.calls.map(([t]) => t as { title?: string; description?: unknown });
-  const shown = restored.find((t) => t.title === "Site page restored");
+  const shown = restored.find((t) => t.title === "CMS page restored");
   expect(shown).toBeDefined();
   expect(textOf(shown!.description)).toContain(NOTICE);
 });

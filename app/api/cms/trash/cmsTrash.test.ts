@@ -111,9 +111,9 @@ test("the owner sees the archived site, the top archived page and the component 
   expect(body.live).toBe(true);
   expect(body.items.map((i: { id: string }) => i.id)).toEqual(["page-services", "site-gone", "comp-header"]);
   expect(body.counts).toEqual([
-    { artifact_kind: "cms_site", label: "Site", n: 1 },
-    { artifact_kind: "cms_page", label: "Site page", n: 1 },
-    { artifact_kind: "cms_component", label: "Site component", n: 1 },
+    { artifact_kind: "cms_site", label: "CMS site", n: 1 },
+    { artifact_kind: "cms_page", label: "CMS page", n: 1 },
+    { artifact_kind: "cms_component", label: "CMS component", n: 1 },
   ]);
   expect(body.items[0]).toMatchObject({ entity_token: "cms_page", title: "Services", is_mine: true, organization_id: ORG });
 });
