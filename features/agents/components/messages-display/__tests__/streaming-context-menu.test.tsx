@@ -39,6 +39,10 @@ jest.mock(
 
 jest.mock("../display-groups", () => ({
   applyDisplayGroupWindow: (groups: unknown) => groups,
+  applyAnchoredDisplayGroupWindow: (groups: unknown) => ({
+    groups,
+    anchor: null,
+  }),
   buildDisplayEntries: () => [],
   groupDisplayEntries: () => [
     { kind: "user", key: "user-1", messageId: "message-1" },

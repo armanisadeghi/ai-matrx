@@ -43,7 +43,8 @@ import { CollabNoteMessage } from "./user/CollabNoteMessage";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { resolveMarkdownContext } from "@/features/context-menu-v3/utils/resolveMarkdownContext";
 import {
-  applyDisplayGroupWindow,
+  applyAnchoredDisplayGroupWindow,
+  type DisplayGroupWindowAnchor,
   buildDisplayEntries,
   groupDisplayEntries,
   type DisplayGroup,
@@ -158,10 +159,26 @@ export function AgentConversationDisplay({
   // briefly render from the oldest loaded group.
   const effectiveVisibleGroupLimit =
     fallbackVisibleGroupLimit ?? visibleGroupLimit;
-  const displayGroups = useMemo(
-    () => applyDisplayGroupWindow(allDisplayGroups, effectiveVisibleGroupLimit),
-    [allDisplayGroups, effectiveVisibleGroupLimit],
+  // The window's first group is pinned while the limit holds, so a turn in
+  // flight never evicts (and later re-mounts) the group at the top edge.
+  const [windowAnchor, setWindowAnchor] = useState<
+    (DisplayGroupWindowAnchor & { conversationId: string }) | null
+  >(null);
+  const windowed = applyAnchoredDisplayGroupWindow(
+    allDisplayGroups,
+    effectiveVisibleGroupLimit,
+    windowAnchor?.conversationId === conversationId ? windowAnchor : null,
   );
+  const displayGroups = windowed.groups;
+  if (
+    (windowed.anchor?.key ?? null) !== (windowAnchor?.key ?? null) ||
+    (windowed.anchor?.limit ?? null) !== (windowAnchor?.limit ?? null) ||
+    (windowAnchor !== null && windowAnchor.conversationId !== conversationId)
+  ) {
+    setWindowAnchor(
+      windowed.anchor ? { ...windowed.anchor, conversationId } : null,
+    );
+  }
 
   // Key of the conversation's LAST user turn — the scroll anchor.
   useMessageListInteractions(

@@ -297,6 +297,66 @@ export function applyDisplayGroupWindow(
   return groups.slice(groups.length - visibleGroupLimit);
 }
 
+/** Where a rendered window starts, pinned to a group identity. */
+export interface DisplayGroupWindowAnchor {
+  /** Key of the first rendered group. */
+  key: string;
+  /** The limit the anchor was taken under; a new limit re-derives the window. */
+  limit: number;
+}
+
+/**
+ * The visible-group window, ANCHORED: once a window is on screen its first
+ * group stays its first group while the limit is unchanged. A turn in flight
+ * adds groups at the bottom (the optimistic user row, then the answer) and can
+ * briefly remove one (a synthetic stream entry becoming a row); counting the
+ * last N groups made the group at the top edge unmount and remount with every
+ * such step — invisible above the viewport, but a remount of every card in it
+ * and a layout jump under a scrolled reader (verifier 2026-09-27, /chat 375).
+ * Anchored, the rendered set only grows while a turn streams. A larger limit
+ * (reveal older) opens the window upward by the difference; a smaller one (a
+ * cold reset) or a missing anchor (its group was deleted) re-derives the
+ * window from the end.
+ */
+export function applyAnchoredDisplayGroupWindow(
+  groups: DisplayGroup[],
+  visibleGroupLimit: number | null,
+  anchor: DisplayGroupWindowAnchor | null,
+): { groups: DisplayGroup[]; anchor: DisplayGroupWindowAnchor | null } {
+  if (visibleGroupLimit === null) return { groups, anchor: null };
+  const anchorIndex = anchor
+    ? groups.findIndex((g) => g.key === anchor.key)
+    : -1;
+  if (anchor && anchorIndex >= 0) {
+    if (anchor.limit === visibleGroupLimit) {
+      return { groups: groups.slice(anchorIndex), anchor };
+    }
+    if (visibleGroupLimit > anchor.limit) {
+      // Revealing older history opens the window UPWARD by the difference;
+      // it never trades bottom groups (which may have grown in-session).
+      const start = Math.max(
+        0,
+        Math.min(
+          anchorIndex - (visibleGroupLimit - anchor.limit),
+          groups.length - visibleGroupLimit,
+        ),
+      );
+      const windowed = groups.slice(start);
+      return {
+        groups: windowed,
+        anchor: { key: windowed[0].key, limit: visibleGroupLimit },
+      };
+    }
+  }
+  const windowed = applyDisplayGroupWindow(groups, visibleGroupLimit);
+  return {
+    groups: windowed,
+    anchor: windowed[0]
+      ? { key: windowed[0].key, limit: visibleGroupLimit }
+      : null,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Loaded display-group count — the unit the visible-group window and the
 // "reveal more" step actually operate in. `visibleGroupLimit` is a count of
