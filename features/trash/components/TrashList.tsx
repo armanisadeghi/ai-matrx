@@ -56,6 +56,7 @@ import {
   sourceForItem,
   type MergedTrashCounts,
 } from "@/features/trash/sources";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Rows per page — per kind in personal mode, per merged page in organization mode. */
 export const TRASH_PAGE = 50;
@@ -301,6 +302,9 @@ export function TrashList({
   // owners-and-admins page for that one organization. Personal Trash can list moved older tables of
   // any organization, so it asks once which organizations this person owns or administers.
   const [managed, setManaged] = useState<ReadonlySet<string>>(new Set());
+  // The organizations-you-manage read failed: the switch-back link is not
+  // offered, and the screen says why (never a silently missing control).
+  const [managedError, setManagedError] = useState<string | null>(null);
   const hasMoved = !org && items.some(isMovedOlderTable);
   useEffect(() => {
     if (!hasMoved) return;
@@ -308,7 +312,12 @@ export function TrashList({
     void (async () => {
       try {
         const res = await membershipsService.forUser("organization");
-        if (!live || !res.ok) return;
+        if (!live) return;
+        if (!res.ok) {
+          setManagedError(res.error.message);
+          return;
+        }
+        setManagedError(null);
         setManaged(
           new Set(
             res.data.memberships
@@ -316,9 +325,8 @@ export function TrashList({
               .map((m) => m.containerId),
           ),
         );
-        // read-gate-exempt: this read only adds a manage link; without it the row still names where the table went, so nothing on screen is wrong
-      } catch {
-        // No link is the safe answer; the row still says where the table went.
+      } catch (err) {
+        if (live) setManagedError(err instanceof Error ? err.message : String(err));
       }
     })();
     return () => {
@@ -330,6 +338,12 @@ export function TrashList({
 
   return (
     <div data-trash-scope={scope.mode}>
+      {hasMoved && managedError ? (
+        <p role="alert" className="pb-2 text-xs text-destructive">
+          Couldn&apos;t check which organizations you manage, so the switch-back link isn&apos;t offered on moved tables.
+          <ErrorAlchemyMenu error={managedError} operation="Read the organizations you manage" />
+        </p>
+      ) : null}
       {org && (
         <div className="flex flex-wrap items-center gap-2 pb-3">
           <span className="text-muted-foreground text-sm">Archived by</span>
