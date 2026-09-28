@@ -343,6 +343,7 @@ export function StudyPlanner({
                         size="icon"
                         className="h-7 w-7"
                         onClick={() => openEdit(goal)}
+                        aria-label={`Edit ${goal.title}`}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
@@ -369,6 +370,7 @@ export function StudyPlanner({
                         size="icon"
                         className="h-7 w-7 text-destructive"
                         onClick={() => setPendingDelete(goal)}
+                        aria-label={`Remove ${goal.title}`}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
