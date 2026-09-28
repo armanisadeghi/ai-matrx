@@ -642,7 +642,7 @@ export function productHealth({
       state: "unavailable",
       label: "Availability unknown",
       reason: `We could not confirm whether ${product.name} can be connected right now.`,
-      remedy: "Choose an organization if prompted, then try again.",
+      remedy: "Try again in a moment; if you are asked which organization you are working in, pick it.",
       togglable: false,
     });
   }

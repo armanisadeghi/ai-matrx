@@ -48,6 +48,9 @@ import { composerShows } from "./composer-mode-visibility";
 import type { ComposerAgentControl, ComposerMode, ComposerSize } from "./composer-types";
 import { useComposerAgent, type ComposerAgentInfo } from "./useComposerAgent";
 import { useRecentWorkAgents } from "./useRecentWorkAgents";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
+import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 
 const MANUAL_MODE_HINT = "Per-run settings are edited in the builder panel during test runs";
 
@@ -172,16 +175,26 @@ function ChatPresetsPanel({
   };
 
   const setPersonalModel = async (modelId: string) => {
-    if (!organizationId || !userId) {
-      toast.error("Choose an organization first — your default model is saved per organization.");
+    if (!userId) {
+      toast.error("Sign in first — your default model is saved to your account.");
       return;
+    }
+    // Your default model is saved per organization. With none known yet the
+    // press is HELD: boot's answer first, then the person is asked.
+    let targetOrganizationId: string;
+    try {
+      targetOrganizationId = organizationId ?? (await ensureOrgId(null));
+    } catch (error) {
+      if (isOrganizationSelectionCancelled(error)) return;
+      if (presentOrganizationRefusal(error, { subject: "Your default model", act: "saved" })) return;
+      throw error;
     }
     const result = await setKnobOverride({
       feature: "agents.model_prefs",
       key: "chat_default_model",
       scopeKind: "user",
       scopeId: userId,
-      organizationId,
+      organizationId: targetOrganizationId,
       value: modelId,
       note: "Picked under Custom in the chat composer",
     });

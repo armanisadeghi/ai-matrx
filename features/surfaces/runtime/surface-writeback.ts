@@ -75,6 +75,7 @@ import {
   validateCustomFieldsWrite,
 } from "./custom-field-targets";
 import { toast } from "@/lib/toast";
+import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 
 import type {
   SurfaceWritePolicy,
@@ -1217,17 +1218,25 @@ async function applySurfaceFeedbackWrite(
 
   // Filed under the organization the person is acting in. The table requires
   // one; with none selected we refuse with the remedy rather than open an
-  // organization picker just for feedback.
-  const organizationId = readActiveOrganizationId();
+  // organization picker just for feedback. "None yet" is not "none": a write
+  // racing boot waits for its answer, and a FAILED organization read is said
+  // as that, never as "pick one".
+  let organizationId = readActiveOrganizationId();
   if (!organizationId) {
-    return {
-      ok: false,
-      refused: true,
-      phase: "apply",
-      error:
-        "No organization is selected, and every feedback row is filed under one, so nothing was saved. " +
-        "Tell the person their feedback could not be filed until they pick their organization from the avatar menu, then send it again.",
-    };
+    const resolved = await awaitEffectiveOrganizationId();
+    if (resolved.status === "ready") organizationId = resolved.organizationId;
+    else
+      return {
+        ok: false,
+        refused: true,
+        phase: "apply",
+        error:
+          resolved.cause === "unreadable"
+            ? "The person's organization could not be read just now, so nothing was saved. " +
+              "Tell them their feedback was not filed and to send it again in a moment."
+            : "No organization is selected, and every feedback row is filed under one, so nothing was saved. " +
+              "Tell the person their feedback could not be filed until they pick their organization from the avatar menu, then send it again.",
+      };
   }
 
   try {

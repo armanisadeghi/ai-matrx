@@ -50,6 +50,7 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { selectIsAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 
 /** The two store methods the identity port reads. */
 export interface AlchemyIdentityStore {
@@ -155,13 +156,22 @@ export function createNotifyPort(): NotifyPort {
   };
 }
 
-/** The signed-in person in their active organization, or a sentence saying what is missing. */
-function knobPrincipal(store: AlchemyIdentityStore): { userId: string; organizationId: string } {
+/**
+ * The signed-in person in their active organization, or a sentence saying what
+ * is missing. "No organization yet" is not "none": it waits for boot's answer
+ * first, and a FAILED organization read says so instead of "pick one".
+ */
+async function knobPrincipal(store: AlchemyIdentityStore): Promise<{ userId: string; organizationId: string }> {
   const identity = readIdentity(store.getState());
-  if (!identity?.organizationId) {
-    throw new Error("Your own settings are saved per organization. Choose an organization, then try again.");
-  }
-  return { userId: identity.userId, organizationId: identity.organizationId };
+  if (!identity) throw new Error("Sign in to use your own settings.");
+  if (identity.organizationId) return { userId: identity.userId, organizationId: identity.organizationId };
+  const resolved = await awaitEffectiveOrganizationId();
+  if (resolved.status === "ready") return { userId: identity.userId, organizationId: resolved.organizationId };
+  throw new Error(
+    resolved.cause === "unreadable"
+      ? resolved.reason
+      : "Your own settings are saved per organization, and none is selected. Pick the one you are working in from the menu under your avatar, then try again.",
+  );
 }
 
 /** The person's own settings: their user-rung knob row (never the effective ladder). */
@@ -169,13 +179,13 @@ export function createPersistencePort(store: AlchemyIdentityStore): PersistenceP
   return {
     async readSetting<T extends Json>(setting: string) {
       const { feature, key } = knobAddress(setting);
-      const { userId, organizationId } = knobPrincipal(store);
+      const { userId, organizationId } = await knobPrincipal(store);
       const rows = await fetchKnobRungOverrides({ feature, key, organizationId, kinds: ["user"] });
       return (rows.find((row) => row.scope_id === userId)?.value ?? null) as T | null;
     },
     async writeSetting(setting, value) {
       const { feature, key } = knobAddress(setting);
-      const { userId, organizationId } = knobPrincipal(store);
+      const { userId, organizationId } = await knobPrincipal(store);
       const result = await setKnobOverride({ feature, key, scopeKind: "user", scopeId: userId, organizationId, value });
       if (!result.ok) throw new Error(`Your ${setting} setting was not saved: ${knobRefusalSentence(result)}`);
     },

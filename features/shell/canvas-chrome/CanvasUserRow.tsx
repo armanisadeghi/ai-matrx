@@ -22,6 +22,7 @@ import AppLink from "@/components/navigation/AppLink";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { cn } from "@/lib/utils";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import UserMenuPanel from "@/features/shell/components/header/header-right-menu/UserMenuPanel";
 import { MenuCheckboxIdProvider } from "@/features/shell/components/header/header-right-menu/menuCheckboxId";
 import { ShellUserAvatarImage } from "@/features/shell/components/header/header-right-menu/ShellUserAvatarImage";
@@ -78,6 +79,8 @@ function CanvasOrgDropUp({ onOpenChange }: { onOpenChange?: (open: boolean) => v
   const [open, setOpen] = useState(false);
   const { activeOrgId, activeOrgName, organizations, loading, loadFailed, selectOrganization } =
     useActiveOrganizationPicker();
+  // The chip only invites a choice once boot has answered with none.
+  const { organizationState } = useOrganizationRequired();
 
   // Scratch organizations a test lane made are classified in the data
   // (`is_test_fixture`) — the canonical picker hides them the same way.
@@ -95,7 +98,13 @@ function CanvasOrgDropUp({ onOpenChange }: { onOpenChange?: (open: boolean) => v
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label={activeOrgName ? `Organization: ${activeOrgName}` : "Choose an organization"}
+          aria-label={
+            activeOrgName
+              ? `Organization: ${activeOrgName}`
+              : organizationState === "required"
+                ? "Choose an organization"
+                : "Organization"
+          }
           className={cn(
             "flex h-9 max-w-[45%] shrink-0 items-center gap-1 rounded-lg px-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground",
             open && "bg-accent text-foreground",

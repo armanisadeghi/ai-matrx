@@ -47,6 +47,7 @@ import {
 } from "./voices/voiceSettingDoors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 
 export default function VoicesTab() {
   const settings = useUniversalSettings();
@@ -66,8 +67,11 @@ export default function VoicesTab() {
         (key) => !settings.knobByKey(key),
       )
     : [];
+  // "No organization yet" is said only once boot has ANSWERED with none — never
+  // while it is still resolving, and never for a failed read (that is not "pick one").
+  const { organizationState } = useOrganizationRequired();
   const noOrganizationYet =
-    !settings.isLoading && !settings.error && !settings.organizationId;
+    !settings.isLoading && !settings.error && !settings.organizationId && organizationState === "required";
 
   return (
     <>
