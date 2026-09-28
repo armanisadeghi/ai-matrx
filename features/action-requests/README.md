@@ -68,6 +68,17 @@ Two corollaries that follow from it, and are load-bearing:
   from the render spec — the site the agent is signing into. aidream compares it
   to the origin on the row exactly; this app's own origin would match nothing.
 
+## The link is enough (Arman, 2026-09-23)
+
+A person tapping a link we texted to their verified number is already
+themselves. For a `credential` ask the server's default is therefore
+`can_complete: true` with no session: the password is saved to the vault and
+the parked turn resumes. Requiring a sign-in first is an organization's opt-in
+knob, never the default, and when it is on the page prints the server's own
+sentence naming the organization. This page never re-derives that decision
+from `kind` — it renders the form when `can_complete` is true and the server's
+`sign_in_reason` when it is not (aidream 962cb047).
+
 ## Known gap
 
 `upload_file` has no door. aidream's result for it is a list of file ids, and
