@@ -19527,6 +19527,31 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      meet_audience_assets: {
+        Args: { p_id: string }
+        Returns: {
+          label: string
+          resource_id: string
+          resource_type: string
+        }[]
+      }
+      meet_audience_members: {
+        Args: { p_id: string }
+        Returns: {
+          display_name: string
+          email: string
+          user_id: string
+          why: string
+        }[]
+      }
+      meet_audience_source: {
+        Args: { p_id: string }
+        Returns: {
+          href: string
+          organization_id: string
+          title: string
+        }[]
+      }
       meet_cancel_meeting: {
         Args: { p_by_user_id: string; p_meeting_id: string; p_reason: string }
         Returns: {
@@ -29507,6 +29532,10 @@ export type Database = {
         }
         Returns: Json
       }
+      _digest_since_words: {
+        Args: { p_at: string; p_tz: string }
+        Returns: string
+      }
       _display_format_check: { Args: { p_format: Json }; Returns: Json }
       _display_of_field: {
         Args: { p_field_id: string; p_organization_id: string }
@@ -31097,14 +31126,23 @@ export type Database = {
           version: number
         }[]
       }
-      data_home_pages: {
+      data_home_changed_by: {
+        Args: { p_asks: Json }
+        Returns: {
+          at: string
+          id: string
+          organization_id: string
+          who: string
+        }[]
+      }
+      data_home_items: {
         Args: { p_organization_id?: string }
         Returns: {
+          item_id: string
+          item_row: Json
           kind: string
           organization_id: string
           organization_name: string
-          page_id: string
-          page_row: Json
           table_id: string
           table_name: string
         }[]
@@ -66824,6 +66862,26 @@ export type Database = {
         }
         Returns: undefined
       }
+      _audience_grant: {
+        Args: {
+          p_actor: string
+          p_level: Database["public"]["Enums"]["permission_level"]
+          p_resource_id: string
+          p_resource_type: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      _audience_plan: {
+        Args: {
+          p_actor: string
+          p_exclude?: string[]
+          p_kind: string
+          p_level: Database["public"]["Enums"]["permission_level"]
+          p_source_id: string
+        }
+        Returns: Json
+      }
       _client_grant_column_list: {
         Args: { p_excluded: string[]; p_rel: unknown }
         Returns: string
@@ -66949,6 +67007,7 @@ export type Database = {
       }
       _org_availability_arm: { Args: never; Returns: undefined }
       _org_availability_token: { Args: never; Returns: string }
+      _person_name: { Args: { p_user_id: string }; Returns: string }
       _reach_node_lanes: {
         Args: {
           p_gr: string[]
@@ -66987,6 +67046,15 @@ export type Database = {
         }
         Returns: string
       }
+      _record_share_invite: {
+        Args: {
+          p_actor: string
+          p_email: string
+          p_level: Database["public"]["Enums"]["permission_level"]
+          p_plan: Json
+        }
+        Returns: Json
+      }
       _resolve_owner_column: {
         Args: { p_pref: string; p_schema: string; p_table: string }
         Returns: string
@@ -66998,6 +67066,17 @@ export type Database = {
       _rls_plan_is: {
         Args: { p_create: string[]; p_kept: string[]; p_tbl: string }
         Returns: undefined
+      }
+      _share_with_audience: {
+        Args: {
+          p_actor: string
+          p_exclude?: string[]
+          p_kind: string
+          p_level: Database["public"]["Enums"]["permission_level"]
+          p_source_id: string
+          p_via?: string
+        }
+        Returns: Json
       }
       _team_caller: {
         Args: { p_team_id: string }
@@ -67174,6 +67253,22 @@ export type Database = {
       assoc_side_readable: {
         Args: { p_id: string; p_token: string }
         Returns: boolean
+      }
+      audience_kinds: {
+        Args: never
+        Returns: {
+          assets_fn: string
+          describe_fn: string
+          kind: string
+          label: string
+          level_knob_feature: string
+          level_knob_key: string
+          members_fn: string
+          offer_knob_feature: string
+          offer_knob_key: string
+          source_noun: string
+          source_token: string
+        }[]
       }
       auth_users_hands_off: {
         Args: never
@@ -67819,6 +67914,10 @@ export type Database = {
           relation: string
           why: string
         }[]
+      }
+      permission_means: {
+        Args: { p_level: Database["public"]["Enums"]["permission_level"] }
+        Returns: string
       }
       personal_data_relations: {
         Args: never
@@ -90441,6 +90540,10 @@ export type Database = {
           source_type: string
         }[]
       }
+      audience_share_preview: {
+        Args: { p_kind: string; p_level?: string; p_source_id: string }
+        Returns: Json
+      }
       auth_is_org_admin: {
         Args: { org_id: string; user_id: string }
         Returns: boolean
@@ -96228,6 +96331,8 @@ export type Database = {
         }
         Returns: string
       }
+      record_share_accept: { Args: { p_token: string }; Returns: Json }
+      record_share_peek: { Args: { p_token: string }; Returns: Json }
       reference_categories_list: {
         Args: never
         Returns: {
@@ -96784,6 +96889,15 @@ export type Database = {
         Returns: Json
       }
       share_token_keyword_metrics: { Args: { p_token: string }; Returns: Json }
+      share_with_audience: {
+        Args: {
+          p_exclude?: string[]
+          p_kind: string
+          p_level: string
+          p_source_id: string
+        }
+        Returns: Json
+      }
       shareable_owner_column: {
         Args: { p_registry_owner: string; p_schema: string; p_table: string }
         Returns: string
@@ -118218,6 +118332,54 @@ export type Database = {
   }
   users: {
     Tables: {
+      _vault_fill_devices: {
+        Row: {
+          extension_origin: string | null
+          id: string
+          key_thumbprint: string
+          label: string
+          last_used_at: string | null
+          oauth_client_id: string
+          oauth_session_id: string
+          public_key_jwk: Json
+          registered_at: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          user_id: string
+        }
+        Insert: {
+          extension_origin?: string | null
+          id?: string
+          key_thumbprint: string
+          label: string
+          last_used_at?: string | null
+          oauth_client_id: string
+          oauth_session_id: string
+          public_key_jwk: Json
+          registered_at?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id: string
+        }
+        Update: {
+          extension_origin?: string | null
+          id?: string
+          key_thumbprint?: string
+          label?: string
+          last_used_at?: string | null
+          oauth_client_id?: string
+          oauth_session_id?: string
+          public_key_jwk?: Json
+          registered_at?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       credential_attachments: {
         Row: {
           created_at: string
