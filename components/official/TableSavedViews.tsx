@@ -35,7 +35,7 @@ function PersonalViews({ tableId, snapshot, defaultSnapshot, onApply, presentati
   useEffect(() => {
     const writes = pendingWrites.current;
     return () => { for (const request of writes) request.abort(); };
-  }, []);
+  }, [actor.accessToken]);
   useEffect(() => {
     const request = new AbortController();
     const startedAtRevision = completedWriteRevision.current;
@@ -91,7 +91,7 @@ function PersonalViews({ tableId, snapshot, defaultSnapshot, onApply, presentati
   return <SavedViewsControl
     views={views}
     activeId={active?.id ?? null}
-    dirty={active !== null && JSON.stringify(active.snapshot) !== JSON.stringify(snapshot)}
+    dirty={JSON.stringify(active?.snapshot ?? defaultSnapshot) !== JSON.stringify(snapshot)}
     loading={loading}
     error={error}
     onReload={() => setReloadKey((key) => key + 1)}
