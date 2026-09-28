@@ -338,9 +338,9 @@ const enc = encodeURIComponent;
 /** The processing destinations of one transcript record (by its id). */
 function transcriptOpens(id: string): TranscriptMenuEntry[] {
   return [
-    { id: "open-processor", label: "Open in Processor", icon: "processor", href: `/transcripts/processor?focus=${enc(id)}`, section: "open" },
-    { id: "open-studio", label: "Open in Studio", icon: "studio", href: `/transcripts/studio?import=${enc(id)}`, section: "open" },
-    { id: "run-cleanup", label: "Run Cleanup", icon: "cleanup", href: `/transcripts/cleanup?import=${enc(id)}`, section: "open" },
+    { id: "open-processor", label: "Edit transcript", icon: "processor", href: `/transcripts/processor?focus=${enc(id)}`, section: "open" },
+    { id: "open-studio", label: "Add to a recording session", icon: "studio", href: `/transcripts/studio?import=${enc(id)}`, section: "open" },
+    { id: "run-cleanup", label: "Clean up the text", icon: "cleanup", href: `/transcripts/cleanup?import=${enc(id)}`, section: "open" },
   ];
 }
 
@@ -360,20 +360,20 @@ export function transcriptMenu(
   if (kind === "transcript") out.push(...transcriptOpens(hit.id));
   else if (kind === "session")
     out.push(
-      { id: "open-studio", label: "Open in Studio", icon: "studio", href: `/transcripts/studio?session=${enc(hit.id)}`, section: "open" },
-      { id: "open-scribe", label: "Open in Scribe", icon: "scribe", href: `/transcripts/scribe/${enc(hit.id)}`, section: "open" },
+      { id: "open-studio", label: "Continue recording", icon: "studio", href: `/transcripts/studio?session=${enc(hit.id)}`, section: "open" },
+      { id: "open-scribe", label: "Read the live transcript", icon: "scribe", href: `/transcripts/scribe/${enc(hit.id)}`, section: "open" },
     );
   else if (kind === "cleanup")
-    out.push({ id: "open-cleanup", label: "Open cleanup session", icon: "cleanup", href: `/transcripts/cleanup?session=${enc(hit.id)}`, section: "open" });
+    out.push({ id: "open-cleanup", label: "Open the cleanup", icon: "cleanup", href: `/transcripts/cleanup?session=${enc(hit.id)}`, section: "open" });
   else if (kind === "unsorted")
-    out.push({ id: "open-unsorted", label: "View unsorted recordings", icon: "unsorted", href: "/transcripts/scribe/unsorted", section: "open" });
+    out.push({ id: "open-unsorted", label: "Unsorted recordings", icon: "unsorted", href: "/transcripts/scribe/unsorted", section: "open" });
   else if (kind === "source") {
     const own = sourceHref(hit.id);
-    if (own) out.push({ id: "open-source", label: "Open Source", icon: "source", href: own, section: "open" });
+    if (own) out.push({ id: "open-source", label: "Source page", icon: "source", href: own, section: "open" });
     if (fact?.transcript_id) out.push(...transcriptOpens(fact.transcript_id));
   } else if (hit.entity === STUDIO_SESSION_TOKEN) {
     // Session vs cleanup unknown until its row is read: the registry's address still opens it.
-    out.push({ id: "open-studio", label: "Open in Studio", icon: "studio", href: `/transcripts/studio?session=${enc(hit.id)}`, section: "open" });
+    out.push({ id: "open-studio", label: "Continue recording", icon: "studio", href: `/transcripts/studio?session=${enc(hit.id)}`, section: "open" });
   } else return out;
 
   if (kind === "transcript" || kind === "session" || kind === "cleanup")

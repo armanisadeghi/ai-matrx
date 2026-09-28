@@ -265,7 +265,7 @@ function VirtualList({
     ? groupByDate(hits, hitWhen, now)
     : hits.map((h) => ({ kind: "row" as const, item: h, group: { key: "undated" as const, label: "" } }));
   const lines = items.map((it) => (it.kind === "row" ? titleLinesFor(it.item.title, width, compact) : 1));
-  const sizes = items.map((it, i) => (it.kind === "header" ? HEADER_H : resultRowHeight(it.item, handlers, lines[i])));
+  const sizes = items.map((it, i) => (it.kind === "header" ? HEADER_H : resultRowHeight(it.item, handlers, lines[i], compact)));
   const starts: number[] = [];
   sizes.reduce((acc, n, i) => ((starts[i] = acc), acc + n), 0);
   // Keep the keyboard-focused row in view.

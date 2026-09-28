@@ -45,6 +45,12 @@ import {
   Settings2,
   Download,
   Plus,
+  AppWindow,
+  ArrowUpRight,
+  ClipboardCopy,
+  Copy,
+  Link2,
+  Pencil,
 } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { useEntityTitles } from "@ai-matrx/associations/react";
@@ -202,7 +208,7 @@ import {
 } from "@/features/transcripts/browse/copyRows";
 import type { TranscriptListRow } from "@/features/transcripts/browse/types";
 import { useTranscriptFacts } from "@/features/knowledge/hub/transcripts/useTranscriptFacts";
-import { TranscriptRowMenu } from "@/features/knowledge/hub/transcripts/TranscriptRowMenu";
+import { HubRowMenu, type HubMenuGroup } from "@/features/knowledge/hub/components/HubRowMenu";
 import { TranscriptFacetBar } from "@/features/knowledge/hub/transcripts/TranscriptFacetBar";
 import {
   TRANSCRIPT_KIND_LABEL,
@@ -814,14 +820,64 @@ export function KnowledgeHubPage({
     }
   };
 
-  const transcriptMenuNode = (hit: KnowledgeHit) =>
-    isTranscriptHit(hit) ? (
-      <TranscriptRowMenu
-        title={hit.title}
-        entries={transcriptMenu(hit, transcriptFacts.factFor(hit), sourceHref)}
-        onAction={(a) => onTranscriptAction(hit, a)}
-      />
-    ) : null;
+  // Every row's menu (HubRowMenu): the keyboard's actions first, the kind's own destinations
+  // under "Open with", then Copy, then Trash. The same verbs the keys advertise (s, e, t, m).
+  const rowMenuNode = (hit: KnowledgeHit) => {
+    const transcript = isTranscriptHit(hit);
+    const entries = transcript ? transcriptMenu(hit, transcriptFacts.factFor(hit), sourceHref) : [];
+    const opens = entries.filter((e) => e.section === "open" && e.href);
+    const open = openFullHref(hit);
+    const ref = entries.length ? (a: TranscriptMenuAction) => entries.some((e) => e.action === a) : () => false;
+    const groups: HubMenuGroup[] = [
+      {
+        id: "main",
+        items: [
+          { id: "open", label: "Open", icon: ArrowUpRight, href: open, shortcut: "⌘↵" },
+          ...(open ? [] : [{ id: "peek", label: "Open", icon: ArrowUpRight, onSelect: () => openPeek(hit), shortcut: "↵" }]),
+          { id: "keep", label: "Keep", icon: Check, onSelect: () => void doTriage([hit], "kept"), shortcut: "S" },
+          { id: "archive", label: "Archive", icon: Archive, onSelect: () => void doTriage([hit], "archived"), shortcut: "E" },
+          { id: "tag", label: "Tag…", icon: Hash, onSelect: () => setTagFor([hit]), shortcut: "T" },
+          { id: "file", label: "File to…", icon: FolderInput, onSelect: () => setFileUnderFor([hit]), shortcut: "M" },
+          ...(ref("rename") ? [{ id: "rename", label: "Rename", icon: Pencil, onSelect: () => onTranscriptAction(hit, "rename") }] : []),
+        ],
+      },
+      ...(opens.length
+        ? [
+            {
+              id: "open-with",
+              submenu: { label: "Open with", icon: AppWindow },
+              items: opens.map((e) => ({ id: e.id, label: e.label, icon: ArrowUpRight, href: e.href })),
+            },
+          ]
+        : []),
+      {
+        id: "copy",
+        submenu: { label: "Copy", icon: Copy },
+        items: [
+          ...(ref("copy") ? [{ id: "copy", label: "Copy", icon: Copy, onSelect: () => onTranscriptAction(hit, "copy") }] : []),
+          ...(ref("copy-ai") ? [{ id: "copy-ai", label: "Copy for AI", icon: Sparkles, onSelect: () => onTranscriptAction(hit, "copy-ai") }] : []),
+          {
+            id: "copy-link",
+            label: "Copy link",
+            icon: Link2,
+            onSelect: () => void copyText(absolute(open ?? `/knowledge?peek=${hit.entity}:${encodeURIComponent(hit.id)}`), "Link copied"),
+          },
+          {
+            id: "copy-reference",
+            label: "Copy reference",
+            icon: ClipboardCopy,
+            onSelect: () =>
+              void copyText(
+                buildRecordReferenceFence({ type: transcriptReferenceType(hit), id: hit.id, label: hit.title }),
+                "Reference copied",
+              ),
+          },
+        ],
+      },
+      { id: "trash", items: [{ id: "trash", label: "Move to Trash", icon: Trash2, destructive: true, onSelect: () => void doTrash([hit]) }] },
+    ];
+    return <HubRowMenu title={hit.title} groups={groups} />;
+  };
 
   const selectedTranscriptRows = selectedHits
     .map((h) => transcriptFacts.factFor(h))
@@ -849,7 +905,7 @@ export function KnowledgeHubPage({
     onOpen: openPeek,
     onOpenFull: openFull,
     onFilterTag: (name) => filterByTag(name),
-    rowMenu: transcriptMenuNode,
+    rowMenu: rowMenuNode,
     rowFacts: (h) =>
       isTranscriptHit(h) ? transcriptRowFacts(transcriptFacts.factFor(h), transcriptFacts.contentFor(h)) : [],
     rowContent: (h) => {

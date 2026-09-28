@@ -255,13 +255,32 @@ export function ResultRow({
             handlers={handlers}
             className={cn("min-w-0 flex-1 font-medium leading-5 text-foreground", titleLines === 2 ? "line-clamp-2 break-words" : "truncate")}
           />
-          {!compact && date ? (
-            <time dateTime={when ?? undefined} className="shrink-0 text-xs tabular-nums text-muted-foreground">
-              {date}
-            </time>
+          {!compact && (date || menu) ? (
+            // Linear: the date holds the right edge; the row menu takes its place on hover or
+            // keyboard focus, so every row's right edge lines up with the count above.
+            <div className="relative flex shrink-0 items-center justify-end self-center">
+              {date ? (
+                <time
+                  dateTime={when ?? undefined}
+                  className={cn(
+                    "text-xs tabular-nums text-muted-foreground",
+                    menu && "group-hover:invisible group-focus-within:invisible group-has-[[data-state=open]]:invisible",
+                  )}
+                >
+                  {date}
+                </time>
+              ) : null}
+              {menu ? (
+                <div className="absolute inset-y-0 right-0 flex items-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 has-[[data-state=open]]:opacity-100">
+                  {menu}
+                </div>
+              ) : null}
+            </div>
           ) : null}
         </div>
-        {snippet ? <p className="truncate text-[13px] leading-5 text-muted-foreground">{snippet}</p> : null}
+        {snippet ? (
+          <p className={cn("text-[13px] leading-5 text-muted-foreground", compact ? "line-clamp-2" : "truncate")}>{snippet}</p>
+        ) : null}
         {parts.length || tags.length ? (
           <div className="flex min-w-0 items-center gap-2 text-xs leading-4 text-muted-foreground/80">
             <span className="min-w-0 truncate">{parts.join(" · ")}</span>
@@ -269,9 +288,7 @@ export function ResultRow({
           </div>
         ) : null}
       </div>
-      <div className="flex w-7 shrink-0 justify-end transition-opacity md:opacity-0 md:focus-within:opacity-100 md:group-hover:opacity-100 md:has-[[data-state=open]]:opacity-100">
-        {menu}
-      </div>
+      {compact && menu ? <div className="flex w-7 shrink-0 justify-end">{menu}</div> : null}
     </div>
   );
 }
@@ -281,10 +298,10 @@ export function ResultRow({
  * before render, so a row can never be taller than the height it was given:
  * the title is clamped to exactly the lines counted here.
  */
-export function resultRowHeight(hit: KnowledgeHit, handlers: ResultHandlers, titleLines: 1 | 2): number {
+export function resultRowHeight(hit: KnowledgeHit, handlers: ResultHandlers, titleLines: 1 | 2, compact = false): number {
   const hasSnippet = Boolean(hit.snippet || handlers.rowContent?.(hit)?.snippet);
-  // py-2 (16) + title (20 a line) + snippet (22) + facts (18) + spacing (4)
-  return 16 + 20 * titleLines + (hasSnippet ? 22 : 0) + 18 + 4;
+  // py-2 (16) + title (20 a line) + snippet (22; two lines on a narrow pane) + facts (18) + spacing (4)
+  return 16 + 20 * titleLines + (hasSnippet ? (compact ? 42 : 22) : 0) + 18 + 4;
 }
 
 /** A narrow pane gives the title two lines when it will not fit one (≈7.4px per character at 14px). */

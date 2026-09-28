@@ -173,9 +173,9 @@ const ids = (h: KnowledgeHit) => menu(h).map((e) => e.id);
 describe("the Transcripts row menu, per kind", () => {
   it("a transcript opens in Processor / Studio / Cleanup, renames and copies", () => {
     expect(menu(H.transcript).filter((e) => e.href).map((e) => [e.label, e.href])).toEqual([
-      ["Open in Processor", "/transcripts/processor?focus=t1"],
-      ["Open in Studio", "/transcripts/studio?import=t1"],
-      ["Run Cleanup", "/transcripts/cleanup?import=t1"],
+      ["Edit transcript", "/transcripts/processor?focus=t1"],
+      ["Add to a recording session", "/transcripts/studio?import=t1"],
+      ["Clean up the text", "/transcripts/cleanup?import=t1"],
     ]);
     expect(ids(H.transcript)).toEqual(
       expect.arrayContaining(["rename", "copy", "copy-ai", "copy-link", "copy-reference"]),
