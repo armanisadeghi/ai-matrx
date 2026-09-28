@@ -353,7 +353,7 @@ function CanvasNavMore({ children }: { children: ReactNode }) {
             return (
               <DropdownMenuSub key={item.href}>
                 <DropdownMenuSubTrigger className="gap-2.5">{label}</DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="max-h-[75dvh] min-w-56 overflow-y-auto">
+                <DropdownMenuSubContent className="max-h-[var(--radix-dropdown-menu-content-available-height)] min-w-56 overflow-y-auto">
                   {/* A group parent (`dashboard: false`) only organizes; any other parent is a page too. */}
                   {item.dashboard !== false ? (
                     <>
