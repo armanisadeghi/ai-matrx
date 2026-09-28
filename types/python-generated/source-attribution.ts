@@ -136,6 +136,7 @@ export const SOURCE_FEATURES = [
   "provenance",
   "reachability",
   "billing",
+  "sharing",
   "client-unmapped",
   "web-capture",
   "admin",

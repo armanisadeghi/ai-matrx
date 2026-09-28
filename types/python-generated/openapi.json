@@ -13698,7 +13698,7 @@
           "Credential Vault"
         ],
         "summary": "Effective Env",
-        "description": "Personal-over-organization effective environment for the actor,\nminus sealed aliases.",
+        "description": "Personal-over-organization effective environment for the actor,\nminus sealed aliases. Organization values the actor may use but not view\nare withheld by name, never returned.",
         "operationId": "effective_env_vault_effective_env_get",
         "parameters": [
           {
@@ -14605,7 +14605,7 @@
           "Credential Vault"
         ],
         "summary": "Browser Login Materialize",
-        "description": "Transient username/password for ONE fill on the CURRENT tab.\n\nRe-runs the SAME matcher the discovery call used, so advertisement and\nenforcement cannot drift; refusals are audited. `no-store`.",
+        "description": "Transient username/password for ONE fill on the CURRENT tab.\n\nThe fill path only: a request signed by a registered browser-extension fill\ndevice over that extension's own OAuth session (``fill_devices``). The web\nsign-in token, a forged origin, or any other API caller is refused and audited —\na value a person may only use is never returned to them. Re-runs the SAME\nmatcher the discovery call used, so advertisement and enforcement cannot\ndrift; refusals are audited. `no-store`.",
         "operationId": "browser_login_materialize_vault_browser_login__item_id__materialize_post",
         "parameters": [
           {
@@ -14714,6 +14714,152 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BrowserAuthenticatorMaterializeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/fill-devices": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Register Fill Device",
+        "description": "Register this fill client install's public key: its own OAuth session plus the\nperson's password on this request (the step-up).",
+        "operationId": "register_fill_device_vault_fill_devices_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultFillDeviceRegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultFillDeviceOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "List Fill Devices",
+        "description": "The browsers that may fill this person's saved passwords, newest first.",
+        "operationId": "list_fill_devices_vault_fill_devices_get",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultFillDeviceListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/fill-devices/{device_id}/revoke": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Revoke Fill Device",
+        "description": "Turn filling off for one browser (kept in the list as revoked, audited).",
+        "operationId": "revoke_fill_device_vault_fill_devices__device_id__revoke_post",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Device Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultFillDeviceOut"
                 }
               }
             }
@@ -19660,8 +19806,15 @@
           "required": true
         },
         "responses": {
-          "204": {
-            "description": "Successful Response"
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleDisconnectResponse"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -91785,6 +91938,25 @@
         }
       }
     },
+    "/communications/sms/inbound-fallback": {
+      "post": {
+        "tags": [
+          "SMS Inbound Fallback (Twilio)"
+        ],
+        "summary": "Inbound Sms Fallback",
+        "operationId": "inbound_sms_fallback_communications_sms_inbound_fallback_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/podcast/cast-preview": {
       "get": {
         "tags": [
@@ -94060,10 +94232,10 @@
                   "type": "null"
                 }
               ],
-              "description": "JSON-encoded dashboard filters for kind, route, error_text, user_id, and request_id.",
+              "description": "JSON-encoded dashboard filters for kind, route, error_text, user_id, request_id, source_app, and source_feature.",
               "title": "Column Filters"
             },
-            "description": "JSON-encoded dashboard filters for kind, route, error_text, user_id, and request_id."
+            "description": "JSON-encoded dashboard filters for kind, route, error_text, user_id, request_id, source_app, and source_feature."
           },
           {
             "name": "limit",
@@ -182740,6 +182912,29 @@
         ],
         "title": "GoogleDisconnectRequest"
       },
+      "GoogleDisconnectResponse": {
+        "properties": {
+          "google_authorization_status": {
+            "type": "string",
+            "enum": [
+              "active_for_other_connection",
+              "revocation_unconfirmed",
+              "revoked"
+            ],
+            "title": "Google Authorization Status"
+          },
+          "google_authorization_remains_active": {
+            "type": "boolean",
+            "title": "Google Authorization Remains Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "google_authorization_status",
+          "google_authorization_remains_active"
+        ],
+        "title": "GoogleDisconnectResponse"
+      },
       "GoogleExchangeRequest": {
         "properties": {
           "code": {
@@ -182793,7 +182988,8 @@
               "google_ads_isolated",
               "google_capability",
               "google_products",
-              "read_only_sweep"
+              "read_only_sweep",
+              "youtube_isolated"
             ],
             "title": "Connection Purpose",
             "default": "general"
@@ -218440,6 +218636,7 @@
             "type": "string",
             "enum": [
               "credential_unavailable",
+              "fill_device_required",
               "invalid_request",
               "item_unavailable",
               "native_session_required",
@@ -247298,6 +247495,14 @@
             ],
             "title": "Note",
             "description": "Why the filter is approximate or unresolved, when it is."
+          },
+          "suggestions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Suggestions",
+            "description": "An unmatched #tag: the closest existing tag names."
           }
         },
         "additionalProperties": false,
@@ -277921,6 +278126,17 @@
           "chars": {
             "type": "integer",
             "title": "Chars"
+          },
+          "preview": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preview"
           }
         },
         "type": "object",
@@ -303127,6 +303343,25 @@
           "count": {
             "type": "integer",
             "title": "Count"
+          },
+          "withheld": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Withheld",
+            "description": "Organization keys you may use but not view (values never returned)."
+          },
+          "withheld_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withheld Note"
           }
         },
         "type": "object",
@@ -303481,6 +303716,226 @@
           "value"
         ],
         "title": "VaultFieldValueRequest"
+      },
+      "VaultFillDeviceListResponse": {
+        "properties": {
+          "devices": {
+            "items": {
+              "$ref": "#/components/schemas/VaultFillDeviceOut"
+            },
+            "type": "array",
+            "title": "Devices"
+          }
+        },
+        "type": "object",
+        "required": [
+          "devices"
+        ],
+        "title": "VaultFillDeviceListResponse"
+      },
+      "VaultFillDeviceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "extension_origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extension Origin"
+          },
+          "registered_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registered At"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          },
+          "revoke_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoke Reason"
+          },
+          "key_thumbprint": {
+            "type": "string",
+            "title": "Key Thumbprint"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "key_thumbprint"
+        ],
+        "title": "VaultFillDeviceOut",
+        "description": "One browser that may fill saved passwords. Never carries key material\nbeyond its public thumbprint."
+      },
+      "VaultFillDeviceRegisterRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "public_key_jwk": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Public Key Jwk"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "extension_origin": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extension Origin"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "format": "password",
+            "title": "Password",
+            "writeOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "public_key_jwk",
+          "label",
+          "password"
+        ],
+        "title": "VaultFillDeviceRegisterRequest",
+        "description": "The browser extension registers the PUBLIC half of its non-extractable\nP-256 key. Accepted only over the extension's own OAuth session."
       },
       "VaultForkRequest": {
         "properties": {
