@@ -60,6 +60,16 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
   // composer — and its chat-voice session — as a drill began).
   useSuppressAmbientAssistant(true);
 
+  // Each screen starts at its top (page-pass 2026-09-27): Start sits at the
+  // bottom of a long setup, and the drill card used to open still scrolled
+  // down — under the header, with the timer out of view.
+  useEffect(() => {
+    let el: HTMLElement | null = menuContentRef.current?.parentElement ?? null;
+    while (el && getComputedStyle(el).overflowY !== "auto" && getComputedStyle(el).overflowY !== "scroll")
+      el = el.parentElement;
+    el?.scrollTo({ top: 0 });
+  }, [phase]);
+
   // The drill orchestrator — mounted for the whole surface so capture + timers
   // persist across phase transitions. It self-guards on phase internally.
   const { subscribeProgress, countdown, skipCard, abort, onSpokenFrontEnded } =
