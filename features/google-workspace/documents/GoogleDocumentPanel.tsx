@@ -219,8 +219,7 @@ function KeepAndArchiveActions({
       description:
         `This ${noun} stops refreshing from Google and keeps exactly what it has today — the text below, ` +
         `its owner and the date it was last edited. Nothing changes in your Google account, and nothing here ` +
-        `is deleted. It cannot be undone from this screen: to sync from Google again you pick the file in ` +
-        `Google once more.`,
+        `is removed. To sync it from Google again later, pick the file in Google once more.`,
       confirmLabel: "Keep as AI Matrx data",
     });
     if (!ok) return;

@@ -215,8 +215,8 @@ function CalendarEventKeepAndArchiveActions({
       description:
         "This event stops refreshing from Google Calendar and keeps exactly what it has today — " +
         "its time, location, attendees and notes. Nothing changes in your Google Calendar, and " +
-        "nothing here is deleted. It cannot be undone from this screen: to sync from Google " +
-        "Calendar again you reconnect and let it refresh once more.",
+        "nothing here is removed. To sync it from Google Calendar again later, reconnect and let " +
+        "it refresh once more.",
       confirmLabel: "Keep as AI Matrx data",
     });
     if (!ok) return;
