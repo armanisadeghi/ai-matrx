@@ -468,7 +468,9 @@ export const TransformableCard: React.FC<TransformableCardProps> = ({
           // animating from `none` and pinning the card at its origin with the
           // translate silently discarded — that is D195's actual root cause.
           // Transition named properties if you need one, never `all`.
-          "relative min-h-80 w-80 overflow-hidden rounded-md bg-white p-6 border-2 border-indigo-400 dark:border-indigo-600 shadow-md dark:bg-gray-800",
+          // `max-w-none`: the card is absolutely placed in a 0x0 container, so
+          // the phone `* { max-width: 100% }` default would squeeze it to 0px.
+          "relative min-h-80 w-80 max-w-none overflow-hidden rounded-md bg-white p-6 border-2 border-indigo-400 dark:border-indigo-600 shadow-md dark:bg-gray-800",
           isReturningToCard ? "ring-2 ring-blue-500" : "",
           isDragging ? "shadow-xl ring-2 ring-indigo-500 dark:ring-indigo-400" : "",
           className
