@@ -37,6 +37,7 @@ export function ManualKitCreator() {
   const [loading, setLoading] = useState(true);
   const [recoveryReady, setRecoveryReady] = useState(false);
   const [existingFingerprint, setExistingFingerprint] = useState<string | null>(null);
+  const [existingReady, setExistingReady] = useState(!existingSourceId);
   const draftKey = `manual-study-kit-draft:${existingSourceId ?? "new"}`;
 
   useEffect(() => {
@@ -44,7 +45,10 @@ export function ManualKitCreator() {
   }, [existingSourceId, sourceId]);
   useEffect(() => {
     if (!existingSourceId) return;
-    void readKit("file", existingSourceId).then((kit) => setExistingFingerprint(kit ? kitMembershipFingerprint(kit) : null));
+    void Promise.all([readKit("file", existingSourceId), getFileMetadata(existingSourceId)]).then(([kit, file]) => {
+      if (!kit) throw new Error("This kit no longer exists.");
+      setExistingFingerprint(kitMembershipFingerprint(kit)); setTitle(kit.title); setSourceName(file.data.file_name); setExistingReady(true);
+    }).catch((cause) => { setError(cause instanceof Error ? cause.message : "Could not load this kit."); setExistingReady(false); });
   }, [existingSourceId]);
 
   useEffect(() => {
@@ -150,7 +154,7 @@ export function ManualKitCreator() {
   return <SurfaceRuntimeProvider surfaceName={EDUCATION_KITS_SURFACE_NAME} getScope={getScope} getWriteHandlers={getWriteHandlers}><main className="mx-auto w-full max-w-3xl space-y-5 p-4">
     <h1 className="text-xl font-semibold">{existingSourceId ? "Add saved aids" : "Create a study kit"}</h1>
     <p className="text-sm text-muted-foreground">Group saved study aids under one saved source file. Your aids are not copied or changed.</p>
-    <label className="block text-sm font-medium">Kit title<Input className="mt-1" value={title} onChange={(event) => setTitle(event.target.value)} /></label>
+    <label className="block text-sm font-medium">Kit title<Input className="mt-1" value={title} readOnly={!!existingSourceId} onChange={(event) => setTitle(event.target.value)} /></label>
     {!existingSourceId && <Button variant="outline" onClick={() => void chooseFile()}>{sourceId ? "Change source file" : "Choose source file"}</Button>}
     {sourceId && <p className="text-xs text-muted-foreground">Source: <a className="underline" href={`/files/f/${sourceId}`}>{sourceName ?? "Selected file"}</a></p>}
     <label className="block text-sm font-medium">Find saved study aids<Input className="mt-1" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} /></label>
@@ -161,6 +165,6 @@ export function ManualKitCreator() {
     </div>
     <div className="flex justify-between"><Button variant="outline" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>Previous</Button><span className="text-sm text-muted-foreground">{page * PAGE_SIZE < total ? "More results available" : "End of results"}</span><Button variant="outline" disabled={page * PAGE_SIZE >= total} onClick={() => setPage((value) => value + 1)}>Next</Button></div>
     {error && <p role="alert" className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>}
-    <div className="flex gap-2"><Button variant="outline" onClick={() => { sessionStorage.removeItem(draftKey); router.push("/education/kits"); }}>Cancel</Button><Button disabled={saving} onClick={() => void save()}>{saving ? "Saving…" : existingSourceId ? "Add saved aids" : "Create kit"}</Button></div>
+    <div className="flex gap-2"><Button variant="outline" onClick={() => { sessionStorage.removeItem(draftKey); router.push("/education/kits"); }}>Cancel</Button><Button disabled={saving || (Boolean(existingSourceId) && !existingReady)} onClick={() => void save()}>{saving ? "Saving…" : existingSourceId ? "Add saved aids" : "Create kit"}</Button></div>
   </main></SurfaceRuntimeProvider>;
 }
