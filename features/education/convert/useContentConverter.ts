@@ -50,6 +50,11 @@ export interface UseContentConverter {
      * narrates itself and a board of spinners.
      */
     onProgress?: (kind: TargetKind, progress: ConvertProgress) => void,
+    /**
+     * The organization the caller already resolved before the run started. A
+     * caller that holds one passes it so no target can stop mid-run to ask.
+     */
+    orgId?: string,
   ) => Promise<KitTargetOutcome[]>;
 }
 
@@ -73,8 +78,9 @@ export function useContentConverter(): UseContentConverter {
       onEach?: (outcome: KitTargetOutcome) => void,
       onRequestId?: (kind: TargetKind, id: string) => void,
       onProgress?: (kind: TargetKind, progress: ConvertProgress) => void,
+      resolvedOrgId?: string,
     ): Promise<KitTargetOutcome[]> => {
-      const orgId = await ensureOrgId(undefined);
+      const orgId = await ensureOrgId(resolvedOrgId);
       return Promise.all(
         kinds.map(async (targetKind): Promise<KitTargetOutcome> => {
           try {
