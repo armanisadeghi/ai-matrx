@@ -157,6 +157,11 @@ export function applyPartyListPredicates<Q extends PartyPredicateBuilder<Q>>(
       ? q.eq("organization_id", scope.organizationId)
       : q.in("organization_id", ctx.orgIds);
   } else if (scope.kind === "team") {
+    if (ctx.teamReachUnread) {
+      throw new Error(
+        "Your teams could not be read, so My team cannot be shown. Reload the page to try again; Mine and My Orgs still work.",
+      );
+    }
     // MY TEAM: parties I and the people I share a team with created, per organization.
     const reach = (ctx.teamReach ?? []).filter(
       (p) => !scope.organizationId || p.organizationId === scope.organizationId,

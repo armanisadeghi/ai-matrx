@@ -24,18 +24,20 @@ export function useCrmContext(): CrmQueryContext | null {
     let cancelled = false;
     void (async () => {
       try {
+        let teamReachUnread = false;
         const [orgs, teamReach] = await Promise.all([
           getUserOrganizations(),
-          // A failed team read leaves My team empty rather than breaking the list.
+          // A failed team read must not break Mine or My Orgs; My team says it could not be read.
           fetchMyTeamReach(null).catch((e: unknown) => {
             console.error("[crm] failed to read the My team reach:", e);
+            teamReachUnread = true;
             return [];
           }),
         ]);
         if (cancelled) return;
         const orgNames: Record<string, string> = {};
         for (const org of orgs) orgNames[org.id] = org.name;
-        setCtx({ userId, orgIds: orgs.map((o) => o.id), orgNames, teamReach });
+        setCtx({ userId, orgIds: orgs.map((o) => o.id), orgNames, teamReach, teamReachUnread });
       } catch (e) {
         if (!cancelled) {
           console.error("[crm] failed to load org memberships:", e);

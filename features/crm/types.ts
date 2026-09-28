@@ -470,6 +470,8 @@ export interface CrmQueryContext {
    * live team with the caller there, the caller included. Absent = not read yet.
    */
   teamReach?: { organizationId: string; userId: string }[];
+  /** The team read FAILED, so My team cannot be answered — the list says so instead of showing nothing. */
+  teamReachUnread?: boolean;
   /** Every org the user belongs to (personal + companies), for "orgs". */
   orgIds: string[];
   /** Org names for the My Orgs narrowing dropdown, from getUserOrganizations. */
