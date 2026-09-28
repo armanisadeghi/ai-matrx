@@ -111,7 +111,7 @@ export default function SiteSettingsPage() {
     setIsDeleting(true);
     try {
       await CmsSiteService.deleteSite(siteId, force);
-      toast.success(`Deleted site "${site.name}"`);
+      toast.success(`Moved site "${site.name}" to Trash`);
       router.push("/cms");
     } catch (err) {
       if (err instanceof SiteNotEmptyError) {
@@ -119,7 +119,7 @@ export default function SiteSettingsPage() {
         setForceDeleteState({ pageCount: err.pageCount });
       } else {
         toast.error(
-          err instanceof Error ? err.message : "Failed to delete site",
+          err instanceof Error ? err.message : "Failed to move site to Trash",
         );
       }
     } finally {
@@ -520,9 +520,9 @@ export default function SiteSettingsPage() {
                   Danger Zone
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Permanently deletes this site and everything under it — pages,
-                  components, versions, and activity history. This cannot be
-                  undone.
+                  Moves this site and everything under it — pages, components,
+                  assets, and redirects — to Trash. The site goes offline and
+                  you can restore it, with its history, later.
                 </p>
                 <Button
                   variant="outline"
@@ -531,7 +531,7 @@ export default function SiteSettingsPage() {
                   className="gap-1.5 text-xs text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  Delete Site
+                  Move Site to Trash
                 </Button>
               </section>
             </div>
@@ -545,10 +545,10 @@ export default function SiteSettingsPage() {
         <TextInputDialog
           open={deleteDialogOpen}
           onOpenChange={(open) => !isDeleting && setDeleteDialogOpen(open)}
-          title={`Delete "${site.name}"?`}
-          description={`Type the site slug "${site.slug}" to confirm. This permanently deletes the site and all its pages, components, and history.`}
+          title={`Move "${site.name}" to Trash?`}
+          description={`Type the site slug "${site.slug}" to confirm. The site and all its pages and components move to Trash and go offline; you can restore them later.`}
           placeholder={site.slug}
-          confirmLabel="Delete Site"
+          confirmLabel="Move to Trash"
           busy={isDeleting}
           validate={(value) =>
             value !== site.slug ? "Slug does not match" : null
@@ -573,8 +573,8 @@ export default function SiteSettingsPage() {
             !isDeleting && !open && setForceDeleteState(null)
           }
           title={`Site "${site.name}" is not empty`}
-          description={`This site has ${forceDeleteState?.pageCount ?? 0} page(s). Force-deleting removes the site and every page, component, and version under it. This cannot be undone.`}
-          confirmLabel="Force Delete"
+          description={`This site has ${forceDeleteState?.pageCount ?? 0} page(s). Moving it to Trash takes every page and component with it; restoring the site brings them all back.`}
+          confirmLabel="Move All to Trash"
           variant="destructive"
           busy={isDeleting}
           onConfirm={() => runDelete(true)}

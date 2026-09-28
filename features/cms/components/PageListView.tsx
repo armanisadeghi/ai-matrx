@@ -426,14 +426,14 @@ export default function PageListView({
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
-        title="Delete page"
+        title="Move page to Trash"
         description={
           <>
-            Permanently delete <b>{deleteTarget?.title}</b>? This cannot be
-            undone.
+            Move <b>{deleteTarget?.title}</b> and its sub-pages to Trash? The
+            page goes offline and you can restore it later.
           </>
         }
-        confirmLabel="Delete"
+        confirmLabel="Move to Trash"
         variant="destructive"
         onConfirm={() => {
           if (deleteTarget) {

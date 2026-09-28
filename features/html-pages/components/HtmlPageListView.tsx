@@ -552,14 +552,14 @@ export default function HtmlPageListView({
         onOpenChange={(open) => {
           if (!open && !busyDelete) setDeleteTarget(null);
         }}
-        title="Delete published page"
+        title="Move published page to Trash"
         description={
           <>
-            Permanently delete <b>{deleteTarget?.meta_title}</b>? The live URL
-            will stop working. This cannot be undone.
+            Move <b>{deleteTarget?.meta_title}</b> to Trash? The live URL stops
+            working until you restore it.
           </>
         }
-        confirmLabel="Delete"
+        confirmLabel="Move to Trash"
         variant="destructive"
         busy={busyDelete}
         onConfirm={async () => {
