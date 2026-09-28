@@ -579,7 +579,7 @@ function BoardLayout({ hits, handlers, more }: { hits: KnowledgeHit[]; handlers:
       onScroll={(e) => nearEnd(e.currentTarget, more)}
     >
       <div className="flex min-h-full gap-3 max-md:flex-col md:w-max">
-        {[...groups.entries()].map(([label, items]) => (
+        {groups.map(([label, items]) => (
           <section key={label} className="flex w-full flex-col gap-2 md:w-72" aria-label={label}>
             <h3 className="px-1 text-xs font-medium text-muted-foreground">{label}</h3>
             {items.map((h) => (
@@ -629,7 +629,8 @@ export function searchHitsByItem(sections: SectionState[]): KnowledgeHit[] {
         const key = `processed_document:${h.segment.source_id}`;
         const i = at.get(key);
         if (i !== undefined) {
-          if (!out[i].matched) out[i] = { ...out[i], snippet: h.snippet ?? out[i].snippet, matched: true } as KnowledgeHit;
+          if (!(out[i] as KnowledgeHit & { matched?: boolean }).matched)
+            out[i] = { ...out[i], snippet: h.snippet ?? out[i].snippet, matched: true } as KnowledgeHit;
           continue;
         }
         at.set(key, out.length);
