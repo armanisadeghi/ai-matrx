@@ -292,6 +292,23 @@ with the stated vision.
 
 ## Change log
 
+- **2026-09-27** — page-pass `/education/summaries` + `/education/summaries/[id]` (education fleet
+  wave 3): type list + single-record (view-only). Root cause found: neither route had an entry in
+  `route-to-surface.ts`, so both fell through the `/education` prefix to the education hub
+  surface — an agent on this page saw the hub's values, never a summary's title, markdown, key
+  points or trust citations. Fixed with a new `matrx-user/education-summaries` manifest
+  (`features/surfaces/manifests/education-summaries.manifest.ts`, registered in `registry.ts`,
+  routed in `route-to-surface.ts`), mirroring the sibling `education-mind-maps` surface (same
+  `study_media` table). View-only by design — no write targets, matching the page's own "no /new
+  route" decision (a summary is produced by the ingest converter, never authored here).
+  `SummaryHome`/`SummaryDetail` mount `SurfaceRuntimeProvider` for list/loading/not-found/loaded
+  states. Also added the missing `toolMetadata("summaries")` export on
+  `app/(core)/education/summaries/[id]/page.tsx` (the record route had no tab title/favicon —
+  `/education/summaries` and `/education/notes/[id]` already had it, this leaf did not).
+  Readiness `partial`: DB manifest sync and a live agent probe not yet run. Verified live as
+  admin@admin.com: list renders real rows and the search box, a real summary opens with its
+  markdown/key points/citations intact, no console errors from the change, `pnpm check:parse` /
+  `check:surface-drift` / `check:surface-routes` all clean.
 - **2026-09-27** — page-pass `/education/start`: type single-record-ish AI workspace form,
   posture sharp after Linear/Notion form density. Fixed on a phone at 375px: the input-source tabs
   ("My files" / "Upload" / "Paste" / "Link") wrapped mid-word ("Uplo\nad") because the button label
