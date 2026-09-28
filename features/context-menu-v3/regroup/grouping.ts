@@ -29,6 +29,8 @@ import {
 export interface MenuGroupDef {
   key: string;
   label: string;
+  /** One line: what the person gets from a row in this submenu. */
+  definition: string;
   /** Icon KEY for the Alchemy icon port. */
   icon?: string;
   /** Decides where the submenu row sits among the other rows (the package's group order). */
@@ -110,8 +112,13 @@ function ruleMatches(rule: GroupingRule, action: Action): boolean {
   return false;
 }
 
+/** The rule that places this action, or null when it falls through to `fallback`. */
+export function matchRule(grouping: MenuGrouping, action: Pick<Action, "id" | "category" | "section">): GroupingRule | null {
+  return grouping.rules.find((r) => ruleMatches(r, action as Action)) ?? null;
+}
+
 export function destinationFor(grouping: MenuGrouping, action: Action): GroupingDestination {
-  return grouping.rules.find((r) => ruleMatches(r, action))?.to ?? grouping.fallback;
+  return matchRule(grouping, action)?.to ?? grouping.fallback;
 }
 
 const sameName = (label: string) =>

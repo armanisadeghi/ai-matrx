@@ -190,9 +190,6 @@ export const MENU_STRUCTURE: MenuSection[] = [
       "download-html",
       "print",
       "full-print",
-      // This message only — the whole conversation's exports live in the
-      // Conversation section.
-      "convert-to-broker",
     ],
   },
   {

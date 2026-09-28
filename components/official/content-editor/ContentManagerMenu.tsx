@@ -11,7 +11,6 @@ import {
   Globe,
   Save,
   BookText,
-  Briefcase,
   FileCode,
   Code2,
 } from "lucide-react";
@@ -280,17 +279,6 @@ ${cssContent}
       category: "Actions",
       successMessage: "Opening save dialog...",
       errorMessage: "Failed to open save dialog",
-      showToast: false,
-    },
-    {
-      key: "convert-broker",
-      icon: Briefcase,
-      iconColor: "text-amber-500 dark:text-amber-400",
-      label: "Convert to broker",
-      description: "Create broker instance",
-      action: () => {},
-      category: "Actions",
-      disabled: true,
       showToast: false,
     },
     {

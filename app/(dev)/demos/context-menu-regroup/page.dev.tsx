@@ -27,6 +27,7 @@ import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { NotesDemoPanel } from "../context-menu/_components/NotesDemoPanel";
 import { QuizListPanel } from "./_components/QuizListPanel";
 import { WhereTable } from "./_components/WhereTable";
+import { CategoriesTable } from "./_components/CategoriesTable";
 
 type ContextKey = "quiz" | "note" | "field";
 
@@ -101,7 +102,7 @@ function Surface({ contextKey, side }: { contextKey: ContextKey; side: "today" |
   if (contextKey === "note") {
     return (
       <NotesDemoPanel
-        title={side === "today" ? "Note (today’s menu)" : "Note (proposed menu)"}
+        title={side === "today" ? "Note (today’s menu)" : "Note (v2 menu)"}
         description="The exact /notes menu wiring."
         initialContent={NOTE_TEXT}
         minHeightClass="min-h-[150px]"
@@ -181,8 +182,9 @@ export default function ContextMenuRegroupPage() {
     <div className="flex h-full flex-col overflow-hidden bg-textured">
       <div className="flex flex-shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-b border-border bg-card/50 px-4 py-2">
         <p className="min-w-0 flex-1 text-sm text-muted-foreground">
-          Today’s right-click menu on the left, the proposed grouping on the right — both are the live menu. Submenus:
-          Copy, Save to…, Share, AI, Read aloud.
+          Today’s right-click menu on the left, v2 on the right — both are the live menu. v2 groups every row by what
+          you get: Copy, Download, Convert to, Publish, Share, Organize, History, AI, Read aloud, Compare, Edit,
+          Feedback, Admin.
         </p>
         <label className="flex cursor-pointer items-center gap-2 text-sm">
           <input
@@ -212,7 +214,7 @@ export default function ContextMenuRegroupPage() {
                 <h2 className="text-base font-semibold">{title}</h2>
                 <p className="text-xs text-muted-foreground">
                   {hint}
-                  {audit && "rows" in audit ? ` Rows on open: ${audit.currentRows} today → ${audit.proposedRows} proposed.` : ""}
+                  {audit && "rows" in audit ? ` Rows on open: ${audit.currentRows} today → ${audit.proposedRows} in v2.` : ""}
                 </p>
               </header>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -225,7 +227,7 @@ export default function ContextMenuRegroupPage() {
                   </div>
                 </div>
                 <div className="min-w-0 space-y-1">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Proposed</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">v2</p>
                   <MenuRegroupProvider value={{ grouping: PROPOSED_MENU_GROUPING, mergeSameName }}>
                     <Surface contextKey={key} side="proposed" />
                   </MenuRegroupProvider>
@@ -236,12 +238,47 @@ export default function ContextMenuRegroupPage() {
         })}
 
         <section className="space-y-3">
+          <h2 className="text-base font-semibold">Rows when the menu opens</h2>
+          <div className="overflow-x-auto rounded-md border border-border bg-card">
+            <table className="w-full min-w-[420px] text-left text-sm">
+              <thead className="bg-muted/50 text-xs text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-1.5 font-medium">Context</th>
+                  <th className="px-3 py-1.5 font-medium">Items</th>
+                  <th className="px-3 py-1.5 font-medium">Rows today</th>
+                  <th className="px-3 py-1.5 font-medium">Rows in v2</th>
+                </tr>
+              </thead>
+              <tbody>
+                {CONTEXTS.map(({ key, title }) => {
+                  const audit = audits[key];
+                  const ok = audit && "rows" in audit ? audit : null;
+                  return (
+                    <tr key={key} className="border-t border-border">
+                      <td className="px-3 py-1.5 font-medium">{title}</td>
+                      <td className="px-3 py-1.5">{ok ? ok.rows.length : "—"}</td>
+                      <td className="px-3 py-1.5">{ok ? ok.currentRows : "—"}</td>
+                      <td className="px-3 py-1.5 font-semibold">{ok ? ok.proposedRows : "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <CategoriesTable
+          grouping={PROPOSED_MENU_GROUPING}
+          audits={Object.values(audits).filter((a): a is RegroupAudit => Boolean(a && "rows" in a))}
+        />
+
+        <section className="space-y-3">
           <header className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-base font-semibold">What goes where</h2>
             <p className={lostTotal > 0 ? "text-sm font-semibold text-destructive" : "text-xs text-muted-foreground"}>
               {lostTotal > 0
                 ? `${lostTotal} item${lostTotal === 1 ? "" : "s"} would lose their place — listed in red below.`
-                : "Every item today has a home in the proposal."}
+                : "Every item today has a home in v2."}
             </p>
           </header>
           {CONTEXTS.map(({ key, title }) => {

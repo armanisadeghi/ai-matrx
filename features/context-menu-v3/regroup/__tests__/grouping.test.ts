@@ -38,6 +38,8 @@ const ROW: ResolvedAction[] = [
   action("copy-markdown", "Copy as Markdown", "copy"),
   action("copy-plain-text", "Copy as plain text", "copy"),
   action("compare-with-clipboard", "Compare with clipboard", "edit"),
+  action("set-compare-base", "Set as compare base", "edit"),
+  action("save-to-task", "Create Task", "save"),
   action("save-to-notes", "Save to Notes", "save"),
   action("save-as-file", "Download as Markdown", "save"),
   action("download-pdf", "Download as PDF", "export"),
@@ -61,9 +63,13 @@ describe("regroup — nothing is lost silently", () => {
     expect(audit.proposedRows).toBeLessThan(audit.currentRows);
     const where = Object.fromEntries(audit.rows.map((r) => [r.id, r.proposedPlace]));
     expect(where["copy-markdown"]).toBe("Copy ▸");
-    expect(where["compare-with-clipboard"]).toBe("Copy ▸");
-    expect(where["download-pdf"]).toBe("Save to… ▸");
-    expect(where["cm:share"]).toBe("Share ▸");
+    expect(where["save-as-file"]).toBe("Download ▸");
+    expect(where["download-pdf"]).toBe("Download ▸");
+    expect(where["save-to-notes"]).toBe("Convert to ▸");
+    expect(where["share-webpage"]).toBe("Top level");
+    expect(where["cm:share"]).toBe("Top level");
+    expect(where["compare-with-clipboard"]).toBe("Compare ▸");
+    expect(where["save-to-task"]).toBe("Convert to ▸");
     expect(where["cm:chat"]).toBe("AI ▸");
     expect(where["cm:speak"]).toBe("Read aloud ▸");
     expect(where["tts-play-2"]).toBe("Read aloud ▸ Read aloud");
@@ -80,9 +86,9 @@ describe("regroup — nothing is lost silently", () => {
   it("broken regroup: an action dropped by the regroup is reported lost, from what the menu holds", () => {
     const lossy: typeof regroupResolved = (...args) => {
       const result = regroupResolved(...args);
-      // Drop a member from the Save to… submenu but keep its bookkeeping entry.
-      const save = result.members.get("save") ?? [];
-      result.members.set("save", save.filter((r) => r.action.id !== "download-pdf"));
+      // Drop a member from the Download submenu but keep its bookkeeping entry.
+      const download = result.members.get("download") ?? [];
+      result.members.set("download", download.filter((r) => r.action.id !== "download-pdf"));
       return result;
     };
     const audit = auditRegroup(target, ROW, PROPOSED_MENU_GROUPING, { mergeSameName: true }, "command", lossy);

@@ -41,7 +41,7 @@ export function WhereTable({ title, audit }: { title: string; audit: RegroupAudi
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border px-3 py-2">
         <h3 className="text-sm font-semibold">{title}</h3>
         <p className="text-xs text-muted-foreground">
-          {audit.rows.length} items · {audit.currentRows} rows on open today → {audit.proposedRows} proposed
+          {audit.rows.length} items · {audit.currentRows} rows on open today → {audit.proposedRows} in v2
         </p>
       </header>
       {lost.length > 0 ? (
@@ -59,7 +59,7 @@ export function WhereTable({ title, audit }: { title: string; audit: RegroupAudi
             <tr>
               <th className="px-3 py-1.5 font-medium">Item</th>
               <th className="px-3 py-1.5 font-medium">Today</th>
-              <th className="px-3 py-1.5 font-medium">Proposed</th>
+              <th className="px-3 py-1.5 font-medium">v2</th>
             </tr>
           </thead>
           <tbody>

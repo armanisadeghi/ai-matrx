@@ -199,6 +199,7 @@ assertions in addition to the Content IR route matrix.
 
 ## Change log
 
+- `2026-09-28` — claude: **"Convert to broker" is deleted** (Arman: meaningless now). `actions/handlers/stubs.ts` (its only action) is gone, with its id in `types.ts`, `menuStructure.ts`, the Coming-Soon entry `rich-document.convert-to-broker` and the content-manager menu row. Guard: `features/context-menu-v3/regroup/__tests__/inventory-coverage.test.ts`.
 - `2026-09-27` — claude: **Custom Agent and send-to-agent speak the shortcut mapping language.** "Map Inputs" now emits a `ValueMappingMap` (`surface_value` per mapped input, Skip = left out) carried as `runtime.valueMappings`, resolved ONCE against the captured scope by the one resolver (`resolvePerLaunchMappings` in `thunks/surface-scope-mapping.ts` → `resolveValueMappings`) and pinned with the host values, so a per-turn surface refresh never re-reads it from the live page. The message stays `userInput` (the one input a mapping never reaches). Send-to-agent's variable destination is a `direct_value` mapping. **Save as shortcut** (Custom Agent footer) opens the ONE shortcut editor (`/agents/[id]/shortcuts/new?seed=`) prefilled with that mapping and the page's surface (`features/agent-shortcuts/draft-seed.ts`).
 Newest first.
 

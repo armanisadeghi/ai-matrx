@@ -26,7 +26,6 @@ import "./compare";
 import "./creator";
 import "./feedback";
 import "./fullscreen-editor";
-import "./stubs";
 import "./app";
 import "./server-api";
 import "./answer-tools";

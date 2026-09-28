@@ -371,19 +371,6 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     stage: "planned",
     surfaces: ["Math problem block action bar (chat content)"],
   },
-  "rich-document.convert-to-broker": {
-    id: "rich-document.convert-to-broker",
-    label: "Convert to Broker",
-    owner: "rich-document",
-    promise:
-      "Turn this response or document into a reusable broker that agents can reference as structured context.",
-    stage: "planned",
-    surfaces: [
-      "Rich document action menu",
-      "Authenticated chat message action menu",
-      "Public chat message action menu",
-    ],
-  },
   "image-studio.smart-crop": {
     id: "image-studio.smart-crop",
     label: "Smart Crop",

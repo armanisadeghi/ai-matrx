@@ -1,59 +1,134 @@
 // features/context-menu-v3/regroup/proposed-grouping.ts
 //
-// THE PROPOSED GROUPING (2026-09-27, awaiting Arman's approval on
-// /demos/context-menu-regroup). Applied ONLY where a MenuRegroupContext asks
-// for it — no production menu uses it. Plain data over the registry's own
-// action ids and categories: the rows themselves come from the registry.
+// THE PROPOSED GROUPING, v2 (2026-09-28, after Arman's review of v1: "we should
+// distinguish between a few things better: Copy (as various things), Download
+// (becomes some sort of external file), Convert (becomes something different in
+// our system…), Action (Publish HTML, etc.)… we still need more categories…
+// the more of [sub-menus] we do, the better").
 //
-// Order in the menu: the page's own actions first, the Copy/Cut/Paste strip,
-// then Copy ▸, Save to… ▸, Share ▸, AI ▸, Read aloud ▸, and Quick Actions /
-// feedback / admin / the page submenu last (the package's group order decides
-// the rest). Submenu names are plain, conventional words.
+// Every submenu is named by its OUTCOME — what the person gets — in one plain
+// word. Applied ONLY where a MenuRegroupContext asks for it (the regroup demo);
+// no production menu uses it until Arman approves. Plain data over the
+// registry's own action ids and categories: the rows themselves come from the
+// registry, never from this file.
 
-import { Copy, Download, Share2, Volume2 } from "lucide-react";
+import {
+  ArrowRightLeft,
+  Copy,
+  Download,
+  GitCompareArrows,
+  Globe,
+  History,
+  Pencil,
+  Share2,
+  Shield,
+  Tags,
+  ThumbsUp,
+  Volume2,
+} from "lucide-react";
 import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import type { MenuGrouping } from "./grouping";
 
+const icon = (c: unknown) => registerAlchemyIcon(c);
+
 export const PROPOSED_MENU_GROUPING: MenuGrouping = {
-  name: "Page first, then Copy / Save to… / Share / AI / Read aloud",
+  name: "v2 — grouped by what you get",
   minMembers: 2,
+  // `category` + `order` place each submenu row among the others (the package's
+  // group order): Edit, Copy, Download, Convert to, Publish, Share, Organize,
+  // History, AI, Read aloud, Compare, Feedback, Admin.
   groups: [
-    { key: "copy", label: "Copy", icon: registerAlchemyIcon(Copy), category: "copy", order: 0 },
-    { key: "save", label: "Save to…", icon: registerAlchemyIcon(Download), category: "save", order: 0 },
-    { key: "share", label: "Share", icon: registerAlchemyIcon(Share2), category: "share", order: 0 },
-    { key: "ai", label: "AI", icon: registerAlchemyIcon(AGENT_ICON), category: "ai", order: 0 },
-    { key: "listen", label: "Read aloud", icon: registerAlchemyIcon(Volume2), category: "listen", order: 0 },
+    { key: "edit", label: "Edit", definition: "Change this item where it is: edit, rewrite, open in an editor, run, delete.", icon: icon(Pencil), category: "edit", order: 0 },
+    { key: "copy", label: "Copy", definition: "It lands on your clipboard, in the form you pick: text, Markdown, rich text, HTML, a table, JSON, a reference.", icon: icon(Copy), category: "copy", order: 0 },
+    { key: "download", label: "Download", definition: "It becomes a file outside the app: Markdown, PDF, Word, HTML — or a printout.", icon: icon(Download), category: "export", order: 0 },
+    { key: "convert", label: "Convert to", definition: "It becomes a new thing inside the app: a note, document, task, file, flashcards, quiz, template, contact, data table.", icon: icon(ArrowRightLeft), category: "save", order: 0 },
+    { key: "publish", label: "Publish", definition: "It goes out to the world: a public web page or published HTML anyone with the link can open.", icon: icon(Globe), category: "share", order: 0 },
+    { key: "share", label: "Share", definition: "It goes to specific people or places: share with someone, send to Google Docs, email it.", icon: icon(Share2), category: "share", order: 1 },
+    { key: "organize", label: "Organize", definition: "It stays what it is, but gets filed: attached to a project or context, pinned, annotated.", icon: icon(Tags), category: "history", order: 0 },
+    { key: "history", label: "History", definition: "Earlier versions: view the history, fork from a point in it.", icon: icon(History), category: "history", order: 1 },
+    { key: "ai", label: "AI", definition: "An AI works on it: ask, chat, run an agent or AI action, regenerate.", icon: icon(AGENT_ICON), category: "ai", order: 0 },
+    { key: "listen", label: "Read aloud", definition: "You hear it: read it aloud, a spoken summary, the voice settings.", icon: icon(Volume2), category: "listen", order: 0 },
+    { key: "compare", label: "Compare", definition: "You see it side by side with something else: the clipboard or a saved base.", icon: icon(GitCompareArrows), category: "study", order: 0 },
+    { key: "feedback", label: "Feedback", definition: "Tell us how it went: thumbs up or down, report a problem.", icon: icon(ThumbsUp), category: "feedback", order: 1 },
+    { key: "admin", label: "Admin", definition: "Creator and admin tools: inspect, debug, server-side message surgery. Admins only.", icon: icon(Shield), category: "admin", order: 0 },
   ],
   rules: [
-    // The clicked thing's own rows (a quiz row's Open / Take / Archive, a note's rows).
+    // The clicked thing's own rows (a quiz row's Open / Take / Archive, a note's
+    // rows, a conversation's rows) always come first, as they are.
     { when: { pageOwn: true }, to: { kind: "page-first" } },
-    // The universal verb strip and in-place editing stay exactly where they are.
-    { when: { ids: ["cm:copy", "cm:cut", "cm:paste", "cm:undo", "cm:redo", "cm:find", "copy"] }, to: { kind: "top" } },
-    // Copy formats and compare.
+    // The universal verb strip (icons across the top) stays exactly as it is.
+    {
+      when: { ids: ["cm:copy", "cm:cut", "cm:paste", "cm:undo", "cm:redo", "cm:find", "copy", "cm:select-all"] },
+      to: { kind: "top" },
+    },
+    // Quick Actions is already one submenu of quick tools; the page submenu is last;
+    // an editor's own Save / Delete stay one click away.
+    { when: { ids: ["cm:quick-actions", "cm:save", "cm:delete"], categories: ["surface-info"] }, to: { kind: "top" } },
+
     {
       when: {
-        ids: ["cm:copy-as", "cm:json", "cm:compare", "compare-with-clipboard", "set-compare-base", "compare-with-base"],
+        ids: ["cm:copy-as", "cm:json", "cm:insert-reference", "copy-html-page", "conversation-copy-link"],
         categories: ["copy"],
       },
       to: { kind: "group", key: "copy" },
     },
-    // Read aloud: speak, listen, summaries for listening, voice settings.
-    { when: { ids: ["cm:speak", "cm:listen"], categories: ["listen"] }, to: { kind: "group", key: "listen" } },
-    // Share and attach.
-    { when: { ids: ["cm:attach", "cm:share"], categories: ["share"] }, to: { kind: "group", key: "share" } },
-    // Save a copy somewhere: notes, files, documents, downloads, print, convert, study cards.
     {
-      when: { ids: ["cm:export", "cm:convert"], categories: ["save", "export", "study"] },
-      to: { kind: "group", key: "save" },
+      when: { ids: ["cm:export", "save-as-file", "download-pdf", "download-docx", "download-html", "print", "full-print"] },
+      to: { kind: "group", key: "download" },
     },
-    // Everything AI: chat, agents, shortcuts, content blocks, ask.
+    { when: { ids: ["html-preview", "share-webpage"] }, to: { kind: "group", key: "publish" } },
     {
-      when: { ids: ["cm:chat"], idPrefixes: ["cm:placement:", "cm:cat:", "cm:agents"], categories: ["ai", "ask"] },
+      when: { ids: ["cm:share", "send-google-doc", "email-to-me", "conversation-share"] },
+      to: { kind: "group", key: "share" },
+    },
+    {
+      when: { ids: ["cm:attach", "set-context-value", "pin-message", "notes-and-comments"] },
+      to: { kind: "group", key: "organize" },
+    },
+    {
+      when: { ids: ["cm:view-history", "edit-history", "fork-at-message", "fork-and-regenerate"] },
+      to: { kind: "group", key: "history" },
+    },
+    {
+      when: { ids: ["cm:compare", "compare-with-clipboard", "set-compare-base", "compare-with-base"] },
+      to: { kind: "group", key: "compare" },
+    },
+    {
+      when: { ids: ["cm:speak", "cm:listen", "tts-voice-settings"], categories: ["listen"] },
+      to: { kind: "group", key: "listen" },
+    },
+    {
+      when: {
+        ids: ["cm:chat", "regenerate-response", "regenerate-latest", "continue-in-chat", "send-to-agent", "code-block-chart"],
+        idPrefixes: ["cm:placement:", "cm:cat:", "cm:agents"],
+        categories: ["ai", "ask"],
+      },
       to: { kind: "group", key: "ai" },
     },
+    {
+      when: {
+        ids: [
+          "edit",
+          "edit-and-resubmit",
+          "open-fullscreen-editor",
+          "delete-message",
+          "code-block-open-in-editor",
+          "code-block-apply-to-file",
+          "code-block-run",
+          "conversation-rename",
+          "conversation-duplicate",
+        ],
+      },
+      to: { kind: "group", key: "edit" },
+    },
+    { when: { ids: ["thumbs-up", "thumbs-down", "submit-feedback"], categories: ["feedback"] }, to: { kind: "group", key: "feedback" } },
+    { when: { ids: ["cm:admin"], categories: ["creator", "admin"] }, to: { kind: "group", key: "admin" } },
+    // Everything that makes a new thing in the app — checked after the rows
+    // above because the registry files several of them under "save".
+    { when: { ids: ["cm:convert", "add-to-rulebook"], categories: ["save", "study", "export"] }, to: { kind: "group", key: "convert" } },
   ],
-  // Everything else (history, edit tools, Quick Actions, feedback, admin, the
-  // page submenu) stays at the top level where the package places it.
+  // A row no rule names stays at the top level where the package places it —
+  // and the demo's Categories section lists it under "No category yet".
   fallback: { kind: "top" },
 };

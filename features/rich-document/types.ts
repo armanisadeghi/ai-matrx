@@ -158,8 +158,6 @@ export type RichDocumentActionId =
   // App-level
   | "submit-feedback"
 
-  // Stubs
-  | "convert-to-broker"
   | "add-to-docs"
   // Capture — formerly chat-only (messageActionRegistry), now every source
   | "add-to-rulebook"
