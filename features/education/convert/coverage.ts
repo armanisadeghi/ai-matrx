@@ -181,6 +181,10 @@ function withChunkHeader(unit: string, pieces: string[]): string[] {
 /** The first heading-ish line of a unit, cleaned up for a label. */
 function unitLabel(unit: string): string {
   const first = unit.split("\n", 1)[0]?.trim() ?? "";
+  // A resolver chunk header names a page, never a heading worth showing: say
+  // "Page 12", not "Chunk b93ab938-… (page 12)".
+  const chunk = /^### Chunk \S+(?: \(page (\d+)\))?/.exec(first);
+  if (chunk) return chunk[1] ? `Page ${chunk[1]}` : "";
   const cleaned = first
     .replace(/^#{1,6}\s*/, "")
     .replace(/^-{2,}\s*/, "")
