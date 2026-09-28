@@ -7,7 +7,7 @@ describe("plain Input import boundary", () => {
     const trackedSourceFiles = execFileSync(
       "git",
       ["ls-files", "*.ts", "*.tsx"],
-      { cwd: process.cwd(), encoding: "utf8" },
+      { cwd: process.cwd(), encoding: "utf8", maxBuffer: 20 * 1024 * 1024 },
     )
       .split("\n")
       .filter(
