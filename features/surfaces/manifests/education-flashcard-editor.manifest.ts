@@ -196,15 +196,14 @@ const surfaceSpecific: SurfaceValue[] = [
  * decomposition action in the same class.
  *
  * Deliberately NOT targets:
- *   • deleting a card or a set — destructive, stays human.
+ *   • deleting a set — managed from the deck library.
  *   • reordering cards — a mechanical nudge nobody asks an agent to perform.
  *   • share visibility / folders — a permissions decision, not authored content.
  *   • everything in `study_signal` — derived review evidence. Letting an agent
  *     write mastery would be fabricating the learner's history.
  *
- * All three persist immediately through `fcService` (the SAME service the
- * learner's own typing autosaves through) and so are `mode: "entity"` on
- * `applyPolicy: "ask"` — the learner confirms each one in place.
+ * All four persist immediately through `fcService` (the same service the
+ * learner's controls use) and so are `mode: "entity"` on `applyPolicy: "ask"`.
  */
 const writeTargets: SurfaceWriteTarget[] = [
   {
@@ -243,6 +242,18 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "cards",
     sortOrder: 120,
   },
+  {
+    name: "delete_cards",
+    label: "Delete cards",
+    description:
+      "Archive 1-25 cards in this open set after the learner approves. Value is an array of card ids from cards. Archived cards leave this editor and study modes; this does not erase their stored history. Every id must still belong to the loaded set when applied.",
+    valueType: "array",
+    updatesValue: "cards",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "cards",
+    sortOrder: 130,
+  },
 ];
 
 export const educationFlashcardEditorManifest: SurfaceManifest = {
@@ -253,13 +264,13 @@ export const educationFlashcardEditorManifest: SurfaceManifest = {
     "Flashcard set editor — one set open for authoring (/education/flashcards/[setId]/edit).",
   readiness: "partial",
   readinessNote:
-    "Manifest + emitter + the three write targets (set_details, card_content, add_cards) are shipped, DB-synced, and verified end-to-end against a live Badass Agent run on the edit route: ask-per-target, Apply landing visibly, decline writing nothing, a handler throw reaching the agent verbatim, and a clean Error Inspector. Not yet stamped verified: no agent roles are declared, no `data-surface-value` Locate anchors are tagged on the page, and two child controls still load state this manifest does not declare — FolderTagPicker's folder taxonomy for this set and SetVisibilityControl's share links (only the resulting `set_visibility` is declared).",
+    "Set details, card content, and add cards were verified against a live agent run. Delete cards is implemented through the same soft-delete service as the page's Delete action and still needs live agent acceptance. No agent roles or Locate anchors are declared; folder taxonomy and share links remain outside this surface's values.",
   label: "Flashcard set editor",
   urlPattern: "/education/flashcards/[setId]/edit",
   intro: `<surface_intro>
 You are on the flashcard set EDITOR at /education/flashcards/[setId]/edit — ONE set open for authoring, not the flashcards library and not a study session. The page shows the set's name, topic, and description, then every card in the set with an inline front/back editor.
 Check set_loaded first — while it is false the set is still in flight (or load_error explains a real failure), and you must not describe the set as empty. Read cards for the actual card content; each entry carries the id you need to edit that card, and card_kind tells you how to read it — a cloze card's front holds {{c1::answer}} deletion markup rather than a plain question, and a matching card's content lives in its pairs.
-You can WRITE here, and this is a page where that matters: set_details rewrites the header, card_content rewrites one card's front and/or back, and add_cards appends new cards. Drafting cards from material the learner gives you, tightening a wordy back, or splitting one overloaded card into several is exactly the work this surface exists for. Every write asks the learner first, so propose confidently — declining is normal and costs nothing.
+You can WRITE here: set_details rewrites the header, card_content rewrites one card's front and/or back, add_cards appends new cards, and delete_cards archives selected cards. Drafting cards from material the learner gives you, tightening a wordy back, or splitting one overloaded card into several is exactly the work this surface exists for. Every write asks the learner first, so propose confidently — declining is normal and costs nothing.
 card_mastery is DERIVED from the learner's real review history. Use it to aim your help (a card that keeps failing is usually badly worded, not badly learned) and never present it as something you can change.
 </surface_intro>`,
   groups,

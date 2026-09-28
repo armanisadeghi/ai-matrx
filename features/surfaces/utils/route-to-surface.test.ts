@@ -262,7 +262,9 @@ describe("Agent surface resolution (nested [id])", () => {
   });
 
   it("battle modes resolve to the battle surfaces, Model to its own", () => {
-    expect(surfaceFromPathname("/agents/battle")).toBe("matrx-user/agent-battle");
+    expect(surfaceFromPathname("/agents/battle")).toBe(
+      "matrx-user/agent-battle",
+    );
     expect(surfaceFromPathname(`/agents/battle/open/${A}`)).toBe(
       "matrx-user/agent-battle",
     );
@@ -414,6 +416,15 @@ describe("Admin surface resolution (post catch-all removal)", () => {
 });
 
 describe("Education tool-family resolution", () => {
+  it("maps only the Education Notes collection; its detail keeps the Notes surface", () => {
+    expect(surfaceFromPathname("/education/notes")).toBe(
+      "matrx-user/education-notes",
+    );
+    expect(surfaceFromPathname(`/education/notes/${ID}`)).toBe(
+      "matrx-user/notes",
+    );
+  });
+
   const ID = "e9906c5e-e21a-4194-8ad3-ad0c1eaca5ad";
 
   it("resolves each education tool to its own surface, incl. sub-routes", () => {
@@ -449,6 +460,18 @@ describe("Education tool-family resolution", () => {
     expect(surfaceFromPathname("/education/progress/learning-gain")).toBe(
       "matrx-user/education-progress",
     );
+    expect(surfaceFromPathname("/education/creator")).toBe(
+      "matrx-user/education-creator",
+    );
+    expect(surfaceFromPathname("/education/sessions")).toBe(
+      "matrx-user/education-sessions",
+    );
+    expect(surfaceFromPathname("/education/subjects/quick-math/admin")).toBe(
+      "matrx-user/education-quick-math-authoring",
+    );
+    expect(surfaceFromPathname(`/education/flashcards/${ID}/sessions`)).toBe(
+      "matrx-user/education-sessions",
+    );
     expect(surfaceFromPathname("/education/learn/biology/photosynthesis")).toBe(
       "matrx-user/education-learn",
     );
@@ -478,7 +501,9 @@ describe("Education tool-family resolution", () => {
       "matrx-user/education-study-guides",
     );
     expect(
-      surfaceFromPathname("/education/study-guides/63ac076a-3cf9-48f8-9af6-e974a6789883"),
+      surfaceFromPathname(
+        "/education/study-guides/63ac076a-3cf9-48f8-9af6-e974a6789883",
+      ),
     ).toBe("matrx-user/education-study-guide");
     // My Classes is the exact list route; one class's hub is its own
     // surface; the join page is neither.
@@ -496,7 +521,9 @@ describe("Education tool-family resolution", () => {
       "matrx-user/education-kits",
     );
     expect(
-      surfaceFromPathname("/education/kits/63ac076a-3cf9-48f8-9af6-e974a6789883"),
+      surfaceFromPathname(
+        "/education/kits/63ac076a-3cf9-48f8-9af6-e974a6789883",
+      ),
     ).toBe("matrx-user/education-kits");
     // The research topics LIST is its own surface; one topic's workspace,
     // the wizard and the landing keep the research workspace surface.
@@ -507,9 +534,13 @@ describe("Education tool-family resolution", () => {
       "matrx-user/research-topics",
     );
     expect(
-      surfaceFromPathname("/research/topics/63ac076a-3cf9-48f8-9af6-e974a6789883/sources"),
+      surfaceFromPathname(
+        "/research/topics/63ac076a-3cf9-48f8-9af6-e974a6789883/sources",
+      ),
     ).toBe("matrx-user/research");
-    expect(surfaceFromPathname("/research/topics/new")).toBe("matrx-user/research");
+    expect(surfaceFromPathname("/research/topics/new")).toBe(
+      "matrx-user/research",
+    );
     expect(surfaceFromPathname("/education/overview")).toBe(
       "matrx-user/education-overview",
     );
@@ -632,9 +663,7 @@ describe("commerce label routes", () => {
       surfaceFromPathname(
         "/commerce/labels/02648d08-93bd-4c2e-b5cf-54c9c7828475",
       ),
-    ).toBe(
-      "matrx-user/commerce-label-batch",
-    );
+    ).toBe("matrx-user/commerce-label-batch");
     expect(surfaceFromPathname("/commerce/labels/printers")).toBeNull();
     expect(surfaceFromPathname("/commerce/labels/printers/certify")).toBeNull();
   });
@@ -642,7 +671,9 @@ describe("commerce label routes", () => {
 
 describe("HR employer route", () => {
   it("maps only the employer tab of HR settings to the HR employer surface", () => {
-    expect(surfaceFromPathname("/hr/settings/employer")).toBe("matrx-user/hr-employer");
+    expect(surfaceFromPathname("/hr/settings/employer")).toBe(
+      "matrx-user/hr-employer",
+    );
     expect(surfaceFromPathname("/hr/settings/structure")).toBeNull();
     expect(surfaceFromPathname("/hr/settings")).toBeNull();
   });
@@ -654,8 +685,12 @@ describe("message template record page", () => {
     expect(surfaceFromPathname(`/chat/message-templates/${id}`)).toBe(
       "matrx-user/message-template",
     );
-    expect(surfaceFromPathname("/chat/message-templates")).toBe("matrx-user/chat");
-    expect(surfaceFromPathname("/chat/message-templates/new")).toBe("matrx-user/chat");
+    expect(surfaceFromPathname("/chat/message-templates")).toBe(
+      "matrx-user/chat",
+    );
+    expect(surfaceFromPathname("/chat/message-templates/new")).toBe(
+      "matrx-user/chat",
+    );
     expect(surfaceFromPathname(`/chat/message-templates/edit/${id}`)).toBe(
       "matrx-user/chat",
     );

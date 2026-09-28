@@ -8,7 +8,7 @@
 // on the sender's authority and the database hands it out exactly once — this file decides
 // NOTHING. It carries requests to aidream through `callApi` (so the transport, auth and the
 // selected server are the app's one path) and reads the sender's own list straight from
-// `platform.secure_delivery` under row security, as every plain read in this app does.
+// the door `platform.secure_delivery_sent` (the caller's own rows only; the table is closed to clients).
 //
 // 🚨 NO VALUE EVER PASSES THROUGH THE SENDER'S SIDE. `create` returns a receipt; the link secret
 // goes to the recipient only; the payload column is client-excluded in the database.
@@ -128,18 +128,12 @@ export async function listSentSecureDeliveries(
   resourceType: string,
   resourceId: string,
 ): Promise<SentSecureDelivery[]> {
+  // The delivery table is closed to signed-in clients (aidream 1350g): the list comes from the
+  // door that returns only the CALLER's own sent rows for this item — never a coworker's.
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("platform")
-    .from("secure_delivery")
-    .select(
-      "id, recipient_name, recipient_email, recipient_phone, link_channel, code_channel, field_keys, status, created_at, expires_at, viewed_at",
-    )
-    .eq("resource_type", resourceType)
-    .eq("resource_id", resourceId)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false })
-    .limit(20);
+    .rpc("secure_delivery_sent", { p_resource_type: resourceType, p_resource_id: resourceId });
   if (error) throw new Error(error.message);
   return (data ?? []) as SentSecureDelivery[];
 }
