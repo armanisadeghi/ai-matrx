@@ -74,7 +74,8 @@ export function useMeetTemplates(
       setLoaded(true);
     });
     void fetchKnobWriteDoor({ fullKey: "meet.templates", organizationId })
-      .then((door) => live && setMayWriteOrganization(door.mayWrite))
+      // An unknown answer (null) is not permission.
+      .then((door) => live && setMayWriteOrganization(door.mayWrite === true))
       .catch(() => live && setMayWriteOrganization(false));
     return () => {
       live = false;

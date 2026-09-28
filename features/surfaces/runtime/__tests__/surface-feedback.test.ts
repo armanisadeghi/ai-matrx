@@ -16,6 +16,11 @@ const mockGetManifest = jest.fn();
 const mockSubmitFeedback = jest.fn();
 let mockOrganizationId: string | null = "org-1";
 
+// "None yet" waits for boot's answer; the test scripts that answer.
+const mockAwaitOrganization = jest.fn();
+jest.mock("@/features/organizations/awaitWorkspace", () => ({
+  awaitEffectiveOrganizationId: () => mockAwaitOrganization(),
+}));
 jest.mock("@/lib/toast", () => ({
   toast: { error: mockToastError, success: mockToastSuccess },
 }));
@@ -122,14 +127,45 @@ describe("surface_feedback — refused before anything is written", () => {
     }
   });
 
-  it("refuses with the remedy when no organization is selected", async () => {
+  it("refuses with the remedy when boot answered with no organization", async () => {
     mockOrganizationId = null;
+    mockAwaitOrganization.mockResolvedValueOnce({ status: "unavailable", reason: "x", cause: "no-selection" });
     const unregister = mount(PAGE, 1);
     try {
       const result = await applySurfaceWrite("surface_feedback", GOOD, { origin: "agent" });
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.error).toContain("pick their organization");
       expect(mockSubmitFeedback).not.toHaveBeenCalled();
+    } finally {
+      unregister();
+    }
+  });
+
+  it("a FAILED organization read is said as that, never as 'pick one'", async () => {
+    mockOrganizationId = null;
+    mockAwaitOrganization.mockResolvedValueOnce({ status: "unavailable", reason: "x", cause: "unreadable" });
+    const unregister = mount(PAGE, 1);
+    try {
+      const result = await applySurfaceWrite("surface_feedback", GOOD, { origin: "agent" });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toContain("could not be read just now");
+        expect(result.error).not.toContain("pick their organization");
+      }
+      expect(mockSubmitFeedback).not.toHaveBeenCalled();
+    } finally {
+      unregister();
+    }
+  });
+
+  it("an organization boot answers late is used, not refused", async () => {
+    mockOrganizationId = null;
+    mockAwaitOrganization.mockResolvedValueOnce({ status: "ready", organizationId: "org-late" });
+    const unregister = mount(PAGE, 1);
+    try {
+      await applySurfaceWrite("surface_feedback", GOOD, { origin: "agent" });
+      expect(mockSubmitFeedback).toHaveBeenCalled();
+      expect(JSON.stringify(mockSubmitFeedback.mock.calls)).toContain("org-late");
     } finally {
       unregister();
     }

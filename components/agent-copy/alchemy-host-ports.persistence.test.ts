@@ -17,6 +17,12 @@ const mockRegister = {
   refuse: null as null | { reason: string; detail: string },
 };
 
+// The organization question: "none yet" waits for boot's answer; the test scripts that answer.
+const mockAwaitOrganization = jest.fn();
+jest.mock("@/features/organizations/awaitWorkspace", () => ({
+  awaitEffectiveOrganizationId: () => mockAwaitOrganization(),
+}));
+
 jest.mock("@/utils/supabase/client", () => {
   const select = (table: string) => {
     const eqs: [string, unknown][] = [];
@@ -145,6 +151,28 @@ describe("web app persistence + transfer knobs (PP-13a)", () => {
   });
 
   it("without an organization a personal setting is a sentence, not a guess", async () => {
-    await expect(portsFor(ADMIN, null).persistence.readSetting("alchemy.transfer.default_recipe")).rejects.toThrow(/Choose an organization/);
+    mockAwaitOrganization.mockResolvedValueOnce({ status: "unavailable", reason: "unused", cause: "no-selection" });
+    const before = mockRegister.rpc.length;
+    await expect(portsFor(ADMIN, null).persistence.readSetting("alchemy.transfer.default_recipe")).rejects.toThrow(
+      /saved per organization, and none is selected\. Pick the one you are working in/,
+    );
+    expect(mockRegister.rpc.length).toBe(before);
+  });
+
+  it("a FAILED organization read is said as that, never as 'pick one'", async () => {
+    mockAwaitOrganization.mockResolvedValueOnce({
+      status: "unavailable",
+      reason: "We could not check which organization to file this in.",
+      cause: "unreadable",
+    });
+    await expect(portsFor(ADMIN, null).persistence.readSetting("alchemy.transfer.default_recipe")).rejects.toThrow(
+      /We could not check which organization/,
+    );
+  });
+
+  it("an organization boot answers late is used, not refused", async () => {
+    mockAwaitOrganization.mockResolvedValueOnce({ status: "ready", organizationId: HARBOR });
+    mockRegister.overrides = [];
+    await expect(portsFor(ADMIN, null).persistence.readSetting("alchemy.transfer.default_recipe")).resolves.toBeNull();
   });
 });

@@ -17,6 +17,7 @@
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { organizationRefusalMessage } from "@/lib/organizations/organizationRefusalToast";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fcService } from "@/features/flashcards/data/fcService";
@@ -78,7 +79,13 @@ export function useFastFireLauncher(
         await ensureOrgId(null);
       } catch (holdError) {
         if (isOrganizationSelectionCancelled(holdError)) return false;
-        setStartError(organizationRefusalMessage({ subject: "The drill", act: "started" }));
+        setStartError(
+          isOrganizationRequiredError(holdError)
+            ? organizationRefusalMessage({ subject: "The drill", act: "started" })
+            : holdError instanceof Error && holdError.message
+              ? holdError.message
+              : "The drill could not start. Try again.",
+        );
         return false;
       }
     }

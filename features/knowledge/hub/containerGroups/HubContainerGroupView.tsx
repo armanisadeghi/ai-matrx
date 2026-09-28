@@ -37,7 +37,9 @@ import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrgBootstrapResolved, selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useDataStores } from "@/features/rag/hooks/useDataStores";
 import {
@@ -265,7 +267,9 @@ interface LibrariesRead {
 function LibrariesGroup({ group, set }: { group: Group; set: (k: string, v: string | null, replace?: boolean) => void }) {
   const dispatch = useAppDispatch();
   const organizationId = useAppSelector(selectOrganizationId);
-  const orgResolved = useAppSelector(selectOrgBootstrapResolved);
+  // Four states, one reading: still resolving, none chosen, the read FAILED
+  // (never told "choose one"), or signed out.
+  const { organizationState, retry: retryOrganization } = useOrganizationRequired();
   const lane = libraryLane(group);
   const adapters = libraryAdapters(group);
   const words = groupWords(group);
@@ -369,13 +373,15 @@ function LibrariesGroup({ group, set }: { group: Group; set: (k: string, v: stri
         </Link>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto" role="list" aria-label="Libraries">
-        {!organizationId && !orgResolved ? (
-          <Notice>Opening your workspace…</Notice>
-        ) : !organizationId ? (
+        {!organizationId && organizationState === "required" ? (
           <Notice>
             Libraries are listed for the organization you are working in, and none is chosen yet. Choose one with the
             organization button in the header and they appear here.
           </Notice>
+        ) : !organizationId && (organizationState === "unavailable" || organizationState === "signed_out") ? (
+          <OrganizationContextNotice state={organizationState} what="Libraries" compact onRetry={retryOrganization} />
+        ) : !organizationId ? (
+          <Notice>Opening your workspace…</Notice>
         ) : read.status === "loading" ? (
           <Notice>Reading your Libraries…</Notice>
         ) : null}

@@ -19,6 +19,7 @@
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { organizationRefusalMessage } from "@/lib/organizations/organizationRefusalToast";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRun";
@@ -64,7 +65,13 @@ export function useGradeWork(
         await ensureOrgId(null);
       } catch (holdError) {
         if (isOrganizationSelectionCancelled(holdError)) return null;
-        setError(organizationRefusalMessage({ subject: "Your work", act: "graded" }));
+        setError(
+          isOrganizationRequiredError(holdError)
+            ? organizationRefusalMessage({ subject: "Your work", act: "graded" })
+            : holdError instanceof Error && holdError.message
+              ? holdError.message
+              : "Your work could not be graded. Try again.",
+        );
         setStatus("error");
         return null;
       }

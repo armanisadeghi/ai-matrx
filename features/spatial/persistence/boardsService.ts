@@ -22,7 +22,7 @@ import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { writeOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
-import { isOrgBootstrapResolved, whenOrgBootstrapResolved } from "@/lib/organizations/orgBootstrapGate";
+import { whenOrgBootstrapResolved } from "@/lib/organizations/orgBootstrapGate";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
 import type { Database, Json } from "@/types/database.types";
 import {
@@ -263,7 +263,8 @@ export function boardHref(board: { id: string; is_home?: boolean; isHome?: boole
  * before the gate would ask a question the person already answered.
  */
 async function resolveOrganization(organizationId: string | null): Promise<string> {
-  if (!organizationId && !isOrgBootstrapResolved()) await whenOrgBootstrapResolved();
+  // Returns at once when boot has already answered (bounded otherwise).
+  if (!organizationId) await whenOrgBootstrapResolved();
   return ensureOrganizationContext({ organizationId });
 }
 

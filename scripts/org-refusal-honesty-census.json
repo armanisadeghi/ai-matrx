@@ -43,7 +43,6 @@
     "features/skills/redux/skillsThunks.ts",
     "features/surfaces/components/bind/SurfaceAgentBindPanel.tsx",
     "features/surfaces/services/bind-agent-to-surface.service.ts",
-    "features/surfaces/services/surface-config.service.ts",
     "features/tool-registry/shared/toolBindings.service.ts",
     "features/transcripts/service/transcriptsService.ts",
     "hooks/canvas/useCanvasLike.ts",
