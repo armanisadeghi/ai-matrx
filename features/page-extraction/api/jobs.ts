@@ -153,9 +153,6 @@ export async function updateJob(
 /**
  * Soft-delete (archive) a template. Sets `archived_at` so the row is
  * hidden from listings but the results it produced stay queryable.
- *
- * Use `hardDeleteJob` for a permanent purge (cascades to runs + results
- * via the FK chain).
  */
 export async function deleteJob(jobId: string): Promise<void> {
   await writeOne(
@@ -168,16 +165,10 @@ export async function deleteJob(jobId: string): Promise<void> {
   );
 }
 
-export async function hardDeleteJob(jobId: string): Promise<void> {
-  await writeOne(db.from(TABLE).delete().eq("id", jobId).select("id"), {
-    action: "delete",
-    noun: "extraction template",
-  });
-}
-
 /**
- * Delete all extraction results for a template without touching the
- * template itself. Used by the "Clear data" affordance on the Results tab.
+ * Move all of a template's runs (and, via the soft-delete cascade, their page
+ * runs and result rows) to Trash without touching the template itself. Used
+ * by the "Move to Trash" data affordances; Trash restores them.
  *
  * Single transactional RPC (`page_extraction_clear_job_results`,
  * migrations/page_extraction_clear_job_results_rpc.sql). The previous four

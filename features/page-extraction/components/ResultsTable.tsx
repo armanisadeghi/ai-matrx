@@ -198,16 +198,16 @@ function SingleJobResultsTable({
     const rowWord = results.length === 1 ? "row" : "rows";
     const templateName = job?.name ?? "this template";
     const ok = await confirm({
-      title: "Clear extraction data",
+      title: "Move extraction data to Trash",
       description:
-        "Delete " +
+        "Move " +
         results.length +
         " result " +
         rowWord +
         ' for "' +
         templateName +
-        '"? The template itself stays - only the extracted data is removed.',
-      confirmLabel: "Clear data",
+        '" to Trash? The template itself stays, and you can restore the data from Trash.',
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (!ok) return;
@@ -215,7 +215,7 @@ function SingleJobResultsTable({
     try {
       await clearJobResults(jobId);
       refetch();
-      toast.success("Cleared extraction data");
+      toast.success("Extraction data moved to Trash");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Clear failed");
     } finally {
@@ -334,7 +334,7 @@ function SingleJobResultsTable({
             className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
             disabled={clearing}
             onClick={() => void handleClearData()}
-            title="Delete every result row for this template (template stays)"
+            title="Move every result row for this template to Trash (template stays)"
           >
             {clearing ? (
               <Loader2 className="w-3 h-3 mr-1 animate-spin" />

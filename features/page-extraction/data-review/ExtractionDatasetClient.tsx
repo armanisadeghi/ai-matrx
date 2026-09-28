@@ -6,7 +6,7 @@
  * The full review/management grid for ONE extraction dataset
  * (/knowledge/extractions/[id]). Everything the cramped PDF-Studio Results tab
  * couldn't do: search, sort, column show/hide, pagination, run picker, merged
- * duplicates, inline editing of manual columns, per-row + bulk delete, clear,
+ * duplicates, inline editing of manual columns, per-row + bulk move to Trash, clear,
  * rename / duplicate / archive, run history (cancel + retry), context tagging,
  * jump-to-source, and export (download / copy / push) — all on the SAME shared
  * column + wrapping rules as the inline tab (features/page-extraction/utils/columns).
@@ -772,12 +772,12 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
     try {
       if (confirmKind === "clear") {
         await clearJobResults(job.id);
-        toast.success("Data cleared");
+        toast.success("All rows moved to Trash");
         await loadResults();
       } else if (confirmKind === "bulk") {
         await deleteResultRows([...selected].filter((id) => !id.includes("#")));
         toast.success(
-          `Deleted ${selected.size} row${selected.size === 1 ? "" : "s"}`,
+          `Moved ${selected.size} row${selected.size === 1 ? "" : "s"} to Trash`,
         );
         setSelected(new Set());
         await loadResults();
@@ -801,9 +801,9 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
     try {
       await deleteResultRows([id]);
       setResults((rs) => rs.filter((r) => r.id !== id));
-      toast.success("Row deleted");
+      toast.success("Row moved to Trash");
     } catch (e) {
-      toast.error("Could not delete row", {
+      toast.error("Could not move the row to Trash", {
         description: e instanceof Error ? e.message : undefined,
       });
     }
@@ -1007,7 +1007,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
                   onClick={() => setConfirmKind("clear")}
                   disabled={results.length === 0}
                 >
-                  <Trash2 className="mr-2 h-4 w-4" /> Clear all rows
+                  <Trash2 className="mr-2 h-4 w-4" /> Move all rows to Trash
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setConfirmKind("archive")}
@@ -1093,7 +1093,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
                       setConfirmKind("bulk");
                     }}
                   >
-                    <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Move to Trash
                   </Button>
                 ),
               }}
@@ -1103,7 +1103,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7"
-                    title="Delete row"
+                    title="Move row to Trash"
                     onClick={() => void deleteOneRow(row.id)}
                   >
                     <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -1150,19 +1150,19 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
           }}
           title={
             confirmKind === "clear"
-              ? "Clear all rows?"
+              ? "Move all rows to Trash?"
               : confirmKind === "bulk"
-                ? `Delete ${selected.size} row${selected.size === 1 ? "" : "s"}?`
+                ? `Move ${selected.size} row${selected.size === 1 ? "" : "s"} to Trash?`
                 : "Archive dataset?"
           }
           description={
             confirmKind === "clear"
-              ? "Every extracted row for this dataset will be permanently deleted. The template is kept."
+              ? "Every run and extracted row for this dataset moves to Trash, where you can restore it. The template is kept."
               : confirmKind === "bulk"
-                ? "The selected rows will be permanently deleted."
+                ? "The selected rows move to Trash, where you can restore them."
                 : "The dataset is hidden from listings. Its rows stay queryable and it can be restored by an admin."
           }
-          confirmLabel={confirmKind === "archive" ? "Archive" : "Delete"}
+          confirmLabel={confirmKind === "archive" ? "Archive" : "Move to Trash"}
           variant="destructive"
           busy={busy}
           onConfirm={runConfirmed}

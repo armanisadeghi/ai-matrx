@@ -12,6 +12,7 @@ import { listResults, listResultsForFile } from "./runs";
 interface RecordedQuery {
   select(...args: unknown[]): RecordedQuery;
   eq(...args: unknown[]): RecordedQuery;
+  is(...args: unknown[]): RecordedQuery;
   order(...args: unknown[]): RecordedQuery;
   range(from: number, to: number): Promise<{ data: Array<{ id: string }>; error: null; count: number }>;
 }
@@ -30,6 +31,10 @@ function queryRecorder() {
     },
     eq: (...args) => {
       calls.push({ method: "eq", args });
+      return query;
+    },
+    is: (...args) => {
+      calls.push({ method: "is", args });
       return query;
     },
     order: (...args) => {
@@ -71,6 +76,7 @@ describe("complete extraction result reads", () => {
       [
         { method: "select", args: ["*", { count: "exact" }] },
         { method: "eq", args: ["job_id", "job-1"] },
+        { method: "is", args: ["deleted_at", null] },
         { method: "eq", args: ["run_id", "run-1"] },
         { method: "order", args: ["canonical_page", { ascending: true, nullsFirst: false }] },
         { method: "order", args: ["created_at", { ascending: true }] },
@@ -80,6 +86,7 @@ describe("complete extraction result reads", () => {
       [
         { method: "select", args: ["*", { count: "exact" }] },
         { method: "eq", args: ["job_id", "job-1"] },
+        { method: "is", args: ["deleted_at", null] },
         { method: "eq", args: ["run_id", "run-1"] },
         { method: "order", args: ["canonical_page", { ascending: true, nullsFirst: false }] },
         { method: "order", args: ["created_at", { ascending: true }] },
@@ -102,6 +109,7 @@ describe("complete extraction result reads", () => {
       [
         { method: "select", args: ["*", { count: "exact" }] },
         { method: "eq", args: ["file_id", "file-1"] },
+        { method: "is", args: ["deleted_at", null] },
         { method: "order", args: ["canonical_page", { ascending: true, nullsFirst: false }] },
         { method: "order", args: ["created_at", { ascending: true }] },
         { method: "order", args: ["id", { ascending: true }] },
@@ -110,6 +118,7 @@ describe("complete extraction result reads", () => {
       [
         { method: "select", args: ["*", { count: "exact" }] },
         { method: "eq", args: ["file_id", "file-1"] },
+        { method: "is", args: ["deleted_at", null] },
         { method: "order", args: ["canonical_page", { ascending: true, nullsFirst: false }] },
         { method: "order", args: ["created_at", { ascending: true }] },
         { method: "order", args: ["id", { ascending: true }] },

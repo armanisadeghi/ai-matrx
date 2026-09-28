@@ -253,14 +253,14 @@ export function TemplateReadOnlyView({
       </dl>
 
       {/* Footer — danger zone. Only shown once this template has run data
-          to delete. Distinct from "delete template" (removes the template
-          itself) and from clearing the Results table — this wipes the
-          chunk runs AND result rows for every run, keeping the template. */}
+          to trash. Distinct from archiving the template itself — this moves
+          the chunk runs AND result rows for every run to Trash, keeping the
+          template. */}
       {hasRunData && onDeleteRunData && (
         <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-border">
           <span className="text-[10px] text-muted-foreground leading-snug">
-            Delete this template&apos;s run data (chunks + results). The
-            template stays so you can run it again.
+            Move this template&apos;s run data (chunks + results) to Trash.
+            The template stays so you can run it again.
           </span>
           <Button
             size="sm"
@@ -268,14 +268,14 @@ export function TemplateReadOnlyView({
             className="h-7 px-2 text-[10px] shrink-0 text-destructive hover:text-destructive border-destructive/40 hover:border-destructive/70"
             onClick={() => void onDeleteRunData()}
             disabled={deletingRunData}
-            title="Delete all run data (chunk runs + result rows) for this template"
+            title="Move all run data (chunk runs + result rows) for this template to Trash"
           >
             {deletingRunData ? (
               <Loader2 className="w-3 h-3 mr-1 animate-spin" />
             ) : (
               <Trash2 className="w-3 h-3 mr-1" />
             )}
-            Delete run data
+            Move run data to Trash
           </Button>
         </div>
       )}

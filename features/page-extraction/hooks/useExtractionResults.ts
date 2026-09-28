@@ -119,7 +119,9 @@ export function useExtractionResults(
       if (at === -1) merged.push(row);
       else merged[at] = row;
     }
-    return merged.sort((a, b) => {
+    // A row moved to Trash arrives as an UPDATE stamping deleted_at — it
+    // leaves the live list exactly like a delete would.
+    return merged.filter((r) => !r.deleted_at).sort((a, b) => {
       const ap = a.canonical_page ?? Number.MAX_SAFE_INTEGER;
       const bp = b.canonical_page ?? Number.MAX_SAFE_INTEGER;
       if (ap !== bp) return ap - bp;

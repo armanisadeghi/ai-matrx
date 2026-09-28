@@ -141,6 +141,8 @@ export interface PageExtractionRun {
   error: string | null;
   metadata: Record<string, Json>;
   created_at: string;
+  /** Set when the run was moved to Trash (soft delete). */
+  deleted_at?: string | null;
 }
 
 export interface PageExtractionPageRun {
@@ -174,6 +176,8 @@ export interface PageExtractionResult {
   source_pages: number[];
   canonical_page: number | null;
   created_at: string;
+  /** Set when the result was moved to Trash (soft delete). */
+  deleted_at?: string | null;
 }
 
 export type PageExtractionJobInsert = Omit<

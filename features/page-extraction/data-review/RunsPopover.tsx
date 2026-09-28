@@ -126,14 +126,14 @@ export function RunsPopover({
   const doDelete = useCallback(
     async (run: PageExtractionRun, num: number) => {
       const ok = await confirm({
-        title: `Delete run #${num}`,
+        title: `Move run #${num} to Trash`,
         description:
-          "Permanently delete this entire run — its chunk runs and all " +
+          "Move this entire run to Trash — its chunk runs and all " +
           run.result_count +
           " result row" +
           (run.result_count === 1 ? "" : "s") +
-          " it produced. The dataset's other runs stay. This cannot be undone.",
-        confirmLabel: "Delete run",
+          " it produced. The dataset's other runs stay. You can restore the run from Trash.",
+        confirmLabel: "Move to Trash",
         variant: "destructive",
       });
       if (!ok) return;
@@ -142,11 +142,11 @@ export function RunsPopover({
         await deleteRun(run.id);
         // If we were viewing the deleted run, fall back to "All runs".
         if (selectedRunId === run.id) onSelectRun(null);
-        toast.success("Run deleted");
+        toast.success("Run moved to Trash");
         await load();
         onChanged();
       } catch (e) {
-        toast.error("Could not delete run", {
+        toast.error("Could not move the run to Trash", {
           description: e instanceof Error ? e.message : undefined,
         });
       } finally {
@@ -297,7 +297,7 @@ export function RunsPopover({
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                          title="Delete this entire run (chunks + results)"
+                          title="Move this entire run (chunks + results) to Trash"
                           disabled={busy === run.id}
                           onClick={() => void doDelete(run, num)}
                         >

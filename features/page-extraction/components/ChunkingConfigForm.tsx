@@ -546,20 +546,20 @@ export function ChunkingConfigForm({
     toast,
   ]);
 
-  // Delete every run this template produced — chunk runs + result rows —
-  // while keeping the template. Canonical wipe via `clearJobResults`
+  // Move every run this template produced — chunk runs + result rows — to
+  // Trash while keeping the template. Canonical soft wipe via `clearJobResults`
   // (the same RPC the Results tab's "Clear data" uses), surfaced here so
   // it's discoverable in the Chunked Runs tab where templates are managed.
   const [deletingRunData, setDeletingRunData] = useState(false);
   const handleDeleteRunData = useCallback(async () => {
     if (!selectedJobId || !loadedJob) return;
     const ok = await confirm({
-      title: "Delete run data",
+      title: "Move run data to Trash",
       description:
-        "Permanently delete every run this template produced — all chunk " +
-        "runs and result rows. The template itself stays, so you can run " +
-        "it again. This cannot be undone.",
-      confirmLabel: "Delete run data",
+        "Move every run this template produced — all chunk runs and result " +
+        "rows — to Trash, where you can restore them. The template itself " +
+        "stays, so you can run it again.",
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (!ok) return;
@@ -573,9 +573,11 @@ export function ChunkingConfigForm({
         setLoadedJob(fresh);
         upsertJobInCache(fileId, fresh);
       }
-      toast.success("Deleted run data");
+      toast.success("Run data moved to Trash");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Delete failed");
+      toast.error(
+        err instanceof Error ? err.message : "Could not move run data to Trash",
+      );
     } finally {
       setDeletingRunData(false);
     }

@@ -124,12 +124,14 @@ export async function listExtractionCatalog(opts?: {
           .schema("docproc")
           .from("page_extraction_runs")
           .select("id, status, finished_at")
+          .is("deleted_at", null)
           .in("id", runIds)
       : Promise.resolve({ data: [], error: null }),
     docproc
       .schema("docproc")
       .from("page_extraction_results")
       .select("job_id")
+      .is("deleted_at", null)
       .in("job_id", jobIds),
   ]);
 
@@ -193,14 +195,19 @@ export async function listExtractionCatalog(opts?: {
   });
 }
 
-/** Bulk delete result rows by id (per-row / bulk delete in the grid). */
+/**
+ * Move result rows to Trash by id (per-row / bulk "Move to Trash" in the grid).
+ * Soft delete — stamps deleted_at; every reader skips trashed rows and Trash
+ * restores them.
+ */
 export async function deleteResultRows(resultIds: string[]): Promise<void> {
   if (resultIds.length === 0) return;
   const { error } = await docproc
     .schema("docproc")
     .from("page_extraction_results")
-    .delete()
-    .in("id", resultIds);
+    .update({ deleted_at: new Date().toISOString() })
+    .in("id", resultIds)
+    .is("deleted_at", null);
   if (error) throw error;
 }
 

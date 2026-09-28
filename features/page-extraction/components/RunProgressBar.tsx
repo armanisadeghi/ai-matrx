@@ -48,14 +48,14 @@ export function RunProgressBar({ jobId }: { jobId: string | null }) {
   const handleDeleteRun = async () => {
     if (!jobId || isAll || !runId) return;
     const ok = await confirm({
-      title: "Delete this run",
+      title: "Move this run to Trash",
       description:
-        "Permanently delete this entire run — its chunk runs and all " +
+        "Move this entire run to Trash — its chunk runs and all " +
         progress.resultCount +
         " result row" +
         (progress.resultCount === 1 ? "" : "s") +
-        " it produced. The template stays, so you can run it again. This cannot be undone.",
-      confirmLabel: "Delete run",
+        " it produced. The template stays, so you can run it again. You can restore the run from Trash.",
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (!ok) return;
@@ -67,9 +67,9 @@ export function RunProgressBar({ jobId }: { jobId: string | null }) {
       // its rows changed underneath it.
       dispatch(clearRun({ jobId }));
       dispatch(invalidateResults());
-      toast.success("Deleted run");
+      toast.success("Run moved to Trash");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Delete failed");
+      toast.error(err instanceof Error ? err.message : "Could not move the run to Trash");
     } finally {
       setDeleting(false);
     }
@@ -112,14 +112,14 @@ export function RunProgressBar({ jobId }: { jobId: string | null }) {
               className="h-5 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
               disabled={deleting}
               onClick={() => void handleDeleteRun()}
-              title="Delete this entire run (chunks + results); the template stays"
+              title="Move this entire run (chunks + results) to Trash; the template stays"
             >
               {deleting ? (
                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
               ) : (
                 <Trash2 className="w-3 h-3 mr-1" />
               )}
-              Delete run
+              Move run to Trash
             </Button>
           )}
         </div>

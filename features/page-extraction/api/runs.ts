@@ -45,26 +45,36 @@ export async function updateResultPayloadField(opts: {
 }
 
 /**
- * Permanently delete one entire run: the run row plus everything it produced
- * (its `page_extraction_page_runs` chunks and `page_extraction_results` rows)
- * via the `ON DELETE CASCADE` FK chain. The owning job's `latest_run_id` FK is
- * `ON DELETE SET NULL`, so it self-clears if it pointed here — and
- * `getLatestRunId` falls back to the newest remaining run, so the job still
- * resolves a "latest" execution afterward. RLS owner-write applies.
+ * Move one entire run to Trash (soft delete — stamps `deleted_at`). Its
+ * `page_extraction_page_runs` chunks and `page_extraction_results` rows follow
+ * via the `platform.soft_delete_edge` cascade, and restoring the run from
+ * Trash restores exactly those. Every reader here skips trashed rows.
  *
- * This is distinct from `clearJobResults` (which wipes ALL runs for the
- * template) and from archiving the template (`deleteJob`, which keeps the
- * data queryable).
+ * If the owning job's `latest_run_id` pointed at this run it is cleared (the
+ * same outcome the old `ON DELETE SET NULL` FK produced), and `getLatestRunId`
+ * falls back to the newest live run. RLS owner-write applies.
+ *
+ * This is distinct from `clearJobResults` (which trashes ALL runs for the
+ * template) and from archiving the template (`deleteJob`).
  */
 export async function deleteRun(runId: string): Promise<void> {
-  await writeOne(
+  const trashed = await writeOne(
     docproc
       .from("page_extraction_runs")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", runId)
-      .select("id"),
+      .select("id, job_id"),
     { action: "delete", noun: "run" },
   );
+  const jobId = trashed.job_id ?? null;
+  if (jobId) {
+    const { error } = await docproc
+      .from("page_extraction_jobs")
+      .update({ latest_run_id: null })
+      .eq("id", jobId)
+      .eq("latest_run_id", runId);
+    if (error) throw error;
+  }
 }
 
 export async function getRun(runId: string): Promise<PageExtractionRun | null> {
@@ -72,6 +82,7 @@ export async function getRun(runId: string): Promise<PageExtractionRun | null> {
     .from("page_extraction_runs")
     .select("*")
     .eq("id", runId)
+    .is("deleted_at", null)
     .maybeSingle();
   if (error) throw error;
   return (data ?? null) as PageExtractionRun | null;
@@ -84,6 +95,7 @@ export async function listRunsForJob(
     .from("page_extraction_runs")
     .select("*")
     .eq("job_id", jobId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as PageExtractionRun[];
@@ -111,7 +123,8 @@ export async function listResults(opts: {
       let query = docproc
         .from("page_extraction_results")
         .select("*", { count: "exact" })
-        .eq("job_id", opts.jobId);
+        .eq("job_id", opts.jobId)
+        .is("deleted_at", null);
       if (opts.runId) query = query.eq("run_id", opts.runId);
       return query
         .order("canonical_page", { ascending: true, nullsFirst: false })
@@ -139,6 +152,7 @@ export async function listResultsForFile(
         .from("page_extraction_results")
         .select("*", { count: "exact" })
         .eq("file_id", fileId)
+        .is("deleted_at", null)
         .order("canonical_page", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: true })
         .order("id", { ascending: true })
@@ -162,6 +176,7 @@ export async function listResultsForFilePage(
     .from("page_extraction_results")
     .select("*", { count: "exact" })
     .eq("file_id", fileId)
+    .is("deleted_at", null)
     .contains("source_pages", [pageNumber])
     .order("created_at", { ascending: true })
     .limit(limit);
@@ -179,15 +194,26 @@ export async function getLatestRunId(jobId: string): Promise<string | null> {
     .eq("id", jobId)
     .maybeSingle();
   if (jobErr) throw jobErr;
-  if (jobRow?.latest_run_id) return jobRow.latest_run_id as string;
-
+  // The pointer may name a run that was moved to Trash — only a live run
+  // counts as "latest"; otherwise fall back to the newest live run.
   const { data, error } = await docproc
     .from("page_extraction_runs")
     .select("id")
     .eq("job_id", jobId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error) throw error;
+  if (jobRow?.latest_run_id) {
+    const { data: pointed, error: pointedErr } = await docproc
+      .from("page_extraction_runs")
+      .select("id")
+      .eq("id", jobRow.latest_run_id as string)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (pointedErr) throw pointedErr;
+    if (pointed?.id) return pointed.id as string;
+  }
   return (data?.id ?? null) as string | null;
 }
