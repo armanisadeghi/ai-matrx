@@ -14,6 +14,8 @@ import { Bookmark, Building2, Contact, Users } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { Button } from "@/components/ui/button";
+import { PitchAdvisoryPanel } from "@/features/crm/pitch-advisories/PitchAdvisoryPanel";
+import { usePitchAdvisories } from "@/features/crm/pitch-advisories/usePitchAdvisories";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -173,11 +175,33 @@ export function AddMembersDialog({
       : preview.total
     : null;
 
-  const submit = async () => {
+  // THE PR FLOOR at the media-list save (E1–E4): how big this list becomes,
+  // and the first wave the organization's `pr.first_wave_size_*` knobs propose.
+  // "Start with the first N" enrolls only those; Add still adds everyone.
+  const advisories = usePitchAdvisories(
+    list.organization_id,
+    open && willAdd
+      ? {
+          surface: "list_save",
+          outreach_list_id: list.id,
+          adding_recipients: willAdd,
+          attachment_count: 0,
+          is_exclusive: false,
+        }
+      : null,
+  );
+
+  const submit = async (limit?: number) => {
     if (!query) return;
     setAdding(true);
     try {
-      const ids = await fetchPartyIdsByFilter(query, ctx, { excludeDnc });
+      await advisories.recordGoAhead({
+        entityType: "crm_outreach_list",
+        entityId: list.id,
+        choice: limit ? "limit_to" : "go_ahead",
+      });
+      const all = await fetchPartyIdsByFilter(query, ctx, { excludeDnc });
+      const ids = limit ? all.slice(0, limit) : all;
       if (ids.length === 0) {
         toast.info("Nothing to add — the filter matches no records");
         return;
@@ -401,6 +425,21 @@ export function AddMembersDialog({
               <span className="text-muted-foreground">No preview yet</span>
             )}
           </div>
+          <PitchAdvisoryPanel
+            state={advisories}
+            organizationId={list.organization_id}
+            actionLabel="adding them"
+            surfaceName="crm-outreach-lists"
+            canPerformLocal={(offer) =>
+              offer.action === "limit_to" && typeof offer.detail?.count === "number"
+            }
+            onLocalOffer={(_advisory, offer) => {
+              const count = offer.detail?.count;
+              if (offer.action !== "limit_to" || typeof count !== "number") return false;
+              void submit(count);
+              return true;
+            }}
+          />
         </div>
         <DialogFooter>
           <Button

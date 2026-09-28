@@ -577,6 +577,23 @@ export async function requeueMember(memberId: string): Promise<void> {
   if (error) throw pgError(error);
 }
 
+/**
+ * Hold a member until `at`: the cadence runner picks them up then, not before.
+ * The pitch-advisory "wait" / "hold until" offers (E7, E10, E12) call this —
+ * the person chose a later send instead of sending now.
+ */
+export async function scheduleMember(memberId: string, at: string): Promise<void> {
+  const { error } = await tryWriteOne(
+    crm()
+      .from("outreach_list_member")
+      .update({ status: "queued", next_attempt_at: at, claimed_by: null, claimed_until: null })
+      .eq("id", memberId)
+      .select("id"),
+    { action: "update", noun: "list member" },
+  );
+  if (error) throw pgError(error);
+}
+
 // ── The claim lock ──────────────────────────────────────────────────────────
 
 /**
