@@ -24,7 +24,6 @@ import {
   FileSpreadsheet,
   FileDown,
   ChevronDown,
-  Table2,
   Columns3,
   Maximize2,
   EyeOff,
@@ -718,22 +717,6 @@ const StreamingTableRendererCore: React.FC<
     );
   };
 
-  // The one table-specific write that is not a "Save to" destination.
-  const renderTableActionButton = () => {
-    if (!tableData.normalizedData || !convertToTable) return null;
-    return (
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={convertToTable.onClick}
-        disabled={convertToTable.disabled || convertToTable.busy}
-        className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
-      >
-        <Table2 className="h-4 w-4" />
-        {convertToTable.busy ? "Converting…" : "Convert to table"}
-      </Button>
-    );
-  };
 
   // ========================================================================
   // RENDER
@@ -1121,13 +1104,12 @@ const StreamingTableRendererCore: React.FC<
                     active={showChart}
                     onToggle={() => setShowChart((v) => !v)}
                   />
-                  {canWrite && renderTableActionButton()}
                   {canWrite && tableData.normalizedData && (
                     <TableSaveToMenu
                       headers={headers}
                       rows={rows}
                       savedTableName={savedTableInfo?.table_name ?? null}
-                      {...(convertToTable ? { hideDataTable: true } : {})}
+                      convertToTable={convertToTable}
                       onSaveAsDataTable={() => setShowSaveModal(true)}
                       onOpenSavedTable={handleViewSavedTable}
                     />

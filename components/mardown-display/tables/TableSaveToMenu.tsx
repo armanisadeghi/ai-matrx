@@ -12,7 +12,7 @@
  * copy and download. Both table renderers (MarkdownTable, StreamingTableRenderer)
  * use it.
  */
-import { ChevronDown, Database, ArrowUpRight, FileSpreadsheet, Loader2, Sheet } from "lucide-react";
+import { ChevronDown, Database, ArrowUpRight, FileSpreadsheet, Loader2, Sheet, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -30,6 +30,7 @@ export function TableSaveToMenu({
   onSaveAsDataTable,
   onOpenSavedTable,
   hideDataTable = false,
+  convertToTable,
 }: {
   headers: string[];
   rows: string[][];
@@ -39,10 +40,16 @@ export function TableSaveToMenu({
   onOpenSavedTable: () => void;
   /** The surface offers its own "Convert to table" instead of a data-table save. */
   hideDataTable?: boolean;
+  /**
+   * A chat artifact's one-press convert: the artifact itself BECOMES a live table. It is the first
+   * item of this menu, never an unlabeled icon beside it (lane HANDOVER, 2026-09-28: the one write
+   * a person came for sat as a bare table icon while "Save to" offered only a workbook and a sheet).
+   */
+  convertToTable?: { onClick: () => void | Promise<void>; busy?: boolean; disabled?: boolean } | undefined;
 }) {
   const workbook = useSendToWorkbook({ headers, rows });
   const sheet = useSendToGoogleSheet({ headers, rows });
-  const busy = workbook.pushing || sheet.pushing;
+  const busy = workbook.pushing || sheet.pushing || Boolean(convertToTable?.busy);
   if (!headers.length) return null;
 
   return (
@@ -66,7 +73,16 @@ export function TableSaveToMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          {hideDataTable ? null : savedTableName ? (
+          {convertToTable ? (
+            <DropdownMenuItem
+              disabled={Boolean(convertToTable.disabled || convertToTable.busy)}
+              onSelect={() => void convertToTable.onClick()}
+              className="gap-2"
+            >
+              <Table2 className="h-4 w-4" /> {convertToTable.busy ? "Making the table…" : "A live table"}
+            </DropdownMenuItem>
+          ) : null}
+          {hideDataTable || convertToTable ? null : savedTableName ? (
             <DropdownMenuItem onSelect={onOpenSavedTable} className="gap-2">
               <ArrowUpRight className="h-4 w-4" /> Open “{savedTableName}”
             </DropdownMenuItem>
