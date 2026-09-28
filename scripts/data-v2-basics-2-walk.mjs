@@ -476,6 +476,100 @@ try {
     if (kinds.some((k) => /^(string|number|datetime)$/.test(k))) friction("the + Row form prints storage words");
     await page.keyboard.press("Escape");
   }
+  if (PHASE === "look-stock") {
+    await open(T.supplies, "?view=sheet");
+    const d = await columnSettings("Stock Status");
+    await shot("c01-stock-status-settings");
+    step("Stock Status settings", { text: (await d.innerText()).replace(/\s+/g, " ").slice(0, 1500), combos: await d.getByRole("combobox").allInnerTexts() });
+    await d.getByRole("combobox").nth(1).click();
+    await sleep(800);
+    const options = await page.getByRole("option").allInnerTexts();
+    step("Shows as offers", { options });
+    const pick = options.findIndex((o) => /^(Choice|Single select|Select|Dropdown)/i.test(o.trim()));
+    if (pick >= 0) {
+      await page.getByRole("option").nth(pick).click();
+      await sleep(1500);
+      await shot("c02-shows-as-choice");
+      step("after picking a choice look", { text: (await d.innerText()).replace(/\s+/g, " ").slice(0, 1800) });
+    }
+    await page.keyboard.press("Escape");
+  }
+
+  if (PHASE === "choicetext") {
+    // A choice column changed to Text and back, with data present (the Sheet on a native table).
+    const stockCells = async () => {
+      const i = await colIndex("Stock Status");
+      return page.evaluate((ix) => [...document.querySelectorAll("tbody tr")].map((tr) => tr.querySelectorAll("td")[ix]?.innerText.trim()).filter((t) => t !== undefined), i);
+    };
+    await open(T.supplies, "?view=sheet");
+    step("Stock Status before", { cells: await stockCells() });
+    // 1 · Text → Choice from the column's own settings: its values are offered.
+    let d = await columnSettings("Stock Status");
+    const shows = d.getByRole("combobox").nth(1);
+    if (!/Choice/.test(await shows.innerText())) {
+      await shows.click();
+      await sleep(700);
+      await page.getByRole("option").filter({ hasText: /^Choice/ }).first().click();
+      await sleep(2500);
+    }
+    const offered = await d.evaluate((x) => (x.innerText.match(/Already in this column[\s\S]*?(?=\n\s*Allow other|$)/)?.[0] ?? "").replace(/\s+/g, " "));
+    await shot("c03-text-to-choice-offers-values");
+    step("Text → Choice offers the column's values", { offered });
+    if (!/Already in this column/.test(offered)) friction("Column settings → Choice did not offer the values already in the column");
+    for (const word of ["In stock", "Backordered"]) {
+      const chip = d.locator("button", { hasText: new RegExp(`^\\s*${word}\\s*\\d*\\s*$`) }).first();
+      if (await chip.count()) await chip.click();
+      await sleep(300);
+    }
+    await d.getByRole("button", { name: "Save", exact: true }).click();
+    const ok = page.getByRole("alertdialog").getByRole("button").filter({ hasNotText: "Cancel" });
+    if (await ok.count().catch(() => 0)) await ok.first().click().catch(() => {});
+    await sleep(5000);
+    const asChoice = await stockCells();
+    await shot("c04-now-a-choice");
+    step("now a Choice", { cells: asChoice, popups: await popups() });
+    if (asChoice.some((c) => /_/.test(c))) friction(`a choice cell shows a key: ${asChoice.join(" | ")}`);
+    // 2 · Choice → Text from Configure Table (the breaker's route): the words stay words.
+    await page.locator('[aria-label="Table settings"]').click();
+    const cfg = page.getByRole("dialog").filter({ hasText: "Configure Table" });
+    await cfg.waitFor({ timeout: 20000 });
+    await sleep(1500);
+    const fieldIdx = await cfg.evaluate((x) =>
+      [...x.querySelectorAll("input")].filter((i) => i.type === "text" || !i.getAttribute("type")).findIndex((i) => i.value === "Stock Status"),
+    );
+    await cfg.getByRole("combobox").nth(fieldIdx * 2 + 1).click();
+    await sleep(600);
+    await page.getByRole("option", { name: /^Text/ }).first().click();
+    await sleep(600);
+    await cfg.getByRole("button", { name: /Save Changes/ }).click().catch(() => {});
+    const ok2 = page.getByRole("alertdialog").getByRole("button").filter({ hasNotText: "Cancel" });
+    if (await ok2.count().catch(() => 0)) await ok2.first().click().catch(() => {});
+    await sleep(6000);
+    await page.keyboard.press("Escape");
+    await open(T.supplies, "?view=sheet");
+    const asText = await stockCells();
+    await shot("c05-choice-to-text-keeps-words");
+    step("Choice → Text", { cells: asText });
+    if (asText.some((c) => /_/.test(c))) friction(`changed to Text, a cell reads a hidden key: ${asText.join(" | ")}`);
+    // 3 · and back to a Choice, so the table ends as it began
+    d = await columnSettings("Stock Status");
+    await d.getByRole("combobox").nth(1).click();
+    await sleep(700);
+    await page.getByRole("option").filter({ hasText: /^Choice/ }).first().click();
+    await sleep(2500);
+    const addAll = d.getByRole("button", { name: /^Add all/ });
+    if (await addAll.count()) await addAll.first().click();
+    await sleep(400);
+    await d.getByRole("button", { name: "Save", exact: true }).click();
+    const ok3 = page.getByRole("alertdialog").getByRole("button").filter({ hasNotText: "Cancel" });
+    if (await ok3.count().catch(() => 0)) await ok3.first().click().catch(() => {});
+    await sleep(5000);
+    const back = await stockCells();
+    await shot("c06-back-to-a-choice");
+    step("back to a Choice", { cells: back });
+    if (back.some((c) => /_/.test(c))) friction(`back to a Choice, a cell shows a key: ${back.join(" | ")}`);
+  }
+
   if (PHASE === "toolbar") {
     // The Sheet's toolbar row: no control drawn over another, none cut off, at 1600 and 1280.
     for (const width of [1600, 1280]) {

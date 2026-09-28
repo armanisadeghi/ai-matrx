@@ -64,6 +64,7 @@ import {
   isRecordStoreTable,
   RECORD_STORE_COLUMN_TYPES,
   getChoiceUsage,
+  getColumnFacets,
   renameColumn,
   setFieldFormat,
   undoChoiceRemoval,
@@ -160,6 +161,23 @@ function ColumnSettingsForm({
       live = false;
     };
   }, [choosing, tableId, field.id]);
+  // NOBODY TYPES A LIST THEY ALREADY HAVE (DATA-V2-BASICS-2): turning a column that holds values
+  // into a Choice column offers those values, most used first, with "Add all" — the same seeding
+  // Configure Table's picker has always had. Measured: this dialog opened on "No choices yet."
+  // with eight rows of Stock Status already on screen. Read once, only when a choice look is picked.
+  const [suggestions, setSuggestions] = useState<{ value: string; count?: number }[] | undefined>(undefined);
+  useEffect(() => {
+    if (!choosing || suggestions !== undefined) return;
+    let live = true;
+    void getColumnFacets({ tableId, fieldName: field.field_name, limit: 50 }).then((answer) => {
+      if (live && !isServiceFailure(answer)) {
+        setSuggestions(answer.data.values.map((v) => ({ value: String(v.value), count: v.count })));
+      }
+    });
+    return () => {
+      live = false;
+    };
+  }, [choosing, suggestions, tableId, field.field_name]);
 
 
   const computed = isComputedColumn({
@@ -370,6 +388,7 @@ function ColumnSettingsForm({
                 setFormat(next);
               }}
               siblingFields={siblings}
+              {...(suggestions ? { suggestions } : {})}
               choiceUsage={choiceUsage}
               rehome={rehome}
               onRehomeChange={setRehome}
