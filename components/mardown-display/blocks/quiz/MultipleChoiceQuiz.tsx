@@ -1065,6 +1065,7 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
           <span className="text-sm font-medium">
             {parsedQuiz.title}
             <span className="ml-2 text-xs text-muted-foreground">
+              {/* read-gate-exempt: question count of quiz content parsed locally from this block's own data, not a network read */}
               ({questionCount} {questionCount === 1 ? "question" : "questions"})
             </span>
           </span>

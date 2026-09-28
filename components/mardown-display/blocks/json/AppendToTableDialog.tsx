@@ -289,14 +289,17 @@ export const AppendToTableDialog: React.FC<AppendToTableDialogProps> = ({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-sm">Column mapping</Label>
-                <div className="text-xs text-muted-foreground">
-                  {mappedCount} of {columns.length} mapped
-                  {unmappedCount > 0 && (
-                    <span className="ml-1 text-amber-600 dark:text-amber-400">
-                      · {unmappedCount} skipped
-                    </span>
-                  )}
-                </div>
+                {/* The mapping is built from the table's fields read — no counts over its failure. */}
+                {!fieldsError && (
+                  <div className="text-xs text-muted-foreground">
+                    {mappedCount} of {columns.length} mapped
+                    {unmappedCount > 0 && (
+                      <span className="ml-1 text-amber-600 dark:text-amber-400">
+                        · {unmappedCount} skipped
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {fieldsLoading ? (
@@ -378,7 +381,7 @@ export const AppendToTableDialog: React.FC<AppendToTableDialogProps> = ({
                 </div>
               ) : null}
 
-              {unmappedCount > 0 && fields && (
+              {!fieldsError && unmappedCount > 0 && fields && (
                 <div className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-md p-2">
                   <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                   <span>

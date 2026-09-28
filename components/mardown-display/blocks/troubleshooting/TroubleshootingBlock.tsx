@@ -44,6 +44,7 @@ import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artif
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import ImportTasksModal from "@/features/tasks/components/ImportTasksModal";
 import { convertTroubleshootingToTasks } from "@/features/tasks/utils/importConverters";
+import { toast } from "@/lib/toast";
 
 interface TroubleshootingData {
   title: string;
@@ -266,7 +267,9 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
         });
       }, 2000);
     } catch (err) {
-      console.error("Failed to copy command:", err);
+      toast.error("Couldn't copy the command", {
+        description: err instanceof Error ? err.message : String(err),
+      });
     }
   };
 

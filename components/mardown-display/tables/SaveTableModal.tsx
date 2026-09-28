@@ -905,6 +905,7 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
         title="Replace table contents"
         description={
           <>
+            {/* read-gate-exempt: row count of the table the person picked from a list that loaded; replace is only offered once a table is selected */}
             This archives all <b>{selectedTable?.row_count ?? 0}</b>{" "}
             existing row
             {selectedTable?.row_count === 1 ? "" : "s"} in{" "}
