@@ -29,6 +29,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import {
   addInstanceTab,
+  removeInstanceTab,
   registerInstance,
   setInstanceActiveTab,
   setInstanceHistoryOpen,
@@ -75,6 +76,9 @@ export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspacePr
   useEffect(() => {
     dispatch(addInstanceTab({ instanceId, noteId }));
     dispatch(setInstanceActiveTab({ instanceId, noteId }));
+    return () => {
+      dispatch(removeInstanceTab({ instanceId, noteId }));
+    };
   }, [dispatch, instanceId, noteId]);
 
   // The folder menu lists the person's folders, which come from the notes

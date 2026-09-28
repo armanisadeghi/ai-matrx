@@ -7,30 +7,18 @@
 // same everywhere.
 
 import { useCallback } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
-import { useSetting } from "@/features/settings/hooks/useSetting";
 import {
   NAV_ITEM_SELECTED,
   NAV_ITEM_UNSELECTED,
 } from "@/features/shell/components/header/navItemClasses";
-import { setNoteEditorMode } from "../redux/slice";
-import {
-  DEFAULT_EDITOR_MODE_SETTING,
-  normalizeNoteEditorMode,
-  useNoteEditorMode,
-} from "../hooks/usePreferredDefaultEditorMode";
-import type { EditorMode } from "./NoteEditorCore";
+import { useSelectNoteMode } from "../hooks/usePreferredDefaultEditorMode";
 import { NOTE_VIEW_MODES } from "./NoteViewControls";
 
 export interface NoteModeSwitchProps {
   noteId: string;
-  /**
-   * Picking a WRITING mode (Split / Plain / Write) becomes the person's
-   * default for notes they have not typed in before
-   * (notes.defaultEditorMode). Reading one note never does.
-   */
-  rememberAsDefault: boolean;
+  /** Kept for host compatibility; a mode click never changes a default. */
+  rememberAsDefault?: boolean;
   /**
    * `always` (default) shows every label. `container` shows labels only when
    * the nearest `@container` ancestor is at least 26rem wide — for hosts that
@@ -42,23 +30,17 @@ export interface NoteModeSwitchProps {
 
 export function NoteModeSwitch({
   noteId,
-  rememberAsDefault,
+  rememberAsDefault: _rememberAsDefault,
   labels = "always",
   className,
 }: NoteModeSwitchProps) {
-  const dispatch = useAppDispatch();
-  const editorMode = useNoteEditorMode(noteId);
-  const [, saveDefaultEditorMode] = useSetting<EditorMode>(
-    DEFAULT_EDITOR_MODE_SETTING,
-  );
+  const selectNoteMode = useSelectNoteMode();
 
   const setMode = useCallback(
     (mode: string) => {
-      const next = normalizeNoteEditorMode(mode, editorMode);
-      dispatch(setNoteEditorMode({ id: noteId, mode: next }));
-      if (rememberAsDefault && next !== "preview") saveDefaultEditorMode(next);
+      selectNoteMode(noteId, mode);
     },
-    [dispatch, noteId, editorMode, rememberAsDefault, saveDefaultEditorMode],
+    [noteId, selectNoteMode],
   );
 
   return (

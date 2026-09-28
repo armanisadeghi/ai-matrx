@@ -1068,9 +1068,9 @@ export async function applySurfaceWrite(
     try {
       // Approval can span renders or navigation. Resolve the current handlers
       // again so draft/revision guards see the state at the time of the write.
-      if (!getSurfaceRuntimeStack().includes(runtime))
+      if (!registry.stack().includes(runtime))
         throw new SurfaceWriteRefusalError("The page changed while approval was open. Review the current page before applying this change.");
-      const currentHandler = splitHandler(resolveHandlers(runtime)[targetName]);
+      const currentHandler = splitHandler(resolveHandlers(runtime, registry)[targetName]);
       if (!currentHandler)
         throw new SurfaceWriteRefusalError("This operation is no longer available on the current page.");
       if (currentHandler.validate) {
