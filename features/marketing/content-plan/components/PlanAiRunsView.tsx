@@ -28,6 +28,7 @@ import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { usePlanAiRun, usePlanAiRuns } from "../hooks/usePlanAiRuns";
 import { planAiRunSummary } from "../format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 const STATUS_TONE: Record<string, string> = {
   completed: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
@@ -41,11 +42,6 @@ function when(iso: string): string {
   return Number.isNaN(date.getTime()) ? iso : date.toLocaleString();
 }
 
-function money(cost: number): string {
-  if (!cost) return "";
-  return cost < 0.01 ? "<$0.01" : `$${cost.toFixed(2)}`;
-}
-
 export function PlanAiRunsView({
   siteId,
   onOpenNode,
@@ -54,6 +50,8 @@ export function PlanAiRunsView({
   /** Open the page a per-page run was made for (THE DOOR LAW). */
   onOpenNode: (nodeId: string) => void;
 }) {
+  const { format: formatCostDisplay, unit } = useCostDisplay();
+  const money = (cost: number): string => (!cost ? "" : formatCostDisplay(cost));
   const runs = usePlanAiRuns(siteId);
   const [openRunId, setOpenRunId] = useState<string | null>(null);
   const detail = usePlanAiRun(siteId, openRunId);
@@ -84,7 +82,7 @@ export function PlanAiRunsView({
                 size="icon"
                 label="AI runs"
                 human={() =>
-                  (runs.data ?? []).map(planAiRunSummary).join("\n")
+                  (runs.data ?? []).map((run) => planAiRunSummary(run, unit)).join("\n")
                 }
                 json={() => runs.data ?? []}
                 agent={() => {
@@ -239,7 +237,7 @@ export function PlanAiRunsView({
                 <CopyButtons
                   size="xs"
                   label={`AI run — ${run.kindLabel}`}
-                  human={() => planAiRunSummary(run)}
+                  human={() => planAiRunSummary(run, unit)}
                   json={() => (open && detail.data ? detail.data : run)}
                   agent={() => ({
                     kind: "plan_ai_run",
@@ -256,7 +254,7 @@ export function PlanAiRunsView({
                         ? undefined
                         : "This run is collapsed; open it to include the complete request and result.",
                     },
-                    summary: planAiRunSummary(run),
+                    summary: planAiRunSummary(run, unit),
                     attributes: {
                       run_id: run.runId,
                       kind: run.kind,

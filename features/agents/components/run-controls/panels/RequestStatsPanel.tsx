@@ -8,6 +8,7 @@
  * durations, tool-call summary, and finish reason.
  */
 
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useMemo } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -32,6 +33,7 @@ export function RequestStatsPanel({
   conversationId,
   requestId,
 }: RequestStatsPanelProps) {
+  const { unit: costUnit } = useCostDisplay();
   const selector = useMemo(
     () =>
       requestId
@@ -101,7 +103,7 @@ export function RequestStatsPanel({
       </StatSection>
 
       <StatSection title="Cost & duration">
-        <StatRow label="Cost" value={fmtCost(usage?.total_cost)} />
+        <StatRow label="Cost" value={fmtCost(usage?.total_cost, costUnit)} />
         <StatRow label="Total" value={fmtServerSeconds(timing?.total_duration)} />
         <StatRow label="API" value={fmtServerSeconds(timing?.api_duration)} />
         <StatRow label="Tools" value={fmtServerSeconds(timing?.tool_duration)} />

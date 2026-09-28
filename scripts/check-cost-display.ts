@@ -1,0 +1,266 @@
+#!/usr/bin/env npx tsx
+/**
+ * check:cost-display — a UI file that shows a person a COST in dollars.
+ *
+ * THE RULE (Arman, 2026-09-27): "No one talks cost to a normal user, only api
+ * users. For normal users, they use points or credits … Everyone should see
+ * credits/points except for system admins who should always be able to toggle
+ * to see $." Every AI/run cost therefore renders through ONE primitive:
+ * `<Cost usd={…}/>` / `<CostBadge/>` / `useCostDisplay().format` in
+ * `components/cost/`, built on `formatCost` in `@ai-matrx/kit/format`
+ * (20,000 points = $1, the same rate `aidream/services/billing/ai_points.py`
+ * banks). A member sees points; only a system admin who flipped the switch in
+ * the header menu's Admin group sees dollars.
+ *
+ * WHAT THIS FLAGS, per file (comments excluded):
+ *   R1 `formatUsd(`                       — the kit's raw dollar formatter;
+ *   R2 `currency: "USD"`                  — an Intl dollar formatter;
+ *   R3 `<cost/usd/spend/savings name>.toFixed(` or `(… ?? 0).toFixed(`
+ *                                          — a hand-rolled dollar figure;
+ *   R4 `"$" + …`                          — a hand-glued dollar sign.
+ *
+ * NOT FLAGGED: `components/cost/**` (the primitive), tests, scripts, and the
+ * DOMAIN_MONEY files below — real money that is not what the platform charged
+ * for AI work (a worker's pay, a course price, a keyword's CPC, a print order's
+ * price). Each carries its reason; a file whose rule no longer fires there
+ * fails as STALE so the list cannot rot.
+ *
+ * THE BASELINE IS A RATCHET (`scripts/cost-display-baseline.json`): per-file
+ * counts of cost sites not yet converted. New file or higher count = exit 1;
+ * `--write` ratchets it down (never up).
+ *
+ *   pnpm check:cost-display
+ *   pnpm check:cost-display --write       # ratchet down / seed
+ *   pnpm check:cost-display --self-test   # every rule fires on a planted line
+ */
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import process from "node:process";
+import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
+// The fleet's money SHAPE detector (template `$${x}`, `"$" + x`, Intl currency
+// formatters and every `.format()` on them, labelled `.toFixed`, cents
+// division) — reused so a helper named `fmt(n)` cannot hide a dollar sign.
+import { moneyShapeIn } from "./money-shape.mjs";
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const BASELINE_FILE = join(ROOT, "scripts", "cost-display-baseline.json");
+
+/** Real money that is not platform cost — dollars are the truth here. */
+export const DOMAIN_MONEY: Record<string, string> = {
+  "features/hr/time/shared/format.ts": "a worker's pay",
+  "features/hr/people/profile/tabs/CompensationTab.tsx": "a worker's compensation",
+  "features/hr/people/profile/ProposePayChange.tsx": "a proposed pay change",
+  "features/legal/wc/pd-ratings/lib/formulas.ts": "a workers'-comp award amount",
+  "features/education/creators/components/EnrollButton.tsx": "a course's price to a student",
+  "features/marketing/link-valuation/configs/matrx-v1.ts": "a backlink's market value",
+  "features/marketing/link-valuation/configs/sheet-2018.ts": "a backlink's market value",
+  "features/marketing/seo/keyword-research/format.ts": "a keyword's cost-per-click in the ad market",
+  "features/product-capture/components/pipeline/ResearchPanel.tsx": "a product's sale price",
+  "features/education/creators/components/CreatorLandingPage.tsx": "a course's price to a student",
+  "features/education/creators/components/CreatorDashboard.tsx": "a creator's earnings",
+  "features/education/classes/components/ClassFormDialog.tsx": "a class's tuition",
+  "features/print/order/lulu-api.ts": "a print order's price",
+  "features/print/order/OrderFlow.tsx": "a print order's price",
+  "components/mardown-display/blocks/print-kinds/print-kind-blocks.tsx": "a print quote's price",
+  "components/mardown-display/blocks/commerce-kinds/commerce-kind-blocks.tsx": "a product's price",
+  "components/rich-editor/core/commands.ts": "a LaTeX `$…$` math delimiter, not money",
+  "features/crm/deals/types.ts": "a sales deal's value",
+  "features/hr/me/MyPaySurface.tsx": "a worker's pay",
+  "features/legal/wc/pd-ratings/components/workspace/RatingBreakdownTable.tsx": "a workers'-comp award amount",
+  "features/marketing/ads/GoogleAdsWorkspace.tsx": "the customer's own Google Ads spend",
+  "features/marketing/initiatives/columns.tsx": "a marketing initiative's budget",
+  "features/marketing/initiatives/InitiativeDetail.tsx": "a marketing initiative's budget",
+  "features/marketing/link-valuation/components/ResultPanel.tsx": "a backlink's market value",
+  "features/marketing/link-valuation/engine.ts": "a backlink's market value",
+  "features/marketing/seo/keyword-research/components/KeywordMetrics.tsx": "a keyword's cost-per-click in the ad market",
+  "features/pricing/data.ts": "our subscription plan prices",
+  "features/pricing/education/EducationPricing.tsx": "our subscription plan prices",
+  "features/entitlements/components/PlanUsagePanel.tsx": "our subscription plan price",
+  "lib/stripe/connect.ts": "a Stripe Connect payout/price",
+  "features/scopes/components/reference/ContextValueDisplay.tsx": "a person's own currency-typed value",
+  "features/ai-models/components/ModelPricingEditor.tsx": "the provider's USD price list an admin edits",
+  "features/ai-models/components/ProviderPriceCell.tsx": "the provider's USD price list an admin syncs",
+  "features/ai-models/utils/providerSyncPricing.ts": "the provider's USD price list an admin syncs",
+};
+
+const SKIP_PREFIXES = ["components/cost/", "scripts/", "node_modules/", ".next/"];
+
+const RULES: { id: string; re: RegExp }[] = [
+  { id: "R1 formatUsd(", re: /\bformatUsd\s*\(/g },
+  { id: "R2 Intl USD", re: /currency:\s*["'`]USD["'`]/g },
+  {
+    id: "R3 cost.toFixed",
+    re: /\b[\w.?]*(?:[cC]ost|[uU]sd|USD|[sS]pend|[sS]avings)[\w?]*\s*\)?\s*\.toFixed\s*\(/g,
+  },
+  {
+    id: "R3 (cost ?? 0).toFixed",
+    re: /\(\s*[\w.?]*(?:[cC]ost|[uU]sd|USD|[sS]pend|[sS]avings)[\w.?]*\s*(?:\?\?\s*0\s*)?\)\s*\.toFixed\s*\(/g,
+  },
+  { id: "R4 \"$\" +", re: /["'`]\$["'`]\s*\+/g },
+];
+
+/** How many LINES of one file's source show money: THE shape detector's
+ *  findings plus this guard's cost rules, each line counted once. Pure. */
+export function countCostSites(source: string): number {
+  const lines = new Set<number>();
+  for (const hit of moneyShapeIn(source) as { line: number }[]) lines.add(hit.line);
+  source.split("\n").forEach((line, i) => {
+    if (/^\s*(\*|\/\*|\/\/)/.test(line)) return;
+    const code = line.replace(/(^|[^:"'`\\])\/\/.*$/, "$1").replace(/\/\*.*?\*\//g, " ");
+    for (const rule of RULES) {
+      rule.re.lastIndex = 0;
+      if (rule.re.test(code)) {
+        lines.add(i + 1);
+        break;
+      }
+    }
+  });
+  return lines.size;
+}
+
+function isUiFile(file: string): boolean {
+  if (!/\.(ts|tsx)$/.test(file) || file.endsWith(".d.ts")) return false;
+  if (/(^|\/)__(tests|fixtures)__\//.test(file) || /\.(test|spec)\.tsx?$/.test(file)) return false;
+  if (SKIP_PREFIXES.some((p) => file.startsWith(p))) return false;
+  return /^(app|features|components|lib|hooks|providers|utils)\//.test(file);
+}
+
+type Counts = Record<string, number>;
+
+function scanTree(): { counts: Counts; staleDomain: string[] } {
+  const listed = execFileSync(
+    "git",
+    ["ls-files", "--cached", "--others", "--exclude-standard", "--", "*.ts", "*.tsx"],
+    { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+  )
+    .split("\n")
+    .filter(Boolean);
+  const counts: Counts = {};
+  const staleDomain: string[] = [];
+  for (const file of listed) {
+    if (!isUiFile(file)) continue;
+    const abs = join(ROOT, file);
+    if (!existsSync(abs)) continue;
+    const n = countCostSites(readFileSync(abs, "utf8"));
+    if (file in DOMAIN_MONEY) {
+      if (n === 0) staleDomain.push(file);
+      continue;
+    }
+    if (n > 0) counts[file] = n;
+  }
+  for (const file of Object.keys(DOMAIN_MONEY)) {
+    if (!existsSync(join(ROOT, file)) && !staleDomain.includes(file)) staleDomain.push(file);
+  }
+  return { counts, staleDomain: staleDomain.sort() };
+}
+
+export interface Verdict {
+  newSites: { file: string; count: number; baseline: number }[];
+  cleared: string[];
+}
+
+/** New = a file above its baseline count (absent = 0). Pure. */
+export function judge(current: Counts, baseline: Counts): Verdict {
+  const newSites = Object.entries(current)
+    .filter(([file, count]) => count > (baseline[file] ?? 0))
+    .map(([file, count]) => ({ file, count, baseline: baseline[file] ?? 0 }))
+    .sort((a, b) => a.file.localeCompare(b.file));
+  const cleared = Object.keys(baseline)
+    .filter((file) => (current[file] ?? 0) < baseline[file])
+    .sort();
+  return { newSites, cleared };
+}
+
+function readBaseline(): Counts | null {
+  if (!existsSync(BASELINE_FILE)) return null;
+  return JSON.parse(readFileSync(BASELINE_FILE, "utf8")) as Counts;
+}
+
+function writeBaseline(counts: Counts): void {
+  const sorted = Object.fromEntries(Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)));
+  writeFileSync(BASELINE_FILE, `${JSON.stringify(sorted, null, 2)}\n`);
+}
+
+function selfTest(): number {
+  const cases: { name: string; source: string; want: number }[] = [
+    { name: "R1 kit formatUsd", source: `<span>{formatUsd(run.costUsd, { digits: "adaptive" })}</span>`, want: 1 },
+    { name: "R2 Intl currency", source: `new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })`, want: 1 },
+    { name: "R3 JSX toFixed", source: `<span>${"{"}arm.cost_usd.toFixed(3)}</span>`, want: 1 },
+    { name: "R3 template toFixed", source: "const s = `$${view.costUsd.toFixed(4)}`;", want: 1 },
+    { name: "R3 optional chain", source: "`${m.total_cost?.toFixed(2)}`", want: 1 },
+    { name: "R3 nullish group", source: "`$${(row.spendUsd ?? 0).toFixed(2)}`", want: 1 },
+    { name: "R4 glued dollar", source: `const s = "$" + total;`, want: 1 },
+    { name: "the primitive", source: `<Cost usd={run.costUsd} />`, want: 0 },
+    { name: "the hook", source: `const { format } = useCostDisplay(); format(costUsd)`, want: 0 },
+    { name: "a duration", source: "`${seconds.toFixed(1)}s`", want: 0 },
+    { name: "a comment", source: `// formatUsd(cost) is banned; "$" + x too`, want: 0 },
+  ];
+  let failed = 0;
+  for (const c of cases) {
+    const got = countCostSites(c.source);
+    const ok = got === c.want;
+    if (!ok) failed++;
+    console.log(`${ok ? "PASS" : "FAIL"}  ${c.name}: got ${got}, want ${c.want}`);
+  }
+  const ratchet = judge({ "a.tsx": 2, "b.tsx": 1, "c.tsx": 1 }, { "a.tsx": 2, "b.tsx": 2 });
+  const ratchetOk =
+    ratchet.newSites.length === 1 && ratchet.newSites[0].file === "c.tsx" && ratchet.cleared.join() === "b.tsx";
+  if (!ratchetOk) failed++;
+  console.log(`${ratchetOk ? "PASS" : "FAIL"}  ratchet: a new file fails, a lower count is cleared`);
+  console.log(failed === 0 ? "self-test: all rules fire" : `self-test: ${failed} failed`);
+  return failed === 0 ? 0 : 1;
+}
+
+function main(): number {
+  const args = new Set(process.argv.slice(2));
+  if (args.has("--self-test")) return selfTest();
+
+  const { counts: current, staleDomain } = scanTree();
+  const baseline = readBaseline();
+  if (args.has("--write")) {
+    if (!baseline) {
+      writeBaseline(current);
+      console.log(`Seeded ${BASELINE_FILE} with ${Object.keys(current).length} files.`);
+      return 0;
+    }
+    const ratcheted: Counts = {};
+    for (const [file, count] of Object.entries(baseline)) {
+      const now = Math.min(count, current[file] ?? 0);
+      if (now > 0) ratcheted[file] = now;
+    }
+    writeBaseline(ratcheted);
+    console.log(`Ratcheted baseline to ${Object.keys(ratcheted).length} files.`);
+    return 0;
+  }
+
+  const verdict = judge(current, baseline ?? {});
+  let code = 0;
+  if (staleDomain.length > 0) {
+    console.log("FAIL: DOMAIN_MONEY entries no longer format dollars (or are gone) — delete them:");
+    for (const file of staleDomain) console.log(`  STALE  ${file}`);
+    code = 1;
+  }
+  if (verdict.newSites.length > 0) {
+    console.log(
+      `FAIL: a cost is shown in dollars. Render it with <Cost usd={…}/> (components/cost/Cost.tsx) or useCostDisplay().format — everyone sees points; only a system admin who flipped "Show costs in dollars" sees $. Real money that is not platform cost goes in DOMAIN_MONEY with its reason.`,
+    );
+    for (const site of verdict.newSites) {
+      console.log(`  NEW  ${site.file}  (${site.count} site${site.count === 1 ? "" : "s"}, baseline ${site.baseline})`);
+    }
+    code = 1;
+  }
+  if (code === 0) {
+    const remaining = Object.keys(current).length;
+    console.log(
+      `OK: no new dollar-formatted cost. ${remaining} baseline file${remaining === 1 ? "" : "s"} still to convert.` +
+        (verdict.cleared.length > 0
+          ? ` ${verdict.cleared.length} cleared since the baseline — run --write to ratchet it down.`
+          : ""),
+    );
+  }
+  return code;
+}
+
+exitAfterDrain(main());

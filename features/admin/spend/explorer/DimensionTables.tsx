@@ -25,6 +25,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { timestamp, usd } from "../format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
   SPEND_DIMENSIONS,
   type SpendBreakdown,
@@ -38,7 +39,7 @@ import {
   identityHref,
   rowLabel,
 } from "./labels";
-import { formatCount, formatPercentFromFraction } from "@ai-matrx/kit/format";
+import { formatCount, formatPercentFromFraction, type CostUnit } from "@ai-matrx/kit/format";
 
 function ShareBar({ share }: { share: number }) {
   return (
@@ -59,6 +60,7 @@ function ShareBar({ share }: { share: number }) {
 function columnsFor(
   dim: SpendDimension,
   onDrill: (dim: SpendDimension, key: string) => void,
+  unit: CostUnit,
 ): MatrxColumnDef<SpendDimensionRow>[] {
   return [
     {
@@ -104,7 +106,7 @@ function columnsFor(
       width: 100,
       align: "right",
       cell: (r) => (
-        <span className="tabular-nums font-medium">{usd(r.cost)}</span>
+        <span className="tabular-nums font-medium">{usd(r.cost, unit)}</span>
       ),
     },
     {
@@ -124,7 +126,7 @@ function columnsFor(
       align: "right",
       cell: (r) => (
         <span className="tabular-nums text-muted-foreground">
-          {usd(r.manualCost)}
+          {usd(r.manualCost, unit)}
         </span>
       ),
     },
@@ -137,7 +139,7 @@ function columnsFor(
       align: "right",
       cell: (r) => (
         <span className="tabular-nums text-muted-foreground">
-          {usd(r.automatedCost)}
+          {usd(r.automatedCost, unit)}
         </span>
       ),
     },
@@ -163,7 +165,7 @@ function columnsFor(
       align: "right",
       cell: (r) => (
         <span className="tabular-nums text-muted-foreground">
-          {r.requests > 0 ? usd(r.cost / r.requests) : "—"}
+          {r.requests > 0 ? usd(r.cost / r.requests, unit) : "—"}
         </span>
       ),
     },
@@ -230,6 +232,7 @@ export function DimensionTables({
   data: SpendBreakdown;
   onDrill: (dim: SpendDimension, key: string) => void;
 }) {
+  const { unit } = useCostDisplay();
   const [tab, setTab] = useState<SpendDimension>("user");
   return (
     <section className="flex min-w-0 flex-col gap-2">
@@ -273,7 +276,7 @@ export function DimensionTables({
             >
               {d.otherN > 0 ? (
                 <p className="text-xs tabular-nums text-muted-foreground">
-                  Top {d.rows.length} of {d.distinct} · Other {usd(d.otherCost)}
+                  Top {d.rows.length} of {d.distinct} · Other {usd(d.otherCost, unit)}
                 </p>
               ) : null}
               <MatrxDataTable
@@ -282,7 +285,7 @@ export function DimensionTables({
                   defaultSort: { id: "cost", direction: "desc" },
                 }}
                 data={d.rows}
-                columns={columnsFor(dim, onDrill)}
+                columns={columnsFor(dim, onDrill, unit)}
                 getRowId={(r) => r.key}
                 pageSize={15}
                 emptyState={{ title: "Nothing in this window." }}

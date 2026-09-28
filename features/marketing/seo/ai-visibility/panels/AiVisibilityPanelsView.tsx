@@ -23,6 +23,7 @@
 // panel's health opens its own run history.
 
 import { useState } from "react";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { humanizeBackendError } from "@/utils/errors";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -151,6 +152,7 @@ function PanelCard({
   organizationId: string;
 }) {
   const { row, trend } = panel;
+  const { format: formatCostDisplay } = useCostDisplay();
   const prompts = panelPrompts(row);
   const messages = panelKeyMessages(row);
   const design = usePanelDesign(row.id, organizationId);
@@ -186,7 +188,7 @@ function PanelCard({
           detail={
             row.last_run_at
               ? `${formatCompactDate(row.last_run_at)}${
-                  row.last_run_cost_usd ? ` · $${Number(row.last_run_cost_usd).toFixed(2)}` : ""
+                  row.last_run_cost_usd ? ` · ${formatCostDisplay(Number(row.last_run_cost_usd))}` : ""
                 }`
               : trend.answers > 0
                 ? // A panel follows a QUESTION, not its own runs: answers

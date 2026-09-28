@@ -12,10 +12,16 @@
 // Nothing about what AuditionProof already rendered changed when this moved:
 // the strings are byte-identical to the ones it built inline.
 
-/** Dollars when it is dollars, cents when a trial arm cost less than one. */
-export function money(usd: number | null | undefined): string | null {
+import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
+
+/** The trial arm's cost, in the viewer's unit (points for everyone, dollars
+ *  only for an admin who flipped the switch). */
+export function money(
+  usd: number | null | undefined,
+  unit: CostUnit = "points",
+): string | null {
   if (usd === null || usd === undefined) return null;
-  return usd >= 1 ? `$${usd.toFixed(2)}` : `${(usd * 100).toFixed(1)}¢`;
+  return formatCost(usd, { unit });
 }
 
 /** Whole seconds, or minutes once a trial arm has run long enough to need them. */
@@ -41,7 +47,10 @@ export interface BenchFactsInput {
  * means the trial is void, and this sentence says so on the same line as the
  * panel — never in a footnote under a claim.
  */
-export function benchFacts(v: BenchFactsInput): string[] {
+export function benchFacts(
+  v: BenchFactsInput,
+  unit: CostUnit = "points",
+): string[] {
   return [
     v.panel_votes > 0
       ? `blind panel of ${v.panel_votes}${
@@ -52,7 +61,7 @@ export function benchFacts(v: BenchFactsInput): string[] {
             : ""
         }`
       : null,
-    money(v.c_cost_usd) ? `our arm cost ${money(v.c_cost_usd)}` : null,
+    money(v.c_cost_usd, unit) ? `our arm cost ${money(v.c_cost_usd, unit)}` : null,
     v.c_seconds ? `${Math.round(v.c_seconds)}s` : null,
   ].filter((f): f is string => f !== null);
 }

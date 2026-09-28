@@ -5,10 +5,11 @@
 //
 // Doc: features/admin/spend/FEATURE.md
 
-import { formatCount, formatRelativeTime, formatUsd } from "@ai-matrx/kit/format";
+import { formatCount, formatCost, formatRelativeTime, type CostUnit } from "@ai-matrx/kit/format";
 
 /**
- * `$144.85`. A null is "not measured" — never rendered as $0.00.
+ * `1,234 points` (or `$144.85` for an admin who flipped to dollars). A null
+ * is "not measured" — never rendered as a confident zero.
  *
  * A THIN OPTION-BINDING WRAPPER over `@ai-matrx/kit/format`, not a formatter:
  * what it binds is this surface's own word for an unmeasured value ("not
@@ -16,9 +17,13 @@ import { formatCount, formatRelativeTime, formatUsd } from "@ai-matrx/kit/format
  * ledger and not about money. The two hand-built `Intl.NumberFormat`s and the
  * hand-rolled sub-cent branch that used to live here were found by the money
  * shape lane of `check:package-twins`.
+ *
+ * `unit` defaults to `"points"` — everyone sees points; pass
+ * `useCostDisplay().unit` from the calling component so a system admin who
+ * flipped "Show costs in dollars" still sees $.
  */
-export function usd(value: number | null | undefined): string {
-  return formatUsd(value, { unknown: "not measured" });
+export function usd(value: number | null | undefined, unit: CostUnit = "points"): string {
+  return formatCost(value, { unit, unknown: "not measured" });
 }
 
 /**
@@ -28,10 +33,10 @@ export function usd(value: number | null | undefined): string {
  * places, so `usdPrecise(0.000004)` returned "$0.00" — the exact failure the
  * comment says it exists to stop. `digits: "adaptive"` gives two decimals at a
  * dollar or more, four down to a cent and six below that, so the same value now
- * reads "$0.000004".
+ * reads "$0.000004". See {@link usd} for the `unit` contract.
  */
-export function usdPrecise(value: number | null | undefined): string {
-  return formatUsd(value, { digits: "adaptive", unknown: "not measured" });
+export function usdPrecise(value: number | null | undefined, unit: CostUnit = "points"): string {
+  return formatCost(value, { unit, unknown: "not measured" });
 }
 
 /** A localized item count, with an honest absence when the ledger is unknown. */

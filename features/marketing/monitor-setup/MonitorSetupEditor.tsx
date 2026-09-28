@@ -41,6 +41,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { getComingSoon } from "@/lib/coming-soon/registry";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -252,6 +253,7 @@ export function MonitorSetupEditor() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
+  const { format: formatCostDisplay } = useCostDisplay();
   const invalidate = useInvalidateMonitorSetup();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   useClippedContentGuard(scrollRef, { label: "monitor setup editor" });
@@ -979,10 +981,10 @@ export function MonitorSetupEditor() {
           </div>
           <p className="text-xs text-muted-foreground" data-surface-value="setup_cost_estimate">
             {cost?.average_run_usd != null
-              ? `A run has cost about $${cost.average_run_usd.toFixed(2)} (${cost.runs_measured} runs in the last 30 days), so this schedule is about $${(cost.average_run_usd * preset.runsPerMonth).toFixed(2)} a month.`
+              ? `A run has cost about ${formatCostDisplay(cost.average_run_usd)} (${cost.runs_measured} runs in the last 30 days), so this schedule is about ${formatCostDisplay(cost.average_run_usd * preset.runsPerMonth)} a month.`
               : "No runs yet in this organization, so there is no cost per run to estimate — the first run measures it."}{" "}
             {cost
-              ? `Your organization has spent $${cost.month_to_date_usd.toFixed(2)} of its $${cost.monthly_ceiling_usd.toFixed(2)} monthly news ceiling.`
+              ? `Your organization has spent ${formatCostDisplay(cost.month_to_date_usd)} of its ${formatCostDisplay(cost.monthly_ceiling_usd)} monthly news ceiling.`
               : null}
           </p>
           {schedulePromise ? (

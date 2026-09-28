@@ -6,6 +6,7 @@
  * payload cannot drift away from the sentence the person is looking at.
  */
 
+import { formatCost } from "@ai-matrx/kit/format";
 import {
   buildAgentPayload,
   type AgentPayloadInput,
@@ -45,7 +46,7 @@ export function workflowFailureHuman(view: WorkflowFailureView): string {
       : null;
   const cost =
     view.costUsd !== undefined && view.costUsd > 0
-      ? `$${view.costUsd.toFixed(4)}`
+      ? formatCost(view.costUsd)
       : null;
   return compactLines([
     view.workflowName ? `Workflow: ${view.workflowName}` : null,
@@ -74,7 +75,7 @@ export function workflowFailureAgentInput(
       : null;
   const cost =
     view.costUsd !== undefined && view.costUsd > 0
-      ? `$${view.costUsd.toFixed(4)}`
+      ? formatCost(view.costUsd)
       : null;
 
   return {

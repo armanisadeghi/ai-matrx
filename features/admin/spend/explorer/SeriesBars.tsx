@@ -14,6 +14,7 @@
 import { usd } from "../format";
 import type { SpendSeriesPoint } from "../types";
 import { shortLocal } from "./labels";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 export interface SeriesBarsProps {
   points: SpendSeriesPoint[];
@@ -21,17 +22,12 @@ export interface SeriesBarsProps {
   onPickDay?: (day: string) => void;
 }
 
-const ROUNDED_USD = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
-
 export function SeriesBars({
   points,
   granularity,
   onPickDay,
 }: SeriesBarsProps) {
+  const { unit, format: formatCostDisplay } = useCostDisplay();
   const peak = points.reduce((max, p) => Math.max(max, p.cost), 0);
   if (points.length === 0 || peak <= 0) {
     return (
@@ -67,7 +63,7 @@ export function SeriesBars({
           Automated
         </span>
         <span className="ml-auto whitespace-nowrap max-sm:w-full max-sm:text-right">
-          per {granularity} · peak {usd(peak)} at{" "}
+          per {granularity} · peak {usd(peak, unit)} at{" "}
           {shortLocal(points[peakIndex]?.at ?? "")}
         </span>
       </div>
@@ -76,7 +72,7 @@ export function SeriesBars({
           const total = Math.max(0, p.cost);
           const heightPct = (total / peak) * 100;
           const manualPct = total > 0 ? (p.manual / total) * 100 : 0;
-          const title = `${shortLocal(p.at)} — ${usd(p.cost)} (manual ${usd(p.manual)}, automated ${usd(p.automated)}, ${p.n} executions)`;
+          const title = `${shortLocal(p.at)} — ${usd(p.cost, unit)} (manual ${usd(p.manual, unit)}, automated ${usd(p.automated, unit)}, ${p.n} executions)`;
           const clickable =
             granularity === "day" && onPickDay !== undefined && total > 0;
           const bar = (
@@ -102,7 +98,7 @@ export function SeriesBars({
             >
               {i === peakIndex ? (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-bold tabular-nums text-foreground">
-                  {ROUNDED_USD.format(peak)}
+                  {formatCostDisplay(peak, { short: true })}
                 </span>
               ) : null}
               {clickable ? (

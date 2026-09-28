@@ -49,6 +49,7 @@ import {
 import { fetchSpendOverview, viewerTimezone } from "./service";
 import { useSpendPopoverKnobs } from "./useSpendPopoverKnobs";
 import { staleness, timestamp, usd, usdPrecise } from "./format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import type { SpendLedger, SpendLedgerRole, SpendOverview } from "./types";
 import { formatCount } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -152,6 +153,7 @@ function Folded({
 }
 
 export function SpendDashboard() {
+  const { unit } = useCostDisplay();
   const [timezone] = useState(() => viewerTimezone());
   const [data, setData] = useState<SpendOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -249,7 +251,7 @@ export function SpendDashboard() {
       width: 100,
       align: "right",
       cell: (r) => (
-        <span className="tabular-nums">{usdPrecise(r.totalToday)}</span>
+        <span className="tabular-nums">{usdPrecise(r.totalToday, unit)}</span>
       ),
     },
     {
@@ -259,7 +261,7 @@ export function SpendDashboard() {
       width: 110,
       align: "right",
       cell: (r) => (
-        <span className="tabular-nums">{usdPrecise(r.total30d)}</span>
+        <span className="tabular-nums">{usdPrecise(r.total30d, unit)}</span>
       ),
     },
     {
@@ -269,7 +271,7 @@ export function SpendDashboard() {
       width: 110,
       align: "right",
       cell: (r) => (
-        <span className="tabular-nums">{usdPrecise(r.totalAll)}</span>
+        <span className="tabular-nums">{usdPrecise(r.totalAll, unit)}</span>
       ),
     },
     {
@@ -388,7 +390,7 @@ export function SpendDashboard() {
                     ? "loading"
                     : fixedMonthly === "missing" || fixedMonthly <= 0
                       ? "not set"
-                      : `${usd(fixedMonthly)}/month`
+                      : `${usd(fixedMonthly, unit)}/month`
                 }.`}
               >
                 <Info className="h-3.5 w-3.5" aria-hidden />
@@ -462,7 +464,7 @@ export function SpendDashboard() {
           <Folded
             icon={Package}
             title="Print orders"
-            summary={`${usd(data.printOrders.revenueUsd)} revenue · ${usd(data.printOrders.marginUsd)} margin`}
+            summary={`${usd(data.printOrders.revenueUsd, unit)} revenue · ${usd(data.printOrders.marginUsd, unit)} margin`}
             open={printOrdersExpanded}
             onOpenChange={setPrintOrdersExpanded}
           >
@@ -472,7 +474,7 @@ export function SpendDashboard() {
                   Revenue (paid)
                 </div>
                 <div className="text-lg font-semibold tabular-nums text-foreground">
-                  {usd(data.printOrders.revenueUsd)}
+                  {usd(data.printOrders.revenueUsd, unit)}
                 </div>
                 <div className="text-[11px] text-muted-foreground">
                   {formatCount(data.printOrders.paidOrders)} of{" "}
@@ -484,7 +486,7 @@ export function SpendDashboard() {
                   Refunded
                 </div>
                 <div className="text-lg font-semibold tabular-nums text-foreground">
-                  {usd(data.printOrders.refundedUsd)}
+                  {usd(data.printOrders.refundedUsd, unit)}
                 </div>
               </div>
               <div className="rounded-md border border-border bg-card px-3 py-2">
@@ -492,7 +494,7 @@ export function SpendDashboard() {
                   Our Lulu cost
                 </div>
                 <div className="text-lg font-semibold tabular-nums text-foreground">
-                  {usd(data.printOrders.luluCostUsd)}
+                  {usd(data.printOrders.luluCostUsd, unit)}
                 </div>
               </div>
               <div
@@ -518,7 +520,7 @@ export function SpendDashboard() {
                       : "text-foreground"
                   }`}
                 >
-                  {usd(data.printOrders.marginUsd)}
+                  {usd(data.printOrders.marginUsd, unit)}
                 </div>
                 <div
                   className={`text-[11px] ${

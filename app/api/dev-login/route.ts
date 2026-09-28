@@ -76,35 +76,65 @@ const REPO_ROOT = /* turbopackIgnore: true */ process.cwd();
  * `scripts/agent-harness/preview-session.sh` mints the matching name; the
  * two are pinned together by `pnpm check:preview-session`.
  */
-function nonceFileFor(hostname: string, nonce: string): string {
+function safeHostname(hostname: string): string {
   // `hostname` comes out of `new URL(...)`, so it is already a parsed host —
   // but this value becomes a PATH, so it is re-validated rather than trusted.
-  const safeHost = /^[a-z0-9.-]{1,253}$/.test(hostname) && !hostname.includes("..")
+  return /^[a-z0-9.-]{1,253}$/.test(hostname) && !hostname.includes("..")
     ? hostname
     : "invalid-host";
+}
+
+function nonceFileFor(hostname: string, nonce: string): string {
   // The nonce also becomes part of a PATH. It is always openssl-rand hex, but
   // re-validated rather than trusted, exactly like the hostname above.
   const safeNonce = /^[a-f0-9]{16,64}$/.test(nonce) ? nonce : "invalid-nonce";
-  return join(REPO_ROOT, `.dev-login-nonce.${safeHost}.${safeNonce}`);
+  return join(REPO_ROOT, `.dev-login-nonce.${safeHostname(hostname)}.${safeNonce}`);
+}
+
+// The pre-2026-09-26 shape (one file per HOST, no nonce in the name). A
+// handful of one-off screenshot/verification scripts under scripts/campaign-*
+// still hand-write this file directly rather than going through
+// `pnpm dev-login`; this keeps them working unchanged while the primary path
+// (dev-login.sh) gets the per-mint isolation below.
+function legacyNonceFileFor(hostname: string): string {
+  return join(REPO_ROOT, `.dev-login-nonce.${safeHostname(hostname)}`);
 }
 
 function consumeNonce(presented: string, hostname: string): boolean {
-  const file = nonceFileFor(hostname, presented);
+  // THE PER-MINT FILE FIRST. A session driving `s3f1eb9c52.localhost` mints
+  // `.dev-login-nonce.s3f1eb9c52.localhost.<nonce>`, so two mints for the same
+  // host — e.g. two subagents dispatched from one parent Claude session,
+  // whose `CLAUDE_CODE_HOST_SESSION_ID` is identical (see
+  // `scripts/agent-harness/preview-session.sh`) — are two independent files
+  // that cannot overwrite each other, and a wrong guess touches nothing: it
+  // hashes out to a filename nothing wrote, never a real pending mint.
+  const mintFile = nonceFileFor(hostname, presented);
+  try {
+    const expected = readFileSync(mintFile, "utf8").trim();
+    try {
+      rmSync(mintFile);
+    } catch {
+      /* already gone */
+    }
+    return expected.length >= 16 && presented === expected;
+  } catch {
+    /* no per-mint file under this presented value — fall through below */
+  }
+
+  // THE LEGACY HOST-ONLY FILE. Consumed on ANY presentation (match or
+  // mismatch) exactly as before W56c's extension: a wrong guess against a
+  // single shared per-host file must still burn it, or it can be
+  // brute-forced against a long-lived file.
+  const legacyFile = legacyNonceFileFor(hostname);
   let expected: string;
   try {
-    expected = readFileSync(file, "utf8").trim();
+    expected = readFileSync(legacyFile, "utf8").trim();
   } catch {
-    // No mint exists under THIS presented value for this host — either it was
-    // never minted, already consumed, or a wrong guess. Nothing to burn: a
-    // different pending mint for the same host lives under its OWN nonce and
-    // is untouched.
+    // Nothing pending under either shape for this host — nothing to consume.
     return false;
   }
-  // Consume the moment it is looked up (match or mismatched content) so the
-  // nonce that unavoidably appears in the navigation URL is dead the instant
-  // anything presents it, even to a mismatching file.
   try {
-    rmSync(file);
+    rmSync(legacyFile);
   } catch {
     /* already gone */
   }

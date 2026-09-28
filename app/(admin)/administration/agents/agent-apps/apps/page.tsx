@@ -27,8 +27,8 @@ import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import {
   formatCount,
   formatPercentFromFraction,
-  formatUsd,
 } from "@ai-matrx/kit/format";
+import { Cost } from "@/components/cost/Cost";
 import {
   fetchAgentAppsAdmin,
   updateAgentAppAdmin,
@@ -273,7 +273,7 @@ export const AGENT_APP_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
     width: 90,
     className: "text-right tabular-nums",
     mobileHidden: true,
-    cell: (app) => formatUsd(app.total_cost, { digits: 4 }),
+    cell: (app) => <Cost usd={app.total_cost} />,
   },
   {
     id: "updated",

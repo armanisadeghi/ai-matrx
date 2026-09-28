@@ -24,6 +24,7 @@
 
 import { useEffect, useEffectEvent, useState } from "react";
 import { toast } from "@/lib/toast";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
   AlertCircle,
   ChevronDown,
@@ -153,6 +154,7 @@ function JsonBlock({
 }
 
 function StageCard({ stage }: { stage: Row }) {
+  const { format: formatCostDisplay } = useCostDisplay();
   const key = String(stage.stage_key ?? "?");
   const status = String(stage.status ?? "");
   const failed = status === "failed";
@@ -189,7 +191,7 @@ function StageCard({ stage }: { stage: Row }) {
         </span>
         <span className="ml-auto flex items-center gap-2 text-[10px] text-muted-foreground">
           {dur && <span>{dur}</span>}
-          {cost != null && <span>${cost.toFixed(4)}</span>}
+          {cost != null && <span>{formatCostDisplay(cost)}</span>}
         </span>
       </button>
       {open && (
@@ -244,6 +246,7 @@ export function RunTruthInspector({
   studioRunId,
   episodeId,
 }: RunTruthInspectorProps) {
+  const { format: formatCostDisplay } = useCostDisplay();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -418,7 +421,7 @@ export function RunTruthInspector({
                 </span>
                 {runDuration && <span>duration: {runDuration}</span>}
                 {totalCost != null && (
-                  <span>cost: ${totalCost.toFixed(4)}</span>
+                  <span>cost: {formatCostDisplay(totalCost)}</span>
                 )}
                 <span className="font-mono">
                   run: {truth.resolvedAgentRunId ?? "not assigned yet"}

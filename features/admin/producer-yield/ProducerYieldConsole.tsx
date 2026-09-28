@@ -16,7 +16,7 @@
  *   Unmeasurable — spends money, no acceptance signal wired at all.
  *   Unmeasured   — outcomes exist, nobody has ever decided one. NOT 0%.
  *   Measured     — the rate is real, and 0% here is a genuine failure.
- * Every number is rendered through `formatRate` / `formatUsd` / `formatCount`,
+ * Every number is rendered through `formatRate` / `<Cost>` / `formatCount`,
  * which return an em dash for null. Never write `?? 0` in this file.
  *
  * THE DOOR LAW (common-docs/policies/no-dead-ends.md): every producer row links
@@ -56,12 +56,13 @@ import {
   MEASUREMENT_STATE_COPY,
   formatCount,
   formatRate,
-  formatUsd,
   type ProducerYieldOut,
   type ProducerYieldRow,
 } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
+import { Cost } from "@/components/cost/Cost";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 const TONE_CLASS: Record<string, string> = {
   critical:
@@ -151,6 +152,7 @@ function StatCard({
 export function ProducerYieldConsole() {
   const params = useSearchParams();
   const focused = params?.get("producer") ?? null;
+  const { format: formatCostDisplay } = useCostDisplay();
 
   const [checking, setChecking] = useState(false);
   const [showIdle, setShowIdle] = useState(false);
@@ -263,23 +265,23 @@ export function ProducerYieldConsole() {
       header: "Spend",
       filter: "number",
       width: 120,
-      cell: (row) => <span className="tabular-nums">{formatUsd(row.cost_usd)}</span>,
+      cell: (row) => <span className="tabular-nums"><Cost usd={row.cost_usd} /></span>,
     },
     {
       id: "cost_per_accepted_usd",
       accessorKey: "cost_per_accepted_usd",
-      header: "$/accepted",
+      header: "Per accepted",
       filter: "number",
       width: 125,
-      cell: (row) => <span className="tabular-nums">{formatUsd(row.cost_per_accepted_usd, { digits: 4 })}</span>,
+      cell: (row) => <span className="tabular-nums"><Cost usd={row.cost_per_accepted_usd} /></span>,
     },
     {
       id: "cost_per_produced_usd",
       accessorKey: "cost_per_produced_usd",
-      header: "$/produced",
+      header: "Per produced",
       filter: "number",
       width: 125,
-      cell: (row) => <span className="tabular-nums text-muted-foreground">{formatUsd(row.cost_per_produced_usd, { digits: 4 })}</span>,
+      cell: (row) => <span className="tabular-nums text-muted-foreground"><Cost usd={row.cost_per_produced_usd} /></span>,
     },
     {
       id: "actions",
@@ -337,7 +339,7 @@ export function ProducerYieldConsole() {
           <StatCard
             icon={<Coins className="h-3.5 w-3.5" />}
             label="Total spend"
-            value={formatUsd(totals.cost_usd)}
+            value={formatCostDisplay(totals.cost_usd)}
             hint={`${formatCount(totals.producers)} producers on the register.`}
           />
           <StatCard
@@ -351,13 +353,13 @@ export function ProducerYieldConsole() {
           <StatCard
             icon={<TrendingDown className="h-3.5 w-3.5" />}
             label="Cost per accepted"
-            value={formatUsd(totals.cost_per_accepted_usd, { digits: 4 })}
+            value={formatCostDisplay(totals.cost_per_accepted_usd)}
             hint="The honest number. Cost per PRODUCED outcome flatters a producer that emits more junk, so it is never the headline."
           />
           <StatCard
             icon={<HelpCircle className="h-3.5 w-3.5" />}
             label="Unmeasurable spend"
-            value={formatUsd(totals.unmeasurable_cost_usd)}
+            value={formatCostDisplay(totals.unmeasurable_cost_usd)}
             tone={(totals.unmeasurable_cost_usd ?? 0) > 0 ? "critical" : "neutral"}
             hint="Money spent by producers with NO acceptance signal wired. Nothing here can tell you whether it was worth it."
           />
@@ -372,7 +374,7 @@ export function ProducerYieldConsole() {
           nothing has been decided after{" "}
           <strong>{floors.never_decided_min_age_days} days</strong>; alarm when a
           producer with no acceptance signal has spent{" "}
-          <strong>{formatUsd(floors.no_signal_min_cost_usd)}</strong>. Below the sample
+          <strong><Cost usd={floors.no_signal_min_cost_usd} /></strong>. Below the sample
           floor there is no verdict at all — a 0-of-3 yield is noise with a decimal
           point.
         </p>

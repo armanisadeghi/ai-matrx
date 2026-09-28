@@ -26,6 +26,7 @@ import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { useOrgMemberDetail } from "../hooks";
 import { setMemberStatus } from "../service";
 import { formatMcents, formatRelativeTime } from "../utils";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { MemberControlsForm } from "./MemberControlsForm";
 import { RemoveMemberDialog } from "./RemoveMemberDialog";
@@ -50,6 +51,7 @@ interface Props {
 export function MemberDetailView({ orgId, organization, userId }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
+  const { unit } = useCostDisplay();
   const { member, loading, error, refresh } = useOrgMemberDetail(orgId, userId);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
@@ -172,7 +174,7 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
           value={formatFileSize(member.accountBytesUsed)}
           hint={`${member.accountFilesCount} files (all orgs)`}
         />
-        <Metric label="Spend 24h" value={formatMcents(member.cost24hMcents)} hint={`${member.requests24h} requests`} />
+        <Metric label="Spend 24h" value={formatMcents(member.cost24hMcents, unit)} hint={`${member.requests24h} requests`} />
         <Metric label="Requests 6h" value={String(member.requests6h)} hint="account-wide" />
       </div>
 

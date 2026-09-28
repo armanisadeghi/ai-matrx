@@ -49,7 +49,8 @@ import {
 } from "@/components/ui/select";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/styles/themes/utils";
-import { formatCount, formatUsd } from "@ai-matrx/kit/format";
+import { formatCount } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
@@ -179,6 +180,7 @@ function isFailedCall(call: RunAiCall): boolean {
 /** One AI call's full record — the generated content is the point, so its
  * output owns the body; everything else is a compact metrics strip. */
 function AiCallCard({ call, index }: { call: RunAiCall; index: number }) {
+  const { format: formatCostDisplay } = useCostDisplay();
   const [expanded, setExpanded] = useState(false);
   const failed = isFailedCall(call);
   const truncated = !!call.output_text?.includes(SNAPSHOT_REDACTION_MARKER);
@@ -199,7 +201,7 @@ function AiCallCard({ call, index }: { call: RunAiCall; index: number }) {
         <span className="ml-auto flex items-center gap-2 text-[10px] tabular-nums text-muted-foreground">
           <span className="flex items-center gap-0.5">
             <Coins className="h-3 w-3" />
-            {formatUsd(call.cost, { digits: "adaptive" })}
+            {formatCostDisplay(call.cost)}
           </span>
           <span className="flex items-center gap-0.5">
             <Clock className="h-3 w-3" />
@@ -306,6 +308,7 @@ function RunDetail({
   run: RunHistoryEntry;
   onBack: () => void;
 }) {
+  const { format: formatCostDisplay } = useCostDisplay();
   const calls = useQuery({
     queryKey: [
       "marketing",
@@ -348,7 +351,7 @@ function RunDetail({
             </>
           )}{" "}
           ·{" "}
-          {formatUsd(run.total_cost, { digits: "adaptive" })}
+          {formatCostDisplay(run.total_cost)}
         </span>
       </div>
       {run.error_text ? (
@@ -696,6 +699,7 @@ function RunRow({
   run: RunHistoryEntry;
   onOpen: () => void;
 }) {
+  const { format: formatCostDisplay } = useCostDisplay();
   return (
     <button
       type="button"
@@ -721,7 +725,7 @@ function RunRow({
         {run.total_cost > 0 ? (
           <span className="flex items-center gap-0.5">
             <Coins className="h-3 w-3" />
-            {formatUsd(run.total_cost, { digits: "adaptive" })}
+            {formatCostDisplay(run.total_cost)}
           </span>
         ) : null}
         <span className="flex items-center gap-0.5">

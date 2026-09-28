@@ -1,5 +1,6 @@
 'use client';
 
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -10,7 +11,7 @@ import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { 
   Clock, 
   Zap, 
-  DollarSign, 
+  Gauge,
   Hash, 
   Cpu, 
   CheckCircle2, 
@@ -71,13 +72,6 @@ interface UsageStatsModalProps {
 const formatDuration = (seconds: number): string =>
   formatDurationSeconds(seconds, { style: "compact" });
 
-function formatCost(cost: number | null | undefined): string {
-  if (cost == null) return 'N/A';
-  if (cost === 0) return 'Free';
-  if (cost < 0.01) return `$${cost.toFixed(6)}`;
-  return `$${cost.toFixed(4)}`;
-}
-
 function StatCard({ 
   icon: Icon, 
   label, 
@@ -120,6 +114,7 @@ function StatCard({
 }
 
 export function UsageStatsModal({ isOpen, onClose, data }: UsageStatsModalProps) {
+  const { format: formatCost } = useCostDisplay();
   if (!data) return null;
 
   const { total_usage, timing_stats, tool_call_stats, finish_reason, status, iterations } = data;
@@ -155,7 +150,7 @@ export function UsageStatsModal({ isOpen, onClose, data }: UsageStatsModalProps)
               variant="info"
             />
             <StatCard
-              icon={DollarSign}
+              icon={Gauge}
               label="Total Cost"
               value={formatCost(total_usage.total.total_cost)}
               variant="warning"

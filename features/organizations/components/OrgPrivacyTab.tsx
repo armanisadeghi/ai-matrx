@@ -36,8 +36,9 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@ai-matrx/design-system";
 import { FIELD_ACTION, useOrgAutoRagPreference } from "../hooks/useOrgAutoRagPreference";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
-import { formatDurationMs, formatPercent, formatUsd } from "@ai-matrx/kit/format";
+import { formatDurationMs, formatPercent, pointsToUsd, usdToPoints } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 interface OrgPrivacyTabProps {
   organizationId: string;
@@ -77,6 +78,7 @@ function percentToneClass(percent: number): string {
 }
 
 export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
+  const { unit, format: formatCostDisplay } = useCostDisplay();
   const pref = useOrgAutoRagPreference(organizationId);
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetDraft, setBudgetDraft] = useState<string>("");
@@ -117,7 +119,11 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
   };
 
   const handleStartEditingBudget = () => {
-    setBudgetDraft(pref.budgetUsd.toFixed(2));
+    setBudgetDraft(
+      unit === "usd"
+        ? pref.budgetUsd.toFixed(2)
+        : String(usdToPoints(pref.budgetUsd) ?? 0),
+    );
     setEditingBudget(true);
   };
 
@@ -129,13 +135,18 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
   const handleSaveBudget = async () => {
     const parsed = Number.parseFloat(budgetDraft);
     if (!Number.isFinite(parsed) || parsed < 0) {
-      toast.error("Budget must be a non-negative number");
+      toast.error(
+        unit === "usd"
+          ? "Budget must be a non-negative number"
+          : "Budget must be a non-negative number of points",
+      );
       return;
     }
+    const parsedUsd = unit === "usd" ? parsed : pointsToUsd(parsed);
     try {
-      await pref.setBudgetUsd(parsed);
+      await pref.setBudgetUsd(parsedUsd);
       setEditingBudget(false);
-      toast.success(`Daily budget set to ${formatUsd(parsed)}`);
+      toast.success(`Daily budget set to ${formatCostDisplay(parsedUsd)}`);
     } catch (err) {
       toastWriteFailure(err, { action: FIELD_ACTION.budget });
     }
@@ -234,12 +245,14 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
                 <Skeleton className="h-7 w-24" />
               ) : editingBudget ? (
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-muted-foreground">$</span>
+                  {unit === "usd" ? (
+                    <span className="text-xs text-muted-foreground">$</span>
+                  ) : null}
                   <Input
-                    aria-label="Daily budget in US dollars"
+                    aria-label={unit === "usd" ? "Daily budget in US dollars" : "Daily budget in points"}
                     type="number"
                     min={0}
-                    step="0.01"
+                    step={unit === "usd" ? "0.01" : "1"}
                     inputMode="decimal"
                     value={budgetDraft}
                     onChange={(e) => setBudgetDraft(e.target.value)}
@@ -284,7 +297,7 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
               ) : (
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold tabular-nums">
-                    {formatUsd(pref.budgetUsd)}
+                    {formatCostDisplay(pref.budgetUsd)}
                   </span>
                   {canEdit && (
                     <Button
@@ -311,11 +324,11 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
                 ) : (
                   <span className="tabular-nums">
                     <span className="font-medium text-foreground">
-                      {formatUsd(pref.usedTodayUsd)}
+                      {formatCostDisplay(pref.usedTodayUsd)}
                     </span>
                     <span className="text-muted-foreground">
                       {" "}
-                      of {formatUsd(pref.budgetUsd)} (
+                      of {formatCostDisplay(pref.budgetUsd)} (
                     </span>
                     <span className={percentToneClass(pref.percentUsed)}>
                       {quotaPercent(pref.percentUsed)}

@@ -16,6 +16,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { timestamp, usd } from "../format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import type { SpendDimension, SpendRequestRow } from "../types";
 import { compactNumber } from "./labels";
 import { formatPercentFromFraction } from "@ai-matrx/kit/format";
@@ -51,6 +52,7 @@ export function TopRequestsTable({
   rows: SpendRequestRow[];
   onDrill: (dim: SpendDimension, key: string) => void;
 }) {
+  const { unit } = useCostDisplay();
   const columns: MatrxColumnDef<SpendRequestRow>[] = [
     {
       id: "at",
@@ -75,7 +77,7 @@ export function TopRequestsTable({
       width: 90,
       align: "right",
       cell: (r) => (
-        <span className="tabular-nums font-medium">{usd(r.cost)}</span>
+        <span className="tabular-nums font-medium">{usd(r.cost, unit)}</span>
       ),
     },
     {

@@ -8,16 +8,6 @@ const context = await browser.newContext({ viewport: { width: 1440, height: 900 
 const page = await context.newPage();
 page.on('console', (msg) => { if (msg.type() === 'error') console.log('[console error]', msg.text()); });
 
-// Pick an org first (fresh login has no org selected).
-await page.goto(`http://${HOST}/education`, { waitUntil: 'load', timeout: 60000 });
-await page.waitForTimeout(2000);
-const orgBtn = page.getByText("admin's Workspace", { exact: false }).first();
-if (await orgBtn.isVisible().catch(() => false)) {
-  await orgBtn.click();
-  await page.waitForTimeout(1500);
-  console.log('picked org, url now:', page.url());
-}
-
 // First host a room so we have a real code to join.
 await page.goto(`http://${HOST}/education/game/host`, { waitUntil: 'load', timeout: 60000 });
 await page.waitForTimeout(3000);
@@ -26,9 +16,27 @@ console.log('host page url:', page.url());
 // Click "Create room" with real click.
 const createBtn = page.getByRole('button', { name: /Create room/i });
 await createBtn.waitFor({ state: 'visible', timeout: 15000 });
+await createBtn.scrollIntoViewIfNeeded();
 await createBtn.click();
-await page.waitForTimeout(3000);
+await page.waitForTimeout(1500);
+// Org picker dialog appears on first action.
+const orgOption = page.getByText("admin's Workspace", { exact: true }).first();
+if (await orgOption.isVisible().catch(() => false)) {
+  await orgOption.click();
+  await page.waitForTimeout(300);
+  const continueBtn = page.getByRole('button', { name: /^Continue$/i });
+  await continueBtn.click();
+  await page.waitForTimeout(2000);
+}
+console.log('after org pick, url:', page.url());
+// Now click create room again (or it may have auto-proceeded).
+const createBtn2 = page.getByRole('button', { name: /Create room/i });
+if (await createBtn2.isVisible().catch(() => false)) {
+  await createBtn2.click();
+  await page.waitForTimeout(3000);
+}
 console.log('after create click, url:', page.url());
+await page.screenshot({ path: '/Users/armanisadeghi/code/matrx-frontend/.wave2-scratch/after-create.png', fullPage: false });
 
 // Grab the join code from lobby page
 const codeMatch = page.url().match(/code=([A-Z0-9]+)/i);

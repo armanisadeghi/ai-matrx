@@ -1,6 +1,7 @@
 "use client";
 
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -145,6 +146,7 @@ export function MasterworkRunRow({
   trailing?: React.ReactNode;
 }) {
   const duration = runDuration(run);
+  const { format: formatCostDisplay } = useCostDisplay();
   const rules = useRuleCitationIndex();
   const preview = run.deliverable_preview
     ? deliverableLine(run.deliverable_preview, rules)
@@ -171,12 +173,7 @@ export function MasterworkRunRow({
           <span>· {runWhen(run)}</span>
           {duration ? <span>· {duration}</span> : null}
           {run.cost_usd !== null ? (
-            <span>
-              · $
-              {run.cost_usd < 0.01
-                ? run.cost_usd.toFixed(4)
-                : run.cost_usd.toFixed(2)}
-            </span>
+            <span>· {formatCostDisplay(run.cost_usd)}</span>
           ) : null}
           {/* Always there on touch, hover-revealed on desktop — a hover-only
               door is no door at all on a phone (jobs-bar-2026-09-16, item

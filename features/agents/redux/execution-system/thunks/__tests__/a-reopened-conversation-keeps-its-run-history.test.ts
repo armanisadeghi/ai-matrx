@@ -1,12 +1,13 @@
 /**
  * A reopened conversation keeps its run history.
  *
- * The `get_cx_conversation_bundle` RPC returns messages, tool calls and media
- * but no `requests` / `user_requests`. The initial hydrate seeds run stats
- * (tokens, cost, timing) and the completed-request state the response-feedback
- * bar needs from exactly those rows, so without them every run read empty
- * after a reload. `fetchConversationBundle` now reads the history itself on
- * an initial load; pagination keeps opting out.
+ * The initial hydrate seeds run stats (tokens, cost, timing) and the
+ * completed-request state the response-feedback bar needs from the
+ * conversation's `requests` / `user_requests`, so without them every run read
+ * empty after a reload. Since 2026-09-27 `get_cx_conversation_bundle` carries
+ * both on an initial load, and then no extra table is read. An RPC body
+ * without them still gets the history, read directly (and says so);
+ * pagination keeps opting out.
  */
 
 const rpc = jest.fn();
@@ -63,10 +64,15 @@ describe("fetchConversationBundle run history", () => {
   });
 
   it("adds the conversation's requests and user requests when the RPC omits them", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
     const bundle = await fetchConversationBundle("conv-1");
     expect(bundle.requests?.map((r) => r.id)).toEqual(["req-1", "req-2"]);
     expect(bundle.userRequests?.map((r) => r.id)).toEqual(["ur-1"]);
     expect(fromCalls).toEqual(["request", "user_request"]);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("returned no run history"),
+    );
+    warn.mockRestore();
   });
 
   it("does not read run history for a pagination load", async () => {
@@ -74,6 +80,21 @@ describe("fetchConversationBundle run history", () => {
       skipObservabilityFallback: true,
     });
     expect(bundle.requests).toBeUndefined();
+    expect(fromCalls).toEqual([]);
+  });
+
+  it("reads no extra table when the RPC carries run history (its real shape)", async () => {
+    rpc.mockResolvedValue({
+      data: {
+        ...RPC_BUNDLE,
+        requests: [{ id: "req-7", user_request_id: "ur-7" }],
+        user_requests: [{ id: "ur-7" }],
+      },
+      error: null,
+    });
+    const bundle = await fetchConversationBundle("conv-1");
+    expect(bundle.requests?.map((r) => r.id)).toEqual(["req-7"]);
+    expect(bundle.user_requests?.map((r) => r.id)).toEqual(["ur-7"]);
     expect(fromCalls).toEqual([]);
   });
 

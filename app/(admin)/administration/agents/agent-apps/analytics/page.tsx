@@ -45,7 +45,9 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { humanAgentApp } from "@/features/agent-apps/format";
-import { UNKNOWN_DISPLAY, formatCount, formatDurationMs, formatPercentFromFraction, formatUsd, isKnownNumber, safeRatio } from "@ai-matrx/kit/format";
+import { UNKNOWN_DISPLAY, formatCount, formatDurationMs, formatPercentFromFraction, isKnownNumber, safeRatio } from "@ai-matrx/kit/format";
+import { Cost } from "@/components/cost/Cost";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
@@ -156,7 +158,7 @@ export const ANALYTICS_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
     filter: "number",
     width: 100,
     className: "text-right tabular-nums",
-    cell: (app) => formatUsd(app.total_cost, { digits: 4 }),
+    cell: (app) => <Cost usd={app.total_cost} />,
   },
   {
     id: "tokens",
@@ -228,6 +230,7 @@ export default function AgentAppsAnalyticsPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [viewApps, setViewApps] = useState<AgentAppAdminView[]>([]);
   const { toast } = useToast();
+  const { format: formatCostDisplay } = useCostDisplay();
   const tableQuery = useTableUrlState({
     tableId: "admin-agent-apps-analytics",
     defaultSort: { id: "executions", direction: "desc" },
@@ -464,7 +467,7 @@ export default function AgentAppsAnalyticsPage() {
             <OverviewCard
               icon={<DollarSign className="w-4 h-4 text-green-600" />}
               label="Total Cost"
-              value={`${costPartial.prefix}${formatUsd(totals.totalCost, { digits: 4 })}`}
+              value={`${costPartial.prefix}${formatCostDisplay(totals.totalCost)}`}
               sub={[
                 `${tokensPartial.prefix}${formatCount(totals.totalTokens)} tokens`,
                 costPartial.caveat,

@@ -15,7 +15,7 @@
 import { useState } from "react";
 import { ArrowRight, Loader2, X } from "lucide-react";
 
-import { ProcessingUnitsBadge } from "@/components/processing-units/ProcessingUnitsBadge";
+import { CostBadge } from "@/components/cost/CostBadge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -160,8 +160,8 @@ export function KeywordStrategySection({
             {strategy ? "Re-plan" : "Plan"} {tierEstimate?.pages ?? "…"} pages
             {tierEstimate ? ` · ${tierEstimate.calls} call${tierEstimate.calls === 1 ? "" : "s"}` : ""}
             {tierEstimate?.approximate_cost_usd != null ? (
-              <ProcessingUnitsBadge
-                costUsd={tierEstimate.approximate_cost_usd}
+              <CostBadge
+                usd={tierEstimate.approximate_cost_usd}
                 hideIcon
                 short
                 className="ml-0.5 px-1.5 py-0"

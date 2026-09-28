@@ -20,6 +20,7 @@
  * not a text box for a uuid.
  */
 
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useCallback, useEffect, useState } from "react";
 import {
     BadgeDollarSign,
@@ -47,7 +48,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { formatCost, formatCount, formatSecondsEstimate } from "../format";
+import { formatCount, formatSecondsEstimate } from "../format";
 import type { ActionDeclaration, EstimateResult } from "../types";
 import { sourceVocabulary, speakMediaNouns, type SourceVocabulary } from "../vocabulary";
 import { RulebookParamPicker } from "./RulebookParamPicker";
@@ -136,6 +137,7 @@ function missingParamNoun(
 }
 
 export function ActionRunDialog(props: ActionRunDialogProps) {
+    const { format: costText } = useCostDisplay();
     const {
         open,
         action,
@@ -342,7 +344,7 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                                     label="Cost"
                                     value={
                                         paid
-                                            ? `${formatCost(estimate.cost.paid_cost_estimate, estimate.cost.currency)} (between ${formatCost(estimate.cost.paid_cost_low, estimate.cost.currency)} and ${formatCost(estimate.cost.paid_cost_high, estimate.cost.currency)})`
+                                            ? `${costText(estimate.cost.paid_cost_estimate)} (between ${costText(estimate.cost.paid_cost_low)} and ${costText(estimate.cost.paid_cost_high)})`
                                             : "Free"
                                     }
                                     hint={speakMediaNouns(estimate.cost.basis, vocabulary)}
@@ -518,7 +520,7 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                             <Loader2 className="size-4 animate-spin" aria-hidden />
                         ) : null}
                         {paid
-                            ? `Spend up to ${formatCost(estimate?.cost.paid_cost_high ?? 0, estimate?.cost.currency)} and start`
+                            ? `Spend up to ${costText(estimate?.cost.paid_cost_high ?? 0)} and start`
                             : // D11 (jobs-bar cold-walk-12): lowercasing the whole label
                               // turned a proper name mid-sentence into ugly, wrong
                               // casing ("Start send to a masterwork rulebook"). The

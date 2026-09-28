@@ -1551,6 +1551,48 @@ body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
   min-width: 0;
 }
 
+/* SERVER-RENDERED PAGE HEADER (2026-09-27) — PageHeaderPortal.tsx.
+   The route's header content is in the first HTML, inside a hidden anchor laid
+   over the header slot (its script sets left/top/width, so hydrated controls
+   measure real widths). A body-level ghost clone shows it until hydration moves
+   the real node into the slot in the same frame. The ghost mirrors
+   `.shell-header-center`: a zero-height line on the slot's vertical center with
+   its content centered on it, exactly as the empty slot lays it out. */
+.page-header-ssr,
+.page-header-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+.page-header-ssr {
+  visibility: hidden;
+  pointer-events: none;
+}
+.page-header-ghost {
+  /* Above the shell (the header is z-40 inside .shell-root). */
+  z-index: 41;
+  pointer-events: none;
+}
+/* On a phone, RouteHeader moves its actions and section nav into the shell's
+   ⋮ sheet once the client knows it is a phone. The server cannot know, so the
+   ghost (and the node, until its client snapshots land) draws the phone row. */
+@media (max-width: 767px) {
+  .page-header-ghost [data-route-header-right] > [data-route-header-action],
+  .page-header-ghost [data-route-header-right] > [data-route-header-overflow],
+  .page-header-ghost [data-route-header-center],
+  [data-page-header-settling] [data-route-header-right] > [data-route-header-action],
+  [data-page-header-settling] [data-route-header-right] > [data-route-header-overflow],
+  [data-page-header-settling] [data-route-header-center] {
+    display: none;
+  }
+}
+
 /* ---------------------------------------------------------------------------
    11. Auth Island — Immutable Glass Container
    --------------------------------------------------------------------------- */

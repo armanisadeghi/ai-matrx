@@ -36,18 +36,6 @@ export function formatCompactNumber(value: number | null | undefined): string {
 
 export { formatCount } from "@ai-matrx/kit/format";
 
-/** USD, and never a bare "$0" where "Free" is the honest word. */
-export function formatCost(amount: number, currency = "USD"): string {
-    if (amount === 0) return "Free";
-    const formatted = new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency,
-        minimumFractionDigits: amount < 1 ? 2 : 2,
-        maximumFractionDigits: 2,
-    }).format(amount);
-    return formatted;
-}
-
 /** Wall-clock estimate or elapsed time, in the words a person would say. */
 export function formatElapsed(ms: number | null | undefined): string {
     if (ms == null || !Number.isFinite(ms) || ms < 0) return "—";

@@ -159,6 +159,7 @@ export const defaultUserPreferences: UserPreferences = {
   system: {
     viewedAnnouncements: [],
     feedbackFeatureViewCount: 0,
+    showCostInUsd: false,
   },
   messaging: {
     notificationSoundEnabled: true,

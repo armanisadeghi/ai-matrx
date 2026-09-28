@@ -10,6 +10,11 @@
  *   - Returns `messages`, `tool_calls`, `artifacts`, and `media` JOINED to the
  *     page's message IDs, plus a `pagination` block with `oldest_position` and
  *     `has_more` so callers can advance the cursor.
+ *   - On the initial load only (`p_before_position` NULL) it also carries the
+ *     conversation's run history: `requests` (chat.request) and
+ *     `user_requests` (their distinct chat.user_request parents), both
+ *     `deleted_at IS NULL`, ordered by created_at, whole rows
+ *     (migrations/cx_conversation_bundle_carries_run_history.sql).
  */
 
 import { supabase } from "@/utils/supabase/client";
@@ -52,10 +57,11 @@ export interface CxConversationBundle {
   artifacts: unknown[];
   media: unknown[];
   pagination: BundlePagination;
-  // Legacy parity fields — populated only by the fallback path that
-  // queries observability tables directly (the RPC's bundle doesn't carry
-  // user_requests / requests with the older-pages join).
+  // Run history. The RPC sends `requests` + `user_requests` on an initial
+  // load and omits both on older pages; the client-side paths below (RPC
+  // fallback, `fetchRunHistory`) fill `requests` + `userRequests`.
   userRequests?: CxUserRequestRow[];
+  user_requests?: CxUserRequestRow[];
   requests?: CxRequestRow[];
 }
 
@@ -161,18 +167,23 @@ export async function fetchConversationBundle(
           { code: CONVERSATION_NOT_MATERIALIZED },
         );
       }
-      // The RPC returns messages, tool calls and media but NO run history
-      // (`requests` / `user_requests`). Without it, an initial hydrate seeds
-      // nothing into activeRequests, so after any reload every run's tokens,
-      // cost and timing read empty and the response-feedback bar (which needs
-      // a completed request) vanishes. Fetch it the way the fallback path
-      // does; pagination callers opt out with `skipObservabilityFallback`.
+      // The RPC carries the run history (`requests` / `user_requests`) on an
+      // initial load since 2026-09-27, so this branch normally never runs.
+      // It stays as the fallback for an RPC body that lacks those keys (an
+      // older or reverted definition): without the history an initial
+      // hydrate seeds nothing into activeRequests, so after a reload every
+      // run's tokens, cost and timing read empty and the response-feedback
+      // bar (which needs a completed request) vanishes. When it does run it
+      // says so. Pagination callers opt out with `skipObservabilityFallback`.
       if (
         !skipObservabilityFallback &&
         bundle.requests === undefined &&
         bundle.userRequests === undefined &&
-        (bundle as { user_requests?: unknown }).user_requests === undefined
+        bundle.user_requests === undefined
       ) {
+        console.warn(
+          "[conversation-bundle] get_cx_conversation_bundle returned no run history — reading chat.request / chat.user_request directly. Apply migrations/cx_conversation_bundle_carries_run_history.sql.",
+        );
         try {
           const history = await fetchRunHistory(conversationId);
           return { ...bundle, ...history };

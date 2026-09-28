@@ -32,7 +32,9 @@ import type {
   MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table/types";
 import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
-import { formatCount, formatDurationMs, formatUsd } from "@ai-matrx/kit/format";
+import { formatCount, formatDurationMs, formatCost, type CostUnit } from "@ai-matrx/kit/format";
+import { Cost } from "@/components/cost/Cost";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -113,12 +115,12 @@ export function errorTypeFilterOptions(errorTypes: Iterable<string>) {
     .map((value) => ({ value, label: ERROR_TYPE_LABELS[value] ?? value }));
 }
 
-export function humanExecution(row: AgentAppExecutionRow) {
+export function humanExecution(row: AgentAppExecutionRow, unit: CostUnit = "points") {
   return [
     `${row.app_name ?? row.app_id} — ${row.success === true ? "OK" : row.success === false ? "Failed" : "Pending"}`,
     `Task: ${row.task_id}`,
     row.error_message ? `Error: ${row.error_message}` : null,
-    `Tokens: ${formatCount(row.tokens_used)} · Cost: ${formatUsd(row.cost, { digits: 4 })}`,
+    `Tokens: ${formatCount(row.tokens_used)} · Cost: ${formatCost(row.cost, { unit })}`,
     row.execution_time_ms == null ? null : `Time: ${row.execution_time_ms}ms`,
     `When: ${new Date(row.created_at).toLocaleString()}`,
   ]
@@ -293,7 +295,7 @@ export const EXECUTION_COLUMNS: MatrxColumnDef<AgentAppExecutionRow>[] = [
     filter: "number",
     align: "right",
     width: 100,
-    cell: (row) => formatUsd(row.cost, { digits: 4 }),
+    cell: (row) => <Cost usd={row.cost} />,
   },
   {
     id: "duration",
@@ -542,6 +544,7 @@ function ExecutionsTable({
   appId: string | null;
 }) {
   const { toast } = useToast();
+  const { unit: costUnit } = useCostDisplay();
   const [rows, setRows] = useState<AgentAppExecutionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -670,7 +673,7 @@ function ExecutionsTable({
               rowDescription: "A single agent-app execution row.",
               listDescription:
                 "Recent executions currently shown after canonical table filters.",
-              humanRow: humanExecution,
+              humanRow: (row) => humanExecution(row, costUnit),
               agentRow: (row) => row,
               rowAttributes: (row) => ({ id: row.id, success: row.success }),
               listAttributes: (visible) => ({ count: visible.length }),

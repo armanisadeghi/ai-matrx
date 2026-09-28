@@ -81,7 +81,7 @@ endpoint map). **State** — feature-local Zustand (`state/topicStore.ts` via
 - **Read `token_usage` ONLY through `@/lib/token-usage/normalize`** — it holds
   `{total, by_model}` and has never held flat `input_tokens` keys. Reading those made every cost
   render $0 on 100% of rows. Absent pricing stays **unknown** (`—`), never `$0`. Render every cost
-via `<CostValue>`/`useCostDisplay`; never `toFixed(2)` a dollar figure in a research component.
+via `<Cost>`/`useCostDisplay` (`components/cost/`, points for everyone); never `toFixed(2)` a dollar figure in a research component.
 - **Editing scraped content backs up the original ONCE** — never overwrite an existing
   `rs_content.original_content`.
 - **`sourcesDiscoveredFromItems` is the one "sources discovered" formula.** Keep it in one

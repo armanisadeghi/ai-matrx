@@ -52,7 +52,7 @@ import type {
   ConnectedBrowseReport,
   ConnectedBrowseStatus,
 } from "../browse/service";
-import { ReadResultsDialog, type ConnectedReadResult } from "./ReadResultsDialog";
+import { ReadResultsDialog, type ConnectedReadDialogState } from "./ReadResultsDialog";
 import {
   buildConnectedSourcesScope,
   createConnectedSourcesListSurface,
@@ -134,14 +134,19 @@ function statusLine(status: ConnectedBrowseStatus | null): string {
   return "Couldn't read this account";
 }
 
-/** The server's measured sentence, said in one short line; the full sentence is its tooltip. */
+/**
+ * Only what the pager below cannot say. The count of rows is the pager's
+ * ("1–2 of 2"); this line speaks only when the account holds more than was
+ * read, or a search narrowed what was read. The full server sentence is its
+ * tooltip.
+ */
 function reportLine(report: ConnectedBrowseReport): string {
   if (report.hasMore) {
-    return `${plural(report.matched, "match", "matches")} in the first ${plural(report.scanned, "item", "items")} read — the account holds more`;
+    return `Read the first ${plural(report.scanned, "item", "items")} — the account holds more`;
   }
   return report.matched === report.scanned
-    ? `All ${plural(report.scanned, "item", "items")}`
-    : `${plural(report.matched, "match", "matches")} of ${plural(report.scanned, "item", "items")}`;
+    ? ""
+    : `${report.matched.toLocaleString()} of ${plural(report.scanned, "item", "items")} match`;
 }
 
 export function BrowseEverything() {
@@ -164,7 +169,7 @@ export function BrowseEverything() {
     key: string;
     status: ConnectedBrowseStatus;
   } | null>(null);
-  const [readResult, setReadResult] = useState<ConnectedReadResult | null>(null);
+  const [readResult, setReadResult] = useState<ConnectedReadDialogState | null>(null);
 
   // Re-asked when the header organization changes and on Try again.
   useEffect(() => {
@@ -315,7 +320,7 @@ export function BrowseEverything() {
       >
         <SelectTrigger
           aria-label="Account to browse"
-          className="h-auto min-h-11 w-full min-w-0 py-1 sm:h-9 sm:min-h-0 sm:w-auto sm:max-w-md sm:py-0"
+          className="h-auto min-h-11 w-full min-w-0 py-1 sm:h-9 sm:min-h-0 sm:w-auto sm:max-w-full sm:py-0"
         >
           {/* The account first — it is what tells two choices apart. On a
               phone the source sits on its own line so neither is cut off. */}
@@ -368,7 +373,7 @@ export function BrowseEverything() {
           <PopoverContent /* sizing: fixed — two short sentences about one source */ align="start" className="w-80 space-y-1 text-sm">
             {chosenAdapter.browse_outcome ? <p>{chosenAdapter.browse_outcome}</p> : null}
             {chosenAdapter.limitation ? (
-              <p className="text-muted-foreground">Cannot reach: {chosenAdapter.limitation}</p>
+              <p className="text-muted-foreground">{chosenAdapter.limitation}</p>
             ) : null}
           </PopoverContent>
         </Popover>
@@ -413,6 +418,13 @@ export function BrowseEverything() {
         scopeTabs={false}
         surface={createConnectedSourcesListSurface(getPageState, dispatch, setReadResult)}
         notice={accountBar}
+        emptyAction={
+          chosen.adapter === "google_picked_files" ? (
+            <Button asChild size="sm" className="h-11 sm:h-8">
+              <Link href={INTEGRATIONS_HREF}>Pick files</Link>
+            </Button>
+          ) : undefined
+        }
       />
       <ReadResultsDialog result={readResult} onClose={() => setReadResult(null)} />
     </>

@@ -67,18 +67,33 @@ export interface RemoteWriteFailureNotice {
     recovered(sliceName: string): void;
 }
 
+/** True when the failure is the network being gone, not the server refusing. */
+export function isOfflineFailure(message: string): boolean {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
+    return /failed to fetch|networkerror|network request failed|load failed|err_internet_disconnected/i.test(
+        message,
+    );
+}
+
+/**
+ * The ONE sentence the person sees — plain, no raw error text (the error itself
+ * goes to the log and the Error Inspector). Only says "offline" when it is true.
+ */
+export function remoteWriteFailureMessage(offline: boolean): string {
+    return offline
+        ? "Couldn't save your change — you're offline. We'll keep trying."
+        : "Couldn't save your change. We'll keep trying.";
+}
+
 function toastNotice(): RemoteWriteFailureNotice {
     const id = (sliceName: string) => `sync-remote-write-failing:${sliceName}`;
     return {
         failing(sliceName, message, retryNow) {
-            toast.error(
-                `Your change is not saved yet: ${message}. It is kept on this device and retried automatically.`,
-                {
-                    id: id(sliceName),
-                    duration: Infinity,
-                    action: { label: "Retry now", onClick: retryNow },
-                },
-            );
+            toast.error(remoteWriteFailureMessage(isOfflineFailure(message)), {
+                id: id(sliceName),
+                duration: Infinity,
+                action: { label: "Retry now", onClick: retryNow },
+            });
         },
         recovered(sliceName) {
             toast.dismiss(id(sliceName));

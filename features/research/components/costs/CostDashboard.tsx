@@ -4,8 +4,9 @@
  * The topic cost surface: what the run consumed, phase by phase, model by
  * model, and call by call.
  *
- * Cost is always rendered through `<CostValue>` — Processing Units for every
- * viewer, raw USD appended for admins. Never format a dollar figure here.
+ * Cost is always rendered through `<Cost>` — points for every viewer,
+ * dollars only for a system admin who flipped the switch. Never format a
+ * dollar figure here.
  */
 
 import { useState } from "react";
@@ -23,8 +24,8 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CostValue } from "@/components/processing-units/CostValue";
-import { useCostDisplay } from "@/components/processing-units/useCostDisplay";
+import { Cost } from "@/components/cost/Cost";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useTopicContext } from "../../context/ResearchContext";
@@ -186,8 +187,8 @@ const PHASE_COLUMNS: MatrxColumnDef<PhaseRollup>[] = [
     align: "right",
     width: 112,
     cell: (phase) => (
-      <CostValue
-        costUsd={phase.estimated_cost_usd}
+      <Cost
+        usd={phase.estimated_cost_usd}
         short
         muted={phase.calls === 0}
       />
@@ -268,7 +269,7 @@ const MODEL_COLUMNS: MatrxColumnDef<NormalizedUsageModel>[] = [
     filter: "number",
     align: "right",
     width: 112,
-    cell: (model) => <CostValue costUsd={model.costUsd} short />,
+    cell: (model) => <Cost usd={model.costUsd} short />,
   },
 ];
 
@@ -437,10 +438,9 @@ const LEDGER_COLUMNS: MatrxColumnDef<CostLedgerEntry>[] = [
     align: "right",
     width: 112,
     cell: (entry) => (
-      <CostValue
-        costUsd={entry.costUsd}
+      <Cost
+        usd={entry.costUsd}
         short
-        stacked
         muted={!entry.succeeded}
       />
     ),
@@ -453,7 +453,7 @@ export default function CostDashboard() {
   const [showFailed, setShowFailed] = useState(true);
   const { topicId } = useTopicContext();
   const { ledger, isLoading, error } = useTopicCosts(topicId);
-  const { showUsd, units: unitsLabel } = useCostDisplay();
+  const { format: unitsLabel } = useCostDisplay();
 
   if (isLoading && !ledger) {
     return (
@@ -520,9 +520,9 @@ export default function CostDashboard() {
           label="Processing Units"
           icon={Gauge}
           accent="text-amber-500"
-          hint={showUsd ? "units · actual cost" : "what this topic consumed"}
+          hint="what this topic consumed"
         >
-          <CostValue costUsd={totals.costUsd} stacked className="items-start" />
+          <Cost usd={totals.costUsd} className="items-start" />
         </StatTile>
         <StatTile
           label="AI Calls"

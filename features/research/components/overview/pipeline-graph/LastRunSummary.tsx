@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { CostValue } from "@/components/processing-units/CostValue";
+import { Cost } from "@/components/cost/Cost";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
@@ -468,8 +468,8 @@ export function LastRunSummary({
             icon={Gauge}
             label="AI cost"
             value={
-              <CostValue
-                costUsd={costSummary?.total_estimated_cost_usd ?? 0}
+              <Cost
+                usd={costSummary?.total_estimated_cost_usd ?? 0}
                 short
               />
             }

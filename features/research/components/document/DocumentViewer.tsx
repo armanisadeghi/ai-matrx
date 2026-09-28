@@ -45,7 +45,7 @@ import {
 // wrapper is the lightweight shell (imported statically); MenuContent
 // lazy-loads on first open.
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { CostValue } from "@/components/processing-units/CostValue";
+import { Cost } from "@/components/cost/Cost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function DocumentViewer() {
@@ -449,7 +449,7 @@ export default function DocumentViewer() {
             )}
             {docTokenUsage.costUsd != null && (
               <span className="inline-flex items-center gap-1">
-                Cost: <CostValue costUsd={docTokenUsage.costUsd} short />
+                Cost: <Cost usd={docTokenUsage.costUsd} short />
               </span>
             )}
           </div>

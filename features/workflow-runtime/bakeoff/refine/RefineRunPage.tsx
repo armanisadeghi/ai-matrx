@@ -30,6 +30,7 @@ import { ElapsedTime } from "@/components/official-candidate/elapsed-time/Elapse
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 
 import { RunStatusChip } from "../../run-status";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useWorkflowRun } from "../../hooks/useWorkflowRun";
 import {
   selectRunActivity,
@@ -177,6 +178,7 @@ export function RefineRunPage({ definitionId }: { definitionId: string }) {
   const run = useAppSelector(selectRunState(runId ?? ""));
   const activity = useAppSelector(selectRunActivity(runId ?? ""));
   const costTotal = useAppSelector(selectRunCostTotal(runId ?? ""));
+  const { format: formatCostDisplay } = useCostDisplay();
   const startedAt = useAppSelector(selectRunStartedAt(runId ?? ""));
   const statusTs = useAppSelector(selectRunStatusTs(runId ?? ""));
 
@@ -260,7 +262,7 @@ export function RefineRunPage({ definitionId }: { definitionId: string }) {
             {costTotal > 0 ? (
               <span className="hidden text-[11px] tabular-nums text-muted-foreground sm:inline">
                 {/* read-gate-exempt: run cost streamed into redux, shown only when above 0, not a list read */}
-                ${costTotal.toFixed(2)}
+                {formatCostDisplay(costTotal)}
               </span>
             ) : null}
             <ElapsedTime

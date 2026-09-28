@@ -2,6 +2,7 @@
 //
 // The words and numbers a run row prints. Pure — tested in __tests__.
 
+import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
 import type { MandateRun, RunHistoryView, RunRung, RunStatus } from "./service";
 
 export const STATUS_WORDS: Record<RunStatus, string> = {
@@ -70,11 +71,10 @@ export function absoluteWhen(iso: string): string {
   return Number.isFinite(then) ? new Date(then).toLocaleString() : iso;
 }
 
-/** "$0.0110" under a cent-ish, "$1.24" above; "—" when not known. */
-export function costWords(cost: number | null): string {
-  if (cost === null) return "—";
-  if (cost === 0) return "$0";
-  return cost < 1 ? `$${cost.toFixed(4)}` : `$${cost.toFixed(2)}`;
+/** A run's cost in the viewer's unit ("538 points"; dollars only for a
+ *  system admin who flipped the switch); "—" when not known. */
+export function costWords(cost: number | null, unit: CostUnit = "points"): string {
+  return formatCost(cost, { unit });
 }
 
 /** "850ms" / "11.0s" / "2m 05s"; "—" when not finished. */

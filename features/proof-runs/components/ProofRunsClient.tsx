@@ -28,7 +28,7 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatUsd } from "@ai-matrx/kit/format";
+import { Cost } from "@/components/cost/Cost";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -136,7 +136,7 @@ const proofRunColumns: MatrxColumnDef<ProofRunSummary>[] = [
   },
   { id: "mode", header: "Mode", accessorKey: "mode", cell: (row) => <span className="whitespace-nowrap uppercase text-muted-foreground">{row.mode}</span> },
   { id: "verdict", header: "Verdict", accessorFn: (row) => row.verdict ?? row.status, cell: (row) => <span className={cn("rounded-full border px-1.5 py-px text-[10px] font-medium", verdictClass(row.verdict ?? null))}>{row.verdict ?? row.status}</span> },
-  { id: "cost", header: "Cost", accessorKey: "cost_usd", align: "right", cell: (row) => <span className="font-mono whitespace-nowrap">{formatUsd(row.cost_usd, { digits: 4 })}</span> },
+  { id: "cost", header: "Cost", accessorKey: "cost_usd", align: "right", cell: (row) => <span className="font-mono whitespace-nowrap"><Cost usd={row.cost_usd} /></span> },
   { id: "duration", header: "Took", accessorKey: "duration_ms", align: "right", cell: (row) => <span className="whitespace-nowrap text-muted-foreground">{formatDurationMs(row.duration_ms ?? 0, { style: "compact" })}</span> },
   { id: "trigger", header: "Trigger", accessorKey: "trigger_source", cell: (row) => <span className="whitespace-nowrap text-muted-foreground">{row.trigger_source}</span> },
   {
@@ -328,9 +328,9 @@ export default function ProofRunsClient() {
               This month
             </div>
             <div className="text-sm font-medium text-foreground">
-              ${spend.mtd.toFixed(4)}{" "}
+              <Cost usd={spend.mtd} />{" "}
               <span className="text-xs font-normal text-muted-foreground">
-                of ${spend.ceiling.toFixed(2)}
+                of <Cost usd={spend.ceiling} />
               </span>
             </div>
             <div className="mt-1 h-1 w-32 overflow-hidden rounded-full bg-muted">
@@ -590,8 +590,7 @@ export default function ProofRunsClient() {
                       {formatDurationSeconds(scenario.live_every_seconds, {
                         style: "coarse",
                       })}{" "}
-                      · $
-                      {scenario.max_cost_usd.toFixed(2)}/run
+                      · <Cost usd={scenario.max_cost_usd} />/run
                     </p>
                   </div>
                   <div className="flex items-center gap-1">

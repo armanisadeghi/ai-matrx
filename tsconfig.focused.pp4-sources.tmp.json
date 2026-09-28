@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.json","compilerOptions":{"noEmit":true,"incremental":false},"include":["global.d.ts","cartesia.d.ts","types/typecheck-env.d.ts","features/connected-sources/**/*.ts","features/connected-sources/**/*.tsx","lib/entity-list/components/EntityListPage.tsx","lib/entity-list/components/EntityListToolbar.tsx"]}

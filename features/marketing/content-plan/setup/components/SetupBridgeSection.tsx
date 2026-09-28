@@ -128,6 +128,7 @@ import { SetupSection } from "./SetupSection";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 type BridgeAction =
   | "link"
@@ -236,6 +237,7 @@ export function SetupBridgeSection({
 }) {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
+  const { format: formatCostDisplay } = useCostDisplay();
 
   const linked = Boolean(cms?.link.linked && cms.link.cmsSiteId);
 
@@ -434,7 +436,7 @@ export function SetupBridgeSection({
     } else if (current === "completed") {
       toast.success(
         `Content build finished: ${fillStatus?.pagesBuilt ?? 0} page(s) built` +
-          (fillStatus?.costUsd != null ? ` for $${fillStatus.costUsd.toFixed(2)}` : "") +
+          (fillStatus?.costUsd != null ? ` for ${formatCostDisplay(fillStatus.costUsd)}` : "") +
           ".",
       );
     }
@@ -647,7 +649,7 @@ export function SetupBridgeSection({
       toast.success(
         `Building ${started.estimate.pages} page(s) — ${started.estimate.calls} AI step(s)` +
           (started.estimate.usd != null
-            ? `, about $${started.estimate.usd.toFixed(2)}`
+            ? `, about ${formatCostDisplay(started.estimate.usd)}`
             : "") +
           "…",
       );
@@ -1042,7 +1044,7 @@ export function SetupBridgeSection({
             fillStatus && fillStatus.status === "completed"
               ? `${fillStatus.pagesBuilt} page(s) built` +
                 (fillStatus.costUsd !== null
-                  ? ` · $${fillStatus.costUsd.toFixed(2)}`
+                  ? ` · ${formatCostDisplay(fillStatus.costUsd)}`
                   : "")
               : null
           }
@@ -1492,8 +1494,8 @@ function FillStepRow({ step }: { step: FillStepCounts }) {
 
 /** Live fill progress + failures, verbatim from queue counts. */
 function FillStatusSummary({ status }: { status: FillStatus }) {
+  const { format: money } = useCostDisplay();
   const failures = status.failed + status.deadLetter;
-  const money = (value: number) => `$${value.toFixed(2)}`;
   return (
     <div
       className={cn(

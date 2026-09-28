@@ -22,7 +22,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import type { ConnectedAdapterRow, ConnectedSourceRow } from "../types";
 import {
   readResultText,
-  type ConnectedReadResult,
+  type ConnectedReadDialogState,
 } from "../components/ReadResultsDialog";
 import { runSourceRead, sourceReadSpec, type SourceReadKind } from "./reads";
 
@@ -169,7 +169,7 @@ function readTarget(
   kind: SourceReadKind,
   list: List,
   dispatch: AppDispatch,
-  onRead: (result: ConnectedReadResult) => void,
+  onRead: (state: ConnectedReadDialogState | null) => void,
 ) {
   const spec = sourceReadSpec(kind);
   return {
@@ -179,7 +179,15 @@ function readTarget(
     },
     apply: async (value: unknown) => {
       const rows = resolveReadRows(value, list.rows);
-      const outcome = await runSourceRead(dispatch, kind, rows);
+      let outcome;
+      try {
+        outcome = await runSourceRead(dispatch, kind, rows, (titles) =>
+          onRead({ kind, pending: true, titles }),
+        );
+      } catch (error) {
+        onRead(null);
+        throw error;
+      }
       if (!outcome.ok) throw new Error(outcome.refusal);
       onRead(outcome.result);
       const text = readResultText(outcome.result);
@@ -199,7 +207,7 @@ function readTarget(
 export function createConnectedSourcesWriteHandlers(
   list: List,
   dispatch: AppDispatch,
-  onRead: (result: ConnectedReadResult) => void,
+  onRead: (state: ConnectedReadDialogState | null) => void,
 ): SurfaceWriteHandlers {
   return {
     read_comments: readTarget("comments", list, dispatch, onRead),
@@ -211,7 +219,7 @@ export function createConnectedSourcesWriteHandlers(
 export function createConnectedSourcesListSurface(
   getState: () => ConnectedSourcesPageState,
   dispatch: AppDispatch,
-  onRead: (result: ConnectedReadResult) => void,
+  onRead: (state: ConnectedReadDialogState | null) => void,
 ): EntityListSurface<ConnectedSourceRow> {
   return {
     surfaceName: CONNECTED_SOURCES_SURFACE_NAME,

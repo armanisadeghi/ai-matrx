@@ -90,10 +90,13 @@ export async function runSourceRead(
   dispatch: AppDispatch,
   kind: SourceReadKind,
   rows: readonly ConnectedSourceRow[],
+  /** Called once the read is known to run — open the pending dialog here. */
+  onStart?: (titles: string[]) => void,
 ): Promise<SourceReadOutcome> {
   const spec = sourceReadSpec(kind);
   const eligible = rows.filter(spec.eligible);
   if (!eligible.length) return { ok: false, refusal: spec.refusal };
+  onStart?.(eligible.map((row) => row.title));
   const skipped = rows.length - eligible.length;
   const ref = (row: ConnectedSourceRow) => ({ title: row.title, url: row.url ?? null });
 

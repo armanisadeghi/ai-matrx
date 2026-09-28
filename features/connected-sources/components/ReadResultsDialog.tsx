@@ -10,6 +10,7 @@
  */
 
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { Skeleton } from "@ai-matrx/design-system";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,6 +35,34 @@ export type ConnectedReadResult =
   | { kind: "comments"; files: (FileRef & { thread: GoogleCommentsResponse })[] }
   | { kind: "revisions"; files: (FileRef & { history: GoogleRevisionsResponse })[] }
   | { kind: "slides"; files: (FileRef & { deck: GooglePresentationResponse })[] };
+
+/**
+ * The dialog opens the moment a read starts — never nothing between the click
+ * and the answer — and fills in when the read lands.
+ */
+export interface ConnectedReadPending {
+  kind: ConnectedReadResult["kind"];
+  pending: true;
+  titles: string[];
+}
+
+export type ConnectedReadDialogState = ConnectedReadResult | ConnectedReadPending;
+
+function isPending(state: ConnectedReadDialogState): state is ConnectedReadPending {
+  return "pending" in state;
+}
+
+const EXACT = new Intl.DateTimeFormat(undefined, {
+  dateStyle: "medium",
+  timeStyle: "medium",
+});
+
+/** Exact date and time — revisions seconds apart must read differently. */
+function exactly(iso: string | null): string {
+  if (!iso) return "Unknown date";
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? iso : EXACT.format(date);
+}
 
 const TITLES: Record<ConnectedReadResult["kind"], string> = {
   comments: "Comments",
@@ -63,9 +92,13 @@ export function readResultText(result: ConnectedReadResult): string {
     for (const file of result.files) {
       const lines = [`# ${file.title}`];
       if (!file.history.revisions.length) lines.push("No kept revisions.");
-      for (const r of file.history.revisions) {
-        lines.push(`- ${r.modified_at ?? "unknown date"} by ${r.author_name ?? "someone"}`);
-      }
+      file.history.revisions.forEach((r, index) => {
+        lines.push(
+          `- Version ${index + 1}: ${exactly(r.modified_at)} by ${r.author_name ?? "someone"}${
+            r.size_bytes ? ` (${formatFileSize(r.size_bytes)})` : ""
+          }`,
+        );
+      });
       blocks.push(lines.join("\n"));
     }
   } else {
@@ -155,12 +188,18 @@ function Body({ result }: { result: ConnectedReadResult }) {
             <FileHeading file={file} />
             {file.history.revisions.length ? (
               <ul className="divide-y divide-border">
-                {file.history.revisions.map((r) => (
+                {file.history.revisions.map((r, index) => (
                   <li
                     key={r.revision_id}
                     className="flex flex-wrap items-center gap-x-3 gap-y-0.5 py-1.5 text-sm"
                   >
-                    <span className="text-foreground">{when(r.modified_at) || "Unknown date"}</span>
+                    {/* Google lists kept revisions oldest first. */}
+                    <span className="w-20 shrink-0 tabular-nums text-muted-foreground">
+                      Version {index + 1}
+                    </span>
+                    <span className="tabular-nums text-foreground" title={when(r.modified_at)}>
+                      {exactly(r.modified_at)}
+                    </span>
                     <span className="text-muted-foreground">{r.author_name ?? "Someone"}</span>
                     {r.size_bytes ? (
                       <span className="tabular-nums text-muted-foreground">
@@ -205,13 +244,43 @@ function Body({ result }: { result: ConnectedReadResult }) {
   );
 }
 
+function Reading({ state }: { state: ConnectedReadPending }) {
+  const count = state.titles.length;
+  return (
+    <div className="space-y-3" role="status">
+      <p className="text-sm text-muted-foreground">
+        Reading {count === 1 ? state.titles[0] : `${count} files`} from Google…
+      </p>
+      {Array.from({ length: 3 }, (_, i) => (
+        <div key={i} className="space-y-1.5">
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-3 w-1/3" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ReadResultsDialog({
-  result,
+  result: state,
   onClose,
 }: {
-  result: ConnectedReadResult | null;
+  result: ConnectedReadDialogState | null;
   onClose: () => void;
 }) {
+  if (state && isPending(state)) {
+    return (
+      <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
+        <DialogContent className="matrx-touch-targets flex max-h-[85dvh] max-w-2xl flex-col">
+          <DialogHeader className="space-y-0 pr-8">
+            <DialogTitle>{TITLES[state.kind]}</DialogTitle>
+          </DialogHeader>
+          <Reading state={state} />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+  const result = state;
   return (
     <Dialog open={result !== null} onOpenChange={(open) => (open ? undefined : onClose())}>
       {result ? (

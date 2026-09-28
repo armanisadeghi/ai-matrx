@@ -24,6 +24,7 @@
  * "canonical" is how a scheduled deletion grows dependants instead of dying.
  */
 
+import { Cost } from "@/components/cost/Cost";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CircleCheck,
@@ -572,7 +573,7 @@ function ComparisonView({
           <div className="truncate text-sm font-semibold">{row.title}</div>
           <div className="text-xs text-muted-foreground">
             {arms.length} arms · {row.status}
-            {totalCost > 0 && <> · total ${totalCost.toFixed(3)}</>}
+            {totalCost > 0 && <> · total <Cost usd={totalCost} /></>}
             {judged && (
               <>
                 {" "}
@@ -689,7 +690,7 @@ function ArmColumn({
           {!blind && (
             <div className="truncate text-[11px] text-muted-foreground">
               {arm.version_number ? `v${arm.version_number}` : "current version"}
-              {typeof arm.cost_usd === "number" && <> · ${arm.cost_usd.toFixed(3)}</>}
+              {typeof arm.cost_usd === "number" && <> · <Cost usd={arm.cost_usd} /></>}
             </div>
           )}
         </div>

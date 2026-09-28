@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/tooltip";
 import Link from "next/link";
 import { HouseWifi } from "lucide-react";
-import { formatFileSize } from "@ai-matrx/kit/format";
+import { formatCost, formatFileSize, type CostUnit } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import type {
   EgressUnavailable,
   RunEgress,
@@ -29,14 +30,15 @@ import type {
 } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-function formatValue(m: TelemetryMetric): string {
+function formatValue(m: TelemetryMetric, unit: CostUnit): string {
   if (!m.measured || m.value === null) return "—";
   // Bytes are formatFileSize's, whatever the unit turns out to be. The body
   // this replaced divided by 1_000_000 and had no B or KB tier at all, so a
   // 4 KB transfer rendered "0.0 MB" — a confident wrong zero, which is the one
   // thing this package exists to forbid.
   if (m.unit === "bytes") return formatFileSize(m.value);
-  if (m.unit === "USD") return `$${m.value.toFixed(2)}`;
+  // A USD metric is platform cost: points for everyone, $ for an admin who asked.
+  if (m.unit === "USD") return formatCost(m.value, { unit });
   return `${m.value.toLocaleString()}${m.unit ? " " + m.unit : ""}`;
 }
 
@@ -98,6 +100,7 @@ export function TelemetrySurface({
   onRefresh?: () => void;
   className?: string;
 }) {
+  const { unit: costUnit } = useCostDisplay();
   if (!telemetry) {
     return (
       <div className={cn("flex flex-col gap-2 p-4", className)}>
@@ -147,7 +150,7 @@ export function TelemetrySurface({
               ) : null}
             </div>
             <div className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
-              {formatValue(m)}
+              {formatValue(m, costUnit)}
             </div>
             {!m.measured ? (
               <div className="text-[10px] font-medium uppercase tracking-wide text-amber-500">

@@ -23,6 +23,7 @@ import type { OrgAdminMember } from "../types";
 // package's documented, once-made display decision.
 import { getInitials } from "@ai-matrx/kit/format";
 import { activityBucket, formatMcents, formatRelativeTime } from "../utils";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
@@ -72,6 +73,7 @@ interface Props {
 }
 
 export function MemberRosterTable({ orgSlug, members }: Props) {
+  const { unit } = useCostDisplay();
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [query, setQuery] = useState("");
@@ -204,7 +206,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
         sortable: false,
         cell: (member) => (
           <span className="text-sm text-muted-foreground">
-            {formatMcents(member.cost24hMcents)}
+            {formatMcents(member.cost24hMcents, unit)}
           </span>
         ),
       },
@@ -223,7 +225,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
           ),
       },
     ],
-    [],
+    [unit],
   );
 
   return (
@@ -279,7 +281,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
             <CopyButtons
               size="icon"
               label="Member roster"
-              human={() => rosterListHuman(members)}
+              human={() => rosterListHuman(members, unit)}
               json={() => members.map(rosterMemberRow)}
               agent={() =>
                 buildRosterListPayload({
@@ -287,6 +289,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
                   orgSlug,
                   searchQuery: query,
                   sort,
+                  unit,
                 })
               }
               export={{
@@ -325,13 +328,14 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
             <CopyButtons
               size="xs"
               label={member.displayName || member.email || "Member"}
-              human={() => rosterMemberSummary(member)}
+              human={() => rosterMemberSummary(member, unit)}
               json={() => rosterMemberRow(member)}
               agent={() =>
                 buildRosterMemberPayload({
                   member,
                   orgSlug,
                   totalMembers: members.length,
+                  unit,
                 })
               }
             />

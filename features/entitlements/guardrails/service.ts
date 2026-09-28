@@ -23,8 +23,6 @@
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 
-/** 20,000 points = $1 of model spend. Server mirror: aidream ai_points.py. */
-export const POINTS_PER_USD = 20_000;
 export const AI_POINTS_CAPABILITY = "platform.points";
 
 export type GuardrailScope = "org" | "user";
@@ -252,28 +250,11 @@ export async function removeGuardrail(id: string): Promise<void> {
 }
 
 // ── Units ──────────────────────────────────────────────────────────────────
-
-export function pointsToUsd(points: number): number {
-  return points / POINTS_PER_USD;
-}
-
-export function usdToPoints(usd: number): number {
-  return Math.round(usd * POINTS_PER_USD);
-}
-
-// THE money voice: @ai-matrx/kit/format owns "$1,234.50" — same grouped,
-// two-decimal output this produced, plus an em-dash for an unmeasured value.
-import { formatUsd } from "@ai-matrx/kit/format";
-export { formatUsd };
-
-export function formatPoints(points: number): string {
-  return `${points.toLocaleString()} pts`;
-}
-
-/** "$16.00 (320,000 pts)" — the human unit first, the stored unit beside it. */
-export function formatPointsAsMoney(points: number): string {
-  return `${formatUsd(pointsToUsd(points))} (${formatPoints(points)})`;
-}
+// THE points conversion lives in `@ai-matrx/kit/format` (POINTS_PER_USD,
+// usdToPoints, pointsToUsd, formatPoints) — shared with the server's
+// ai_points.py and every client. Render a points figure for a person with
+// `useCostDisplay().format(pointsToUsd(points))`, so a system admin who asked
+// for dollars sees dollars and nobody else ever does.
 
 export function periodPhrase(period: string | null): string {
   switch (period) {

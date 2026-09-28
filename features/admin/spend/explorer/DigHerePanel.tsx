@@ -15,6 +15,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { timestamp, usd } from "../format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import type { SpendBreakdown, SpendDimension } from "../types";
 import { compactNumber, shortLocal } from "./labels";
 import { formatPercentFromFraction } from "@ai-matrx/kit/format";
@@ -131,6 +132,7 @@ export function DigHerePanel({
   data: SpendBreakdown;
   onDrill: (dim: SpendDimension, key: string) => void;
 }) {
+  const { unit } = useCostDisplay();
   const s = data.signals;
   const total = data.totals.cost;
   const [open, setOpen] = useState<string | null>(null);
@@ -176,7 +178,7 @@ export function DigHerePanel({
           r.trigger ?? "—",
           r.requests,
           formatPercentFromFraction(r.share),
-          usd(r.cost),
+          usd(r.cost, unit),
         ],
       })),
     },
@@ -220,7 +222,7 @@ export function DigHerePanel({
           compactNumber(r.avgContext),
           r.calls,
           r.requests,
-          usd(r.cost),
+          usd(r.cost, unit),
         ],
       })),
     },
@@ -268,7 +270,7 @@ export function DigHerePanel({
           r.agent ?? "—",
           r.iterations,
           r.toolCalls,
-          usd(r.cost),
+          usd(r.cost, unit),
         ],
       })),
     },
@@ -306,14 +308,14 @@ export function DigHerePanel({
           />,
           r.user ?? "—",
           r.agent ?? "—",
-          usd(r.cost),
+          usd(r.cost, unit),
         ],
       })),
     },
     {
       key: "spikes",
       title: "Spike hours",
-      tooltip: `> ${s.spikeHours.threshold}× the median hour (${usd(s.spikeHours.medianHour)})`,
+      tooltip: `> ${s.spikeHours.threshold}× the median hour (${usd(s.spikeHours.medianHour, unit)})`,
       cost: s.spikeHours.cost,
       n: s.spikeHours.n,
       listed: s.spikeHours.rows.length,
@@ -346,7 +348,7 @@ export function DigHerePanel({
           r.n,
           r.topUser ?? "—",
           r.topFeature ?? "—",
-          usd(r.cost),
+          usd(r.cost, unit),
         ],
       })),
     },
@@ -385,7 +387,7 @@ export function DigHerePanel({
           r.feature ?? "—",
           r.trigger ?? "—",
           r.requests,
-          usd(r.cost),
+          usd(r.cost, unit),
         ],
       })),
     },
@@ -453,7 +455,7 @@ export function DigHerePanel({
               ? "—"
               : spec.n === 0
                 ? "none"
-                : usd(spec.cost)}
+                : usd(spec.cost, unit)}
           </span>
         );
       },

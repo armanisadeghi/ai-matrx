@@ -35,6 +35,7 @@ import { useOrganizationRequired } from "@/features/organizations/useOrganizatio
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { errorRowsHref, fetchMandateReferenceBoard, formatRepoList, formatSeconds, costCell, type MandatePatrolRun, type MandatePatrolSection, type MandateReferenceBoard, type MandateReferenceBoardRepo } from "./references";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function ScanLine({
@@ -180,6 +181,7 @@ function RepoCard({ repo }: { repo: MandateReferenceBoardRepo }) {
  *    outage says so in red.
  */
 function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
+  const { unit, format: formatCostDisplay } = useCostDisplay();
   return (
     <section className="space-y-2" aria-label="Scheduled patrol">
       <div className="flex flex-wrap items-center gap-3">
@@ -273,7 +275,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
                 Total compute
               </th>
               <td className="px-3 py-1.5">
-                {costCell(patrol.cumulative_compute_cost_usd)}
+                {costCell(patrol.cumulative_compute_cost_usd, unit)}
                 <span className="ml-1 text-muted-foreground">
                   ({patrol.cumulative_vcpu_seconds} vCPU-s)
                 </span>
@@ -282,7 +284,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
                 Total model spend
               </th>
               <td className="px-3 py-1.5">
-                ${patrol.cumulative_model_spend_usd.toFixed(2)}
+                {formatCostDisplay(patrol.cumulative_model_spend_usd)}
                 <span className="ml-1 text-muted-foreground">
                   over {patrol.runs_counted} run
                   {patrol.runs_counted === 1 ? "" : "s"}
@@ -362,7 +364,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
                         .filter(Boolean)
                         .join(" · ")}
                     >
-                      {costCell(run.compute_cost_usd)}
+                      {costCell(run.compute_cost_usd, unit)}
                     </td>
                     <td
                       className="whitespace-nowrap px-3 py-2 text-right"
@@ -370,7 +372,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
                     >
                       {run.model_spend_usd === null || run.model_spend_usd === undefined
                         ? "—"
-                        : `$${run.model_spend_usd.toFixed(2)}`}
+                        : formatCostDisplay(run.model_spend_usd)}
                     </td>
                     <td className="px-3 py-2 text-right">{run.rows_submitted ?? "—"}</td>
                     <td className="px-3 py-2 text-right">

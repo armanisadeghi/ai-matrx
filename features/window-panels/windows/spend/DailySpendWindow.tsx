@@ -25,6 +25,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { SpendHeadline } from "@/features/admin/spend/SpendHeadline";
 import { fetchSpendHeadline, viewerTimezone } from "@/features/admin/spend/service";
 import { usd } from "@/features/admin/spend/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { recordDismissed } from "@/features/admin/spend/dailySpendPopoverState";
 import { useSpendPopoverKnobs } from "@/features/admin/spend/useSpendPopoverKnobs";
 import type { SpendHeadlineSnapshot } from "@/features/admin/spend/types";
@@ -42,6 +43,7 @@ export default function DailySpendWindow(props: DailySpendWindowProps) {
 
 function DailySpendWindowInner({ onClose }: DailySpendWindowProps) {
   const router = useRouter();
+  const { unit } = useCostDisplay();
   const [snapshot, setSnapshot] = useState<SpendHeadlineSnapshot | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const knobsState = useSpendPopoverKnobs();
@@ -128,7 +130,7 @@ function DailySpendWindowInner({ onClose }: DailySpendWindowProps) {
               <span className="font-medium text-foreground">
                 {snapshot.topOrg ? snapshot.topOrg.name : "nothing recorded yet"}
               </span>
-              {snapshot.topOrg ? ` · ${usd(snapshot.topOrg.cost)}` : ""}
+              {snapshot.topOrg ? ` · ${usd(snapshot.topOrg.cost, unit)}` : ""}
             </div>
             <div>
               {snapshot.gapCount} cost sources measure nothing, so the figure

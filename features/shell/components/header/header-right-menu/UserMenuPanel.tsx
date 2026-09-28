@@ -6,6 +6,7 @@ import { useResetMenuGroupsOnOpen } from "./useResetMenuGroupsOnOpen";
 import { OverlayMenuItem } from "./OverlayMenuItem";
 import { LinkMenuItem } from "./LinkMenuItem";
 import { AdminIndicatorMenuItem } from "./AdminIndicatorMenuItem";
+import { CostUnitMenuItem } from "./CostUnitMenuItem";
 import { ErrorInspectorMenuItem } from "./ErrorInspectorMenuItem";
 import { ThemeToggleMenuItem } from "./ThemeToggleMenuItem";
 import { CopyShortLinkMenuItem } from "./CopyShortLinkMenuItem";
@@ -84,6 +85,7 @@ export default function UserMenuPanel({
               className="[&_svg]:text-amber-500"
             />
             <AdminIndicatorMenuItem />
+            <CostUnitMenuItem />
             <ErrorInspectorMenuItem />
           </MenuGroup>
         </>

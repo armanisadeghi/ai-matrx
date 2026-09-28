@@ -20,7 +20,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { StudyDeckHeader } from "@/features/flashcards/components/study/StudyDeckHeader";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { cn } from "@/lib/utils";
-import { useTakeAssessment, type TakeOptions } from "./useTakeAssessment";
+import { useTakeAssessment, type AnswerRecord, type TakeOptions } from "./useTakeAssessment";
 import {
   StudyOrganizationGate,
   useStudyOrganizationReady,
@@ -28,12 +28,62 @@ import {
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { QuestionView } from "./QuestionView";
 import { kindConfigFor } from "../kindConfig";
+import type { GradedAnswer } from "../../data/grading";
 import type {
   AssessmentItemRow,
   AssessmentRow,
   AttemptResult,
   QuestionType,
 } from "../../data/types";
+
+// Table stakes: a countdown/typed answers never vanish on a reload mid-taking
+// (`common-docs/policies/table-stakes-are-never-a-question.md`). One snapshot
+// per assessment id in sessionStorage — cleared the moment the taking
+// finishes so a later fresh attempt never resumes a stale one.
+const SNAPSHOT_PREFIX = "edu-assessment-taking:";
+
+interface StoredRecord {
+  itemId: string;
+  response: string;
+  graded: GradedAnswer;
+}
+
+interface TakingSnapshot {
+  startedAt: number;
+  sessionId: string | null;
+  resultId: string | null;
+  records: StoredRecord[];
+  index: number;
+  responses: Record<string, string>;
+}
+
+function loadSnapshot(assessmentId: string): TakingSnapshot | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(SNAPSHOT_PREFIX + assessmentId);
+    return raw ? (JSON.parse(raw) as TakingSnapshot) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSnapshot(assessmentId: string, snapshot: TakingSnapshot): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(SNAPSHOT_PREFIX + assessmentId, JSON.stringify(snapshot));
+  } catch {
+    // Best-effort — a full/blocked sessionStorage never breaks the taking.
+  }
+}
+
+function clearSnapshot(assessmentId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(SNAPSHOT_PREFIX + assessmentId);
+  } catch {
+    // no-op
+  }
+}
 
 function isAnswerable(
   type: QuestionType,
@@ -70,37 +120,95 @@ export function AssessmentTaker({
     ? assessment.organization_id
     : null;
   const orgReady = carriedOrgId !== null || (!orgsLoading && selectedOrgReady);
+
+  // Reload mid-taking resumes from here instead of restarting the clock and
+  // dropping already-graded answers (read once, synchronously, on mount).
+  const [snapshot] = useState<TakingSnapshot | null>(() => loadSnapshot(assessment.id));
+  const restoreRecords: AnswerRecord[] | undefined = snapshot
+    ? snapshot.records
+        .map((r) => {
+          const item = items.find((it) => it.id === r.itemId);
+          return item ? { item, response: r.response, graded: r.graded } : null;
+        })
+        .filter((r): r is AnswerRecord => r !== null)
+    : undefined;
+
   const take = useTakeAssessment(assessment, items, {
     ...options,
     enabled: orgReady,
     orgId: carriedOrgId ?? undefined,
+    restore: snapshot
+      ? {
+          startedAt: snapshot.startedAt,
+          sessionId: snapshot.sessionId,
+          resultId: snapshot.resultId,
+          records: restoreRecords ?? [],
+        }
+      : null,
   });
-  const [index, setIndex] = useState(0);
-  const [responses, setResponses] = useState<Record<string, string>>({});
+  const [index, setIndex] = useState(snapshot?.index ?? 0);
+  const [responses, setResponses] = useState<Record<string, string>>(
+    snapshot?.responses ?? {},
+  );
   const [photos, setPhotos] = useState<Record<string, File | null>>({});
   const [finishing, startFinishing] = useState(false);
   const [, startTransition] = useTransition();
 
-  // Begin on mount — or once an organization is chosen. Nothing is written
-  // until the first answer (see useTakeAssessment.start).
+  // Begin on mount — or once an organization is chosen. A restored snapshot
+  // already carries a startedAt, so this is a no-op then (see start()'s guard).
   useEffect(() => {
     if (orgReady) void take.start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgReady]);
 
-  // Countdown timer (practice tests with a limit).
+  // Countdown timer (practice tests with a limit). Derived from the wall-clock
+  // startedAt rather than decremented locally, so a page reload — which
+  // restores startedAt from the snapshot above — recomputes the true
+  // remaining time instead of granting a fresh full countdown.
   const limit = assessment.time_limit_seconds ?? 0;
-  const [remaining, setRemaining] = useState<number | null>(
-    config.timed && limit > 0 ? limit : null,
+  const timed = config.timed && limit > 0;
+  const computeRemaining = (startedAt: number | null): number | null => {
+    if (!timed) return null;
+    if (startedAt === null) return limit;
+    return Math.max(0, limit - Math.floor((Date.now() - startedAt) / 1000));
+  };
+  const [remaining, setRemaining] = useState<number | null>(() =>
+    computeRemaining(take.startedAt),
   );
   useEffect(() => {
     if (remaining === null || !take.started) return;
     if (remaining <= 0) return;
     const id = setInterval(() => {
-      setRemaining((r) => (r === null ? null : r - 1));
+      setRemaining(computeRemaining(take.startedAt));
     }, 1000);
     return () => clearInterval(id);
-  }, [remaining, take.started]);
+  }, [remaining, take.started, take.startedAt, limit]);
+
+  // Persist progress after every relevant change — the reload safety net.
+  useEffect(() => {
+    if (!take.started || take.startedAt === null) return;
+    saveSnapshot(assessment.id, {
+      startedAt: take.startedAt,
+      sessionId: take.sessionId,
+      resultId: take.resultId,
+      records: take.records.map((r) => ({
+        itemId: r.item.id,
+        response: r.response,
+        graded: r.graded,
+      })),
+      index,
+      responses,
+    });
+  }, [
+    take.started,
+    take.startedAt,
+    take.sessionId,
+    take.resultId,
+    take.records,
+    index,
+    responses,
+    assessment.id,
+  ]);
 
   const current = items[index];
   const record = take.records.find((r) => r.item.id === current?.id) ?? null;
@@ -116,6 +224,7 @@ export function AssessmentTaker({
       toast.error(take.error ?? "Could not save your results");
       return;
     }
+    clearSnapshot(assessment.id);
     startTransition(() => router.push(`${base}/${assessment.id}/results?r=${id}`));
   };
 

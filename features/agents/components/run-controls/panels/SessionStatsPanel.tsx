@@ -5,6 +5,7 @@
  * conversation. Mirrors the "Session" tab in the Creator Run Panel.
  */
 
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useMemo } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -25,6 +26,7 @@ export interface SessionStatsPanelProps {
 }
 
 export function SessionStatsPanel({ conversationId }: SessionStatsPanelProps) {
+  const { unit: costUnit } = useCostDisplay();
   const selector = useMemo(
     () => makeSelectConversationRequests(conversationId),
     [conversationId],
@@ -104,7 +106,7 @@ export function SessionStatsPanel({ conversationId }: SessionStatsPanelProps) {
       </StatSection>
 
       <StatSection title="Cost & duration">
-        <StatRow label="Cost" value={fmtCost(stats.totals.cost)} />
+        <StatRow label="Cost" value={fmtCost(stats.totals.cost, costUnit)} />
         <StatRow label="Total" value={fmtMs(stats.totalDurationMs)} />
         <StatRow label="API" value={fmtMs(stats.apiDurationMs)} />
         <StatRow label="Tools" value={fmtMs(stats.toolDurationMs)} />

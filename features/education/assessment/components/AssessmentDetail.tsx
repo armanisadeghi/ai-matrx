@@ -356,6 +356,15 @@ export function AssessmentDetail({
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => void handleDuplicate()}
+                disabled={duplicating}
+              >
+                <Copy className="mr-1.5 h-4 w-4" />
+                Duplicate
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setConfirmDelete(true)}
               >
                 <Trash2 className="mr-1.5 h-4 w-4" />

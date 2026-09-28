@@ -68,12 +68,8 @@ import {
   useKnowledgeAssetRunner,
   type OpState,
 } from "@/features/rag/hooks/useKnowledgeAssetRunner";
-import { ProcessingUnitsBadge } from "@/components/processing-units/ProcessingUnitsBadge";
-import {
-  costToUnits,
-  formatUnits,
-  sumCostToUnits,
-} from "@/lib/processing-units/units";
+import { CostBadge } from "@/components/cost/CostBadge";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
   usePageVerificationSummary,
   VERIFICATION_REASON_SHORT,
@@ -175,6 +171,7 @@ export interface KnowledgeAssetDoc {
 }
 
 export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
+  const { format: costText } = useCostDisplay();
   const runner = useKnowledgeAssetRunner(doc.id);
   const {
     derivations,
@@ -276,20 +273,24 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
   const allComplete = incompleteKinds.length === 0;
   const builtCount = DERIVE_KINDS.length - incompleteKinds.length;
 
-  // Total Processing Units to build everything — the pre-flight cost shown
-  // before "Build all" so nothing expensive is ever triggered blind.
+  // Total cost (USD, shown in points) to build everything — the pre-flight
+  // cost shown before "Build all" so nothing expensive is ever triggered blind.
+  // Summed first, converted once, so per-kind rounding never drifts the total.
   const totalBuildUnits = useMemo(() => {
     const est = estimate.data?.estimates;
     if (!est) return null;
-    return sumCostToUnits(DERIVE_KINDS.map((k) => est[k]?.cost_usd));
+    return DERIVE_KINDS.reduce((sum, k) => {
+      const usd = est[k]?.cost_usd;
+      return sum + (typeof usd === "number" && usd > 0 ? usd : 0);
+    }, 0);
   }, [estimate.data]);
 
   const handleRunAll = async () => {
     const costNote =
       totalBuildUnits && totalBuildUnits > 0
         ? hasPriorProgress
-          ? ` Full-build upper bound: ${formatUnits(totalBuildUnits)}; resume skips persisted paid work.`
-          : ` Estimated cost: about ${formatUnits(totalBuildUnits)}.`
+          ? ` Full-build upper bound: ${costText(totalBuildUnits)}; resume skips persisted paid work.`
+          : ` Estimated cost: about ${costText(totalBuildUnits)}.`
         : "";
     const ok = await confirm({
       title: hasPriorProgress
@@ -310,8 +311,8 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
       // Request 1 is an authoritative, non-mutating server impact check.
       const preview = await prepareRebuild(doc.id, kind);
       const meta = KIND_META[kind];
-      const fullUnits = costToUnits(preview.full_rebuild_cost_usd);
-      const resumeUnits = costToUnits(preview.resume_cost_usd);
+      const fullUnits = preview.full_rebuild_cost_usd ?? 0;
+      const resumeUnits = preview.resume_cost_usd ?? 0;
       const ok = await confirm({
         title: `Discard and rebuild ${meta.label.toLowerCase()}?`,
         description: (
@@ -335,8 +336,8 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
             )}
             {fullUnits > 0 && (
               <p>
-                Estimated rebuild: {formatUnits(fullUnits)}. Estimated resume:{" "}
-                {formatUnits(resumeUnits)}.
+                Estimated rebuild: {costText(fullUnits)}. Estimated resume:{" "}
+                {costText(resumeUnits)}.
               </p>
             )}
           </div>
@@ -389,7 +390,7 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
           <DocSummaryLine estimate={estimate} fallbackPages={doc.totalPages} />
           {totalBuildUnits != null && totalBuildUnits > 0 && (
             <div className="mt-1 flex items-center gap-1.5">
-              <ProcessingUnitsBadge units={totalBuildUnits} />
+              <CostBadge usd={totalBuildUnits} />
               <span className="text-[10px] text-muted-foreground">
                 full build estimate
               </span>
@@ -537,6 +538,7 @@ function RepresentationCard({
   onRebuild: () => void;
   onCancel: () => void;
 }) {
+  const { format: costText } = useCostDisplay();
   const meta = KIND_META[kind];
   const Icon = meta.icon;
   const chunkCount = rollup?.chunk_count ?? 0;
@@ -561,8 +563,8 @@ function RepresentationCard({
   // than letting an expensive run start blind. Deterministic ops just run.
   const isCostly = meta.costly === true;
   const estimateLoading = estimating && !estimate;
-  const estUnits = estimate ? costToUnits(estimate.cost_usd) : 0;
-  const costLabel = estUnits > 0 ? ` · ${formatUnits(estUnits)}` : "";
+  const estUnits = estimate?.cost_usd ?? 0;
+  const costLabel = estUnits > 0 ? ` · ${costText(estUnits)}` : "";
 
   const handleBuild = async (resume = false) => {
     if (isCostly) {
@@ -582,15 +584,15 @@ function RepresentationCard({
         estUnits > 0
           ? resume
             ? "only on the missing parts (already-done work is skipped for free)"
-            : `about ${formatUnits(estUnits)}`
-          : "Processing Units — we couldn't compute an exact estimate right now";
+            : `about ${costText(estUnits)}`
+          : "points — we couldn't compute an exact estimate right now";
       const ok = await confirm({
         title: resume
           ? `Resume ${meta.label.toLowerCase()}?`
           : `Build ${meta.label.toLowerCase()}?`,
         description: resume
           ? `This resumes where the last run stopped — ${costPhrase}. Persisted output is retained.`
-          : `This runs AI ${scope}and will cost ${costPhrase}. (Processing Units, not money.)`,
+          : `This runs AI ${scope}and will cost ${costPhrase}.`,
         confirmLabel: resume
           ? "Resume"
           : estUnits > 0
@@ -850,6 +852,7 @@ function RealityLine({
   loading: boolean;
   unit: string;
 }) {
+  const { format: costText } = useCostDisplay();
   if (loading && !estimate) {
     return (
       <div className="mt-1.5 flex items-center gap-1 text-[10px] leading-snug text-muted-foreground">
@@ -864,7 +867,7 @@ function RealityLine({
     estimate.runs > 0
       ? `${estimate.runs.toLocaleString()} run${estimate.runs === 1 ? "" : "s"}`
       : "deterministic";
-  const units = costToUnits(estimate.cost_usd);
+  const units = estimate.cost_usd ?? 0;
 
   return (
     <div className="mt-1.5 flex items-start gap-1 text-[10px] leading-snug text-muted-foreground">
@@ -878,7 +881,7 @@ function RealityLine({
           <>
             {" · "}
             <span className="font-medium text-foreground/70">
-              {formatUnits(units)}
+              {costText(units)}
             </span>
           </>
         )}

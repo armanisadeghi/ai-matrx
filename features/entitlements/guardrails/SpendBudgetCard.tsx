@@ -33,21 +33,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { formatPoints, pointsToUsd } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
-  formatPoints,
-  formatPointsAsMoney,
-  formatUsd,
   LIMIT_SOURCE_LABEL,
   periodPhrase,
-  pointsToUsd,
   removeGuardrail,
   saveGuardrail,
-  usdToPoints,
   type EffectiveCapability,
   type GuardrailScope,
   type SpendGuardrail,
 } from "./service";
 import { useSpendBudget } from "./useSpendBudget";
+
+/** A points figure in the viewer's unit: points for everyone, dollars only for
+ *  a system admin who flipped the switch. */
+function usePointsText(): (points: number) => string {
+  const { format } = useCostDisplay();
+  return (points) => format(pointsToUsd(points));
+}
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SpendBudgetCardProps {
@@ -184,6 +188,8 @@ function Headline({
   effective: EffectiveCapability;
   mode: GuardrailScope;
 }) {
+  const pointsText = usePointsText();
+  const { unit } = useCostDisplay();
   // The counter the binding layer is measured on: org layers meter the
   // organization, a user guardrail meters the person.
   const used =
@@ -220,7 +226,7 @@ function Headline({
 
       <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <span className="text-2xl font-semibold tabular-nums text-foreground">
-          {formatUsd(pointsToUsd(used))}
+          {pointsText(used)}
         </span>
         <span className="text-sm text-muted-foreground">
           {limit === null ? (
@@ -230,7 +236,7 @@ function Headline({
             </span>
           ) : (
             <>
-              of {formatUsd(pointsToUsd(limit))} {when}
+              of {pointsText(limit)} {when}
             </>
           )}
         </span>
@@ -249,7 +255,7 @@ function Headline({
         {limit !== null ? (
           <span>Limit set by {LIMIT_SOURCE_LABEL[effective.limitSource]}</span>
         ) : null}
-        {limit !== null ? (
+        {limit !== null && unit === "usd" ? (
           <span>
             {formatPoints(used)} of {formatPoints(limit)}
           </span>
@@ -265,8 +271,8 @@ function Headline({
         ) : null}
         {mode === "user" && effective.limitSource !== "user_guardrail" ? (
           <span>
-            You: {formatUsd(pointsToUsd(effective.userUsed))} · Organization:{" "}
-            {formatUsd(pointsToUsd(effective.orgUsed))}
+            You: {pointsText(effective.userUsed)} · Organization:{" "}
+            {pointsText(effective.orgUsed)}
           </span>
         ) : null}
         {effective.wouldBlock && !effective.enforced ? (
@@ -316,6 +322,7 @@ function Row({
 }
 
 function EntitlementRow({ effective }: { effective: EffectiveCapability }) {
+  const pointsText = usePointsText();
   const binding =
     effective.limitSource === "plan" ||
     effective.limitSource === "addon" ||
@@ -333,7 +340,7 @@ function EntitlementRow({ effective }: { effective: EffectiveCapability }) {
         </span>
       ) : (
         <span className="text-foreground">
-          {formatPointsAsMoney(effective.entitlementLimit)}
+          {pointsText(effective.entitlementLimit)}
         </span>
       )}
     </Row>
@@ -357,6 +364,8 @@ function GuardrailRow({
   editable: boolean;
   onChanged: () => Promise<void>;
 }) {
+  const pointsText = usePointsText();
+  const { unit } = useCostDisplay();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const [note, setNote] = useState("");
@@ -372,15 +381,15 @@ function GuardrailRow({
   const ceiling = effective.entitlementLimit;
 
   function beginEdit() {
-    setDraft(value !== null ? String(pointsToUsd(value)) : "");
+    setDraft(value !== null ? String(value) : "");
     setNote(existing?.note ?? "");
     setEditing(true);
   }
 
   const draftPoints = useMemo(() => {
-    const n = Number(draft);
+    const n = Number(draft.replace(/,/g, ""));
     return draft.trim() !== "" && Number.isFinite(n) && n >= 0
-      ? usdToPoints(n)
+      ? Math.round(n)
       : null;
   }, [draft]);
   const aboveCeiling =
@@ -403,7 +412,7 @@ function GuardrailRow({
 
   async function save() {
     if (draftPoints === null) {
-      toast.error("Enter a dollar amount, for example 5 or 12.50.");
+      toast.error("Enter a number of points, for example 100000.");
       return;
     }
     if (!userId) {
@@ -421,7 +430,7 @@ function GuardrailRow({
         note: note.trim() || null,
       });
       toast.success(
-        `${label} set to ${formatUsd(pointsToUsd(draftPoints))} ${periodPhrase(effective.period)}`.trim(),
+        `${label} set to ${pointsText(draftPoints)} ${periodPhrase(effective.period)}`.trim(),
       );
       setEditing(false);
       await onChanged();
@@ -460,14 +469,11 @@ function GuardrailRow({
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <div className="relative">
-            <span className="pointer-events-none absolute inset-y-0 left-2.5 flex items-center text-sm text-muted-foreground">
-              $
-            </span>
             <Input
               autoFocus
-              inputMode="decimal"
-              className="w-32 pl-6 tabular-nums"
-              placeholder="0.00"
+              inputMode="numeric"
+              className="w-32 pr-10 tabular-nums"
+              placeholder="100,000"
               value={draft}
               disabled={busy}
               onChange={(e) => setDraft(e.target.value)}
@@ -475,14 +481,19 @@ function GuardrailRow({
                 if (e.key === "Enter") void save();
                 if (e.key === "Escape") setEditing(false);
               }}
-              aria-label={`${label} in US dollars`}
+              aria-label={`${label} in points`}
             />
+            <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-xs text-muted-foreground">
+              pts
+            </span>
           </div>
           <span className="text-xs text-muted-foreground">
             {periodPhrase(effective.period)
               .replace(/^this /, "per ")
               .replace(/^today$/, "per day")}
-            {draftPoints !== null ? ` · ${formatPoints(draftPoints)}` : ""}
+            {draftPoints !== null && unit === "usd"
+              ? ` · ${pointsText(draftPoints)}`
+              : ""}
           </span>
           <Input
             className="min-w-40 flex-1"
@@ -529,12 +540,12 @@ function GuardrailRow({
         {aboveCeiling && ceiling !== null ? (
           <p className="mt-1.5 text-xs text-destructive">
             A budget can only lower your limit. This account is entitled to{" "}
-            {formatPointsAsMoney(ceiling)}; enter that or less. Raising a limit
+            {pointsText(ceiling)}; enter that or less. Raising a limit
             is an add-on, which a platform administrator grants.
           </p>
         ) : ceiling !== null ? (
           <p className="mt-1.5 text-xs text-muted-foreground">
-            Up to {formatUsd(pointsToUsd(ceiling))} — the entitlement is the
+            Up to {pointsText(ceiling)} — the entitlement is the
             ceiling.
           </p>
         ) : null}
@@ -547,7 +558,7 @@ function GuardrailRow({
       {value === null ? (
         <span className="text-muted-foreground">Not set</span>
       ) : (
-        <span className="text-foreground">{formatPointsAsMoney(value)}</span>
+        <span className="text-foreground">{pointsText(value)}</span>
       )}
       {editable ? (
         <Button

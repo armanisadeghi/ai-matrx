@@ -20,7 +20,7 @@ import {
   researchLocation,
   type ResearchKpis,
 } from "@/features/research/copy";
-import { formatUsd } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useCountUp, formatInt, formatCompact } from "./resultsShared";
 
 export interface HeroMetric {
@@ -122,11 +122,12 @@ function MetricValue({
 }) {
   // Money animates with 2 decimals; compact/int animate as whole numbers and
   // we format the live value each frame.
+  const { format: formatCostDisplay } = useCostDisplay();
   const decimals = format === "usd" && value < 1000 ? 2 : 0;
   const animated = useCountUp(value, { decimals, delay });
   const text =
     format === "usd"
-      ? formatUsd(animated, { digits: "adaptive" })
+      ? formatCostDisplay(animated)
       : format === "compact"
         ? formatCompact(animated)
         : formatInt(animated);
@@ -146,9 +147,9 @@ export interface HeroMetricsCopyContext {
 }
 
 /** Readable value for a tile, in the same format the tile renders. */
-function metricText(metric: HeroMetric): string {
+function metricText(metric: HeroMetric, formatCostDisplay: (usd: number) => string): string {
   return metric.format === "usd"
-    ? formatUsd(metric.value, { digits: "adaptive" })
+    ? formatCostDisplay(metric.value)
     : metric.format === "compact"
       ? formatCompact(metric.value)
       : formatInt(metric.value);
@@ -163,6 +164,7 @@ function MetricTile({
   index: number;
   copyContext?: HeroMetricsCopyContext;
 }) {
+  const { format: formatCostDisplay } = useCostDisplay();
   const Icon = metric.icon;
   return (
     <motion.div
@@ -198,7 +200,7 @@ function MetricTile({
             label={`${metric.label} (research)`}
             human={() =>
               humanLines([
-                [metric.label, metricText(metric)],
+                [metric.label, metricText(metric, formatCostDisplay)],
                 [metric.hint ? "Note" : "", metric.hint],
               ])
             }
@@ -211,7 +213,7 @@ function MetricTile({
                   key: metric.key,
                   label: metric.label,
                   value: metric.value,
-                  rendered: metricText(metric),
+                  rendered: metricText(metric, formatCostDisplay),
                   hint: metric.hint ?? null,
                 },
                 // A single tile is only meaningful beside the whole strip.
@@ -257,13 +259,14 @@ export function ResultsHeroMetrics({
   metrics: HeroMetric[];
   copyContext?: HeroMetricsCopyContext;
 }) {
+  const { format: formatCostDisplay } = useCostDisplay();
   /** Rows for the rail's own copy/export — ALL tiles, never a visible slice. */
   const metricRows = () =>
     metrics.map((m) => ({
       key: m.key,
       label: m.label,
       value: m.value,
-      rendered: metricText(m),
+      rendered: metricText(m, formatCostDisplay),
       hint: m.hint ?? null,
     }));
 

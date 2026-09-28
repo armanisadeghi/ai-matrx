@@ -19,7 +19,8 @@ import { createSelector } from "@reduxjs/toolkit";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import type { ActiveRequest } from "@/features/agents/types/request.types";
-import { formatFileSize } from "@ai-matrx/kit/format";
+import { formatFileSize, type CostUnit } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
   addUsageTotals,
   fmtCost,
@@ -356,7 +357,8 @@ type Direction = "lower" | "higher" | "none";
 interface MetricRow {
   label: string;
   pick: (s: ColumnStats) => number | null;
-  format: (v: number | null) => string;
+  /** `unit` is the viewer's cost unit — only cost rows read it. */
+  format: (v: number | null, unit: CostUnit) => string;
   direction: Direction;
   emphasized?: boolean;
 }
@@ -893,6 +895,7 @@ function SectionTable({
   section: MetricSection;
   stats: ColumnStats[];
 }) {
+  const { unit: costUnit } = useCostDisplay();
   return (
     <div className="border border-border rounded-md overflow-hidden">
       <div className="px-3 py-1.5 bg-muted/40 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
@@ -961,7 +964,7 @@ function SectionTable({
                           hl === "worst" && "text-rose-500 font-semibold",
                         )}
                       >
-                        {row.format(v)}
+                        {row.format(v, costUnit)}
                       </td>
                     );
                   })}

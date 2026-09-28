@@ -34,6 +34,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { bridgeFillStart } from "@/features/marketing/content-plan/setup/bridge";
 import type { PlanNodeRow } from "@/features/marketing/content-plan/types";
 import type { NodePipelineProgress } from "@/features/marketing/content-plan/lib/pipeline-progress";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 export function RunPipelineBulkAction({
   siteId,
@@ -53,6 +54,7 @@ export function RunPipelineBulkAction({
   onStarted?: () => void;
 }) {
   const dispatch = useAppDispatch();
+  const { format: formatCostDisplay } = useCostDisplay();
   const [busy, setBusy] = useState(false);
 
   // What the selection has ALREADY done, so the confirm can say "the rest"
@@ -100,7 +102,7 @@ export function RunPipelineBulkAction({
         `Running ${started.estimate.pages} page${started.estimate.pages === 1 ? "" : "s"} — ` +
           `${started.estimate.calls} AI step${started.estimate.calls === 1 ? "" : "s"}` +
           (started.estimate.usd != null
-            ? `, about $${started.estimate.usd.toFixed(2)}`
+            ? `, about ${formatCostDisplay(started.estimate.usd)}`
             : "") +
           ". Progress shows on each page's rail.",
       );

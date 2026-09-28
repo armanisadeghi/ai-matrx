@@ -27,7 +27,8 @@ import {
   buildSpendLeadingKpis,
   type SpendLeadingKpis,
 } from "./TotalsStrip";
-import { formatPercentFromFraction } from "@ai-matrx/kit/format";
+import { formatPercentFromFraction, type CostUnit } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 const PARETO_DIMENSIONS: readonly SpendDimension[] = [
   "user",
@@ -86,6 +87,7 @@ export function paretoCopyText(
   cut: ParetoCut,
   total: number,
   parent: ParetoParentContext,
+  unit: CostUnit = "points",
 ): string {
   const data = paretoCopyData(dim, cut, total, parent);
   const activeFilters = Object.entries(parent.filters)
@@ -105,11 +107,11 @@ export function paretoCopyText(
     `Explained by a request: ${kpis.explainedByRequest.value} · ${kpis.explainedByRequest.hint}`,
     "",
     `${data.dimension} — 80% of spend`,
-    `${data.shownCount} of ${data.distinctCount} shown · ${formatPercentFromFraction(data.shownShare)} · Total ${usd(data.windowTotal)}`,
+    `${data.shownCount} of ${data.distinctCount} shown · ${formatPercentFromFraction(data.shownShare)} · Total ${usd(data.windowTotal, unit)}`,
     ...data.rows.map(
-      (row) => `${row.label}\t${formatPercentFromFraction(row.share)}\t${usd(row.cost)}`,
+      (row) => `${row.label}\t${formatPercentFromFraction(row.share)}\t${usd(row.cost, unit)}`,
     ),
-    `Everything else (${data.everythingElse.count} more)\t${formatPercentFromFraction(data.everythingElse.share)}\t${usd(data.everythingElse.cost)}`,
+    `Everything else (${data.everythingElse.count} more)\t${formatPercentFromFraction(data.everythingElse.share)}\t${usd(data.everythingElse.cost, unit)}`,
   ].join("\n");
 }
 
@@ -213,6 +215,7 @@ function ParetoCard({
   totals,
   parent,
   onDrill,
+  unit,
 }: {
   dim: SpendDimension;
   cut: ParetoCut;
@@ -220,6 +223,7 @@ function ParetoCard({
   totals: SpendBreakdown["totals"];
   parent: ParetoParentContext;
   onDrill: (dim: SpendDimension, key: string) => void;
+  unit: CostUnit;
 }) {
   const headShare = total > 0 ? cut.headCost / total : 0;
   return (
@@ -233,13 +237,13 @@ function ParetoCard({
             {cut.head.length} of {cut.distinct} · {formatPercentFromFraction(headShare)}
           </span>
           <span className="shrink-0 font-medium text-foreground">
-            Total {usd(total)}
+            Total {usd(total, unit)}
           </span>
           <CopyButtons
             size="xs"
             className="shrink-0"
             label={`${DIMENSION_LABEL[dim]} — 80% of spend`}
-            human={() => paretoCopyText(dim, cut, total, parent)}
+            human={() => paretoCopyText(dim, cut, total, parent, unit)}
             json={() => paretoCopyData(dim, cut, total, parent)}
             agent={() =>
               paretoAgentPayload(dim, cut, total, totals, parent)
@@ -273,7 +277,7 @@ function ParetoCard({
                 {formatPercentFromFraction(row.share)}
               </span>
               <span className="relative w-16 shrink-0 text-right text-xs font-medium tabular-nums text-foreground">
-                {usd(row.cost)}
+                {usd(row.cost, unit)}
               </span>
               {href ? (
                 <Link
@@ -300,7 +304,7 @@ function ParetoCard({
             {formatPercentFromFraction(total > 0 ? cut.restCost / total : 0)}
           </span>
           <span className="w-16 shrink-0 text-right tabular-nums">
-            {usd(cut.restCost)}
+            {usd(cut.restCost, unit)}
           </span>
           <span className="h-3 w-3 shrink-0" aria-hidden />
         </li>
@@ -323,12 +327,13 @@ export function ParetoPanel({
   windowLabel: string;
   onDrill: (dim: SpendDimension, key: string) => void;
 }) {
+  const { unit } = useCostDisplay();
   const total = data.totals.cost;
   const parent: ParetoParentContext = {
     selectedWindow: windowLabel,
     window: data.window,
     filters: data.filters,
-    leadingKpis: buildSpendLeadingKpis(data),
+    leadingKpis: buildSpendLeadingKpis(data, unit),
   };
   // A dimension already filtered to one value has nothing to say here.
   const dims = PARETO_DIMENSIONS.filter((dim) => !data.filters[dim]);
@@ -346,6 +351,7 @@ export function ParetoPanel({
             totals={data.totals}
             parent={parent}
             onDrill={onDrill}
+            unit={unit}
           />
         );
       })}

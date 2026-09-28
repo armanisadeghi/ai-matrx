@@ -65,6 +65,7 @@ import {
 } from "../../components/run/node-presentation";
 import { InterruptCard, RunErrorCard } from "../../components/readout-parts";
 import { RunStatusChip } from "../../run-status";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { runIsOver, type WorkflowRunStatus } from "../../types";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
 
@@ -354,6 +355,7 @@ function PromiseStrip({
   const startedAt = useAppSelector(selectRunStartedAt(runId ?? "∅"));
   const statusTs = useAppSelector(selectRunStatusTs(runId ?? "∅"));
   const cost = useAppSelector(selectRunCostTotal(runId ?? "∅"));
+  const { format: formatCostDisplay } = useCostDisplay();
   const summary = planSummary(steps, phases);
   const runOver = runIsOver(status);
 
@@ -385,7 +387,7 @@ function PromiseStrip({
         {cost > 0 ? (
           <span className="flex items-center gap-1.5 text-xs tabular-nums text-muted-foreground">
             <CircleDollarSign className="h-3.5 w-3.5" aria-hidden />
-            ${cost.toFixed(2)}
+            {formatCostDisplay(cost)}
           </span>
         ) : null}
         <span className="text-xs tabular-nums text-muted-foreground">

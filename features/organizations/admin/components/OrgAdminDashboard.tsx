@@ -23,6 +23,7 @@ import type { Organization, OrgRole } from "../../types";
 import { useOrgRoster } from "../hooks";
 import type { OrgAdminOverview } from "../types";
 import { formatMcents } from "../utils";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { MemberRosterTable } from "./MemberRosterTable";
 import { OrgAdminAuditTable } from "./OrgAdminAuditTable";
@@ -56,6 +57,7 @@ function StatTile({
 }
 
 function OverviewTiles({ overview }: { overview: OrgAdminOverview }) {
+  const { unit } = useCostDisplay();
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
       <StatTile icon={Users} label="Members" value={overview.totalMembers} hint={`${overview.admins} admins`} />
@@ -82,7 +84,7 @@ function OverviewTiles({ overview }: { overview: OrgAdminOverview }) {
       <StatTile
         icon={Activity}
         label="Spend 24h"
-        value={formatMcents(overview.cost24hMcents)}
+        value={formatMcents(overview.cost24hMcents, unit)}
         hint={`${overview.requests24h} requests`}
       />
     </div>

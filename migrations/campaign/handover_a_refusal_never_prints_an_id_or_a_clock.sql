@@ -1,4 +1,5 @@
 -- additive: yes
+-- chair-step: replaces 75 live custom.* function bodies whose own existing DELETE statements (record_delete, dashboard_delete, migrate_delete …) are carried over unchanged; only refusal sentences change, so no row is touched
 -- based-on: custom._action_check(uuid, uuid, jsonb) bc514c252d9ce1e980eb1ecf3e0e7f020f561cf034fa6f6c321f0408ccca9b68
 -- based-on: custom._doc_signature_immutable() 8978743cfda8b1ebfe260475f719cdbd5f47214a884174a761a36a1b81c00996
 -- based-on: custom._read_record_with(uuid, uuid, boolean, jsonb, jsonb) c298cb02bbcb9344efd7b358b3c32ad9a49a0032c9d6fb765ef09c8e73070404

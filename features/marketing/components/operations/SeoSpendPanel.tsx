@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { SeoSpendChart } from "@/features/marketing/components/operations/SeoSpendChart";
 import { formatRuntimeCost } from "@/features/marketing/data/operations-format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
   useSeoSpendSummary,
   type SeoBudgetRejectionRow,
@@ -28,6 +29,7 @@ import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { toast } from "@/lib/toast";
 
 function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
+  const { unit } = useCostDisplay();
   const pct = Math.max(0, Math.min(100, row.pct_used));
   const over = row.pct_used >= 100;
   const warn = row.pct_used >= 80 && !over;
@@ -37,9 +39,9 @@ function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
         {row.provider.replace(/_/g, " ")}
       </span>
       <span className="text-right font-mono text-xs font-semibold tabular-nums">
-        {formatRuntimeCost(row.effective_cost)}{" "}
+        {formatRuntimeCost(row.effective_cost, unit)}{" "}
         <span className="font-normal text-muted-foreground">
-          / {formatRuntimeCost(row.ceiling_usd)}
+          / {formatRuntimeCost(row.ceiling_usd, unit)}
         </span>
       </span>
       <div className="col-span-2 h-1.5 overflow-hidden rounded-full bg-muted">
@@ -63,6 +65,7 @@ function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
 }
 
 export function SeoSpendPanel() {
+  const { unit } = useCostDisplay();
   const spend = useSeoSpendSummary();
   /** Right-clicked rejection row — STATE (not a ref) so the menu reads the
    *  row that was actually clicked. */
@@ -115,7 +118,7 @@ export function SeoSpendPanel() {
       filter: "number",
       align: "right",
       cell: (row) =>
-        row.spent_usd === null ? "—" : formatRuntimeCost(row.spent_usd),
+        row.spent_usd === null ? "—" : formatRuntimeCost(row.spent_usd, unit),
     },
     {
       id: "limit_usd",
@@ -124,7 +127,7 @@ export function SeoSpendPanel() {
       filter: "number",
       align: "right",
       cell: (row) =>
-        row.limit_usd === null ? "—" : formatRuntimeCost(row.limit_usd),
+        row.limit_usd === null ? "—" : formatRuntimeCost(row.limit_usd, unit),
     },
     {
       id: "occurred_at",
@@ -218,9 +221,9 @@ export function SeoSpendPanel() {
         )}
         <p className="mt-2 text-[10px] text-muted-foreground">
           Org·provider monthly ceiling{" "}
-          {formatRuntimeCost(data.org_provider_monthly_ceiling_usd)} ·
+          {formatRuntimeCost(data.org_provider_monthly_ceiling_usd, unit)} ·
           platform-wide monthly ceiling{" "}
-          {formatRuntimeCost(data.global_provider_monthly_ceiling_usd)} per
+          {formatRuntimeCost(data.global_provider_monthly_ceiling_usd, unit)} per
           provider (placeholder values, pending final ruling).
         </p>
       </section>

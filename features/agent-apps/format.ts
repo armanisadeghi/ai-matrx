@@ -19,10 +19,10 @@ import { visibilityLabelShort } from "@/lib/visibility/labels";
 import {
   formatCount,
   formatPercentFromFraction,
-  formatUsd,
   isKnownNumber,
   UNKNOWN_DISPLAY,
 } from "@/lib/format/honest";
+import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
 
 /**
  * "1.2k" / "3m" style compact number, matching the app's existing style.
@@ -145,7 +145,10 @@ export type AgentAppKpis = Record<string, string | number>;
  * carried in from Overview into Run / Code / Versions / Settings.
  * Mirrors `AgentAppOverviewContent`'s StatChip row.
  */
-export function agentAppKpis(app: AgentAppKpiLike): AgentAppKpis {
+export function agentAppKpis(
+  app: AgentAppKpiLike,
+  unit: CostUnit = "points",
+): AgentAppKpis {
   const kpis: AgentAppKpis = {
     runs: formatNumber(app.total_executions),
     success: formatPercentFromFraction(app.success_rate),
@@ -157,7 +160,7 @@ export function agentAppKpis(app: AgentAppKpiLike): AgentAppKpis {
   // UNMEASURED cost is omitted. The old `> 0` test hid a real free run and
   // (with the `?? 0` twin below) turned an unknown one into "$0.00".
   if (isKnownNumber(app.total_cost)) {
-    kpis.cost = formatUsd(app.total_cost);
+    kpis.cost = formatCost(app.total_cost, { unit });
   }
   if (app.status) kpis.status = app.status;
   if (app.visibility) kpis.visibility = app.visibility;
@@ -166,15 +169,18 @@ export function agentAppKpis(app: AgentAppKpiLike): AgentAppKpis {
 
 /**
  * The Analytics card as the ADMIN edit page renders it, verbatim — including
- * its own `toLocaleString` / 0-dp percent / 4-dp dollar formatting, which
- * deliberately differs from the entity strip above.
+ * its own `toLocaleString` / 0-dp percent formatting. Cost is in the viewer's
+ * unit (points unless a system admin flipped the switch).
  */
-export function agentAppAdminKpis(app: AgentAppKpiLike): AgentAppKpis {
+export function agentAppAdminKpis(
+  app: AgentAppKpiLike,
+  unit: CostUnit = "points",
+): AgentAppKpis {
   return {
     runs: formatCount(app.total_executions),
     users: formatCount(app.unique_users_count),
     success: formatPercentFromFraction(app.success_rate),
-    cost: formatUsd(app.total_cost, { digits: 4 }),
+    cost: formatCost(app.total_cost, { unit }),
   };
 }
 

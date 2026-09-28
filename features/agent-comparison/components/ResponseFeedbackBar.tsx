@@ -23,6 +23,7 @@
  * — rating a half-streamed answer is pointless.
  */
 
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useEffect, useState } from "react";
 import {
   ThumbsUp,
@@ -32,7 +33,7 @@ import {
   Star,
   Trophy,
   Coins,
-  DollarSign,
+  Gauge,
   Timer,
   Zap,
   EyeOff,
@@ -668,6 +669,7 @@ function BlindUsageNotice() {
  * of comparison mode since the request slice is global.
  */
 function ResponseUsageStrip({ requestId }: { requestId: string }) {
+  const { unit: costUnit } = useCostDisplay();
   const stats = useAppSelector((state: RootState) => {
     const req = state.activeRequests.byRequestId[requestId];
     if (!req) return null;
@@ -715,9 +717,9 @@ function ResponseUsageStrip({ requestId }: { requestId: string }) {
         accent="text-primary"
       />
       <UsageTile
-        icon={<DollarSign className="w-3 h-3" />}
+        icon={<Gauge className="w-3 h-3" />}
         label="Cost"
-        primary={fmtCost(stats.cost)}
+        primary={fmtCost(stats.cost, costUnit)}
         accent="text-emerald-500"
       />
       <UsageTile

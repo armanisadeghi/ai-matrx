@@ -3,8 +3,9 @@
  */
 
 import {
+  formatCost,
   formatRelativeTime as kitFormatRelativeTime,
-  formatUsd,
+  type CostUnit,
 } from "@ai-matrx/kit/format";
 
 /**
@@ -39,9 +40,12 @@ const MCENTS_PER_USD = 100_000;
  * capability — so the conversion is one named constant and the rendering is
  * the package's.
  */
-export function formatMcents(mcents: number | null | undefined): string {
+export function formatMcents(
+  mcents: number | null | undefined,
+  unit: CostUnit = "points",
+): string {
   if (mcents == null) return "—";
-  return formatUsd(mcents / MCENTS_PER_USD);
+  return formatCost(mcents / MCENTS_PER_USD, { unit });
 }
 
 /** USD → milli-cents for storing a budget. Returns null for empty input. */

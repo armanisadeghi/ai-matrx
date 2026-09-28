@@ -14,6 +14,7 @@ import { X } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 
 import { usd } from "../format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { SPEND_DIMENSIONS, type SpendBreakdown, type SpendDimension, type SpendFilters } from "../types";
 import { DIMENSION_LABEL, rowLabel } from "./labels";
 import { formatPercentFromFraction } from "@ai-matrx/kit/format";
@@ -26,6 +27,7 @@ export interface FilterChipsProps {
 }
 
 export function FilterChips({ filters, data, onRemove, onClear }: FilterChipsProps) {
+  const { unit } = useCostDisplay();
   const active = SPEND_DIMENSIONS.filter((dim) => filters[dim]);
   if (active.length === 0) return null;
 
@@ -62,7 +64,7 @@ export function FilterChips({ filters, data, onRemove, onClear }: FilterChipsPro
       </Button>
       {data ? (
         <span className="ml-auto text-[11px] text-muted-foreground">
-          This slice is {usd(cost)} of the {usd(ledger)} the whole window cost (
+          This slice is {usd(cost, unit)} of the {usd(ledger, unit)} the whole window cost (
           {formatPercentFromFraction(ledger > 0 ? cost / ledger : 0)}).
         </span>
       ) : null}

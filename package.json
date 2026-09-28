@@ -285,6 +285,8 @@
     "check:admin-no-personal-seat": "tsx scripts/check-admin-no-personal-seat.ts",
     "check:hardcoded-agents": "tsx scripts/check-hardcoded-agents.ts",
     "check:hardcoded-agents:write": "tsx scripts/check-hardcoded-agents.ts --write",
+    "check:cost-display": "tsx scripts/check-cost-display.ts",
+    "check:cost-display:self-test": "tsx scripts/check-cost-display.ts --self-test",
     "check:reserved-icons": "tsx scripts/check-reserved-icons.ts",
     "check:reserved-icons:write": "tsx scripts/check-reserved-icons.ts --write",
     "check:reserved-icons:self-test": "tsx scripts/check-reserved-icons.ts --self-test",

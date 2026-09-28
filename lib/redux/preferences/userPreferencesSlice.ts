@@ -353,6 +353,9 @@ export interface AiModelsPreferences {
 export interface SystemPreferences {
   viewedAnnouncements: string[]; // Array of announcement IDs that have been viewed
   feedbackFeatureViewCount: number; // Number of times user has seen the new feedback feature highlight
+  /** System admins only: show AI costs in dollars instead of points. Ignored
+   *  for everyone else (components/cost/useCostDisplay.ts). Default false. */
+  showCostInUsd: boolean;
 }
 
 export interface MessagingPreferences {
@@ -1239,6 +1242,7 @@ export const initializeUserPreferencesState = (
     system: {
       viewedAnnouncements: [],
       feedbackFeatureViewCount: 0,
+      showCostInUsd: false,
     },
     messaging: {
       notificationSoundEnabled: true,

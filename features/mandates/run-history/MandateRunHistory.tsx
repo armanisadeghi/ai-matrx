@@ -19,6 +19,7 @@
 // the run, each with its peek and new-tab door; "Open" goes to the canonical
 // viewer of what it produced — the conversation, or the workflow run page.
 
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -434,6 +435,7 @@ function RunRow({
   onPerson: (() => void) | null;
   onOrg: (() => void) | null;
 }) {
+  const { unit: costUnit } = useCostDisplay();
   const ranBy = ranByWords(run, view);
   const warning = outputWarningTitle(run);
   const outputHref =
@@ -488,7 +490,7 @@ function RunRow({
           {run.error ? <ErrorAlchemyMenu error={run.error} size="xs" /> : null}
         </span>
       </TableCell>
-      <TableCell className="text-right tabular-nums">{costWords(run.cost)}</TableCell>
+      <TableCell className="text-right tabular-nums">{costWords(run.cost, costUnit)}</TableCell>
       <TableCell className="hidden text-right tabular-nums md:table-cell">{durationWords(run.durationMs)}</TableCell>
       <TableCell className="px-1">
         {warning ? (

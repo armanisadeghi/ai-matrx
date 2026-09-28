@@ -47,6 +47,7 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
+import { Cost } from "@/components/cost/Cost";
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
@@ -164,7 +165,7 @@ export function WorkflowRunBoard({
         {costTotal > 0 ? (
           <span className="text-xs text-muted-foreground">
             {/* read-gate-exempt: progress and cost over the live run stream in redux, not a list read */}
-            ${costTotal.toFixed(4)}
+            <Cost usd={costTotal} />
           </span>
         ) : null}
         {/* Transport is a live-follow detail — meaningless (and misleading:

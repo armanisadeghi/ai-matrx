@@ -53,6 +53,7 @@
  * detail row.
  */
 
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, MessagesSquare } from "lucide-react";
 
@@ -68,7 +69,12 @@ import type { AgentRunFacts } from "@/features/workflow-runtime/agent-run-output
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
 // 1h 02m. THE UNIT LAW puts the unit in the name.
-import { formatCount, formatDurationMs } from "@ai-matrx/kit/format";
+import {
+  formatCost,
+  formatCount,
+  formatDurationMs,
+  type CostUnit,
+} from "@ai-matrx/kit/format";
 
 export interface AgentResultBlockProps {
   serverData?: unknown;
@@ -123,17 +129,12 @@ function formatDuration(ms: number): string | null {
   return formatDurationMs(ms, { style: "compact" });
 }
 
-/** Sub-cent runs are the common case, so they keep four decimals. */
-function formatCost(usd: number): string {
-  return usd >= 1 ? `$${usd.toFixed(2)}` : `$${usd.toFixed(4)}`;
-}
-
 interface Fact {
   label: string;
   value: string;
 }
 
-function factList(facts: AgentRunFacts): Fact[] {
+function factList(facts: AgentRunFacts, unit: CostUnit): Fact[] {
   const out: Fact[] = [];
   if (facts.models.length > 0) {
     out.push({ label: "Model", value: facts.models.join(", ") });
@@ -148,7 +149,7 @@ function factList(facts: AgentRunFacts): Fact[] {
     out.push({ label: "Tool calls", value: formatCount(facts.toolCalls) });
   }
   if (facts.costUsd !== null) {
-    out.push({ label: "Cost", value: formatCost(facts.costUsd) });
+    out.push({ label: "Cost", value: formatCost(facts.costUsd, { unit }) });
   }
   if (facts.inputTokens !== null || facts.outputTokens !== null) {
     out.push({
@@ -169,18 +170,19 @@ function factList(facts: AgentRunFacts): Fact[] {
  * Empty when the producer tracked neither — the row then says only "Run
  * detail", which is honest rather than a fabricated "0ms · $0".
  */
-function summaryLine(facts: AgentRunFacts): string | null {
+function summaryLine(facts: AgentRunFacts, unit: CostUnit): string | null {
   const parts: string[] = [];
   const duration =
     facts.durationMs !== null ? formatDuration(facts.durationMs) : null;
   if (duration) parts.push(duration);
   if (facts.costUsd !== null && facts.costUsd > 0) {
-    parts.push(formatCost(facts.costUsd));
+    parts.push(formatCost(facts.costUsd, { unit }));
   }
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 function RunDetail({ facts }: { facts: AgentRunFacts }) {
+  const { unit: costUnit } = useCostDisplay();
   const [open, setOpen] = useState(false);
   const detailRef = useRef<HTMLDivElement>(null);
   // The row sits at the BOTTOM of a bounded, scrollable host (the workflow
@@ -190,11 +192,11 @@ function RunDetail({ facts }: { facts: AgentRunFacts }) {
   useEffect(() => {
     if (open) detailRef.current?.scrollIntoView({ block: "nearest" });
   }, [open]);
-  const items = factList(facts);
+  const items = factList(facts, costUnit);
   // Nothing to tell and nowhere to go — render no row at all rather than a
   // control that opens onto an empty box.
   if (items.length === 0 && !facts.conversationId) return null;
-  const summary = summaryLine(facts);
+  const summary = summaryLine(facts, costUnit);
 
   return (
     <div className="mt-2 border-t border-border/50 pt-1.5">

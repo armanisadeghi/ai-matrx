@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/features/marketing/components/shared/MarketingUi";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { cn } from "@/lib/utils";
 
 import {
@@ -462,7 +463,8 @@ function Gate4Body({
   edits: Record<string, unknown>;
   setEdits: (next: Record<string, unknown>) => void;
 }) {
-  const cost = formatUsd(payload.wave_cost_usd);
+  const { unit } = useCostDisplay();
+  const cost = formatUsd(payload.wave_cost_usd, unit);
   const limitations = editing
     ? arr<string>(edits.limitations)
     : arr<string>(payload.limitations);

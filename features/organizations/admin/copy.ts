@@ -11,7 +11,7 @@
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import type { OrgAdminAuditEntry, OrgAdminMember } from "./types";
 import { formatMcents, formatRelativeTime } from "./utils";
-import { formatFileSize } from "@ai-matrx/kit/format";
+import { formatFileSize, type CostUnit } from "@ai-matrx/kit/format";
 
 function lines(
   rows: Array<[string, string | number | boolean | null | undefined]>,
@@ -29,7 +29,10 @@ function adminLocation(orgSlug: string, area: string): string {
 // ── Member roster ──────────────────────────────────────────────────────────
 
 /** One member row, in the units the table renders (bytes and mcents formatted). */
-export function rosterMemberSummary(member: OrgAdminMember): string {
+export function rosterMemberSummary(
+  member: OrgAdminMember,
+  unit: CostUnit = "points",
+): string {
   return lines([
     ["Member", member.displayName || member.email || "Unknown user"],
     ["Email", member.email],
@@ -40,7 +43,7 @@ export function rosterMemberSummary(member: OrgAdminMember): string {
       "Files (org)",
       `${member.orgFilesCount} (${formatFileSize(member.orgBytesUsed)})`,
     ],
-    ["Spend 24h", formatMcents(member.cost24hMcents)],
+    ["Spend 24h", formatMcents(member.cost24hMcents, unit)],
     ["Requests 24h", member.requests24h],
     ["Tier", member.memberLevel ?? "Standard"],
   ]);
@@ -89,10 +92,13 @@ export function rosterKpis(members: OrgAdminMember[]) {
   };
 }
 
-export function rosterListHuman(members: OrgAdminMember[]): string {
+export function rosterListHuman(
+  members: OrgAdminMember[],
+  unit: CostUnit = "points",
+): string {
   const kpis = rosterKpis(members);
-  const head = `Org member roster — ${kpis.total} member${kpis.total === 1 ? "" : "s"} · ${kpis.suspended} suspended · ${formatFileSize(kpis.org_bytes_used)} in org files · ${formatMcents(kpis.cost_24h_mcents)} spend 24h`;
-  return [head, "", ...members.map(rosterMemberSummary)].join("\n\n");
+  const head = `Org member roster — ${kpis.total} member${kpis.total === 1 ? "" : "s"} · ${kpis.suspended} suspended · ${formatFileSize(kpis.org_bytes_used)} in org files · ${formatMcents(kpis.cost_24h_mcents, unit)} spend 24h`;
+  return [head, "", ...members.map((member) => rosterMemberSummary(member, unit))].join("\n\n");
 }
 
 export function buildRosterListPayload(input: {
@@ -101,8 +107,9 @@ export function buildRosterListPayload(input: {
   /** The table's live search + sort, echoed so the agent knows the view. */
   searchQuery?: string;
   sort?: string;
+  unit?: CostUnit;
 }): AgentPayloadInput {
-  const { members, orgSlug, searchQuery, sort } = input;
+  const { members, orgSlug, searchQuery, sort, unit = "points" } = input;
   const kpis = rosterKpis(members);
   return {
     kind: "org-admin-roster",
@@ -111,7 +118,7 @@ export function buildRosterListPayload(input: {
       "Every member of this organization with their org-scoped governance metrics, as the roster renders them.",
     // ALL members, never the search-filtered/sorted slice.
     data: { members: members.map(rosterMemberRow), totals: kpis },
-    summary: rosterListHuman(members),
+    summary: rosterListHuman(members, unit),
     attributes: {
       rows: kpis.total,
       suspended: kpis.suspended,
@@ -133,14 +140,15 @@ export function buildRosterMemberPayload(input: {
   member: OrgAdminMember;
   orgSlug: string;
   totalMembers: number;
+  unit?: CostUnit;
 }): AgentPayloadInput {
-  const { member, orgSlug, totalMembers } = input;
+  const { member, orgSlug, totalMembers, unit = "points" } = input;
   return {
     kind: "org-admin-member",
     location: adminLocation(orgSlug, "Member roster"),
     description: "One member row from the org-admin roster.",
     data: rosterMemberRow(member),
-    summary: rosterMemberSummary(member),
+    summary: rosterMemberSummary(member, unit),
     attributes: {
       user_id: member.userId,
       email: member.email,

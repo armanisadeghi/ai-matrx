@@ -28,7 +28,7 @@ import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import type { ConnectedSourceRow } from "../types";
 import { SOURCE_READS, runSourceRead, type SourceReadSpec } from "./reads";
-import type { ConnectedReadResult } from "../components/ReadResultsDialog";
+import type { ConnectedReadDialogState } from "../components/ReadResultsDialog";
 import {
   CONNECTED_SOURCE_SCOPES,
   createConnectedSourceListService,
@@ -85,7 +85,15 @@ function sourceColumns(adapter: string): EntityColumnSpec<ConnectedSourceRow>[] 
       filter: false,
       cell: (row) => (
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-sm">{row.title}</span>
+          {/* Not the `truncate` class: a phone card turns that into two
+              wrapping lines, which broke names mid-date ("2026-09-" / "14").
+              One line, cut with an ellipsis, full name on hover. */}
+          <span
+            className="block overflow-hidden text-ellipsis whitespace-nowrap text-sm"
+            title={row.title}
+          >
+            {row.title}
+          </span>
           {row.subtitle && row.subtitle !== row.author ? (
             <span className="truncate text-xs text-muted-foreground">
               {row.subtitle}
@@ -176,7 +184,7 @@ function sourceColumns(adapter: string): EntityColumnSpec<ConnectedSourceRow>[] 
 function readAsBulkAction(
   spec: SourceReadSpec,
   dispatch: AppDispatch,
-  onRead: (result: ConnectedReadResult) => void,
+  onRead: (state: ConnectedReadDialogState | null) => void,
 ): EntityBulkAction<ConnectedSourceRow> {
   return {
     id: `read-${spec.kind}`,
@@ -184,7 +192,15 @@ function readAsBulkAction(
     icon: spec.icon,
     variant: "outline",
     run: async (selection) => {
-      const outcome = await runSourceRead(dispatch, spec.kind, selection.rows);
+      let outcome;
+      try {
+        outcome = await runSourceRead(dispatch, spec.kind, selection.rows, (titles) =>
+          onRead({ kind: spec.kind, pending: true, titles }),
+        );
+      } catch (error) {
+        onRead(null); // the pending dialog closes; the shell toasts the reason
+        throw error;
+      }
       if (!outcome.ok) {
         toast.warning(outcome.refusal);
         return;
@@ -203,7 +219,7 @@ function readAsBulkAction(
 
 function bulkActions(
   dispatch: AppDispatch,
-  onRead: (result: ConnectedReadResult) => void,
+  onRead: (state: ConnectedReadDialogState | null) => void,
 ): EntityBulkAction<ConnectedSourceRow>[] {
   return [
     ...SOURCE_READS.map((spec) => readAsBulkAction(spec, dispatch, onRead)),
@@ -252,7 +268,7 @@ function bulkActions(
  */
 function createRowActionsHook(
   dispatch: AppDispatch,
-  onRead: (result: ConnectedReadResult) => void,
+  onRead: (state: ConnectedReadDialogState | null) => void,
 ) {
   return function useConnectedSourceRowActions(
     _list: EntityListController<ConnectedSourceRow>,
@@ -270,13 +286,16 @@ function createRowActionsHook(
     const readRow = useCallback(
       async (spec: SourceReadSpec, row: ConnectedSourceRow) => {
         try {
-          const outcome = await runSourceRead(dispatch, spec.kind, [row]);
+          const outcome = await runSourceRead(dispatch, spec.kind, [row], (titles) =>
+            onRead({ kind: spec.kind, pending: true, titles }),
+          );
           if (!outcome.ok) {
             toast.warning(outcome.refusal);
             return;
           }
           onRead(outcome.result);
         } catch (error) {
+          onRead(null);
           toast.error(extractErrorMessage(error));
         }
       },
@@ -336,7 +355,7 @@ function emptyStateFor(adapter: string): { title: string; description: string } 
     return {
       title: "No Google files picked yet",
       description:
-        "Only the Docs, Sheets and Slides you pick for AI Matrx appear here. Pick some in Settings → Integrations → Google Workspace.",
+        "To keep your Drive private, only the Docs, Sheets and Slides you pick appear here.",
     };
   }
   return {
@@ -351,7 +370,7 @@ export function createConnectedSourceListConfig(
   target: ConnectedBrowseTarget,
   organizationId: string | null,
   onStatus: (status: ConnectedBrowseStatus) => void,
-  onRead: (result: ConnectedReadResult) => void,
+  onRead: (state: ConnectedReadDialogState | null) => void,
 ): EntityListConfig<ConnectedSourceRow> {
   return {
     surfaceKey: "connected-sources-browse",

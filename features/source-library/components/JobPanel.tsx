@@ -39,6 +39,7 @@
  *     rather than silently drawn short.
  */
 
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
@@ -67,7 +68,6 @@ import { cn } from "@/lib/utils";
 
 import { useJob } from "../hooks/useJob";
 import {
-    formatCost,
     formatCount,
     formatDuration,
     formatElapsed,
@@ -380,6 +380,7 @@ export function JobPanel({
     onDismiss?: () => void;
     vocabulary?: SourceVocabulary;
 }) {
+    const { format: costText } = useCostDisplay();
     const {
         job,
         items,
@@ -779,7 +780,7 @@ export function JobPanel({
 
                             <span className="text-muted-foreground">Cost</span>
                             <span className="text-right tabular-nums text-foreground">
-                                {promisedCost === null ? "—" : formatCost(promisedCost, estimate.cost.currency)}
+                                {promisedCost === null ? "—" : costText(promisedCost)}
                             </span>
                             <span className="text-right text-muted-foreground">
                                 not reported
@@ -791,8 +792,8 @@ export function JobPanel({
                                 <>
                                     {" "}
                                     The range shown at confirmation was{" "}
-                                    {formatCost(estimate.cost.paid_cost_low, estimate.cost.currency)} to{" "}
-                                    {formatCost(estimate.cost.paid_cost_high, estimate.cost.currency)}.
+                                    {costText(estimate.cost.paid_cost_low)} to{" "}
+                                    {costText(estimate.cost.paid_cost_high)}.
                                 </>
                             )}{" "}
                             The server does not report what this job actually spent, so only the
@@ -953,7 +954,7 @@ export function JobPanel({
                                 {" "}
                                 Whatever has already been spent on this run is spent: cancelling
                                 does not refund it. The whole run was estimated at{" "}
-                                {formatCost(promisedCost, estimate?.cost.currency)} when it was
+                                {costText(promisedCost)} when it was
                                 confirmed.
                             </>
                         )}{" "}

@@ -11,6 +11,7 @@
 // server left null) reads "Not measured yet"; `campaign_response` with no
 // pre-registered design reads "Not set up". Neither is ever "0%".
 
+import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
 import { AI_VISIBILITY_ENGINES } from "../types";
 import type {
   DesignPerformer,
@@ -387,9 +388,12 @@ export function formatComparison(comparison: PairedComparison): string {
   return `${scope}: ${points(comparison.change)} points${interval}`;
 }
 
-export function formatUsd(value: number | null | undefined): string | null {
+export function formatUsd(
+  value: number | null | undefined,
+  unit: CostUnit = "points",
+): string | null {
   if (value === null || value === undefined || Number.isNaN(value)) return null;
-  return `$${value.toFixed(2)}`;
+  return formatCost(value, { unit });
 }
 
 export interface AidedPivotRow {

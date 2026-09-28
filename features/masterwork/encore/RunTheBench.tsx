@@ -59,6 +59,7 @@ import { createSittingStore, type SittingBase } from "../sitting/sitting";
 import { useDialogSitting } from "../sitting/useDialogSitting";
 import { SittingResumed } from "../sitting/SittingResumed";
 import { benchFacts, duration, money } from "./benchFacts";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
   BENCH_RUN_PATH,
   modelName,
@@ -125,8 +126,9 @@ const WHAT_IT_DOES =
   "this.";
 
 function ArmRow({ arm }: { arm: BenchArmWire }) {
+  const { unit } = useCostDisplay();
   const words = ARM_WORDS[arm.arm.toLowerCase()] ?? arm.label;
-  const cost = money(arm.cost_usd);
+  const cost = money(arm.cost_usd, unit);
   const secs = duration(arm.seconds);
   return (
     <li className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 border-b border-border py-1 last:border-b-0">
@@ -166,7 +168,8 @@ function ArmRow({ arm }: { arm: BenchArmWire }) {
 
 /** The verdict, said the way the doctrine says it — and no other way. */
 function Verdict({ verdict }: { verdict: BenchVerdictWire }) {
-  const facts = benchFacts(verdict);
+  const { unit } = useCostDisplay();
+  const facts = benchFacts(verdict, unit);
   // A void trial and an uncalibrated panel both mean NO CLAIM SURVIVES. They
   // are different sentences because they blame different things: a void blames
   // the trial, "not scored" blames the bench's own judges.

@@ -15,6 +15,7 @@
  * single wrap-free scroller, so nothing below it ever moves as state changes.
  */
 
+import { Cost } from "@/components/cost/Cost";
 import { CheckCircle2, CircleDashed, Loader2 } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -84,11 +85,6 @@ const TONE_DOT: Record<string, string> = {
   bad: "bg-destructive",
   hold: "bg-amber-500",
 };
-
-function usdCopy(total: number): string | null {
-  if (total <= 0) return null;
-  return total < 0.01 ? "<$0.01" : `$${total.toFixed(2)}`;
-}
 
 /** One deliverable's promise chip: named from the first frame, lit on arrival. */
 function PromiseChip({
@@ -172,7 +168,6 @@ export function RunHero({
   const rawPct = Math.round((done / denominator) * 100);
   // Never 100% while the run can still move (the podcast law).
   const pct = terminal ? rawPct : Math.min(99, rawPct);
-  const cost = usdCopy(costTotal);
 
   // The step doing the work right now — the one line that answers "what is it
   // doing?" without the reader hunting for it.
@@ -214,7 +209,11 @@ export function RunHero({
           {copy.label}
         </span>
         <div className="ml-auto flex items-center gap-3 text-xs tabular-nums text-muted-foreground">
-          {cost ? <span title="AI cost so far">{cost}</span> : null}
+          {costTotal > 0 ? (
+            <span aria-label="AI cost so far">
+              <Cost usd={costTotal} />
+            </span>
+          ) : null}
           {/* "0 of 13 steps" about a run nobody has read yet is a measurement
               of nothing, and it reads as a run that just started. Until the
               row lands, the denominator is all we honestly have. */}

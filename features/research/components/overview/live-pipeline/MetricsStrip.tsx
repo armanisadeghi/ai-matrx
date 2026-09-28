@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCount } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import type {
   PipelineDerived,
   PipelineState,
@@ -22,12 +23,6 @@ interface Props {
   derived: PipelineDerived;
   /** Authoritative cost from backend cost_summary, when available. */
   authoritativeCostUsd: number | null;
-}
-
-function formatCost(usd: number): string {
-  if (usd === 0) return "$0.00";
-  if (usd < 1) return `$${usd.toFixed(4)}`;
-  return `$${usd.toFixed(2)}`;
 }
 
 function MetricChip({
@@ -63,6 +58,7 @@ function MetricChip({
 }
 
 export function MetricsStrip({ state, derived, authoritativeCostUsd }: Props) {
+  const { format: formatCostDisplay } = useCostDisplay();
   const errors =
     state.stages.scrape.totals.failed +
     state.stages.analyze.totals.failed +
@@ -121,7 +117,7 @@ export function MetricsStrip({ state, derived, authoritativeCostUsd }: Props) {
         icon={DollarSign}
         iconColor="text-green-500"
         label={isLiveCost ? "spent so far" : "spent"}
-        value={cost == null ? "—" : formatCost(cost)}
+        value={cost == null ? "—" : formatCostDisplay(cost)}
       />
       {errors > 0 && (
         <MetricChip

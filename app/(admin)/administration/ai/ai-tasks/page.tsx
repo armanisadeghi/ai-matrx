@@ -94,8 +94,7 @@ export default function AiTasksPage() {
           )}
 
           <>
-              {/* Intentional override — Arman, 2026-09-21 shared-table rollout:
-                  this page historically exposes only its first 50-row source window.
+              {/* This page intentionally exposes only its first 50-row source window.
                   Keep that behavior rather than adding a loader that the 10-second
                   poll would discard; the table labels this as a loaded local window. */}
               <MatrxDataTable
@@ -104,7 +103,7 @@ export default function AiTasksPage() {
                 getRowId={(task) => task.id}
                 isLoading={isLoading && tasks.length === 0}
                 isFetching={isLoading && tasks.length > 0}
-                hidePagination
+                pageSize={0}
                 viewTabs={false}
                 copy={{ ...taskCopy, listAttributes: (visible) => ({ count: visible.length, total }) }}
                 detail={{ enabled: false }}

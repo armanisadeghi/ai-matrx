@@ -24,7 +24,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import MarkdownStream from "@/components/markdown";
-import { CostValue } from "@/components/processing-units/CostValue";
+import { Cost } from "@/components/cost/Cost";
 import { useTopicContext } from "../../context/ResearchContext";
 import {
   useAnalysesForTopic,
@@ -118,7 +118,7 @@ function StatsBar({
         <div>
           <p className="text-[10px] text-muted-foreground leading-none">Cost</p>
           <p className="text-sm font-bold tabular-nums text-amber-600 dark:text-amber-400 mt-0.5 leading-none">
-            <CostValue costUsd={totalCost} short />
+            <Cost usd={totalCost} short />
           </p>
         </div>
       </div>
@@ -228,8 +228,8 @@ function ListItem({
           {formattedDate}
         </span>
         {tokenCost != null && tokenCost > 0 && (
-          <CostValue
-            costUsd={tokenCost}
+          <Cost
+            usd={tokenCost}
             short
             className="text-[9px] text-amber-500/50 ml-auto shrink-0"
           />
@@ -441,8 +441,8 @@ function DetailPanel({
             </span>
           )}
           {tokenCost != null && tokenCost > 0 && (
-            <CostValue
-              costUsd={tokenCost}
+            <Cost
+              usd={tokenCost}
               short
               className="text-[10px] font-medium text-amber-600 dark:text-amber-400 ml-auto"
             />

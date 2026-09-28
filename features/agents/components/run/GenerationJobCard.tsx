@@ -10,9 +10,10 @@
  *
  *   Generating a video · Veo 3.1                      1:12
  *   ▰▰▰▰▱▱▱▱▱▱  (indeterminate — providers report no percentage)
- *   8 s · 16:9 · ≈ $3.20 ($0.40/s × 8 s)
+ *   8 s · 16:9 · ≈ 64,000 points (8,000 points/s × 8 s)
  *
- * The cost is an ESTIMATE from the routing offering's per-second price and the
+ * The cost is an ESTIMATE in points (dollars only for a system admin who
+ * flipped the switch) from the routing offering's per-second points price and the
  * requested duration (a literal setting or a variable-bound control), labelled
  * as one; the billed figure arrives with the finished run. When no price or
  * duration is known the line says so instead of inventing a number.
@@ -37,7 +38,9 @@ import {
   selectResolvedVariables,
 } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { selectRunModelId } from "@/features/agents/runtime/generation-job";
-import { useVideoSecondPrice } from "./useVideoSecondPrice";
+import { useVideoSecondPoints } from "./useVideoSecondPoints";
+import { formatCost, pointsToUsd, type CostUnit } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 export function formatElapsed(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -64,13 +67,14 @@ export function resolvedControl(
 
 export interface VideoJobEstimate {
   seconds: number | null;
-  pricePerSecond: number | null;
-  usd: number | null;
+  pointsPerSecond: number | null;
+  /** The estimate in points (the unit everyone sees). */
+  points: number | null;
 }
 
 export function estimateVideoJob(
   duration: unknown,
-  pricePerSecond: number | null,
+  pointsPerSecond: number | null,
 ): VideoJobEstimate {
   const parsed =
     typeof duration === "number"
@@ -81,21 +85,29 @@ export function estimateVideoJob(
   const seconds = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
   return {
     seconds,
-    pricePerSecond,
-    usd: seconds !== null && pricePerSecond !== null ? seconds * pricePerSecond : null,
+    pointsPerSecond,
+    points:
+      seconds !== null && pointsPerSecond !== null
+        ? Math.ceil(seconds * pointsPerSecond)
+        : null,
   };
 }
 
-export function describeEstimate(estimate: VideoJobEstimate): string {
-  if (estimate.usd !== null && estimate.pricePerSecond !== null) {
-    return `≈ $${estimate.usd.toFixed(2)} ($${estimate.pricePerSecond.toFixed(2)}/s × ${estimate.seconds} s)`;
+/** The estimate line in the viewer's unit (`useCostDisplay().unit`). */
+export function describeEstimate(
+  estimate: VideoJobEstimate,
+  unit: CostUnit = "points",
+): string {
+  if (estimate.points !== null && estimate.pointsPerSecond !== null) {
+    const total = formatCost(pointsToUsd(estimate.points), { unit });
+    const rate = formatCost(pointsToUsd(estimate.pointsPerSecond), { unit });
+    return `≈ ${total} (${rate}/s × ${estimate.seconds} s)`;
   }
   if (estimate.seconds === null) {
     return "Cost shows when the video lands (duration set by the model)";
   }
-  // The per-second price was not readable from here (ai.offering is
-  // admin-only under RLS) — say when the cost arrives, never claim the model
-  // has no price.
+  // No per-second points price on this model's offering — say when the cost
+  // arrives, never claim the model has no price.
   return "Cost shows when the video lands";
 }
 
@@ -126,7 +138,8 @@ export function GenerationJobCard({
   // honouring a pinned version) — reading the agent record directly missed it
   // on /agents/[id]/run and the card claimed "no catalog price".
   const modelId = useAppSelector((state) => selectRunModelId(state, conversationId));
-  const price = useVideoSecondPrice(job?.kind === "video" ? modelId : null);
+  const pointsPerSecond = useVideoSecondPoints(job?.kind === "video" ? modelId : null);
+  const { unit } = useCostDisplay();
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -141,11 +154,11 @@ export function GenerationJobCard({
   const elapsed = Number.isFinite(started) ? formatElapsed(now - started) : null;
   const duration = resolvedControl("duration_seconds", settings, definitions, values);
   const aspect = resolvedControl("aspect_ratio", settings, definitions, values);
-  const estimate = estimateVideoJob(duration, price);
+  const estimate = estimateVideoJob(duration, pointsPerSecond);
   const facts = [
     estimate.seconds !== null ? `${estimate.seconds} s` : null,
     typeof aspect === "string" && aspect ? aspect : null,
-    describeEstimate(estimate),
+    describeEstimate(estimate, unit),
   ].filter(Boolean);
 
   return (

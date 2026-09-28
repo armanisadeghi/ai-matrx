@@ -24,7 +24,8 @@ import {
   agentAppAdminKpis,
   type AgentAppAdminEditView,
 } from "@/features/agent-apps/format";
-import { formatCount, formatPercentFromFraction, formatUsd } from "@ai-matrx/kit/format";
+import { formatCount, formatPercentFromFraction } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { AgentAppAdminActions } from "@/features/agent-apps/components/AgentAppAdminActions";
 import { AgentAppEditor } from "@/features/agent-apps/components/AgentAppEditor";
 import { UpdateAgentAppModal } from "@/features/agent-apps/components/UpdateAgentAppModal";
@@ -88,6 +89,7 @@ export default function AdminEditAgentAppPage({
   const { id } = use(params);
   const router = useRouter();
   const { toast } = useToast();
+  const { format: formatCostDisplay } = useCostDisplay();
   const [isPending, startTransition] = useTransition();
 
   const [app, setApp] = useState<AgentAppAdminView | null>(null);
@@ -560,7 +562,7 @@ export default function AdminEditAgentAppPage({
                     />
                     <Stat
                       label="Cost"
-                      value={formatUsd(app.total_cost, { digits: 4 })}
+                      value={formatCostDisplay(app.total_cost)}
                     />
                   </CardContent>
                 </Card>

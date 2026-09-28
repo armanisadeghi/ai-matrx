@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDurationMs } from "@ai-matrx/kit/format";
+import { formatCost, formatDurationMs, type CostUnit } from "@ai-matrx/kit/format";
 
 /**
  * Shared primitives for request/session stat panels.
@@ -92,10 +92,13 @@ export function fmtTokens(n: number | null | undefined): string {
   return n.toLocaleString();
 }
 
-export function fmtCost(cost: number | null | undefined): string {
-  if (cost == null) return "—";
-  if (cost === 0) return "$0";
-  return `$${cost.toFixed(4)}`;
+/** A USD cost in the viewer's unit — points for everyone, dollars only for a
+ *  system admin who flipped the switch. Pass `useCostDisplay().unit`. */
+export function fmtCost(
+  cost: number | null | undefined,
+  unit: CostUnit = "points",
+): string {
+  return formatCost(cost, { unit });
 }
 
 // ── Stats extractors ───────────────────────────────────────────────────────

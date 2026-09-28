@@ -27,7 +27,7 @@ import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
-import { formatFileSize, formatUsd } from "@ai-matrx/kit/format";
+import { formatFileSize, formatCost, type CostUnit } from "@ai-matrx/kit/format";
 
 export type MandateReferenceRow =
   components["schemas"]["MandateReferenceRow"];
@@ -186,8 +186,8 @@ export const NO_COST_CELL = "no rate set";
  * set", never "$0.00" — plus the sub-cent precision the old body branched for
  * by hand.
  */
-export function costCell(usd: number | null | undefined): string {
-  return formatUsd(usd, { digits: "adaptive", unknown: NO_COST_CELL });
+export function costCell(usd: number | null | undefined, unit: CostUnit = "points"): string {
+  return formatCost(usd, { unit, unknown: NO_COST_CELL });
 }
 
 export function formatSeconds(seconds: number | null | undefined): string {

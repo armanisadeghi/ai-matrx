@@ -1,0 +1,18 @@
+import { chromium } from 'playwright';
+const HOST = 'wave2edu.localhost:3001';
+const STATE = '/Users/armanisadeghi/code/matrx-frontend/.wave2-scratch/state.json';
+const browser = await chromium.launch();
+const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: STATE });
+const page = await context.newPage();
+await page.goto(`http://${HOST}/education/game/host`, { waitUntil: 'load', timeout: 60000 });
+await page.waitForTimeout(3000);
+const createBtn = page.getByRole('button', { name: /Create room/i });
+await createBtn.scrollIntoViewIfNeeded();
+await createBtn.click();
+await page.waitForTimeout(1500);
+const dialog = page.getByRole('dialog');
+const count = await dialog.count();
+console.log('dialog count', count);
+const html = await dialog.first().innerHTML();
+console.log(html.slice(0, 4000));
+await browser.close();

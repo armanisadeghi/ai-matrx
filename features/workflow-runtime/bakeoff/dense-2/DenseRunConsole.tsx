@@ -44,6 +44,7 @@ import {
   RunErrorCard,
 } from "../../components/readout-parts";
 import { RunStatusChip } from "../../run-status";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
   describeWorkflowSteps,
   deliverableSteps,
@@ -258,6 +259,7 @@ function Desk({
   const startedAt = useAppSelector(selectRunStartedAt(selectorRunId));
   const statusTs = useAppSelector(selectRunStatusTs(selectorRunId));
   const cost = useAppSelector(selectRunCostTotal(selectorRunId));
+  const { format: formatCostDisplay } = useCostDisplay();
   const { pause, resumePaused, cancel } = useWorkflowRunControls();
 
   // `runIsOver` is the ONE viewer predicate (it counts `errored`, which the
@@ -309,7 +311,7 @@ function Desk({
           </span>
           {cost > 0 ? (
             <span className="text-xs tabular-nums text-muted-foreground">
-              ${cost.toFixed(2)}
+              {formatCostDisplay(cost)}
             </span>
           ) : null}
           <span className="flex-1" />

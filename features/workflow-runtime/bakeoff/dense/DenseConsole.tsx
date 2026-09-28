@@ -41,6 +41,7 @@ import {
 } from "../../redux/workflow-runs.selectors";
 import { InterruptCard, RunErrorCard } from "../../components/readout-parts";
 import { RunStatusChip } from "../../run-status";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { runIsOver } from "../../types";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
 import {
@@ -72,6 +73,7 @@ export function DenseConsole({
   const statusTs = useAppSelector(selectRunStatusTs(runId));
   const startedAt = useAppSelector(selectRunStartedAt(runId));
   const cost = useAppSelector(selectRunCostTotal(runId));
+  const { format: formatCostDisplay } = useCostDisplay();
   const phases = useAppSelector(selectNodeAggregatePhases(runId));
   const transport = useAppSelector(selectRunTransportMode(runId));
   const activity = useAppSelector(selectRunActivity(runId));
@@ -142,7 +144,7 @@ export function DenseConsole({
         </span>
         {cost > 0 ? (
           <span className="text-xs tabular-nums text-muted-foreground">
-            ${cost.toFixed(2)}
+            {formatCostDisplay(cost)}
           </span>
         ) : null}
         <span

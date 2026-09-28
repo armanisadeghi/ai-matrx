@@ -13,6 +13,7 @@
  * columns are labelled anonymously, exactly as the page shows them.
  */
 
+import { formatCost } from "@ai-matrx/kit/format";
 import type { RootState } from "@/lib/redux/store";
 import {
   extractFlatText,
@@ -500,7 +501,7 @@ export function battleMarkdown(
     if (scores && c.metrics && c.metrics.rounds > 0) {
       const m = c.metrics;
       out.push(
-        `**Run:** ${m.total_tokens ?? "—"} tokens, ${m.cost_usd != null ? `$${m.cost_usd.toFixed(4)}` : "—"}, ${m.server_seconds != null ? `${m.server_seconds.toFixed(1)}s` : "—"}`,
+        `**Run:** ${m.total_tokens ?? "—"} tokens, ${formatCost(m.cost_usd)}, ${m.server_seconds != null ? `${m.server_seconds.toFixed(1)}s` : "—"}`,
       );
     }
     if (c.error) out.push(`**Error:** ${c.error}`);

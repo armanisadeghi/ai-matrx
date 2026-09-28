@@ -14,7 +14,7 @@
  */
 
 import { AlertTriangle, Ban } from "lucide-react";
-import { formatUsd } from "@ai-matrx/kit/format";
+import { Cost } from "@/components/cost/Cost";
 import { cn } from "@/lib/utils";
 import {
   answerProbability,
@@ -212,9 +212,7 @@ export function DecisionAnswers({
           </span>
         )}
         {view.costUsd != null && (
-          <span className="ml-auto tabular-nums">
-            {formatUsd(view.costUsd, { digits: "adaptive" })}
-          </span>
+          <Cost usd={view.costUsd} className="ml-auto" />
         )}
       </div>
 

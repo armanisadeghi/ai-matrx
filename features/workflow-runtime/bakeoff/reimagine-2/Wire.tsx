@@ -37,6 +37,7 @@ import {
 import { runIsOver } from "../../types";
 import { activityLine } from "../../components/run/activity-copy";
 import { RunStatusChip } from "../../run-status";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 const QUIET_AFTER_MS = 20_000;
 
@@ -67,6 +68,7 @@ export function Wire({
   const startedAt = useAppSelector(selectRunStartedAt(runId));
   const statusTs = useAppSelector(selectRunStatusTs(runId));
   const cost = useAppSelector(selectRunCostTotal(runId));
+  const { format: formatCostDisplay } = useCostDisplay();
   const terminal = runIsOver(status);
   const running = status !== null && !terminal;
 
@@ -119,7 +121,7 @@ export function Wire({
           </span>
           {cost > 0 ? (
             <span className="flex items-center gap-1 tabular-nums">
-              <CircleDollarSign className="h-3 w-3" />${cost.toFixed(2)}
+              <CircleDollarSign className="h-3 w-3" />{formatCostDisplay(cost)}
             </span>
           ) : null}
         </div>

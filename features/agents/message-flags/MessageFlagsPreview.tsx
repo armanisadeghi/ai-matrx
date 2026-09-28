@@ -8,14 +8,9 @@
  */
 
 import { DatabaseZap } from "lucide-react";
+import { Cost } from "@/components/cost/Cost";
 import type { FlagPreview, MessageFlagProfile } from "./flags";
 import { ANTHROPIC_MIN_CACHEABLE_TOKENS } from "./flags";
-
-function usd(value: number): string {
-  if (value === 0) return "$0";
-  if (value < 0.01) return `$${value.toFixed(4)}`;
-  return `$${value.toFixed(3)}`;
-}
 
 export function MessageFlagsPreview({
   preview,
@@ -52,7 +47,7 @@ export function MessageFlagsPreview({
         preview.fullInputCost !== null &&
         preview.cachedInputCost !== null && (
           <span className="tabular-nums text-foreground" data-testid="message-flags-preview-savings">
-            Repeat run input {usd(preview.fullInputCost)} → {usd(preview.cachedInputCost)}
+            Repeat run input <Cost usd={preview.fullInputCost} /> → <Cost usd={preview.cachedInputCost} />
             {preview.savingsPercent !== null ? ` (−${preview.savingsPercent}%)` : ""}
           </span>
         )}

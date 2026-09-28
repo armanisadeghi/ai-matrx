@@ -21,6 +21,7 @@
  * see is an image the user can reach.
  */
 
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { ImageIcon, Loader2 } from "lucide-react";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
@@ -125,10 +126,11 @@ export default function GeneratedImageSetBlock({
   hideHeader = false,
   className,
 }: GeneratedImageSetBlockProps) {
+  const { unit: costUnit } = useCostDisplay();
   const data = readGeneratedImageSetData(serverData);
   if (!data) return null;
 
-  const cost = formatCost(data.usage?.cost_usd ?? null);
+  const cost = formatCost(data.usage?.cost_usd ?? null, costUnit);
 
   return (
     <div className={cn("my-2 space-y-2", className)}>

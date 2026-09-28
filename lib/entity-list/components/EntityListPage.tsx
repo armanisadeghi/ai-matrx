@@ -731,7 +731,11 @@ export function EntityListPage<TRow>({
       */}
       <div
         className={cn(
-          "shrink-0 space-y-1.5 px-3 pb-2 sm:space-y-2",
+          // gap, not space-y: a child hidden with display:none (the phone
+          // select-all bar on a desktop) still made its sibling "not last"
+          // under space-y and pushed the table down 8px the moment rows
+          // arrived (page-pass /connected-sources, 2026-09-27).
+          "flex shrink-0 flex-col gap-1.5 px-3 pb-2 sm:gap-2",
           clearsShellHeader
             ? "pt-[calc(var(--shell-header-h)+0.5rem)]"
             : "pt-2",

@@ -17,6 +17,7 @@ import type { ReactNode } from "react";
 
 import { deltaPercent, formatDelta, usd } from "./format";
 import { formatCount } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 export interface SpendHeadlineProps {
   today: number;
@@ -110,6 +111,7 @@ export function SpendHeadline({
   density = "full",
   headlineActions,
 }: SpendHeadlineProps) {
+  const { unit } = useCostDisplay();
   const alarm = today > scareThresholdUsd;
   const delta = deltaPercent(today, yesterday);
 
@@ -132,13 +134,13 @@ export function SpendHeadline({
         >
           <Tile
             label="Spent so far today"
-            value={usd(today)}
+            value={usd(today, unit)}
             size="hero"
             tone={alarm ? "alarm" : "normal"}
             actions={headlineActions}
             hint={
               alarm
-                ? `Past the ${usd(scareThresholdUsd)} alarm line${
+                ? `Past the ${usd(scareThresholdUsd, unit)} alarm line${
                     todayRuns === undefined ? "" : ` · ${formatCount(todayRuns)} runs`
                   }`
                 : todayRuns === undefined
@@ -149,24 +151,24 @@ export function SpendHeadline({
         </div>
         <Tile
           label="Yesterday"
-          value={usd(yesterday)}
+          value={usd(yesterday, unit)}
           hint={formatDelta(delta)}
         />
         <Tile
           label="Last 7 days"
-          value={usd(last7d)}
-          hint={`${usd(last7d / 7)} daily average`}
+          value={usd(last7d, unit)}
+          hint={`${usd(last7d / 7, unit)} daily average`}
         />
         {density === "full" && last30d !== undefined ? (
           <Tile
             label="Last 30 days"
-            value={usd(last30d)}
-            hint={`${usd(last30d / 30)} daily average`}
+            value={usd(last30d, unit)}
+            hint={`${usd(last30d / 30, unit)} daily average`}
           />
         ) : null}
         <Tile
           label="This month"
-          value={usd(monthToDate)}
+          value={usd(monthToDate, unit)}
           // `null` means the month is too young to extrapolate; `undefined`
           // means this caller never carried a projection (the popover). They
           // are different facts and the tile must never claim the first when
@@ -176,7 +178,7 @@ export function SpendHeadline({
               ? undefined
               : monthProjection === null
                 ? "too early to project"
-                : `on pace for ${usd(monthProjection)}`
+                : `on pace for ${usd(monthProjection, unit)}`
           }
         />
       </div>

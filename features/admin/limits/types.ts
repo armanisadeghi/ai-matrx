@@ -6,6 +6,8 @@
 // deploy" half of that rule — without it the rows are just a nicer place to
 // hardcode.
 
+import { formatCost, pointsToUsd, type CostUnit } from "@ai-matrx/kit/format";
+
 /** One operational knob: a ceiling, backstop, cadence or default. */
 export interface FeatureKnob {
   feature: string;
@@ -131,32 +133,33 @@ export function limitToStored(
  * stored unit, dollars are commentary. `seo.provider_spend` is the reverse.
  */
 export const POINTS_CAPABILITY = "platform.points";
-export const POINTS_PER_USD = 20_000;
 
 export function isPoints(capability: string): boolean {
   return capability === POINTS_CAPABILITY;
 }
 
 /**
- * "~$16.00 / month of AI" for a points figure, or `null` when there is nothing
- * honest to say (blank, not a number, or not the points capability). A blank
- * is unlimited and gets no dollar figure — "~$∞" is not a sentence.
+ * "~1,234 points / month of AI" (or "~$16.00 / month of AI" for a system
+ * admin who flipped to dollars) for a points figure, or `null` when there is
+ * nothing honest to say (blank, not a number, or not the points capability).
+ * A blank is unlimited and gets no figure — "~∞" is not a sentence.
+ *
+ * This is the ONE place in this file allowed to render money at all: it is
+ * the admin limits editor describing a POINTS limit back to the admin, not a
+ * cost charged to anyone, so it renders through `formatCost` with the
+ * viewer's own unit (`useCostDisplay().unit`) rather than a bare dollar
+ * string — everyone else still sees points by default.
  */
 export function pointsToUsdLabel(
   points: number | string | null | undefined,
   period: string | null | undefined,
+  unit: CostUnit = "points",
 ): string | null {
   if (points === null || points === undefined) return null;
   const numeric = typeof points === "string" ? Number(points.trim()) : points;
   if (typeof points === "string" && points.trim() === "") return null;
   if (!Number.isFinite(numeric) || numeric < 0) return null;
-  const usd = numeric / POINTS_PER_USD;
-  const money = usd.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  const money = formatCost(pointsToUsd(numeric), { unit });
   const per = period && period !== "lifetime" ? ` / ${period}` : "";
   return `~${money}${per} of AI`;
 }
@@ -173,13 +176,14 @@ export function capabilityUnitLabel(capability: string): string {
  * READ rendering (the edit rendering is `limitToDisplay`, which stays a bare
  * string so it can round-trip through an input). Blank is unlimited.
  */
-export function limitToHuman(capability: string, stored: number | null): string {
+export function limitToHuman(
+  capability: string,
+  stored: number | null,
+  unit: CostUnit = "points",
+): string {
   if (stored === null || stored === undefined) return "unlimited";
   if (isMicroUsd(capability)) {
-    return (stored / MICRO_USD_PER_USD).toLocaleString("en-US", {
-      style: "currency",
-      currency: "USD",
-    });
+    return formatCost(stored / MICRO_USD_PER_USD, { unit });
   }
   return stored.toLocaleString("en-US");
 }

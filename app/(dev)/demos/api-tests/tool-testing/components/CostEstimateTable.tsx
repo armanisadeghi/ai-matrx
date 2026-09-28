@@ -3,12 +3,16 @@
 import { Badge } from '@/components/ui/badge';
 import { DollarSign, Hash, FileText, Info } from 'lucide-react';
 import type { CostEstimate } from '@/features/tool-call-visualization/testing/types';
+import { Cost } from '@/components/cost/Cost';
+import { useCostDisplay } from '@/components/cost/useCostDisplay';
 
 interface CostEstimateTableProps {
   costEstimate: CostEstimate | null;
 }
 
 export function CostEstimateTable({ costEstimate }: CostEstimateTableProps) {
+  const { format: formatCostDisplay } = useCostDisplay();
+
   if (!costEstimate) {
     return (
       <div className="flex flex-col items-center justify-center py-8 gap-2 text-muted-foreground">
@@ -59,7 +63,7 @@ export function CostEstimateTable({ costEstimate }: CostEstimateTableProps) {
               <tr className="bg-muted/50 border-b border-border">
                 <th className="text-left px-3 py-2 font-semibold">Model</th>
                 <th className="text-left px-3 py-2 font-semibold">API</th>
-                <th className="text-right px-3 py-2 font-semibold">$/M Input</th>
+                <th className="text-right px-3 py-2 font-semibold">Input rate /M</th>
                 <th className="text-right px-3 py-2 font-semibold">Est. Cost</th>
               </tr>
             </thead>
@@ -77,13 +81,11 @@ export function CostEstimateTable({ costEstimate }: CostEstimateTableProps) {
                   </td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums">
                     {model.input_price_per_million !== null
-                      ? `$${model.input_price_per_million.toFixed(2)}`
+                      ? formatCostDisplay(model.input_price_per_million)
                       : '—'}
                   </td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums">
-                    {model.estimated_cost_usd !== null
-                      ? formatCost(model.estimated_cost_usd)
-                      : '—'}
+                    <Cost usd={model.estimated_cost_usd} />
                   </td>
                 </tr>
               ))}
@@ -97,11 +99,4 @@ export function CostEstimateTable({ costEstimate }: CostEstimateTableProps) {
       </p>
     </div>
   );
-}
-
-function formatCost(usd: number): string {
-  if (usd < 0.001) return `$${usd.toFixed(6)}`;
-  if (usd < 0.01) return `$${usd.toFixed(5)}`;
-  if (usd < 1) return `$${usd.toFixed(4)}`;
-  return `$${usd.toFixed(2)}`;
 }

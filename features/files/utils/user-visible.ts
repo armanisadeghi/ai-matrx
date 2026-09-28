@@ -78,6 +78,7 @@ const CARRIED_ROOTS = [
   "timesheet-reports",
   "hr-letters",
   "page-captures",
+  "text-messages",
 ] as const;
 const CARRIED_ROOT_SEGMENT = new RegExp(
   `^(${CARRIED_ROOTS.join("|")})-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`,

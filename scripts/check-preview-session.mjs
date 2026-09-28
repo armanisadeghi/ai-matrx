@@ -132,7 +132,7 @@ await check("the harness and the route name the SAME nonce file", () => {
   // host overwrite the first's file); if that template ever moves, the
   // harness mints a file nothing reads and every sign-in 401s.
   assert.ok(
-    route.includes("`.dev-login-nonce.${safeHost}.${safeNonce}`"),
+    route.includes("`.dev-login-nonce.${safeHostname(hostname)}.${safeNonce}`"),
     "app/api/dev-login/route.ts no longer derives the nonce file from the host and nonce",
   );
 });

@@ -20,7 +20,7 @@ import { useResearchApi } from "../../hooks/useResearchApi";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
 import { humanizeAgentType } from "../../labels";
 import { type ResearchAnalysis, tokenUsageFromJson } from "../../types";
-import { CostValue } from "@/components/processing-units/CostValue";
+import { Cost } from "@/components/cost/Cost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AnalysisCardProps {
@@ -316,7 +316,7 @@ export function AnalysisCard({
                 </span>
               )}
               {tokenUsage.costUsd != null && (
-                <CostValue costUsd={tokenUsage.costUsd} short />
+                <Cost usd={tokenUsage.costUsd} short />
               )}
             </div>
           )}

@@ -5645,6 +5645,84 @@ export type Database = {
         }
         Relationships: []
       }
+      spend_approval: {
+        Row: {
+          action_request_id: string
+          approved_amount_usd: number
+          approved_by: string
+          capability: string
+          ceiling_usd: number
+          covers: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          estimate_usd: number | null
+          expires_at: string
+          id: string
+          metadata: Json
+          organization_id: string
+          purpose: string
+          scope: Json
+          spent_model_usd: number
+          spent_provider_usd: number
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          action_request_id: string
+          approved_amount_usd: number
+          approved_by: string
+          capability: string
+          ceiling_usd: number
+          covers?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          estimate_usd?: number | null
+          expires_at: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          purpose: string
+          scope?: Json
+          spent_model_usd?: number
+          spent_provider_usd?: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          action_request_id?: string
+          approved_amount_usd?: number
+          approved_by?: string
+          capability?: string
+          ceiling_usd?: number
+          covers?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          estimate_usd?: number | null
+          expires_at?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          purpose?: string
+          scope?: Json
+          spent_model_usd?: number
+          spent_provider_usd?: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       spend_guardrail: {
         Row: {
           capability: string
@@ -6037,6 +6115,21 @@ export type Database = {
       resolve_tier: {
         Args: { p_user: string }
         Returns: Database["billing"]["Enums"]["tier"]
+      }
+      spend_approval_draw: {
+        Args: {
+          p_allow_over?: boolean
+          p_approval_id: string
+          p_model_usd?: number
+          p_provider_usd?: number
+        }
+        Returns: {
+          ceiling_usd: number
+          id: string
+          spent_model_usd: number
+          spent_provider_usd: number
+          status: string
+        }[]
       }
       tier_max: {
         Args: {
@@ -58198,6 +58291,10 @@ export type Database = {
         Args: { p_limit?: number; p_organization_id: string }
         Returns: Json
       }
+      org_lane_visibility_sql: {
+        Args: { p_alias?: string; p_token: string }
+        Returns: string
+      }
       org_readable: {
         Args: { p_org: string; p_token: string }
         Returns: boolean
@@ -58245,6 +58342,15 @@ export type Database = {
           relation: string
           why: string
         }[]
+      }
+      personal_opens_row: {
+        Args: {
+          p_id: string
+          p_schema: string
+          p_table: string
+          p_token: string
+        }
+        Returns: boolean
       }
       placeholder_in_a_name: {
         Args: { p_name: string; p_slug?: string }
@@ -67737,18 +67843,24 @@ export type Database = {
       }
       domain_classification: {
         Row: {
+          authority: number | null
           confidence: number | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          display_name: string | null
           entity_role: string
           id: string
           industry_hint: string | null
           is_active: boolean
           metadata: Json
+          metrics_measured_at: string | null
+          metrics_source: string | null
+          monthly_traffic: number | null
           notes: string | null
           observed_hits: number | null
           organization_id: string
+          outlet_tier: string | null
           pattern: string
           pattern_kind: string
           reason: string | null
@@ -67760,18 +67872,24 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          authority?: number | null
           confidence?: number | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          display_name?: string | null
           entity_role: string
           id?: string
           industry_hint?: string | null
           is_active?: boolean
           metadata?: Json
+          metrics_measured_at?: string | null
+          metrics_source?: string | null
+          monthly_traffic?: number | null
           notes?: string | null
           observed_hits?: number | null
           organization_id: string
+          outlet_tier?: string | null
           pattern: string
           pattern_kind?: string
           reason?: string | null
@@ -67783,18 +67901,24 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          authority?: number | null
           confidence?: number | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          display_name?: string | null
           entity_role?: string
           id?: string
           industry_hint?: string | null
           is_active?: boolean
           metadata?: Json
+          metrics_measured_at?: string | null
+          metrics_source?: string | null
+          monthly_traffic?: number | null
           notes?: string | null
           observed_hits?: number | null
           organization_id?: string
+          outlet_tier?: string | null
           pattern?: string
           pattern_kind?: string
           reason?: string | null
@@ -72516,19 +72640,19 @@ export type Database = {
       sign_in_fk_legacy: {
         Row: {
           con_oid: unknown
-          conname: unknown
+          conname: string
           recorded_at: string
           relation: string
         }
         Insert: {
           con_oid: unknown
-          conname: unknown
+          conname: string
           recorded_at?: string
           relation: string
         }
         Update: {
           con_oid?: unknown
-          conname?: unknown
+          conname?: string
           recorded_at?: string
           relation?: string
         }
@@ -75835,6 +75959,7 @@ export type Database = {
         Returns: Json
       }
       route_manifest_snapshot: { Args: { p_app: string }; Returns: Json }
+      row_class_column: { Args: { p_token: string }; Returns: string }
       rulebook_library_catalog: {
         Args: { p_organization_id?: string }
         Returns: {
@@ -97489,6 +97614,9 @@ export type Database = {
           data_months: number | null
           deleted_at: string | null
           demand_trajectory: string | null
+          difficulty: number | null
+          difficulty_observed_at: string | null
+          difficulty_source: string | null
           growth_rate: number | null
           high_top_of_page_bid: number | null
           id: string
@@ -97521,6 +97649,9 @@ export type Database = {
           data_months?: number | null
           deleted_at?: string | null
           demand_trajectory?: string | null
+          difficulty?: number | null
+          difficulty_observed_at?: string | null
+          difficulty_source?: string | null
           growth_rate?: number | null
           high_top_of_page_bid?: number | null
           id?: string
@@ -97553,6 +97684,9 @@ export type Database = {
           data_months?: number | null
           deleted_at?: string | null
           demand_trajectory?: string | null
+          difficulty?: number | null
+          difficulty_observed_at?: string | null
+          difficulty_source?: string | null
           growth_rate?: number | null
           high_top_of_page_bid?: number | null
           id?: string
@@ -104240,6 +104374,7 @@ export type Database = {
           p_confidence?: number
           p_dimension: string
           p_keyword_ids: string[]
+          p_remove?: boolean
           p_site_id?: string
           p_source?: string
           p_value?: string
@@ -104334,6 +104469,14 @@ export type Database = {
           scope_tier: string
           topic_id: string
         }[]
+      }
+      keyword_tag_dimension_ensure: {
+        Args: { p_site_id: string }
+        Returns: string
+      }
+      keyword_tag_dimension_slug: {
+        Args: { p_site_id: string }
+        Returns: string
       }
       keyword_value_map: {
         Args: { p_keyword_ids?: string[]; p_site_id: string }
@@ -113919,6 +114062,95 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_site_kpis"
             referencedColumns: ["site_id"]
+          },
+        ]
+      }
+      voice_fingerprint: {
+        Row: {
+          brand_id: string | null
+          confidence: string
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          fingerprint: Json
+          id: string
+          label: string
+          last_extracted_at: string
+          metadata: Json
+          organization_id: string
+          person_user_id: string | null
+          profile_scope: string
+          refresh_due_at: string
+          register_label: string | null
+          sample_count: number
+          sample_word_count: number
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          brand_id?: string | null
+          confidence: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          fingerprint: Json
+          id?: string
+          label: string
+          last_extracted_at: string
+          metadata?: Json
+          organization_id: string
+          person_user_id?: string | null
+          profile_scope: string
+          refresh_due_at: string
+          register_label?: string | null
+          sample_count: number
+          sample_word_count: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          brand_id?: string | null
+          confidence?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          fingerprint?: Json
+          id?: string
+          label?: string
+          last_extracted_at?: string
+          metadata?: Json
+          organization_id?: string
+          person_user_id?: string | null
+          profile_scope?: string
+          refresh_due_at?: string
+          register_label?: string | null
+          sample_count?: number
+          sample_word_count?: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_fingerprint_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand"
+            referencedColumns: ["id"]
           },
         ]
       }

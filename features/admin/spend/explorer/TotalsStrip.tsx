@@ -11,7 +11,8 @@
 import { usd } from "../format";
 import type { SpendBreakdown } from "../types";
 import { compactNumber } from "./labels";
-import { formatCount, formatPercentFromFraction } from "@ai-matrx/kit/format";
+import { formatCount, formatPercentFromFraction, type CostUnit } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 export interface SpendLeadingKpis {
   windowTotal: { value: string; hint: string };
@@ -23,7 +24,7 @@ export interface SpendLeadingKpis {
 }
 
 /** One formatter for both the rendered KPI strip and its Copy-for-AI context. */
-export function buildSpendLeadingKpis(data: SpendBreakdown): SpendLeadingKpis {
+export function buildSpendLeadingKpis(data: SpendBreakdown, unit: CostUnit = "points"): SpendLeadingKpis {
   const t = data.totals;
   const sliceHours = data.filters.hour ? 1 : data.filters.day ? 24 : t.hours;
   const perHour = sliceHours > 0 ? t.cost / sliceHours : 0;
@@ -34,17 +35,17 @@ export function buildSpendLeadingKpis(data: SpendBreakdown): SpendLeadingKpis {
 
   return {
     windowTotal: {
-      value: usd(t.cost),
+      value: usd(t.cost, unit),
       hint: data.filters.hour
         ? `${formatCount(t.paidExecutions)} executions`
-        : `${usd(perHour)}/hr · ${formatCount(t.paidExecutions)} executions`,
+        : `${usd(perHour, unit)}/hr · ${formatCount(t.paidExecutions)} executions`,
     },
     manual: {
-      value: usd(t.manualCost),
+      value: usd(t.manualCost, unit),
       hint: formatPercentFromFraction(t.cost > 0 ? t.manualCost / t.cost : 0),
     },
     automated: {
-      value: usd(t.automatedCost),
+      value: usd(t.automatedCost, unit),
       hint: formatPercentFromFraction(t.cost > 0 ? t.automatedCost / t.cost : 0),
     },
     requests: {
@@ -59,7 +60,7 @@ export function buildSpendLeadingKpis(data: SpendBreakdown): SpendLeadingKpis {
       value: formatPercentFromFraction(t.cost > 0 ? t.linkedCost / t.cost : 0),
       hint:
         t.unlinkedCost > 0
-          ? `${usd(t.unlinkedCost)} from execution context`
+          ? `${usd(t.unlinkedCost, unit)} from execution context`
           : "Fully attributed",
     },
   };
@@ -98,7 +99,8 @@ function Tile({
 }
 
 export function TotalsStrip({ data }: { data: SpendBreakdown }) {
-  const kpis = buildSpendLeadingKpis(data);
+  const { unit } = useCostDisplay();
+  const kpis = buildSpendLeadingKpis(data, unit);
   return (
     <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
       <Tile

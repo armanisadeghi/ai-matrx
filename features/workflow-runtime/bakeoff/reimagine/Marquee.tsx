@@ -21,6 +21,7 @@ import {
 } from "@/features/workflow-runtime/components/run/node-presentation";
 import type { NodeAggregatePhase } from "@/features/workflow-runtime/redux/workflow-runs.selectors";
 import { runIsOver, type WorkflowRunStatus } from "../../types";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 function ControlButton({
   label,
@@ -81,6 +82,7 @@ export function Marquee({
   onStop: () => void;
   onRunAgain: () => void;
 }) {
+  const { format: formatCostDisplay } = useCostDisplay();
   const running =
     status === "running" ||
     status === "pending" ||
@@ -114,7 +116,7 @@ export function Marquee({
               endedAt={terminal ? endedAt : null}
             />
           ) : null}
-          {costUsd > 0 ? <span>${costUsd.toFixed(2)}</span> : null}
+          {costUsd > 0 ? <span>{formatCostDisplay(costUsd)}</span> : null}
         </span>
         <span className="flex shrink-0 items-center gap-1.5">
           {status === "running" || status === "pending" ? (

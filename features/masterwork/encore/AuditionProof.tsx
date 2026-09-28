@@ -33,6 +33,7 @@ import { withoutRepeatedLead } from "@/lib/copy/withoutRepeatedLead";
 import { formatRelativeTime } from "@/utils/datetime";
 import type { BenchProofState } from "./benchProof";
 import { benchFacts } from "./benchFacts";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 export interface AuditionProofProps {
   /** 0-100, judged against the Expert's own published work. 50 = parity. */
@@ -132,12 +133,13 @@ function BenchLine({ bench }: { bench: BenchProofState }) {
 /** The banked record, or the honest no. Split out so a running trial can show
  *  its own line above an existing record without duplicating either. */
 function BenchRecordLine({ bench }: { bench: BenchProofState }) {
+  const { unit } = useCostDisplay();
   if (bench.status === "loading") return null;
   if (bench.status === "record") {
     const { proof } = bench;
     // Built by the shared `benchFacts` so the live dialog and this banked
     // record can never say the same fact two different ways.
-    const facts = benchFacts(proof);
+    const facts = benchFacts(proof, unit);
     return (
       <div className="mt-2 rounded-md border border-border px-2 py-1.5">
         <p className="flex items-center gap-1.5 text-xs font-medium text-foreground">

@@ -49,6 +49,18 @@ export interface TakeOptions {
    * the person belongs to it) instead of the selected one.
    */
   orgId?: string;
+  /**
+   * Resume an in-progress taking after a reload — table stakes: a countdown
+   * timer (or any answered questions) never resets/vanishes because the tab
+   * refreshed. The caller (AssessmentTaker) persists this snapshot and reads
+   * it back before first render.
+   */
+  restore?: {
+    startedAt: number;
+    sessionId: string | null;
+    resultId: string | null;
+    records: AnswerRecord[];
+  } | null;
 }
 
 export interface AnswerRecord {
@@ -77,12 +89,12 @@ export function useTakeAssessment(
   opts: TakeOptions = {},
 ) {
   const dispatch = useAppDispatch();
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [resultId, setResultId] = useState<string | null>(null);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(opts.restore?.sessionId ?? null);
+  const [resultId, setResultId] = useState<string | null>(opts.restore?.resultId ?? null);
+  const [startedAt, setStartedAt] = useState<number | null>(opts.restore?.startedAt ?? null);
   const [starting, setStarting] = useState(false);
   const [grading, setGrading] = useState(false);
-  const [records, setRecords] = useState<AnswerRecord[]>([]);
+  const [records, setRecords] = useState<AnswerRecord[]>(opts.restore?.records ?? []);
   const [error, setError] = useState<string | null>(null);
 
   const pointsPossible = items.reduce((s, it) => s + Number(it.points ?? 1), 0);
@@ -99,7 +111,14 @@ export function useTakeAssessment(
   }
 
   /** The session + result ids, opened once on the first answer. */
-  const recordRef = useRef<Promise<{ sessionId: string; resultId: string } | null> | null>(null);
+  const recordRef = useRef<Promise<{ sessionId: string; resultId: string } | null> | null>(
+    opts.restore?.sessionId && opts.restore?.resultId
+      ? Promise.resolve({
+          sessionId: opts.restore.sessionId,
+          resultId: opts.restore.resultId,
+        })
+      : null,
+  );
   function openRecord(): Promise<{ sessionId: string; resultId: string } | null> {
     if (opts.enabled === false) return Promise.resolve(null);
     if (!recordRef.current) {
@@ -335,6 +354,9 @@ export function useTakeAssessment(
     resultId,
     /** True once the taking began (the clock runs) — nothing is written yet. */
     started: startedAt !== null,
+    /** The wall-clock anchor the taking began at — lets a countdown timer
+     *  re-derive its remaining time after a reload instead of resetting. */
+    startedAt,
     starting,
     grading,
     records,

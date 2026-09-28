@@ -70,7 +70,8 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { formatNumber } from "@/features/agent-apps/format";
-import { formatPercentFromFraction, formatUsd, isKnownNumber } from "@ai-matrx/kit/format";
+import { formatPercentFromFraction, isKnownNumber } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 interface AgentAppOverviewContentProps {
   appId: string;
@@ -139,6 +140,7 @@ function LabeledPill({ label, children, icon: Icon, accent }: LabeledPillProps) 
 }
 
 export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps) {
+  const { format: costText } = useCostDisplay();
   const dispatch = useAppDispatch();
   const app = useAppSelector((state) => selectAppById(state, appId));
   // The agent this overview describes is the one that will RUN — read through
@@ -480,7 +482,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
             <StatChip
               icon={Zap}
               label="cost"
-              value={formatUsd(app.total_cost)}
+              value={costText(app.total_cost)}
               accent="text-amber-500"
             />
           )}

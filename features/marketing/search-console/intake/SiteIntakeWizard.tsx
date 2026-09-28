@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { extractErrorMessage } from "@/utils/errors";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { siteProviderStatuses } from "@/features/marketing/lib/site-status";
@@ -132,6 +133,7 @@ function PeriodPreviewCard({ period }: { period: IntakeBundlePeriodPreview }) {
 export function SiteIntakeWizard() {
   const { site } = useMarketingSite();
   const dispatch = useAppDispatch();
+  const { format: formatCostDisplay } = useCostDisplay();
   const queryClient = useQueryClient();
   const organizationId = site.organization_id ?? null;
 
@@ -398,7 +400,7 @@ export function SiteIntakeWizard() {
             >
               <RotateCcw className="h-3 w-3" /> Re-run analysis
               {runResult.cost_usd != null
-                ? ` ($${runResult.cost_usd.toFixed(2)}/run)`
+                ? ` (${formatCostDisplay(runResult.cost_usd)}/run)`
                 : ""}
             </button>
           ) : null}
@@ -676,7 +678,7 @@ export function SiteIntakeWizard() {
                 keywords remain machine-unclassified platform-wide (~
                 {applyResult.classify_estimate.batches} batches
                 {applyResult.classify_estimate.est_cost_usd != null
-                  ? `, ≈$${applyResult.classify_estimate.est_cost_usd.toFixed(2)}`
+                  ? `, ≈${formatCostDisplay(applyResult.classify_estimate.est_cost_usd)}`
                   : ""}
                 ) — the nightly classifier sweeps them under your boundaries.
               </p>

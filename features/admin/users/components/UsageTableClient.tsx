@@ -24,7 +24,8 @@ import {
   sortByOriginOrder,
 } from "@/lib/usage/originClass";
 import { pushAppHref } from "@/lib/deployment/navigate";
-import { formatCount, formatUsd } from "@ai-matrx/kit/format";
+import { formatCount, formatCost, type CostUnit } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { readOf } from "@/components/read-state/ReadGate";
 
 type Timeframe = "all" | "30d" | "7d" | "24h";
@@ -43,7 +44,7 @@ const TIMEFRAME_DAYS: Record<Exclude<Timeframe, "all">, number> = {
  * "0,00 $" for a dollar figure. `digits: "adaptive"` shows the sub-cent end and
  * kit pins `en-US`, so the separators never move under the reader.
  */
-const fmtCost = (n: number | null | undefined) => formatUsd(n, { digits: "adaptive" });
+const fmtCost = (n: number | null | undefined, unit: CostUnit = "points") => formatCost(n, { unit });
 function fmtDate(iso: string | null): string {
   return iso ? new Date(iso).toLocaleString() : "—";
 }
@@ -53,6 +54,7 @@ function fmtDate(iso: string | null): string {
  * rather than by size so a row reads the same way every time.
  */
 function OriginBar({ row }: { row: AdminUserUsageRow }) {
+  const { unit } = useCostDisplay();
   const parts = sortByOriginOrder(row.by_origin, (o) => o.origin_class).filter(
     (o) => o.total_cost > 0 || o.requests > 0,
   );
@@ -71,7 +73,7 @@ function OriginBar({ row }: { row: AdminUserUsageRow }) {
       title={parts
         .map(
           (o) =>
-            `${originClassLabel(o.origin_class)}: ${fmtCost(o.total_cost)} · ${formatCount(o.requests)} reqs`,
+            `${originClassLabel(o.origin_class)}: ${fmtCost(o.total_cost, unit)} · ${formatCount(o.requests)} reqs`,
         )
         .join("\n")}
     >
@@ -92,10 +94,11 @@ function OriginBar({ row }: { row: AdminUserUsageRow }) {
 /** Origin split as one scalar line — the copy/AI payload takes scalars only. */
 function originSummaryLine(
   origins: readonly AdminUserUsageRow["by_origin"][number][],
+  unit: CostUnit = "points",
 ): string {
   const parts = sortByOriginOrder(origins, (o) => o.origin_class).map(
     (o) =>
-      `${originClassLabel(o.origin_class)} ${fmtCost(o.total_cost)}/${formatCount(o.requests)} reqs`,
+      `${originClassLabel(o.origin_class)} ${fmtCost(o.total_cost, unit)}/${formatCount(o.requests)} reqs`,
   );
   return parts.join(", ") || "none recorded";
 }
@@ -114,6 +117,7 @@ function topOriginLabel(row: AdminUserUsageRow): string {
 }
 
 export function UsageTableClient() {
+  const { unit } = useCostDisplay();
   const searchParams = useSearchParams();
   const router = useRouter();
   const focusUser = searchParams.get("user");
@@ -255,7 +259,7 @@ export function UsageTableClient() {
         align: "right",
         cell: (r) => (
           <span className="tabular-nums text-sm font-medium">
-            {fmtCost(r.total_cost)}
+            {fmtCost(r.total_cost, unit)}
           </span>
         ),
         width: 100,
@@ -351,7 +355,7 @@ export function UsageTableClient() {
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="text-[11px] text-muted-foreground">Total cost</div>
           <div className="text-lg font-semibold tabular-nums">
-            {fmtCost(totals.cost)}
+            {fmtCost(totals.cost, unit)}
           </div>
         </div>
       </div>
@@ -370,7 +374,7 @@ export function UsageTableClient() {
                   width: `${totals.cost > 0 ? (o.cost / totals.cost) * 100 : 0}%`,
                   backgroundColor: originClassColor(o.origin_class),
                 }}
-                title={`${originClassLabel(o.origin_class)}: ${fmtCost(o.cost)}`}
+                title={`${originClassLabel(o.origin_class)}: ${fmtCost(o.cost, unit)}`}
               />
             ))}
           </div>
@@ -385,7 +389,7 @@ export function UsageTableClient() {
                   style={{ backgroundColor: originClassColor(o.origin_class) }}
                 />
                 <span>{originClassLabel(o.origin_class)}</span>
-                <span className="font-mono tabular-nums">{fmtCost(o.cost)}</span>
+                <span className="font-mono tabular-nums">{fmtCost(o.cost, unit)}</span>
                 <span className="text-muted-foreground">
                   ({formatCount(o.requests)})
                 </span>
@@ -408,7 +412,7 @@ export function UsageTableClient() {
             setClickedRow(row);
             if (!row) return null;
             return {
-              content: `${row.email ?? row.user_id}: ${formatCount(row.total_requests)} requests, ${fmtCost(row.total_cost)}`,
+              content: `${row.email ?? row.user_id}: ${formatCount(row.total_requests)} requests, ${fmtCost(row.total_cost, unit)}`,
             };
           }}
           extraSections={[
@@ -461,9 +465,9 @@ export function UsageTableClient() {
               "Filtered/sorted per-user usage currently visible.",
             humanRow: (r) =>
               [
-                `${r.email ?? r.user_id}: ${formatCount(r.total_requests)} requests, ${formatCount(r.total_tokens)} tokens, ${fmtCost(r.total_cost)}`,
+                `${r.email ?? r.user_id}: ${formatCount(r.total_requests)} requests, ${formatCount(r.total_tokens)} tokens, ${fmtCost(r.total_cost, unit)}`,
                 `models=${r.distinct_models} last=${r.last_activity ?? "?"}`,
-                `by origin: ${originSummaryLine(r.by_origin)}`,
+                `by origin: ${originSummaryLine(r.by_origin, unit)}`,
               ].join("\n"),
             rowAttributes: (r) => ({
               user_id: r.user_id,
@@ -471,7 +475,7 @@ export function UsageTableClient() {
               requests: r.total_requests,
               cost: r.total_cost,
               top_origin: topOriginLabel(r),
-              by_origin: originSummaryLine(r.by_origin),
+              by_origin: originSummaryLine(r.by_origin, unit),
             }),
             listAttributes: (visible) => ({
               users: visible.length,
@@ -479,7 +483,7 @@ export function UsageTableClient() {
               by_origin: originTotals
                 .map(
                   (o) =>
-                    `${originClassLabel(o.origin_class)} ${fmtCost(o.cost)}/${formatCount(o.requests)}`,
+                    `${originClassLabel(o.origin_class)} ${fmtCost(o.cost, unit)}/${formatCount(o.requests)}`,
                 )
                 .join(", "),
             }),

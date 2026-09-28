@@ -18,11 +18,12 @@ describe("agentAppAdminKpis — unknown must not read as a number", () => {
   });
 
   it("still renders a REAL zero cost as $0.0000", () => {
-    expect(agentAppAdminKpis({ total_cost: 0 }).cost).toBe("$0.0000");
+    expect(agentAppAdminKpis({ total_cost: 0 }).cost).toBe("0 points");
   });
 
   it("renders a real cost unchanged", () => {
-    expect(agentAppAdminKpis({ total_cost: 1.23456 }).cost).toBe("$1.2346");
+    expect(agentAppAdminKpis({ total_cost: 1.23456 }).cost).toBe("24,692 points");
+    expect(agentAppAdminKpis({ total_cost: 1.23456 }, "usd").cost).toBe("$1.23");
   });
 
   it("renders unknown runs / users / success rate as em-dashes", () => {
@@ -47,6 +48,6 @@ describe("agentAppAdminKpis — unknown must not read as a number", () => {
 describe("agentAppKpis — the entity stat strip", () => {
   it("omits cost when unknown and shows a real zero when known", () => {
     expect(agentAppKpis({ total_cost: null }).cost).toBeUndefined();
-    expect(agentAppKpis({ total_cost: 0 }).cost).toBe("$0.00");
+    expect(agentAppKpis({ total_cost: 0 }).cost).toBe("0 points");
   });
 });

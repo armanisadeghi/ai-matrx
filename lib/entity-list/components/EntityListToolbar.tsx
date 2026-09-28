@@ -375,8 +375,11 @@ export function EntityListToolbar<TRow>({
           data-entity-list-table-controls
           // The table's row (view tabs + its controls) drawn here: never
           // wrapping, the tab strip bounded and scrolling sideways, so it can
-          // neither push a third row nor squeeze the search.
-          className="flex min-w-0 flex-1 items-center justify-end empty:hidden sm:flex-none [&>*]:w-auto [&>*]:min-w-0 [&_[data-matrx-table-toolbar]]:flex-nowrap [&_[data-matrx-table-toolbar-tabs]]:flex-none [&_[data-matrx-table-toolbar-tabs]]:basis-auto [&_[data-matrx-table-toolbar-tabs]]:max-w-[14rem] [&_[data-matrx-table-toolbar-tabs]]:min-w-0 [&_[data-matrx-table-tabs]]:border-b-0"
+          // neither push a third row nor squeeze the search. The tab strip may
+          // SHRINK (flex-initial, never flex-none): on a 375px phone a rigid
+          // strip pushed the copy button past the 16px gutter (page-pass
+          // /connected-sources, 2026-09-27).
+          className="flex min-w-0 flex-1 items-center justify-end empty:hidden sm:flex-none [&>*]:w-auto [&>*]:min-w-0 [&_[data-matrx-table-toolbar]]:flex-nowrap [&_[data-matrx-table-toolbar-tabs]]:flex-initial [&_[data-matrx-table-toolbar-tabs]]:basis-auto [&_[data-matrx-table-toolbar-tabs]]:max-w-[14rem] [&_[data-matrx-table-toolbar-tabs]]:min-w-0 [&_[data-matrx-table-tabs]]:border-b-0"
         />
       )}
     </div>
