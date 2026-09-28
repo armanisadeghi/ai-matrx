@@ -26,6 +26,7 @@ import { useRichDocumentProvider } from "@/features/rich-document/actions/useRic
 import { useContextMenuActions } from "../hooks/useContextMenuActions";
 import { buildMenuModel } from "../model/menu-model";
 import { namedHeader, contextMenuActionsFromModel, menuHeader, modelRevision } from "../alchemy-provider";
+import { RegroupBoundary } from "../regroup/RegroupContext";
 import type { MenuContentProps } from "../types";
 
 export type AlchemyMenuMode = "context" | "sheet" | "palette";
@@ -138,21 +139,34 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
     namedHeader(menuProps.heading, m.actionText) ?? menuHeader(m.actionText, m.fieldLabel, chatMessage);
   const engine = { revision, content, contentLabel };
 
+  // A pass-through everywhere except under a MenuRegroupContext (the regroup
+  // demo): there it reports what resolved and may draw a proposed grouping.
+  const close = () => onOpenChange(false);
   if (mode === "sheet") {
-    return <ActionSheet {...engine} target={target} open={open} onOpenChange={onOpenChange} />;
+    return (
+      <RegroupBoundary arrangement={menuProps.menuLayout} close={close}>
+        <ActionSheet {...engine} target={target} open={open} onOpenChange={onOpenChange} />
+      </RegroupBoundary>
+    );
   }
   if (mode === "palette") {
-    return <ActionPalette {...engine} target={target} open={open} onOpenChange={onOpenChange} />;
+    return (
+      <RegroupBoundary arrangement={menuProps.menuLayout} close={close}>
+        <ActionPalette {...engine} target={target} open={open} onOpenChange={onOpenChange} />
+      </RegroupBoundary>
+    );
   }
   return (
-    <ContextMenuPanel
-      {...engine}
-      target={target}
-      point={point}
-      open={open}
-      onOpenChange={onOpenChange}
-      arrangement={menuProps.menuLayout}
-      density={menuProps.menuDensity}
-    />
+    <RegroupBoundary arrangement={menuProps.menuLayout} close={close}>
+      <ContextMenuPanel
+        {...engine}
+        target={target}
+        point={point}
+        open={open}
+        onOpenChange={onOpenChange}
+        arrangement={menuProps.menuLayout}
+        density={menuProps.menuDensity}
+      />
+    </RegroupBoundary>
   );
 }
