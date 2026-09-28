@@ -317,10 +317,6 @@ export function MindMapNew() {
             Generate a mind map
             <IntelligenceIndicator feature="education" mandateKeys={[EDU_MEDIA_MANDATES.mindMap]} />
           </h1>
-          <p className="text-xs text-muted-foreground">
-            Turn a deck or topic into a visual concept map — nodes for the key ideas, edges for how
-            they connect.
-          </p>
         </div>
       </div>
 
