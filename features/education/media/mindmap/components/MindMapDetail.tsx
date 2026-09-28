@@ -115,10 +115,10 @@ export function MindMapDetail({ mediaId, edit = false }: { mediaId: string; edit
   async function handleDelete() {
     if (!media) return;
     const ok = await confirm({
-      title: "Delete this mind map?",
+      title: "Move this mind map to Trash?",
       description:
-        "It will be removed from your library. This can't be undone.",
-      confirmLabel: "Delete",
+        "It leaves your library and goes to Trash, where you can restore it.",
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (!ok) return;
@@ -127,7 +127,7 @@ export function MindMapDetail({ mediaId, edit = false }: { mediaId: string; edit
       toast.error(res.error);
       return;
     }
-    toast.success("Deleted");
+    toast.success("Moved to Trash");
     router.push("/education/mind-maps");
   }
 
@@ -331,7 +331,7 @@ export function MindMapDetail({ mediaId, edit = false }: { mediaId: string; edit
                   variant="ghost"
                   size="icon"
                   onClick={handleDelete}
-                  aria-label="Delete"
+                  aria-label="Move to Trash"
                 >
                   <Trash2 className="h-4 w-4 text-muted-foreground" />
                 </Button>

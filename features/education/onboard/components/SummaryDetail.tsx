@@ -131,11 +131,11 @@ export function SummaryDetail({ id, edit = false }: { id: string; edit?: boolean
   };
   const onDelete = async () => {
     if (!access.isOwner) return;
-    const accepted = await confirm({ title: "Delete this summary?", description: "It will be removed from your summary library. This cannot be undone.", confirmLabel: "Delete summary", variant: "destructive" });
+    const accepted = await confirm({ title: "Move this summary to Trash?", description: "It leaves your summary library and goes to Trash, where you can restore it.", confirmLabel: "Move to Trash", variant: "destructive" });
     if (!accepted) return;
     const result = await studyMediaService.softDelete(row.id);
     if (result.error) { toast.error(result.error); return; }
-    toast.success("Summary deleted");
+    toast.success("Summary moved to Trash");
     router.push("/education/summaries");
   };
 
@@ -206,7 +206,7 @@ export function SummaryDetail({ id, edit = false }: { id: string; edit?: boolean
           <Download className="h-4 w-4" /> Markdown
         </Button>
         {canEdit ? <Button variant="outline" size="sm" onClick={() => router.push(`/education/summaries/${row.id}/edit`)}><Pencil className="h-4 w-4" />Edit</Button> : null}
-        {access.isOwner ? <Button variant="outline" size="icon" onClick={() => { void onDelete(); }} aria-label="Delete summary"><Trash2 className="h-4 w-4" /></Button> : null}
+        {access.isOwner ? <Button variant="outline" size="icon" onClick={() => { void onDelete(); }} aria-label="Move summary to Trash"><Trash2 className="h-4 w-4" /></Button> : null}
       </div>
 
       <div ref={contentRef} className="space-y-5">

@@ -205,10 +205,10 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
   async function handleDelete() {
     if (!media || !(await leaveItem())) return;
     const ok = await confirm({
-      title: "Delete this entire memory aid set?",
+      title: "Move this entire memory aid set to Trash?",
       description:
-        "They will be removed from your library. This can't be undone.",
-      confirmLabel: "Delete entire set",
+        "The whole set leaves your library and goes to Trash, where you can restore it.",
+      confirmLabel: "Move set to Trash",
       variant: "destructive",
     });
     if (!ok) return;
@@ -217,7 +217,7 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
       toast.error(res.error);
       return;
     }
-    toast.success("Deleted");
+    toast.success("Moved to Trash");
     router.push("/education/memory");
   }
 
@@ -362,7 +362,7 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
                   <RefreshCw className="mr-2 h-4 w-4" /> Regenerate set
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => void handleDelete()}>
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete entire set
+                  <Trash2 className="mr-2 h-4 w-4" /> Move set to Trash
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

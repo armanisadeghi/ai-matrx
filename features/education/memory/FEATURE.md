@@ -28,7 +28,7 @@ Memory Tools is a **thin tool over the existing study-media substrate** — it i
 ## Entry points
 
 - **Routes** (`app/(core)/education/memory/`): `/` (library) · `/new` (generate) · `/new/manual` (write an aid) · `/[id]` (shareable viewer) · `/[id]/edit` (structured editor, EDIT-gated).
-- **Detail editing:** `/[id]` keeps Edit all and also offers inline add/edit/delete for one mnemonic, analogy, or memory-palace stop. Each child change uses the same version-guarded `studyMediaService.updateVersioned` save as Edit all; the other children, source identity, and trust remain intact. The whole-set delete lives behind the clearly named “Delete entire set” action. A saved set may be empty after its final child is removed so a child delete never silently deletes its parent.
+- **Detail editing:** `/[id]` keeps Edit all and also offers inline add/edit/delete for one mnemonic, analogy, or memory-palace stop. Each child change uses the same version-guarded `studyMediaService.updateVersioned` save as Edit all; the other children, source identity, and trust remain intact. The whole-set archive lives behind the clearly named “Move set to Trash” action (soft delete; restorable from Trash). A saved set may be empty after its final child is removed so a child delete never silently deletes its parent.
 - **Agent item writes:** `change_memory_item` is an approval-gated detail-only target for one add/update/delete by 1-based position. It validates before approval and again on apply, then uses the same guarded save. `update_memory_aids` and `delete_memory_aids` remain the whole-set operations.
 - **Shared viewer:** `/education/media/[id]` → `MediaRouter` → `MemoryDetail` (kind dispatch).
 - **Feature dir** (`features/education/memory/`):
