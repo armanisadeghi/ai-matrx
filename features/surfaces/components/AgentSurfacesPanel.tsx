@@ -422,7 +422,8 @@ export function AgentSurfacesPanel({ agent }: Props) {
 
       {/* All surfaces, grouped by client */}
       <div className="flex-1 min-h-0 overflow-auto px-3 py-3 space-y-3">
-        {!loading && groupedSurfaces.length === 0 && (
+        {/* A failed surfaces read is said once, in the strip above — never also "no match". */}
+        {!loading && !surfacesError && groupedSurfaces.length === 0 && (
           <div className="rounded-md border border-dashed border-border px-4 py-8 text-center text-xs text-muted-foreground">
             No surfaces match &ldquo;{query}&rdquo;.
           </div>

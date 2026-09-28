@@ -32,7 +32,6 @@ import { useQuery } from "@tanstack/react-query";
 import AppLink from "@/components/navigation/AppLink";
 import { useSearchParams } from "next/navigation";
 import {
-  AlertTriangle,
   ArrowUpRight,
   Coins,
   HelpCircle,
@@ -59,7 +58,6 @@ import {
   type ProducerYieldOut,
   type ProducerYieldRow,
 } from "./types";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 import { Cost } from "@/components/cost/Cost";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
@@ -326,13 +324,7 @@ export function ProducerYieldConsole() {
 
       <AssistProducerControl />
 
-      {error && (
-        <div className="flex items-center gap-2 rounded-md border border-rose-300 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200">
-          <AlertTriangle className="h-4 w-4" />
-          {error}
-          <ErrorAlchemyMenu error={error} />
-        </div>
-      )}
+      {/* The register read's failure is said once, by the table (read=). */}
 
       {totals && (
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

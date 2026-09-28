@@ -82,7 +82,6 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_PROOF_RUNS_SURFACE_NAME, createAdminProofRunsScope } from "@/features/surfaces/manifests/admin-proof-runs.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
 
 const MODES: { value: ProofRunMode; label: string; hint: string }[] = [
   {
@@ -431,6 +430,9 @@ export default function ProofRunsClient() {
             — they ship with the next aidream deploy. Nothing here is broken;
             there is just nothing to talk to yet.
           </p>
+          <Button size="sm" variant="outline" className="h-7" onClick={() => void refresh()}>
+            Retry
+          </Button>
           <ErrorAlchemyMenu error={loadError} />
         </div>
       ) : null}
@@ -634,6 +636,7 @@ export default function ProofRunsClient() {
           <p className="text-xs text-muted-foreground">
             Live and replay runs, newest first. Open one to see every proof it rests on.
           </p>
+          {loadError && runs.length === 0 ? null : (
           <MatrxDataTable
             tableId="admin/proof-runs"
             isLoading={loading && runs.length === 0}
@@ -648,7 +651,9 @@ export default function ProofRunsClient() {
               if (!id) setOpenRun(null);
             }}
             onRowOpen={(row) => void openRunDetail(row.id)}
-            read={readOf({ loading, error: loadError }, { what: "proof runs", onRetry: () => void refresh() })}
+            // The API's failure is said once, by the strip at the top (it covers the
+            // checks too); the table carries the read's wait and is not drawn when nothing loaded.
+            read={{ status: loading && runs.length === 0 ? "loading" : "ready", what: "proof runs", hasData: runs.length > 0 }}
             emptyState={{ title: "No runs yet." }}
             toolbar={{
               title: "Recent runs",
@@ -656,6 +661,7 @@ export default function ProofRunsClient() {
               refresh: { onRefresh: refresh },
             }}
           />
+          )}
 
           {openRun ? (
             <div className="space-y-2 rounded-md border border-border p-3">

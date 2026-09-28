@@ -34,11 +34,15 @@ interface EntitlementRow {
 export function EntitlementsTableClient() {
   const [rows, setRows] = useState<EntitlementRow[]>([]);
   const [loading, setLoading] = useState(true);
+  // The registry read (capabilities) — the table's rows; said by the table.
   const [error, setError] = useState<string | null>(null);
+  // The usage rollup / limits reads — a DIFFERENT read beside a registry that loaded.
+  const [partialError, setPartialError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setPartialError(null);
     try {
       const supabase = createClient();
       const [capRes, limRes, useRes] = await Promise.all([
@@ -65,7 +69,10 @@ export function EntitlementsTableClient() {
         event_count: number;
         active_users: number;
       }>;
-      if (useRes.error) setError(useRes.error.message);
+      const partial = [useRes.error && `usage rollup: ${useRes.error.message}`, limRes.error && `free limits: ${limRes.error.message}`]
+        .filter(Boolean)
+        .join(" · ");
+      if (partial) setPartialError(partial);
       const freeLimits = (cap: string) =>
         limits
           .filter((l) => l.capability === cap && l.tier === "free")
@@ -198,10 +205,10 @@ export function EntitlementsTableClient() {
 
   return (
     <div className="flex h-full flex-col gap-3 p-4">
-      {error ? (
+      {partialError ? (
         <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-600 dark:text-amber-400">
-          Usage rollup unavailable: {error} (registry still shown.)
-          <ErrorAlchemyMenu error={error} />
+          Unavailable — {partialError} (registry still shown.)
+          <ErrorAlchemyMenu error={partialError} />
         </div>
       ) : null}
       <div className="min-h-0 flex-1">
