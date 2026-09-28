@@ -16,6 +16,7 @@
  *     Archives the original into content_history so it's fully reversible).
  */
 
+import { isConversationSurfaceOwned } from "./surfaceOwnedConversations";
 import { supabase } from "@/utils/supabase/client";
 import { hasBrowserSession } from "@/lib/supabase/hasBrowserSession";
 
@@ -89,6 +90,13 @@ export async function materializeMessageArtifacts(
   // only produced "permission denied for table message" on every guest run
   // (page-pass /p/[slug], 2026-09-27).
   if (!(await hasBrowserSession())) {
+    return { materializedCount: 0, rewrittenContent: null, errors: [] };
+  }
+
+  // A surface that writes this conversation's result itself (a segmented
+  // background generation) owns it: materializing here would create a second
+  // record per call (surfaceOwnedConversations.ts).
+  if (isConversationSurfaceOwned(params.conversationId)) {
     return { materializedCount: 0, rewrittenContent: null, errors: [] };
   }
 
