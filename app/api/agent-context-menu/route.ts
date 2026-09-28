@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { contextMenuView } from "@/lib/supabase/shortcutStorage";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { extractErrorMessage } from "@/utils/errors";
 
 export async function GET(request: NextRequest) {
   try {
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: extractErrorMessage(error, "Unknown error"),
       },
       { status: 500 },
     );

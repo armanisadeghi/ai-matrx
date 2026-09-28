@@ -6,6 +6,7 @@ import { shortcutTable } from "@/lib/supabase/shortcutStorage";
 import { toGlobalOwnershipWire, toGlobalOwnershipWireList } from "@/lib/organizations/globalOwnership";
 import { pickWritableShortcutFields } from "./writable-fields";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { extractErrorMessage } from "@/utils/errors";
 
 /**
  * Keys the CREATE body legitimately carries that are not columns: the scope
@@ -127,7 +128,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: extractErrorMessage(error, "Unknown error"),
       },
       { status: 500 },
     );
@@ -263,7 +264,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: extractErrorMessage(error, "Unknown error"),
       },
       { status: 500 },
     );

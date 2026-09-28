@@ -75,6 +75,7 @@ import {
   type EntityHeaderAction,
 } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { extractErrorMessage } from "@/utils/errors";
 
 const DEFAULT_CWD = "/home/agent";
 
@@ -169,7 +170,7 @@ export default function SandboxDetailPage() {
       if (current) { setInstance(data.instance); setError(null); }
       return current ? data.instance as SandboxInstance : undefined;
     } catch (err) {
-      if (generation === lifecycleReadGeneration.current) setError(err instanceof Error ? err.message : "Unknown error");
+      if (generation === lifecycleReadGeneration.current) setError(extractErrorMessage(err, "Unknown error"));
       return undefined;
     } finally {
       if (generation === lifecycleReadGeneration.current) setLoading(false);

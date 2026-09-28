@@ -1,6 +1,7 @@
 import { createApi } from "unsplash-js";
 import { NextRequest, NextResponse } from "next/server";
 import { requireEnv } from "@/utils/supabase/env";
+import { extractErrorMessage } from "@/utils/errors";
 
 /**
  * Unsplash proxy.
@@ -262,7 +263,7 @@ export async function POST(request: NextRequest) {
     const result = await dispatch(body.method, body.args ?? {});
     return NextResponse.json(result);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
+    const message = extractErrorMessage(err, "Unknown error");
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

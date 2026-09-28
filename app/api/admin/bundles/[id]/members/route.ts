@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { requireAdmin } from "@/utils/auth/adminUtils";
+import { extractErrorMessage } from "@/utils/errors";
 
 function authErrorResponse(error: unknown): NextResponse | null {
   const message = error instanceof Error ? error.message : "";
@@ -88,7 +89,7 @@ export async function POST(
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: extractErrorMessage(error, "Unknown error"),
       },
       { status: 500 },
     );

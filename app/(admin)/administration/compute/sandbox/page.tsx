@@ -71,6 +71,7 @@ import {
 } from "@/features/surfaces/manifests/admin-sandbox.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
+import { extractErrorMessage } from "@/utils/errors";
 
 const STATUS_BADGE_MAP: Record<
   string,
@@ -230,7 +231,7 @@ export default function AdminSandboxManagementPage() {
       setLoadError(null);
     } catch (err) {
       if (generation === fetchGeneration.current)
-        setLoadError(err instanceof Error ? err.message : "Unknown error");
+        setLoadError(extractErrorMessage(err, "Unknown error"));
     } finally {
       if (generation === fetchGeneration.current) setLoading(false);
     }
@@ -303,7 +304,7 @@ export default function AdminSandboxManagementPage() {
       const data: SandboxAccessResponse = await resp.json();
       setSshAccess(data);
     } catch (err) {
-      setSshError(err instanceof Error ? err.message : "Unknown error");
+      setSshError(extractErrorMessage(err, "Unknown error"));
     } finally {
       setSshLoading(false);
     }

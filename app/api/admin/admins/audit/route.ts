@@ -3,9 +3,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
+import { extractErrorMessage } from "@/utils/errors";
 
 function errorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unknown error";
+  const message = extractErrorMessage(error, "Unknown error");
   const status = message.startsWith("Unauthorized") ? 401
     : message.startsWith("Forbidden") ? 403
     : 400;

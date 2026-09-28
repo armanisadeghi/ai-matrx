@@ -11,11 +11,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import type { Database, Json } from "@/types/database.types";
+import { extractErrorMessage } from "@/utils/errors";
 
 type AdminLevel = Database["public"]["Enums"]["admin_level"];
 
 function errorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unknown error";
+  const message = extractErrorMessage(error, "Unknown error");
   const status = message.startsWith("Unauthorized") ? 401
     : message.startsWith("Forbidden") || message.startsWith("Cannot") ? 403
     : 400;

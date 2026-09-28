@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { extractErrorMessage } from "@/utils/errors";
 
 /**
  * Public endpoint to fetch active tool UI component code by tool_name.
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ component: data });
     } catch (error) {
         return NextResponse.json(
-            { error: "Internal server error", details: error instanceof Error ? error.message : "Unknown error" },
+            { error: "Internal server error", details: extractErrorMessage(error, "Unknown error") },
             { status: 500 }
         );
     }

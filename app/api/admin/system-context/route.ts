@@ -22,6 +22,7 @@ import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import type { Database, Json } from "@/types/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { extractErrorMessage } from "@/utils/errors";
 
 type AdminClient = SupabaseClient<Database>;
 
@@ -78,7 +79,7 @@ export interface SystemContextPayload {
 }
 
 function errorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unknown error";
+  const message = extractErrorMessage(error, "Unknown error");
   const status = message.startsWith("Unauthorized")
     ? 401
     : message.startsWith("Forbidden")
@@ -252,7 +253,7 @@ export async function GET(request: NextRequest) {
     organization_id = await resolveSystemOrgId(admin);
   } catch (e) {
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Unknown error" },
+      { error: extractErrorMessage(e, "Unknown error") },
       { status: 404 },
     );
   }
@@ -340,7 +341,7 @@ export async function POST(request: NextRequest) {
     }
   } catch (e) {
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Unknown error" },
+      { error: extractErrorMessage(e, "Unknown error") },
       { status: 500 },
     );
   }

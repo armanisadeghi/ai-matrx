@@ -19,6 +19,7 @@ import {
   CANONICALIZATION_DATASETS,
   type CanonicalizationDataset,
 } from "@/features/administration/canonicalization/types";
+import { extractErrorMessage } from "@/utils/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,7 @@ function jsonNoCache(body: unknown, init?: ResponseInit) {
 }
 
 function errorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unknown error";
+  const message = extractErrorMessage(error, "Unknown error");
   const status = message.startsWith("Unauthorized")
     ? 401
     : message.startsWith("Forbidden")

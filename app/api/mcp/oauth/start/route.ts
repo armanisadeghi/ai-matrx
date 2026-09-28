@@ -15,6 +15,7 @@ import {
 import { validateSupabaseScopedMcpEndpointOverride } from "@/features/agents/services/mcp-oauth/endpoint";
 import { supportsClientIdMetadataDocument } from "@/features/agents/services/mcp-oauth/client-registration";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { extractErrorMessage } from "@/utils/errors";
 
 const CALLBACK_PATH = "/api/mcp/oauth/callback";
 const CLIENT_METADATA_PATH = "/api/mcp/oauth/client-metadata";
@@ -330,7 +331,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.redirect(authUrl);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
+    const message = extractErrorMessage(err, "Unknown error");
     console.error("[MCP OAuth Start] Error:", message);
     return errorRedirect(
       req,

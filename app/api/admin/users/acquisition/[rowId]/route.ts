@@ -6,12 +6,13 @@ import type {
   AcquisitionJourney,
   AcquisitionJourneyEvent,
 } from "@/features/admin/users/types";
+import { extractErrorMessage } from "@/utils/errors";
 
 const LIMIT = 500;
 type ApiRow = Database["ops"]["Tables"]["api_request_log"]["Row"];
 
 function errorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unknown error";
+  const message = extractErrorMessage(error, "Unknown error");
   const status = message.startsWith("Unauthorized")
     ? 401
     : message.startsWith("Forbidden")

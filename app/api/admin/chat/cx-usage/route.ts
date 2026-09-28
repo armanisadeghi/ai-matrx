@@ -14,9 +14,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { fetchCxUsageAnalyticsRange } from "@/features/cx-dashboard/service";
+import { extractErrorMessage } from "@/utils/errors";
 
 function errorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unknown error";
+  const message = extractErrorMessage(error, "Unknown error");
   const status = message.startsWith("Unauthorized")
     ? 401
     : message.startsWith("Forbidden")

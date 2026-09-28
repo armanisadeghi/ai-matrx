@@ -12,6 +12,7 @@ import {
 } from "@/types/sandbox";
 import type { Database } from "@/types/database.types";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { extractErrorMessage } from "@/utils/errors";
 
 type SandboxInstanceInsert =
   Database["public"]["Tables"]["sandbox_instances"]["Insert"];
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: extractErrorMessage(error, "Unknown error"),
       },
       { status: 500 },
     );
@@ -340,7 +341,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: extractErrorMessage(error, "Unknown error"),
       },
       { status: 500 },
     );

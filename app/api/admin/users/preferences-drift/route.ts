@@ -12,9 +12,10 @@ import { NextResponse } from "next/server";
 import { readAllRows } from "@ai-matrx/data/db";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { extractErrorMessage } from "@/utils/errors";
 
 function errorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unknown error";
+  const message = extractErrorMessage(error, "Unknown error");
   const status = message.startsWith("Unauthorized")
     ? 401
     : message.startsWith("Forbidden")

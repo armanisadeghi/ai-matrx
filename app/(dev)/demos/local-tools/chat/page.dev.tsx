@@ -8,6 +8,7 @@ import { supabase } from "@/utils/supabase/client";
 import { LocalToolsPageShell } from "../_lib/LocalToolsPageShell";
 import { useMatrxLocalContext } from "../_lib/MatrxLocalContext";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { extractErrorMessage } from "@/utils/errors";
 
 type StreamMode = "openai" | "matrx";
 
@@ -169,7 +170,7 @@ export default function LocalChatTestPage() {
         ...prev,
         running: false,
         status: "error",
-        error: err instanceof Error ? err.message : "Unknown error",
+        error: extractErrorMessage(err, "Unknown error"),
       }));
     }
   };

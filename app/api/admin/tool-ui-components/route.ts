@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
 import { WEB_TOOL_UI_SURFACE } from "@/features/tool-call-visualization/db-renderer/surface";
+import { extractErrorMessage } from "@/utils/errors";
 
 // Map requireAdmin()/requireSuperAdmin() throws to the right HTTP status.
 function authErrorResponse(error: unknown): NextResponse | null {
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: extractErrorMessage(error, "Unknown error"),
       },
       { status: 500 },
     );
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: extractErrorMessage(error, "Unknown error"),
       },
       { status: 500 },
     );

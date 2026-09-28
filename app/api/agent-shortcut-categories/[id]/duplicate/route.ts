@@ -11,6 +11,7 @@ import {
   type PlatformCategorySelectRow,
 } from "../../_lib/categoryRow";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { extractErrorMessage } from "@/utils/errors";
 
 /**
  * POST /api/agent-shortcut-categories/[id]/duplicate
@@ -250,7 +251,7 @@ export async function POST(
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: extractErrorMessage(error, "Unknown error"),
       },
       { status: 500 },
     );

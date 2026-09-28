@@ -19,12 +19,13 @@ import {
   hasMcpFullAccessPermission,
   withMcpFullAccessPermission,
 } from "@/features/admin/users/lib/mcp-access";
+import { extractErrorMessage } from "@/utils/errors";
 
 const PER_PAGE = 1000;
 const MAX_PAGES = 50; // hard ceiling: 50k users
 
 function errorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unknown error";
+  const message = extractErrorMessage(error, "Unknown error");
   const status = message.startsWith("Unauthorized")
     ? 401
     : message.startsWith("Forbidden")

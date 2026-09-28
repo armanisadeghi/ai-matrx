@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { extractErrorMessage } from "@/utils/errors";
 
 export async function GET() {
   try {
@@ -64,7 +65,7 @@ export async function GET() {
     console.error("Unexpected error:", error);
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: extractErrorMessage(error, "Unknown error"),
       stack: error instanceof Error ? error.stack : undefined,
       details: error instanceof Error ? { name: error.name, message: error.message } : error,
     }, { status: 500 });

@@ -32,6 +32,7 @@ import type {
   ToolResult,
   VersionInfo,
 } from "./types";
+import { extractErrorMessage } from "@/utils/errors";
 
 interface PendingWsRequest {
   tool: string;
@@ -881,7 +882,7 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
       } catch (err) {
         return {
           type: "error",
-          output: err instanceof Error ? err.message : "Unknown error",
+          output: extractErrorMessage(err, "Unknown error"),
         };
       } finally {
         setLoading(null);

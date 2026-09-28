@@ -21,6 +21,7 @@ import {
   buildRecentInteractionSamples,
   type PersistedInteractionRow,
 } from "@/features/agents/ui-first-tools/demo/recent-interaction-samples";
+import { extractErrorMessage } from "@/utils/errors";
 
 // Columns the renderer needs to rebuild a ToolLifecycleEntry, plus owner context.
 const ROW_COLUMNS =
@@ -152,7 +153,7 @@ export async function GET(request: NextRequest) {
     if (error) throw error;
     return NextResponse.json({ tool, rows: data ?? [] });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
+    const message = extractErrorMessage(error, "Unknown error");
     return NextResponse.json(
       { error: "Failed to load tool-call samples", details: message },
       { status: 500 },

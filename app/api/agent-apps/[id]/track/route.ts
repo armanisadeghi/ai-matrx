@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import type { TablesUpdate } from "@/types/database.types";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { extractErrorMessage } from "@/utils/errors";
 
 /**
  * POST /api/agent-apps/[id]/track
@@ -225,7 +226,7 @@ export async function POST(
     return NextResponse.json({ ok: true, taskId }, { status: 202 });
   } catch (err) {
     console.error("[track] unexpected", err);
-    const msg = err instanceof Error ? err.message : "Unknown error";
+    const msg = extractErrorMessage(err, "Unknown error");
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

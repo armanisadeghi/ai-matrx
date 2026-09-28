@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { requireAdmin } from "@/utils/auth/adminUtils";
 import { parseSemver } from "@/features/admin/applications/version";
 import type { Database } from "@/types/database.types";
+import { extractErrorMessage } from "@/utils/errors";
 
 const EDITABLE_FIELDS = [
   "description",
@@ -73,7 +74,7 @@ export async function GET(
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: extractErrorMessage(error, "Unknown error"),
       },
       { status: 500 },
     );
@@ -173,7 +174,7 @@ export async function PUT(
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: extractErrorMessage(error, "Unknown error"),
       },
       { status: 500 },
     );
@@ -221,7 +222,7 @@ export async function DELETE(
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: extractErrorMessage(error, "Unknown error"),
       },
       { status: 500 },
     );

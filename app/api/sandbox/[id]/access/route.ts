@@ -3,6 +3,7 @@ import {
   lookupSandboxAndOrchestrator,
   orchestratorJsonHeaders,
 } from "@/lib/sandbox/orchestrator-routing";
+import { extractErrorMessage } from "@/utils/errors";
 
 /**
  * POST /api/sandbox/[id]/access
@@ -85,7 +86,7 @@ export async function POST(
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: extractErrorMessage(error, "Unknown error"),
       },
       { status: 500 },
     );

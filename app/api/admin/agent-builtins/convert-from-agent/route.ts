@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { extractErrorMessage } from "@/utils/errors";
 
 /**
  * POST /api/admin/agent-builtins/convert-from-agent
@@ -223,7 +224,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("[convert-from-agent] unexpected error:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
+    const message = extractErrorMessage(error, "Unknown error");
     return NextResponse.json(
       { error: "Internal server error", details: message },
       { status: 500 },

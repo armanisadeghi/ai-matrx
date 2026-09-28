@@ -6,6 +6,7 @@ import {
 } from "@/lib/sandbox/orchestrator-routing";
 import { isJsonObject } from "@/types/json";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { extractErrorMessage } from "@/utils/errors";
 
 const TRANSIENT_UPSTREAM_STATUSES = new Set([502, 503, 504]);
 const TOKEN_MINT_MAX_ATTEMPTS = 3;
@@ -280,7 +281,7 @@ export async function POST(
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: extractErrorMessage(error, "Unknown error"),
       },
       { status: 500 },
     );

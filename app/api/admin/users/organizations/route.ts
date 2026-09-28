@@ -5,9 +5,10 @@ import {
 } from "@/features/admin/users/server/organizationMembershipAdmin";
 import { isOrgRole } from "@/features/organizations/types";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
+import { extractErrorMessage } from "@/utils/errors";
 
 function errorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unknown error";
+  const message = extractErrorMessage(error, "Unknown error");
   const status = message.startsWith("Unauthorized")
     ? 401
     : message.startsWith("Forbidden")

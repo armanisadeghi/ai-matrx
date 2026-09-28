@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { extractErrorMessage } from "@/utils/errors";
 
 /**
  * GET /api/admin/agent-builtins/by-source?source_agent_id=<id>
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ system_agents: data ?? [] });
   } catch (error) {
     console.error("[agent-builtins/by-source] unexpected:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
+    const message = extractErrorMessage(error, "Unknown error");
     return NextResponse.json(
       { error: "Internal server error", details: message },
       { status: 500 },

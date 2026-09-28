@@ -19,9 +19,10 @@ import {
   createDownloadProbe,
   createScriptRunner,
 } from "@/lib/integrity/server";
+import { extractErrorMessage } from "@/utils/errors";
 
 function errorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unknown error";
+  const message = extractErrorMessage(error, "Unknown error");
   const status = message.startsWith("Unauthorized")
     ? 401
     : message.startsWith("Forbidden")

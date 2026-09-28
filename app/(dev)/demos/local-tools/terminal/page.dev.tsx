@@ -15,6 +15,7 @@ import {
 import { LocalToolsPageShell } from "../_lib/LocalToolsPageShell";
 import { useMatrxLocalContext } from "../_lib/MatrxLocalContext";
 import type { ToolResult } from "../_lib/types";
+import { extractErrorMessage } from "@/utils/errors";
 
 // ---------------------------------------------------------------------------
 // Command parser
@@ -256,7 +257,7 @@ export default function TerminalPage() {
           addLine("info", `[Image: ${result.image.media_type}]`);
         }
       } catch (err) {
-        addLine("error", err instanceof Error ? err.message : "Unknown error");
+        addLine("error", extractErrorMessage(err, "Unknown error"));
       } finally {
         setRunning(false);
       }

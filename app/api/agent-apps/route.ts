@@ -7,6 +7,7 @@ import type { Database } from "@/types/database.types";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { agentAppPublicationPatch } from "@/features/agent-apps/lib/publication";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { extractErrorMessage } from "@/utils/errors";
 
 type AgentAppInsert = Database["app"]["Tables"]["definition"]["Insert"];
 
@@ -230,7 +231,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(data, { status: 201 });
   } catch (error) {
     console.error("POST /api/agent-apps unexpected:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
+    const message = extractErrorMessage(error, "Unknown error");
     return NextResponse.json(
       { error: "Internal server error", details: message },
       { status: 500 },

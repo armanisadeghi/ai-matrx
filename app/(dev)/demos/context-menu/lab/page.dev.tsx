@@ -139,6 +139,7 @@ import { DemoProTextarea } from "../_components/DemoProTextarea";
 
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { extractErrorMessage } from "@/utils/errors";
 
 // Heavy: CodeMirror + tree explorer + JSON tabs. Don't ship on first paint.
 const JsonInspector = dynamic(
@@ -811,7 +812,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
         fetchedAt: new Date().toISOString(),
         rowCount: 0,
         rows: null,
-        error: err instanceof Error ? err.message : "Unknown error",
+        error: extractErrorMessage(err, "Unknown error"),
       });
     } finally {
       setDbBusy(false);

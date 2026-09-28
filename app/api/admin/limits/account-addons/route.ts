@@ -24,6 +24,7 @@ import { readAllRows } from "@ai-matrx/data/db";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
 import type { AccountAddon } from "@/features/admin/limits/types";
+import { extractErrorMessage } from "@/utils/errors";
 
 /** The column list the panel renders, unchanged from the old client-direct read. */
 const COLUMNS =
@@ -33,7 +34,7 @@ export async function GET() {
   try {
     await requireAdmin();
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Unknown error";
+    const message = extractErrorMessage(e, "Unknown error");
     return NextResponse.json(
       { error: message },
       { status: message.startsWith("Unauthorized") ? 401 : 403 },
@@ -57,7 +58,7 @@ export async function GET() {
     return NextResponse.json({ addons });
   } catch (e) {
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Unknown error" },
+      { error: extractErrorMessage(e, "Unknown error") },
       { status: 500 },
     );
   }
