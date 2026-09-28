@@ -1,3 +1,11 @@
+-- chair-step: every REVOKE here closes a private helper THIS file creates (no door row) to every client role; no existing grant anywhere loses reach. Already applied once through the MCP on 2026-09-27; this run is the idempotent, ledgered apply.
+-- based-on: platform._search_engine_indexed_table(text) 3abfdc0019fa160ee24747db86dd8062fc5eab65e63a0e30d7c5ee2ee6d1e9de
+-- based-on: platform._search_engine_indexed_default(text, uuid) 319f8029649784feff1a979a807ea1f28a0ed5aec415317c7473d1e37c6e37d8
+-- based-on: platform._published_to_web_sql(boolean, boolean) 494b12073bd84c58387a9097749508f5a96751206e485bb58a10fcf80b59483f
+-- based-on: platform.search_engine_indexed(text, text) a6664cedd00d997d560a640df07e72d6ac107ce6a026d5a6cb2a5f7ab82eb80a
+-- based-on: platform.search_engine_indexed_records(text, integer) 50b81ee9f51037d0ca59c1d6ba2bed173d9a9e573a81072279c0dacd2428effd
+-- based-on: platform.search_engine_indexed_state(text, uuid) 45c3298503f4bddf50d3e49d2cc419a0708f2e437e550a0dbf4f704b078a247f
+-- based-on: platform.set_search_engine_indexed(text, uuid, boolean) be6bd05d7d20a8bac9aea569df26a59b65145be586312224321ac88737f13a65
 -- lane: access-ladder T-12 (the indexed switch), part b: the type knob, the ONE resolver,
 -- the ONE setter, the state reader, and their door declarations.
 --
@@ -218,10 +226,11 @@ begin
 end $fn$;
 
 -- ── 7. Doors ───────────────────────────────────────────────────────────────────────────────
+-- Idempotent: a re-run (the ledgered apply after the first MCP apply) adds no second row.
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, declared_by, reason, anonymous_callers,
    anonymous_purpose, gate_predicate, argument_rules)
-values
+select v.* from (values
   ('platform','search_engine_indexed','p_resource_type text, p_key text',
    'access_ladder_t12b_indexed_knob_and_doors.sql',
    'Answers whether search engines may index one record that is published to the web; every public record page and the proxy read it to emit robots noindex.',
@@ -254,12 +263,15 @@ values
    jsonb_build_object('version',1,'arguments',jsonb_build_object(
      'p_resource_type', jsonb_build_object('type','text','position',1,'optional',false,'foreign',jsonb_build_object('not_an_id',true)),
      'p_resource_id', jsonb_build_object('type','uuid','position',2,'optional',false,'foreign',jsonb_build_object('bounded',true,'note','iam.has_access editor decides on this id before any read or write')),
-     'p_indexed', jsonb_build_object('type','boolean','position',3,'optional',true,'foreign',jsonb_build_object('not_an_id',true)))));
+     'p_indexed', jsonb_build_object('type','boolean','position',3,'optional',true,'foreign',jsonb_build_object('not_an_id',true)))))
+) as v(schema_name, function_name, identity_args, declared_by, reason, anonymous_callers,
+       anonymous_purpose, gate_predicate, argument_rules)
+where not exists (select 1 from platform.client_callable_door d
+                   where d.schema_name = v.schema_name and d.function_name = v.function_name
+                     and d.identity_args = v.identity_args);
 
-revoke all on function platform.search_engine_indexed(text, text) from public;
-revoke all on function platform.search_engine_indexed_records(text, integer) from public;
-revoke all on function platform.search_engine_indexed_state(text, uuid) from public, anon;
-revoke all on function platform.set_search_engine_indexed(text, uuid, boolean) from public, anon;
+-- No REVOKE on the four doors: their door rows decide who keeps EXECUTE (the DB-wide guards
+-- close anon on the two signed-in doors and reopen declared lanes).
 grant execute on function platform.search_engine_indexed(text, text) to anon, authenticated, service_role;
 grant execute on function platform.search_engine_indexed_records(text, integer) to anon, authenticated, service_role;
 grant execute on function platform.search_engine_indexed_state(text, uuid) to authenticated, service_role;

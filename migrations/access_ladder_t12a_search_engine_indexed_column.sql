@@ -9,7 +9,7 @@
 -- One table per transaction, lock_timeout 2s (a nullable column with no default is a
 -- catalog-only change; the lock is held for milliseconds). Applied table by table through
 -- the Supabase MCP on 2026-09-27; each block below is one apply.
-set lock_timeout = '2s';
+set local lock_timeout = '2s';
 
 alter table podcast.pc_episodes         add column if not exists search_engine_indexed boolean;
 alter table podcast.pc_shows            add column if not exists search_engine_indexed boolean;
