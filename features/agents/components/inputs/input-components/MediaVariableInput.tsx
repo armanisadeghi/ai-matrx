@@ -53,10 +53,10 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setRuntimeVariableResourcePolicy } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { selectRuntimeVariableResourcePolicies } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-
-// 36-char canonical UUID — what cld_files file_ids look like.
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import {
+  isMediaFileId,
+  readMediaVariableValue,
+} from "@/features/agents/utils/media-variable-value";
 
 export type MediaKind = "image" | "audio" | "video" | "document";
 
@@ -116,23 +116,13 @@ const KIND_META: Record<
   },
 };
 
-function readValue(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (value && typeof value === "object") {
-    const o = value as Record<string, unknown>;
-    // Runtime values may already be a MediaRef (for example an upstream
-    // agent/workflow node). Keep its durable identity instead of collapsing
-    // it to a transient URL or an empty field.
-    if (typeof o.file_id === "string") return o.file_id;
-    if (typeof o.fileId === "string") return o.fileId;
-    if (typeof o.resource_id === "string") return o.resource_id;
-    if (typeof o.url === "string") return o.url;
-  }
-  return "";
-}
+// Runtime values may already be a MediaRef (for example an upstream
+// agent/workflow node). `readMediaVariableValue` keeps its durable identity
+// instead of collapsing it to a transient URL or an empty field.
+const readValue = readMediaVariableValue;
 
 function describeValue(value: string): string {
-  if (UUID_PATTERN.test(value))
+  if (isMediaFileId(value))
     return `From your library · ${value.slice(0, 8)}…`;
   try {
     const u = new URL(value);
@@ -177,7 +167,7 @@ export function MediaVariableInput({
   const meta = KIND_META[mediaKind];
   const Icon = meta.Icon;
   const stored = readValue(value);
-  const isFileId = !!stored && UUID_PATTERN.test(stored);
+  const isFileId = !!stored && isMediaFileId(stored);
 
   // Resolve a renderable URL when the stored value is a cld_files UUID.
   // Returns null while loading; we hide the thumbnail in that case.

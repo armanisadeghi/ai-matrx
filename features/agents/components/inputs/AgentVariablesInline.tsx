@@ -38,6 +38,9 @@ import { BoundVariableChips } from "./BoundVariableChips";
 import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunHint, variableRunLabel } from "@ai-matrx/agents";
 import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
+import { readMediaVariableFileId } from "@/features/agents/utils/media-variable-value";
+import { isMediaVariableType } from "@/features/agents/types/agent-definition.types";
+import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
 import { calculateVisualViewportLift } from "@/lib/dom/visual-viewport-lift";
 import { collapsedRowKind } from "./collapsed-row";
 import { isControlVariable } from "@ai-matrx/agents";
@@ -257,6 +260,17 @@ export function AgentVariablesInline({
           const displayValue: string = variableValueToDisplay(rawValue);
           const isPicklistBound = !!readStructuredList(variable.customComponent)
             ?.listId;
+          // A media variable (image/audio/video/document) whose value names a
+          // library file is a FileChip, never raw text — printing the bare
+          // file_id here is the exact developer leakage this row must never
+          // show (bug: /agents/battle/model "First frame" role image, and
+          // the same collapsed row every run form / battle shared input /
+          // chat composer draws through this one component).
+          const mediaFileId = isMediaVariableType(
+            variable.customComponent?.type ?? "textarea",
+          )
+            ? readMediaVariableFileId(rawValue)
+            : null;
 
           if (isControlVariable(variable)) {
             return (
@@ -315,13 +329,15 @@ export function AgentVariablesInline({
                     <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0 cursor-pointer">
                       {variableRunLabel(variable, formatText)}:
                     </Label>
-                    <div className="flex-1 text-sm text-foreground min-w-0">
-                      {displayValue ? (
-                        <span className="whitespace-nowrap overflow-hidden text-ellipsis block">
+                    <div className="flex-1 min-w-0">
+                      {mediaFileId ? (
+                        <FileResourceChip fileId={mediaFileId} size="xs" />
+                      ) : displayValue ? (
+                        <span className="text-sm text-foreground whitespace-nowrap overflow-hidden text-ellipsis block">
                           {displayValue.replace(/\n/g, " ↵ ")}
                         </span>
                       ) : (
-                        <span className="text-muted-foreground/60">
+                        <span className="text-sm text-muted-foreground/60">
                           {variable.helpText ?? "Enter value..."}
                         </span>
                       )}
@@ -372,7 +388,25 @@ export function AgentVariablesInline({
               >
                 {variableRunLabel(variable, formatText)}:
               </Label>
-              {rowKind === "open-editor" ? (
+              {rowKind === "open-editor" && mediaFileId ? (
+                <div
+                  className="flex-1 min-w-0"
+                  data-variable-index={index}
+                  tabIndex={index + 1}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleExpand(variable.name);
+                    }
+                  }}
+                >
+                  <FileResourceChip
+                    fileId={mediaFileId}
+                    size="xs"
+                    onOpen={() => handleExpand(variable.name)}
+                  />
+                </div>
+              ) : rowKind === "open-editor" ? (
                 <button
                   type="button"
                   onClick={() => handleExpand(variable.name)}
