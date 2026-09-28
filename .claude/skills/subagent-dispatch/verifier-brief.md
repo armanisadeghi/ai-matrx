@@ -41,7 +41,11 @@ Misunderstood · ⚠ Cannot verify (what the owner must check).
 Reuse-first (a second implementation of something we own?) · no-legacy (shim, fallback, dead twin,
 deprecated path left alive?) · platform primitive vs feature-local · nothing fails silently · opinions
 hardcoded instead of knobs · guard proven RED→GREEN · tests clear `forcing-function-tests` (no
-manufactured fixtures, no `return expected` passes). Inspect code outside the diff only for a named
+manufactured fixtures, no `return expected` passes). **When the diff touches paid provider calls or model spend,
+review metering as its own concern:** every paid call passes the spend gate; nothing spends before an
+approval it needs; a retry never charges twice; a billed failure is still recorded; the cost shown equals the
+cost recorded. **State what the change does NOT add** (a migration, a dependency, a new access path) so a
+surprise one stands out. Inspect code outside the diff only for a named
 risk; name the risk and the check.
 
 ## Calibration

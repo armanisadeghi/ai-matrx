@@ -62,6 +62,11 @@ Hard boundaries (apply in every repo):
   - **Only OPEN entries carry an ID**; resolved prose keeps none. **Every open entry lives under `## OPEN`** — appended below the closed sections it is invisible to the every-turn scan.
   - **Bare `D<n>` always means matrx-frontend.** Write `matrx-frontend D184` / `aidream AD57` across repos. A defect spanning both keeps ONE number — the frontend's — with aidream's half as `AD<n> — D<n> remainder: …`.
   - Full body: `common-docs/policies/defect-ownership.md` § Entry IDs.
+- **Admission test before filing a friction entry** (adopted from the OpenSEO pack's papercuts practice,
+  2026-09-27): file it only if (1) anyone can reproduce it on a fresh checkout and (2) it is fixable in the repo.
+  Never file: your own sandbox or permission errors, shell mistakes, transient flakes, local corrupted state,
+  third-party limits with no repo-side workaround, or secrets. Product bugs are real work, not friction — file
+  them as defects.
 - **Priority scale:** `P0` breaks users/data now · `P1` important, this week · `P2` real but can wait · `P3` polish/wishlist.
 - **Statuses (defects):** `open` / `needs-hw-verification` / `blocked-external` / `rejected`. (`fixed` is transient — see lifecycle below.)
 - **Analysis stamp** — every defect/task carries exactly one:
