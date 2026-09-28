@@ -1,11 +1,39 @@
 import {
   buildTokenEndpointClientAuthentication,
+  DynamicClientRegistrationError,
   resolveRegisteredTokenEndpointAuthMethod,
   registerDynamicClient,
+  resolveOAuthServerMetadata,
   selectDcrTokenEndpointAuthMethod,
 } from "../discovery";
 
 describe("MCP dynamic client registration", () => {
+  it("preserves discovered DCR capability when static endpoint hints are configured", () => {
+    const discovered = {
+      issuer: "https://vercel.test",
+      authorization_endpoint: "https://vercel.test/oauth/authorize",
+      token_endpoint: "https://vercel.test/oauth/token",
+      registration_endpoint: "https://vercel.test/api/login/oauth/register",
+      token_endpoint_auth_methods_supported: ["none"],
+    };
+
+    expect(
+      resolveOAuthServerMetadata(discovered, {
+        authorizationEndpoint: "https://vercel.test/oauth/authorize",
+        tokenEndpoint: "https://vercel.test/oauth/token",
+      }),
+    ).toEqual(discovered);
+  });
+
+  it("refuses an insecure static token endpoint when discovery is unavailable", () => {
+    expect(() =>
+      resolveOAuthServerMetadata(null, {
+        authorizationEndpoint: "https://canva.test/oauth/authorize",
+        tokenEndpoint: "http://canva.test/oauth/token",
+      }),
+    ).toThrow("Static OAuth token endpoint must be an HTTPS URL");
+  });
+
   it("honors a public auth method explicitly returned by DCR", () => {
     expect(
       resolveRegisteredTokenEndpointAuthMethod(
@@ -166,5 +194,30 @@ describe("MCP dynamic client registration", () => {
       token_endpoint_auth_method: "none",
       scope: "openid email boards:read",
     });
+  });
+
+  it("sanitizes a provider redirect-uri rejection without retaining its response body", async () => {
+    const fetcher = jest
+      .fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>()
+      .mockResolvedValue({
+        ok: false,
+        status: 400,
+        text: async () =>
+          '{"error":"invalid_redirect_uri","detail":"callback is not approved"}',
+      } as Response);
+
+    await expect(
+      registerDynamicClient(
+        "https://provider.test/register",
+        {
+          redirectUri: "https://app.aimatrx.test/api/mcp/oauth/callback",
+        },
+        fetcher,
+      ),
+    ).rejects.toMatchObject({
+      name: "DynamicClientRegistrationError",
+      reason: "redirect_uri_not_approved",
+      message: "Dynamic client registration rejected the callback URI.",
+    } satisfies Partial<DynamicClientRegistrationError>);
   });
 });

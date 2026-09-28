@@ -17,6 +17,61 @@ export interface AuthServerMetadata {
   grant_types_supported?: string[];
 }
 
+export interface StaticOAuthEndpointHints {
+  authorizationEndpoint?: unknown;
+  tokenEndpoint?: unknown;
+}
+
+function validateOAuthEndpoint(value: unknown, label: string): string {
+  if (typeof value !== "string") {
+    throw new Error(`${label} must be a URL string.`);
+  }
+
+  const endpoint = new URL(value);
+  if (
+    endpoint.protocol !== "https:" ||
+    endpoint.username ||
+    endpoint.password ||
+    endpoint.hash
+  ) {
+    throw new Error(
+      `${label} must be an HTTPS URL without credentials or a fragment.`,
+    );
+  }
+
+  return endpoint.toString();
+}
+
+/**
+ * Resolve the authorization-server contract once for every MCP OAuth caller.
+ * Catalog endpoints are a fallback for providers without discovery documents;
+ * they must never short-circuit a successful discovery response, because that
+ * response can additionally advertise dynamic client registration.
+ */
+export function resolveOAuthServerMetadata(
+  discoveredAuthServer: AuthServerMetadata | null,
+  staticHints: StaticOAuthEndpointHints,
+): AuthServerMetadata {
+  if (discoveredAuthServer) {
+    return discoveredAuthServer;
+  }
+
+  const authorizationEndpoint = validateOAuthEndpoint(
+    staticHints.authorizationEndpoint,
+    "Static OAuth authorization endpoint",
+  );
+  const tokenEndpoint = validateOAuthEndpoint(
+    staticHints.tokenEndpoint,
+    "Static OAuth token endpoint",
+  );
+
+  return {
+    issuer: new URL(authorizationEndpoint).origin,
+    authorization_endpoint: authorizationEndpoint,
+    token_endpoint: tokenEndpoint,
+  };
+}
+
 export type DcrTokenEndpointAuthMethod =
   "client_secret_basic" | "client_secret_post" | "none";
 
@@ -266,6 +321,32 @@ export interface DynamicClientRegistrationResult {
   client_secret_expires_at?: number;
 }
 
+export type DynamicClientRegistrationFailureReason =
+  | "redirect_uri_not_approved"
+  | "registration_rejected";
+
+/**
+ * DCR responses can include provider-specific HTML or JSON. Keep that body out
+ * of route logs and user-visible errors while preserving the one actionable
+ * setup condition callers can safely explain.
+ */
+export class DynamicClientRegistrationError extends Error {
+  readonly reason: DynamicClientRegistrationFailureReason;
+
+  constructor(status: number, responseBody: string) {
+    const reason = /invalid_redirect_uri/i.test(responseBody)
+      ? "redirect_uri_not_approved"
+      : "registration_rejected";
+    super(
+      reason === "redirect_uri_not_approved"
+        ? "Dynamic client registration rejected the callback URI."
+        : `Dynamic client registration was rejected (HTTP ${status}).`,
+    );
+    this.name = "DynamicClientRegistrationError";
+    this.reason = reason;
+  }
+}
+
 export function resolveRegisteredTokenEndpointAuthMethod(
   requestedMethod: DcrTokenEndpointAuthMethod,
   registration: DynamicClientRegistrationResult,
@@ -342,9 +423,7 @@ export async function registerDynamicClient(
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(
-      `Dynamic client registration failed (${res.status}): ${text}`,
-    );
+    throw new DynamicClientRegistrationError(res.status, text);
   }
 
   return (await res.json()) as DynamicClientRegistrationResult;
