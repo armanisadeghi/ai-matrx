@@ -115,7 +115,12 @@ export function readAgentAppRun(
             ? "done"
             : "idle"
           : "running";
-  const input = selectResolvedVariables(conversationId)(state) as Record<string, unknown>;
+  const resolved = selectResolvedVariables(conversationId)(state) as Record<string, unknown>;
+  const input =
+    resolved && Object.keys(resolved).length > 0
+      ? resolved
+      : ((state.instanceVariableValues?.byConversationId?.[conversationId]
+          ?.userValues ?? {}) as Record<string, unknown>);
   return {
     conversationId,
     status,

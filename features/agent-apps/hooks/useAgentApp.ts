@@ -694,6 +694,19 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       : EMPTY_RECORD,
   );
 
+  // A run reopened for READING (no organization, so no agent payload) has its
+  // values but no definitions naming them — fall back to the raw values so
+  // the app and the page still know what the run was asked.
+  const rawUserValues = useAppSelector((state) =>
+    conversationId
+      ? state.instanceVariableValues?.byConversationId?.[conversationId]?.userValues
+      : undefined,
+  );
+  const shownVariables =
+    Object.keys(variables).length > 0 || !rawUserValues
+      ? (variables as Record<string, unknown>)
+      : (rawUserValues as Record<string, unknown>);
+
   const contextEntries = useAppSelector((state) =>
     conversationId
       ? selectInstanceContextEntries(conversationId)(state)
@@ -1059,7 +1072,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       agent,
       variableDefinitions: agent?.variableDefinitions ?? null,
       contextPolicies: agent?.contextPolicies ?? [],
-      variables: variables as Record<string, unknown>,
+      variables: shownVariables,
       setVariable,
       setVariables,
       resetVariables,
@@ -1097,7 +1110,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       surfaceKey,
       conversationId,
       agent,
-      variables,
+      shownVariables,
       setVariable,
       setVariables,
       resetVariables,
