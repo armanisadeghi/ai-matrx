@@ -581,6 +581,7 @@ export default function KindAssetsTab({
             answeredBy: "client",
             noun: "component",
           }}
+          // read-gate-exempt: rows are the detail prop the server page read; this client performs no read of them, only default-switch writes
           emptyState={{
             title: "No kind_component rows",
             description:

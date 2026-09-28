@@ -140,11 +140,9 @@ export default function KindRegistryAdminClient() {
         if (cancelled) return;
         const message = error instanceof Error ? error.message : String(error);
         // Loud, then degrade to the compiled registry so the page stays usable.
+        // (The banner above the explorer is the one message — no toast too.)
         setLoadError(message);
         setCatalog(listCompiledKinds());
-        toast.error(
-          `flexible_data Block Schemas unavailable — showing compiled kinds only. ${message}`,
-        );
       }
     })();
     return () => {
@@ -320,7 +318,9 @@ export default function KindRegistryAdminClient() {
           Schema explorer &amp; export
         </h2>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Badge variant="secondary">{stats.total} kinds</Badge>
+          <Badge variant="secondary">
+            {loadError ? `${stats.total} compiled kinds` : `${stats.total} kinds`}
+          </Badge>
           <span
             className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${SOURCE_STYLES.system}`}
           >
@@ -526,6 +526,7 @@ export default function KindRegistryAdminClient() {
                       total: fieldRows.length,
                       noun: "field",
                     }}
+                    // read-gate-exempt: fields of the kind picked from the catalog on screen; the catalog read's failure is the banner above the explorer
                     emptyState={{
                       title: "No fields",
                       description:

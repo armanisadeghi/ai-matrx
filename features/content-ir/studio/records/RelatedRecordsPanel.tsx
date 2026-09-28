@@ -329,6 +329,7 @@ function RelatedChildList({
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
           <span>
             <strong>
+              {/* read-gate-exempt: shown only when this panel's read returned; result is null when it failed and the failure is said in the list */}
               {result.fieldlessCount} record
               {result.fieldlessCount === 1 ? "" : "s"} belonging to this one
               {result.fieldlessCount === 1 ? " does" : " do"} not say which list

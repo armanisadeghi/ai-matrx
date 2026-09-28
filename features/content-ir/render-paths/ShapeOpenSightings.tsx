@@ -30,6 +30,7 @@ import {
   resolveKindIncident,
   type KindIncidentRecord,
 } from "@/features/content-ir/admin/incident-service";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export interface ShapeOpenSightingsProps {
   kind: string;
@@ -43,11 +44,13 @@ export default function ShapeOpenSightings({
 }: ShapeOpenSightingsProps) {
   const [rows, setRows] = useState<KindIncidentRecord[] | null>(null);
   const [resolving, setResolving] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
 
   const load = useCallback(async () => {
     try {
       const all = await listKindIncidents(supabase, "open");
       setRows(all.filter((r) => r.kind === kind));
+      setLoadError(null);
     } catch (error) {
       // A failure to LOAD sightings must not look like "no sightings".
       captureError({
@@ -57,6 +60,7 @@ export default function ShapeOpenSightings({
         }`,
         relation: kind,
       });
+      setLoadError(error);
       setRows([]);
     }
   }, [kind]);
@@ -65,6 +69,16 @@ export default function ShapeOpenSightings({
     void load();
   }, [load]);
 
+  if (loadError != null) {
+    return (
+      <ReadFailure
+        error={loadError}
+        what="this shape's open sightings"
+        onRetry={() => void load()}
+        className="m-0"
+      />
+    );
+  }
   if (rows === null || rows.length === 0) return null;
 
   return (
