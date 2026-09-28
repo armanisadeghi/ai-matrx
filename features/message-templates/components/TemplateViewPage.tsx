@@ -12,6 +12,7 @@
 // example value (`lib/merge-fields.ts`); the raw syntax appears only in the
 // edit form, where "Insert field" writes it for the person.
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Archive, Eye, Info, Pencil, Plus, Save, X } from "lucide-react";
@@ -865,7 +866,10 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                     </span>
                   )}
                   {saveError && (
-                    <span className="text-xs text-destructive">{saveError}</span>
+                    <span className="text-xs text-destructive">
+                      {saveError}
+                      <ErrorAlchemyMenu error={saveError} size="xs" />
+                    </span>
                   )}
                 </div>
               </MenuPresenceProvider>

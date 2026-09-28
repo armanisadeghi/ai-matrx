@@ -18,6 +18,7 @@
 // meeting's page; Join/Start is the row's button when it is on or about to be;
 // everything else is in the row's "…" menu.
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -25,8 +26,10 @@ import {
   CalendarDays,
   CalendarPlus,
   Crown,
+  ExternalLink,
   Film,
   History,
+  MoreHorizontal,
   Repeat,
   Search,
   Video,
@@ -45,6 +48,26 @@ import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { MEET_PLACES } from "@/features/meet/intelligence-places";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
+import { useMeetPlanningKnobs } from "@/features/meet/hooks/useMeetPlanningKnobs";
+import { useExternalEvents } from "@/features/meet/hooks/useExternalEvents";
+import {
+  PROVIDER_LABELS,
+  agendaExternalEvents,
+  noteTakerLine,
+  prefillGuests,
+  type ExternalEvent,
+} from "@/features/meet/lib/external-events";
+import { utcToZoned } from "@/features/meet/lib/zoned-time";
 import {
   Select,
   SelectContent,
@@ -90,7 +113,21 @@ import {
   meetingHref,
   useMeetingActionHost,
 } from "@/features/meet/components/manage/useMeetingActionHost";
-import type { OccurrenceRef } from "@/features/meet/components/manage/MeetingFormDialog";
+import type {
+  MeetingPrefill,
+  OccurrenceRef,
+} from "@/features/meet/components/manage/MeetingFormDialog";
+
+/** One Upcoming row: an AI Matrx occurrence, or an event from the person's other calendar. */
+type AgendaRow =
+  | { kind: "meeting"; occurrenceStart: string; item: UpcomingOccurrence }
+  | { kind: "external"; occurrenceStart: string; event: ExternalEvent };
+
+const SOURCE_LABELS: Record<string, string> = {
+  google: "Google Calendar",
+  microsoft: "Outlook",
+  outlook: "Outlook",
+};
 
 const MEETING_JOBS = MEET_PLACES.places.flatMap((place) => place.mandateKeys);
 
@@ -132,6 +169,13 @@ export function MeetingsHome() {
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState<AgendaScope>("mine");
   const [creating, setCreating] = useState(false);
+  const [prefill, setPrefill] = useState<MeetingPrefill | undefined>(undefined);
+  const planning = useMeetPlanningKnobs(actions.organizationId, directory.userId);
+  const external = useExternalEvents(
+    directory.userId,
+    planning.loaded && planning.showExternalEvents,
+  );
+  const openItem = useOpenItemPresentation();
   const [starting, setStarting] = useState(false);
   const [zone] = useState(browserTimeZone);
   const [now, setNow] = useState(() => new Date());
@@ -150,7 +194,41 @@ export function MeetingsHome() {
   // Scheduling needs an organization (a meeting belongs to one). With none
   // chosen the organization picker opens, and the action continues once set.
   const [held, setHeld] = useState<"create" | "start" | null>(null);
-  const withOrganization = async (what: "create" | "start") => {
+  const createFromEvent = (event: ExternalEvent) => {
+    const at = utcToZoned(event.occurrenceStart, zone);
+    setPrefill({
+      patch: {
+        title: event.title,
+        date: at.date,
+        time: at.time,
+        timeZone: zone,
+        durationMinutes: event.durationMinutes,
+        invitees: prefillGuests(event).map((g) => ({
+          key: g.email,
+          inviteeId: null,
+          userId: null,
+          email: g.email,
+          displayName: g.name,
+          cohost: false,
+        })),
+      },
+    });
+    void withOrganization("create", true);
+  };
+  const toggleExternal = async (show: boolean) => {
+    try {
+      if (!actions.organizationId) await ensureOrganizationContext();
+      await planning.setShowExternalEvents(show);
+    } catch (thrown) {
+      toast.error(errorSentence(thrown));
+    }
+  };
+
+  const withOrganization = async (
+    what: "create" | "start",
+    keepPrefill = false,
+  ) => {
+    if (what === "create" && !keepPrefill) setPrefill(undefined);
     if (actions.ready) {
       if (what === "create") setCreating(true);
       else void startNow();
@@ -247,6 +325,23 @@ export function MeetingsHome() {
   };
 
   const upcoming = upcomingRows(directory.occurrences, { scope, query, now });
+  const listedSlugs = new Set(directory.meetings.map((m) => m.slug));
+  const externalRows =
+    planning.showExternalEvents && scope === "mine"
+      ? agendaExternalEvents(external.events, { now, query, listedSlugs })
+      : [];
+  const agendaRows: AgendaRow[] = [
+    ...upcoming.map((item) => ({
+      kind: "meeting" as const,
+      occurrenceStart: item.occurrenceStart,
+      item,
+    })),
+    ...externalRows.map((event) => ({
+      kind: "external" as const,
+      occurrenceStart: event.occurrenceStart,
+      event,
+    })),
+  ];
   const liveInstants = directory.meetings.filter(
     (m) =>
       isLiveInstant(m, now) &&
@@ -299,6 +394,17 @@ export function MeetingsHome() {
               </SelectContent>
             </Select>
             ) : null}
+            {tab === "upcoming" && planning.loaded ? (
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Switch
+                  checked={planning.showExternalEvents}
+                  onCheckedChange={(v) => void toggleExternal(v)}
+                  aria-label="Show calendar events"
+                  className="scale-90"
+                />
+                Calendar events
+              </label>
+            ) : null}
             <span
               className="ml-auto text-xs text-muted-foreground"
               title={zone}
@@ -315,7 +421,10 @@ export function MeetingsHome() {
               className="mt-6 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm"
             >
               <p className="font-medium">Your meetings could not be listed.</p>
-              <p className="mt-1 text-muted-foreground">{directory.failure}</p>
+              <p className="mt-1 text-muted-foreground">
+                {directory.failure}
+                <ErrorAlchemyMenu error={directory.failure} size="xs" />
+              </p>
               <Button
                 variant="outline"
                 size="sm"
@@ -337,7 +446,12 @@ export function MeetingsHome() {
             </div>
           ) : tab === "upcoming" ? (
             <UpcomingList
-              days={groupByDay(upcoming, zone, now)}
+              days={groupByDay(agendaRows, zone, now)}
+              onOpenEvent={(event) =>
+                void openItem("calendar_event", event.id, { name: event.title })
+              }
+              onCreateFromEvent={createFromEvent}
+              onHideEvents={() => void toggleExternal(false)}
               liveInstants={liveInstants}
               zone={zone}
               now={now}
@@ -373,7 +487,7 @@ export function MeetingsHome() {
         <MeetingFormDialog
           open
           onOpenChange={setCreating}
-          mode={{ kind: "create" }}
+          mode={{ kind: "create", prefill }}
           onSaved={(meeting) => {
             directory.reload();
             startTransition(() => router.push(meetingHref(meeting)));
@@ -399,6 +513,9 @@ type Run = ReturnType<typeof useMeetingActionHost>["run"];
 
 function UpcomingList({
   days,
+  onOpenEvent,
+  onCreateFromEvent,
+  onHideEvents,
   liveInstants,
   zone,
   now,
@@ -410,7 +527,10 @@ function UpcomingList({
   onCreate,
   searching,
 }: {
-  days: ReturnType<typeof groupByDay<UpcomingOccurrence>>;
+  days: ReturnType<typeof groupByDay<AgendaRow>>;
+  onOpenEvent: (event: ExternalEvent) => void;
+  onCreateFromEvent: (event: ExternalEvent) => void;
+  onHideEvents: () => void;
   liveInstants: readonly MeetingRecord[];
   zone: string;
   now: Date;
@@ -502,7 +622,22 @@ function UpcomingList({
             ) : null}
           </h2>
           <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
-            {day.items.map((item) => {
+            {day.items.map((row) => {
+              if (row.kind === "external") {
+                return (
+                  <li key={`ext:${row.event.id}:${row.occurrenceStart}`}>
+                    <ExternalEventRow
+                      event={row.event}
+                      zone={zone}
+                      now={now}
+                      onOpen={() => onOpenEvent(row.event)}
+                      onCreate={() => onCreateFromEvent(row.event)}
+                      onHide={onHideEvents}
+                    />
+                  </li>
+                );
+              }
+              const item = row.item;
               const meeting = meetingsById.get(item.meetingId);
               const cancelledOne = item.state === "cancelled";
               const live = !cancelledOne && isLive(item, now);

@@ -1334,6 +1334,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             {adminOptionsError ? (
               <p className="flex items-center gap-2 text-xs text-destructive">
                 {asClause(adminOptionsError)}.
+                <ErrorAlchemyMenu error={adminOptionsError} size="xs" />
                 <Button type="button" variant="outline" size="xs" onClick={retryAdminOptions}>
                   Retry
                 </Button>

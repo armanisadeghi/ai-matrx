@@ -12,6 +12,7 @@
 // the directory's one index (`useIntelligenceDirectory`), so it is instant
 // after the first page.
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -174,6 +175,7 @@ export function EverywhereElse({
       {error ? (
         <p className="truncate text-[13px] text-destructive" title={error}>
           Other features could not be searched: {error}
+          <ErrorAlchemyMenu error={error} size="xs" />
         </p>
       ) : !domains ? (
         <div className="space-y-1.5" aria-label="Searching other features">

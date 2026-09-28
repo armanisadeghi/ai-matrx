@@ -485,6 +485,7 @@ function RunRow({
         <span className="inline-flex items-center gap-1.5">
           <span className={cn("h-2 w-2 shrink-0 rounded-full", STATUS_DOT[run.status])} aria-hidden />
           {STATUS_WORDS[run.status]}
+          {run.error ? <ErrorAlchemyMenu error={run.error} size="xs" /> : null}
         </span>
       </TableCell>
       <TableCell className="text-right tabular-nums">{costWords(run.cost)}</TableCell>

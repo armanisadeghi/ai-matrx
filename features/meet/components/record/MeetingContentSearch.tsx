@@ -8,6 +8,7 @@
 // and transcript lines (`meet_search`, English stemming: "renewal" finds
 // "renew"). Each hit opens the meeting's record at that exact line.
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -130,6 +131,7 @@ export function MeetingContentSearch({ query }: { query: string }) {
       {failure ? (
         <p role="alert" className="text-sm text-destructive">
           {failure}
+          <ErrorAlchemyMenu error={failure} size="xs" />
         </p>
       ) : hits === null ? (
         <div

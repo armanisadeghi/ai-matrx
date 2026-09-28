@@ -11,6 +11,7 @@
 // Loaded on a click (a recording is tens of megabytes; nobody who opened the
 // summary asked to download a video) or on the first seek request.
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useRef, useState } from "react";
 import { Loader2, Play } from "lucide-react";
 import {
@@ -109,6 +110,7 @@ export function RecordingSeekPlayer({
         {error ? (
           <p role="alert" className="max-w-md px-4 text-center text-xs text-red-300">
             {error}
+            <ErrorAlchemyMenu error={error} size="xs" />
           </p>
         ) : null}
       </div>

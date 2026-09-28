@@ -20,6 +20,7 @@
 // decision / action item, `?recap=1` (the host's "recap ready" notification)
 // opens the recap for review.
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -131,6 +132,7 @@ function Workspace({
         <p className="font-medium">This meeting record could not be opened.</p>
         <p className="mt-1 text-muted-foreground">
           {record.failure.message} {record.failure.remedy}
+          <ErrorAlchemyMenu error={record.failure.message} size="xs" />
         </p>
         <Button
           size="sm"
@@ -379,6 +381,7 @@ function Workspace({
               {record.askError ? (
                 <p role="alert" className="text-xs text-destructive">
                   {record.askError.message} {record.askError.remedy}
+                  <ErrorAlchemyMenu error={record.askError.message} size="xs" />
                 </p>
               ) : null}
             </section>

@@ -163,7 +163,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Manifest values missing from DB"
                 count={report.manifestsMissingInDb.length}
                 tone="amber"
-                description="Declared in code but not saved to the database yet. Sync to apply."
+                description="Declared in code but not in the database yet. Sync to apply."
               >
                 {report.manifestsMissingInDb.map((d) => (
                   <DriftRow
@@ -219,7 +219,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Manifest roles missing from DB"
                 count={report.roleManifestsMissingInDb.length}
                 tone="amber"
-                description="Agent roles declared in code but not saved to the database yet. Sync to apply."
+                description="Agent roles declared in code but not in the database yet. Sync to apply."
               >
                 {report.roleManifestsMissingInDb.map((d) => (
                   <DriftRow
@@ -275,7 +275,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Manifest write targets missing from DB"
                 count={report.writeTargetManifestsMissingInDb.length}
                 tone="amber"
-                description="Write targets declared in code but not saved to the database yet. Server-side agents can't see them until they are. Sync to apply."
+                description="Write targets declared in code but not in the database yet. Server-side agents can't see them until they are. Sync to apply."
               >
                 {report.writeTargetManifestsMissingInDb.map((d) => (
                   <DriftRow
@@ -331,7 +331,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 title="Manifest client tools missing from DB"
                 count={report.clientToolManifestsMissingInDb.length}
                 tone="amber"
-                description="Client tools declared in code but not saved to the database yet."
+                description="Client tools declared in code but not in the database yet."
               >
                 {report.clientToolManifestsMissingInDb.map((d) => (
                   <DriftRow

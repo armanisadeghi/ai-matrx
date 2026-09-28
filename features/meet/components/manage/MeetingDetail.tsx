@@ -18,6 +18,7 @@
 // `?at=<original start>` names the occurrence the person came from, so Edit and
 // Cancel can ask "this occurrence or the whole series".
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -198,7 +199,10 @@ export function MeetingDetail({
             className="mx-auto mt-10 max-w-md rounded-md border border-border p-4 text-sm"
           >
             <p className="font-medium">This meeting could not be opened.</p>
-            <p className="mt-1 text-muted-foreground">{failure}</p>
+            <p className="mt-1 text-muted-foreground">
+              {failure}
+              <ErrorAlchemyMenu error={failure} size="xs" />
+            </p>
             <Button
               variant="outline"
               size="sm"
@@ -549,6 +553,7 @@ function DetailsSection({
             ? `: “${meeting.cancellationReason}”`
             : "."}{" "}
           Nobody can join it.
+          <ErrorAlchemyMenu size="xs" />
         </div>
       ) : null}
       <h1 className="text-xl font-semibold">{meeting.title}</h1>

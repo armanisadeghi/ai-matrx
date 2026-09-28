@@ -129,6 +129,7 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
               {previewError ? (
                 <span className="text-destructive">
                   Could not load the drift report: {previewError}
+                  <ErrorAlchemyMenu error={previewError} size="xs" />
                 </span>
               ) : previewTotal === null ? (
                 <span className="flex items-center gap-1.5 text-muted-foreground">

@@ -7,6 +7,7 @@
  * used (`libraryTrash.ts`). Purge asks first and is the only hard delete.
  */
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCallback, useEffect, useState } from "react";
 import { ArchiveRestore, FileText, Loader2, RotateCw, Trash2 } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -105,7 +106,10 @@ export function LibraryTrashList({
       </p>
       {error ? (
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-2 text-xs">
-          <span className="min-w-0 flex-1 text-destructive">{error}</span>
+          <span className="min-w-0 flex-1 text-destructive">
+            {error}
+            <ErrorAlchemyMenu error={error} size="xs" />
+          </span>
           <button type="button" onClick={() => void load()} className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-accent">
             <RotateCw className="h-3 w-3" /> Try again
           </button>

@@ -7,6 +7,7 @@
 // this meeting) and "Create N tasks" does every one still loose. Once a task
 // exists the row shows ITS status and due date — done in Tasks is done here.
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ListPlus, Loader2, SquareCheck } from "lucide-react";
@@ -175,6 +176,7 @@ export function ActionItemsSection({
       {linked.failure ? (
         <p role="alert" className="text-xs text-destructive">
           {linked.failure}
+          <ErrorAlchemyMenu error={linked.failure} size="xs" />
         </p>
       ) : null}
       {items.length === 0 ? (

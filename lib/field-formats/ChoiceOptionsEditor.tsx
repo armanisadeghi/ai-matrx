@@ -358,9 +358,12 @@ export function ChoiceOptionsEditor({
 
           {binding?.listId && !bound.loading && (
             <p className="text-xs text-muted-foreground">
-              {bound.error
-                ? "This list couldn't be read — its options are unknown right now."
-                : bound.unavailable
+              {bound.error ? (
+                <>
+                  This list couldn&apos;t be read — its options are unknown right now.
+                  <ErrorAlchemyMenu error={bound.error} size="xs" />
+                </>
+              ) : bound.unavailable
                 ? "This list can't be opened — it may have been deleted or unshared."
                 : `${bound.items.length} option${bound.items.length === 1 ? "" : "s"}${
                     groupNames.length > 0 && !binding.groupName

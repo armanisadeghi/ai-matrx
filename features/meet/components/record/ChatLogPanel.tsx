@@ -7,6 +7,7 @@
 // Private messages are never saved, by design — the empty state says so, and
 // a refusal from the server is shown in its own words.
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState } from "react";
 import {
   loadMeetingChat,
@@ -62,7 +63,10 @@ export function ChatLogPanel({ meetingId }: { meetingId: MeetingId }) {
   if (history.refusal !== null) {
     return (
       <div role="alert" className="p-4 text-sm">
-        <p>{history.refusal.message}</p>
+        <p>
+          {history.refusal.message}
+          <ErrorAlchemyMenu error={history.refusal.message} size="xs" />
+        </p>
         <p className="mt-1 text-muted-foreground">{history.refusal.remedy}</p>
       </div>
     );

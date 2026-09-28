@@ -16,6 +16,7 @@
 // once the page is on screen (a link scanner fetching the URL runs no script,
 // so it never answers for anyone); the person can change it or add a note.
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import {
   CalendarDays,
@@ -246,6 +247,7 @@ export function RsvpLanding({
             {meeting.cancellationReason
               ? `: “${meeting.cancellationReason}”`
               : "."}
+            <ErrorAlchemyMenu size="xs" />
           </div>
         ) : null}
 
@@ -340,7 +342,10 @@ export function RsvpLanding({
             </div>
             <div aria-live="polite" className="min-h-5 text-sm">
               {error ? (
-                <span className="text-destructive">{error}</span>
+                <span className="text-destructive">
+                  {error}
+                  <ErrorAlchemyMenu error={error} size="xs" />
+                </span>
               ) : saved ? (
                 <span className="text-muted-foreground">
                   {ANSWERS.find((a) => a.answer === saved)?.said} The host has

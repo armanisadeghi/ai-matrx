@@ -10,6 +10,7 @@
 // without this click. "Check delivery" is a dry run: the server resolves every
 // recipient and renders every email, and queues nothing.
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState } from "react";
 import { Loader2, Send } from "lucide-react";
 import {
@@ -142,6 +143,7 @@ export function RecapDialog({
         ) : failure ? (
           <p role="alert" className="text-sm text-destructive">
             {failure}
+            <ErrorAlchemyMenu error={failure} size="xs" />
           </p>
         ) : draft === null ? (
           <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">

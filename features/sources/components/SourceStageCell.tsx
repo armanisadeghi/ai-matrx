@@ -6,6 +6,7 @@
  * status read → Retry (moved from the retired Sources page's table).
  */
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import {
@@ -53,6 +54,11 @@ export function SourceStageCell({
         {facts?.entitiesState?.startsWith("failed") ? (
           <span className="ml-1 text-warning" title={facts.entitiesState.slice("failed:".length) || undefined}>
             · entity extraction failed
+            <ErrorAlchemyMenu
+              error={facts.entitiesState.slice("failed:".length) || "Entity extraction failed"}
+              operation="Extract entities"
+              size="xs"
+            />
           </span>
         ) : null}
       </span>

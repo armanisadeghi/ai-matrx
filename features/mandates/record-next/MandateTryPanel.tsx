@@ -387,6 +387,7 @@ export function MandateTryPanel({
               {problem ? (
                 <p className="text-xs text-destructive" role="alert">
                   {problem}
+                  <ErrorAlchemyMenu error={problem} size="xs" />
                 </p>
               ) : null}
             </div>

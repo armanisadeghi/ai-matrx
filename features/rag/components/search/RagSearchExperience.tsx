@@ -1345,6 +1345,7 @@ function SearchTab({
                     <p className="text-xs text-amber-600 dark:text-amber-500">
                       Couldn&apos;t read the Sources behind these results (
                       {hitSources.error}); titles show what each result carries.
+                      <ErrorAlchemyMenu error={hitSources.error} size="xs" />
                     </p>
                   ) : null}
                   {resultOrigins.length > 1 ? (

@@ -20,6 +20,7 @@
 // calendar and the guest list, and a sentence saying who can add people —
 // never a control that would refuse.
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState } from "react";
 import {
   useMeetHost,
@@ -357,6 +358,7 @@ export function InvitePeopleSection({
       {failure !== null ? (
         <p className="text-xs text-destructive">
           The guest list could not be read: {failure}
+          <ErrorAlchemyMenu error={failure} size="xs" />
         </p>
       ) : invitees === null ? (
         <div aria-busy="true" className="space-y-2">

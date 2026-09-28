@@ -12,6 +12,7 @@
 // The read is `meet_my_recordings` — scoped to meetings the reader hosts, is
 // invited to, or attended (RLS is the ceiling, never the view).
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -188,7 +189,10 @@ export function RecordingsLibrary({ query }: { query: string }) {
           className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm"
         >
           <p className="font-medium">Your recordings could not be listed.</p>
-          <p className="mt-1 text-muted-foreground">{failure}</p>
+          <p className="mt-1 text-muted-foreground">
+            {failure}
+            <ErrorAlchemyMenu error={failure} size="xs" />
+          </p>
           <Button variant="outline" size="sm" className="mt-3" onClick={reload}>
             Try again
           </Button>

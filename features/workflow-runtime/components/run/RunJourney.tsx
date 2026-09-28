@@ -18,6 +18,7 @@
  * Layer 2 is never removed — it is the floor, not the ceiling.
  */
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState } from "react";
 import {
   AlertTriangle,
@@ -293,9 +294,10 @@ function JourneyRow({
         {refused && latest ? (
           <p
             data-step-refused=""
-            className="truncate text-[11px] text-amber-700 dark:text-amber-300"
+            className="flex min-w-0 items-center gap-1 text-[11px] text-amber-700 dark:text-amber-300"
           >
-            {latest}
+            <span className="min-w-0 truncate">{latest}</span>
+            <ErrorAlchemyMenu error={latest} size="xs" />
           </p>
         ) : null}
 
