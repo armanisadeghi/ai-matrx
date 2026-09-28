@@ -275,6 +275,8 @@ type SignedOutReadable<T> = Omit<
   | "custom_fields"
   // Access ladder T-12: read only through platform.search_engine_indexed(), never by a page.
   | "search_engine_indexed"
+  // Access ladder T-11: a list-scope column, never read by a signed-out page.
+  | "shown_to"
 > &
   Partial<
     Pick<
@@ -287,6 +289,7 @@ type SignedOutReadable<T> = Omit<
         | "version"
         | "metadata"
         | "search_engine_indexed"
+        | "shown_to"
       >
     >
   >;
