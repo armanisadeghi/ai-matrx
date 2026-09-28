@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { FolderOpen, ImageIcon, Play, Radio } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Button } from "@/components/ui/button";
 import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
@@ -113,6 +114,16 @@ export function SiteMediaWorkspace({ view: fixedView }: { view?: string } = {}) 
       surfaceName={MARKETING_SITE_MEDIA_SURFACE_NAME}
       getScope={getScope}
     >
+      {/* THE PAGE MENU: right-click / long-press anywhere in the workspace
+          opens the one context menu under this surface, so "Surface Context"
+          shows the Site Media values (agent-review 53d879df found the Media
+          route had no menu at all). Cards with their own menus still win. */}
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        surfaceName={MARKETING_SITE_MEDIA_SURFACE_NAME}
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+      >
       <div className="h-full overflow-y-auto">
         <div className="space-y-4 p-3 sm:p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -175,6 +186,7 @@ export function SiteMediaWorkspace({ view: fixedView }: { view?: string } = {}) 
           )}
         </div>
       </div>
+      </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }
