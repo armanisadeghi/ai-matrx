@@ -186,7 +186,12 @@ export default function MobileNotesView({
             <ChevronLeftTapButton onClick={handleBack} ariaLabel="Back to notes" />
 
             {/* Title — the header names the record; it takes the free space */}
-            <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+            {/* Two lines before it ever truncates: "Clinic int…" told the
+                person nothing (page-pass 2026-09-28). */}
+            <span
+              className="min-w-0 flex-1 line-clamp-2 break-words text-sm font-medium leading-tight text-foreground"
+              title={noteDisplayLabel(selectedNote)}
+            >
               {noteDisplayLabel(selectedNote)}
             </span>
 
@@ -195,29 +200,31 @@ export default function MobileNotesView({
                 (page-pass shared defects, 2026-09-27). */}
             {/* The view switch: a segmented Plain | Write showing the CURRENT
                 view highlighted (a single button naming the other view read
-                like the current state). 44px on touch; short labels leave the
-                title its room. */}
+                like the current state). Icon-labelled (Type / PenLine, named
+                for assistive tech and in the tooltip) so the TITLE keeps the
+                row; each segment is a 44px touch target. */}
             <div
               role="radiogroup"
               aria-label="Note view"
               className="flex flex-shrink-0 items-center rounded-full bg-muted p-0.5"
             >
-              {NOTE_PHONE_VIEW_MODES.map(({ mode, label, hint }) => (
+              {NOTE_PHONE_VIEW_MODES.map(({ mode, label, hint, icon: Icon }) => (
                 <button
                   key={mode}
                   type="button"
                   role="radio"
                   aria-checked={editorMode === mode}
-                  title={hint}
+                  aria-label={label}
+                  title={`${label} — ${hint}`}
                   onClick={() => setEditorMode(mode)}
                   className={cn(
-                    "h-8 rounded-full px-2.5 text-xs font-medium transition-colors pointer-coarse:h-10",
+                    "flex h-11 w-11 items-center justify-center rounded-full transition-colors",
                     editorMode === mode
                       ? "bg-background text-foreground shadow-sm"
                       : "text-muted-foreground",
                   )}
                 >
-                  {label}
+                  <Icon className="h-4 w-4" aria-hidden />
                 </button>
               ))}
             </div>
