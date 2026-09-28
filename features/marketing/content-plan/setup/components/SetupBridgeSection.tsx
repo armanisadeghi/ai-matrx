@@ -33,6 +33,7 @@
  * reported as exactly that.
  */
 import { useEffect, useRef, useState } from "react";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
@@ -313,6 +314,9 @@ export function SetupBridgeSection({
   const [savingTier, setSavingTier] = useState(false);
   const [fillStatus, setFillStatus] = useState<FillStatus | null>(null);
   const [publishResult, setPublishResult] = useState<BridgePublishResult | null>(null);
+  // Background refreshes that fail keep the last numbers on screen — marked, never silent.
+  const [fillPollFailed, setFillPollFailed] = useState(false);
+  const [publishRefreshFailed, setPublishRefreshFailed] = useState(false);
   // On-demand rendered-page inspection (the same check every publish runs
   // automatically) — a human can point it at the live site any time.
   const [shellSummary, setShellSummary] = useState<ShellCheckSummary | null>(null);
@@ -365,9 +369,14 @@ export function SetupBridgeSection({
     const read = async () => {
       try {
         const status = await bridgeFillStatus(dispatch, site.id);
-        if (!stop) setFillStatus(status.status === "none" ? null : status);
+        if (!stop) {
+          setFillStatus(status.status === "none" ? null : status);
+          setFillPollFailed(false);
+        }
       } catch {
         // Transient poll failure — the next tick retries; never toast a loop.
+        // The progress line marks itself as the last known value meanwhile.
+        if (!stop) setFillPollFailed(true);
       }
     };
     void read();
@@ -412,9 +421,14 @@ export function SetupBridgeSection({
       // Refresh the rung's numbers from truth — a re-run dry preview says what
       // (if anything) still has pending changes, instead of a stale count.
       void bridgePublish(dispatch, site.id, { dryRun: true, cmsSite: knownCmsSite })
-        .then(setPublishResult)
+        .then((result) => {
+          setPublishResult(result);
+          setPublishRefreshFailed(false);
+        })
         .catch(() => {
-          // The next manual "See what would go live" recovers; never toast here.
+          // The next manual "See what would go live" recovers; never toast here —
+          // but the summary says its numbers were not refreshed.
+          setPublishRefreshFailed(true);
         });
       const live = publishStep.succeeded + publishStep.skipped;
       if (fillStatus.failed > 0 || fillStatus.deadLetter > 0) {
@@ -1061,11 +1075,20 @@ export function SetupBridgeSection({
               <>
                 <span className="inline-flex items-center gap-1.5 text-[11px] tabular-nums text-muted-foreground">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  {fillStatus.pagesBuilt} / {fillStatus.pages} pages built ·{" "}
-                  {fillStatus.succeeded + fillStatus.skipped + fillStatus.failed +
-                    fillStatus.deadLetter}{" "}
-                  / {fillStatus.total} steps
-                  {fillStatus.inProgress > 0 ? ` · ${fillStatus.inProgress} running` : ""}
+                  <UntrustedCount
+                    read={{
+                      status: fillPollFailed ? "error" : "ready",
+                      error: fillPollFailed,
+                      hasData: true,
+                    }}
+                    label="Content build progress"
+                    value={
+                      `${fillStatus.pagesBuilt} / ${fillStatus.pages} pages built · ` +
+                      `${fillStatus.succeeded + fillStatus.skipped + fillStatus.failed + fillStatus.deadLetter}` +
+                      ` / ${fillStatus.total} steps` +
+                      (fillStatus.inProgress > 0 ? ` · ${fillStatus.inProgress} running` : "")
+                    }
+                  />
                 </span>
                 <Button
                   size="sm"
@@ -1258,6 +1281,14 @@ export function SetupBridgeSection({
       ) : null}
       {fillStatus ? <FillStatusSummary status={fillStatus} /> : null}
       {publishResult ? <PublishSummary result={publishResult} /> : null}
+      {publishRefreshFailed && publishResult ? (
+        <p className="text-[11px] text-muted-foreground">
+          Couldn&apos;t refresh what is still waiting to go live, so the numbers
+          above may be out of date — press &ldquo;See what would go live&rdquo;
+          to check again.
+          <ErrorAlchemyMenu operation="Refresh the publish preview" />
+        </p>
+      ) : null}
       {shellSummary ? <ShellSummaryBlock summary={shellSummary} /> : null}
     </SetupSection>
   );

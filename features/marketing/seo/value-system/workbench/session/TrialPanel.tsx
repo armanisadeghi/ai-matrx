@@ -627,6 +627,7 @@ export function TrialPanel({
 
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border pt-2">
             <p className="text-xs text-muted-foreground">
+              {/* read-gate-exempt: counts the person's own right/wrong marks on this trial, not a read */}
               {verdicts.filter((v) => v.status === "wrong").length} marked wrong
               · the rest are taken as right
             </p>

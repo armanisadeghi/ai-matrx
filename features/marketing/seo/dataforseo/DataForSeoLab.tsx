@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import {
   CheckCircle2,
   Database,
@@ -103,6 +104,8 @@ export function DataForSeoLab() {
   const serverUrl = seoTarget?.url;
   const [accessToken, setAccessToken] = useState("");
   const [operations, setOperations] = useState<DataForSeoOperation[]>([]);
+  // The catalog read's own failure (runs share `error`): the count says "—", never 0.
+  const [catalogFailed, setCatalogFailed] = useState(false);
   const [operationName, setOperationName] = useState("");
   const [workflow, setWorkflow] = useState<"live" | "standard">("live");
   const [endpoint, setEndpoint] = useState("");
@@ -148,6 +151,7 @@ export function DataForSeoLab() {
       ]);
       setHealth(healthPayload);
       setOperations(catalog.operations);
+      setCatalogFailed(false);
       if (!operationName && catalog.operations[0]) {
         const first = catalog.operations[0];
         // Prefer live — standard task_post/poll can sit silent for minutes.
@@ -163,6 +167,7 @@ export function DataForSeoLab() {
       }
     } catch (loadError) {
       setError(connectionErrorText(loadError, serverUrl));
+      setCatalogFailed(true);
     } finally {
       setBusy(false);
     }
@@ -312,7 +317,16 @@ export function DataForSeoLab() {
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Database className="h-4 w-4" />
-            {operations.length} operations
+            <UntrustedCount
+              read={{
+                status: catalogFailed ? "error" : health ? "ready" : "loading",
+                error: catalogFailed,
+                hasData: health !== null,
+              }}
+              label="Operations"
+              value={operations.length}
+            />{" "}
+            operations
             {health ? (
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             ) : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +40,9 @@ export function OrgCompetitorLabelsSettings({
   const [state, setState] = useState<OrgModuleCustomValues | null>(null);
   const [value, setValue] = useState(requestedValue);
   const [busy, setBusy] = useState<string | null>(null);
+  // A failed read is said with a retry — never a fake empty list ("No labels yet").
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -48,22 +52,27 @@ export function OrgCompetitorLabelsSettings({
       COMPETITOR_LABELS_NAMESPACE,
     )
       .then((result) => {
-        if (alive) setState(result);
+        if (!alive) return;
+        setState(result);
+        setLoadError(null);
       })
       .catch((error) => {
-        if (alive) {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Could not load organization labels.",
-          );
-          setState({ values: [], membersCanAdd: false, canAdmin: false });
-        }
+        if (alive) setLoadError(error ?? new Error("Could not load organization labels."));
       });
     return () => {
       alive = false;
     };
-  }, [orgId]);
+  }, [orgId, loadAttempt]);
+
+  if (loadError && !state) {
+    return (
+      <ReadFailure
+        error={loadError}
+        what="your organization's competitor labels"
+        onRetry={() => setLoadAttempt((n) => n + 1)}
+      />
+    );
+  }
 
   if (!state) {
     return (

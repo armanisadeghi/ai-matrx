@@ -217,6 +217,7 @@ export function IngestRequestsDialog({
               ) : null}
               {screenedOut && screenedOut.length > 0 ? (
                 <p className="text-muted-foreground">
+                  {/* read-gate-exempt: screenedOut is the outcome list of an ingest run that finished, not a read */}
                   Not a fit for this site ({screenedOut.length}):{" "}
                   {screenedOut
                     .slice(0, 3)

@@ -703,6 +703,7 @@ export function EntityManager({
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-foreground">
                     Suggested from research
+                    {/* read-gate-exempt: proposals are staged answers of a research run the person started, not a read */}
                     {proposals.length > 0 ? ` (${proposals.length})` : ""}
                   </p>
                   {/* With proposals staged, the notes render inside the
@@ -1171,6 +1172,7 @@ export function EntityManager({
           onOpenChange={(open) => {
             if (!open && !addingProposals) setConfirmingAdd(false);
           }}
+          // read-gate-exempt: counts the staged research proposals being confirmed, not a read
           title={`Add ${pendingProposals.length} suggested entit${pendingProposals.length === 1 ? "y" : "ies"}?`}
           description="Cancelling keeps the suggestions on screen — nothing is re-run."
           content={

@@ -555,7 +555,7 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
           {/* read-gate-exempt: static intro before any search is run; a failed search shows its error block directly above */}
           {!page && !loading && <EmptyState />}
 
-          {page && page.results.length === 0 && (
+          {!error && page && page.results.length === 0 && (
             <div className="rounded-3xl border border-dashed border-border p-14 text-center dark:border-white/15">
               <h2 className="text-lg font-semibold">No videos matched</h2>
               <p className="mt-2 text-sm text-muted-foreground dark:text-zinc-500">
@@ -569,6 +569,7 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
             <>
               <div className="mb-4 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground dark:text-zinc-500">
+                  {/* read-gate-exempt: counts the results on screen from the last search that succeeded; a failed search shows its error block above */}
                   Showing {page.results.length} enriched videos for{" "}
                   <span className="text-foreground/80 dark:text-zinc-300">
                     “{page.query}”

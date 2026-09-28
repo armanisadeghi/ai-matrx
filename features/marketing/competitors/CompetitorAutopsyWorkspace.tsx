@@ -1403,6 +1403,7 @@ export default function CompetitorAutopsyWorkspace({
                           ) : business.competitor_id ? (
                             <Badge variant="outline">Proposed below</Badge>
                           ) : business.domain ? null : (
+                            // read-gate-exempt: "No website" labels a map listing that has no domain, not an empty read
                             <Badge variant="outline" className="text-muted-foreground">
                               No website
                             </Badge>

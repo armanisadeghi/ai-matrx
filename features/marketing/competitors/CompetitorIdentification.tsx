@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { Check, ExternalLink, Loader2, Plus, Search } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -312,6 +313,8 @@ export function CompetitorClassificationEditor({
   // THE TRAINING SIGNAL (FEATURE.md §10). Free text, never a dropdown.
   const [why, setWhy] = useState("");
   const [organizationLabels, setOrganizationLabels] = useState<string[]>([]);
+  // The organization's label list is the suggestion source; a failed read is said.
+  const [labelsReadFailed, setLabelsReadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const classification =
     isJsonObject(row.latest_autopsy) &&
@@ -334,10 +337,13 @@ export function CompetitorClassificationEditor({
       COMPETITOR_LABELS_NAMESPACE,
     )
       .then((result) => {
-        if (alive) setOrganizationLabels(result.values);
+        if (!alive) return;
+        setOrganizationLabels(result.values);
+        setLabelsReadFailed(false);
       })
       .catch((error) => {
         console.error("[competitor-labels] load failed", error);
+        if (alive) setLabelsReadFailed(true);
       });
     return () => {
       alive = false;
@@ -482,6 +488,13 @@ export function CompetitorClassificationEditor({
           Pick an organization label or type your own. Personal labels never
           rewrite the underlying evidence.
         </p>
+        {labelsReadFailed ? (
+          <p className="text-xs text-muted-foreground">
+            Couldn&apos;t load your organization&apos;s labels, so none are
+            suggested — you can still type your own.
+            <ErrorAlchemyMenu operation="Load the organization's competitor labels" />
+          </p>
+        ) : null}
       </div>
       <div className="flex items-center gap-2">
         <Checkbox
