@@ -190,8 +190,14 @@ const CLIENT = {
   forms: async () => ({ ok: true as const, data: [] }),
   bookings: async () => ({
     ok: true as const,
-    data: PAGES.filter((p) => p.kind === "booking" && p.organization_id === RINCON).map((p) => p.page_row),
+    data: PAGES.filter((p) => p.kind === "booking" && p.organization_id === RINCON).map((p) => p.item_row),
   }),
+  // The working organization's other list doors: Rincon Plumbing keeps none of these.
+  listPortals: async () => ({ ok: true as const, data: [] }),
+  portalTables: async () => ({ ok: true as const, data: [] }),
+  dashboards: async () => ({ ok: true as const, data: [] }),
+  subscriptions: async () => ({ ok: true as const, data: [] }),
+  checklistTemplates: async () => ({ ok: true as const, data: [] }),
 };
 const TABLES = { data: [], loading: false, error: null };
 jest.mock("@ai-matrx/records/react", () => ({
@@ -251,6 +257,8 @@ jest.mock("../doors", () => ({
     return { ok: true, data: organizationId ? ROWS.filter((r) => r.organization_id === organizationId) : ROWS };
   },
   tablesICanOpen: async () => ({ ok: true, data: ROWS }),
+  pipelines: async () => ({ ok: true, data: [] }),
+  sharesOutside: async () => ({ ok: true, data: [] }),
   dataHomeItems: async (_ds: unknown, organizationId?: string | null) => {
     pagesAskedFor.push(organizationId ?? null);
     return { ok: true, data: organizationId ? PAGES.filter((p) => p.organization_id === organizationId) : PAGES };

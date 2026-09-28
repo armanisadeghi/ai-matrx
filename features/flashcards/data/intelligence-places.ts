@@ -30,6 +30,7 @@ export const FLASHCARDS_PLACES: FeaturePlaces = {
       trigger: "Make more cards, Enhance, audio overview",
       urlPattern: "/education/flashcards/[setId]",
       mandateKeys: [
+        FC_MANDATES.generateCards,
         FC_MANDATES.generateFromSource,
         FC_MANDATES.enrichCard,
         FC_MANDATES.expandCard,
@@ -39,6 +40,7 @@ export const FLASHCARDS_PLACES: FeaturePlaces = {
       sources: [
         "features/flashcards/components/set-detail/SetDetailView.tsx",
         "features/flashcards/components/set-detail/AddMoreCardsButton.tsx",
+        "features/flashcards/components/set-detail/GenerateCardsDialog.tsx",
         "features/flashcards/components/set-detail/EnhanceSetDialog.tsx",
         "features/flashcards/components/set-detail/AudioOverviewSection.tsx",
       ],

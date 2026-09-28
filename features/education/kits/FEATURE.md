@@ -141,6 +141,7 @@ same anchor and whatever is made lands in THIS kit.
 
 ## Change log
 
+- **page-pass 2026-09-28 (wave 4c)** — type list/detail, posture sharp after Linear. `/education/kits` and `/education/kits/[id]` on phone: "New kit" (90x32), the "Search study kits" input (343x36), and the empty state's "Create a study kit" (151x32) all sat under the 44px touch floor. Gave `KitsHome.tsx`'s and `KitHub.tsx`'s roots `matrx-touch-targets` and marked the two Link-as-Button anchors `data-tap-target`. Verified live against production (signed in as admin). Commit `d59b6f6abb`.
 - **2026-09-27** — Agent surface `matrx-user/education-kits` (label "Study Kits",
   `features/surfaces/manifests/education-kits.manifest.ts`) for both routes; view-only. The
   list emits every kit; the hub emits `kit_status`, the study aids in study-path order with

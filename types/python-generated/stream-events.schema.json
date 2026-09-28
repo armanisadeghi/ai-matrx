@@ -4894,6 +4894,52 @@
     "title": "ScrapeBatchCompleteData",
     "type": "object"
   },
+  "YouTubeTranscriptSourceData": {
+    "additionalProperties": false,
+    "description": "``POST /media/youtube/transcript``'s result: the Source the transcript landed as.\n\n``processed_document_id`` is the Source (one ``segment`` portion per timed segment, with\n``t0_ms``/``t1_ms`` locators); ``transcript_id`` is its ``transcripts.transcripts`` row.\n``reused_existing`` is true when the organization already held this video's transcript.",
+    "properties": {
+      "type": {
+        "const": "youtube_transcript_source",
+        "default": "youtube_transcript_source",
+        "title": "Type",
+        "type": "string"
+      },
+      "processed_document_id": {
+        "title": "Processed Document Id",
+        "type": "string"
+      },
+      "transcript_id": {
+        "title": "Transcript Id",
+        "type": "string"
+      },
+      "video_id": {
+        "title": "Video Id",
+        "type": "string"
+      },
+      "title": {
+        "title": "Title",
+        "type": "string"
+      },
+      "segment_count": {
+        "title": "Segment Count",
+        "type": "integer"
+      },
+      "reused_existing": {
+        "title": "Reused Existing",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "processed_document_id",
+      "transcript_id",
+      "video_id",
+      "title",
+      "segment_count",
+      "reused_existing"
+    ],
+    "title": "YouTubeTranscriptSourceData",
+    "type": "object"
+  },
   "FetchResultsData": {
     "$defs": {
       "FetchResultItem": {

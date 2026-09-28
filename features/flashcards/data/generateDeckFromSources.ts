@@ -37,6 +37,8 @@ import type {
   ConvertResult,
   ConvertSource,
 } from "@/features/education/convert/types";
+import { fetchDocument } from "@/features/rag/api/document";
+import { peekHref } from "@/features/organizations/peek/peekHref";
 import { coerceCards, setTitleOf } from "./coerce-card";
 import { foldDepthIntoRequest } from "./enhanceCard";
 import { fcService } from "./fcService";
@@ -85,6 +87,46 @@ function documentIdOf(source: ResolvedSource): string {
   return source.processed_document_id ?? source.file_id ?? source.ref.resource_id;
 }
 
+/** The in-app page of a Source that has no file behind it (a note, a record). */
+function openHrefOf(source: ResolvedSource): string | null {
+  const type = source.ref.resource_type;
+  if (type === "processed_document" || type === "file" || type === "cld_file") return null;
+  return peekHref(type, source.ref.resource_id) ?? null;
+}
+
+/**
+ * A stored document picked as a Source resolves with its document id but not
+ * the file behind it, and a citation opens the real PDF only through that
+ * file id. Read it once per document (the document detail names its origin).
+ * A failure is announced on the Source's notes, never silent.
+ */
+export async function backfillFileIds(
+  resolved: ResolvedSourceSet,
+): Promise<ResolvedSourceSet> {
+  const sources = await Promise.all(
+    resolved.sources.map(async (s) => {
+      if (s.file_id || !s.processed_document_id) return s;
+      try {
+        const doc = await fetchDocument(s.processed_document_id);
+        return doc.source_kind === "cld_file" && doc.source_id
+          ? { ...s, file_id: doc.source_id }
+          : s;
+      } catch (e) {
+        return {
+          ...s,
+          notes: [
+            ...s.notes,
+            `Its citations show the passage but cannot open the file (${
+              e instanceof Error ? e.message : "the document could not be read"
+            }).`,
+          ],
+        };
+      }
+    }),
+  );
+  return { ...resolved, sources };
+}
+
 /** Backfill every citation with the durable ids of ITS OWN Source. */
 export function groundCitations(
   trust: TrustEnvelope | undefined,
@@ -101,6 +143,9 @@ export function groundCitations(
       return attachRefsToCitation(c, {
         fileId: source.file_id ?? null,
         documentId: source.processed_document_id ?? null,
+        // A Source with no file behind it (a note, a record) still opens: its
+        // own page in the app.
+        url: source.file_id ? null : openHrefOf(source),
         title: source.label,
         pageForCitation: () => owner?.page,
       });
@@ -181,7 +226,9 @@ export interface DeckFromSourcesOutcome {
 
 /** A name for the deck when the person gave none. */
 export function defaultDeckName(sources: ResolvedSource[]): string {
-  const first = sources[0]?.label?.trim() || "Study deck";
+  const first =
+    sources[0]?.label?.trim().replace(/\.(pdf|docx?|pptx?|txt|md|csv|xlsx?)$/i, "") ||
+    "Study deck";
   return sources.length > 1
     ? `${first} and ${sources.length - 1} more`
     : first;

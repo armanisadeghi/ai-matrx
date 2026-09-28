@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/select";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ResourceFamilyPolicyEditor } from "@/features/agents/components/inputs/resources/ResourceFamilyPolicyEditor";
+import { primaryFormShortLabel } from "@/features/agents/components/inputs/resources/resource-family-words";
 import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
 import { useStagesStatus } from "@/features/rag/hooks/useStagesStatus";
 import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
@@ -122,8 +123,10 @@ export function SourceCard({
     if (hadParts)
       toast.info("The parts you picked were cleared — this form is split differently. Choose parts again if you need them.");
   };
-  const formLabel =
-    entry?.forms.find((f) => f.form === (ref?.representation ?? entry.default_form))?.label ??
+  // A stored file uses the same words as its chooser (the shared family editor).
+  const formLabel = isFile
+    ? primaryFormShortLabel(ref?.representation as DocumentRepresentation | undefined)
+    : entry?.forms.find((f) => f.form === (ref?.representation ?? entry.default_form))?.label ??
     (ref?.representation === "raw"
       ? "Raw text"
       : ref?.representation === "pdf"

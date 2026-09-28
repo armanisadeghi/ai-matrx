@@ -45,7 +45,7 @@ export function primaryFormShortLabel(
 ): string {
   if (!representation) return "Best available";
   if (representation === "pdf") return "Original PDF";
-  return representation === "clean" ? "Clean text" : "Text as read";
+  return representation === "clean" ? "Clean text" : "Text exactly as read";
 }
 
 interface FamilyWords {

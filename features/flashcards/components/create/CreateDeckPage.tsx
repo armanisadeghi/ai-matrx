@@ -83,7 +83,10 @@ import { useFlashcardMandates } from "../../data/mandate-disclosure";
 import { fcService } from "../../data/fcService";
 import { generatedSetFromEnvelope } from "../../data/generated-set-from-envelope";
 import { useGenerateCards } from "../../data/useGenerateCards";
-import { generateDeckFromSources } from "../../data/generateDeckFromSources";
+import {
+  backfillFileIds,
+  generateDeckFromSources,
+} from "../../data/generateDeckFromSources";
 import { LiveGenerationPreview } from "./LiveGenerationPreview";
 import { DeckFileImport } from "./DeckFileImport";
 
@@ -118,6 +121,7 @@ export function CreateDeckPage() {
   // COPPA before billing, and before any AI work.
   const coppa = useAiComplianceGate();
   const [isNavigating, startNavigation] = useTransition();
+  const [isLeaving, startLeaving] = useTransition();
 
   const [mode, setMode] = useState<StartMode>(
     params.get("start") === "import" ? "import" : "make",
@@ -186,7 +190,9 @@ export function CreateDeckPage() {
   );
   const safeCount = Math.min(COUNT_MAX, Math.max(COUNT_MIN, count || 10));
 
-  const running = phase !== "idle" || topicRun.isGenerating;
+  // Stays on the progress view through the hand-off to the new deck, so the
+  // cleared picks never flash "pick a source" while the deck opens.
+  const running = phase !== "idle" || topicRun.isGenerating || isNavigating;
   const busy = running || isNavigating || cardGen.isChecking || holding;
   const blockedReason = landing.length
     ? `Wait until ${landing.length === 1 ? "your new source has" : `${landing.length} new sources have`} finished adding.`
@@ -247,7 +253,8 @@ export function CreateDeckPage() {
   const runFromSources = async () => {
     setPhase("reading");
     const orgId = await ensureOrgId(undefined);
-    const resolved = await set.resolve();
+    // Citations open the real file only through its file id.
+    const resolved = await backfillFileIds(await set.resolve());
     const dropped = resolved.dropped.map(
       (d) =>
         d.detail ??
@@ -511,8 +518,10 @@ export function CreateDeckPage() {
                           {/* read-gate-exempt: counts of the sources the person added to this form and the card count they chose, not a read's rows */}
                           {phase === "reading"
                             ? `Reading ${ready.length} ${ready.length === 1 ? "source" : "sources"}…`
-                            : phase === "saving"
-                              ? "Saving your deck…"
+                            : phase === "saving" || isNavigating
+                              ? isNavigating
+                                ? "Opening your deck…"
+                                : "Saving your deck…"
                               : progress && progress.total > 1
                                 ? `Section ${Math.min(progress.done + 1, progress.total)} of ${progress.total} — ${progress.items} cards so far`
                                 : `Making ${safeCount} cards${hasSources ? " from your sources" : ` about “${topic}”`}`}
@@ -588,8 +597,8 @@ export function CreateDeckPage() {
                         type="button"
                         variant="ghost"
                         className="h-11 sm:h-9"
-                        onClick={() => startNavigation(() => router.push(EDU_BASE))}
-                        disabled={busy}
+                        onClick={() => startLeaving(() => router.push(EDU_BASE))}
+                        disabled={busy || isLeaving}
                       >
                         Cancel
                       </Button>

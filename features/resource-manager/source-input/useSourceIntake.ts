@@ -239,13 +239,36 @@ export function useSourceIntake(
   const landYouTube = async (id: string, url: string, videoId: string) => {
     try {
       const organizationId = await ensureOrgId(activeOrgId);
-      const { text, note } = await fetchYouTubeTranscript(backendApi.post, url);
+      const { text, note, source } = await fetchYouTubeTranscript(backendApi.post, url);
       if (!text) {
         set.fail(
           id,
           note ??
             "That video has no speech we could write out (no captions and no clear voice). Try another video, or paste a transcript.",
         );
+        return;
+      }
+      if (source) {
+        // The server landed the timed transcript through the door: the card IS
+        // that transcript Source, and "Choose parts" lists its timed segments.
+        const label = `YouTube — ${source.title || videoId}`.slice(0, TRANSCRIPT_NAME_MAX);
+        let notes: string[] = [];
+        try {
+          const kept = await keepSource(source.processed_document_id, { attachTo, organizationId });
+          notes = landedNotes(kept.notices);
+        } catch (err) {
+          notes = [
+            `It was read, but its Source could not be kept for reuse${
+              attachTo.length ? " or filed with what you are making" : ""
+            }: ${addFailureSentence(err)}`,
+          ];
+        }
+        set.settle(id, {
+          label,
+          ref: createSourceRef("processed_document", source.processed_document_id),
+          processedDocumentId: source.processed_document_id,
+          notes,
+        });
         return;
       }
       const name = `YouTube — ${text.split(/\s+/).slice(0, 10).join(" ")}…`.slice(0, TRANSCRIPT_NAME_MAX);
@@ -265,7 +288,8 @@ export function useSourceIntake(
         label: name,
         ref: createSourceRef("processed_document", landed.id),
         processedDocumentId: landed.id,
-        notes: landed.notes,
+        // Untimed: say why it has no parts to choose (the server's own sentence).
+        notes: note ? [...landed.notes, note] : landed.notes,
       });
     } catch (err) {
       set.fail(id, addFailureSentence(err));

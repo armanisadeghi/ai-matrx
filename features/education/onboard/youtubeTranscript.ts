@@ -15,12 +15,19 @@
 
 import { consumeStream } from "@/lib/api/stream-parser";
 import { ENDPOINTS } from "@/lib/api/endpoints";
+import type { YouTubeTranscriptSourceData } from "@/types/python-generated/stream-events";
 
 export interface YouTubeTranscriptResult {
   /** The spoken transcript (empty when the video has no captions/speech). */
   text: string;
   /** Server-provided reason when no transcript was produced (for honest UX). */
   note?: string;
+  /**
+   * The Source the server landed the timed transcript as (one portion per
+   * segment). Absent when the video had no timed segments, or the Source could
+   * not be saved — `note` then says why.
+   */
+  source?: YouTubeTranscriptSourceData;
 }
 
 /**
@@ -45,9 +52,14 @@ export async function fetchYouTubeTranscript(
   );
 
   let note: string | undefined;
+  let source: YouTubeTranscriptSourceData | undefined;
   const { accumulatedText } = await consumeStream(
     response,
     {
+      onData: (data) => {
+        if (data.type === "youtube_transcript_source" && "processed_document_id" in data)
+          source = data as YouTubeTranscriptSourceData;
+      },
       onWarning: (w) => {
         note = w.user_message || w.system_message || note;
       },
@@ -62,5 +74,5 @@ export async function fetchYouTubeTranscript(
     signal,
   );
 
-  return { text: accumulatedText.trim(), note };
+  return { text: accumulatedText.trim(), note, source };
 }

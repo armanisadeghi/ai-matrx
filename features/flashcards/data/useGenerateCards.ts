@@ -87,10 +87,21 @@ function isFromSourceVars(
   return "source_content" in vars;
 }
 
+export interface GenerateCardsRunOptions {
+  /**
+   * The run's conversation, as soon as it exists (before the stream). A
+   * caller filling an EXISTING deck stamps that deck with it, so the stream's
+   * render-block adapter links to the deck instead of creating a twin
+   * (the single-writer contract, D-WP3).
+   */
+  onConversationCreated?: (conversationId: string) => void;
+}
+
 export interface GenerateCardsResult {
   generate: (
     mandateKey: AnyMandateKey,
     vars: GenerateCardsVariables | GenerateFromSourceVariables,
+    opts?: GenerateCardsRunOptions,
   ) => Promise<GeneratedCardSet>;
   isGenerating: boolean;
   error: string | null;
@@ -140,10 +151,14 @@ export function useGenerateCards(): GenerateCardsResult {
   async function generate(
     mandateKey: AnyMandateKey,
     vars: GenerateCardsVariables | GenerateFromSourceVariables,
+    opts: GenerateCardsRunOptions = {},
   ): Promise<GeneratedCardSet> {
     const fromSource = isFromSourceVars(vars);
     return run<GeneratedCardSet>({
       mandateKey,
+      ...(opts.onConversationCreated
+        ? { onConversationCreated: opts.onConversationCreated }
+        : {}),
       surfaceKey: fromSource
         ? "flashcards-create-from-source"
         : "flashcards-create-from-topic",
