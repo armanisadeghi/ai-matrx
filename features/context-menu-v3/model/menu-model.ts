@@ -387,7 +387,7 @@ export function registryTreeNodes(
   ctx: ContextMenuActions["richDocCtx"],
   aiExtras: MenuNode[],
 ): MenuNode[] {
-  const tree = buildMenuTree(actions);
+  const tree = buildMenuTree(actions, { aiSlot: aiExtras.length > 0 });
   const nodes: MenuNode[] = tree.topLevel.map((a) => richActionNode(a, ctx));
   for (const sub of withAiSlot(tree.submenus, aiExtras.length > 0)) {
     const children: MenuNode[] = sub.actions.map((a) => richActionNode(a, ctx));

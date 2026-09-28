@@ -37,6 +37,10 @@ jest.mock("@/lib/organization/organization-gate", () => {
 jest.mock("../utils/notesDrafts", () => ({ listNoteDrafts: () => drafts, discardNoteDraft: discard }));
 jest.mock("@ai-matrx/kit/drafts", () => ({ subscribeDrafts: () => () => {}, getDraftsVersion: () => 1 }));
 jest.mock("@/lib/toast", () => ({ toast: { success: successToast, error: errorToast } }));
+// The existing-note path asks the server whether the draft's text was saved
+// (version history). The test decides the answer instead of letting jsdom try a
+// real network read that fails at some later tick: here the text was NOT saved.
+jest.mock("./NoteDraftRecoveryBanner", () => ({ isDraftAlreadySaved: async () => false }));
 
 import { NotesDraftRecoveryList } from "./NotesDraftRecoveryList";
 import { OrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
@@ -90,7 +94,10 @@ describe("NotesDraftRecoveryList recovery", () => {
   it("opens an existing note without an active organization", async () => {
     organizationId = null;
     notesMap = { lost: { id: "lost" } };
-    await render(); await clickPrimaryAction();
+    await render();
+    // The draft is offered only after the "was it saved?" check settles.
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    await clickPrimaryAction();
     expect(choose).not.toHaveBeenCalled(); expect(create).not.toHaveBeenCalled();
     expect(fetch).toHaveBeenCalledWith("lost");
     expect(dispatch).toHaveBeenCalledWith({ instanceId: "i", noteId: "lost" });

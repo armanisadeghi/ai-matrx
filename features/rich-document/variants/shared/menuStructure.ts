@@ -280,7 +280,19 @@ const MENU_ALIASES: Record<string, string> = {
   "regenerate-latest": "regenerate-response",
 };
 
-export function buildMenuTree(input: RichDocumentAction[]): MenuTree {
+/**
+ * A ONE-ROW "AI Actions" submenu is a dead container (chair ruling 2026-09-27:
+ * the chat answer's ⋯ grew an 18th row holding only "Custom agent…"). When the
+ * host folds no agent libraries into the AI family, a lone AI row joins the
+ * approved group it belongs to — Edit, because every AI row here reviews and
+ * applies an edit to this text — and the menu keeps its D6 bound.
+ */
+const LONE_AI_ROW_JOINS = "Edit";
+
+export function buildMenuTree(
+  input: RichDocumentAction[],
+  options: { aiSlot?: boolean } = {},
+): MenuTree {
   const present = new Set(input.map((a) => a.id));
   const actions = input.filter((a) => {
     const canonical = MENU_ALIASES[a.id];
@@ -306,6 +318,13 @@ export function buildMenuTree(input: RichDocumentAction[]): MenuTree {
         actions: sectionActions,
       });
     }
+  }
+
+  const ai = submenus.find((s) => s.label === AI_SUBMENU_LABEL);
+  const home = submenus.find((s) => s.label === LONE_AI_ROW_JOINS);
+  if (!options.aiSlot && ai && ai.actions.length === 1 && home) {
+    home.actions = [...home.actions, ...ai.actions];
+    submenus.splice(submenus.indexOf(ai), 1);
   }
 
   const extras = actions.filter((a) => !PLACED_IDS.has(a.id));

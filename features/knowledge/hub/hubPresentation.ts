@@ -58,7 +58,8 @@ export function kindIcon(hit: Pick<KnowledgeHit, "entity" | "source_kind">): Luc
 
 export function originLabel(origin: string | null | undefined): string {
   if (!origin) return "Not reported";
-  return ORIGIN_WORDS[origin] ?? origin;
+  // An origin this table has not named yet still reads as words ("transcription" → "Transcription"), never a raw code.
+  return ORIGIN_WORDS[origin] ?? origin.charAt(0).toUpperCase() + origin.slice(1).replace(/_/g, " ");
 }
 
 /** "Open full" — the item's own route (server href wins, then the registry). */

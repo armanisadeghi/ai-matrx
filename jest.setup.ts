@@ -115,6 +115,32 @@ if (
 }
 
 /**
+ * ── fetch / Request / Response / Headers ─────────────────────────────────────
+ *
+ * Same class again: Node has had the Fetch API as globals since 18, jsdom's
+ * test-local `globalThis` carries none of it, and a module that touches one at
+ * IMPORT time takes the whole suite down before a test is collected. `next/cache`
+ * does (next/dist/server/web/spec-extension/adapters/next-request.js subclasses
+ * `Request`), so any client component that imports a server action pulled it
+ * in and twelve rich-document suites died with `ReferenceError: Request is not
+ * defined` (2026-09-27, the search-engine-indexed switch).
+ *
+ * These are Node's OWN implementations, read from Node's real global through
+ * `vm.runInThisContext` — the outer context, not jsdom's — so there is no new
+ * dependency and nothing is a stub. It runs for every environment, including
+ * files that pin `@jest-environment jsdom` in a docblock.
+ */
+{
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const nodeGlobal = (require("node:vm") as typeof import("node:vm")).runInThisContext("globalThis") as Record<string, unknown>;
+  for (const name of ["fetch", "Request", "Response", "Headers"] as const) {
+    if (typeof (globalThis as Record<string, unknown>)[name] === "undefined" && nodeGlobal[name] !== undefined) {
+      (globalThis as Record<string, unknown>)[name] = nodeGlobal[name];
+    }
+  }
+}
+
+/**
  * ── THE TOP-LAYER PSEUDO-CLASSES ARE ANSWERED HERE, NOT BY nwsapi ────────────
  *
  * MEASURED, not guessed: opening ONE Radix popover (`ColumnHeaderCell`'s

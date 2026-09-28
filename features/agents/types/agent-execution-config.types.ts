@@ -23,6 +23,7 @@ import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import type { VariablesPanelStyle } from "../components/inputs/variable-input-variations/variable-input-options";
 import type { ApplicationScope } from "./scope.types";
 import type { JsonExtractionConfig } from "./instance.types";
+import type { ValueMappingMap } from "@/features/surfaces/types";
 
 /**
  * ============================================================================
@@ -178,6 +179,17 @@ export interface AgentExecutionRuntime {
    * the instance-context slice on launch; never persisted on a shortcut.
    */
   context?: Record<string, unknown>;
+  /**
+   * A mapping chosen for THIS launch only — the same language a shortcut's
+   * `valueMappings` and a surface binding use (keyed by agent variable or
+   * context-slot name). Resolved ONCE, against this launch's
+   * `applicationScope`, by the one resolver (`resolveValueMappings`); the
+   * values are pinned like `variables` (they win over them), so a later
+   * per-turn surface refresh never re-reads them from whatever is selected
+   * now. Save it on a shortcut and it becomes that shortcut's mapping.
+   * Never carries the message: text the person sees goes in `userInput`.
+   */
+  valueMappings?: ValueMappingMap;
   /**
    * The `ui_surface.name` of the surface that initiated the launch. Used by
    * the launch thunk to look up an agent↔surface binding edges binding row and

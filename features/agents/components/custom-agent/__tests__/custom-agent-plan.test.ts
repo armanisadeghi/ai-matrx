@@ -63,7 +63,7 @@ describe("buildMappedRuntime", () => {
     { name: "temperature", defaultValue: 0.7, control: {} as never },
   ]);
 
-  it("fills each mapped input, leaves Skip alone, and always carries the whole scope as context", () => {
+  it("speaks the shortcut mapping language: each mapped input is a surface_value, Skip is left out", () => {
     const runtime = buildMappedRuntime(
       { information: "selection", [USER_INPUT_ROW_ID]: SKIP },
       sources,
@@ -72,11 +72,11 @@ describe("buildMappedRuntime", () => {
     );
     expect(runtime).toEqual({
       applicationScope: scope,
-      variables: { information: "the highlighted bit" },
+      valueMappings: { information: { mapType: "surface_value", target: "selection" } },
     });
   });
 
-  it("maps content to the message when the person chooses it, and never fills a disabled input", () => {
+  it("maps content to the message when the person chooses it, and never maps a disabled input", () => {
     const runtime = buildMappedRuntime(
       { [USER_INPUT_ROW_ID]: "content", temperature: "selection" },
       sources,
@@ -84,6 +84,13 @@ describe("buildMappedRuntime", () => {
       scope,
     );
     expect(runtime).toEqual({ applicationScope: scope, userInput: "the whole page" });
+  });
+
+  it("a value offered from outside the captured scope still resolves: it rides the scope under its key", () => {
+    const barSources = buildValueSources({ note_title: "Q3 plan" }, "the whole note");
+    const runtime = buildMappedRuntime({ information: "content" }, barSources, rows, { note_title: "Q3 plan" });
+    expect(runtime.applicationScope).toEqual({ note_title: "Q3 plan", content: "the whole note" });
+    expect(runtime.valueMappings).toEqual({ information: { mapType: "surface_value", target: "content" } });
   });
 
   it("all Skip: nothing but the scope", () => {

@@ -1,0 +1,158 @@
+/**
+ * The tracker editor's calls into aidream. Three are work the client cannot do
+ * (the setup facts that need the vault and the cost tree, the proposal — an
+ * agent run — and Run now); saving the monitor is `POST /coverage/trackers`,
+ * the one declare path with its lens and access checks. Facts, notes and the
+ * tracker read stay on the direct Supabase path.
+ */
+
+import { callApi } from "@/lib/api/call-api";
+import type { TypedStreamEvent } from "@/lib/api/types";
+import type { AppDispatch } from "@/lib/redux/store";
+import type { components } from "@/types/python-generated/api-types";
+
+import type { Basis, DeclareTrackerBody, SetupProposal } from "./model";
+
+export type SetupFacts = components["schemas"]["SetupFacts"];
+export type TrackerView = components["schemas"]["TrackerView"];
+
+export interface ProposalRef {
+  ref: string;
+  kind: Basis["kind"];
+  label: string;
+  url?: string | null;
+}
+
+export interface ProposalResult {
+  brand_id: string;
+  proposal: SetupProposal;
+  refs: ProposalRef[];
+  inputs: Record<string, number>;
+}
+
+export interface CoverageRunTracker {
+  tracker_id: string;
+  status: "ok" | "empty" | "failed";
+  queries: number;
+  articles_seen: number;
+  candidates: number;
+  mentions_created: number;
+  captured: number;
+  analyzed: number;
+  queries_refused?: number;
+  error?: string | null;
+}
+
+export interface CoverageRunResult {
+  trackers_due: number;
+  trackers_run: number;
+  trackers_failed: number;
+  mentions_created: number;
+  captured: number;
+  analyzed: number;
+  trackers: CoverageRunTracker[];
+}
+
+function streamData(event: TypedStreamEvent): Record<string, unknown> | null {
+  return event.event === "data" ? (event.data as Record<string, unknown>) : null;
+}
+
+export async function getSetupFacts(
+  dispatch: AppDispatch,
+  brandId: string,
+): Promise<SetupFacts> {
+  const outcome = await dispatch(
+    callApi({
+      path: "/news/setup/facts",
+      method: "GET",
+      queryParams: { brand_id: brandId },
+    }),
+  );
+  if (outcome.error) {
+    throw new Error(outcome.error.message ?? "Could not load the monitor setup settings.");
+  }
+  return outcome.data as SetupFacts;
+}
+
+const STAGE_LABELS: Record<string, string> = {
+  gathering: "Reading your brand, confirmed facts, site pages and recent coverage",
+  proposing: "Proposing beats, search terms and means lines from what we read",
+};
+
+export async function proposeMonitorSetup(
+  dispatch: AppDispatch,
+  brandId: string,
+  trackerId: string | null,
+  onStage?: (label: string) => void,
+): Promise<ProposalResult> {
+  let completed: ProposalResult | undefined;
+  const outcome = await dispatch(
+    callApi({
+      path: "/news/setup/propose",
+      method: "POST",
+      body: { brand_id: brandId, tracker_id: trackerId },
+      stream: true,
+      onStreamEvent: (event) => {
+        const data = streamData(event);
+        if (!data) return;
+        if (data.kind === "news.setup_proposal_completed") {
+          completed = data.result as ProposalResult;
+          return;
+        }
+        if (data.kind === "news.setup_proposal_stage") {
+          const label = STAGE_LABELS[String(data.stage)];
+          if (label) onStage?.(label);
+        }
+      },
+    }),
+  );
+  if (outcome.error) {
+    throw new Error(outcome.error.message ?? "The proposal could not be made.");
+  }
+  if (!completed) {
+    throw new Error("The proposal finished without returning anything.");
+  }
+  return completed;
+}
+
+export async function saveMonitor(
+  dispatch: AppDispatch,
+  body: DeclareTrackerBody,
+): Promise<TrackerView> {
+  const outcome = await dispatch(
+    callApi({ path: "/coverage/trackers", method: "POST", body }),
+  );
+  if (outcome.error) {
+    throw new Error(outcome.error.message ?? "The monitor could not be saved.");
+  }
+  return outcome.data as TrackerView;
+}
+
+export async function runMonitorNow(
+  dispatch: AppDispatch,
+  trackerId: string,
+): Promise<CoverageRunResult> {
+  let result: CoverageRunResult | undefined;
+  const outcome = await dispatch(
+    callApi({
+      path: "/coverage/trackers/{tracker_id}/run",
+      pathParams: { tracker_id: trackerId },
+      method: "POST",
+      body: { force: true },
+      stream: true,
+      onStreamEvent: (event) => {
+        const data = streamData(event);
+        if (data && Array.isArray(data.trackers)) {
+          result = data as unknown as CoverageRunResult;
+        }
+      },
+    }),
+  );
+  if (outcome.error) {
+    throw new Error(outcome.error.message ?? "The run could not start.");
+  }
+  if (!result) {
+    throw new Error("The run finished without reporting what it did.");
+  }
+  return result;
+}

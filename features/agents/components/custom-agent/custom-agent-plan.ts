@@ -13,6 +13,7 @@
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import type { AgentExecutionRuntime } from "@/features/agents/types/agent-execution-config.types";
+import type { ValueMappingMap } from "@/features/surfaces/types";
 import { humanizeName } from "@/features/agents/components/send-to-agent/send-to-agent-plan";
 
 /** A value the menu captured that the person can map onto an input. */
@@ -115,10 +116,14 @@ export function buildInputRows(
 }
 
 /**
- * The launch runtime: each mapped input gets its value; "Skip" leaves the
- * input alone. The captured scope rides as the run's application scope, so
- * every surface value reaches the agent as context exactly as it does for
- * the menu's own agents.
+ * The launch runtime. Each mapped variable becomes one entry of a
+ * `ValueMappingMap` — the same language a shortcut and a surface binding
+ * speak — and the launch resolves it with the one resolver against the
+ * captured scope ("Skip" = `unmapped`, so the input is left alone). Saved on
+ * a shortcut, this exact map is that shortcut's mapping.
+ *
+ * The message is the one input a mapping never reaches (THE USER-INPUT LAW):
+ * the person chose it here, so it lands in `userInput`, editable before send.
  */
 export function buildMappedRuntime(
   mapping: Readonly<Record<string, string>>,
@@ -128,18 +133,23 @@ export function buildMappedRuntime(
 ): AgentExecutionRuntime {
   const byId = new Map(sources.map((s) => [s.id, s.value]));
   const enabled = new Set(rows.filter((r) => !r.disabledReason).map((r) => r.id));
-  const variables: Record<string, string> = {};
+  const valueMappings: ValueMappingMap = {};
   let userInput: string | undefined;
   for (const [rowId, sourceId] of Object.entries(mapping)) {
-    if (sourceId === SKIP || !enabled.has(rowId)) continue;
-    const value = byId.get(sourceId);
-    if (value === undefined) continue;
-    if (rowId === USER_INPUT_ROW_ID) userInput = value;
-    else variables[rowId] = value;
+    if (sourceId === SKIP || !enabled.has(rowId) || !byId.has(sourceId)) continue;
+    if (rowId === USER_INPUT_ROW_ID) userInput = byId.get(sourceId);
+    else valueMappings[rowId] = { mapType: "surface_value", target: sourceId };
   }
+  // Every offered value rides the scope under its own key — including a
+  // `content` that came from the bar rather than the captured scope — so
+  // each mapping target resolves.
+  const applicationScope: ApplicationScope = {
+    ...(scope ?? {}),
+    ...Object.fromEntries(sources.map((s) => [s.id, s.value])),
+  };
   return {
-    ...(scope ? { applicationScope: scope } : {}),
+    applicationScope,
     ...(userInput !== undefined ? { userInput } : {}),
-    ...(Object.keys(variables).length > 0 ? { variables } : {}),
+    ...(Object.keys(valueMappings).length > 0 ? { valueMappings } : {}),
   };
 }

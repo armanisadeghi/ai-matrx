@@ -71,6 +71,10 @@ export function AgentOrgChartView({
   const place = async (managerId: string, reportId: string) => {
     const res = await dispatch(setManualManager(managerId, reportId));
     if (res.ok) toast.success(`${nameOf(reportId)} now sits under ${nameOf(managerId)}.`);
+    else if (res.loop && managerId !== reportId)
+      toast.error(
+        `${nameOf(managerId)} already sits under ${nameOf(reportId)}, so this would make a loop. Move ${nameOf(managerId)} first.`,
+      );
     else toast.error(res.error ?? "Could not save that placement.");
   };
 

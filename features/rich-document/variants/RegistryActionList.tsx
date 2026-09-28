@@ -63,7 +63,7 @@ export function RegistryActionList(
   // menu); everything else follows the shared tree.
   // The SAME tree, in the SAME order, as every other menu (⋯, right-click,
   // the mobile sheet) — guard: __tests__/oneMenuTree.test.ts.
-  const tree = buildMenuTree(menuActions(resolvedActions));
+  const tree = buildMenuTree(menuActions(resolvedActions), { aiSlot: Boolean(aiSlot) });
   const submenus = withAiSlot(tree.submenus, Boolean(aiSlot));
   if (
     !aiSlot &&

@@ -16,6 +16,8 @@ type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 export interface OrgChartWriteResult {
   ok: boolean;
   error?: string;
+  /** The refusal was a loop (the chosen manager already sits under the agent). */
+  loop?: boolean;
 }
 
 const inFlight = new Set<string>();
@@ -87,6 +89,7 @@ export function setManualManager(managerId: string, reportId: string): AppThunk<
       if (loop) {
         return {
           ok: false,
+          loop: true,
           error:
             managerId === reportId
               ? "An agent can't sit under itself."

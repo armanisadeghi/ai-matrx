@@ -52,14 +52,19 @@ export function RowsSkeleton({
   sentence?: string;
 }) {
   return (
-    <div className="space-y-2 px-2 py-1.5" aria-label={label} role="status">
-      {sentence ? <p className="text-xs text-muted-foreground">{sentence}</p> : null}
+    <div className="px-0.5 py-1" aria-label={label} role="status">
+      <span className="sr-only">{label}</span>
+      {sentence ? <p className="px-2 pb-1 text-xs text-muted-foreground">{sentence}</p> : null}
+      {/* The row's own shape: kind tile, title + date, one line of facts. */}
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="flex items-start gap-2.5">
-          <Skeleton className="mt-0.5 h-4 w-4" />
-          <div className="flex-1 space-y-1.5">
-            <Skeleton className="h-3.5 w-2/3" />
-            <Skeleton className="h-3 w-5/6" />
+        <div key={i} className="flex items-center gap-3 px-2.5 py-2">
+          <Skeleton className="h-8 w-8 shrink-0 rounded-md" />
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <div className="flex items-center gap-3">
+              <Skeleton className={cn("h-3.5", i % 3 === 0 ? "w-1/2" : i % 3 === 1 ? "w-2/3" : "w-2/5")} />
+              <Skeleton className="ml-auto h-3 w-12" />
+            </div>
+            <Skeleton className={cn("h-3", i % 2 ? "w-1/3" : "w-1/2")} />
           </div>
         </div>
       ))}
@@ -202,9 +207,17 @@ export function SearchSections({
 
 // ─── browsing: layouts ──────────────────────────────────────────────────────
 
-const ROW_H = 64;
+const ROW_H = 56;
+
+/** Every hit is the same kind (a Transcripts view, a Files view) — the kind word on each row is noise. */
+export function oneKind(hits: KnowledgeHit[]): boolean {
+  if (hits.length < 2) return false;
+  const first = kindLabel(hits[0]);
+  return hits.every((h) => kindLabel(h) === first);
+}
 
 function VirtualList({ hits, handlers }: { hits: KnowledgeHit[]; handlers: ResultHandlers }) {
+  const hideKind = oneKind(hits);
   const ref = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState(0);
   const [viewport, setViewport] = useState(800);
@@ -238,7 +251,7 @@ function VirtualList({ hits, handlers }: { hits: KnowledgeHit[]; handlers: Resul
     >
       <div style={{ height: w.padStart }} />
       {hits.slice(w.start, w.end).map((h) => (
-        <ResultRow key={hitKey(h)} hit={h} handlers={handlers} style={{ height: ROW_H }} />
+        <ResultRow key={hitKey(h)} hit={h} handlers={handlers} style={{ height: ROW_H }} hideKind={hideKind} />
       ))}
       <div style={{ height: w.padEnd }} />
     </div>
@@ -452,15 +465,15 @@ export function BrowseResults({
 
   const footer =
     more.length || loadingMore ? (
-      <div className="flex justify-center py-3">
+      <div className="flex shrink-0 justify-center py-2">
         <button
           type="button"
           disabled={loadingMore}
           onClick={() => more.forEach((s) => onShowMore(s.key))}
-          className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent"
+          className="inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-70"
         >
-          {loadingMore ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-          {loadingMore ? "Loading more…" : `Load more (${more.map((s) => s.section?.label).join(", ")})`}
+          {loadingMore ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+          {loadingMore ? "Loading more results…" : "Load more"}
         </button>
       </div>
     ) : null;
@@ -488,8 +501,8 @@ export function BrowseResults({
       {failures}
       {loading && hits.length === 0 ? <RowsSkeleton rows={8} label="Loading your knowledge" /> : null}
       {!loading && hits.length === 0 && !failed.length ? (
-        <div className="px-2 py-6">
-          <p className="text-sm text-muted-foreground">{emptySentence}</p>
+        <div className="flex flex-col items-start gap-3 px-2.5 py-8">
+          <p className="max-w-prose text-sm text-muted-foreground">{emptySentence}</p>
           {emptyExtra}
         </div>
       ) : null}

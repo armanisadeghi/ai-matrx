@@ -140,7 +140,7 @@ describe("one registry tree behind every menu", () => {
   const menuActions = registryMenuActions(resolveActions(ctx));
   // The ⋯ tree for a host that carries the agent libraries (the ⋯ on a
   // right-clickable answer opens that very menu): the AI submenu is present.
-  const tree = buildMenuTree(menuActions);
+  const tree = buildMenuTree(menuActions, { aiSlot: true });
   const dotsIds = flattenMenuTreeIds({ ...tree, submenus: withAiSlot(tree.submenus, true) });
   const model = buildMenuModel(engine(menuActions, ctx), {
     selectedText: "",

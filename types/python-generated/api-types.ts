@@ -29001,6 +29001,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/news/setup/facts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Setup Facts */
+        get: operations["get_setup_facts_news_setup_facts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/news/setup/propose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Propose Setup
+         * @description Propose beats, competitors, search terms, standing, feeds and coverage means lines — each with its
+         *     source. Items whose source is not in the input are dropped by code and listed, never silently.
+         */
+        post: operations["propose_setup_news_setup_propose_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai-visibility/panels": {
         parameters: {
             query?: never;
@@ -61459,6 +61497,13 @@ export interface components {
             key: string;
             /** Terms */
             terms?: string[];
+            /**
+             * Means
+             * @default
+             */
+            means?: string;
+            /** Exclude Hints */
+            exclude_hints?: string[];
         };
         /** CompetitorLookupBody */
         CompetitorLookupBody: {
@@ -67225,6 +67270,10 @@ export interface components {
             x_trends_woeids?: number[];
             /** Brief Source Id */
             brief_source_id?: string | null;
+            /** Term Meanings */
+            term_meanings?: {
+                [key: string]: components["schemas"]["TermMeaning"];
+            };
         };
         /** DedupResponse */
         DedupResponse: {
@@ -106398,6 +106447,43 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** ProposeSetupBody */
+        ProposeSetupBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("user" | "auto") | null;
+            /** Brand Id */
+            brand_id: string;
+            /** Tracker Id */
+            tracker_id?: string | null;
+        };
         /**
          * ProposedWriteResponse
          * @description What a write door answers when the organization requires a review first.
@@ -117080,6 +117166,41 @@ export interface components {
              */
             guidance?: string;
         };
+        /** SetupCost */
+        SetupCost: {
+            /** Monthly Ceiling Usd */
+            monthly_ceiling_usd: number;
+            /** Month To Date Usd */
+            month_to_date_usd: number;
+            /** Average Run Usd */
+            average_run_usd?: number | null;
+            /**
+             * Runs Measured
+             * @default 0
+             */
+            runs_measured?: number;
+        };
+        /**
+         * SetupFacts
+         * @description What the editor needs besides the proposal: the knob ranges, the catalog, X, and cost.
+         */
+        SetupFacts: {
+            /** Brand Id */
+            brand_id: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Counts */
+            counts: {
+                [key: string]: number[];
+            };
+            /** Feed Catalog */
+            feed_catalog: {
+                [key: string]: unknown;
+            }[];
+            /** X Key On File */
+            x_key_on_file: boolean;
+            cost: components["schemas"]["SetupCost"];
+        };
         /**
          * SevenShiftsServiceStatus
          * @description Safe aggregate status projection for 7shifts' fixed status page.
@@ -125709,6 +125830,20 @@ export interface components {
             entries?: components["schemas"]["TermEntry"][] | null;
         };
         /**
+         * TermMeaning
+         * @description One brand keyword's "means" line (``seo.coverage_tracker.term_meanings``, brief §4). An empty means
+         *     never blocks a save; the editor says "wrong-company matches will get through".
+         */
+        TermMeaning: {
+            /**
+             * Means
+             * @default
+             */
+            means?: string;
+            /** Exclude Hints */
+            exclude_hints?: string[];
+        };
+        /**
          * TerraformRegistryPublicModuleVersion
          * @description Safe bounded projection of one public Terraform module version.
          */
@@ -127527,6 +127662,10 @@ export interface components {
             x_trends_woeids?: number[];
             /** Brief Source Id */
             brief_source_id?: string | null;
+            /** Term Meanings */
+            term_meanings?: {
+                [key: string]: components["schemas"]["TermMeaning"];
+            };
             /** Alert Recipient User Ids */
             alert_recipient_user_ids?: string[];
             /** Slack Credential Item Id */
@@ -183116,6 +183255,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CoverageFeed"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_setup_facts_news_setup_facts_get: {
+        parameters: {
+            query: {
+                brand_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupFacts"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    propose_setup_news_setup_propose_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProposeSetupBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

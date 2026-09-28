@@ -30,6 +30,9 @@ import {
   type Edge,
   type NodeProps,
   type NodeTypes,
+  BaseEdge,
+  type EdgeProps,
+  type EdgeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./orchestra-builder-canvas.css";
@@ -59,6 +62,7 @@ import {
   DEFAULT_ORG_CHART_LAYOUT,
   layoutOrgForest,
   countDescendants,
+  roundedPath,
   type OrgChartTreeNode,
   type PlacedOrgNode,
 } from "@/components/official/org-chart/layout";
@@ -237,6 +241,23 @@ const nodeTypes: NodeTypes = {
   nested: NestedNode,
 };
 
+/** A stacked team's link: straight down the parent's centre line, then across
+ *  to the card — one shared spine, exactly like the Org chart view draws it. */
+function TrunkEdge({ sourceX, sourceY, targetX, targetY, style }: EdgeProps) {
+  return (
+    <BaseEdge
+      path={roundedPath([
+        [sourceX, sourceY],
+        [sourceX, targetY],
+        [targetX, targetY],
+      ])}
+      style={style}
+    />
+  );
+}
+
+const edgeTypes: EdgeTypes = { trunk: TrunkEdge };
+
 const NEST_W = DEFAULT_ORG_CHART_LAYOUT.cardWidth;
 const NEST_H = DEFAULT_ORG_CHART_LAYOUT.cardHeight;
 /** Gap between a member card's bottom and its team's first row. */
@@ -325,7 +346,7 @@ function buildNestedGraph(
         source: parentKey === member.key ? memberId : idOf(parentKey),
         target: idOf(n.key),
         targetHandle,
-        type: "smoothstep",
+        type: targetHandle === "top" ? "smoothstep" : "trunk",
         style: {
           stroke: manual
             ? AGENT_ORG_EDGE_KINDS.manual.color
@@ -634,6 +655,7 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onNodeDragStart={(_e, node) => bringToFront(node.id)}
         onNodeClick={(_e, node) => bringToFront(node.id)}

@@ -58,12 +58,20 @@ interface HubSearchBoxProps {
   titleFor: (ref: EntityRef) => string;
   /** Called when the person presses ↓ / Enter to move into the results. */
   onEnterResults: () => void;
+  /**
+   * The open view's OWN filters (a preset's, a kind's, a container's). They are
+   * the view — its name already says them — so they never show as removable
+   * chips; only what the person added on top does, and "Clear filters" returns
+   * to the view, never to everything (Linear: a view's definition is not a
+   * filter you are carrying).
+   */
+  viewQuery?: KnowledgeQuery;
 }
 
 const DEBOUNCE_MS = 250;
 
 export const HubSearchBox = forwardRef<HTMLInputElement, HubSearchBoxProps>(function HubSearchBox(
-  { query, onQueryChange, onOpenFilters, titleFor, onEnterResults },
+  { query, onQueryChange, onOpenFilters, titleFor, onEnterResults, viewQuery },
   ref,
 ) {
   const [draft, setDraft] = useState(query.text ?? "");
@@ -103,7 +111,9 @@ export const HubSearchBox = forwardRef<HTMLInputElement, HubSearchBoxProps>(func
     return () => clearTimeout(t);
   }, [draft]);
 
-  const chips = chipsFromQuery(query);
+  const viewChipKeys = new Set(viewQuery ? chipsFromQuery(viewQuery).map(chipKey) : []);
+  const allChips = chipsFromQuery(query);
+  const chips = allChips.filter((c) => !viewChipKeys.has(chipKey(c)));
 
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
@@ -128,7 +138,8 @@ export const HubSearchBox = forwardRef<HTMLInputElement, HubSearchBoxProps>(func
               onQueryChange(removeChip(query, chips[chips.length - 1]), { typing: false });
             }
           }}
-          placeholder="Search your knowledge — try type:note, @Ava, #grant-2026, last week"
+          placeholder="Search your knowledge"
+          title="Search — or narrow with type:note, @Ava, #grant-2026, last week"
           aria-label="Search your knowledge"
           className="h-9 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground md:text-sm"
         />
@@ -167,7 +178,12 @@ export const HubSearchBox = forwardRef<HTMLInputElement, HubSearchBoxProps>(func
           <button
             type="button"
             className="px-1 text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => onQueryChange({ mode: query.mode, text: query.text }, { typing: false })}
+            onClick={() =>
+              onQueryChange(
+                viewQuery ? { ...viewQuery, mode: query.mode, text: query.text } : { mode: query.mode, text: query.text },
+                { typing: false },
+              )
+            }
           >
             Clear filters
           </button>

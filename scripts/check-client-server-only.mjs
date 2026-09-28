@@ -8,9 +8,13 @@
  * pricing card imported a constant from its server-only loader and the release
  * had to be repaired (26f87c7c7d). Type-only imports are fine (erased).
  *
- * Server-only = marked `import "server-only"`, imports `next/headers`, or
- * (transitively, through value imports) imports such a module — the shipped
- * case was client card → loader → utils/supabase/server → next/headers.
+ * Server-only = marked `import "server-only"`, imports `next/headers` or
+ * `next/cache`, or (transitively, through value imports) imports such a
+ * module — the shipped case was client card → loader → utils/supabase/server →
+ * next/headers. A client file importing `next/headers` / `next/cache` itself is
+ * flagged too. A `"use server"` module is the Server Actions door and stays
+ * allowed: the bundler hands the client a reference, never the module body.
+ * (next/cache added 2026-09-27: it subclasses the Fetch `Request` at import.)
  * Aliases: `@/` = repo root;
  * relative paths resolved against the importer; extensions .ts/.tsx/.js/.mjs
  * and /index.*.
@@ -35,11 +39,14 @@ function isClient(src) {
   return /^["']use client["']/.test(head);
 }
 
+/** Framework entry points that only run on the server. */
+const SERVER_ONLY_PACKAGES = ["next/headers", "next/cache"];
+
 /** A module that can only run on the server by itself. */
 function isServerOnlyMarker(src) {
   return (
     /^\s*import\s+["']server-only["'];?/m.test(src) ||
-    /^\s*import\s+(?!type\b)[^;]*?from\s+["']next\/headers["']/m.test(src)
+    valueImports(src).some(({ spec }) => SERVER_ONLY_PACKAGES.includes(spec))
   );
 }
 
@@ -103,6 +110,10 @@ export function scan(root, files) {
     const src = readFileSync(file, "utf8");
     if (!isClient(src)) continue;
     for (const { spec, line } of valueImports(src)) {
+      if (SERVER_ONLY_PACKAGES.includes(spec)) {
+        findings.push(`${rel}:${line} — a client component imports a value from ${spec}, which only runs on the server. Call it from a "use server" action instead.`);
+        continue;
+      }
       const target = resolve(root, file, spec);
       const chain = target && serverOnly(target);
       if (chain)
@@ -131,13 +142,24 @@ if (process.argv.includes("--self-test")) {
   writeFileSync(path.join(dir, "f/db.ts"), 'import { cookies } from "next/headers";\nexport const db = cookies;\n');
   writeFileSync(path.join(dir, "f/load2.ts"), 'import { db } from "@/f/db";\nexport const LIMIT = 3;\nexport const get = db;\n');
   writeFileSync(path.join(dir, "f/bad2.tsx"), '"use client";\nimport { LIMIT } from "./load2";\nexport const z = LIMIT;\n');
-  const findings = scan(dir, ["f/bad.tsx", "f/ok.tsx", "f/server.tsx", "f/bad2.tsx"]);
+  // next/cache is server-only too (it subclasses the Fetch `Request` at import time).
+  writeFileSync(path.join(dir, "f/tags.ts"), 'import { revalidateTag } from "next/cache";\nexport const TAG = "t";\nexport const bust = () => revalidateTag(TAG);\n');
+  writeFileSync(path.join(dir, "f/bad3.tsx"), '"use client";\nimport { TAG } from "./tags";\nexport const t = TAG;\n');
+  writeFileSync(path.join(dir, "f/bad4.tsx"), '"use client";\nimport { updateTag } from "next/cache";\nexport const u = updateTag;\n');
+  // A "use server" module is the Server Actions door: a client calling it stays allowed.
+  writeFileSync(path.join(dir, "f/actions.ts"), '"use server";\nimport { updateTag } from "next/cache";\nimport { cookies } from "next/headers";\nexport async function act() { await cookies(); updateTag("t"); }\n');
+  writeFileSync(path.join(dir, "f/ok2.tsx"), '"use client";\nimport { act } from "./actions";\nexport const a = act;\n');
+  const findings = scan(dir, ["f/bad.tsx", "f/ok.tsx", "f/server.tsx", "f/bad2.tsx", "f/bad3.tsx", "f/bad4.tsx", "f/ok2.tsx"]);
   const ok =
-    findings.length === 2 &&
+    findings.length === 4 &&
     findings[0].startsWith("f/bad.tsx:2") &&
     findings[1].startsWith("f/bad2.tsx:2") &&
-    findings[1].includes("f/load2.ts → f/db.ts");
-  console.log(ok ? "SELF-TEST PASS: flags direct and transitive client value imports only" : `SELF-TEST FAIL: ${JSON.stringify(findings)}`);
+    findings[1].includes("f/load2.ts → f/db.ts") &&
+    findings[2].startsWith("f/bad3.tsx:2") &&
+    findings[2].includes("f/tags.ts") &&
+    findings[3].startsWith("f/bad4.tsx:2") &&
+    findings[3].includes("next/cache");
+  console.log(ok ? "SELF-TEST PASS: flags direct and transitive client value imports of server-only code (server-only, next/headers, next/cache); a \"use server\" door stays allowed" : `SELF-TEST FAIL: ${JSON.stringify(findings)}`);
   process.exit(ok ? 0 : 1);
 }
 

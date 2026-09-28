@@ -42,8 +42,9 @@ import {
   Paperclip,
   Sparkles,
   Activity,
-  SlidersHorizontal,
+  Settings2,
   Download,
+  Plus,
 } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { useEntityTitles } from "@ai-matrx/associations/react";
@@ -205,6 +206,7 @@ import {
   transcriptMenu,
   transcriptReferenceType,
   transcriptRowHref,
+  transcriptRowFacts,
   type HubTranscriptKind,
   type TranscriptMenuAction,
 } from "@/features/knowledge/hub/transcripts/transcriptRows";
@@ -279,7 +281,7 @@ function emptySentence(view: HubView, title: string, filtered: boolean): string 
     case "saved":
       return "Nothing matches this saved view right now.";
     case "preset":
-      return `No ${title.toLowerCase()} yet. Record or upload one from New transcript.`;
+      return `No ${title.toLowerCase()} yet.`;
     case "group":
       return "";
     case "everything":
@@ -447,6 +449,12 @@ export function KnowledgeHubPage({
     state.view.kind === "saved"
       ? (sidebar.savedViews.items.find((v) => v.id === (state.view as { id: string }).id) ?? null)
       : presetSavedView;
+  // The open view's OWN filters never show as removable chips — its name already says
+  // them. A saved view is the person's own filter set, so its filters stay visible.
+  const viewOwnQuery =
+    state.view.kind === "saved"
+      ? undefined
+      : selectionQuery(state.view, state.view.kind === "preset" ? presetDef : null).query;
   const dirty = openSavedView ? viewIsDirty(openSavedView.definition, { query: state.query, layout: state.layout }) : false;
   // `library:*` waits on the libraries read; when that read FAILED it must say
   // so — "pending" forever ("Reading your libraries…") or "no libraries" are
@@ -489,6 +497,21 @@ export function KnowledgeHubPage({
         .filter((s) => s.key !== "top_hit" && s.key !== "segments")
         .reduce((n, s) => n + (s.section?.count ?? 0), 0)
     : undefined;
+
+  // "24 of 180" while more pages wait; "3 matching" when facets or Stage narrow the loaded rows.
+  const narrowed = hits.length !== baseHits.length;
+  const resultNoun = transcriptsView ? "transcript" : "item";
+  const plural = (n: number) => `${n.toLocaleString("en-US")} ${resultNoun}${n === 1 ? "" : "s"}`;
+  const resultCount =
+    searching || triageView || state.view.kind === "favorites" || results.sections.some((s) => s.status === "loading")
+      ? null
+      : narrowed
+        ? `${hits.length.toLocaleString("en-US")} matching`
+        : typeof total === "number" && total > hits.length
+          ? `${hits.length.toLocaleString("en-US")} of ${plural(total)}`
+          : hits.length
+            ? plural(hits.length)
+            : null;
 
   const write = (next: Partial<HubState>, opts?: { replace?: boolean }) =>
     setState({ ...state, ...next }, opts);
@@ -777,6 +800,7 @@ export function KnowledgeHubPage({
     onOpenFull: openFull,
     onFilterTag: (name) => filterByTag(name),
     rowMenu: transcriptMenuNode,
+    rowFacts: (h) => (isTranscriptHit(h) ? transcriptRowFacts(transcriptFacts.factFor(h)) : []),
     renamingKey,
     onRenameCommit: (h, title) => void commitRename(h, title),
     onRenameCancel: () => setRenamingKey(null),
@@ -1372,6 +1396,7 @@ export function KnowledgeHubPage({
                 onQueryChange={onQueryChange}
                 onOpenFilters={() => setFiltersOpen(true)}
                 titleFor={titleFor}
+                viewQuery={viewOwnQuery}
                 onEnterResults={() => {
                   searchRef.current?.blur();
                   if (!focusedKey && hits[0]) setFocusedKey(hitKey(hits[0]));
@@ -1384,8 +1409,8 @@ export function KnowledgeHubPage({
         <div className={trashView ? "hidden" : "flex shrink-0 items-center gap-1"}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" aria-label="Advanced search options" title="Advanced">
-                <SlidersHorizontal className="h-4 w-4" />
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" aria-label="Search settings" title="Search settings">
+                <Settings2 className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
@@ -1433,6 +1458,14 @@ export function KnowledgeHubPage({
               <Save className="h-3.5 w-3.5" /> Save changes
             </Button>
           ) : null}
+          {transcriptsView ? (
+            <Button asChild size="sm" className="h-8 gap-1.5 px-2.5 max-md:w-8 max-md:px-0">
+              <Link href="/transcripts/new" aria-label="New transcript" title="Record, upload or paste a new transcript">
+                <Plus className="h-4 w-4" />
+                <span className="hidden md:inline">New transcript</span>
+              </Link>
+            </Button>
+          ) : null}
           <Button
             size="sm"
             variant="outline"
@@ -1447,19 +1480,33 @@ export function KnowledgeHubPage({
           {!searching ? <div className="hidden sm:block">{layoutSwitch}</div> : null}
         </div>
       </div>
-      {!searching && !trashView ? <div className="sm:hidden">{layoutSwitch}</div> : null}
       {bulkBar}
-      {transcriptsView && !trashView ? (
-        <TranscriptFacetBar
-          counts={transcriptFacetCounts(baseHits, transcriptFacts.factFor)}
-          selection={facetSel}
-          onChange={(next) => write({ group: facetSelectionToGroup(next, state.group) }, { replace: true })}
-          note={
-            hasFacetSelection(facetSel) && moreToLoad
-              ? `These filters narrow the ${baseHits.length} rows loaded so far; load more to check the rest.`
-              : null
-          }
-        />
+      {/* One quiet line under the search: the view's own facets (Transcripts), how many rows,
+          and — on a phone — the layout switch (Linear's display row). */}
+      {!trashView && (!searching || transcriptsView) ? (
+        <div className="flex min-h-8 min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5">
+          <div className={transcriptsView ? "min-w-0 basis-full sm:basis-0 sm:flex-1" : "min-w-0 flex-1"}>
+            {transcriptsView ? (
+              <TranscriptFacetBar
+                counts={transcriptFacetCounts(baseHits, transcriptFacts.factFor)}
+                selection={facetSel}
+                ready={transcriptFacts.status !== "loading" && transcriptFacts.status !== "idle"}
+                onChange={(next) => write({ group: facetSelectionToGroup(next, state.group) }, { replace: true })}
+                note={
+                  hasFacetSelection(facetSel) && moreToLoad
+                    ? `Narrowing the ${baseHits.length} rows loaded so far; load more to check the rest.`
+                    : null
+                }
+              />
+            ) : null}
+          </div>
+          {resultCount ? (
+            <span className="mr-auto shrink-0 text-xs tabular-nums text-muted-foreground sm:mr-0" aria-live="polite">
+              {resultCount}
+            </span>
+          ) : null}
+          {!searching ? <div className="sm:hidden">{layoutSwitch}</div> : null}
+        </div>
       ) : null}
       {transcriptFacts.status === "error" && transcriptFacts.error ? (
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs" role="status">
@@ -1560,7 +1607,17 @@ export function KnowledgeHubPage({
             onShowMore={triageView ? triage.showMore : results.showMore}
             onRetry={triageView ? triage.refresh : results.retry}
             stage={stageColumn}
-            emptyExtra={state.view.kind === "everything" && !sample ? <HubGettingStarted /> : null}
+            emptyExtra={
+              state.view.kind === "everything" && !sample ? (
+                <HubGettingStarted />
+              ) : transcriptsView && !hasFacetSelection(facetSel) ? (
+                <Button asChild size="sm" className="h-8 gap-1.5">
+                  <Link href="/transcripts/new">
+                    <Plus className="h-4 w-4" /> Record, upload or paste a transcript
+                  </Link>
+                </Button>
+              ) : null
+            }
           />
         )}
       </div>

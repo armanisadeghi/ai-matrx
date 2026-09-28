@@ -179,6 +179,11 @@ function MediaBlock({ block, token }: { block: MediaBlockData; token: string }) 
           height={block.height ?? undefined}
           loading="lazy"
           onError={() => setFailed(true)}
+          // An image that failed BEFORE hydration never reaches onError —
+          // catch it on mount so the reader gets the honest line, not a void.
+          ref={(el) => {
+            if (el && el.complete && el.naturalWidth === 0) setFailed(true);
+          }}
           className="h-auto max-h-[28rem] w-auto max-w-full rounded-lg border border-border"
         />
       </a>

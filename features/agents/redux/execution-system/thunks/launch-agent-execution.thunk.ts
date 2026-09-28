@@ -103,6 +103,7 @@ import {
   applyLaunchWritePolicies,
   prepareLaunchMappings,
   resolveLaunchMappingLayers,
+  resolvePerLaunchMappings,
   type MergedValueMappings,
 } from "./surface-scope-mapping";
 
@@ -354,6 +355,7 @@ export const launchAgentExecution = createAsyncThunk<
       ? { ...(configDefaultVariables ?? {}), ...(runtime?.variables ?? {}) }
       : undefined;
   const runtimeContext = runtime?.context;
+  const launchValueMappings = runtime?.valueMappings;
 
   // ── THE DOCUMENT-VARIABLE PRECONDITION (disease D4) ───────────────────────
   // A Mandate's `required_variables` bind the CALLER too, not only the bound
@@ -722,12 +724,42 @@ export const launchAgentExecution = createAsyncThunk<
     // resolves.
     onConversationCreated?.(conversationId);
 
-    if (variables && Object.keys(variables).length > 0) {
+    // THE PER-LAUNCH MAPPING (`runtime.valueMappings`) — see resolvePerLaunchMappings.
+    const shortcutAgentRecord = shortcut.agentId
+      ? (getState() as RootState).agentDefinition.agents?.[shortcut.agentId]
+      : undefined;
+    const {
+      variables: shortcutPinnedVariables,
+      contextEntries: shortcutLaunchMappedContext,
+    } = resolvePerLaunchMappings({
+      mappings: launchValueMappings,
+      applicationScope,
+      variableDefinitions: shortcutAgentRecord?.variableDefinitions,
+      contextPolicies: shortcutAgentRecord?.contextPolicies,
+      variables,
+    });
+    if (
+      shortcutPinnedVariables &&
+      Object.keys(shortcutPinnedVariables).length > 0
+    ) {
       // HOST-WIRED, not typed. `runtime.variables` is what this SURFACE knows —
       // it ships exactly as before, but it is recorded as the host's so the
       // user bubble never presents it as the person's own words (see
       // `hostValueNames` in instance-variable-values.slice.ts).
-      dispatch(setHostVariableValues({ conversationId, values: variables }));
+      dispatch(
+        setHostVariableValues({
+          conversationId,
+          values: shortcutPinnedVariables,
+        }),
+      );
+    }
+    if (shortcutLaunchMappedContext.length > 0) {
+      dispatch(
+        setContextEntries({
+          conversationId,
+          entries: shortcutLaunchMappedContext,
+        }),
+      );
     }
     if (runtimeContext && Object.keys(runtimeContext).length > 0) {
       // Deferred tier: these land in the request's `context` dict, not the
@@ -936,12 +968,33 @@ export const launchAgentExecution = createAsyncThunk<
       }
     }
 
-    if (variables && Object.keys(variables).length > 0) {
+    // THE PER-LAUNCH MAPPING (`runtime.valueMappings`) — see resolvePerLaunchMappings.
+    const launchAgentRecord = (getState() as RootState).agentDefinition
+      .agents?.[agentId];
+    const {
+      variables: pinnedVariables,
+      contextEntries: launchMappedContext,
+    } = resolvePerLaunchMappings({
+      mappings: launchValueMappings,
+      applicationScope,
+      variableDefinitions: launchAgentRecord?.variableDefinitions,
+      contextPolicies: launchAgentRecord?.contextPolicies,
+      variables,
+    });
+
+    if (pinnedVariables && Object.keys(pinnedVariables).length > 0) {
       // HOST-WIRED, not typed. `runtime.variables` is what this SURFACE knows —
       // it ships exactly as before, but it is recorded as the host's so the
       // user bubble never presents it as the person's own words (see
       // `hostValueNames` in instance-variable-values.slice.ts).
-      dispatch(setHostVariableValues({ conversationId, values: variables }));
+      dispatch(
+        setHostVariableValues({ conversationId, values: pinnedVariables }),
+      );
+    }
+    if (launchMappedContext.length > 0) {
+      dispatch(
+        setContextEntries({ conversationId, entries: launchMappedContext }),
+      );
     }
     if (runtimeContext && Object.keys(runtimeContext).length > 0) {
       // Deferred tier: these land in the request's `context` dict, not the

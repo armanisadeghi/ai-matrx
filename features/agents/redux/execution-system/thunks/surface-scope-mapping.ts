@@ -15,6 +15,11 @@ import {
   type ValuePromptField,
 } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 import { toast } from "@/lib/toast";
+import { resolveValueMappings } from "@/features/surfaces/utils/value-mapping-resolver";
+import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
 import { resolveShortcutMappings } from "@/features/agent-shortcuts/utils/resolveShortcutMappings";
 import { registerSurfaceWritePolicies } from "@/features/surfaces/runtime/surface-writeback";
 import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/bind-agent-to-surface.service";
@@ -164,4 +169,48 @@ export async function prepareLaunchMappings(args: {
     out[key] = { mapType: "direct_value", target: answers[key] ?? "" };
   }
   return out;
+}
+
+/**
+ * THE PER-LAUNCH MAPPING (`runtime.valueMappings`). A mapping chosen for one
+ * launch — by a person on the Custom Agent screen, or by a caller — is
+ * resolved ONCE against that launch's scope by the same resolver shortcuts
+ * and surface bindings use. The caller pins the result with its host values,
+ * so a later per-turn surface refresh never re-reads it from the live page.
+ * Mapped values win over the caller's own `variables`.
+ */
+export function resolvePerLaunchMappings(args: {
+  mappings: ValueMappingMap | null | undefined;
+  applicationScope: ApplicationScope | null | undefined;
+  variableDefinitions: VariableDefinition[] | null | undefined;
+  contextPolicies:
+    | Array<{ key: string; type?: ContextObjectType; label?: string }>
+    | null
+    | undefined;
+  variables: Record<string, unknown> | undefined;
+}): {
+  variables: Record<string, unknown> | undefined;
+  contextEntries: InstanceContextEntry[];
+} {
+  const { mappings, variables } = args;
+  if (!mappings || Object.keys(mappings).length === 0) {
+    return { variables, contextEntries: [] };
+  }
+  const mapped = resolveValueMappings(
+    args.applicationScope ?? {},
+    mappings,
+    args.variableDefinitions ?? [],
+    args.contextPolicies ?? [],
+    { autoNameMatch: false },
+  );
+  for (const warning of mapped.warnings) {
+    console.warn("[launch mapping]", warning);
+  }
+  for (const error of mapped.errors) {
+    console.error("[launch mapping]", error);
+  }
+  return {
+    variables: { ...(variables ?? {}), ...mapped.variableValues },
+    contextEntries: mapped.contextEntries,
+  };
 }

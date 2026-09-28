@@ -312,18 +312,48 @@ not deleted, use limit) and only then attaches `children` from
 direct client call runs under the caller's own RLS; its reach exists only inside the resolver.
 `conversation` → `{kind:'conversation_messages', messages, total, truncated}`: visible
 (`is_visible_to_user`, status active/edited, not deleted) user + assistant messages, first 500;
-text blocks verbatim; thinking blocks and their provider signatures never; a tool call becomes
-`{type:'tool', name}` — never its arguments or result payload; media carries kind/title/size and a
-URL only when already on the public CDN (`cdn.matrxserver.com`), otherwise the lens names the
-attachment as private and does not serve it. `lenses/conversation-transcript.ts` (server-safe)
-validates the shape and groups consecutive assistant messages into one turn;
-`lenses/conversation-lens.tsx` renders it — user text in bubbles, assistant text through
-`RichContentStaticStandard` (in the SSR HTML), folded "Used X ×n" tool steps, a closing
-"Continue this chat" (`DuplicateToEditButton`) + "Try AI Matrx" card; `lenses/metadata.ts`
-describes the card by the chat's opening question. `/s/[token]` resolves once per request
-(`React.cache`), so one view is one use against `max_uses`. Not yet served: private attachments
-(no token-backed byte route for a chat's child files), tool RESULTS in their cleaned card form,
-and `decision_*` / `speech_script` blocks.
+thinking blocks and their provider signatures never. Per part (T-19b,
+`migrations/access_ladder_t19b_shared_chat_files_tools_blocks.sql` +
+`access_ladder_t19b2_coding_session_steps_withheld.sql`):
+- **text** verbatim.
+- **tool_call** → the chat's `chat.tool_call` row (joined on conversation + call id): name, status,
+  error, timestamps, and arguments + output passed through **`platform.share_redact`** — the one
+  cleaner: secret-named keys (password, token, api/private/access/secret key, authorization,
+  cookie, credential, OTP, SSN, env, …) lose their values; provider keys, JWTs, bearer values, PEM
+  private keys, URL passwords and `SECRET_NAME=value` assignments are scrubbed from strings. Output
+  over 60,000 chars falls back to `output_preview` (`output_truncated`). **Withheld** (name + status
+  only, `withheld: true`): `platform.share_tool_is_withheld(name)` (credential_login, vault*,
+  secure_delivery*, *secret*, *credential*, *password*, coding_session*, env tools) and every
+  `tool_type = 'coding_agent'` step (a coding session's raw log). Execution-event logs never.
+- **media** → kind/title/mime/size + `file_id` (+ a URL only when already on the public CDN).
+- **decision_questions / decision_answers / speech_script** → their payload (answers without
+  usage/cost).
+
+**A shared chat's files ride its token.** `GET {files service}/share/{token}/files/{file_id}`
+(`matrx_files/api/router_share.py`, mirrored in aidream `routers/files/public_share.py`) streams
+ONE child file, inline by default, `?inline=false` = attachment. It is authorized by
+**`public.share_link_child_file(token, file_id)`** (SECURITY DEFINER, server-only door): the token
+exists, is active, unexpired, within its use limit, its type still link-shareable, the conversation
+is not deleted, and the file is a media part of one of its VISIBLE user/assistant messages. A child
+fetch never consumes a use. Every refusal — dead token, another chat's file, the owner's original
+upload that the chat does not reference (the server stores a vision derivative, and only that id is
+a child) — is the same 404. URL builder: `shareChildFileUrls(token, fileId)` in
+`features/files/handler/utils/python-base.ts`.
+
+`lenses/conversation-transcript.ts` (server-safe) validates the shape, groups consecutive assistant
+messages into one turn and consecutive tool steps into one run, and builds each step's
+`ToolLifecycleEntry` (`sharedToolEntry` ≙ `persistedToolEntry`). `lenses/conversation-lens.tsx`
+renders it — user text in bubbles, assistant text through `RichContentStaticStandard` (in the SSR
+HTML); tool steps through the chat's OWN cards (`lenses/conversation-tool-steps.tsx`,
+`next/dynamic`: `ToolCallVisualization`, runs folded in `ToolCallBatch`; a withheld step says its
+details are private); images inline from the child route (a load failure — even one before
+hydration — says so in words), audio/video players, documents as download cards (name, type,
+size); `DecisionQuestionsTranscriptView` / `DecisionAnswersBlock` / `SpeechScriptTranscriptView`
+read-only; a closing "Continue this chat" (`DuplicateToEditButton`) + "Try AI Matrx" card. The
+files-service origin comes from `useSyncExternalStore` so an admin's per-service override replaces
+the server-rendered default after hydration instead of leaving a mismatched `src`.
+`lenses/metadata.ts` describes the card by the chat's opening question. `/s/[token]` resolves once
+per request (`React.cache`), so one view is one use against `max_uses`.
 
 **Adding a share rendering = one registry entry (+ optional metadata entry). Adding a per-type
 `switch` on any share surface is banned** — `SharedResourceView.tsx` is a pure shell
@@ -401,6 +431,7 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 - `2026-09-27` — **Access ladder T-12: the indexed switch.** Knob family `access.indexed_by_default`, column `search_engine_indexed` on 10 publishable tables, resolver/setter/state/sitemap doors; robots metadata + `X-Robots-Tag` on podcast, blog, `/p/e`, app, shared-canvas and learning-article pages; Anyone-link pages always noindex; sitemap lists only indexed records; "Indexed by search engines" beside "Published to the web". **Localhost evidence (admin@admin.com, episode `a4d537e5…`):** indexed → `index, follow`, no header, in `/sitemap.xml`; switched off in the episode editor → `noindex, nofollow` meta + `x-robots-tag: noindex, nofollow`, gone from the sitemap; `/s/<token>` → `noindex, nofollow`.
 
 
+- `2026-09-28` — **Access ladder T-19b: a shared chat shows its files, its cleaned tool results and its decision / speech-script blocks.** Projection extended (`platform.share_redact`, withheld credential and coding-session steps); new token-scoped child-file byte route authorized by `public.share_link_child_file`; the lens renders tool steps through the chat's own tool cards. **Evidence (admin@admin.com, a real conversation with an uploaded menu-board image, a PDF cost sheet, and 10 research_web / cloud_browser steps):** against the files service run locally on this commit — chat A's token + chat A's image → 200 image/jpeg inline; + chat A's PDF `?inline=false` → 200 `attachment`; chat A's token + chat B's image, chat B's token + chat A's image or PDF, chat A's token + the owner's own upload not referenced by the chat, a bogus token, a junk id → all 404. Signed-out `/s/<token>` SSR HTML carries `noindex`, the image and PDF child URLs, the PDF card and the "10 tool calls" line. Until the files service deploys this route, the image shows the honest "could not be loaded" line.
 - `2026-09-27` — **Access ladder T-19: a shared AI chat shows its messages.** `resolve_share_token` now attaches `children` from the new `platform.share_link_children` after every token check; the `conversation` lens renders the narrowed transcript signed-out, SSR, noindex, with a continue-this-chat CTA. `/s/[token]` resolves once per request (a view no longer counts twice against `max_uses`) and drops the doubled brand from its title. **Localhost evidence (admin@admin.com, conversation `c282678f…`):** link created in the Share dialog's Public tab; opened on a fresh signed-out host — title, 5-message count, the user prompt, "Used Fs write / Fs patch / Fs read", the full answer, the CTA card; SSR HTML carries the answer text and `noindex, nofollow`; no thinking signature in the HTML; no horizontal overflow at 375px; after "Turn off share link" the same URL shows "This link has been turned off by its owner."
 
 - `2026-09-26` — **Access ladder T-9: sharing reaches every type.** 127 more types became link-shareable (public_columns derived from display column names; types with nothing to show stay off). Personal-variant RLS emits the owner-grant arm, 8 personal tables registered for direct sharing (TS mirror + snapshot synced, plus `agent_term_list`/`document` drift from other lanes). Billing customer/subscription/connect_account re-registered Organization (ledger variant: member read, server-only writes). Proven live in rolled-back transactions: admin shares an `mcp_user_conn` row with test@test.com through `share_resource_with_user` → test reads 1, a third user 0, kernel agrees; anon resolves `create_share_link` tokens for a conversation, podcast episode and skill.

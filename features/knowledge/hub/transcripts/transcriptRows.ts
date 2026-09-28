@@ -18,6 +18,7 @@
  *     the CSV and the clipboard are written by the SAME code as before.
  */
 
+import { formatCount, formatDurationSeconds } from "@ai-matrx/kit/format";
 import type { KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import {
   KIND_META,
@@ -477,5 +478,29 @@ export function transcriptFacetCounts(
       .map(([value, count]) => ({ value, count }))
       .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
   }
+  return out;
+}
+
+// ─── Row facts (the list row's meta line) ───────────────────────────────────
+
+/**
+ * What a transcript row says beside its title (Granola / Otter: how long, how
+ * much, what state): the kind when it is not a plain transcript (Session,
+ * Cleanup, Unsorted), duration, word count, and a draft or live session status.
+ * Only facts the record actually carries — an unknown is omitted, never "0 min".
+ */
+export function transcriptRowFacts(fact: TranscriptListRow | null | undefined): string[] {
+  if (!fact) return [];
+  const out: string[] = [];
+  if (fact.kind === "session" || fact.kind === "cleanup" || fact.kind === "unsorted")
+    out.push(TRANSCRIPT_KIND_LABEL[fact.kind as HubTranscriptKind]);
+  // THE package formatters (dense voice): "13 min", "1h 2m"; "2,340 words".
+  if (typeof fact.duration_seconds === "number" && fact.duration_seconds > 0)
+    out.push(formatDurationSeconds(fact.duration_seconds, { style: "coarse" }));
+  if (typeof fact.word_count === "number" && fact.word_count > 0)
+    out.push(`${formatCount(fact.word_count)} ${fact.word_count === 1 ? "word" : "words"}`);
+  if (fact.kind === "transcript" && fact.is_draft) out.push("Draft");
+  else if ((fact.kind === "session" || fact.kind === "cleanup") && fact.status && fact.status !== "completed")
+    out.push(fact.status.charAt(0).toUpperCase() + fact.status.slice(1).replace(/_/g, " "));
   return out;
 }
