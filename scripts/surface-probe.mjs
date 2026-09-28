@@ -594,31 +594,32 @@ try {
 
       // The canonical right-click menu must open on the page body.
       await page.keyboard.press("Escape");
-      const menu = await page.evaluate(() => {
-        // Right-click the DEEPEST element in the middle of the page content, as
-        // a person would — the event bubbles through whatever menu wraps the
-        // page. (Dispatching on the shell's <main> itself sits OUTSIDE every
-        // page-level menu and always read "no menu".)
-        const area =
-          document.querySelector("main [data-surface-value]") || document.querySelector("main") || document.body;
+      // Right-click INSIDE the page's menu region, with a real mouse, as a
+      // person would. The region is the element carrying the menu trigger
+      // (`data-alchemy-trigger="context"`); a short page (Settings) leaves the
+      // middle of <main> EMPTY and outside every region, which read as "no
+      // menu" while a real right-click on the content opened it (2026-09-27).
+      const point = await page.evaluate(() => {
+        const covered = (el) => el && el.closest("[data-window-panel],[role=dialog]");
+        const regions = Array.from(document.querySelectorAll('main [data-alchemy-trigger="context"]'))
+          .map((el) => (getComputedStyle(el).display === "contents" ? el.firstElementChild : el))
+          .filter(Boolean);
+        const area = regions.find((el) => {
+          const r = el.getBoundingClientRect();
+          return r.width > 40 && r.height > 20;
+        }) || document.querySelector("main") || document.body;
         const r = area.getBoundingClientRect();
-        const x = r.left + Math.min(r.width / 2, 400);
-        const y = r.top + Math.min(r.height / 2, 300);
-        // Skip points covered by a floating window (the Surface Context window
-        // this probe opened sits over the page) or a dialog.
-        let target = null;
-        for (const fx of [0.5, 0.25, 0.75, 0.15])
-          for (const fy of [0.5, 0.3, 0.7]) {
-            if (target) break;
-            const el = document.elementFromPoint(r.left + r.width * fx, r.top + r.height * fy);
-            if (el && area.contains(el) && !el.closest("[data-window-panel],[role=dialog]")) target = el;
+        for (const fx of [0.3, 0.5, 0.15, 0.7])
+          for (const fy of [0.1, 0.3, 0.5, 0.05]) {
+            const x = r.left + r.width * fx;
+            const y = Math.min(window.innerHeight - 5, r.top + Math.max(12, r.height * fy));
+            const el = document.elementFromPoint(x, y);
+            if (el && area.contains(el) && !covered(el)) return { x, y };
           }
-        target = target || area;
-        target.dispatchEvent(
-          new MouseEvent("contextmenu", { bubbles: true, cancelable: true, button: 2, clientX: x, clientY: y }),
-        );
-        return true;
+        return { x: r.left + r.width / 2, y: Math.min(window.innerHeight - 5, r.top + 20) };
       });
+      await page.mouse.click(point.x, point.y, { button: "right" });
+      const menu = true;
       await page.waitForTimeout(2000);
       const menuText = await page.evaluate(() =>
         Array.from(document.querySelectorAll('[role="menu"]')).map((m) => m.textContent || "").join(" "),
