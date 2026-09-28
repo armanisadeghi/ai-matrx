@@ -1697,6 +1697,16 @@ body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
   --shell-fixed-alert-clearance: max(4.5rem, env(safe-area-inset-bottom, 0px));
 }
 
+/* Keep the default floating notice above table navigation. This moves only
+   the unpositioned dock; remembered user positions still belong to the user.
+   No table height, padding, or footer controls change. */
+:root:has(.shell-main [data-matrx-table-footer]) {
+  --admin-attention-anchor-bottom: calc(
+    1rem + var(--matrx-table-control-size, 2rem) + 0.5rem +
+    env(safe-area-inset-bottom, 0px)
+  );
+}
+
 :root[data-admin-attention="expanded"] {
   --shell-fixed-alert-clearance: max(14rem, 36dvh, env(safe-area-inset-bottom, 0px));
 }
