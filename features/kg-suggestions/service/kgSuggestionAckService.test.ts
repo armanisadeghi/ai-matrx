@@ -35,13 +35,25 @@ describe("ackSuggestions with the lifetime acknowledgement identity", () => {
     }, { onConflict: "user_id,suggestion_id" });
   });
 
-  it("keeps a concurrent upsert on the same lifetime identity", async () => {
-    upsert.mockResolvedValue({ error: null });
+  it("keeps simultaneous dismissals on the same lifetime identity", async () => {
+    const releases: Array<() => void> = [];
+    upsert.mockImplementation(
+      () => new Promise<{ error: null }>((resolve) => releases.push(() => resolve({ error: null }))),
+    );
 
-    await expect(ackSuggestions("member-7", ["suggestion-a", "suggestion-a"])).resolves.toBeUndefined();
+    const writes = Promise.all([
+      ackSuggestions("member-7", ["suggestion-a"]),
+      ackSuggestions("member-7", ["suggestion-a"]),
+    ]);
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(upsert).toHaveBeenCalledTimes(2);
+    expect(releases).toHaveLength(2);
     expect(upsert.mock.calls.every(([, options]) => options.onConflict === "user_id,suggestion_id")).toBe(true);
+
+    releases.forEach((release) => release());
+    await expect(writes).resolves.toEqual([undefined, undefined]);
   });
 
   it("makes a deleted acknowledgement live again after an explicit dismissal", async () => {

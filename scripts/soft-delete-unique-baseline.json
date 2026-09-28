@@ -351,6 +351,11 @@
       "ruled": "CI-FIX terminal identity correction, 2026-09-28 — canvasItemStateService reader and revive-on-save writer inspected"
     },
     {
+      "index": "rag.kg_suggestion_ack:kg_suggestion_ack_created_by_suggestion_key",
+      "reason": "(user_id, suggestion_id) is one lifetime acknowledgement identity, not a reusable name. The owner-only reader returns only deleted_at-null rows, while the matching upsert writes deleted_at null and explicitly revives that same row when its person dismisses again; it never claims an archived acknowledgement can be replayed as a new record.",
+      "ruled": "Owner lifetime-identity ruling, 2026-09-28 — verified revive upsert, owner RLS mirror, census 117 zero mismatch"
+    },
+    {
       "index": "extend.extension_auth_codes:extension_auth_codes_code_key",
       "reason": "code is a generated 128-bit, short-lived extension credential rather than a reusable human name. The full key protects the same credential while its row is retained; it does not claim lifetime non-replay after a physical deletion.",
       "ruled": "CI-FIX extension exchange correction, 2026-09-28 — generate-code and fail-closed atomic exchange paths inspected"
