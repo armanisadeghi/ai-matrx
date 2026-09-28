@@ -11,6 +11,7 @@ import { getAxisEntries } from "../data/registry";
 import { EDU_TOOLS } from "../data/tools";
 import { getCreatorSitemapPaths } from "../creators/sitemap";
 import { listPublishedLearnDocs } from "./queries";
+import { listSearchEngineIndexedRecords } from "@/lib/seo/search-engine-indexed.server";
 
 export interface SitemapPath {
   path: string;
@@ -43,8 +44,15 @@ export async function getEducationSitemapPaths(): Promise<SitemapPath[]> {
   }
 
   add(eduHref(EDU_LEARN_SEGMENT), "weekly", "0.7");
-  const docs = await listPublishedLearnDocs();
+  // THE INDEXED SWITCH (access ladder T-12): only learn docs whose "Indexed by search
+  // engines" resolves on (the creator's choice, else the learn_doc type knob).
+  const [docs, indexed] = await Promise.all([
+    listPublishedLearnDocs(),
+    listSearchEngineIndexedRecords("learn_doc"),
+  ]);
+  const indexedSlugs = new Set(indexed.map((r) => r.slug));
   for (const d of docs) {
+    if (!indexedSlugs.has(d.slug)) continue;
     add(eduHref(EDU_LEARN_SEGMENT, d.slug), "monthly", "0.6");
   }
 

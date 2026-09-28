@@ -39,6 +39,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { SearchEngineIndexedSwitch } from "@/features/sharing/indexed/SearchEngineIndexedSwitch";
 import { Skeleton } from "@ai-matrx/design-system";
 import {
   Select,
@@ -396,8 +397,14 @@ export function ShowManageClient({ showId }: { showId: string }) {
                   ) : (
                     <Lock className="h-3.5 w-3.5 text-muted-foreground" />
                   )}
-                  {isPublished ? "Public — anyone with the link can listen" : "Private"}
+                  {isPublished ? "Published to the web — anyone can listen" : "Not published"}
                 </Label>
+                <SearchEngineIndexedSwitch
+                  className="ml-auto"
+                  resourceType="pc_show"
+                  resourceId={show.id}
+                  publishedHint={isPublished}
+                />
               </div>
             </div>
           </div>

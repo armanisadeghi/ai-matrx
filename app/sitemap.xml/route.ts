@@ -3,6 +3,63 @@ import { EDU_ORIGIN } from '@/features/education/constants'
 import { getEducationSitemapPaths } from '@/features/education/publishing/sitemap'
 import { MODULE_LANDING_DIRECTORY } from '@/features/auth/components/module-landing/landings/directory'
 import { MARKETING_PUBLIC_TOOLS } from '@/features/marketing/lib/marketing-nav'
+import { listSearchEngineIndexedRecords } from '@/lib/seo/search-engine-indexed.server'
+import { getScriptSupabaseClient } from '@/utils/supabase/getScriptClient'
+
+/**
+ * THE INDEXED SWITCH (access ladder T-12): every published record in the sitemap comes from
+ * `platform.search_engine_indexed_records`, which returns only records that are published to
+ * the web AND indexed (the creator's choice, else the type knob). A record switched off
+ * leaves the sitemap on the next read. Anyone-link and secure-link pages never appear.
+ */
+async function getIndexedRecordUrls(baseUrl: string) {
+  const [episodes, shows, articles, apps, canvases, flashcards, notes, templates] =
+    await Promise.all([
+      listSearchEngineIndexedRecords('pc_episode'),
+      listSearchEngineIndexedRecords('pc_show'),
+      listSearchEngineIndexedRecords('pc_article'),
+      listSearchEngineIndexedRecords('app'),
+      listSearchEngineIndexedRecords('shared_canvas_item'),
+      listSearchEngineIndexedRecords('fc_set'),
+      listSearchEngineIndexedRecords('note'),
+      listSearchEngineIndexedRecords('message_template'),
+    ])
+  const out: { loc: string; changefreq: string; priority: string }[] = []
+  for (const r of [...shows, ...episodes]) {
+    out.push({ loc: `${baseUrl}/podcast/${encodeURIComponent(r.slug ?? r.id)}`, changefreq: 'weekly', priority: '0.7' })
+  }
+  // A blog post lives at its episode's address: /podcast/<episode slug>/blog.
+  if (articles.length) {
+    const sb = getScriptSupabaseClient()
+    const { data: arts, error } = await sb
+      .schema('podcast')
+      .from('pc_articles')
+      .select('id,episode_id,kind')
+      .in('id', articles.map((a) => a.id))
+      .eq('kind', 'blog')
+    if (error) throw new Error(`[sitemap] blog posts: ${error.message}`)
+    const episodeIds = [...new Set((arts ?? []).map((a) => a.episode_id).filter(Boolean))] as string[]
+    if (episodeIds.length) {
+      const { data: eps, error: epErr } = await sb
+        .schema('podcast')
+        .from('pc_episodes')
+        .select('id,slug')
+        .in('id', episodeIds)
+        .eq('is_published', true)
+        .is('deleted_at', null)
+      if (epErr) throw new Error(`[sitemap] blog episodes: ${epErr.message}`)
+      for (const e of eps ?? []) {
+        out.push({ loc: `${baseUrl}/podcast/${encodeURIComponent(e.slug ?? e.id)}/blog`, changefreq: 'monthly', priority: '0.6' })
+      }
+    }
+  }
+  for (const r of apps) out.push({ loc: `${baseUrl}/p/${encodeURIComponent(r.slug ?? r.id)}`, changefreq: 'monthly', priority: '0.5' })
+  for (const r of canvases) out.push({ loc: `${baseUrl}/canvas/shared/${r.id}`, changefreq: 'monthly', priority: '0.5' })
+  for (const [type, rows] of [['fc_set', flashcards], ['note', notes], ['message_template', templates]] as const) {
+    for (const r of rows) out.push({ loc: `${baseUrl}/p/e/${type}/${r.id}`, changefreq: 'monthly', priority: '0.4' })
+  }
+  return out
+}
 
 // Revalidate hourly; a learn-doc publish busts the education reads via tag.
 export const revalidate = 3600
@@ -73,6 +130,8 @@ export async function GET() {
     priority: '0.8',
   }))
 
+  const recordUrls = await getIndexedRecordUrls(baseUrl)
+
   const urls = [
     ...staticUrls,
     { loc: `${baseUrl}/features`, changefreq: 'weekly', priority: '0.8' },
@@ -80,6 +139,7 @@ export async function GET() {
     ...seoToolUrls,
     ...moduleLandingUrls,
     ...educationUrls,
+    ...recordUrls,
   ]
   const now = new Date().toISOString()
 

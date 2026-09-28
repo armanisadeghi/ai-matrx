@@ -21,6 +21,10 @@ import {
   BUILD_PROFILE,
   DEPLOYMENT_SURFACES,
 } from "@/lib/deployment/surfaces";
+import {
+  applyRecordRobotsHeader,
+  startRecordRobotsLookup,
+} from "@/lib/seo/record-robots-header";
 
 // ---------------------------------------------------------------------------
 // Edu host gate — learn.aimatrx.com (Arman's decision, 2026-07)
@@ -331,7 +335,11 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     return NextResponse.next({ request });
   }
   const capture = prepareAcquisitionCapture(request, event);
+  // THE INDEXED SWITCH (access ladder T-12): a published-record page that is not indexed
+  // carries X-Robots-Tag. Started before the session pass so the two run side by side.
+  const robotsLookup = startRecordRobotsLookup(request.nextUrl.pathname);
   const response = await routeRequest(request);
+  await applyRecordRobotsHeader(robotsLookup, response);
   return applyAcquisitionCookie(response, capture, request);
 }
 

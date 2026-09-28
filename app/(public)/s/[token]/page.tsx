@@ -1,3 +1,4 @@
+import { NOT_INDEXED_ROBOTS } from "@/lib/seo/search-engine-indexed";
 import type { Metadata } from "next";
 import { cache } from "react";
 import { createClient } from "@/utils/supabase/server";
@@ -28,14 +29,14 @@ export async function generateMetadata({
   const { token } = await params;
   const result = await resolve(token);
   if (!result.success) {
-    return { title: "Shared link", robots: { index: false } };
+    return { title: "Shared link", robots: NOT_INDEXED_ROBOTS };
   }
   const meta = resolveShareLensMeta(result);
   return {
     // The root layout's title template adds the brand.
     title: meta.title,
     description: meta.description,
-    robots: { index: false }, // link-shared, not publicly indexable
+    robots: NOT_INDEXED_ROBOTS, // an Anyone link is NEVER indexed (access ladder)
     openGraph: {
       title: meta.title,
       description: meta.description,

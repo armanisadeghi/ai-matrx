@@ -32,6 +32,7 @@ import {
   type ShareCapabilities,
 } from "@/utils/permissions/shareLinks";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { SearchEngineIndexedSwitch } from "@/features/sharing/indexed/SearchEngineIndexedSwitch";
 import {
   humanPublicState,
   sharingLocation,
@@ -417,7 +418,18 @@ export function PublicAccessTab({
                 role="radiogroup"
                 aria-label="Who can reach this item"
               >
-                <p className="text-xs font-medium">Who can reach this</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-medium">Who can reach this</p>
+                  {/* A type with no page of its own here still has its web address elsewhere
+                      (a podcast, an app); its indexed switch rides this line (T-12). */}
+                  {visibility === "public" && !publicUrl && (
+                    <SearchEngineIndexedSwitch
+                      resourceType={resourceType}
+                      resourceId={resourceId}
+                      publishedHint={isPublic}
+                    />
+                  )}
+                </div>
                 <div className="grid gap-1.5">
                   {VISIBILITY_CHOICES.map((choice) => {
                     const Icon = choice.icon;
@@ -471,7 +483,15 @@ export function PublicAccessTab({
 
               {isPublic && publicUrl && (
                 <div className="space-y-1.5 p-3 bg-muted/30 rounded-lg border">
-                  <p className="text-xs font-medium">Public page</p>
+                  {/* "Indexed by search engines" sits on this same line (access ladder T-12). */}
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-medium">Published to the web</p>
+                    <SearchEngineIndexedSwitch
+                      resourceType={resourceType}
+                      resourceId={resourceId}
+                      publishedHint={isPublic}
+                    />
+                  </div>
                   <div className="flex items-center gap-1.5 rounded-md border bg-background p-1.5">
                     <Input
                       readOnly
@@ -511,6 +531,14 @@ export function PublicAccessTab({
                         <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                         <h3 className="text-sm font-medium">{heading}</h3>
                       </>
+                    )}
+                    {isPublic && !publicUrl && (
+                      <SearchEngineIndexedSwitch
+                        className="ml-auto"
+                        resourceType={resourceType}
+                        resourceId={resourceId}
+                        publishedHint={isPublic}
+                      />
                     )}
                     <span className="ml-auto opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
                       <CopyButtons
@@ -557,7 +585,15 @@ export function PublicAccessTab({
 
               {isPublic && publicUrl && (
                 <div className="space-y-1.5 p-3 bg-muted/30 rounded-lg border">
-                  <p className="text-xs font-medium">Public page</p>
+                  {/* "Indexed by search engines" sits on this same line (access ladder T-12). */}
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-medium">Published to the web</p>
+                    <SearchEngineIndexedSwitch
+                      resourceType={resourceType}
+                      resourceId={resourceId}
+                      publishedHint={isPublic}
+                    />
+                  </div>
                   <div className="flex items-center gap-1.5 rounded-md border bg-background p-1.5">
                     <Input
                       readOnly

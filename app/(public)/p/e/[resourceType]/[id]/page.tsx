@@ -5,6 +5,12 @@ import { getShareableResource } from "@/utils/permissions/registry";
 import { PUBLIC_LANE_TYPES } from "@/utils/permissions/publicLane";
 import { isFullUuid } from "@/utils/supabase-search";
 import { loadPublicResource } from "../../loadPublicResource";
+import {
+  NOT_INDEXED_ROBOTS,
+  SEARCH_ENGINE_INDEXED_TYPES,
+  type SearchEngineIndexedType,
+} from "@/lib/seo/search-engine-indexed";
+import { searchEngineRobots } from "@/lib/seo/search-engine-indexed.server";
 import { PublicResourceView } from "./PublicResourceView";
 
 /**
@@ -29,7 +35,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const entry = getShareableResource(resourceType);
     return {
       title: `${entry?.displayLabel ?? "Public resource"} · AI Matrx`,
-      robots: { index: false },
+      robots: NOT_INDEXED_ROBOTS,
     };
   }
   const description =
@@ -39,7 +45,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `${resource.title} · AI Matrx`,
     description,
     alternates: { canonical },
-    robots: { index: true, follow: true },
+    // THE INDEXED SWITCH (access ladder T-12): published to the web is not the same as
+    // indexed. The creator's choice, else the type knob, answers — never this page.
+    robots: SEARCH_ENGINE_INDEXED_TYPES.has(resource.resourceType)
+      ? await searchEngineRobots([
+          { type: resource.resourceType as SearchEngineIndexedType, key: resource.resourceId },
+        ])
+      : NOT_INDEXED_ROBOTS,
     openGraph: {
       title: resource.title,
       description,

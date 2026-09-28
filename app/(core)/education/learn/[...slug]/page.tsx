@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { NOT_INDEXED_ROBOTS } from "@/lib/seo/search-engine-indexed";
+import { searchEngineRobots } from "@/lib/seo/search-engine-indexed.server";
 import { notFound } from "next/navigation";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import { LearnArticle } from "@/features/education/components/LearnArticle";
@@ -24,15 +26,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const doc = await getPublishedLearnDoc(slug.join("/"));
   if (!doc) {
-    return createDynamicRouteMetadata("/education", {
+    const missing = createDynamicRouteMetadata("/education", {
       title: "Study guide",
       description: "AI Matrx Education",
       letter: "Lr",
       metadataBase: EDU_ORIGIN,
     });
+    return { ...missing, robots: NOT_INDEXED_ROBOTS };
   }
   const slugPath = slug.join("/");
-  return createDynamicRouteMetadata("/education", {
+  const meta = createDynamicRouteMetadata("/education", {
     title: doc.title,
     description: doc.summary,
     letter: doc.letter,
@@ -41,6 +44,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ogImage: `/education/learn/og/${slugPath}`,
     metadataBase: EDU_ORIGIN,
   });
+  // THE INDEXED SWITCH (access ladder T-12): learning articles default to indexed.
+  return { ...meta, robots: await searchEngineRobots([{ type: "learn_doc", key: slugPath }]) };
 }
 
 export default async function LearnArticlePage({ params }: Props) {

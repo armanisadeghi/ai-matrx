@@ -9,6 +9,8 @@ import { publiclyServableEpisodes } from "@/features/podcasts/publicGate";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import type { Metadata } from "next";
+import { NOT_INDEXED_ROBOTS } from "@/lib/seo/search-engine-indexed";
+import { searchEngineRobots } from "@/lib/seo/search-engine-indexed.server";
 import { PodcastEpisodePage } from "@/features/podcasts/components/player/PodcastEpisodePage";
 import { PodcastShowPage } from "@/features/podcasts/components/player/PodcastShowPage";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -95,7 +97,7 @@ export async function generateMetadata({
   // Neutral: an unresolved public slug may be an unpublished episode rather
   // than a nonexistent one, and the tab title must not pick.
   if (!result) {
-    return { title: "Podcast" };
+    return { title: "Podcast", robots: NOT_INDEXED_ROBOTS };
   }
 
   if (result.type === "episode") {
@@ -120,6 +122,8 @@ export async function generateMetadata({
     return {
       title: `${title} | Podcast`,
       description,
+      // THE INDEXED SWITCH (access ladder T-12): episodes default to indexed.
+      robots: await searchEngineRobots([{ type: "pc_episode", key: ep.id }]),
       openGraph: {
         title,
         description,
@@ -143,6 +147,7 @@ export async function generateMetadata({
   return {
     title: `${show.title} | Podcast`,
     description: showDescription,
+    robots: await searchEngineRobots([{ type: "pc_show", key: show.id }]),
     openGraph: {
       title: show.title,
       description: showDescription,

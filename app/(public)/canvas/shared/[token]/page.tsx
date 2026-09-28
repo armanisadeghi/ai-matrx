@@ -10,6 +10,8 @@ import { resolveSharedCanvas } from "@/features/canvas/shared/resolveSharedCanva
 import { markdownToPlainText } from "@/lib/markdown/plain-text";
 import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
 import { SharedCanvasViewClient } from "./SharedCanvasViewClient";
+import { NOT_INDEXED_ROBOTS } from "@/lib/seo/search-engine-indexed";
+import { searchEngineRobots } from "@/lib/seo/search-engine-indexed.server";
 
 /** One read per request: generateMetadata and the page share it. */
 const loadSharedCanvas = cache(async (token: string) =>
@@ -32,6 +34,7 @@ export async function generateMetadata({
     return {
       title: "Shared Canvas | AI Matrx",
       description: "View and interact with shared canvas content on AI Matrx.",
+      robots: NOT_INDEXED_ROBOTS,
     };
   }
 
@@ -103,6 +106,10 @@ export async function generateMetadata({
     alternates: {
       canonical: url,
     },
+    // THE INDEXED SWITCH (access ladder T-12). A uuid here is the canvas's own address and
+    // follows the switch (shared canvases default to not indexed); any other token is an
+    // Anyone link, which the resolver answers as "no published record" -> never indexed.
+    robots: await searchEngineRobots([{ type: "shared_canvas_item", key: token }]),
   };
 }
 

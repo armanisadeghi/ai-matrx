@@ -5,6 +5,8 @@ import { AgentAppPublicRenderer } from "@/features/agent-apps/components/AgentAp
 import { PUBLIC_AGENT_APP_SURFACE_NAME } from "@/features/surfaces/manifests/public-agent-app.manifest";
 import { getAgentAppIconsMetadata } from "@/features/agent-apps/utils/favicon-metadata";
 import type { Metadata } from "next";
+import { NOT_INDEXED_ROBOTS } from "@/lib/seo/search-engine-indexed";
+import { searchEngineRobots } from "@/lib/seo/search-engine-indexed.server";
 import type { PublicAgentApp } from "@/features/agent-apps/types";
 import { CanvasSideSheet } from "@/features/canvas/core/CanvasSideSheet";
 import { MadeWithAiMatrx } from "@/components/matrx/MadeWithAiMatrx";
@@ -60,9 +62,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const agentAppMeta = await resolveAgentAppMetadata(slug);
-  if (!agentAppMeta) return { title: "App | AI Matrx", robots: { index: false } };
+  if (!agentAppMeta) return { title: "App | AI Matrx", robots: NOT_INDEXED_ROBOTS };
   return {
     title: `${agentAppMeta.name} | AI Matrx Apps`,
+    // THE INDEXED SWITCH (access ladder T-12): apps default to not indexed.
+    robots: await searchEngineRobots([{ type: "app", key: slug }]),
     description:
       agentAppMeta.tagline ||
       agentAppMeta.description ||

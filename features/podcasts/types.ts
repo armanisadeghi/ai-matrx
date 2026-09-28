@@ -273,13 +273,20 @@ type SignedOutReadable<T> = Omit<
   | "version"
   | "metadata"
   | "custom_fields"
+  // Access ladder T-12: read only through platform.search_engine_indexed(), never by a page.
+  | "search_engine_indexed"
 > &
   Partial<
     Pick<
       T,
       Extract<
         keyof T,
-        "created_by" | "updated_by" | "organization_id" | "version" | "metadata"
+        | "created_by"
+        | "updated_by"
+        | "organization_id"
+        | "version"
+        | "metadata"
+        | "search_engine_indexed"
       >
     >
   >;

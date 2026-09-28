@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { SearchEngineIndexedSwitch } from "@/features/sharing/indexed/SearchEngineIndexedSwitch";
 import {
   Select,
   SelectContent,
@@ -250,7 +251,15 @@ export function ShowForm({ show, isNew, onSaved, onCancel }: ShowFormProps) {
           checked={form.is_published}
           onCheckedChange={(v) => set("is_published", v)}
         />
-        <Label htmlFor="show-published">Published (visible to public)</Label>
+        <Label htmlFor="show-published">Published to the web</Label>
+        {show?.id && (
+          <SearchEngineIndexedSwitch
+            className="ml-auto"
+            resourceType="pc_show"
+            resourceId={show.id}
+            publishedHint={form.is_published}
+          />
+        )}
       </div>
 
       <div className="flex gap-2 pt-2">
@@ -670,7 +679,15 @@ export function EpisodeForm({
           checked={form.is_published}
           onCheckedChange={(v) => set("is_published", v)}
         />
-        <Label htmlFor="ep-published">Published (visible to public)</Label>
+        <Label htmlFor="ep-published">Published to the web</Label>
+        {episode?.id && (
+          <SearchEngineIndexedSwitch
+            className="ml-auto"
+            resourceType="pc_episode"
+            resourceId={episode.id}
+            publishedHint={form.is_published}
+          />
+        )}
       </div>
 
       <div className="flex gap-2 pt-2">

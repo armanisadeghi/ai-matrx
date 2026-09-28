@@ -7,6 +7,8 @@ import { publiclyServableEpisodes } from "@/features/podcasts/publicGate";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import type { Metadata } from "next";
+import { NOT_INDEXED_ROBOTS } from "@/lib/seo/search-engine-indexed";
+import { searchEngineRobots } from "@/lib/seo/search-engine-indexed.server";
 import { PodcastBlogPage } from "@/features/podcasts/components/player/PodcastBlogPage";
 import type { PcArticleDisplayRow, PcEpisodeWithShow } from "@/features/podcasts/types";
 import { mapPcEpisodeWithShowRow } from "@/features/podcasts/types";
@@ -67,7 +69,7 @@ export async function generateMetadata({
   // Nothing resolved. We can't tell "no such slug" from "not published to
   // you", so the tab title stays neutral; the route itself still 404s, which
   // is the correct answer for a public URL that resolves to nothing.
-  if (!result) return { title: "Blog | Podcast" };
+  if (!result) return { title: "Blog | Podcast", robots: NOT_INDEXED_ROBOTS };
 
   const { episode, article } = result;
   const showName = episode.show?.title;
@@ -86,6 +88,8 @@ export async function generateMetadata({
   return {
     title: `${title} | Blog`,
     description,
+    // THE INDEXED SWITCH (access ladder T-12): blog posts default to indexed.
+    robots: await searchEngineRobots([{ type: "pc_article", key: article.id }]),
     alternates: { canonical },
     openGraph: {
       title,
