@@ -4621,6 +4621,17 @@ export interface WorkflowPlanNodeTypeRecommenderOffer {
   plan_json: string;
   catalog_json: string;
   graph_context: string;
+  plan_id: string;
+  plan_step_name: string;
+  plan_intent: string;
+  plan_notes: string;
+  input_summary: string;
+  output_summary: string;
+  workflow_name: string;
+  upstream_steps: string[];
+  downstream_steps: string[];
+  catalog_node_types: string[];
+  catalog_count: number;
 }
 
 /** Offered shape of provision `workflow.plan_notes_writer` (kind `workflow.plan_notes_writer.offer`). */
@@ -4630,6 +4641,15 @@ export interface WorkflowPlanNotesWriterOffer {
   current_notes: string;
   rough_input: string;
   graph_context: string;
+  plan_id: string;
+  plan_step_name: string;
+  plan_intent: string;
+  plan_notes: string;
+  input_summary: string;
+  output_summary: string;
+  workflow_name: string;
+  upstream_steps: string[];
+  downstream_steps: string[];
 }
 
 /** Offered shape of provision `workflow.plan_room` (kind `workflow.plan_room.offer`). */
