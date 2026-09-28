@@ -1670,7 +1670,12 @@ export function KnowledgeHubPage({
             sections={triageView ? triageSections : state.view.kind === "favorites" ? [] : results.sections}
             hits={hits}
             handlers={handlers}
-            emptySentence={emptySentence(state.view, title, viewFiltered)}
+            emptySentence={emptySentence(
+              state.view,
+              title,
+              // Facets and Stage narrow outside the query: they are filters too.
+              viewFiltered || hasFacetSelection(facetSel) || state.stage.length > 0,
+            )}
             onShowMore={triageView ? triage.showMore : results.showMore}
             onRetry={triageView ? triage.refresh : results.retry}
             stage={stageColumn}
