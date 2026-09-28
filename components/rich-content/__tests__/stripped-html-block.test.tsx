@@ -25,6 +25,8 @@ const AUDIT = [
   "<nav>",
   "2. Keep one canonical per page.",
   "3. Point duplicates at it.",
+  "",
+  "<header>",
   "| Page | Canonical |",
   "| --- | --- |",
   "| /bays?sort=asc | /bays/ |",
@@ -36,10 +38,11 @@ describe("a sanitizer-stripped HTML block ends at its own line", () => {
   it("shows the stripped tags (as text, or the splitter's XML card), never swallowing the lines under them", () => {
     expect(html).toMatch(/&lt;link rel=|data-xml-root-name="true"[^>]*>link</);
     expect(html).toContain("&lt;nav&gt;");
+    expect(html).toContain("&lt;header&gt;");
     expect(html).toContain("Then check the site menu:");
   });
 
-  it("renders the list under <nav> as a list (starting at 2) and the table as a table", () => {
+  it("renders the list under <nav> as a list (starting at 2) and the table under <header> as a table", () => {
     expect(html).toMatch(/<ol[^>]*start="2"/);
     expect((html.match(/<li[^>]*>/g) ?? []).length).toBe(2);
     expect(html).toMatch(/<table[\s\S]*\/bays\?sort=asc[\s\S]*<\/table>/);
