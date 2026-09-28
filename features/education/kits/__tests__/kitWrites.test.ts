@@ -18,6 +18,12 @@ describe("kit writes", () => {
       .toThrow(/changed since it was reviewed/);
   });
 
+  it("refuses a token captured before a kit rename", () => {
+    const token = kitMembershipFingerprint(kit);
+    const renamed = { ...kit, artifacts: kit.artifacts.map((artifact) => ({ ...artifact, sourceTitle: "Renamed lecture" })) };
+    expect(() => requireFreshKitMembership(renamed, token)).toThrow(/changed since it was reviewed/);
+  });
+
   it("accepts a batch that deletes two distinct kits", () => {
     const other = { ...kit, sourceId: "source-2", title: "Second lecture" };
     const plans = parseKitDeletes([

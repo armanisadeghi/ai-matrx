@@ -77,7 +77,7 @@ export function kitArtifactKey(
 /** A deterministic concurrency token for the association-backed kit membership. */
 export function kitMembershipFingerprint(kit: Pick<StudyKit, "artifacts">): string {
   return kit.artifacts
-    .map((artifact) => `${artifact.edgeId}:${artifact.createdAt}`)
+    .map((artifact) => `${artifact.edgeId}:${artifact.createdAt}:${artifact.membershipRole ?? "source"}:${artifact.sourceTitle ?? ""}:${artifact.kitHidden ? "hidden" : "shown"}`)
     .sort()
     .join("|");
 }

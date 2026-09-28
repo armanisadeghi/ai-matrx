@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
-import { deleteKit, listKits, kitHref, renameKit, type StudyKit } from "../kitService";
+import { deleteKit, kitMembershipFingerprint, listKits, kitHref, renameKit, type StudyKit } from "../kitService";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -129,7 +129,7 @@ export function KitsHome() {
               source_id: kit.sourceId,
               source_type: kit.sourceType,
             title: kit.title,
-            membership_fingerprint: kit.artifacts.map((artifact) => `${artifact.edgeId}:${artifact.createdAt}`).sort().join("|"),
+            membership_fingerprint: kitMembershipFingerprint(kit),
               href: kitHref(kit.sourceType, kit.sourceId),
               artifact_count: kit.artifacts.length,
               formats: [

@@ -291,7 +291,7 @@ export function KitHub({
     return collectionWriteHandlers({
       plural: "kits", singular: "kit",
       update: {
-        parse: (value) => parseKitUpdates(value, [kit]),
+        parse: (value) => { if (writing || (managing && draftTitle !== kit.title)) throw new Error("Save or cancel your kit title edits before applying agent changes."); return parseKitUpdates(value, [kit]); },
         run: async (plan) => {
           await renameKit(plan.kit, plan.title, plan.fingerprint);
           setRefreshKey((key) => key + 1);
@@ -301,7 +301,7 @@ export function KitHub({
         changedOf: () => ["title"],
       },
       delete: {
-        parse: (value) => parseKitDeletes(value, [kit]),
+        parse: (value) => { if (writing || (managing && draftTitle !== kit.title)) throw new Error("Save or cancel your kit title edits before applying agent changes."); return parseKitDeletes(value, [kit]); },
         run: async (plan) => {
           await deleteKit(plan.kit, plan.fingerprint);
           router.push("/education/kits");
