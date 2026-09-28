@@ -251,7 +251,11 @@ export function HubListing({
           {state.phase === "reading" ? "reading…" : state.phase === "refused" ? "—" : count}
         </span>
         <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-          {sharedOnly && capability.whatWhenSharedOnly ? capability.whatWhenSharedOnly : capability.what}
+          {inOrganization && capability.whatInOrganization
+            ? capability.whatInOrganization(inOrganization)
+            : sharedOnly && capability.whatWhenSharedOnly
+              ? capability.whatWhenSharedOnly
+              : capability.what}
         </span>
       </button>
 

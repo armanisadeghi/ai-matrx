@@ -376,6 +376,10 @@ describe("the data home · the organization dropdown", () => {
     expect(doorAskedFor).not.toContain(null);
     expect(tableRows().map((r) => r.title)).toEqual(titles);
     expect(tableRows().every((r) => r.organization === "Harbor Dental Group")).toBe(true);
+    // The heading says the one organization, never "every organization you belong to".
+    const heading = container.querySelector('[data-hub-listing-toggle="tables"]')?.textContent ?? "";
+    expect(heading).toMatch(/Every table you can open in Harbor Dental Group/);
+    expect(heading).not.toMatch(/every organization you belong to/);
   });
 
   it("under a Kind, the chosen organization still holds", async () => {

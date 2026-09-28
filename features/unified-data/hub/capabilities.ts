@@ -105,6 +105,12 @@ export interface HubCapability {
    * 1 — Everything this organization keeps records in" over an organization keeping 26).
    */
   whatWhenSharedOnly?: string | undefined;
+  /**
+   * The heading sentence when the data home's organization dropdown names ONE organization
+   * (DATA-HOME-2): "in every organization you belong to" beside that organization's own count is
+   * false.
+   */
+  whatInOrganization?: ((organizationName: string) => string) | undefined;
   /** The store door this listing reads, named on screen so nobody has to guess. */
   door: string;
   /** Which kind `custom.hub_changed_by` answers for these, or null when the store cannot say. */
@@ -233,6 +239,8 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     title: "Tables",
     // THE COUNT BESIDE IT IS WHAT THIS PERSON CAN OPEN, so the sentence says exactly that.
     what: "Every table you can open, in every organization you belong to — yours and the ones the app keeps.",
+    whatInOrganization: (organizationName) =>
+      `Every table you can open in ${organizationName} — yours and the ones the app keeps.`,
     whatWhenSharedOnly:
       "The tables shared with you here. This organization shows each member only what is shared with them.",
     empty: "No tables yet. Press New table above, or start from an example.",
