@@ -11,6 +11,7 @@ import {
   scheduleMinute,
   scheduleOptions,
   toDeclareBody,
+  SAVED_BASIS,
   USER_BASIS,
 } from "./model";
 
@@ -140,6 +141,7 @@ describe("monitor setup model", () => {
 
   it("labels each source the way the brief names it", () => {
     expect(basisChip(USER_BASIS)).toBe("you said it");
+    expect(basisChip(SAVED_BASIS)).toBe("saved");
     expect(basisChip({ kind: "site_page", ref: "page:1" })).toBe("your site");
     expect(basisChip({ kind: "named_entity", ref: "fact:1" })).toBe(
       "named company",
