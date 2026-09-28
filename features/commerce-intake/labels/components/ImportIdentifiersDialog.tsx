@@ -292,6 +292,7 @@ export function ImportIdentifiersDialog({
               <p>
                 Matched {report.matched} · written {report.written} · refused as
                 duplicates {report.duplicates} · unmatched{" "}
+                {/* read-gate-exempt: figures of the import the person just ran; report is set only when that import returned */}
                 {report.unmatched.length}
               </p>
               {report.unmatched.length > 0 && (

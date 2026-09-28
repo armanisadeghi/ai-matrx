@@ -287,6 +287,9 @@ export function LabelBatchDetail({
       setBatch(await markBatchPrinted(batch));
     } catch (err) {
       console.error("[commerce-labels] mark printed failed", err);
+      toast.error("Couldn't record this batch as printed", {
+        description: err instanceof Error ? err.message : String(err),
+      });
     }
   }, [batch]);
 

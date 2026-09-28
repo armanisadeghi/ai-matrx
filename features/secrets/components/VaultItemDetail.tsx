@@ -205,6 +205,7 @@ export function VaultItemDetail({
     try {
       await actions.updateItem(item.id, body);
       setEditSessionBaseline(submittedSnapshot);
+    // read-gate-exempt: a write, and useVault's run() already toasts its failure; drafts stay in place for a retry
     } catch {
       // `useVault` already reports the failure. Keep every draft in place so
       // the person can correct the issue and retry without re-entering it.

@@ -485,6 +485,7 @@ export function VaultLoginExportDialog({
                 <section className="space-y-3 rounded-lg border border-border p-3">
                   <div>
                     <p className="font-medium">Export preview</p>
+                    {/* read-gate-exempt: figures of the export preview the person just requested; preview is set only when that call returned */}
                     <p className="text-sm text-muted-foreground">{eligible} eligible of {preview.items.length} selected. We will recheck the selection before creating the file.</p>
                   </div>
                   <ul className="space-y-2 text-sm">

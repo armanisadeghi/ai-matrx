@@ -21,6 +21,7 @@ import { selectInstanceResources } from "@/features/agents/redux/execution-syste
 import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { makeSelectAssembledRequest } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import type { AssembledAgentStartRequest } from "@/features/agents/types/request.types";
+import { toast } from "@/lib/toast";
 
 interface ResourceDebugIndicatorProps {
   /** Agent execution conversation id (legacy admin debug still stores this as `runId`). */
@@ -141,7 +142,9 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
     } catch (error) {
-      console.error("Failed to copy:", error);
+      toast.error("Couldn't copy to the clipboard", {
+        description: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 
@@ -151,7 +154,9 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
       setCopiedIndex(-1);
       setTimeout(() => setCopiedIndex(null), 2000);
     } catch (error) {
-      console.error("Failed to copy:", error);
+      toast.error("Couldn't copy to the clipboard", {
+        description: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 

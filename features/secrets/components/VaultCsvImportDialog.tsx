@@ -803,6 +803,7 @@ export function VaultCsvImportDialog({
           {preview && (
             <div className="space-y-3">
               <p className="text-sm">
+                {/* read-gate-exempt: rows parsed in this browser from the CSV file the person chose, not a server read */}
                 {preview.rows.length} records ready for review.{" "}
                 {invalidRows
                   ? `${invalidRows} invalid rows will be skipped. `

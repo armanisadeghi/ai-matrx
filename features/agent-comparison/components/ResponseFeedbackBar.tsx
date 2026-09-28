@@ -170,6 +170,9 @@ function ResponseFeedbackBarInner({
   const [commentOpen, setCommentOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [savedRequestId, setSavedRequestId] = useState<string | null>(null);
+  // Earlier feedback that couldn't be read is said in the status slot — never
+  // an unrated-looking bar the person might rate over.
+  const [feedbackReadError, setFeedbackReadError] = useState<unknown>(null);
 
   // Hydrate from server when the request id changes (a new response landed).
   useEffect(() => {
@@ -216,9 +219,11 @@ function ResponseFeedbackBarInner({
           dispatch(setFeedbackRank({ conversationId, rank: null }));
           dispatch(setFeedbackSnapshot({ conversationId, snapshot: null }));
         }
+        if (!cancelled) setFeedbackReadError(null);
       })
-      .catch(() => {
-        // silent — feedback bar shouldn't yell if the table is unreachable
+      .catch((err: unknown) => {
+        // Quietly, in the bar's own status slot — but said.
+        if (!cancelled) setFeedbackReadError(err);
       });
     return () => {
       cancelled = true;
@@ -244,7 +249,7 @@ function ResponseFeedbackBarInner({
             );
           }
         })
-        .catch(() => {});
+        .catch((err: unknown) => setFeedbackReadError(err));
     };
     window.addEventListener("agent-comparison:feedback-saved", handler);
     return () =>
@@ -458,6 +463,11 @@ function ResponseFeedbackBarInner({
         <div className="w-px h-4 bg-border mx-0.5" />
         {busy ? (
           <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+        ) : feedbackReadError != null ? (
+          <span className="text-[10px] text-destructive">
+            earlier feedback couldn&apos;t load{" "}
+            <ErrorAlchemyMenu error={feedbackReadError} size="xs" operation="Load your earlier feedback" />
+          </span>
         ) : savedRequestId === requestId ? (
           <span className="text-[10px] text-emerald-500/80">saved</span>
         ) : (
