@@ -1,4 +1,3 @@
--- draft: udt-rows-soft-delete lane — the "row is in Trash" refusal answers HTTP 409 Conflict, not 500 (rehearsed on the clone; the chair removes this line and applies)
 -- based-on: public.udt_upsert_row(uuid, uuid, jsonb) 0898cf6049b7d3ee3bf3d754c09b201f95de322ddccc29ee94cf96143e2ba848
 -- based-on: public.udt_upsert_cell(uuid, uuid, text, jsonb) 646342582fdb62626b02b630a057c922e64abf8012ae0bc87e146c06d4a0b902
 --
