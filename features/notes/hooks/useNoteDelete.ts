@@ -121,9 +121,9 @@ export function useNoteDelete({
     let ok = false;
     try {
       ok = await confirm({
-        title: `Delete “${title}”?`,
+        title: `Move “${title}” to Trash?`,
         description,
-        confirmLabel: "Delete note",
+        confirmLabel: "Move to Trash",
         variant: "destructive",
       });
     } finally {

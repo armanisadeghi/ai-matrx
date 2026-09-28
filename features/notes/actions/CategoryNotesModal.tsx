@@ -414,7 +414,7 @@ export function CategoryNotesModal({
                                                         </Button>
                                                     )}
                                                     {allowDelete && (
-                                                        <Button size="sm" variant="ghost" onClick={() => handleDelete(selectedNote.id)} className="text-destructive" title="Delete">
+                                                        <Button size="sm" variant="ghost" onClick={() => handleDelete(selectedNote.id)} className="text-destructive" title="Move to Trash">
                                                             <Trash2 className="h-4 w-4" />
                                                         </Button>
                                                     )}
@@ -575,9 +575,9 @@ export function CategoryNotesModal({
                 onOpenChange={(open) => {
                     if (!open && !actionLoading) setDeleteTargetId(null);
                 }}
-                title="Delete note"
-                description="Are you sure you want to delete this?"
-                confirmLabel="Delete"
+                title="Move to Trash"
+                description="This note moves to Trash. You can restore it from Trash."
+                confirmLabel="Move to Trash"
                 variant="destructive"
                 busy={actionLoading}
                 onConfirm={confirmDelete}

@@ -322,7 +322,7 @@ export function NotesSidebar({
         {
             key: 'move',
             icon: FolderInput,
-            label: 'Move to Folder',
+            label: 'Move to folder…',
             description: 'Move to another folder',
             action: () => {
                 setMoveNoteData(note);

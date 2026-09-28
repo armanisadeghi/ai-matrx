@@ -292,7 +292,7 @@ export function NoteTabs({
             {
                 key: 'move-folder',
                 icon: FolderInput,
-                label: 'Move to Folder…',
+                label: 'Move to folder…',
                 description: 'Choose an existing folder or create a new one',
                 action: () => setMoveNoteId(noteId),
                 category: 'Actions',
@@ -522,7 +522,7 @@ export function NoteTabs({
                                                             <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
                                                         </div>
                                                     </TooltipTrigger>
-                                                    <TooltipContent>Delete</TooltipContent>
+                                                    <TooltipContent>Move to Trash</TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>
                                         </>

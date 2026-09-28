@@ -126,14 +126,14 @@ export async function deleteNoteAction(ctx: NoteMenuContext): Promise<void> {
   }
   if (!isNoteContentEmpty(body)) {
     const ok = await confirm({
-      title: "Delete note?",
+      title: "Move to Trash?",
       description: (
         <>
           &ldquo;{displayLabel(ctx.label)}&rdquo; will be moved to trash. You
           can restore it later.
         </>
       ),
-      confirmLabel: "Delete",
+      confirmLabel: "Move to Trash",
       variant: "destructive",
     });
     if (!ok) return;
@@ -220,7 +220,7 @@ export function buildNoteContextSections(
   items.push({
     kind: "submenu",
     id: "move",
-    label: "Move to Folder",
+    label: "Move to folder…",
     icon: FolderInput,
     children: moveChildren,
   });
@@ -230,14 +230,16 @@ export function buildNoteContextSections(
     {
       kind: "item",
       id: "delete",
-      label: "Delete",
+      label: "Move to Trash",
       icon: Trash2,
       destructive: true,
       onSelect: () => void deleteNoteAction(ctx),
     },
   );
 
-  return [{ id: "note-actions", label: displayLabel(ctx.label), items }];
+  // Shown DIRECTLY in the row menu, first — never folded under a submenu named
+  // after the note (the menu header already says "Note: <name>").
+  return [{ id: "note-actions", primary: true, items }];
 }
 
 export function buildNoteMenu(ctx: NoteMenuContext): ItemMenuConfig {
@@ -325,7 +327,7 @@ export function buildNoteMenu(ctx: NoteMenuContext): ItemMenuConfig {
           {
             id: "move",
             kind: "submenu" as const,
-            label: "Move to Folder",
+            label: "Move to folder…",
             icon: FolderInput,
             sections: [
               {
@@ -357,7 +359,7 @@ export function buildNoteMenu(ctx: NoteMenuContext): ItemMenuConfig {
         items: [
           {
             id: "delete",
-            label: "Delete",
+            label: "Move to Trash",
             icon: Trash2,
             tone: "destructive",
             onSelect: () => void deleteNoteAction(ctx),

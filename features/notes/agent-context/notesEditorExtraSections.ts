@@ -193,7 +193,7 @@ export function createNotesEditorExtraSections(
     {
       kind: "submenu",
       id: "move",
-      label: "Move to Folder",
+      label: "Move to folder…",
       icon: FolderInput,
       children: moveChildren,
     },

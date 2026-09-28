@@ -203,9 +203,9 @@ export function NoteSidebarBulkBar({
     const allEmpty = withBodies.every((n) => isNoteContentEmpty(n.content));
     if (!allEmpty) {
       const ok = await confirm({
-        title: `Delete ${count} note${count === 1 ? "" : "s"}?`,
+        title: `Move ${count} note${count === 1 ? "" : "s"} to Trash?`,
         description: `Selected note${count === 1 ? "" : "s"} will be moved to trash. You can restore ${count === 1 ? "it" : "them"} later.`,
-        confirmLabel: "Delete",
+        confirmLabel: "Move to Trash",
         variant: "destructive",
       });
       if (!ok) return;
