@@ -64,11 +64,6 @@
       "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. UNIQUE(created_by, path) and upsertMemory relies on onConflict for idempotent re-creation; the natural-key slot must be freed. Same shape as the note_folders worked example."
     },
     {
-      "file": "features/message-templates/services/message-templates-service.ts",
-      "table": "agent.message_template",
-      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (c) NEEDS A LANE — agent. fetchMessageTemplates, the only list reader, does not filter deleted_at anywhere in the file."
-    },
-    {
       "file": "features/notes/service/notesService.ts",
       "table": "workbench.note_folders",
       "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE, documented in place. A folder is a (created_by, name)-unique registry row notes reference by string; a deleted_at row would hold the slot invisibly and block a same-name recreate."

@@ -220,6 +220,7 @@
     "users.invitation_codes:invitation_codes_code_key",
     "users.invitation_requests:invitation_requests_email_key",
     "users.user_achievements:user_achievements_created_by_achievement_type_key",
+    "users.user_bookmarks:user_bookmarks_user_id_canvas_id_key",
     "users.user_email_preferences:user_email_preferences_user_id_key",
     "users.user_memory:user_memory_created_by_path_key",
     "users.user_surface_state:user_surface_state_uniq",
@@ -299,6 +300,26 @@
       "index": "mandate.reference:reference_head_uq",
       "reason": "The head of a mandate reference's revision chain: _reference_record_states decides whether to write a new head by testing is_head WITHOUT a deleted_at filter, so the global head rule is what that logic assumes. Making it partial would let a removed head and a live head coexist and change the scanner's revision semantics.",
       "ruled": "soft-delete-unique sweep, 2026-09-27 (migrations/soft_delete_partial_unique_mcp_and_parsed_page.sql)"
+    },
+    {
+      "index": "communication.meet_invitees:meet_invitees_rsvp_token_uq",
+      "reason": "rsvp_token_id is a SINGLE-USE OUTSIDER TOKEN (platform.actor_token): one invitation per RSVP link, ever. meet_remove_invitee soft-deletes the invitation AND revokes its token in the same statement, so a removed invitation still owns the token it was sent with; if the removed row released it, the same link a person still holds could be bound to a different invitation. Same rule as platform.secure_delivery actor_token_uq: a token given out is spent forever, removed or not.",
+      "ruled": "CI-FIX on ai-matrx#249, 2026-09-28"
+    },
+    {
+      "index": "communication.meet_recordings:meet_recordings_egress_key",
+      "reason": "egress_id is the media provider's recording-job identity, an EXTERNAL SYSTEM ID: the provider reports one egress once, and platform.lifecycle_meet_custody_stage / enforce_retention_policy_settling look a recording up by it during custody and retention. A removed recording must keep claiming its egress so a late provider callback maps to the same row and never manufactures a second recording beside the removed one.",
+      "ruled": "CI-FIX on ai-matrx#249, 2026-09-28"
+    },
+    {
+      "index": "seo.tracker_story:tracker_story_tracker_story_key_uq",
+      "reason": "story_key is the INGESTION IDENTITY of a story inside a tracker (derived from the source, not typed by a person): the backend ingester re-reads the same feed and must land on the same row, archived or not, so an archived story is not resurrected as a duplicate on the next crawl. Not a name anybody re-creates by hand; there is no client write path on this table (no PostgREST upsert in this repo, no DB function names it).",
+      "ruled": "CI-FIX on ai-matrx#249, 2026-09-28"
+    },
+    {
+      "index": "web.news_item:news_item_org_url_key_uq",
+      "reason": "url_key is the URL identity of an ingested news item within an organization, an EXTERNAL REFERENCE: the same URL re-ingested must map to the same row, archived or not, or every crawl after a removal would create a duplicate of the item the person removed. Not a name anybody re-creates by hand; there is no client write path on this table.",
+      "ruled": "CI-FIX on ai-matrx#249, 2026-09-28"
     }
   ]
 }
