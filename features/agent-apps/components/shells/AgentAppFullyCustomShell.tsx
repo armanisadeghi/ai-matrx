@@ -26,8 +26,10 @@ import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   MoreHorizontalTapButton,
+  RetryTapButton,
   StopTapButton,
 } from "@ai-matrx/tap-target/buttons";
+import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { cancelExecution } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { APP_RUN_ERROR_TITLE } from "@/features/agent-apps/components/app-run-error";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -49,7 +51,7 @@ import {
   recordRunOutcome,
   waitForRunOutcome,
 } from "@/features/agent-apps/tracking/run-outcome";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { useWarmAgent } from "@/features/agents/hooks/useWarmAgent";
 import type {
   AgentAppShellConfigCommon,
@@ -135,6 +137,13 @@ export function AgentAppFullyCustomShell({
   const [localError, setLocalError] = useState<string | null>(null);
   const store = useAppStore();
   const dispatch = useAppDispatch();
+  const latestRequestStatus = useAppSelector((state) =>
+    ctx.conversationId
+      ? selectPrimaryRequest(ctx.conversationId)(state)?.status
+      : undefined,
+  );
+  // What the last run was sent, so Retry repeats it exactly.
+  const lastRunVariablesRef = useRef<Record<string, unknown>>({});
 
   // ── Legacy-compat onExecute / onResetConversation ──────────────────────
   // The three sample apps + many in-the-wild rows still use the old prop
@@ -154,6 +163,7 @@ export function AgentAppFullyCustomShell({
         return;
       }
 
+      lastRunVariablesRef.current = variables;
       const tracker = startRun(variables);
       try {
         const receipt = await ctx.submit({
@@ -221,12 +231,22 @@ export function AgentAppFullyCustomShell({
   // live, held, or being rejoined after a reload (it used to show beside the
   // still-generating answer).
   const isLive = ctx.isStreaming || ctx.isExecuting || ctx.isRestoringRun;
-  const showActionBar = !isLive && ctx.response.length > 0;
+  // The person pressed Stop: say so, and offer the two ways on — never a bar
+  // that simply vanishes.
+  const wasStopped = !isLive && latestRequestStatus === "cancelled";
+  const showActionBar = !isLive && !wasStopped && ctx.response.length > 0;
   // What the run was asked, for the live bar ("Checking: …" in the app's own
   // words is the app's; the host says what it is working on).
   const liveInput = Object.values(ctx.variables ?? {}).find(
     (v): v is string => typeof v === "string" && v.trim().length > 0,
   );
+  const retryRun = () => {
+    void handleLegacyExecute(
+      Object.keys(lastRunVariablesRef.current).length > 0
+        ? lastRunVariablesRef.current
+        : (ctx.variables ?? {}),
+    );
+  };
   const stopRun = () => {
     if (ctx.conversationId) void dispatch(cancelExecution(ctx.conversationId));
   };
@@ -317,6 +337,7 @@ export function AgentAppFullyCustomShell({
     appCategory: app.category,
     // The reopened run's input — so a refresh never loses what was typed.
     initialVariables: ctx.variables,
+    isReopenedRun: ctx.isReopenedRun,
   };
 
   return (
@@ -387,6 +408,19 @@ export function AgentAppFullyCustomShell({
               {liveInput ? ` — ${liveInput}` : "…"}
             </p>
             <StopTapButton onClick={stopRun} ariaLabel="Stop this run" tooltip="Stop" label="Stop" />
+          </div>
+        )}
+
+        {wasStopped && (
+          <div
+            data-testid="app-stopped-bar"
+            className="matrx-touch-targets flex-shrink-0 flex items-center gap-2 px-3 py-1.5 border-t border-border/40"
+          >
+            <p className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+              Stopped{liveInput ? ` — ${liveInput}` : ""}
+            </p>
+            <RetryTapButton onClick={retryRun} ariaLabel="Run it again" tooltip="Retry" label="Retry" />
+            <StartOverButton onStartOver={ctx.startNewRun} />
           </div>
         )}
 

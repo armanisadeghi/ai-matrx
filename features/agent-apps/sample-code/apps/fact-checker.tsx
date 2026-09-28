@@ -21,14 +21,18 @@ export default function FactCheckerApp({
   error,
   rateLimitInfo,
   initialVariables,
+  isReopenedRun,
 }: AgentAppComponentProps) {
   // Seeded from the reopened run so a refresh keeps what was typed.
   const [claim, setClaim] = useState(
     typeof initialVariables?.claim === "string" ? initialVariables.claim : "",
   );
-  const [submittedClaim, setSubmittedClaim] = useState("");
-  const [hasSubmitted, setHasSubmitted] = useState(false);
-  const [showFullForm, setShowFullForm] = useState(true);
+  // A reopened run opens on its submitted view ("Checked: <claim>"), exactly
+  // like the live run, never the empty first form above the result.
+  const reopened = Boolean(isReopenedRun && claim);
+  const [submittedClaim, setSubmittedClaim] = useState(reopened ? claim : "");
+  const [hasSubmitted, setHasSubmitted] = useState(reopened);
+  const [showFullForm, setShowFullForm] = useState(!reopened);
 
   const isFormValid = useMemo(() => claim.trim().length >= 6, [claim]);
   const isBusy = isExecuting || isStreaming;
@@ -147,7 +151,7 @@ export default function FactCheckerApp({
       {hasSubmitted && !showFullForm && (
         <div className="flex items-start justify-between gap-3 py-4 border-b border-border mb-6">
           <p className="text-sm text-muted-foreground leading-snug line-clamp-2 min-w-0">
-            <span className="font-medium text-foreground">Checking: </span>
+            <span className="font-medium text-foreground">{isBusy ? "Checking: " : "Checked: "}</span>
             {claimPreview}
           </p>
           <Button

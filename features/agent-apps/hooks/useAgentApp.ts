@@ -287,6 +287,8 @@ export interface UseAgentAppReturn {
    * loaded — a shell remounts the app so it can seed its inputs from them.
    */
   isRestoringRun: boolean;
+  /** This page reopened a run from its address and it has loaded (see `isReopenedRun` on the app contract). */
+  isReopenedRun: boolean;
 
   // ── Configuration mirrors (so shells can read state-of-app) ────────────
   allowChat: boolean;
@@ -524,6 +526,8 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   // True while a reopened run is being rejoined — the app shows its busy
   // state instead of an idle, empty form.
   const [isReopening, setIsReopening] = useState(false);
+  // Which conversation this page reopened from its address (null = none).
+  const [reopenedId, setReopenedId] = useState<string | null>(null);
   useEffect(() => {
     if (!urlConversationId || !agentId || !isReady) return;
     if (restoredRef.current === urlConversationId) return;
@@ -586,6 +590,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
           if (!found) await new Promise((r) => setTimeout(r, 2000));
         }
         setIsReopening(false);
+        if (found) setReopenedId(urlConversationId);
         if (!found) {
           throw new Error("no answer and no running operation for this run");
         }
@@ -1044,6 +1049,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       resetConversation,
       startNewRun,
       isRestoringRun: isReopening,
+      isReopenedRun: reopenedId !== null && reopenedId === conversationId && !isReopening,
       runKey,
       allowChat,
       surfaceHandle,
@@ -1076,6 +1082,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       isExecuting,
       isHolding,
       isReopening,
+      reopenedId,
       streamPhase,
       error,
       messages,

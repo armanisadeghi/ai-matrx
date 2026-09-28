@@ -513,6 +513,13 @@ export interface AgentAppComponentProps {
    * is remounted once a reopened run has loaded, so the seed is current.
    */
   initialVariables?: Record<string, unknown>;
+  /**
+   * True when this mount is a REOPENED run (a refresh or a shared
+   * `?conversationId=` link) that already has its input — show the app's
+   * submitted view ("Checked: <input>") seeded from `initialVariables`, never
+   * the empty first form above the result.
+   */
+  isReopenedRun?: boolean;
 }
 
 // ============================================================================

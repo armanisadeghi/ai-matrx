@@ -339,15 +339,18 @@ function renderRich(
           {values.map((item, i) => {
             const choice = matchChoice(declared, item);
             return (
+              // A CHIP WIDER THAN ITS COLUMN ENDS IN AN ELLIPSIS AND SAYS ITS WHOLE WORDS ON HOVER
+              // (DATA-V2-BASICS-2 F30): "Pending verification" was cut to "Pending verificatio" by
+              // the cell's edge, with nothing saying more was there.
               <span
                 key={`${item}-${i}`}
-                title={choice?.help ?? undefined}
+                title={choice?.help ?? choice?.label ?? item}
                 className={cn(
-                  "inline-flex items-center rounded-md border px-1.5 py-0.5 text-xs",
+                  "inline-flex min-w-0 max-w-full items-center rounded-md border px-1.5 py-0.5 text-xs",
                   choiceColorClass(choice?.color),
                 )}
               >
-                {choice?.label ?? item}
+                <span className="truncate">{choice?.label ?? item}</span>
               </span>
             );
           })}
