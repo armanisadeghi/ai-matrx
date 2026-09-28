@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Copy } from "lucide-react";
@@ -204,7 +203,7 @@ export function SchemaSummaryPage() {
     isAuditSummaryRow,
   );
   const toolbar = useCanonicalizationDatasetToolbar(reload);
-  const schemaRows = useMemo(() => rollUpBySchema(rows), [rows]);
+  const schemaRows = rollUpBySchema(rows);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
