@@ -132,8 +132,15 @@ export function isGoogleConnectionReachableByUser(
   organizationIds: readonly string[],
 ): boolean {
   if (!userId) return false;
-  if (connection.owner_user_id === userId) return true;
+  // Match the server's credential-custody check: a row with a personal owner
+  // belongs only to that user.  A legacy/malformed row can still carry an
+  // organization id, but membership in that organization must never make a
+  // personal OAuth credential actionable.
+  if (connection.owner_user_id !== null) {
+    return connection.owner_user_id === userId;
+  }
   return Boolean(
+    connection.owner_type === "organization" &&
     connection.organization_id &&
     organizationIds.includes(connection.organization_id),
   );

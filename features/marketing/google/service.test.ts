@@ -223,6 +223,18 @@ describe("Google OAuth connection resources", () => {
         "reviewer",
         ["org-1"],
       ),
+    ).toBe(false);
+    expect(
+      isGoogleConnectionReachableByUser(
+        {
+          ...connection,
+          owner_type: "organization",
+          owner_user_id: null,
+          organization_id: "org-1",
+        },
+        "reviewer",
+        ["org-1"],
+      ),
     ).toBe(true);
   });
 
