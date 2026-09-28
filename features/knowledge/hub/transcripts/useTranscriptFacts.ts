@@ -37,6 +37,7 @@ const SEGMENT_HEADS = Array.from({ length: SNIPPET_SEGMENTS }, (_, i) => `seg${i
 const TRANSCRIPT_COLUMNS = `id,title,description,is_draft,folder_name,tags,visibility,metadata,organization_id,created_by,created_at,updated_at,processed_document_id,${SEGMENT_HEADS}`;
 const SESSION_COLUMNS =
   "id,title,source,status,visibility,total_duration_ms,transcript_id,organization_id,created_by,created_at,updated_at";
+const EDIT_OF_COLUMNS: string = "id,edit_of:metadata->>edit_of";
 /** PostgREST `in.(…)` stays well under URL limits at this size. */
 const CHUNK = 80;
 
@@ -129,10 +130,11 @@ export function useTranscriptFacts(hits: KnowledgeHit[], enabled: boolean): Tran
           const { data: docs, error: docError } = await supabase
             .schema("docproc")
             .from("processed_documents")
-            .select("id,edit_of:metadata->>edit_of")
+            // A plain string: the typed select parser recurses without end on the JSON arrow alias.
+            .select(EDIT_OF_COLUMNS)
             .in("id", unlinked);
           if (docError) throw new Error(`edited Sources: ${docError.message}`);
-          for (const d of (docs ?? []) as { id: string; edit_of: string | null }[]) if (d.edit_of) aliases.set(d.id, d.edit_of);
+          for (const d of (docs ?? []) as unknown as { id: string; edit_of: string | null }[]) if (d.edit_of) aliases.set(d.id, d.edit_of);
           const originals = [...new Set(aliases.values())];
           if (originals.length) {
             const { data: more, error: moreError } = await supabase
