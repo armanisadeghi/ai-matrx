@@ -64,7 +64,7 @@ export function AssignResourceSheet({
             onChange={(e) => onDueDateChange(e.target.value)}
             className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-sm text-foreground [color-scheme:light] dark:[color-scheme:dark]"
           />
-          <p className="mt-1 text-[11px] text-muted-foreground">
+          <p className="mt-1 text-xs text-muted-foreground">
             Applied to items you assign next. Clear it to assign with no due date.
           </p>
         </div>

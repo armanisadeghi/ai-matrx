@@ -52,7 +52,8 @@ export default function MobileCardSurface({
   useEffect(() => {
     if (!isOpen) return undefined;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      // One Escape closes ONE layer (a menu inside already took it).
+      if (e.key === "Escape" && !e.defaultPrevented) onClose();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);

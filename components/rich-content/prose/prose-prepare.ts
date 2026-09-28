@@ -10,7 +10,7 @@
 
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 import { splitFrontmatter } from "@/components/markdown-core/syntax/frontmatter";
-import { fenceLineKinds } from "@ai-matrx/content-ir/source";
+import { fenceLineKinds, lineIndent, opensStrippedHtmlBlock } from "@ai-matrx/content-ir/source";
 import { fromMarkdown } from "mdast-util-from-markdown";
 import { gfmFromMarkdown } from "mdast-util-gfm";
 import { gfm } from "micromark-extension-gfm";
@@ -271,6 +271,19 @@ export function preprocessCellProse(rawContent: string): string {
   return linkBracketedUrls(prepareInlineProse(rawContent));
 }
 
+/** A blank line after every line that opens a sanitizer-stripped HTML block (fenced code arrives already guarded). */
+function endStrippedHtmlBlocks(text: string): string {
+  if (!text.includes("<")) return text;
+  const lines = text.split("\n");
+  const out: string[] = [];
+  lines.forEach((line, i) => {
+    out.push(line);
+    const next = lines[i + 1];
+    if (next !== undefined && next.trim() && lineIndent(line) < 4 && opensStrippedHtmlBlock(line.trim())) out.push("");
+  });
+  return out.length === lines.length ? text : out.join("\n");
+}
+
 /**
  * What GFM says a block IS, for the checks below: its lists (ordered or not,
  * how many items), tables, quotes, headings and footnote notes (how many
@@ -386,6 +399,13 @@ export function preprocessProse(rawContent: string): string {
   if (guarded) return guarded.restore(preprocessProse(guarded.text));
 
   let processed = rawContent;
+
+  // THE ONE DELIBERATE GFM DEVIATION (content-ir opensStrippedHtmlBlock,
+  // verify-RC-B4 round 16 ruling — content never silently disappears): a line
+  // opening an HTML block whose element every sanitizer strips (`<link …/>`,
+  // `<nav>`, …) ends that block at its own line, so the lines under it read as
+  // ordinary markdown — never lazy text of the (escaped) tag line.
+  processed = endStrippedHtmlBlocks(processed);
 
   processed = prepareInlineProse(processed);
 

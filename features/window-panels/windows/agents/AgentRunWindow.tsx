@@ -1,4 +1,5 @@
 "use client";
+import { logAgentLoadFailure } from "@/features/agents/redux/agent-definition/agent-not-readable";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
@@ -392,10 +393,7 @@ function AgentRunBody({
           await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
         }
       } catch (err) {
-        console.error(
-          "[AgentRunWindow] Failed to load agent execution payload:",
-          err,
-        );
+        logAgentLoadFailure("[AgentRunWindow] Failed to load agent execution payload:", err);
         if (!cancelled) {
           setInitError(
             err instanceof Error ? err.message : "Failed to load agent.",

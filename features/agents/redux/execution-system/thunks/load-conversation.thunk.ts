@@ -510,7 +510,8 @@ export const loadConversation = createAsyncThunk<
           agentVersionId: conv.initial_agent_version_id,
         });
       } catch (capErr) {
-        console.warn("[loadConversation] agent input settings unreadable; using defaults", {
+        // Expected and announced (toast below): information, never an error.
+        console.info("[loadConversation] agent input settings unreadable; using defaults", {
           conversationId,
           agentId: conv.initial_agent_id,
           error: capErr instanceof Error ? capErr.message : String(capErr),

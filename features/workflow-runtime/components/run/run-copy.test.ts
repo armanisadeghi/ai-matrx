@@ -41,7 +41,7 @@ describe("workflow run copy payloads", () => {
       run: {
         run_id: "run-1",
         progress: "17 of 39 steps",
-        cost: "$6.4600",
+        cost: "129,200 points",
       },
     });
   });

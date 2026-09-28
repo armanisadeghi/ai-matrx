@@ -31,7 +31,7 @@ test("the estimate is points per second times the resolved duration, in points f
 });
 
 test("dollars appear only when the admin unit is passed", () => {
-  expect(describeEstimate(estimateVideoJob("8", 8000), "usd")).toBe("≈ $3.20 ($0.40/s × 8 s)");
+  expect(describeEstimate(estimateVideoJob("8", 8000), "usd")).toBe("≈ $3.20 ($0.4000/s × 8 s)");
 });
 
 test("an unknown price or duration is said, never invented", () => {

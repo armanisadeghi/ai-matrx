@@ -1010,26 +1010,23 @@ const nextConfig = {
   },
 };
 
-// ONE DEV SERVER MACHINE-WIDE (Arman, 2026-09-24). Every lane that booted its
-// own `next dev` (own port, own NEXT_DISTDIR) brought 70-130 Turbopack workers
-// and 15-25 GB with it; with type-checks on top, the 256 GB Mac ran out of
-// memory, WindowServer starved, and the kernel watchdog rebooted it twice.
-// `pnpm preview:start` (scripts/agent-dev-server.sh) is the only launcher and
-// sets MATRX_SHARED_PREVIEW=1; every other `next dev` is refused here, before
-// a single worker spawns. Need a different environment? There is no second
-// server — use the shared one; restart it with `pnpm preview:stop` + `start`.
+// ONE DEV SERVER MACHINE-WIDE (Arman, 2026-09-24), plus exactly one named clone
+// preview (2026-09-27). Every lane that booted its own `next dev` (own port, own
+// NEXT_DISTDIR) brought 70-130 Turbopack workers and 15-25 GB with it; with
+// type-checks on top, the 256 GB Mac ran out of memory, WindowServer starved,
+// and the kernel watchdog rebooted it twice. `pnpm preview:start [--clone]`
+// (scripts/agent-dev-server.sh) is the only launcher and sets
+// MATRX_SHARED_PREVIEW to the server's token; every other `next dev` — a third
+// server, a per-agent server, an unpaired clone — is refused here, before a
+// single worker spawns. The table and the rule:
+// scripts/agent-harness/shared-dev-servers.cjs.
 const { PHASE_DEVELOPMENT_SERVER } = require("next/constants");
+const { sharedDevServerRefusal } = require("./scripts/agent-harness/shared-dev-servers.cjs");
 
 function assertSharedDevServer(phase) {
   if (phase !== PHASE_DEVELOPMENT_SERVER) return;
-  if (process.env.MATRX_SHARED_PREVIEW === "1") return;
-  throw new Error(
-    "[one-dev-server] Refusing to start a second Next.js dev server.\n" +
-      "  There is ONE dev server on this machine: run `pnpm preview:start` and open the\n" +
-      "  http://<your-session>.localhost:3001 URL it prints. Everyone shares it; if it\n" +
-      "  needs a restart, `pnpm preview:stop && pnpm preview:start` (a brief blip for all).\n" +
-      "  Why: extra dev servers exhausted memory and rebooted the Mac twice (2026-09-23/24).",
-  );
+  const refusal = sharedDevServerRefusal({ env: process.env, argv: process.argv });
+  if (refusal) throw new Error(refusal);
 }
 
 copyFiles();

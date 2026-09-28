@@ -40,6 +40,7 @@
  * replaced by agx_usage_scan / agx_usage_report / agx_usage_update_to_active.
  */
 
+import { agentNotReadableError } from "./agent-not-readable";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
@@ -551,9 +552,9 @@ export const fetchAgentExecutionMinimal = createAsyncThunk<
       // a shared app). Returning here left `isReady` false forever with no
       // error, so every Run on /agent-apps/[id]/run "was still loading"
       // (page-pass 2026-09-27) and callers never reached their fallback door.
-      const message = `Agent ${agentId} is not readable by you (no execution payload returned).`;
-      dispatch(setAgentError({ id: agentId, error: message }));
-      throw new Error(message);
+      const refusal = agentNotReadableError(agentId);
+      dispatch(setAgentError({ id: agentId, error: refusal.message }));
+      throw refusal;
     }
     const row = raw as unknown as AgentExecutionMinimal;
 

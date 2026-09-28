@@ -60,7 +60,7 @@ const ALLOW: Record<string, string> = {
   "features/context-menu-v3/ContextMenuV3.tsx": "selection tracking for the right-click menu; no popup",
 };
 
-const RULES: { id: string; pattern: RegExp; allowCanonical: boolean }[] = [
+const RULES: { id: string; pattern: RegExp; allowCanonical: boolean; alsoNeeds?: RegExp }[] = [
   { id: "tiptap-bubble-menu", pattern: /from\s+["']@tiptap\/react\/menus["']|<BubbleMenu\b/, allowCanonical: false },
   { id: "package-selection-layout", pattern: /["']@ai-matrx\/alchemy\/react\/selection["']/, allowCanonical: true },
   {
@@ -69,7 +69,14 @@ const RULES: { id: string; pattern: RegExp; allowCanonical: boolean }[] = [
       /(?:function|const|class)\s+(?:\w*Selection(?:Toolbar|Popover|Bubble|Popup)|Floating\w*Selection\w*|\w*BubbleMenu|AnnotationToolbar|HighlightToolbar)\b/,
     allowCanonical: true,
   },
-  { id: "selectionchange-listener", pattern: /addEventListener\(\s*["']selectionchange["']/, allowCanonical: true },
+  // A selectionchange listener is a popup only when the file also floats UI. A caret guard in an
+  // editor (MergeFieldInput keeps the caret out of chips) draws nothing and is no toolbar.
+  {
+    id: "selectionchange-listener",
+    pattern: /addEventListener\(\s*["']selectionchange["']/,
+    allowCanonical: true,
+    alsoNeeds: /createPortal\(|position:\s*["']?(fixed|absolute)|className=\{?["'`][^"'`]*\b(fixed|absolute)\b|getBoundingClientRect/,
+  },
 ];
 
 /** Rule 5: selection-driven floating UI, by behaviour (all four in one file). */
@@ -107,6 +114,7 @@ export function censusSelectionToolbars(root: string, files: readonly string[]):
     }
     for (const rule of RULES) {
       if (rule.allowCanonical && CANONICAL.has(file)) continue;
+      if (rule.alsoNeeds && !rule.alsoNeeds.test(text)) continue;
       const at = lines.findIndex((l) => rule.pattern.test(l));
       if (at >= 0) findings.push({ file, rule: rule.id, line: at + 1 });
     }
@@ -146,7 +154,15 @@ describe("one selection toolbar", () => {
     };
     plant("features/notes/NoteSelectionPopover.tsx", "export function NoteSelectionPopover() { return null; }\n");
     plant("features/chat/AnswerBubble.tsx", 'import { BubbleMenu } from "@tiptap/react/menus";\n');
-    plant("features/docs/Listen.tsx", 'document.addEventListener("selectionchange", () => {});\n');
+    plant(
+      "features/docs/Listen.tsx",
+      'document.addEventListener("selectionchange", () => {});\nexport const Bar = () => <div className="absolute">Quote</div>;\n',
+    );
+    // Not a toolbar: a caret guard that draws nothing (the MergeFieldInput shape).
+    plant(
+      "features/docs/CaretGuard.tsx",
+      'document.addEventListener("selectionchange", () => { const s = window.getSelection(); s?.removeAllRanges(); });\n',
+    );
     plant("features/docs/Layout.tsx", 'import { SelectionToolbar } from "@ai-matrx/alchemy/react/selection";\n');
     // The verifier's plant: a mouseup + getSelection bar portaled to the body, named innocently.
     plant(
@@ -166,6 +182,7 @@ describe("one selection toolbar", () => {
       "features/notes/NoteSelectionPopover.tsx",
       "features/chat/AnswerBubble.tsx",
       "features/docs/Listen.tsx",
+      "features/docs/CaretGuard.tsx",
       "features/docs/Layout.tsx",
       "features/chat/AnswerQuoteBar.tsx",
     ]);

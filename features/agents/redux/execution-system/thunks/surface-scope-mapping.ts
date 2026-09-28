@@ -203,7 +203,7 @@ export async function prepareLaunchMappings(args: {
       out[m.key] = { ...m.mapping, required: false };
     };
     if (!interactive) {
-      toast.info(`"${title}" ran without ${names} — this page had none.`);
+      toast.info(`Ran ${title} without ${names} — this page had none.`);
       missing.forEach(runWithout);
     } else {
       const answers = await promptForValues({
@@ -241,7 +241,7 @@ export async function prepareLaunchMappings(args: {
     if (requiredNames.length > 0) {
       // Nobody can be asked in a direct/background run — say so, and run.
       toast.info(
-        `"${title}" ran without ${joinNames(requiredNames.map((n) => `"${n}"`))} — it runs without a window, so nobody could be asked.`,
+        `Ran ${title} without ${joinNames(requiredNames)} — it runs without a window, so nobody could be asked.`,
       );
     }
     for (const [key] of promptEntries) {

@@ -266,6 +266,10 @@ function EntitySheetRows({
   );
 }
 
+// The rows ARE the phone sheet's menu: RouteHeader must never keep them in the
+// header row as the page's primary (`isMenuAction`, route-header-layout.tsx).
+EntitySheetRows.routeHeaderMenu = true as const;
+
 export function EntityModeHeader({
   backHref,
   entityLabel,

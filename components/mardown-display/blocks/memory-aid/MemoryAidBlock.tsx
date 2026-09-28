@@ -136,6 +136,13 @@ export default function MemoryAidBlock({
 
 export function MnemonicsSection({ mnemonics, controls }: { mnemonics: Mnemonic[]; controls?: MemoryAidControls }) {
   if (mnemonics.length === 0 && !controls) return null;
+  // A brand-new mnemonic starts with empty text, and the coercer that builds
+  // `mnemonics` from raw data drops an item with no device/target (correctly —
+  // that is what hides an in-progress streaming item). So the just-added draft
+  // never appears in `mnemonics` itself; render its editor as one more row
+  // instead of relying on a map slot that was coerced away (D-page-pass 2026-09-27:
+  // "Add mnemonic" was a dead control — the row it opened had nothing to land in).
+  const addingNew = controls?.editor?.kind === "mnemonic" && controls.editor.index >= mnemonics.length;
   return (
     <Section icon={Brain} title="Mnemonics" count={mnemonics.length} action={controls && <AddItem kind="mnemonic" label="Add mnemonic" controls={controls} />}>
       <div className="space-y-2">
@@ -165,6 +172,11 @@ export function MnemonicsSection({ mnemonics, controls }: { mnemonics: Mnemonic[
             </>}
           </div>
         ))}
+        {addingNew && controls?.editor && (
+          <div key="mn-new" className="group rounded-xl border border-border bg-card p-3">
+            {controls.editor.content}
+          </div>
+        )}
       </div>
     </Section>
   );
@@ -172,6 +184,9 @@ export function MnemonicsSection({ mnemonics, controls }: { mnemonics: Mnemonic[
 
 export function AnalogiesSection({ analogies, controls }: { analogies: Analogy[]; controls?: MemoryAidControls }) {
   if (analogies.length === 0 && !controls) return null;
+  // Same "Add" fix as mnemonics: a fresh blank analogy is coerced out of
+  // `analogies`, so its editor needs an appended slot, not a map index.
+  const addingNew = controls?.editor?.kind === "analogy" && controls.editor.index >= analogies.length;
   return (
     <Section
       icon={Lightbulb}
@@ -204,6 +219,11 @@ export function AnalogiesSection({ analogies, controls }: { analogies: Analogy[]
             </>}
           </div>
         ))}
+        {addingNew && controls?.editor && (
+          <div key="an-new" className="group rounded-xl border border-border bg-card p-3">
+            {controls.editor.content}
+          </div>
+        )}
       </div>
     </Section>
   );
@@ -211,6 +231,24 @@ export function AnalogiesSection({ analogies, controls }: { analogies: Analogy[]
 
 export function MemoryPalaceSection({ palace, controls }: { palace: MemoryPalace; controls?: MemoryAidControls }) {
   if ((!palace.applicable || palace.loci.length === 0) && !controls) return null;
+  // Same "Add" fix as mnemonics/analogies: a fresh blank stop is coerced out
+  // of `palace.loci`, so its editor needs an appended slot, not a map index.
+  const addingNew = controls?.editor?.kind === "locus" && controls.editor.index >= palace.loci.length;
+  // Empty is compact: with nothing to show yet, this is one line with its
+  // create action — never a bordered card holding nothing (D-page-pass 2026-09-27).
+  // Unless a stop is actively being added: then the editor itself is the content.
+  if (palace.loci.length === 0 && !addingNew) {
+    return (
+      <Section icon={Landmark} title="Memory palace" action={controls && <AddItem kind="locus" label="Add stop" controls={controls} />} />
+    );
+  }
+  if (palace.loci.length === 0 && addingNew && controls?.editor) {
+    return (
+      <Section icon={Landmark} title="Memory palace" action={controls && <AddItem kind="locus" label="Add stop" controls={controls} />}>
+        <div className="rounded-xl border border-border bg-card p-3">{controls.editor.content}</div>
+      </Section>
+    );
+  }
   return (
     <Section icon={Landmark} title="Memory palace" action={controls && <AddItem kind="locus" label="Add stop" controls={controls} />}>
       <div className="rounded-xl border border-border bg-card p-3">
@@ -245,6 +283,14 @@ export function MemoryPalaceSection({ palace, controls }: { palace: MemoryPalace
               </>}
             </li>
           ))}
+          {addingNew && controls?.editor && (
+            <li key="loc-new" className="group flex gap-2.5 rounded-md py-1">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+                {palace.loci.length + 1}
+              </span>
+              <div className="min-w-0 flex-1">{controls.editor.content}</div>
+            </li>
+          )}
         </ol>
       </div>
     </Section>
@@ -274,7 +320,7 @@ function Section({
   title: string;
   count?: number;
   action?: React.ReactNode;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
     <section className="space-y-2">

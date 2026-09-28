@@ -49,14 +49,14 @@ export function AccessModeField({
                 <Icon className="h-4 w-4" />
                 {mode.label}
               </span>
-              <span className="text-[11px] leading-snug text-muted-foreground">
+              <span className="text-xs leading-snug text-muted-foreground">
                 {mode.short}
               </span>
             </button>
           );
         })}
       </div>
-      <p className="text-[11px] leading-snug text-muted-foreground">
+      <p className="text-xs leading-snug text-muted-foreground">
         {ACCESS_MODES.find((m) => m.value === value)?.description}
       </p>
     </div>
