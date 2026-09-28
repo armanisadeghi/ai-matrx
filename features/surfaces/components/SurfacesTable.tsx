@@ -175,10 +175,10 @@ function NameCell({
 }
 
 function ActiveBadge({ active }: { active: boolean }) {
+  // Nearly every surface is active, so "Active" is quiet text; only the
+  // exception (Inactive) is marked.
   return active ? (
-    <Badge variant="outline" className="text-xs border-success/40 text-success">
-      Active
-    </Badge>
+    <span className="text-muted-foreground">Active</span>
   ) : (
     <Badge variant="outline" className="text-xs text-muted-foreground">
       Inactive
@@ -490,7 +490,7 @@ export function SurfacesTable({
       mobileCards={(row, _index, controls) => (
         <article
           className={cn(
-            "space-y-2 rounded-md border p-3",
+            "space-y-1.5 rounded-md border p-2.5",
             row.name === selectedName
               ? "border-primary/40 bg-primary/5"
               : "border-border",

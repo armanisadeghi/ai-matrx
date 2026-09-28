@@ -474,11 +474,8 @@ export function SurfacesContainer() {
           title={`${surfaces.length} surfaces · ${totalActive} active · ${manifestedSurfaceNames.size} with a code manifest · ${totalUnbound} with no agents or tools`}
         >
           {surfaces.length} surfaces · {totalActive} active
-          {!isMobile && (
-            <>
-              {" "}· {manifestedSurfaceNames.size} with a code manifest
-              {totalUnbound > 0 && <> · {totalUnbound} with no agents or tools</>}
-            </>
+          {!isMobile && totalUnbound > 0 && (
+            <> · {totalUnbound} with no agents or tools</>
           )}
         </span>
         {loading && (
