@@ -145,6 +145,7 @@ export async function listJurisdictionPolicies() {
         "distinguishes_subscriber_kind, citation, ratified_by, ratified_at, notes",
     )
     .eq("is_active", true)
+    .is("deleted_at", null)
     .order("country_name");
 
   if (error) throw new Error(`Could not load jurisdictions: ${error.message}`);

@@ -182,6 +182,7 @@ export function AppConfigEditor({
       .from("app_config")
       .select("*")
       .eq("app", app)
+      .is("deleted_at", null)
       .maybeSingle();
     if (error || !data) {
       toast({

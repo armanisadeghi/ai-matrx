@@ -58,6 +58,7 @@ export function AppConfigClient({
     const { data, error } = await supabase
       .from("app_config")
       .select("*")
+      .is("deleted_at", null)
       .order("app");
     if (error) {
       toast({

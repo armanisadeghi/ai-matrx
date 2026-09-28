@@ -42,9 +42,12 @@ jest.mock("@/utils/supabase/adminClient", () => ({
           },
           select: () => ({
             eq: () => ({
+              // consumed_at IS NULL, then deleted_at IS NULL (an archived code never verifies).
               is: () => ({
-                order: () => ({
-                  limit: () => ({ maybeSingle: selectRowMock }),
+                is: () => ({
+                  order: () => ({
+                    limit: () => ({ maybeSingle: selectRowMock }),
+                  }),
                 }),
               }),
             }),

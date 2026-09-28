@@ -49,11 +49,13 @@ export function EntitlementsTableClient() {
         supabase
           .schema("billing")
           .from("capability")
-          .select("capability, enforced, period, min_tier"),
+          .select("capability, enforced, period, min_tier")
+          .is("deleted_at", null),
         supabase
           .schema("billing")
           .from("capability_limit")
-          .select("capability, tier, period, limit_value"),
+          .select("capability, tier, period, limit_value")
+          .is("deleted_at", null),
         supabase.schema("billing").rpc("usage_admin_summary"),
       ]);
       if (capRes.error) throw capRes.error;

@@ -44,6 +44,7 @@ export default function CredentialExpiryNotifier() {
         .from("app_config")
         .select("config")
         .eq("app", WEB_APP_CONFIG_SLUG)
+        .is("deleted_at", null)
         .maybeSingle();
 
       if (cancelled) return;

@@ -14,8 +14,13 @@ export default async function ApplicationsOverviewPage() {
   const supabase = await createClient();
 
   const [configResult, catalogResult, instanceResult] = await Promise.all([
-    supabase.from("app_config").select("*").order("app"),
-    supabase.from("catalog_entries").select("*").order("app").order("kind"),
+    supabase.from("app_config").select("*").is("deleted_at", null).order("app"),
+    supabase
+      .from("catalog_entries")
+      .select("*")
+      .is("deleted_at", null)
+      .order("app")
+      .order("kind"),
     supabase.rpc("admin_list_app_instances"),
   ]);
 

@@ -41,6 +41,7 @@ export async function listUiClients(): Promise<UiClientRow[]> {
   const { data, error } = await sb()
     .schema("ui").from("ui_client")
     .select("*")
+    .is("deleted_at", null)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
   if (error) throw error;

@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
       .from("price")
       .select("stripe_price_id, active, trial_period_days")
       .eq("id", body.priceId)
+      .is("deleted_at", null)
       .maybeSingle();
     if (!price?.stripe_price_id || !price.active) {
       return NextResponse.json(

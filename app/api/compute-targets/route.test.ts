@@ -56,7 +56,9 @@ function tierQuery() {
   return {
     select: () => ({
       eq: () => ({
-        maybeSingle: async () => ({ data: { features: { max_sandboxes: 1 } }, error: null }),
+        is: () => ({
+          maybeSingle: async () => ({ data: { features: { max_sandboxes: 1 } }, error: null }),
+        }),
       }),
     }),
   };

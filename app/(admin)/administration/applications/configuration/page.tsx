@@ -30,6 +30,7 @@ export default async function ApplicationsConfigurationPage({
   const { data, error } = await supabase
     .from("app_config")
     .select("*")
+    .is("deleted_at", null)
     .order("app");
 
   if (error) {

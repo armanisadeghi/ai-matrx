@@ -329,6 +329,7 @@ export async function listClientNames(): Promise<
     .schema("ui")
     .from("ui_client")
     .select("name, description, is_active")
+    .is("deleted_at", null)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
   if (error) throw error;

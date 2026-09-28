@@ -19,6 +19,7 @@ export default async function ApplicationsInstallationsPage() {
       .from("app_config")
       .select("app, min_supported_app_version")
       .eq("app", DEFAULT_APPLICATION)
+      .is("deleted_at", null)
       .maybeSingle(),
   ]);
 

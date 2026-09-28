@@ -55,6 +55,7 @@ export async function getResearchIntentsServer(): Promise<ResearchIntent[]> {
     .from("research_intent")
     .select("*")
     .eq("is_active", true)
+    .is("deleted_at", null)
     .order("position", { ascending: true });
   if (error) throw error;
   return data ?? [];

@@ -224,6 +224,7 @@ export async function checkTestHandsetVerification(
     .select("id, code_salt, code_hash, expires_at, consumed_at, attempts")
     .eq("phone_number", phoneNumber)
     .is("consumed_at", null)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

@@ -136,6 +136,7 @@ export async function fetchCapabilities(): Promise<Capability[]> {
     .schema("billing")
     .from("capability")
     .select("capability, enforced, period, min_tier, usage_source")
+    .is("deleted_at", null)
     .order("capability");
   if (error) throw error;
   return (data ?? []) as Capability[];
@@ -146,7 +147,8 @@ export async function fetchPlanLimits(): Promise<PlanLimit[]> {
   const { data, error } = await supabase
     .schema("billing")
     .from("plan_limit")
-    .select("plan_id, capability, period, limit_value, note");
+    .select("plan_id, capability, period, limit_value, note")
+    .is("deleted_at", null);
   if (error) throw error;
   return (data ?? []) as PlanLimit[];
 }

@@ -207,6 +207,7 @@ async function resolveMaxSandboxes(
     // `files.account_tiers` gained its canonical uuid identity. `user_account.tier_id`
     // still holds the SLUG, so this lookup keys on `tier_key`, not the uuid.
     .eq("tier_key", tierId)
+    .is("deleted_at", null)
     .maybeSingle();
   const features =
     (tier?.features as { max_sandboxes?: number } | null) ?? null;

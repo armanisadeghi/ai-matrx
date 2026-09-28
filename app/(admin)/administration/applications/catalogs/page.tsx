@@ -38,6 +38,7 @@ export default async function ApplicationsCatalogsPage({
   const { data, error } = await supabase
     .from("catalog_entries")
     .select("*")
+    .is("deleted_at", null)
     .order("app")
     .order("kind")
     .order("sort_order")

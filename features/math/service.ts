@@ -108,6 +108,7 @@ export async function getAllMathProblems(): Promise<MathProblem[]> {
     .from("math_problems")
     .select("*")
     .eq("is_published", true)
+    .is("deleted_at", null)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
 
@@ -133,6 +134,7 @@ export async function getMathProblemById(
     .select("*")
     .eq("id", id)
     .eq("is_published", true)
+    .is("deleted_at", null)
     .single();
 
   if (error) {
@@ -161,6 +163,7 @@ export async function getMathProblemsByModule(
     .eq("topic_name", topicName)
     .eq("module_name", moduleName)
     .eq("is_published", true)
+    .is("deleted_at", null)
     .order("sort_order", { ascending: true });
 
   if (error) {
@@ -181,7 +184,8 @@ export async function getMathCourseStructure() {
     .schema("education")
     .from("math_problems")
     .select("course_name, topic_name, module_name")
-    .eq("is_published", true);
+    .eq("is_published", true)
+    .is("deleted_at", null);
 
   if (error) {
     console.error("Error fetching course structure:", error);
