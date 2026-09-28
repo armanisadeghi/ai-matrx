@@ -13,8 +13,8 @@ import type { RichDocumentActionContext } from "../../types";
 
 function dockOf(ctx: RichDocumentActionContext) {
   const record = annotationRecordOf(ctx.source);
-  if (!record) return null;
-  const key = recordKeyOf(record);
+  const key = record ? recordKeyOf(record) : (ctx.callbacks?.annotationRecordKey?.() ?? null);
+  if (!key) return null;
   const state = dockStateFor(key);
   return state ? { key, ...state } : null;
 }
@@ -29,7 +29,7 @@ registerAction({
   icon: MessageSquareText,
   iconColor: "text-amber-600 dark:text-amber-400",
   category: "share",
-  supportedSources: ["note", "chat-message", "working-document"],
+  supportedSources: "*",
   renderSlot: "overflow",
   order: 5,
   visible: (ctx) => {

@@ -361,6 +361,12 @@ export interface RichDocumentActionContextCallbacks {
     actionId: "cleanup" | "help" | "customAgent",
     ctx: RichDocumentActionContext,
   ) => void;
+  /**
+   * The saved record this content is (`token:id`) when the source does not say —
+   * the studio previewing a loaded document over a raw source. The ⋯ "Notes &
+   * comments" row reads it (annotations/RecordAnnotations).
+   */
+  annotationRecordKey?: () => string | null;
 }
 
 /** What a chat-answer save actually wrote (RC-B5) — the source of any "saved" sentence. */

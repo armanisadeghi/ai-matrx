@@ -192,3 +192,30 @@ it("6 — which saved record a ContentSource is", () => {
   expect(annotationRecordOf({ type: "working-document", conversationId: "c1", kind: "working", documentId: null })).toBeNull();
   expect(annotationRecordOf({ type: "raw" })).toBeNull();
 });
+
+it("7 — the ⋯ row finds the dock of a record the host names explicitly (the studio's raw source)", async () => {
+  // The registry is mocked to capture the one registration (the real provider pulls the whole app).
+  const registered: import("../../types").RichDocumentAction[] = [];
+  jest.doMock("../../actions/provider", () => ({ registerAction: (a: import("../../types").RichDocumentAction) => registered.push(a) }));
+  let store!: typeof import("../record-annotations-store");
+  jest.isolateModules(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("../../actions/handlers/annotations");
+    // The same module instance the handler reads.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    store = require("../record-annotations-store");
+  });
+  const { registerDock, setDockCount } = store;
+  const action = registered.find((a) => a.id === "notes-and-comments")!;
+  const ctx = { source: { type: "raw" }, callbacks: { annotationRecordKey: () => "document:kiln-log" } } as never;
+  expect(action.visible!(ctx)).toBe(false);
+  const off = registerDock("studio-preview", "document:kiln-log");
+  setDockCount("studio-preview", 2);
+  expect(action.visible!(ctx)).toBe(true);
+  expect(typeof action.label === "function" ? action.label(ctx) : action.label).toBe("Notes & comments (2)");
+  action.run(ctx);
+  expect(store.dockStateFor("document:kiln-log")).toEqual({ count: 2, open: true });
+  // No record named and none in the source: absent.
+  expect(action.visible!({ source: { type: "raw" } } as never)).toBe(false);
+  off();
+});

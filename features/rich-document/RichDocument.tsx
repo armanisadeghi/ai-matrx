@@ -58,7 +58,7 @@ import type {
   RichDocumentActionsBehavior,
 } from "./types";
 import { RecordAnnotations } from "./annotations/RecordAnnotations";
-import { annotationRecordOf, type AnnotationRecord } from "./annotations/record-of-source";
+import { annotationRecordOf, recordKeyOf, type AnnotationRecord } from "./annotations/record-of-source";
 import type { AnnotationSource } from "./annotations/types";
 import type { ServerProcessedBlock } from "@/components/mardown-display/chat-markdown/EnhancedChatMarkdown";
 import type { TypedStreamEvent } from "@/components/mardown-display/chat-markdown/types";
@@ -239,10 +239,16 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
           }
         : null,
   });
+  // The saved record this content IS (reading set + Notes & comments dock).
+  const record =
+    annotationRecord !== undefined ? annotationRecord : source.readOnly ? null : annotationRecordOf(source);
   const hostedActions: RichDocumentActionsProp = {
     ...actionsProp,
     callbacks: {
       ...dialogsHost.callbacks,
+      // A host that names its record explicitly (the studio's loaded document
+      // rides a raw source) tells the ⋯ "Notes & comments" row which dock it is.
+      ...(record && annotationRecord !== undefined ? { annotationRecordKey: () => recordKeyOf(record) } : {}),
       ...actionsProp?.callbacks,
     },
   };
@@ -343,8 +349,6 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
 
   // THE READING SET on a saved record: the one mount (annotations/RecordAnnotations)
   // every note, chat answer and saved document inherits from here.
-  const record =
-    annotationRecord !== undefined ? annotationRecord : source.readOnly ? null : annotationRecordOf(source);
   const annotationSource: AnnotationSource | null =
     record && !specimenMode && !isStreamActive && typeof content === "string" && content.trim()
       ? {
