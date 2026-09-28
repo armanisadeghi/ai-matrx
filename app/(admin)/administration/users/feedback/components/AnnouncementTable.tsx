@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { AlertCircle, AlertTriangle, Info, Megaphone, Trash2, Calendar, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from "@/lib/toast";
-import { ReadFailure } from '@/components/read-state/ReadFailure';
+import { readOf } from '@/components/read-state/ReadGate';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -51,6 +51,7 @@ export default function AnnouncementTable() {
     const [announcements, setAnnouncements] = useState<SystemAnnouncement[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<unknown>(null);
+    const [hasLoaded, setHasLoaded] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [viewDialogOpen, setViewDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -63,11 +64,13 @@ export default function AnnouncementTable() {
 
     async function loadAnnouncements() {
         setLoading(true);
+        setLoadError(null);
         try {
             const result = await getAllAnnouncements();
             if (result.success && result.data) {
                 setAnnouncements(result.data);
                 setLoadError(null);
+                setHasLoaded(true);
             } else {
                 setLoadError(result.error ? new Error(result.error) : true);
             }
@@ -128,8 +131,17 @@ export default function AnnouncementTable() {
             id: 'title',
             accessorKey: 'title',
             header: 'Title',
+            filter: 'text',
             width: 280,
-            cell: (announcement) => <div><div className="font-medium line-clamp-1">{announcement.title}</div><div className="text-xs text-muted-foreground line-clamp-1">{announcement.message}</div></div>,
+            cell: (announcement) => <span className="block truncate font-medium" title={announcement.title}>{announcement.title}</span>,
+        },
+        {
+            id: 'message',
+            accessorKey: 'message',
+            header: 'Message',
+            filter: 'text',
+            width: 420,
+            cell: (announcement) => <span className="block truncate text-muted-foreground" title={announcement.message}>{announcement.message}</span>,
         },
         {
             id: 'active',
@@ -159,69 +171,9 @@ export default function AnnouncementTable() {
         },
     ], []);
 
-    if (loading) {
-        return (
-            <Card className="p-8 text-center">
-                <p className="text-gray-600 dark:text-gray-400">Loading announcements...</p>
-            </Card>
-        );
-    }
-
-    if (loadError && announcements.length === 0) {
-        return <ReadFailure error={loadError} what="the announcements" onRetry={() => void loadAnnouncements()} />;
-    }
-
-    if (announcements.length === 0) {
-        return (
-            <Card className="p-8 text-center">
-                <p className="text-gray-600 dark:text-gray-400">No announcements created yet</p>
-            </Card>
-        );
-    }
-
     return (
         <>
             <Card className="p-4">
-                <div className="mb-4 flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                        <strong>{announcements.length}</strong> loaded announcement{announcements.length !== 1 ? 's' : ''}
-                    </span>
-                    <div className="flex items-center gap-1">
-                        <CopyButtons
-                            size="icon"
-                            label="Announcements"
-                            human={() => announcements.map(announcementSummary).join('\n\n')}
-                            json={() => announcements}
-                            agent={() => ({
-                                kind: 'system-announcements',
-                                location: LOCATION,
-                                description: 'The system announcements loaded by this page.',
-                                data: announcements,
-                                attributes: { count: announcements.length },
-                            })}
-                          export={{
-                            items: [
-                              jsonExportItem(() => announcements),
-                              csvExportItem(
-                                  () =>
-                                      announcements as unknown as Array<
-                                          Record<string, unknown>
-                                      >,
-                                  'CSV',
-                              ),
-                            ],
-                          }}
-                        />
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={loadAnnouncements}
-                        >
-                            Refresh
-                        </Button>
-                    </div>
-                </div>
-
                 {/* Table owner, 2026-09-28: preserve the loaded-window coverage
                     and existing announcement actions as the sole record controls.
                     Numbered pagination follows Arman's stable-footer instruction. */}
@@ -235,7 +187,46 @@ export default function AnnouncementTable() {
                     detail={{ enabled: false }}
                     window={{ enabled: false }}
                     coverage={{ answeredBy: 'client', noun: 'system announcement' }}
-                    toolbar={{ search: true, searchPlaceholder: 'Search announcements…' }}
+                    isLoading={loading && !hasLoaded}
+                    isFetching={loading && hasLoaded}
+                    read={readOf(
+                        { loading, error: loadError, hasData: hasLoaded },
+                        { what: 'the announcements', onRetry: () => void loadAnnouncements() },
+                    )}
+                    emptyState={{
+                        title: 'No announcements created yet',
+                        description: 'Refresh to check for announcements created by another administrator.',
+                        action: <Button variant="outline" size="sm" onClick={() => void loadAnnouncements()}>Refresh</Button>,
+                    }}
+                    toolbar={{
+                        title: 'Announcements',
+                        titleCount: { value: announcements.length, label: 'announcements' },
+                        search: true,
+                        searchPlaceholder: 'Search announcements…',
+                        refresh: { onRefresh: () => loadAnnouncements(), label: 'Refresh announcements' },
+                        actions: <CopyButtons
+                            size="icon"
+                            label="Announcements"
+                            human={() => announcements.map(announcementSummary).join('\n\n')}
+                            json={() => announcements}
+                            agent={() => ({
+                                kind: 'system-announcements',
+                                location: LOCATION,
+                                description: 'The system announcements loaded by this page.',
+                                data: announcements,
+                                attributes: { count: announcements.length },
+                            })}
+                            export={{
+                                items: [
+                                    jsonExportItem(() => announcements),
+                                    csvExportItem(
+                                        () => announcements as unknown as Array<Record<string, unknown>>,
+                                        'CSV',
+                                    ),
+                                ],
+                            }}
+                        />,
+                    }}
                     rowActions={(announcement) => <div className="flex items-center gap-2"><Badge className={announcementTypeColors[announcement.announcement_type]}>{announcement.announcement_type}</Badge><CopyButtons size="xs" label={`Announcement "${announcement.title}"`} human={() => announcementSummary(announcement)} json={() => announcement} agent={() => ({ kind: 'system-announcement', location: LOCATION, description: 'One system announcement row.', data: announcement, summary: announcementSummary(announcement), attributes: { id: announcement.id, type: announcement.announcement_type, active: announcement.is_active } })} /><Button variant="ghost" size="sm" onClick={() => handleView(announcement)} className="h-7 px-2" title="View details"><Eye className="w-4 h-4" /></Button><Button variant="ghost" size="sm" onClick={() => { setAnnouncementToDelete(announcement.id); setDeleteDialogOpen(true); }} className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20" title="Move announcement to Trash"><Trash2 className="w-4 h-4" /></Button></div>}
                 />
             </Card>
