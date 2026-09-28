@@ -137,7 +137,7 @@ test("Keep as AI Matrx data names its consequence in calendar words before it ru
   expect(asked.description).not.toMatch(/^Are you sure/i);
   expect(asked.description).toContain("stops refreshing from Google Calendar");
   expect(asked.description).toContain("Nothing changes in your Google Calendar");
-  expect(asked.description).toContain("cannot be undone");
+  expect(asked.description).toContain("nothing here is removed");
   expect(asked.confirmLabel).toBe("Keep as AI Matrx data");
 
   expect(calls).toHaveLength(1);

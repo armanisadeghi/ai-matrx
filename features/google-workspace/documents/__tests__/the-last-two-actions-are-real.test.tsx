@@ -177,7 +177,7 @@ test("Keep as AI Matrx data names what it costs, then detaches this record in it
   expect(asked.description).toContain("stops refreshing from Google");
   expect(asked.description).toContain("keeps exactly what it has today");
   expect(asked.description).toContain("Nothing changes in your Google account");
-  expect(asked.description).toContain("cannot be undone");
+  expect(asked.description).toContain("nothing here is removed");
   expect(asked.confirmLabel).toBe("Keep as AI Matrx data");
 
   expect(calls).toHaveLength(1);
