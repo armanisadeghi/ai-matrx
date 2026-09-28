@@ -42,7 +42,8 @@ import { readMediaVariableFileId } from "@/features/agents/utils/media-variable-
 import { isMediaVariableType } from "@/features/agents/types/agent-definition.types";
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
 import { calculateVisualViewportLift } from "@/lib/dom/visual-viewport-lift";
-import { collapsedRowKind } from "./collapsed-row";
+import { collapsedRowChoices, collapsedRowKind } from "./collapsed-row";
+import { RowChoicesButton } from "./RowChoicesButton";
 import { isControlVariable } from "@ai-matrx/agents";
 
 interface AgentVariablesInlineProps {
@@ -146,6 +147,18 @@ export function AgentVariablesInline({
 
   const handleVariableKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+      // Down arrow opens the row's choices list (when it has one) without
+      // leaving the keyboard; typing stays free.
+      if (e.key === "ArrowDown") {
+        const choices = e.currentTarget.parentElement?.querySelector<HTMLElement>(
+          "[data-row-choices]",
+        );
+        if (choices) {
+          e.preventDefault();
+          choices.click();
+        }
+        return;
+      }
       if (e.key !== "Enter" || e.shiftKey) return;
       e.preventDefault();
       advanceFromCollapsed(index);
@@ -304,11 +317,15 @@ export function AgentVariablesInline({
 
           // 🚨 THE COLLAPSED ROW IS A ONE-LINE TEXT BOX, BY DESIGN — even for a
           // select/radio/checkbox. Free typing is the point of this view; the
-          // real component is behind the chevron. Never draw the component
-          // inline here (reverted 2026-09-27 — read collapsed-row.ts first).
+          // real component is behind the chevron. A fixed set of choices adds a
+          // choices arrow BESIDE the box, never instead of it (collapsed-row.ts).
           const rowKind = collapsedRowKind(variable.customComponent, {
             picklistBound: isPicklistBound,
           });
+          const rowChoices =
+            rowKind === "text-line"
+              ? collapsedRowChoices(variable.customComponent)
+              : null;
 
           if (isExpanded) {
             return (
@@ -429,13 +446,30 @@ export function AgentVariablesInline({
                       : displayValue
                   }
                   onChange={(e) =>
-                    handleValueChange(variable.name, e.target.value)
+                    handleValueChange(
+                      variable.name,
+                      // The box shows line breaks as " ↵ "; store them back as
+                      // real line breaks so the full editor reads the same value.
+                      e.target.value.replace(/ ↵ /g, "\n"),
+                    )
                   }
                   onKeyDown={(e) => handleVariableKeyDown(e, index)}
-                  placeholder={variable.helpText ?? "Enter value..."}
+                  placeholder={
+                    variable.helpText ??
+                    (rowChoices ? "Type or choose…" : "Enter value...")
+                  }
                   className="flex-1 text-sm bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/60 min-w-0"
                   data-variable-index={index}
                   tabIndex={index + 1}
+                />
+              )}
+              {rowChoices && (
+                <RowChoicesButton
+                  options={rowChoices.options}
+                  multiple={rowChoices.multiple}
+                  value={typeof rawValue === "string" ? rawValue : displayValue}
+                  onChange={(v) => handleValueChange(variable.name, v)}
+                  label={variableRunLabel(variable, formatText)}
                 />
               )}
               <button
