@@ -292,7 +292,7 @@ function BindingsSection({ toolId }: { toolId: string }) {
       <SectionHeader
         icon={<Cpu className="h-4 w-4" />}
         title="Executor bindings"
-        count={rows.length}
+        count={error ? undefined : rows.length}
         description="Executors that can run this tool. Dispatch policy: client > MCP > server."
       />
       {loading && (
@@ -301,7 +301,7 @@ function BindingsSection({ toolId }: { toolId: string }) {
         </div>
       )}
       {error && <ErrorBox msg={error} />}
-      {!loading && rows.length === 0 && (
+      {!loading && !error && rows.length === 0 && (
         <EmptyHint>
           No executor bindings — this tool cannot be dispatched anywhere. Bind
           one below.
@@ -450,7 +450,7 @@ function SurfacesSection({ toolId }: { toolId: string }) {
       <SectionHeader
         icon={<Layers className="h-4 w-4" />}
         title="Surface inclusions"
-        count={rows.length}
+        count={error ? undefined : rows.length}
         description="Surfaces that force-include this tool. Tools NOT in this list still resolve through executor bindings + surface defaults inheritance."
       />
       {loading && (
@@ -459,7 +459,7 @@ function SurfacesSection({ toolId }: { toolId: string }) {
         </div>
       )}
       {error && <ErrorBox msg={error} />}
-      {!loading && rows.length === 0 && (
+      {!loading && !error && rows.length === 0 && (
         <EmptyHint>
           Not force-included on any surface. The tool resolves wherever its
           executor bindings + surface inheritance allow.
@@ -572,7 +572,7 @@ function BundlesSection({ toolId }: { toolId: string }) {
       <SectionHeader
         icon={<Package className="h-4 w-4" />}
         title="Bundles"
-        count={rows.length}
+        count={error ? undefined : rows.length}
         description="Bundles this tool is a member of. Manage membership from each bundle's detail page."
       />
       {loading && (
@@ -581,7 +581,7 @@ function BundlesSection({ toolId }: { toolId: string }) {
         </div>
       )}
       {error && <ErrorBox msg={error} />}
-      {!loading && rows.length === 0 && (
+      {!loading && !error && rows.length === 0 && (
         <EmptyHint>This tool is not in any bundle.</EmptyHint>
       )}
       {rows.length > 0 && (
